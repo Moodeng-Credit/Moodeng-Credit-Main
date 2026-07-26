@@ -45,7 +45,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
-import { checkReasonQuality } from '@/lib/reasonQuality';
+import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -1576,6 +1576,22 @@ export default function LoanRequestModal({
       const situationText = borrowerContext.incomeDescription?.trim() ?? '';
       const bioSignature = `${professionText}||${situationText}`;
       if (bioInputWarnedRef.current === bioSignature) return true;
+
+      // "Describe your situation" is prose a lender reads, so the English rule applies here
+      // too — checked offline first, before spending a DeepSeek call. The profession field is
+      // deliberately exempt: "sari-sari store owner" is what the job is called, not a sentence
+      // in another language, and its own rubric already accepts those terms.
+      if (looksNotEnglish(situationText)) {
+         bioInputWarnedRef.current = bioSignature;
+         showToast(
+            TOAST_TYPES.WARNING,
+            'Write this in English',
+            'Lenders reading your profile are in the US and Europe — please describe your situation in English.',
+            'OK',
+            'acknowledge'
+         );
+         return false;
+      }
 
       setIsCheckingBio(true);
       let hint = '';

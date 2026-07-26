@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { checkReasonQuality } from '@/lib/reasonQuality';
+import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 
 describe('reason quality', () => {
    it('confirms a real English reason', () => {
@@ -44,6 +44,31 @@ describe('reason quality', () => {
          // "para" (para-athlete), "na" (initials), "sa" (South Africa) each appear in English.
          expect(checkReasonQuality('Saving up for the para athletics meet entry fee in March').ok).toBe(true);
          expect(checkReasonQuality('Buying gamot for my mother, she needs it before Friday').ok).toBe(true);
+      });
+   });
+
+   // Used on its own by the bio step's "describe your situation" field, where the shape rules
+   // (four words, character minimum) don't apply but the English rule still does.
+   describe('looksNotEnglish on its own', () => {
+      it('flags Tagalog and Bisaya prose', () => {
+         expect(looksNotEnglish('Tindera ako sa palengke, kita ko araw araw')).toBe(true);
+         expect(looksNotEnglish('Nagtatrabaho ako sa construction, sahod tuwing Sabado')).toBe(true);
+         expect(looksNotEnglish('Naa koy gamay nga tindahan sa amoang balay')).toBe(true);
+      });
+
+      it('leaves English descriptions alone', () => {
+         expect(looksNotEnglish('I run a small online shop and income changes month to month')).toBe(false);
+         expect(looksNotEnglish('I drive a jeepney six days a week and get paid daily')).toBe(false);
+      });
+
+      it('does not flag a local job title', () => {
+         expect(looksNotEnglish('sari-sari store owner')).toBe(false);
+         expect(looksNotEnglish('jeepney driver')).toBe(false);
+         expect(looksNotEnglish('palengke vendor')).toBe(false);
+      });
+
+      it('is quiet on empty input', () => {
+         expect(looksNotEnglish('  ')).toBe(false);
       });
    });
 

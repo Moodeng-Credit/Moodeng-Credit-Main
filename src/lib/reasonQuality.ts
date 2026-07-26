@@ -121,6 +121,29 @@ const looksLikeWord = (word: string): boolean => {
 
 const NOT_ENGLISH_HINT = 'Please write your reason in English — the lenders reading it don’t speak Tagalog.';
 
+/**
+ * Language check on its own, for the other free text lenders read (the "describe your
+ * situation" bio field). Shape rules like "at least four words" don't apply there, but the
+ * English rule does — same reason: the people reading it are in the US and EU.
+ *
+ * Short inputs are given the benefit of the doubt: a two-word answer can't clear the
+ * two-ambiguous-markers bar, and a job title borrowed straight from Filipino English
+ * ("sari-sari store owner") is what the job is called, not a sentence in another language.
+ */
+export const looksNotEnglish = (rawText: string): boolean => {
+   const text = rawText.trim();
+   if (!text) return false;
+   if (NON_LATIN.test(text)) return true;
+
+   const normalized = text
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.toLowerCase().replace(/[^\p{L}\p{N}’']/gu, ''));
+
+   if (normalized.some((word) => DECISIVE_MARKERS.has(word))) return true;
+   return normalized.filter((word) => WEAK_MARKERS.has(word)).length >= 2;
+};
+
 export type ReasonQuality = {
    /** True when the text looks like a real English sentence — only then do we confirm it. */
    ok: boolean;
@@ -163,9 +186,7 @@ export const checkReasonQuality = (rawReason: string): ReasonQuality => {
 
    // One unmistakable marker, or two that could each be an English accident. Taglish clears
    // this easily — a sentence built on Tagalog grammar can't avoid "ng"/"ako"/"sa ... ko".
-   const decisive = normalized.some((word) => DECISIVE_MARKERS.has(word));
-   const weakHits = normalized.filter((word) => WEAK_MARKERS.has(word)).length;
-   if (decisive || weakHits >= 2) return { ok: false, hint: NOT_ENGLISH_HINT, code: 'not-english' };
+   if (looksNotEnglish(reason)) return { ok: false, hint: NOT_ENGLISH_HINT, code: 'not-english' };
 
    return { ok: true, hint: '', code: 'ok' };
 };

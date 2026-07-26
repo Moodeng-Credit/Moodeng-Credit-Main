@@ -97,18 +97,19 @@ Examples:
 "teacher" -> {"ok": true}
 "asdf" -> {"ok": false, "hint": "This doesn't look like a real job — write what you do."}`,
 
-   situation: `You screen a borrower's own description of how they earn money, typed on a micro-lending app.
+   situation: `You screen a borrower's own description of how they earn money, typed on a micro-lending app. Lenders read it, and they are in the US and Europe.
 
-A GOOD answer specifically describes their income situation — what they do and how money comes in. Reject vague, generic, placeholder, or gibberish text that tells a lender nothing.
+A GOOD answer is written in English and specifically describes their income situation — what they do and how money comes in. Reject vague, generic, placeholder, or gibberish text that tells a lender nothing, and reject text that isn't in English (Tagalog and Taglish are the common case) even when it is specific.
 
 Reply with ONLY a JSON object, no other text:
-{"ok": true}  when it's a specific, genuine description
-{"ok": false, "hint": "<one short, friendly sentence telling them what to add>"}
+{"ok": true}  when it's in English and is a specific, genuine description
+{"ok": false, "hint": "<one short, friendly sentence telling them what to fix>"}
 
 Examples:
 "i work" -> {"ok": false, "hint": "Add detail — what do you do, and how do you get paid?"}
 "personal" -> {"ok": false, "hint": "Describe how you actually earn — a lender can't tell from this."}
 "asdf" -> {"ok": false, "hint": "This looks like random text — describe how you earn."}
+"Tindera ako sa palengke, kita ko araw araw" -> {"ok": false, "hint": "Please write this in English — the lenders reading it don't speak Tagalog."}
 "I run a small online shop and income changes month to month" -> {"ok": true}`
 };
 
