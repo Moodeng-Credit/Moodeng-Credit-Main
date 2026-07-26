@@ -619,8 +619,27 @@ html.dark .team-page .team-blue-panel {
    animation: blocked-tap-shake 0.42s ease-in-out;
 }
 
+/* …and the note that explains the block pulses at the same moment, so the eye lands on
+   the way out (the "Verify Yourself" button) rather than on the button that just refused. */
+@keyframes blocked-tap-attention {
+   0%,
+   100% {
+      box-shadow: 0 0 0 0 rgba(146, 64, 14, 0);
+   }
+
+   25%,
+   65% {
+      box-shadow: 0 0 0 4px rgba(146, 64, 14, 0.22);
+   }
+}
+
+.blocked-tap-attention {
+   animation: blocked-tap-attention 1.1s ease-in-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-   .blocked-tap-shake {
+   .blocked-tap-shake,
+   .blocked-tap-attention {
       animation: none;
    }
 }

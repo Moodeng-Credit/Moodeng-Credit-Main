@@ -205,7 +205,12 @@ describe('LoanRequestModal borrowing gate', () => {
 
       expect(markup).toContain('One quick step to request a loan');
       expect(markup).toContain('Verify Yourself');
-      expect(markup).toContain('disabled');
+      // The submit button is deliberately NOT disabled while unverified — a dead button
+      // swallows the tap. It stays live so it can answer with the reason, which sits in the
+      // blocker note it points at.
+      expect(markup).toContain('You&#x27;re not verified yet.');
+      expect(markup).toContain('aria-describedby="loan-verify-blocker"');
+      expect(markup).not.toContain('disabled');
    });
 
    it('uses the verified credit limit when showing the loan cap', () => {

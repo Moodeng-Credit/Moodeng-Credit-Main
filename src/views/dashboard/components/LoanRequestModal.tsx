@@ -1451,20 +1451,13 @@ export default function LoanRequestModal({
       }
 
       // The submit button stays tappable while unverified on purpose: a dead grey button
-      // teaches nothing. Answer the tap — shake it, name the blocker, and point at the fix.
+      // teaches nothing. Answer the tap — shake the button, pulse the note right above it
+      // that says why, and bring both on screen. Deliberately no toast: it lands bottom-right,
+      // straight on top of the "Verify Yourself" button we're sending them to.
       if (!isVerified) {
          event.preventDefault();
          setVerifyNudge(true);
-         window.setTimeout(() => setVerifyNudge(false), 500);
-         showToast(
-            TOAST_TYPES.WARNING,
-            isPending ? 'Verification still in review' : 'Verify yourself to send this',
-            isPending
-               ? verifyPendingBody
-               : 'One quick one-time verification and your request goes live to lenders.',
-            'OK',
-            'acknowledge'
-         );
+         window.setTimeout(() => setVerifyNudge(false), 1200);
          document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
          return;
       }
@@ -2158,7 +2151,9 @@ export default function LoanRequestModal({
                             Say it here, where the tap happens, with the way out attached. */}
                         {!isVerified ? (
                            <div
-                              className="flex flex-col gap-md-1 rounded-md-lg border border-[#f0c98a] bg-[#fff6d0] px-md-3 py-md-2"
+                              className={`flex flex-col gap-md-1 rounded-md-lg border border-[#f0c98a] bg-[#fff6d0] px-md-3 py-md-2 ${
+                                 verifyNudge ? 'blocked-tap-attention' : ''
+                              }`}
                               id="loan-verify-blocker"
                            >
                               <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
@@ -2178,8 +2173,10 @@ export default function LoanRequestModal({
                               </button>
                            </div>
                         ) : null}
+                        {/* Deliberately not aria-disabled: the button *does* act — it explains why it
+                            can't submit yet. Point screen readers at that explanation instead. */}
                         <button
-                           aria-disabled={!isVerified}
+                           aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
                               isVerified && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
