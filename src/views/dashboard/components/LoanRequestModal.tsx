@@ -968,6 +968,7 @@ export default function LoanRequestModal({
    const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable'; hint: string }>(
       { status: 'idle', hint: '' }
    );
+   const liveChecksUsedRef = useRef(0);
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1390,6 +1391,7 @@ export default function LoanRequestModal({
    // reason (the #1 confusion) is caught right here, under the field, not via a toast that
    // hides behind the next card.
    const REASON_MIN_LENGTH = 40;
+   const MAX_LIVE_REASON_CHECKS = 12;
    // Per-field "valid" flags — drive the green success border so each box confirms when it's
    // correctly filled (feedback the borrower can see), separate from the red error state.
    const parsedAmountNum = Number(loanAmount);
@@ -1428,9 +1430,17 @@ export default function LoanRequestModal({
          return;
       }
 
+      // Budget: a borrower rewriting their reason twenty times shouldn't mean twenty DeepSeek
+      // calls. Past the cap the field goes quiet and the submit gate does the judging.
+      if (liveChecksUsedRef.current >= MAX_LIVE_REASON_CHECKS) {
+         setLiveReasonCheck({ status: 'unavailable', hint: '' });
+         return;
+      }
+
       let cancelled = false;
       setLiveReasonCheck({ status: 'checking', hint: '' });
       const timer = window.setTimeout(async () => {
+         liveChecksUsedRef.current += 1;
          const verdict = await checkLoanReason(trimmed);
          if (cancelled) return;
          if (!verdict.checked) {
@@ -1471,6 +1481,10 @@ export default function LoanRequestModal({
          errors.reason = 'Please add a reason so lenders know what the loan is for.';
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
+      } else if (reasonQuality.code === 'not-english') {
+         // The one hard rule on this field. Everything else about the reason is a nudge, but a
+         // request the US/EU lenders can't read can't be funded, so it doesn't leave the form.
+         errors.reason = 'Please write your reason in English so lenders can read it.';
       }
 
       setTermErrors(errors);
@@ -2138,6 +2152,9 @@ export default function LoanRequestModal({
                                  {(() => {
                                     const trimmedLength = reason.trim().length;
                                     const remaining = REASON_MIN_LENGTH - trimmedLength;
+                                    // A red error below is already saying it — don't say it twice in
+                                    // two colours. The counter keeps its place on the right.
+                                    if (termErrors.reason) return <span />;
                                     // Guide live: while short, show how many more characters are needed; once the
                                     // minimum is met, confirm it — so they learn before submitting, not after.
                                     if (trimmedLength > 0 && remaining > 0) {
@@ -2211,6 +2228,17 @@ export default function LoanRequestModal({
                                           seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
                                        />
                                     </div>
+                                 </div>
+                              ) : reasonQuality.code === 'not-english' ? (
+                                 // Mecha speaks both — hand them a translation rather than leaving
+                                 // "write it in English" as homework.
+                                 <div className="mt-md-1 pl-[22px]">
+                                    <AskMechaButton
+                                       variant="link"
+                                       label="Ask Mecha to write this in English"
+                                       context={{ page: 'Loan request', step: 'loan-request' }}
+                                       seedUserMessage={`Please help me write my loan reason in English. Here is what I wrote: "${reason}"`}
+                                    />
                                  </div>
                               ) : liveReasonCheck.status === 'weak' ? (
                                  // Same offer as the submit-time warning, just earlier: the hint is

@@ -19,58 +19,84 @@ const CONSONANT_RUN = /[^aeiouyà-ü\W\d]{5,}/i;
 
 /**
  * Reasons must be written in English: the lenders reading them are in the US and EU, and a
- * request they can't read doesn't get funded. This catches the common case — Tagalog and
- * Taglish — by counting function words that have no English homograph. Content words
- * (gamot, tuition, sahod) are deliberately absent: they show up inside otherwise-English
- * sentences, and one borrowed noun shouldn't fail an English reason.
+ * request they can't read doesn't get funded. This catches the two languages borrowers
+ * actually write in — Tagalog and Cebuano — by their function words.
+ *
+ * Content words (gamot, tuition, sahod, palengke) are deliberately absent: they turn up
+ * inside otherwise-English sentences and one borrowed noun must not fail an English reason.
+ *
+ * DECISIVE markers have no English homograph, so a single one settles it. WEAK markers are
+ * words that can appear in English text — "kay" is a name, "hindi" is a language, "na" is
+ * how people type N/A, "para" is a sports prefix — so they only count in pairs. "mo" and
+ * "po" are left out of both: "6 mo old" and "the PO I owe" are ordinary English.
  */
-const TAGALOG_MARKERS = new Set([
+const DECISIVE_MARKERS = new Set([
+   // Tagalog
    'ako',
    'akin',
-   'ang',
-   'ako’y',
-   'ang mga',
    'aking',
-   'ay',
+   'ang',
    'dahil',
-   'ganito',
-   'hindi',
-   'ito',
-   'ka',
    'kailangan',
    'kami',
    'kaming',
-   'kasi',
-   'kay',
-   'ko',
-   'kong',
-   'kumuha',
-   'lang',
-   'mag',
-   'maga',
-   'magkano',
+   'kayo',
    'mga',
-   'mo',
-   'na',
    'namin',
-   'nang',
-   'naman',
-   'nasa',
    'natin',
    'ng',
    'ngayon',
+   'ngayong',
    'nila',
+   'ninyo',
    'nito',
    'niya',
-   'para',
-   'po',
-   'sa',
-   'saka',
+   'pambayad',
+   'pambili',
+   'pamasahe',
    'sila',
    'siya',
+   'upang',
    'yung',
+   // Cebuano/Bisaya
+   'akong',
+   'gyud',
+   'imong',
+   'iyang',
+   'kinahanglan',
+   'kwarta',
+   'nako',
+   'namo',
+   'nimo'
+]);
+const WEAK_MARKERS = new Set([
+   'ay',
+   'hindi',
+   'ito',
+   'ka',
+   'kana',
+   'karon',
+   'kasi',
+   'kay',
+   'kini',
+   'ko',
+   'kong',
+   'lang',
+   'mao',
+   'na',
+   'naman',
+   'nang',
+   'nasa',
+   'nga',
+   'ni',
+   'og',
+   'para',
+   'sa',
+   'saka',
+   'ug',
    'ulit',
-   'upang'
+   'unsa',
+   'wala'
 ]);
 /** Scripts we can't serve at all — the reason would be unreadable to every lender. */
 const NON_LATIN = /[Ѐ-ӿ؀-ۿ฀-๿぀-ヿ一-鿿가-힯]/;
@@ -100,39 +126,46 @@ export type ReasonQuality = {
    ok: boolean;
    /** Shown in place of "Looks good" when it doesn't. Empty when ok. */
    hint: string;
+   /**
+    * Why it failed. Callers treat these differently: `not-english` is an objective rule the
+    * submit gate enforces, while the rest are advisory nudges (the DeepSeek check is the
+    * judge of whether a reason is good enough).
+    */
+   code: 'ok' | 'empty' | 'not-english' | 'too-few-words' | 'not-words' | 'repeated';
 };
 
 export const checkReasonQuality = (rawReason: string): ReasonQuality => {
    const reason = rawReason.trim();
-   if (!reason) return { ok: false, hint: '' };
+   if (!reason) return { ok: false, hint: '', code: 'empty' };
 
-   if (NON_LATIN.test(reason)) return { ok: false, hint: NOT_ENGLISH_HINT };
+   if (NON_LATIN.test(reason)) return { ok: false, hint: NOT_ENGLISH_HINT, code: 'not-english' };
 
    const words = reason.split(/\s+/).filter(Boolean);
 
    // One long unbroken string is the classic mash ("dwadpajdiwajdwad…"). Real reasons —
    // even terse ones — are several words.
    if (words.length < 4) {
-      return { ok: false, hint: 'Write it as a sentence — what the money is for and when you get paid.' };
+      return { ok: false, hint: 'Write it as a sentence — what the money is for and when you get paid.', code: 'too-few-words' };
    }
 
    const normalized = words.map((word) => word.toLowerCase().replace(/[^\p{L}\p{N}’']/gu, ''));
 
    const oddWords = words.filter((word) => !looksLikeWord(word)).length;
    if (oddWords / words.length > 0.34) {
-      return { ok: false, hint: "This doesn't look like real words yet — tell lenders what the loan is for." };
+      return { ok: false, hint: "This doesn't look like real words yet — tell lenders what the loan is for.", code: 'not-words' };
    }
 
    // "aaaa aaaa aaaa aaaa" and other filler that pads the counter without saying anything.
    const distinctWords = new Set(normalized).size;
    if (words.length >= 6 && distinctWords / words.length < 0.4) {
-      return { ok: false, hint: 'Try saying it once, clearly — repeating words does not help lenders.' };
+      return { ok: false, hint: 'Try saying it once, clearly — repeating words does not help lenders.', code: 'repeated' };
    }
 
-   // Two Tagalog function words is well past coincidence ("para" alone can be a name or
-   // "para-athlete"; "sa" alone can be an abbreviation), and Taglish always clears it.
-   const tagalogHits = normalized.filter((word) => TAGALOG_MARKERS.has(word)).length;
-   if (tagalogHits >= 2) return { ok: false, hint: NOT_ENGLISH_HINT };
+   // One unmistakable marker, or two that could each be an English accident. Taglish clears
+   // this easily — a sentence built on Tagalog grammar can't avoid "ng"/"ako"/"sa ... ko".
+   const decisive = normalized.some((word) => DECISIVE_MARKERS.has(word));
+   const weakHits = normalized.filter((word) => WEAK_MARKERS.has(word)).length;
+   if (decisive || weakHits >= 2) return { ok: false, hint: NOT_ENGLISH_HINT, code: 'not-english' };
 
-   return { ok: true, hint: '' };
+   return { ok: true, hint: '', code: 'ok' };
 };

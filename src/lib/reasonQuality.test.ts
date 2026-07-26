@@ -24,7 +24,7 @@ describe('reason quality', () => {
    });
 
    it('stays quiet on empty input', () => {
-      expect(checkReasonQuality('   ')).toEqual({ ok: false, hint: '' });
+      expect(checkReasonQuality('   ')).toEqual({ ok: false, hint: '', code: 'empty' });
    });
 
    describe('English only — lenders are US/EU and cannot read Tagalog', () => {
