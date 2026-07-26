@@ -961,6 +961,15 @@ export default function LoanRequestModal({
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
    // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
    const [verifyNudge, setVerifyNudge] = useState(false);
+   // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
+   // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint.
+   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak'; hint: string }>({
+      status: 'idle',
+      hint: ''
+   });
+   // One verdict per distinct reason text — re-typing a character shouldn't re-bill DeepSeek,
+   // and coming back to an earlier draft should answer instantly.
+   const reasonVerdictsRef = useRef<Map<string, { ok: boolean; hint: string }>>(new Map());
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1394,11 +1403,54 @@ export default function LoanRequestModal({
       !Number.isNaN(parsedAmountNum) &&
       parsedRepayNum >= parsedAmountNum + 1;
    // Length is necessary but not sufficient: 46 characters of "dwadwadwad" used to earn a
-   // green "Looks good". The shape check keeps the field honest — it withholds the tick (and
-   // says what's missing) without blocking, since the DeepSeek check on submit is the real gate.
+   // green "Looks good". Two checks now stand between the borrower and that tick:
+   //   1. checkReasonQuality — instant, offline, catches text that isn't words yet;
+   //   2. check-loan-input (DeepSeek) — the same judge that runs on submit, pulled forward so
+   //      the tick means what it says instead of appearing and then being contradicted.
+   // Both only withhold the tick; neither blocks. The submit gate stays the enforcement point.
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
-   const reasonValid = reasonMeetsLength && reasonQuality.ok;
+   const reasonShapeOk = reasonMeetsLength && reasonQuality.ok;
+   const reasonValid = reasonShapeOk && liveReasonCheck.status === 'ok';
+
+   // Ask the effort check while they're still in the field, once typing settles. Cheap to do:
+   // it's the flash model, it only fires on text that already passed the offline shape check,
+   // each distinct text is asked once, and it fails open — a slow or unhappy DeepSeek leaves
+   // the borrower exactly where they were, with the submit-time gate unchanged behind it.
+   useEffect(() => {
+      const trimmed = reason.trim();
+      if (!reasonShapeOk) {
+         setLiveReasonCheck({ status: 'idle', hint: '' });
+         return;
+      }
+
+      const cached = reasonVerdictsRef.current.get(trimmed);
+      if (cached) {
+         setLiveReasonCheck({ status: cached.ok ? 'ok' : 'weak', hint: cached.hint });
+         return;
+      }
+
+      let cancelled = false;
+      setLiveReasonCheck({ status: 'checking', hint: '' });
+      const timer = window.setTimeout(async () => {
+         let verdict = { ok: true, hint: '' };
+         try {
+            const { data } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+               body: { text: trimmed, kind: 'reason' }
+            });
+            verdict = { ok: data?.ok !== false, hint: data?.hint ?? '' };
+            reasonVerdictsRef.current.set(trimmed, verdict);
+         } catch (error) {
+            console.error('check-loan-input (live reason) failed, allowing:', error);
+         }
+         if (!cancelled) setLiveReasonCheck({ status: verdict.ok ? 'ok' : 'weak', hint: verdict.hint });
+      }, 900);
+
+      return () => {
+         cancelled = true;
+         window.clearTimeout(timer);
+      };
+   }, [reason, reasonShapeOk]);
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
 
@@ -2097,13 +2149,24 @@ export default function LoanRequestModal({
                                        );
                                     }
                                     if (trimmedLength >= REASON_MIN_LENGTH) {
-                                       if (!reasonQuality.ok) {
+                                       // Offline shape check first (instant), then whatever the
+                                       // effort check came back with. The tick only appears once
+                                       // both have actually passed it.
+                                       const weakHint = !reasonQuality.ok
+                                          ? reasonQuality.hint
+                                          : liveReasonCheck.status === 'weak'
+                                            ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
+                                            : '';
+                                       if (weakHint) {
                                           return (
                                              <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
                                                 <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                                {reasonQuality.hint}
+                                                {weakHint}
                                              </span>
                                           );
+                                       }
+                                       if (liveReasonCheck.status !== 'ok') {
+                                          return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
                                        }
                                        return (
                                           <span className="inline-flex items-center gap-1 font-medium text-md-primary-1200">
@@ -2141,6 +2204,17 @@ export default function LoanRequestModal({
                                           seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
                                        />
                                     </div>
+                                 </div>
+                              ) : liveReasonCheck.status === 'weak' ? (
+                                 // Same offer as the submit-time warning, just earlier: the hint is
+                                 // already in the counter row above, so only the way out is needed.
+                                 <div className="mt-md-1 pl-[22px]">
+                                    <AskMechaButton
+                                       variant="link"
+                                       label="Ask Mecha to help me word this"
+                                       context={{ page: 'Loan request', step: 'loan-request' }}
+                                       seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                    />
                                  </div>
                               ) : null}
                            </div>
