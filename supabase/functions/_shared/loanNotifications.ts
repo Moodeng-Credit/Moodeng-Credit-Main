@@ -21,6 +21,8 @@ export type LoanNotificationLoan = {
    updated_at?: string | null;
    borrower_username?: string | null;
    lender_username?: string | null;
+   lender_wallet?: string | null;
+   hash?: string[] | null;
 };
 
 export type LoanNotificationRecipient = {
@@ -137,6 +139,21 @@ const getSiteUrl = () => {
 };
 
 const buildAppLink = (path: string) => `${getSiteUrl()}${path.startsWith('/') ? path : `/${path}`}`;
+
+// Short 0x1234…abcd form for wallet addresses in notification text.
+const shortenWallet = (address?: string | null) => {
+   const value = (address ?? '').trim();
+   if (!/^0x[0-9a-fA-F]{40}$/.test(value)) return '';
+   return `${value.slice(0, 6)}…${value.slice(-4)}`;
+};
+
+// Basescan link for a confirmed on-chain transaction hash. Returns '' for anything that isn't a
+// real 32-byte tx hash (e.g. a Base Account userOperation hash, which 404s on the explorer).
+const buildTxExplorerLink = (hash?: string | null) => {
+   const value = (hash ?? '').trim();
+   if (!/^0x[0-9a-fA-F]{64}$/.test(value)) return '';
+   return `https://basescan.org/tx/${value}`;
+};
 
 const buildDashboardLink = () => buildAppLink('/dashboard');
 
@@ -846,8 +863,21 @@ export const buildLenderRepaymentTelegram = (
    const actionUrl = buildDashboardLink();
    const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
 
+   // Where the money actually landed: repayments always return to the wallet that FUNDED this loan
+   // (loans.lender_wallet), which may differ from whatever wallet the lender has connected now. Spelling
+   // this out — plus a verifiable tx link — heads off "I never received it" tickets when the lender is
+   // looking at a different wallet. Prefer the last recorded hash (the repayment); fall back to any.
+   const destinationLine = shortenWallet(loan.lender_wallet)
+      ? `Sent to your funding wallet ${shortenWallet(loan.lender_wallet)} — the wallet you used for this loan.`
+      : '';
+   const hashes = Array.isArray(loan.hash) ? loan.hash : [];
+   const explorerLink = hashes.map((h) => buildTxExplorerLink(h)).filter(Boolean).at(-1) ?? '';
+   const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
+
    const text = normalizeNotificationText(`Repayment received
 Hi ${name}, ${borrowerName} repaid ${amountRepaid} for ${loan.tracking_id}.
+${destinationLine}
+${verifyLine}
 Thanks for supporting the Moodeng community.
 ${actionUrl}`);
 

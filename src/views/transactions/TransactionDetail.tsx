@@ -609,6 +609,24 @@ export default function TransactionDetail() {
    const canReturnInterest = isLender && status === 'REPAID' && interestAmount > 0.005 && !loan.interestReturnedAt && !returnedTxHash;
    const didReturnInterest = isLender && status === 'REPAID' && interestAmount > 0.005 && (!!loan.interestReturnedAt || !!returnedTxHash);
 
+   // Repayment-destination transparency for lenders. Repayments always return to the wallet that FUNDED
+   // this loan (loans.lender_wallet) — which may differ from whatever wallet the lender has connected
+   // now. Surfacing the destination (plus a verifiable explorer link) is what stops "I never got paid"
+   // tickets when a lender switched wallets after funding.
+   const shortAddr = (addr?: string | null) => {
+      const v = (addr ?? '').trim();
+      return /^0x[0-9a-fA-F]{40}$/.test(v) ? `${v.slice(0, 6)}…${v.slice(-4)}` : '';
+   };
+   const repaymentWallet = loan.lenderWallet ?? '';
+   const connectedWallet = account.address ?? user?.walletAddress ?? '';
+   const walletMismatch =
+      !!repaymentWallet && !!connectedWallet && repaymentWallet.toLowerCase() !== connectedWallet.toLowerCase();
+   const explorerBase = (account.chain?.blockExplorers?.default?.url ?? 'https://basescan.org').replace(/\/$/, '');
+   // The last valid 32-byte tx hash in the log is the most recent (repayment) transfer; userOp hashes and
+   // other non-tx entries are skipped since they 404 on the explorer.
+   const repaymentTxHash = [...(loan.hash ?? [])].reverse().find((h) => /^0x[0-9a-fA-F]{64}$/.test((h ?? '').trim()));
+   const showRepaymentDestination = isLender && !isPendingFunding && !!repaymentWallet;
+
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
@@ -683,6 +701,41 @@ export default function TransactionDetail() {
                      </div>
                   </div>
                </div>
+
+               {/* Repayment destination card — lender-facing transparency about where money returns */}
+               {showRepaymentDestination ? (
+                  <div className="bg-white rounded-md-lg shadow-md-card p-md-4 flex flex-col gap-md-2">
+                     <h2 className="text-md-h5 font-semibold text-md-heading">Repayment destination</h2>
+                     <p className="text-md-b3 text-md-neutral-1000">
+                        {status === 'REPAID'
+                           ? 'This repayment was sent to the wallet you funded this loan from:'
+                           : 'When repaid, funds return to the wallet you funded this loan from:'}
+                     </p>
+                     <div className="flex items-center justify-between rounded-md-md bg-md-neutral-200 px-md-3 py-md-2">
+                        <span className="text-md-b2 font-semibold text-md-primary-2000">{shortAddr(repaymentWallet) || repaymentWallet}</span>
+                        {repaymentTxHash ? (
+                           <a
+                              href={`${explorerBase}/tx/${repaymentTxHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-md-b3 font-semibold text-md-primary-900 underline"
+                           >
+                              View on explorer
+                           </a>
+                        ) : null}
+                     </div>
+                     {walletMismatch ? (
+                        <div className="flex gap-md-2 rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2">
+                           <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
+                           <span className="text-md-b4 text-md-neutral-1000">
+                              This differs from the wallet you have connected now ({shortAddr(connectedWallet)}). That is
+                              expected — repayments go to the wallet used to fund each loan, not your current one. Open{' '}
+                              {shortAddr(repaymentWallet)} to find these funds.
+                           </span>
+                        </div>
+                     ) : null}
+                  </div>
+               ) : null}
 
                {/* Timeline card */}
                <div className="bg-white rounded-md-lg shadow-md-card p-md-4 flex flex-col gap-md-3">
