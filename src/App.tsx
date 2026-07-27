@@ -263,6 +263,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/admin/pricing-preview" element={<PricingHealthPreview />} /> : null}
+            {import.meta.env.DEV ? <Route path="/history-preview" element={<TransactionDetail />} /> : null}
 
             {/* Verification */}
             <Route
