@@ -42,6 +42,33 @@ function buildPreviewLoan(): Loan {
    };
 }
 
+// Dev-only: a fully-repaid loan seen from the lender's side, with real-shaped wallet addresses and a
+// genuine Base repayment tx hash, so the "Repayment destination" card (incl. explorer link + the
+// connected-wallet-mismatch note) can be reviewed in the preview harness. Not used in production.
+function buildPreviewLenderLoan(): Loan {
+   return {
+      id: 'preview-lender-repaid',
+      trackingId: 'preview-lender-repaid',
+      borrowerUser: 'preview-borrower',
+      lenderUser: 'preview-lender',
+      borrowerWallet: '0xF39c560E550469E31D16c55fBEf83561664Fd24F',
+      lenderWallet: '0x13D697Ff8ABcE2dCa07857C286A075C7164A3699',
+      loanAmount: 20,
+      repaidAmount: 23,
+      totalRepaymentAmount: 23,
+      reason: 'Emergency bill payment until salary is credited',
+      loanStatus: LoanStatusValue.LENT,
+      repaymentStatus: RepaymentStatus.PAID,
+      dueDate: '2026-07-31T00:00:00.000Z',
+      coin: 'USDC',
+      hash: ['0x542a5de4420b3355e97991db7a29303af207e648fc28c86fc27f41cba4b38b35'],
+      createdAt: '2026-07-22T00:00:00.000Z',
+      updatedAt: '2026-07-27T04:01:09.000Z',
+      fundedAt: '2026-07-22T13:55:27.000Z',
+      repaidAt: '2026-07-27T04:01:09.000Z'
+   };
+}
+
 function formatCurrency(amount: number): string {
    return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -495,6 +522,7 @@ export default function TransactionDetail() {
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const isLoansLoading = useSelector((state: RootState) => state.loans.isLoading);
    const isPreview = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
+   const previewAsLender = isPreview && searchParams.get('role') === 'lender';
    const [modalOpen, setModalOpen] = useState(false);
    const [returnedTxHash, setReturnedTxHash] = useState<string | null>(null);
    const returnInFlightRef = useRef(false);
@@ -505,8 +533,9 @@ export default function TransactionDetail() {
    const loan = useMemo(() => {
       const foundLoan = gloans.find((l) => l.id === loanId);
       if (foundLoan) return foundLoan;
+      if (previewAsLender) return buildPreviewLenderLoan();
       return isPreview ? buildPreviewLoan() : undefined;
-   }, [gloans, isPreview, loanId]);
+   }, [gloans, isPreview, previewAsLender, loanId]);
 
    useEffect(() => {
       if (!user?.id || isPreview) return;
@@ -600,7 +629,7 @@ export default function TransactionDetail() {
 
    const status = getTransactionLoanStatus(loan, new Date());
    const isPendingFunding = status === 'PENDING';
-   const isLender = !!user?.id && loan.lenderUser === user.id;
+   const isLender = previewAsLender || (!!user?.id && loan.lenderUser === user.id);
    const counterpartyId = isLender ? loan.borrowerUser : loan.lenderUser;
    const counterpartyProfile = counterpartyId ? userProfiles[counterpartyId] : undefined;
    const counterpartyName = counterpartyProfile?.username ?? 'Unknown';
@@ -608,6 +637,27 @@ export default function TransactionDetail() {
    const interestAmount = Math.round((loan.totalRepaymentAmount - loan.loanAmount) * 100) / 100;
    const canReturnInterest = isLender && status === 'REPAID' && interestAmount > 0.005 && !loan.interestReturnedAt && !returnedTxHash;
    const didReturnInterest = isLender && status === 'REPAID' && interestAmount > 0.005 && (!!loan.interestReturnedAt || !!returnedTxHash);
+
+   // Repayment-destination transparency for lenders. Repayments always return to the wallet that FUNDED
+   // this loan (loans.lender_wallet) — which may differ from whatever wallet the lender has connected
+   // now. Surfacing the destination (plus a verifiable explorer link) is what stops "I never got paid"
+   // tickets when a lender switched wallets after funding.
+   const shortAddr = (addr?: string | null) => {
+      const v = (addr ?? '').trim();
+      return /^0x[0-9a-fA-F]{40}$/.test(v) ? `${v.slice(0, 6)}…${v.slice(-4)}` : '';
+   };
+   const repaymentWallet = loan.lenderWallet ?? '';
+   // In the lender preview, stand in a different connected wallet so the mismatch note is visible.
+   const connectedWallet = previewAsLender
+      ? '0xDC1DF130710bCA7A617A867FBccF97a7dA1253CC'
+      : (account.address ?? user?.walletAddress ?? '');
+   const walletMismatch =
+      !!repaymentWallet && !!connectedWallet && repaymentWallet.toLowerCase() !== connectedWallet.toLowerCase();
+   const explorerBase = (account.chain?.blockExplorers?.default?.url ?? 'https://basescan.org').replace(/\/$/, '');
+   // The last valid 32-byte tx hash in the log is the most recent (repayment) transfer; userOp hashes and
+   // other non-tx entries are skipped since they 404 on the explorer.
+   const repaymentTxHash = [...(loan.hash ?? [])].reverse().find((h) => /^0x[0-9a-fA-F]{64}$/.test((h ?? '').trim()));
+   const showRepaymentDestination = isLender && !isPendingFunding && !!repaymentWallet;
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
@@ -683,6 +733,41 @@ export default function TransactionDetail() {
                      </div>
                   </div>
                </div>
+
+               {/* Repayment destination card — lender-facing transparency about where money returns */}
+               {showRepaymentDestination ? (
+                  <div className="bg-white rounded-md-lg shadow-md-card p-md-4 flex flex-col gap-md-2">
+                     <h2 className="text-md-h5 font-semibold text-md-heading">Repayment destination</h2>
+                     <p className="text-md-b3 text-md-neutral-1000">
+                        {status === 'REPAID'
+                           ? 'This repayment was sent to the wallet you funded this loan from:'
+                           : 'When repaid, funds return to the wallet you funded this loan from:'}
+                     </p>
+                     <div className="flex items-center justify-between rounded-md-md bg-md-neutral-200 px-md-3 py-md-2">
+                        <span className="text-md-b2 font-semibold text-md-primary-2000">{shortAddr(repaymentWallet) || repaymentWallet}</span>
+                        {repaymentTxHash ? (
+                           <a
+                              href={`${explorerBase}/tx/${repaymentTxHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-md-b3 font-semibold text-md-primary-900 underline"
+                           >
+                              View on explorer
+                           </a>
+                        ) : null}
+                     </div>
+                     {walletMismatch ? (
+                        <div className="flex gap-md-2 rounded-md-md border border-md-yellow-700/40 bg-md-yellow-700/10 px-md-3 py-md-2">
+                           <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-md-yellow-700" strokeWidth={2.3} />
+                           <span className="text-md-b4 text-md-neutral-1000">
+                              This differs from the wallet you have connected now ({shortAddr(connectedWallet)}). That is
+                              expected — repayments go to the wallet used to fund each loan, not your current one. Open{' '}
+                              {shortAddr(repaymentWallet)} to find these funds.
+                           </span>
+                        </div>
+                     ) : null}
+                  </div>
+               ) : null}
 
                {/* Timeline card */}
                <div className="bg-white rounded-md-lg shadow-md-card p-md-4 flex flex-col gap-md-3">

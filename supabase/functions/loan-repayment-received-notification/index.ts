@@ -114,7 +114,7 @@ serve(async (req) => {
    const { data: loan, error: loanError } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, repayment_status, updated_at'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, lender_wallet, hash, repayment_status, updated_at'
       )
       .eq('id', loanId)
       .maybeSingle();

@@ -93,6 +93,10 @@ interface VerifiedTransfer {
    to: string;
    micros: bigint;
    blockNumber?: string;
+   // The real, Basescan-verifiable on-chain transaction hash. For 'wallet' payments this equals the
+   // input hash; for 'base' (ERC-4337) payments the input is a userOperation hash — which 404s on the
+   // explorer — so we surface the bundler's resolved transactionHash instead.
+   txHash?: string;
 }
 
 // Confirms `hash` on-chain and returns the USDC transfer it produced. Throws
@@ -109,7 +113,13 @@ const verifyPayment = async (method: 'wallet' | 'base', hash: string): Promise<V
       const sender = (result.sender ?? '').toLowerCase();
       const bySender = transfers.filter((t) => t.from === sender);
       const chosen = bySender[0] ?? transfers[0];
-      return { from: chosen.from, to: chosen.to, micros: chosen.value, blockNumber: result.receipt?.blockNumber };
+      return {
+         from: chosen.from,
+         to: chosen.to,
+         micros: chosen.value,
+         blockNumber: result.receipt?.blockNumber,
+         txHash: result.receipt?.transactionHash
+      };
    }
 
    const receipt = await rpcCall(RPC_URL, 'eth_getTransactionReceipt', [hash]);
@@ -117,7 +127,13 @@ const verifyPayment = async (method: 'wallet' | 'base', hash: string): Promise<V
    if (receipt.status !== '0x1') throw new Error('Transaction failed on-chain');
    const transfers = decodeUsdcTransfers(receipt.logs);
    if (transfers.length === 0) throw new Error('No USDC transfer found in this transaction');
-   return { from: transfers[0].from, to: transfers[0].to, micros: transfers[0].value, blockNumber: receipt.blockNumber };
+   return {
+      from: transfers[0].from,
+      to: transfers[0].to,
+      micros: transfers[0].value,
+      blockNumber: receipt.blockNumber,
+      txHash: receipt.transactionHash ?? hash
+   };
 };
 
 // Best-effort block timestamp (ms) for the freshness check. Fail-open: any RPC/parse problem returns
@@ -390,14 +406,20 @@ serve(async (req) => {
 
    const updates: Record<string, unknown> = {};
 
+   // Record the real, explorer-verifiable tx hash in loans.hash (dedup still keys on the raw input
+   // `hash` via used_payment_hashes above, so replay protection is unchanged). Before this, base-wallet
+   // payments stored the userOperation hash here, which 404s on Basescan and made repayment disputes
+   // impossible to self-verify.
+   const recordHash = transfer.txHash ?? hash;
+
    if (action === 'fund') {
-      updates.hash = [...(loan.hash ?? []), hash];
+      updates.hash = [...(loan.hash ?? []), recordHash];
       updates.lender_user_id = callerId;
       updates.lender_wallet = transfer.from;
       updates.loan_status = 'Lent';
       updates.funded_at = new Date().toISOString();
    } else if (action === 'repay') {
-      updates.hash = [...(loan.hash ?? []), hash];
+      updates.hash = [...(loan.hash ?? []), recordHash];
       const paidUsd = Number(transfer.micros) / 1e6;
       const newRepaidAmount = Math.min(Number(loan.repaid_amount ?? 0) + paidUsd, Number(loan.total_repayment_amount));
       const isFullyRepaid = newRepaidAmount >= Number(loan.total_repayment_amount) - 0.005;
@@ -409,7 +431,7 @@ serve(async (req) => {
    } else {
       // return-interest: interest_return_hash is a single-hash column (not the payment-log array).
       updates.interest_returned_at = new Date().toISOString();
-      updates.interest_return_hash = hash;
+      updates.interest_return_hash = recordHash;
    }
 
    const { data: updatedLoan, error: updateError } = await admin.from('loans').update(updates).eq('id', loanId).select().single();

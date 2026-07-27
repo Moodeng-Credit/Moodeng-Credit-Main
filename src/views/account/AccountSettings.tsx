@@ -1093,6 +1093,7 @@ export default function AccountSettings() {
    const [isSavingWallet, setIsSavingWallet] = useState(false);
    const [walletError, setWalletError] = useState('');
    const [walletSafetyWarning, setWalletSafetyWarning] = useState('');
+   const [walletSafetyIntent, setWalletSafetyIntent] = useState<'change' | 'disconnect' | null>(null);
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const hasWallet = Boolean(user?.walletAddress);
@@ -1166,45 +1167,63 @@ export default function AccountSettings() {
       setTimeout(() => setWalletCopied(false), 2000);
    };
 
-   const checkWalletChangeSafety = useCallback(async (): Promise<{ blocked: boolean; warning?: string }> => {
-      if (!user?.id || isBorrower) return { blocked: false };
-      const supabase = getSupabaseBrowserClient();
-      const { count } = await supabase
-         .from('loan_requests')
-         .select('id', { count: 'exact', head: true })
-         .eq('lender_user_id', user.id)
-         .eq('loan_status', 'Lent')
-         .neq('repayment_status', 'Paid');
-      if ((count ?? 0) > 0) {
+   const checkWalletChangeSafety = useCallback(
+      async (intent: 'change' | 'disconnect' = 'change'): Promise<{ blocked: boolean; warning?: string }> => {
+         if (!user?.id || isBorrower) return { blocked: false };
+         const supabase = getSupabaseBrowserClient();
+         // NOTE: the loans table is `loans` (there is no `loan_requests` table) — the old query here
+         // silently errored, so this safety warning never fired. That gap is exactly how a lender ends
+         // up thinking a repayment vanished after they switched wallets. Fetch the funding wallets of
+         // any active (Lent, not fully repaid) loans so we can name where repayments will still land.
+         const { data, error } = await supabase
+            .from('loans')
+            .select('lender_wallet')
+            .eq('lender_user_id', user.id)
+            .eq('loan_status', 'Lent')
+            .neq('repayment_status', 'Paid');
+         if (error || !data || data.length === 0) return { blocked: false };
+
+         const wallets = [...new Set(data.map((row) => (row.lender_wallet ?? '').trim()).filter(Boolean))];
+         const walletList = wallets.map((w) => truncateAddress(w)).join(', ');
+         const loanWord = data.length === 1 ? 'loan' : 'loans';
+         const walletClause = walletList
+            ? ` Repayments will still arrive at the wallet you funded from (${walletList}), not the wallet you connect here.`
+            : ' Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here.';
+         const verb = intent === 'disconnect' ? 'Disconnecting' : 'Changing';
          return {
             blocked: false,
-            warning:
-               'You have an active loan you funded. Repayments from that borrower will still go to your current wallet address — not your new one.'
+            warning: `You have ${data.length} active ${loanWord} being repaid.${walletClause} ${verb} your wallet here is safe — it only affects loans you fund from now on.`
          };
-      }
-      return { blocked: false };
-   }, [user?.id, isBorrower]);
+      },
+      [user?.id, isBorrower]
+   );
 
    const handleInitiateWalletChange = useCallback(async () => {
       setWalletSafetyWarning('');
-      const { warning } = await checkWalletChangeSafety();
+      const { warning } = await checkWalletChangeSafety('change');
       if (warning) {
+         setWalletSafetyIntent('change');
          setWalletSafetyWarning(warning);
       } else {
          setShowChangeWalletModal(true);
       }
    }, [checkWalletChangeSafety]);
 
-   const handleInitiateWalletDisconnect = useCallback(() => {
-      setWalletSafetyWarning('');
+   const handleInitiateWalletDisconnect = useCallback(async () => {
       setWalletError('');
+      // Surface the same active-loan reassurance on disconnect as on change — repayments for loans
+      // already funded keep flowing to the funding wallet regardless of what happens here.
+      const { warning } = await checkWalletChangeSafety('disconnect');
+      setWalletSafetyIntent(null);
+      setWalletSafetyWarning(warning ?? '');
       setIsDisconnectWalletPending(true);
-   }, []);
+   }, [checkWalletChangeSafety]);
 
    const handleRevertWalletChanges = () => {
       setIsDisconnectWalletPending(false);
       setWalletError('');
       setWalletSafetyWarning('');
+      setWalletSafetyIntent(null);
    };
 
    const handleSaveWalletChanges = async () => {
@@ -1480,7 +1499,7 @@ export default function AccountSettings() {
                   <p className="text-md-b2 font-medium text-md-neutral-700">
                      {isBorrower
                         ? 'The Base Account that receives funded loans and is used for repayments.'
-                        : 'The wallet you use to fund loans and receive repayments.'}
+                        : 'The wallet you use to fund new loans. Each repayment returns to the wallet that funded that specific loan — changing the wallet here does not redirect money for loans you are already lending.'}
                   </p>
 
                   <div className="flex flex-col gap-md-2 w-full relative">
@@ -1547,6 +1566,9 @@ export default function AccountSettings() {
                                     ? 'This will remove your saved Base Account. You will need to connect one again before borrowing or repaying.'
                                     : 'This will remove your connected wallet from your account. You can reconnect anytime.'}
                               </p>
+                              {!isBorrower && walletSafetyWarning ? (
+                                 <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">{walletSafetyWarning}</p>
+                              ) : null}
                               {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
                               <div className="grid grid-cols-2 gap-md-2">
                                  <button
@@ -1611,9 +1633,9 @@ export default function AccountSettings() {
                      </div>
                   ) : null}
 
-                  {!isBorrower && hasWallet && walletSafetyWarning ? (
+                  {!isBorrower && hasWallet && walletSafetyWarning && walletSafetyIntent === 'change' ? (
                      <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-yellow-700 bg-md-yellow-100 p-md-3">
-                        <p className="text-md-b2 font-semibold text-md-heading">Active loan warning</p>
+                        <p className="text-md-b2 font-semibold text-md-heading">Heads up — you have active loans</p>
                         <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">{walletSafetyWarning}</p>
                         <div className="grid grid-cols-2 gap-md-2">
                            <button
@@ -1625,7 +1647,7 @@ export default function AccountSettings() {
                            </button>
                            <button
                               type="button"
-                              onClick={() => { setWalletSafetyWarning(''); setShowChangeWalletModal(true); }}
+                              onClick={() => { setWalletSafetyWarning(''); setWalletSafetyIntent(null); setShowChangeWalletModal(true); }}
                               className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
                            >
                               Change anyway
