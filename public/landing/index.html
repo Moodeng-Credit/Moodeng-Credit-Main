@@ -17,9 +17,45 @@
       <link rel="canonical" href="https://moodeng.app/" />
       <link rel="alternate" media="only screen and (max-width: 699px)" href="https://moodeng.app/landing/old-mobile.html" />
       <script>
+         /*
+          * Supabase auth-return catcher. MUST stay the first script in this head — it has to
+          * run before the mobile redirect below, which would otherwise throw the auth params away.
+          *
+          * `/` is this static landing page (see vercel.json), not the app. When Supabase cannot
+          * honor a `redirect_to` (origin missing from the project's Redirect URLs allow-list — e.g.
+          * a *.vercel.app preview or home.moodeng.app), it falls back to the Site URL, which is the
+          * bare apex. The PKCE `?code=` then lands here, where no app boots to exchange it: the user
+          * ends up staring at the marketing page, still logged out. Forward any auth return to
+          * /auth/confirm (same origin, so the PKCE verifier in localStorage still matches) so the
+          * sign-in completes instead of dead-ending. Errors are forwarded too — /auth/confirm shows
+          * them, which beats a silent bounce to the landing page.
+          */
          (function () {
-            var query = new URLSearchParams(window.location.search);
-            if (window.matchMedia('(max-width: 699px)').matches && query.get('desktop') !== '1') {
+            try {
+               var search = window.location.search;
+               var rawHash = window.location.hash;
+               var query = new URLSearchParams(search);
+               var fragment = new URLSearchParams(rawHash.charAt(0) === '#' ? rawHash.slice(1) : '');
+               // Length check keeps a short marketing/referral `?code=` from being mistaken for
+               // a PKCE authorization code.
+               var code = query.get('code');
+               var isAuthReturn =
+                  (code !== null && code.length >= 20) ||
+                  (query.get('token_hash') !== null && query.get('type') !== null) ||
+                  fragment.get('access_token') !== null ||
+                  fragment.get('error_code') !== null ||
+                  fragment.get('error_description') !== null;
+
+               if (isAuthReturn) {
+                  window.location.replace('/auth/confirm' + search + rawHash);
+                  return;
+               }
+            } catch (err) {
+               /* Never let this block the landing page from rendering. */
+            }
+
+            var mobileQuery = new URLSearchParams(window.location.search);
+            if (window.matchMedia('(max-width: 699px)').matches && mobileQuery.get('desktop') !== '1') {
                window.location.replace('/landing/old-mobile.html?theme=professional');
             }
          })();
