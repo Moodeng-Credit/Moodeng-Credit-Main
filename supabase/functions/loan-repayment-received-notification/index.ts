@@ -6,6 +6,7 @@ import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDel
 import {
    buildLenderRepaymentTelegram,
    buildLoanNotificationEmail,
+   buildRepaymentTeamFeedMessage,
    LoanNotificationType
 } from '../_shared/loanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -41,6 +42,15 @@ const hasNotificationBeenSent = async (
 
    return Boolean(data);
 };
+
+const getSetting = async (supabase: SupabaseClient, key: string): Promise<string | undefined> => {
+   const { data } = await supabase.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
+   return data?.value as string | undefined;
+};
+
+// Same operator group the new-request feed posts to (team_group_chat_id / TEAM_TELEGRAM_CHAT_ID).
+const getTeamChatId = async (supabase: SupabaseClient): Promise<string | undefined> =>
+   (await getSetting(supabase, 'team_group_chat_id')) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
 
 const getLenderDirectNotificationsEnabled = async (supabase: SupabaseClient) => {
    const envValue = Deno.env.get('LENDER_TELEGRAM_NOTIFICATIONS_ENABLED') ?? Deno.env.get('TELEGRAM_DIRECT_MESSAGES_ENABLED');
@@ -175,8 +185,38 @@ serve(async (req) => {
       ? await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: lender.id, type: 'repayment_received' })
       : true;
 
+   // Team-group repayment feed. Runs independently of the borrower/lender DMs (and before their
+   // early-return below) so the operator group always gets exactly one "loan repaid" post per loan.
+   // Idempotency keyed on (loan, borrower, 'repayment_team_feed'); a Telegram failure here must not
+   // block the borrower/lender notifications, so it's isolated in its own try/catch.
+   let teamFeedSent = false;
+   try {
+      const teamFeedEnabled = (await getSetting(supabase, 'repayment_team_feed_enabled')) === 'true';
+      const teamChatId = await getTeamChatId(supabase);
+      const teamAlreadySent = await hasNotificationBeenSent(supabase, {
+         loanId: loan.id,
+         userId: borrower.id,
+         type: 'repayment_team_feed'
+      });
+      if (teamFeedEnabled && teamChatId && !teamAlreadySent) {
+         const { text, actionUrl } = buildRepaymentTeamFeedMessage(loan, borrower, lender);
+         await sendTelegramMessage(teamChatId, text, {
+            inlineKeyboard: [[{ text: 'View loan', url: actionUrl }]]
+         });
+         await supabase
+            .from('loan_notifications')
+            .insert({ loan_id: loan.id, user_id: borrower.id, notification_type: 'repayment_team_feed' });
+         teamFeedSent = true;
+      }
+   } catch (teamFeedError) {
+      console.error('repayment team feed failed', teamFeedError instanceof Error ? teamFeedError.message : teamFeedError);
+   }
+
    if (borrowerAlreadySent && lenderAlreadySent) {
-      return new Response(JSON.stringify({ message: 'Notification already sent' }), { status: 200, headers: corsHeaders });
+      return new Response(
+         JSON.stringify({ message: 'Notification already sent', teamFeedSent }),
+         { status: 200, headers: corsHeaders }
+      );
    }
 
    let emailSent = false;
@@ -226,7 +266,10 @@ serve(async (req) => {
    }
 
    if (!emailSent && !telegramSent) {
-      return new Response(JSON.stringify({ message: 'No eligible repayment notification target' }), { status: 200, headers: corsHeaders });
+      return new Response(
+         JSON.stringify({ message: 'No eligible borrower/lender target', teamFeedSent }),
+         { status: 200, headers: corsHeaders }
+      );
    }
 
    if (notificationRows.length) {
@@ -237,5 +280,5 @@ serve(async (req) => {
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, teamFeedSent }), { status: 200, headers: corsHeaders });
 });

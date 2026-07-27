@@ -5,6 +5,7 @@ export type LoanNotificationType =
    | 'weekly_digest'
    | 'overdue'
    | 'repayment_received'
+   | 'repayment_team_feed'
    | 'request_expired';
 
 export type LoanNotificationLoan = {
@@ -880,6 +881,38 @@ ${destinationLine}
 ${verifyLine}
 Thanks for supporting the Moodeng community.
 ${actionUrl}`);
+
+   return { actionUrl, text };
+};
+
+// Team-group repayment feed: the operator group (George + Emma) already receives a post for every new
+// loan request via loan-request-lender-suggestions. This is the matching post for when a loan is fully
+// repaid, so the team sees the full request → funded → repaid arc in one channel. Includes the funding
+// wallet + a verifiable explorer link, mirroring what borrowers/lenders now see.
+export const buildRepaymentTeamFeedMessage = (
+   loan: LoanNotificationLoan,
+   borrower: Pick<LoanNotificationRecipient, 'username' | 'telegram_username'> | null,
+   lender: Pick<LoanNotificationRecipient, 'username' | 'telegram_username'> | null
+) => {
+   const handleName = (u?: { username?: string | null; telegram_username?: string | null } | null) => {
+      const tg = u?.telegram_username?.trim().replace(/^@/, '');
+      if (tg) return `@${tg}`;
+      return u?.username?.trim() || 'someone';
+   };
+   const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
+   const walletLine = shortenWallet(loan.lender_wallet)
+      ? `Returned to funding wallet ${shortenWallet(loan.lender_wallet)}.`
+      : '';
+   const hashes = Array.isArray(loan.hash) ? loan.hash : [];
+   const explorerLink = hashes.map((h) => buildTxExplorerLink(h)).filter(Boolean).at(-1) ?? '';
+   const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
+   const actionUrl = buildDashboardLink();
+
+   const text = normalizeNotificationText(`✅ Loan repaid
+${handleName(borrower)} repaid ${amountRepaid} for ${loan.tracking_id}.
+Lender: ${handleName(lender)}
+${walletLine}
+${verifyLine}`);
 
    return { actionUrl, text };
 };
