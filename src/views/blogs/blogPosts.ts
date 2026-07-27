@@ -826,6 +826,290 @@ export const blogPosts: BlogPost[] = [
             ]
          }
       ]
+   },
+   {
+      slug: 'borrow-money-online-philippines-without-bank-account',
+      category: 'Borrower guide',
+      title: 'How to borrow money online in the Philippines without a bank account',
+      dek: 'Millions of Filipinos have a phone but no bank account. Here is how online borrowing actually works when you do not have a traditional bank, what you need instead, and how to stay safe doing it.',
+      seoTitle: 'Borrow Money Online in the Philippines Without a Bank Account | Moodeng',
+      metaDescription:
+         'A plain guide to borrowing money online in the Philippines without a bank account: what you need instead of a bank, how funding and repayment work, how to cash out to pesos, and how to avoid predatory loan apps.',
+      summary: [
+         'You do not need a bank account to borrow online. You need a way to prove you are a real person and a wallet that can receive and send money.',
+         'Moodeng uses small USDC loans on a phone wallet, so borrowers without a bank can still receive funds, repay, and build a record.',
+         'The real safety question is not "do they need my bank?" but "do they demand my contact list, and are the terms clear before I agree?"'
+      ],
+      keywords: [
+         'borrow money online philippines',
+         'loan without bank account philippines',
+         'online loan no bank account',
+         'how to borrow money without a bank',
+         'usdc loan philippines'
+      ],
+      faq: [
+         {
+            question: 'Can I get an online loan in the Philippines without a bank account?',
+            answer:
+               'Yes. A bank account is only one way to receive money. With Moodeng you receive a small loan in USDC to a wallet on your phone, so you can borrow, repay, and build a record without a traditional bank account.'
+         },
+         {
+            question: 'What do I need instead of a bank account?',
+            answer:
+               'You need a smartphone, an internet connection, a way to verify that you are a unique real person, and a wallet that can hold USDC. Moodeng helps you set the wallet up inside the app.'
+         },
+         {
+            question: 'How do I turn the loan into pesos I can spend?',
+            answer:
+               'USDC can be cashed out to pesos through crypto exchanges and off-ramp services that pay out to GCash or a bank transfer. You keep the loan as USDC while you use it and convert only the part you need.'
+         },
+         {
+            question: 'Is borrowing online without a bank safe?',
+            answer:
+               'It can be, if the terms are clear before you agree and the lender does not demand access to your contacts. Avoid any app that asks for your contact list or phone permissions as a condition of a loan.'
+         }
+      ],
+      sources: [
+         { label: 'World Bank Global Findex database', href: globalFindexUrl },
+         { label: 'CGAP research on consumer protection in digital credit', href: cgapConsumerProtectionUrl }
+      ],
+      publishedAt: 'July 2026',
+      readTime: '7 min read',
+      audience: 'Borrowers',
+      image: '/hippos/hippo-with-id-card.png',
+      imageAlt: 'Moodeng hippo holding an identification card',
+      accent: 'violet',
+      sections: [
+         {
+            heading: 'Why the bank account is the wrong requirement',
+            body: [
+               'A large share of adults in the Philippines still do not have a bank account. They are not unemployed or dishonest. Many are drivers, sellers, freelancers, farmers, and household workers who are paid in cash and never had a reason a bank would recognize.',
+               'Traditional lending treats the bank account as the front door. No account, no payslip from a registered employer, no credit file: the answer is no before your situation is ever read. The account becomes a gate, not a measure of whether you can repay.',
+               'Borrowing money online without a bank account is not a loophole. It is simply lending that measures the thing that actually matters, which is whether you are a real person who agrees to clear terms and pays back what you borrowed.'
+            ]
+         },
+         {
+            heading: 'What you actually need instead',
+            body: [
+               'Three things replace the bank account. First, a smartphone with an internet connection, which most Filipinos already carry. Second, a way to prove you are a single, real human being rather than a duplicate or a bot. Third, a wallet that can receive and send digital money.',
+               'Moodeng handles all three inside the app. You verify that you are a unique real person, and the app helps you create a wallet on your phone. There is no branch visit, no minimum balance, and no maintaining fee for a bank you did not want in the first place.',
+               'The money you receive is USDC, a digital dollar that holds a steady value of about one US dollar. It does not swing in price like other crypto. It is used because it can move across borders instantly, which is what lets a lender abroad fund a small loan to a borrower in the Philippines in minutes.'
+            ]
+         },
+         {
+            heading: 'How borrowing works step by step',
+            body: [
+               'You open the app and verify that you are a real person. You set up your wallet. You make a small request: one amount, one payback date, and a short reason in your own words. You see the whole deal before you ask, with no hidden fees added later.',
+               'A lender reads your request and funds it. The USDC arrives in your wallet, usually quickly. When the payback date comes, you send the agreed amount back from the same wallet. That is the whole loop.',
+               'Because every request is small and clearly stated, you are never signing up for a debt that balloons. You start small, you repay, and the record of that repayment becomes yours to reuse on the next request.'
+            ]
+         },
+         {
+            heading: 'Getting your money into pesos',
+            body: [
+               'Holding a loan as USDC is useful because it is stable and easy to send, but you will often want pesos to spend locally. You can cash out through crypto exchanges and off-ramp services that support the Philippines, which pay out to GCash or to a bank transfer for those who have one.',
+               'A practical habit is to keep the loan as USDC and convert only the portion you need at the moment you need it. That keeps things simple and avoids converting back and forth.',
+               'When it is time to repay, you send USDC back from your wallet on the agreed date. If you cashed out to pesos, you top the wallet back up before the date so the repayment goes through cleanly.'
+            ]
+         },
+         {
+            heading: 'How to tell a fair loan from a predatory one',
+            body: [
+               'The dangerous apps are not the ones that skip the bank account. They are the ones that demand your contact list. If an app asks for access to your contacts, your photos, or your SMS as a condition of lending, treat that as a warning, not a formality. Those permissions are collection leverage, not underwriting.',
+               'Check three things before you agree to any online loan. Are the amount, the fees, and the payback date shown clearly before you commit? Does the app avoid asking for your contacts? And does repaying leave you with something portable, a record you own, rather than only a cleared balance in someone else private ledger?',
+               'A fair loan is boring in the best way. One amount, one date, terms you can read, and money you actually receive. That is the standard worth holding out for, with or without a bank account.'
+            ]
+         }
+      ]
+   },
+   {
+      slug: 'what-is-a-peer-to-peer-loan-and-is-it-safe',
+      category: 'Borrower guide',
+      title: 'What is a peer-to-peer loan, and is it safe?',
+      dek: 'Peer-to-peer lending connects a person who needs a small loan with a person willing to fund it, without a bank in the middle. Here is how it works, where the real risks are, and what makes one safe.',
+      seoTitle: 'What Is a Peer-to-Peer Loan and Is It Safe? | Moodeng',
+      metaDescription:
+         'A clear explanation of peer-to-peer (P2P) loans: how they work, how they differ from banks and loan apps, where the real risks sit for borrowers and lenders, and what to check before you borrow or lend.',
+      summary: [
+         'A peer-to-peer loan is funded by a person, not a bank. A platform handles the terms, the record, and the safety rules in between.',
+         'P2P is not automatically safe or unsafe. Safety comes from clear terms, verified people, and a platform that does not use pressure tactics.',
+         'The biggest borrower risk is unclear terms and contact-list collection. The biggest lender risk is funding blindly without context.'
+      ],
+      keywords: [
+         'what is a peer to peer loan',
+         'is peer to peer lending safe',
+         'p2p lending philippines',
+         'person to person loan',
+         'peer to peer loan for borrowers'
+      ],
+      faq: [
+         {
+            question: 'What is a peer-to-peer loan?',
+            answer:
+               'A peer-to-peer loan is money lent by one person to another through an online platform, instead of by a bank. The platform sets the terms, verifies the people involved, and keeps the record of the loan and repayment.'
+         },
+         {
+            question: 'Is peer-to-peer lending safe?',
+            answer:
+               'It can be safe when the platform shows clear terms before you agree, verifies that participants are real people, and does not use contact-list pressure. It is unsafe when terms are hidden or when the app collects your contacts as leverage.'
+         },
+         {
+            question: 'How is a P2P loan different from a loan app or a bank?',
+            answer:
+               'A bank lends its own money and requires formal history. A predatory loan app often hides fees and collects personal data. A fair P2P loan connects real people around clear terms and turns repayment into a record the borrower owns.'
+         },
+         {
+            question: 'What should I check before borrowing or lending peer-to-peer?',
+            answer:
+               'Confirm the amount, fees, and payback date are shown up front, that participants are verified, that the platform does not demand phone permissions, and that repayment produces a portable record.'
+         }
+      ],
+      sources: [
+         { label: 'CGAP research on digital credit', href: cgapDigitalCreditUrl },
+         { label: 'CGAP research on consumer protection in digital credit', href: cgapConsumerProtectionUrl }
+      ],
+      publishedAt: 'July 2026',
+      readTime: '6 min read',
+      audience: 'Everyone',
+      image: '/hippos/community.png',
+      imageAlt: 'Moodeng hippos standing together as a community',
+      accent: 'blue',
+      sections: [
+         {
+            heading: 'What peer-to-peer actually means',
+            body: [
+               'Peer-to-peer lending, often shortened to P2P, means a loan funded by a person rather than a bank. One person needs a small amount. Another person is willing to lend it. A platform sits in the middle to set the terms, verify the people, move the money, and keep the record.',
+               'The word peer is the important part. There is no institution deciding you are invisible because you lack a payslip. There is a human on the other side reading a real request and choosing to fund it.',
+               'This is sometimes called person-to-person lending, and for small amounts it is one of the few honest options available to people the formal system ignores.'
+            ]
+         },
+         {
+            heading: 'How it differs from a bank and from a loan app',
+            body: [
+               'A bank lends its own money and protects itself with heavy requirements: credit history, formal income, collateral. If you do not fit the template, you are declined, and nothing you did wrong caused it.',
+               'A predatory loan app looks like the opposite, fast and friendly, but it often hides the true cost and quietly collects your contacts, your location, and your messages so it has people to threaten if you are late. The speed is bait for the data grab.',
+               'A fair peer-to-peer platform sits between those two. It keeps the human willingness of a person lending to a person, but adds the structure that makes it safe: verified identities, clear terms shown before you agree, and a repayment record that belongs to the borrower.'
+            ]
+         },
+         {
+            heading: 'Where the risk really sits',
+            body: [
+               'For a borrower, the real risk in P2P is almost never the fact that a person is funding the loan. It is unclear terms and invasive data collection. A loan that hides its fees or reaches into your phone is dangerous no matter who funds it.',
+               'For a lender, the real risk is funding blindly. Lending to a stranger with no context and no verification is how people lose money. A good platform gives the lender enough context to judge a request and enough tools to spread risk across several small loans instead of one large gamble.',
+               'Safety, in other words, is not a property of the word peer-to-peer. It is a property of the platform sitting in the middle and the rules it enforces.'
+            ]
+         },
+         {
+            heading: 'How a fair platform reduces the risk',
+            body: [
+               'Moodeng is built around a few plain rules. Every participant verifies that they are a single, real human being, which blocks duplicates and bots. Every loan states one amount and one payback date, shown in full before anyone commits. No app permission is used as collection pressure, so your contacts are never leverage.',
+               'On the borrower side, repaying on time builds a portable Trust Score and Credit Level that you carry forward. Good behavior compounds into better options, which is the opposite of a loan-shark relationship that keeps you dependent.',
+               'On the lender side, context and limits let a lender judge a request and diversify across many small loans, so no single late payment is a disaster. Structure is what turns a risky idea into a fair marketplace.'
+            ]
+         },
+         {
+            heading: 'Questions to ask before you borrow or lend',
+            body: [
+               'Before you borrow: Are the amount, fees, and date clear before I agree? Does the app avoid asking for my contacts? Will repaying leave me with a record I own? If any answer is no, keep looking.',
+               'Before you lend: Can I see enough context to judge this request? Can I spread my money across several small loans? Does the platform verify that borrowers are real people? If yes, the risk is one you can actually manage.',
+               'Peer-to-peer lending is only as safe as the terms and the platform. Ask the boring questions first, and the answer becomes clear quickly.'
+            ]
+         }
+      ]
+   },
+   {
+      slug: 'how-to-build-credit-with-no-credit-history',
+      category: 'Borrower guide',
+      title: 'How to build credit when you have no credit history',
+      dek: 'The hardest part of credit is the beginning: you cannot get approved without a history, and you cannot build a history without being approved. Here is how to break out of that loop safely.',
+      seoTitle: 'How to Build Credit With No Credit History | Moodeng',
+      metaDescription:
+         'A practical guide to building credit from zero: why the cold-start problem exists, how to start with small on-time loans, how to make your repayment record portable, and what to avoid.',
+      summary: [
+         'The cold-start problem is real: no history means no approval, and no approval means no history. You break it by starting small.',
+         'A few small loans repaid on time are worth more than one large loan you struggle with. Consistency beats size.',
+         'Credit only helps if the record is portable. Repaying into a private app ledger you cannot carry away builds nothing you own.'
+      ],
+      keywords: [
+         'how to build credit with no credit history',
+         'build credit from nothing',
+         'no credit history philippines',
+         'first time borrower credit',
+         'build credit without a bank'
+      ],
+      faq: [
+         {
+            question: 'How do I build credit if I have no credit history at all?',
+            answer:
+               'Start with a small loan you are confident you can repay on time, then repeat. A short series of small, on-time repayments creates the first evidence that you are a reliable borrower.'
+         },
+         {
+            question: 'Do I need a bank or a credit card to start building credit?',
+            answer:
+               'No. You can build a repayment record through small peer-to-peer loans without a bank account or a credit card, as long as the platform turns your repayments into a record you own.'
+         },
+         {
+            question: 'How long does it take to build credit from zero?',
+            answer:
+               'There is no fixed number, but a realistic first step is a few small loans repaid on time over roughly 90 days. Consistency matters far more than the size of any single loan.'
+         },
+         {
+            question: 'What is the biggest mistake when building credit from nothing?',
+            answer:
+               'Borrowing more than you can repay on time to look impressive. One large missed payment sets you back further than several small on-time ones move you forward.'
+         }
+      ],
+      sources: [
+         { label: 'World Bank Global Findex database', href: globalFindexUrl }
+      ],
+      publishedAt: 'July 2026',
+      readTime: '6 min read',
+      audience: 'Borrowers',
+      image: '/hippos/credit-building-scene.png',
+      imageAlt: 'Moodeng hippo building a tower of blocks',
+      accent: 'green',
+      sections: [
+         {
+            heading: 'The cold-start problem',
+            body: [
+               'Credit has a cruel opening move. To get approved, you need a history of being approved. To build that history, you need to be approved. Millions of first-time borrowers are stuck in that loop, not because they are risky, but because no one ever gave them a first line to write.',
+               'This is why so many people take their first loan from whoever says yes fastest, which is too often a predatory app. The first record ends up owned by the worst possible lender, and it does nothing to help the next request.',
+               'Breaking the loop does not require a trick. It requires a starting point small enough that a lender can say yes to a stranger, and a platform that turns that first yes into something you keep.'
+            ]
+         },
+         {
+            heading: 'Start small and repay on time',
+            body: [
+               'The single most powerful thing you can do is borrow a small amount and pay it back exactly on the agreed date. Not early to impress anyone, not late with an excuse. On time. That one signal, repeated, is what credibility is made of.',
+               'Small is the point, not a limitation. A first loan of a modest amount that you are completely confident you can repay is worth more to your record than a large loan that keeps you awake at night. You are not trying to solve every money problem with the first loan. You are trying to write a clean first line.',
+               'Then you do it again. A short series of small, on-time repayments tells any future lender the only thing they truly want to know: this person does what they said they would do.'
+            ]
+         },
+         {
+            heading: 'Make your good behavior portable',
+            body: [
+               'Here is the part most people miss. Repaying a loan only builds credit if the record is portable. If you repay perfectly into a private app ledger that you cannot carry anywhere else, you have cleared a balance but built nothing you own.',
+               'On Moodeng, on-time repayment builds a Trust Score and a Credit Level that belong to you and travel with you. Each good loan raises the ceiling on the next one. The record is evidence you control, not a collection tool controlled by the lender.',
+               'That is the difference between paying off a debt and building credit. One ends when the balance hits zero. The other leaves you better positioned than you were before you borrowed.'
+            ]
+         },
+         {
+            heading: 'What not to do',
+            body: [
+               'Do not borrow more than you can comfortably repay on time in order to look serious. Lenders are not impressed by size. They are reassured by reliability. One large missed payment damages your record more than several small on-time payments help it.',
+               'Do not use apps that demand your contacts or phone permissions. A record built under threat is not credit, it is leverage held over you, and it does not make you more creditworthy anywhere else.',
+               'Do not chase many loans at once early on. Handling one small loan cleanly, then the next, is far stronger evidence than juggling several and stumbling on one.'
+            ]
+         },
+         {
+            heading: 'A simple plan to start',
+            body: [
+               'Verify that you are a real person and set up your wallet. Make one small request with an amount you are certain you can repay, a clear reason, and a date you will not miss. Repay it on time.',
+               'Do that two or three more times over the next few months, keeping each loan small and each repayment punctual. Watch your Trust Score and Credit Level rise as the record accumulates.',
+               'Within roughly 90 days of consistent small, on-time loans, you will have something you never had before: real, portable evidence that you are a reliable borrower, written in your name and owned by you.'
+            ]
+         }
+      ]
    }
 ];
 
