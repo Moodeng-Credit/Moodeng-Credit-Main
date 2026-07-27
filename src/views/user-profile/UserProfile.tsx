@@ -38,6 +38,7 @@ import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/con
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
+import { isCurrentUserAdmin } from '@/lib/isCurrentUserAdmin';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -45,7 +46,14 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 
-import { DEMO_BORROWER_INSIGHTS_LOANS, DEMO_BORROWER_INSIGHTS_USER, DEMO_LENDER_PROFILES } from './demoBorrowerInsights';
+import {
+   DEMO_BORROWER_INSIGHTS_LOANS,
+   DEMO_BORROWER_INSIGHTS_USER,
+   DEMO_BORROWER_PROFILES,
+   DEMO_LENDER_INSIGHTS_LOANS,
+   DEMO_LENDER_INSIGHTS_USER,
+   DEMO_LENDER_PROFILES
+} from './demoBorrowerInsights';
 
 const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: string }> = {
    Excellent: { border: 'border-md-green-600', text: 'text-md-green-600', bg: 'bg-[rgba(0,134,36,0.05)]' },
@@ -70,17 +78,28 @@ const UserProfile = () => {
    const [isDefaultHistorySheetOpen, setIsDefaultHistorySheetOpen] = useState(false);
    const [isRepaymentHistorySheetOpen, setIsRepaymentHistorySheetOpen] = useState(false);
    const [isLenderDiversitySheetOpen, setIsLenderDiversitySheetOpen] = useState(false);
+   // `null` until the admin check resolves, so a real admin never sees the restricted
+   // card flash before their lender figures load.
+   const [isAdminViewer, setIsAdminViewer] = useState<boolean | null>(null);
    const hasScrolledToHashRef = useRef(false);
    const { isDarkMode, toggleMode } = useThemeMode();
    const isDemoInsights = searchParams.get('demo') === 'rich';
+   // Sample lender so the lender variant of this page can be reviewed without a real
+   // lender account that happens to have funded loans.
+   const isDemoLenderInsights = searchParams.get('demo') === 'lender';
+   const isDemoMode = isDemoInsights || isDemoLenderInsights;
    const forceTourPreview = import.meta.env.DEV && searchParams.has('tourPreview');
 
    const user = useSelector((state: RootState) => state.auth.user);
    const storedLoans = useSelector((state: RootState) => state.loans.loans.gloans);
    const storedUserProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const loans = isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
-   const userProfiles = isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
-   const resolvedUser = isDemoInsights ? DEMO_BORROWER_INSIGHTS_USER : (profileUser ?? (username === user.username ? user : null));
+   const loans = isDemoLenderInsights ? DEMO_LENDER_INSIGHTS_LOANS : isDemoInsights ? DEMO_BORROWER_INSIGHTS_LOANS : storedLoans;
+   const userProfiles = isDemoLenderInsights ? DEMO_BORROWER_PROFILES : isDemoInsights ? DEMO_LENDER_PROFILES : storedUserProfiles;
+   const resolvedUser = isDemoLenderInsights
+      ? DEMO_LENDER_INSIGHTS_USER
+      : isDemoInsights
+        ? DEMO_BORROWER_INSIGHTS_USER
+        : (profileUser ?? (username === user.username ? user : null));
    const isRealUserAuthenticated = Boolean(user?.id && user?.username);
    // A guest who follows the lender-tour bridge link from UserCard arrives with
    // ?demo=rich&lenderTourPreview=1&tourPreview=1 but has no real session — the DEV-only
@@ -109,8 +128,25 @@ const UserProfile = () => {
       window.scrollTo(0, 0);
    }, []);
 
+   // This route is public — every in-product link points at a borrower, but a lender's
+   // username can still be typed in. Their lending figures are admin-only, so resolve the
+   // viewer's admin status before deciding what a lender profile shows.
    useEffect(() => {
-      if (!username || isDemoInsights) return;
+      if (isDemoMode) {
+         setIsAdminViewer(true);
+         return;
+      }
+      let cancelled = false;
+      isCurrentUserAdmin().then((result) => {
+         if (!cancelled) setIsAdminViewer(result);
+      });
+      return () => {
+         cancelled = true;
+      };
+   }, [isDemoMode]);
+
+   useEffect(() => {
+      if (!username || isDemoMode) return;
       const loadProfile = async () => {
          try {
             const { user: fetchedUser } = await dispatch(getUserProfile(username)).unwrap();
@@ -121,15 +157,17 @@ const UserProfile = () => {
          }
       };
       loadProfile();
-   }, [dispatch, isDemoInsights, username]);
+   }, [dispatch, isDemoMode, username]);
 
    useEffect(() => {
-      if (isDemoInsights) return;
-      const lenderUserIds = [...new Set(loans.map((loan) => loan.lenderUser).filter(Boolean))] as string[];
-      if (lenderUserIds.length > 0) {
-         dispatch(fetchUserProfiles(lenderUserIds)).catch(() => undefined);
+      if (isDemoMode) return;
+      // Both sides are needed: the borrower view names the lenders, the lender view names
+      // the borrowers they funded.
+      const counterpartyIds = [...new Set(loans.flatMap((loan) => [loan.lenderUser, loan.borrowerUser]).filter(Boolean))] as string[];
+      if (counterpartyIds.length > 0) {
+         dispatch(fetchUserProfiles(counterpartyIds)).catch(() => undefined);
       }
-   }, [dispatch, isDemoInsights, loans]);
+   }, [dispatch, isDemoMode, loans]);
 
    if (!resolvedUser || !loans) return <Loading />;
 
@@ -138,7 +176,12 @@ const UserProfile = () => {
 
    // --- Computed loan data ---
 
-   const fundedLoans = loans.filter((loan) => loan.loanStatus === 'Lent');
+   // `getUserLoans` returns every loan this person touched on EITHER side (borrower or
+   // lender). This page reads them purely as a borrower, so loans they funded have to be
+   // dropped first — otherwise money they lent out shows up as "Total Borrowed", and their
+   // own id lands in the repeat-lender / diversity maths.
+   const borrowedLoans = loans.filter((loan) => loan.borrowerUser === resolvedUser.id);
+   const fundedLoans = borrowedLoans.filter((loan) => loan.loanStatus === 'Lent');
    const defaultedLoans = fundedLoans.filter(
       (loan) => loan.repaymentStatus !== 'Paid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
    );
@@ -220,6 +263,49 @@ const UserProfile = () => {
    const totalBorrowed = fundedLoans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0);
    const totalRepaid = fundedLoans.reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
    const repaymentLoans = fundedLoans.filter((loan) => toNumber(loan.repaidAmount) > 0);
+
+   // --- Lender-side view ---
+   // Admin's "Open profile" and the lender feed both land here, so the page has to cope
+   // with a user who only ever funds loans. Every borrower stat above reads as zero for
+   // them, which looks broken; the lender variant reads the same loans from the other side.
+   const lentLoans = loans.filter((loan) => loan.lenderUser === resolvedUser.id && loan.loanStatus === 'Lent');
+   // Role is the signal, but older accounts predate `userRole`, so fall back to behaviour:
+   // funded loans and nothing borrowed means they are being read as a lender.
+   const isLenderProfile =
+      resolvedUser.userRole === 'lender' || (resolvedUser.userRole !== 'borrower' && lentLoans.length > 0 && borrowedLoans.length === 0);
+   // A lender's book — how much they have out, and who they backed — is an admin tool, not
+   // something any visitor should be able to pull up by guessing a username.
+   const canSeeLenderInsights = isLenderProfile && isAdminViewer === true;
+   const isLenderInsightsRestricted = isLenderProfile && isAdminViewer === false;
+
+   const totalLent = lentLoans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0);
+   const repaidToLender = lentLoans.reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
+   const lenderPaidLoans = lentLoans.filter((l) => l.repaymentStatus === 'Paid');
+   const lenderActiveLoans = lentLoans.filter((l) => l.repaymentStatus !== 'Paid');
+   const lenderDefaultedLoans = lentLoans.filter((l) => l.repaymentStatus !== 'Paid' && parseDateSafely(l.dueDate).getTime() < Date.now());
+   const borrowerCountMap = lentLoans.reduce<Record<string, number>>((acc, loan) => {
+      const name = resolveUsername(loan.borrowerUser) || 'Unknown';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+   }, {});
+   const uniqueBorrowerCount = Object.keys(borrowerCountMap).length;
+   const repeatBorrowerCount = Object.values(borrowerCountMap).filter((c) => c > 1).length;
+   const avgTicketSize = lentLoans.length > 0 ? Math.round(totalLent / lentLoans.length) : 0;
+   const avgRepaidBackDays =
+      lenderPaidLoans.length > 0
+         ? Math.round(
+              lenderPaidLoans.reduce(
+                 (sum, l) =>
+                    sum +
+                    (parseDateSafely(l.updatedAt).getTime() - parseDateSafely(l.fundedAt ?? l.createdAt).getTime()) / (1000 * 3600 * 24),
+                 0
+              ) / lenderPaidLoans.length
+           )
+         : 0;
+   const lenderExpectedReturn = lentLoans.reduce((sum, l) => sum + toNumber(l.totalRepaymentAmount), 0);
+   const hasLendingHistory = lentLoans.length > 0;
+   const lentLoansShouldScroll = lentLoans.length > 5;
+   const displayedLentLoans = lentLoansShouldScroll ? lentLoans : lentLoans.slice(0, 5);
 
    const isVerifiedBorrower = isUserVerified(resolvedUser);
    const displayedCreditLimit = getEffectiveCreditLimit(resolvedUser.cs, isVerifiedBorrower);
@@ -518,7 +604,7 @@ const UserProfile = () => {
                      <ChevronLeft className="h-6 w-6 text-md-primary-2000" />
                   </button>
                   <h1 className="min-w-0 text-[26px] font-[590] leading-[1.1] tracking-[-0.52px] text-md-primary-2000">
-                     Borrower Insights
+                     {canSeeLenderInsights ? 'Lender Insights' : isLenderProfile ? 'Lender Account' : 'Borrower Insights'}
                   </h1>
                </div>
                <div className="flex shrink-0 items-center gap-2">
@@ -578,7 +664,7 @@ const UserProfile = () => {
                                  )}
                               </span>
                               <span className="borrower-verification-label text-[12px] font-[590] leading-none">
-                                 {isVerifiedBorrower ? 'Verified borrower' : 'Not verified'}
+                                 {isVerifiedBorrower ? (isLenderProfile ? 'Verified lender' : 'Verified borrower') : 'Not verified'}
                               </span>
                            </span>
                         </div>
@@ -595,324 +681,538 @@ const UserProfile = () => {
                   ) : null}
                </div>
 
-               {/* Credit Level */}
-               <div
-                  className="flex flex-col gap-4 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
-                  data-tour-target="borrower-credit-level"
-               >
-                  <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-2">
-                        <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Credit Level</span>
-                        <button
-                           type="button"
-                           onClick={() => setIsCreditLevelSheetOpen(true)}
-                           aria-label="How Credit Level works"
-                           className="flex h-7 w-7 items-center justify-center rounded-full active:scale-95"
-                        >
-                           <HelpCircle className="w-5 h-5 text-md-primary-900" strokeWidth={1.5} />
-                        </button>
-                     </div>
-                     <button
-                        type="button"
-                        onClick={() =>
-                           navigate(
-                              `/user/${encodeURIComponent(resolvedUser.username || username || '')}/progress-history${
-                                 isDemoInsights ? '?demo=rich' : ''
-                              }`
-                           )
-                        }
-                        className="text-[12px] font-[590] leading-[18px] text-md-blue-600 underline underline-offset-2"
-                     >
-                        View Progress History
-                     </button>
+               {/* ── Lender view ──────────────────────────────────────────────────────
+                   Credit Level, Lender Diversity and the borrowing patterns below are all
+                   borrower concepts. A lender gets the mirror image: what they put out,
+                   who they backed, and what came back — but only for an admin. Everyone
+                   else gets told this is a lender account and nothing more; the admin
+                   check is still resolving while `isLenderProfile` holds and neither
+                   branch is true. */}
+               {isLenderInsightsRestricted ? (
+                  <div className="rounded-[20px] border border-[#ece7f4] bg-white p-6 text-center shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
+                     <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f3ff]">
+                        <ShieldCheck className="h-6 w-6 text-[#8b5cf6]" strokeWidth={2.2} />
+                     </span>
+                     <p className="text-[17px] font-bold leading-tight text-md-primary-2000">This account is a lender</p>
+                     <p className="mx-auto mt-2 max-w-[280px] text-[14px] leading-5 text-md-neutral-1400">
+                        Lenders fund loans rather than borrow, so there is no borrowing history to show here.
+                     </p>
                   </div>
-                  <div className="flex flex-col gap-3">
-                     <div className="flex items-center gap-2">
-                        {/* LVL Badge */}
-                        <div className="flex items-center">
-                           <div className="w-[28px] h-[28px] rounded-full bg-md-neutral-500 flex items-center justify-center z-10">
-                              <div className="w-4 h-4 rounded-full bg-md-neutral-1400" />
-                           </div>
-                           <div className="bg-md-neutral-500 rounded-md-sm flex items-center justify-end px-md-1 h-[22px] w-[58px] -ml-2">
-                              <span className="font-knewave text-md-b2 text-md-neutral-1400 text-center">LVL {creditLevel}</span>
+               ) : canSeeLenderInsights ? (
+                  <>
+                     {/* Lending Summary */}
+                     <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4">
+                        <div className="flex items-center gap-4">
+                           <span className="text-md-h5 font-semibold text-md-heading">Lending Summary</span>
+                           {lenderDefaultedLoans.length === 0 ? (
+                              <span className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-[#d4f4e2] to-[#e8f9f0] px-3 py-1.5 shadow-sm">
+                                 <span className="text-[11px] font-semibold leading-none text-[#059669]">No Defaults</span>
+                              </span>
+                           ) : (
+                              <span className="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1.5 shadow-sm">
+                                 <span className="text-[11px] font-semibold leading-none text-[#ef4444]">
+                                    {lenderDefaultedLoans.length} Overdue
+                                 </span>
+                              </span>
+                           )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-[14px]">
+                           <SummaryMetricCard
+                              icon={<DollarSign className="h-5 w-5 text-white" strokeWidth={2.5} />}
+                              iconClassName="from-[#8b5cf6] to-[#7c3aed] shadow-purple-200"
+                              waveId="lent-wave"
+                              waveStart="#e9d5ff"
+                              waveEnd="#ddd6fe"
+                              title="Total Lent"
+                              value={`$${formatNumber(totalLent)}`}
+                           >
+                              <div className="relative z-10 space-y-[3px]">
+                                 <p className="text-[12px] font-medium text-[#10b981]">${formatNumber(repaidToLender)} Repaid Back</p>
+                                 <p className="text-[12px] font-medium text-[#9ca3af]">${formatNumber(lenderExpectedReturn)} Expected</p>
+                              </div>
+                           </SummaryMetricCard>
+
+                           <SummaryMetricCard
+                              icon={<FileText className="h-5 w-5 text-white" strokeWidth={2.5} />}
+                              iconClassName="from-[#3b82f6] to-[#2563eb] shadow-blue-200"
+                              waveId="loans-wave"
+                              waveStart="#ddd6fe"
+                              waveEnd="#c4b5fd"
+                              title="Loans Funded"
+                              value={String(lentLoans.length)}
+                           >
+                              <div className="relative z-10 space-y-[3px]">
+                                 <p className="text-[12px] font-medium text-[#2563eb]">{lenderActiveLoans.length} Active</p>
+                                 <p className="text-[12px] font-medium text-[#059669]">{lenderPaidLoans.length} Fully Repaid</p>
+                              </div>
+                           </SummaryMetricCard>
+
+                           <div className="relative col-span-2 overflow-hidden rounded-[24px] border border-[#e9d5ff] bg-gradient-to-br from-white to-[#faf5ff] p-5 shadow-[0_6px_24px_rgba(131,54,240,0.12)]">
+                              <div className="absolute right-0 top-0 h-[120px] w-[120px] rounded-full bg-gradient-to-br from-[#f3e8ff] to-transparent opacity-60 blur-2xl" />
+                              <div className="relative z-10 flex items-start justify-between gap-3">
+                                 <div className="min-w-0 flex-1">
+                                    <p className="mb-3 text-[15px] font-semibold text-[#6b7280]">Borrowers Backed</p>
+                                    {hasLendingHistory ? (
+                                       <>
+                                          <div className="mb-3 flex items-baseline gap-1.5">
+                                             <p className="text-[32px] font-bold leading-none tracking-tight text-[#7c3aed]">
+                                                {uniqueBorrowerCount}
+                                             </p>
+                                             <p className="text-[16px] font-medium text-[#4b5563]">
+                                                {uniqueBorrowerCount === 1 ? 'borrower' : 'borrowers'}
+                                             </p>
+                                          </div>
+                                          <span className="inline-flex items-center gap-1.5">
+                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#dbeafe]">
+                                                <Users className="h-3.5 w-3.5 text-[#3b82f6]" strokeWidth={2.5} />
+                                             </span>
+                                             <span className="text-[13px] font-semibold text-[#3b82f6]">
+                                                {repeatBorrowerCount} funded more than once
+                                             </span>
+                                          </span>
+                                       </>
+                                    ) : (
+                                       <div className="max-w-[210px]">
+                                          <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f3ff] px-3 py-2">
+                                             <Sparkles className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />
+                                             <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">No loans funded yet</span>
+                                          </span>
+                                          <p className="text-[14px] leading-5 text-[#6b7280]">
+                                             This lender has not funded a loan yet, so there is nothing to summarise.
+                                          </p>
+                                       </div>
+                                    )}
+                                 </div>
+                                 <span className="flex h-[104px] w-[104px] shrink-0 items-center justify-center">
+                                    <img
+                                       src="/hippos/borrower-insights-trophy.png"
+                                       alt="Moodeng with trophy"
+                                       className="h-[96px] w-[96px] object-contain drop-shadow-lg"
+                                    />
+                                 </span>
+                              </div>
                            </div>
                         </div>
-                        <div className="flex-1 flex items-center justify-end gap-1 text-md-b2">
-                           <span className="font-semibold text-md-primary-800">${formatNumber(creditMax)}</span>
-                           <span className="font-normal text-md-neutral-700">/ ${formatNumber(creditMax)}</span>
+                     </div>
+
+                     {/* Lending Patterns */}
+                     {hasLendingHistory ? (
+                        <div className="flex flex-col gap-4">
+                           <div className="flex items-center gap-2.5">
+                              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#7c3aed] shadow-md shadow-purple-200">
+                                 <BarChart3 className="h-[18px] w-[18px] text-white" strokeWidth={2.5} />
+                              </span>
+                              <p className="text-[20px] font-bold leading-none tracking-[-0.01em] text-[#2d1b69]">Lending Patterns</p>
+                           </div>
+                           <div className="overflow-hidden rounded-[20px] bg-white shadow-[0_4px_16px_rgba(131,54,240,0.08)] divide-y divide-[#f3f4f6]">
+                              <InsightRow
+                                 icon={<DollarSign className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#ede9fe]"
+                                 label="Usual amount funded"
+                                 value={`$${avgTicketSize}`}
+                                 valueColor="text-[#8b5cf6]"
+                              />
+                              <InsightRow
+                                 icon={<Clock3 className="h-4 w-4 text-[#3b82f6]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#dbeafe]"
+                                 label="Typical time to be repaid"
+                                 value={
+                                    lenderPaidLoans.length > 0
+                                       ? `${avgRepaidBackDays} ${avgRepaidBackDays === 1 ? 'day' : 'days'}`
+                                       : 'No repayments yet'
+                                 }
+                                 valueColor="text-[#3b82f6]"
+                              />
+                              <InsightRow
+                                 icon={<RefreshCcw className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#ede9fe]"
+                                 label="Repeat borrowers"
+                                 value={`${repeatBorrowerCount} of ${uniqueBorrowerCount}`}
+                                 valueColor="text-[#8b5cf6]"
+                              />
+                              <InsightRow
+                                 icon={<AlertCircle className="h-4 w-4 text-[#ef4444]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#fee2e2]"
+                                 label="Overdue against them"
+                                 value={`${lenderDefaultedLoans.length} of ${lentLoans.length}`}
+                                 valueColor={lenderDefaultedLoans.length > 0 ? 'text-[#ef4444]' : 'text-[#1f2937]'}
+                              />
+                           </div>
+                        </div>
+                     ) : null}
+
+                     {/* Loans Funded */}
+                     <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-2">
+                           <span className="text-md-h5 font-semibold text-md-heading">Loans Funded</span>
+                           <p className="text-md-b3 font-normal text-md-neutral-1500">
+                              Who this lender has backed and the status of each loan.
+                           </p>
+                        </div>
+                        <div className="overflow-hidden rounded-[18px] border border-[#ece7f4] bg-white shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
+                           <div className="hidden border-b border-[#ece7f4] bg-[#fbfafc] px-4 py-3 sm:block">
+                              <div className="grid grid-cols-[minmax(0,1.45fr)_72px_86px] items-center gap-3 text-[11px] font-bold uppercase tracking-[0.04em] text-[#7c6f91]">
+                                 <span>Loan / borrower</span>
+                                 <span className="text-right">Amount</span>
+                                 <span className="text-right">Status</span>
+                              </div>
+                           </div>
+                           <div className={lentLoansShouldScroll ? 'max-h-[360px] overflow-y-auto' : ''}>
+                              {hasLendingHistory ? (
+                                 <>
+                                    <table className="hidden w-full border-collapse sm:table">
+                                       <tbody className="divide-y divide-[#f1edf8]">
+                                          {displayedLentLoans.map((loan: Loan) => (
+                                             <RecentLoanItem
+                                                key={loan.id}
+                                                counterparty="borrower"
+                                                loan={loan}
+                                                resolveUsername={resolveUsername}
+                                             />
+                                          ))}
+                                       </tbody>
+                                    </table>
+                                    <div className="divide-y divide-[#f1edf8] sm:hidden">
+                                       {displayedLentLoans.map((loan: Loan) => (
+                                          <RecentLoanMobileItem
+                                             key={loan.id}
+                                             counterparty="borrower"
+                                             loan={loan}
+                                             resolveUsername={resolveUsername}
+                                          />
+                                       ))}
+                                    </div>
+                                 </>
+                              ) : (
+                                 <p className="text-md-b2 text-md-neutral-1200 text-center py-6">No loans funded yet</p>
+                              )}
+                           </div>
                         </div>
                      </div>
-                     {/* Progress Bar */}
-                     <div className="h-2.5 overflow-hidden rounded-md-pill bg-[#eee8f4]">
-                        <div
-                           className="h-full bg-md-primary-900 rounded-md-pill transition-all duration-500"
-                           style={{ width: creditProgress > 0 ? `${Math.max(creditProgress, 8)}%` : '0%' }}
-                        />
-                     </div>
-                  </div>
-               </div>
-
-               {/* Loan Summary */}
-               <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4" data-tour-target="borrower-loan-summary">
-                  <div className="flex items-center justify-between gap-3">
-                     <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Loan Summary</span>
-                     {isGoodStanding ? (
-                        <span className="inline-flex items-center justify-center rounded-full border border-[#bfe8cf] bg-[#eefbf3] px-2.5 py-1.5">
-                           <span className="text-[11px] font-[590] leading-none text-[#166534]">Good standing</span>
-                        </span>
-                     ) : (
-                        <button
-                           type="button"
-                           onClick={() => setIsDefaultHistorySheetOpen(true)}
-                           className="inline-flex items-center justify-center rounded-full border border-[#fecaca] bg-red-50 px-2.5 py-1.5 transition-opacity active:opacity-70"
-                        >
-                           <span className="text-[11px] font-semibold leading-none text-[#ef4444]">
-                              {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
-                           </span>
-                        </button>
-                     )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                     <SummaryMetricCard
-                        icon={<DollarSign className="h-5 w-5 text-white" strokeWidth={2.5} />}
-                        iconClassName="from-[#8b5cf6] to-[#7c3aed] shadow-purple-200"
-                        waveId="borrowed-wave"
-                        waveStart="#e9d5ff"
-                        waveEnd="#ddd6fe"
-                        title="Total Borrowed"
-                        value={`$${formatNumber(totalBorrowed)}`}
+                  </>
+               ) : isLenderProfile ? null : (
+                  <>
+                     {/* Credit Level */}
+                     <div
+                        className="flex flex-col gap-4 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
+                        data-tour-target="borrower-credit-level"
                      >
-                        <div className="relative z-10 flex flex-col items-start gap-1">
-                           {totalRepaid > 0 ? (
+                        <div className="flex items-center justify-between">
+                           <div className="flex items-center gap-2">
+                              <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Credit Level</span>
                               <button
                                  type="button"
-                                 onClick={() => setIsRepaymentHistorySheetOpen(true)}
-                                 className="text-[12px] font-medium text-[#10b981] underline-offset-2 transition-opacity hover:underline active:opacity-70"
+                                 onClick={() => setIsCreditLevelSheetOpen(true)}
+                                 aria-label="How Credit Level works"
+                                 className="flex h-7 w-7 items-center justify-center rounded-full active:scale-95"
                               >
-                                 ${formatNumber(totalRepaid)} Repaid
+                                 <HelpCircle className="w-5 h-5 text-md-primary-900" strokeWidth={1.5} />
                               </button>
-                           ) : null}
-                           {defaultCount > 0 ? (
+                           </div>
+                           <button
+                              type="button"
+                              onClick={() =>
+                                 navigate(
+                                    `/user/${encodeURIComponent(resolvedUser.username || username || '')}/progress-history${
+                                       isDemoInsights ? '?demo=rich' : ''
+                                    }`
+                                 )
+                              }
+                              className="text-[12px] font-[590] leading-[18px] text-md-blue-600 underline underline-offset-2"
+                           >
+                              View Progress History
+                           </button>
+                        </div>
+                        <div className="flex flex-col gap-3">
+                           <div className="flex items-center gap-2">
+                              {/* LVL Badge */}
+                              <div className="flex items-center">
+                                 <div className="w-[28px] h-[28px] rounded-full bg-md-neutral-500 flex items-center justify-center z-10">
+                                    <div className="w-4 h-4 rounded-full bg-md-neutral-1400" />
+                                 </div>
+                                 <div className="bg-md-neutral-500 rounded-md-sm flex items-center justify-end px-md-1 h-[22px] w-[58px] -ml-2">
+                                    <span className="font-knewave text-md-b2 text-md-neutral-1400 text-center">LVL {creditLevel}</span>
+                                 </div>
+                              </div>
+                              <div className="flex-1 flex items-center justify-end gap-1 text-md-b2">
+                                 <span className="font-semibold text-md-primary-800">${formatNumber(creditMax)}</span>
+                                 <span className="font-normal text-md-neutral-700">/ ${formatNumber(creditMax)}</span>
+                              </div>
+                           </div>
+                           {/* Progress Bar */}
+                           <div className="h-2.5 overflow-hidden rounded-md-pill bg-[#eee8f4]">
+                              <div
+                                 className="h-full bg-md-primary-900 rounded-md-pill transition-all duration-500"
+                                 style={{ width: creditProgress > 0 ? `${Math.max(creditProgress, 8)}%` : '0%' }}
+                              />
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* Loan Summary */}
+                     <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4" data-tour-target="borrower-loan-summary">
+                        <div className="flex items-center justify-between gap-3">
+                           <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Loan Summary</span>
+                           {isGoodStanding ? (
+                              <span className="inline-flex items-center justify-center rounded-full border border-[#bfe8cf] bg-[#eefbf3] px-2.5 py-1.5">
+                                 <span className="text-[11px] font-[590] leading-none text-[#166534]">Good standing</span>
+                              </span>
+                           ) : (
                               <button
                                  type="button"
                                  onClick={() => setIsDefaultHistorySheetOpen(true)}
-                                 className="text-[12px] font-medium text-[#ef4444] underline-offset-2 transition-opacity hover:underline active:opacity-70"
+                                 className="inline-flex items-center justify-center rounded-full border border-[#fecaca] bg-red-50 px-2.5 py-1.5 transition-opacity active:opacity-70"
                               >
-                                 {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
+                                 <span className="text-[11px] font-semibold leading-none text-[#ef4444]">
+                                    {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
+                                 </span>
                               </button>
-                           ) : (
-                              <p className="text-[12px] font-medium text-[#9ca3af]">0 Defaults</p>
                            )}
                         </div>
-                     </SummaryMetricCard>
 
-                     <SummaryMetricCard
-                        icon={<FileText className="h-5 w-5 text-white" strokeWidth={2.5} />}
-                        iconClassName="from-[#3b82f6] to-[#2563eb] shadow-blue-200"
-                        waveId="loans-wave"
-                        waveStart="#ddd6fe"
-                        waveEnd="#c4b5fd"
-                        title="Total Loans"
-                        value={String(fundedLoans.length)}
-                     >
-                        <div className="relative z-10 flex flex-col items-start gap-2">
-                           <button
-                              type="button"
-                              onClick={() => setIsLoanMixSheetOpen(true)}
-                              className="group inline-flex max-w-full items-center gap-1 rounded-full bg-[#f5f3ff] px-2 py-1 transition-colors hover:bg-[#ede9fe] active:scale-[0.98]"
+                        <div className="grid grid-cols-2 gap-3">
+                           <SummaryMetricCard
+                              icon={<DollarSign className="h-5 w-5 text-white" strokeWidth={2.5} />}
+                              iconClassName="from-[#8b5cf6] to-[#7c3aed] shadow-purple-200"
+                              waveId="borrowed-wave"
+                              waveStart="#e9d5ff"
+                              waveEnd="#ddd6fe"
+                              title="Total Borrowed"
+                              value={`$${formatNumber(totalBorrowed)}`}
                            >
-                              <span className="text-[11px] font-[590] text-md-primary-1200">View loan mix</span>
-                              <ChevronRight className="h-2.5 w-2.5 shrink-0 text-[#8b5cf6]" strokeWidth={2.5} />
-                           </button>
-                           {hasLoanHistory ? (
-                              <div className="max-w-full space-y-0.5 text-[10px] font-semibold leading-[1.15]">
-                                 <div className="flex min-w-0 items-center gap-1 text-[#2563eb]">
-                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2563eb]" />
-                                    <span className="whitespace-nowrap">{trustBuildingCount} Trust Building</span>
-                                 </div>
-                                 <div className="flex min-w-0 items-center gap-1 text-[#059669]">
-                                    <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#059669]" />
-                                    <span className="whitespace-nowrap">{creditBuildingCount} Credit Building</span>
-                                 </div>
-                              </div>
-                           ) : null}
-                        </div>
-                     </SummaryMetricCard>
-
-                     <div
-                        className="diversity-score-card relative col-span-2 overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
-                        data-tour-target="borrower-diversity-score"
-                     >
-                        <div className="relative z-10 flex items-start justify-between gap-3">
-                           <div className="min-w-0 flex-1">
-                              <div className="mb-3 flex items-center gap-1.5">
-                                 <p className="text-[13px] font-[590] leading-5 text-md-neutral-1200">Lender diversity</p>
-                                 <button
-                                    type="button"
-                                    onClick={() => setIsLenderDiversitySheetOpen(true)}
-                                    aria-label="How Lender Diversity Score works"
-                                    className="flex h-6 w-6 items-center justify-center rounded-full text-[#8b5cf6] transition active:scale-95"
-                                 >
-                                    <HelpCircle className="h-4 w-4" strokeWidth={2.2} />
-                                 </button>
-                              </div>
-                              {hasEnoughLenderDiversityHistory ? (
-                                 <>
-                                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                                       <div className="flex items-baseline gap-1.5">
-                                          <p className="diversity-score-value text-[30px] font-[590] leading-none tracking-[-0.6px] text-md-primary-1200">
-                                             {diversityScore}
-                                          </p>
-                                          <p className="text-[13px] font-normal text-md-neutral-1200">points</p>
-                                       </div>
-                                       <span
-                                          className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 ${badge.border} ${badge.bg}`}
-                                       >
-                                          <span className={`text-[11px] font-semibold leading-none ${badge.text}`}>
-                                             {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
-                                          </span>
-                                       </span>
-                                    </div>
-                                    {isEarlyLenderDiversityScore ? (
-                                       <p className="mb-3 max-w-[210px] text-[12px] leading-[18px] text-md-neutral-1200">
-                                          Early estimate: needs 8 funded loans before the score is fully weighted.
-                                       </p>
-                                    ) : null}
+                              <div className="relative z-10 flex flex-col items-start gap-1">
+                                 {totalRepaid > 0 ? (
                                     <button
                                        type="button"
-                                       onClick={() =>
-                                          navigate(
-                                             `/user/${encodeURIComponent(resolvedUser.username)}/lender-diversity${isDemoInsights ? '?demo=rich' : ''}`
-                                          )
-                                       }
-                                       className="flex items-center gap-1.5 transition-opacity hover:opacity-80 active:scale-[0.98]"
+                                       onClick={() => setIsRepaymentHistorySheetOpen(true)}
+                                       className="text-[12px] font-medium text-[#10b981] underline-offset-2 transition-opacity hover:underline active:opacity-70"
                                     >
-                                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#dbeafe]">
-                                          <Users className="h-3.5 w-3.5 text-[#3b82f6]" strokeWidth={2.5} />
-                                       </span>
-                                       <span className="text-[13px] font-semibold text-[#3b82f6]">
-                                          {lenderDiversity.uniqueLenders} Unique{' '}
-                                          {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'}
-                                       </span>
+                                       ${formatNumber(totalRepaid)} Repaid
                                     </button>
-                                 </>
-                              ) : (
-                                 <div className="max-w-[210px]">
-                                    <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f3ff] px-3 py-2">
-                                       <Sparkles className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />
-                                       <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">Not enough history</span>
-                                    </span>
-                                    <p className="mb-2 text-[16px] font-semibold leading-[1.25] text-[#4b5563]">Not enough history</p>
-                                    <p className="text-[14px] leading-5 text-[#6b7280]">
-                                       This score appears after at least 2 funded loans.
-                                    </p>
-                                 </div>
-                              )}
-                           </div>
-                           <span className="diversity-score-hero flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full bg-[#f8f4fc]">
-                              <img
-                                 src="/hippos/borrower-insights-trophy.png"
-                                 alt="Moodeng with trophy"
-                                 className="h-[68px] w-[68px] object-contain"
-                              />
-                           </span>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-
-               {/* Borrower Insights */}
-               <div className="flex flex-col gap-4" data-tour-target="borrower-insights">
-                  <div className="flex items-center gap-2">
-                     <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#ede2ff]">
-                        <BarChart3 className="h-[18px] w-[18px] text-md-primary-1200" strokeWidth={2.2} />
-                     </span>
-                     <p className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Borrower patterns</p>
-                  </div>
-                  {hasLoanHistory ? (
-                     <div className="divide-y divide-[#eee7f5] overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
-                        <InsightRow
-                           icon={<CalendarDays className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
-                           iconClassName="bg-[#ede9fe]"
-                           label="Avg days between loans"
-                           value={`${avgDays} days`}
-                           valueColor="text-[#8b5cf6]"
-                        />
-                        <InsightRow
-                           icon={<Clock3 className="h-4 w-4 text-[#3b82f6]" strokeWidth={2.5} />}
-                           iconClassName="bg-[#dbeafe]"
-                           label="Typical payment time"
-                           value={`${avgPaymentTime} ${avgPaymentTime === 1 ? 'day' : 'days'}`}
-                           valueColor="text-[#3b82f6]"
-                        />
-                        <InsightRow
-                           icon={<DollarSign className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
-                           iconClassName="bg-[#ede9fe]"
-                           label="Usual loan size"
-                           value={`$${usualLoanSize}`}
-                           valueColor="text-[#8b5cf6]"
-                        />
-                        <InsightRow
-                           icon={<FileText className="h-4 w-4 text-[#6b7280]" strokeWidth={2.5} />}
-                           iconClassName="bg-[#f3f4f6]"
-                           label="Typical loan term"
-                           value={`${avgLoanTerm} days`}
-                           valueColor="text-[#1f2937]"
-                        />
-                        <InsightRow
-                           icon={<RefreshCcw className="h-4 w-4 text-[#ef4444]" strokeWidth={2.5} />}
-                           iconClassName="bg-[#fee2e2]"
-                           label="Repeat lenders"
-                           value={`${repeatLenderCount} of ${totalUniqueLenders}`}
-                           valueColor="text-[#ef4444]"
-                        />
-                     </div>
-                  ) : (
-                     <NewBorrowerInsightsCard />
-                  )}
-               </div>
-
-               {/* Recent Loans */}
-               <div className="flex flex-col gap-2" data-tour-target="borrower-recent-loans">
-                  <div className="flex flex-col gap-2">
-                     <div className="flex items-center justify-between">
-                        <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
-                     </div>
-                     <p className="text-md-b3 font-normal text-md-neutral-1500">
-                        View who has funded this borrower and the status of each loan.
-                     </p>
-                  </div>
-                  <div className="overflow-hidden rounded-[18px] border border-[#ece7f4] bg-white shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
-                     <div className="hidden border-b border-[#ece7f4] bg-[#fbfafc] px-4 py-3 sm:block">
-                        <div className="grid grid-cols-[minmax(0,1.45fr)_72px_86px] items-center gap-3 text-[11px] font-bold uppercase tracking-[0.04em] text-[#7c6f91]">
-                           <span>Loan / lender</span>
-                           <span className="text-right">Amount</span>
-                           <span className="text-right">Status</span>
-                        </div>
-                     </div>
-                     <div className={recentLoansShouldScroll ? 'max-h-[360px] overflow-y-auto' : ''}>
-                        {fundedLoans.length > 0 ? (
-                           <>
-                              <table className="hidden w-full border-collapse sm:table">
-                                 <tbody className="divide-y divide-[#f1edf8]">
-                                    {displayedRecentLoans.map((loan: Loan) => (
-                                       <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
-                                    ))}
-                                 </tbody>
-                              </table>
-                              <div className="divide-y divide-[#f1edf8] sm:hidden">
-                                 {displayedRecentLoans.map((loan: Loan) => (
-                                    <RecentLoanMobileItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
-                                 ))}
+                                 ) : null}
+                                 {defaultCount > 0 ? (
+                                    <button
+                                       type="button"
+                                       onClick={() => setIsDefaultHistorySheetOpen(true)}
+                                       className="text-[12px] font-medium text-[#ef4444] underline-offset-2 transition-opacity hover:underline active:opacity-70"
+                                    >
+                                       {defaultCount} {defaultCount === 1 ? 'Default' : 'Defaults'}
+                                    </button>
+                                 ) : (
+                                    <p className="text-[12px] font-medium text-[#9ca3af]">0 Defaults</p>
+                                 )}
                               </div>
-                           </>
+                           </SummaryMetricCard>
+
+                           <SummaryMetricCard
+                              icon={<FileText className="h-5 w-5 text-white" strokeWidth={2.5} />}
+                              iconClassName="from-[#3b82f6] to-[#2563eb] shadow-blue-200"
+                              waveId="loans-wave"
+                              waveStart="#ddd6fe"
+                              waveEnd="#c4b5fd"
+                              title="Total Loans"
+                              value={String(fundedLoans.length)}
+                           >
+                              <div className="relative z-10 flex flex-col items-start gap-2">
+                                 <button
+                                    type="button"
+                                    onClick={() => setIsLoanMixSheetOpen(true)}
+                                    className="group inline-flex max-w-full items-center gap-1 rounded-full bg-[#f5f3ff] px-2 py-1 transition-colors hover:bg-[#ede9fe] active:scale-[0.98]"
+                                 >
+                                    <span className="text-[11px] font-[590] text-md-primary-1200">View loan mix</span>
+                                    <ChevronRight className="h-2.5 w-2.5 shrink-0 text-[#8b5cf6]" strokeWidth={2.5} />
+                                 </button>
+                                 {hasLoanHistory ? (
+                                    <div className="max-w-full space-y-0.5 text-[10px] font-semibold leading-[1.15]">
+                                       <div className="flex min-w-0 items-center gap-1 text-[#2563eb]">
+                                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#2563eb]" />
+                                          <span className="whitespace-nowrap">{trustBuildingCount} Trust Building</span>
+                                       </div>
+                                       <div className="flex min-w-0 items-center gap-1 text-[#059669]">
+                                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#059669]" />
+                                          <span className="whitespace-nowrap">{creditBuildingCount} Credit Building</span>
+                                       </div>
+                                    </div>
+                                 ) : null}
+                              </div>
+                           </SummaryMetricCard>
+
+                           <div
+                              className="diversity-score-card relative col-span-2 overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
+                              data-tour-target="borrower-diversity-score"
+                           >
+                              <div className="relative z-10 flex items-start justify-between gap-3">
+                                 <div className="min-w-0 flex-1">
+                                    <div className="mb-3 flex items-center gap-1.5">
+                                       <p className="text-[13px] font-[590] leading-5 text-md-neutral-1200">Lender diversity</p>
+                                       <button
+                                          type="button"
+                                          onClick={() => setIsLenderDiversitySheetOpen(true)}
+                                          aria-label="How Lender Diversity Score works"
+                                          className="flex h-6 w-6 items-center justify-center rounded-full text-[#8b5cf6] transition active:scale-95"
+                                       >
+                                          <HelpCircle className="h-4 w-4" strokeWidth={2.2} />
+                                       </button>
+                                    </div>
+                                    {hasEnoughLenderDiversityHistory ? (
+                                       <>
+                                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                                             <div className="flex items-baseline gap-1.5">
+                                                <p className="diversity-score-value text-[30px] font-[590] leading-none tracking-[-0.6px] text-md-primary-1200">
+                                                   {diversityScore}
+                                                </p>
+                                                <p className="text-[13px] font-normal text-md-neutral-1200">points</p>
+                                             </div>
+                                             <span
+                                                className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 ${badge.border} ${badge.bg}`}
+                                             >
+                                                <span className={`text-[11px] font-semibold leading-none ${badge.text}`}>
+                                                   {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
+                                                </span>
+                                             </span>
+                                          </div>
+                                          {isEarlyLenderDiversityScore ? (
+                                             <p className="mb-3 max-w-[210px] text-[12px] leading-[18px] text-md-neutral-1200">
+                                                Early estimate: needs 8 funded loans before the score is fully weighted.
+                                             </p>
+                                          ) : null}
+                                          <button
+                                             type="button"
+                                             onClick={() =>
+                                                navigate(
+                                                   `/user/${encodeURIComponent(resolvedUser.username)}/lender-diversity${isDemoInsights ? '?demo=rich' : ''}`
+                                                )
+                                             }
+                                             className="flex items-center gap-1.5 transition-opacity hover:opacity-80 active:scale-[0.98]"
+                                          >
+                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#dbeafe]">
+                                                <Users className="h-3.5 w-3.5 text-[#3b82f6]" strokeWidth={2.5} />
+                                             </span>
+                                             <span className="text-[13px] font-semibold text-[#3b82f6]">
+                                                {lenderDiversity.uniqueLenders} Unique{' '}
+                                                {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'}
+                                             </span>
+                                          </button>
+                                       </>
+                                    ) : (
+                                       <div className="max-w-[210px]">
+                                          <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f3ff] px-3 py-2">
+                                             <Sparkles className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />
+                                             <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">Not enough history</span>
+                                          </span>
+                                          <p className="mb-2 text-[16px] font-semibold leading-[1.25] text-[#4b5563]">Not enough history</p>
+                                          <p className="text-[14px] leading-5 text-[#6b7280]">
+                                             This score appears after at least 2 funded loans.
+                                          </p>
+                                       </div>
+                                    )}
+                                 </div>
+                                 <span className="diversity-score-hero flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full bg-[#f8f4fc]">
+                                    <img
+                                       src="/hippos/borrower-insights-trophy.png"
+                                       alt="Moodeng with trophy"
+                                       className="h-[68px] w-[68px] object-contain"
+                                    />
+                                 </span>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* Borrower Insights */}
+                     <div className="flex flex-col gap-4" data-tour-target="borrower-insights">
+                        <div className="flex items-center gap-2">
+                           <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#ede2ff]">
+                              <BarChart3 className="h-[18px] w-[18px] text-md-primary-1200" strokeWidth={2.2} />
+                           </span>
+                           <p className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Borrower patterns</p>
+                        </div>
+                        {hasLoanHistory ? (
+                           <div className="divide-y divide-[#eee7f5] overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+                              <InsightRow
+                                 icon={<CalendarDays className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#ede9fe]"
+                                 label="Avg days between loans"
+                                 value={`${avgDays} days`}
+                                 valueColor="text-[#8b5cf6]"
+                              />
+                              <InsightRow
+                                 icon={<Clock3 className="h-4 w-4 text-[#3b82f6]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#dbeafe]"
+                                 label="Typical payment time"
+                                 value={`${avgPaymentTime} ${avgPaymentTime === 1 ? 'day' : 'days'}`}
+                                 valueColor="text-[#3b82f6]"
+                              />
+                              <InsightRow
+                                 icon={<DollarSign className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#ede9fe]"
+                                 label="Usual loan size"
+                                 value={`$${usualLoanSize}`}
+                                 valueColor="text-[#8b5cf6]"
+                              />
+                              <InsightRow
+                                 icon={<FileText className="h-4 w-4 text-[#6b7280]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#f3f4f6]"
+                                 label="Typical loan term"
+                                 value={`${avgLoanTerm} days`}
+                                 valueColor="text-[#1f2937]"
+                              />
+                              <InsightRow
+                                 icon={<RefreshCcw className="h-4 w-4 text-[#ef4444]" strokeWidth={2.5} />}
+                                 iconClassName="bg-[#fee2e2]"
+                                 label="Repeat lenders"
+                                 value={`${repeatLenderCount} of ${totalUniqueLenders}`}
+                                 valueColor="text-[#ef4444]"
+                              />
+                           </div>
                         ) : (
-                           <p className="text-md-b2 text-md-neutral-1200 text-center py-6">No funded loans yet</p>
+                           <NewBorrowerInsightsCard />
                         )}
                      </div>
-                  </div>
-               </div>
+
+                     {/* Recent Loans */}
+                     <div className="flex flex-col gap-2" data-tour-target="borrower-recent-loans">
+                        <div className="flex flex-col gap-2">
+                           <div className="flex items-center justify-between">
+                              <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
+                           </div>
+                           <p className="text-md-b3 font-normal text-md-neutral-1500">
+                              View who has funded this borrower and the status of each loan.
+                           </p>
+                        </div>
+                        <div className="overflow-hidden rounded-[18px] border border-[#ece7f4] bg-white shadow-[0_4px_16px_rgba(48,24,92,0.06)]">
+                           <div className="hidden border-b border-[#ece7f4] bg-[#fbfafc] px-4 py-3 sm:block">
+                              <div className="grid grid-cols-[minmax(0,1.45fr)_72px_86px] items-center gap-3 text-[11px] font-bold uppercase tracking-[0.04em] text-[#7c6f91]">
+                                 <span>Loan / lender</span>
+                                 <span className="text-right">Amount</span>
+                                 <span className="text-right">Status</span>
+                              </div>
+                           </div>
+                           <div className={recentLoansShouldScroll ? 'max-h-[360px] overflow-y-auto' : ''}>
+                              {fundedLoans.length > 0 ? (
+                                 <>
+                                    <table className="hidden w-full border-collapse sm:table">
+                                       <tbody className="divide-y divide-[#f1edf8]">
+                                          {displayedRecentLoans.map((loan: Loan) => (
+                                             <RecentLoanItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
+                                          ))}
+                                       </tbody>
+                                    </table>
+                                    <div className="divide-y divide-[#f1edf8] sm:hidden">
+                                       {displayedRecentLoans.map((loan: Loan) => (
+                                          <RecentLoanMobileItem key={loan.id} loan={loan} resolveUsername={resolveUsername} />
+                                       ))}
+                                    </div>
+                                 </>
+                              ) : (
+                                 <p className="text-md-b2 text-md-neutral-1200 text-center py-6">No funded loans yet</p>
+                              )}
+                           </div>
+                        </div>
+                     </div>
+                  </>
+               )}
             </div>
          </div>
          <LoanMixBottomSheet
@@ -1770,10 +2070,13 @@ const LoanMixType = ({
    </div>
 );
 
-const getRecentLoanDisplay = (loan: Loan, resolveUsername: (id?: string | null) => string) => {
+/** Whose name the row shows: the borrower reads their lenders, the lender reads their borrowers. */
+type LoanCounterparty = 'lender' | 'borrower';
+
+const getRecentLoanDisplay = (loan: Loan, resolveUsername: (id?: string | null) => string, counterparty: LoanCounterparty) => {
    const isPaid = loan.repaymentStatus === 'Paid';
    const isDefaulted = !isPaid && parseDateSafely(loan.dueDate).getTime() < Date.now();
-   const lenderName = resolveUsername(loan.lenderUser) || 'Unknown';
+   const counterpartyName = resolveUsername(counterparty === 'lender' ? loan.lenderUser : loan.borrowerUser) || 'Unknown';
    const fundedDate = formatDate(loan.fundedAt ?? loan.createdAt);
    const statusClassName = isPaid
       ? 'border-[#c4b5fd] bg-[#f5f3ff] text-md-primary-900'
@@ -1785,14 +2088,22 @@ const getRecentLoanDisplay = (loan: Loan, resolveUsername: (id?: string | null) 
    return {
       fundedDate,
       isPaid,
-      lenderName,
+      counterpartyName,
       statusClassName,
       statusLabel
    };
 };
 
-const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
-   const { fundedDate, isPaid, lenderName, statusClassName, statusLabel } = getRecentLoanDisplay(loan, resolveUsername);
+const RecentLoanItem = ({
+   loan,
+   resolveUsername,
+   counterparty = 'lender'
+}: {
+   loan: Loan;
+   resolveUsername: (id?: string | null) => string;
+   counterparty?: LoanCounterparty;
+}) => {
+   const { counterpartyName, fundedDate, isPaid, statusClassName, statusLabel } = getRecentLoanDisplay(loan, resolveUsername, counterparty);
 
    return (
       <tr className="align-top transition-colors hover:bg-[#fbfafc]">
@@ -1801,7 +2112,7 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
                <img src={PLACEHOLDER_AVATAR} alt="" className="mt-0.5 h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-[#f1edf8]" />
                <div className="min-w-0 flex-1">
                   <p className="truncate text-[14px] font-bold leading-tight text-md-primary-2000">{loan.reason || 'Loan request'}</p>
-                  <p className="mt-1 truncate text-[12px] font-medium leading-tight text-[#766985]">{lenderName}</p>
+                  <p className="mt-1 truncate text-[12px] font-medium leading-tight text-[#766985]">{counterpartyName}</p>
                   <p className="mt-1 text-[11px] font-medium leading-none text-[#a199ad]">{fundedDate}</p>
                </div>
             </div>
@@ -1830,8 +2141,16 @@ const RecentLoanItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername
    );
 };
 
-const RecentLoanMobileItem = ({ loan, resolveUsername }: { loan: Loan; resolveUsername: (id?: string | null) => string }) => {
-   const { fundedDate, isPaid, lenderName, statusClassName, statusLabel } = getRecentLoanDisplay(loan, resolveUsername);
+const RecentLoanMobileItem = ({
+   loan,
+   resolveUsername,
+   counterparty = 'lender'
+}: {
+   loan: Loan;
+   resolveUsername: (id?: string | null) => string;
+   counterparty?: LoanCounterparty;
+}) => {
+   const { counterpartyName, fundedDate, isPaid, statusClassName, statusLabel } = getRecentLoanDisplay(loan, resolveUsername, counterparty);
 
    return (
       <div className="px-3 py-3">
@@ -1851,7 +2170,7 @@ const RecentLoanMobileItem = ({ loan, resolveUsername }: { loan: Loan; resolveUs
                      {statusLabel}
                   </span>
                </div>
-               <p className="mt-1 text-[12px] font-semibold leading-tight text-[#766985]">{lenderName}</p>
+               <p className="mt-1 text-[12px] font-semibold leading-tight text-[#766985]">{counterpartyName}</p>
                <div className="mt-3 flex items-end justify-between gap-3">
                   <p className="text-[11px] font-semibold leading-none text-[#a199ad]">{fundedDate}</p>
                   <div className="text-right">

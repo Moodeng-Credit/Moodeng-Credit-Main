@@ -32,9 +32,9 @@ import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { getCreditTierKey, getNextCreditTier, isExactCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
-import { isUserVerified } from '@/lib/isUserVerified';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
@@ -454,7 +454,9 @@ export default function ProgressHistory() {
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const isDemoTimeline = searchParams.get('demo') === 'rich';
    const borrower = isDemoTimeline ? DEMO_BORROWER : (profileUser ?? user);
-   const timelineLoans = isDemoTimeline ? DEMO_LOANS : loans;
+   // `loans` holds every loan this person touched on either side; the borrower timeline
+   // must only read the ones they borrowed, never the ones they funded as a lender.
+   const timelineLoans = isDemoTimeline ? DEMO_LOANS : loans.filter((loan) => loan.borrowerUser === borrower?.id);
 
    useEffect(() => {
       window.scrollTo(0, 0);
