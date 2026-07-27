@@ -143,7 +143,12 @@ export default function LenderDiversityHistory() {
       loadProfile();
    }, [dispatch, isDemoInsights, username]);
 
-   const fundedLoans = useMemo(() => loans.filter((loan) => loan.loanStatus === 'Lent'), [loans]);
+   // `loans` holds every loan this person touched on either side. Diversity is about who
+   // lent TO them, so loans they funded themselves must be dropped before counting lenders.
+   const fundedLoans = useMemo(
+      () => loans.filter((loan) => loan.borrowerUser === borrower?.id && loan.loanStatus === 'Lent'),
+      [borrower?.id, loans]
+   );
 
    useEffect(() => {
       if (isDemoInsights) return;
