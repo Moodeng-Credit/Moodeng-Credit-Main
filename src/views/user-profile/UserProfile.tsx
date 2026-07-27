@@ -650,24 +650,28 @@ const UserProfile = () => {
                         <p className="truncate text-[20px] font-[590] leading-6 tracking-[-0.4px] text-md-primary-2000">
                            {resolvedUser.username || username}
                         </p>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                           <span
-                              className={`borrower-verification-pill inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 ${
-                                 isVerifiedBorrower ? 'verified' : 'unverified'
-                              }`}
-                           >
-                              <span className="borrower-verification-icon flex h-4 w-4 items-center justify-center rounded-full">
-                                 {isVerifiedBorrower ? (
-                                    <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
-                                 ) : (
-                                    <X className="h-2.5 w-2.5 text-white" strokeWidth={4} />
-                                 )}
+                        {/* Verification is a borrower requirement — lenders never go through it,
+                            so an "unverified" pill on a lender reads as a black mark it isn't. */}
+                        {isLenderProfile ? null : (
+                           <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                              <span
+                                 className={`borrower-verification-pill inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 ${
+                                    isVerifiedBorrower ? 'verified' : 'unverified'
+                                 }`}
+                              >
+                                 <span className="borrower-verification-icon flex h-4 w-4 items-center justify-center rounded-full">
+                                    {isVerifiedBorrower ? (
+                                       <Check className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                                    ) : (
+                                       <X className="h-2.5 w-2.5 text-white" strokeWidth={4} />
+                                    )}
+                                 </span>
+                                 <span className="borrower-verification-label text-[12px] font-[590] leading-none">
+                                    {isVerifiedBorrower ? 'Verified borrower' : 'Not verified'}
+                                 </span>
                               </span>
-                              <span className="borrower-verification-label text-[12px] font-[590] leading-none">
-                                 {isVerifiedBorrower ? (isLenderProfile ? 'Verified lender' : 'Verified borrower') : 'Not verified'}
-                              </span>
-                           </span>
-                        </div>
+                           </div>
+                        )}
                         <p className="mt-2 text-[12px] font-normal leading-[18px] text-md-neutral-1200">Member since {memberSince}</p>
                      </div>
                   </div>
