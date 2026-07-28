@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { buildFraudAlertMessage, FraudSignal } from '../_shared/fraudNotifications.ts';
@@ -20,6 +21,11 @@ serve(async (req) => {
    if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
+
+   // Default verify_jwt accepts the public anon key, so the shared cron secret is what
+   // actually keeps a full scan (and its Telegram alert) from being triggered by anyone.
+   const auth = checkCronAuth(req, Deno.env.get('ADMIN_API_TOKEN'), corsHeaders);
+   if (!auth.ok) return auth.response;
 
    const startedAt = new Date().toISOString();
    const body = await req.json().catch(() => ({}));
