@@ -787,6 +787,8 @@ const authSlice = createSlice({
             displayName: 'alexc_ph',
             email: 'preview@moodeng.local',
             walletAddress: '0x71c...9d42',
+            walletProvider: 'base_wallet',
+            walletConnectorName: 'Base Account',
             isWorldId: isFilled ? WorldId.ACTIVE : WorldId.INACTIVE,
             cs: isFilled ? 60 : 0,
             mal: isFilled ? 1 : 0,

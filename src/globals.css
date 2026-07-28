@@ -282,6 +282,7 @@ html.dark .border-md-neutral-400,
 html.dark .border-md-neutral-500,
 html.dark .border-md-neutral-600,
 html.dark .divide-md-neutral-300 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-md-neutral-400 > :not([hidden]) ~ :not([hidden]),
 html.dark [class*='border-[#dddddd'],
 html.dark [class*='border-[#ded0ef'],
 html.dark [class*='border-[#eadff8'],
@@ -313,7 +314,10 @@ html.dark [class*='border-[#dcfce7'] {
    border-color: #2b6647;
 }
 
-html.dark .shadow-md-card,
+html.dark .shadow-md-card {
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.22);
+}
+
 html.dark .shadow-md-nav,
 html.dark [class*='shadow-[0_'] {
    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
@@ -500,14 +504,6 @@ html.dark .team-page .team-blue-panel {
 
    100% {
       transform: scale(1);
-   }
-}
-
-/* Credit level-up moment: the limit bar fills once, earned. Kept deliberately quiet
-   (badge pop + bar fill, no confetti) so it reads as credit progress, not a game. */
-@keyframes levelBarFill {
-   from {
-      width: 0;
    }
 }
 

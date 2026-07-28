@@ -348,6 +348,7 @@ export default function Repay() {
       trustPoints: number;
       creditLevelUp?: { toLevel: number; newLimit: number } | null;
    } | null>(null);
+   const [showCompletionDetails, setShowCompletionDetails] = useState(false);
    // Acknowledge a partial payment inline (the loan stays active). Shown until the borrower's
    // next interaction so there's no timer to leak; full payoffs use `completion` instead.
    const [partialPaid, setPartialPaid] = useState<{ paidAmount: number; remaining: number; coin: string } | null>(null);
@@ -771,6 +772,7 @@ export default function Repay() {
             if (isFullyRepaid) {
                // Demo the level-up so the celebration is visible in preview/video runs.
                const demoNext = getNextCreditTier(reduxStore.getState().auth.user?.cs || 15);
+               setShowCompletionDetails(false);
                setCompletion({
                   reason: selectedLoan.reason || 'your loan',
                   paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
@@ -869,6 +871,7 @@ export default function Repay() {
             // confirmLoanPayment refetched the user, so the store now holds any raised limit.
             const newCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
             const leveledUp = newCreditLimit > prevCreditLimit;
+            setShowCompletionDetails(false);
             setCompletion({
                reason: selectedLoan.reason || 'your loan',
                paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
@@ -1000,71 +1003,91 @@ export default function Repay() {
       const hasMoreLoans = activeLoans.length > 0;
 
       return (
-         <main className="repay-page min-h-screen bg-[linear-gradient(180deg,#fbfafd_0%,#ffffff_44%,#fbfafd_100%)] px-4 pb-32 pt-5 text-md-heading sm:px-6">
+         <main className="repay-page min-h-screen bg-md-neutral-200 px-4 pb-32 pt-5 text-md-heading sm:px-6">
             <div className="mx-auto flex w-full max-w-[400px] flex-col gap-3">
-               <section className="repay-success-section flex flex-col items-center rounded-md-xl border border-md-neutral-300 bg-white px-6 py-10 text-center shadow-[0_10px_28px_rgba(31,28,37,0.05)] animate-[repaySuccessIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
-                  <span className="repay-success-icon flex h-16 w-16 items-center justify-center rounded-md-pill bg-md-green-100 text-md-green-900 animate-[repaySuccessPop_0.45s_cubic-bezier(0.16,1,0.3,1)]">
-                     <Check className="h-8 w-8" aria-hidden="true" />
+               <section className="repay-success-section flex flex-col items-center rounded-md-xl border border-md-neutral-300 bg-md-neutral-100 px-5 pb-6 pt-8 text-center animate-[repaySuccessIn_0.35s_cubic-bezier(0.16,1,0.3,1)]">
+                  <span className="repay-success-icon flex h-14 w-14 items-center justify-center rounded-md-pill bg-md-green-100 text-md-green-900 animate-[repaySuccessPop_0.45s_cubic-bezier(0.16,1,0.3,1)]">
+                     <Check className="h-7 w-7" aria-hidden="true" />
                   </span>
-                  <h1 className="mt-5 text-md-h4 font-semibold text-md-heading">Loan fully repaid</h1>
-                  <p className="mt-2 max-w-[320px] text-md-b2 text-md-neutral-1200">
-                     You’ve cleared <span className="font-semibold text-md-heading">{completion.reason}</span> — $
-                     {formatCurrency(completion.paidAmount)} {completion.coin} paid in full. Nice work building your repayment history.
+                  <h1 className="mt-4 text-md-h4 font-semibold text-md-heading">Loan repaid</h1>
+                  <p className="mt-4 text-[30px] font-semibold leading-none tracking-[-0.03em] text-md-heading">
+                     ${formatCurrency(completion.paidAmount)} <span className="text-md-b2 font-semibold">{completion.coin}</span>
                   </p>
+                  <p className="mt-2 text-md-b2 font-medium text-md-neutral-1200">Paid in full</p>
+
                   {completion.trustPoints > 0 ? (
                      <span className="mt-4 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1.5 text-md-b3 font-semibold text-md-green-900">
-                        <ShieldCheck className="h-4 w-4" aria-hidden="true" />+{completion.trustPoints} Trust Points earned
+                        <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                        Trust Points +{completion.trustPoints}
                      </span>
                   ) : null}
+
                   {completion.creditLevelUp ? (
-                     <div className="mt-6 w-full rounded-md-lg border border-md-primary-300 bg-[#f6f0fd] px-5 py-5 text-left animate-[repaySuccessIn_0.4s_cubic-bezier(0.16,1,0.3,1)_0.25s_both]">
-                        <div className="flex items-center justify-between gap-3">
-                           <span className="inline-flex items-center gap-1.5 rounded-md-pill bg-md-primary-1200 px-3 py-1.5 text-md-neutral-100 animate-[repaySuccessPop_0.5s_cubic-bezier(0.16,1,0.3,1)_0.4s_both]">
-                              <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
-                              <span className="text-md-b3 font-bold uppercase tracking-[0.08em]">Lvl {completion.creditLevelUp.toLevel}</span>
-                           </span>
-                           <span className="text-md-h5 font-bold text-md-primary-1500">${completion.creditLevelUp.newLimit}</span>
+                     <div className="mt-6 flex w-full items-center gap-3 rounded-md-lg bg-md-primary-100 px-4 py-4 text-left animate-[repaySuccessIn_0.4s_cubic-bezier(0.16,1,0.3,1)_0.2s_both]">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md-pill bg-md-primary-1200 text-md-neutral-100">
+                           <TrendingUp className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                           <p className="text-md-b3 font-semibold text-md-primary-1500">New borrowing limit</p>
+                           <p className="mt-0.5 text-md-b2 font-semibold text-md-heading">
+                              Credit Level {completion.creditLevelUp.toLevel} unlocked
+                           </p>
                         </div>
-                        <div className="mt-3.5 h-2 w-full overflow-hidden rounded-md-pill bg-md-primary-100">
-                           <div
-                              className="h-full rounded-md-pill bg-md-primary-1200 animate-[levelBarFill_0.9s_cubic-bezier(0.16,1,0.3,1)_0.55s_both]"
-                              style={{ width: '100%' }}
-                           />
+                        <div className="shrink-0 text-right">
+                           <p className="text-md-h4 font-semibold text-md-primary-1500">${completion.creditLevelUp.newLimit}</p>
+                           <p className="text-md-b3 font-medium text-md-neutral-1200">limit</p>
                         </div>
-                        <p className="mt-3.5 text-md-b2 font-semibold text-md-primary-1500">
-                           Credit Level {completion.creditLevelUp.toLevel} unlocked
-                        </p>
-                        <p className="mt-0.5 text-md-b3 text-md-neutral-1200">
-                           Your on-time repayment raised your limit to ${completion.creditLevelUp.newLimit}.
-                        </p>
                      </div>
                   ) : null}
-                  <div className="mt-7 flex w-full flex-col gap-2.5">
-                     {hasMoreLoans ? (
-                        <button
-                           type="button"
-                           onClick={() => setCompletion(null)}
-                           className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
-                        >
-                           Repay another loan
-                        </button>
+
+                  <div className="mt-5 w-full border-y border-md-neutral-400">
+                     <button
+                        type="button"
+                        onClick={() => setShowCompletionDetails((visible) => !visible)}
+                        aria-expanded={showCompletionDetails}
+                        className="flex min-h-[52px] w-full items-center justify-between gap-3 text-left text-md-b2 font-semibold text-md-heading focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
+                     >
+                        <span>{showCompletionDetails ? 'Hide repayment details' : 'Show repayment details'}</span>
+                        <ChevronDown
+                           className={`h-4 w-4 text-md-primary-900 transition-transform duration-200 ${
+                              showCompletionDetails ? 'rotate-180' : ''
+                           }`}
+                           aria-hidden="true"
+                        />
+                     </button>
+                     {showCompletionDetails ? (
+                        <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 pb-4 text-left text-md-b3">
+                           <dt className="font-medium text-md-neutral-1200">Loan</dt>
+                           <dd className="min-w-0 break-words text-right font-medium text-md-heading">{completion.reason}</dd>
+                           <dt className="font-medium text-md-neutral-1200">Amount</dt>
+                           <dd className="text-right font-medium text-md-heading">
+                              ${formatCurrency(completion.paidAmount)} {completion.coin}
+                           </dd>
+                        </dl>
                      ) : null}
+                  </div>
+
+                  <div className="mt-5 flex w-full flex-col gap-1">
+                     <button
+                        type="button"
+                        onClick={() => {
+                           if (hasMoreLoans) {
+                              setCompletion(null);
+                              return;
+                           }
+                           navigate('/dashboard');
+                        }}
+                        className="inline-flex min-h-[54px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
+                     >
+                        {hasMoreLoans ? 'Repay next loan' : 'Done'}
+                     </button>
                      <button
                         type="button"
                         onClick={() => navigate('/history')}
-                        className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] border border-md-neutral-300 bg-white px-md-4 py-md-3 text-md-b1 font-semibold text-md-primary-1200 active:scale-[0.99]"
+                        className="inline-flex min-h-[48px] items-center justify-center rounded-[16px] px-md-4 py-md-2 text-md-b2 font-semibold text-md-primary-1200 active:bg-md-primary-100"
                      >
                         View repayment history
                      </button>
-                     {!hasMoreLoans ? (
-                        <button
-                           type="button"
-                           onClick={() => navigate('/dashboard')}
-                           className="inline-flex min-h-[56px] items-center justify-center rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
-                        >
-                           Back to dashboard
-                        </button>
-                     ) : null}
                   </div>
                </section>
             </div>

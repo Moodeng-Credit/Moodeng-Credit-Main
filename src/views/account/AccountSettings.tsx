@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 
-import { Camera } from 'lucide-react';
+import {
+   AlertCircle,
+   ArrowLeft,
+   Bell,
+   Camera,
+   CheckCircle2,
+   ChevronRight,
+   Clock3,
+   Languages,
+   ShieldCheck,
+   WalletCards
+} from 'lucide-react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -16,10 +27,10 @@ import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
 import { useLocalization } from '@/i18n';
+import { getVerificationUiState, VERIFICATION_STATE_LABEL, type VerificationUiState } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getBaseAccountConnector, getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
-import { getWorldIdVerificationLabel } from '@/lib/worldIdVerificationLabel';
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
@@ -46,16 +57,36 @@ interface NotificationPrefs {
    moodengBlogs: boolean;
 }
 
+const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+   accountActivity: true,
+   transactionActivity: true,
+   moodengBlogs: false
+};
+
 function loadNotificationPrefs(): NotificationPrefs {
    try {
       const stored = window.localStorage?.getItem(NOTIFICATION_STORAGE_KEY);
       if (stored) {
-         return JSON.parse(stored) as NotificationPrefs;
+         const parsed = JSON.parse(stored) as Partial<NotificationPrefs> | null;
+         if (parsed && typeof parsed === 'object') {
+            return {
+               accountActivity:
+                  typeof parsed.accountActivity === 'boolean'
+                     ? parsed.accountActivity
+                     : DEFAULT_NOTIFICATION_PREFS.accountActivity,
+               transactionActivity:
+                  typeof parsed.transactionActivity === 'boolean'
+                     ? parsed.transactionActivity
+                     : DEFAULT_NOTIFICATION_PREFS.transactionActivity,
+               moodengBlogs:
+                  typeof parsed.moodengBlogs === 'boolean' ? parsed.moodengBlogs : DEFAULT_NOTIFICATION_PREFS.moodengBlogs
+            };
+         }
       }
    } catch {
-      return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
+      return DEFAULT_NOTIFICATION_PREFS;
    }
-   return { accountActivity: true, transactionActivity: true, moodengBlogs: false };
+   return DEFAULT_NOTIFICATION_PREFS;
 }
 
 function isTelegramPlaceholderEmail(email?: string | null) {
@@ -122,21 +153,158 @@ function ReadOnlyField({
 
 // ─── Toggle ───
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
    return (
       <button
          type="button"
          role="switch"
          aria-checked={checked}
+         aria-label={label}
          onClick={() => onChange(!checked)}
-         className={`relative w-[42px] h-6 rounded-md-pill border border-md-primary-100 shrink-0 transition-colors duration-200 ${
-            checked ? 'bg-md-primary-900' : 'bg-md-neutral-300'
+         className={`relative h-6 w-[42px] shrink-0 rounded-md-pill border transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+            checked ? 'border-md-primary-900 bg-md-primary-900' : 'border-md-neutral-600 bg-md-neutral-300'
          }`}
       >
          <span
-            className={`absolute top-[2px] w-[18px] h-[18px] rounded-full shadow-sm transition-all duration-200 ${
-               checked ? 'bg-white left-[21px]' : 'bg-md-neutral-800 left-[2px]'
+            className={`absolute left-[2px] top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
+               checked ? 'translate-x-[18px] bg-white' : 'translate-x-0 bg-md-neutral-800'
             }`}
+         />
+      </button>
+   );
+}
+
+type SettingsSectionKey = 'profile' | 'preferences' | 'security' | 'wallet' | 'notifications';
+
+const SETTINGS_SECTION_KEYS: SettingsSectionKey[] = ['profile', 'preferences', 'security', 'wallet', 'notifications'];
+
+const SETTINGS_SECTION_TITLES: Record<SettingsSectionKey, string> = {
+   profile: 'Personal details',
+   preferences: 'Appearance & language',
+   security: 'Security & verification',
+   wallet: 'Wallet',
+   notifications: 'Notifications'
+};
+
+const SETTINGS_SECTION_DESCRIPTIONS: Record<SettingsSectionKey, string> = {
+   profile: 'Keep your profile and contact details up to date.',
+   preferences: 'These choices apply throughout Moodeng.',
+   security: 'Manage sign-in security and identity checks.',
+   wallet: 'Manage the wallet used for loans and repayments.',
+   notifications: 'Choose which account and loan alerts you receive.'
+};
+
+const VERIFICATION_PRESENTATION: Record<
+   VerificationUiState,
+   { title: string; description: string; tone: 'success' | 'warning' | 'danger' }
+> = {
+   verified: {
+      title: 'Identity verified',
+      description: 'Your identity check is complete.',
+      tone: 'success'
+   },
+   review: {
+      title: 'Verification in review',
+      description: 'Your identity check is being reviewed.',
+      tone: 'warning'
+   },
+   processing: {
+      title: 'Verification pending',
+      description: 'Your submitted identity check is processing.',
+      tone: 'warning'
+   },
+   unfinished: {
+      title: 'Verification unfinished',
+      description: 'Continue where you left off.',
+      tone: 'warning'
+   },
+   declined: {
+      title: 'Verification declined',
+      description: 'Review the result and try again.',
+      tone: 'danger'
+   },
+   duplicate: {
+      title: 'Verification blocked',
+      description: 'Open verification to review the issue.',
+      tone: 'danger'
+   },
+   unverified: {
+      title: 'Identity not verified',
+      description: 'Complete an identity check to build account trust.',
+      tone: 'danger'
+   }
+};
+
+function isSettingsSectionKey(value: string | null): value is SettingsSectionKey {
+   return value !== null && SETTINGS_SECTION_KEYS.includes(value as SettingsSectionKey);
+}
+
+function VerificationStateIcon({ state, className = 'size-4' }: { state: VerificationUiState; className?: string }) {
+   const tone = VERIFICATION_PRESENTATION[state].tone;
+
+   if (tone === 'success') {
+      return <CheckCircle2 className={`${className} text-md-green-900`} strokeWidth={2.2} aria-hidden="true" />;
+   }
+
+   if (tone === 'warning') {
+      return <Clock3 className={`${className} text-md-yellow-700`} strokeWidth={2.2} aria-hidden="true" />;
+   }
+
+   return <AlertCircle className={`${className} text-md-red-500`} strokeWidth={2.2} aria-hidden="true" />;
+}
+
+function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
+   return (
+      <section>
+         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-1000">{label}</h2>
+         <div className="divide-y divide-md-neutral-400 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100">
+            {children}
+         </div>
+      </section>
+   );
+}
+
+function SettingsRow({
+   title,
+   summary,
+   icon,
+   summaryIcon,
+   iconStyle = 'standard',
+   onClick
+}: {
+   title: string;
+   summary: string;
+   icon: React.ReactNode;
+   summaryIcon?: React.ReactNode;
+   iconStyle?: 'standard' | 'avatar';
+   onClick: () => void;
+}) {
+   return (
+      <button
+         type="button"
+         onClick={onClick}
+         className="group flex min-h-[72px] w-full items-center gap-md-2 px-md-3 py-md-2 text-left transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900 active:bg-md-neutral-300"
+      >
+         <span
+            className={
+               iconStyle === 'avatar'
+                  ? 'flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full'
+                  : 'flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300 text-md-neutral-1200'
+            }
+            aria-hidden="true"
+         >
+            {icon}
+         </span>
+         <span className="min-w-0 flex-1">
+            <span className="block text-md-b1 font-semibold text-md-heading">{title}</span>
+            <span className="mt-px flex min-w-0 items-center gap-1.5 text-md-b2 font-medium text-md-neutral-1200">
+               {summaryIcon ? <span className="shrink-0">{summaryIcon}</span> : null}
+               <span className="truncate">{summary}</span>
+            </span>
+         </span>
+         <ChevronRight
+            className="size-[18px] shrink-0 text-md-neutral-800 transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-md-primary-900"
+            aria-hidden="true"
          />
       </button>
    );
@@ -832,7 +1000,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
          return;
       }
       previousWalletRef.current = user?.walletAddress ?? null;
-   // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
 
    // Auto-close when useWalletSync saves the new wallet
@@ -947,7 +1115,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                         className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
                      >
                         {isConnecting ? 'Connecting...' : 'Connect Base Account'}
-                        {!isConnecting && (
+                        {!isConnecting ? (
                            <div
                               className="w-6 h-6 bg-md-neutral-100"
                               style={{
@@ -956,7 +1124,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                  maskImage: "url('/icons/chevron-right.svg')"
                               }}
                            />
-                        )}
+                        ) : null}
                      </button>
                   ) : (
                      <div className="flex flex-col gap-md-2">
@@ -1068,10 +1236,18 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
 export default function AccountSettings() {
    const navigate = useNavigate();
-   const [searchParams] = useSearchParams();
-   const { t } = useLocalization();
+   const location = useLocation();
+   const [searchParams, setSearchParams] = useSearchParams();
+   const { t, locale, locales } = useLocalization();
    const editTarget = searchParams.get('edit');
+   const sectionTarget = searchParams.get('section');
+   const activeSection: SettingsSectionKey | null = editTarget
+      ? 'profile'
+      : isSettingsSectionKey(sectionTarget)
+        ? sectionTarget
+        : null;
    const handledEditTargetRef = useRef<string | null>(null);
+   const detailHeadingRef = useRef<HTMLHeadingElement>(null);
    const dispatch = useDispatch<AppDispatch>();
    const user = useSelector((state: RootState) => state.auth.user);
    const { connector, chain } = useAccount();
@@ -1115,8 +1291,8 @@ export default function AccountSettings() {
    const emailActionLabel = hasTelegramPlaceholderEmail ? 'Add' : isEmailPasswordUser ? 'Change' : undefined;
    const canEditEmail = isEmailPasswordUser || hasTelegramPlaceholderEmail;
    const emailHelpCopy = hasTelegramPlaceholderEmail
-      ? 'Telegram sign-in does not provide a real email. Add one for account recovery and notifications.'
-      : 'Having an up-to-date email address attached to your account is a great step towards improving account security.';
+      ? 'Add an email for account recovery and important alerts.'
+      : 'Used for account recovery and important alerts.';
    const telegramAlertsValue = user?.chatId
       ? user?.telegramUsername
          ? `@${user.telegramUsername}`
@@ -1132,7 +1308,11 @@ export default function AccountSettings() {
    }, [notifPrefs]);
 
    useEffect(() => {
-      if (!editTarget || handledEditTargetRef.current === editTarget) return;
+      if (!editTarget) {
+         handledEditTargetRef.current = null;
+         return;
+      }
+      if (handledEditTargetRef.current === editTarget) return;
 
       handledEditTargetRef.current = editTarget;
 
@@ -1154,6 +1334,15 @@ export default function AccountSettings() {
          setShowBioInfoModal(true);
       }
    }, [currentDisplayName, editTarget]);
+
+   useEffect(() => {
+      if (!activeSection) return;
+
+      window.requestAnimationFrame(() => {
+         window.scrollTo({ top: 0, behavior: 'auto' });
+         detailHeadingRef.current?.focus({ preventScroll: true });
+      });
+   }, [activeSection]);
 
    useEffect(() => {
       setIsDisconnectWalletPending(false);
@@ -1192,7 +1381,7 @@ export default function AccountSettings() {
          const verb = intent === 'disconnect' ? 'Disconnecting' : 'Changing';
          return {
             blocked: false,
-            warning: `You have ${data.length} active ${loanWord} being repaid.${walletClause} ${verb} your wallet here is safe — it only affects loans you fund from now on.`
+            warning: `You have ${data.length} active ${loanWord} being repaid.${walletClause} ${verb} your wallet here is safe. It only affects loans you fund from now on.`
          };
       },
       [user?.id, isBorrower]
@@ -1348,234 +1537,379 @@ export default function AccountSettings() {
       // rows). Openfort resolves to 'openfort' → labelled "Instant Wallet", never forced to Base.
       assumeBaseAccount: isBorrower && hasWallet && !baseWalletLock.provider
    });
+   const verificationState = getVerificationUiState(user);
+   const activeNotificationCount = Object.values(notifPrefs).filter(Boolean).length;
+   const currentLanguage = locales.find((supportedLocale) => supportedLocale.code === locale)?.label ?? 'English';
+   const sectionSummaries: Record<SettingsSectionKey, string> = {
+      profile: hasTelegramPlaceholderEmail
+         ? 'Add an email for recovery'
+         : currentDisplayName
+           ? `${currentDisplayName} · ${emailFieldValue}`
+           : emailFieldValue,
+      preferences: `${currentLanguage} · ${isDarkMode ? 'Dark' : 'Light'} mode`,
+      security: verificationState === 'verified' ? 'Identity verified' : VERIFICATION_STATE_LABEL[verificationState],
+      wallet: hasWallet ? `${walletLabel} · ${truncateAddress(user?.walletAddress || '')}` : 'No wallet connected',
+      notifications: `${activeNotificationCount} of 3 preferences enabled`
+   };
 
    const toggleNotif = (key: keyof NotificationPrefs) => {
       setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
    };
 
+   const openSettingsSection = (section: SettingsSectionKey) => {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('section', section);
+      nextParams.delete('edit');
+      const currentState =
+         location.state && typeof location.state === 'object' ? (location.state as Record<string, unknown>) : {};
+      navigate(
+         { pathname: location.pathname, search: nextParams.toString() },
+         { state: { ...currentState, settingsFromOverview: true } }
+      );
+      window.scrollTo({ top: 0, behavior: 'auto' });
+   };
+
+   const closeSettingsSection = () => {
+      if (
+         location.state &&
+         typeof location.state === 'object' &&
+         (location.state as { settingsFromOverview?: boolean }).settingsFromOverview
+      ) {
+         navigate(-1);
+         return;
+      }
+
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('section');
+      nextParams.delete('edit');
+      setSearchParams(nextParams, { replace: true });
+      window.scrollTo({ top: 0, behavior: 'auto' });
+   };
+
    return (
       <div className="min-h-screen bg-md-neutral-200">
-         <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
-            {/* Header */}
-            <div className="flex items-center gap-4 px-md-5 py-md-3">
-               <button type="button" onClick={() => navigate('/account')} className="shrink-0">
-                  <div
-                     className="w-6 h-6 bg-md-heading"
-                     style={{
-                        ...ICON_MASK,
-                        WebkitMaskImage: "url('/icons/arrow-left.svg')",
-                        maskImage: "url('/icons/arrow-left.svg')"
-                     }}
-                  />
+         <div className="mx-auto flex max-w-[440px] flex-col pb-28">
+            <header className="sticky top-0 z-20 flex min-h-[64px] items-center gap-md-2 border-b border-md-neutral-400 bg-md-neutral-200 px-md-5">
+               <button
+                  type="button"
+                  onClick={activeSection ? closeSettingsSection : () => navigate('/account')}
+                  className="-ml-2 flex size-10 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-md-neutral-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                  aria-label={activeSection ? 'Back to settings' : 'Back to account'}
+               >
+                  <ArrowLeft className="size-6 text-md-heading" strokeWidth={2} aria-hidden="true" />
                </button>
-               <h1 className="text-md-h3 font-semibold text-md-heading">Account Settings</h1>
-            </div>
+               <h1
+                  ref={detailHeadingRef}
+                  tabIndex={activeSection ? -1 : undefined}
+                  className="truncate text-md-h6 font-semibold text-md-heading outline-none"
+               >
+                  {activeSection ? SETTINGS_SECTION_TITLES[activeSection] : 'Account settings'}
+               </h1>
+            </header>
 
-            {/* Avatar + Name */}
-            <div className="flex items-center gap-md-5 px-md-5 py-md-3">
-               <div id="avatar-section" className="flex flex-col gap-md-1 items-center shrink-0">
-                  <EditableAvatar onClick={() => setShowAvatarModal(true)} />
-                  <button type="button" onClick={() => setShowAvatarModal(true)} className="text-md-b1 text-md-primary-900">
-                     Change
-                  </button>
-               </div>
-               <div id="display-name-section" className="flex flex-col gap-md-1 flex-1 min-w-0">
-                  <p className="text-md-b2 font-semibold text-md-heading">Display Name</p>
-                  <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                     <span className="text-md-b1 text-md-neutral-1200 truncate">{currentDisplayName}</span>
-                     <button
-                        type="button"
-                        onClick={() => setShowNameModal(true)}
-                        className="text-md-b1 text-md-primary-900 shrink-0 ml-2"
-                     >
-                        Change
-                     </button>
-                  </div>
-               </div>
-            </div>
-
-            {/* Sections */}
-            <div className="flex flex-col gap-5 px-md-4">
-               {/* Basic Information */}
-               <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Basic Information</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">{emailHelpCopy}</p>
-                  <ReadOnlyField
-                     label="Email Address"
-                     value={emailFieldValue}
-                     actionLabel={emailActionLabel}
-                     onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
-                  />
-                  {isBorrower ? (
-                     <ReadOnlyField
-                        label="Bio Info"
-                        value="Work, income, and what you need help with"
-                        actionLabel="Change"
-                        onAction={() => setShowBioInfoModal(true)}
+            {!activeSection ? (
+               <main className="flex flex-col gap-6 px-md-4 py-md-5">
+                  <SettingsGroup label="Account">
+                     <SettingsRow
+                        title="Personal details"
+                        summary={sectionSummaries.profile}
+                        icon={<UserAvatar size={40} clickable={false} />}
+                        iconStyle="avatar"
+                        onClick={() => openSettingsSection('profile')}
                      />
+                     <SettingsRow
+                        title="Security & verification"
+                        summary={sectionSummaries.security}
+                        icon={<ShieldCheck size={19} strokeWidth={1.8} />}
+                        summaryIcon={<VerificationStateIcon state={verificationState} />}
+                        onClick={() => openSettingsSection('security')}
+                     />
+                  </SettingsGroup>
+
+                  <SettingsGroup label="Money">
+                     <SettingsRow
+                        title="Wallet"
+                        summary={sectionSummaries.wallet}
+                        icon={
+                           borrowerHasConfirmedBaseWallet && !baseWalletLock.isConfirmedOpenfort ? (
+                              <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
+                           ) : (
+                              <WalletCards size={20} strokeWidth={1.8} />
+                           )
+                        }
+                        onClick={() => openSettingsSection('wallet')}
+                     />
+                  </SettingsGroup>
+
+                  <SettingsGroup label="Preferences">
+                     <SettingsRow
+                        title="Notifications"
+                        summary={sectionSummaries.notifications}
+                        icon={<Bell size={19} strokeWidth={1.8} />}
+                        onClick={() => openSettingsSection('notifications')}
+                     />
+                     <SettingsRow
+                        title="Appearance & language"
+                        summary={sectionSummaries.preferences}
+                        icon={<Languages size={19} strokeWidth={1.8} />}
+                        onClick={() => openSettingsSection('preferences')}
+                     />
+                  </SettingsGroup>
+               </main>
+            ) : (
+               <main className="px-md-4 pb-md-6 pt-md-4">
+                  <p className="mb-md-5 px-1 text-md-b2 font-medium leading-5 text-md-neutral-1200">
+                     {activeSection === 'wallet'
+                        ? isBorrower
+                           ? 'This wallet receives your loans and records your repayments.'
+                           : 'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.'
+                        : SETTINGS_SECTION_DESCRIPTIONS[activeSection]}
+                  </p>
+
+                  {activeSection === 'profile' ? (
+                  <div className="flex flex-col gap-3">
+                     <div
+                        id="avatar-section"
+                        className="mb-1 flex items-center gap-md-2 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3"
+                     >
+                        <EditableAvatar size={52} onClick={() => setShowAvatarModal(true)} />
+                        <div className="min-w-0 flex-1">
+                           <p className="text-md-b2 font-semibold text-md-heading">Profile photo</p>
+                           <p className="text-md-b2 font-medium text-md-neutral-1200">Helps people recognize you</p>
+                        </div>
+                        <button
+                           type="button"
+                           onClick={() => setShowAvatarModal(true)}
+                           className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                        >
+                           Change
+                        </button>
+                     </div>
+                     <div id="display-name-section">
+                        <ReadOnlyField
+                           label="Display name"
+                           value={currentDisplayName}
+                           actionLabel="Change"
+                           onAction={() => setShowNameModal(true)}
+                        />
+                     </div>
+                     <ReadOnlyField
+                        label="Email address"
+                        value={emailFieldValue}
+                        actionLabel={emailActionLabel}
+                        onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
+                     />
+                     <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">{emailHelpCopy}</p>
+                     {isBorrower ? (
+                        <ReadOnlyField
+                           label="Bio"
+                           value="Work, income, and what you need help with"
+                           actionLabel="Change"
+                           onAction={() => setShowBioInfoModal(true)}
+                        />
+                     ) : null}
+                  </div>
                   ) : null}
-               </div>
 
                {/* Preferences (Appearance + Language) */}
-               <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Preferences</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">Choose how Moodeng looks and reads on this device.</p>
+                  {activeSection === 'preferences' ? (
+                     <div className="flex flex-col gap-md-4">
+                        <SettingsGroup label="Appearance">
+                           <div className="flex min-h-[72px] items-center justify-between gap-md-3 px-md-3 py-md-2">
+                              <div className="min-w-0">
+                                 <p className="text-md-b1 font-semibold text-md-heading">Dark mode</p>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">Use darker surfaces throughout Moodeng</p>
+                              </div>
+                              <Toggle
+                                 checked={isDarkMode}
+                                 onChange={(checked) => setMode(checked ? 'dark' : 'light')}
+                                 label="Use dark mode"
+                              />
+                           </div>
+                        </SettingsGroup>
 
-                  {/* Dark Mode */}
-                  <div className="flex flex-col gap-2">
-                     <div className="flex items-center justify-between">
-                        <p className="text-md-b2 font-semibold text-md-heading">Dark Mode</p>
-                        <Toggle checked={isDarkMode} onChange={(checked) => setMode(checked ? 'dark' : 'light')} />
+                        <div className="flex flex-col gap-md-1">
+                           <p className="px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-1000">
+                              {t('language.label')}
+                           </p>
+                           <p className="px-1 text-md-b2 font-medium text-md-neutral-1200">{t('language.settingsDescription')}</p>
+                           <LanguageSwitcher tone="light" variant="full" />
+                        </div>
                      </div>
-                     <p className="text-md-b3 font-medium text-md-neutral-1400">Use darker app surfaces across the website.</p>
-                  </div>
-
-                  {/* Language */}
-                  <div className="flex flex-col gap-md-1">
-                     <p className="text-md-b2 font-semibold text-md-heading">{t('language.label')}</p>
-                     <p className="text-md-b3 font-medium text-md-neutral-1400">{t('language.settingsDescription')}</p>
-                     <div className="rounded-md-input border border-md-neutral-600 bg-md-neutral-100 p-3 shadow-md-card">
-                        <LanguageSwitcher tone="light" variant="full" />
-                     </div>
-                  </div>
-               </div>
-
-               {/* Security */}
-               <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Security &amp; Verification</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">
-                     Manage how you sign in and the identity verification on your account.
-                  </p>
-
-                  {isEmailPasswordUser ? (
-                     <ReadOnlyField label="Password" value="******" actionLabel="Change" onAction={() => setShowPasswordModal(true)} />
                   ) : null}
 
-                  {/* World ID */}
-                  <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">World ID</p>
-                     <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        {user?.isWorldId === 'ACTIVE' ? (
-                           <>
-                              <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
-                              <span className="text-md-b1 font-medium text-md-green-900">
-                                 {getWorldIdVerificationLabel({
-                                    isWorldId: user?.isWorldId,
-                                    userRole: user?.userRole
-                                 })}
-                              </span>
-                           </>
-                        ) : (
-                           <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
-                        )}
-                     </div>
-                  </div>
-
-                  {/* ID verification (Didit) */}
-                  <div className="flex flex-col gap-md-1 w-full">
-                     <p className="text-md-b2 font-semibold text-md-heading">ID Verification</p>
-                     <div className="flex items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        {user?.isDidit === 'ACTIVE' ? (
-                           <>
-                              <img src="/icons/check-fill.svg" alt="" className="w-4 h-4 shrink-0" />
-                              <span className="text-md-b1 font-medium text-md-green-900">
-                                 {getWorldIdVerificationLabel({
-                                    isWorldId: user?.isDidit,
-                                    userRole: user?.userRole
-                                 })}
-                              </span>
-                           </>
-                        ) : (
-                           <span className="text-md-b1 text-md-neutral-1200">Not Verified</span>
-                        )}
-                     </div>
-                  </div>
-
-               </div>
-
-               {/* Wallet */}
-               <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Wallet</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">
-                     {isBorrower
-                        ? 'The Base Account that receives funded loans and is used for repayments.'
-                        : 'The wallet you use to fund new loans. Each repayment returns to the wallet that funded that specific loan — changing the wallet here does not redirect money for loans you are already lending.'}
-                  </p>
-
-                  <div className="flex flex-col gap-md-2 w-full relative">
-                     <p className="text-md-b2 font-semibold text-md-heading">Connected Wallet</p>
-                     <div className="flex items-center justify-between bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                        {hasWallet ? (
-                           <>
-                              <div className="flex min-w-0 shrink-0 items-center gap-2 text-md-b1 text-md-neutral-1200">
-                                 <span
-                                    className="block size-4 bg-md-primary-900"
-                                    style={{
-                                       ...ICON_MASK,
-                                       WebkitMaskImage: "url('/icons/locked.svg')",
-                                       maskImage: "url('/icons/locked.svg')"
-                                    }}
-                                 />
-                                 <span className="truncate">{walletLabel}</span>
+                  {activeSection === 'security' ? (
+                     <div className="flex flex-col gap-md-4">
+                        {isEmailPasswordUser ? (
+                           <SettingsGroup label="Sign-in">
+                              <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-md-b1 font-semibold text-md-heading">Password</p>
+                                    <p className="text-md-b2 font-medium tracking-[0.12em] text-md-neutral-1200">••••••••</p>
+                                 </div>
+                                 <button
+                                    type="button"
+                                    onClick={() => setShowPasswordModal(true)}
+                                    className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                 >
+                                    Change
+                                 </button>
                               </div>
-                              <span className="mx-md-2 h-6 w-px shrink-0 bg-md-neutral-600" aria-hidden="true" />
-                              <button
-                                 type="button"
-                                 onClick={handleCopyWallet}
-                                 title="Click to copy wallet address"
-                                 className="min-w-0 flex-1 truncate text-right text-md-b2 font-medium text-md-neutral-900 hover:text-md-primary-900 transition-colors"
-                                 aria-label="Copy wallet address"
-                              >
-                                 {truncateAddress(user?.walletAddress || '')}
-                              </button>
-                              <button type="button" onClick={handleCopyWallet} className="shrink-0 ml-2" aria-label="Copy wallet address">
-                                 {walletCopied ? (
-                                    <span className="text-md-b2 font-semibold text-md-primary-900">Copied</span>
-                                 ) : (
-                                    <div
-                                       className="w-5 h-5 bg-md-primary-900"
-                                       style={{
-                                          ...ICON_MASK,
-                                          WebkitMaskImage: "url('/icons/copy.svg')",
-                                          maskImage: "url('/icons/copy.svg')"
-                                       }}
-                                    />
-                                 )}
-                              </button>
-                           </>
-                        ) : (
-                           <>
-                              <span className="text-md-b1 text-md-neutral-1200">Not Connected</span>
-                              <button
-                                 type="button"
-                                 onClick={() => navigate('/onboarding/wallet')}
-                                 className="text-md-b1 text-md-primary-900 shrink-0 ml-2"
-                              >
-                                 {walletSetupLabel}
-                              </button>
-                           </>
-                        )}
-                     </div>
+                           </SettingsGroup>
+                        ) : null}
 
-                     {hasWallet ? (
-                        isDisconnectWalletPending ? (
-                           <div className="flex flex-col gap-md-2 rounded-md-md border border-md-red-100 bg-md-red-100/60 p-md-2">
-                              <p className="text-md-b2 font-semibold text-md-heading">Disconnect wallet?</p>
-                              <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
+                        <SettingsGroup label="Identity verification">
+                           <div className="flex min-h-[76px] items-center gap-md-2 px-md-3 py-md-2">
+                              <span
+                                 className={`flex size-10 shrink-0 items-center justify-center rounded-md-input ${
+                                    VERIFICATION_PRESENTATION[verificationState].tone === 'success'
+                                       ? 'bg-md-green-100'
+                                       : VERIFICATION_PRESENTATION[verificationState].tone === 'warning'
+                                         ? 'bg-md-yellow-100'
+                                         : 'bg-md-red-100'
+                                 }`}
+                              >
+                                 <VerificationStateIcon state={verificationState} className="size-5" />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                 <p className="text-md-b1 font-semibold text-md-heading">
+                                    {VERIFICATION_PRESENTATION[verificationState].title}
+                                 </p>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                    {VERIFICATION_PRESENTATION[verificationState].description}
+                                 </p>
+                              </div>
+                              {verificationState === 'verified' ? null : (
+                                 <button
+                                    type="button"
+                                    onClick={() => navigate('/verify')}
+                                    className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                 >
+                                    {verificationState === 'unverified' ? 'Verify' : 'View'}
+                                 </button>
+                              )}
+                           </div>
+                        </SettingsGroup>
+                     </div>
+                  ) : null}
+
+                  {activeSection === 'wallet' ? (
+                     <div className="flex flex-col gap-md-4">
+                        <SettingsGroup label="Connected wallet">
+                           <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300">
+                                 {borrowerHasConfirmedBaseWallet && !baseWalletLock.isConfirmedOpenfort ? (
+                                    <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
+                                 ) : (
+                                    <WalletCards className="size-5 text-md-neutral-1200" strokeWidth={1.8} aria-hidden="true" />
+                                 )}
+                              </span>
+                              {hasWallet ? (
+                                 <>
+                                    <div className="min-w-0 flex-1">
+                                       <p className="truncate text-md-b1 font-semibold text-md-heading">{walletLabel}</p>
+                                       <p className="truncate text-md-b2 font-medium text-md-neutral-1200">
+                                          {truncateAddress(user?.walletAddress || '')}
+                                       </p>
+                                    </div>
+                                    <button
+                                       type="button"
+                                       onClick={handleCopyWallet}
+                                       title="Copy wallet address"
+                                       className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                       aria-label="Copy wallet address"
+                                    >
+                                       {walletCopied ? (
+                                          'Copied'
+                                       ) : (
+                                          <span
+                                             className="block size-5 bg-md-primary-900"
+                                             style={{
+                                                ...ICON_MASK,
+                                                WebkitMaskImage: "url('/icons/copy.svg')",
+                                                maskImage: "url('/icons/copy.svg')"
+                                             }}
+                                             aria-hidden="true"
+                                          />
+                                       )}
+                                    </button>
+                                 </>
+                              ) : (
+                                 <>
+                                    <div className="min-w-0 flex-1">
+                                       <p className="text-md-b1 font-semibold text-md-heading">No wallet connected</p>
+                                       <p className="text-md-b2 font-medium text-md-neutral-1200">Connect a wallet to continue</p>
+                                    </div>
+                                    <button
+                                       type="button"
+                                       onClick={() => navigate('/onboarding/wallet')}
+                                       className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                    >
+                                       {walletSetupLabel}
+                                    </button>
+                                 </>
+                              )}
+                           </div>
+
+                           {hasWallet ? (
+                              <div className="flex min-h-[52px] items-center justify-between gap-md-2 px-md-3 py-md-1">
+                                 <span className="text-md-b2 font-medium text-md-neutral-1200">Network</span>
+                                 <span className="text-md-b2 font-semibold text-md-heading">{chain?.name || 'Base'}</span>
+                              </div>
+                           ) : null}
+
+                           {borrowerHasConfirmedBaseWallet ? (
+                              <div className="flex items-start gap-md-2 px-md-3 py-md-2">
+                                 <CheckCircle2
+                                    className="mt-0.5 size-5 shrink-0 text-md-green-900"
+                                    strokeWidth={2.2}
+                                    aria-hidden="true"
+                                 />
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-md-b2 font-semibold text-md-heading">{walletLabel} confirmed</p>
+                                    <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">
+                                       {baseWalletLock.isConfirmedOpenfort
+                                          ? 'Ready to receive loans and record repayments.'
+                                          : 'Ready for your Moodeng loans and repayment history.'}
+                                    </p>
+                                    {baseWalletLock.isConfirmedOpenfort ? (
+                                       <div className="mt-md-2">
+                                          <ExportInstantWalletKey />
+                                       </div>
+                                    ) : null}
+                                 </div>
+                              </div>
+                           ) : null}
+                        </SettingsGroup>
+
+                        {hasWallet && !isDisconnectWalletPending ? (
+                           <button
+                              type="button"
+                              onClick={handleInitiateWalletChange}
+                              className="min-h-[48px] rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-primary-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 active:scale-[0.99]"
+                           >
+                              Change wallet
+                           </button>
+                        ) : null}
+
+                        {isDisconnectWalletPending ? (
+                           <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-red-100 bg-md-red-100 p-md-3">
+                              <p className="text-md-b1 font-semibold text-md-heading">Disconnect wallet?</p>
+                              <p className="text-md-b2 font-medium leading-5 text-md-heading">
                                  {isBorrower
-                                    ? 'This will remove your saved Base Account. You will need to connect one again before borrowing or repaying.'
-                                    : 'This will remove your connected wallet from your account. You can reconnect anytime.'}
+                                    ? 'This removes your saved Base Account. You will need to connect one again before borrowing or repaying.'
+                                    : 'This removes the wallet from your account. You can reconnect it anytime.'}
                               </p>
                               {!isBorrower && walletSafetyWarning ? (
-                                 <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">{walletSafetyWarning}</p>
+                                 <p className="text-md-b2 font-medium leading-5 text-md-heading">{walletSafetyWarning}</p>
                               ) : null}
-                              {walletError ? <p className="text-md-b3 font-medium text-md-red-500">{walletError}</p> : null}
+                              {walletError ? <p className="text-md-b2 font-medium text-md-red-500">{walletError}</p> : null}
                               <div className="grid grid-cols-2 gap-md-2">
                                  <button
                                     type="button"
                                     onClick={handleRevertWalletChanges}
                                     disabled={isSavingWallet}
-                                    className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 disabled:opacity-60"
+                                    className="min-h-11 rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 disabled:opacity-60"
                                  >
                                     Cancel
                                  </button>
@@ -1583,162 +1917,169 @@ export default function AccountSettings() {
                                     type="button"
                                     onClick={handleSaveWalletChanges}
                                     disabled={isSavingWallet}
-                                    className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 disabled:opacity-60"
+                                    className="min-h-11 rounded-md-lg bg-md-red-500 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100 disabled:opacity-60"
                                  >
                                     {isSavingWallet ? 'Saving...' : 'Disconnect'}
                                  </button>
                               </div>
                            </div>
-                        ) : (
-                           <div className="grid grid-cols-2 gap-md-2">
+                        ) : null}
+
+                        {borrowerNeedsBaseWallet && hasWallet ? (
+                           <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-100 p-md-3">
+                              <div className="flex items-start gap-md-2">
+                                 <img src="/icons/base-account.svg" alt="" className="size-9 shrink-0 rounded-md-md" />
+                                 <div className="flex min-w-0 flex-1 flex-col gap-md-0">
+                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
+                                    <p className="text-md-b2 font-medium text-md-heading">
+                                       {borrowerHasNonBaseWallet
+                                          ? `Your account is using ${walletLabel}. Connect a Base Account so loans and repayments use the right wallet.`
+                                          : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
+                                    </p>
+                                 </div>
+                              </div>
                               <button
                                  type="button"
-                                 onClick={handleInitiateWalletChange}
-                                 className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900 active:scale-[0.99]"
+                                 onClick={() => setShowChangeWalletModal(true)}
+                                 className="inline-flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                               >
-                                 Change wallet
+                                 Confirm Base Account
                               </button>
+                           </div>
+                        ) : null}
+
+                        {!isBorrower && hasWallet && walletSafetyWarning && walletSafetyIntent === 'change' ? (
+                           <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-yellow-700 bg-md-yellow-100 p-md-3">
+                              <p className="text-md-b2 font-semibold text-md-heading">You have active loans</p>
+                              <p className="text-md-b2 font-medium leading-5 text-md-heading">{walletSafetyWarning}</p>
+                              <div className="grid grid-cols-2 gap-md-2">
+                                 <button
+                                    type="button"
+                                    onClick={handleRevertWalletChanges}
+                                    className="min-h-11 rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
+                                 >
+                                    Cancel
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => {
+                                       setWalletSafetyWarning('');
+                                       setWalletSafetyIntent(null);
+                                       setShowChangeWalletModal(true);
+                                    }}
+                                    className="min-h-11 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
+                                 >
+                                    Change anyway
+                                 </button>
+                              </div>
+                           </div>
+                        ) : null}
+
+                        {hasWallet && !isDisconnectWalletPending ? (
+                           <SettingsGroup label="Wallet access">
                               <button
                                  type="button"
                                  onClick={handleInitiateWalletDisconnect}
-                                 className="rounded-md-lg border border-md-red-100 bg-md-red-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-red-500 active:scale-[0.99]"
+                                 className="group flex min-h-[68px] w-full items-center gap-md-2 px-md-3 py-md-2 text-left transition-colors duration-150 hover:bg-md-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-red-500"
                               >
-                                 Disconnect wallet
+                                 <span className="min-w-0 flex-1">
+                                    <span className="block text-md-b1 font-semibold text-md-red-500">Disconnect wallet</span>
+                                    <span className="block truncate text-md-b2 font-medium text-md-neutral-1200">
+                                       {isBorrower
+                                          ? 'Remove this saved wallet from your account'
+                                          : 'Stop using this wallet for new loans'}
+                                    </span>
+                                 </span>
+                                 <ChevronRight
+                                    className="size-[18px] shrink-0 text-md-red-500 transition-transform duration-150 group-hover:translate-x-0.5"
+                                    aria-hidden="true"
+                                 />
                               </button>
-                           </div>
-                        )
-                     ) : null}
-                  </div>
-
-                  {borrowerNeedsBaseWallet && hasWallet ? (
-                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-primary-900 bg-md-primary-900/10 p-md-3">
-                        <div className="flex items-start gap-md-2">
-                           <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md shrink-0" />
-                           <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                              <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
-                              <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                 {borrowerHasNonBaseWallet
-                                    ? `Your account is using ${walletLabel}. Connect a Base Account so funded loans and repayments use the right wallet.`
-                                    : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
-                              </p>
-                           </div>
-                        </div>
-                        <button
-                           type="button"
-                           onClick={() => setShowChangeWalletModal(true)}
-                           className="inline-flex w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
-                        >
-                           Confirm Base Account
-                        </button>
+                           </SettingsGroup>
+                        ) : null}
                      </div>
                   ) : null}
 
-                  {!isBorrower && hasWallet && walletSafetyWarning && walletSafetyIntent === 'change' ? (
-                     <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-yellow-700 bg-md-yellow-100 p-md-3">
-                        <p className="text-md-b2 font-semibold text-md-heading">Heads up — you have active loans</p>
-                        <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">{walletSafetyWarning}</p>
-                        <div className="grid grid-cols-2 gap-md-2">
-                           <button
-                              type="button"
-                              onClick={handleRevertWalletChanges}
-                              className="rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
-                           >
-                              Cancel
-                           </button>
-                           <button
-                              type="button"
-                              onClick={() => { setWalletSafetyWarning(''); setWalletSafetyIntent(null); setShowChangeWalletModal(true); }}
-                              className="rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b2 font-semibold text-md-neutral-100"
-                           >
-                              Change anyway
-                           </button>
-                        </div>
-                     </div>
-                  ) : null}
-
-                  {borrowerHasConfirmedBaseWallet ? (
-                     <div className="flex items-start gap-md-2 rounded-md-lg border border-md-primary-100 bg-md-primary-900/5 p-md-3">
-                        {baseWalletLock.isConfirmedOpenfort ? null : (
-                           <img src="/icons/base-account.svg" alt="" className="size-8 rounded-md-md shrink-0" />
-                        )}
-                        <div className="min-w-0">
-                           <p className="text-md-b2 font-semibold text-md-heading">{walletLabel} locked</p>
-                           <p className="text-md-b3 font-medium leading-5 text-md-neutral-1200">
-                              {baseWalletLock.isConfirmedOpenfort
-                                 ? 'This instant wallet receives funded loans and is used for repayment history. You fully own it — you can export its key anytime to move to another wallet app.'
-                                 : 'This wallet receives funded loans and is used for repayment history. Change it only if this is no longer your Base Account.'}
+                  {activeSection === 'notifications' ? (
+                     <div className="flex flex-col gap-md-4">
+                        {hasTelegramPlaceholderEmail ? (
+                           <p className="px-1 text-md-b2 font-medium leading-5 text-md-neutral-1200">
+                              Add an email in Personal details to receive email alerts.
                            </p>
-                           {baseWalletLock.isConfirmedOpenfort ? (
-                              <div className="mt-md-2">
-                                 <ExportInstantWalletKey />
+                        ) : null}
+
+                        <SettingsGroup label="Channels">
+                           <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300">
+                                 <span
+                                    className="size-7 bg-[#229ED9]"
+                                    style={{
+                                       ...ICON_MASK,
+                                       WebkitMaskImage: "url('/icons/telegram.svg')",
+                                       maskImage: "url('/icons/telegram.svg')"
+                                    }}
+                                    aria-hidden="true"
+                                 />
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                 <p className="text-md-b1 font-semibold text-md-heading">Telegram</p>
+                                 <p className="truncate text-md-b2 font-medium text-md-neutral-1200">{telegramAlertsValue}</p>
                               </div>
-                           ) : null}
-                        </div>
+                              {user?.chatId ? (
+                                 <CheckCircle2 className="size-5 shrink-0 text-md-green-900" strokeWidth={2.2} aria-label="Connected" />
+                              ) : (
+                                 <button
+                                    type="button"
+                                    onClick={() => setShowTelegramAlertsModal(true)}
+                                    className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                 >
+                                    Connect
+                                 </button>
+                              )}
+                           </div>
+                        </SettingsGroup>
+
+                        <SettingsGroup label="Alert types">
+                           <div className="flex min-h-[72px] items-center justify-between gap-md-3 px-md-3 py-md-2">
+                              <div className="min-w-0">
+                                 <p className="text-md-b1 font-semibold text-md-heading">Account activity</p>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">Security and account updates</p>
+                              </div>
+                              <Toggle
+                                 checked={notifPrefs.accountActivity}
+                                 onChange={() => toggleNotif('accountActivity')}
+                                 label="Account activity notifications"
+                              />
+                           </div>
+
+                           <div className="flex min-h-[72px] items-center justify-between gap-md-3 px-md-3 py-md-2">
+                              <div className="min-w-0">
+                                 <p className="text-md-b1 font-semibold text-md-heading">Loan activity</p>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">Funding, repayments, and due dates</p>
+                              </div>
+                              <Toggle
+                                 checked={notifPrefs.transactionActivity}
+                                 onChange={() => toggleNotif('transactionActivity')}
+                                 label="Loan activity notifications"
+                              />
+                           </div>
+
+                           <div className="flex min-h-[72px] items-center justify-between gap-md-3 px-md-3 py-md-2">
+                              <div className="min-w-0">
+                                 <p className="text-md-b1 font-semibold text-md-heading">Moodeng news</p>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">Occasional product updates</p>
+                              </div>
+                              <Toggle
+                                 checked={notifPrefs.moodengBlogs}
+                                 onChange={() => toggleNotif('moodengBlogs')}
+                                 label="Moodeng news notifications"
+                              />
+                           </div>
+                        </SettingsGroup>
                      </div>
                   ) : null}
-
-                  {/* Network */}
-                  {hasWallet ? (
-                     <div className="flex flex-col gap-md-1 w-full">
-                        <p className="text-md-b2 font-semibold text-md-heading">Network</p>
-                        <div className="flex items-center gap-md-1 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 overflow-hidden">
-                           <span className="text-md-b1 text-md-neutral-1200">{chain?.name || 'Base'}</span>
-                        </div>
-                     </div>
-                  ) : null}
-               </div>
-
-               {/* Notifications */}
-               <div className="flex flex-col gap-3">
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Notifications</h2>
-                  <p className="text-md-b2 font-medium text-md-neutral-700">
-                     {hasTelegramPlaceholderEmail
-                        ? 'Add a real email address before turning on email notifications.'
-                        : 'Choose where to receive alerts and which account activity to be notified about.'}
-                  </p>
-
-                  {/* Delivery channels */}
-                  <ReadOnlyField
-                     label="Telegram Alerts"
-                     value={telegramAlertsValue}
-                     actionLabel={user?.chatId ? undefined : 'Connect'}
-                     onAction={user?.chatId ? undefined : () => setShowTelegramAlertsModal(true)}
-                  />
-                  <ReadOnlyField label="WhatsApp" value="Coming soon" disabled />
-                  <ReadOnlyField label="LINE" value="Coming soon" disabled />
-
-                  <div className="flex flex-col gap-2">
-                     {/* Account Activity */}
-                     <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                           <p className="text-md-b2 font-semibold text-md-heading">Account Activity</p>
-                           <Toggle checked={notifPrefs.accountActivity} onChange={() => toggleNotif('accountActivity')} />
-                        </div>
-                        <p className="text-md-b3 font-medium text-md-neutral-1400">
-                           Get important notifications about you or activity you've missed
-                        </p>
-                     </div>
-
-                     {/* Transaction Activity */}
-                     <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                           <p className="text-md-b2 font-semibold text-md-heading">Transaction Activity</p>
-                           <Toggle checked={notifPrefs.transactionActivity} onChange={() => toggleNotif('transactionActivity')} />
-                        </div>
-                        <p className="text-md-b3 font-medium text-md-neutral-1400">Get important notifications about your transactions</p>
-                     </div>
-
-                     {/* Moodeng Blogs */}
-                     <div className="flex flex-col gap-2">
-                        <div className="flex items-center justify-between">
-                           <p className="text-md-b2 font-semibold text-md-heading">Moodeng Blogs</p>
-                           <Toggle checked={notifPrefs.moodengBlogs} onChange={() => toggleNotif('moodengBlogs')} />
-                        </div>
-                        <p className="text-md-b3 font-medium text-md-neutral-1400">Get updated with our latest news, updates and blogs</p>
-                     </div>
-                  </div>
-               </div>
-            </div>
+               </main>
+            )}
          </div>
 
          <AvatarUploadModal

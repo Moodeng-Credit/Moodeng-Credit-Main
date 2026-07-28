@@ -149,9 +149,14 @@ export default function App() {
       (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
+   const accountSettingsParams = new URLSearchParams(location.search);
+   const isAccountSettingsDetail =
+      location.pathname === '/account/settings' &&
+      (accountSettingsParams.has('section') || accountSettingsParams.has('edit'));
    const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
       Boolean(user?.id) &&
+      !isAccountSettingsDetail &&
       (!shouldShowAccountSupport || canRepayWhileDefaulted) &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
