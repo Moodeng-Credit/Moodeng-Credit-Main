@@ -49,6 +49,7 @@
       <!-- og:url is set per-route by <RouteSeo>; no homepage-locked value in the shell. -->
       <meta property="og:image" content="https://moodeng.app/brand/moodeng-logo.png" />
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@moodengcredit" />
       <meta name="twitter:title" content="Moodeng Credit — Build credit with small USDC loans" />
       <meta
          name="twitter:description"
@@ -59,11 +60,30 @@
       <script type="application/ld+json">
          {
             "@context": "https://schema.org",
-            "@type": "Organization",
+            "@type": ["Organization", "FinancialService"],
+            "@id": "https://moodeng.app/#organization",
             "name": "Moodeng Credit",
+            "alternateName": "Moodeng",
             "url": "https://moodeng.app/",
-            "logo": "https://moodeng.app/brand/moodeng-logo.png",
-            "description": "A community lending platform for small USDC loans with World ID verification and a portable Trust Score."
+            "logo": {
+               "@type": "ImageObject",
+               "url": "https://moodeng.app/brand/moodeng-logo.png"
+            },
+            "description": "Moodeng Credit is a community lending fintech for small person-to-person USDC loans, with World ID verification and a portable Trust Score. Not affiliated with the pygmy hippo of the same name.",
+            "slogan": "Small loans with clear terms.",
+            "areaServed": "PH",
+            "email": "support@moodengcredit.com",
+            "contactPoint": {
+               "@type": "ContactPoint",
+               "contactType": "customer support",
+               "email": "support@moodengcredit.com",
+               "url": "https://t.me/jimmymoodengcredit"
+            },
+            "sameAs": [
+               "https://x.com/moodengcredit",
+               "https://t.me/jimmymoodengcredit",
+               "https://www.facebook.com/profile.php?id=61589106561061"
+            ]
          }
       </script>
 
