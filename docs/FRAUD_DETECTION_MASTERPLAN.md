@@ -155,6 +155,12 @@ The phases in §4 fix these in that order. Do them **in order**, one phase per b
 - `supabase/functions/security-heartbeat/index.ts`: gathers facts, always sends one Telegram
   message, emails on failure/undeliverable, records its own ledger row.
 - Migration `20260722020000`: pg_cron `security-heartbeat-daily` at 09:00 UTC.
+- Migration `20260728010000`: pg_cron `risk-score-recompute-daily` at 01:15 UTC. Added
+  2026-07-28 after the first live heartbeat reported "Risk scoring down" — the CRS batch
+  the masterplan assumed (§1.2 "daily batch") had never actually been scheduled, so that
+  check would have failed every morning forever. Needs the `ADMIN_API_TOKEN` secret in
+  BOTH function secrets and vault (see the migration header); until then the cron only
+  logs 401s, because this function enforces its own `X-Admin-Token` check.
 - Tests: `src/test/securityHeartbeat.test.ts` (11 cases incl. the 11-day-outage scenario).
 - **config.toml finding:** `fraud-signal-scan` has NO `[functions.*]` entry, so it runs with the
   default `verify_jwt` and authenticates via the cron's service-role bearer token.
