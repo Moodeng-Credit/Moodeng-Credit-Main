@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { checkCronAuth } from '../_shared/cronAuth.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { callTelegramApi } from '../_shared/telegram.ts';
@@ -28,6 +29,11 @@ serve(async (req) => {
    if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
+
+   // Default verify_jwt accepts the public anon key; the shared cron secret is what stops
+   // anyone from firing heartbeat messages into the team group at will.
+   const auth = checkCronAuth(req, Deno.env.get('ADMIN_API_TOKEN'), corsHeaders);
+   if (!auth.ok) return auth.response;
 
    const startedAt = new Date().toISOString();
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
