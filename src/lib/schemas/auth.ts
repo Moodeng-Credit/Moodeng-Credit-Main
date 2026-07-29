@@ -64,7 +64,7 @@ export const updateUserSchema = z.object({
    walletChainId: z.number().int().positive().nullable().optional(),
    walletConnectorName: z.string().max(80).nullable().optional(),
    walletProvider: z
-      .enum(['argent', 'base_wallet', 'metamask', 'phantom', 'rainbow', 'trust', 'walletconnect', 'unknown'])
+      .enum(['argent', 'base_wallet', 'metamask', 'openfort', 'phantom', 'rainbow', 'trust', 'walletconnect', 'unknown'])
       .nullable()
       .optional(),
    telegramUsername: optionalTelegramUsername,

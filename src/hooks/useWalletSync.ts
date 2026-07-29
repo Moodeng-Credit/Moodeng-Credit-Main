@@ -14,6 +14,12 @@ import {
    getWalletProviderFromConnector,
    isBaseWalletProvider
 } from '@/lib/walletProvider';
+import {
+   completeWalletChangeIntent,
+   getWalletChangeDisposition,
+   getWalletChangeIntent,
+   reportWalletChangeFailure
+} from '@/lib/walletChangeIntent';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -76,6 +82,13 @@ export function useWalletSync() {
 
       if (account.address.toLowerCase() === storedWalletAddress.toLowerCase()) {
          showSuccessToast(account.address);
+         const walletChangeIntent = getWalletChangeIntent();
+         if (
+            walletChangeIntent?.status === 'active' &&
+            walletChangeIntent.previousAddress === storedWalletAddress.toLowerCase()
+         ) {
+            completeWalletChangeIntent(walletChangeIntent.id);
+         }
          isConnecting.current = false; // Reset intent so it doesn't fire again on re-renders
       }
    }, [account.address, storedWalletAddress, showSuccessToast]);
@@ -90,6 +103,13 @@ export function useWalletSync() {
          connectorId: account.connector?.id,
          connectorName: account.connector?.name
       });
+      const walletChangeIntent = getWalletChangeIntent();
+      const walletChangeDisposition = getWalletChangeDisposition({
+         intent: walletChangeIntent,
+         storedAddress: storedWalletAddress,
+         connectedAddress,
+         role: userRole
+      });
 
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          showToast(
@@ -99,6 +119,11 @@ export function useWalletSync() {
             undefined,
             undefined
          );
+         disconnect();
+         return;
+      }
+
+      if (walletChangeDisposition === 'cancelled-change') {
          disconnect();
          return;
       }
@@ -113,7 +138,7 @@ export function useWalletSync() {
       // below silently overwrote that saved wallet — a contradiction. For lenders we let
       // the saved value simply follow the connected wallet; fraud is handled out-of-band
       // (detection + review), not by gating the wallet UX here.
-      if (userRole === 'borrower' && storedWalletAddress) {
+      if (walletChangeDisposition === 'borrower-mismatch' && storedWalletAddress) {
          if (!areWalletAddressesEqual(connectedAddress, storedWalletAddress)) {
             // Wallet mismatch - account switch detected, disconnect it
             showToast(
@@ -163,6 +188,14 @@ export function useWalletSync() {
       });
       const walletConnectorName = account.connector?.name ?? null;
       const walletChainId = account.chainId ?? null;
+      const walletChangeIntent = getWalletChangeIntent();
+      const walletChangeDisposition = getWalletChangeDisposition({
+         intent: walletChangeIntent,
+         storedAddress,
+         connectedAddress,
+         role: userRole
+      });
+      const isExplicitWalletChange = walletChangeDisposition === 'explicit-change';
 
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          return;
@@ -175,6 +208,16 @@ export function useWalletSync() {
             storedWalletConnectorName !== walletConnectorName ||
             (walletChainId !== null && storedWalletChainId !== walletChainId));
 
+      if (shouldUpdateAddress && storedAddress && walletChangeDisposition === 'cancelled-change') {
+         completeWalletChangeIntent(walletChangeIntent.id);
+         disconnect();
+         return;
+      }
+
+      if (shouldUpdateAddress && storedAddress && walletChangeDisposition === 'borrower-mismatch') {
+         return;
+      }
+
       if (shouldUpdateAddress || shouldUpdateProvider) {
          dispatch(
             updateUser({
@@ -186,9 +229,17 @@ export function useWalletSync() {
          )
             .unwrap()
             .then(() => {
-               // wallet details saved successfully
+               if (shouldUpdateAddress && isExplicitWalletChange && walletChangeIntent) {
+                  completeWalletChangeIntent(walletChangeIntent.id);
+               }
             })
             .catch((error) => {
+               if (walletChangeIntent) {
+                  reportWalletChangeFailure(
+                     walletChangeIntent.id,
+                     'We could not save the new wallet. Your previous wallet is still saved. Please try again.'
+                  );
+               }
                console.error('Failed to save wallet address:', error);
 
                // Check if it's a duplicate wallet constraint error
