@@ -55,6 +55,11 @@ html,
 body {
    margin: 0px;
    height: 100%;
+   /* Kill the mobile tap-highlight box. Without this, tapping a bare button
+      (list rows, nav items, icon buttons with no bg utility) flashes a light
+      grey/white overlay in dark mode. Interactive elements have their own
+      active: feedback, so removing the UA highlight is pure polish. */
+   -webkit-tap-highlight-color: transparent;
    font-family:
       'SF Pro Display',
       -apple-system,
@@ -190,6 +195,50 @@ html.dark [class*='bg-[#eff6ff'],
 html.dark [class*='bg-[#dbeafe'],
 html.dark [class*='bg-[#e2f7f5'] {
    background-color: #102a3f;
+}
+
+/* ── Dark mode — interaction states (hover / active / focus) ──
+   The remap above only rewrites RESTING bg-* classes. Tailwind's
+   hover:/active:/focus: variants compile to their own class names
+   (e.g. `hover:bg-white`), which the resting selectors don't match —
+   so on tap/hover/focus the element used to repaint with the LIGHT
+   token value, a jarring near-white flash across the whole app.
+   Match on the literal variant class string so every element is
+   covered without per-component `dark:` edits. */
+html.dark [class*='hover:bg-white']:hover,
+html.dark [class*='hover:bg-md-neutral-50']:hover,
+html.dark [class*='hover:bg-md-neutral-100']:hover,
+html.dark [class*='hover:bg-md-neutral-200']:hover,
+html.dark [class*='hover:bg-md-neutral-300']:hover,
+html.dark [class*='hover:bg-md-neutral-400']:hover,
+html.dark [class*='hover:bg-md-neutral-500']:hover,
+html.dark [class*='active:bg-white']:active,
+html.dark [class*='active:bg-md-neutral-50']:active,
+html.dark [class*='active:bg-md-neutral-100']:active,
+html.dark [class*='active:bg-md-neutral-200']:active,
+html.dark [class*='active:bg-md-neutral-300']:active,
+html.dark [class*='active:bg-md-neutral-400']:active,
+html.dark [class*='active:bg-md-neutral-500']:active,
+html.dark [class*='focus:bg-white']:focus,
+html.dark [class*='focus:bg-md-neutral-100']:focus,
+html.dark [class*='focus-visible:bg-white']:focus-visible,
+html.dark [class*='focus-visible:bg-md-neutral-100']:focus-visible {
+   /* one step lighter than the base surface → reads as a press/hover */
+   background-color: #2a2235;
+}
+
+html.dark [class*='hover:bg-md-primary-100']:hover,
+html.dark [class*='active:bg-md-primary-100']:active,
+html.dark [class*='focus:bg-md-primary-100']:focus,
+html.dark [class*='focus-visible:bg-md-primary-100']:focus-visible {
+   background-color: #2a1740;
+}
+
+/* Text that darkens on hover in light mode would vanish on the dark
+   interaction surface — keep it light. */
+html.dark [class*='hover:text-md-heading']:hover,
+html.dark [class*='hover:text-black']:hover {
+   color: #f8f4ff;
 }
 
 html.dark .text-md-heading,
