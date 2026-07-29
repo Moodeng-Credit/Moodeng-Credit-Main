@@ -30,6 +30,12 @@ import { useLocalization } from '@/i18n';
 import { getVerificationUiState, VERIFICATION_STATE_LABEL, type VerificationUiState } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import {
+   beginWalletChangeIntent,
+   cancelWalletChangeIntent,
+   completeWalletChangeIntent,
+   WALLET_CHANGE_FAILED_EVENT
+} from '@/lib/walletChangeIntent';
 import { getBaseAccountConnector, getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
@@ -39,6 +45,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
+import WalletAccountInsights from '@/views/account/WalletAccountInsights';
 
 const ICON_MASK: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -965,9 +972,9 @@ function TelegramAlertsModal({
 // ─── Change Wallet Modal ───
 
 function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-   const dispatch = useDispatch<AppDispatch>();
    const { showToast } = useToast();
    const user = useSelector((state: RootState) => state.auth.user);
+   const { address: connectedAddress, isConnected } = useAccount();
    const { connect, connectors, status: connectStatus, reset: resetConnect } = useConnect();
    const { openConnectModal } = useConnectModal();
    const { disconnectAsync } = useDisconnect();
@@ -976,9 +983,11 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    const [step, setStep] = useState<'choose' | 'connecting'>('choose');
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
    const [isClearing, setIsClearing] = useState(false);
+   const [openOtherWalletsWhenReady, setOpenOtherWalletsWhenReady] = useState(false);
    const [error, setError] = useState('');
 
    const previousWalletRef = useRef<string | null | undefined>(undefined);
+   const walletChangeIntentRef = useRef<string | null>(null);
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
@@ -995,31 +1004,73 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       if (!isOpen) {
          setStep('choose');
          setSelectedKey(null);
+         setOpenOtherWalletsWhenReady(false);
          setError('');
          previousWalletRef.current = undefined;
+         walletChangeIntentRef.current = null;
          return;
       }
       previousWalletRef.current = user?.walletAddress ?? null;
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
 
+   useEffect(() => {
+      if (!isOpen || !openOtherWalletsWhenReady || !openConnectModal) return;
+      openConnectModal();
+      setOpenOtherWalletsWhenReady(false);
+   }, [isOpen, openConnectModal, openOtherWalletsWhenReady]);
+
+   useEffect(() => {
+      if (!isOpen) return;
+
+      const handleWalletChangeFailure = (event: Event) => {
+         const detail = (event as CustomEvent<{ intentId?: string; message?: string }>).detail;
+         if (!detail?.intentId || detail.intentId !== walletChangeIntentRef.current) return;
+
+         walletChangeIntentRef.current = null;
+         resetConnect();
+         setOpenOtherWalletsWhenReady(false);
+         setStep('choose');
+         setError(detail.message || 'We could not save the new wallet. Your previous wallet is still saved.');
+      };
+
+      window.addEventListener(WALLET_CHANGE_FAILED_EVENT, handleWalletChangeFailure);
+      return () => window.removeEventListener(WALLET_CHANGE_FAILED_EVENT, handleWalletChangeFailure);
+   }, [isOpen, resetConnect]);
+
    // Auto-close when useWalletSync saves the new wallet
    useEffect(() => {
       if (!isOpen || step !== 'connecting') return;
       if (previousWalletRef.current === undefined) return;
-      if (user?.walletAddress != null && user.walletAddress !== previousWalletRef.current) {
+      const previousAddress = previousWalletRef.current?.toLowerCase() ?? '';
+      const savedAddress = user?.walletAddress?.toLowerCase() ?? '';
+      const liveAddress = connectedAddress?.toLowerCase() ?? '';
+
+      if (savedAddress && savedAddress !== previousAddress) {
          showToast(TOAST_TYPES.SUCCESS, 'Wallet changed', 'Your new wallet has been connected.');
          onClose();
+         return;
       }
-   }, [isOpen, step, user?.walletAddress, onClose, showToast]);
+
+      if (connectStatus === 'success' && isConnected && liveAddress === previousAddress) {
+         if (walletChangeIntentRef.current) completeWalletChangeIntent(walletChangeIntentRef.current);
+         walletChangeIntentRef.current = null;
+         showToast(TOAST_TYPES.SUCCESS, 'Wallet unchanged', 'You reconnected the same wallet.');
+         onClose();
+      }
+   }, [connectedAddress, connectStatus, isConnected, isOpen, onClose, showToast, step, user?.walletAddress]);
 
    // Surface connection errors back to choose step
    useEffect(() => {
       if (step !== 'connecting' || connectStatus !== 'error') return;
       resetConnect();
       setStep('choose');
-      setError('Connection was cancelled or failed. Please try again.');
-   }, [connectStatus, step, resetConnect]);
+      const intentId = walletChangeIntentRef.current;
+      if (intentId) cancelWalletChangeIntent(intentId);
+      walletChangeIntentRef.current = null;
+      void disconnectAsync().catch(() => undefined);
+      setError('Connection was cancelled or failed. Your previous wallet is still saved.');
+   }, [connectStatus, disconnectAsync, step, resetConnect]);
 
    // Avoid getting stuck on "Connecting…" forever if the wallet app never responds
    useEffect(() => {
@@ -1027,59 +1078,72 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       const timeout = setTimeout(() => {
          resetConnect();
          setStep('choose');
-         setError('Connection is taking too long. Please try again.');
+         const intentId = walletChangeIntentRef.current;
+         if (intentId) cancelWalletChangeIntent(intentId);
+         walletChangeIntentRef.current = null;
+         void disconnectAsync().catch(() => undefined);
+         setError('Connection took too long. Your previous wallet is still saved.');
       }, 45000);
       return () => clearTimeout(timeout);
-   }, [step, resetConnect]);
+   }, [disconnectAsync, step, resetConnect]);
 
-   const clearWallet = async () => {
-      // Disconnect first so useWalletSync doesn't re-save the old wallet after we
-      // clear the stored address (same race as the Disconnect flow in settings).
-      await disconnectAsync().catch(() => undefined);
-      const result = await dispatch(
-         updateUser({
-            walletAddress: null,
-            walletChainId: null,
-            walletConnectorName: null,
-            walletProvider: null
-         })
-      );
-      if (!updateUser.fulfilled.match(result)) {
-         throw new Error(result.error?.message || 'Failed to clear wallet');
-      }
+   const startWalletChange = () => {
+      const intentId = beginWalletChangeIntent(previousWalletRef.current);
+      walletChangeIntentRef.current = intentId;
+      return intentId;
    };
 
    const handleConnectWithKey = async (key: WalletConnectorKey) => {
       setIsClearing(true);
       setError('');
       try {
-         await clearWallet();
          const connector = connectorsByName.get(WALLET_CONNECTOR_NAMES[key]);
          if (!connector) throw new Error(`${WALLET_CONNECTOR_NAMES[key]} is not available right now.`);
+         startWalletChange();
+         await disconnectAsync().catch(() => undefined);
          connect({ connector });
          setStep('connecting');
       } catch (err) {
+         const intentId = walletChangeIntentRef.current;
+         if (intentId) cancelWalletChangeIntent(intentId);
+         walletChangeIntentRef.current = null;
          setError(err instanceof Error ? err.message : 'Failed to change wallet');
       } finally {
          setIsClearing(false);
       }
    };
 
-   // For "Other Wallets" — open RainbowKit from the click context, clear async
+   // RainbowKit exposes its connect modal only after the current live wallet is
+   // disconnected. The saved address remains unchanged until a new one is confirmed.
    const handleConnectOther = () => {
-      openConnectModal?.();
+      const intentId = startWalletChange();
       setStep('connecting');
-      clearWallet().catch((err) => {
-         setStep('choose');
-         setError(err instanceof Error ? err.message : 'Failed to change wallet');
-      });
+      void disconnectAsync()
+         .then(() => {
+            if (walletChangeIntentRef.current === intentId) setOpenOtherWalletsWhenReady(true);
+         })
+         .catch((err) => {
+            setStep('choose');
+            if (walletChangeIntentRef.current === intentId) {
+               cancelWalletChangeIntent(intentId);
+               walletChangeIntentRef.current = null;
+            }
+            setError(err instanceof Error ? err.message : 'Failed to change wallet');
+         });
    };
 
    const handleClose = () => {
       resetConnect();
       setStep('choose');
       setSelectedKey(null);
+      setOpenOtherWalletsWhenReady(false);
       setError('');
+      const intentId = walletChangeIntentRef.current;
+      if (intentId) {
+         cancelWalletChangeIntent(intentId);
+         walletChangeIntentRef.current = null;
+         void disconnectAsync().catch(() => undefined);
+      }
       onClose();
    };
 
@@ -1102,8 +1166,8 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                      <h2 className="text-md-h4 font-semibold text-md-heading">Change Wallet</h2>
                      <p className="text-md-b1 text-md-neutral-1200">
                         {isBorrower
-                           ? 'Connect a new Base Account. Your current wallet will be unlinked.'
-                           : 'Connect a new wallet. Your current wallet will be unlinked.'}
+                           ? 'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.'
+                           : 'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.'}
                      </p>
                   </div>
 
@@ -1369,7 +1433,7 @@ export default function AccountSettings() {
             .select('lender_wallet')
             .eq('lender_user_id', user.id)
             .eq('loan_status', 'Lent')
-            .neq('repayment_status', 'Paid');
+            .or('repayment_status.is.null,repayment_status.neq.Paid');
          if (error || !data || data.length === 0) return { blocked: false };
 
          const wallets = [...new Set(data.map((row) => (row.lender_wallet ?? '').trim()).filter(Boolean))];
@@ -1881,6 +1945,15 @@ export default function AccountSettings() {
                               </div>
                            ) : null}
                         </SettingsGroup>
+
+                        {user.id !== '' ? (
+                           <WalletAccountInsights
+                              userId={user.id}
+                              address={user.walletAddress}
+                              role={isBorrower ? 'borrower' : 'lender'}
+                              preview={import.meta.env.DEV ? user.id === 'preview-borrower' : false}
+                           />
+                        ) : null}
 
                         {hasWallet && !isDisconnectWalletPending ? (
                            <button
