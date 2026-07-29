@@ -655,6 +655,50 @@ export type Database = {
           },
         ]
       }
+      wallet_connection_events: {
+        Row: {
+          event_type: string
+          id: string
+          occurred_at: string
+          previous_wallet_address: string | null
+          user_id: string
+          wallet_address: string
+          wallet_chain_id: number | null
+          wallet_connector_name: string | null
+          wallet_provider: string | null
+        }
+        Insert: {
+          event_type: string
+          id?: string
+          occurred_at?: string
+          previous_wallet_address?: string | null
+          user_id: string
+          wallet_address: string
+          wallet_chain_id?: number | null
+          wallet_connector_name?: string | null
+          wallet_provider?: string | null
+        }
+        Update: {
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          previous_wallet_address?: string | null
+          user_id?: string
+          wallet_address?: string
+          wallet_chain_id?: number | null
+          wallet_connector_name?: string | null
+          wallet_provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_connection_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           chat_id: number | null
@@ -771,6 +815,20 @@ export type Database = {
       get_user_id_by_username: {
         Args: { p_username: string }
         Returns: string
+      }
+      get_my_wallet_connection_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          event_type: string
+          id: string
+          occurred_at: string
+          previous_wallet_address: string | null
+          total_wallets: number
+          wallet_address: string
+          wallet_chain_id: number | null
+          wallet_connector_name: string | null
+          wallet_provider: string | null
+        }[]
       }
       award_points: {
         Args: {
