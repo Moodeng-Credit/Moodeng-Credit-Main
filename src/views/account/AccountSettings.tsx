@@ -260,18 +260,20 @@ function VerificationStateIcon({ state, className = 'size-4' }: { state: Verific
    return <AlertCircle className={`${className} text-md-red-500`} strokeWidth={2.2} aria-hidden="true" />;
 }
 
-function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
+export function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
    return (
       <section>
-         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-1000">{label}</h2>
-         <div className="divide-y divide-md-neutral-400 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100">
+         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">{label}</h2>
+         {/* Brand-tinted border + card shadow to match the platform's panel language
+             (Dashboard/RequestBoard/Repay), instead of the old flat grey list. */}
+         <div className="divide-y divide-md-primary-100 overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-neutral-100 shadow-md-card">
             {children}
          </div>
       </section>
    );
 }
 
-function SettingsRow({
+export function SettingsRow({
    title,
    summary,
    icon,
@@ -290,13 +292,13 @@ function SettingsRow({
       <button
          type="button"
          onClick={onClick}
-         className="group flex min-h-[72px] w-full items-center gap-md-2 px-md-3 py-md-2 text-left transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900 active:bg-md-neutral-300"
+         className="group flex min-h-[72px] w-full items-center gap-md-2 px-md-3 py-md-2 text-left transition-colors duration-150 hover:bg-md-primary-100/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900 active:bg-md-primary-100/70"
       >
          <span
             className={
                iconStyle === 'avatar'
                   ? 'flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full'
-                  : 'flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300 text-md-neutral-1200'
+                  : 'flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100 text-md-primary-1200'
             }
             aria-hidden="true"
          >
