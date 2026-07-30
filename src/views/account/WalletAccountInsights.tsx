@@ -236,8 +236,8 @@ async function fetchWalletAccountData(userId: string, role: WalletAccountRole) {
 function WalletSection({ label, children }: { label: string; children: React.ReactNode }) {
    return (
       <section>
-         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-1000">{label}</h2>
-         <div className="divide-y divide-md-neutral-400 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-md-neutral-100">
+         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">{label}</h2>
+         <div className="divide-y divide-md-primary-100 overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-neutral-100 shadow-md-card">
             {children}
          </div>
       </section>

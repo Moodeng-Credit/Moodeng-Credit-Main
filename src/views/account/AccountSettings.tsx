@@ -1752,7 +1752,7 @@ export default function AccountSettings() {
                   <div className="flex flex-col gap-3">
                      <div
                         id="avatar-section"
-                        className="mb-1 flex items-center gap-md-2 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3"
+                        className="mb-1 flex items-center gap-md-2 rounded-md-lg border border-md-primary-300 bg-md-neutral-100 p-md-3 shadow-md-card"
                      >
                         <EditableAvatar size={52} onClick={() => setShowAvatarModal(true)} />
                         <div className="min-w-0 flex-1">
@@ -1893,7 +1893,7 @@ export default function AccountSettings() {
                      <div className="flex flex-col gap-md-4">
                         <SettingsGroup label="Connected wallet">
                            <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
-                              <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100">
                                  {hasWallet && walletLabel === 'Base Account' ? (
                                     <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
                                  ) : (
@@ -2115,7 +2115,7 @@ export default function AccountSettings() {
 
                         <SettingsGroup label="Channels">
                            <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
-                              <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100">
                                  <span
                                     className="size-7 bg-[#229ED9]"
                                     style={{
