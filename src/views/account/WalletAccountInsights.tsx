@@ -539,27 +539,23 @@ export default function WalletAccountInsights({ userId, address, role, preview =
                         Try again
                      </button>
                   </div>
-               ) : activity.length === 0 && transferDataUnavailable ? (
+               ) : activity.length === 0 ? (
+                  // Empty wallet is the common, healthy case — lead with a calm "nothing yet"
+                  // message. A failed on-chain transfer fetch is demoted to a small secondary
+                  // note so a brand-new wallet never reads as if something is broken.
                   <div className="px-md-3 py-md-3">
-                     <p className="text-md-b1 font-semibold text-md-heading">On-chain activity unavailable</p>
-                     <p className="mt-1 text-md-b2 font-medium leading-5 text-md-neutral-1000">
-                        Confirmed Moodeng loan events will still appear here.
-                     </p>
-                     {ALCHEMY_ID ? (
+                     <p className="text-md-b1 font-semibold text-md-heading">No activity yet</p>
+                     <p className="mt-1 text-md-b2 font-medium text-md-neutral-1000">Loans and repayments will appear here.</p>
+                     {transferDataUnavailable && ALCHEMY_ID ? (
                         <button
                            type="button"
                            onClick={() => void transferQuery.refetch()}
-                           className="mt-md-2 inline-flex min-h-11 items-center gap-1.5 text-md-b2 font-semibold text-md-primary-900"
+                           className="mt-md-2 inline-flex min-h-11 items-center gap-1.5 text-md-b3 font-semibold text-md-neutral-1000"
                         >
                            <RefreshCw className="size-4" aria-hidden="true" />
-                           Try again
+                           Check for on-chain transfers
                         </button>
                      ) : null}
-                  </div>
-               ) : activity.length === 0 ? (
-                  <div className="px-md-3 py-md-3">
-                     <p className="text-md-b1 font-semibold text-md-heading">No Moodeng activity yet</p>
-                     <p className="mt-1 text-md-b2 font-medium text-md-neutral-1000">Loans and repayments will appear here.</p>
                   </div>
                ) : (
                   <>

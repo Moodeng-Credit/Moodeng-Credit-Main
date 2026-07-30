@@ -1862,7 +1862,7 @@ export default function AccountSettings() {
                         <SettingsGroup label="Connected wallet">
                            <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
                               <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-neutral-300">
-                                 {borrowerHasConfirmedBaseWallet && !baseWalletLock.isConfirmedOpenfort ? (
+                                 {hasWallet && walletLabel === 'Base Account' ? (
                                     <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
                                  ) : (
                                     <WalletCards className="size-5 text-md-neutral-1200" strokeWidth={1.8} aria-hidden="true" />
