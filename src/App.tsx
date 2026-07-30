@@ -90,6 +90,7 @@ import { type RootState } from '@/store/store';
 import Account from '@/views/account/Account';
 import AccountWalletPreview from '@/views/account/AccountWalletPreview';
 import SettingsStylePreview from '@/views/account/SettingsStylePreview';
+import FundWalletPreview from '@/views/fund/FundWalletPreview';
 import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AccountSettings from '@/views/account/AccountSettings';
@@ -268,6 +269,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-settings-preview" element={<SettingsStylePreview />} /> : null}
+            {import.meta.env.DEV ? <Route path="/fund-wallet-preview" element={<FundWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/admin/pricing-preview" element={<PricingHealthPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/history-preview" element={<TransactionDetail />} /> : null}

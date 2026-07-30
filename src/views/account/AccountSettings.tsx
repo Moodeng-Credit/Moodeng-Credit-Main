@@ -1950,7 +1950,10 @@ export default function AccountSettings() {
                            {hasWallet ? (
                               <div className="flex min-h-[52px] items-center justify-between gap-md-2 px-md-3 py-md-1">
                                  <span className="text-md-b2 font-medium text-md-neutral-1200">Network</span>
-                                 <span className="text-md-b2 font-semibold text-md-heading">{chain?.name || 'Base'}</span>
+                                 <span className="flex items-center gap-1.5 text-md-b2 font-semibold text-md-heading">
+                                    <img src="/icons/base-account.svg" alt="" className="size-4 rounded-[4px]" />
+                                    {chain?.name || 'Base'}
+                                 </span>
                               </div>
                            ) : null}
 

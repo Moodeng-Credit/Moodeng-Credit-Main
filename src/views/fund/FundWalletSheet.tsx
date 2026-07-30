@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { ChevronRight, ExternalLink, LoaderCircle, X } from 'lucide-react';
+import { Check, ChevronRight, Copy, ExternalLink, LoaderCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAccount } from 'wagmi';
+import { erc20Abi, formatUnits } from 'viem';
+import { useAccount, useReadContract } from 'wagmi';
 
+import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { FlagUS, FlagEU, FlagGB, FlagAU, FlagCA } from '@/components/verification/CountryFlags';
@@ -37,6 +39,8 @@ const SOLANA_LOGO = (
    <img src="/hippos/hippo-solana-bridge.png" alt="" className="h-12 w-12 object-contain" />
 );
 
+const DEPOSIT_LOGO = <img src="/icons/base-account.svg" alt="" className="h-12 w-12 rounded-[10px] object-contain" />;
+
 const CHAIN_CHIPS = [
    { name: 'Ethereum', color: '#627EEA' },
    { name: 'Arbitrum', color: '#12AAFF' },
@@ -57,6 +61,31 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
    // wallet" for someone who clearly has one connected.
    const { address: connectedAddress } = useAccount();
    const effectiveWalletAddress = walletAddress || connectedAddress;
+
+   const [showDeposit, setShowDeposit] = useState(false);
+   const [addressCopied, setAddressCopied] = useState(false);
+
+   // Current USDC-on-Base balance for the little "your balance" chip above the options, so the
+   // user can see what they already have before choosing how to add more.
+   const { data: rawUsdcBalance, isLoading: isBalanceLoading } = useReadContract({
+      abi: erc20Abi,
+      address: BASE_USDC_ADDRESS,
+      functionName: 'balanceOf',
+      args: effectiveWalletAddress ? [effectiveWalletAddress as `0x${string}`] : undefined,
+      chainId: ALLOWED_CHAIN_ID,
+      query: { enabled: Boolean(effectiveWalletAddress) }
+   });
+   const usdcBalanceDisplay =
+      rawUsdcBalance != null
+         ? Number(formatUnits(rawUsdcBalance, 6)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+         : null;
+
+   const handleCopyAddress = useCallback(() => {
+      if (!effectiveWalletAddress) return;
+      void navigator.clipboard?.writeText(effectiveWalletAddress);
+      setAddressCopied(true);
+      window.setTimeout(() => setAddressCopied(false), 1800);
+   }, [effectiveWalletAddress]);
 
    useEffect(() => {
       if (!isOpen) return;
@@ -204,6 +233,76 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
             </div>
 
             <div className="flex flex-col gap-2.5 px-4 pb-6 pt-1" style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+               {/* Current balance — what they already hold on Base, before adding more. */}
+               {effectiveWalletAddress ? (
+                  <div className="flex items-center justify-between rounded-xl bg-md-primary-100 px-3 py-2.5">
+                     <span className="text-[12px] font-medium text-md-primary-1200">Your USDC balance</span>
+                     {isBalanceLoading ? (
+                        <span className="h-4 w-16 animate-pulse rounded bg-md-primary-300/60" aria-label="Loading balance" />
+                     ) : (
+                        <span className="text-[15px] font-bold text-md-primary-1200">{usdcBalanceDisplay ?? '0.00'} USDC</span>
+                     )}
+                  </div>
+               ) : null}
+
+               {/* Deposit USDC — direct receive to the wallet on Base (for people who already
+                   hold USDC somewhere). First in the list per product ask. */}
+               <div className="flex flex-col">
+                  <button
+                     onClick={() => setShowDeposit((v) => !v)}
+                     disabled={!effectiveWalletAddress}
+                     aria-expanded={showDeposit}
+                     className="flex flex-col gap-2 rounded-xl border border-md-neutral-400 bg-white px-3 py-3 text-left transition-all hover:border-md-primary-400 hover:shadow-md-card active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+                  >
+                     <div className="flex w-full items-center gap-3">
+                        <div className="shrink-0">{DEPOSIT_LOGO}</div>
+                        <div className="flex-1 min-w-0">
+                           <p className="text-[14px] font-semibold text-md-heading leading-tight">Deposit USDC</p>
+                           <p className="text-[12px] font-normal text-md-neutral-800 leading-tight mt-0.5">
+                              Already have USDC? Send it to your wallet on Base
+                           </p>
+                        </div>
+                        <ChevronRight
+                           className={`h-5 w-5 shrink-0 text-md-neutral-800 transition-transform ${showDeposit ? 'rotate-90' : ''}`}
+                        />
+                     </div>
+                     <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">No fee</span>
+                        <span className="rounded-full bg-md-neutral-200 px-2 py-0.5 text-[10px] font-semibold text-md-neutral-1400">
+                           Base network only
+                        </span>
+                     </div>
+                  </button>
+                  {showDeposit && effectiveWalletAddress ? (
+                     <div className="mt-2 rounded-xl border border-md-primary-300 bg-md-primary-100/50 px-3 py-3">
+                        <p className="text-[12px] font-medium text-md-neutral-1200">
+                           Send USDC on the <span className="font-semibold text-md-heading">Base network</span> to this address:
+                        </p>
+                        <div className="mt-2 flex items-center gap-2 rounded-lg border border-md-primary-300 bg-white px-2.5 py-2">
+                           <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-md-heading">{effectiveWalletAddress}</span>
+                           <button
+                              type="button"
+                              onClick={handleCopyAddress}
+                              className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-md-primary-1200"
+                           >
+                              {addressCopied ? (
+                                 <>
+                                    <Check className="h-4 w-4" /> Copied
+                                 </>
+                              ) : (
+                                 <>
+                                    <Copy className="h-4 w-4" /> Copy
+                                 </>
+                              )}
+                           </button>
+                        </div>
+                        <p className="mt-2 text-[11px] leading-snug text-md-red-500">
+                           Only send USDC on Base. Other tokens or networks may be lost.
+                        </p>
+                     </div>
+                  ) : null}
+               </div>
+
                {/* Coinbase Onramp */}
                <button
                   onClick={handleCoinbase}
