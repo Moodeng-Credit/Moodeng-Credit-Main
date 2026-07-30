@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
 import { Check } from 'lucide-react';
@@ -405,6 +405,17 @@ function LenderConnectView({
    // wallets go through RainbowKit's WalletButton so the connect never dead-ends.
    const rainbowKitWalletId = !isPreview && selectedKey && selectedKey !== 'coinbase' ? RAINBOWKIT_WALLET_ID[selectedKey] : null;
 
+   const connectButtonRef = useRef<HTMLDivElement>(null);
+   // Picking a tile only highlights it — the real Connect button lives below the "Other Wallets"
+   // card and is easy to miss (it's what stranded a lender who tapped a tile and saw nothing
+   // happen). Scroll it into view the moment a tile is selected so the next tap is obvious.
+   const handleSelect = (key: WalletConnectorKey) => {
+      onSelect(key);
+      requestAnimationFrame(() => {
+         connectButtonRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+   };
+
    const renderConnectButton = (onClick: () => void, disabled: boolean) => (
       <button
          type="button"
@@ -450,7 +461,7 @@ function LenderConnectView({
                      <button
                         key={option.key}
                         type="button"
-                        onClick={() => onSelect(option.key)}
+                        onClick={() => handleSelect(option.key)}
                         className={[
                            'flex flex-col gap-md-3 items-start p-md-3 rounded-[12px] border text-left transition-colors',
                            isSelected ? 'bg-md-primary-900/10 border-md-primary-900' : 'bg-white border-md-neutral-600'
@@ -510,7 +521,7 @@ function LenderConnectView({
                </div>
             </button>
 
-            <div className="flex flex-col gap-md-1">
+            <div ref={connectButtonRef} className="flex flex-col gap-md-1 scroll-mt-md-4">
                {rainbowKitWalletId ? (
                   <WalletButton.Custom wallet={rainbowKitWalletId}>
                      {({ connect, ready }) =>
