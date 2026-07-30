@@ -314,13 +314,16 @@ export default function Account() {
                   >
                      <UserAvatar size={48} />
                   </button>
-                  <div className="flex min-w-0 flex-col gap-1">
-                     {/* Long auto-generated names (from emails) drop to a smaller size so they
-                         wrap cleanly instead of orphaning a character on line two. */}
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                     {/* Truncate on one line with an ellipsis. Long unspaced usernames (common
+                         for our borrowers) used to break one character per line and wreck the
+                         header when the row got crowded; a smaller size for long names still
+                         lets more of the name show before it ellipsizes. */}
                      <p
-                        className={`max-w-full break-words font-semibold leading-tight text-md-heading [overflow-wrap:anywhere] ${
+                        className={`min-w-0 max-w-full truncate font-semibold leading-tight text-md-heading ${
                            displayName.length > 18 ? 'text-md-b1' : 'text-md-h6'
                         }`}
+                        title={displayName}
                      >
                         {displayName}
                      </p>

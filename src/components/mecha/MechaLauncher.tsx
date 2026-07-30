@@ -32,6 +32,9 @@ const HIDE_ON_PREFIXES = ['/help', '/admin'];
 const ONBOARDING_BUBBLE_PREFIXES = ['/onboarding', '/verify', '/sign-up'];
 // Routes where the bottom nav is present — raise the bubble so it clears it.
 const OVER_NAV_PREFIXES = ['/request-board', '/repay', '/dashboard', '/lender/', '/history', '/account', '/support', '/user/'];
+// The wallet-connect picker has its own bottom-sticky "Connect Wallet" CTA — without this the
+// bubble sits on top of it, right where a lender needs to tap.
+const OVER_STICKY_CTA_PATHS = ['/onboarding/wallet', '/onboarding/wallet-preview'];
 // How long a user idles on a friction step before Mecha offers a nudge.
 const NUDGE_DELAY_MS = 22000;
 
@@ -137,7 +140,8 @@ export default function MechaLauncher(): JSX.Element | null {
    if (hidden) return null;
 
    const overNav = OVER_NAV_PREFIXES.some((p) => location.pathname.startsWith(p));
-   const bubbleBottom = { bottom: `calc(env(safe-area-inset-bottom, 0px) + ${overNav ? 92 : 20}px)` };
+   const overStickyCta = OVER_STICKY_CTA_PATHS.includes(location.pathname);
+   const bubbleBottom = { bottom: `calc(env(safe-area-inset-bottom, 0px) + ${overNav || overStickyCta ? 92 : 20}px)` };
    const quickReplies = pickList(step?.quickReplies ?? DEFAULT_QUICK_REPLIES, locale);
    // Onboarding-only: the proactive bubble appears only while the user is in the onboarding
    // funnel (wallet, verify, sign-up), and only when there's a reason to — a friction-step
