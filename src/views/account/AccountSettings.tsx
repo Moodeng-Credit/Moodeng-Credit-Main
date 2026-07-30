@@ -1602,6 +1602,10 @@ export default function AccountSettings() {
       assumeBaseAccount: isBorrower && hasWallet && !baseWalletLock.provider
    });
    const verificationState = getVerificationUiState(user);
+   // Lenders don't do identity verification, so the whole "verification" story is hidden for
+   // them — it only confused lenders who thought they had to verify before they could lend.
+   const showIdentityVerification = isBorrower;
+   const securitySectionTitle = showIdentityVerification ? 'Security & verification' : 'Security';
    const activeNotificationCount = Object.values(notifPrefs).filter(Boolean).length;
    const currentLanguage = locales.find((supportedLocale) => supportedLocale.code === locale)?.label ?? 'English';
    const sectionSummaries: Record<SettingsSectionKey, string> = {
@@ -1611,7 +1615,13 @@ export default function AccountSettings() {
            ? `${currentDisplayName} · ${emailFieldValue}`
            : emailFieldValue,
       preferences: `${currentLanguage} · ${isDarkMode ? 'Dark' : 'Light'} mode`,
-      security: verificationState === 'verified' ? 'Identity verified' : VERIFICATION_STATE_LABEL[verificationState],
+      security: showIdentityVerification
+         ? verificationState === 'verified'
+            ? 'Identity verified'
+            : VERIFICATION_STATE_LABEL[verificationState]
+         : isEmailPasswordUser
+           ? 'Password & sign-in'
+           : 'Sign-in',
       wallet: hasWallet ? `${walletLabel} · ${truncateAddress(user?.walletAddress || '')}` : 'No wallet connected',
       notifications: `${activeNotificationCount} of 3 preferences enabled`
    };
@@ -1667,7 +1677,11 @@ export default function AccountSettings() {
                   tabIndex={activeSection ? -1 : undefined}
                   className="truncate text-md-h6 font-semibold text-md-heading outline-none"
                >
-                  {activeSection ? SETTINGS_SECTION_TITLES[activeSection] : 'Account settings'}
+                  {activeSection
+                     ? activeSection === 'security'
+                        ? securitySectionTitle
+                        : SETTINGS_SECTION_TITLES[activeSection]
+                     : 'Account settings'}
                </h1>
             </header>
 
@@ -1682,10 +1696,10 @@ export default function AccountSettings() {
                         onClick={() => openSettingsSection('profile')}
                      />
                      <SettingsRow
-                        title="Security & verification"
+                        title={securitySectionTitle}
                         summary={sectionSummaries.security}
                         icon={<ShieldCheck size={19} strokeWidth={1.8} />}
-                        summaryIcon={<VerificationStateIcon state={verificationState} />}
+                        summaryIcon={showIdentityVerification ? <VerificationStateIcon state={verificationState} /> : undefined}
                         onClick={() => openSettingsSection('security')}
                      />
                   </SettingsGroup>
@@ -1727,7 +1741,9 @@ export default function AccountSettings() {
                         ? isBorrower
                            ? 'This wallet receives your loans and records your repayments.'
                            : 'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.'
-                        : SETTINGS_SECTION_DESCRIPTIONS[activeSection]}
+                        : activeSection === 'security' && !showIdentityVerification
+                          ? 'Manage how you sign in to Moodeng.'
+                          : SETTINGS_SECTION_DESCRIPTIONS[activeSection]}
                   </p>
 
                   {activeSection === 'profile' ? (
@@ -1822,38 +1838,52 @@ export default function AccountSettings() {
                            </SettingsGroup>
                         ) : null}
 
-                        <SettingsGroup label="Identity verification">
-                           <div className="flex min-h-[76px] items-center gap-md-2 px-md-3 py-md-2">
-                              <span
-                                 className={`flex size-10 shrink-0 items-center justify-center rounded-md-input ${
-                                    VERIFICATION_PRESENTATION[verificationState].tone === 'success'
-                                       ? 'bg-md-green-100'
-                                       : VERIFICATION_PRESENTATION[verificationState].tone === 'warning'
-                                         ? 'bg-md-yellow-100'
-                                         : 'bg-md-red-100'
-                                 }`}
-                              >
-                                 <VerificationStateIcon state={verificationState} className="size-5" />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                 <p className="text-md-b1 font-semibold text-md-heading">
-                                    {VERIFICATION_PRESENTATION[verificationState].title}
-                                 </p>
-                                 <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                    {VERIFICATION_PRESENTATION[verificationState].description}
+                        {showIdentityVerification ? (
+                           <SettingsGroup label="Identity verification">
+                              <div className="flex min-h-[76px] items-center gap-md-2 px-md-3 py-md-2">
+                                 <span
+                                    className={`flex size-10 shrink-0 items-center justify-center rounded-md-input ${
+                                       VERIFICATION_PRESENTATION[verificationState].tone === 'success'
+                                          ? 'bg-md-green-100'
+                                          : VERIFICATION_PRESENTATION[verificationState].tone === 'warning'
+                                            ? 'bg-md-yellow-100'
+                                            : 'bg-md-red-100'
+                                    }`}
+                                 >
+                                    <VerificationStateIcon state={verificationState} className="size-5" />
+                                 </span>
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-md-b1 font-semibold text-md-heading">
+                                       {VERIFICATION_PRESENTATION[verificationState].title}
+                                    </p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                       {VERIFICATION_PRESENTATION[verificationState].description}
+                                    </p>
+                                 </div>
+                                 {verificationState === 'verified' ? null : (
+                                    <button
+                                       type="button"
+                                       onClick={() => navigate('/verify')}
+                                       className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                    >
+                                       {verificationState === 'unverified' ? 'Verify' : 'View'}
+                                    </button>
+                                 )}
+                              </div>
+                           </SettingsGroup>
+                        ) : null}
+
+                        {/* A social-login lender has no password row and no verification — keep the
+                            section from rendering blank. */}
+                        {!showIdentityVerification && !isEmailPasswordUser ? (
+                           <SettingsGroup label="Sign-in">
+                              <div className="flex min-h-[68px] items-center px-md-3 py-md-2">
+                                 <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">
+                                    You sign in with your linked account. There’s nothing to manage here.
                                  </p>
                               </div>
-                              {verificationState === 'verified' ? null : (
-                                 <button
-                                    type="button"
-                                    onClick={() => navigate('/verify')}
-                                    className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
-                                 >
-                                    {verificationState === 'unverified' ? 'Verify' : 'View'}
-                                 </button>
-                              )}
-                           </div>
-                        </SettingsGroup>
+                           </SettingsGroup>
+                        ) : null}
                      </div>
                   ) : null}
 
