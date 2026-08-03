@@ -227,9 +227,9 @@ function BorrowerConnectView({
                    wallet, so the brand mascot (never the Base logo) makes clear it's a Moodeng
                    wallet you're creating, not an external one you're connecting. */}
                <img
-                  src="/hippos/hippo-debit-card.png"
+                  src="/hippos/hippo-wallet.png"
                   alt="Moodeng wallet"
-                  className="mb-md-3 h-24 w-24 object-contain drop-shadow-[0_18px_40px_rgba(96,16,210,0.22)]"
+                  className="mb-md-3 h-28 w-auto max-w-[200px] object-contain drop-shadow-[0_18px_40px_rgba(96,16,210,0.22)]"
                />
                <div className="mb-md-3 flex max-w-[360px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
