@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 interface UseTrustRewardOwnershipArgs {
@@ -34,7 +35,7 @@ export function useTrustRewardOwnership({ userId, fallbackRewardIds, enabled }: 
          if (!isActive) return;
 
          if (error) {
-            if (!isMissingRewardStorageFunction(error)) {
+            if (!isMissingRewardStorageFunction(error) && !isTransientNetworkError(error)) {
                console.error('Failed to sync Trust Point rewards:', error.message);
             }
             setUnlockedRewardIds(fallbackRewardIds);
