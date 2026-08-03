@@ -149,7 +149,11 @@ export default function MechaLauncher(): JSX.Element | null {
    // block the loan-request form or any other in-app task. Explicit "Ask Mecha" buttons and
    // the Help page open the panel directly and are unaffected by this gate.
    const onOnboarding = ONBOARDING_BUBBLE_PREFIXES.some((p) => location.pathname.startsWith(p));
-   const showBubble = onOnboarding && (problemSignaled || Boolean(step?.nudge));
+   // Mecha is turned off across the wallet-connect onboarding step. That's the exact screen
+   // where users are already wrestling with wallet setup, and the proactive bubble/nudge was
+   // adding noise rather than helping. The Help page and other entry points are unaffected.
+   const onWalletOnboarding = location.pathname.startsWith('/onboarding/wallet');
+   const showBubble = onOnboarding && !onWalletOnboarding && (problemSignaled || Boolean(step?.nudge));
 
    return (
       <>
