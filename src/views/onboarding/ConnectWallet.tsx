@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
-import { Check } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
@@ -231,19 +230,14 @@ function BorrowerConnectView({
                   alt="Moodeng wallet"
                   className="mb-md-3 h-28 w-auto max-w-[200px] object-contain drop-shadow-[0_18px_40px_rgba(96,16,210,0.22)]"
                />
-               <div className="mb-md-3 flex max-w-[360px] flex-col items-center gap-md-2">
+               <div className="mb-md-5 flex max-w-[320px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
                      Create your wallet
                   </h2>
-                  <p className="max-w-[320px] text-md-b1 font-medium leading-7 text-md-neutral-700">
-                     Your Moodeng wallet holds your USDC loans and builds your Trust Score. It's created
-                     instantly from your login — no app to download and no seed phrase to remember.
+                  <p className="max-w-[280px] text-md-b1 font-medium leading-7 text-md-neutral-700">
+                     Hold your loans and build your Trust Score.
                   </p>
                </div>
-               <span className="mb-md-3 inline-flex items-center gap-md-1 rounded-md-pill bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-semibold text-md-primary-1200 dark:bg-[#2a1740] dark:text-md-primary-400">
-                  <Check aria-hidden="true" className="size-4" strokeWidth={2.4} />
-                  Yours to keep · export anytime
-               </span>
                <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} />
                {isCreatingInstantWallet && !instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-neutral-700">
