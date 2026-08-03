@@ -6,7 +6,6 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
-import AskMechaButton from '@/components/mecha/AskMechaButton';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
@@ -46,14 +45,11 @@ export default function ConnectWallet() {
    const [pendingKey, setPendingKey] = useState<WalletConnectorKey | null>(null);
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
    const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
-   // The escape hatch is promoted when we detect the ISP block, or after any Base connect fails.
-   const [baseConnectFailed, setBaseConnectFailed] = useState(false);
+   // Borrowers lead with the instant wallet; we still probe the ISP block so we can hide the
+   // secondary "connect an existing Base wallet" link on networks where Base is known-dead.
    const [keysBlocked, setKeysBlocked] = useState(false);
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
-   // `?instant=1` jumps a borrower straight to the "Create my wallet" screen — a shortcut for
-   // testing and for support to hand blocked borrowers a direct link.
-   const forceInstant = new URLSearchParams(location.search).get('instant') === '1';
    const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
    const role = user?.userRole || (isPreview ? previewRole : undefined);
 
@@ -104,13 +100,12 @@ export default function ConnectWallet() {
          const code = (error as { code?: number | string }).code;
          const isUserRejection = code === 4001 || /reject/i.test(error.message);
          if (!isUserRejection) {
-            // A real (non-rejection) Base connect failure — surface the instant-wallet escape
-            // hatch for borrowers, since a blocked keys.coinbase.com fails exactly this way.
-            if (role === 'borrower') setBaseConnectFailed(true);
+            // A borrower who reaches a Base connect only via the secondary link already has the
+            // instant wallet as the primary path on this screen, so just surface the error.
             showToast(TOAST_TYPES.ERROR, 'Connection failed', error.message || 'Could not connect wallet. Please try again.');
          }
       }
-   }, [status, error, showToast, role]);
+   }, [status, error, showToast]);
 
    // Borrower-only: passively detect the PLDT/Smart block on keys.coinbase.com so we can lead with
    // the instant wallet instead of a Base Account popup that would dead-end. Cached per session.
@@ -158,7 +153,9 @@ export default function ConnectWallet() {
             isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
             instantWalletConfigured={openfort.isConfigured}
-            preferInstant={keysBlocked || baseConnectFailed || forceInstant}
+            // Base is known-dead on ISP-blocked networks (PLDT/Smart) — hide the secondary
+            // "connect existing wallet" link there so it can never dead-end.
+            allowBaseConnect={!keysBlocked}
             onCreateInstantWallet={handleCreateInstantWallet}
             isCreatingInstantWallet={openfort.isConnecting}
             instantWalletError={openfort.error}
@@ -192,7 +189,7 @@ function BorrowerConnectView({
    isPreview,
    isConnecting,
    instantWalletConfigured,
-   preferInstant,
+   allowBaseConnect,
    onCreateInstantWallet,
    isCreatingInstantWallet,
    instantWalletError
@@ -202,41 +199,45 @@ function BorrowerConnectView({
    isPreview: boolean;
    isConnecting: boolean;
    instantWalletConfigured: boolean;
-   preferInstant: boolean;
+   allowBaseConnect: boolean;
    onCreateInstantWallet: () => void;
    isCreatingInstantWallet: boolean;
    instantWalletError: string | null;
 }) {
    const connectBase = isPreview ? onPreviewConnect : onConnectBaseAccount;
-   // Lead with the instant wallet only when it's available AND we have a reason to (ISP block
-   // detected, or a Base connect already failed). Otherwise Base stays primary, exactly as before,
-   // with the instant wallet offered quietly as a fallback.
-   const leadWithInstant = instantWalletConfigured && preferInstant;
+   // Borrowers always start with the Moodeng instant wallet when it's available. It's the
+   // lowest-friction path — one tap, no app, no seed phrase — and, unlike Base Account, it
+   // can't be dead-ended by the PLDT/Smart ISP block that hijacks keys.coinbase.com in the
+   // Philippines (that block cost us signups). Base stays reachable as a quiet secondary for
+   // borrowers who already have a wallet, and only on networks where it isn't blocked. If the
+   // instant rail somehow isn't configured, we fall back to the Base-primary screen so there
+   // is always a way through.
+   const leadWithInstant = instantWalletConfigured;
 
    if (leadWithInstant) {
       return (
          <div className={CONNECT_WALLET_SCREEN_CLASS}>
             <OnboardingHeader
                title="Create Your Wallet"
-               tooltip="Your wallet builds your Trust Score and receives USDC loans. An instant wallet is created from your Moodeng login — you fully own it, and can export its key anytime. We never ask for your private keys or seed phrase."
+               tooltip="Your Moodeng wallet holds your USDC loans and builds your Trust Score. It's created instantly from your login — no app and no seed phrase — and it's fully yours: you can export its key anytime. We never ask for your private keys or seed phrase."
             />
 
             <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
-               {/* Neutral wallet glyph — deliberately NOT the Base logo. This screen creates an
-                   embedded wallet, so it must never imply "Base": the copy and icon say "create". */}
-               <div className="mb-md-3 flex size-16 items-center justify-center rounded-md-xl bg-md-primary-1200 shadow-[0_18px_56px_rgba(96,16,210,0.22)] dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]">
-                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                     <rect x="3" y="6" width="18" height="13" rx="3" stroke="#fff" strokeWidth="1.8" />
-                     <path d="M3 9h18" stroke="#fff" strokeWidth="1.8" />
-                     <circle cx="16.5" cy="13" r="1.4" fill="#fff" />
-                  </svg>
-               </div>
+               {/* Moodeng hippo holding a card — this screen creates the app's own embedded
+                   wallet, so the brand mascot (never the Base logo) makes clear it's a Moodeng
+                   wallet you're creating, not an external one you're connecting. */}
+               <img
+                  src="/hippos/hippo-debit-card.png"
+                  alt="Moodeng wallet"
+                  className="mb-md-3 h-24 w-24 object-contain drop-shadow-[0_18px_40px_rgba(96,16,210,0.22)]"
+               />
                <div className="mb-md-3 flex max-w-[360px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
                      Create your wallet
                   </h2>
-                  <p className="max-w-[300px] text-md-b1 font-medium leading-7 text-md-neutral-700">
-                     Hold USDC. Build your Trust Score.
+                  <p className="max-w-[320px] text-md-b1 font-medium leading-7 text-md-neutral-700">
+                     Your Moodeng wallet holds your USDC loans and builds your Trust Score. It's created
+                     instantly from your login — no app to download and no seed phrase to remember.
                   </p>
                </div>
                <span className="mb-md-3 inline-flex items-center gap-md-1 rounded-md-pill bg-md-primary-100 px-md-2 py-md-0 text-md-b3 font-semibold text-md-primary-1200 dark:bg-[#2a1740] dark:text-md-primary-400">
@@ -252,19 +253,18 @@ function BorrowerConnectView({
                {instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-red-500">{instantWalletError}</p>
                ) : null}
-               {/* No "connect existing wallet" here on purpose: this screen leads with the embedded
-                   wallet precisely because Base is unavailable (e.g. an ISP block), so offering a
-                   Base connect would dead-end the few who tap it. Anyone who truly has a wallet can
-                   use "Trouble connecting?" below. */}
-               <div className="mt-md-3">
-                  <AskMechaButton
-                     variant="chip"
-                     label="Not sure? Ask Mecha"
-                     context={{ page: 'Create your instant wallet', step: 'instant-wallet' }}
-                     greeting="Creating your wallet? It takes one tap — no app to install, no seed phrase. 🤖"
-                     seedUserMessage="I'm on the Create your wallet step. What is the instant wallet and is my money safe?"
-                  />
-               </div>
+               {/* Quiet secondary for the rare borrower who already has a Base wallet. Hidden when
+                   the network is blocking keys.coinbase.com, since a Base connect would dead-end. */}
+               {allowBaseConnect ? (
+                  <button
+                     type="button"
+                     onClick={connectBase}
+                     disabled={isConnecting || isCreatingInstantWallet}
+                     className="mt-md-4 text-md-b2 font-semibold text-md-primary-1200 underline underline-offset-4 disabled:opacity-60 dark:text-md-primary-500"
+                  >
+                     {isConnecting ? 'Connecting…' : 'Already have a wallet? Connect it'}
+                  </button>
+               ) : null}
                <WalletConnectHelp />
             </div>
          </div>
@@ -293,34 +293,6 @@ function BorrowerConnectView({
                </p>
             </div>
             <ConnectBaseAccountButton onClick={connectBase} isDisabled={isConnecting || isCreatingInstantWallet} />
-            {/* Step-aware co-pilot (Direction 02): pre-empts the #1 drop-off — new
-                users downloading the Coinbase app instead of creating a Base Account. */}
-            <div className="mt-md-3">
-               <AskMechaButton
-                  variant="chip"
-                  label="Not sure? Ask Mecha"
-                  context={{ page: 'Connect your Base Account', step: 'base-account' }}
-                  greeting="Setting up your wallet? I can help — the #1 mix-up is downloading the Coinbase app by mistake. 🤖"
-                  seedUserMessage="I'm on the Connect Base Account step. Do I need the Coinbase app, and how do I set this up?"
-               />
-            </div>
-            {/* Quiet fallback: if Base won't connect (e.g. an ISP that blocks it), a borrower can
-                still create an instant wallet with one tap. */}
-            {instantWalletConfigured ? (
-               <>
-                  <button
-                     type="button"
-                     onClick={onCreateInstantWallet}
-                     disabled={isConnecting || isCreatingInstantWallet}
-                     className="mt-md-4 text-md-b2 font-semibold text-md-primary-1200 underline underline-offset-4 disabled:opacity-60 dark:text-md-primary-500"
-                  >
-                     {isCreatingInstantWallet ? 'Creating your wallet…' : "Can't connect? Create an instant wallet"}
-                  </button>
-                  {instantWalletError ? (
-                     <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-red-500">{instantWalletError}</p>
-                  ) : null}
-               </>
-            ) : null}
             <WalletConnectHelp />
          </div>
       </div>
