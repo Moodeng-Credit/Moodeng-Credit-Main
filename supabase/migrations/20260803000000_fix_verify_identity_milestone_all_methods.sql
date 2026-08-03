@@ -1,17 +1,16 @@
--- Fix: verify-identity milestone was unreachable for Didit / World ID Passport users.
+-- Fix: verify-identity milestone was unreachable for Didit-verified borrowers.
 --
--- The app's canonical verification rule (src/lib/isUserVerified.ts) treats a user as
--- verified when ANY of World ID, World ID Passport, or Didit KYC is ACTIVE. The dashboard
--- uses that rule to mark the "verify-identity" milestone complete and then calls
--- record_milestone_completion. But private.is_trust_milestone_complete only checked
--- is_world_id = 'ACTIVE', so borrowers who verified via Didit (e.g. the combined flow) or
--- World ID Passport were rejected with "Milestone criteria not met" (errcode 23514) on
--- every dashboard load — the award never persisted, so it retried and errored indefinitely.
+-- The app marks the "verify-identity" milestone complete for any verified borrower and then
+-- calls record_milestone_completion, but private.is_trust_milestone_complete only checked
+-- is_world_id = 'ACTIVE'. Borrowers who verified via Didit KYC (e.g. the combined flow) were
+-- rejected with "Milestone criteria not met" (errcode 23514) on every dashboard load — the
+-- award never persisted, so it retried and errored indefinitely.
 --
--- This redefines the function with is_verified matching the canonical OR-of-three rule.
--- Only the is_verified computation changes; every other branch is byte-for-byte identical
--- to 20260521001000_separate_borrower_trust_points.sql. is_verified also gates
--- 'reach-level-three', which is corrected by the same change.
+-- This redefines is_verified as (is_world_id OR is_didit) = 'ACTIVE'. NOTE: the users table
+-- has is_world_id and is_didit but NOT is_world_id_passport on the deployed database, so we
+-- deliberately do not reference passport here (doing so throws at runtime). is_verified also
+-- gates 'reach-level-three', which is corrected by the same change. Every other branch is
+-- identical to 20260521001000_separate_borrower_trust_points.sql.
 
 create or replace function private.is_trust_milestone_complete(
   user_id_input uuid,
@@ -35,7 +34,6 @@ begin
     coalesce(u.cs, 0),
     coalesce(
       u.is_world_id::text = 'ACTIVE'
-      or u.is_world_id_passport::text = 'ACTIVE'
       or u.is_didit::text = 'ACTIVE',
       false
     )
