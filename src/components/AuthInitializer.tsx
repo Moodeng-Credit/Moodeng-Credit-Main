@@ -127,9 +127,21 @@ export function AuthInitializer() {
                }
             }
 
-            await dispatch(fetchUser()).unwrap();
+            // The Supabase session is valid at this point, so a failed profile fetch is
+            // almost always a transient network blip (the top offender in Error Tracking
+            // was "TypeError: Load failed"). Retry once before giving up so we don't leave
+            // an authenticated user with no profile loaded.
+            try {
+               await dispatch(fetchUser()).unwrap();
+            } catch {
+               await new Promise((resolve) => setTimeout(resolve, 750));
+               await dispatch(fetchUser()).unwrap();
+            }
          } catch (error) {
-            console.error('Failed to fetch user profile during auth initialization:', error);
+            // Serialize properly — logging the raw object rendered as "[object Object]" in
+            // Error Tracking, hiding the real cause for every user who hit this.
+            const message = error instanceof Error ? error.message : String(error);
+            console.error('Failed to fetch user profile during auth initialization:', message);
          } finally {
             dispatch(setAuthChecked());
          }

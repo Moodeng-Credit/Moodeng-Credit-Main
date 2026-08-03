@@ -84,10 +84,21 @@ const redactBody = (body: unknown, url: string): unknown => {
 // keys: isTrusted" — pure noise with no stack or type, and they drown out real errors in
 // Error Tracking. Drop synthetic non-Error exceptions here while letting genuine ones
 // through. See PostHog `before_send` docs.
+// Known-benign exceptions we drop regardless of stack/type: external browser-extension
+// injected-script rejections we can neither see nor fix, and Supabase's background
+// token-refresher throwing when a refresh token is expired/revoked — that's an expected
+// session-expiry state that AuthInitializer's SIGNED_OUT handler already cleans up
+// (clears auth + redirects), so it's not an actionable app error.
+const KNOWN_BENIGN_EXCEPTION_PATTERNS = [
+   /Object Not Found Matching Id/i, // browser-extension injected script
+   /Invalid Refresh Token: Refresh Token Not Found/i // Supabase background auto-refresh; handled via SIGNED_OUT
+];
+
 const isNonActionableException = (value?: string | null, type?: string | null, hasStack?: boolean) => {
+   const text = value ?? '';
+   if (KNOWN_BENIGN_EXCEPTION_PATTERNS.some((pattern) => pattern.test(text))) return true;
    if (hasStack) return false;
    if (type) return false;
-   const text = value ?? '';
    return /captured as exception with keys/i.test(text) || /^\s*\[?object \w+\]?\s*$/i.test(text);
 };
 
