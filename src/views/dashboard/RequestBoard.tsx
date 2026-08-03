@@ -48,6 +48,7 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import { checkLoanReason } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
@@ -1539,7 +1540,9 @@ function RequestBoard$() {
                await dispatch(fetchUserProfiles(borrowerUserIds)).unwrap();
             }
          } catch (error) {
-            console.error('Error fetching data:', (error as Error).message || error);
+            if (!isTransientNetworkError(error)) {
+               console.error('Error fetching data:', (error as Error).message || error);
+            }
          } finally {
             setHasLoadedRequestBoardLoans(true);
          }

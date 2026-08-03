@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { formatPointsMajor } from '@/shared/points';
 
@@ -76,7 +77,10 @@ export function useTrustPointTotal({ userId, fallbackPoints, enabled }: UseTrust
          if (!isActive) return;
 
          if (error) {
-            console.error('Failed to fetch Trust Points:', error.message);
+            // The cached value stays on screen; a dropped mobile fetch isn't worth an error.
+            if (!isTransientNetworkError(error)) {
+               console.error('Failed to fetch Trust Points:', error.message);
+            }
             setIsLoading(false);
             return;
          }
