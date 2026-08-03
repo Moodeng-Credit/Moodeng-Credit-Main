@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import '@rainbow-me/rainbowkit/styles.css';
-import type { CapturedNetworkRequest } from 'posthog-js';
+import type { CaptureResult as PostHogEvent, CapturedNetworkRequest } from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -78,8 +78,36 @@ const redactBody = (body: unknown, url: string): unknown => {
    }
 };
 
+// PostHog's exception autocapture wraps *anything* thrown or rejected, including bare
+// DOM `Event`s (wallet/websocket/resource-load error events) whose only own key is
+// `isTrusted`. Those surface as `$exception`s reading "Event captured as exception with
+// keys: isTrusted" — pure noise with no stack or type, and they drown out real errors in
+// Error Tracking. Drop synthetic non-Error exceptions here while letting genuine ones
+// through. See PostHog `before_send` docs.
+const isNonActionableException = (value?: string | null, type?: string | null, hasStack?: boolean) => {
+   if (hasStack) return false;
+   if (type) return false;
+   const text = value ?? '';
+   return /captured as exception with keys/i.test(text) || /^\s*\[?object \w+\]?\s*$/i.test(text);
+};
+
+const dropSyntheticExceptions = (event: PostHogEvent | null): PostHogEvent | null => {
+   if (!event || event.event !== '$exception') return event;
+   const list = (event.properties?.$exception_list ?? []) as Array<{
+      type?: string | null;
+      value?: string | null;
+      stacktrace?: { frames?: unknown[] } | null;
+   }>;
+   if (list.length === 0) return event;
+   const everyEntryNoise = list.every((entry) =>
+      isNonActionableException(entry.value, entry.type, Boolean(entry.stacktrace?.frames?.length))
+   );
+   return everyEntryNoise ? null : event;
+};
+
 const posthogOptions = {
    api_host: posthogHost,
+   before_send: dropSyntheticExceptions,
    capture_exceptions: {
       capture_unhandled_errors: true,
       capture_unhandled_rejections: true,

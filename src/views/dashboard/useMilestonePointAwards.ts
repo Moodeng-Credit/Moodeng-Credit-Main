@@ -6,6 +6,15 @@ import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 const isMissingMilestoneStorageFunction = (error: { code?: string; message?: string }) =>
    error.code === 'PGRST202' || error.message?.includes('record_milestone_completion');
 
+// The RPC re-validates each milestone's criteria server-side and rejects with
+// "Milestone criteria not met" when the persisted state doesn't yet satisfy the rule.
+// That's an expected server-authoritative outcome (e.g. verification approved on the
+// client but the borrower's verified flag not yet committed), not a client fault —
+// logging it via console.error turns it into a captured `$exception` and, because the
+// award never persists, it re-fires on every dashboard mount. Treat it as a no-op.
+const isCriteriaNotMet = (error: { message?: string }) =>
+   Boolean(error.message?.includes('Milestone criteria not met'));
+
 interface UseMilestonePointAwardsArgs {
    userId?: string | null;
    milestones: DashboardMilestone[];
@@ -54,7 +63,7 @@ export function useMilestonePointAwards({ userId, milestones, enabled }: UseMile
                   return;
                }
 
-               if (!isMissingMilestoneStorageFunction(error)) {
+               if (!isMissingMilestoneStorageFunction(error) && !isCriteriaNotMet(error)) {
                   console.error(`Failed to record milestone completion for ${milestone.id}:`, error.message);
                }
             })
