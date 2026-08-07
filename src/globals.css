@@ -170,6 +170,7 @@ html.dark [class*='bg-[#d6bcfa'] {
 html.dark .bg-md-green-100,
 html.dark [class*='bg-md-green-100\/'],
 html.dark [class*='bg-[#dcfce7'],
+html.dark [class*='bg-[#e6f9ef'],
 html.dark [class*='bg-[#f0fdf4'] {
    background-color: #113522;
 }
@@ -302,7 +303,8 @@ html.dark .text-md-green-700,
 html.dark .text-md-green-800,
 html.dark .text-md-green-900,
 html.dark [class*='text-md-green-900\/'],
-html.dark [class*='text-[#059669'] {
+html.dark [class*='text-[#059669'],
+html.dark [class*='text-[#1a8c4e'] {
    color: #70e4a6;
 }
 
@@ -350,6 +352,17 @@ html.dark .border-md-primary-100,
 html.dark .border-md-primary-900,
 html.dark .border-md-primary-1200 {
    border-color: #7c4ed8;
+}
+
+/* primary-300/400 are the *soft* accent hairlines (light lavender in light
+   mode), used for panel outlines rather than emphasis. Left unmapped they
+   painted #d6bcfa — a near-white line on the dark surface. The bright
+   #7c4ed8 above is too loud for a hairline, so give them a muted purple
+   that still reads as accented next to the neutral #40354f. */
+html.dark .border-md-primary-300,
+html.dark .border-md-primary-400,
+html.dark [class*='border-[#d6bcfa'] {
+   border-color: #4a2f70;
 }
 
 html.dark .border-md-red-100,
