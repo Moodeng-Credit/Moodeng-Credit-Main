@@ -238,7 +238,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                   <div className="flex items-center justify-between rounded-xl bg-md-primary-100 px-3 py-2.5">
                      <span className="text-[12px] font-medium text-md-primary-1200">Your USDC balance</span>
                      {isBalanceLoading ? (
-                        <span className="h-4 w-16 animate-pulse rounded bg-md-primary-300/60" aria-label="Loading balance" />
+                        <span className="h-4 w-16 animate-pulse rounded bg-md-primary-300/60 dark:bg-[#3d2a5c]" aria-label="Loading balance" />
                      ) : (
                         <span className="text-[15px] font-bold text-md-primary-1200">{usdcBalanceDisplay ?? '0.00'} USDC</span>
                      )}
@@ -273,8 +273,13 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                         </span>
                      </div>
                   </button>
+                  {/* The panel's `/50` tint is an opacity-modifier class, which the dark remap in
+                      globals.css (an exact `.bg-md-primary-100` selector) can't reach — so it
+                      painted the light lavender at 50% over the dark sheet, a washed grey box.
+                      Pin the dark surface explicitly: a subtle purple recess between the sheet
+                      (#1b1525) and the full primary tint (#2a1740). */}
                   {showDeposit && effectiveWalletAddress ? (
-                     <div className="mt-2 rounded-xl border border-md-primary-300 bg-md-primary-100/50 px-3 py-3">
+                     <div className="mt-2 rounded-xl border border-md-primary-300 bg-md-primary-100/50 px-3 py-3 dark:bg-[#231733]">
                         <p className="text-[12px] font-medium text-md-neutral-1200">
                            Send USDC on the <span className="font-semibold text-md-heading">Base network</span> to this address:
                         </p>
