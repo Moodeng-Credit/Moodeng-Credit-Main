@@ -5,6 +5,7 @@ import {
    getBorrowerTelegramNotificationsEnabled,
    sendBorrowerLoanNotification
 } from '../_shared/borrowerNotificationDelivery.ts';
+import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
 import {
    getLoanOutstandingAmount,
    getReminderWindows,
@@ -77,7 +78,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity, notif_push')
       .in('id', userIds);
 
    if (error || !data) {
@@ -281,10 +282,17 @@ const notifyBorrower = async (
          trust_points_reward_kind: 'potential'
       },
       aggregate,
-      { telegramEnabled, notifEnabled: (borrower as any).notif_transaction_activity !== false }
+      {
+         telegramEnabled,
+         notifEnabled: (borrower as any).notif_transaction_activity !== false,
+         push: { supabase, userId: borrower.id }
+      }
    );
 
-   if (!delivery.emailSent && !delivery.telegramSent) {
+   // A push that landed counts as delivered on its own — a borrower who has the
+   // app on their phone but no email on file still gets the reminder recorded,
+   // so the hourly cron doesn't re-send it every hour.
+   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent) {
       return false;
    }
 
@@ -338,6 +346,9 @@ serve(async (req) => {
    const borrowers = await loadBorrowers(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
    const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
+   // Borrowers reachable by push only — no email, no Telegram — still need to pass
+   // the reachability gate below.
+   const pushableBorrowerIds = new Set((await loadPushSubscriptions(supabase, borrowerIds)).keys());
 
    const { final, urgent } = getReminderWindows(
       referenceDate,
@@ -383,7 +394,7 @@ serve(async (req) => {
 
    for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
-      if (!borrower?.email && !borrower?.chat_id) {
+      if (!borrower?.email && !borrower?.chat_id && !pushableBorrowerIds.has(borrowerId)) {
          continue;
       }
 
