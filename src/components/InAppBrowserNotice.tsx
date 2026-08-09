@@ -1,6 +1,6 @@
 import { type JSX, useEffect, useState } from 'react';
 
-import AskMechaButton from '@/components/mecha/AskMechaButton';
+import AskSupportButton from '@/components/support/AskSupportButton';
 
 import { detectInAppBrowser, openInSystemBrowser, type InAppBrowserInfo } from '@/lib/inAppBrowser';
 
@@ -115,7 +115,7 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                   </button>
                </div>
                <div className="mt-2.5">
-                  <AskMechaButton
+                  <AskSupportButton
                      variant="link"
                      label="Why isn't this working?"
                      context={{ page: 'In-app browser notice', step: 'in-app-browser' }}

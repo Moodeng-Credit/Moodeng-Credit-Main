@@ -1,34 +1,16 @@
-// Event bus for opening Mecha from anywhere in the app — mirrors the
-// openSupportContacts() idiom in src/components/support/supportContacts.ts.
-// Any component (an error card, the in-app-browser notice, a verify step) can
-// fire openMecha() with context and a seeded question; the always-mounted
-// MechaLauncher host listens and opens the shared panel pre-loaded.
+// Event bus for opening the Mecha writing assistant from anywhere in the app —
+// mirrors the openSupportContacts() idiom in
+// src/components/support/supportContacts.ts. A component that wants an instant
+// AI answer (today: the loan-reason wording helpers) fires openMecha() with
+// context and a seeded question; the always-mounted MechaLauncher host listens
+// and opens the panel pre-loaded.
+//
+// Note this is *not* the support path any more. Anything shaped like "I have a
+// problem and I need a person" belongs in Crisp — see openSupportChat() in
+// src/lib/support/crisp.ts, and <AskSupportButton /> for the inline trigger.
 
 export const MECHA_OPEN_EVENT = 'moodeng:open-mecha';
 export const MECHA_CLOSE_EVENT = 'moodeng:close-mecha';
-export const MECHA_SIGNAL_EVENT = 'moodeng:mecha-problem';
-
-// The launcher bubble is problem-gated: it stays hidden until something goes wrong for the
-// user (an error toast, an explicit openMecha from an error card) or they're on a known
-// friction step. Once signaled, it stays available for the rest of the session.
-const PROBLEM_SIGNAL_KEY = 'mecha_problem_signaled';
-
-export function signalMechaProblem(): void {
-   try {
-      sessionStorage.setItem(PROBLEM_SIGNAL_KEY, '1');
-   } catch {
-      /* storage unavailable — the in-memory event still shows the bubble this page */
-   }
-   window.dispatchEvent(new CustomEvent(MECHA_SIGNAL_EVENT));
-}
-
-export function hasMechaProblemSignal(): boolean {
-   try {
-      return sessionStorage.getItem(PROBLEM_SIGNAL_KEY) === '1';
-   } catch {
-      return false;
-   }
-}
 
 export type MechaContext = {
    /** Human-readable screen name, e.g. "Repay" — sent to the model for grounding. */

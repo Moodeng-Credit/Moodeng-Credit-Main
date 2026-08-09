@@ -3,9 +3,10 @@
 import type { ReactNode } from 'react';
 import { createContext, useCallback, useMemo, useReducer } from 'react';
 
-import { signalMechaProblem } from '@/components/mecha/mechaBus';
 import { TOAST_SETTINGS } from '@/components/ToastSystem/config/toastConfig';
 import { TOAST_TYPES, type ToastPropsType } from '@/components/ToastSystem/types';
+
+import { signalSupportProblem } from '@/lib/support/crisp';
 
 interface ToastState {
    toasts: ToastPropsType[];
@@ -72,9 +73,10 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
    const [state, dispatch] = useReducer(toastReducer, initialState);
 
    const addToast = useCallback((toastData: Omit<ToastPropsType, 'id'>) => {
-      // An error toast = the user just hit a problem → surface the Mecha help bubble
-      // for the rest of the session (it stays hidden while everything works).
-      if (toastData.toastType === TOAST_TYPES.ERROR) signalMechaProblem();
+      // An error toast = the user just hit a problem → make sure the support chat
+      // is loaded and its launcher visible, so "message a human" is one tap away
+      // at the exact moment they need it rather than after the idle-load lands.
+      if (toastData.toastType === TOAST_TYPES.ERROR) signalSupportProblem();
       dispatch({ type: 'ADD_TOAST', payload: toastData });
    }, []);
 

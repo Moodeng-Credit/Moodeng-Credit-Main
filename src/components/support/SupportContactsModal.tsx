@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { X } from 'lucide-react';
+import { MessageCircle, X } from 'lucide-react';
+
+import { openSupportChat } from '@/lib/support/crisp';
 
 import {
    LOAN_REQUEST_EXPIRED_SUPPORT_URL,
@@ -81,6 +83,21 @@ function SupportContactsModal({ issue, onClose }: { issue: SupportContactIssue; 
 
                <div className="flex flex-col gap-md-1">
                   <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Contact us via</p>
+                  {/* Live chat leads: it is the one channel that reaches the team's inbox
+                      without the borrower leaving the app or already being in our Telegram
+                      or Facebook group. Telegram and Facebook stay for people who prefer
+                      them — this modal is deliberately "pick your channel", not a redirect. */}
+                  <button
+                     type="button"
+                     onClick={() => {
+                        openSupportChat();
+                        onClose();
+                     }}
+                     className="inline-flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
+                  >
+                     <MessageCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+                     Live chat
+                  </button>
                   <div className="grid w-full grid-cols-2 gap-md-2">
                      <button
                         type="button"

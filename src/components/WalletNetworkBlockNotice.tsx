@@ -2,7 +2,7 @@ import { type JSX, useCallback, useEffect, useState } from 'react';
 
 import { useLocation } from 'react-router-dom';
 
-import AskMechaButton from '@/components/mecha/AskMechaButton';
+import AskSupportButton from '@/components/support/AskSupportButton';
 
 import { checkCoinbaseKeysReachability, clearCoinbaseKeysReachabilityCache } from '@/lib/coinbaseReachability';
 import { detectInAppBrowser } from '@/lib/inAppBrowser';
@@ -153,9 +153,9 @@ export default function WalletNetworkBlockNotice(): JSX.Element | null {
                   </button>
                </div>
                <div className="mt-2.5">
-                  <AskMechaButton
+                  <AskSupportButton
                      variant="link"
-                     label="Still stuck? Ask Mecha"
+                     label="Still stuck? Message the team"
                      context={{ page: 'Wallet network block notice', step: 'network-block' }}
                      seedUserMessage="My wallet won't connect — the sign-in screen is blank or shows a security warning. What should I do?"
                   />
