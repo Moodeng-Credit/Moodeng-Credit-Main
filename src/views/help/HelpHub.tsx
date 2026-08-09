@@ -3,7 +3,6 @@ import { type JSX } from 'react';
 import { Facebook, Mail, MessageCircle, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { poseSrc } from '@/components/mecha/mechaAssets';
 import { type LocalizedText, pickText } from '@/components/mecha/stepContext';
 
 import { useLocalization } from '@/i18n';
@@ -106,8 +105,10 @@ export default function HelpHub(): JSX.Element {
          <div className="mx-auto w-full max-w-xl">
             {/* Header */}
             <div className="flex items-center gap-3">
+               {/* Moodeng, not Mecha. This page hands you to a person now, so the face
+                   on it is the brand's, not the retired AI assistant's. */}
                <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#f3effe] dark:bg-[#281b35]">
-                  <img src={poseSrc('wave')} alt="" className="h-11 w-11 object-contain" />
+                  <img src="/brand/moodeng-logo.png" alt="" className="h-11 w-11 object-contain" />
                </span>
                <div>
                   <h1 className="text-[22px] font-semibold leading-tight text-[#1b0a36] dark:text-[#F8F4FF]">{t('title')}</h1>
