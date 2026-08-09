@@ -1643,3 +1643,87 @@ export async function getUxMetrics(): Promise<UxMetrics> {
    if (result?.error) throw new Error(result.error);
    return result as UxMetrics;
 }
+
+// ---------------------------------------------------------------------------
+// Loan request removal — delete a pending request and tell the borrower why.
+// ---------------------------------------------------------------------------
+
+// Codes must match the REASONS map in supabase/functions/admin-loan-request-removed/index.ts.
+// The labels here are what the admin picks from; the borrower-facing copy lives in the function.
+export const LOAN_REMOVAL_REASONS = [
+   { code: 'speculative_investment', label: 'Speculative / investment use' },
+   { code: 'prohibited_use', label: 'Prohibited use (gambling, lending on, etc.)' },
+   { code: 'unclear_reason', label: 'Reason unclear or incomplete' },
+   { code: 'duplicate_request', label: 'Duplicate of an open request' },
+   { code: 'not_eligible_yet', label: 'Not eligible yet' },
+   { code: 'needs_verification', label: 'Needs verification before we can list it' },
+   { code: 'test_request', label: 'Test / non-genuine request' },
+   { code: 'other', label: 'Other (write your own message)' }
+] as const;
+
+export type LoanRemovalReasonCode = (typeof LOAN_REMOVAL_REASONS)[number]['code'];
+
+export const LOAN_REMOVAL_MESSAGE_LIMIT = 1000;
+
+export interface RemoveLoanRequestInput {
+   loanId: string;
+   borrowerUserId: string | null;
+   reasonCode: LoanRemovalReasonCode;
+   personalMessage?: string | null;
+   canReapply?: boolean;
+   channels?: { email?: boolean; telegram?: boolean };
+}
+
+export interface RemoveLoanRequestResult {
+   removed: boolean;
+   alreadyRemoved: boolean;
+   emailSent: boolean;
+   telegramSent: boolean;
+   subject: string;
+   errors: string[];
+}
+
+// The function returns its refusals (funded loan, missing borrower) as JSON on a non-2xx, which
+// supabase-js hides behind a generic message — dig the real one out so the admin sees it.
+async function readFunctionError(error: unknown): Promise<string | null> {
+   const context = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context;
+   if (!context?.json) return null;
+   const body = await context.json().catch(() => null);
+   return body?.error ?? null;
+}
+
+async function invokeLoanRequestRemoval(body: Record<string, unknown>) {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-loan-request-removed', { body });
+   if (error) {
+      throw new Error((await readFunctionError(error)) || error.message || 'Could not remove the request.');
+   }
+   const result = data as { error?: string } | null;
+   if (result?.error) throw new Error(result.error);
+   return result;
+}
+
+// Render the borrower-facing message without removing anything — the panel's preview step.
+export async function previewLoanRequestRemoval(input: RemoveLoanRequestInput): Promise<string> {
+   const result = (await invokeLoanRequestRemoval({
+      loanId: input.loanId,
+      borrowerUserId: input.borrowerUserId,
+      reasonCode: input.reasonCode,
+      personalMessage: input.personalMessage?.trim() || undefined,
+      canReapply: input.canReapply ?? true,
+      dryRun: true
+   })) as { preview?: { text?: string } } | null;
+   return result?.preview?.text ?? '';
+}
+
+// Remove the request and notify the borrower. The function refuses to touch a funded loan.
+export async function removeLoanRequest(input: RemoveLoanRequestInput): Promise<RemoveLoanRequestResult> {
+   const result = (await invokeLoanRequestRemoval({
+      loanId: input.loanId,
+      borrowerUserId: input.borrowerUserId,
+      reasonCode: input.reasonCode,
+      personalMessage: input.personalMessage?.trim() || undefined,
+      canReapply: input.canReapply ?? true,
+      channels: input.channels ?? { email: true, telegram: true }
+   })) as RemoveLoanRequestResult;
+   return result;
+}

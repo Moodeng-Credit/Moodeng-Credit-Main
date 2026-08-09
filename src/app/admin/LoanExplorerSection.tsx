@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { type AdminLoanRecord, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
+import RemoveLoanRequestDialog from './RemoveLoanRequestDialog';
 
 const FILTERS: Array<{ id: LoanExplorerStatus; label: string }> = [
    { id: 'all', label: 'All' },
@@ -50,6 +51,7 @@ export default function LoanExplorerSection() {
    const [search, setSearch] = useState('');
    const [hideTest, setHideTest] = useState(true);
    const [busy, setBusy] = useState<string | null>(null);
+   const [removing, setRemoving] = useState<AdminLoanRecord | null>(null);
 
    const load = useCallback(async (status: LoanExplorerStatus, includeTest: boolean) => {
       setLoading(true);
@@ -156,6 +158,7 @@ export default function LoanExplorerSection() {
                         <th className="px-4 py-3">Due</th>
                         <th className="px-4 py-3">Requested</th>
                         <th className="px-4 py-3 text-right">Data</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
                      </tr>
                   </thead>
                   <tbody>
@@ -188,6 +191,20 @@ export default function LoanExplorerSection() {
                                     {l.is_test ? 'Test' : 'Real'}
                                  </button>
                               </td>
+                              <td className="px-4 py-3 text-right">
+                                 {status === 'Requested' ? (
+                                    <button
+                                       type="button"
+                                       onClick={() => setRemoving(l)}
+                                       title="Remove this request and tell the borrower why"
+                                       className="rounded-full bg-red-900/50 px-3 py-1 text-xs font-black uppercase text-red-300"
+                                    >
+                                       Remove
+                                    </button>
+                                 ) : (
+                                    <span className="text-xs font-bold text-[#6f6385]">—</span>
+                                 )}
+                              </td>
                            </tr>
                         );
                      })}
@@ -199,6 +216,14 @@ export default function LoanExplorerSection() {
                {loading ? 'Loading loans…' : 'No loans match.'}
             </div>
          )}
+
+         {removing ? (
+            <RemoveLoanRequestDialog
+               loan={removing}
+               onClose={() => setRemoving(null)}
+               onRemoved={() => setLoans((prev) => prev.filter((row) => row.id !== removing.id))}
+            />
+         ) : null}
       </div>
    );
 }
