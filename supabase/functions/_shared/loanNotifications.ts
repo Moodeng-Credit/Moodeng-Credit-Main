@@ -31,6 +31,8 @@ export type LoanNotificationRecipient = {
    telegram_username?: string | null;
    email?: string | null;
    chat_id?: number | string | null;
+   /** Push channel opt-out. Undefined is treated as opted in, matching the column default. */
+   notif_push?: boolean | null;
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';

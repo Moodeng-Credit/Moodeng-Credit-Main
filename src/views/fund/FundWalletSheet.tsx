@@ -7,9 +7,11 @@ import { useAccount, useReadContract } from 'wagmi';
 
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { STRIPE_REGION_FOOTNOTE, STRIPE_SUPPORTED_REGION_CODES } from '@/config/stripeOnrampConfig';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { FlagUS, FlagEU, FlagGB, FlagAU, FlagCA } from '@/components/verification/CountryFlags';
 import FundBridge from '@/views/fund/FundBridge';
+import StripeOnrampModal from '@/views/fund/StripeOnrampModal';
 
 const COINBASE_SUPPORTED_REGIONS = [
    { Flag: FlagUS, label: 'US' },
@@ -18,6 +20,15 @@ const COINBASE_SUPPORTED_REGIONS = [
    { Flag: FlagCA, label: 'CA' },
    { Flag: FlagAU, label: 'AU' },
 ];
+
+// Derived from the config so advertised coverage can't drift from what the onramp actually
+// accepts. Stripe covers fewer countries than Coinbase (no UK/CA/AU); the trade-off is that
+// it needs no exchange account and checks out inside the app instead of popping out.
+const FLAG_BY_REGION_CODE = { US: FlagUS, EU: FlagEU } as const;
+const STRIPE_SUPPORTED_REGIONS = STRIPE_SUPPORTED_REGION_CODES.map((code) => ({
+   Flag: FLAG_BY_REGION_CODE[code],
+   label: code
+}));
 
 interface FundWalletSheetProps {
    isOpen: boolean;
@@ -29,6 +40,10 @@ const COINBASE_PAY_URL = 'https://pay.coinbase.com/buy/select-asset';
 
 const COINBASE_LOGO = (
    <img src="/hippos/hippo-debit-card.png" alt="" className="h-12 w-12 object-contain" />
+);
+
+const STRIPE_LOGO = (
+   <img src="/hippos/hippo-friendly-lock.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const BRIDGE_LOGO = (
@@ -52,6 +67,7 @@ const CHAIN_CHIPS = [
 export default function FundWalletSheet({ isOpen, onClose, walletAddress }: FundWalletSheetProps) {
    const navigate = useNavigate();
    const [showBridge, setShowBridge] = useState(false);
+   const [showStripe, setShowStripe] = useState(false);
    const [coinbaseLoading, setCoinbaseLoading] = useState(false);
    const [coinbaseError, setCoinbaseError] = useState<string | null>(null);
 
@@ -308,6 +324,47 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
                   ) : null}
                </div>
 
+               {/* Stripe Onramp — listed above Coinbase because it checks out inside the app
+                   (no exchange account, no popup). Narrower country coverage, so Coinbase
+                   stays directly beneath it as the fallback for UK/CA/AU. */}
+               <button
+                  onClick={() => setShowStripe(true)}
+                  disabled={!effectiveWalletAddress}
+                  className="flex flex-col gap-2 rounded-xl border border-md-primary-400 bg-white px-3 py-3 text-left transition-all hover:border-md-primary-600 hover:shadow-md-card active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+               >
+                  <div className="flex w-full items-center gap-3">
+                     <div className="shrink-0">{STRIPE_LOGO}</div>
+                     <div className="flex-1 min-w-0">
+                        <p className="text-[14px] font-semibold text-md-heading leading-tight">Buy USDC with card</p>
+                        <p className="text-[12px] font-normal text-md-neutral-800 leading-tight mt-0.5">
+                           Visa / Mastercard &middot; Apple Pay &middot; no account needed
+                        </p>
+                     </div>
+                     <ChevronRight className="h-5 w-5 shrink-0 text-md-neutral-800" />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                     <span className="rounded-full bg-md-primary-100 px-2 py-0.5 text-[10px] font-semibold text-md-primary-1200">
+                        Powered by Stripe
+                     </span>
+                     <span className="rounded-full bg-[#e6f9ef] px-2 py-0.5 text-[10px] font-semibold text-[#1a8c4e]">
+                        Stays in the app
+                     </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                     <span className="text-[11px] text-md-neutral-800 leading-tight">Supported in</span>
+                     {STRIPE_SUPPORTED_REGIONS.map(({ Flag, label }) => (
+                        <span key={label} className="inline-flex items-center gap-1">
+                           <Flag className="h-[10px] w-[15px] rounded-[1px]" />
+                           <span className="text-[11px] text-md-neutral-800">{label}</span>
+                        </span>
+                     ))}
+                     <span className="text-[11px] text-md-neutral-800 leading-tight">only</span>
+                  </div>
+                  <div className="rounded-lg bg-md-neutral-100 px-2.5 py-2 text-[11px] font-normal leading-snug text-md-neutral-800">
+                     {STRIPE_REGION_FOOTNOTE}. Stripe handles ID checks and payment — USDC lands on Base.
+                  </div>
+               </button>
+
                {/* Coinbase Onramp */}
                <button
                   onClick={handleCoinbase}
@@ -443,6 +500,9 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
          `}</style>
       </div>
       {showBridge && <FundBridge onClose={() => setShowBridge(false)} />}
+      {showStripe && (
+         <StripeOnrampModal onClose={() => setShowStripe(false)} walletAddress={effectiveWalletAddress} />
+      )}
       </>
    );
 }
