@@ -46,18 +46,28 @@ declare global {
    }
 }
 
-const propertyId = import.meta.env.VITE_TAWK_PROPERTY_ID as string | undefined;
-const widgetId = import.meta.env.VITE_TAWK_WIDGET_ID as string | undefined;
+// The tawk.to property and widget ids are public by design — the embed script
+// ships them to every visitor's browser on every page load — so hard-coding the
+// defaults keeps the widget working without adding a secret to the dotenvx
+// bundle. The env vars stay supported so a staging workspace can point at a
+// separate property and avoid polluting the live support inbox with test chats.
+const DEFAULT_PROPERTY_ID = '6a78cc4ed436a81d47b3b0f0';
+const DEFAULT_WIDGET_ID = '1jvjts5rt';
+
+const envPropertyId = import.meta.env.VITE_TAWK_PROPERTY_ID as string | undefined;
+const envWidgetId = import.meta.env.VITE_TAWK_WIDGET_ID as string | undefined;
 
 // Guard against the raw dotenvx `encrypted:…` ciphertext leaking through as a
-// truthy-but-invalid id (the same failure mode clarity.ts guards against), and
-// against the placeholder values in env.example. A tawk.to property id is a
-// 24-character hex string; the widget id is a short alphanumeric slug that is
-// literally "default" on a brand-new property.
-const isUsableId = (value: string | undefined, pattern: RegExp): boolean =>
-   Boolean(value) && !value!.startsWith('encrypted:') && pattern.test(value!.trim());
+// truthy-but-invalid id (the same failure mode clarity.ts guards against). A
+// tawk.to property id is a 24-character hex string; the widget id is a short
+// alphanumeric slug.
+const resolveId = (value: string | undefined, fallback: string): string =>
+   value && !value.startsWith('encrypted:') ? value.trim() : fallback;
 
-const hasValidIds = isUsableId(propertyId, /^[0-9a-f]{20,32}$/i) && isUsableId(widgetId, /^[0-9a-z]{1,20}$/i);
+const propertyId = resolveId(envPropertyId, DEFAULT_PROPERTY_ID);
+const widgetId = resolveId(envWidgetId, DEFAULT_WIDGET_ID);
+
+const hasValidIds = /^[0-9a-f]{20,32}$/i.test(propertyId) && /^[0-9a-z]{1,20}$/i.test(widgetId);
 
 /**
  * Whether live chat is configured. Every entry point checks this and falls back
@@ -68,18 +78,51 @@ const hasValidIds = isUsableId(propertyId, /^[0-9a-f]{20,32}$/i) && isUsableId(w
 export const isSupportChatEnabled = hasValidIds;
 
 let injected = false;
-let loaded = false;
-/** Handlers registered before the script finished loading, replayed on load. */
-const pendingOnLoad: Array<() => void> = [];
+/** Actions registered before the API was ready, replayed once it is. */
+const pending: Array<() => void> = [];
+let pollTimer: number | undefined;
 
-function whenLoaded(action: () => void): void {
+// Readiness is decided by the API surface actually existing, not by the
+// Tawk_API.onLoad callback. onLoad is a single assignable property — anything
+// else on the page can clobber it, and in practice it did not fire for us at
+// all, which silently swallowed every queued open/identify call. Checking for a
+// real method is true whenever the API is genuinely usable.
+const isApiReady = (): boolean => typeof window !== 'undefined' && typeof window.Tawk_API?.maximize === 'function';
+
+// Give up after ~20s. A widget that has not booted by then is blocked (ad
+// blocker, offline, corporate proxy) and will not boot later; dropping the queue
+// keeps a stuck poll from running for the life of the session.
+const POLL_INTERVAL_MS = 200;
+const POLL_TIMEOUT_MS = 20000;
+
+function drainPending(): void {
+   while (pending.length > 0) pending.shift()!();
+}
+
+function whenReady(action: () => void): void {
    if (!isSupportChatEnabled) return;
-   if (loaded) {
+   if (isApiReady()) {
       action();
       return;
    }
-   pendingOnLoad.push(action);
+
+   pending.push(action);
    loadSupportChat();
+
+   if (pollTimer !== undefined) return;
+   const startedAt = Date.now();
+   pollTimer = window.setInterval(() => {
+      if (isApiReady()) {
+         window.clearInterval(pollTimer);
+         pollTimer = undefined;
+         drainPending();
+      } else if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+         window.clearInterval(pollTimer);
+         pollTimer = undefined;
+         pending.length = 0;
+         console.warn('[support] live chat did not load; falling back to Telegram/Facebook/email');
+      }
+   }, POLL_INTERVAL_MS);
 }
 
 /**
@@ -94,16 +137,12 @@ export function loadSupportChat(): void {
    window.Tawk_API = api;
    window.Tawk_LoadStart = new Date();
 
-   // tawk.to reads Tawk_API.visitor at load time only, so anything identifySupport()
-   // recorded before the script landed is applied here; later updates go through
-   // setAttributes instead.
-   api.onLoad = () => {
-      loaded = true;
-      while (pendingOnLoad.length > 0) pendingOnLoad.shift()!();
-   };
+   // Fast path only. When tawk.to does fire onLoad we drain the queue on the spot
+   // instead of waiting up to one poll interval; whenReady() does not rely on it.
+   api.onLoad = () => drainPending();
 
    const script = document.createElement('script');
-   script.src = `https://embed.tawk.to/${propertyId!.trim()}/${widgetId!.trim()}`;
+   script.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
    script.async = true;
    script.charset = 'UTF-8';
    script.setAttribute('crossorigin', '*');
@@ -139,7 +178,7 @@ export function identifySupport({ email, nickname, data, segments }: SupportIden
       api.visitor = { ...api.visitor, ...(nickname ? { name: nickname } : {}), ...(email ? { email } : {}) };
    }
 
-   whenLoaded(() => {
+   whenReady(() => {
       const attributes: Record<string, string> = {};
       if (nickname) attributes.name = nickname;
       if (email) attributes.email = email;
@@ -160,7 +199,7 @@ export function identifySupport({ email, nickname, data, segments }: SupportIden
  */
 export function resetSupportSession(): void {
    if (!isSupportChatEnabled || typeof window === 'undefined') return;
-   whenLoaded(() => window.Tawk_API?.endChat?.());
+   whenReady(() => window.Tawk_API?.endChat?.());
 }
 
 /**
@@ -176,7 +215,7 @@ export function resetSupportSession(): void {
 export function openSupportChat(topic?: string): void {
    if (!isSupportChatEnabled) return;
    loadSupportChat();
-   whenLoaded(() => {
+   whenReady(() => {
       const trimmed = topic?.trim();
       if (trimmed) {
          window.Tawk_API?.addEvent?.('help-topic', { topic: trimmed }, () => undefined);
@@ -197,17 +236,17 @@ function topicTag(topic: string): string {
 }
 
 export function closeSupportChat(): void {
-   whenLoaded(() => window.Tawk_API?.minimize?.());
+   whenReady(() => window.Tawk_API?.minimize?.());
 }
 
 /** Show the floating launcher bubble. */
 export function showSupportLauncher(): void {
-   whenLoaded(() => window.Tawk_API?.showWidget?.());
+   whenReady(() => window.Tawk_API?.showWidget?.());
 }
 
 /** Hide the floating launcher without ending the conversation. */
 export function hideSupportLauncher(): void {
-   whenLoaded(() => window.Tawk_API?.hideWidget?.());
+   whenReady(() => window.Tawk_API?.hideWidget?.());
 }
 
 /**
@@ -220,7 +259,7 @@ export function hideSupportLauncher(): void {
 export function signalSupportProblem(): void {
    if (!isSupportChatEnabled) return;
    loadSupportChat();
-   whenLoaded(() => window.Tawk_API?.showWidget?.());
+   whenReady(() => window.Tawk_API?.showWidget?.());
 }
 
 /**
@@ -229,7 +268,7 @@ export function signalSupportProblem(): void {
  * borrower has to notice on their own.
  */
 export function onSupportMessageReceived(handler: () => void): void {
-   whenLoaded(() => {
+   whenReady(() => {
       const api = window.Tawk_API;
       if (api) api.onChatMessageAgent = () => handler();
    });
