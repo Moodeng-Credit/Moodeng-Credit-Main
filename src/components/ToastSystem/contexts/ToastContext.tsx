@@ -6,7 +6,7 @@ import { createContext, useCallback, useMemo, useReducer } from 'react';
 import { TOAST_SETTINGS } from '@/components/ToastSystem/config/toastConfig';
 import { TOAST_TYPES, type ToastPropsType } from '@/components/ToastSystem/types';
 
-import { signalSupportProblem } from '@/lib/support/crisp';
+import { signalSupportProblem } from '@/lib/support/liveChat';
 
 interface ToastState {
    toasts: ToastPropsType[];

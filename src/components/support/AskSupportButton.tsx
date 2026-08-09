@@ -2,13 +2,18 @@ import { type JSX } from 'react';
 
 import { MessageCircle } from 'lucide-react';
 
-import { identifyCrisp, openSupportChat } from '@/lib/support/crisp';
+import { identifySupport, isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 
-// Inline "message the team" trigger — the Crisp-backed replacement for
+// Inline "message the team" trigger — the live-chat replacement for
 // <AskMechaButton />. Drop it next to an error or a friction point; on tap it
-// opens the chat with the question already sent, so a stuck borrower reaches a
-// human without typing anything. `context` rides along as session data, so the
-// operator sees which screen the message came from before they reply.
+// opens the chat with the topic and the current screen already attached, so the
+// agent knows what broke before the borrower has finished typing.
+//
+// Note the widget cannot post an opening message on the borrower's behalf (no
+// vendor API for it), so `topic` is passed as context, not as a sent message —
+// keep labels phrased as "message us about X", never "we've sent your question".
+// Renders nothing when live chat is unconfigured, so the surrounding error card
+// never shows a dead button.
 
 export interface SupportContext {
    /** Human-readable screen name, e.g. "Repay". */
@@ -19,8 +24,8 @@ export interface SupportContext {
 
 interface AskSupportButtonProps {
    label: string;
-   /** Sent as the borrower's opening message, so the thread starts with the problem. */
-   seedUserMessage?: string;
+   /** The problem being reported. Reaches the agent as a chat event + tag. */
+   topic?: string;
    context?: SupportContext;
    variant?: 'chip' | 'link';
    className?: string;
@@ -28,16 +33,18 @@ interface AskSupportButtonProps {
 
 export default function AskSupportButton({
    label,
-   seedUserMessage,
+   topic,
    context,
    variant = 'chip',
    className = ''
-}: AskSupportButtonProps): JSX.Element {
+}: AskSupportButtonProps): JSX.Element | null {
+   if (!isSupportChatEnabled) return null;
+
    const onClick = () => {
       if (context?.page || context?.step) {
-         identifyCrisp({ data: { from_page: context.page, from_step: context.step } });
+         identifySupport({ data: { from_page: context.page, from_step: context.step } });
       }
-      openSupportChat(seedUserMessage);
+      openSupportChat(topic);
    };
 
    if (variant === 'link') {

@@ -7,7 +7,7 @@ import { poseSrc } from '@/components/mecha/mechaAssets';
 import { type LocalizedText, pickText } from '@/components/mecha/stepContext';
 
 import { useLocalization } from '@/i18n';
-import { openSupportChat } from '@/lib/support/crisp';
+import { isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 import { SUPPORT_EMAIL, SUPPORT_FACEBOOK_URL, TELEGRAM_SUPPORT_URL } from '@/views/support/constants';
 
 // The Help destination. Public + shareable — this is the link to paste into the
@@ -17,9 +17,12 @@ import { SUPPORT_EMAIL, SUPPORT_FACEBOOK_URL, TELEGRAM_SUPPORT_URL } from '@/vie
 // hitting when something had genuinely gone wrong with their money, and it went
 // nowhere: Mecha answers from the help docs, and the Facebook/Telegram links
 // that reach a person live in the quick-start guide where nobody was finding
-// them. So the page now leads with a real conversation — Crisp, straight into
-// the team's inbox — and keeps Telegram, Facebook and email underneath as
+// them. So the page now leads with a real conversation — live chat, straight
+// into the team's inbox — and keeps Telegram, Facebook and email underneath as
 // alternatives for people who already prefer them.
+//
+// When live chat is unconfigured the chat card is dropped and Telegram /
+// Facebook / email are promoted to the top, so the page is never a dead end.
 
 type PopularItem = { emoji: string; title: LocalizedText; subtitle: LocalizedText; ask: LocalizedText };
 
@@ -76,11 +79,17 @@ const COPY = {
    chatCta: { en: 'Start a conversation', fil: 'Magsimula ng usapan' },
    replyTime: { en: 'We usually reply within a few hours.', fil: 'Karaniwan kaming sumasagot sa loob ng ilang oras.' },
    popularLabel: { en: 'Common questions', fil: 'Mga karaniwang tanong' },
+   // Deliberately does NOT promise the question is sent for them: the widget has
+   // no API to post a message as the visitor, so tapping opens the chat with the
+   // topic attached for the agent and the borrower still says hello.
    popularHint: {
-      en: 'Tap one to send it to us — no typing needed.',
-      fil: 'I-tap ang isa para ipadala sa amin — hindi mo na kailangang mag-type.'
+      en: 'Tap one to open a chat about it.',
+      fil: 'I-tap ang isa para magbukas ng chat tungkol dito.'
    },
    otherLabel: { en: 'Other ways to reach us', fil: 'Iba pang paraan para makausap kami' },
+   // Used when live chat is off and these are the only channels — "other ways"
+   // would be pointing at nothing.
+   onlyLabel: { en: 'Reach us here', fil: 'Makipag-ugnayan dito' },
    telegram: { en: 'Telegram', fil: 'Telegram' },
    facebook: { en: 'Facebook', fil: 'Facebook' },
    email: { en: 'Email', fil: 'Email' },
@@ -107,6 +116,7 @@ export default function HelpHub(): JSX.Element {
             </div>
 
             {/* Primary: talk to a human */}
+            {isSupportChatEnabled ? (
             <div className="mt-5 rounded-3xl border border-[#efe9fb] bg-white p-5 shadow-[0_12px_44px_rgba(27,10,54,0.10)] dark:border-[#2a2235] dark:bg-[#17121F]">
                <h2 className="text-[17px] font-semibold text-[#1b0a36] dark:text-[#F8F4FF]">{t('chatTitle')}</h2>
                <p className="mt-1.5 text-[14px] leading-snug text-[#5b5470] dark:text-[#B5ACBE]">{t('chatBody')}</p>
@@ -120,8 +130,11 @@ export default function HelpHub(): JSX.Element {
                </button>
                <p className="mt-2.5 text-center text-[12.5px] text-[#8b8299] dark:text-[#8f869c]">{t('replyTime')}</p>
             </div>
+            ) : null}
 
-            {/* Popular topics — each one starts the conversation for them */}
+            {/* Popular topics — each one opens the chat with the topic attached */}
+            {isSupportChatEnabled ? (
+            <>
             <p className="mb-1 mt-8 text-[13px] font-semibold uppercase tracking-wide text-[#5b5470] dark:text-[#B5ACBE]">
                {t('popularLabel')}
             </p>
@@ -146,10 +159,15 @@ export default function HelpHub(): JSX.Element {
                   </button>
                ))}
             </div>
+            </>
+            ) : null}
 
-            {/* Fallback channels for people who already live in Telegram or Facebook */}
-            <p className="mb-3 mt-8 text-[13px] font-semibold uppercase tracking-wide text-[#5b5470] dark:text-[#B5ACBE]">
-               {t('otherLabel')}
+            {/* Fallback channels for people who already live in Telegram or Facebook.
+                When live chat is off these are the only channels, so they lead. */}
+            <p
+               className={`mb-3 text-[13px] font-semibold uppercase tracking-wide text-[#5b5470] dark:text-[#B5ACBE] ${isSupportChatEnabled ? 'mt-8' : 'mt-6'}`}
+            >
+               {t(isSupportChatEnabled ? 'otherLabel' : 'onlyLabel')}
             </p>
             <div className="grid grid-cols-3 gap-2.5">
                {[

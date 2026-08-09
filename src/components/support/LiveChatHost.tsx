@@ -6,39 +6,37 @@ import { useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
-import { useLocalization } from '@/i18n';
 import {
-   hideCrispLauncher,
-   identifyCrisp,
-   isCrispEnabled,
-   loadCrisp,
-   onCrispMessageReceived,
+   hideSupportLauncher,
+   identifySupport,
+   isSupportChatEnabled,
+   loadSupportChat,
+   onSupportMessageReceived,
    openSupportChat,
-   resetCrispSession,
-   setCrispLocale,
-   showCrispLauncher
-} from '@/lib/support/crisp';
+   resetSupportSession,
+   showSupportLauncher
+} from '@/lib/support/liveChat';
 import type { RootState } from '@/store/store';
 
-// Always-mounted host for the Crisp chat widget — the replacement for
+// Always-mounted host for the live chat widget — the replacement for
 // <MechaLauncher />. It owns three jobs and nothing else:
 //
 //   1. load the widget once the app is idle (never on the critical path),
-//   2. keep the Crisp session tagged with who the borrower is, so an operator
+//   2. keep the chat session tagged with who the borrower is, so an agent
 //      opening the conversation already sees their wallet, verification state
 //      and credit level instead of asking for them,
-//   3. surface an operator's reply as an in-app toast, not just a widget badge.
+//   3. surface an agent's reply as an in-app toast, not just a widget badge.
 //
-// The launcher bubble itself is Crisp's own — its colours, avatar, greeting and
-// availability text are configured in the Crisp dashboard rather than here, so
-// support copy can change without a deploy.
+// The launcher bubble itself is the vendor's own — its colours, avatar, greeting
+// and availability text are configured in the support dashboard rather than
+// here, so support copy can change without a deploy. The whole component is
+// inert when live chat is unconfigured (see isSupportChatEnabled).
 
 // Internal tooling: the widget has no business sitting over the admin console.
 const HIDE_LAUNCHER_PREFIXES = ['/admin'];
 
-export default function CrispChat(): null {
+export default function LiveChatHost(): null {
    const location = useLocation();
-   const { locale } = useLocalization();
    const { showToast } = useToast();
    const user = useSelector((state: RootState) => state.auth.user);
    const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
@@ -46,23 +44,23 @@ export default function CrispChat(): null {
    // Load once the browser is idle so the widget never competes with first paint
    // on the low-end Android handsets most of our borrowers are on.
    useEffect(() => {
-      if (!isCrispEnabled) return;
-      const idle = window.requestIdleCallback?.(() => loadCrisp(), { timeout: 4000 });
-      const timer = idle === undefined ? window.setTimeout(loadCrisp, 2500) : undefined;
+      if (!isSupportChatEnabled) return;
+      const idle = window.requestIdleCallback?.(() => loadSupportChat(), { timeout: 4000 });
+      const timer = idle === undefined ? window.setTimeout(loadSupportChat, 2500) : undefined;
       return () => {
          if (idle !== undefined) window.cancelIdleCallback?.(idle);
          if (timer !== undefined) window.clearTimeout(timer);
       };
    }, []);
 
-   // An operator replied. Crisp already badges its own launcher, but a badge on a
-   // collapsed bubble is easy to miss — this is the "there's a message waiting"
+   // An agent replied. The widget already badges its own launcher, but a badge on
+   // a collapsed bubble is easy to miss — this is the "there's a message waiting"
    // signal the borrower actually notices, and tapping it opens the thread.
    const showToastRef = useRef(showToast);
    showToastRef.current = showToast;
    useEffect(() => {
-      if (!isCrispEnabled) return;
-      onCrispMessageReceived(() => {
+      if (!isSupportChatEnabled) return;
+      onSupportMessageReceived(() => {
          showToastRef.current(
             TOAST_TYPES.INFO,
             'Message from Moodeng Support',
@@ -73,27 +71,22 @@ export default function CrispChat(): null {
       });
    }, []);
 
-   // Match the widget chrome to the language the user picked in-app.
-   useEffect(() => {
-      setCrispLocale(locale);
-   }, [locale]);
-
    // Keep the launcher out of the admin console, and restore it everywhere else.
    useEffect(() => {
-      if (!isCrispEnabled) return;
+      if (!isSupportChatEnabled) return;
       if (HIDE_LAUNCHER_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))) {
-         hideCrispLauncher();
+         hideSupportLauncher();
       } else {
-         showCrispLauncher();
+         showSupportLauncher();
       }
    }, [location.pathname]);
 
-   // Identity sync. Runs on login and on any profile change that an operator
-   // would care about; `isAuthChecked` gates it so we don't tag the session with
-   // the empty default user during boot.
+   // Identity sync. Runs on login and on any profile change that an agent would
+   // care about; `isAuthChecked` gates it so we don't tag the session with the
+   // empty default user during boot.
    useEffect(() => {
-      if (!isCrispEnabled || !isAuthChecked || !user?.id) return;
-      identifyCrisp({
+      if (!isSupportChatEnabled || !isAuthChecked || !user?.id) return;
+      identifySupport({
          email: user.email,
          nickname: user.displayName || user.username,
          data: {
@@ -138,7 +131,7 @@ export default function CrispChat(): null {
    useEffect(() => {
       if (!isAuthChecked) return;
       const currentUserId = user?.id ?? '';
-      if (previousUserId.current && !currentUserId) resetCrispSession();
+      if (previousUserId.current && !currentUserId) resetSupportSession();
       previousUserId.current = currentUserId;
    }, [isAuthChecked, user?.id]);
 

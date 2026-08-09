@@ -119,7 +119,7 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                      variant="link"
                      label="Why isn't this working?"
                      context={{ page: 'In-app browser notice', step: 'in-app-browser' }}
-                     seedUserMessage={`I opened Moodeng inside ${appLabel} and sign-in / my wallet won't work. What should I do?`}
+                     topic={`Opened Moodeng inside ${appLabel} — sign-in / wallet not working`}
                   />
                </div>
             </div>

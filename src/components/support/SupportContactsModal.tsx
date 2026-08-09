@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { MessageCircle, X } from 'lucide-react';
 
-import { openSupportChat } from '@/lib/support/crisp';
+import { isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 
 import {
    LOAN_REQUEST_EXPIRED_SUPPORT_URL,
@@ -86,18 +86,22 @@ function SupportContactsModal({ issue, onClose }: { issue: SupportContactIssue; 
                   {/* Live chat leads: it is the one channel that reaches the team's inbox
                       without the borrower leaving the app or already being in our Telegram
                       or Facebook group. Telegram and Facebook stay for people who prefer
-                      them — this modal is deliberately "pick your channel", not a redirect. */}
-                  <button
-                     type="button"
-                     onClick={() => {
-                        openSupportChat();
-                        onClose();
-                     }}
-                     className="inline-flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
-                  >
-                     <MessageCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
-                     Live chat
-                  </button>
+                      them — this modal is deliberately "pick your channel", not a redirect.
+                      Hidden entirely when live chat is unconfigured, leaving the two
+                      channels that always work. */}
+                  {isSupportChatEnabled ? (
+                     <button
+                        type="button"
+                        onClick={() => {
+                           openSupportChat();
+                           onClose();
+                        }}
+                        className="inline-flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
+                     >
+                        <MessageCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        Live chat
+                     </button>
+                  ) : null}
                   <div className="grid w-full grid-cols-2 gap-md-2">
                      <button
                         type="button"

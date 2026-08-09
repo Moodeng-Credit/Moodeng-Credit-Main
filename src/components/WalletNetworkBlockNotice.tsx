@@ -157,7 +157,7 @@ export default function WalletNetworkBlockNotice(): JSX.Element | null {
                      variant="link"
                      label="Still stuck? Message the team"
                      context={{ page: 'Wallet network block notice', step: 'network-block' }}
-                     seedUserMessage="My wallet won't connect — the sign-in screen is blank or shows a security warning. What should I do?"
+                     topic="Wallet will not connect — blank sign-in screen or security warning"
                   />
                </div>
             </div>
