@@ -7,6 +7,8 @@ import { type LocalizedText, pickText } from '@/components/mecha/stepContext';
 
 import { useLocalization } from '@/i18n';
 import { isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
+import HelpTopicCard from '@/views/help/HelpTopicCard';
+import { HELP_TOPICS } from '@/views/help/helpTopics';
 import { SUPPORT_EMAIL, SUPPORT_FACEBOOK_URL, TELEGRAM_SUPPORT_URL } from '@/views/support/constants';
 
 // The Help destination. Public + shareable — this is the link to paste into the
@@ -23,47 +25,6 @@ import { SUPPORT_EMAIL, SUPPORT_FACEBOOK_URL, TELEGRAM_SUPPORT_URL } from '@/vie
 // When live chat is unconfigured the chat card is dropped and Telegram /
 // Facebook / email are promoted to the top, so the page is never a dead end.
 
-type PopularItem = { emoji: string; title: LocalizedText; subtitle: LocalizedText; ask: LocalizedText };
-
-const POPULAR: PopularItem[] = [
-   {
-      emoji: '🪪',
-      title: { en: 'Verify your ID', fil: 'I-verify ang ID mo' },
-      subtitle: { en: 'The quick 3-minute check', fil: 'Mabilis na 3-minutong check' },
-      ask: { en: 'How do I verify my ID?', fil: 'Paano i-verify ang ID ko?' }
-   },
-   {
-      emoji: '🏦',
-      title: { en: 'Cash out to a bank', fil: 'Mag-cash out sa bank' },
-      subtitle: { en: 'USDC → pesos, step by step', fil: 'USDC → pesos, hakbang-hakbang' },
-      ask: { en: 'How do I cash out to GCash or my bank?', fil: 'Paano mag-cash out sa GCash o sa bank ko?' }
-   },
-   {
-      emoji: '🔗',
-      title: { en: "Wallet won't connect", fil: 'Ayaw kumonekta ng wallet' },
-      subtitle: { en: 'The reset that works', fil: 'Ang reset na gumagana' },
-      ask: { en: "My wallet won't connect to Moodeng — what do I do?", fil: 'Ayaw kumonekta ng wallet ko sa Moodeng — ano ang gagawin ko?' }
-   },
-   {
-      emoji: '💸',
-      title: { en: 'How to repay', fil: 'Paano magbayad' },
-      subtitle: { en: 'Buy USDC + send on Base', fil: 'Bumili ng USDC + ipadala sa Base' },
-      ask: { en: 'How do I repay my loan?', fil: 'Paano bayaran ang loan ko?' }
-   },
-   {
-      emoji: '📈',
-      title: { en: 'Grow my credit limit', fil: 'Palakihin ang credit limit' },
-      subtitle: { en: 'From $15 upward', fil: 'Mula $15 pataas' },
-      ask: { en: 'How do I increase my credit limit?', fil: 'Paano tumaas ang credit limit ko?' }
-   },
-   {
-      emoji: '🟣',
-      title: { en: 'Coinbase vs Base', fil: 'Coinbase vs Base' },
-      subtitle: { en: 'Which one do I need?', fil: 'Alin ang kailangan ko?' },
-      ask: { en: 'Do I need the Coinbase app or a Base Account?', fil: 'Kailangan ko ba ang Coinbase app o Base Account?' }
-   }
-];
-
 const COPY = {
    title: { en: 'How can we help?', fil: 'Paano ka namin matutulungan?' },
    subtitle: {
@@ -78,12 +39,9 @@ const COPY = {
    chatCta: { en: 'Start a conversation', fil: 'Magsimula ng usapan' },
    replyTime: { en: 'We usually reply within a few hours.', fil: 'Karaniwan kaming sumasagot sa loob ng ilang oras.' },
    popularLabel: { en: 'Common questions', fil: 'Mga karaniwang tanong' },
-   // Deliberately does NOT promise the question is sent for them: the widget has
-   // no API to post a message as the visitor, so tapping opens the chat with the
-   // topic attached for the agent and the borrower still says hello.
    popularHint: {
-      en: 'Tap one to open a chat about it.',
-      fil: 'I-tap ang isa para magbukas ng chat tungkol dito.'
+      en: "Tap one for the answer. If it doesn't fit your situation, every answer has a way to reach a person.",
+      fil: 'I-tap ang isa para sa sagot. Kung hindi ito bagay sa sitwasyon mo, may paraan sa bawat sagot para makausap ang tao.'
    },
    otherLabel: { en: 'Other ways to reach us', fil: 'Iba pang paraan para makausap kami' },
    // Used when live chat is off and these are the only channels — "other ways"
@@ -133,35 +91,18 @@ export default function HelpHub(): JSX.Element {
             </div>
             ) : null}
 
-            {/* Popular topics — each one opens the chat with the topic attached */}
-            {isSupportChatEnabled ? (
-            <>
+            {/* Answers first. Not gated on live chat: the answer is useful even when
+                the widget is unconfigured, and each card still offers Telegram and
+                Facebook as ways to reach a person. */}
             <p className="mb-1 mt-8 text-[13px] font-semibold uppercase tracking-wide text-[#5b5470] dark:text-[#B5ACBE]">
                {t('popularLabel')}
             </p>
-            <p className="mb-3 text-[13px] text-[#8b8299] dark:text-[#8f869c]">{t('popularHint')}</p>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-               {POPULAR.map((item) => (
-                  <button
-                     key={item.title.en}
-                     type="button"
-                     onClick={() => openSupportChat(pickText(item.ask, locale))}
-                     className="flex items-center gap-3 rounded-2xl border border-[#efe9fb] bg-white px-4 py-3 text-left transition-colors hover:border-[#d9c9fb] hover:bg-[#faf7ff] dark:border-[#2a2235] dark:bg-[#171320] dark:hover:bg-[#1e1730]"
-                  >
-                     <span className="text-2xl">{item.emoji}</span>
-                     <span className="min-w-0">
-                        <span className="block truncate text-[14px] font-semibold text-[#1b0a36] dark:text-[#F8F4FF]">
-                           {pickText(item.title, locale)}
-                        </span>
-                        <span className="block truncate text-[13px] text-[#5b5470] dark:text-[#B5ACBE]">
-                           {pickText(item.subtitle, locale)}
-                        </span>
-                     </span>
-                  </button>
+            <p className="mb-3 text-[13px] leading-snug text-[#8b8299] dark:text-[#8f869c]">{t('popularHint')}</p>
+            <div className="flex flex-col gap-2.5">
+               {HELP_TOPICS.map((topic) => (
+                  <HelpTopicCard key={topic.id} topic={topic} locale={locale} />
                ))}
             </div>
-            </>
-            ) : null}
 
             {/* Fallback channels for people who already live in Telegram or Facebook.
                 When live chat is off these are the only channels, so they lead. */}
