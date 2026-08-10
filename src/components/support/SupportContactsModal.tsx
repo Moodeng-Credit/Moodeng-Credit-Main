@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { X } from 'lucide-react';
+import { ChevronRight, MessageCircle, X } from 'lucide-react';
+
+import { isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 
 import {
    LOAN_REQUEST_EXPIRED_SUPPORT_URL,
@@ -81,12 +83,48 @@ function SupportContactsModal({ issue, onClose }: { issue: SupportContactIssue; 
 
                <div className="flex flex-col gap-md-1">
                   <p className="text-md-b2 font-semibold tracking-normal text-md-heading">Contact us via</p>
+                  {/* Live chat leads: it is the one channel that reaches the team's inbox
+                      without the borrower leaving the app or already being in our Telegram
+                      or Facebook group. Telegram and Facebook stay for people who prefer
+                      them — this modal is deliberately "pick your channel", not a redirect.
+                      Hidden entirely when live chat is unconfigured, leaving the two
+                      channels that always work. */}
+                  {isSupportChatEnabled ? (
+                     <button
+                        type="button"
+                        onClick={() => {
+                           openSupportChat();
+                           onClose();
+                        }}
+                        className="inline-flex min-h-[60px] w-full items-center gap-md-2 rounded-md-lg bg-md-primary-1200 px-md-3 py-md-2 text-md-b1 font-semibold tracking-normal shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-95"
+                        /* Colours are inline, not utility classes: globals.css remaps
+                           .bg-md-neutral-100 (and .bg-white) to a near-black under
+                           html.dark, which would repaint anything white inside this
+                           button. Inline styles win over that stylesheet rule. */
+                        style={{ color: '#ffffff' }}
+                     >
+                        <span
+                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                           style={{ backgroundColor: 'rgba(255,255,255,0.18)' }}
+                           aria-hidden="true"
+                        >
+                           <MessageCircle className="h-[18px] w-[18px]" style={{ color: '#ffffff' }} />
+                        </span>
+                        <span className="flex-1 text-left leading-tight">
+                           Live chat
+                           <span className="block text-[12px] font-normal" style={{ color: 'rgba(255,255,255,0.72)' }}>
+                              Fastest — we reply here and by email
+                           </span>
+                        </span>
+                        <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} aria-hidden="true" />
+                     </button>
+                  ) : null}
                   <div className="grid w-full grid-cols-2 gap-md-2">
                      <button
                         type="button"
                         onClick={openTelegram}
-                        className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
-                        style={{ backgroundColor: '#0088CC' }}
+                        className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-95"
+                        style={{ backgroundColor: '#0088CC', color: '#ffffff' }}
                      >
                         <img src="/icons/telegram-classic-filled.png" alt="" className="h-5 w-5 shrink-0" />
                         Telegram
@@ -94,13 +132,17 @@ function SupportContactsModal({ issue, onClose }: { issue: SupportContactIssue; 
                      <button
                         type="button"
                         onClick={openFacebook}
-                        className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95"
-                        style={{ backgroundColor: '#1877F2' }}
+                        className="inline-flex min-h-[56px] items-center justify-center gap-md-1 rounded-md-lg px-md-3 py-md-3 text-md-b1 font-semibold tracking-normal shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-95"
+                        style={{ backgroundColor: '#1877F2', color: '#ffffff' }}
                      >
                         <span
-                           className="h-5 w-5 shrink-0 bg-md-neutral-100"
+                           className="h-5 w-5 shrink-0"
                            aria-hidden="true"
                            style={{
+                              // Inline, not bg-md-neutral-100: globals.css remaps that class to
+                              // #1b1525 under html.dark, which painted this masked glyph
+                              // near-black on the blue button instead of white.
+                              backgroundColor: '#ffffff',
                               WebkitMaskImage: "url('/icons/facebook.svg')",
                               maskImage: "url('/icons/facebook.svg')",
                               WebkitMaskSize: 'contain',

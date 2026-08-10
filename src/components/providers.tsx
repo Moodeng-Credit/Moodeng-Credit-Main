@@ -10,6 +10,7 @@ import { AuthInitializer } from '@/components/AuthInitializer';
 import BasePaymentReconciler from '@/components/BasePaymentReconciler';
 import Loading from '@/components/Loading';
 import MechaLauncher from '@/components/mecha/MechaLauncher';
+import LiveChatHost from '@/components/support/LiveChatHost';
 import { SupportContactsModalHost } from '@/components/support/SupportContactsModal';
 import { ThemeModeProvider } from '@/components/ThemeModeProvider';
 import { ToastProvider } from '@/components/ToastSystem/contexts/ToastContext';
@@ -74,6 +75,12 @@ export function Providers({ children }: { children: ReactNode }) {
                               <BasePaymentReconciler />
                               {children}
                               <SupportContactsModalHost />
+                              {/* Live chat owns the persistent help launcher and every "I have a
+                                  problem" path — it reaches a human. Mecha stays mounted purely
+                                  as the on-demand writing assistant (loan-reason wording), opened
+                                  explicitly via openMecha(); it no longer shows a bubble of its
+                                  own, so there is exactly one floating launcher on screen. */}
+                              <LiveChatHost />
                               <MechaLauncher />
                               <ToastContainer />
                            </OpenfortProvider>
