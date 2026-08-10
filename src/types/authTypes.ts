@@ -60,6 +60,14 @@ export interface User {
    livenessStatus?: LivenessStatus;
    /** Didit session id of the most recent liveness attempt, used to resume after redirect. */
    livenessSessionId?: string;
+   /**
+    * State of the face scan that gates creating an embedded (Instant) wallet. Deliberately
+    * separate from {@link livenessStatus}: that one gates KYC and is reset on every KYC
+    * attempt, so sharing it would let one flow clobber the other. See {@link WalletFaceStatus}.
+    */
+   walletFaceStatus?: WalletFaceStatus;
+   /** Didit session id of the most recent wallet face scan, used to resume after redirect. */
+   walletFaceSessionId?: string;
    telegramUsername?: string;
    telegramId?: string;
    chatId?: string;
@@ -100,6 +108,20 @@ export type WorldIdStatus = (typeof WorldId)[keyof typeof WorldId];
 
 /** Lifecycle of a single liveness pre-check attempt, written by the didit-webhook. */
 export type LivenessStatus = 'PENDING' | 'APPROVED' | 'DUPLICATE' | 'DECLINED';
+
+/**
+ * Lifecycle of the face scan that gates minting an embedded wallet. Written only by
+ * didit-webhook / check-didit-status (service role) — a client-writable value would let
+ * someone self-approve and mint a sponsored wallet without ever opening the camera.
+ *
+ *   PENDING   scan started, awaiting Didit's verdict
+ *   APPROVED  clean scan — may mint
+ *   DUPLICATE this face already holds another Moodeng account (one wallet per person)
+ *   MISMATCH  a KYC'd borrower whose face didn't match their own KYC enrollment
+ *   DECLINED  liveness itself failed (spoof, poor capture, abandoned)
+ *   CONSUMED  approval already spent on a mint; cannot be replayed
+ */
+export type WalletFaceStatus = 'PENDING' | 'APPROVED' | 'DUPLICATE' | 'MISMATCH' | 'DECLINED' | 'CONSUMED';
 
 export interface IUser {
    id: string;

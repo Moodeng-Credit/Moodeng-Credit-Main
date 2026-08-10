@@ -11,3 +11,15 @@ export {
    exportEmbeddedPrivateKey,
    sendUsdcFromEmbeddedWallet
 } from '@/lib/web3/openfort/embeddedWallet';
+export { useCreateInstantWallet, type InstantWalletReturnTo } from '@/lib/web3/openfort/useCreateInstantWallet';
+export {
+   WALLET_GATE_CODE,
+   WalletGateError,
+   hasEmbeddedWallet,
+   isRetryableGateCode,
+   needsWalletFaceScan,
+   startWalletFaceScan,
+   syncWalletFaceStatus,
+   walletFaceStatusCopy,
+   type WalletGateCode
+} from '@/lib/web3/openfort/walletFaceGate';

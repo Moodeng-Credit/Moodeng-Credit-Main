@@ -12,6 +12,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //                      can't be merged into a Didit workflow). Uses a liveness-only workflow.
 //   kind: 'id'       — legacy ID-only step (ID document + face match). Gated server-side:
 //                      refused unless the caller's latest liveness is APPROVED.
+//   kind: 'wallet'   — the embedded-wallet face gate. Same liveness + 1:N face-search workflow
+//                      as 'liveness', but its verdict lands in users.wallet_face_* instead of
+//                      the KYC liveness columns, so a wallet scan and a KYC attempt can never
+//                      clobber one another. Fires only when minting a sponsored embedded wallet
+//                      — connecting an external wallet never reaches here.
 //
 // vendor_data is set server-side to the authenticated user's id (never trusted
 // from the client) so the didit-webhook can map the result back to the user.
@@ -22,10 +27,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //   DIDIT_LIVENESS_WORKFLOW_ID — Workflow UUID for the World ID liveness pre-gate
 // Optional:
 //   DIDIT_ID_WORKFLOW_ID — legacy ID-only workflow (kind: 'id'); falls back to DIDIT_WORKFLOW_ID.
+//   DIDIT_WALLET_WORKFLOW_ID   — workflow for the wallet face gate; falls back to the liveness
+//                         workflow, which already does liveness + 1:N face search.
 //   DIDIT_API_BASE      — defaults to https://verification.didit.me/v3
 //   DIDIT_CALLBACK_URL  — frontend return URL after verification (e.g.
 //                         https://app.example.com/verify). Required to send the user back
 //                         into the app cleanly. `kind` and `returnTo` are appended as query params.
+//   DIDIT_WALLET_CALLBACK_URL — return URL for kind: 'wallet'. Defaults to the wallet face-check
+//                         route on DIDIT_CALLBACK_URL's origin, so no extra secret is needed.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -46,7 +55,12 @@ const ALLOWED_RETURN_TO = new Set([
    'dashboard-credit-level'
 ]);
 
-type SessionKind = 'liveness' | 'id' | 'combined';
+type SessionKind = 'liveness' | 'id' | 'combined' | 'wallet';
+
+const SESSION_KINDS: ReadonlySet<string> = new Set<SessionKind>(['liveness', 'id', 'combined', 'wallet']);
+
+/** The in-app route Didit returns to for the embedded-wallet face gate. */
+const WALLET_CALLBACK_PATH = '/onboarding/wallet/face-check';
 
 const resolveWorkflowId = (kind: SessionKind): string | undefined => {
    const liveness = Deno.env.get('DIDIT_LIVENESS_WORKFLOW_ID');
@@ -56,7 +70,29 @@ const resolveWorkflowId = (kind: SessionKind): string | undefined => {
    // hosted session). 'liveness' is the World ID pre-gate; 'id' is the legacy ID-only step.
    if (kind === 'combined') return combined;
    if (kind === 'liveness') return liveness || combined;
+   // The wallet gate needs exactly what the liveness workflow already does — a live capture
+   // plus a 1:N search of previously approved faces — so it reuses it unless overridden.
+   if (kind === 'wallet') return Deno.env.get('DIDIT_WALLET_WORKFLOW_ID') || liveness || combined;
    return id || combined;
+};
+
+/**
+ * Where Didit sends the user back to. The wallet gate returns to its own screen rather than
+ * /verify so the KYC flow's state machine is never entered by a wallet scan. Derived from
+ * DIDIT_CALLBACK_URL's origin so shipping this needs no new secret.
+ */
+const resolveCallbackBase = (kind: SessionKind, callbackBase: string | undefined): string | undefined => {
+   if (kind !== 'wallet') return callbackBase;
+
+   const override = Deno.env.get('DIDIT_WALLET_CALLBACK_URL')?.trim();
+   if (override) return override;
+   if (!callbackBase) return undefined;
+
+   try {
+      return new URL(WALLET_CALLBACK_PATH, callbackBase).toString();
+   } catch {
+      return undefined;
+   }
 };
 
 serve(async (req) => {
@@ -102,8 +138,8 @@ serve(async (req) => {
          if (typeof body?.returnTo === 'string' && ALLOWED_RETURN_TO.has(body.returnTo)) {
             returnTo = body.returnTo;
          }
-         if (body?.kind === 'id' || body?.kind === 'liveness' || body?.kind === 'combined') {
-            kind = body.kind;
+         if (typeof body?.kind === 'string' && SESSION_KINDS.has(body.kind)) {
+            kind = body.kind as SessionKind;
          }
       } catch {
          // No body / invalid JSON is fine — kind defaults to 'liveness', returnTo is optional.
@@ -133,7 +169,25 @@ serve(async (req) => {
          }
       }
 
-      const callbackBase = Deno.env.get('DIDIT_CALLBACK_URL')?.trim();
+      // A face scan is only worth paying Didit for when the caller could actually use it.
+      // Someone who already holds an embedded wallet needs no scan (recovery is always
+      // allowed), so refuse early rather than burning a session on a no-op.
+      if (kind === 'wallet') {
+         const { data: grant, error: grantError } = await supabase
+            .from('embedded_wallet_grants')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+         if (grantError) {
+            console.error('[create-didit-session] Failed to read wallet grant:', grantError.message);
+            return jsonResponse({ error: 'Database error' }, 500);
+         }
+         if (grant) {
+            return jsonResponse({ error: 'This account already has an instant wallet.', code: 'ALREADY_GRANTED' }, 409);
+         }
+      }
+
+      const callbackBase = resolveCallbackBase(kind, Deno.env.get('DIDIT_CALLBACK_URL')?.trim());
       const callback = callbackBase
          ? (() => {
               const params = new URLSearchParams({ kind });

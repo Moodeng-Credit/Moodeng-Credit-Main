@@ -55,6 +55,7 @@ import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
+import WalletFaceCheckPage from '@/app/onboarding/wallet/face-check/page';
 import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
@@ -125,7 +126,14 @@ const BOTTOM_NAV_ROUTES = [
 // Routes a defaulted borrower passes through when "Pay Now" requires connecting a wallet or
 // verifying World ID first — Repay.tsx sends them here with `state: { returnTo: 'repay' }` so
 // they can complete that detour without getting bounced to /account-restricted mid-flow.
-const REPAY_CONTINUATION_ROUTES = ['/onboarding/wallet', '/onboarding/wallet/connected', '/verify-world-id'];
+const REPAY_CONTINUATION_ROUTES = [
+   '/onboarding/wallet',
+   '/onboarding/wallet/connected',
+   // The wallet face check is part of getting a wallet, so a defaulted borrower who detoured
+   // here from Repay must not be bounced to /account-restricted mid-scan.
+   '/onboarding/wallet/face-check',
+   '/verify-world-id'
+];
 
 const canShowPreviewRoutes = () => {
    if (import.meta.env.DEV) return true;
@@ -251,6 +259,14 @@ export default function App() {
                element={
                   <ProtectedRoute>
                      <WalletBlocked />
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/onboarding/wallet/face-check"
+               element={
+                  <ProtectedRoute>
+                     <WalletFaceCheckPage />
                   </ProtectedRoute>
                }
             />

@@ -44,6 +44,7 @@ import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSl
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
+import { useCreateInstantWallet } from '@/lib/web3/openfort';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
 import WalletAccountInsights from '@/views/account/WalletAccountInsights';
 
@@ -980,6 +981,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    const { connect, connectors, status: connectStatus, reset: resetConnect } = useConnect();
    const { openConnectModal } = useConnectModal();
    const { disconnectAsync } = useDisconnect();
+   const instantWallet = useCreateInstantWallet('account-settings');
    const isBorrower = user?.userRole === 'borrower';
 
    const [step, setStep] = useState<'choose' | 'connecting'>('choose');
@@ -1174,24 +1176,40 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                   </div>
 
                   {isBorrower ? (
-                     <button
-                        type="button"
-                        disabled={isConnecting}
-                        onClick={() => void handleConnectWithKey('coinbase')}
-                        className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
-                     >
-                        {isConnecting ? 'Connecting...' : 'Connect Base Account'}
-                        {!isConnecting ? (
-                           <div
-                              className="w-6 h-6 bg-md-neutral-100"
-                              style={{
-                                 ...ICON_MASK,
-                                 WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                                 maskImage: "url('/icons/chevron-right.svg')"
-                              }}
-                           />
+                     <div className="flex flex-col gap-md-2">
+                        <button
+                           type="button"
+                           disabled={isConnecting}
+                           onClick={() => void handleConnectWithKey('coinbase')}
+                           className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                        >
+                           {isConnecting ? 'Connecting...' : 'Connect Base Account'}
+                           {!isConnecting ? (
+                              <div
+                                 className="w-6 h-6 bg-md-neutral-100"
+                                 style={{
+                                    ...ICON_MASK,
+                                    WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                    maskImage: "url('/icons/chevron-right.svg')"
+                                 }}
+                              />
+                           ) : null}
+                        </button>
+                        {/* Base Account was the ONLY option here, which is the second half of
+                            the dead end borrowers hit: a legacy Base borrower prompted to
+                            "Confirm your Base Account" had no route to an Instant Wallet, only
+                            back to the wallet they couldn't reach. */}
+                        {instantWallet.isConfigured ? (
+                           <button
+                              type="button"
+                              disabled={isConnecting || instantWallet.isCreating}
+                              onClick={() => void instantWallet.createInstantWallet()}
+                              className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+                           >
+                              {instantWallet.isCreating ? 'Creating your wallet…' : 'Create an Instant Wallet instead'}
+                           </button>
                         ) : null}
-                     </button>
+                     </div>
                   ) : (
                      <div className="flex flex-col gap-md-2">
                         <div className="grid grid-cols-2 gap-md-2">
@@ -1338,8 +1356,11 @@ export default function AccountSettings() {
    const [walletSafetyIntent, setWalletSafetyIntent] = useState<'change' | 'disconnect' | null>(null);
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
+   const instantWallet = useCreateInstantWallet('account-settings');
    const hasWallet = Boolean(user?.walletAddress);
-   const walletSetupLabel = user?.userRole === 'lender' ? 'Connect' : 'Connect Base Account';
+   // Borrowers can now create an Instant Wallet as well as connect a Base Account, so the old
+   // "Connect Base Account" label misdescribed the screen it opens.
+   const walletSetupLabel = 'Connect';
    const isBorrower = user?.userRole === 'borrower';
    const connectedWalletName = connector?.name;
    const baseWalletLock = getBaseWalletLockStatus(user);
@@ -1946,6 +1967,39 @@ export default function AccountSettings() {
                                  </>
                               )}
                            </div>
+
+                           {/* The way back after a disconnect. Both roles, and deliberately here
+                               rather than only in onboarding: disconnecting is exactly when
+                               someone discovers they have no wallet app to reconnect with, and
+                               before this the only offer was "connect one you already own". */}
+                           {!hasWallet && instantWallet.isConfigured ? (
+                              <div className="flex flex-col gap-md-2 border-t border-md-neutral-300 px-md-3 py-md-3">
+                                 <div className="flex items-start gap-md-2">
+                                    <img src="/hippos/hippo-wallet.png" alt="" className="size-9 shrink-0 object-contain" />
+                                    <div className="min-w-0 flex-1">
+                                       <p className="text-md-b1 font-semibold text-md-heading">No wallet app? Create one</p>
+                                       <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">
+                                          An Instant Wallet is made from your Moodeng login — no app, no seed phrase — and the
+                                          key is yours to export anytime.
+                                       </p>
+                                    </div>
+                                 </div>
+                                 <button
+                                    type="button"
+                                    onClick={() => void instantWallet.createInstantWallet()}
+                                    disabled={instantWallet.isCreating}
+                                    className="inline-flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60 active:scale-[0.99]"
+                                 >
+                                    {instantWallet.isCreating ? 'Creating your wallet…' : 'Create Instant Wallet'}
+                                 </button>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                    Includes a ten-second face check, so instant wallets stay one per person.
+                                 </p>
+                                 {instantWallet.error ? (
+                                    <p className="text-md-b2 font-medium text-md-red-500">{instantWallet.error}</p>
+                                 ) : null}
+                              </div>
+                           ) : null}
 
                            {hasWallet ? (
                               <div className="flex min-h-[52px] items-center justify-between gap-md-2 px-md-3 py-md-1">

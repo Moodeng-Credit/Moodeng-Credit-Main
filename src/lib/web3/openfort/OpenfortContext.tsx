@@ -28,6 +28,7 @@ import {
    provisionEmbeddedWallet,
    sendUsdcFromEmbeddedWallet
 } from '@/lib/web3/openfort/embeddedWallet';
+import { WalletGateError } from '@/lib/web3/openfort/walletFaceGate';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -43,6 +44,12 @@ interface OpenfortContextValue {
    /** True when a signer is live and ready to send. */
    isConnected: boolean;
    error: string | null;
+   /**
+    * Set when the last connect was refused by the server-side face gate (FACE_REQUIRED,
+    * FACE_DUPLICATE, …). Callers route on this: FACE_REQUIRED means "send them to the scan",
+    * the others are terminal and need explaining. Null for ordinary failures.
+    */
+   gateCode: string | null;
    /** Provision (or recover) the wallet from a user tap, lock it to the account, resolve to the address. */
    connect: () => Promise<string | null>;
    /** Clear the local signer + Openfort auth (does not unlock or delete the wallet). */
@@ -64,6 +71,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
    const [status, setStatus] = useState<OpenfortStatus>(configured ? 'idle' : 'unconfigured');
    const [address, setAddress] = useState<string | null>(null);
    const [error, setError] = useState<string | null>(null);
+   const [gateCode, setGateCode] = useState<string | null>(null);
 
    // Restore-on-reload (read-only): if this borrower is locked to Openfort and the SDK already
    // holds a READY signer for the session, hydrate the live address without a fresh tap or a
@@ -96,6 +104,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
       }
       setStatus('connecting');
       setError(null);
+      setGateCode(null);
       try {
          const account = await provisionEmbeddedWallet();
          setAddress(account.address);
@@ -120,6 +129,17 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
          return account.address;
       } catch (err) {
          console.error('[Openfort] connect failed', err);
+
+         // The face gate refusing a mint is an expected outcome, not a failure. The caller
+         // turns FACE_REQUIRED into a trip to the scan, so toasting "couldn't create your
+         // wallet" here would contradict the screen we're about to show.
+         if (err instanceof WalletGateError) {
+            setGateCode(err.code);
+            setError(err.message);
+            setStatus('idle');
+            return null;
+         }
+
          const message = friendlyConnectError(err);
          setError(message);
          setStatus('error');
@@ -135,6 +155,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
          await logoutEmbeddedWallet();
       } finally {
          setAddress(null);
+         setGateCode(null);
          setStatus(configured ? 'idle' : 'unconfigured');
       }
    }, [configured]);
@@ -152,12 +173,13 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
          address,
          isConnected: status === 'ready' && Boolean(address),
          error,
+         gateCode,
          connect,
          disconnect,
          sendUsdc,
          exportPrivateKey: exportEmbeddedPrivateKey
       }),
-      [configured, status, address, error, connect, disconnect, sendUsdc]
+      [configured, status, address, error, gateCode, connect, disconnect, sendUsdc]
    );
 
    return <OpenfortContext.Provider value={value}>{children}</OpenfortContext.Provider>;

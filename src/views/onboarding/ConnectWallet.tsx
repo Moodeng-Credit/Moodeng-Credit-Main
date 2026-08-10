@@ -13,7 +13,7 @@ import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { checkCoinbaseKeysReachability } from '@/lib/coinbaseReachability';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { useOpenfort } from '@/lib/web3/openfort';
+import { useCreateInstantWallet, useOpenfort } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
@@ -49,6 +49,8 @@ export default function ConnectWallet() {
    const [keysBlocked, setKeysBlocked] = useState(false);
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
+   // Declared after returnTo — the hook needs it to route back once the wallet exists.
+   const instantWallet = useCreateInstantWallet(returnTo);
    const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
    const role = user?.userRole || (isPreview ? previewRole : undefined);
 
@@ -81,12 +83,20 @@ export default function ConnectWallet() {
       [connect, connectorsByName, isPreview, navigate, returnTo, showToast]
    );
 
+   // Only a connection the user actually started HERE should advance the flow.
+   //
+   // This used to fire for any borrower whose wagmi session happened to be live
+   // (`role === 'borrower' || userInitiatedConnection`), which is what stranded borrowers who
+   // had connected Base under the old onboarding: after disconnecting their saved wallet in
+   // Settings they'd tap "Connect", land here, and be bounced straight to the "connected"
+   // screen by a leftover live session before they could ever see "Create wallet" — where
+   // useWalletSync then re-saved the very Base wallet they had just removed. A borrower who
+   // genuinely still has a confirmed wallet is caught by the redirect below, not by this.
    useEffect(() => {
-      if (isConnected && (role === 'borrower' || userInitiatedConnection)) {
-         setPendingKey(null);
-         navigate('/onboarding/wallet/connected', { replace: true, state: { returnTo } });
-      }
-   }, [isConnected, role, userInitiatedConnection, navigate, returnTo]);
+      if (!isConnected || !userInitiatedConnection) return;
+      setPendingKey(null);
+      navigate('/onboarding/wallet/connected', { replace: true, state: { returnTo } });
+   }, [isConnected, userInitiatedConnection, navigate, returnTo]);
 
    useEffect(() => {
       if (status === 'error' && error) {
@@ -121,18 +131,16 @@ export default function ConnectWallet() {
       };
    }, [role, openfort.isConfigured, isPreview]);
 
+   // Shared with Account Settings so the two entry points can't drift — the differences
+   // between them are exactly what produced a working wallet on one screen and a dead end
+   // on the other.
    const handleCreateInstantWallet = useCallback(async () => {
       if (isPreview) {
          navigate('/onboarding/wallet-connected-preview', returnTo ? { state: { returnTo } } : undefined);
          return;
       }
-      // On failure the context's `error` updates reactively and renders inline in the view — we
-      // don't read it here (it would be the stale pre-render value in this same tick).
-      const address = await openfort.connect();
-      if (address) {
-         navigate('/onboarding/wallet/connected', { replace: true, state: { returnTo } });
-      }
-   }, [isPreview, navigate, returnTo, openfort]);
+      await instantWallet.createInstantWallet();
+   }, [instantWallet, isPreview, navigate, returnTo]);
 
    if (!role) {
       return <Navigate to="/onboarding/role" replace />;
@@ -175,6 +183,10 @@ export default function ConnectWallet() {
             openConnectModal?.();
          }}
          isConnecting={status === 'pending'}
+         instantWalletConfigured={openfort.isConfigured}
+         onCreateInstantWallet={handleCreateInstantWallet}
+         isCreatingInstantWallet={openfort.isConnecting}
+         instantWalletError={openfort.error}
       />
    );
 }
@@ -356,7 +368,11 @@ function LenderConnectView({
    onMarkUserInitiated,
    onOpenOther,
    isPreview,
-   isConnecting
+   isConnecting,
+   instantWalletConfigured,
+   onCreateInstantWallet,
+   isCreatingInstantWallet,
+   instantWalletError
 }: {
    selectedKey: WalletConnectorKey | null;
    onSelect: (key: WalletConnectorKey) => void;
@@ -365,6 +381,10 @@ function LenderConnectView({
    onOpenOther: () => void;
    isPreview: boolean;
    isConnecting: boolean;
+   instantWalletConfigured: boolean;
+   onCreateInstantWallet: () => void;
+   isCreatingInstantWallet: boolean;
+   instantWalletError: string | null;
 }) {
    const canConnect = Boolean(selectedKey) && !isConnecting;
    // Base Account keeps its existing direct-connect path; the injected/WalletConnect
@@ -419,6 +439,53 @@ function LenderConnectView({
                <h2 className="text-md-display text-md-heading">Connect Your Wallet</h2>
                <p className="text-md-b1 font-medium text-md-neutral-700">Think of this as your digital checking account.</p>
             </div>
+
+            {/* Lenders who don't already own a wallet had no way through this screen — every
+                tile assumes an app they've installed. The instant wallet is that way through:
+                created from the login they already have, no app and no seed phrase. It sits
+                above the picker as its own action because it CREATES a wallet rather than
+                connecting one, so it must not need the "Connect Wallet" button below. */}
+            {instantWalletConfigured && !isPreview ? (
+               <div className="flex flex-col gap-md-2 rounded-[12px] border border-md-primary-900 bg-md-primary-100 p-md-3">
+                  <div className="flex items-start gap-md-2">
+                     <img src="/hippos/hippo-wallet.png" alt="" className="size-10 shrink-0 object-contain" />
+                     <div className="flex min-w-0 flex-1 flex-col gap-md-0">
+                        <div className="flex flex-wrap items-center gap-md-1">
+                           <span className="text-md-h5 text-md-heading">Instant Wallet</span>
+                           <span className="inline-flex items-center justify-center rounded-md-sm bg-md-primary-1200 px-md-1 py-md-0 text-md-b3 font-semibold text-md-neutral-100">
+                              No app needed
+                           </span>
+                        </div>
+                        <p className="text-md-b2 font-medium text-md-slate-600">
+                           Created from your Moodeng login in seconds. Fully yours — export the key anytime.
+                        </p>
+                     </div>
+                  </div>
+                  <button
+                     type="button"
+                     onClick={onCreateInstantWallet}
+                     disabled={isCreatingInstantWallet || isConnecting}
+                     className="flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+                  >
+                     {isCreatingInstantWallet ? 'Creating your wallet…' : 'Create Instant Wallet'}
+                  </button>
+                  {/* Set expectations before the camera opens, not after. */}
+                  <p className="text-md-b3 font-medium text-md-slate-600">
+                     Includes a ten-second face check, so instant wallets stay one per person.
+                  </p>
+                  {instantWalletError ? (
+                     <p className="text-md-b3 font-medium text-md-red-500">{instantWalletError}</p>
+                  ) : null}
+               </div>
+            ) : null}
+
+            {instantWalletConfigured && !isPreview ? (
+               <div className="flex items-center gap-md-2">
+                  <span className="h-px flex-1 bg-md-neutral-600" />
+                  <span className="text-md-b3 font-medium text-md-slate-600">or connect one you already own</span>
+                  <span className="h-px flex-1 bg-md-neutral-600" />
+               </div>
+            ) : null}
 
             <div className="grid grid-cols-2 gap-md-4">
                {LENDER_WALLET_OPTIONS.map((option) => {
