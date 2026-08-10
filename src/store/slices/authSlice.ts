@@ -8,7 +8,16 @@ import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
-import { type AccountStatus, type AuthState, type LivenessStatus, type User, type UserRole, type WalletProvider, WorldId } from '@/types/authTypes';
+import {
+   type AccountStatus,
+   type AuthState,
+   type LivenessStatus,
+   type User,
+   type UserRole,
+   type WalletFaceStatus,
+   type WalletProvider,
+   WorldId
+} from '@/types/authTypes';
 
 type UpdateUserPayload = {
    username?: string;
@@ -191,6 +200,9 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    diditSessionUrl: (row as UserRow & { didit_session_url?: string | null }).didit_session_url ?? undefined,
    livenessStatus: (row as UserRow & { liveness_status?: LivenessStatus | null }).liveness_status ?? undefined,
    livenessSessionId: (row as UserRow & { liveness_session_id?: string | null }).liveness_session_id ?? undefined,
+   walletFaceStatus: (row as UserRow & { wallet_face_status?: WalletFaceStatus | null }).wallet_face_status ?? undefined,
+   walletFaceSessionId:
+      (row as UserRow & { wallet_face_session_id?: string | null }).wallet_face_session_id ?? undefined,
    telegramUsername: row.telegram_username ?? undefined,
    telegramId: toOptionalString(row.telegram_id),
    chatId: toOptionalString(row.chat_id),

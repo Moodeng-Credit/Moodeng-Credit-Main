@@ -12,6 +12,7 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 import { OPENFORT_SHIELD_SESSION_URL } from '@/lib/web3/openfort/config';
+import { WalletGateError } from '@/lib/web3/openfort/walletFaceGate';
 
 /**
  * Mint a one-time Shield encryption session id via the edge function.
@@ -41,6 +42,24 @@ export const createShieldEncryptionSession = async (): Promise<string> => {
 
    if (!response.ok) {
       const detail = await response.text().catch(() => '');
+
+      // A 403 here is the abuse gate, not a fault: the caller has no approved face scan on
+      // file, or the face already holds a wallet. Surface it as a typed error so the UI can
+      // route to the scan (or explain a terminal refusal) rather than show "something went wrong".
+      if (response.status === 403) {
+         const body = (() => {
+            try {
+               return JSON.parse(detail) as { error?: string; code?: string };
+            } catch {
+               return null;
+            }
+         })();
+         throw new WalletGateError(
+            body?.error ?? 'A quick face check is needed before we can create your instant wallet.',
+            body?.code ?? 'FACE_REQUIRED'
+         );
+      }
+
       throw new Error(`Could not start wallet recovery session (${response.status}). ${detail}`.trim());
    }
 

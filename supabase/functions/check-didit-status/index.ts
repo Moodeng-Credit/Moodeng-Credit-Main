@@ -18,7 +18,9 @@ import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/did
 // (claimDiditNotification), so a status only ever produces one notification no matter
 // which path discovers it first. All writes are idempotent with the webhook's.
 //
-// Body: { kind: 'liveness' | 'id' } — which of the caller's sessions to sync.
+// Body: { kind: 'liveness' | 'id' | 'wallet' } — which of the caller's sessions to sync.
+// 'wallet' is the embedded-wallet face gate (users.wallet_face_*), which is deliberately
+// separate from the KYC liveness gate so the two can never overwrite each other.
 // Response: { synced: boolean, status?: string } where status is Didit's raw session
 // status ('Not Started', 'In Progress', 'In Review', 'Approved', 'Declined',
 // 'Abandoned', 'Expired').
@@ -114,6 +116,38 @@ const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUse
       warningsFlagDuplicate(decision.warnings)
    );
 };
+
+// --- Embedded-wallet face gate (copied from didit-webhook — keep in sync) ------------
+
+/** Every 1:N match in a decision. face_match contributes only its duplicate-specific arrays. */
+const collectFaceSearchMatches = (decision: DiditDecision | null | undefined): { userId?: string; score: number }[] => {
+   if (!decision) return [];
+   const entries: unknown[] = [];
+   for (const block of [decision.face_search, decision.liveness]) {
+      if (!block) continue;
+      entries.push(
+         ...asArray(block.results),
+         ...asArray(block.matches),
+         ...asArray(block.detected_faces),
+         ...asArray(block.duplicated_faces),
+         ...asArray(block.duplicate_faces)
+      );
+   }
+   entries.push(...asArray(decision.face_match?.duplicated_faces), ...asArray(decision.face_match?.duplicate_faces));
+
+   return entries.map((entry) => {
+      const raw = Number(readField(entry, ['score', 'similarity', 'confidence']) ?? 0);
+      const matchedVendor = readField(entry, ['vendor_data', 'external_user_id', 'user_id']);
+      return {
+         userId: typeof matchedVendor === 'string' ? matchedVendor : undefined,
+         score: raw > 0 && raw <= 1 ? raw * 100 : raw
+      };
+   });
+};
+
+/** True when the scan matched THIS account's own prior enrollment (positive identity proof). */
+const matchesOwnEnrollment = (decision: DiditDecision | null | undefined, currentUserId: string): boolean =>
+   collectFaceSearchMatches(decision).some((match) => match.userId === currentUserId && match.score >= FACE_MATCH_THRESHOLD);
 
 const hasCombinedDuplicate = (decision: DiditDecision | null | undefined, currentUserId: string): boolean => {
    if (!decision) return false;
@@ -220,17 +254,19 @@ serve(async (req) => {
          return jsonResponse({ error: 'Invalid authorization token' }, 401);
       }
 
-      let kind: 'liveness' | 'id' = 'id';
+      let kind: 'liveness' | 'id' | 'wallet' = 'id';
       try {
          const body = (await req.json()) as { kind?: unknown };
-         if (body?.kind === 'liveness' || body?.kind === 'id') kind = body.kind;
+         if (body?.kind === 'liveness' || body?.kind === 'id' || body?.kind === 'wallet') kind = body.kind;
       } catch {
          // Missing body defaults to 'id'.
       }
 
       const { data: profile, error: profileError } = await supabase
          .from('users')
-         .select('liveness_session_id, liveness_status, didit_session_id, didit_id_status, is_didit')
+         .select(
+            'liveness_session_id, liveness_status, didit_session_id, didit_id_status, is_didit, wallet_face_session_id, wallet_face_status, user_role'
+         )
          .eq('id', user.id)
          .maybeSingle();
 
@@ -245,9 +281,13 @@ serve(async (req) => {
          didit_session_id?: string | null;
          didit_id_status?: string | null;
          is_didit?: string | null;
+         wallet_face_session_id?: string | null;
+         wallet_face_status?: string | null;
+         user_role?: string | null;
       };
 
-      const sessionId = kind === 'liveness' ? row.liveness_session_id : row.didit_session_id;
+      const sessionId =
+         kind === 'liveness' ? row.liveness_session_id : kind === 'wallet' ? row.wallet_face_session_id : row.didit_session_id;
       if (!sessionId) {
          return jsonResponse({ synced: false, reason: 'no-session' });
       }
@@ -265,6 +305,43 @@ serve(async (req) => {
 
       const status = state.status;
       const normalized = status.toLowerCase();
+
+      if (kind === 'wallet') {
+         // Same transitions as the webhook's wallet branch — see didit-webhook for why a
+         // KYC'd borrower needs a POSITIVE self-match rather than merely "no duplicate".
+         let walletFaceStatus: 'APPROVED' | 'DUPLICATE' | 'MISMATCH' | 'DECLINED' | null = null;
+
+         if (status === 'Approved' || status === 'Declined') {
+            if (hasDuplicateFace(state.decision, user.id)) {
+               walletFaceStatus = 'DUPLICATE';
+            } else if (status === 'Declined') {
+               walletFaceStatus = 'DECLINED';
+            } else if (row.user_role === 'borrower' && row.is_didit === 'ACTIVE' && !matchesOwnEnrollment(state.decision, user.id)) {
+               walletFaceStatus = 'MISMATCH';
+            } else {
+               walletFaceStatus = 'APPROVED';
+            }
+         } else if (status === 'Abandoned' || status === 'Expired') {
+            walletFaceStatus = 'DECLINED';
+         }
+
+         // Never downgrade an approval the webhook already spent: once CONSUMED the wallet
+         // has been minted, and re-writing the column would strand a working wallet.
+         if (walletFaceStatus && row.wallet_face_status !== walletFaceStatus && row.wallet_face_status !== 'CONSUMED') {
+            const { error: updateError } = await supabase
+               .from('users')
+               .update({ wallet_face_status: walletFaceStatus, wallet_face_checked_at: new Date().toISOString() })
+               .eq('id', user.id)
+               .eq('wallet_face_session_id', sessionId);
+            if (updateError) {
+               console.error('[check-didit-status] Failed to update wallet face gate:', updateError.message);
+               return jsonResponse({ error: 'Database error' }, 500);
+            }
+            console.log(`[check-didit-status] Wallet face ${walletFaceStatus} for user ${user.id} (session ${sessionId})`);
+         }
+
+         return jsonResponse({ synced: true, status });
+      }
 
       if (kind === 'liveness') {
          // Same transitions as the webhook's liveness branch. Non-terminal statuses are

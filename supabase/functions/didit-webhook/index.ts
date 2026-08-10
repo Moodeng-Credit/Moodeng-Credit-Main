@@ -176,6 +176,62 @@ const hasCombinedDuplicate = (decision: DiditDecision | null | undefined, curren
    );
 };
 
+// --- Embedded-wallet face gate helpers ----------------------------------------------
+//
+// The wallet gate needs two things the KYC gate never asked for:
+//   1. the identities behind a 1:N hit, so a borrower/lender collision can be reported
+//      rather than merely refused, and
+//   2. a POSITIVE self-match — proof the scanned face is the SAME face this account
+//      enrolled at KYC, not just "not somebody else's". Absence of a duplicate is not
+//      proof of identity: a face that matches nothing at all also produces no duplicate.
+
+/** Every 1:N match in a decision, as { userId, score }. Only 1:N sources — never face_match's 1:1 result. */
+const collectFaceSearchMatches = (decision: DiditDecision | null | undefined): { userId?: string; score: number }[] => {
+   if (!decision) return [];
+   const blocks: (DiditFeatureBlock | undefined)[] = [decision.face_search, decision.liveness];
+   const entries: unknown[] = [];
+
+   for (const block of blocks) {
+      if (!block) continue;
+      entries.push(
+         ...asArray(block.results),
+         ...asArray(block.matches),
+         ...asArray(block.detected_faces),
+         ...asArray(block.duplicated_faces),
+         ...asArray(block.duplicate_faces)
+      );
+   }
+   // face_match only contributes its duplicate-specific arrays: its `results`/`matches` hold the
+   // 1:1 selfie-vs-document comparison, which is not an identity hit against another account.
+   entries.push(...asArray(decision.face_match?.duplicated_faces), ...asArray(decision.face_match?.duplicate_faces));
+
+   return entries.map((entry) => {
+      const raw = Number(readField(entry, ['score', 'similarity', 'confidence']) ?? 0);
+      const matchedVendor = readField(entry, ['vendor_data', 'external_user_id', 'user_id']);
+      return {
+         userId: typeof matchedVendor === 'string' ? matchedVendor : undefined,
+         score: raw > 0 && raw <= 1 ? raw * 100 : raw
+      };
+   });
+};
+
+/** Distinct OTHER accounts whose enrolled face this scan matched above threshold. */
+const collectDuplicateUserIds = (decision: DiditDecision | null | undefined, currentUserId: string): string[] => [
+   ...new Set(
+      collectFaceSearchMatches(decision)
+         .filter((match) => match.score >= FACE_MATCH_THRESHOLD && match.userId && match.userId !== currentUserId)
+         .map((match) => match.userId as string)
+   )
+];
+
+/**
+ * True when the scan matched THIS account's own prior enrollment. Used to hold a KYC'd
+ * borrower to the face they verified with — without it, someone who took over the account
+ * could mint the wallet with a completely different face and never trip the duplicate rule.
+ */
+const matchesOwnEnrollment = (decision: DiditDecision | null | undefined, currentUserId: string): boolean =>
+   collectFaceSearchMatches(decision).some((match) => match.userId === currentUserId && match.score >= FACE_MATCH_THRESHOLD);
+
 // Best-effort human-readable decline reason from Didit's decision payload. Didit
 // attaches warnings to each feature block (id_verification, face_match, liveness, …)
 // with short descriptions; collect the distinct ones so the user knows what to fix
@@ -235,6 +291,52 @@ const classifyWorkflow = (workflowId: string | undefined): WorkflowKind => {
    if (workflowId === Deno.env.get('DIDIT_ID_WORKFLOW_ID')) return 'id';
    if (workflowId === Deno.env.get('DIDIT_WORKFLOW_ID')) return 'legacy';
    return 'unknown';
+};
+
+/**
+ * Log a refused wallet face scan that matched an existing account into the same
+ * fraud_signal_alerts table the daily scan uses (20260629000000), so it lands in the
+ * founder's existing review flow instead of a new one.
+ *
+ * Severity is about the roles involved: two accounts on the SAME side of the book is
+ * multi-accounting, while a borrower and a lender being one person is self-dealing —
+ * the thing wallet-level checks alone can never catch, because they'd be two different
+ * wallets belonging to the same face.
+ */
+// deno-lint-ignore no-explicit-any
+const recordWalletFaceCollision = async (
+   adminSupabase: any,
+   userId: string,
+   userRole: string | null,
+   matchedUserIds: string[],
+   sessionId: string
+): Promise<void> => {
+   try {
+      const { data: matched } = await adminSupabase
+         .from('users')
+         .select('id, user_role, email, username')
+         .in('id', matchedUserIds);
+
+      const matchedRows = (matched ?? []) as { id: string; user_role?: string | null }[];
+      const crossRole = matchedRows.some((row) => row.user_role && userRole && row.user_role !== userRole);
+
+      await adminSupabase.from('fraud_signal_alerts').insert({
+         signal_type: 'embedded_wallet_face_collision',
+         subject_key: `${userId}:${sessionId}`,
+         details: {
+            user_id: userId,
+            user_role: userRole,
+            session_id: sessionId,
+            matched_accounts: matched ?? matchedUserIds.map((id) => ({ id })),
+            borrower_and_lender: crossRole,
+            severity: crossRole ? 'critical' : 'warning',
+            outcome: 'wallet_creation_refused'
+         }
+      });
+   } catch (error) {
+      // Never fail the webhook over telemetry — the refusal itself is already persisted.
+      console.error('[didit-webhook] Failed to record wallet face collision:', error instanceof Error ? error.message : error);
+   }
 };
 
 serve(async (req) => {
@@ -310,6 +412,75 @@ serve(async (req) => {
          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
          { auth: { autoRefreshToken: false, persistSession: false } }
       );
+
+      // Embedded-wallet face gate. It runs on the SAME Didit workflow as the KYC liveness
+      // pre-gate (both want liveness + 1:N face search), so workflow_id can't tell them apart.
+      // The session id can: create-didit-session pins a wallet scan to wallet_face_session_id.
+      // Checked before the liveness branch so a wallet scan never writes the KYC gate.
+      if (sessionId && (kind === 'liveness' || kind === 'unknown')) {
+         const { data: walletCandidate } = await adminSupabase
+            .from('users')
+            .select('id, user_role, is_didit')
+            .eq('id', vendorData)
+            .eq('wallet_face_session_id', sessionId)
+            .maybeSingle();
+
+         if (walletCandidate) {
+            // Ignore non-terminal updates so we don't clobber PENDING mid-flow.
+            if (status !== 'Approved' && status !== 'Declined' && status !== 'Abandoned' && status !== 'Expired') {
+               return jsonResponse({ success: true });
+            }
+
+            const profile = walletCandidate as { user_role?: string | null; is_didit?: string | null };
+            let walletFaceStatus: 'APPROVED' | 'DUPLICATE' | 'MISMATCH' | 'DECLINED';
+            let duplicateUserIds: string[] = [];
+
+            if (status === 'Abandoned' || status === 'Expired') {
+               walletFaceStatus = 'DECLINED';
+            } else {
+               const decision = payload.decision ?? (await fetchDecision(sessionId));
+               duplicateUserIds = collectDuplicateUserIds(decision, vendorData);
+
+               if (duplicateUserIds.length > 0 || hasDuplicateFace(decision, vendorData)) {
+                  // This face already holds an account. One person, one sponsored wallet.
+                  walletFaceStatus = 'DUPLICATE';
+               } else if (status === 'Declined') {
+                  walletFaceStatus = 'DECLINED';
+               } else if (profile.user_role === 'borrower' && profile.is_didit === 'ACTIVE' && !matchesOwnEnrollment(decision, vendorData)) {
+                  // A verified borrower must present the face they KYC'd with. No self-match
+                  // means this is a different person on a verified account — refuse, and do it
+                  // distinctly from DUPLICATE so the screen can tell them what actually went wrong.
+                  walletFaceStatus = 'MISMATCH';
+               } else {
+                  walletFaceStatus = 'APPROVED';
+               }
+            }
+
+            const { error: walletFaceError } = await adminSupabase
+               .from('users')
+               .update({ wallet_face_status: walletFaceStatus, wallet_face_checked_at: new Date().toISOString() })
+               .eq('id', vendorData)
+               .eq('wallet_face_session_id', sessionId);
+
+            if (walletFaceError) {
+               console.error('[didit-webhook] Failed to update wallet face gate:', walletFaceError.message);
+               return jsonResponse({ success: false, error: 'Database error' }, 500);
+            }
+
+            // A face that already belongs to another account is worth a look even though we
+            // refused it — and if the two accounts sit on opposite sides of the book, it is the
+            // self-dealing signal the fraud scan exists to surface.
+            if (duplicateUserIds.length > 0) {
+               await recordWalletFaceCollision(adminSupabase, vendorData, profile.user_role ?? null, duplicateUserIds, sessionId);
+            }
+
+            console.log(
+               `[didit-webhook] Wallet face ${walletFaceStatus} for user ${vendorData} (session ${sessionId})` +
+                  (duplicateUserIds.length > 0 ? ` matched ${duplicateUserIds.length} other account(s)` : '')
+            );
+            return jsonResponse({ success: true });
+         }
+      }
 
       // Liveness pre-gate: resolve the attempt's status (incl. 1:N face-search dedup). Never
       // touches is_didit - verified status is granted only by the ID/legacy workflow below.
