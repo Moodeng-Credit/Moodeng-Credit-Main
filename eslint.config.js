@@ -19,7 +19,10 @@ export default [
          'dist/**',
          'build/**',
          'src/generated/**',
-         'supabase/functions/**'
+         'supabase/functions/**',
+         // Service worker: shipped verbatim, and runs in a worker global scope
+         // the app tsconfig doesn't cover.
+         'public/**'
       ]
    },
    js.configs.recommended,
