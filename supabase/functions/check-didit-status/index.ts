@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
+import { collectDuplicateUserIds } from '../_shared/walletFaceVerdict.ts';
 
 // On-demand Didit status sync for the authenticated caller.
 //
@@ -116,38 +117,6 @@ const hasDuplicateFace = (decision: DiditDecision | null | undefined, currentUse
       warningsFlagDuplicate(decision.warnings)
    );
 };
-
-// --- Embedded-wallet face gate (copied from didit-webhook — keep in sync) ------------
-
-/** Every 1:N match in a decision. face_match contributes only its duplicate-specific arrays. */
-const collectFaceSearchMatches = (decision: DiditDecision | null | undefined): { userId?: string; score: number }[] => {
-   if (!decision) return [];
-   const entries: unknown[] = [];
-   for (const block of [decision.face_search, decision.liveness]) {
-      if (!block) continue;
-      entries.push(
-         ...asArray(block.results),
-         ...asArray(block.matches),
-         ...asArray(block.detected_faces),
-         ...asArray(block.duplicated_faces),
-         ...asArray(block.duplicate_faces)
-      );
-   }
-   entries.push(...asArray(decision.face_match?.duplicated_faces), ...asArray(decision.face_match?.duplicate_faces));
-
-   return entries.map((entry) => {
-      const raw = Number(readField(entry, ['score', 'similarity', 'confidence']) ?? 0);
-      const matchedVendor = readField(entry, ['vendor_data', 'external_user_id', 'user_id']);
-      return {
-         userId: typeof matchedVendor === 'string' ? matchedVendor : undefined,
-         score: raw > 0 && raw <= 1 ? raw * 100 : raw
-      };
-   });
-};
-
-/** True when the scan matched THIS account's own prior enrollment (positive identity proof). */
-const matchesOwnEnrollment = (decision: DiditDecision | null | undefined, currentUserId: string): boolean =>
-   collectFaceSearchMatches(decision).some((match) => match.userId === currentUserId && match.score >= FACE_MATCH_THRESHOLD);
 
 const hasCombinedDuplicate = (decision: DiditDecision | null | undefined, currentUserId: string): boolean => {
    if (!decision) return false;
@@ -307,17 +276,22 @@ serve(async (req) => {
       const normalized = status.toLowerCase();
 
       if (kind === 'wallet') {
-         // Same transitions as the webhook's wallet branch — see didit-webhook for why a
-         // KYC'd borrower needs a POSITIVE self-match rather than merely "no duplicate".
-         let walletFaceStatus: 'APPROVED' | 'DUPLICATE' | 'MISMATCH' | 'DECLINED' | null = null;
+         // MUST match didit-webhook's resolveWalletFaceVerdict exactly. This is the pull
+         // path for the same scan, so any divergence means the answer depends on whether a
+         // webhook happened to arrive — the worst kind of intermittent bug.
+         //
+         // Critically: do NOT use hasDuplicateFace() here. It treats a match with no
+         // vendor_data as somebody else's, which is right on a first scan and wrong here,
+         // where the user's OWN enrollment is expected to match. See the long note in
+         // didit-webhook above collectFaceSearchMatches.
+         let walletFaceStatus: 'APPROVED' | 'DUPLICATE' | 'DECLINED' | null = null;
 
          if (status === 'Approved' || status === 'Declined') {
-            if (hasDuplicateFace(state.decision, user.id)) {
+            const duplicateUserIds = collectDuplicateUserIds(state.decision, user.id);
+            if (duplicateUserIds.length > 0) {
                walletFaceStatus = 'DUPLICATE';
             } else if (status === 'Declined') {
                walletFaceStatus = 'DECLINED';
-            } else if (row.user_role === 'borrower' && row.is_didit === 'ACTIVE' && !matchesOwnEnrollment(state.decision, user.id)) {
-               walletFaceStatus = 'MISMATCH';
             } else {
                walletFaceStatus = 'APPROVED';
             }

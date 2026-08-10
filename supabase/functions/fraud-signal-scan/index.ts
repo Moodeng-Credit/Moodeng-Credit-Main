@@ -41,7 +41,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
    }
 
-   const signals = ((data?.signals ?? []) as FraudSignal[]) ?? [];
+   // Embedded-wallet face signals are written by didit-webhook as they happen, so they can't
+   // be produced by the scan above — it would have no way to detect them after the fact.
+   // They're collected here instead and ride the same delivery path, rather than growing a
+   // second alerting channel that would need its own destinations and its own monitoring.
+   const { data: faceData, error: faceError } = await supabase.rpc('scan_wallet_face_signals', {
+      stuck_grant_minutes: typeof body.stuckGrantMinutes === 'number' ? body.stuckGrantMinutes : 60
+   });
+   if (faceError) {
+      // Don't lose the wallet/IP signals we already have because the face scan failed —
+      // record the fault and carry on with what we could gather.
+      console.error('[fraud-signal-scan] wallet face scan failed:', faceError.message);
+   }
+
+   const signals = [
+      ...(((data?.signals ?? []) as FraudSignal[]) ?? []),
+      ...(((faceData?.signals ?? []) as FraudSignal[]) ?? [])
+   ];
    if (!signals.length) {
       await recordJobRun(supabase, JOB_NAME, { startedAt, ok: true, signalCount: 0, detail: { message: 'no new signals' } });
       return new Response(JSON.stringify({ message: 'No new fraud signals' }), { status: 200, headers: corsHeaders });

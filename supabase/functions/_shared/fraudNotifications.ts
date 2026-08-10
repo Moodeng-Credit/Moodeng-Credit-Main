@@ -25,6 +25,10 @@ export type FraudSignal = {
    lender_user_id?: string;
    lender_username?: string;
    shared_ip_count?: number;
+   // Embedded-wallet face gate (scan_wallet_face_signals).
+   user_role?: string;
+   stuck_count?: number;
+   details?: Record<string, unknown>;
 };
 
 export const describeFraudSignal = (s: FraudSignal): string => {
@@ -49,6 +53,17 @@ export const describeFraudSignal = (s: FraudSignal): string => {
          return `${s.account_count} accounts from the same network block${s.asn_org ? ` (${s.asn_org})` : ''}\n  accounts: ${(s.accounts ?? [])
             .map((a) => `${a.username ?? a.user_id} (${a.role})`)
             .join('; ')}`;
+      // --- Embedded-wallet face gate ---
+      case 'embedded_wallet_face_collision':
+         return `Instant wallet REFUSED — this face is already enrolled on another account${
+            s.borrower_and_lender ? ' — INCLUDING a borrower AND a lender (one person on both sides)' : ''
+         }\n  user: ${s.user_id} (${s.user_role ?? 'unknown role'})\n  matched: ${JSON.stringify(
+            (s.details as { matched_accounts?: unknown } | undefined)?.matched_accounts ?? []
+         )}`;
+      case 'wallet_face_unverified_self_match':
+         return `Instant wallet allowed, but the scan did not confirm the account's own enrolled face\n  user: ${s.user_id} (${s.user_role ?? 'unknown role'}) — informational; review only if takeover is suspected`;
+      case 'embedded_wallet_grant_stuck':
+         return `${s.stuck_count} instant wallet grant(s) claimed but never completed — users may have scanned and received no wallet. Check Openfort Shield health.`;
       default:
          return `${s.type}: ${JSON.stringify(s)}`;
    }
