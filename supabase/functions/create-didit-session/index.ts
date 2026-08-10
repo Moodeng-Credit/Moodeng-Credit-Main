@@ -235,6 +235,24 @@ serve(async (req) => {
          }
       }
 
+      // Pin the WALLET face scan to this session — the linchpin of the whole gate. The webhook
+      // and check-didit-status both identify a wallet scan by matching Didit's session_id
+      // against users.wallet_face_session_id; without this write that match never happens, the
+      // scan's result falls through to the KYC liveness branch (a wallet scan reuses the
+      // liveness workflow, so classifyWorkflow reads it as 'liveness') and corrupts the caller's
+      // liveness_status, while wallet_face_status never becomes APPROVED and the mint is refused
+      // forever. Reset to PENDING so a fresh attempt can't inherit a prior DECLINED/DUPLICATE.
+      if (kind === 'wallet' && diditBody.session_id) {
+         const { error: walletResetError } = await supabase
+            .from('users')
+            .update({ wallet_face_status: 'PENDING', wallet_face_session_id: diditBody.session_id })
+            .eq('id', user.id);
+         if (walletResetError) {
+            console.error('[create-didit-session] Failed to reset wallet face gate:', walletResetError.message);
+            return jsonResponse({ error: 'Database error' }, 500);
+         }
+      }
+
       // Mark that the user started the document/verification step so the frontend can show
       // "Verification in progress" across the app even after they leave the polling screen.
       // Store the session id/url so an unfinished session can be resumed ("Continue
