@@ -44,7 +44,7 @@ import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSl
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
-import { useCreateInstantWallet } from '@/lib/web3/openfort';
+import { useCreateInstantWallet, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
 import WalletAccountInsights from '@/views/account/WalletAccountInsights';
 
@@ -1199,7 +1199,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                             the dead end borrowers hit: a legacy Base borrower prompted to
                             "Confirm your Base Account" had no route to an Instant Wallet, only
                             back to the wallet they couldn't reach. */}
-                        {instantWallet.isConfigured ? (
+                        {instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED ? (
                            <button
                               type="button"
                               disabled={isConnecting || instantWallet.isCreating}
@@ -1972,7 +1972,7 @@ export default function AccountSettings() {
                                rather than only in onboarding: disconnecting is exactly when
                                someone discovers they have no wallet app to reconnect with, and
                                before this the only offer was "connect one you already own". */}
-                           {!hasWallet && instantWallet.isConfigured ? (
+                           {!hasWallet && instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED ? (
                               <div className="flex flex-col gap-md-2 border-t border-md-neutral-300 px-md-3 py-md-3">
                                  <div className="flex items-start gap-md-2">
                                     <img src="/hippos/hippo-wallet.png" alt="" className="size-9 shrink-0 object-contain" />

@@ -13,6 +13,7 @@ export {
 } from '@/lib/web3/openfort/embeddedWallet';
 export { useCreateInstantWallet, type InstantWalletReturnTo } from '@/lib/web3/openfort/useCreateInstantWallet';
 export {
+   WALLET_FACE_GATE_ENABLED,
    WALLET_GATE_CODE,
    WalletGateError,
    hasEmbeddedWallet,

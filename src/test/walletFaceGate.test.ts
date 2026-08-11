@@ -4,6 +4,7 @@ import {
    hasEmbeddedWallet,
    isRetryableGateCode,
    needsWalletFaceScan,
+   walletFaceScanRequiredForUser,
    WALLET_GATE_CODE,
    WalletGateError,
    walletFaceStatusCopy
@@ -25,31 +26,43 @@ describe('walletFaceGate', () => {
       });
    });
 
-   describe('needsWalletFaceScan', () => {
+   // needsWalletFaceScan = master flag AND the per-user decision. The flag is a build-time env
+   // var, OFF in the test env (and in prod until the real 2-face test passes), so
+   // needsWalletFaceScan is always false here — that's the ship-dark guarantee. The per-user
+   // logic is tested directly via walletFaceScanRequiredForUser.
+   describe('needsWalletFaceScan (ship-dark: gate off by default)', () => {
+      it('never scans while the master flag is off, whatever the user state', () => {
+         expect(needsWalletFaceScan(user({}))).toBe(false);
+         expect(needsWalletFaceScan(user({ walletFaceStatus: 'PENDING' }))).toBe(false);
+         expect(needsWalletFaceScan(user({ walletFaceStatus: 'DUPLICATE' }))).toBe(false);
+      });
+   });
+
+   describe('walletFaceScanRequiredForUser (the flag-independent decision)', () => {
       it('requires a scan for a first-time creation', () => {
-         expect(needsWalletFaceScan(user({}))).toBe(true);
-         expect(needsWalletFaceScan(user({ walletProvider: 'base_wallet', walletAddress: '0xabc' }))).toBe(true);
+         expect(walletFaceScanRequiredForUser(user({}))).toBe(true);
+         expect(walletFaceScanRequiredForUser(user({ walletProvider: 'base_wallet', walletAddress: '0xabc' }))).toBe(true);
       });
 
       it('skips the scan when a live approval is on file', () => {
-         expect(needsWalletFaceScan(user({ walletFaceStatus: 'APPROVED' }))).toBe(false);
+         expect(walletFaceScanRequiredForUser(user({ walletFaceStatus: 'APPROVED' }))).toBe(false);
       });
 
       // The important one: recovery runs on every page reload and before every send. Gating
       // it would lock existing holders out of their own money.
       it('never gates recovery of an existing embedded wallet', () => {
          const holder = user({ walletProvider: 'openfort', walletAddress: '0xabc', walletFaceStatus: 'CONSUMED' });
-         expect(needsWalletFaceScan(holder)).toBe(false);
+         expect(walletFaceScanRequiredForUser(holder)).toBe(false);
       });
 
       it('re-gates once an approval has been spent and no wallet exists', () => {
-         expect(needsWalletFaceScan(user({ walletFaceStatus: 'CONSUMED' }))).toBe(true);
+         expect(walletFaceScanRequiredForUser(user({ walletFaceStatus: 'CONSUMED' }))).toBe(true);
       });
 
       it('gates a refused scan', () => {
-         expect(needsWalletFaceScan(user({ walletFaceStatus: 'DUPLICATE' }))).toBe(true);
-         expect(needsWalletFaceScan(user({ walletFaceStatus: 'MISMATCH' }))).toBe(true);
-         expect(needsWalletFaceScan(user({ walletFaceStatus: 'PENDING' }))).toBe(true);
+         expect(walletFaceScanRequiredForUser(user({ walletFaceStatus: 'DUPLICATE' }))).toBe(true);
+         expect(walletFaceScanRequiredForUser(user({ walletFaceStatus: 'MISMATCH' }))).toBe(true);
+         expect(walletFaceScanRequiredForUser(user({ walletFaceStatus: 'PENDING' }))).toBe(true);
       });
    });
 

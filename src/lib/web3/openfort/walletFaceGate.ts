@@ -18,6 +18,18 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OPENFORT_WALLET_PROVIDER } from '@/lib/web3/openfort/config';
 import type { User, WalletFaceStatus } from '@/types/authTypes';
 
+/**
+ * Master on/off switch for the whole embedded-wallet face gate. Default OFF, so the feature
+ * ships dark: with it off the product behaves exactly as before this project — borrowers
+ * create an instant wallet with no scan, lenders don't see the option. Flip it on only after
+ * the real 2-face test passes.
+ *
+ * The server half of the switch is WALLET_FACE_GATE_ENABLED in the openfort-shield-session
+ * edge function; BOTH must be on, because the server is the real enforcement point. Turn on
+ * with VITE_WALLET_FACE_GATE_ENABLED=true (build) AND WALLET_FACE_GATE_ENABLED=true (function).
+ */
+export const WALLET_FACE_GATE_ENABLED = import.meta.env.VITE_WALLET_FACE_GATE_ENABLED === 'true';
+
 /** Refusal codes returned by openfort-shield-session (mirrors may_mint_embedded_wallet). */
 export const WALLET_GATE_CODE = {
    FACE_REQUIRED: 'FACE_REQUIRED',
@@ -59,10 +71,22 @@ export const hasEmbeddedWallet = (user?: Pick<User, 'walletProvider' | 'walletAd
  * before every send, and gating it would lock people out of their own money. Only a first
  * mint, with no live approval on file, needs the camera.
  */
-export const needsWalletFaceScan = (user?: Pick<User, 'walletProvider' | 'walletAddress' | 'walletFaceStatus'> | null): boolean => {
+/**
+ * The scan-needed decision, IGNORING the master flag. Split out so the logic is unit-testable
+ * without depending on a build-time env var. Recovery of an existing wallet never needs a scan;
+ * a first mint with no live approval does.
+ */
+export const walletFaceScanRequiredForUser = (
+   user?: Pick<User, 'walletProvider' | 'walletAddress' | 'walletFaceStatus'> | null
+): boolean => {
    if (hasEmbeddedWallet(user)) return false;
    return user?.walletFaceStatus !== 'APPROVED';
 };
+
+export const needsWalletFaceScan = (user?: Pick<User, 'walletProvider' | 'walletAddress' | 'walletFaceStatus'> | null): boolean =>
+   // Gate off → never scan; createInstantWallet falls straight through to openfort.connect(),
+   // the pre-project borrower behaviour.
+   WALLET_FACE_GATE_ENABLED && walletFaceScanRequiredForUser(user);
 
 /** User-facing copy for a resolved scan. Keep in sync with GATE_MESSAGES in openfort-shield-session. */
 export const walletFaceStatusCopy = (

@@ -13,7 +13,7 @@ import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { checkCoinbaseKeysReachability } from '@/lib/coinbaseReachability';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { useCreateInstantWallet, useOpenfort } from '@/lib/web3/openfort';
+import { useCreateInstantWallet, useOpenfort, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
@@ -183,7 +183,9 @@ export default function ConnectWallet() {
             openConnectModal?.();
          }}
          isConnecting={status === 'pending'}
-         instantWalletConfigured={openfort.isConfigured}
+         // Lenders only see the Instant Wallet option when the gate is on — until then the
+         // lender picker is exactly what it was before this project (external wallets only).
+         instantWalletConfigured={openfort.isConfigured && WALLET_FACE_GATE_ENABLED}
          onCreateInstantWallet={handleCreateInstantWallet}
          isCreatingInstantWallet={openfort.isConnecting}
          instantWalletError={openfort.error}

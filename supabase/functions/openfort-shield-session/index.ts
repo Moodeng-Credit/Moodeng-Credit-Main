@@ -70,34 +70,55 @@ serve(async (req) => {
       //     re-mints a Shield session on every page reload and before every send, so refusing
       //     here would brick every existing wallet and lock people out of their own money.
       //   * not yet granted → require an APPROVED, unspent face scan.
-      const { data: gate, error: gateError } = await supabase.rpc('may_mint_embedded_wallet', {
-         p_user_id: userData.user.id
-      });
+      //
+      // Master switch: when WALLET_FACE_GATE_ENABLED is not 'true' the whole face gate is OFF
+      // and we restore the pre-project rule — borrower-only, no scan — but STILL allow anyone
+      // who already holds a grant (the 5 grandfathered wallets), so nobody loses access.
+      // Both this and the frontend flag must be on for the gate to run.
+      const gateEnabled = Deno.env.get('WALLET_FACE_GATE_ENABLED') === 'true';
 
-      if (gateError) {
-         console.error('[openfort-shield-session] Gate check failed', gateError.message);
-         return jsonResponse({ error: 'Could not check your wallet eligibility. Please try again.' }, 500);
-      }
-
-      const verdict = (gate ?? {}) as { allowed?: boolean; reason?: string; already_granted?: boolean };
-      if (!verdict.allowed) {
-         const reason = verdict.reason ?? 'FACE_REQUIRED';
-         // The client routes on this code: FACE_REQUIRED starts the scan, DUPLICATE/MISMATCH
-         // are terminal and must explain themselves instead of looping the user through a retry.
-         return jsonResponse({ error: GATE_MESSAGES[reason] ?? GATE_MESSAGES.FACE_REQUIRED, code: reason }, 403);
-      }
-
-      // Spend the approval BEFORE minting, so two racing taps can't turn one scan into two
-      // wallets — the second claim finds no APPROVED row and returns false. If the mint then
-      // fails downstream the grant row still exists, so the retry takes the already-granted
-      // path rather than demanding a second scan.
-      if (!verdict.already_granted) {
-         const { error: claimError } = await supabase.rpc('claim_embedded_wallet_grant', {
+      if (!gateEnabled) {
+         const { data: grant } = await supabase
+            .from('embedded_wallet_grants')
+            .select('user_id')
+            .eq('user_id', userData.user.id)
+            .maybeSingle();
+         if (!grant) {
+            const { data: profile } = await supabase.from('users').select('user_role').eq('id', userData.user.id).maybeSingle();
+            if (profile?.user_role !== 'borrower') {
+               return jsonResponse({ error: 'Instant wallet is available to borrowers only.', code: 'BORROWER_ONLY' }, 403);
+            }
+         }
+      } else {
+         const { data: gate, error: gateError } = await supabase.rpc('may_mint_embedded_wallet', {
             p_user_id: userData.user.id
          });
-         if (claimError) {
-            console.error('[openfort-shield-session] Grant claim failed', claimError.message);
-            return jsonResponse({ error: 'Could not reserve your instant wallet. Please try again.' }, 500);
+
+         if (gateError) {
+            console.error('[openfort-shield-session] Gate check failed', gateError.message);
+            return jsonResponse({ error: 'Could not check your wallet eligibility. Please try again.' }, 500);
+         }
+
+         const verdict = (gate ?? {}) as { allowed?: boolean; reason?: string; already_granted?: boolean };
+         if (!verdict.allowed) {
+            const reason = verdict.reason ?? 'FACE_REQUIRED';
+            // The client routes on this code: FACE_REQUIRED starts the scan, DUPLICATE/MISMATCH
+            // are terminal and must explain themselves instead of looping the user through a retry.
+            return jsonResponse({ error: GATE_MESSAGES[reason] ?? GATE_MESSAGES.FACE_REQUIRED, code: reason }, 403);
+         }
+
+         // Spend the approval BEFORE minting, so two racing taps can't turn one scan into two
+         // wallets — the second claim finds no APPROVED row and returns false. If the mint then
+         // fails downstream the grant row still exists, so the retry takes the already-granted
+         // path rather than demanding a second scan.
+         if (!verdict.already_granted) {
+            const { error: claimError } = await supabase.rpc('claim_embedded_wallet_grant', {
+               p_user_id: userData.user.id
+            });
+            if (claimError) {
+               console.error('[openfort-shield-session] Grant claim failed', claimError.message);
+               return jsonResponse({ error: 'Could not reserve your instant wallet. Please try again.' }, 500);
+            }
          }
       }
 

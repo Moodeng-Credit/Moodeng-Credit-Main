@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
-import { collectDuplicateUserIds } from '../_shared/walletFaceVerdict.ts';
+import { extractPortraitUrl, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
 
 // On-demand Didit status sync for the authenticated caller.
 //
@@ -234,7 +234,7 @@ serve(async (req) => {
       const { data: profile, error: profileError } = await supabase
          .from('users')
          .select(
-            'liveness_session_id, liveness_status, didit_session_id, didit_id_status, is_didit, wallet_face_session_id, wallet_face_status, user_role'
+            'liveness_session_id, liveness_status, didit_session_id, didit_id_status, is_didit, is_world_id, wallet_face_session_id, wallet_face_status, user_role'
          )
          .eq('id', user.id)
          .maybeSingle();
@@ -250,6 +250,7 @@ serve(async (req) => {
          didit_session_id?: string | null;
          didit_id_status?: string | null;
          is_didit?: string | null;
+         is_world_id?: string | null;
          wallet_face_session_id?: string | null;
          wallet_face_status?: string | null;
          user_role?: string | null;
@@ -276,28 +277,28 @@ serve(async (req) => {
       const normalized = status.toLowerCase();
 
       if (kind === 'wallet') {
-         // MUST match didit-webhook's resolveWalletFaceVerdict exactly. This is the pull
-         // path for the same scan, so any divergence means the answer depends on whether a
-         // webhook happened to arrive — the worst kind of intermittent bug.
-         //
-         // Critically: do NOT use hasDuplicateFace() here. It treats a match with no
-         // vendor_data as somebody else's, which is right on a first scan and wrong here,
-         // where the user's OWN enrollment is expected to match. See the long note in
-         // didit-webhook above collectFaceSearchMatches.
-         let walletFaceStatus: 'APPROVED' | 'DUPLICATE' | 'DECLINED' | null = null;
+         // The pull-path twin of the webhook's wallet branch — same shared resolver, so a
+         // missed/late webhook and this sync can never disagree. It 1:N face-searches the
+         // wallet portrait (document-free, so it covers lenders) and fails SAFE to DECLINED if
+         // the search can't run. See _shared/diditFaceSearch.ts.
+         const isKycdBorrower =
+            row.user_role === 'borrower' &&
+            (row.is_didit === 'ACTIVE' || row.is_world_id === 'ACTIVE' || row.liveness_status === 'APPROVED');
 
-         if (status === 'Approved' || status === 'Declined') {
-            const duplicateUserIds = collectDuplicateUserIds(state.decision, user.id);
-            if (duplicateUserIds.length > 0) {
-               walletFaceStatus = 'DUPLICATE';
-            } else if (status === 'Declined') {
-               walletFaceStatus = 'DECLINED';
-            } else {
-               walletFaceStatus = 'APPROVED';
-            }
-         } else if (status === 'Abandoned' || status === 'Expired') {
-            walletFaceStatus = 'DECLINED';
+         let kycPortraitUrl: string | null = null;
+         if (isKycdBorrower && row.didit_session_id) {
+            const kycState = await fetchSessionState(row.didit_session_id, apiKey);
+            kycPortraitUrl = extractPortraitUrl(kycState?.decision);
          }
+
+         const outcome = await resolveWalletFaceOutcome({
+            decision: state.decision,
+            userId: user.id,
+            livenessApproved: status === 'Approved',
+            isKycdBorrower,
+            kycPortraitUrl
+         });
+         const walletFaceStatus: 'APPROVED' | 'DUPLICATE' | 'MISMATCH' | 'DECLINED' = outcome.status;
 
          // Never downgrade an approval the webhook already spent: once CONSUMED the wallet
          // has been minted, and re-writing the column would strand a working wallet.
