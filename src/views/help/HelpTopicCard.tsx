@@ -34,7 +34,9 @@ export default function HelpTopicCard({ topic, locale }: HelpTopicCardProps): JS
    const [copied, setCopied] = useState(false);
 
    const question = pickText(topic.question, locale);
-   const steps = (locale === 'fil' ? topic.steps.fil : topic.steps.en) ?? topic.steps.en;
+   const intro = topic.intro ? pickText(topic.intro, locale) : null;
+   // steps is optional: explainer topics carry only an intro paragraph.
+   const steps = topic.steps ? (locale === 'fil' ? topic.steps.fil : topic.steps.en) ?? topic.steps.en : [];
    const panelId = `help-topic-${topic.id}`;
 
    const askUs = () => {
@@ -83,11 +85,19 @@ export default function HelpTopicCard({ topic, locale }: HelpTopicCardProps): JS
 
          {isOpen ? (
             <div id={panelId} className="border-t border-[#f3effe] px-4 pb-4 pt-3 dark:border-[#2a2235]">
-               <ol className="ml-4 list-decimal space-y-1.5 text-[13.5px] leading-relaxed text-[#3d3450] marker:text-[#8b8299] dark:text-[#D5CEDD]">
-                  {steps.map((step) => (
-                     <li key={step}>{step}</li>
-                  ))}
-               </ol>
+               {intro ? (
+                  <p className="text-[13.5px] leading-relaxed text-[#3d3450] dark:text-[#D5CEDD]">{intro}</p>
+               ) : null}
+
+               {steps.length > 0 ? (
+                  <ol
+                     className={`ml-4 list-decimal space-y-1.5 text-[13.5px] leading-relaxed text-[#3d3450] marker:text-[#8b8299] dark:text-[#D5CEDD] ${intro ? 'mt-3' : ''}`}
+                  >
+                     {steps.map((step) => (
+                        <li key={step}>{step}</li>
+                     ))}
+                  </ol>
+               ) : null}
 
                {topic.watchOut ? (
                   <div className="mt-3 flex gap-2 rounded-xl bg-[#f7f3ff] px-3 py-2.5 dark:bg-[#1e1730]">
