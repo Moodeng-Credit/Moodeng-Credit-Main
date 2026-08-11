@@ -51,7 +51,7 @@ Because your Trust Score is tied to your wallet, it travels with you — it's no
       lastUpdated: 'Jun 9, 2026',
       body: `Credit Levels determine how much you can borrow at a time.
 
-Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 — and unlocks new levels.
+Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — and unlocks new levels.
 
 You only advance by completing a Credit Growth Loan: a loan at your full current limit, repaid in full and on time.`
    },
@@ -255,7 +255,7 @@ I-tap ang "Explore the Request Board" para i-set ang specific loan terms mo. Kai
 
 Important notes tungkol sa credit limit mo
 - Starting limit: Bawat bagong borrower ay nagsisimula sa initial borrowing limit na $15.
-- Credit-building loans: Full-limit loan ito na gumagamit ng buong current credit limit mo, halimbawa full $15 request. Ang successful repayment ng ganitong loan lang ang paraan para tumaas ang limit mo sa next level, halimbawa $15 → $20 → $40 → $60 at pataas. Isang credit-building loan request lang ang puwedeng active at a time.
+- Credit-building loans: Full-limit loan ito na gumagamit ng buong current credit limit mo, halimbawa full $15 request. Ang successful repayment ng ganitong loan lang ang paraan para tumaas ang limit mo sa next level, halimbawa $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 at pataas. Isang credit-building loan request lang ang puwedeng active at a time.
 - Trust-building loans: Mas maliit na loans ito na below sa current credit limit mo. Nakakatulong ito bumuo ng Trust Score mo sa lenders, pero hindi nito tinataas ang overall credit limit mo. Puwede kang magkaroon ng multiple trust-building loan requests at the same time basta ang total ay nasa ilalim ng current limit mo.
 - Pag-unlock ng next level: Para umakyat, kailangan mong hiramin at fully repay ang buong limit mo. Halimbawa, kung $15 ang limit mo at $12 trust-building loan lang ang ni-request mo at nagbayad ka ng $15, hindi tataas ang limit mo. Kailangan mong hiramin ang buong $15 at bayaran ang total agreed amount, kasama ang anumang maliit na interest o additional repayment amount na inoffer mo at tinanggap ng lender, para ma-unlock ang next level.`
    },
@@ -273,7 +273,7 @@ Dahil naka-tie ang Trust Score mo sa wallet mo, dala mo ito kahit saan. Hindi it
       lastUpdated: 'Jun 9, 2026',
       body: `Tinutukoy ng mga antas ng kredito kung magkano ang puwede mong hiramin at a time.
 
-Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at fully nagbabayad, lumalaki ang limit mo — $15 → $20 → $40 → $60 — at nag-a-unlock ng bagong levels.
+Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at fully nagbabayad, lumalaki ang limit mo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — at nag-a-unlock ng bagong levels.
 
 Umakyat ka lang kapag nakumpleto mo ang Credit Growth Loan: loan sa buong current limit mo, fully repaid at on time.`
    },
@@ -399,7 +399,7 @@ Tap "Explore the Request Board" untuk mengatur syarat pinjaman. Kamu perlu menen
 
 Catatan penting tentang credit limit
 - Limit awal: Setiap peminjam baru mulai dengan limit $15.
-- Credit-building loans: Ini adalah pinjaman full-limit yang memakai seluruh credit limit saat ini, misalnya meminta penuh $15. Membayar pinjaman jenis ini dengan sukses adalah satu-satunya cara menaikkan limit ke level berikutnya, misalnya $15 -> $20 -> $40 -> $60 dan seterusnya. Kamu hanya boleh memiliki satu permintaan credit-building loan aktif dalam satu waktu.
+- Credit-building loans: Ini adalah pinjaman full-limit yang memakai seluruh credit limit saat ini, misalnya meminta penuh $15. Membayar pinjaman jenis ini dengan sukses adalah satu-satunya cara menaikkan limit ke level berikutnya, misalnya $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140 dan seterusnya. Kamu hanya boleh memiliki satu permintaan credit-building loan aktif dalam satu waktu.
 - Trust-building loans: Ini adalah pinjaman lebih kecil di bawah credit limit saat ini. Pinjaman ini membangun Trust Score dengan pemberi pinjaman, tetapi tidak menaikkan credit limit keseluruhan. Kamu boleh memiliki beberapa trust-building loan aktif selama totalnya tetap di bawah limit saat ini.
 - Membuka level berikutnya: Untuk naik level, kamu harus meminjam dan membayar penuh seluruh limit. Misalnya, jika limit kamu $15 dan kamu hanya meminta trust-building loan $12 lalu membayar $15, limit kamu tidak naik. Kamu harus meminjam penuh $15 dan membayar total yang disepakati, termasuk bunga kecil atau tambahan pembayaran yang kamu tawarkan dan diterima pemberi pinjaman.`
    },
@@ -417,7 +417,7 @@ Karena Trust Score tertaut ke wallet, skor ini ikut bersama kamu. Skor ini tidak
       lastUpdated: 'Jun 9, 2026',
       body: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
-Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan membayar penuh, limit kamu bertambah: $15 -> $20 -> $40 -> $60, dan membuka level baru.
+Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan membayar penuh, limit kamu bertambah: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, dan membuka level baru.
 
 Kamu hanya naik level dengan menyelesaikan Credit Growth Loan: pinjaman sebesar limit penuh saat ini, dibayar penuh dan tepat waktu.`
    },
@@ -556,7 +556,7 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
       lastUpdated: 'Jun 9, 2026',
       body: `ระดับเครดิตกำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
 
-ทุกคนเริ่มที่ Level 1 พร้อมวงเงิน $15 เมื่อคุณยืมและชำระคืนครบถ้วน วงเงินจะเพิ่มขึ้น: $15 → $20 → $40 → $60 และปลดล็อกระดับใหม่
+ทุกคนเริ่มที่ Level 1 พร้อมวงเงิน $15 เมื่อคุณยืมและชำระคืนครบถ้วน วงเงินจะเพิ่มขึ้น: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 และปลดล็อกระดับใหม่
 
 คุณจะเลื่อนระดับได้ด้วย Credit Growth Loan เท่านั้น: เงินกู้เต็มวงเงินปัจจุบันที่ชำระคืนเต็มจำนวนและตรงเวลา`
    },
@@ -663,7 +663,7 @@ Vì Trust Score gắn với ví của bạn, nó đi cùng bạn và không bị
       lastUpdated: 'Jun 9, 2026',
       body: `Hạng tín dụng xác định bạn có thể vay bao nhiêu trong một lần.
 
-Mọi người bắt đầu ở Level 1 với hạn mức $15. Khi bạn vay và trả đầy đủ, hạn mức tăng: $15 → $20 → $40 → $60 và mở khóa cấp mới.
+Mọi người bắt đầu ở Level 1 với hạn mức $15. Khi bạn vay và trả đầy đủ, hạn mức tăng: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 và mở khóa cấp mới.
 
 Bạn chỉ lên cấp bằng cách hoàn thành Credit Growth Loan: khoản vay bằng toàn bộ hạn mức hiện tại, được trả đủ và đúng hạn.`
    },

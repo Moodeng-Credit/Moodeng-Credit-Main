@@ -13,7 +13,7 @@ export type CreditLevelsVariant = 'support' | 'public';
 
 const PAGE_TITLE = 'How Credit Levels Work on Moodeng Credit';
 const PAGE_DESCRIPTION =
-   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60, what a Credit Growth Loan is, and how to unlock your next level.';
+   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit Growth Loan is, and how to unlock your next level.';
 // The public marketing route is the canonical home for this content so search
 // engines index one URL even though it also renders inside the in-app support area.
 const CANONICAL_PATH = '/learn/how-credit-levels-work';
@@ -22,7 +22,11 @@ const levels = [
    { level: 'Level 1', limit: '$15', state: 'Start', unlock: 'Verify, then make your first request' },
    { level: 'Level 2', limit: '$20', state: 'Next', unlock: 'Repay your $15 loan on time' },
    { level: 'Level 3', limit: '$40', state: 'Locked', unlock: 'Repay your $20 loan on time' },
-   { level: 'Level 4', limit: '$60', state: 'Locked', unlock: 'Repay your $40 loan on time' }
+   { level: 'Level 4', limit: '$60', state: 'Locked', unlock: 'Repay your $40 loan on time' },
+   { level: 'Level 5', limit: '$80', state: 'Locked', unlock: 'Repay your $60 loan on time' },
+   { level: 'Level 6', limit: '$100', state: 'Locked', unlock: 'Repay your $80 loan on time' },
+   { level: 'Level 7', limit: '$120', state: 'Locked', unlock: 'Repay your $100 loan on time' },
+   { level: 'Level 8', limit: '$140', state: 'Locked', unlock: 'Repay your $120 loan on time' }
 ];
 
 const pillars = [
@@ -46,7 +50,7 @@ const pillars = [
       icon: 'stairs',
       eyebrow: 'The pace',
       title: 'One level at a time',
-      lead: 'Limits step up $15 → $20 → $40 → $60.',
+      lead: 'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
       detail: 'No skipping or buying ahead — each level is earned from the one before.',
       shot: 'levelup' as const
    }
@@ -107,7 +111,7 @@ const faqs = [
    },
    {
       q: 'How do I move to the next level?',
-      a: 'Take a Credit Growth Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60.'
+      a: 'Take a Credit Growth Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.'
    },
    {
       q: 'Does borrowing a small amount level me up?',

@@ -135,7 +135,7 @@ If a user doesn't hold USDC yet and needs to repay:
 
 ## Can I have more than one loan at a time?
 
-Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit ($15 / $20 / $40 / $60) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
+Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit (from $15 up to $140) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
 
 ## Paying in parts (some now, some later)
 

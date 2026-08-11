@@ -6,11 +6,17 @@ import { usePageSeo } from '@/hooks/usePageSeo';
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
 
+// Mirrors CREDIT_TIERS in src/config/creditTiers.ts — [15, 20, 40, 60, 80, 100, 120, 140].
+// Keep in sync with that config if the tiers change.
 const levels = [
    { level: 'Level 1', limit: '$15', note: 'Start here', unlock: 'Verify and make your first request', state: 'Current' },
    { level: 'Level 2', limit: '$20', note: 'Next unlock', unlock: 'Borrow $15 and repay funded terms on time', state: 'Next' },
    { level: 'Level 3', limit: '$40', note: 'After that', unlock: 'Borrow $20 and repay funded terms on time', state: 'Locked' },
-   { level: 'Level 4', limit: '$60', note: 'Keep building', unlock: 'Borrow $40 and repay funded terms on time', state: 'Locked' }
+   { level: 'Level 4', limit: '$60', note: 'Keep building', unlock: 'Borrow $40 and repay funded terms on time', state: 'Locked' },
+   { level: 'Level 5', limit: '$80', note: 'Keep building', unlock: 'Borrow $60 and repay funded terms on time', state: 'Locked' },
+   { level: 'Level 6', limit: '$100', note: 'Keep building', unlock: 'Borrow $80 and repay funded terms on time', state: 'Locked' },
+   { level: 'Level 7', limit: '$120', note: 'Keep building', unlock: 'Borrow $100 and repay funded terms on time', state: 'Locked' },
+   { level: 'Level 8', limit: '$140', note: 'Current maximum', unlock: 'Borrow $120 and repay funded terms on time', state: 'Locked' }
 ];
 
 const examples = [
@@ -68,7 +74,7 @@ export default function CreditLevelingGuide(): JSX.Element {
    usePageSeo({
       title: 'Credit Leveling Guide | Moodeng Credit',
       description:
-         'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $60, plus trust-building vs credit-building loans.',
+         'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $140, plus trust-building vs credit-building loans.',
       canonicalPath: '/credit-leveling-guide'
    });
 
