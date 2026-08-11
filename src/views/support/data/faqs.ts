@@ -33,7 +33,7 @@ It goes up with on-time, in-full repayments and drops with late payments or defa
       question: 'What is a Credit Level?',
       answer: `Credit Levels control how much you can borrow at a time.
 
-You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan raises your limit and unlocks the next level — $15 → $20 → $40 → $60 — and beyond.`
+You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan raises your limit and unlocks the next level — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -93,7 +93,7 @@ Unlike a bank credit card or traditional credit-builder product, Moodeng's credi
 
 There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit), set the repayment date and interest rate, and lenders decide whether to fund you.
 
-Each successful repayment grows your limit step by step — $15 → $20 → $40 → $60, and beyond. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
+Each successful repayment grows your limit step by step — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
    }
 ];
 
@@ -126,7 +126,7 @@ Tumataas ito kapag nagbabayad ka on time at in full, at bumababa kapag late ang 
       question: 'Ano ang antas ng kredito?',
       answer: `Ang mga antas ng kredito ang kumokontrol kung magkano ang puwede mong hiramin at a time.
 
-Magsisimula ka sa Level 1 na may $15 limit. Bawat full repayment ng Credit-Building Loan ay nagpapataas ng limit mo at nag-u-unlock ng next level: $15 -> $20 -> $40 -> $60, at pataas pa.`
+Magsisimula ka sa Level 1 na may $15 limit. Bawat full repayment ng Credit-Building Loan ay nagpapataas ng limit mo at nag-u-unlock ng next level: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, at pataas pa.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -186,7 +186,7 @@ Hindi tulad ng bank credit card o traditional credit-builder product, hindi nire
 
 Walang minimum loan amounts, walang monthly subscriptions, walang setup costs, at walang fees. Ire-request mo ang kailangan mo, hanggang sa current limit ng antas ng kredito mo, ise-set ang repayment date at interest rate, at lenders ang magdedesisyon kung popondohan ka nila.
 
-Bawat successful repayment ay nagpapalaki ng limit mo step by step: $15 -> $20 -> $40 -> $60, at pataas pa. Kaya puwede kang magsimula sa maliit para subukan ang platform with low stakes, bumuo ng reputation, at lumaki lang sa bigger loans kapag handa ka na.`
+Bawat successful repayment ay nagpapalaki ng limit mo step by step: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, at pataas pa. Kaya puwede kang magsimula sa maliit para subukan ang platform with low stakes, bumuo ng reputation, at lumaki lang sa bigger loans kapag handa ka na.`
    }
 ];
 
@@ -219,7 +219,7 @@ Skor ini naik saat kamu membayar penuh dan tepat waktu, dan turun saat pembayara
       question: 'Apa itu level kredit?',
       answer: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
-Kamu mulai dari Level 1 dengan limit $15. Setiap pembayaran penuh untuk Credit-Building Loan menaikkan limit dan membuka level berikutnya: $15 -> $20 -> $40 -> $60, dan seterusnya.`
+Kamu mulai dari Level 1 dengan limit $15. Setiap pembayaran penuh untuk Credit-Building Loan menaikkan limit dan membuka level berikutnya: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, dan seterusnya.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -279,7 +279,7 @@ Berbeda dari kartu kredit bank atau produk credit-builder tradisional, kredit Mo
 
 Tidak ada minimum jumlah pinjaman, tidak ada langganan bulanan, tidak ada biaya setup, dan tidak ada fee. Kamu meminta jumlah yang kamu perlukan, sampai limit level kredit saat ini, menetapkan tanggal pembayaran dan rate bunga, lalu pemberi pinjaman memutuskan apakah ingin mendanai.
 
-Setiap pembayaran berhasil menaikkan limit kamu bertahap: $15 -> $20 -> $40 -> $60, dan seterusnya. Jadi kamu bisa mulai kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu tumbuh ke pinjaman lebih besar saat sudah siap.`
+Setiap pembayaran berhasil menaikkan limit kamu bertahap: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, dan seterusnya. Jadi kamu bisa mulai kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu tumbuh ke pinjaman lebih besar saat sudah siap.`
    }
 ];
 
@@ -312,7 +312,7 @@ Trust Score ของคุณไม่ได้ติดอยู่ในแ�
       question: 'ระดับเครดิตคืออะไร?',
       answer: `ระดับเครดิตกำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
 
-คุณเริ่มที่ Level 1 พร้อมวงเงิน $15 การชำระคืนเต็มจำนวนของ Credit-Building Loan แต่ละครั้งจะเพิ่มวงเงินและปลดล็อกระดับถัดไป: $15 -> $20 -> $40 -> $60 และต่อไป`
+คุณเริ่มที่ Level 1 พร้อมวงเงิน $15 การชำระคืนเต็มจำนวนของ Credit-Building Loan แต่ละครั้งจะเพิ่มวงเงินและปลดล็อกระดับถัดไป: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140 และต่อไป`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -391,7 +391,7 @@ Người cho vay xem các yêu cầu đang mở và chọn khoản muốn cấp 
       question: 'Hạng tín dụng là gì?',
       answer: `Hạng tín dụng kiểm soát số tiền bạn có thể vay trong một lần.
 
-Bạn bắt đầu ở Level 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ tăng hạn mức và mở khóa cấp tiếp theo: $15 -> $20 -> $40 -> $60, và tiếp tục.`
+Bạn bắt đầu ở Level 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ tăng hạn mức và mở khóa cấp tiếp theo: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, và tiếp tục.`
    },
    {
       id: 'what-is-a-base-wallet',
