@@ -32,8 +32,13 @@ import type { RootState } from '@/store/store';
 // here, so support copy can change without a deploy. The whole component is
 // inert when live chat is unconfigured (see isSupportChatEnabled).
 
-// Internal tooling: the widget has no business sitting over the admin console.
-const HIDE_LAUNCHER_PREFIXES = ['/admin'];
+// The persistent launcher bubble only belongs where someone is actually looking
+// for help: the /help hub. Everywhere else it stays hidden and support is
+// *summoned* — via openSupportChat() from the "Ask us" error buttons, the
+// support-contacts modal, and an operator-reply toast — rather than following
+// the borrower around every screen. A chat bubble you can't dismiss on a page
+// you didn't ask for help on reads as spam, not support.
+const SHOW_LAUNCHER_PREFIXES = ['/help'];
 
 export default function LiveChatHost(): null {
    const location = useLocation();
@@ -71,13 +76,16 @@ export default function LiveChatHost(): null {
       });
    }, []);
 
-   // Keep the launcher out of the admin console, and restore it everywhere else.
+   // Show the persistent launcher only on the help hub; hide it everywhere else.
+   // openSupportChat() still summons the widget on demand from any screen (error
+   // cards, the support modal, the reply toast), so support is always one tap
+   // away — it just isn't a bubble parked on top of every unrelated page.
    useEffect(() => {
       if (!isSupportChatEnabled) return;
-      if (HIDE_LAUNCHER_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))) {
-         hideSupportLauncher();
-      } else {
+      if (SHOW_LAUNCHER_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))) {
          showSupportLauncher();
+      } else {
+         hideSupportLauncher();
       }
    }, [location.pathname]);
 
