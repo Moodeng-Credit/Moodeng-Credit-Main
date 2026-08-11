@@ -285,7 +285,11 @@ const notifyBorrower = async (
       {
          telegramEnabled,
          notifEnabled: (borrower as any).notif_transaction_activity !== false,
-         push: { supabase, userId: borrower.id }
+         // Push only for the ≤24h final reminder, not the ≤72h urgent one. Email
+         // and Telegram still go out at both windows as before; a lock-screen
+         // interruption is reserved for "due tomorrow", which is the moment the
+         // borrower actually needs to act on.
+         push: type === 'final_reminder' ? { supabase, userId: borrower.id } : undefined
       }
    );
 
