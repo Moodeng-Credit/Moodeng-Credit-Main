@@ -3,8 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
-// Hourly credit watch for the shared DeepSeek account (Mecha support-chat +
-// check-loan-input). Alerts the admin KYC Telegram group when the balance drops
+// Hourly credit watch for the shared DeepSeek account (the loan-reason
+// check-loan-input classifier). Alerts the admin KYC Telegram group when the balance drops
 // to 25% of its high-water mark — i.e. a quarter of the tank left — so credits
 // get topped up BEFORE the AI features degrade (the reactive dead-API alert in
 // _shared/deepseekAlert.ts is the last line, this is the early warning).
@@ -73,7 +73,7 @@ serve(async () => {
                chatId,
                `🔋 <b>DeepSeek credits at ${pct.toFixed(0)}%</b> — a quarter of the tank left.\n` +
                   `Balance: ${balance.toFixed(2)} ${currency} (of a ${storedPeak.toFixed(2)} ${currency} top-up)\n` +
-                  `Mecha and the loan-reason check run on this account — top up before it runs dry.\n\n` +
+                  `The loan-reason check runs on this account — top up before it runs dry.\n\n` +
                   `https://platform.deepseek.com`
             );
             await setSetting(ALERTED_KEY, '1');
