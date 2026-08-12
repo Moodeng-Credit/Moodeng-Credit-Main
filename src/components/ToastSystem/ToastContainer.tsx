@@ -23,7 +23,7 @@ const ToastContainer: FC = () => {
    }
 
    // z-[9999]: above the loan modal (z-[70]) and its calendar (z-[90]) so error toasts are
-   // never hidden behind an open card, but below the Mecha panel (z-[10001]).
+   // never hidden behind an open card.
    return (
       <div className="fixed bottom-4 right-4 z-[9999] max-w-sm">
          <div className="space-y-2">

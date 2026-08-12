@@ -4,8 +4,8 @@ import { MessageCircle } from 'lucide-react';
 
 import { identifySupport, isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 
-// Inline "message the team" trigger — the live-chat replacement for
-// <AskMechaButton />. Drop it next to an error or a friction point; on tap it
+// Inline "message the team" trigger — opens the live chat. Drop it next to an
+// error or a friction point; on tap it
 // opens the chat with the topic and the current screen already attached, so the
 // agent knows what broke before the borrower has finished typing.
 //
