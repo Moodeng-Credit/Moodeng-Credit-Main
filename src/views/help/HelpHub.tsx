@@ -49,7 +49,8 @@ const COPY = {
    telegram: { en: 'Telegram', fil: 'Telegram' },
    facebook: { en: 'Facebook', fil: 'Facebook' },
    email: { en: 'Email', fil: 'Email' },
-   browseAll: { en: 'Browse all FAQs & guides →', fil: 'Tingnan lahat ng FAQ at gabay →' }
+   gettingStarted: { en: 'New to Moodeng? Getting started →', fil: 'Bago sa Moodeng? Magsimula →' },
+   browseAll: { en: 'Browse all guides & updates →', fil: 'Tingnan lahat ng gabay at updates →' }
 } satisfies Record<string, LocalizedText>;
 
 /** Flatten a topic into one lowercase haystack for search. */
@@ -213,10 +214,21 @@ export default function HelpHub(): JSX.Element {
                      </a>
                   ))}
                </div>
+               {/* Cross-links back to the shared resources hub. The FAQs card on
+                   /support now points here, so /help returns the favour: a direct
+                   line to Getting Started for new users, and to the full guides
+                   and updates hub for everyone. */}
                <button
                   type="button"
-                  onClick={() => navigate('/support/faq')}
+                  onClick={() => navigate('/support/getting-started')}
                   className="mt-3 w-full rounded-2xl border border-[#efe9fb] bg-[#faf8ff] px-4 py-3 text-center text-[14px] font-medium text-[#6c3fe0] transition-colors hover:bg-[#f3effe] dark:border-[#2a2235] dark:bg-[#171320] dark:text-[#d8c2ff] dark:hover:bg-[#1e1730]"
+               >
+                  {t('gettingStarted')}
+               </button>
+               <button
+                  type="button"
+                  onClick={() => navigate('/support')}
+                  className="mt-2 w-full rounded-2xl border border-[#efe9fb] bg-[#faf8ff] px-4 py-3 text-center text-[14px] font-medium text-[#6c3fe0] transition-colors hover:bg-[#f3effe] dark:border-[#2a2235] dark:bg-[#171320] dark:text-[#d8c2ff] dark:hover:bg-[#1e1730]"
                >
                   {t('browseAll')}
                </button>

@@ -51,7 +51,7 @@ const SUPPORT_COPY: Record<
             label: 'FAQs',
             description: 'Get clear answers on loans, trust, verification, and repayments.',
             icon: 'question_light.svg',
-            path: '/support/faq'
+            path: '/help'
          },
          {
             label: 'Updates',
@@ -85,7 +85,7 @@ const SUPPORT_COPY: Record<
             label: 'FAQs',
             description: 'Malinaw na sagot tungkol sa pautang, tiwala, verification, at pagbabayad.',
             icon: 'question_light.svg',
-            path: '/support/faq'
+            path: '/help'
          },
          {
             label: 'Mga update',
@@ -119,7 +119,7 @@ const SUPPORT_COPY: Record<
             label: 'FAQ',
             description: 'Jawaban jelas tentang pinjaman, kepercayaan, verifikasi, dan pembayaran.',
             icon: 'question_light.svg',
-            path: '/support/faq'
+            path: '/help'
          },
          {
             label: 'Update',
@@ -153,7 +153,7 @@ const SUPPORT_COPY: Record<
             label: 'FAQ',
             description: 'คำตอบชัดเจนเกี่ยวกับเงินกู้ ความน่าเชื่อถือ การยืนยัน และการชำระคืน',
             icon: 'question_light.svg',
-            path: '/support/faq'
+            path: '/help'
          },
          {
             label: 'อัปเดต',
@@ -187,7 +187,7 @@ const SUPPORT_COPY: Record<
             label: 'FAQ',
             description: 'Câu trả lời rõ ràng về khoản vay, niềm tin, xác minh và trả nợ.',
             icon: 'question_light.svg',
-            path: '/support/faq'
+            path: '/help'
          },
          {
             label: 'Cập nhật',
