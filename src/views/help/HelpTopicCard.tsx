@@ -3,7 +3,7 @@ import { type JSX, useState } from 'react';
 import { ChevronDown, Facebook, Info, MessageCircle, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { pickText } from '@/components/mecha/stepContext';
+import { pickText } from '@/i18n/localizedText';
 
 import { identifySupport, isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 import type { HelpTopic } from '@/views/help/helpTopics';

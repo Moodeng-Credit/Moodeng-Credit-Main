@@ -18,8 +18,8 @@ import {
 } from '@/lib/support/liveChat';
 import type { RootState } from '@/store/store';
 
-// Always-mounted host for the live chat widget — the replacement for
-// <MechaLauncher />. It owns three jobs and nothing else:
+// Always-mounted host for the live chat widget — the single floating support
+// launcher on screen. It owns three jobs and nothing else:
 //
 //   1. load the widget once the app is idle (never on the critical path),
 //   2. keep the chat session tagged with who the borrower is, so an agent

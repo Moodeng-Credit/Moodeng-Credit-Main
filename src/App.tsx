@@ -516,7 +516,7 @@ export default function App() {
             <Route path="/auth/line/callback" element={<LineCallback />} />
 
             {/* Help & Support */}
-            {/* Public, shareable chat-first hub (Mecha). Coexists with /help/:loanId
+            {/* Public, shareable help hub. Coexists with /help/:loanId
                 above — React Router ranks the more specific param route first. */}
             <Route path="/help" element={<HelpPage />} />
             <Route
