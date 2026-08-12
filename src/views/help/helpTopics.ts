@@ -1,4 +1,4 @@
-import type { LocalizedText } from '@/components/mecha/stepContext';
+import type { LocalizedText } from '@/i18n/localizedText';
 
 // The six things borrowers actually ask, answered in place.
 //

@@ -3,7 +3,7 @@ import { type JSX } from 'react';
 import { Facebook, Mail, MessageCircle, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { type LocalizedText, pickText } from '@/components/mecha/stepContext';
+import { type LocalizedText, pickText } from '@/i18n/localizedText';
 
 import { useLocalization } from '@/i18n';
 import { isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
