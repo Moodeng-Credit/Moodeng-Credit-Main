@@ -1212,6 +1212,30 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                      </div>
                   ) : (
                      <div className="flex flex-col gap-md-2">
+                        {/* Instant Wallet as a first-class option here too, so a lender who lost
+                            their wallet can create one straight from the picker without fully
+                            disconnecting first. A card, not a tile — it CREATES a wallet rather
+                            than connecting an existing one. Flag-gated like every other surface. */}
+                        {instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED ? (
+                           <>
+                              <button
+                                 type="button"
+                                 disabled={isConnecting || instantWallet.isCreating}
+                                 onClick={() => void instantWallet.createInstantWallet()}
+                                 className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                 {instantWallet.isCreating ? 'Creating your wallet…' : 'Create Instant Wallet — no app needed'}
+                              </button>
+                              {instantWallet.error ? (
+                                 <p className="text-md-b3 text-md-red-400 text-center w-full">{instantWallet.error}</p>
+                              ) : null}
+                              <div className="flex items-center gap-md-2">
+                                 <span className="h-px flex-1 bg-md-neutral-600" />
+                                 <span className="text-md-b3 font-medium text-md-neutral-800">or connect one you own</span>
+                                 <span className="h-px flex-1 bg-md-neutral-600" />
+                              </div>
+                           </>
+                        ) : null}
                         <div className="grid grid-cols-2 gap-md-2">
                            {LENDER_WALLET_OPTIONS.map((option) => {
                               const isSelected = selectedKey === option.key;
