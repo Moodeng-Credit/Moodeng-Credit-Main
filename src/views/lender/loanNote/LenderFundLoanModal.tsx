@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -32,6 +32,10 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
    const { buy, busy, step } = useBuyLoanNote();
    const userId = useSelector((state: RootState) => state.auth.user?.id);
    const [success, setSuccess] = useState<BuyResult | null>(null);
+   // Set when a lender clicks Fund with no wallet connected: buy() opens the wallet picker
+   // and returns null. Once the wallet connects (address becomes defined), we resume the
+   // purchase automatically instead of making them click Fund a second time.
+   const resumeAfterConnect = useRef(false);
 
    const { data, isLoading } = useQuery<LoanNotePageData | null>({
       queryKey: ['loan-note-popup', loanId, userId ?? null, address ?? null],
@@ -43,9 +47,23 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
 
    const handleSupport = async () => {
       if (!data) return;
+      // Remember intent before buy() may open the wallet picker, so we can resume on connect.
+      if (!address) resumeAfterConnect.current = true;
       const result = await buy(data);
-      if (result) setSuccess(result);
+      if (result) {
+         resumeAfterConnect.current = false;
+         setSuccess(result);
+      }
    };
+
+   // Resume the purchase once the wallet connects, if the lender had clicked Fund first.
+   useEffect(() => {
+      if (address && resumeAfterConnect.current && !busy && !success && data) {
+         resumeAfterConnect.current = false;
+         void handleSupport();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [address, busy, success, data]);
 
    return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" onClick={busy ? undefined : onClose}>
