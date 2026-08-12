@@ -21,6 +21,7 @@ import { RoleGuard } from '@/components/RoleGuard';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import { identifyClarity } from '@/lib/analytics/clarity';
 
@@ -142,6 +143,9 @@ export default function App() {
    const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const isAuthenticated = Boolean(user?.id && username);
    const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
+   // Registers this device for push and keeps the stored subscription current.
+   // No-ops on every browser that can't do push, and while signed out.
+   usePushNotifications(shouldCheckDefaultedBorrower ? user.id : null);
    const defaultedBorrower = useDefaultedBorrowerSupport(shouldCheckDefaultedBorrower ? user.id : null, userLoansFetchedAt);
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;

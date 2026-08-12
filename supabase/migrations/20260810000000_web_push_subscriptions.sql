@@ -87,3 +87,57 @@ ALTER TABLE public.users
 
 COMMENT ON COLUMN public.users.notif_push IS
   'User wants browser/device push notifications. Independent of the notif_* category flags, which still gate each notification type.';
+
+-- Registration goes through an RPC rather than a plain upsert because the
+-- endpoint is unique across the whole table and a device can change hands: on a
+-- shared phone, account B re-subscribing hits account A's row, which RLS
+-- correctly hides from B — so a client-side upsert would fail with a conflict it
+-- cannot see or resolve. Claiming the endpoint for the caller is the right
+-- outcome: the push service will only ever deliver to whoever holds it now.
+CREATE OR REPLACE FUNCTION public.register_push_subscription(
+  p_endpoint TEXT,
+  p_p256dh TEXT,
+  p_auth TEXT,
+  p_locale TEXT DEFAULT 'en',
+  p_user_agent TEXT DEFAULT NULL
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_user_id UUID := auth.uid();
+  v_id UUID;
+BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  IF p_endpoint IS NULL OR p_p256dh IS NULL OR p_auth IS NULL THEN
+    RAISE EXCEPTION 'endpoint, p256dh and auth are required';
+  END IF;
+
+  -- Hand the endpoint to the current user, whoever held it before.
+  DELETE FROM public.push_subscriptions
+  WHERE endpoint = p_endpoint
+    AND user_id <> v_user_id;
+
+  INSERT INTO public.push_subscriptions (user_id, endpoint, p256dh, auth, locale, user_agent)
+  VALUES (v_user_id, p_endpoint, p_p256dh, p_auth, COALESCE(NULLIF(p_locale, ''), 'en'), p_user_agent)
+  ON CONFLICT (endpoint) DO UPDATE
+    SET p256dh       = EXCLUDED.p256dh,
+        auth         = EXCLUDED.auth,
+        locale       = EXCLUDED.locale,
+        user_agent   = EXCLUDED.user_agent,
+        last_seen_at = NOW(),
+        failure_count = 0
+  RETURNING id INTO v_id;
+
+  RETURN v_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.register_push_subscription(TEXT, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.register_push_subscription(TEXT, TEXT, TEXT, TEXT, TEXT) FROM anon;
+GRANT EXECUTE ON FUNCTION public.register_push_subscription(TEXT, TEXT, TEXT, TEXT, TEXT) TO authenticated;
