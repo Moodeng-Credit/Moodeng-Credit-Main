@@ -249,6 +249,13 @@ function requestStatus(request: AdminLoanRequest) {
    return request.review?.status ?? 'visible';
 }
 
+// A user is verified if they passed EITHER identity method — World ID (legacy)
+// or Didit (current KYC). Checking only is_world_id showed Didit-verified users
+// as "not verified".
+function isUserVerified(user: { is_world_id?: string | null; is_didit?: string | null } | null | undefined) {
+   return user?.is_world_id === 'ACTIVE' || user?.is_didit === 'ACTIVE';
+}
+
 function recoveryPathLabel(path: RecoveryPath | null | undefined) {
    return recoveryPaths.find((item) => item.name === path)?.label ?? 'Not selected';
 }
@@ -741,8 +748,8 @@ export default function AdminPanel() {
                                                   <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
                                                   <Badge tone={user.account_status}>{user.account_status}</Badge>
                                                   <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
-                                                  <Badge tone={user.is_world_id ?? 'INACTIVE'}>
-                                                     {user.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}
+                                                  <Badge tone={isUserVerified(user) ? 'ACTIVE' : 'INACTIVE'}>
+                                                     {isUserVerified(user) ? 'verified' : 'not verified'}
                                                   </Badge>
                                                   {user.restriction ? (
                                                      <Badge tone={user.restriction.status}>admin {user.restriction.status}</Badge>
@@ -1148,7 +1155,7 @@ export default function AdminPanel() {
                                     <div>
                                        <h4 className="break-words text-2xl font-black">{user.username}</h4>
                                        <p className="mt-1 text-lg font-bold text-[#a89bb8]">
-                                          {user.is_world_id === 'ACTIVE' ? 'Verified borrower' : 'Not verified'}
+                                          {isUserVerified(user) ? 'Verified borrower' : 'Not verified'}
                                        </p>
                                     </div>
                                     <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
@@ -1365,8 +1372,8 @@ export default function AdminPanel() {
                                           {request.borrower?.user_role ?? 'borrower'}
                                        </Badge>
                                        <Badge tone={requestStatus(request)}>{requestStatus(request).replace('_', ' ')}</Badge>
-                                       <Badge tone={request.borrower?.is_world_id ?? 'INACTIVE'}>
-                                          {request.borrower?.is_world_id === 'ACTIVE' ? 'verified' : 'not verified'}
+                                       <Badge tone={isUserVerified(request.borrower) ? 'ACTIVE' : 'INACTIVE'}>
+                                          {isUserVerified(request.borrower) ? 'verified' : 'not verified'}
                                        </Badge>
                                     </div>
                                     <p className="mt-3 text-xl text-[#a89bb8]">{request.reason}</p>
