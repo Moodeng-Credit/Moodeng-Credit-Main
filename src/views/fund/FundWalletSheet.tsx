@@ -43,7 +43,7 @@ const COINBASE_LOGO = (
 );
 
 const STRIPE_LOGO = (
-   <img src="/hippos/hippo-friendly-lock.png" alt="" className="h-12 w-12 object-contain" />
+   <img src="/hippos/hippo-stripe.png" alt="" className="h-12 w-12 object-contain" />
 );
 
 const BRIDGE_LOGO = (
