@@ -32,13 +32,14 @@ import type { RootState } from '@/store/store';
 // here, so support copy can change without a deploy. The whole component is
 // inert when live chat is unconfigured (see isSupportChatEnabled).
 
-// The persistent launcher bubble only belongs where someone is actually looking
-// for help: the /help hub. Everywhere else it stays hidden and support is
-// *summoned* — via openSupportChat() from the "Ask us" error buttons, the
-// support-contacts modal, and an operator-reply toast — rather than following
-// the borrower around every screen. A chat bubble you can't dismiss on a page
-// you didn't ask for help on reads as spam, not support.
-const SHOW_LAUNCHER_PREFIXES = ['/help'];
+// The persistent launcher bubble belongs on the help destinations — /support
+// (the "Help & Support Center" that the lender dashboard, request board, history
+// and most in-app "help" links point at) and /help (the answers hub). Everywhere
+// else it stays hidden and support is *summoned* — via openSupportChat() from the
+// "Ask us" error buttons, the support-contacts modal, and an operator-reply toast
+// — rather than following the borrower around every screen. A chat bubble you
+// can't dismiss on a page you didn't ask for help on reads as spam, not support.
+const SHOW_LAUNCHER_PREFIXES = ['/support', '/help'];
 
 export default function LiveChatHost(): null {
    const location = useLocation();
