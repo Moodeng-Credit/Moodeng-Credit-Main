@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { isSupportChatEnabled, openSupportChat } from '@/lib/support/liveChat';
 import { ICON_MASK_BASE, TELEGRAM_SUPPORT_URL } from '@/views/support/constants';
 
 interface NeedMoreHelpProps {
@@ -7,6 +8,18 @@ interface NeedMoreHelpProps {
 }
 
 export default function NeedMoreHelp({ showTeamLink = false }: NeedMoreHelpProps) {
+   // "Get In Touch" is the primary support CTA on the /support hub. It now opens
+   // the live chat — the same conversation the /help page starts — so the team is
+   // reached the same way from both. It falls back to Telegram only when live
+   // chat is unconfigured, so the button is never a dead end.
+   const handleGetInTouch = () => {
+      if (isSupportChatEnabled) {
+         openSupportChat();
+      } else {
+         window.open(TELEGRAM_SUPPORT_URL, '_blank', 'noopener,noreferrer');
+      }
+   };
+
    return (
       <div className="flex w-full flex-col gap-md-2">
          <div className="bg-md-primary-100 rounded-md-input flex items-start gap-md-1 w-full overflow-hidden">
@@ -15,11 +28,10 @@ export default function NeedMoreHelp({ showTeamLink = false }: NeedMoreHelpProps
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-md-1 p-md-3 self-stretch">
                <p className="text-md-h5 font-semibold text-md-heading">Need more help?</p>
-               <p className="text-md-b2 text-md-neutral-1200">Our support team is available 24/7 to assist you.</p>
-               <a
-                  href={TELEGRAM_SUPPORT_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+               <p className="text-md-b2 text-md-neutral-1200">Message the team and a real person will reply — here and by email.</p>
+               <button
+                  type="button"
+                  onClick={handleGetInTouch}
                   className="bg-md-primary-1200 rounded-md-lg flex items-center justify-center gap-md-1 px-md-4 py-md-2 self-start transition-all duration-150 hover:brightness-105 active:scale-[0.97] active:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-1200"
                >
                   <span className="text-md-b1 font-semibold text-md-neutral-100">Get In Touch</span>
@@ -31,7 +43,7 @@ export default function NeedMoreHelp({ showTeamLink = false }: NeedMoreHelpProps
                         maskImage: "url('/icons/chevron-right.svg')"
                      }}
                   />
-               </a>
+               </button>
             </div>
          </div>
 
