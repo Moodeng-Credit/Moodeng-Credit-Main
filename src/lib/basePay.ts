@@ -25,13 +25,16 @@ const DEFAULT_POLL_INTERVAL_MS = 2_000;
 export type BasePaymentFailureKind =
    | 'rejected' // user dismissed the popup
    | 'insufficient' // not enough USDC/gas
-   | 'failed' // userOp reverted on-chain, or pay() threw
+   | 'failed' // userOp definitively reverted on-chain — money did NOT move
+   | 'unknown' // pay() threw with an unrecognized message — money MAY still have moved
    | 'timeout'; // approved but not confirmed before the deadline — money MAY still land
 
 /**
- * A classified Base Pay failure. `kind === 'timeout'` is deliberately NOT a hard failure:
- * the payment can still confirm later, so callers should record `id` and reconcile rather
- * than tell the user it failed. `errorCode` maps to our existing toast catalogue.
+ * A classified Base Pay failure. `kind === 'timeout'` and `kind === 'unknown'` are deliberately
+ * NOT hard failures: the payment can still confirm later, so callers that have already armed
+ * reconciliation should record `id` and reconcile rather than tell the user it failed. Only
+ * `failed` (a confirmed on-chain revert), `insufficient`, and `rejected` are definitive.
+ * `errorCode` maps to our existing toast catalogue.
  */
 export class BasePaymentError extends Error {
    readonly kind: BasePaymentFailureKind;
@@ -66,7 +69,11 @@ const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 
 // pay() throws a plain Error on cancel/failure with no stable code, so we sniff the message.
 // Conservative on purpose: only an unambiguous rejection maps to "rejected" (so we don't
-// swallow a real failure as a user cancel); everything else is a generic failure.
+// swallow a real failure as a user cancel), and only an unambiguous balance error to
+// "insufficient". Anything else is `unknown`, NOT `failed`: pay() can resolve-then-throw after
+// the userOp is already broadcasting, so a message we don't recognize does not prove the money
+// stayed put. Callers with reconciliation armed treat `unknown` as reconcile-later; only an
+// explicit on-chain revert (from waitForBasePayment) is a hard `failed`.
 export const classifyBasePayThrow = (err: unknown): BasePaymentError => {
    if (err instanceof BasePaymentError) return err;
 
@@ -79,7 +86,7 @@ export const classifyBasePayThrow = (err: unknown): BasePaymentError => {
    if (/insufficient|balance|not enough|exceeds/.test(normalized)) {
       return new BasePaymentError('insufficient', message);
    }
-   return new BasePaymentError('failed', message);
+   return new BasePaymentError('unknown', message);
 };
 
 /**
@@ -127,6 +134,11 @@ export async function waitForBasePayment(
    { timeoutMs = DEFAULT_POLL_TIMEOUT_MS, intervalMs = DEFAULT_POLL_INTERVAL_MS }: { timeoutMs?: number; intervalMs?: number } = {}
 ): Promise<BasePaymentConfirmed> {
    const deadline = Date.now() + timeoutMs;
+   // getPaymentStatus can briefly report `failed` for a userOp that then settles (bundler churn),
+   // so we don't trust a single reading — a payment reported failed but actually confirmed used to
+   // surface a hard "Transaction Error" while the money moved. Require two consecutive `failed`
+   // reads before treating it as a definitive revert; any non-failed reading resets the count.
+   let consecutiveFailedReads = 0;
 
    for (;;) {
       let status: PaymentStatus;
@@ -135,6 +147,7 @@ export async function waitForBasePayment(
       } catch (err) {
          // A transient RPC/bundler hiccup shouldn't abort a real payment: keep polling until
          // the deadline, then surface a timeout the caller can reconcile.
+         consecutiveFailedReads = 0;
          if (Date.now() >= deadline) {
             throw new BasePaymentError('timeout', err instanceof Error ? err.message : 'Payment status unavailable', id);
          }
@@ -146,10 +159,21 @@ export async function waitForBasePayment(
          return { id, sender: status.sender, amount: status.amount, recipient: status.recipient };
       }
       if (status.status === 'failed') {
-         throw new BasePaymentError('failed', status.reason ?? status.message ?? 'Payment failed on-chain', id);
+         consecutiveFailedReads += 1;
+         if (consecutiveFailedReads >= 2) {
+            throw new BasePaymentError('failed', status.reason ?? status.message ?? 'Payment failed on-chain', id);
+         }
+         // First failed reading — could be a transient blip. Poll once more to confirm (or, past
+         // the deadline, hand off to reconciliation rather than declaring a hard failure).
+         if (Date.now() >= deadline) {
+            throw new BasePaymentError('timeout', 'Payment was not confirmed in time', id);
+         }
+         await delay(intervalMs);
+         continue;
       }
 
       // pending | not_found → keep waiting until the deadline.
+      consecutiveFailedReads = 0;
       if (Date.now() >= deadline) {
          throw new BasePaymentError('timeout', 'Payment was not confirmed in time', id);
       }

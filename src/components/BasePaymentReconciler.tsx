@@ -2,10 +2,13 @@ import { useEffect } from 'react';
 
 import { useDispatch } from 'react-redux';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { reconcilePendingBasePayments } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
 import { confirmLoanPayment } from '@/store/slices/loanSlice';
 import type { AppDispatch } from '@/store/store';
+import { formatCurrency } from '@/utils/decimalHelpers';
 
 // Base Pay confirms in seconds, so a stranded payment is rare; a light cadence is plenty.
 const RECONCILE_INTERVAL_MS = 5 * 60 * 1000;
@@ -18,6 +21,7 @@ const RECONCILE_INTERVAL_MS = 5 * 60 * 1000;
  */
 export default function BasePaymentReconciler() {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
 
    useEffect(() => {
       const run = () =>
@@ -27,14 +31,27 @@ export default function BasePaymentReconciler() {
             // immediately and rely on that same server verification (it returns retry-later until
             // the tx settles). The lender/borrower is the currently-signed-in caller (whose
             // device is reconciling).
+            //
+            // The live payUsdc call clears its own entry on success, so anything we finish here is
+            // a payment the user was NEVER shown a confirmation for (its poll timed out, the server
+            // was still catching up on-chain, or the tab closed mid-poll). Toast the success so a
+            // late-confirming payment gets the same closure as the happy path instead of silently
+            // resolving with no UI. See [[funding-desync-recovery]].
             completeFund: async ({ loanId, hash, method }) => {
-               await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'fund' })).unwrap();
+               const loan = await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'fund' })).unwrap();
+               showToast(
+                  TOAST_TYPES.SUCCESS,
+                  'Loan Funded',
+                  `Your $${formatCurrency(loan.loanAmount)} funding just confirmed. Thank you!`
+               );
             },
             completeRepay: async ({ loanId, hash, method }) => {
                await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'repay' })).unwrap();
+               showToast(TOAST_TYPES.SUCCESS, 'Repayment Confirmed', 'Your repayment just confirmed on-chain.');
             },
             completeInterest: async ({ loanId, hash, method }) => {
                await dispatch(confirmLoanPayment({ loanId, hash, method, action: 'return-interest' })).unwrap();
+               showToast(TOAST_TYPES.SUCCESS, 'Interest Returned', 'Your interest payment just confirmed on-chain.');
             },
             completeWithdraw: async ({ userId, amount, exchange, address, hash }) => {
                await recordWithdrawal({ userId, amount, exchange, address, txHash: hash });
@@ -44,7 +61,7 @@ export default function BasePaymentReconciler() {
       run();
       const interval = window.setInterval(run, RECONCILE_INTERVAL_MS);
       return () => window.clearInterval(interval);
-   }, [dispatch]);
+   }, [dispatch, showToast]);
 
    return null;
 }
