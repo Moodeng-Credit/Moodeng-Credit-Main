@@ -41,7 +41,8 @@ function mkLoan(
          wallet_address: null,
          user_role: 'borrower',
          account_status: 'active',
-         is_world_id: 'ACTIVE'
+         is_world_id: 'ACTIVE',
+         is_didit: 'ACTIVE'
       },
       lender: null
    };

@@ -65,6 +65,7 @@ export interface AdminDirectoryUser {
    user_role: UserRole;
    account_status: AccountStatus;
    is_world_id: 'ACTIVE' | 'INACTIVE' | null;
+   is_didit: 'ACTIVE' | 'INACTIVE' | null;
    cs: number | null;
    mal: number | null;
    nal: number | null;
@@ -113,8 +114,8 @@ export interface AdminLoanRecord {
    is_test: boolean;
    created_at: string | null;
    funded_at: string | null;
-   borrower: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id'> | null;
-   lender: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id'> | null;
+   borrower: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'> | null;
+   lender: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'> | null;
 }
 
 export interface AdminLoanRequestReview {
@@ -221,7 +222,8 @@ function shortUser(row: AdminDirectoryUser | undefined | null) {
       wallet_address: row.wallet_address,
       user_role: row.user_role,
       account_status: row.account_status,
-      is_world_id: row.is_world_id
+      is_world_id: row.is_world_id,
+      is_didit: row.is_didit
    };
 }
 
@@ -343,7 +345,7 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
       getSupabaseBrowserClient()
          .from('users')
          .select(
-            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at'
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
          )
          .in('id', uniqueIds)
    );
@@ -413,6 +415,7 @@ async function buildDirectoryRows(
          user_role: normalizeRole(row.user_role),
          account_status: normalizeAccountStatus(row.account_status),
          is_world_id: row.is_world_id ?? null,
+         is_didit: row.is_didit ?? null,
          cs: row.cs ?? null,
          mal: row.mal ?? null,
          nal: row.nal ?? null,
@@ -538,7 +541,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    let query = supabase
       .from('users')
       .select(
-         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,cs,mal,nal,created_at,updated_at'
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
       )
       .order('updated_at', { ascending: false })
       .limit(100);
