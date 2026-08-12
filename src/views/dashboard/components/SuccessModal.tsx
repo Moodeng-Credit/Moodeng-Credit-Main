@@ -8,6 +8,9 @@ interface SuccessModalProps {
    onClose: () => void;
 }
 
+const BORROWER_GROUP_TELEGRAM_URL = 'https://t.me/jimmymoodengcredit';
+const BORROWER_GROUP_FACEBOOK_URL = 'https://www.facebook.com/groups/1593629908540434';
+
 export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: SuccessModalProps) {
    const navigate = useNavigate();
    const dismissStartRef = useRef<number | null>(null);
@@ -72,6 +75,44 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
                <p className="w-full text-md-b1 font-medium text-md-neutral-700">
                   Your loan request is now live. Lenders can review it and fund your request.
                </p>
+               <div className="flex w-full flex-col gap-3 rounded-md-lg border border-md-neutral-400 bg-md-neutral-200 p-4 text-left">
+                  <p className="text-md-b2 font-medium text-md-neutral-700">
+                     Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                     <a
+                        className="flex items-center gap-3 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 px-md-4 py-md-3 text-md-b1 font-semibold text-md-heading"
+                        href={BORROWER_GROUP_TELEGRAM_URL}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                     >
+                        <img alt="" aria-hidden="true" className="h-6 w-6 object-contain" src="/icons/telegram-classic-filled.png" />
+                        Join on Telegram
+                     </a>
+                     <a
+                        className="flex items-center gap-3 rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 px-md-4 py-md-3 text-md-b1 font-semibold text-md-heading"
+                        href={BORROWER_GROUP_FACEBOOK_URL}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                     >
+                        <span
+                           aria-hidden="true"
+                           className="block h-6 w-6 flex-shrink-0 bg-[#1877f2]"
+                           style={{
+                              WebkitMaskImage: "url('/icons/facebook.svg')",
+                              maskImage: "url('/icons/facebook.svg')",
+                              WebkitMaskSize: 'contain',
+                              maskSize: 'contain',
+                              WebkitMaskRepeat: 'no-repeat',
+                              maskRepeat: 'no-repeat',
+                              WebkitMaskPosition: 'center',
+                              maskPosition: 'center'
+                           }}
+                        />
+                        Join on Facebook
+                     </a>
+                  </div>
+               </div>
                <button
                   className="w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100"
                   onClick={goToDashboard}
