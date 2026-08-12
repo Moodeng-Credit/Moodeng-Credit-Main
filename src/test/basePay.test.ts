@@ -38,10 +38,13 @@ describe('startBasePayment', () => {
       });
    });
 
-   it('classifies an unknown failure as failed, not rejected', async () => {
+   it('classifies an unrecognized throw as unknown (recoverable), not rejected or a hard failure', async () => {
+      // pay() can resolve-then-throw after the userOp is already broadcasting, so a message we
+      // can't classify does not prove the money stayed put — callers with reconciliation armed
+      // treat `unknown` as reconcile-later rather than surfacing a hard error.
       mockPay.mockRejectedValue(new Error('bundler exploded'));
 
-      await expect(startBasePayment({ to: '0xb', usdAmount: '1' })).rejects.toMatchObject({ kind: 'failed' });
+      await expect(startBasePayment({ to: '0xb', usdAmount: '1' })).rejects.toMatchObject({ kind: 'unknown' });
    });
 });
 
@@ -73,10 +76,23 @@ describe('waitForBasePayment', () => {
       expect(mockGetStatus).toHaveBeenCalledTimes(3);
    });
 
-   it('throws a definitive failure with the on-chain reason', async () => {
+   it('throws a definitive failure only after two consecutive failed reads', async () => {
       mockGetStatus.mockResolvedValue({ status: 'failed', id: '0xuserop', message: 'reverted', reason: 'transfer exceeds balance' } as never);
 
       await expect(waitForBasePayment('0xuserop', FAST)).rejects.toMatchObject({ kind: 'failed', message: 'transfer exceeds balance' });
+      expect(mockGetStatus.mock.calls.length).toBeGreaterThanOrEqual(2);
+   });
+
+   it('recovers when a transient failed reading is followed by completion (no hard failure)', async () => {
+      // getPaymentStatus can briefly report `failed` for a userOp that then settles; a single
+      // blip must not surface as a hard "Transaction Error" while the money actually moves.
+      mockGetStatus
+         .mockResolvedValueOnce({ status: 'failed', id: '0xuserop', message: 'blip' } as never)
+         .mockResolvedValueOnce({ status: 'completed', id: '0xuserop', message: 'ok', sender: '0xlender' } as never);
+
+      const confirmed = await waitForBasePayment('0xuserop', FAST);
+
+      expect(confirmed.sender).toBe('0xlender');
    });
 
    it('throws a reconcilable timeout (not a hard failure) if never confirmed', async () => {
@@ -119,5 +135,9 @@ describe('classifyBasePayThrow', () => {
 
    it('detects insufficient-balance messages', () => {
       expect(classifyBasePayThrow(new Error('insufficient balance')).kind).toBe('insufficient');
+   });
+
+   it('defaults an unrecognized message to unknown, not failed', () => {
+      expect(classifyBasePayThrow(new Error('some opaque SDK error')).kind).toBe('unknown');
    });
 });

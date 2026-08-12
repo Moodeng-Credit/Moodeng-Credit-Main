@@ -177,9 +177,13 @@ const useWallet = () => {
             return { hash: confirmed.id, payer: confirmed.sender };
          } catch (err) {
             const paymentError = err instanceof BasePaymentError ? err : null;
-            if (paymentError?.kind === 'timeout' && submittedId) {
-               // Approved but not confirmed in our window. Don't cry failure — the reconciler
-               // (armed via onSubmitted) will finish the DB write once it settles.
+            // Once startBasePayment resolved, onSubmitted armed the reconciler and the userOp is in
+            // flight. A `timeout` (not confirmed in our window) or an `unknown` (pay() threw a
+            // message we can't classify) does NOT prove the money stayed put — the reconciler owns
+            // finishing it, so surface a soft "still confirming" instead of a hard error. Only a
+            // confirmed revert (`failed`), `insufficient`, or user `rejected` is a real stop.
+            const isRecoverable = paymentError?.kind === 'timeout' || paymentError?.kind === 'unknown';
+            if (submittedId && isRecoverable) {
                showToast(
                   TOAST_TYPES.INFO,
                   'Still confirming',

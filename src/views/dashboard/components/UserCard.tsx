@@ -304,13 +304,11 @@ export default function UserCard(loan: UserCardProps) {
                   // modal over the request board — the toast below still confirms it went through.
                   if (!cancelledRef.current) setShowModal(true);
 
-                  if (sideEffectErrors.length === 0) {
-                     showToast(
-                        TOAST_TYPES.SUCCESS,
-                        'Thank You!',
-                        `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
-                     );
-                  } else {
+                  // The money moved and the loan is Lent. A failed non-critical follow-up (awarding
+                  // IOU points, sending the funded notification) is NOT the lender's problem and must
+                  // not be dressed up as a warning that reads like the payment broke — log it for us
+                  // and keep the lender's confirmation an unambiguous success.
+                  if (sideEffectErrors.length > 0) {
                      const errorDetails = sideEffectErrors
                         .map((error: LoanSideEffectError) =>
                            error.type === 'award_points'
@@ -318,13 +316,14 @@ export default function UserCard(loan: UserCardProps) {
                               : `sending funded notification failed (${error.message})`
                         )
                         .join('; ');
-
-                     showToast(
-                        TOAST_TYPES.WARNING,
-                        'Funded with Warnings',
-                        `Loan funded successfully, but some follow-ups failed: ${errorDetails}.`
-                     );
+                     console.warn(`[fund] loan ${loanData.id} funded, but follow-ups failed: ${errorDetails}`);
                   }
+
+                  showToast(
+                     TOAST_TYPES.SUCCESS,
+                     'Thank You!',
+                     `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
+                  );
                } else if (updateResult.error?.name === 'PaymentNotConfirmedError') {
                   // Payment sent but not yet confirmed on-chain — the reconciler (armed in
                   // onSubmitted) finishes the DB write once it settles. Not a failure.
