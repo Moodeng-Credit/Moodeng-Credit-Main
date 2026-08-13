@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 
 import { useDispatch } from 'react-redux';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { updateBorrowerContext } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -63,6 +65,7 @@ interface EditBioInfoModalProps {
 
 export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoModalProps) {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
 
    const [context, setContext] = useState<BorrowerContextState>(() => buildContextFromUser(user));
    const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(user?.otherIncome));
@@ -103,6 +106,7 @@ export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoM
       setIsSaving(false);
 
       if (updateBorrowerContext.fulfilled.match(result)) {
+         showToast(TOAST_TYPES.SUCCESS, 'Bio info saved', 'Your income and budget details have been updated.');
          onClose();
       } else {
          setError(result.error?.message || 'Failed to save bio info. Please try again.');

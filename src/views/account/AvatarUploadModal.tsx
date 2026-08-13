@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { AVATAR_BACKGROUNDS, DEFAULT_AVATAR_BACKGROUND } from '@/config/avatarBackgrounds';
 import { detectVisibleAvatarBackgroundArea, imageHasVisibleAvatarBackgroundArea } from '@/lib/avatarBackgroundVisibility';
@@ -50,6 +52,7 @@ export default function AvatarUploadModal({
    onSave,
 }: AvatarUploadModalProps) {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
    const [step, setStep] = useState<Step>('select');
    const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
    const [scale, setScale] = useState(1);
@@ -231,6 +234,7 @@ export default function AvatarUploadModal({
             throw new Error(result.error?.message || 'Failed to save avatar background.');
          }
 
+         showToast(TOAST_TYPES.SUCCESS, 'Background updated', 'Your profile background has been changed.');
          reset();
          onClose();
       } catch (err) {

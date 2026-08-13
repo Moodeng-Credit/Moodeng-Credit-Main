@@ -33,6 +33,8 @@ import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { openSupportContacts } from '@/components/support/supportContacts';
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
@@ -989,6 +991,7 @@ type AppFlowConfig = {
 
 function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
    const { available: LOAN_USDC, spendable, isPreview, isInstantWallet, send } = useWithdrawData();
+   const { showToast } = useToast();
    const [address, setAddress] = useState('');
    const [amount, setAmount] = useState('');
    const [sending, setSending] = useState(false);
@@ -1018,14 +1021,27 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: cfg.name, amount: amtNum });
       setSending(true);
-      const result = await send(address.trim(), String(amtNum), cfg.name, () => setConfirming(true));
-      setSending(false);
-      setConfirming(false);
-      if (result) {
-         sentAmountRef.current = amtNum;
-         track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
-         onSent(result.hash, result.confirmed);
-      } else track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
+      try {
+         const result = await send(address.trim(), String(amtNum), cfg.name, () => setConfirming(true));
+         if (result) {
+            sentAmountRef.current = amtNum;
+            track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
+            onSent(result.hash, result.confirmed);
+         } else track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
+      } catch (err) {
+         // `send` (useWallet) normally surfaces its own failure toast and returns null, but
+         // if it throws we must still clear the pending state below (finally) so the button
+         // can't hang on the spinner, and give the user an explicit failure signal.
+         track('withdraw_send_failed', { exchange: cfg.name, amount: amtNum });
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Withdrawal didn't go through",
+            err instanceof Error ? err.message : 'Please try again in a moment.'
+         );
+      } finally {
+         setSending(false);
+         setConfirming(false);
+      }
    }
 
    return (
@@ -1430,6 +1446,7 @@ const COINSPH_FLOW: AppFlowConfig = {
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) => void; onDone: () => void }) {
    const { available: LOAN_USDC, spendable, isPreview, isInstantWallet, send } = useWithdrawData();
+   const { showToast } = useToast();
    const region = useRegion();
    const isPH = region !== 'other';
    const [address, setAddress] = useState('');
@@ -1464,14 +1481,26 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: 'Binance', amount: amtNum });
       setSending(true);
-      const result = await send(address.trim(), String(amtNum), 'Binance', () => setConfirming(true));
-      setSending(false);
-      setConfirming(false);
-      if (result) {
-         sentAmountRef.current = amtNum;
-         track('withdraw_sent', { exchange: 'Binance', amount: amtNum });
-         onSent(result.hash, result.confirmed);
-      } else track('withdraw_send_rejected', { exchange: 'Binance', amount: amtNum });
+      try {
+         const result = await send(address.trim(), String(amtNum), 'Binance', () => setConfirming(true));
+         if (result) {
+            sentAmountRef.current = amtNum;
+            track('withdraw_sent', { exchange: 'Binance', amount: amtNum });
+            onSent(result.hash, result.confirmed);
+         } else track('withdraw_send_rejected', { exchange: 'Binance', amount: amtNum });
+      } catch (err) {
+         // See AppFlow.handleSend: guard against a thrown send so the button can't hang and
+         // the user always gets an explicit failure signal.
+         track('withdraw_send_failed', { exchange: 'Binance', amount: amtNum });
+         showToast(
+            TOAST_TYPES.ERROR,
+            "Withdrawal didn't go through",
+            err instanceof Error ? err.message : 'Please try again in a moment.'
+         );
+      } finally {
+         setSending(false);
+         setConfirming(false);
+      }
    }
 
    return (
@@ -1980,6 +2009,7 @@ function WithdrawScreen({
 
 function WithdrawFlow() {
    const navigate = useNavigate();
+   const { showToast } = useToast();
    const [screen, setScreen] = useState<Screen>('celebrate');
    const [withdrawVisible, setWithdrawVisible] = useState(false);
    const [provider, setProvider] = useState<Provider>('moneybees');
@@ -1991,10 +2021,19 @@ function WithdrawFlow() {
       requestAnimationFrame(() => requestAnimationFrame(() => setWithdrawVisible(true)));
    }
 
-   const handleConfirmed = useCallback((_amount: number) => {
-      // No-op: the inline SuccessBanner now handles the confirmed state
-      // within the flow component itself, keeping the cash-out instructions visible.
-   }, []);
+   const handleConfirmed = useCallback(
+      (amount: number) => {
+         // The inline SuccessBanner keeps the cash-out instructions visible within the
+         // flow; this toast adds a persistent, global confirmation that survives scrolling
+         // away from the banner — important since this is real money leaving the account.
+         showToast(
+            TOAST_TYPES.SUCCESS,
+            'Withdrawal sent',
+            amount > 0 ? `${amount} USDC is on its way to your exchange.` : 'Your funds are on their way to your exchange.'
+         );
+      },
+      [showToast]
+   );
 
    const handleDone = useCallback(() => navigate('/dashboard'), [navigate]);
 

@@ -364,6 +364,7 @@ function PasswordInput({
 
 function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
    const dispatch = useDispatch<AppDispatch>();
+   const { showToast } = useToast();
    const userEmail = useSelector((state: RootState) => state.auth.user?.email);
    const [oldPassword, setOldPassword] = useState('');
    const [newPassword, setNewPassword] = useState('');
@@ -420,6 +421,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       setIsSubmitting(false);
 
       if (updateUser.fulfilled.match(result)) {
+         showToast(TOAST_TYPES.SUCCESS, 'Password updated', 'Your password has been changed.');
          handleClose();
       } else {
          setError(result.error?.message || 'Failed to update password');
@@ -1362,6 +1364,7 @@ export default function AccountSettings() {
    const { disconnectAsync } = useDisconnect();
    const { isEmailPasswordUser } = useAuthProvider();
    const { isDarkMode, setMode } = useThemeMode();
+   const { showToast } = useToast();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
    const [showNameModal, setShowNameModal] = useState(false);
@@ -1554,6 +1557,7 @@ export default function AccountSettings() {
             throw new Error(result.error?.message || 'Failed to update wallet.');
          }
 
+         showToast(TOAST_TYPES.SUCCESS, 'Wallet disconnected', 'Your wallet has been removed from this account.');
          handleRevertWalletChanges();
       } catch (err) {
          setWalletError(err instanceof Error ? err.message : 'Failed to update wallet.');
@@ -1569,6 +1573,7 @@ export default function AccountSettings() {
          const result = await dispatch(updateUser({ avatarUrl, avatarBackground }));
 
          if (updateUser.fulfilled.match(result)) {
+            showToast(TOAST_TYPES.SUCCESS, 'Photo updated', 'Your profile photo has been changed.');
             setShowAvatarModal(false);
             return;
          }
