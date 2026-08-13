@@ -41,6 +41,7 @@ import ReferralCodesSection from './ReferralCodesSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
+import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
 
 type AdminTab =
@@ -59,6 +60,7 @@ type AdminTab =
    | 'self-lending'
    | 'referrals'
    | 'notifications'
+   | 'chat'
    | 'relay';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
@@ -116,6 +118,11 @@ const navGroups: NavGroup[] = [
          { id: 'referrals', label: 'Referral codes' },
          { id: 'notifications', label: 'Notifications' }
       ]
+   },
+   {
+      id: 'support',
+      label: 'Support',
+      items: [{ id: 'chat', label: 'Live chat' }]
    },
    {
       id: 'funding',
@@ -1551,6 +1558,8 @@ export default function AdminPanel() {
                      <ReferralCodesSection />
                   </section>
                ) : null}
+
+               {activeTab === 'chat' ? <SupportChatSection /> : null}
 
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 
