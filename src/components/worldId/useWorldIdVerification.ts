@@ -8,6 +8,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { handleApiError, isApiError } from '@/lib/apiHandler';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { openSupportChat } from '@/lib/support/liveChat';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import type { ApiResponse } from '@/types/apiTypes';
@@ -357,6 +358,8 @@ export function useWorldIdVerification({
                   throw new Error('WORLDID_ALREADY_USED');
                }
                showToastByConfig(handleApiError(result));
+               // A genuine verification failure — proactively open support with context.
+               openSupportChat('I had a problem with verification');
                throw new Error(isApiError(result) ? result.error : 'Verification failed.');
             }
 
