@@ -86,7 +86,11 @@ export function ExpiredLoanRequestNotifier() {
          }
 
          const newestRequest = data[0];
-         const storageKey = `${TOAST_STORAGE_PREFIX}:${user.id}:${newestRequest.id}`;
+         // Key by user only (not by request id) so the expired-request toast is
+         // shown at most once per person. Keying by request id re-triggered a new
+         // toast every time another request expired, which read as it "keeps
+         // showing up".
+         const storageKey = `${TOAST_STORAGE_PREFIX}:${user.id}`;
 
          if (hasSeenExpiredRequestToast(storageKey)) {
             return;
