@@ -1,4 +1,4 @@
-import { type MouseEvent, useCallback, useMemo, useRef, useState } from 'react';
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
@@ -47,6 +47,9 @@ type UserCardProps = Loan & {
    forceTourBorrowerLink?: boolean;
    tourBorrowerUsername?: string;
    borrowerContextProfile?: BorrowerContextProfileData;
+   // When true, a lender card mounts already expanded (used when arriving via a shared link so
+   // the request opens fully instead of collapsed behind "View Request").
+   openByDefault?: boolean;
 };
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
@@ -153,6 +156,7 @@ export default function UserCard(loan: UserCardProps) {
       forceTourBorrowerLink = false,
       tourBorrowerUsername,
       borrowerContextProfile,
+      openByDefault = false,
       ...loanData
    } = loan;
    const borrowerUserId = loanData.borrowerUser || '';
@@ -179,7 +183,13 @@ export default function UserCard(loan: UserCardProps) {
    // resolves after the user has already backed out. (A broadcast that still lands is left
    // to the reconciler — the money moved, so we never silently drop it.)
    const cancelledRef = useRef(false);
-   const [showDetails, setShowDetails] = useState(false);
+   const [showDetails, setShowDetails] = useState(openByDefault);
+
+   // Open the request fully when arriving via a shared link (the prop flips true once the board
+   // resolves the shared loan, which can happen after this card has already mounted).
+   useEffect(() => {
+      if (openByDefault) setShowDetails(true);
+   }, [openByDefault]);
    const { showToast, showToastByConfig } = useToast();
    const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
@@ -528,35 +538,38 @@ export default function UserCard(loan: UserCardProps) {
                   ) : null}
                </div>
             ) : null}
-            {/* Top-right actions: Share (deep-links a lender to this exact request) and, on your
-                own open request, Delete. Hidden on preview/marketing cards. */}
-            {canDeleteOwnRequest || !isPreviewRequest ? (
-               <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
-                  {canDeleteOwnRequest ? (
-                     <button
-                        type="button"
-                        onClick={handleDeleteOwnRequest}
-                        disabled={isDeletingOwnRequest}
-                        aria-label="Delete your loan request"
-                        title="Delete request"
-                        className="inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
-                     >
-                        <Trash2 className="size-4" strokeWidth={2} />
-                     </button>
-                  ) : null}
-                  {!isPreviewRequest ? (
-                     <button
-                        type="button"
-                        onClick={handleShareRequest}
-                        aria-label="Share this request"
-                        title="Share this request"
-                        className="inline-flex size-8 items-center justify-center rounded-[9px] border border-[#e6e1f5] bg-white text-md-primary-1200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition active:scale-[0.96] dark:border-[#3a2f58] dark:bg-[#1e1830]"
-                     >
-                        <Share2 className="size-4" strokeWidth={2} />
-                     </button>
-                  ) : null}
-               </div>
-            ) : null}
+            {/* Top-right actions: Share (funding admins only — normal users never share, they just
+                open the link) and, on your own open request, Delete. Hidden on preview cards. */}
+            {(() => {
+               const showShare = isFundingAdmin && !isPreviewRequest;
+               return canDeleteOwnRequest || showShare ? (
+                  <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                     {canDeleteOwnRequest ? (
+                        <button
+                           type="button"
+                           onClick={handleDeleteOwnRequest}
+                           disabled={isDeletingOwnRequest}
+                           aria-label="Delete your loan request"
+                           title="Delete request"
+                           className="inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                           <Trash2 className="size-4" strokeWidth={2} />
+                        </button>
+                     ) : null}
+                     {showShare ? (
+                        <button
+                           type="button"
+                           onClick={handleShareRequest}
+                           aria-label="Share this request"
+                           title="Share this request"
+                           className="inline-flex size-7 items-center justify-center rounded-[8px] bg-white text-md-neutral-1200 shadow-[0_1px_4px_rgba(0,0,0,0.10)] ring-1 ring-black/5 transition hover:text-md-primary-1200 active:scale-[0.96] dark:bg-[#1e1830] dark:text-md-neutral-300 dark:ring-white/10"
+                        >
+                           <Share2 className="size-[15px]" strokeWidth={2} />
+                        </button>
+                     ) : null}
+                  </div>
+               ) : null;
+            })()}
             {/* Top: Loan Info + Amount Card */}
             <div
                className={`flex gap-4 items-center ${canDeleteOwnRequest ? 'pr-10' : ''} ${isLenderCard && showDetails ? 'cursor-pointer' : ''}`}

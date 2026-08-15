@@ -452,6 +452,7 @@ function RequestBoard$() {
    const [failedVerifyMethod, setFailedVerifyMethod] = useState<VerifyMethod | null>(null);
    const verifyFailCheckedRef = useRef(false);
    const highlightParamRef = useRef<string | null>(null);
+   const [sharedRequestId, setSharedRequestId] = useState<string | null>(null);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -1701,8 +1702,9 @@ function RequestBoard$() {
       setHighlightedRequestId(visibleLoans[0].id);
    }, [location.search, showSubmittedRequestSuccessPreview, visibleLoans]);
 
-   // A shared request link (/request-board?highlight=<loanId>) drops the lender on the board
-   // focused on that exact request: highlight it and scroll it into view once it's on screen.
+   // A shared request link (/request-board?highlight=<loanId>) drops the viewer on the board
+   // focused on that exact request: highlight it, scroll it into view, and open it fully (the
+   // card mounts expanded via openByDefault) so they land on the ready-to-fund request.
    useEffect(() => {
       const target = new URLSearchParams(location.search).get('highlight');
       if (!target || highlightParamRef.current === target) return;
@@ -1710,6 +1712,7 @@ function RequestBoard$() {
 
       highlightParamRef.current = target;
       setHighlightedRequestId(target);
+      setSharedRequestId(target);
    }, [location.search, visibleLoans]);
 
    return (
@@ -2094,6 +2097,7 @@ function RequestBoard$() {
                                     isBorrower={isBorrower}
                                     isAuthenticated={isAuthenticated}
                                     isHighlighted={loan.id === highlightedRequestId}
+                                    openByDefault={loan.id === sharedRequestId}
                                     isPreviewRequest={isPreviewRequestBoardLoan(loan)}
                                     isDeletingOwnRequest={Boolean(isDeletingRequest && requestToDelete?.id === loan.id)}
                                     onDeleteOwnRequest={handleDeleteOwnRequestClick}
