@@ -550,9 +550,9 @@ export default function UserCard(loan: UserCardProps) {
                         onClick={handleShareRequest}
                         aria-label="Share this request"
                         title="Share this request"
-                        className="inline-flex size-8 items-center justify-center rounded-[9px] border border-[#e6e1f5] bg-white text-md-primary-1200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition active:scale-[0.96] dark:border-[#3a2f58] dark:bg-[#1e1830]"
+                        className="inline-flex size-7 items-center justify-center rounded-[8px] bg-white text-md-neutral-1200 shadow-[0_1px_4px_rgba(0,0,0,0.10)] ring-1 ring-black/5 transition hover:text-md-primary-1200 active:scale-[0.96] dark:bg-[#1e1830] dark:text-md-neutral-300 dark:ring-white/10"
                      >
-                        <Share2 className="size-4" strokeWidth={2} />
+                        <Share2 className="size-[15px]" strokeWidth={2} />
                      </button>
                   ) : null}
                </div>
