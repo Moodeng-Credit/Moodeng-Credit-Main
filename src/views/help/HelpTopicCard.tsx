@@ -16,9 +16,9 @@ import { SUPPORT_FACEBOOK_URL, TELEGRAM_URL } from '@/views/support/constants';
 // than no answer if it dead-ends — so every topic ends with three live ways out,
 // and each one carries the question with it:
 //
-//   Ask us   → opens the chat with the topic attached; the team is pinged in
-//              Telegram by the tawk-webhook function, and the reply comes back
-//              here plus by email.
+//   Ask us   → opens the chat with the topic attached; a ticket opens in the
+//              Discord #web-support forum and the team is pinged, and the reply
+//              comes back here in the same chat thread.
 //   Telegram → t.me deep link with the question pre-filled as the message.
 //   Facebook → Messenger cannot pre-fill, so we copy the question to the
 //              clipboard first and say so, which is the closest honest thing.
