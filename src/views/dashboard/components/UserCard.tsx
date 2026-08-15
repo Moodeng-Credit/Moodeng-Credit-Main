@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, Clock, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
+import { ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
@@ -458,6 +458,35 @@ export default function UserCard(loan: UserCardProps) {
       onDeleteOwnRequest?.(loanData);
    };
 
+   // Deep-links to this exact request on the board (card scrolled-to + highlighted), so a lender
+   // who opens the shared link lands on the loan they were sent and can fund it directly.
+   const shareRequestUrl =
+      typeof window !== 'undefined' ? `${window.location.origin}/request-board?highlight=${loanData.id}` : '';
+   const handleShareRequest = async (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Native share sheet on mobile (WhatsApp/Telegram/etc.); clipboard copy everywhere else.
+      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+         try {
+            await navigator.share({
+               title: 'Moodeng loan request',
+               text: `Help fund ${borrowerDisplayName}'s loan on Moodeng`,
+               url: shareRequestUrl
+            });
+            return;
+         } catch (shareError) {
+            // AbortError = the user closed the share sheet on purpose; don't fall back to copy.
+            if ((shareError as Error)?.name === 'AbortError') return;
+         }
+      }
+      try {
+         await navigator.clipboard.writeText(shareRequestUrl);
+         showToast(TOAST_TYPES.SUCCESS, 'Link copied', 'Send it to a lender so they can fund this request.');
+      } catch {
+         showToast(TOAST_TYPES.ERROR, 'Could not copy link', shareRequestUrl);
+      }
+   };
+
    return (
       <>
          <div
@@ -499,17 +528,34 @@ export default function UserCard(loan: UserCardProps) {
                   ) : null}
                </div>
             ) : null}
-            {canDeleteOwnRequest ? (
-               <button
-                  type="button"
-                  onClick={handleDeleteOwnRequest}
-                  disabled={isDeletingOwnRequest}
-                  aria-label="Delete your loan request"
-                  title="Delete request"
-                  className="absolute right-3 top-3 z-10 inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
-               >
-                  <Trash2 className="size-4" strokeWidth={2} />
-               </button>
+            {/* Top-right actions: Share (deep-links a lender to this exact request) and, on your
+                own open request, Delete. Hidden on preview/marketing cards. */}
+            {canDeleteOwnRequest || !isPreviewRequest ? (
+               <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                  {canDeleteOwnRequest ? (
+                     <button
+                        type="button"
+                        onClick={handleDeleteOwnRequest}
+                        disabled={isDeletingOwnRequest}
+                        aria-label="Delete your loan request"
+                        title="Delete request"
+                        className="inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                     >
+                        <Trash2 className="size-4" strokeWidth={2} />
+                     </button>
+                  ) : null}
+                  {!isPreviewRequest ? (
+                     <button
+                        type="button"
+                        onClick={handleShareRequest}
+                        aria-label="Share this request"
+                        title="Share this request"
+                        className="inline-flex size-8 items-center justify-center rounded-[9px] border border-[#e6e1f5] bg-white text-md-primary-1200 shadow-[0_1px_3px_rgba(0,0,0,0.06)] transition active:scale-[0.96] dark:border-[#3a2f58] dark:bg-[#1e1830]"
+                     >
+                        <Share2 className="size-4" strokeWidth={2} />
+                     </button>
+                  ) : null}
+               </div>
             ) : null}
             {/* Top: Loan Info + Amount Card */}
             <div

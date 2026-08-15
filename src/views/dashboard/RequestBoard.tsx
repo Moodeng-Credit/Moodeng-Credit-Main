@@ -451,6 +451,7 @@ function RequestBoard$() {
    const [isOpeningLoanRequest, setIsOpeningLoanRequest] = useState(false);
    const [failedVerifyMethod, setFailedVerifyMethod] = useState<VerifyMethod | null>(null);
    const verifyFailCheckedRef = useRef(false);
+   const highlightParamRef = useRef<string | null>(null);
 
    const user = useSelector((state: RootState) => state.auth.user);
    const username = useSelector((state: RootState) => state.auth.username);
@@ -1690,6 +1691,17 @@ function RequestBoard$() {
       submittedRequestPreviewRunRef.current = location.search;
       setHighlightedRequestId(visibleLoans[0].id);
    }, [location.search, showSubmittedRequestSuccessPreview, visibleLoans]);
+
+   // A shared request link (/request-board?highlight=<loanId>) drops the lender on the board
+   // focused on that exact request: highlight it and scroll it into view once it's on screen.
+   useEffect(() => {
+      const target = new URLSearchParams(location.search).get('highlight');
+      if (!target || highlightParamRef.current === target) return;
+      if (!visibleLoans.some((loan) => loan.id === target)) return;
+
+      highlightParamRef.current = target;
+      setHighlightedRequestId(target);
+   }, [location.search, visibleLoans]);
 
    return (
       <>
