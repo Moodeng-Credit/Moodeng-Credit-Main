@@ -1696,15 +1696,28 @@ export default function AccountSettings() {
    };
 
    const closeSettingsSection = () => {
-      if (
+      // Two ways to land on a section:
+      //  1. Tapped a row in the settings overview (openSettingsSection sets
+      //     `settingsFromOverview`) — back should return to that overview.
+      //  2. Deep-linked straight into a section from elsewhere in the app, e.g.
+      //     tapping your username on the request board (`/account/settings?edit=name`).
+      //     The user never saw the overview, so back should return to wherever
+      //     they came from — not strand them on the overview.
+      // In both cases there is a real previous in-app history entry to pop.
+      // react-router gives the first entry of a session the key 'default'; any
+      // other key means we navigated here in-app and can safely go back.
+      const cameFromOverview =
          location.state &&
          typeof location.state === 'object' &&
-         (location.state as { settingsFromOverview?: boolean }).settingsFromOverview
-      ) {
+         (location.state as { settingsFromOverview?: boolean }).settingsFromOverview;
+
+      if (cameFromOverview || location.key !== 'default') {
          navigate(-1);
          return;
       }
 
+      // Hard-loaded directly onto a section (no in-app history to pop): fall back
+      // to revealing the settings overview in place.
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete('section');
       nextParams.delete('edit');
