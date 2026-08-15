@@ -1531,8 +1531,10 @@ function RequestBoard$() {
    }, [pathname]);
 
    useEffect(() => {
-      const loadLoans = async () => {
-         setHasLoadedRequestBoardLoans(false);
+      // `silent` skips the loading-state toggle so the periodic auto-refresh
+      // re-fetches in the background without blanking the board.
+      const loadLoans = async (silent = false) => {
+         if (!silent) setHasLoadedRequestBoardLoans(false);
          try {
             const loans = await dispatch(fetchLoans()).unwrap();
             const borrowerUserIds = [...new Set(loans.map((loan: Loan) => loan.borrowerUser).filter(Boolean))] as string[];
@@ -1544,10 +1546,17 @@ function RequestBoard$() {
                console.error('Error fetching data:', (error as Error).message || error);
             }
          } finally {
-            setHasLoadedRequestBoardLoans(true);
+            if (!silent) setHasLoadedRequestBoardLoans(true);
          }
       };
       loadLoans();
+      // Auto-refresh the request board every 60s so newly posted requests appear
+      // without a manual reload. Runs silently and pauses while the tab is hidden.
+      const interval = setInterval(() => {
+         if (typeof document !== 'undefined' && document.hidden) return;
+         loadLoans(true);
+      }, 60000);
+      return () => clearInterval(interval);
    }, [dispatch]);
 
    const filteredLoans = useMemo(() => {
