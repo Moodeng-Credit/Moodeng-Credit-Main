@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
+import { openSupportChat } from '@/lib/support/liveChat';
 import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
@@ -98,6 +99,14 @@ const useWallet = () => {
    const { writeContractAsync } = useWriteContract();
    const { showToast, showToastByConfig } = useToast();
 
+   // Show the failure toast and, when it's a genuine failure (not a user-cancelled
+   // transaction), proactively open support with context — a stuck payment,
+   // repayment, or withdrawal is then one step from a human instead of a dead end.
+   const toastTransferFailure = (code: ErrorCode) => {
+      showToastByConfig(getToastKeyFromErrorCode(code));
+      if (code !== ERROR_CODES.TRANSACTION_REJECTED) openSupportChat('I had a problem with a wallet transaction');
+   };
+
    const Transfer = async (recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
       const tokenConfig = getAllowedChainTokenConfig();
 
@@ -130,7 +139,7 @@ const useWallet = () => {
          return hash;
       } catch (err) {
          console.error('Tx failed:', err);
-         showToastByConfig(getToastKeyFromErrorCode(classifyTransferError(err)));
+         toastTransferFailure(classifyTransferError(err));
          return null;
       }
    };
@@ -191,7 +200,7 @@ const useWallet = () => {
                );
                return null;
             }
-            showToastByConfig(getToastKeyFromErrorCode(paymentError?.errorCode ?? ERROR_CODES.TRANSACTION_FAILED));
+            toastTransferFailure(paymentError?.errorCode ?? ERROR_CODES.TRANSACTION_FAILED);
             return null;
          }
       }
@@ -204,7 +213,7 @@ const useWallet = () => {
             return { hash };
          } catch (err) {
             console.error('[payUsdc:openfort] send failed', err);
-            showToastByConfig(getToastKeyFromErrorCode(classifyTransferError(err)));
+            toastTransferFailure(classifyTransferError(err));
             return null;
          }
       }
