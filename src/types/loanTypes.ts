@@ -26,6 +26,12 @@ export interface Loan {
    interestReturnedAt?: string;
    interestReturnHash?: string;
    repaidAt?: string;
+   // Admin refund: set when the lender was refunded their principal and the loan was cancelled.
+   // A refunded loan reads back as repaymentStatus 'Paid', so treat refundedAt as the signal that
+   // this was a refund (money returned by the platform), NOT a borrower repayment.
+   refundedAt?: string;
+   refundReason?: string;
+   refundHash?: string;
 }
 
 export interface CreateLoanData {

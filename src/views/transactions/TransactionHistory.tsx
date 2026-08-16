@@ -50,6 +50,15 @@ function StatusChip({ status }: { status: TransactionLoanStatus }) {
             </span>
          )
       },
+      REFUNDED: {
+         label: 'REFUNDED',
+         className: 'border-md-primary-900 text-md-primary-900 bg-transparent',
+         icon: (
+            <span className="w-3 h-3 rounded-full bg-md-primary-900 flex items-center justify-center shrink-0">
+               <span className="text-white text-[8px] font-bold leading-none">&#8617;</span>
+            </span>
+         )
+      },
       ACTIVE: {
          label: 'ACTIVE',
          className: 'border-md-blue-500 text-md-blue-500 bg-transparent',
