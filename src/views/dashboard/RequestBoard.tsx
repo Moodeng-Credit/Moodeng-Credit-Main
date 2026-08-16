@@ -68,6 +68,7 @@ import LoanRequestModal, { type AppliedReferralCode, mapBorrowerContextForSave }
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
+import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import FundWalletSheet from '@/views/fund/FundWalletSheet';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
@@ -1714,6 +1715,15 @@ function RequestBoard$() {
       setHighlightedRequestId(target);
       setSharedRequestId(target);
    }, [location.search, visibleLoans]);
+
+   // Logged-out visitor opening a shared link: stash the target so sign-in can return them to
+   // it (getPostSignInPath consumes it). Stashed regardless of whether the loan is loaded on
+   // the public board yet, so it survives a delayed or empty first load.
+   useEffect(() => {
+      if (isAuthenticated) return;
+      const target = new URLSearchParams(location.search).get('highlight');
+      if (target) setPendingSharedRequestId(target);
+   }, [isAuthenticated, location.search]);
 
    return (
       <>

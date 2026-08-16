@@ -13,6 +13,7 @@ import {
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -24,7 +25,17 @@ const getPostSignInPath = async (user: { id: string; accountStatus?: string }) =
    }
 
    const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
-   return defaultedBorrower.overdueAmount > 0 ? '/account-restricted' : '/dashboard';
+   if (defaultedBorrower.overdueAmount > 0) return '/account-restricted';
+
+   // If they arrived via a shared request link before signing in, return them to that exact
+   // request (opened on the board) instead of the generic dashboard.
+   const sharedRequestId = getPendingSharedRequestId();
+   if (sharedRequestId) {
+      clearPendingSharedRequestId();
+      return `/request-board?highlight=${encodeURIComponent(sharedRequestId)}`;
+   }
+
+   return '/dashboard';
 };
 
 export default function SignInPage() {
