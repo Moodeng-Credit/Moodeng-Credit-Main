@@ -61,6 +61,11 @@ verify_jwt = true
 [functions.admin-loan-notify]
 verify_jwt = true
 
+# Admin refund: repays a lender for an outstanding loan, cancels the loan, and bans +
+# KYC-blacklists the borrower. Re-verifies the caller is an active admin inside the function.
+[functions.admin-refund-loan]
+verify_jwt = true
+
 # Mints an Openfort Shield encryption session for embedded-wallet recovery. Gated to
 # signed-in users (the function also re-verifies the JWT) so it can't be called anonymously.
 [functions.openfort-shield-session]
