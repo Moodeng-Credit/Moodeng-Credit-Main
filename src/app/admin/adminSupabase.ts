@@ -1767,7 +1767,6 @@ export async function getLoanRefundState(loanId: string): Promise<{ alreadyHandl
    const outstanding = data?.loan_status === 'Lent' && (repaymentStatus === 'Unpaid' || repaymentStatus === 'Partial');
    return { alreadyHandled: !outstanding, repaymentStatus };
 }
-
 // The refund USDC transfer must ALREADY have been sent (pass its hash). The admin-refund-loan Edge
 // Function verifies it on-chain before writing anything, then cancels the loan (repayment_status →
 // 'Paid' + refunded_at stamp), records the ledger, bans + KYC-blacklists the borrower, and notifies
