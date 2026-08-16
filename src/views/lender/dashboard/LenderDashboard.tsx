@@ -8,6 +8,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import PowerLenderBadge from '@/components/PowerLenderBadge';
 import UserAvatar from '@/components/UserAvatar';
+import RefundReceipts from '@/views/lender/dashboard/RefundReceipts';
 
 import { isPowerLender } from '@/config/powerLenders';
 
@@ -424,6 +425,9 @@ export default function LenderDashboard() {
                   <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                </button>
             </div>
+
+            {/* ── Refund receipts (proof money was returned) ── */}
+            <RefundReceipts />
 
             {/* ── Profile section ── */}
             <div className="flex items-start gap-3 px-md-5 pb-md-3">
