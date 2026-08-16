@@ -38,6 +38,7 @@ import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
 import PricingHealthSection from './PricingHealthSection';
 import ReferralCodesSection from './ReferralCodesSection';
+import RefundSection from './RefundSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
@@ -56,6 +57,7 @@ type AdminTab =
    | 'trust-points'
    | 'defaults'
    | 'requests'
+   | 'refunds'
    | 'risk'
    | 'self-lending'
    | 'referrals'
@@ -92,6 +94,7 @@ const navGroups: NavGroup[] = [
          { id: 'coming-due', label: 'Coming due' },
          { id: 'extensions', label: 'Loan extensions' },
          { id: 'requests', label: 'Loan request review' },
+         { id: 'refunds', label: 'Refunds' },
          { id: 'defaults', label: 'Default recovery' }
       ]
    },
@@ -303,6 +306,7 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'trust-points',
    'defaults',
    'requests',
+   'refunds',
    'risk',
    'self-lending',
    'referrals',
@@ -1475,6 +1479,8 @@ export default function AdminPanel() {
                ) : null}
 
                {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
+
+               {activeTab === 'refunds' ? <RefundSection /> : null}
 
                {activeTab === 'analytics' ? (
                   <section className="space-y-6">
