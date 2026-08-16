@@ -1,29 +1,25 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
-
 // Admin refund flow.
 //
 // An active admin repays a LENDER out of the admin's own wallet for an outstanding loan, and this
 // function — the ONLY path allowed to write the loan money columns (a DB trigger rejects client
-// writes) — records it and applies the fallout atomically-ish:
+// writes) — records it and applies the fallout:
 //   1. Verifies the on-chain USDC transfer to the lender's wallet (same gate as confirm-loan-payment).
-//   2. Cancels the loan: repayment_status = 'Paid', repaid_amount = total (so it is never "due" again),
-//      and stamps refunded_at / refund_reason / refunded_by / refund_hash as the real provenance.
-//   3. Writes an immutable loan_refunds ledger row.
+//   2. Cancels the loan: repayment_status = 'Paid', repaid_amount = total (never "due" again),
+//      + refunded_at/refund_reason/refunded_by/refund_hash provenance stamp.
+//   3. Immutable loan_refunds ledger row.
 //   4. Bans the BORROWER: users.account_status = 'banned' AND a 'banned' admin_account_restrictions row.
-//   5. KYC-blacklists the borrower: internal kyc_blacklist row + best-effort push to the DIDIT
-//      provider blocklist (gated on DIDIT_BLOCKLIST_ID; failure is surfaced, not fatal).
+//   5. KYC-blacklists the borrower: internal kyc_blacklist row + push to the DIDIT provider blocklists
+//      (wallet address, email, and vendor_data/user), so a future KYC session auto-declines.
 //   6. Notifies the lender (admin_user_notices + email + Telegram) with the admin's free-text reason.
-//   7. Writes admin_audit_logs for the refund, the ban, and the blacklist.
+//   7. admin_audit_logs for the refund, the ban, and the blacklist.
 //
-// Steps 1–3 are the transaction of record; if any of 4–7 fail the refund still stands and the error is
-// returned in `errors` for the admin to follow up (mirrors confirm-loan-payment's side-effect contract).
+// This same function also RECONCILES an already-sent refund: pass the hash of a transfer that already
+// went out and it records everything above without sending money (the send happens client-side first).
 //
 // Body: { loanId: string, hash: string, method: 'wallet' | 'base', reason: string }
-// Response: { ok: true, ... summary ..., errors: string[] } | { error: string, retry?: boolean }
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -34,7 +30,7 @@ const corsHeaders = {
 const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-// --- On-chain verification (ported from confirm-loan-payment; kept identical on purpose) ---
+// --- On-chain verification (identical to confirm-loan-payment) ---
 const USDC_ADDRESS = (Deno.env.get('BASE_USDC_ADDRESS') || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913').toLowerCase();
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 const BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O';
@@ -123,32 +119,62 @@ const getBlockTimestampMs = async (blockNumber?: string): Promise<number | null>
 
 const money = (v: number) => `$${Number(v || 0).toFixed(2)}`;
 
-// Best-effort push of a blocklist entry to the DIDIT provider. Gated on DIDIT_BLOCKLIST_ID; the exact
-// v3 lists-entry endpoint/body should be confirmed against your DIDIT account before relying on it —
-// the internal kyc_blacklist row is the authoritative record either way.
+// --- Inlined email (Resend) + Telegram helpers, so this function deploys as a single file ---
+const sendEmail = async (to: string, subject: string, text: string, html?: string) => {
+   const key = Deno.env.get('RESEND_API_KEY');
+   const from = Deno.env.get('RESEND_FROM') || 'support@moodeng.app';
+   if (!key) throw new Error('Missing RESEND_API_KEY');
+   const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ from, to: [to], subject, text, ...(html ? { html } : {}) })
+   });
+   if (!res.ok) throw new Error(`Resend: ${await res.text()}`);
+};
+
+const sendTelegramMessage = async (chatId: number | string, text: string) => {
+   const token = Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
+   const apiUrl = Deno.env.get('TELEGRAM_API_URL');
+   const url = apiUrl ?? (token ? `https://api.telegram.org/bot${token}/sendMessage` : null);
+   if (!url) throw new Error('TELEGRAM token not configured');
+   const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true })
+   });
+   const r = await res.json().catch(() => null);
+   if (!res.ok || !r?.ok) throw new Error(r?.description ?? `Telegram failed ${res.status}`);
+};
+
+// --- DIDIT provider blocklists (production app). Each entry type has its own list UUID; overridable
+// via env. Endpoint: POST {DIDIT_API_BASE}/lists/{uuid}/entries/ with x-api-key and { value, comment }.
+// vendor_data we send to DIDIT is the Supabase user id, so the user-blocklist value is the borrower id.
+const DIDIT_API_BASE = (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
+const DIDIT_WALLET_BLOCKLIST_ID = Deno.env.get('DIDIT_WALLET_BLOCKLIST_ID') || '323dda80-f5f9-443e-9cfc-5da7c2cac979';
+const DIDIT_EMAIL_BLOCKLIST_ID = Deno.env.get('DIDIT_EMAIL_BLOCKLIST_ID') || '05115446-d867-4f93-a474-65bbc4725bd4';
+const DIDIT_USER_BLOCKLIST_ID = Deno.env.get('DIDIT_USER_BLOCKLIST_ID') || 'ba4003b8-a9a5-4df0-9343-f2101598b4f5';
+
 const pushToDiditBlocklist = async (
-   entries: Array<{ entry_type: string; value: string }>,
-   reason: string
+   entries: Array<{ listUuid: string; type: string; value: string; label: string }>,
+   comment: string
 ): Promise<{ pushed: boolean; response: unknown }> => {
    const apiKey = Deno.env.get('DIDIT_API_KEY');
-   const listId = Deno.env.get('DIDIT_BLOCKLIST_ID');
-   if (!apiKey || !listId) return { pushed: false, response: { skipped: 'DIDIT_API_KEY or DIDIT_BLOCKLIST_ID not configured' } };
-   const apiBase = (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
+   if (!apiKey) return { pushed: false, response: { skipped: 'DIDIT_API_KEY not configured' } };
    const results: unknown[] = [];
    let anyOk = false;
-   for (const entry of entries) {
-      if (!entry.value) continue;
+   for (const e of entries) {
+      if (!e.value || !e.listUuid) continue;
       try {
-         const res = await fetch(`${apiBase}/lists/${listId}/entries/`, {
+         const res = await fetch(`${DIDIT_API_BASE}/lists/${e.listUuid}/entries/`, {
             method: 'POST',
             headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ entry_type: entry.entry_type, value: entry.value, reason })
+            body: JSON.stringify({ value: e.value, comment, display_label: e.label })
          });
-         const bodyJson = await res.json().catch(() => null);
-         results.push({ entry_type: entry.entry_type, status: res.status, body: bodyJson });
+         const body = await res.json().catch(() => null);
+         results.push({ type: e.type, status: res.status, body });
          if (res.ok) anyOk = true;
-      } catch (e) {
-         results.push({ entry_type: entry.entry_type, error: e instanceof Error ? e.message : String(e) });
+      } catch (err) {
+         results.push({ type: e.type, error: err instanceof Error ? err.message : String(err) });
       }
    }
    return { pushed: anyOk, response: results };
@@ -168,9 +194,7 @@ serve(async (req) => {
    const { loanId, hash } = body;
    const method = body.method;
    const reason = (body.reason ?? '').trim();
-   if (!loanId || !hash || (method !== 'wallet' && method !== 'base')) {
-      return json({ error: 'Missing or invalid loanId, hash, or method' }, 400);
-   }
+   if (!loanId || !hash || (method !== 'wallet' && method !== 'base')) return json({ error: 'Missing or invalid loanId, hash, or method' }, 400);
    if (!reason) return json({ error: 'A refund reason is required' }, 400);
 
    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -200,12 +224,9 @@ serve(async (req) => {
    if (loan.repayment_status === 'Paid') return json({ error: 'This loan is already fully repaid — nothing to refund' }, 409);
    if (!loan.lender_wallet) return json({ error: 'Loan is missing a lender wallet to refund to' }, 409);
 
-   // The refund returns the lender's PRINCIPAL. The on-chain transfer must land on the lender wallet
-   // for at least loan_amount, and (freshness) must post-date the funding it unwinds.
    const requiredMicros = BigInt(Math.round(Number(loan.loan_amount) * 1e6));
    const expectedRecipient = loan.lender_wallet.toLowerCase();
 
-   // Replay protection: a hash may only ever back ONE money event, across funding/repayment/refund.
    const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', hash).maybeSingle();
    if (existingHash) return json({ error: 'This transaction has already been used' }, 409);
 
@@ -237,7 +258,7 @@ serve(async (req) => {
    const refundAmount = Number(loan.loan_amount);
    const errors: string[] = [];
 
-   // --- (2) Cancel the loan — the transaction of record ---
+   // --- (2) Cancel the loan ---
    const { data: updatedLoan, error: updateError } = await admin
       .from('loans')
       .update({
@@ -254,7 +275,7 @@ serve(async (req) => {
       .single();
    if (updateError || !updatedLoan) return json({ error: updateError?.message || 'Failed to cancel the loan' }, 500);
 
-   // --- (3) Refund ledger ---
+   // --- (3) Ledger ---
    const { error: ledgerError } = await admin.from('loan_refunds').insert({
       loan_id: loanId,
       lender_user_id: loan.lender_user_id,
@@ -269,16 +290,16 @@ serve(async (req) => {
    });
    if (ledgerError) errors.push(`ledger: ${ledgerError.message}`);
 
-   // --- (4) Ban the borrower ---
+   // --- (4) Ban borrower + (5) KYC blacklist ---
    const borrowerId = loan.borrower_user_id as string | null;
    let borrowerBanned = false;
    let kycBlacklisted = false;
    let diditPushed = false;
-   let borrower: { id: string; username?: string | null; email?: string | null } | null = null;
 
    if (borrowerId) {
       const { data: b } = await admin.from('users').select('id, username, email, wallet_address').eq('id', borrowerId).maybeSingle();
-      borrower = b as typeof borrower;
+      const borrowerWallet = (b as { wallet_address?: string } | null)?.wallet_address ?? loan.borrower_wallet ?? '';
+      const borrowerEmail = b?.email ?? '';
 
       const { error: banError } = await admin.from('users').update({ account_status: 'banned' }).eq('id', borrowerId);
       if (banError) errors.push(`ban(account_status): ${banError.message}`);
@@ -301,25 +322,25 @@ serve(async (req) => {
       );
       if (restrictionError) errors.push(`ban(restriction): ${restrictionError.message}`);
 
-      // --- (5) KYC blacklist: revoke KYC, internal record, then best-effort DIDIT push ---
       const { error: kycRevokeError } = await admin.from('users').update({ is_didit: 'INACTIVE' }).eq('id', borrowerId);
       if (kycRevokeError) errors.push(`kyc(revoke): ${kycRevokeError.message}`);
 
       const diditResult = await pushToDiditBlocklist(
          [
-            { entry_type: 'wallet_address', value: (b as { wallet_address?: string } | null)?.wallet_address ?? loan.borrower_wallet ?? '' },
-            { entry_type: 'email', value: b?.email ?? '' }
+            { listUuid: DIDIT_WALLET_BLOCKLIST_ID, type: 'wallet_address', value: borrowerWallet, label: `Refund ${loan.tracking_id}` },
+            { listUuid: DIDIT_EMAIL_BLOCKLIST_ID, type: 'email', value: borrowerEmail, label: `Refund ${loan.tracking_id}` },
+            { listUuid: DIDIT_USER_BLOCKLIST_ID, type: 'user', value: borrowerId, label: `Refund ${loan.tracking_id}` }
          ],
          `Admin refund on loan ${loan.tracking_id}: ${reason}`
       );
       diditPushed = diditResult.pushed;
-      if (!diditResult.pushed) errors.push('didit: blocklist push skipped or failed (see kyc_blacklist.didit_response)');
+      if (!diditResult.pushed) errors.push('didit: blocklist push failed (see kyc_blacklist.didit_response)');
 
       const { error: blacklistError } = await admin.from('kyc_blacklist').upsert(
          {
             user_id: borrowerId,
-            wallet_address: (b as { wallet_address?: string } | null)?.wallet_address ?? loan.borrower_wallet,
-            email: b?.email ?? null,
+            wallet_address: borrowerWallet || null,
+            email: borrowerEmail || null,
             reason,
             source: 'admin_refund',
             didit_pushed: diditResult.pushed,
@@ -334,7 +355,7 @@ serve(async (req) => {
       errors.push('borrower: loan has no borrower_user_id — could not ban / blacklist');
    }
 
-   // --- (6) Notify the lender: persisted notice + email + Telegram ---
+   // --- (6) Notify the lender ---
    let lenderEmailSent = false;
    let lenderTelegramSent = false;
    let lenderNoticeStored = false;
@@ -344,7 +365,7 @@ serve(async (req) => {
       const title = 'Your loan has been refunded';
       const bodyText =
          `We've refunded loan ${loan.tracking_id}. ${money(refundAmount)} (${loan.coin ?? 'USDC'}) has been sent back to your wallet. ` +
-         `This loan is now closed and nothing further is owed to you on it.\n\nReason: ${reason}`;
+         `This loan is now closed and nothing further is owed to you on it.\n\nReason: ${reason}\n\nOn-chain proof: ${recordHash}`;
 
       const { error: noticeError } = await admin.from('admin_user_notices').insert({
          recipient_user_id: lenderId,
