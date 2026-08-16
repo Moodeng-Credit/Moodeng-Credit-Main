@@ -1381,6 +1381,9 @@ export default function AccountSettings() {
    const [walletError, setWalletError] = useState('');
    const [walletSafetyWarning, setWalletSafetyWarning] = useState('');
    const [walletSafetyIntent, setWalletSafetyIntent] = useState<'change' | 'disconnect' | null>(null);
+   // Set when a borrower with an outstanding loan tries to change/disconnect their wallet — the
+   // action is refused (not just warned), because that wallet is their loan/repayment anchor.
+   const [walletBlockedReason, setWalletBlockedReason] = useState('');
    const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
 
    const instantWallet = useCreateInstantWallet('account-settings');
@@ -1472,8 +1475,30 @@ export default function AccountSettings() {
 
    const checkWalletChangeSafety = useCallback(
       async (intent: 'change' | 'disconnect' = 'change'): Promise<{ blocked: boolean; warning?: string }> => {
-         if (!user?.id || isBorrower) return { blocked: false };
+         if (!user?.id) return { blocked: false };
          const supabase = getSupabaseBrowserClient();
+
+         // Borrowers are BLOCKED (not just warned) while a loan they took out is still
+         // outstanding. Their wallet is the on-chain anchor their loan and repayments are tied
+         // to; disconnecting or swapping it mid-loan unlinks that anchor (and breaks their own
+         // withdraw/repay views). Previously borrowers were exempted from this check entirely —
+         // the exact group that most needs locking got a free pass.
+         if (isBorrower) {
+            const { data, error } = await supabase
+               .from('loans')
+               .select('id')
+               .eq('borrower_user_id', user.id)
+               .eq('loan_status', 'Lent')
+               .or('repayment_status.is.null,repayment_status.neq.Paid');
+            if (error || !data || data.length === 0) return { blocked: false };
+            const loanWord = data.length === 1 ? 'loan' : 'loans';
+            const verb = intent === 'disconnect' ? 'disconnect' : 'change';
+            return {
+               blocked: true,
+               warning: `You have ${data.length} active ${loanWord} still to repay. You can't ${verb} your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.`
+            };
+         }
+
          // NOTE: the loans table is `loans` (there is no `loan_requests` table) — the old query here
          // silently errored, so this safety warning never fired. That gap is exactly how a lender ends
          // up thinking a repayment vanished after they switched wallets. Fetch the funding wallets of
@@ -1503,7 +1528,12 @@ export default function AccountSettings() {
 
    const handleInitiateWalletChange = useCallback(async () => {
       setWalletSafetyWarning('');
-      const { warning } = await checkWalletChangeSafety('change');
+      setWalletBlockedReason('');
+      const { blocked, warning } = await checkWalletChangeSafety('change');
+      if (blocked) {
+         setWalletBlockedReason(warning ?? "You can't change your wallet while you have an active loan.");
+         return;
+      }
       if (warning) {
          setWalletSafetyIntent('change');
          setWalletSafetyWarning(warning);
@@ -1514,9 +1544,14 @@ export default function AccountSettings() {
 
    const handleInitiateWalletDisconnect = useCallback(async () => {
       setWalletError('');
-      // Surface the same active-loan reassurance on disconnect as on change — repayments for loans
-      // already funded keep flowing to the funding wallet regardless of what happens here.
-      const { warning } = await checkWalletChangeSafety('disconnect');
+      setWalletBlockedReason('');
+      const { blocked, warning } = await checkWalletChangeSafety('disconnect');
+      if (blocked) {
+         setWalletBlockedReason(warning ?? "You can't disconnect your wallet while you have an active loan.");
+         return;
+      }
+      // For lenders this is reassurance only — repayments for loans already funded keep flowing to
+      // the funding wallet regardless of what happens here.
       setWalletSafetyIntent(null);
       setWalletSafetyWarning(warning ?? '');
       setIsDisconnectWalletPending(true);
@@ -1524,6 +1559,7 @@ export default function AccountSettings() {
 
    const handleRevertWalletChanges = () => {
       setIsDisconnectWalletPending(false);
+      setWalletBlockedReason('');
       setWalletError('');
       setWalletSafetyWarning('');
       setWalletSafetyIntent(null);
@@ -2094,6 +2130,20 @@ export default function AccountSettings() {
                            >
                               Change wallet
                            </button>
+                        ) : null}
+
+                        {walletBlockedReason ? (
+                           <div className="flex flex-col gap-md-2 rounded-md-lg border border-md-yellow-700 bg-md-yellow-100 p-md-3">
+                              <p className="text-md-b2 font-semibold text-md-heading">Wallet locked while you have an active loan</p>
+                              <p className="text-md-b2 font-medium leading-5 text-md-heading">{walletBlockedReason}</p>
+                              <button
+                                 type="button"
+                                 onClick={() => setWalletBlockedReason('')}
+                                 className="min-h-11 self-start rounded-md-lg border border-md-primary-900 bg-md-neutral-100 px-md-3 py-md-2 text-md-b2 font-semibold text-md-primary-900"
+                              >
+                                 OK
+                              </button>
+                           </div>
                         ) : null}
 
                         {isDisconnectWalletPending ? (
