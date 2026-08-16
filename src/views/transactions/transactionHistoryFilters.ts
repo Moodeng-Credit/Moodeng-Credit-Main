@@ -12,11 +12,14 @@ export interface TransactionHistoryFilterState {
    status: TransactionHistoryStatusFilter;
 }
 
-export type TransactionLoanStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL';
+export type TransactionLoanStatus = 'REPAID' | 'REFUNDED' | 'ACTIVE' | 'DEFAULT' | 'PENDING' | 'PARTIAL';
 
 export const DEFAULT_TRANSACTION_HISTORY_FILTERS: TransactionHistoryFilterState = { sortBy: '', status: '' };
 
 export function getTransactionLoanStatus(loan: Loan, now = new Date()): TransactionLoanStatus {
+   // An admin refund cancels the loan and reads back as 'Paid'; surface it as REFUNDED (money
+   // returned by the platform) so it's never mistaken for a borrower repayment. Checked first.
+   if (loan.refundedAt) return 'REFUNDED';
    if (loan.repaymentStatus === RepaymentStatus.PAID) return 'REPAID';
    if (loan.loanStatus === LoanStatusValue.REQUESTED) return 'PENDING';
 
@@ -37,7 +40,7 @@ function matchesStatusFilter(status: TransactionLoanStatus, statusFilter: Transa
    if (!statusFilter) return true;
    if (statusFilter === 'active') return status === 'ACTIVE' || status === 'PARTIAL';
    if (statusFilter === 'pending') return status === 'PENDING';
-   if (statusFilter === 'repaid') return status === 'REPAID';
+   if (statusFilter === 'repaid') return status === 'REPAID' || status === 'REFUNDED';
    if (statusFilter === 'default') return status === 'DEFAULT';
    return true;
 }
@@ -81,8 +84,9 @@ export function filterTransactionHistoryLoans({
 
    let result = loans.filter((loan) => {
       const status = getTransactionLoanStatus(loan, now);
-      if (activeTab === 'active' && status === 'REPAID') return false;
-      if (activeTab === 'completed' && status !== 'REPAID') return false;
+      const isSettled = status === 'REPAID' || status === 'REFUNDED';
+      if (activeTab === 'active' && isSettled) return false;
+      if (activeTab === 'completed' && !isSettled) return false;
       if (!matchesStatusFilter(status, filters.status)) return false;
 
       if (!normalizedSearch) return true;

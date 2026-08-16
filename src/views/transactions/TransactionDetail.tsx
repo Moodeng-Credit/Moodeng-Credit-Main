@@ -94,6 +94,15 @@ function StatusChip({ status }: { status: TransactionLoanStatus }) {
             </span>
          )
       },
+      REFUNDED: {
+         label: 'REFUNDED',
+         className: 'border-md-primary-900 text-md-primary-900 bg-transparent',
+         icon: (
+            <span className="w-3 h-3 rounded-full bg-md-primary-900 flex items-center justify-center shrink-0">
+               <span className="text-white text-[8px] font-bold leading-none">&#8617;</span>
+            </span>
+         )
+      },
       ACTIVE: {
          label: 'ACTIVE',
          className: 'border-md-blue-500 text-md-blue-500 bg-transparent',
@@ -188,6 +197,7 @@ function buildTimeline(loan: Loan): TimelineStep[] {
    };
 
    const labelFor = (key: TimelineStep['key'], state: StepState): string => {
+      if (key === 'repaid' && loan.refundedAt) return 'Refunded';
       if (key === 'funded' && state === 'active') return 'Waiting for lender';
       if (key === 'repaid' && loan.loanStatus === 'Requested') return 'Repayment schedule';
       if (key === 'repaid' && state !== 'done') return 'Repayment due';
@@ -714,9 +724,9 @@ export default function TransactionDetail() {
                         <span className="text-md-b1 font-semibold text-md-primary-2000">{formatCurrency(loan.totalRepaymentAmount)}</span>
                      </div>
                      <div className="flex flex-col gap-1">
-                        <span className="text-md-b3 text-md-neutral-1000">Repaid</span>
-                        <span className={`text-md-b1 font-semibold ${loan.repaidAmount > 0 ? 'text-md-green-800' : 'text-md-neutral-600'}`}>
-                           {formatCurrency(loan.repaidAmount)}
+                        <span className="text-md-b3 text-md-neutral-1000">{loan.refundedAt ? 'Refunded' : 'Repaid'}</span>
+                        <span className={`text-md-b1 font-semibold ${loan.refundedAt || loan.repaidAmount > 0 ? 'text-md-green-800' : 'text-md-neutral-600'}`}>
+                           {formatCurrency(loan.refundedAt ? loan.loanAmount : loan.repaidAmount)}
                         </span>
                      </div>
                      <div className="flex flex-col gap-1">

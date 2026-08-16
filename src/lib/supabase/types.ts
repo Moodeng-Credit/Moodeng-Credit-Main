@@ -94,6 +94,10 @@ export type Database = {
           id: string
           interest_return_hash: string | null
           interest_returned_at: string | null
+          refunded_at: string | null
+          refund_reason: string | null
+          refunded_by: string | null
+          refund_hash: string | null
           lender_user_id: string | null
           lender_wallet: string | null
           loan_amount: number
