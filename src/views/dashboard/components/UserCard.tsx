@@ -539,11 +539,24 @@ export default function UserCard(loan: UserCardProps) {
                </div>
             ) : null}
             {/* Top-right actions: Share (funding admins only — normal users never share, they just
-                open the link) and, on your own open request, Delete. Hidden on preview cards. */}
+                open the link) as a corner notch, plus Delete on your own open request. The notch
+                follows the card's rounded corner; delete shifts left when the notch is present. */}
             {(() => {
                const showShare = isFundingAdmin && !isPreviewRequest;
-               return canDeleteOwnRequest || showShare ? (
-                  <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+               if (!canDeleteOwnRequest && !showShare) return null;
+               return (
+                  <>
+                     {showShare ? (
+                        <button
+                           type="button"
+                           onClick={handleShareRequest}
+                           aria-label="Share this request"
+                           title="Share this request"
+                           className="absolute right-0 top-0 z-10 flex h-[34px] w-10 items-center justify-center rounded-bl-[14px] rounded-tr-[24px] bg-[#faf8ff] pb-0.5 pl-1 text-md-primary-1200 transition hover:brightness-95 active:scale-[0.96] dark:bg-[#241b38] dark:text-[#c4a0ff]"
+                        >
+                           <Share2 className="size-[15px]" strokeWidth={2} />
+                        </button>
+                     ) : null}
                      {canDeleteOwnRequest ? (
                         <button
                            type="button"
@@ -551,24 +564,13 @@ export default function UserCard(loan: UserCardProps) {
                            disabled={isDeletingOwnRequest}
                            aria-label="Delete your loan request"
                            title="Delete request"
-                           className="inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50"
+                           className={`absolute top-3 z-10 inline-flex size-8 items-center justify-center rounded-full border border-md-red-500/30 bg-md-red-500/15 text-md-red-300 shadow-[0_1px_3px_rgba(0,0,0,0.12)] transition active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-50 ${showShare ? 'right-12' : 'right-3'}`}
                         >
                            <Trash2 className="size-4" strokeWidth={2} />
                         </button>
                      ) : null}
-                     {showShare ? (
-                        <button
-                           type="button"
-                           onClick={handleShareRequest}
-                           aria-label="Share this request"
-                           title="Share this request"
-                           className="inline-flex size-7 items-center justify-center rounded-[8px] bg-white text-md-neutral-1200 shadow-[0_1px_4px_rgba(0,0,0,0.10)] ring-1 ring-black/5 transition hover:text-md-primary-1200 active:scale-[0.96] dark:bg-[#1e1830] dark:text-md-neutral-300 dark:ring-white/10"
-                        >
-                           <Share2 className="size-[15px]" strokeWidth={2} />
-                        </button>
-                     ) : null}
-                  </div>
-               ) : null;
+                  </>
+               );
             })()}
             {/* Top: Loan Info + Amount Card */}
             <div
