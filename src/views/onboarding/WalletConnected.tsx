@@ -11,6 +11,7 @@ import {
    getWalletProviderFromConnector,
    isBaseWalletProvider
 } from '@/lib/walletProvider';
+import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -129,6 +130,14 @@ export default function WalletConnected() {
       }
       if (returnTo === 'dashboard-credit-level') {
          navigate('/dashboard', { replace: true });
+         return;
+      }
+      // A new user who arrived via a shared request link finishes onboarding straight onto that
+      // request (not the generic board), completing the same return that sign-in already does.
+      const pendingSharedRequestId = getPendingSharedRequestId();
+      if (pendingSharedRequestId) {
+         clearPendingSharedRequestId();
+         navigate(`/request-board?highlight=${encodeURIComponent(pendingSharedRequestId)}`, { replace: true });
          return;
       }
       const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
