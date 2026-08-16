@@ -1730,3 +1730,45 @@ export async function removeLoanRequest(input: RemoveLoanRequestInput): Promise<
    })) as RemoveLoanRequestResult;
    return result;
 }
+
+// ---------------------------------------------------------------------------
+// Admin loan refund — repay a lender out of the admin's own wallet for an
+// outstanding loan, cancel the loan, and ban + KYC-blacklist the borrower.
+// ---------------------------------------------------------------------------
+export interface RefundLoanInput {
+   loanId: string;
+   /** The on-chain hash of the refund the admin ALREADY sent to the lender's wallet. */
+   hash: string;
+   method: 'wallet' | 'base';
+   reason: string;
+}
+
+export interface RefundLoanResult {
+   ok: boolean;
+   refund: { amount: number; coin: string; txHash: string };
+   borrowerBanned: boolean;
+   kycBlacklisted: boolean;
+   diditPushed: boolean;
+   lender: { noticeStored: boolean; emailSent: boolean; telegramSent: boolean };
+   errors: string[];
+}
+
+// The refund USDC transfer must ALREADY have been sent (pass its hash). The admin-refund-loan Edge
+// Function verifies it on-chain before writing anything, then cancels the loan (repayment_status →
+// 'Paid' + refunded_at stamp), records the ledger, bans + KYC-blacklists the borrower, and notifies
+// the lender. A 202 (not yet confirmed on-chain) surfaces as a retryable error.
+export async function refundLoan(input: RefundLoanInput): Promise<RefundLoanResult> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-refund-loan', {
+      body: { loanId: input.loanId, hash: input.hash, method: input.method, reason: input.reason.trim() }
+   });
+   if (error) {
+      throw new Error((await readFunctionError(error)) || error.message || 'Refund failed.');
+   }
+   const result = data as (RefundLoanResult & { error?: string; retry?: boolean }) | null;
+   if (result?.retry) {
+      throw new Error(result.error || 'Refund payment is not confirmed on-chain yet — wait a moment and try again.');
+   }
+   if (result?.error) throw new Error(result.error);
+   if (!result?.ok) throw new Error('Refund failed.');
+   return result;
+}
