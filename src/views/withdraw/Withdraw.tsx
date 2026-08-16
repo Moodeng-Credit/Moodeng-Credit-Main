@@ -66,13 +66,20 @@ type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax';
 // LOAN_USDC; `send` replaces the simulated transfer with a real on-chain USDC
 // Transfer; `repayUsdc`/`dueDate` come from the borrower's funded loan.
 type WithdrawData = {
-   // Display estimate of what the borrower can cash out (on-chain balance, or the
-   // funded-loan amount as a fallback before the balance loads). Used for copy only.
+   // Illustrative amount for estimate/instructional copy only (e.g. "once your X USDC shows in
+   // Binance…"). Falls back to the funded-loan amount when the real balance isn't known, so it
+   // MUST NEVER be shown as the wallet's available balance — that's what `spendable` is for.
+   // Showing this as "available" told a borrower she had 15 USDC when her wallet held 0.
    available: number;
-   // Hard cap for the amount field + Max button: the *verified* on-chain balance,
-   // never the loan estimate. `null` while it's still loading — send stays disabled
-   // until we can prove the wallet holds the funds, so we can't authorise an over-send.
+   // Hard cap for the amount field + Max button AND the source of every "available balance"
+   // display: the *verified* on-chain balance, never the loan estimate. `null` while it's still
+   // loading — send stays disabled until we can prove the wallet holds the funds, so we can't
+   // authorise an over-send.
    spendable: number | null;
+   // Whether there's a wallet whose balance we can actually read. False when no wallet is
+   // connected/linked, so the UI can say "connect your wallet" instead of spinning on
+   // "Checking your balance…" forever or, worse, showing a fabricated balance.
+   walletConnected: boolean;
    repayUsdc: number | null;
    dueDate: string | null;
    walletAddress: string;
@@ -576,7 +583,7 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 }
 
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
-   const { available: LOAN_USDC, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
+   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
    const region = useRegion();
    const navigate = useNavigate();
    const isPH = region !== 'other';
@@ -624,7 +631,7 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   Withdraw your USDC
                </h1>
                <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-                  {LOAN_USDC} USDC available
+                  {!walletConnected ? 'Connect your wallet to see your balance' : spendable == null ? 'Checking your balance…' : `${spendable} USDC available`}
                   {REPAY_USDC != null && DUE_DATE ? (
                      <>
                         {' '}
@@ -990,7 +997,7 @@ type AppFlowConfig = {
 };
 
 function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed: (amount: number) => void; onDone: () => void }) {
-   const { available: LOAN_USDC, spendable, isPreview, isInstantWallet, send } = useWithdrawData();
+   const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
    const { showToast } = useToast();
    const [address, setAddress] = useState('');
    const [amount, setAmount] = useState('');
@@ -1138,7 +1145,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -1445,7 +1452,7 @@ const COINSPH_FLOW: AppFlowConfig = {
 
 /* ─── Binance flow (custom — has P2P cash-out guide with video) ──── */
 function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) => void; onDone: () => void }) {
-   const { available: LOAN_USDC, spendable, isPreview, isInstantWallet, send } = useWithdrawData();
+   const { available: LOAN_USDC, spendable, walletConnected, isPreview, isInstantWallet, send } = useWithdrawData();
    const { showToast } = useToast();
    const region = useRegion();
    const isPH = region !== 'other';
@@ -1630,7 +1637,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -2116,7 +2123,12 @@ export default function Withdraw() {
 
    const fundedTotal = fundedLoans.reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
    const onChainBalance = typeof usdcBalanceRaw === 'bigint' ? Number(usdcBalanceRaw) / 1e6 : null;
-   // Display estimate: real balance if we have it, else the funded-loan amount.
+   // True when we have a wallet to read a balance from (or we're in preview, where the balance
+   // is synthetic). When false, the balance simply can't be known — the UI must say so rather
+   // than fall back to a number.
+   const walletConnected = isPreview ? true : Boolean(walletAddress);
+   // Illustrative amount for estimate/instructional copy ONLY — never a balance claim. Falls
+   // back to the funded-loan amount before/without an on-chain read; see the type comment.
    const available = isPreview ? 50 : Math.round((onChainBalance ?? fundedTotal) * 100) / 100;
    // Hard send cap: verified on-chain balance only. `null` until it loads, which
    // disables the send button so we never authorise more than the wallet holds.
@@ -2128,6 +2140,7 @@ export default function Withdraw() {
       () => ({
          available,
          spendable,
+         walletConnected,
          repayUsdc: isPreview ? 55 : primaryLoan ? Math.round(Number(primaryLoan.totalRepaymentAmount) * 100) / 100 : null,
          dueDate: isPreview
             ? 'July 18, 2026'
@@ -2188,7 +2201,7 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id]
+      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id]
    );
 
    return (
