@@ -1753,6 +1753,21 @@ export interface RefundLoanResult {
    errors: string[];
 }
 
+// Live re-check of a loan's settlement state, used as a pre-send guard so a stale row can't send a
+// second on-chain refund for a loan that's already been refunded/repaid. A refunded loan reads back
+// as repayment_status='Paid'; treat anything not still-owed as "already handled".
+export async function getLoanRefundState(loanId: string): Promise<{ alreadyHandled: boolean; repaymentStatus: string | null }> {
+   const { data, error } = await getSupabaseBrowserClient()
+      .from('loans')
+      .select('repayment_status, loan_status')
+      .eq('id', loanId)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   const repaymentStatus = (data?.repayment_status ?? null) as string | null;
+   const outstanding = data?.loan_status === 'Lent' && (repaymentStatus === 'Unpaid' || repaymentStatus === 'Partial');
+   return { alreadyHandled: !outstanding, repaymentStatus };
+}
+
 // The refund USDC transfer must ALREADY have been sent (pass its hash). The admin-refund-loan Edge
 // Function verifies it on-chain before writing anything, then cancels the loan (repayment_status →
 // 'Paid' + refunded_at stamp), records the ledger, bans + KYC-blacklists the borrower, and notifies
