@@ -33,7 +33,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
    const isVerified = isUserVerified(user);
    const currentLimit = getEffectiveCreditLimit(user.cs, isVerified);
    const isPaused = Boolean(user.creditProgressionPaused);
-   const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid');
+   const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
    const onTimePaidLoans = paidLoans.filter((loan) => {
       const repaidAmount = toNumber(loan.repaidAmount);
       const totalRepayment = toNumber(loan.totalRepaymentAmount);
@@ -163,7 +163,7 @@ export const useDashboardData = (activeRole: RoleType) => {
    }, [dispatch, hasCachedDashboardData, hasFreshDashboardData, userId]);
 
    const loanArrays = useMemo(() => {
-      const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid');
+      const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
       const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
       const defaultedLoans = userLoans.filter(
          (loan) => loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
