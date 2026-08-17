@@ -8,7 +8,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import PowerLenderBadge from '@/components/PowerLenderBadge';
 import UserAvatar from '@/components/UserAvatar';
-import RefundReceipts from '@/views/lender/dashboard/RefundReceipts';
 
 import { isPowerLender } from '@/config/powerLenders';
 
@@ -27,7 +26,7 @@ import type { Loan } from '@/types/loanTypes';
 
 type SortBy = 'low-to-high' | 'high-to-low' | '';
 type StatusFilter = 'new-to-old' | 'old-to-new' | 'pending' | 'active' | 'default' | '';
-type LoanDisplayStatus = 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING';
+type LoanDisplayStatus = 'REPAID' | 'REFUNDED' | 'ACTIVE' | 'DEFAULT' | 'PENDING';
 
 interface FilterState {
    sortBy: SortBy;
@@ -39,6 +38,9 @@ interface FilterState {
 // ---------------------------------------------------------------------------
 
 function getLoanDisplayStatus(loan: Loan): LoanDisplayStatus {
+   // An admin refund cancels the loan and reads back as 'Paid'; surface it as REFUNDED (money
+   // returned by the platform) so it's never mistaken for a borrower repayment. Checked first.
+   if (loan.refundedAt) return 'REFUNDED';
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
    if (loan.loanStatus === 'Requested') return 'PENDING';
    const dueDate = new Date(loan.dueDate);
@@ -101,6 +103,16 @@ function StatusChip({ status }: { status: LoanDisplayStatus }) {
          <span className="inline-flex items-center gap-1 px-3 py-[5px] rounded-[30px] border border-md-green-700">
             <CheckCircle className="w-3.5 h-3.5 text-md-green-700 shrink-0" strokeWidth={2.5} />
             <span className="text-md-b4 font-semibold text-md-green-700 uppercase tracking-wide">REPAID</span>
+         </span>
+      );
+   }
+   if (status === 'REFUNDED') {
+      return (
+         <span className="inline-flex items-center gap-1 px-3 py-[5px] rounded-[30px] border border-md-primary-900">
+            <span className="w-3.5 h-3.5 rounded-full bg-md-primary-900 flex items-center justify-center shrink-0">
+               <span className="text-white text-[9px] font-bold leading-none">&#8617;</span>
+            </span>
+            <span className="text-md-b4 font-semibold text-md-primary-900 uppercase tracking-wide">REFUNDED</span>
          </span>
       );
    }
@@ -425,9 +437,6 @@ export default function LenderDashboard() {
                   <HelpCircle className="w-6 h-6 text-md-primary-900" strokeWidth={1.5} />
                </button>
             </div>
-
-            {/* ── Refund receipts (proof money was returned) ── */}
-            <RefundReceipts />
 
             {/* ── Profile section ── */}
             <div className="flex items-start gap-3 px-md-5 pb-md-3">
