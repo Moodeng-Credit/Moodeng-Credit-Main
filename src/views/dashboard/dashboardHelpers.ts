@@ -70,7 +70,9 @@ export const getDashboardMilestoneHighlights = (milestones: DashboardMilestone[]
 };
 
 const isLoanPaidOnTime = (loan: Loan): boolean => {
-   if (loan.repaymentStatus !== 'Paid') return false;
+   // A refund reads back as 'Paid' with repaidAmount stamped to the full total, but the borrower
+   // defaulted — it must never count as an on-time repayment (would advance their credit level).
+   if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
    const repaidAmount = toNumber(loan.repaidAmount);
    const totalRepayment = toNumber(loan.totalRepaymentAmount);
    const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
@@ -138,7 +140,7 @@ export const buildReputationMilestones = ({
    isVerified: boolean;
 }): DashboardMilestone[] => {
    const fundedLoans = borrowerLoans.filter((loan) => loan.loanStatus === 'Lent');
-   const paidLoans = borrowerLoans.filter((loan) => loan.repaymentStatus === 'Paid');
+   const paidLoans = borrowerLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
    const onTimePaidLoans = getOnTimePaidLoans(borrowerLoans);
    const unlockedLevels = creditLevels.filter((level) => level.unlocked);
    const currentLevel = unlockedLevels[unlockedLevels.length - 1];

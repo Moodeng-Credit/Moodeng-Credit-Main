@@ -458,7 +458,8 @@ export const updateLoanStatus = createAsyncThunk<
             .from('loans')
             .select('loan_amount, repaid_amount, total_repayment_amount, due_date, repaid_at, updated_at')
             .eq('borrower_user_id', data.borrower_user_id)
-            .eq('repayment_status', 'Paid');
+            .eq('repayment_status', 'Paid')
+            .is('refunded_at', null); // refunds aren't borrower repayments — exclude from credit progression
 
          if (paidLoansError) {
             throw new Error(paidLoansError.message);

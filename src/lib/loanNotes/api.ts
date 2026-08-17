@@ -67,12 +67,14 @@ export async function getLoanNotePageData(loanId: string, viewer: { userId?: str
    if (loan.borrower_user_id) {
       const { data: history } = await supabase
          .from('loans')
-         .select('repayment_status, loan_status')
+         .select('repayment_status, loan_status, refunded_at')
          .eq('borrower_user_id', loan.borrower_user_id)
          .eq('loan_status', 'Lent');
       if (Array.isArray(history)) {
          loansFunded = history.length;
-         loansRepaid = history.filter((row) => row.repayment_status === 'Paid').length;
+         // A refunded loan is a default (lender refunded, borrower banned), not a repayment — it
+         // stays in the funded denominator but must not count toward the repaid rate.
+         loansRepaid = history.filter((row) => row.repayment_status === 'Paid' && !row.refunded_at).length;
       }
    }
    const repaymentRatePct = loansFunded > 0 ? Math.round((loansRepaid / loansFunded) * 100) : null;
