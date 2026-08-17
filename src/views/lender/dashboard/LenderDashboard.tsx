@@ -75,19 +75,23 @@ function computeEarningsChange(loans: Loan[]): { total: number; changePercent: n
    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-   const repaidLoans = loans.filter((l) => l.repaymentStatus === 'Paid');
-   const total = repaidLoans.reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
+   // Earnings = interest actually earned, not gross repayment. The returned principal is the
+   // lender's own capital coming back, so only (total_repayment - principal) counts. Refunded
+   // loans return principal only (no interest), so they're excluded entirely.
+   const earned = (l: Loan) => Math.max(0, l.totalRepaymentAmount - l.loanAmount);
+   const repaidLoans = loans.filter((l) => l.repaymentStatus === 'Paid' && !l.refundedAt);
+   const total = repaidLoans.reduce((sum, l) => sum + earned(l), 0);
 
    const currentPeriod = repaidLoans
       .filter((l) => new Date(l.updatedAt ?? l.createdAt) >= thirtyDaysAgo)
-      .reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
+      .reduce((sum, l) => sum + earned(l), 0);
 
    const previousPeriod = repaidLoans
       .filter((l) => {
          const d = new Date(l.updatedAt ?? l.createdAt);
          return d >= sixtyDaysAgo && d < thirtyDaysAgo;
       })
-      .reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
+      .reduce((sum, l) => sum + earned(l), 0);
 
    const changePercent = previousPeriod > 0 ? ((currentPeriod - previousPeriod) / previousPeriod) * 100 : 0;
    return { total, changePercent };
