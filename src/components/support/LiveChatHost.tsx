@@ -12,7 +12,6 @@ import {
    isSupportChatEnabled,
    loadSupportChat,
    onSupportMessageReceived,
-   openSupportChat,
    resetSupportSession,
    showSupportLauncher
 } from '@/lib/support/liveChat';
@@ -67,12 +66,14 @@ export default function LiveChatHost(): null {
    useEffect(() => {
       if (!isSupportChatEnabled) return;
       onSupportMessageReceived(() => {
+         // buttonAction is a string action key dispatched by handleToastAction —
+         // NOT a callback. 'open_support_chat' maps there to openSupportChat().
          showToastRef.current(
             TOAST_TYPES.INFO,
             'Message from Moodeng Support',
             'The team replied to your chat. Tap to read it.',
             'Open chat',
-            () => openSupportChat()
+            'open_support_chat'
          );
       });
    }, []);

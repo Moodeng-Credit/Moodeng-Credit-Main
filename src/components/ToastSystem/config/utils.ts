@@ -3,8 +3,14 @@ import type { NavigateFunction as AppRouterInstance } from 'react-router-dom';
 import { TOAST_CONFIGS } from '@/components/ToastSystem/config/toastConfig';
 import type { ToastData } from '@/components/ToastSystem/types';
 import { openSupportContacts, type SupportContactIssue } from '@/components/support/supportContacts';
+import { openSupportChat } from '@/lib/support/liveChat';
 
 export const handleToastAction = (action: string, customData: ToastData, navigate: AppRouterInstance) => {
+   if (action === 'open_support_chat') {
+      openSupportChat();
+      return;
+   }
+
    if (action === 'open_support_contacts') {
       openSupportContacts((customData.supportIssue as SupportContactIssue | undefined) ?? 'general');
       return;
