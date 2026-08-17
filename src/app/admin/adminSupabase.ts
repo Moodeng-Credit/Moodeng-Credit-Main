@@ -392,7 +392,7 @@ async function buildDirectoryRows(
          const due = new Date(loan.due_date).getTime();
          return Number.isFinite(due) && due < now;
       });
-      const paidLoans = borrowedLoans.filter((loan) => loan.repayment_status === 'Paid');
+      const paidLoans = borrowedLoans.filter((loan) => loan.repayment_status === 'Paid' && !loan.refunded_at);
       const loanActivityDates = userLoans
          .map((loan) => loan.funded_at ?? loan.created_at ?? null)
          .filter(Boolean)
@@ -560,7 +560,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
               supabase
                  .from('loans')
                  .select(
-                    'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,created_at,funded_at'
+                    'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,refunded_at,created_at,funded_at'
                  )
                  .or(`borrower_user_id.in.(${userIds.join(',')}),lender_user_id.in.(${userIds.join(',')})`)
            )

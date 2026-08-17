@@ -201,7 +201,7 @@ export default function UserCard(loan: UserCardProps) {
       ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
       : undefined;
    const borrowerRepaidLoanCount = borrowerUserId
-      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid').length
+      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid' && !l.refundedAt).length
       : undefined;
    const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
    const borrowerIsVerified = borrowerProfile ? isUserVerified(borrowerProfile) : undefined;
