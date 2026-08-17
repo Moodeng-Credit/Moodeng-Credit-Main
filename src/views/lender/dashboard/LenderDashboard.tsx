@@ -75,7 +75,9 @@ function computeEarningsChange(loans: Loan[]): { total: number; changePercent: n
    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-   const repaidLoans = loans.filter((l) => l.repaymentStatus === 'Paid');
+   // A refund closes the loan as 'Paid' but only returns the lender's principal — no interest was
+   // earned — so it must not count toward earnings. Exclude refunded loans.
+   const repaidLoans = loans.filter((l) => l.repaymentStatus === 'Paid' && !l.refundedAt);
    const total = repaidLoans.reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
 
    const currentPeriod = repaidLoans
