@@ -26,7 +26,7 @@ type Body = {
    deviceRaw?: string | null;
 };
 
-const GPS_STATUSES = new Set(['granted', 'denied', 'unavailable', 'timeout']);
+const GPS_STATUSES = new Set(['granted', 'denied', 'unavailable', 'timeout', 'skipped']);
 
 // Two applications count as "same place" within this radius. Loose enough to
 // catch a shared home/room, tight enough that a whole city block doesn't trip.
