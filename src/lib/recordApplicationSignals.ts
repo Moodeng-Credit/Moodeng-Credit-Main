@@ -9,8 +9,12 @@ type GpsResult = {
    lat: number | null;
    lon: number | null;
    accuracy: number | null;
-   status: 'granted' | 'denied' | 'unavailable' | 'timeout';
+   // 'skipped' = the borrower declined our own priming step, so we never even
+   // fired the browser prompt (distinct from 'denied' = they blocked it).
+   status: 'granted' | 'denied' | 'unavailable' | 'timeout' | 'skipped';
 };
+
+export type CapturedSignals = { gps: GpsResult; deviceRaw: string | null };
 
 const captureGps = (): Promise<GpsResult> =>
    new Promise((resolve) => {
@@ -31,12 +35,7 @@ const captureGps = (): Promise<GpsResult> =>
                lat: null,
                lon: null,
                accuracy: null,
-               status:
-                  err.code === err.PERMISSION_DENIED
-                     ? 'denied'
-                     : err.code === err.TIMEOUT
-                       ? 'timeout'
-                       : 'unavailable'
+               status: err.code === err.PERMISSION_DENIED ? 'denied' : err.code === err.TIMEOUT ? 'timeout' : 'unavailable'
             }),
          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -55,24 +54,39 @@ const captureDevice = async (): Promise<string | null> => {
 };
 
 /**
- * Fire-and-forget: capture this application's GPS fix + device fingerprint and
- * attach them to the given loan for out-of-band fraud review. Soft-require —
- * a denied/blocked permission still records the *reason* and never blocks the
- * loan. Safe to call after the loan row exists; never throws into the caller.
+ * Capture the application's device fingerprint (always, silent) and — only if
+ * `wantGps` — the GPS fix. `wantGps` is driven by our own priming step: when the
+ * borrower taps "Not now" we pass false and never fire the browser prompt.
+ * Never throws.
  */
-export const recordApplicationSignals = async (loanId: string): Promise<void> => {
+export const captureApplicationSignals = async (wantGps: boolean): Promise<CapturedSignals> => {
    try {
-      const [gps, deviceRaw] = await Promise.all([captureGps(), captureDevice()]);
+      const [gps, deviceRaw] = await Promise.all([
+         wantGps ? captureGps() : Promise.resolve<GpsResult>({ lat: null, lon: null, accuracy: null, status: 'skipped' }),
+         captureDevice()
+      ]);
+      return { gps, deviceRaw };
+   } catch {
+      return { gps: { lat: null, lon: null, accuracy: null, status: 'unavailable' }, deviceRaw: null };
+   }
+};
+
+/**
+ * Fire-and-forget: attach already-captured signals to the given loan. Safe to
+ * call after the loan row exists; never throws into the caller.
+ */
+export const sendApplicationSignals = async (loanId: string, captured: CapturedSignals): Promise<void> => {
+   try {
       const supabase = getSupabaseBrowserClient();
       await supabase.functions
          .invoke('record-application-signals', {
             body: {
                loanId,
-               lat: gps.lat,
-               lon: gps.lon,
-               accuracy: gps.accuracy,
-               gpsStatus: gps.status,
-               deviceRaw
+               lat: captured.gps.lat,
+               lon: captured.gps.lon,
+               accuracy: captured.gps.accuracy,
+               gpsStatus: captured.gps.status,
+               deviceRaw: captured.deviceRaw
             }
          })
          .catch(() => undefined);

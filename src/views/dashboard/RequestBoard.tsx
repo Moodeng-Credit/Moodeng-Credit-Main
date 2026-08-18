@@ -36,6 +36,7 @@ import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
 import { STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { logoImageSrc } from '@/config/navigationConfig';
+import { useLocalization } from '@/i18n';
 import type { BorrowerContextProfileData } from '@/lib/borrowerContextFit';
 import { getBorrowerActiveLoanCount, getBorrowerUsedCreditAmount, isRequestBoardLoanVisible } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
@@ -48,11 +49,13 @@ import {
    recordGuidedTourShown,
    shouldShowGuidedTour
 } from '@/lib/guidedTourStorage';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import { checkLoanReason } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
-import { recordApplicationSignals } from '@/lib/recordApplicationSignals';
+import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
+import { captureApplicationSignals, type CapturedSignals, sendApplicationSignals } from '@/lib/recordApplicationSignals';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
 import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
@@ -66,10 +69,10 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode, mapBorrowerContextForSave } from '@/views/dashboard/components/LoanRequestModal';
+import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import UserCard from '@/views/dashboard/components/UserCard';
-import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import FundWalletSheet from '@/views/fund/FundWalletSheet';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
@@ -436,6 +439,11 @@ function RequestBoard$() {
    const [showModal, setShowModal] = useState(false);
    const [showPurple, setShowPurple] = useState(false);
    const [showBioStep, setShowBioStep] = useState(false);
+   // Location priming (PH market only): show our own "share location" step, then
+   // let doCreateLoan fire the native prompt based on the borrower's choice.
+   const [showLocationPriming, setShowLocationPriming] = useState(false);
+   const locationResolverRef = useRef<((choice: 'share' | 'skip') => void) | null>(null);
+   const { locale } = useLocalization();
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [isCheckingReason, setIsCheckingReason] = useState(false);
    const [reasonWarning, setReasonWarning] = useState('');
@@ -1417,17 +1425,37 @@ function RequestBoard$() {
       }
    };
 
+   // Show the location priming modal and resolve once the borrower picks. The
+   // native geolocation prompt is fired by the caller only on 'share'.
+   const askLocationConsent = () =>
+      new Promise<'share' | 'skip'>((resolve) => {
+         locationResolverRef.current = resolve;
+         setShowLocationPriming(true);
+      });
+   const resolveLocationConsent = (choice: 'share' | 'skip') => {
+      setShowLocationPriming(false);
+      locationResolverRef.current?.(choice);
+      locationResolverRef.current = null;
+   };
+
    const doCreateLoan = async (loanData: CreateLoanData) => {
       setIsSubmitting(true);
       try {
          if (!(await ensureCanCreateLoanRequest())) {
             return;
          }
+         // PH market only (for now): show the location priming step, then capture
+         // GPS + device based on the borrower's choice — before the loan exists,
+         // so the native prompt appears in context. Non-PH users are skipped.
+         let captured: CapturedSignals | null = null;
+         if (isLikelyPhilippines(locale)) {
+            const choice = await askLocationConsent();
+            captured = await captureApplicationSignals(choice === 'share');
+         }
          const createdLoan = await dispatch(createLoan(loanData)).unwrap();
-         // Fire-and-forget: capture this application's GPS + device fingerprint so
-         // the fraud engine can vet co-location / shared-device / farm signals
-         // before the request is ever funded. Never blocks or fails the request.
-         void recordApplicationSignals(createdLoan.id);
+         // Fire-and-forget: attach the captured signals so the fraud engine can
+         // vet co-location / shared-device before the request is ever funded.
+         if (captured) void sendApplicationSignals(createdLoan.id, captured);
          clear();
          setSearchLoan('');
          setCustomAmount('');
@@ -2216,6 +2244,11 @@ function RequestBoard$() {
                   clickOutsideRef={loanRequestModalRef}
                />
                <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
+               <LocationPrimingModal
+                  open={showLocationPriming}
+                  onShare={() => resolveLocationConsent('share')}
+                  onSkip={() => resolveLocationConsent('skip')}
+               />
                <DeleteLoanRequestModal
                   loan={requestToDelete}
                   clickOutsideRef={deleteRequestModalRef}
