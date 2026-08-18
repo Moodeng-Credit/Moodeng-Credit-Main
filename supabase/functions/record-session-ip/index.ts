@@ -90,6 +90,58 @@ const lookupGeo = async (ip: string): Promise<GeoResult | null> => {
    }
 };
 
+// Post a single login line to the #login-feed Discord channel. Fire-and-forget:
+// any failure here must never affect the session-recording response. Red embed
+// when the login trips a flag (datacenter/VPN IP, or a subnet shared with other
+// accounts), green when it looks clean — so weird logins stand out at a glance.
+const postLoginFeed = async (details: {
+   username: string | null;
+   email: string | null;
+   geo: GeoResult | null;
+   sharedSubnetUsers: number;
+}) => {
+   const webhook = Deno.env.get('DISCORD_LOGIN_WEBHOOK_URL');
+   if (!webhook) return;
+
+   const { username, email, geo, sharedSubnetUsers } = details;
+
+   const flags: string[] = [];
+   if (geo?.is_hosting) flags.push('🚩 Datacenter / VPN IP');
+   if (sharedSubnetUsers > 0) {
+      flags.push(`🚩 Shared subnet with ${sharedSubnetUsers} other account${sharedSubnetUsers > 1 ? 's' : ''}`);
+   }
+   const flagged = flags.length > 0;
+
+   const location = geo
+      ? `${geo.city_name ?? 'Unknown city'}, ${geo.country_iso ?? '??'}`
+      : 'Unknown (no geo)';
+   const network = geo?.asn_org
+      ? `${geo.asn_org}${geo.asn_number ? ` (AS${geo.asn_number})` : ''}`
+      : 'Unknown';
+
+   const embed = {
+      title: `🔐 Login — ${username ?? 'unknown user'}`,
+      color: flagged ? 0xe74c3c : 0x2ecc71,
+      fields: [
+         { name: 'User', value: `${username ?? '—'}\n${email ?? '—'}`, inline: true },
+         { name: 'Location', value: location, inline: true },
+         { name: 'Network', value: network, inline: true },
+         { name: 'Flags', value: flags.length ? flags.join('\n') : '✅ none', inline: false }
+      ],
+      timestamp: new Date().toISOString()
+   };
+
+   try {
+      await fetch(webhook, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ embeds: [embed] })
+      });
+   } catch {
+      // Swallow — the login feed is best-effort and must not break session logging.
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
@@ -131,6 +183,18 @@ serve(async (req) => {
    const subnetHash = subnet ? await hashValue(subnet, salt) : null;
    const today = new Date().toISOString().slice(0, 10);
 
+   // Is this the first time we've seen this user on this IP today? We use that to
+   // post exactly one login-feed line per user per IP per day — so the channel
+   // shows each person once, and a mid-day network switch shows up as a new line.
+   const { data: existing } = await supabase
+      .from('auth_ip_log')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('ip_hash', ipHash)
+      .eq('seen_on', today)
+      .maybeSingle();
+   const isNewLoginToday = !existing;
+
    const row: Record<string, unknown> = {
       user_id: userId,
       ip_hash: ipHash,
@@ -153,6 +217,36 @@ serve(async (req) => {
 
    if (error) {
       return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 200, headers: corsHeaders });
+   }
+
+   // Best-effort login feed. Only on the first sighting per user/IP/day so we
+   // don't spam the channel on every throttled profile refresh.
+   if (isNewLoginToday) {
+      // Who is this? Pull the display fields for the Discord line.
+      const { data: profile } = await supabase
+         .from('users')
+         .select('username, email')
+         .eq('id', userId)
+         .maybeSingle();
+
+      // How many OTHER accounts have logged in from this same /24 (or /48)? A
+      // non-zero count is the classic shared-network signal worth eyeballing.
+      let sharedSubnetUsers = 0;
+      if (subnetHash) {
+         const { data: subnetRows } = await supabase
+            .from('auth_ip_log')
+            .select('user_id')
+            .eq('subnet_hash', subnetHash)
+            .neq('user_id', userId);
+         sharedSubnetUsers = new Set((subnetRows ?? []).map((r) => r.user_id)).size;
+      }
+
+      await postLoginFeed({
+         username: profile?.username ?? null,
+         email: profile?.email ?? null,
+         geo,
+         sharedSubnetUsers
+      });
    }
 
    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
