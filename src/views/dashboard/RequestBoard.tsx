@@ -52,6 +52,7 @@ import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import { checkLoanReason } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
+import { recordApplicationSignals } from '@/lib/recordApplicationSignals';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
 import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
@@ -1423,6 +1424,10 @@ function RequestBoard$() {
             return;
          }
          const createdLoan = await dispatch(createLoan(loanData)).unwrap();
+         // Fire-and-forget: capture this application's GPS + device fingerprint so
+         // the fraud engine can vet co-location / shared-device / farm signals
+         // before the request is ever funded. Never blocks or fails the request.
+         void recordApplicationSignals(createdLoan.id);
          clear();
          setSearchLoan('');
          setCustomAmount('');

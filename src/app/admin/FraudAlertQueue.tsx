@@ -16,10 +16,17 @@ const SIGNAL_LABEL: Record<string, string> = {
    counterparty_shared_ip: 'Counterparties share an IP',
    datacenter_ip: 'Datacenter / hosting login',
    impossible_travel: 'Impossible travel',
-   subnet_cluster: 'Subnet cluster'
+   subnet_cluster: 'Subnet cluster',
+   shared_device: 'Shared device (one phone, many accounts)',
+   application_colocation: 'Applied from same location'
 };
 
-const CRITICAL = new Set(['self_deal_wallet', 'counterparty_shared_wallet', 'impossible_travel']);
+const CRITICAL = new Set([
+   'self_deal_wallet',
+   'counterparty_shared_wallet',
+   'impossible_travel',
+   'shared_device'
+]);
 
 function statusClass(s: FraudAlertStatus): string {
    if (s === 'confirmed') return 'bg-red-900/50 text-red-300';
@@ -46,6 +53,10 @@ function describe(a: FraudAlert): string {
          return `${get('username')}: ${get('location_a')} → ${get('location_b')} (${get('distance_km')}km / ${get('hours_apart')}h)`;
       case 'subnet_cluster':
          return `${get('account_count')} accounts in one block${get('asn_org') ? ` (${get('asn_org')})` : ''}`;
+      case 'shared_device':
+         return `${get('username')} — device shared with ${get('other_accounts')} other account(s) — loan ${get('tracking_id') || get('loan_id')}`;
+      case 'application_colocation':
+         return `${get('username')} — applied ${get('distance_m')}m from ${get('other_accounts')} other account(s) — loan ${get('tracking_id') || get('loan_id')}`;
       default:
          return JSON.stringify(d).slice(0, 120);
    }
