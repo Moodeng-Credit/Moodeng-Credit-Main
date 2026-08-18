@@ -863,6 +863,41 @@ export async function extendLoan(input: {
 
 // Growth analytics — current-state breakdowns plus a weekly registration trend. Computed
 // client-side from lightweight row sets (small user/loan tables); no aggregation RPC needed.
+// Category keys that a stat card can drill into. `null` means the card has no
+// underlying list to show (e.g. the volume totals).
+export type AnalyticsUserCategory =
+   | 'totalUsers'
+   | 'borrowers'
+   | 'lenders'
+   | 'unsetRole'
+   | 'blockedUsers'
+   | 'worldIdVerified'
+   | 'diditVerified'
+   | 'anyVerified';
+export type AnalyticsLoanCategory = 'totalLoans' | 'requestedLoans' | 'activeLoans' | 'overdueLoans' | 'repaidLoans';
+
+export interface AnalyticsUserRow {
+   id: string;
+   username: string;
+   wallet: string | null;
+   role: string | null;
+   status: string | null;
+   world: boolean;
+   didit: boolean;
+   createdAt: string | null;
+}
+
+export interface AnalyticsLoanRow {
+   id: string;
+   trackingId: string | null;
+   amount: number; // principal
+   repaid: number;
+   owed: number; // remaining owed incl. interest (0 once paid)
+   bucket: 'requested' | 'active' | 'overdue' | 'repaid' | 'other';
+   status: string | null;
+   repaymentStatus: string | null;
+}
+
 export interface GrowthAnalytics {
    totalUsers: number;
    borrowers: number;
@@ -883,6 +918,10 @@ export interface GrowthAnalytics {
    volumeRepaid: number;
    volumeOutstanding: number;
    repaymentRate: number; // repaid loans / (funded loans)
+   // Underlying rows so stat cards can drill into the exact records they count.
+   // Already-fetched here, so drill-downs need no extra query.
+   userRows: AnalyticsUserRow[];
+   loanRows: AnalyticsLoanRow[];
 }
 
 function isoWeekStart(dateStr: string): string {
@@ -897,8 +936,14 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
    const supabase = getSupabaseBrowserClient();
    const now = Date.now();
 
-   let usersQuery = supabase.from('users').select('id,created_at,user_role,is_world_id,is_didit,account_status').limit(5000);
-   let loansQuery = supabase.from('loans').select('loan_amount,repaid_amount,loan_status,repayment_status,due_date,created_at').limit(5000);
+   let usersQuery = supabase
+      .from('users')
+      .select('id,username,wallet_address,created_at,user_role,is_world_id,is_didit,account_status')
+      .limit(5000);
+   let loansQuery = supabase
+      .from('loans')
+      .select('id,tracking_id,loan_amount,total_repayment_amount,repaid_amount,loan_status,repayment_status,due_date,created_at')
+      .limit(5000);
    if (!includeTest) {
       usersQuery = usersQuery.eq('is_test', false);
       loansQuery = loansQuery.eq('is_test', false);
@@ -914,18 +959,29 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
    let worldIdVerified = 0;
    let diditVerified = 0;
    let anyVerified = 0;
+   const userRows: AnalyticsUserRow[] = [];
 
    for (const u of users) {
       if (u.user_role === 'borrower') borrowers += 1;
       else if (u.user_role === 'lender') lenders += 1;
       else unsetRole += 1;
-      if (String(u.account_status ?? '').toLowerCase() === 'blocked' || String(u.account_status ?? '').toLowerCase() === 'banned')
-         blockedUsers += 1;
+      const status = String(u.account_status ?? '').toLowerCase();
+      if (status === 'blocked' || status === 'banned') blockedUsers += 1;
       const world = isActive(u.is_world_id);
       const didit = isActive(u.is_didit);
       if (world) worldIdVerified += 1;
       if (didit) diditVerified += 1;
       if (world || didit) anyVerified += 1;
+      userRows.push({
+         id: String(u.id),
+         username: (u.username as string) ?? 'Unnamed user',
+         wallet: (u.wallet_address as string) ?? null,
+         role: (u.user_role as string) ?? null,
+         status: (u.account_status as string) ?? null,
+         world,
+         didit,
+         createdAt: (u.created_at as string) ?? null
+      });
    }
 
    // Weekly registration buckets, chronological, with a running cumulative total.
@@ -950,24 +1006,49 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
    let volumeLent = 0;
    let volumeRepaid = 0;
    let volumeOutstanding = 0;
+   const loanRows: AnalyticsLoanRow[] = [];
 
    for (const l of loans) {
       const amount = toNumber(l.loan_amount);
       const repaid = l.repaid_amount == null ? 0 : toNumber(l.repaid_amount);
+      // What the borrower actually owes is the total repayment (principal + interest),
+      // falling back to principal when a loan has no interest schedule recorded.
+      const totalOwed = l.total_repayment_amount == null ? amount : toNumber(l.total_repayment_amount);
       const dueMs = l.due_date ? new Date(l.due_date).getTime() : null;
+      let bucket: AnalyticsLoanRow['bucket'] = 'other';
+      let owed = 0;
       if (l.loan_status === 'Requested') {
          requestedLoans += 1;
+         bucket = 'requested';
       } else if (l.loan_status === 'Lent') {
          volumeLent += amount;
          volumeRepaid += repaid;
          if (l.repayment_status === 'Paid') {
             repaidLoans += 1;
+            bucket = 'repaid';
          } else {
-            volumeOutstanding += Math.max(amount - repaid, 0);
-            if (dueMs != null && dueMs < now) overdueLoans += 1;
-            else activeLoans += 1;
+            // Outstanding now reflects interest still owed, not just remaining principal.
+            owed = Math.max(totalOwed - repaid, 0);
+            volumeOutstanding += owed;
+            if (dueMs != null && dueMs < now) {
+               overdueLoans += 1;
+               bucket = 'overdue';
+            } else {
+               activeLoans += 1;
+               bucket = 'active';
+            }
          }
       }
+      loanRows.push({
+         id: String(l.id),
+         trackingId: (l.tracking_id as string) ?? null,
+         amount,
+         repaid,
+         owed,
+         bucket,
+         status: (l.loan_status as string) ?? null,
+         repaymentStatus: (l.repayment_status as string) ?? null
+      });
    }
 
    const fundedLoans = activeLoans + overdueLoans + repaidLoans;
@@ -991,7 +1072,9 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
       volumeLent,
       volumeRepaid,
       volumeOutstanding,
-      repaymentRate: fundedLoans ? repaidLoans / fundedLoans : 0
+      repaymentRate: fundedLoans ? repaidLoans / fundedLoans : 0,
+      userRows,
+      loanRows
    };
 }
 
