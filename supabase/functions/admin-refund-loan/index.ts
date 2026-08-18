@@ -263,7 +263,9 @@ serve(async (req) => {
       .from('loans')
       .update({
          repayment_status: 'Paid',
-         repaid_amount: loan.total_repayment_amount,
+         // Do NOT stamp repaid_amount to the total: the borrower repaid nothing (they defaulted and
+         // are banned). refunded_at + repayment_status='Paid' already mark the loan settled/closed;
+         // leaving repaid_amount at its real value keeps borrower repayment/credit stats honest.
          refunded_at: nowIso,
          refund_reason: reason,
          refunded_by: callerId,
