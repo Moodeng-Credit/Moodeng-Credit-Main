@@ -154,7 +154,8 @@ export const getLenderRepaidCount = createAsyncThunk('loans/getLenderRepaidCount
       .from('loans')
       .select('*', { count: 'exact', head: true })
       .eq('lender_user_id', lenderUserId)
-      .eq('repayment_status', 'Paid');
+      .eq('repayment_status', 'Paid')
+      .is('refunded_at', null); // a refund returns the lender's principal but isn't a successful repayment — don't count it
 
    if (error) {
       throw new Error(error.message);

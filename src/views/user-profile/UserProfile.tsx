@@ -229,7 +229,10 @@ const UserProfile = () => {
    }
    const avgDays = sortedLoans.length > 1 ? Math.round(totalDaysBetween / (sortedLoans.length - 1)) : 0;
 
-   const paidLoans = fundedLoans.filter((l) => l.repaymentStatus === 'Paid');
+   // A refunded loan reads back as 'Paid' with repaidAmount stamped to the full total, but the
+   // borrower defaulted (lender refunded, borrower banned). It must not count as a repayment in
+   // any of this borrower's public profile stats — payment time, total repaid, or history list.
+   const paidLoans = fundedLoans.filter((l) => l.repaymentStatus === 'Paid' && !l.refundedAt);
    const avgPaymentTime =
       paidLoans.length > 0
          ? Math.round(
@@ -261,8 +264,8 @@ const UserProfile = () => {
 
    const lenderDiversity = calculateLenderDiversity(fundedLoans, userProfiles);
    const totalBorrowed = fundedLoans.reduce((sum, l) => sum + toNumber(l.loanAmount), 0);
-   const totalRepaid = fundedLoans.reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
-   const repaymentLoans = fundedLoans.filter((loan) => toNumber(loan.repaidAmount) > 0);
+   const totalRepaid = fundedLoans.filter((l) => !l.refundedAt).reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
+   const repaymentLoans = fundedLoans.filter((loan) => toNumber(loan.repaidAmount) > 0 && !loan.refundedAt);
 
    // --- Lender-side view ---
    // Admin's "Open profile" and the lender feed both land here, so the page has to cope
