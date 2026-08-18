@@ -73,6 +73,10 @@ import FundWalletSheet from '@/views/fund/FundWalletSheet';
 import LoadMoreButton from '@/views/profile/components/shared/LoadMoreButton';
 import { FAQS } from '@/views/support/data/faqs';
 
+// Temporarily hides the lender "IMPORTANT NOTE" fee banner on the request board.
+// Flip to `true` to restore it (see the banner block below, gated on this flag).
+const SHOW_LENDER_FEE_NOTE = false;
+
 // Stable empty-array identity so memos/selectors that fall back to "no loans" don't
 // produce a fresh [] every render (which would churn downstream useMemos in a loop
 // and crash the page — e.g. a blank screen when navigating Back into the board).
@@ -2060,8 +2064,8 @@ function RequestBoard$() {
                         </div>
                      </div>
 
-                     {/* Important Note — lender only */}
-                     {isAuthenticated && !isBorrower && showLenderNote && (
+                     {/* Important Note — lender only. Temporarily hidden; flip SHOW_LENDER_FEE_NOTE to true to restore. */}
+                     {SHOW_LENDER_FEE_NOTE && isAuthenticated && !isBorrower && showLenderNote && (
                         <div className="bg-[rgba(255,237,161,0.2)] rounded-md-lg flex items-start gap-4 px-4 py-[15px]">
                            <AlertTriangle className="w-5 h-5 shrink-0 text-md-yellow-700 mt-0.5" strokeWidth={2} />
                            <div className="flex-1 flex flex-col gap-1">
