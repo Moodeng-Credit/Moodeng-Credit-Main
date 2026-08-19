@@ -139,6 +139,8 @@ export async function recordAdminFunding(payload: {
    fundingMethod: 'direct' | 'smart_contract';
    txHash?: string;
    borrowerWallet?: string;
+   /** Wallet that fronted the money / holds the Loan Note — recorded as the originator (lender of record). */
+   funderWallet?: string;
    principal?: string | number;
    totalOwed?: string | number;
    dueDate?: string;
