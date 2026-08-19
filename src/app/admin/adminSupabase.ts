@@ -898,6 +898,26 @@ export interface AnalyticsLoanRow {
    repaymentStatus: string | null;
 }
 
+// Acquisition funnel — each stage is a subset of the one before it. The last two
+// count *distinct borrowers* who reached that stage, not loans.
+export interface AnalyticsFunnel {
+   signedUp: number;
+   roleSet: number; // picked borrower or lender
+   verified: number; // World ID or Didit
+   borrowedOut: number; // distinct borrowers with at least one funded loan
+   repaid: number; // distinct borrowers who fully repaid at least one loan
+}
+
+// One borrower cohort keyed by the month of their FIRST funded loan. `retention[k]`
+// is the count of the cohort's borrowers who took a loan k months after their first
+// (retention[0] === size). UI renders these as % of `size`.
+export interface AnalyticsCohort {
+   cohortMonth: string;
+   label: string;
+   size: number;
+   retention: number[];
+}
+
 // One calendar month's activity, used for month-over-month growth targets and the
 // milestone tracker. `monthKey` is UTC `YYYY-MM`; `label` is a human "Aug 2026".
 export interface AnalyticsMonth {
@@ -926,6 +946,9 @@ export interface GrowthAnalytics {
    // Calendar-month activity (continuous, chronological) driving the doubling
    // targets and milestone tracker in the growth dashboard.
    monthly: AnalyticsMonth[];
+   // Acquisition funnel + borrower cohort-retention grid.
+   funnel: AnalyticsFunnel;
+   cohorts: AnalyticsCohort[];
    totalLoans: number;
    requestedLoans: number;
    activeLoans: number;
@@ -1164,6 +1187,55 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
          cursor.setUTCMonth(cursor.getUTCMonth() + 1);
       }
    }
+   const monthIndex = new Map(monthly.map((m, i) => [m.monthKey, i]));
+
+   // Per-borrower loan activity, used for both the funnel (distinct borrowers who
+   // borrowed / repaid) and the cohort grid (retention by first-loan month).
+   const borrowerActiveMonths = new Map<string, Set<number>>();
+   const borrowersWhoRepaid = new Set<string>();
+   for (const l of loans) {
+      if (l.loan_status !== 'Lent') continue;
+      const uid = l.borrower_user_id ? String(l.borrower_user_id) : null;
+      if (!uid) continue;
+      const idx = monthIndex.get(monthKeyOf(l.funded_at ?? l.created_at) ?? '');
+      if (idx != null) {
+         let set = borrowerActiveMonths.get(uid);
+         if (!set) borrowerActiveMonths.set(uid, (set = new Set<number>()));
+         set.add(idx);
+      }
+      if (l.repayment_status === 'Paid' && !l.refunded_at) borrowersWhoRepaid.add(uid);
+   }
+
+   const funnel: AnalyticsFunnel = {
+      signedUp: users.length,
+      roleSet: borrowers + lenders,
+      verified: anyVerified,
+      borrowedOut: borrowerActiveMonths.size,
+      repaid: borrowersWhoRepaid.size
+   };
+
+   // Cohort retention: bucket each borrower by the month of their first loan, then
+   // count how many of that cohort took a loan k months later.
+   const cohortBuckets = new Map<number, { size: number; retained: Map<number, number> }>();
+   for (const [, monthsActive] of borrowerActiveMonths) {
+      const sorted = [...monthsActive].sort((a, b) => a - b);
+      const first = sorted[0];
+      let bucket = cohortBuckets.get(first);
+      if (!bucket) cohortBuckets.set(first, (bucket = { size: 0, retained: new Map() }));
+      bucket.size += 1;
+      for (const idx of sorted) {
+         const offset = idx - first;
+         bucket.retained.set(offset, (bucket.retained.get(offset) ?? 0) + 1);
+      }
+   }
+   const cohorts: AnalyticsCohort[] = [...cohortBuckets.keys()]
+      .sort((a, b) => a - b)
+      .map((firstIdx) => {
+         const bucket = cohortBuckets.get(firstIdx)!;
+         const span = monthly.length - firstIdx; // months observable for this cohort
+         const retention = Array.from({ length: span }, (_, k) => bucket.retained.get(k) ?? 0);
+         return { cohortMonth: monthly[firstIdx].monthKey, label: monthly[firstIdx].label, size: bucket.size, retention };
+      });
 
    return {
       totalUsers: users.length,
@@ -1177,6 +1249,8 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
       verifiedRate: users.length ? anyVerified / users.length : 0,
       registrationsByWeek,
       monthly,
+      funnel,
+      cohorts,
       totalLoans: loans.length,
       requestedLoans,
       activeLoans,

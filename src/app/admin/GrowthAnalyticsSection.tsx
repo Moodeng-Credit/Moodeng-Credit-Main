@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+   type AnalyticsCohort,
+   type AnalyticsFunnel,
    type AnalyticsLoanCategory,
    type AnalyticsLoanRow,
    type AnalyticsMonth,
@@ -376,6 +378,231 @@ function MonthlyChart({ months, metric }: { months: AnalyticsMonth[]; metric: (t
    );
 }
 
+// ── Alternative analytical views ─────────────────────────────────────────────
+type ViewKey = 'projection' | 'funnel' | 'cohorts' | 'balance';
+
+// Geometric mean of the last few months' growth multiples — a steadier "current
+// pace" than a single month's jump. Ignores months with a zero base.
+function recentGrowthRate(series: number[], window = 3): number | null {
+   const multiples: number[] = [];
+   for (let i = series.length - 1; i > 0 && multiples.length < window; i--) {
+      if (series[i - 1] > 0) multiples.push(series[i] / series[i - 1]);
+   }
+   if (!multiples.length) return null;
+   const logAvg = multiples.reduce((s, m) => s + Math.log(m), 0) / multiples.length;
+   return Math.exp(logAvg);
+}
+
+// Projection / runway: extend cumulative users & loans forward at the current pace
+// and at the 2× goal pace, and report the month each round-number target is reached.
+function ProjectionView({ data }: { data: GrowthAnalytics }) {
+   const months = data.monthly;
+   const monthsAhead = 9;
+   const series: Array<{ key: 'users' | 'loans'; label: string; current: number; monthlyAdds: number[]; targets: number[] }> = [
+      { key: 'users', label: 'Total users', current: data.totalUsers, monthlyAdds: months.map((m) => m.newUsers), targets: [250, 500, 1000, 5000, 10000] },
+      { key: 'loans', label: 'Loans funded', current: data.activeLoans + data.overdueLoans + data.repaidLoans, monthlyAdds: months.map((m) => m.loansOut), targets: [100, 250, 500, 1000, 5000] }
+   ];
+
+   const futureLabel = (offset: number): string => {
+      const base = months.length ? months[months.length - 1] : null;
+      if (!base) return `+${offset}`;
+      const [y, m] = base.monthKey.split('-').map(Number);
+      const d = new Date(Date.UTC(y, m - 1 + offset, 1));
+      return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+   };
+
+   return (
+      <div className="space-y-5">
+         <p className="text-sm font-bold text-[#a89bb8]">
+            Straight line = your <span className="text-[#a06bff]">current pace</span> (geometric mean of the last 3 months). Dashed = the <span className="text-[#f5d76e]">2×/month goal</span>. Read across to see when you clear each milestone.
+         </p>
+         {series.map((s) => {
+            const rate = recentGrowthRate(s.monthlyAdds);
+            const lastAdd = s.monthlyAdds[s.monthlyAdds.length - 1] ?? 0;
+            // Project forward: additions compound at `rate` (current) or 2× (goal).
+            const projectFrom = (mult: number) => {
+               const out: number[] = [];
+               let cum = s.current;
+               let add = lastAdd || 1;
+               for (let i = 1; i <= monthsAhead; i++) {
+                  add = add * mult;
+                  cum += add;
+                  out.push(cum);
+               }
+               return out;
+            };
+            const curPath = rate ? projectFrom(rate) : null;
+            const goalPath = projectFrom(2);
+            const reach = (path: number[] | null, target: number): string => {
+               if (!path) return '—';
+               if (s.current >= target) return '✓ hit';
+               const idx = path.findIndex((v) => v >= target);
+               return idx === -1 ? `>${monthsAhead}mo` : futureLabel(idx + 1);
+            };
+            return (
+               <div key={s.key} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                  <div className="mb-3 flex items-baseline justify-between gap-2">
+                     <h5 className="text-lg font-black text-white">{s.label}</h5>
+                     <span className="text-sm font-bold text-[#a89bb8]">
+                        now {s.current.toLocaleString()} · pace {rate ? `${rate.toFixed(2)}×/mo` : 'n/a'}
+                     </span>
+                  </div>
+                  <table className="w-full text-left text-sm">
+                     <thead>
+                        <tr className="text-xs font-black uppercase tracking-wide text-[#6f6385]">
+                           <th className="py-2 pr-3">Milestone</th>
+                           <th className="py-2 pr-3">At current pace</th>
+                           <th className="py-2">At 2× goal</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {s.targets.map((t) => {
+                           const reached = s.current >= t;
+                           return (
+                              <tr key={t} className="border-t border-[#2a1453]">
+                                 <td className="py-2 pr-3 font-bold text-white">{t.toLocaleString()}</td>
+                                 <td className={`py-2 pr-3 font-bold ${reached ? 'text-emerald-300' : 'text-[#cfc6dd]'}`}>{reach(curPath, t)}</td>
+                                 <td className={`py-2 font-bold ${reached ? 'text-emerald-300' : 'text-[#f5d76e]'}`}>{reach(goalPath, t)}</td>
+                              </tr>
+                           );
+                        })}
+                     </tbody>
+                  </table>
+               </div>
+            );
+         })}
+      </div>
+   );
+}
+
+// Acquisition funnel: horizontal bars, each stage a share of the widest (signed up),
+// with step-to-step conversion.
+function FunnelView({ funnel }: { funnel: AnalyticsFunnel }) {
+   const stages: Array<{ label: string; value: number; accent: string }> = [
+      { label: 'Signed up', value: funnel.signedUp, accent: '#6f6385' },
+      { label: 'Role set', value: funnel.roleSet, accent: '#4ea1ff' },
+      { label: 'Verified (World/Didit)', value: funnel.verified, accent: '#a06bff' },
+      { label: 'Borrowed (loan out)', value: funnel.borrowedOut, accent: '#f0a336' },
+      { label: 'Repaid a loan', value: funnel.repaid, accent: '#34d399' }
+   ];
+   const top = Math.max(funnel.signedUp, 1);
+   return (
+      <div className="space-y-3">
+         {stages.map((st, i) => {
+            const width = clampPct(st.value / top) * 100;
+            const prev = i > 0 ? stages[i - 1].value : null;
+            const conv = prev && prev > 0 ? st.value / prev : null;
+            return (
+               <div key={st.label}>
+                  <div className="mb-1 flex items-baseline justify-between text-sm">
+                     <span className="font-black text-white">{st.label}</span>
+                     <span className="font-bold text-[#a89bb8]">
+                        {st.value.toLocaleString()}
+                        {conv != null ? <span className="ml-2 text-xs text-[#6f6385]">{pct(conv)} of prev</span> : null}
+                     </span>
+                  </div>
+                  <div className="h-7 w-full overflow-hidden rounded-lg bg-[#150730]">
+                     <div className="flex h-full items-center rounded-lg px-2 transition-all" style={{ width: `${Math.max(width, 3)}%`, backgroundColor: st.accent }}>
+                        <span className="text-xs font-black text-[#0d0320]">{pct(st.value / top)}</span>
+                     </div>
+                  </div>
+               </div>
+            );
+         })}
+      </div>
+   );
+}
+
+// Cohort retention grid: rows = first-loan month, columns = months since, cells
+// shaded by the % of the cohort that borrowed again that month.
+function CohortView({ cohorts }: { cohorts: AnalyticsCohort[] }) {
+   if (!cohorts.length) return <p className="text-base font-bold text-[#a89bb8]">No borrower cohorts yet.</p>;
+   const maxSpan = Math.max(...cohorts.map((c) => c.retention.length));
+   const cell = (frac: number): string => {
+      if (frac <= 0) return 'transparent';
+      // Purple ramp: deeper = higher retention.
+      const alpha = 0.15 + 0.85 * frac;
+      return `rgba(131, 54, 240, ${alpha.toFixed(2)})`;
+   };
+   return (
+      <div className="overflow-x-auto">
+         <table className="w-full border-separate text-center text-xs" style={{ borderSpacing: 3 }}>
+            <thead>
+               <tr className="text-[#6f6385]">
+                  <th className="whitespace-nowrap px-2 py-1 text-left font-black uppercase tracking-wide">Cohort</th>
+                  <th className="px-2 py-1 font-black">Size</th>
+                  {Array.from({ length: maxSpan }, (_, k) => (
+                     <th key={k} className="px-2 py-1 font-black">
+                        M{k}
+                     </th>
+                  ))}
+               </tr>
+            </thead>
+            <tbody>
+               {cohorts.map((c) => (
+                  <tr key={c.cohortMonth}>
+                     <td className="whitespace-nowrap px-2 py-1 text-left font-black text-white">{c.label}</td>
+                     <td className="px-2 py-1 font-bold text-[#cfc6dd]">{c.size}</td>
+                     {Array.from({ length: maxSpan }, (_, k) => {
+                        const val = c.retention[k];
+                        if (val == null) return <td key={k} className="px-2 py-1" />;
+                        const frac = c.size ? val / c.size : 0;
+                        return (
+                           <td key={k} className="rounded px-2 py-1 font-bold text-white" style={{ backgroundColor: cell(frac) }} title={`${val} of ${c.size} borrowed again`}>
+                              {pct(frac)}
+                           </td>
+                        );
+                     })}
+                  </tr>
+               ))}
+            </tbody>
+         </table>
+         <p className="mt-2 text-xs font-bold text-[#6f6385]">M0 is the first-loan month (always 100%). Mk = share of the cohort who took another loan k months later.</p>
+      </div>
+   );
+}
+
+// Two-sided marketplace balance: new lenders vs new borrowers each month, plus the
+// running supply/demand ratio, so it's clear which side is the bottleneck.
+function BalanceView({ months }: { months: AnalyticsMonth[] }) {
+   if (!months.length) return <p className="text-base font-bold text-[#a89bb8]">No monthly activity yet.</p>;
+   const maxSide = Math.max(...months.flatMap((m) => [m.newBorrowers, m.newLenders]), 1);
+   return (
+      <div className="space-y-2">
+         <div className="mb-2 flex items-center gap-4 text-xs font-bold text-[#8a7da5]">
+            <span className="flex items-center gap-1.5">
+               <span className="inline-block h-2 w-4 rounded" style={{ backgroundColor: '#4ea1ff' }} /> new borrowers (demand)
+            </span>
+            <span className="flex items-center gap-1.5">
+               <span className="inline-block h-2 w-4 rounded" style={{ backgroundColor: '#a06bff' }} /> new lenders (supply)
+            </span>
+         </div>
+         {months.map((m) => {
+            const ratio = m.newLenders > 0 ? m.newBorrowers / m.newLenders : null;
+            return (
+               <div key={m.monthKey} className="flex items-center gap-3">
+                  <span className="w-16 shrink-0 text-xs font-black text-[#a89bb8]">{m.label.split(' ')[0]}</span>
+                  <div className="flex flex-1 items-center gap-1">
+                     <div className="flex flex-1 justify-end">
+                        <div className="h-4 rounded-l bg-[#4ea1ff]" style={{ width: `${(m.newBorrowers / maxSide) * 100}%` }} title={`${m.newBorrowers} borrowers`} />
+                     </div>
+                     <div className="h-4 w-px shrink-0 bg-[#3a1d6e]" />
+                     <div className="flex flex-1 justify-start">
+                        <div className="h-4 rounded-r bg-[#a06bff]" style={{ width: `${(m.newLenders / maxSide) * 100}%` }} title={`${m.newLenders} lenders`} />
+                     </div>
+                  </div>
+                  <span className="w-20 shrink-0 text-right text-xs font-bold text-[#cfc6dd]">
+                     {m.newBorrowers}/{m.newLenders}
+                     {ratio != null ? <span className="ml-1 text-[#6f6385]">{ratio.toFixed(1)}×</span> : null}
+                  </span>
+               </div>
+            );
+         })}
+         <p className="mt-2 text-xs font-bold text-[#6f6385]">Ratio &gt; 1 = more borrowers than lenders that month (demand-led); &lt; 1 = supply-led.</p>
+      </div>
+   );
+}
+
 // `initialData` skips the fetch — used by tests and the dev preview route where the admin
 // `users` table isn't readable. Production renders it without the prop and fetches live.
 export default function GrowthAnalyticsSection({ initialData }: { initialData?: GrowthAnalytics } = {}) {
@@ -413,6 +640,7 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
 
    const [metricKey, setMetricKey] = useState<MetricKey>('loansOut');
    const metric = GROWTH_METRICS.find((m) => m.key === metricKey) ?? GROWTH_METRICS[0];
+   const [view, setView] = useState<ViewKey>('projection');
 
    const maxWeek = useMemo(() => (data ? Math.max(...data.registrationsByWeek.map((w) => w.count), 1) : 1), [data]);
    const months = data?.monthly ?? [];
@@ -510,6 +738,32 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
                         <MilestoneBar label="Volume lent" current={data.volumeLent} isMoney />
                      </div>
                   </div>
+               </div>
+
+               <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                  <div className="mb-4 flex flex-wrap gap-1.5">
+                     {(
+                        [
+                           ['projection', 'Projection'],
+                           ['funnel', 'Funnel'],
+                           ['cohorts', 'Cohorts'],
+                           ['balance', 'Supply / demand']
+                        ] as Array<[ViewKey, string]>
+                     ).map(([key, label]) => (
+                        <button
+                           key={key}
+                           type="button"
+                           onClick={() => setView(key)}
+                           className={`rounded-full px-4 py-1.5 text-sm font-black transition ${view === key ? 'bg-[#8336f0] text-white' : 'bg-[#150730] text-[#a89bb8] hover:brightness-125'}`}
+                        >
+                           {label}
+                        </button>
+                     ))}
+                  </div>
+                  {view === 'projection' ? <ProjectionView data={data} /> : null}
+                  {view === 'funnel' ? <FunnelView funnel={data.funnel} /> : null}
+                  {view === 'cohorts' ? <CohortView cohorts={data.cohorts} /> : null}
+                  {view === 'balance' ? <BalanceView months={data.monthly} /> : null}
                </div>
 
                <div>
