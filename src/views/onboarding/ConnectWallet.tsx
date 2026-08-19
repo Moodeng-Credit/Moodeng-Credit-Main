@@ -10,7 +10,9 @@ import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
+import { useLocalization } from '@/i18n';
 import { checkCoinbaseKeysReachability } from '@/lib/coinbaseReachability';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { useCreateInstantWallet, useOpenfort } from '@/lib/web3/openfort';
@@ -40,7 +42,13 @@ export default function ConnectWallet() {
    const { connect, connectors, status, error } = useConnect();
    const { openConnectModal } = useConnectModal();
    const { showToast } = useToast();
+   const { locale } = useLocalization();
    const openfort = useOpenfort();
+   // The instant wallet is our Philippines escape hatch (PLDT/Smart block keys.coinbase.com).
+   // Scope the OFFER to PH visitors: outside PH, Base is the wallet path and the instant wallet
+   // is hidden. Soft, client-side gate (append ?ph=1 to test from abroad); the server face-gate
+   // in openfort-shield-session still enforces one-per-person on mint. See isLikelyPhilippines.
+   const instantAvailable = openfort.isConfigured && isLikelyPhilippines(locale);
    const [pendingKey, setPendingKey] = useState<WalletConnectorKey | null>(null);
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
    const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
@@ -119,7 +127,7 @@ export default function ConnectWallet() {
    // Borrower-only: passively detect the PLDT/Smart block on keys.coinbase.com so we can lead with
    // the instant wallet instead of a Base Account popup that would dead-end. Cached per session.
    useEffect(() => {
-      if (role !== 'borrower' || !openfort.isConfigured || isPreview) return;
+      if (role !== 'borrower' || !instantAvailable || isPreview) return;
       let cancelled = false;
       checkCoinbaseKeysReachability()
          .then((result) => {
@@ -129,7 +137,7 @@ export default function ConnectWallet() {
       return () => {
          cancelled = true;
       };
-   }, [role, openfort.isConfigured, isPreview]);
+   }, [role, instantAvailable, isPreview]);
 
    // Shared with Account Settings so the two entry points can't drift — the differences
    // between them are exactly what produced a working wallet on one screen and a dead end
@@ -159,7 +167,7 @@ export default function ConnectWallet() {
             onConnectBaseAccount={() => handleConnect('coinbase')}
             isPreview={isPreview}
             isConnecting={pendingKey === 'coinbase' || status === 'pending'}
-            instantWalletConfigured={openfort.isConfigured}
+            instantWalletConfigured={instantAvailable}
             // Base is known-dead on ISP-blocked networks (PLDT/Smart) — hide the secondary
             // "connect existing wallet" link there so it can never dead-end.
             allowBaseConnect={!keysBlocked}
@@ -193,7 +201,7 @@ export default function ConnectWallet() {
          // the removed WalletConnect tile as the "no app installed" path. The one-per-person
          // face check is enforced server-side by openfort-shield-session on mint, so this no
          // longer needs the build-time gate flag to be on to be safe to show.
-         instantWalletConfigured={openfort.isConfigured}
+         instantWalletConfigured={instantAvailable}
          onCreateInstantWallet={handleCreateInstantWallet}
          isCreatingInstantWallet={openfort.isConnecting}
          instantWalletError={openfort.error}
