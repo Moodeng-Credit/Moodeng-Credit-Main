@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 
+import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useQuery } from '@tanstack/react-query';
+import { ChevronRight, Send } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -12,6 +14,7 @@ import { txExplorerUrl } from '@/config/loanFundingConfig';
 import { getLoanNotePageData } from '@/lib/loanNotes/api';
 import type { LoanNotePageData } from '@/lib/loanNotes/types';
 import type { RootState } from '@/store/store';
+import LendChecklistModal from '@/views/dashboard/components/LendChecklistModal';
 import { setPendingFundLoanId } from '@/views/lender/loanNote/fundingPopup';
 import { type BuyResult, useBuyLoanNote } from '@/views/lender/loanNote/useBuyLoanNote';
 
@@ -24,11 +27,11 @@ const fmtDate = (iso: string) => {
    }
 };
 
-
 export default function LoanNotePurchase() {
    const { loanId = '' } = useParams();
    const navigate = useNavigate();
    const { address } = useAccount();
+   const { openConnectModal } = useConnectModal();
    const { buy, busy, step } = useBuyLoanNote();
 
    const userId = useSelector((state: RootState) => state.auth.user?.id);
@@ -36,8 +39,12 @@ export default function LoanNotePurchase() {
    const isLoggedIn = Boolean(userId && username);
 
    const [success, setSuccess] = useState<BuyResult | null>(null);
+   // Buying a Loan Note is a two-call contract flow (approve + buyLoanNote) — there's no
+   // Base-Pay-style single popup for it, so a lender with no wallet always needs the explicit
+   // connect-then-confirm checklist, unlike the one-tap direct-lend path on the request board.
+   const [showWalletChecklist, setShowWalletChecklist] = useState(false);
 
-   const { data, isLoading, isError, refetch } = useQuery<LoanNotePageData | null>({
+   const { data, isLoading, isError } = useQuery<LoanNotePageData | null>({
       queryKey: ['loan-note-page', loanId, userId ?? null, address ?? null],
       queryFn: () => getLoanNotePageData(loanId, { userId, walletAddress: address }),
       enabled: Boolean(loanId)
@@ -58,8 +65,19 @@ export default function LoanNotePurchase() {
          requireLoginThenPopup();
          return;
       }
+      if (!address) {
+         setShowWalletChecklist(true);
+         return;
+      }
       const result = await buy(data);
       if (result) setSuccess(result);
+   };
+
+   const handleConfirmFromChecklist = async () => {
+      if (!data) return;
+      const result = await buy(data);
+      if (result) setSuccess(result);
+      setShowWalletChecklist(false);
    };
 
    const primaryLabel = useMemo(() => {
@@ -69,16 +87,17 @@ export default function LoanNotePurchase() {
       if (step === 'recording') return 'Finalizing…';
       if (busy) return 'Processing…';
       if (!isLoggedIn) return `Support ${borrowerName}`;
-      if (!address) return 'Connect wallet to continue';
       return `Fund ${borrowerName}’s loan`;
-   }, [step, busy, isLoggedIn, address, borrowerName]);
+   }, [step, busy, isLoggedIn, borrowerName]);
 
    if (isLoading) return <Loading />;
    if (isError || !data) {
       return (
-         <div className="mx-auto max-w-xl px-4 py-16 text-center">
-            <h1 className="text-xl font-semibold text-gray-900">Loan not found</h1>
-            <p className="mt-2 text-gray-500">This support link is invalid or the loan is no longer available.</p>
+         <div className="min-h-screen bg-md-neutral-200">
+            <div className="mx-auto w-full max-w-[440px] px-md-4 py-16 text-center">
+               <h1 className="text-md-h5 font-semibold text-md-heading">Loan not found</h1>
+               <p className="mt-md-2 text-md-b2 text-md-neutral-700">This support link is invalid or the loan is no longer available.</p>
+            </div>
          </div>
       );
    }
@@ -91,164 +110,185 @@ export default function LoanNotePurchase() {
    const notSellable = !data.isSellable && !alreadyOwned;
 
    return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-         <h1 className="text-2xl font-bold text-gray-900">Support {borrowerName}</h1>
-         <p className="mt-1 text-sm text-gray-500">Fund this loan and receive the repayment if {borrowerName} pays back.</p>
+      <div className="min-h-screen bg-md-neutral-200">
+         <div className="mx-auto w-full max-w-[440px] px-md-4 py-md-4">
+            <div className="flex flex-col gap-md-0">
+               <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-1.12px] text-md-heading">Support {borrowerName}</h1>
+               <p className="text-md-b2 text-[#6d6d6d]">Fund this loan and receive the repayment if {borrowerName} pays back.</p>
+            </div>
 
-         {/* Borrower profile card */}
-         <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-5">
-            <div className="flex items-center gap-4">
-               <UserAvatar src={data.borrowerAvatarUrl ?? undefined} alt={borrowerName} size={56} />
-               <div>
-                  <div className="text-lg font-semibold text-gray-900">{borrowerName}</div>
-                  {data.borrowerUsername ? <div className="text-sm text-gray-500">@{data.borrowerUsername}</div> : null}
-                  {data.borrowerCreditLevel != null ? (
-                     <div className="mt-1 inline-block rounded-full bg-[#0052FF]/10 px-2 py-0.5 text-xs font-medium text-[#0052FF]">
-                        Trust level {data.borrowerCreditLevel}
+            {/* Request Card — matches the request-board card (rounded-24, amount box, Send CTA) */}
+            <div className="relative mt-md-4 flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]">
+               <div className="flex gap-4 items-center">
+                  <div className="flex-1 flex flex-col gap-2 min-w-0">
+                     <div className="flex items-center gap-md-2">
+                        <UserAvatar src={data.borrowerAvatarUrl ?? undefined} alt={borrowerName} size={40} />
+                        <p className="text-md-h5 font-semibold text-md-heading">{borrowerName}</p>
                      </div>
-                  ) : null}
+                     <div className="flex items-center gap-2 flex-wrap">
+                        {data.borrowerUsername ? <p className="text-md-b3 text-md-neutral-700">@{data.borrowerUsername}</p> : null}
+                        {data.borrowerCreditLevel != null ? (
+                           <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-primary-900 bg-md-primary-100">
+                              <span className="text-md-b4 font-semibold text-md-primary-1200">Trust level {data.borrowerCreditLevel}</span>
+                           </span>
+                        ) : null}
+                     </div>
+                     <div className="flex items-center gap-1 text-md-b2 font-semibold">
+                        <span className="text-[#585858]">Due On</span>
+                        <span className="text-md-red-600">{fmtDate(data.dueDate)}</span>
+                     </div>
+                  </div>
+
+                  <div className="shrink-0 w-[134px] bg-white border border-[#f0f0f0] rounded-[12px] p-3 flex flex-col gap-5 self-stretch justify-center">
+                     <div className="flex flex-col gap-1">
+                        <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Amount funded</p>
+                        <p className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-heading">{usd(data.principal)}</p>
+                     </div>
+                     <div className="flex flex-col gap-1">
+                        <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Will repay</p>
+                        <p className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">{usd(data.totalOwed)}</p>
+                     </div>
+                  </div>
                </div>
-            </div>
 
-            {data.loanPurpose ? (
-               <div className="mt-4">
-                  <div className="text-xs uppercase tracking-wide text-gray-400">Loan purpose</div>
-                  <p className="mt-1 text-sm text-gray-700">{data.loanPurpose}</p>
+               {data.loanPurpose ? <p className="text-md-b2 text-md-neutral-700">{data.loanPurpose}</p> : null}
+
+               <div className="grid grid-cols-2 gap-3">
+                  <BoxedStat label="Remaining owed" value={usd(data.remainingOwed)} />
+                  <BoxedStat label="IOU points reward" value={`${data.iouPointsReward.toLocaleString()} pts`} />
+                  <BoxedStat
+                     className="col-span-2"
+                     label="Repayment history"
+                     value={
+                        data.repaymentStats.loansFunded > 0
+                           ? `${data.repaymentStats.loansRepaid}/${data.repaymentStats.loansFunded} repaid${data.repaymentStats.repaymentRatePct != null ? ` (${data.repaymentStats.repaymentRatePct}%)` : ''}`
+                           : 'New borrower'
+                     }
+                  />
                </div>
-            ) : null}
 
-            <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
-               <Stat label="Amount originally funded" value={usd(data.principal)} />
-               <Stat label="Borrower will repay" value={usd(data.totalOwed)} />
-               <Stat label="Remaining owed" value={usd(data.remainingOwed)} />
-               <Stat label="Due date" value={fmtDate(data.dueDate)} />
-               <Stat
-                  label="Repayment history"
-                  value={
-                     data.repaymentStats.loansFunded > 0
-                        ? `${data.repaymentStats.loansRepaid}/${data.repaymentStats.loansFunded} repaid${data.repaymentStats.repaymentRatePct != null ? ` (${data.repaymentStats.repaymentRatePct}%)` : ''}`
-                        : 'New borrower'
-                  }
-               />
-               <Stat label="IOU points reward" value={`${data.iouPointsReward.toLocaleString()} pts`} />
-            </dl>
-         </div>
-
-         {/* Economics */}
-         <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
-            <div className="grid grid-cols-3 gap-4 text-center">
-               <div>
-                  <div className="text-xs text-gray-400">Your purchase</div>
-                  <div className="mt-1 text-lg font-semibold text-gray-900">{usd(data.listingPrice)}</div>
+               {/* Economics */}
+               <div className="bg-white border border-[#f0f0f0] rounded-[12px] p-3 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                     <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Your purchase</p>
+                     <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">{usd(data.listingPrice)}</p>
+                  </div>
+                  <div>
+                     <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Repayment</p>
+                     <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">{usd(data.expectedRepayment)}</p>
+                  </div>
+                  <div>
+                     <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Yield</p>
+                     <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-green-600">{usd(data.expectedProfit)}</p>
+                  </div>
                </div>
-               <div>
-                  <div className="text-xs text-gray-400">Expected repayment</div>
-                  <div className="mt-1 text-lg font-semibold text-gray-900">{usd(data.expectedRepayment)}</div>
-               </div>
-               <div>
-                  <div className="text-xs text-gray-400">Expected yield</div>
-                  <div className="mt-1 text-lg font-semibold text-emerald-600">{usd(data.expectedProfit)}</div>
-               </div>
-            </div>
-         </div>
 
-         {/* Disclosure */}
-         <div className="mt-4 rounded-2xl bg-[#0052FF]/5 p-5 text-sm text-gray-700">
-            <p>If {borrowerName} repays, the repayment is automatically sent to your wallet — you don’t need to claim anything.</p>
-         </div>
-
-         {/* Risk warning */}
-         <div className="mt-4 rounded-2xl bg-amber-50 p-5 text-sm text-amber-800">
-            ⚠️ Repayment is not guaranteed. If the borrower does not repay, you may lose some or all of your purchase amount.
-         </div>
-
-         {alreadyOwned ? (
-            <div className="mt-6 rounded-xl bg-emerald-50 p-4 text-center text-sm text-emerald-700">
-               You already own this Loan Note.
-               <button type="button" onClick={() => navigate('/lender/supported')} className="ml-2 font-medium underline">
-                  View My Funded Loans
-               </button>
-            </div>
-         ) : (
-            <div className="mt-6">
-               <button
-                  type="button"
-                  onClick={handleSupport}
-                  disabled={busy || notSellable}
-                  className="w-full rounded-xl bg-[#0052FF] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#0041cc] disabled:opacity-50"
-               >
-                  {notSellable ? 'Not available for purchase' : primaryLabel}
-               </button>
-               <p className="mt-2 text-center text-xs text-gray-500">
-                  If {borrowerName} repays, the repayment comes straight to your wallet.
+               <p className="rounded-[16px] bg-md-primary-100/60 px-3 py-2.5 text-md-b3 font-medium text-md-neutral-1500">
+                  If {borrowerName} repays, the repayment is automatically sent to your wallet — you don’t need to claim anything.
                </p>
-               {isLoggedIn && address ? (
-                  <p className="mt-1 text-center text-xs text-gray-400">
-                     Repayments are automatically sent to your wallet when the borrower repays — you do not need to manually claim.
+
+               {alreadyOwned ? (
+                  <div className="rounded-md-input border border-md-green-100 bg-md-green-100/60 px-3 py-2.5 text-center">
+                     <p className="text-md-b3 font-medium text-md-green-900">You already own this Loan Note.</p>
+                     <button
+                        type="button"
+                        onClick={() => navigate('/lender/supported')}
+                        className="mt-1 text-md-b3 font-semibold text-md-primary-1200 underline underline-offset-2"
+                     >
+                        View My Funded Loans
+                     </button>
+                  </div>
+               ) : (
+                  <button
+                     onClick={handleSupport}
+                     disabled={busy || notSellable}
+                     type="button"
+                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                  >
+                     {notSellable ? 'Not available for purchase' : primaryLabel}
+                     {!busy && !notSellable ? <Send className="w-5 h-5" /> : null}
+                  </button>
+               )}
+
+               {!isLoggedIn ? (
+                  <p className="text-center text-md-b3 text-md-neutral-800">
+                     You’ll be asked to sign in or sign up, then returned here to complete your support.
                   </p>
                ) : null}
             </div>
-         )}
+         </div>
 
-         {!isLoggedIn ? (
-            <p className="mt-4 text-center text-xs text-gray-400">You’ll be asked to sign in or sign up, then returned here to complete your support.</p>
+         {showWalletChecklist && data ? (
+            <LendChecklistModal
+               title="Fund this loan"
+               amountLabel={usd(data.listingPrice)}
+               borrowerName={borrowerName}
+               connected={Boolean(address)}
+               connectedAddress={address}
+               isProcessing={busy}
+               onConnect={() => openConnectModal?.()}
+               onConfirm={handleConfirmFromChecklist}
+               onClose={() => setShowWalletChecklist(false)}
+            />
          ) : null}
-
-         {/* refetch is wired for callers that want to refresh after external changes */}
-         <button type="button" onClick={() => refetch()} className="sr-only">
-            Refresh
-         </button>
       </div>
    );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function BoxedStat({ label, value, className = '' }: { label: string; value: string; className?: string }) {
    return (
-      <div>
-         <dt className="text-xs uppercase tracking-wide text-gray-400">{label}</dt>
-         <dd className="mt-0.5 font-medium text-gray-900">{value}</dd>
+      <div className={`bg-white border border-[#f0f0f0] rounded-[12px] p-3 flex flex-col gap-1 ${className}`}>
+         <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">{label}</p>
+         <p className="text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">{value}</p>
       </div>
    );
 }
 
 function SuccessScreen({ borrowerName, success, onViewSupported }: { borrowerName: string; success: BuyResult; onViewSupported: () => void }) {
    return (
-      <div className="mx-auto max-w-xl px-4 py-12 text-center">
-         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">🎉</div>
-         <h1 className="text-2xl font-bold text-gray-900">You funded {borrowerName}’s loan</h1>
-         <p className="mt-2 text-gray-600">
-            You funded this loan. If {borrowerName} repays, the repayment is automatically sent to your wallet.
-         </p>
+      <div className="min-h-screen bg-md-neutral-200">
+         <div className="mx-auto flex w-full max-w-[440px] flex-col items-center gap-5 px-md-6 py-12 text-center">
+            <img src="/icons/check-3d.png" alt="" className="size-[104px]" />
+            <div className="flex flex-col gap-1">
+               <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-1.12px] text-md-heading">Thank you for funding</h1>
+               <p className="text-md-b1 font-medium text-[#6d6d6d]">
+                  You funded {borrowerName}’s loan. If they repay, the repayment is sent straight to your wallet — no claim needed.
+               </p>
+            </div>
 
-         <dl className="mt-6 space-y-3 rounded-2xl border border-gray-200 bg-white p-5 text-left text-sm">
-            <Row label="Loan Note ID" value={`#${success.loanNoteId}`} />
-            <Row label="Purchase amount" value={usd(success.purchaseAmount)} />
-            <Row label="Expected repayment" value={usd(success.expectedRepayment)} />
-            <Row label="Due date" value={fmtDate(success.dueDate)} />
-            <Row label="IOU points earned" value={`${success.iouPoints.toLocaleString()} pts`} />
-         </dl>
+            <dl className="w-full space-y-md-1 rounded-[16px] border border-[#f0f0f0] bg-white p-md-3 text-left">
+               <Row label="Loan Note ID" value={`#${success.loanNoteId}`} />
+               <Row label="Purchase amount" value={usd(success.purchaseAmount)} />
+               <Row label="Expected repayment" value={usd(success.expectedRepayment)} />
+               <Row label="Due date" value={fmtDate(success.dueDate)} />
+               <Row label="IOU points earned" value={`${success.iouPoints.toLocaleString()} pts`} />
+            </dl>
 
-         {success.txHash ? (
-            <a
-               href={txExplorerUrl(success.txHash)}
-               target="_blank"
-               rel="noopener noreferrer"
-               className="mt-3 inline-block text-xs font-medium text-[#0052FF] underline"
+            {success.txHash ? (
+               <a
+                  href={txExplorerUrl(success.txHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-md-b3 font-semibold text-md-primary-1200 underline underline-offset-2"
+               >
+                  View transaction on Basescan ↗
+               </a>
+            ) : null}
+
+            {!success.synced ? (
+               <p className="rounded-[16px] bg-[rgba(255,237,161,0.35)] p-md-3 text-md-b3 text-[#8a6d00]">
+                  Your purchase is confirmed on-chain (you own the Loan Note). We’re still syncing it to your dashboard — it’ll appear
+                  shortly. Your funds and IOU points are safe.
+               </p>
+            ) : null}
+
+            <button
+               type="button"
+               onClick={onViewSupported}
+               className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90"
             >
-               View transaction on Basescan ↗
-            </a>
-         ) : null}
-
-         {!success.synced ? (
-            <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs text-amber-800">
-               Your purchase is confirmed on-chain (you own the Loan Note). We’re still syncing it to your dashboard — it’ll appear
-               shortly. Your funds and IOU points are safe.
-            </p>
-         ) : null}
-
-         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button type="button" onClick={onViewSupported} className="flex-1 rounded-xl bg-[#0052FF] px-6 py-3 font-semibold text-white hover:bg-[#0041cc]">
                View My Funded Loans
+               <ChevronRight className="w-5 h-5" />
             </button>
          </div>
       </div>
@@ -258,8 +298,8 @@ function SuccessScreen({ borrowerName, success, onViewSupported }: { borrowerNam
 function Row({ label, value }: { label: string; value: string }) {
    return (
       <div className="flex items-center justify-between">
-         <dt className="text-gray-500">{label}</dt>
-         <dd className="font-medium text-gray-900">{value}</dd>
+         <dt className="text-md-b2 text-[#585858]">{label}</dt>
+         <dd className="text-md-b2 font-semibold text-md-heading">{value}</dd>
       </div>
    );
 }

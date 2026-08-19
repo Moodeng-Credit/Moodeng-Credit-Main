@@ -15,6 +15,8 @@ interface LendChecklistModalProps {
    /** Fires the USDC send for step 2. Only tappable once connected — a real tap, never auto-fired. */
    onConfirm: () => void;
    onClose: () => void;
+   /** Modal heading. Defaults to the direct-lend wording; the Loan Note purchase flow passes its own. */
+   title?: string;
 }
 
 const shortAddress = (address?: string) => (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '');
@@ -34,10 +36,11 @@ export default function LendChecklistModal({
    isProcessing,
    onConnect,
    onConfirm,
-   onClose
+   onClose,
+   title = 'Send your help'
 }: LendChecklistModalProps) {
    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
          <div
             className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-lg"
             style={{ minWidth: '300px' }}
@@ -45,7 +48,7 @@ export default function LendChecklistModal({
          >
             <div className="flex items-start justify-between px-5 pb-2 pt-5">
                <div>
-                  <h3 className="text-lg font-medium text-md-heading">Send your help</h3>
+                  <h3 className="text-lg font-medium text-md-heading">{title}</h3>
                   <p className="text-md-b3 text-md-neutral-800">
                      {amountLabel} to {borrowerName} · two quick steps
                   </p>
