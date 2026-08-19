@@ -18,14 +18,17 @@ const SIGNAL_LABEL: Record<string, string> = {
    impossible_travel: 'Impossible travel',
    subnet_cluster: 'Subnet cluster',
    shared_device: 'Shared device (one phone, many accounts)',
-   application_colocation: 'Applied from same location'
+   application_colocation: 'Applied from same location',
+   shared_payout_destination: 'Shared payout destination (mule herder)',
+   fast_offramp: 'Fast off-ramp to exchange'
 };
 
 const CRITICAL = new Set([
    'self_deal_wallet',
    'counterparty_shared_wallet',
    'impossible_travel',
-   'shared_device'
+   'shared_device',
+   'shared_payout_destination'
 ]);
 
 function statusClass(s: FraudAlertStatus): string {
@@ -57,6 +60,10 @@ function describe(a: FraudAlert): string {
          return `${get('username')} — device shared with ${get('other_accounts')} other account(s) — loan ${get('tracking_id') || get('loan_id')}`;
       case 'application_colocation':
          return `${get('username')} — applied ${get('distance_m')}m from ${get('other_accounts')} other account(s) — loan ${get('tracking_id') || get('loan_id')}`;
+      case 'shared_payout_destination':
+         return `${get('borrower_count')} borrowers → ${get('destination_label') || 'the same wallet'} ${get('terminal_destination')}${d.is_exchange_deposit ? ' (exchange deposit)' : ''}`;
+      case 'fast_offramp':
+         return `loan ${get('loan_id')} → ${get('destination_label') || 'exchange'} ${get('hours_to_offramp')}h after funding`;
       default:
          return JSON.stringify(d).slice(0, 120);
    }
