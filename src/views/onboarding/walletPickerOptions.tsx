@@ -41,16 +41,11 @@ export const LENDER_WALLET_OPTIONS: WalletOption[] = [
       tag: { label: 'Popular', bgClass: 'bg-md-blue-200', textClass: 'text-md-blue-800' },
       line1: 'Universal',
       line2: 'Widely Used'
-   },
-   {
-      key: 'walletConnect',
-      name: 'WalletConnect',
-      iconSrc: '/icons/wallet_connect.png',
-      iconBg: 'bg-transparent',
-      iconPadding: 'p-0',
-      line1: 'Universal',
-      line2: '100+ wallets'
    }
+   // WalletConnect was removed as a dedicated tile: its bare connect dead-ended (it needs its
+   // own QR modal, which the tile path never popped), and the Instant Wallet card now fills the
+   // "no app installed" slot it was meant to serve. WalletConnect is still reachable through the
+   // "Other Wallets" RainbowKit modal for lenders who specifically want it.
 ];
 
 export const getConnectorName = (key: WalletConnectorKey) => WALLET_CONNECTOR_NAMES[key];
