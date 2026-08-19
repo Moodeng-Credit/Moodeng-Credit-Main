@@ -21,7 +21,8 @@ const corsHeaders = {
 };
 
 const USDC_ADDRESS = (Deno.env.get('BASE_USDC_ADDRESS') || '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913').toLowerCase();
-const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
+// This project stores the Alchemy key under the frontend name VITE_ALCHEMY_ID; fall back to it.
+const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? Deno.env.get('VITE_ALCHEMY_ID') ?? '';
 const ALCHEMY_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : '';
 
 const norm = (a: string | null | undefined): string => (a ?? '').trim().toLowerCase();
@@ -89,7 +90,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
-   const auth = checkCronAuth(req, Deno.env.get('ADMIN_API_TOKEN'), corsHeaders);
+   // Dedicated token (not the shared ADMIN_API_TOKEN) so this function's auth is isolated
+   // from the other security crons. Deployed with verify_jwt=false, so this header check —
+   // not the gateway — is what protects it.
+   const auth = checkCronAuth(req, Deno.env.get('TRACE_CRON_TOKEN'), corsHeaders);
    if (!auth.ok) return auth.response;
 
    const startedAt = new Date().toISOString();
