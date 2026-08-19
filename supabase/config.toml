@@ -80,3 +80,9 @@ verify_jwt = false
 # the project gas credit drops below the configured threshold. Gated by a shared URL token.
 [functions.openfort-gas-webhook]
 verify_jwt = false
+
+# Follow-the-money tracer — called only by pg_cron (net.http_post). verify_jwt is off so it
+# doesn't depend on a project API key in the gateway; it is gated by its own TRACE_CRON_TOKEN
+# header check (checkCronAuth), so only the cron (which reads the token from vault) can run it.
+[functions.trace-loan-fund-flow]
+verify_jwt = false
