@@ -7,7 +7,7 @@ export type FraudSignal = {
    wallet_address?: string;
    account_count?: number;
    borrower_and_lender?: boolean;
-   accounts?: Array<{ user_id: string; role: string; email?: string; username?: string }>;
+   accounts?: Array<{ user_id: string; role?: string; email?: string; username?: string; loan_id?: string }>;
    loan_id?: string;
    tracking_id?: string;
    wallet?: string;
@@ -28,6 +28,10 @@ export type FraudSignal = {
    // Embedded-wallet face gate (scan_wallet_face_signals).
    user_role?: string;
    stuck_count?: number;
+   // Follow-the-money convergence (scan_payout_convergence).
+   terminal_destination?: string;
+   destination_label?: string;
+   is_exchange_deposit?: boolean;
    details?: Record<string, unknown>;
 };
 
@@ -64,6 +68,18 @@ export const describeFraudSignal = (s: FraudSignal): string => {
          return `Instant wallet allowed, but the scan did not confirm the account's own enrolled face\n  user: ${s.user_id} (${s.user_role ?? 'unknown role'}) — informational; review only if takeover is suspected`;
       case 'embedded_wallet_grant_stuck':
          return `${s.stuck_count} instant wallet grant(s) claimed but never completed — users may have scanned and received no wallet. Check Openfort Shield health.`;
+      // --- Follow-the-money convergence ---
+      case 'shared_payout_destination': {
+         const dest = s.destination_label ? `${s.destination_label} (${s.terminal_destination})` : s.terminal_destination;
+         const who = (s.accounts ?? [])
+            .map((a) => `${a.username ?? a.user_id}${a.loan_id ? ` [loan ${a.loan_id}]` : ''}`)
+            .join('; ');
+         return `${s.account_count} borrower accounts' loans all cashed out to the SAME destination${
+            s.is_exchange_deposit ? ' (exchange deposit)' : ''
+         } — one beneficiary behind multiple borrowers\n  destination: ${dest}\n  borrowers: ${who}`;
+      }
+      case 'fast_offramp':
+         return `Loan ${s.loan_id} cashed out to ${s.destination_label ?? 'an exchange'} ${s.hours_apart}h after funding — bust-out speed (borrower ${s.username ?? s.user_id})`;
       default:
          return `${s.type}: ${JSON.stringify(s)}`;
    }

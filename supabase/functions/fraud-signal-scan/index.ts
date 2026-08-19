@@ -54,9 +54,20 @@ serve(async (req) => {
       console.error('[fraud-signal-scan] wallet face scan failed:', faceError.message);
    }
 
+   // Follow-the-money convergence (Part A): one on-chain destination fed by many borrowers
+   // (the 2026-08-15 mule pattern) + fast off-ramps. Populated by trace-loan-fund-flow.
+   // Rides the same delivery path; a failure here must not drop the wallet/IP/face signals.
+   const { data: payoutData, error: payoutError } = await supabase.rpc('scan_payout_convergence', {
+      fast_offramp_hours: typeof body.fastOfframpHours === 'number' ? body.fastOfframpHours : 24
+   });
+   if (payoutError) {
+      console.error('[fraud-signal-scan] payout convergence scan failed:', payoutError.message);
+   }
+
    const signals = [
       ...(((data?.signals ?? []) as FraudSignal[]) ?? []),
-      ...(((faceData?.signals ?? []) as FraudSignal[]) ?? [])
+      ...(((faceData?.signals ?? []) as FraudSignal[]) ?? []),
+      ...(((payoutData?.signals ?? []) as FraudSignal[]) ?? [])
    ];
    if (!signals.length) {
       await recordJobRun(supabase, JOB_NAME, { startedAt, ok: true, signalCount: 0, detail: { message: 'no new signals' } });
