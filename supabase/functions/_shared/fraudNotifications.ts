@@ -32,6 +32,8 @@ export type FraudSignal = {
    terminal_destination?: string;
    destination_label?: string;
    is_exchange_deposit?: boolean;
+   // Per-borrower mule-risk score (scan_mule_risk).
+   score?: number;
    details?: Record<string, unknown>;
 };
 
@@ -80,6 +82,10 @@ export const describeFraudSignal = (s: FraudSignal): string => {
       }
       case 'fast_offramp':
          return `Loan ${s.loan_id} cashed out to ${s.destination_label ?? 'an exchange'} ${s.hours_apart}h after funding — bust-out speed (borrower ${s.username ?? s.user_id})`;
+      case 'high_mule_risk': {
+         const reasons = ((s.details as { reasons?: string[] } | undefined)?.reasons ?? []).join('; ');
+         return `Mule-risk score ${s.score}/100 — ${s.username ?? s.user_id}${reasons ? `\n  reasons: ${reasons}` : ''}`;
+      }
       default:
          return `${s.type}: ${JSON.stringify(s)}`;
    }
