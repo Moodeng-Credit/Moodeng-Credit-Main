@@ -898,6 +898,20 @@ export interface AnalyticsLoanRow {
    repaymentStatus: string | null;
 }
 
+// One calendar month's activity, used for month-over-month growth targets and the
+// milestone tracker. `monthKey` is UTC `YYYY-MM`; `label` is a human "Aug 2026".
+export interface AnalyticsMonth {
+   monthKey: string;
+   label: string;
+   newUsers: number;
+   newBorrowers: number;
+   newLenders: number;
+   loansOut: number; // loans funded (funded_at) that month
+   loansRepaid: number; // loans marked Paid (repaid_at) that month
+   volumeOut: number; // principal disbursed that month
+   volumeRepaid: number; // cash repaid that month
+}
+
 export interface GrowthAnalytics {
    totalUsers: number;
    borrowers: number;
@@ -909,6 +923,9 @@ export interface GrowthAnalytics {
    anyVerified: number;
    verifiedRate: number; // 0..1 of all users with at least one verification
    registrationsByWeek: Array<{ weekStart: string; count: number; cumulative: number }>;
+   // Calendar-month activity (continuous, chronological) driving the doubling
+   // targets and milestone tracker in the growth dashboard.
+   monthly: AnalyticsMonth[];
    totalLoans: number;
    requestedLoans: number;
    activeLoans: number;
@@ -932,24 +949,65 @@ function isoWeekStart(dateStr: string): string {
    return d.toISOString().slice(0, 10);
 }
 
+// UTC `YYYY-MM` bucket key for a timestamp (null when the date is missing/invalid).
+function monthKeyOf(dateStr: string | null | undefined): string | null {
+   if (!dateStr) return null;
+   const d = new Date(dateStr);
+   if (Number.isNaN(d.getTime())) return null;
+   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function monthLabelOf(monthKey: string): string {
+   const [y, m] = monthKey.split('-').map(Number);
+   return `${MONTH_NAMES[(m || 1) - 1]} ${y}`;
+}
+
+// Team + internal test accounts to keep out of growth stats. Active admins
+// (admin_users) are excluded automatically; this list catches the founders'
+// throwaway borrower/lender test accounts, which are NOT admins. Match is a
+// case-insensitive substring against both email and username — edit freely.
+const GROWTH_EXCLUDED_MATCHERS = ['emmadawg', 'atomicmail'];
+
+function isExcludedByMatcher(user: AnyRow): boolean {
+   const hay = `${String(user.email ?? '')} ${String(user.username ?? '')}`.toLowerCase();
+   return GROWTH_EXCLUDED_MATCHERS.some((needle) => needle && hay.includes(needle.toLowerCase()));
+}
+
 export async function getGrowthAnalytics({ includeTest = false }: { includeTest?: boolean } = {}): Promise<GrowthAnalytics> {
    const supabase = getSupabaseBrowserClient();
    const now = Date.now();
 
    let usersQuery = supabase
       .from('users')
-      .select('id,username,wallet_address,created_at,user_role,is_world_id,is_didit,account_status')
+      .select('id,username,email,wallet_address,created_at,user_role,is_world_id,is_didit,account_status')
       .limit(5000);
    let loansQuery = supabase
       .from('loans')
-      .select('id,tracking_id,loan_amount,total_repayment_amount,repaid_amount,loan_status,repayment_status,due_date,created_at')
+      .select('id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,loan_status,repayment_status,due_date,created_at,funded_at,repaid_at,refunded_at')
       .limit(5000);
    if (!includeTest) {
       usersQuery = usersQuery.eq('is_test', false);
       loansQuery = loansQuery.eq('is_test', false);
    }
 
-   const [users, loans] = await Promise.all([requireOk<AnyRow[]>(usersQuery), requireOk<AnyRow[]>(loansQuery)]);
+   const [allUsers, allLoans, adminRows] = await Promise.all([
+      requireOk<AnyRow[]>(usersQuery),
+      requireOk<AnyRow[]>(loansQuery),
+      // Best-effort: if the admin roster can't be read we still exclude by matcher.
+      optionalOk<AnyRow[]>(supabase.from('admin_users').select('user_id').eq('active', true), [])
+   ]);
+
+   // Build the excluded-user set: every active admin, plus anyone matching the
+   // internal/test-account patterns. Their loans are dropped too (either side).
+   const excludedUserIds = new Set<string>();
+   for (const a of adminRows) if (a.user_id) excludedUserIds.add(String(a.user_id));
+   for (const u of allUsers) if (isExcludedByMatcher(u)) excludedUserIds.add(String(u.id));
+
+   const users = allUsers.filter((u) => !excludedUserIds.has(String(u.id)));
+   const loans = allLoans.filter(
+      (l) => !excludedUserIds.has(String(l.borrower_user_id ?? '')) && !excludedUserIds.has(String(l.lender_user_id ?? ''))
+   );
 
    const isActive = (v: unknown) => String(v ?? '').toUpperCase() === 'ACTIVE';
    let borrowers = 0;
@@ -1053,6 +1111,60 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
 
    const fundedLoans = activeLoans + overdueLoans + repaidLoans;
 
+   // Monthly activity for the doubling targets + milestone tracker. Users are
+   // bucketed by sign-up month; a loan counts as "out" in its funding month and
+   // "repaid" in its repayment month, so the two can fall in different months.
+   const monthMap = new Map<string, AnalyticsMonth>();
+   const monthFor = (key: string): AnalyticsMonth => {
+      let m = monthMap.get(key);
+      if (!m) {
+         m = { monthKey: key, label: monthLabelOf(key), newUsers: 0, newBorrowers: 0, newLenders: 0, loansOut: 0, loansRepaid: 0, volumeOut: 0, volumeRepaid: 0 };
+         monthMap.set(key, m);
+      }
+      return m;
+   };
+   for (const u of users) {
+      const key = monthKeyOf(u.created_at);
+      if (!key) continue;
+      const m = monthFor(key);
+      m.newUsers += 1;
+      if (u.user_role === 'borrower') m.newBorrowers += 1;
+      else if (u.user_role === 'lender') m.newLenders += 1;
+   }
+   for (const l of loans) {
+      if (l.loan_status === 'Lent') {
+         const outKey = monthKeyOf(l.funded_at ?? l.created_at);
+         if (outKey) {
+            const m = monthFor(outKey);
+            m.loansOut += 1;
+            m.volumeOut += toNumber(l.loan_amount);
+         }
+         if (l.repayment_status === 'Paid' && !l.refunded_at) {
+            const paidKey = monthKeyOf(l.repaid_at ?? l.funded_at ?? l.created_at);
+            if (paidKey) {
+               const m = monthFor(paidKey);
+               m.loansRepaid += 1;
+               m.volumeRepaid += l.repaid_amount == null ? toNumber(l.loan_amount) : toNumber(l.repaid_amount);
+            }
+         }
+      }
+   }
+   // Emit a continuous month range from earliest activity through the current
+   // month, so gaps read as zeros and "this month" is always the last bucket.
+   const monthly: AnalyticsMonth[] = [];
+   if (monthMap.size) {
+      const keys = [...monthMap.keys()].sort();
+      const [startY, startM] = keys[0].split('-').map(Number);
+      const cursor = new Date(Date.UTC(startY, startM - 1, 1));
+      const end = new Date();
+      const endBound = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1);
+      while (cursor.getTime() <= endBound) {
+         const key = `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}`;
+         monthly.push(monthMap.get(key) ?? monthFor(key));
+         cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+      }
+   }
+
    return {
       totalUsers: users.length,
       borrowers,
@@ -1064,6 +1176,7 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
       anyVerified,
       verifiedRate: users.length ? anyVerified / users.length : 0,
       registrationsByWeek,
+      monthly,
       totalLoans: loans.length,
       requestedLoans,
       activeLoans,
