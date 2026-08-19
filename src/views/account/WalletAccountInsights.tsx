@@ -33,7 +33,11 @@ import {
    type WalletTransferRecord
 } from '@/views/account/walletAccountData';
 
-const ALCHEMY_ID = (import.meta.env.VITE_ALCHEMY_ID ?? '').trim();
+const RAW_ALCHEMY_ID = (import.meta.env.VITE_ALCHEMY_ID ?? '').trim();
+// A build that shipped the setup placeholder ("your_alchemy_id") or an undecrypted
+// dotenvx value ("encrypted:…") would 401 on every request. Treat those as unconfigured
+// so on-chain fetches are skipped cleanly instead of surfacing a broken retry loop.
+const ALCHEMY_ID = RAW_ALCHEMY_ID === 'your_alchemy_id' || RAW_ALCHEMY_ID.startsWith('encrypted:') ? '' : RAW_ALCHEMY_ID;
 const MAX_TRANSFER_ROWS = 8;
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 

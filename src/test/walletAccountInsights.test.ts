@@ -109,7 +109,7 @@ describe('buildRecentWalletActivity', () => {
       });
    });
 
-   it('does not invent lender funding or repayment rows without on-chain transfers', () => {
+   it('surfaces lender funding and repayment rows for loans on the current wallet', () => {
       const rows = buildRecentWalletActivity({
          loans: [makeLoan({ lender_wallet: CURRENT_WALLET })],
          userId: 'lender-1',
@@ -118,10 +118,11 @@ describe('buildRecentWalletActivity', () => {
          limit: 10
       });
 
-      expect(rows).toEqual([]);
+      expect(rows.find((row) => row.kind === 'loan_funded')).toMatchObject({ direction: 'out', amount: 20 });
+      expect(rows.find((row) => row.kind === 'repayment_received')).toMatchObject({ direction: 'in', amount: 21 });
    });
 
-   it('does not mix activity from a previous wallet into the current wallet feed', () => {
+   it('shows a previous wallet loan in the feed but stays neutral about its direction', () => {
       const rows = buildRecentWalletActivity({
          loans: [makeLoan({ borrower_wallet: PREVIOUS_WALLET })],
          userId: 'borrower-1',
@@ -129,7 +130,9 @@ describe('buildRecentWalletActivity', () => {
          currentAddress: CURRENT_WALLET
       });
 
-      expect(rows).toEqual([]);
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((row) => row.direction === 'neutral')).toBe(true);
+      expect(rows.find((row) => row.kind === 'loan_received')).toBeDefined();
    });
 });
 
