@@ -27,6 +27,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
 import { useLocalization } from '@/i18n';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { getVerificationUiState, VERIFICATION_STATE_LABEL, type VerificationUiState } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -985,6 +986,10 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    const { disconnectAsync } = useDisconnect();
    const instantWallet = useCreateInstantWallet('account-settings');
    const isBorrower = user?.userRole === 'borrower';
+   // Instant wallet is the PH-market escape hatch — only offer it to visitors who look like
+   // they're in the Philippines (isLikelyPhilippines). Elsewhere the picker shows Base/other
+   // wallets only. Soft client-side gate; server face-gate still enforces one-per-person on mint.
+   const showInstantWallet = instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED && isLikelyPhilippines();
 
    const [step, setStep] = useState<'choose' | 'connecting'>('choose');
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
@@ -1201,7 +1206,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                             the dead end borrowers hit: a legacy Base borrower prompted to
                             "Confirm your Base Account" had no route to an Instant Wallet, only
                             back to the wallet they couldn't reach. */}
-                        {instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED ? (
+                        {showInstantWallet ? (
                            <button
                               type="button"
                               disabled={isConnecting || instantWallet.isCreating}
@@ -1218,7 +1223,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                             their wallet can create one straight from the picker without fully
                             disconnecting first. A card, not a tile — it CREATES a wallet rather
                             than connecting an existing one. Flag-gated like every other surface. */}
-                        {instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED ? (
+                        {showInstantWallet ? (
                            <>
                               <button
                                  type="button"
@@ -2050,7 +2055,7 @@ export default function AccountSettings() {
                                rather than only in onboarding: disconnecting is exactly when
                                someone discovers they have no wallet app to reconnect with, and
                                before this the only offer was "connect one you already own". */}
-                           {!hasWallet && instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED ? (
+                           {!hasWallet && instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED && isLikelyPhilippines(locale) ? (
                               <div className="flex flex-col gap-md-2 border-t border-md-neutral-300 px-md-3 py-md-3">
                                  <div className="flex items-start gap-md-2">
                                     <img src="/hippos/hippo-wallet.png" alt="" className="size-9 shrink-0 object-contain" />
