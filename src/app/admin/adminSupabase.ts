@@ -1695,6 +1695,44 @@ export async function getLoginGeo(): Promise<LoginGeoPoint[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Mule risk — per-borrower 0..100 score over the on-chain loan_fund_flow graph
+// (MULE_HUNTER-style 2-hop fraud density). Read-only RPC; each row carries the
+// human-readable reasons behind its score for explainability.
+// ---------------------------------------------------------------------------
+export interface MuleRiskRow {
+   user_id: string;
+   username: string | null;
+   account_status: string | null;
+   score: number;
+   reasons: string[];
+   max_co_borrowers: number;
+   destinations: string[];
+}
+
+// `notDeployed` lets the UI show a "run the migration" hint instead of a scary
+// error while the prototype RPC hasn't been applied to this project yet.
+export async function getMuleRiskScores(topN = 50): Promise<{ rows: MuleRiskRow[]; notDeployed: boolean }> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.rpc('score_borrower_mule_risk', { top_n: topN });
+   if (error) {
+      // 42883 = undefined_function (RPC not applied yet); surface it softly.
+      const missing = /score_borrower_mule_risk|function.*does not exist|42883/i.test(error.message);
+      if (missing) return { rows: [], notDeployed: true };
+      throw error;
+   }
+   const rows = ((data ?? []) as AnyRow[]).map((r) => ({
+      user_id: String(r.user_id),
+      username: (r.username as string) ?? null,
+      account_status: (r.account_status as string) ?? null,
+      score: toNumber(r.score),
+      reasons: Array.isArray(r.reasons) ? (r.reasons as string[]) : [],
+      max_co_borrowers: toNumber(r.max_co_borrowers),
+      destinations: Array.isArray(r.destinations) ? (r.destinations as string[]) : []
+   }));
+   return { rows, notDeployed: false };
+}
+
+// ---------------------------------------------------------------------------
 // UX Health — friction metrics pulled from PostHog via the admin-ux-metrics
 // edge function (last 30 days). Aggregate numbers only; the PostHog personal
 // API key stays server-side.

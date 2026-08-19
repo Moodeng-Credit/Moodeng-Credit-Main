@@ -42,6 +42,7 @@ import RefundSection from './RefundSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
+import MuleRiskSection from './MuleRiskSection';
 import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
 
@@ -60,6 +61,7 @@ type AdminTab =
    | 'refunds'
    | 'risk'
    | 'self-lending'
+   | 'mule-risk'
    | 'referrals'
    | 'notifications'
    | 'chat'
@@ -111,7 +113,8 @@ const navGroups: NavGroup[] = [
       label: 'Risk & fraud',
       items: [
          { id: 'risk', label: 'Risk assessment' },
-         { id: 'self-lending', label: 'Self-lending?' }
+         { id: 'self-lending', label: 'Self-lending?' },
+         { id: 'mule-risk', label: 'Mule risk' }
       ]
    },
    {
@@ -309,6 +312,7 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'refunds',
    'risk',
    'self-lending',
+   'mule-risk',
    'referrals',
    'notifications',
    'relay'
@@ -1479,6 +1483,8 @@ export default function AdminPanel() {
                ) : null}
 
                {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
+
+               {activeTab === 'mule-risk' ? <MuleRiskSection /> : null}
 
                {activeTab === 'refunds' ? <RefundSection /> : null}
 

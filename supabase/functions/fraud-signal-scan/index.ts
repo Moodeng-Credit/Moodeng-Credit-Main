@@ -64,10 +64,23 @@ serve(async (req) => {
       console.error('[fraud-signal-scan] payout convergence scan failed:', payoutError.message);
    }
 
+   // Per-borrower mule-risk score (MULE_HUNTER-style 2-hop fraud density over the
+   // loan_fund_flow graph). Emits a deduped high_mule_risk signal the first time a
+   // borrower crosses the threshold. Tolerates the RPC being absent (prototype not
+   // yet applied) so it can never break the wallet/IP/face/convergence signals.
+   const { data: muleData, error: muleError } = await supabase.rpc('scan_mule_risk', {
+      min_score: typeof body.muleMinScore === 'number' ? body.muleMinScore : 60,
+      fast_offramp_hours: typeof body.fastOfframpHours === 'number' ? body.fastOfframpHours : 24
+   });
+   if (muleError) {
+      console.error('[fraud-signal-scan] mule-risk scan failed (RPC may not be deployed yet):', muleError.message);
+   }
+
    const signals = [
       ...(((data?.signals ?? []) as FraudSignal[]) ?? []),
       ...(((faceData?.signals ?? []) as FraudSignal[]) ?? []),
-      ...(((payoutData?.signals ?? []) as FraudSignal[]) ?? [])
+      ...(((payoutData?.signals ?? []) as FraudSignal[]) ?? []),
+      ...(((muleData?.signals ?? []) as FraudSignal[]) ?? [])
    ];
    if (!signals.length) {
       await recordJobRun(supabase, JOB_NAME, { startedAt, ok: true, signalCount: 0, detail: { message: 'no new signals' } });
