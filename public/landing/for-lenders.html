@@ -34,7 +34,7 @@
             </nav>
             <div class="header-actions">
                <a class="button secondary" href="/sign-in">Sign in</a>
-               <a class="button" href="/request-board">Browse requests</a>
+               <a class="button" href="/request-board?tour=1&tourRole=lender">Tour now</a>
                <button class="menu-button" type="button" data-menu-open aria-label="Open menu" aria-haspopup="dialog" aria-expanded="false">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                      <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -57,7 +57,7 @@
             <a href="/about">Our story <span aria-hidden="true">→</span></a>
          </nav>
          <div class="menu-actions">
-            <a class="button" href="/request-board">Browse requests</a><a class="button secondary" href="/sign-in">Sign in</a>
+            <a class="button" href="/request-board?tour=1&tourRole=lender">Tour now</a><a class="button secondary" href="/sign-in">Sign in</a>
          </div>
       </dialog>
 
@@ -660,7 +660,13 @@
       </footer>
       <script type="module" src="/landing/site.js?v=20260717-hero-note-1"></script>
       <!-- Moodeng support chat — Discord-backed live chat widget -->
-      <script src="https://web-iota-sage-38.vercel.app/widget.js" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
+      <script
+         src="https://web-iota-sage-38.vercel.app/widget.js"
+         data-title="Moodeng Support"
+         data-accent="#2563eb"
+         data-greeting-human="Want a Moodeng Credit Account Manager to reach out to you? Send a message and we’ll get back to you."
+         defer
+      ></script>
 
    </body>
 </html>
