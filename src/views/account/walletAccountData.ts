@@ -102,15 +102,20 @@ function buildLoanFallbackActivity(params: {
 
    for (const loan of loans) {
       const belongsToUser = role === 'borrower' ? loan.borrower_user_id === userId : loan.lender_user_id === userId;
-      const loanWallet = normalizeWalletAddress(getLoanWallet(loan, role));
-      if (!belongsToUser || !loanWallet || loanWallet !== normalizedCurrentAddress) continue;
+      if (!belongsToUser) continue;
 
+      // Loans tied to the currently connected wallet can safely assert an in/out direction.
+      // Loans made with a previous wallet still belong in the user's feed, but we show them
+      // as neutral so we never claim the current wallet sent or received those funds.
+      const onCurrentWallet = normalizeWalletAddress(getLoanWallet(loan, role)) === normalizedCurrentAddress;
       const hashes = loan.hash ?? [];
-      if (role === 'borrower' && loan.funded_at && loan.loan_status === 'Lent') {
+
+      if (loan.funded_at && loan.loan_status === 'Lent') {
          rows.push({
             id: `${loan.id}-funded`,
-            kind: 'loan_received',
-            direction: 'in',
+            // Borrower received the funding; lender sent it.
+            kind: role === 'borrower' ? 'loan_received' : 'loan_funded',
+            direction: onCurrentWallet ? (role === 'borrower' ? 'in' : 'out') : 'neutral',
             amount: loan.loan_amount,
             occurredAt: loan.funded_at,
             transactionHash: hashes[0] ?? null,
@@ -119,11 +124,13 @@ function buildLoanFallbackActivity(params: {
          });
       }
 
-      if (role === 'borrower' && loan.repayment_status === 'Paid' && loan.repaid_at) {
+      if (loan.repayment_status === 'Paid' && loan.repaid_at) {
          rows.push({
             id: `${loan.id}-repaid`,
-            kind: 'loan_repaid',
-            direction: 'neutral',
+            // A lender receives the repayment (assertable when it routed to the current
+            // wallet). A borrower's repayment may leave a different wallet, so it stays neutral.
+            kind: role === 'borrower' ? 'loan_repaid' : 'repayment_received',
+            direction: role === 'lender' && onCurrentWallet ? 'in' : 'neutral',
             amount: loan.total_repayment_amount,
             occurredAt: loan.repaid_at,
             transactionHash: hashes.at(-1) ?? null,
