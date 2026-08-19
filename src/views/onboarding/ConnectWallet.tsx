@@ -13,7 +13,7 @@ import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { checkCoinbaseKeysReachability } from '@/lib/coinbaseReachability';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { useCreateInstantWallet, useOpenfort, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
+import { useCreateInstantWallet, useOpenfort } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
@@ -182,10 +182,18 @@ export default function ConnectWallet() {
             setUserInitiatedConnection(true);
             openConnectModal?.();
          }}
+         // Phantom connects through the same RainbowKit modal (live provider discovery +
+         // QR/install), keeping the selected tile so the modal opens in context.
+         onConnectViaModal={() => {
+            setUserInitiatedConnection(true);
+            openConnectModal?.();
+         }}
          isConnecting={status === 'pending'}
-         // Lenders only see the Instant Wallet option when the gate is on — until then the
-         // lender picker is exactly what it was before this project (external wallets only).
-         instantWalletConfigured={openfort.isConfigured && WALLET_FACE_GATE_ENABLED}
+         // Lenders lead with the Instant Wallet wherever Openfort is configured — it replaces
+         // the removed WalletConnect tile as the "no app installed" path. The one-per-person
+         // face check is enforced server-side by openfort-shield-session on mint, so this no
+         // longer needs the build-time gate flag to be on to be safe to show.
+         instantWalletConfigured={openfort.isConfigured}
          onCreateInstantWallet={handleCreateInstantWallet}
          isCreatingInstantWallet={openfort.isConnecting}
          instantWalletError={openfort.error}
@@ -369,6 +377,7 @@ function LenderConnectView({
    onConnect,
    onMarkUserInitiated,
    onOpenOther,
+   onConnectViaModal,
    isPreview,
    isConnecting,
    instantWalletConfigured,
@@ -381,6 +390,7 @@ function LenderConnectView({
    onConnect: (key: WalletConnectorKey) => void;
    onMarkUserInitiated: () => void;
    onOpenOther: () => void;
+   onConnectViaModal: () => void;
    isPreview: boolean;
    isConnecting: boolean;
    instantWalletConfigured: boolean;
@@ -389,9 +399,15 @@ function LenderConnectView({
    instantWalletError: string | null;
 }) {
    const canConnect = Boolean(selectedKey) && !isConnecting;
-   // Base Account keeps its existing direct-connect path; the injected/WalletConnect
-   // wallets go through RainbowKit's WalletButton so the connect never dead-ends.
-   const rainbowKitWalletId = !isPreview && selectedKey && selectedKey !== 'coinbase' ? RAINBOWKIT_WALLET_ID[selectedKey] : null;
+   // Base Account keeps its existing direct-connect path. MetaMask is the default injected
+   // provider (window.ethereum), so RainbowKit's WalletButton resolves it correctly. Phantom
+   // does NOT: RainbowKit resolves each injected wallet's provider once at page load and falls
+   // back to window.ethereum (MetaMask) when phantom.ethereum isn't present yet — so a stale or
+   // absent Phantom silently connected MetaMask instead. Phantom therefore goes through the
+   // RainbowKit connect modal (onConnectViaModal), which rediscovers providers live and shows
+   // the QR / install instructions when Phantom isn't installed.
+   const rainbowKitWalletId = !isPreview && selectedKey === 'metaMask' ? RAINBOWKIT_WALLET_ID.metaMask : null;
+   const connectsViaModal = !isPreview && selectedKey === 'phantom';
 
    const connectButtonRef = useRef<HTMLDivElement>(null);
    // Picking a tile only highlights it — the real Connect button lives below the "Other Wallets"
@@ -557,7 +573,9 @@ function LenderConnectView({
             </button>
 
             <div ref={connectButtonRef} className="flex flex-col gap-md-1 scroll-mt-md-4">
-               {rainbowKitWalletId ? (
+               {connectsViaModal ? (
+                  renderConnectButton(onConnectViaModal, !canConnect)
+               ) : rainbowKitWalletId ? (
                   <WalletButton.Custom wallet={rainbowKitWalletId}>
                      {({ connect, ready }) =>
                         renderConnectButton(() => {
