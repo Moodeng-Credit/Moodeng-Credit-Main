@@ -123,6 +123,10 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             fundingMethod: 'smart_contract' as const,
             txHash,
             borrowerWallet: target.borrowerWallet,
+            // The connected admin wallet fronted the principal and holds the minted Loan Note;
+            // record it as the originator so the loan shows in the funder's history (and can be
+            // resold to a lender later). See admin-fund-loan.
+            funderWallet: address,
             principal: principalNum,
             totalOwed: totalOwedNum,
             dueDate: `${dueDate}T23:59:59.000Z`,
