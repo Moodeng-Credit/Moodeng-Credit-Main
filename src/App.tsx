@@ -434,23 +434,12 @@ export default function App() {
 
             {/* Lender Loan Note purchase (direct link only — not in main nav).
                 Public so logged-out users see the borrower/loan preview; the page itself
-                gates the purchase action behind login + wallet. /help/:loanId aliases it. */}
-            <Route
-               path="/lend/loan/:loanId"
-               element={
-                  <Layout>
-                     <LendLoanPage />
-                  </Layout>
-               }
-            />
-            <Route
-               path="/help/:loanId"
-               element={
-                  <Layout>
-                     <LendLoanPage />
-                  </Layout>
-               }
-            />
+                gates the purchase action behind login + wallet. /help/:loanId aliases it.
+                Bare (no Layout) like the other current-design pages (Repay, Withdraw,
+                LenderPerformance) — it renders its own in-page back header, not the
+                marketing nav/footer. */}
+            <Route path="/lend/loan/:loanId" element={<LendLoanPage />} />
+            <Route path="/help/:loanId" element={<LendLoanPage />} />
             <Route
                path="/lender/supported"
                element={

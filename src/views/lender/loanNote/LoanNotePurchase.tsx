@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Send } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Send } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAccount } from 'wagmi';
@@ -94,16 +94,19 @@ export default function LoanNotePurchase() {
    if (isError || !data) {
       return (
          <div className="min-h-screen bg-md-neutral-200">
-            <div className="mx-auto w-full max-w-[440px] px-md-4 py-16 text-center">
-               <h1 className="text-md-h5 font-semibold text-md-heading">Loan not found</h1>
-               <p className="mt-md-2 text-md-b2 text-md-neutral-700">This support link is invalid or the loan is no longer available.</p>
+            <div className="mx-auto w-full max-w-[440px] px-md-4 py-md-4">
+               <BackHeader onBack={() => navigate(-1)} />
+               <div className="py-16 text-center">
+                  <h1 className="text-md-h5 font-semibold text-md-heading">Loan not found</h1>
+                  <p className="mt-md-2 text-md-b2 text-md-neutral-700">This support link is invalid or the loan is no longer available.</p>
+               </div>
             </div>
          </div>
       );
    }
 
    if (success) {
-      return <SuccessScreen borrowerName={borrowerName} success={success} onViewSupported={() => navigate('/lender/supported')} />;
+      return <SuccessScreen borrowerName={borrowerName} success={success} onBack={() => navigate(-1)} onViewSupported={() => navigate('/lender/supported')} />;
    }
 
    const alreadyOwned = data.ownsLoanNote;
@@ -112,10 +115,20 @@ export default function LoanNotePurchase() {
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="mx-auto w-full max-w-[440px] px-md-4 py-md-4">
-            <div className="flex flex-col gap-md-0">
-               <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-1.12px] text-md-heading">Support {borrowerName}</h1>
-               <p className="text-md-b2 text-[#6d6d6d]">Fund this loan and receive the repayment if {borrowerName} pays back.</p>
-            </div>
+            <header className="flex items-start gap-3">
+               <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-md-pill bg-md-neutral-100 text-md-primary-1200 shadow-md-card transition hover:bg-md-primary-100 focus:outline-none focus:ring-2 focus:ring-md-primary-500"
+                  aria-label="Go back"
+               >
+                  <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+               </button>
+               <div>
+                  <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-1.12px] text-md-heading">Support {borrowerName}</h1>
+                  <p className="mt-1 text-md-b2 text-[#6d6d6d]">Fund this loan and receive the repayment if {borrowerName} pays back.</p>
+               </div>
+            </header>
 
             {/* Request Card — matches the request-board card (rounded-24, amount box, Send CTA) */}
             <div className="relative mt-md-4 flex flex-col gap-4 rounded-[24px] border border-[#f0f0f0] bg-white p-md-4 shadow-[0px_11px_24px_0px_rgba(0,0,0,0.02)]">
@@ -210,6 +223,21 @@ export default function LoanNotePurchase() {
    );
 }
 
+function BackHeader({ onBack, className = '' }: { onBack: () => void; className?: string }) {
+   return (
+      <div className={className}>
+         <button
+            type="button"
+            onClick={onBack}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md-pill bg-md-neutral-100 text-md-primary-1200 shadow-md-card transition hover:bg-md-primary-100 focus:outline-none focus:ring-2 focus:ring-md-primary-500"
+            aria-label="Go back"
+         >
+            <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+         </button>
+      </div>
+   );
+}
+
 function BoxedStat({ label, value, className = '' }: { label: string; value: string; className?: string }) {
    return (
       <div className={`bg-white border border-[#f0f0f0] rounded-[12px] p-3 flex flex-col gap-1 ${className}`}>
@@ -219,11 +247,22 @@ function BoxedStat({ label, value, className = '' }: { label: string; value: str
    );
 }
 
-function SuccessScreen({ borrowerName, success, onViewSupported }: { borrowerName: string; success: BuyResult; onViewSupported: () => void }) {
+function SuccessScreen({
+   borrowerName,
+   success,
+   onBack,
+   onViewSupported
+}: {
+   borrowerName: string;
+   success: BuyResult;
+   onBack: () => void;
+   onViewSupported: () => void;
+}) {
    return (
       <div className="min-h-screen bg-md-neutral-200">
-         <div className="mx-auto flex w-full max-w-[440px] flex-col items-center gap-5 px-md-6 py-12 text-center">
-            <img src="/icons/check-3d.png" alt="" className="size-[104px]" />
+         <div className="mx-auto flex w-full max-w-[440px] flex-col items-center gap-5 px-md-6 py-md-4 text-center">
+            <BackHeader onBack={onBack} className="w-full" />
+            <img src="/icons/check-3d.png" alt="" className="mt-md-3 size-[104px]" />
             <div className="flex flex-col gap-1">
                <h1 className="text-[28px] font-semibold leading-[1.2] tracking-[-1.12px] text-md-heading">Thank you for funding</h1>
                <p className="text-md-b1 font-medium text-[#6d6d6d]">
