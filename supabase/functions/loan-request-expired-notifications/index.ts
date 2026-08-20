@@ -122,7 +122,7 @@ serve(async (req) => {
 
    for (const [borrowerId, borrowerLoans] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
-      if (!borrower?.email && !borrower?.chat_id) {
+      if (!borrower) {
          continue;
       }
 
@@ -133,10 +133,17 @@ serve(async (req) => {
       const pendingLoans = borrowerLoans.filter((loan) => !sentLoanIds.has(loan.id));
 
       for (const loan of pendingLoans) {
-         const delivery = await sendBorrowerLoanNotification('request_expired', loan, borrower, undefined, { telegramEnabled, notifEnabled: (borrower as any).notif_account_activity !== false });
-
-         if (!delivery.emailSent && !delivery.telegramSent) {
-            continue;
+         // Record the notice regardless of whether email/Telegram delivery actually
+         // succeeded (or whether the borrower has either channel configured at all).
+         // The frontend's in-app toast treats this row as "borrower already notified"
+         // for cross-device suppression — leaving it unwritten on delivery failure
+         // meant borrowers with no channel, or a flaky send, saw the expired-request
+         // toast resurface on every new device/session forever.
+         if (borrower.email || borrower.chat_id) {
+            await sendBorrowerLoanNotification('request_expired', loan, borrower, undefined, {
+               telegramEnabled,
+               notifEnabled: (borrower as any).notif_account_activity !== false
+            });
          }
 
          await recordRequestExpiredNotification(supabase, borrower.id, loan.id);
