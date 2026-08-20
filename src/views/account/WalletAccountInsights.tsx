@@ -1,18 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-   AlertTriangle,
-   ArrowDownLeft,
-   ArrowUpRight,
-   CheckCircle2,
-   ChevronDown,
-   ChevronRight,
-   ExternalLink,
-   History,
-   RefreshCw,
-   WalletCards
-} from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronRight, ExternalLink, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { erc20Abi, formatUnits } from 'viem';
 import { useReadContract } from 'wagmi';
@@ -240,8 +229,8 @@ async function fetchWalletAccountData(userId: string, role: WalletAccountRole) {
 function WalletSection({ label, children }: { label: string; children: React.ReactNode }) {
    return (
       <section>
-         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">{label}</h2>
-         <div className="divide-y divide-md-primary-100 overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-neutral-100 shadow-md-card">
+         <h2 className="mb-md-2 px-1 text-md-h5 font-semibold text-md-heading">{label}</h2>
+         <div className="divide-y divide-md-neutral-400 overflow-hidden rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 shadow-md-card">
             {children}
          </div>
       </section>
@@ -278,9 +267,7 @@ function BalanceRow({ address, preview }: { address: string; preview: boolean })
             <div className="flex flex-col gap-md-2 min-[350px]:flex-row min-[350px]:items-start min-[350px]:justify-between min-[350px]:gap-md-3">
                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-md-primary-100">
-                        <span className="text-md-b2 font-bold text-md-primary-1200">$</span>
-                     </span>
+                     <img src="/icons/balance-coin-3d.png" alt="" className="size-9 shrink-0 object-contain" />
                      <div>
                         <p className="text-md-b2 font-semibold text-md-neutral-1200">USDC on Base</p>
                         {isLoading && !preview ? (
@@ -288,7 +275,7 @@ function BalanceRow({ address, preview }: { address: string; preview: boolean })
                         ) : showUnavailable ? (
                            <p className="mt-1 text-md-h5 font-semibold text-md-heading">Balance unavailable</p>
                         ) : (
-                           <p className="mt-0.5 text-[28px] font-semibold leading-8 tracking-[-0.03em] text-md-heading">
+                           <p className="mt-0.5 text-md-h3 font-semibold text-md-heading">
                               {displayBalance} <span className="text-md-b2 font-semibold text-md-neutral-1000">USDC</span>
                            </p>
                         )}
@@ -330,24 +317,14 @@ function BalanceRow({ address, preview }: { address: string; preview: boolean })
 }
 
 function ActivityIcon({ direction }: { direction: WalletActivityItem['direction'] }) {
-   const tone =
+   // 3D icons carry their own tile/badge background, so they render bare (no wrapper).
+   const src =
       direction === 'in'
-         ? 'bg-md-green-100 text-md-green-900'
+         ? '/icons/tx-received-3d.png'
          : direction === 'out'
-           ? 'bg-md-primary-100 text-md-primary-1200'
-           : 'bg-md-neutral-300 text-md-neutral-1200';
-
-   return (
-      <span className={`flex size-9 shrink-0 items-center justify-center rounded-full ${tone}`}>
-         {direction === 'in' ? (
-            <ArrowDownLeft className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
-         ) : direction === 'out' ? (
-            <ArrowUpRight className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
-         ) : (
-            <CheckCircle2 className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
-         )}
-      </span>
-   );
+           ? '/icons/tx-sent-3d.png'
+           : '/icons/verified-check-3d.png';
+   return <img src={src} alt="" className="size-9 shrink-0 object-contain" />;
 }
 
 function ActivityRow({ item }: { item: WalletActivityItem }) {
@@ -390,14 +367,16 @@ function HistoryEventRow({ event, isCurrent }: { event: WalletConnectionEvent; i
 
    return (
       <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
-         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-md-neutral-300 text-md-neutral-1200">
-            <WalletCards className="size-[18px]" strokeWidth={1.8} aria-hidden="true" />
-         </span>
+         <img
+            src={isCurrent ? '/icons/wallet-3d.png' : '/icons/wallet-previous-3d.png'}
+            alt=""
+            className="size-9 shrink-0 object-contain"
+         />
          <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-1.5">
                <p className="truncate text-md-b2 font-semibold text-md-heading">{title}</p>
                {isCurrent ? (
-                  <span className="shrink-0 rounded-md-pill bg-md-green-100 px-2 py-0.5 text-[10px] font-semibold text-md-green-900">
+                  <span className="shrink-0 rounded-md-pill bg-md-green-100 px-2 py-0.5 text-md-b4 font-semibold text-md-green-900">
                      Current
                   </span>
                ) : null}
@@ -620,9 +599,7 @@ export default function WalletAccountInsights({ userId, address, role, preview =
                         aria-expanded={showHistory}
                         className="flex min-h-[68px] w-full items-center gap-md-2 px-md-3 py-md-2 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                      >
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-md-neutral-300 text-md-neutral-1200">
-                           <History className="size-[18px]" strokeWidth={1.9} aria-hidden="true" />
-                        </span>
+                        <img src="/icons/wallet-history-3d.png" alt="" className="size-9 shrink-0 object-contain" />
                         <span className="min-w-0 flex-1">
                            <span className="block text-md-b1 font-semibold text-md-heading">
                               {walletCount} {walletCount === 1 ? 'wallet' : 'wallets'} used

@@ -3,13 +3,11 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import {
    AlertCircle,
    ArrowLeft,
-   Bell,
    Camera,
    CheckCircle2,
    ChevronRight,
    Clock3,
    Languages,
-   ShieldCheck,
    WalletCards
 } from 'lucide-react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
@@ -126,43 +124,46 @@ function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () =>
 
 // ─── Reusable field ───
 
-function ReadOnlyField({
-   label,
+// Detail-page field row: title + current value + inline action, designed to sit
+// inside a SettingsGroup card (same row pattern as the Wallet / Security pages).
+export function SettingsFieldRow({
+   title,
    value,
    actionLabel,
    onAction,
-   disabled = false
+   leading,
+   id
 }: {
-   label: string;
+   title: string;
    value: string;
    actionLabel?: string;
    onAction?: () => void;
-   disabled?: boolean;
+   leading?: React.ReactNode;
+   id?: string;
 }) {
    return (
-      <div className={`flex flex-col gap-md-1 w-full ${disabled ? 'opacity-50' : ''}`}>
-         <p className={`text-md-b2 font-semibold ${disabled ? 'text-md-neutral-700' : 'text-md-heading'}`}>{label}</p>
-         <div
-            className={`flex items-center justify-between rounded-md-input border px-md-3 py-md-2 overflow-hidden ${
-               disabled
-                  ? 'bg-md-neutral-200 border-md-neutral-400'
-                  : 'bg-md-neutral-100 border-md-neutral-600 shadow-md-card'
-            }`}
-         >
-            <span className={`text-md-b1 truncate ${disabled ? 'text-md-neutral-700' : 'text-md-neutral-1200'}`}>{value}</span>
-            {actionLabel && onAction ? (
-               <button type="button" onClick={onAction} className="text-md-b1 text-md-primary-900 shrink-0 ml-2">
-                  {actionLabel}
-               </button>
-            ) : null}
+      <div id={id} className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
+         {leading ? <span className="shrink-0">{leading}</span> : null}
+         <div className="min-w-0 flex-1">
+            <p className="text-md-b1 font-semibold text-md-heading">{title}</p>
+            <p className="text-md-b2 font-medium text-md-neutral-1200 truncate">{value}</p>
          </div>
+         {actionLabel && onAction ? (
+            <button
+               type="button"
+               onClick={onAction}
+               className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+            >
+               {actionLabel}
+            </button>
+         ) : null}
       </div>
    );
 }
 
 // ─── Toggle ───
 
-function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
    return (
       <button
          type="button"
@@ -171,12 +172,14 @@ function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: 
          aria-label={label}
          onClick={() => onChange(!checked)}
          className={`relative h-6 w-[42px] shrink-0 rounded-md-pill border transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-            checked ? 'border-md-primary-900 bg-md-primary-900' : 'border-md-neutral-600 bg-md-neutral-300'
+            checked ? 'border-md-primary-100 bg-md-primary-900' : 'border-md-primary-300 bg-white'
          }`}
       >
+         {/* Figma inverts the knob against the track: pale lavender on the purple
+             "on" track, brand purple on the white "off" track. */}
          <span
-            className={`absolute left-[2px] top-[2px] h-[18px] w-[18px] rounded-full shadow-sm transition-transform duration-200 ${
-               checked ? 'translate-x-[18px] bg-white' : 'translate-x-0 bg-md-neutral-800'
+            className={`absolute left-[2px] top-[2px] h-[18px] w-[18px] rounded-full transition-transform duration-200 ${
+               checked ? 'translate-x-[18px] bg-md-primary-100' : 'translate-x-0 bg-md-primary-900'
             }`}
          />
       </button>
@@ -262,13 +265,25 @@ function VerificationStateIcon({ state, className = 'size-4' }: { state: Verific
    return <AlertCircle className={`${className} text-md-red-500`} strokeWidth={2.2} aria-hidden="true" />;
 }
 
-export function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
+export function SettingsGroup({
+   label,
+   description,
+   children
+}: {
+   label: string;
+   description?: string;
+   children: React.ReactNode;
+}) {
    return (
       <section>
-         <h2 className="mb-md-1 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">{label}</h2>
-         {/* Brand-tinted border + card shadow to match the platform's panel language
-             (Dashboard/RequestBoard/Repay), instead of the old flat grey list. */}
-         <div className="divide-y divide-md-primary-100 overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-neutral-100 shadow-md-card">
+         {/* Section heading per the Figma settings spec (md-h5 in the dark heading
+             colour, optional grey supporting copy beneath) — the same treatment
+             Dashboard/RequestBoard/TransactionHistory/Support already use. */}
+         <div className="mb-md-2 flex flex-col gap-md-0 px-1">
+            <h2 className="text-md-h5 font-semibold text-md-heading">{label}</h2>
+            {description ? <p className="text-md-b2 font-medium text-md-neutral-700">{description}</p> : null}
+         </div>
+         <div className="divide-y divide-md-neutral-400 overflow-hidden rounded-md-lg border border-md-neutral-600 bg-md-neutral-100 shadow-md-card">
             {children}
          </div>
       </section>
@@ -588,7 +603,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
          <div
-            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-[17px] items-center"
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
             onClick={(e) => e.stopPropagation()}
          >
             {step === 'enterEmail' ? (
@@ -626,7 +641,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                      </div>
                   </div>
                   {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
-                  <div className="flex flex-col gap-[17px] w-full">
+                  <div className="flex flex-col gap-md-3 w-full">
                      <button
                         type="button"
                         disabled={isSubmitting}
@@ -683,7 +698,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                      </button>
                   </div>
                   {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
-                  <div className="flex flex-col gap-[17px] w-full">
+                  <div className="flex flex-col gap-md-3 w-full">
                      <button
                         type="button"
                         disabled={isSubmitting}
@@ -775,7 +790,7 @@ function ChangeDisplayNameModal({
    return (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
          <div
-            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-[17px] items-center"
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
             onClick={(e) => e.stopPropagation()}
          >
             <div className="flex flex-col gap-md-5 items-center w-full">
@@ -800,7 +815,7 @@ function ChangeDisplayNameModal({
                </div>
             </div>
             {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
-            <div className="flex flex-col gap-[17px] w-full">
+            <div className="flex flex-col gap-md-3 w-full">
                <button
                   type="button"
                   disabled={isSubmitting}
@@ -1264,7 +1279,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                     <div className="flex flex-wrap items-center gap-1">
                                        <span className="text-md-b2 font-semibold text-md-heading">{option.name}</span>
                                        {option.tag ? (
-                                          <span className={`text-[9px] font-semibold px-1 rounded ${option.tag.bgClass} ${option.tag.textClass}`}>
+                                          <span className={`text-md-b4 font-semibold px-1 rounded-md-sm ${option.tag.bgClass} ${option.tag.textClass}`}>
                                              {option.tag.label}
                                           </span>
                                        ) : null}
@@ -1694,6 +1709,9 @@ export default function AccountSettings() {
       // rows). Openfort resolves to 'openfort' → labelled "Instant Wallet", never forced to Base.
       assumeBaseAccount: isBorrower && hasWallet && !baseWalletLock.provider
    });
+   // Show the Base logo whenever the wallet resolves to a Base Account — the icon must
+   // track the label (not the borrower-only lock), so lenders on Base see it too.
+   const isBaseAccountWallet = hasWallet && walletLabel === 'Base Account';
    const verificationState = getVerificationUiState(user);
    // Lenders don't do identity verification, so the whole "verification" story is hidden for
    // them — it only confused lenders who thought they had to verify before they could lend.
@@ -1778,10 +1796,15 @@ export default function AccountSettings() {
                >
                   <ArrowLeft className="size-6 text-md-heading" strokeWidth={2} aria-hidden="true" />
                </button>
+               {/* Top-level title is md-h3 per the Figma spec (28px) and the app's
+                   page-title standard; sub-page titles stay md-h6 so longer names
+                   ("Security & verification") don't crowd the back button on mobile. */}
                <h1
                   ref={detailHeadingRef}
                   tabIndex={activeSection ? -1 : undefined}
-                  className="truncate text-md-h6 font-semibold text-md-heading outline-none"
+                  className={`truncate font-semibold text-md-heading outline-none ${
+                     activeSection ? 'text-md-h6' : 'text-md-h3'
+                  }`}
                >
                   {activeSection
                      ? activeSection === 'security'
@@ -1804,7 +1827,7 @@ export default function AccountSettings() {
                      <SettingsRow
                         title={securitySectionTitle}
                         summary={sectionSummaries.security}
-                        icon={<ShieldCheck size={19} strokeWidth={1.8} />}
+                        icon={<img src="/icons/security-lock-3d.png" alt="" className="size-7 object-contain" />}
                         summaryIcon={showIdentityVerification ? <VerificationStateIcon state={verificationState} /> : undefined}
                         onClick={() => openSettingsSection('security')}
                      />
@@ -1815,7 +1838,7 @@ export default function AccountSettings() {
                         title="Wallet"
                         summary={sectionSummaries.wallet}
                         icon={
-                           borrowerHasConfirmedBaseWallet && !baseWalletLock.isConfirmedOpenfort ? (
+                           isBaseAccountWallet ? (
                               <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
                            ) : (
                               <WalletCards size={20} strokeWidth={1.8} />
@@ -1829,7 +1852,7 @@ export default function AccountSettings() {
                      <SettingsRow
                         title="Notifications"
                         summary={sectionSummaries.notifications}
-                        icon={<Bell size={19} strokeWidth={1.8} />}
+                        icon={<img src="/icons/notification-bell-3d.png" alt="" className="size-7 object-contain" />}
                         onClick={() => openSettingsSection('notifications')}
                      />
                      <SettingsRow
@@ -1853,48 +1876,45 @@ export default function AccountSettings() {
                   </p>
 
                   {activeSection === 'profile' ? (
-                  <div className="flex flex-col gap-3">
-                     <div
-                        id="avatar-section"
-                        className="mb-1 flex items-center gap-md-2 rounded-md-lg border border-md-primary-300 bg-md-neutral-100 p-md-3 shadow-md-card"
-                     >
-                        <EditableAvatar size={52} onClick={() => setShowAvatarModal(true)} />
-                        <div className="min-w-0 flex-1">
-                           <p className="text-md-b2 font-semibold text-md-heading">Profile photo</p>
-                           <p className="text-md-b2 font-medium text-md-neutral-1200">Helps people recognize you</p>
-                        </div>
-                        <button
-                           type="button"
-                           onClick={() => setShowAvatarModal(true)}
-                           className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
-                        >
-                           Change
-                        </button>
+                     <div className="flex flex-col gap-md-4">
+                        <SettingsGroup label="Profile">
+                           <SettingsFieldRow
+                              id="avatar-section"
+                              leading={<EditableAvatar size={40} onClick={() => setShowAvatarModal(true)} />}
+                              title="Profile photo"
+                              value="Helps people recognize you"
+                              actionLabel="Change"
+                              onAction={() => setShowAvatarModal(true)}
+                           />
+                           <SettingsFieldRow
+                              id="display-name-section"
+                              title="Display name"
+                              value={currentDisplayName || 'Not set'}
+                              actionLabel="Change"
+                              onAction={() => setShowNameModal(true)}
+                           />
+                        </SettingsGroup>
+
+                        <SettingsGroup label="Contact" description={emailHelpCopy}>
+                           <SettingsFieldRow
+                              title="Email address"
+                              value={emailFieldValue}
+                              actionLabel={canEditEmail ? emailActionLabel : undefined}
+                              onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
+                           />
+                        </SettingsGroup>
+
+                        {isBorrower ? (
+                           <SettingsGroup label="About you">
+                              <SettingsFieldRow
+                                 title="Bio"
+                                 value="Work, income, and what you need help with"
+                                 actionLabel="Change"
+                                 onAction={() => setShowBioInfoModal(true)}
+                              />
+                           </SettingsGroup>
+                        ) : null}
                      </div>
-                     <div id="display-name-section">
-                        <ReadOnlyField
-                           label="Display name"
-                           value={currentDisplayName}
-                           actionLabel="Change"
-                           onAction={() => setShowNameModal(true)}
-                        />
-                     </div>
-                     <ReadOnlyField
-                        label="Email address"
-                        value={emailFieldValue}
-                        actionLabel={emailActionLabel}
-                        onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
-                     />
-                     <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">{emailHelpCopy}</p>
-                     {isBorrower ? (
-                        <ReadOnlyField
-                           label="Bio"
-                           value="Work, income, and what you need help with"
-                           actionLabel="Change"
-                           onAction={() => setShowBioInfoModal(true)}
-                        />
-                     ) : null}
-                  </div>
                   ) : null}
 
                {/* Preferences (Appearance + Language) */}
@@ -1914,11 +1934,9 @@ export default function AccountSettings() {
                            </div>
                         </SettingsGroup>
 
-                        <div className="flex flex-col gap-md-1">
-                           <p className="px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-1000">
-                              {t('language.label')}
-                           </p>
-                           <p className="px-1 text-md-b2 font-medium text-md-neutral-1200">{t('language.settingsDescription')}</p>
+                        <div className="flex flex-col gap-md-0">
+                           <h2 className="px-1 text-md-h5 font-semibold text-md-heading">{t('language.label')}</h2>
+                           <p className="mb-md-1 px-1 text-md-b2 font-medium text-md-neutral-700">{t('language.settingsDescription')}</p>
                            <LanguageSwitcher tone="light" variant="full" />
                         </div>
                      </div>
@@ -1998,7 +2016,7 @@ export default function AccountSettings() {
                         <SettingsGroup label="Connected wallet">
                            <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
                               <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100">
-                                 {hasWallet && walletLabel === 'Base Account' ? (
+                                 {isBaseAccountWallet ? (
                                     <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
                                  ) : (
                                     <WalletCards className="size-5 text-md-neutral-1200" strokeWidth={1.8} aria-hidden="true" />
@@ -2088,7 +2106,7 @@ export default function AccountSettings() {
                               <div className="flex min-h-[52px] items-center justify-between gap-md-2 px-md-3 py-md-1">
                                  <span className="text-md-b2 font-medium text-md-neutral-1200">Network</span>
                                  <span className="flex items-center gap-1.5 text-md-b2 font-semibold text-md-heading">
-                                    <img src="/icons/base-account.svg" alt="" className="size-4 rounded-[4px]" />
+                                    <img src="/icons/base-account.svg" alt="" className="size-4 rounded-md-sm" />
                                     {chain?.name || 'Base'}
                                  </span>
                               </div>
@@ -2096,11 +2114,7 @@ export default function AccountSettings() {
 
                            {borrowerHasConfirmedBaseWallet ? (
                               <div className="flex items-start gap-md-2 px-md-3 py-md-2">
-                                 <CheckCircle2
-                                    className="mt-0.5 size-5 shrink-0 text-md-green-900"
-                                    strokeWidth={2.2}
-                                    aria-hidden="true"
-                                 />
+                                 <img src="/icons/verified-check-3d.png" alt="" className="mt-0.5 size-6 shrink-0 object-contain" />
                                  <div className="min-w-0 flex-1">
                                     <p className="text-md-b2 font-semibold text-md-heading">{walletLabel} confirmed</p>
                                     <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">

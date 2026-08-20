@@ -1,6 +1,6 @@
-import { Bell, ShieldCheck, User, WalletCards } from 'lucide-react';
+import { User } from 'lucide-react';
 
-import { SettingsGroup, SettingsRow } from '@/views/account/AccountSettings';
+import { SettingsFieldRow, SettingsGroup, SettingsRow, Toggle } from '@/views/account/AccountSettings';
 
 // DEV-only harness so the Account Settings card/row styling can be reviewed and screenshotted
 // without a logged-in account (AccountSettings itself reads live Redux/auth state). Mounted at
@@ -10,19 +10,19 @@ export default function SettingsStylePreview() {
    return (
       <div className="min-h-screen bg-md-neutral-200">
          <div className="mx-auto flex max-w-[440px] flex-col gap-6 px-md-4 py-md-5">
-            <h1 className="text-md-h6 font-semibold text-md-heading">Account settings</h1>
+            <h1 className="text-md-h3 font-semibold text-md-heading">Account settings</h1>
 
             <SettingsGroup label="Account">
                <SettingsRow
                   title="Personal details"
                   summary="Jamie Cruz · jamie@example.com"
-                  icon={<User size={19} strokeWidth={1.8} />}
+                  icon={<img src="/icons/personal-details-card-3d.png" alt="" className="size-7 object-contain" />}
                   onClick={noop}
                />
                <SettingsRow
                   title="Security & verification"
                   summary="Identity verified"
-                  icon={<ShieldCheck size={19} strokeWidth={1.8} />}
+                  icon={<img src="/icons/security-lock-3d.png" alt="" className="size-7 object-contain" />}
                   onClick={noop}
                />
             </SettingsGroup>
@@ -31,45 +31,76 @@ export default function SettingsStylePreview() {
                <SettingsRow
                   title="Wallet"
                   summary="Base Account · 0x95B6…d431"
-                  icon={<WalletCards size={19} strokeWidth={1.8} />}
+                  icon={<img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />}
                   onClick={noop}
                />
             </SettingsGroup>
 
-            <SettingsGroup label="Notifications">
+            <SettingsGroup
+               label="Notifications"
+               description="Get notified of activity going on with your account. Notifications will be sent to the email that you have provided."
+            >
                <SettingsRow
                   title="Notifications"
                   summary="2 of 3 preferences enabled"
-                  icon={<Bell size={19} strokeWidth={1.8} />}
+                  icon={<img src="/icons/notification-bell-3d.png" alt="" className="size-7 object-contain" />}
                   onClick={noop}
                />
-            </SettingsGroup>
-
-            {/* Detail-page card treatment (Profile photo card + a Connected-wallet row),
-                mirroring the swept inline cards inside the real detail sub-pages. */}
-            <p className="mt-2 px-1 text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">
-               Detail-page cards
-            </p>
-            <div className="mb-1 flex items-center gap-md-2 rounded-md-lg border border-md-primary-300 bg-md-neutral-100 p-md-3 shadow-md-card">
-               <span className="flex size-[52px] shrink-0 items-center justify-center rounded-full bg-md-primary-100 text-md-primary-1200">
-                  <User size={22} strokeWidth={1.8} />
-               </span>
-               <div className="min-w-0 flex-1">
-                  <p className="text-md-b2 font-semibold text-md-heading">Profile photo</p>
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">Helps people recognize you</p>
-               </div>
-            </div>
-            <div className="overflow-hidden rounded-md-lg border border-md-primary-300 bg-md-neutral-100 shadow-md-card">
-               <div className="flex min-h-[72px] items-center gap-md-2 px-md-3 py-md-2">
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100 text-md-primary-1200">
-                     <WalletCards size={20} strokeWidth={1.8} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                     <p className="text-md-b1 font-semibold text-md-heading">Base Account</p>
-                     <p className="text-md-b2 font-medium text-md-neutral-1200">0x95B6…d431</p>
+               {/* Both toggle states side by side so the Figma inverted-knob
+                   treatment can be eyeballed in one screenshot. */}
+               <div className="flex flex-col gap-md-2 px-md-3 py-md-2">
+                  <div className="flex items-center justify-between gap-md-2">
+                     <div className="min-w-0">
+                        <p className="text-md-b2 font-semibold text-md-heading">Account Activity</p>
+                        <p className="text-md-b3 font-medium text-md-neutral-1400">
+                           Get important notifications about you or activity you&rsquo;ve missed
+                        </p>
+                     </div>
+                     <Toggle checked onChange={noop} label="Account activity (on)" />
+                  </div>
+                  <div className="flex items-center justify-between gap-md-2">
+                     <div className="min-w-0">
+                        <p className="text-md-b2 font-semibold text-md-heading">Moodeng Blogs</p>
+                        <p className="text-md-b3 font-medium text-md-neutral-1400">
+                           Get updated with our latest news, updates and blogs
+                        </p>
+                     </div>
+                     <Toggle checked={false} onChange={noop} label="Moodeng blogs (off)" />
                   </div>
                </div>
-            </div>
+            </SettingsGroup>
+
+            {/* A detail sub-page ("Personal details"), grouped into labeled card
+                sections like the Wallet page — the structure the real sub-pages use. */}
+            <p className="mt-4 px-1 text-md-h3 font-semibold text-md-heading">Personal details</p>
+            <p className="-mt-4 px-1 text-md-b2 font-medium leading-5 text-md-neutral-1200">
+               Keep your profile and contact details up to date.
+            </p>
+            <SettingsGroup label="Profile">
+               <SettingsFieldRow
+                  leading={
+                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-md-primary-100 text-md-primary-1200">
+                        <User size={20} strokeWidth={1.8} />
+                     </span>
+                  }
+                  title="Profile photo"
+                  value="Helps people recognize you"
+                  actionLabel="Change"
+                  onAction={noop}
+               />
+               <SettingsFieldRow title="Display name" value="Jamie Cruz" actionLabel="Change" onAction={noop} />
+            </SettingsGroup>
+            <SettingsGroup label="Contact" description="Used for account recovery and important alerts.">
+               <SettingsFieldRow title="Email address" value="jamie@example.com" actionLabel="Change" onAction={noop} />
+            </SettingsGroup>
+            <SettingsGroup label="About you">
+               <SettingsFieldRow
+                  title="Bio"
+                  value="Work, income, and what you need help with"
+                  actionLabel="Change"
+                  onAction={noop}
+               />
+            </SettingsGroup>
          </div>
       </div>
    );

@@ -60,7 +60,7 @@ export default function ExportInstantWalletKey() {
          {stage !== 'idle' ? (
             <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 px-md-3 pb-md-4 sm:items-center" onClick={close}>
                <div
-                  className="w-full max-w-[440px] rounded-md-xl bg-md-neutral-100 p-md-4 shadow-md-card"
+                  className="w-full max-w-modal rounded-md-lg bg-white p-md-4 shadow-md-card"
                   onClick={(e) => e.stopPropagation()}
                >
                   {stage === 'revealed' && privateKey ? (
