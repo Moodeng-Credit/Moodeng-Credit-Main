@@ -34,6 +34,9 @@ declare
 begin
   with
   -- Edges: borrower ↔ terminal destination (drop rows with no borrower).
+  -- Mirrors scan_payout_convergence's false-positive filters: skip TEST-account
+  -- borrowers and ignore-list destinations (DEX routers/pools/known contracts),
+  -- so the score never flags a real customer for hitting a shared DeFi contract.
   edges as (
     select f.borrower_user_id as uid,
            f.terminal_destination as dest,
@@ -42,7 +45,10 @@ begin
            f.funded_at,
            f.first_out_at
     from public.loan_fund_flow f
+    join public.users bu on bu.id = f.borrower_user_id
     where f.borrower_user_id is not null
+      and not coalesce(bu.is_test, false)
+      and f.terminal_destination not in (select address from public.flow_ignore_destinations)
   ),
   -- Seed set 1: banned / blocked borrowers (known-bad nodes).
   banned as (
