@@ -4,9 +4,11 @@
 //   - Telegram: routes through deliverSecurityAlert (source: 'kyc'), the SAME ops group every
 //     other KYC/fraud alert already reaches (fraud_alert_chat_id, seeded from the KYC group) —
 //     no new Telegram configuration needed.
-//   - Discord: a dedicated KYC channel webhook, separate from the existing security/login
-//     channels (DISCORD_SECURITY_WEBHOOK_URL, DISCORD_LOGIN_WEBHOOK_URL) because this is a
-//     face-identity verdict, not a device/network signal — set DISCORD_KYC_WEBHOOK_URL to enable.
+//   - Discord: DISCORD_KYC_WEBHOOK_URL for a dedicated KYC channel, since this is a
+//     face-identity verdict rather than the device/network signals the existing channels carry.
+//     Falls back to DISCORD_SECURITY_WEBHOOK_URL when that isn't set, so the alert lands
+//     SOMEWHERE a human looks instead of silently going nowhere — point it at its own channel
+//     later by setting the KYC secret.
 //
 // Both are best-effort: a delivery failure must never block the refusal itself, which is already
 // persisted in cashout_face_checks + fraud_signal_alerts before this is called.
@@ -44,7 +46,7 @@ const formatMismatchBody = (d: CashoutFaceMismatchDetails): string => {
 };
 
 const postDiscordKycAlert = async (title: string, body: string): Promise<void> => {
-   const webhook = Deno.env.get('DISCORD_KYC_WEBHOOK_URL');
+   const webhook = Deno.env.get('DISCORD_KYC_WEBHOOK_URL') || Deno.env.get('DISCORD_SECURITY_WEBHOOK_URL');
    if (!webhook) return;
    try {
       await fetch(webhook, {
