@@ -40,7 +40,13 @@ export function createSupabaseBrowserClient() {
       throw new Error(supabaseBrowserConfigErrorMessage());
    }
    const { url, key } = readSupabaseBrowserEnv();
-   return createBrowserClient(url, key);
+   // `experimental.passkey` is required for `auth.registerPasskey()`,
+   // `auth.signInWithPasskey()` and the `auth.passkey.*` namespace — without it those
+   // methods throw at call time. Passkeys here are an alternative *sign-in* method, not
+   // a second factor; see useMfa.ts for the (separate, aal2) TOTP 2FA path.
+   return createBrowserClient(url, key, {
+      auth: { experimental: { passkey: true } }
+   });
 }
 
 // Singleton instance for client components
