@@ -190,7 +190,7 @@ export default function EditBioInfoModal({ isOpen, onClose, user }: EditBioInfoM
                            }}
                            className={`rounded-md-pill px-4 py-1.5 text-md-b2 font-semibold transition ${
                               (opt === 'Yes') === hasOtherIncome
-                                 ? 'bg-md-primary-1200 text-white'
+                                 ? 'bg-md-primary-1200 text-md-neutral-100'
                                  : 'border border-md-neutral-400 text-md-neutral-800'
                            }`}
                         >
