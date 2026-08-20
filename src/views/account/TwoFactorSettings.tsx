@@ -4,6 +4,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useMfa } from '@/hooks/useMfa';
+import { usePasskeys } from '@/hooks/usePasskeys';
 
 import { SettingsGroup } from '@/views/account/AccountSettings';
 
@@ -177,11 +178,13 @@ function EnrollTotpModal({ isOpen, onClose, onEnrolled }: { isOpen: boolean; onC
 function RemoveFactorModal({
    isOpen,
    factorLabel,
+   description,
    onClose,
    onConfirm
 }: {
    isOpen: boolean;
    factorLabel: string;
+   description: string;
    onClose: () => void;
    onConfirm: () => Promise<void>;
 }) {
@@ -217,9 +220,7 @@ function RemoveFactorModal({
          >
             <div className="flex flex-col gap-2 items-center text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Remove {factorLabel}?</h2>
-               <p className="text-md-b1 text-md-neutral-1200">
-                  You won't be asked for this the next time you sign in. You can set it up again anytime.
-               </p>
+               <p className="text-md-b1 text-md-neutral-1200">{description}</p>
             </div>
             {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
             <div className="flex flex-col gap-md-3 w-full">
@@ -247,37 +248,60 @@ function RemoveFactorModal({
 
 // ─── Section ───
 
-type PendingRemoval = { factorId: string; label: string } | null;
+// Removal routes to a different API per kind: TOTP factors are unenrolled through
+// `auth.mfa`, passkeys deleted through `auth.passkey` — they are separate systems here.
+type PendingRemoval = { kind: 'totp' | 'passkey'; id: string; label: string } | null;
+
+const REMOVAL_COPY: Record<'totp' | 'passkey', string> = {
+   totp: "You won't be asked for this the next time you sign in. You can set it up again anytime.",
+   passkey: 'This removes the passkey from your account. Your password still works, and you can set one up again anytime.'
+};
 
 export default function TwoFactorSettings() {
-   const { totpFactor, passkeyFactor, isLoading, enrollPasskey, removeFactor, refresh } = useMfa();
+   const { totpFactor, isLoading, removeFactor, refresh } = useMfa();
+   const {
+      passkeys,
+      isSupported: isPasskeySupported,
+      isLoading: isLoadingPasskeys,
+      registerPasskey,
+      removeAllPasskeys
+   } = usePasskeys();
+   const hasPasskey = passkeys.length > 0;
    const { showToast } = useToast();
 
    const [showTotpModal, setShowTotpModal] = useState(false);
-   const [isEnrollingPasskey, setIsEnrollingPasskey] = useState(false);
+   const [isRegisteringPasskey, setIsRegisteringPasskey] = useState(false);
    const [passkeyError, setPasskeyError] = useState('');
    const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval>(null);
 
-   const handleEnrollPasskey = async () => {
+   const handleRegisterPasskey = async () => {
       setPasskeyError('');
-      setIsEnrollingPasskey(true);
+      setIsRegisteringPasskey(true);
       try {
-         await enrollPasskey('Passkey');
-         showToast(TOAST_TYPES.SUCCESS, 'Passkey enabled', "You'll be asked for it the next time you sign in.");
-      } catch (enrollError) {
-         setPasskeyError(enrollError instanceof Error ? enrollError.message : 'Failed to set up passkey');
+         await registerPasskey();
+         showToast(TOAST_TYPES.SUCCESS, 'Passkey added', 'You can now sign in with it instead of your password.');
+      } catch (registerError) {
+         // A user dismissing the Face ID / Touch ID sheet is a cancellation, not a fault —
+         // surfacing the raw WebAuthn "NotAllowedError" would read as a bug to them.
+         const message = registerError instanceof Error ? registerError.message : 'Failed to add passkey';
+         setPasskeyError(/notallowed|abort|cancel/i.test(message) ? '' : message);
       } finally {
-         setIsEnrollingPasskey(false);
+         setIsRegisteringPasskey(false);
       }
    };
 
    const handleRemove = async () => {
       if (!pendingRemoval) return;
-      await removeFactor(pendingRemoval.factorId);
-      showToast(TOAST_TYPES.SUCCESS, `${pendingRemoval.label} removed`, 'It will no longer be asked for at sign-in.');
+      if (pendingRemoval.kind === 'totp') {
+         await removeFactor(pendingRemoval.id);
+         showToast(TOAST_TYPES.SUCCESS, `${pendingRemoval.label} removed`, 'It will no longer be asked for at sign-in.');
+         return;
+      }
+      await removeAllPasskeys();
+      showToast(TOAST_TYPES.SUCCESS, 'Passkey removed', 'You can set one up again anytime.');
    };
 
-   if (isLoading) return null;
+   if (isLoading || isLoadingPasskeys) return null;
 
    return (
       <>
@@ -292,39 +316,53 @@ export default function TwoFactorSettings() {
                </div>
                <button
                   type="button"
-                  onClick={() => (totpFactor ? setPendingRemoval({ factorId: totpFactor.id, label: 'authenticator app' }) : setShowTotpModal(true))}
+                  onClick={() => (totpFactor ? setPendingRemoval({ kind: 'totp', id: totpFactor.id, label: 'authenticator app' }) : setShowTotpModal(true))}
                   className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
                >
                   {totpFactor ? 'Remove' : 'Enable'}
                </button>
             </div>
-
-            <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
-               <img src="/icons/passkey-3d.png" alt="" className="size-10 shrink-0 object-contain" aria-hidden="true" />
-               <div className="min-w-0 flex-1">
-                  <p className="text-md-b1 font-semibold text-md-heading">Passkey</p>
-                  <p className="text-md-b2 font-medium text-md-neutral-1200">
-                     {passkeyFactor ? 'Enabled' : isEnrollingPasskey ? 'Waiting for your device...' : 'Face ID, Touch ID, or a security key'}
-                  </p>
-               </div>
-               <button
-                  type="button"
-                  disabled={isEnrollingPasskey}
-                  onClick={() =>
-                     passkeyFactor ? setPendingRemoval({ factorId: passkeyFactor.id, label: 'passkey' }) : void handleEnrollPasskey()
-                  }
-                  className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 disabled:opacity-50"
-               >
-                  {passkeyFactor ? 'Remove' : isEnrollingPasskey ? '...' : 'Enable'}
-               </button>
-            </div>
-            {passkeyError ? <p className="px-md-3 pb-md-2 text-md-b3 text-md-red-400">{passkeyError}</p> : null}
          </SettingsGroup>
+
+         {/* Passkeys are a faster way to sign in, not a second factor — hence a separate
+             group from 2FA above. Hidden entirely where WebAuthn is unavailable (older
+             in-app webviews) rather than offered and then failing at the prompt. */}
+         {isPasskeySupported ? (
+            <SettingsGroup label="Passkey" description="Optional. Use Face ID, Touch ID, or a security key on this device.">
+               <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
+                  <img src="/icons/passkey-3d.png" alt="" className="size-10 shrink-0 object-contain" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                     <p className="text-md-b1 font-semibold text-md-heading">Passkey</p>
+                     <p className="text-md-b2 font-medium text-md-neutral-1200">
+                        {hasPasskey
+                           ? 'Enabled'
+                           : isRegisteringPasskey
+                             ? 'Waiting for your device...'
+                             : 'Face ID, Touch ID, or a security key'}
+                     </p>
+                  </div>
+                  <button
+                     type="button"
+                     disabled={isRegisteringPasskey}
+                     onClick={() =>
+                        hasPasskey
+                           ? setPendingRemoval({ kind: 'passkey', id: passkeys[0].id, label: 'passkey' })
+                           : void handleRegisterPasskey()
+                     }
+                     className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 disabled:opacity-50"
+                  >
+                     {hasPasskey ? 'Remove' : isRegisteringPasskey ? '...' : 'Enable'}
+                  </button>
+               </div>
+               {passkeyError ? <p className="px-md-3 pb-md-2 text-md-b3 text-md-red-400">{passkeyError}</p> : null}
+            </SettingsGroup>
+         ) : null}
 
          <EnrollTotpModal isOpen={showTotpModal} onClose={() => setShowTotpModal(false)} onEnrolled={() => void refresh()} />
          <RemoveFactorModal
             isOpen={pendingRemoval !== null}
             factorLabel={pendingRemoval?.label ?? ''}
+            description={REMOVAL_COPY[pendingRemoval?.kind ?? 'totp']}
             onClose={() => setPendingRemoval(null)}
             onConfirm={handleRemove}
          />

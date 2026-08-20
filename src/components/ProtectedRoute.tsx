@@ -18,10 +18,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
    const location = useLocation();
    const isAuthenticated = !!(username && user?.id);
 
-   // Optional per-user 2FA: someone with an enrolled TOTP/passkey factor must clear an
-   // MFA challenge once per session before reaching any protected screen. A user with no
+   // Optional per-user 2FA: someone with an enrolled TOTP factor must clear an MFA
+   // challenge once per session before reaching any protected screen. A user with no
    // factor sees nextLevel stay at 'aal1' and passes straight through, unchanged — this
-   // is what keeps 2FA opt-in rather than forced on everyone.
+   // is what keeps 2FA opt-in rather than forced on everyone. Passkeys never trigger this:
+   // they are a sign-in credential (aal1), not an MFA factor — see usePasskeys.ts.
    const [needsMfaChallenge, setNeedsMfaChallenge] = useState(false);
    const [isMfaChecked, setIsMfaChecked] = useState(false);
 

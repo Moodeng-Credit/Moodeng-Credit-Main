@@ -9,16 +9,18 @@ export type { Factor };
 interface UseMfaState {
    factors: Factor[];
    totpFactor: Factor | null;
-   passkeyFactor: Factor | null;
    isLoading: boolean;
 }
 
-const EMPTY_STATE: UseMfaState = { factors: [], totpFactor: null, passkeyFactor: null, isLoading: false };
+const EMPTY_STATE: UseMfaState = { factors: [], totpFactor: null, isLoading: false };
 
 /**
- * Shared wrapper around `supabase.auth.mfa.*` for the optional TOTP/passkey 2FA
- * feature. Both factor types share this one hook because Supabase treats them
- * identically once enrolled — the only branching is which enroll call to make.
+ * Wrapper around `supabase.auth.mfa.*` for the optional TOTP 2FA feature.
+ *
+ * TOTP is the only real second factor here: verifying it promotes the session to aal2,
+ * which is what `ProtectedRoute` gates on. Passkeys deliberately live outside this hook
+ * (see usePasskeys.ts) — they are a sign-in credential, not an MFA factor, because
+ * WebAuthn-as-an-MFA-factor is a paid Supabase add-on.
  */
 export function useMfa() {
    const [state, setState] = useState<UseMfaState>({ ...EMPTY_STATE, isLoading: true });
@@ -42,7 +44,6 @@ export function useMfa() {
       setState({
          factors: verified,
          totpFactor: verified.find((factor) => factor.factor_type === 'totp') ?? null,
-         passkeyFactor: verified.find((factor) => factor.factor_type === 'webauthn') ?? null,
          isLoading: false
       });
    }, []);
@@ -75,20 +76,6 @@ export function useMfa() {
    );
 
    /**
-    * Passkey enrollment is a single call: Supabase's WebAuthn helper handles enroll,
-    * challenge, the browser's Face ID/Touch ID/security-key prompt, and verify together.
-    */
-   const enrollPasskey = useCallback(
-      async (friendlyName: string) => {
-         const supabase = getSupabaseBrowserClient();
-         const { error } = await supabase.auth.mfa.webauthn.register({ friendlyName });
-         if (error) throw error;
-         await refresh();
-      },
-      [refresh]
-   );
-
-   /**
     * Removing a verified factor requires an aal2 session — satisfied automatically here
     * because ProtectedRoute already forces anyone with a factor through the MFA challenge
     * before they can reach this settings screen.
@@ -103,7 +90,7 @@ export function useMfa() {
       [refresh]
    );
 
-   /** Best-effort cleanup for a QR/passkey prompt the user closed without finishing setup. */
+   /** Best-effort cleanup for a QR prompt the user closed without finishing setup. */
    const cancelEnrollment = useCallback(async (factorId: string) => {
       const supabase = getSupabaseBrowserClient();
       await supabase.auth.mfa.unenroll({ factorId }).catch(() => undefined);
@@ -114,7 +101,6 @@ export function useMfa() {
       refresh,
       enrollTotp,
       verifyTotp,
-      enrollPasskey,
       removeFactor,
       cancelEnrollment
    };
