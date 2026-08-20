@@ -4,6 +4,9 @@ verify_jwt = false
 [functions.check-loan-input]
 verify_jwt = true
 
+[functions.wallet-usdc-transfers]
+verify_jwt = true
+
 [functions.webhook]
 verify_jwt = false
 

@@ -22,12 +22,6 @@ import {
    type WalletTransferRecord
 } from '@/views/account/walletAccountData';
 
-const RAW_ALCHEMY_ID = (import.meta.env.VITE_ALCHEMY_ID ?? '').trim();
-// A build that shipped the setup placeholder ("your_alchemy_id") or an undecrypted
-// dotenvx value ("encrypted:…") would 401 on every request. Treat those as unconfigured
-// so on-chain fetches are skipped cleanly instead of surfacing a broken retry loop.
-const ALCHEMY_ID = RAW_ALCHEMY_ID === 'your_alchemy_id' || RAW_ALCHEMY_ID.startsWith('encrypted:') ? '' : RAW_ALCHEMY_ID;
-const MAX_TRANSFER_ROWS = 8;
 const ADDRESS_PATTERN = /^0x[a-fA-F0-9]{40}$/;
 
 const ACTIVITY_TITLES: Record<WalletActivityItem['kind'], string> = {
@@ -48,17 +42,6 @@ type WalletAccountInsightsProps = {
    address?: string | null;
    role: WalletAccountRole;
    preview?: boolean;
-};
-
-type AlchemyTransfer = {
-   value: number | null;
-   hash: string;
-   metadata?: { blockTimestamp?: string };
-};
-
-type AlchemyResponse = {
-   error?: { message?: string };
-   result?: { transfers?: AlchemyTransfer[] };
 };
 
 const PREVIEW_ADDRESS = '0x71c92A46A238AEeB8D4502aE43B709d7E75B9d42';
@@ -154,43 +137,15 @@ function formatRawUsdcBalance(value: bigint) {
    return `${groupedWhole}.${fraction.padEnd(2, '0').slice(0, 2)}`;
 }
 
-async function fetchTransfers(address: string, direction: 'in' | 'out', signal?: AbortSignal) {
-   const response = await fetch(`https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      signal,
-      body: JSON.stringify({
-         id: 1,
-         jsonrpc: '2.0',
-         method: 'alchemy_getAssetTransfers',
-         params: [
-            {
-               fromBlock: '0x0',
-               toBlock: 'latest',
-               [direction === 'in' ? 'toAddress' : 'fromAddress']: address,
-               contractAddresses: [BASE_USDC_ADDRESS],
-               category: ['erc20'],
-               withMetadata: true,
-               order: 'desc',
-               maxCount: `0x${MAX_TRANSFER_ROWS.toString(16)}`
-            }
-         ]
-      })
-   });
-
-   if (!response.ok) throw new Error(`Wallet activity request failed (${response.status})`);
-   const body = (await response.json()) as AlchemyResponse;
-   if (body.error) throw new Error(body.error.message || 'Wallet activity request failed');
-   if (!Array.isArray(body.result?.transfers)) throw new Error('Wallet activity response was incomplete');
-
-   return body.result.transfers
-      .filter((transfer) => typeof transfer.hash === 'string' && typeof transfer.value === 'number' && transfer.value > 0)
-      .map<WalletTransferRecord>((transfer) => ({
-         direction,
-         amount: transfer.value as number,
-         timestamp: transfer.metadata?.blockTimestamp ?? '',
-         hash: transfer.hash
-      }));
+// Proxied through the wallet-usdc-transfers edge function so the Alchemy key stays a
+// server-side secret instead of shipping in the public VITE_ bundle.
+async function fetchTransfers(address: string): Promise<WalletTransferRecord[]> {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.functions.invoke('wallet-usdc-transfers', { body: { address } });
+   if (error) throw new Error(error.message || 'Wallet activity request failed');
+   const transfers = (data as { transfers?: WalletTransferRecord[] } | null)?.transfers;
+   if (!Array.isArray(transfers)) throw new Error('Wallet activity response was incomplete');
+   return transfers;
 }
 
 async function fetchWalletAccountData(userId: string, role: WalletAccountRole) {
@@ -429,14 +384,8 @@ export default function WalletAccountInsights({ userId, address, role, preview =
 
    const transferQuery = useQuery({
       queryKey: ['wallet-usdc-transfers', effectiveAddress],
-      queryFn: async ({ signal }) => {
-         const [incoming, outgoing] = await Promise.all([
-            fetchTransfers(effectiveAddress, 'in', signal),
-            fetchTransfers(effectiveAddress, 'out', signal)
-         ]);
-         return [...incoming, ...outgoing];
-      },
-      enabled: isValidAddress && Boolean(ALCHEMY_ID) && !preview,
+      queryFn: () => fetchTransfers(effectiveAddress),
+      enabled: isValidAddress && !preview,
       staleTime: 30_000,
       retry: 1
    });
@@ -493,9 +442,9 @@ export default function WalletAccountInsights({ userId, address, role, preview =
    const historySummary = getHistorySummary(history[0], currentEventId);
 
    const isAccountDataLoading = !preview && accountQuery.isLoading;
-   const isActivityLoading = isAccountDataLoading || (!preview && isValidAddress && Boolean(ALCHEMY_ID) && transferQuery.isLoading);
+   const isActivityLoading = isAccountDataLoading || (!preview && isValidAddress && transferQuery.isLoading);
    const activityUnavailable = !preview && accountQuery.isError;
-   const transferDataUnavailable = !preview && isValidAddress && (!ALCHEMY_ID || transferQuery.isError);
+   const transferDataUnavailable = !preview && isValidAddress && transferQuery.isError;
 
    return (
       <>
@@ -540,7 +489,7 @@ export default function WalletAccountInsights({ userId, address, role, preview =
                         type="button"
                         onClick={() => {
                            void accountQuery.refetch();
-                           if (ALCHEMY_ID) void transferQuery.refetch();
+                           void transferQuery.refetch();
                         }}
                         className="mt-md-2 inline-flex min-h-11 items-center gap-1.5 text-md-b2 font-semibold text-md-primary-900"
                      >
@@ -555,7 +504,7 @@ export default function WalletAccountInsights({ userId, address, role, preview =
                   <div className="px-md-3 py-md-3">
                      <p className="text-md-b1 font-semibold text-md-heading">No activity yet</p>
                      <p className="mt-1 text-md-b2 font-medium text-md-neutral-1000">Loans and repayments will appear here.</p>
-                     {transferDataUnavailable && ALCHEMY_ID ? (
+                     {transferDataUnavailable ? (
                         <button
                            type="button"
                            onClick={() => void transferQuery.refetch()}
@@ -576,16 +525,14 @@ export default function WalletAccountInsights({ userId, address, role, preview =
                            <p className="text-md-b3 font-semibold text-md-neutral-1000">
                               On-chain transfers could not load. Confirmed loan events are shown.
                            </p>
-                           {ALCHEMY_ID ? (
-                              <button
-                                 type="button"
-                                 onClick={() => void transferQuery.refetch()}
-                                 className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-md-b2 font-semibold text-md-primary-900"
-                              >
-                                 <RefreshCw className="size-4" aria-hidden="true" />
-                                 Try again
-                              </button>
-                           ) : null}
+                           <button
+                              type="button"
+                              onClick={() => void transferQuery.refetch()}
+                              className="mt-1 inline-flex min-h-11 items-center gap-1.5 text-md-b2 font-semibold text-md-primary-900"
+                           >
+                              <RefreshCw className="size-4" aria-hidden="true" />
+                              Try again
+                           </button>
                         </div>
                      ) : null}
                   </>
