@@ -2094,3 +2094,27 @@ export async function refundLoan(input: RefundLoanInput): Promise<RefundLoanResu
    if (!result?.ok) throw new Error('Refund failed.');
    return result;
 }
+
+// ---------------------------------------------------------------------------
+// Admin 2FA reset — recovery path for a user locked out of their own account
+// after enabling optional TOTP/passkey 2FA and losing the device. There is no
+// user-facing recovery-code flow, so this admin action is the only way back in.
+// ---------------------------------------------------------------------------
+export interface ResetUserMfaResult {
+   ok: boolean;
+   removedCount: number;
+   removedFactorTypes: string[];
+   errors: string[];
+}
+
+export async function resetUserMfa(userId: string): Promise<ResetUserMfaResult> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-reset-mfa', {
+      body: { userId }
+   });
+   if (error) {
+      throw new Error((await readFunctionError(error)) || error.message || 'Could not reset 2FA for this user.');
+   }
+   const result = data as ResetUserMfaResult | null;
+   if (!result) throw new Error('Could not reset 2FA for this user.');
+   return result;
+}

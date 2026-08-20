@@ -45,6 +45,7 @@ import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
 import { useCreateInstantWallet, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
+import TwoFactorSettings from '@/views/account/TwoFactorSettings';
 import WalletAccountInsights from '@/views/account/WalletAccountInsights';
 
 const ICON_MASK: React.CSSProperties = {
@@ -1998,7 +1999,8 @@ export default function AccountSettings() {
                         ) : null}
 
                         {/* A social-login lender has no password row and no verification — keep the
-                            section from rendering blank. */}
+                            section from rendering blank. Two-factor auth is offered below regardless,
+                            since it's independent of how the user originally signed in. */}
                         {!showIdentityVerification && !isEmailPasswordUser ? (
                            <SettingsGroup label="Sign-in">
                               <div className="flex min-h-[68px] items-center px-md-3 py-md-2">
@@ -2008,6 +2010,8 @@ export default function AccountSettings() {
                               </div>
                            </SettingsGroup>
                         ) : null}
+
+                        <TwoFactorSettings />
                      </div>
                   ) : null}
 
