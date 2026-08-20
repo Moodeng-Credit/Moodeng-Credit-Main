@@ -59,8 +59,13 @@ const write = async (functionName: string, args: readonly unknown[]): Promise<`0
    if (isPaymasterEnabled()) {
       try {
          return await sendSponsored(address(), LOAN_MANAGER_ABI as unknown as Abi, functionName, args);
-      } catch {
-         // Wallet/paymaster can't sponsor (e.g. plain EOA) — fall back to a user-paid tx.
+      } catch (err) {
+         // Wallet/paymaster can't sponsor (e.g. a plain EOA with no EIP-5792 support) — fall back
+         // to a user-paid tx. Logged (not swallowed) because the same catch also fires when a
+         // capable smart wallet's sponsorship request is REJECTED by a misconfigured CDP paymaster
+         // policy — that case is a bug, not expected behavior, and was previously indistinguishable
+         // from "wallet doesn't support it" since both silently charged the user gas.
+         console.warn(`[loanManager] paymaster sponsorship failed for "${functionName}" — falling back to a user-paid tx.`, err);
       }
    }
    const hash = await writeContract(config, {
@@ -200,8 +205,10 @@ export const approveUsdc = async (spender: string, amount: bigint, usdcAddress: 
    if (isPaymasterEnabled()) {
       try {
          return await sendSponsored(usdcAddress as `0x${string}`, ERC20_ABI as unknown as Abi, 'approve', [spender as `0x${string}`, amount]);
-      } catch {
-         // Fall back to a normal user-paid approval.
+      } catch (err) {
+         // See the matching comment in write() above — this can be an unsupported wallet
+         // (expected) or a rejected/misconfigured CDP paymaster policy (a bug), so log it.
+         console.warn('[loanManager] paymaster sponsorship failed for USDC "approve" — falling back to a user-paid tx.', err);
       }
    }
    const hash = await writeContract(config, {
