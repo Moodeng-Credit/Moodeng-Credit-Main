@@ -327,14 +327,25 @@ function ActivityIcon({ direction }: { direction: WalletActivityItem['direction'
    return <img src={src} alt="" className="size-9 shrink-0 object-contain" />;
 }
 
+// Full ids look like "LOAN-1786944883861-5le6mca" — long enough to push the date
+// off a truncating flex row. Only the trailing suffix is unique enough to matter here.
+function shortenTrackingId(trackingId: string) {
+   const suffix = trackingId.split('-').at(-1);
+   return suffix ? `#${suffix}` : trackingId;
+}
+
 function ActivityRow({ item }: { item: WalletActivityItem }) {
-   const detail = item.trackingId ? `${item.trackingId} · ${formatDate(item.occurredAt)}` : formatDate(item.occurredAt);
-   return (
-      <div className="grid min-h-[68px] grid-cols-[36px_minmax(0,1fr)] items-center gap-x-md-2 px-md-3 py-md-2 min-[350px]:grid-cols-[36px_minmax(0,1fr)_auto]">
+   const date = formatDate(item.occurredAt);
+   const content = (
+      <>
          <ActivityIcon direction={item.direction} />
          <div className="min-w-0 flex-1">
             <p className="truncate text-md-b1 font-semibold text-md-heading">{ACTIVITY_TITLES[item.kind]}</p>
-            <p className="truncate text-md-b3 font-medium text-md-neutral-1000">{detail}</p>
+            <p className="flex min-w-0 items-baseline gap-1 text-md-b3 font-medium text-md-neutral-1000">
+               {item.trackingId ? <span className="truncate">{shortenTrackingId(item.trackingId)}</span> : null}
+               {item.trackingId ? <span className="shrink-0">·</span> : null}
+               <span className="shrink-0">{date}</span>
+            </p>
          </div>
          <p
             className={`col-start-2 mt-1 shrink-0 text-md-b1 font-semibold min-[350px]:col-auto min-[350px]:mt-0 ${
@@ -345,8 +356,23 @@ function ActivityRow({ item }: { item: WalletActivityItem }) {
             {formatUsdcAmount(item.amount)}
             <span className="ml-1 text-md-b3 font-semibold text-md-neutral-1000">USDC</span>
          </p>
-      </div>
+      </>
    );
+   const rowClassName =
+      'grid min-h-[68px] grid-cols-[36px_minmax(0,1fr)] items-center gap-x-md-2 px-md-3 py-md-2 min-[350px]:grid-cols-[36px_minmax(0,1fr)_auto]';
+
+   if (item.loanId) {
+      return (
+         <Link
+            to={`/history/${item.loanId}`}
+            className={`${rowClassName} focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900`}
+         >
+            {content}
+         </Link>
+      );
+   }
+
+   return <div className={rowClassName}>{content}</div>;
 }
 
 function HistoryEventRow({ event, isCurrent }: { event: WalletConnectionEvent; isCurrent: boolean }) {
