@@ -86,6 +86,15 @@ export const describeFraudSignal = (s: FraudSignal): string => {
          const reasons = ((s.details as { reasons?: string[] } | undefined)?.reasons ?? []).join('; ');
          return `Mule-risk score ${s.score}/100 — ${s.username ?? s.user_id}${reasons ? `\n  reasons: ${reasons}` : ''}`;
       }
+      // --- First-cash-out face gate (20260820100000) ---
+      case 'cashout_face_mismatch':
+         return `Cash-out HELD — face does not match the account's KYC'er\n  user: ${s.user_id}${
+            s.details && (s.details as { matched_user_id?: unknown }).matched_user_id
+               ? `\n  face matches another account: ${(s.details as { matched_user_id?: unknown }).matched_user_id}`
+               : ''
+         }`;
+      case 'cashout_face_blocked':
+         return `Cash-out HELD — no KYC reference face on file for this account\n  user: ${s.user_id}`;
       default:
          return `${s.type}: ${JSON.stringify(s)}`;
    }
