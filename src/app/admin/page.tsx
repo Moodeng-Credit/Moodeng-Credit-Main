@@ -27,6 +27,7 @@ import {
    logAdminAction,
    type NoticeAudience,
    type RecoveryPath,
+   resetUserMfa,
    saveDefaultRecoveryPlan,
    sendNoticeToUsername,
    upsertAccountRestrictionByUserId,
@@ -516,6 +517,29 @@ export default function AdminPanel() {
       }
    }
 
+   async function handleResetMfa(user: AdminDirectoryUser) {
+      setError(null);
+      setStatusMessage(null);
+
+      try {
+         const result = await resetUserMfa(user.id);
+         await logAdminAction({
+            action: 'mfa_reset',
+            target_table: 'users',
+            target_id: user.id,
+            target_user_id: user.id,
+            metadata: { username: user.username, removed_factor_types: result.removedFactorTypes, source: 'live_admin_panel' }
+         });
+         setStatusMessage(
+            result.removedCount > 0
+               ? `${user.username}'s 2FA was reset. They can sign in with just their password/link next time.`
+               : `${user.username} had no 2FA enrolled — nothing to reset.`
+         );
+      } catch (caught) {
+         setError(caught instanceof Error ? caught.message : 'Could not reset 2FA for this user.');
+      }
+   }
+
    async function handleLoanRequestAction(action: 'keep' | 'remove_review') {
       if (!selectedRequest) return;
       setError(null);
@@ -935,9 +959,17 @@ export default function AdminPanel() {
                                             >
                                                Clear restriction
                                             </button>
+                                            <button
+                                               type="button"
+                                               onClick={() => handleResetMfa(user)}
+                                               className="rounded-2xl bg-sky-600 px-5 py-4 text-xl font-black text-white"
+                                            >
+                                               Reset 2FA
+                                            </button>
                                          </div>
                                          <p className="mt-3 text-base font-bold text-[#a89bb8]">
-                                            Flag ban review does not ban anyone. It records an admin review item only.
+                                            Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
+                                            every authenticator/passkey factor this user has enrolled — use it when they're locked out.
                                          </p>
                                       </div>
                                    ) : null}

@@ -52,6 +52,7 @@ import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
 import Login from '@/app/login/page';
+import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
@@ -228,6 +229,7 @@ export default function App() {
             <Route path="/sign-in" element={<Login />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
+            <Route path="/mfa-challenge" element={<MfaChallengePage />} />
 
             {/* Onboarding */}
             <Route
