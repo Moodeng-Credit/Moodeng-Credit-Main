@@ -918,11 +918,15 @@ export interface AnalyticsCohort {
    retention: number[];
 }
 
-// One calendar month's activity, used for month-over-month growth targets and the
-// milestone tracker. `monthKey` is UTC `YYYY-MM`; `label` is a human "Aug 2026".
+// One growth period's activity, used for period-over-period growth targets and the
+// milestone tracker. A period runs from the 15th of one month to the 15th of the
+// next (Moodeng launched mid-month, so calendar months split the launch in half).
+// `monthKey` is the UTC ISO date of the period's opening 15th, e.g. `2026-07-15`;
+// `label` is a human "Jul 15 – Aug 15" and `shortLabel` a compact "Jul 15".
 export interface AnalyticsMonth {
    monthKey: string;
    label: string;
+   shortLabel: string;
    newUsers: number;
    newBorrowers: number;
    newLenders: number;
@@ -972,18 +976,37 @@ function isoWeekStart(dateStr: string): string {
    return d.toISOString().slice(0, 10);
 }
 
-// UTC `YYYY-MM` bucket key for a timestamp (null when the date is missing/invalid).
+// Period bucket key for a timestamp: the ISO date of the opening 15th of the
+// 15th-to-15th period the timestamp falls in (null when missing/invalid). A date
+// before the 15th belongs to the period that opened on the previous month's 15th.
 function monthKeyOf(dateStr: string | null | undefined): string | null {
    if (!dateStr) return null;
    const d = new Date(dateStr);
    if (Number.isNaN(d.getTime())) return null;
-   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+   let y = d.getUTCFullYear();
+   let m = d.getUTCMonth(); // 0-based
+   if (d.getUTCDate() < 15) {
+      m -= 1;
+      if (m < 0) {
+         m = 11;
+         y -= 1;
+      }
+   }
+   return `${y}-${String(m + 1).padStart(2, '0')}-15`;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+// "Jul 15 – Aug 15" for a period key of `2026-07-15`.
 function monthLabelOf(monthKey: string): string {
-   const [y, m] = monthKey.split('-').map(Number);
-   return `${MONTH_NAMES[(m || 1) - 1]} ${y}`;
+   const [, m] = monthKey.split('-').map(Number);
+   const startM = (m || 1) - 1;
+   const endM = (startM + 1) % 12;
+   return `${MONTH_NAMES[startM]} 15 – ${MONTH_NAMES[endM]} 15`;
+}
+// Compact "Jul 15" for chart axes.
+function monthShortLabelOf(monthKey: string): string {
+   const [, m] = monthKey.split('-').map(Number);
+   return `${MONTH_NAMES[(m || 1) - 1]} 15`;
 }
 
 // Team + internal test accounts to keep out of growth stats. Active admins
@@ -1141,7 +1164,7 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
    const monthFor = (key: string): AnalyticsMonth => {
       let m = monthMap.get(key);
       if (!m) {
-         m = { monthKey: key, label: monthLabelOf(key), newUsers: 0, newBorrowers: 0, newLenders: 0, loansOut: 0, loansRepaid: 0, volumeOut: 0, volumeRepaid: 0 };
+         m = { monthKey: key, label: monthLabelOf(key), shortLabel: monthShortLabelOf(key), newUsers: 0, newBorrowers: 0, newLenders: 0, loansOut: 0, loansRepaid: 0, volumeOut: 0, volumeRepaid: 0 };
          monthMap.set(key, m);
       }
       return m;
@@ -1172,17 +1195,18 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
          }
       }
    }
-   // Emit a continuous month range from earliest activity through the current
-   // month, so gaps read as zeros and "this month" is always the last bucket.
+   // Emit a continuous period range from earliest activity through the current
+   // period, so gaps read as zeros and "this period" is always the last bucket.
    const monthly: AnalyticsMonth[] = [];
    if (monthMap.size) {
       const keys = [...monthMap.keys()].sort();
       const [startY, startM] = keys[0].split('-').map(Number);
-      const cursor = new Date(Date.UTC(startY, startM - 1, 1));
-      const end = new Date();
-      const endBound = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1);
+      const cursor = new Date(Date.UTC(startY, startM - 1, 15));
+      const nowKey = monthKeyOf(new Date().toISOString()) ?? keys[keys.length - 1];
+      const [endY, endM] = nowKey.split('-').map(Number);
+      const endBound = Date.UTC(endY, endM - 1, 15);
       while (cursor.getTime() <= endBound) {
-         const key = `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}`;
+         const key = `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}-15`;
          monthly.push(monthMap.get(key) ?? monthFor(key));
          cursor.setUTCMonth(cursor.getUTCMonth() + 1);
       }

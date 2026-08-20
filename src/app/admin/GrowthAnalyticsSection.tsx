@@ -219,8 +219,8 @@ function GrowthChart({ data }: { data: GrowthAnalytics['registrationsByWeek'] })
 }
 
 // ── Monthly growth: "double every month" ─────────────────────────────────────
-// The four headline metrics the team is racing to double each month. `count`
-// pulls the number out of a monthly bucket; `cumulative` picks the running total
+// The four headline metrics the team is racing to double each period. `count`
+// pulls the number out of a period bucket; `cumulative` picks the running total
 // this metric rolls up into for the milestone tracker.
 type MetricKey = 'newBorrowers' | 'newLenders' | 'loansOut' | 'loansRepaid';
 
@@ -235,9 +235,9 @@ function clampPct(n: number): number {
    return Math.max(0, Math.min(1, n));
 }
 
-// One "double last month" scorecard: last month's number, this month's, the 2×
-// goal, and a progress bar toward it. With no prior month there's no baseline to
-// double, so we just show this month's tally and mark the baseline as pending.
+// One "double last period" scorecard: last period's number, this period's, the 2×
+// goal, and a progress bar toward it. With no prior period there's no baseline to
+// double, so we just show this period's tally and mark the baseline as pending.
 function GrowthTargetCard({
    label,
    accent,
@@ -261,19 +261,19 @@ function GrowthTargetCard({
             <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>
             {multiple != null ? (
                <span className={`rounded-full px-2 py-0.5 text-xs font-black ${hit ? 'bg-emerald-900/50 text-emerald-300' : 'bg-[#2a1453] text-[#cfc6dd]'}`}>
-                  {multiple.toFixed(multiple >= 10 ? 0 : 1)}× MoM
+                  {multiple.toFixed(multiple >= 10 ? 0 : 1)}× vs prior
                </span>
             ) : null}
          </div>
          <div className="mt-2 flex items-baseline gap-2">
             <strong className="text-4xl font-black text-white">{thisMonth}</strong>
-            <span className="text-sm font-bold text-[#a89bb8]">this month</span>
+            <span className="text-sm font-bold text-[#a89bb8]">this period</span>
          </div>
          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-[#150730]">
             <div className="h-full rounded-full transition-all" style={{ width: `${progress * 100}%`, backgroundColor: hit ? '#34d399' : accent }} />
          </div>
          <div className="mt-2 flex items-center justify-between text-xs font-bold text-[#a89bb8]">
-            <span>Last month: {lastMonth ?? 0}</span>
+            <span>Last period: {lastMonth ?? 0}</span>
             {target != null ? (
                <span className={hit ? 'text-emerald-300' : ''}>
                   {hit ? '✓ goal hit' : `Goal ${target} (${pct(progress)})`}
@@ -317,8 +317,8 @@ function MilestoneBar({ label, current, isMoney }: { label: string; current: num
    );
 }
 
-// Monthly bars for one metric with a dashed "2× the previous month" doubling
-// target drawn on top, so the team can see at a glance which months hit the pace.
+// Per-period bars for one metric with a dashed "2× the previous period" doubling
+// target drawn on top, so the team can see at a glance which periods hit the pace.
 function MonthlyChart({ months, metric }: { months: AnalyticsMonth[]; metric: (typeof GROWTH_METRICS)[number] }) {
    const W = 760;
    const H = 240;
@@ -342,14 +342,14 @@ function MonthlyChart({ months, metric }: { months: AnalyticsMonth[]; metric: (t
       const x = padL + slot * i + slot / 2;
       return [x, yFor(targets[i])] as const;
    });
-   // Draw the doubling line only across months that actually have a baseline.
+   // Draw the doubling line only across periods that actually have a baseline.
    const targetLine = targetPts
       .slice(1)
       .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`)
       .join(' ');
 
    return (
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`${metric.label} by month with doubling target`}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={`${metric.label} by period with doubling target`}>
          {months.map((m, i) => {
             const v = values[i];
             const x = padL + slot * i + (slot - barW) / 2;
@@ -365,7 +365,7 @@ function MonthlyChart({ months, metric }: { months: AnalyticsMonth[]; metric: (t
                      </text>
                   ) : null}
                   <text x={padL + slot * i + slot / 2} y={H - 12} textAnchor="middle" style={{ fontSize: 10, fontWeight: 700, fill: '#8a7da5' }}>
-                     {m.label.split(' ')[0]}
+                     {m.shortLabel}
                   </text>
                </g>
             );
@@ -381,8 +381,8 @@ function MonthlyChart({ months, metric }: { months: AnalyticsMonth[]; metric: (t
 // ── Alternative analytical views ─────────────────────────────────────────────
 type ViewKey = 'projection' | 'funnel' | 'cohorts' | 'balance';
 
-// Geometric mean of the last few months' growth multiples — a steadier "current
-// pace" than a single month's jump. Ignores months with a zero base.
+// Geometric mean of the last few periods' growth multiples — a steadier "current
+// pace" than a single period's jump. Ignores periods with a zero base.
 function recentGrowthRate(series: number[], window = 3): number | null {
    const multiples: number[] = [];
    for (let i = series.length - 1; i > 0 && multiples.length < window; i--) {
@@ -393,65 +393,94 @@ function recentGrowthRate(series: number[], window = 3): number | null {
    return Math.exp(logAvg);
 }
 
-// Projection / runway: extend cumulative users & loans forward at the current pace
-// and at the 2× goal pace, and report the month each round-number target is reached.
+// Total addressable base per series. When set, projected growth slows as the
+// cumulative total approaches the cap (logistic-style saturation), so the curve
+// can't sail past a realistic ceiling. Leave null until the cap is confirmed.
+// TODO: set once base cap confirmed.
+const BASE_CAP: Record<'users' | 'loans', number | null> = { users: null, loans: null };
+
+// How fast an above-1× pace cools each period: the excess over flat (mult − 1) is
+// multiplied by this every period, so a hot 2.3×/period start decays toward steady
+// state instead of compounding forever. Higher = cools slower / more optimistic.
+// At 0.7 a 2.3×/period start reads ~2.3× → 1.9 → 1.6 → 1.45 → 1.3…
+const PACE_DECAY = 0.7;
+
+// Projection / runway: grow the *cumulative base* of users & loans forward — the
+// honest "double the existing base" model — with the pace decaying period over
+// period, and compare against a flat 2×/period goal. Reports the period each
+// round-number milestone is cleared.
 function ProjectionView({ data }: { data: GrowthAnalytics }) {
    const months = data.monthly;
-   const monthsAhead = 9;
-   const series: Array<{ key: 'users' | 'loans'; label: string; current: number; monthlyAdds: number[]; targets: number[] }> = [
-      { key: 'users', label: 'Total users', current: data.totalUsers, monthlyAdds: months.map((m) => m.newUsers), targets: [250, 500, 1000, 5000, 10000] },
-      { key: 'loans', label: 'Loans funded', current: data.activeLoans + data.overdueLoans + data.repaidLoans, monthlyAdds: months.map((m) => m.loansOut), targets: [100, 250, 500, 1000, 5000] }
+   const periodsAhead = 9;
+   const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+   const series: Array<{ key: 'users' | 'loans'; label: string; current: number; adds: number[]; targets: number[] }> = [
+      { key: 'users', label: 'Total users', current: data.totalUsers, adds: months.map((m) => m.newUsers), targets: [250, 500, 1000, 5000, 10000] },
+      { key: 'loans', label: 'Loans funded', current: data.activeLoans + data.overdueLoans + data.repaidLoans, adds: months.map((m) => m.loansOut), targets: [100, 250, 500, 1000, 5000] }
    ];
 
+   // Closing 15th of the period `offset` periods after the last actual one, e.g.
+   // "Oct 15, 2026" — the point by which the milestone is cleared.
    const futureLabel = (offset: number): string => {
       const base = months.length ? months[months.length - 1] : null;
       if (!base) return `+${offset}`;
       const [y, m] = base.monthKey.split('-').map(Number);
-      const d = new Date(Date.UTC(y, m - 1 + offset, 1));
-      return `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+      const d = new Date(Date.UTC(y, m - 1 + offset + 1, 15));
+      return `${MON[d.getUTCMonth()]} 15, ${d.getUTCFullYear()}`;
    };
 
    return (
       <div className="space-y-5">
          <p className="text-sm font-bold text-[#a89bb8]">
-            Straight line = your <span className="text-[#a06bff]">current pace</span> (geometric mean of the last 3 months). Dashed = the <span className="text-[#f5d76e]">2×/month goal</span>. Read across to see when you clear each milestone.
+            <span className="text-[#a06bff]">Expected</span> grows your existing base at its current pace (geometric mean of the last 3 periods), with that pace <span className="text-white">cooling each period</span> — real growth doesn&apos;t double forever. <span className="text-[#f5d76e]">2× goal</span> is a flat doubling every period. Read across to see when you clear each milestone.
          </p>
          {series.map((s) => {
-            const rate = recentGrowthRate(s.monthlyAdds);
-            const lastAdd = s.monthlyAdds[s.monthlyAdds.length - 1] ?? 0;
-            // Project forward: additions compound at `rate` (current) or 2× (goal).
-            const projectFrom = (mult: number) => {
+            // Reconstruct the cumulative-base series from period additions so the pace
+            // is measured on the base itself (base×mult), not on additions.
+            const cum: number[] = new Array(s.adds.length);
+            let running = s.current;
+            for (let i = s.adds.length - 1; i >= 0; i--) {
+               cum[i] = running;
+               running = Math.max(0, running - s.adds[i]);
+            }
+            const rate = recentGrowthRate(cum);
+            const cap = BASE_CAP[s.key];
+            // Grow the base by `mult` each period; the pace decays toward 1× via
+            // `decay`, and saturates as the base nears `cap` (when a cap is set).
+            const projectFrom = (startMult: number, decay: number) => {
                const out: number[] = [];
-               let cum = s.current;
-               let add = lastAdd || 1;
-               for (let i = 1; i <= monthsAhead; i++) {
-                  add = add * mult;
-                  cum += add;
-                  out.push(cum);
+               let base = s.current;
+               let mult = startMult;
+               for (let i = 1; i <= periodsAhead; i++) {
+                  const headroom = cap ? Math.max(0, 1 - base / cap) : 1;
+                  const effMult = 1 + (mult - 1) * headroom;
+                  base = base * effMult;
+                  if (cap) base = Math.min(base, cap);
+                  out.push(base);
+                  mult = 1 + (mult - 1) * decay;
                }
                return out;
             };
-            const curPath = rate ? projectFrom(rate) : null;
-            const goalPath = projectFrom(2);
+            const curPath = rate ? projectFrom(rate, PACE_DECAY) : null;
+            const goalPath = projectFrom(2, 1);
             const reach = (path: number[] | null, target: number): string => {
                if (!path) return '—';
                if (s.current >= target) return '✓ hit';
                const idx = path.findIndex((v) => v >= target);
-               return idx === -1 ? `>${monthsAhead}mo` : futureLabel(idx + 1);
+               return idx === -1 ? `>${periodsAhead} periods` : futureLabel(idx + 1);
             };
             return (
                <div key={s.key} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
                   <div className="mb-3 flex items-baseline justify-between gap-2">
                      <h5 className="text-lg font-black text-white">{s.label}</h5>
                      <span className="text-sm font-bold text-[#a89bb8]">
-                        now {s.current.toLocaleString()} · pace {rate ? `${rate.toFixed(2)}×/mo` : 'n/a'}
+                        now {s.current.toLocaleString()} · pace {rate ? `${rate.toFixed(2)}×/period` : 'n/a'}
                      </span>
                   </div>
                   <table className="w-full text-left text-sm">
                      <thead>
                         <tr className="text-xs font-black uppercase tracking-wide text-[#6f6385]">
                            <th className="py-2 pr-3">Milestone</th>
-                           <th className="py-2 pr-3">At current pace</th>
+                           <th className="py-2 pr-3">Expected</th>
                            <th className="py-2">At 2× goal</th>
                         </tr>
                      </thead>
@@ -562,7 +591,7 @@ function CohortView({ cohorts }: { cohorts: AnalyticsCohort[] }) {
    );
 }
 
-// Two-sided marketplace balance: new lenders vs new borrowers each month, plus the
+// Two-sided marketplace balance: new lenders vs new borrowers each period, plus the
 // running supply/demand ratio, so it's clear which side is the bottleneck.
 function BalanceView({ months }: { months: AnalyticsMonth[] }) {
    if (!months.length) return <p className="text-base font-bold text-[#a89bb8]">No monthly activity yet.</p>;
@@ -581,7 +610,7 @@ function BalanceView({ months }: { months: AnalyticsMonth[] }) {
             const ratio = m.newLenders > 0 ? m.newBorrowers / m.newLenders : null;
             return (
                <div key={m.monthKey} className="flex items-center gap-3">
-                  <span className="w-16 shrink-0 text-xs font-black text-[#a89bb8]">{m.label.split(' ')[0]}</span>
+                  <span className="w-16 shrink-0 text-xs font-black text-[#a89bb8]">{m.shortLabel}</span>
                   <div className="flex flex-1 items-center gap-1">
                      <div className="flex flex-1 justify-end">
                         <div className="h-4 rounded-l bg-[#4ea1ff]" style={{ width: `${(m.newBorrowers / maxSide) * 100}%` }} title={`${m.newBorrowers} borrowers`} />
@@ -598,7 +627,7 @@ function BalanceView({ months }: { months: AnalyticsMonth[] }) {
                </div>
             );
          })}
-         <p className="mt-2 text-xs font-bold text-[#6f6385]">Ratio &gt; 1 = more borrowers than lenders that month (demand-led); &lt; 1 = supply-led.</p>
+         <p className="mt-2 text-xs font-bold text-[#6f6385]">Ratio &gt; 1 = more borrowers than lenders that period (demand-led); &lt; 1 = supply-led.</p>
       </div>
    );
 }
@@ -683,12 +712,12 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
                <div className="rounded-2xl border border-[#3a1d6e] bg-gradient-to-br from-[#20093f] to-[#150730] p-5">
                   <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                      <h4 className="text-2xl font-black text-white">
-                        Double every month <span className="text-[#a06bff]">🚀</span>
+                        Double every period <span className="text-[#a06bff]">🚀</span>
                      </h4>
                      {thisMonth ? <span className="text-sm font-black text-[#a89bb8]">{thisMonth.label}</span> : null}
                   </div>
                   <p className="mb-4 text-sm font-bold text-[#a89bb8]">
-                     Goal: 2× last month on every metric. Bars in <span className="text-emerald-300">green</span> cleared the doubling target.
+                     Periods run the 15th to the 15th. Goal: 2× last period on every metric. Bars in <span className="text-emerald-300">green</span> cleared the doubling target.
                   </p>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                      {GROWTH_METRICS.map((m) => (
@@ -704,7 +733,7 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
 
                   <div className="mt-5 rounded-2xl border border-[#2a1453] bg-[#150730] p-4">
                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Monthly trend vs. doubling target</p>
+                        <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Per-period trend vs. doubling target</p>
                         <div className="flex flex-wrap gap-1.5">
                            {GROWTH_METRICS.map((m) => (
                               <button
@@ -725,7 +754,7 @@ export default function GrowthAnalyticsSection({ initialData }: { initialData?: 
                            <span className="inline-block h-2 w-4 rounded" style={{ backgroundColor: metric.accent }} /> actual
                         </span>
                         <span className="flex items-center gap-1.5">
-                           <span className="inline-block h-0.5 w-4" style={{ backgroundColor: '#f5d76e' }} /> 2× prior month (target)
+                           <span className="inline-block h-0.5 w-4" style={{ backgroundColor: '#f5d76e' }} /> 2× prior period (target)
                         </span>
                      </div>
                   </div>
