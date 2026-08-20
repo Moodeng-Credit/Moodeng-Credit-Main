@@ -1997,19 +1997,6 @@ export default function AccountSettings() {
                            </SettingsGroup>
                         ) : null}
 
-                        {/* A social-login lender has no password row and no verification — keep the
-                            section from rendering blank. Two-factor auth is offered below regardless,
-                            since it's independent of how the user originally signed in. */}
-                        {!showIdentityVerification && !isEmailPasswordUser ? (
-                           <SettingsGroup label="Sign-in">
-                              <div className="flex min-h-[68px] items-center px-md-3 py-md-2">
-                                 <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">
-                                    You sign in with your linked account. There’s nothing to manage here.
-                                 </p>
-                              </div>
-                           </SettingsGroup>
-                        ) : null}
-
                         <TwoFactorSettings />
                      </div>
                   ) : null}
