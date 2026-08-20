@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 
-import { KeyRound, ShieldCheck } from 'lucide-react';
-
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -285,9 +283,9 @@ export default function TwoFactorSettings() {
       <>
          <SettingsGroup label="Two-factor authentication" description="Optional. Add an extra step when you sign in.">
             <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
-               <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100 text-md-primary-1200">
-                  <ShieldCheck className="size-5" strokeWidth={1.8} aria-hidden="true" />
-               </span>
+               {/* The 3D icons ship with their own rounded-square backdrop, so they sit bare here
+                   rather than inside the lavender bg-md-primary-100 tile other rows use. */}
+               <img src="/icons/two-factor-3d.png" alt="" className="size-10 shrink-0 object-contain" aria-hidden="true" />
                <div className="min-w-0 flex-1">
                   <p className="text-md-b1 font-semibold text-md-heading">Authenticator app</p>
                   <p className="text-md-b2 font-medium text-md-neutral-1200">{totpFactor ? 'Enabled' : 'Not set up'}</p>
@@ -302,9 +300,7 @@ export default function TwoFactorSettings() {
             </div>
 
             <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
-               <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100 text-md-primary-1200">
-                  <KeyRound className="size-5" strokeWidth={1.8} aria-hidden="true" />
-               </span>
+               <img src="/icons/passkey-3d.png" alt="" className="size-10 shrink-0 object-contain" aria-hidden="true" />
                <div className="min-w-0 flex-1">
                   <p className="text-md-b1 font-semibold text-md-heading">Passkey</p>
                   <p className="text-md-b2 font-medium text-md-neutral-1200">
