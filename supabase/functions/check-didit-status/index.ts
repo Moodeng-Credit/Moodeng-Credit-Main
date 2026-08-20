@@ -1,8 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { notifyCashoutFaceBlocked, notifyCashoutFaceMismatch } from '../_shared/cashoutFaceNotify.ts';
 import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
-import { extractPortraitUrl, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
+import { extractPortraitUrl, resolveCashoutFaceOutcome, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
 
 // On-demand Didit status sync for the authenticated caller.
 //
@@ -223,12 +224,134 @@ serve(async (req) => {
          return jsonResponse({ error: 'Invalid authorization token' }, 401);
       }
 
-      let kind: 'liveness' | 'id' | 'wallet' = 'id';
+      let kind: 'liveness' | 'id' | 'wallet' | 'cashout' = 'id';
       try {
          const body = (await req.json()) as { kind?: unknown };
-         if (body?.kind === 'liveness' || body?.kind === 'id' || body?.kind === 'wallet') kind = body.kind;
+         if (body?.kind === 'liveness' || body?.kind === 'id' || body?.kind === 'wallet' || body?.kind === 'cashout') {
+            kind = body.kind;
+         }
       } catch {
          // Missing body defaults to 'id'.
+      }
+
+      // The cash-out gate has no `users` column to key off (a scan is per-attempt, not a
+      // standing account attribute — see cashout_face_checks), so it's resolved entirely
+      // separately from the profile-row lookup every other kind shares below.
+      if (kind === 'cashout') {
+         const { data: pending } = await supabase
+            .from('cashout_face_checks')
+            .select('id, didit_session_id, loan_id, destination_address, amount, status')
+            .eq('user_id', user.id)
+            .eq('status', 'PENDING')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+         const check = pending as {
+            id: string;
+            didit_session_id: string | null;
+            loan_id: string | null;
+            destination_address: string;
+            amount: number;
+            status: string;
+         } | null;
+
+         if (!check?.didit_session_id) {
+            return jsonResponse({ synced: false, reason: 'no-session' });
+         }
+
+         const state = await fetchSessionState(check.didit_session_id, apiKey);
+         if (!state) {
+            return jsonResponse({ synced: false, reason: 'didit-unreachable' });
+         }
+
+         const status = state.status;
+         if (status !== 'Approved' && status !== 'Declined' && status !== 'Abandoned' && status !== 'Expired') {
+            return jsonResponse({ synced: true, status });
+         }
+
+         const { data: kycRow } = await supabase.from('users').select('didit_session_id').eq('id', user.id).maybeSingle();
+         const kycSessionId = (kycRow as { didit_session_id?: string | null } | null)?.didit_session_id ?? null;
+
+         let kycPortraitUrl: string | null = null;
+         if (kycSessionId) {
+            const kycState = await fetchSessionState(kycSessionId, apiKey);
+            kycPortraitUrl = extractPortraitUrl(kycState?.decision);
+         }
+
+         const outcome = await resolveCashoutFaceOutcome({
+            decision: state.decision,
+            userId: user.id,
+            livenessApproved: status === 'Approved',
+            kycPortraitUrl
+         });
+         const expiresAt = outcome.status === 'APPROVED' ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : null;
+
+         // Status-guarded, same as the webhook: whichever of the push/pull paths resolves this
+         // session first wins the write; the other affects zero rows and skips the alert, so a
+         // race between a late webhook and this sync can never double-fire the same incident.
+         const { data: updated, error: updateError } = await supabase
+            .from('cashout_face_checks')
+            .update({
+               status: outcome.status,
+               match_score: outcome.matchScore,
+               matched_user_id: outcome.matchedUserId,
+               checked_at: new Date().toISOString(),
+               expires_at: expiresAt
+            })
+            .eq('id', check.id)
+            .eq('status', 'PENDING')
+            .select('id');
+
+         if (updateError) {
+            console.error('[check-didit-status] Failed to update cash-out face check:', updateError.message);
+            return jsonResponse({ error: 'Database error' }, 500);
+         }
+
+         if (updated && updated.length > 0) {
+            if (outcome.status === 'MISMATCH') {
+               await supabase.from('fraud_signal_alerts').insert({
+                  signal_type: 'cashout_face_mismatch',
+                  subject_key: `${user.id}:${check.didit_session_id}`,
+                  details: {
+                     user_id: user.id,
+                     loan_id: check.loan_id,
+                     destination_address: check.destination_address,
+                     amount: check.amount,
+                     match_score: outcome.matchScore,
+                     matched_user_id: outcome.matchedUserId
+                  }
+               });
+               await notifyCashoutFaceMismatch(supabase, {
+                  userId: user.id,
+                  loanId: check.loan_id,
+                  destinationAddress: check.destination_address,
+                  amount: check.amount,
+                  matchScore: outcome.matchScore,
+                  matchedUserId: outcome.matchedUserId
+               });
+            } else if (outcome.status === 'BLOCKED') {
+               await supabase.from('fraud_signal_alerts').insert({
+                  signal_type: 'cashout_face_blocked',
+                  subject_key: `${user.id}:${check.didit_session_id}`,
+                  details: {
+                     user_id: user.id,
+                     loan_id: check.loan_id,
+                     destination_address: check.destination_address,
+                     amount: check.amount
+                  }
+               });
+               await notifyCashoutFaceBlocked(supabase, {
+                  userId: user.id,
+                  loanId: check.loan_id,
+                  destinationAddress: check.destination_address,
+                  amount: check.amount
+               });
+            }
+         }
+
+         console.log(`[check-didit-status] Cash-out face ${outcome.status} for user ${user.id} (session ${check.didit_session_id})`);
+         return jsonResponse({ synced: true, status });
       }
 
       const { data: profile, error: profileError } = await supabase

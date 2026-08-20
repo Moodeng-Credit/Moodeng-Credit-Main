@@ -100,6 +100,7 @@ import AccountSettings from '@/views/account/AccountSettings';
 import Dashboard from '@/views/dashboard/Dashboard';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import Repay from '@/views/repay/Repay';
+import CashoutFaceCheck from '@/views/withdraw/CashoutFaceCheck';
 import Withdraw from '@/views/withdraw/Withdraw';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
@@ -370,6 +371,16 @@ export default function App() {
                }
             />
             {showPreviewRoutes ? <Route path="/withdraw-preview" element={<Withdraw />} /> : null}
+            <Route
+               path="/withdraw/face-check"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <CashoutFaceCheck />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
             <Route
                path="/milestones"
                element={

@@ -36,15 +36,25 @@ export const WALLET_GATE_CODE = {
    FACE_PENDING: 'FACE_PENDING',
    FACE_DUPLICATE: 'FACE_DUPLICATE',
    FACE_MISMATCH: 'FACE_MISMATCH',
-   FACE_DECLINED: 'FACE_DECLINED'
+   FACE_DECLINED: 'FACE_DECLINED',
+   /**
+    * NOT a wallet-creation refusal — the first-cash-out hold (20260820110000). The same endpoint
+    * raises it because the Shield mint is the one chokepoint every wallet operation shares, but
+    * it needs a DIFFERENT destination: the withdraw face check, not the wallet-creation one.
+    */
+   CASHOUT_FACE_REQUIRED: 'CASHOUT_FACE_REQUIRED'
 } as const;
 
 export type WalletGateCode = (typeof WALLET_GATE_CODE)[keyof typeof WALLET_GATE_CODE];
 
+/** True when the refusal is the cash-out hold rather than anything about creating a wallet. */
+export const isCashoutHoldCode = (code?: string | null): boolean => code === WALLET_GATE_CODE.CASHOUT_FACE_REQUIRED;
+
 /** Codes a fresh scan can clear. DUPLICATE/MISMATCH are terminal — retrying only wastes a session. */
 const RETRYABLE_CODES: ReadonlySet<string> = new Set<string>([
    WALLET_GATE_CODE.FACE_REQUIRED,
-   WALLET_GATE_CODE.FACE_DECLINED
+   WALLET_GATE_CODE.FACE_DECLINED,
+   WALLET_GATE_CODE.CASHOUT_FACE_REQUIRED
 ]);
 
 export const isRetryableGateCode = (code?: string | null): boolean => Boolean(code && RETRYABLE_CODES.has(code));

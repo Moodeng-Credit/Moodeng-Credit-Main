@@ -3,10 +3,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { hmac } from 'https://esm.sh/@noble/hashes@1.8.0/hmac?target=deno';
 import { sha256 } from 'https://esm.sh/@noble/hashes@1.8.0/sha2?target=deno';
 
+import { notifyCashoutFaceBlocked, notifyCashoutFaceMismatch } from '../_shared/cashoutFaceNotify.ts';
 import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/diditNotifications.ts';
 // The wallet face verdict is shared with check-didit-status so the push and pull paths can
 // never disagree. It is deliberately NOT hasDuplicateFace() — see that module's header.
-import { extractPortraitUrl, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
+import { extractPortraitUrl, resolveCashoutFaceOutcome, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
 
 // Didit webhook receiver.
 // Verifies the HMAC-SHA256 signature over the raw request body (X-Signature),
@@ -360,6 +361,159 @@ serve(async (req) => {
          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
          { auth: { autoRefreshToken: false, persistSession: false } }
       );
+
+      // First-cash-out face gate (20260820100000_cashout_face_gate.sql). It runs on the SAME
+      // Didit workflow as the wallet gate and the KYC liveness pre-gate (all want liveness +
+      // 1:N face search), so workflow_id can't tell any of them apart — the session id can.
+      // create-didit-session inserts a PENDING row keyed by this session id. Checked before the
+      // wallet/liveness branches so a cash-out scan never writes either of those gates.
+      if (sessionId && (kind === 'liveness' || kind === 'unknown')) {
+         const { data: cashoutCheck } = await adminSupabase
+            .from('cashout_face_checks')
+            .select('id, user_id, loan_id, destination_address, amount, status')
+            .eq('didit_session_id', sessionId)
+            .eq('user_id', vendorData)
+            .maybeSingle();
+
+         if (cashoutCheck) {
+            const check = cashoutCheck as {
+               id: string;
+               user_id: string;
+               loan_id: string | null;
+               destination_address: string;
+               amount: number;
+               status: string;
+            };
+
+            // Ignore non-terminal updates and don't re-resolve an already-decided attempt (a
+            // duplicate/delayed webhook for the same session must not re-alert or re-consume).
+            if (status !== 'Approved' && status !== 'Declined' && status !== 'Abandoned' && status !== 'Expired') {
+               return jsonResponse({ success: true });
+            }
+            if (check.status !== 'PENDING') {
+               return jsonResponse({ success: true });
+            }
+
+            const { data: profile } = await adminSupabase
+               .from('users')
+               .select('username, email, didit_session_id')
+               .eq('id', vendorData)
+               .maybeSingle();
+            const kyc = profile as { username?: string | null; email?: string | null; didit_session_id?: string | null } | null;
+
+            const decision =
+               status === 'Abandoned' || status === 'Expired' ? null : (payload.decision ?? (await fetchDecision(sessionId)));
+
+            // The face this account was originally KYC'd with — the ONLY reference this gate is
+            // allowed to check against. No fallback to a self-search match here (unlike the
+            // wallet gate): an account with no combined-KYC session has no reference at all, and
+            // resolveCashoutFaceOutcome fails that to BLOCKED rather than approving on nothing.
+            let kycPortraitUrl: string | null = null;
+            if (kyc?.didit_session_id) {
+               const kycDecision = await fetchDecision(kyc.didit_session_id);
+               kycPortraitUrl = extractPortraitUrl(kycDecision);
+            }
+
+            const outcome = await resolveCashoutFaceOutcome({
+               decision,
+               userId: vendorData,
+               livenessApproved: status === 'Approved',
+               kycPortraitUrl
+            });
+
+            // APPROVED gets a short validity window — long enough for a slow connection to
+            // finish the send, short enough that a scan taken this morning can't authorise a
+            // different cash-out tonight. Binding to destination+amount happens at consume time
+            // (consume_cashout_face_check), not here.
+            const expiresAt = outcome.status === 'APPROVED' ? new Date(Date.now() + 10 * 60 * 1000).toISOString() : null;
+
+            const { data: updated, error: updateError } = await adminSupabase
+               .from('cashout_face_checks')
+               .update({
+                  status: outcome.status,
+                  match_score: outcome.matchScore,
+                  matched_user_id: outcome.matchedUserId,
+                  checked_at: new Date().toISOString(),
+                  expires_at: expiresAt
+               })
+               .eq('id', check.id)
+               .eq('status', 'PENDING')
+               .select('id');
+
+            if (updateError) {
+               console.error('[didit-webhook] Failed to update cash-out face check:', updateError.message);
+               return jsonResponse({ success: false, error: 'Database error' }, 500);
+            }
+
+            // The status-guarded update above races the pull-path sync (check-didit-status) for
+            // the same session: whichever resolves first wins the write, the loser affects zero
+            // rows. Skip the alert in that case — otherwise a lost/delayed webhook racing its own
+            // sync could double-fire the same incident.
+            if (!updated || updated.length === 0) {
+               return jsonResponse({ success: true });
+            }
+
+            // MISMATCH is the incident this gate exists to catch — someone other than the
+            // account's own KYC'er passed liveness. BLOCKED means there was no reference face to
+            // check against at all. Both hold the cash-out and need a human, right now.
+            if (outcome.status === 'MISMATCH') {
+               let matchedUsername: string | null = null;
+               if (outcome.matchedUserId) {
+                  const { data: matched } = await adminSupabase
+                     .from('users')
+                     .select('username')
+                     .eq('id', outcome.matchedUserId)
+                     .maybeSingle();
+                  matchedUsername = (matched as { username?: string | null } | null)?.username ?? null;
+               }
+               await adminSupabase.from('fraud_signal_alerts').insert({
+                  signal_type: 'cashout_face_mismatch',
+                  subject_key: `${vendorData}:${sessionId}`,
+                  details: {
+                     user_id: vendorData,
+                     loan_id: check.loan_id,
+                     destination_address: check.destination_address,
+                     amount: check.amount,
+                     match_score: outcome.matchScore,
+                     matched_user_id: outcome.matchedUserId
+                  }
+               });
+               await notifyCashoutFaceMismatch(adminSupabase, {
+                  userId: vendorData,
+                  username: kyc?.username ?? null,
+                  email: kyc?.email ?? null,
+                  loanId: check.loan_id,
+                  destinationAddress: check.destination_address,
+                  amount: check.amount,
+                  matchScore: outcome.matchScore,
+                  matchedUserId: outcome.matchedUserId,
+                  matchedUsername
+               });
+            } else if (outcome.status === 'BLOCKED') {
+               await adminSupabase.from('fraud_signal_alerts').insert({
+                  signal_type: 'cashout_face_blocked',
+                  subject_key: `${vendorData}:${sessionId}`,
+                  details: {
+                     user_id: vendorData,
+                     loan_id: check.loan_id,
+                     destination_address: check.destination_address,
+                     amount: check.amount
+                  }
+               });
+               await notifyCashoutFaceBlocked(adminSupabase, {
+                  userId: vendorData,
+                  username: kyc?.username ?? null,
+                  email: kyc?.email ?? null,
+                  loanId: check.loan_id,
+                  destinationAddress: check.destination_address,
+                  amount: check.amount
+               });
+            }
+
+            console.log(`[didit-webhook] Cash-out face ${outcome.status} for user ${vendorData} (session ${sessionId})`);
+            return jsonResponse({ success: true });
+         }
+      }
 
       // Embedded-wallet face gate. It runs on the SAME Didit workflow as the KYC liveness
       // pre-gate (both want liveness + 1:N face search), so workflow_id can't tell them apart.

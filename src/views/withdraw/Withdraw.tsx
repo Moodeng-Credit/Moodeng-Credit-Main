@@ -46,6 +46,7 @@ import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
+import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
 
 import './withdraw-theme.css';
@@ -2081,6 +2082,7 @@ const PREVIEW_ADDRESS = '0x1234aBCd5678Ef901234abcd5678ef901234ABcd';
 // or fail the user's flow — we only log it. The unique tx_hash index dedupes retries.
 export default function Withdraw() {
    const location = useLocation();
+   const navigate = useNavigate();
    const account = useAccount();
    const { payUsdc } = useWallet();
    const activePaymentMethod = useActivePaymentMethod();
@@ -2160,6 +2162,30 @@ export default function Withdraw() {
             // borrowers cash out gaslessly from their embedded wallet. The recipient is always the
             // exchange address the user typed — the send rail never changes where the money goes.
             const method: PaymentMethod = activePaymentMethod;
+
+            // First-cash-out face gate (PH, embedded wallet only — see cashoutFaceGate.ts). The
+            // server decides whether this transfer actually needs a scan; most cash-outs return
+            // required:false immediately with no Didit session spent. When one IS required, hand
+            // off to its own screen rather than trying to resume the send afterward — the user
+            // simply taps Send again on return, and the now-valid same-transfer approval lets it
+            // straight through.
+            if (method === 'openfort') {
+               const destination = toAddress.trim();
+               const gate = await startCashoutFaceCheck({
+                  destinationAddress: destination,
+                  amount: Number(amount),
+                  loanId: primaryLoan?.id ?? null
+               }).catch((err) => {
+                  // Fail closed on an unexpected error here too — never let a broken gate check
+                  // silently skip straight to an ungated send.
+                  throw err instanceof CashoutGateError ? err : new Error('Could not verify this cash-out. Please try again.');
+               });
+               if (gate.required) {
+                  navigate('/withdraw/face-check', { state: { url: gate.url, returnTo: '/withdraw' } });
+                  return null;
+               }
+            }
+
             const outcome = await payUsdc({
                method,
                to: toAddress.trim(),
@@ -2193,7 +2219,8 @@ export default function Withdraw() {
                   amount: Number(amount),
                   exchange,
                   address: toAddress.trim(),
-                  txHash: outcome.hash
+                  txHash: outcome.hash,
+                  consumeCashoutFaceCheck: method === 'openfort'
                });
             }
             // Base Pay ('base') already waited for on-chain confirmation; wagmi ('wallet') only
@@ -2201,7 +2228,7 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id]
+      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate]
    );
 
    return (

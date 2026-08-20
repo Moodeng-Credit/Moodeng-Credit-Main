@@ -240,3 +240,70 @@ export const resolveWalletFaceOutcome = async ({
 
    return { status: 'APPROVED', collisions: [] };
 };
+
+export type CashoutFaceOutcome = {
+   status: 'APPROVED' | 'MISMATCH' | 'DECLINED' | 'BLOCKED';
+   matchScore: number | null;
+   /** A 1:N hit naming who the mismatched face actually belongs to, if it's another Moodeng account. */
+   matchedUserId: string | null;
+};
+
+/**
+ * The decision for the FIRST-cash-out face gate (see migration 20260820100000).
+ *
+ * Unlike the wallet-mint gate, this is not "does the scan match any previously-approved face" —
+ * it is specifically "does this selfie match the face that KYC'd THIS account". Passive liveness
+ * only guards the input (rejects a photo/screen replay); the 1:1 match against the caller's own
+ * KYC portrait is the actual decision. A liveness-only check would not catch someone else's live
+ * face held up to the camera, which is exactly the attack this gate exists to stop.
+ *
+ * `kycPortraitUrl` is REQUIRED, not optional like the wallet gate's. An account with no reference
+ * face on file must go to manual review (BLOCKED), never a self-enrollment prompt — offering one
+ * here would let whoever is holding the phone enrol their OWN face as the account's identity,
+ * which inverts the whole feature. Fails SAFE throughout: any inconclusive step declines/blocks,
+ * never approves.
+ */
+export const resolveCashoutFaceOutcome = async ({
+   decision,
+   userId,
+   livenessApproved,
+   kycPortraitUrl
+}: {
+   decision: unknown;
+   userId: string;
+   livenessApproved: boolean;
+   kycPortraitUrl: string | null;
+}): Promise<CashoutFaceOutcome> => {
+   if (!livenessApproved) return { status: 'DECLINED', matchScore: null, matchedUserId: null };
+
+   const portrait = extractPortraitUrl(decision);
+   if (!portrait) {
+      console.error('[diditFaceSearch] cashout check: no portrait in decision — failing safe');
+      return { status: 'DECLINED', matchScore: null, matchedUserId: null };
+   }
+
+   if (!kycPortraitUrl) {
+      console.error(`[diditFaceSearch] cashout check: no reference portrait for user ${userId} — blocking`);
+      return { status: 'BLOCKED', matchScore: null, matchedUserId: null };
+   }
+
+   const score = await faceMatch({ imageUrl1: portrait, imageUrl2: kycPortraitUrl });
+   if (score === null) {
+      console.error('[diditFaceSearch] cashout check: face-match request failed — failing safe');
+      return { status: 'DECLINED', matchScore: null, matchedUserId: null };
+   }
+
+   if (score >= FACE_MATCH_THRESHOLD) {
+      return { status: 'APPROVED', matchScore: score, matchedUserId: null };
+   }
+
+   // MISMATCH — this is the incident this gate exists to catch. A 1:N search may name the face
+   // as another Moodeng account (including a self-KYC'd attacker), turning "someone else's face"
+   // into a specific account the admin fraud queue can act on rather than an anonymous refusal.
+   const { ok, matches } = await faceSearch({ imageUrl: portrait, vendorData: userId });
+   const named = ok
+      ? matches.find((m) => m.vendorData && m.vendorData !== userId && m.similarity >= FACE_MATCH_THRESHOLD)
+      : undefined;
+
+   return { status: 'MISMATCH', matchScore: score, matchedUserId: named?.vendorData ?? null };
+};

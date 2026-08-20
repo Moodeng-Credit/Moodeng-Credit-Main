@@ -17,6 +17,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //                      the KYC liveness columns, so a wallet scan and a KYC attempt can never
 //                      clobber one another. Fires only when minting a sponsored embedded wallet
 //                      — connecting an external wallet never reaches here.
+//   kind: 'cashout'  — the first-cash-out face gate (20260820100000_cashout_face_gate.sql).
+//                      Same liveness + 1:N workflow again, but the verdict is a 1:1 match
+//                      against the ORIGINAL KYC'er's portrait, not just "any approved face" —
+//                      see resolveCashoutFaceOutcome in _shared/diditFaceSearch.ts. Fires only
+//                      for a PH borrower's first-ever cash-out from an embedded wallet (see
+//                      cashout_face_gate_required); requires destinationAddress + amount in the
+//                      body so the resulting approval can be bound to that exact transfer.
 //
 // vendor_data is set server-side to the authenticated user's id (never trusted
 // from the client) so the didit-webhook can map the result back to the user.
@@ -29,12 +36,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //   DIDIT_ID_WORKFLOW_ID — legacy ID-only workflow (kind: 'id'); falls back to DIDIT_WORKFLOW_ID.
 //   DIDIT_WALLET_WORKFLOW_ID   — workflow for the wallet face gate; falls back to the liveness
 //                         workflow, which already does liveness + 1:N face search.
+//   DIDIT_CASHOUT_WORKFLOW_ID  — workflow for the cash-out face gate; falls back to the wallet
+//                         workflow, then liveness — same underlying capture either way.
 //   DIDIT_API_BASE      — defaults to https://verification.didit.me/v3
 //   DIDIT_CALLBACK_URL  — frontend return URL after verification (e.g.
 //                         https://app.example.com/verify). Required to send the user back
 //                         into the app cleanly. `kind` and `returnTo` are appended as query params.
 //   DIDIT_WALLET_CALLBACK_URL — return URL for kind: 'wallet'. Defaults to the wallet face-check
 //                         route on DIDIT_CALLBACK_URL's origin, so no extra secret is needed.
+//   DIDIT_CASHOUT_CALLBACK_URL — return URL for kind: 'cashout'. Defaults to the withdraw
+//                         face-check route on DIDIT_CALLBACK_URL's origin.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -55,43 +66,67 @@ const ALLOWED_RETURN_TO = new Set([
    'dashboard-credit-level'
 ]);
 
-type SessionKind = 'liveness' | 'id' | 'combined' | 'wallet';
+type SessionKind = 'liveness' | 'id' | 'combined' | 'wallet' | 'cashout';
 
-const SESSION_KINDS: ReadonlySet<string> = new Set<SessionKind>(['liveness', 'id', 'combined', 'wallet']);
+const SESSION_KINDS: ReadonlySet<string> = new Set<SessionKind>(['liveness', 'id', 'combined', 'wallet', 'cashout']);
 
 /** The in-app route Didit returns to for the embedded-wallet face gate. */
 const WALLET_CALLBACK_PATH = '/onboarding/wallet/face-check';
+
+/** The in-app route Didit returns to for the first-cash-out face gate. */
+const CASHOUT_CALLBACK_PATH = '/withdraw/face-check';
 
 const resolveWorkflowId = (kind: SessionKind): string | undefined => {
    const liveness = Deno.env.get('DIDIT_LIVENESS_WORKFLOW_ID');
    const id = Deno.env.get('DIDIT_ID_WORKFLOW_ID');
    const combined = Deno.env.get('DIDIT_WORKFLOW_ID');
+   const wallet = Deno.env.get('DIDIT_WALLET_WORKFLOW_ID') || liveness || combined;
    // 'combined' is the single Traditional-KYC workflow (liveness + ID + face match in one
    // hosted session). 'liveness' is the World ID pre-gate; 'id' is the legacy ID-only step.
    if (kind === 'combined') return combined;
    if (kind === 'liveness') return liveness || combined;
    // The wallet gate needs exactly what the liveness workflow already does — a live capture
    // plus a 1:N search of previously approved faces — so it reuses it unless overridden.
-   if (kind === 'wallet') return Deno.env.get('DIDIT_WALLET_WORKFLOW_ID') || liveness || combined;
+   if (kind === 'wallet') return wallet;
+   // The cash-out gate needs the same capture; it differs only in HOW the webhook resolves the
+   // verdict (1:1 against the caller's own KYC portrait, not "any approved face" — see
+   // resolveCashoutFaceOutcome), so it reuses the wallet workflow unless overridden.
+   if (kind === 'cashout') return Deno.env.get('DIDIT_CASHOUT_WORKFLOW_ID') || wallet;
    return id || combined;
 };
 
 /**
- * Where Didit sends the user back to. The wallet gate returns to its own screen rather than
- * /verify so the KYC flow's state machine is never entered by a wallet scan. Derived from
- * DIDIT_CALLBACK_URL's origin so shipping this needs no new secret.
+ * Where Didit sends the user back to. The wallet and cash-out gates return to their own screens
+ * rather than /verify so the KYC flow's state machine is never entered by either scan. Derived
+ * from DIDIT_CALLBACK_URL's origin so shipping this needs no new secret.
  */
 const resolveCallbackBase = (kind: SessionKind, callbackBase: string | undefined): string | undefined => {
-   if (kind !== 'wallet') return callbackBase;
+   if (kind !== 'wallet' && kind !== 'cashout') return callbackBase;
 
-   const override = Deno.env.get('DIDIT_WALLET_CALLBACK_URL')?.trim();
+   const overrideEnvKey = kind === 'wallet' ? 'DIDIT_WALLET_CALLBACK_URL' : 'DIDIT_CASHOUT_CALLBACK_URL';
+   const override = Deno.env.get(overrideEnvKey)?.trim();
    if (override) return override;
    if (!callbackBase) return undefined;
 
    try {
-      return new URL(WALLET_CALLBACK_PATH, callbackBase).toString();
+      return new URL(kind === 'wallet' ? WALLET_CALLBACK_PATH : CASHOUT_CALLBACK_PATH, callbackBase).toString();
    } catch {
       return undefined;
+   }
+};
+
+/** Best-effort IP → ISO country lookup, same free service check-geo already uses. */
+const resolveCountryFromRequest = async (req: Request): Promise<string | null> => {
+   try {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '';
+      if (!ip) return null;
+      const res = await fetch(`https://ipwho.is/${ip}`);
+      if (!res.ok) return null;
+      const geo = (await res.json().catch(() => null)) as { country_code?: string } | null;
+      return typeof geo?.country_code === 'string' ? geo.country_code : null;
+   } catch (err) {
+      console.error('[create-didit-session] Geo lookup failed:', err instanceof Error ? err.message : err);
+      return null;
    }
 };
 
@@ -133,17 +168,44 @@ serve(async (req) => {
 
       let returnTo: string | undefined;
       let kind: SessionKind = 'liveness';
+      // kind: 'cashout' only — the exact transfer this scan's approval will be bound to.
+      let cashoutDestination: string | undefined;
+      let cashoutAmount: number | undefined;
+      let cashoutLoanId: string | undefined;
       try {
-         const body = (await req.json()) as { returnTo?: unknown; kind?: unknown };
+         const body = (await req.json()) as {
+            returnTo?: unknown;
+            kind?: unknown;
+            destinationAddress?: unknown;
+            amount?: unknown;
+            loanId?: unknown;
+         };
          if (typeof body?.returnTo === 'string' && ALLOWED_RETURN_TO.has(body.returnTo)) {
             returnTo = body.returnTo;
          }
          if (typeof body?.kind === 'string' && SESSION_KINDS.has(body.kind)) {
             kind = body.kind as SessionKind;
          }
+         if (typeof body?.destinationAddress === 'string' && body.destinationAddress.trim()) {
+            cashoutDestination = body.destinationAddress.trim();
+         }
+         if (typeof body?.amount === 'number' && Number.isFinite(body.amount) && body.amount > 0) {
+            cashoutAmount = body.amount;
+         }
+         if (typeof body?.loanId === 'string' && body.loanId.trim()) {
+            cashoutLoanId = body.loanId.trim();
+         }
       } catch {
          // No body / invalid JSON is fine — kind defaults to 'liveness', returnTo is optional.
       }
+
+      // A cash-out check normally binds to one transfer. With no destination/amount it is an
+      // "unlock" check instead: the caller is held out of their wallet entirely (see
+      // cashout_gate_holds_wallet in 20260820110000) and needs some way to prove their face when
+      // there is no transfer to bind to yet — the private-key export screen, or a plain connect.
+      // It clears the 24h wallet hold and authorises NO specific send, because the '' it records
+      // as a destination can never equal a real address in the binding check.
+      const isCashoutUnlock = kind === 'cashout' && (!cashoutDestination || !cashoutAmount);
 
       const workflowId = resolveWorkflowId(kind);
       if (!workflowId) {
@@ -184,6 +246,44 @@ serve(async (req) => {
          }
          if (grant) {
             return jsonResponse({ error: 'This account already has an instant wallet.', code: 'ALREADY_GRANTED' }, 409);
+         }
+      }
+
+      // The first-cash-out face gate. Checked BEFORE spending a Didit credit: most cash-outs
+      // (non-PH, external wallet, repeat borrower, or one already covered by a still-valid,
+      // same-transfer approval) don't need a scan at all. cashout_face_gate_required is the one
+      // place this rule lives (see migration 20260820100000) so it can't drift from the
+      // withdraw-flow client's own copy of the same check.
+      let cashoutCountryIso: string | null = null;
+      if (kind === 'cashout') {
+         cashoutCountryIso = await resolveCountryFromRequest(req);
+
+         // An unlock check asks a different question ("is this account's wallet currently held?")
+         // than a transfer-bound one ("does THIS transfer need a scan?"), so it consults the hold
+         // function instead — there is no destination to bind to.
+         const { data: gate, error: gateError } = isCashoutUnlock
+            ? await supabase.rpc('cashout_gate_holds_wallet', {
+                 p_user_id: user.id,
+                 p_country_iso: cashoutCountryIso
+              })
+            : await supabase.rpc('cashout_face_gate_required', {
+                 p_user_id: user.id,
+                 p_destination: cashoutDestination,
+                 p_amount: cashoutAmount,
+                 p_country_iso: cashoutCountryIso
+              });
+
+         if (gateError) {
+            console.error('[create-didit-session] Cash-out gate check failed:', gateError.message);
+            return jsonResponse({ error: 'Could not check cash-out eligibility.' }, 500);
+         }
+
+         const verdict = (gate ?? {}) as { required?: boolean; held?: boolean; reason?: string };
+         const needsScan = isCashoutUnlock ? Boolean(verdict.held) : Boolean(verdict.required);
+         if (!needsScan) {
+            // Not an error — the caller just doesn't need a scan (e.g. already has a valid,
+            // same-transfer approval, isn't held, or isn't in scope for the gate at all).
+            return jsonResponse({ required: false, reason: verdict.reason ?? 'NOT_REQUIRED' });
          }
       }
 
@@ -270,7 +370,40 @@ serve(async (req) => {
             .eq('id', user.id);
       }
 
-      return jsonResponse({ url: diditBody.url, sessionId: diditBody.session_id ?? null });
+      // The cash-out gate has no `users` column to pin to (a scan is per-attempt, bound to one
+      // destination + amount, not a standing account attribute) — instead it's its own row.
+      // didit-webhook and check-didit-status find it by matching Didit's session_id against
+      // cashout_face_checks.didit_session_id, exactly the same pattern the wallet gate uses
+      // against users.wallet_face_session_id.
+      let cashoutCheckId: string | null = null;
+      if (kind === 'cashout' && diditBody.session_id) {
+         const { data: inserted, error: insertError } = await supabase
+            .from('cashout_face_checks')
+            .insert({
+               user_id: user.id,
+               loan_id: cashoutLoanId ?? null,
+               didit_session_id: diditBody.session_id,
+               status: 'PENDING',
+               // Unlock checks record ''/0 — never equal to a real transfer, so passing one
+               // releases the wallet hold without authorising any particular send.
+               destination_address: cashoutDestination ?? '',
+               amount: cashoutAmount ?? 0,
+               country_iso: cashoutCountryIso
+            })
+            .select('id')
+            .single();
+         if (insertError) {
+            console.error('[create-didit-session] Failed to record cash-out face check:', insertError.message);
+            return jsonResponse({ error: 'Database error' }, 500);
+         }
+         cashoutCheckId = inserted?.id ?? null;
+      }
+
+      return jsonResponse({
+         url: diditBody.url,
+         sessionId: diditBody.session_id ?? null,
+         ...(kind === 'cashout' ? { checkId: cashoutCheckId } : {})
+      });
    } catch (error) {
       const message = error instanceof Error ? error.message : 'Internal server error';
       console.error('[create-didit-session] Unhandled error:', message);

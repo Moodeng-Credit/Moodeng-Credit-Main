@@ -33,7 +33,29 @@ const GATE_MESSAGES: Record<string, string> = {
    FACE_PENDING: 'Your face scan is still being checked. This usually takes a few seconds.',
    FACE_DUPLICATE: 'This face is already linked to another Moodeng account. Each person can have one instant wallet.',
    FACE_MISMATCH: "This doesn't match the face used to verify this account. Please scan again as the account holder.",
-   FACE_DECLINED: "We couldn't complete your face scan. Please try again in good lighting."
+   FACE_DECLINED: "We couldn't complete your face scan. Please try again in good lighting.",
+   // The first-cash-out hold (20260820110000). Distinct code so the client routes to the
+   // withdraw face check rather than the wallet-creation one.
+   CASHOUT_FACE_REQUIRED: 'A quick face check is needed before you can move your loan out of your wallet.'
+};
+
+/**
+ * Best-effort IP -> ISO country for the caller, same free service check-geo uses. Only feeds
+ * cashout_gate_holds_wallet, which treats an unknown country as NOT held — so a failure here
+ * degrades to "don't hold", never to "brick the wallet".
+ */
+const resolveCountryFromRequest = async (req: Request): Promise<string | null> => {
+   try {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || '';
+      if (!ip) return null;
+      const res = await fetch(`https://ipwho.is/${ip}`);
+      if (!res.ok) return null;
+      const geo = (await res.json().catch(() => null)) as { country_code?: string } | null;
+      return typeof geo?.country_code === 'string' ? geo.country_code : null;
+   } catch (err) {
+      console.error('[openfort-shield-session] Geo lookup failed:', err instanceof Error ? err.message : err);
+      return null;
+   }
 };
 
 serve(async (req) => {
@@ -119,6 +141,38 @@ serve(async (req) => {
                console.error('[openfort-shield-session] Grant claim failed', claimError.message);
                return jsonResponse({ error: 'Could not reserve your instant wallet. Please try again.' }, 500);
             }
+         }
+      }
+
+      // ── The first-cash-out hold ───────────────────────────────────────────────────────
+      //
+      // Separate from, and checked AFTER, the mint gate above: that one asks "may this person
+      // have a sponsored wallet at all", this one asks "may they use it right now". It applies
+      // to an ALREADY-GRANTED wallet, which the mint gate deliberately waves through as
+      // recovery — and recovery is exactly the path a stolen phone takes.
+      //
+      // Because every route to a usable signer goes through this mint (page reload, pre-send,
+      // and the private-key export in ExportInstantWalletKey.tsx), holding here is what makes
+      // the withdraw-flow face check a real boundary instead of a UI step. Scope is narrow —
+      // funded PH borrower, first cash-out, no face check passed in 24h, not admin-exempt —
+      // see cashout_gate_holds_wallet (20260820110000).
+      //
+      // Deliberately fails OPEN on an RPC error: this function is on the critical path for
+      // every embedded wallet, and a broken hold check must not lock people out of their own
+      // money. The withdraw-step gate (create-didit-session) still fails CLOSED, so the
+      // money-moving action stays protected even if this degrades.
+      if (Deno.env.get('CASHOUT_FACE_GATE_ENABLED') === 'true') {
+         const countryIso = await resolveCountryFromRequest(req);
+         const { data: hold, error: holdError } = await supabase.rpc('cashout_gate_holds_wallet', {
+            p_user_id: userData.user.id,
+            p_country_iso: countryIso
+         });
+
+         if (holdError) {
+            console.error('[openfort-shield-session] Cash-out hold check failed (allowing):', holdError.message);
+         } else if ((hold as { held?: boolean } | null)?.held) {
+            console.log(`[openfort-shield-session] Cash-out face check required for ${userData.user.id} — wallet held`);
+            return jsonResponse({ error: GATE_MESSAGES.CASHOUT_FACE_REQUIRED, code: 'CASHOUT_FACE_REQUIRED' }, 403);
          }
       }
 
