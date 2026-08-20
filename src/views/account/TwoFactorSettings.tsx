@@ -118,7 +118,7 @@ function EnrollTotpModal({ isOpen, onClose, onEnrolled }: { isOpen: boolean; onC
                      </div>
                      {qrCode ? (
                         <img
-                           src={`data:image/svg+xml;utf-8,${encodeURIComponent(qrCode)}`}
+                           src={qrCode}
                            alt="Scan with your authenticator app"
                            className="h-48 w-48 rounded-md-md border border-md-neutral-600"
                         />
