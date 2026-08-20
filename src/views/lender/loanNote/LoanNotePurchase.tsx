@@ -156,31 +156,6 @@ export default function LoanNotePurchase() {
                <div className="grid grid-cols-2 gap-3">
                   <BoxedStat label="Remaining owed" value={usd(data.remainingOwed)} />
                   <BoxedStat label="IOU points reward" value={`${data.iouPointsReward.toLocaleString()} pts`} />
-                  <BoxedStat
-                     className="col-span-2"
-                     label="Repayment history"
-                     value={
-                        data.repaymentStats.loansFunded > 0
-                           ? `${data.repaymentStats.loansRepaid}/${data.repaymentStats.loansFunded} repaid${data.repaymentStats.repaymentRatePct != null ? ` (${data.repaymentStats.repaymentRatePct}%)` : ''}`
-                           : 'New borrower'
-                     }
-                  />
-               </div>
-
-               {/* Economics */}
-               <div className="bg-white border border-[#f0f0f0] rounded-[12px] p-3 grid grid-cols-3 gap-2 text-center">
-                  <div>
-                     <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Your purchase</p>
-                     <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">{usd(data.listingPrice)}</p>
-                  </div>
-                  <div>
-                     <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Repayment</p>
-                     <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading">{usd(data.expectedRepayment)}</p>
-                  </div>
-                  <div>
-                     <p className="text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-[#585858]">Yield</p>
-                     <p className="mt-1 text-[20px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-green-600">{usd(data.expectedProfit)}</p>
-                  </div>
                </div>
 
                <p className="rounded-[16px] bg-md-primary-100/60 px-3 py-2.5 text-md-b3 font-medium text-md-neutral-1500">

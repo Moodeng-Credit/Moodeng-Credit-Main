@@ -86,11 +86,13 @@ export async function getLoanNotePageData(loanId: string, viewer: { userId?: str
    const expectedRepayment = totalOwed;
    const expectedProfit = Math.max(0, expectedRepayment - listingPrice);
 
-   // On-chain enrichment (mock or real). Best-effort: failures fall back to DB values.
+   // On-chain enrichment — real service only. The mock's local state has no record of a loan
+   // funded through the real on-chain relay, so it returns '0' for any id it doesn't recognize —
+   // that would silently stomp a correct DB-computed remainingOwed with a false "fully repaid".
    let remainingOwed = Math.max(0, totalOwed - repaid);
    let ownsLoanNote = false;
    const service = getLoanManagerService();
-   if (loan.onchain_loan_id) {
+   if (loan.onchain_loan_id && !service.isMock) {
       try {
          const remainingBase = await service.getRemainingOwed(loan.onchain_loan_id);
          remainingOwed = usdcFromBaseUnits(remainingBase);
