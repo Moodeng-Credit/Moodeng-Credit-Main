@@ -5,20 +5,10 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { useMfa } from '@/hooks/useMfa';
+import { safeMfaReturnPath } from '@/lib/mfaReturnPath';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-
-/** Only allow returning to an internal path — never an absolute/external URL from router state. */
-function safeReturnPath(from: unknown): string {
-   if (from && typeof from === 'object' && 'pathname' in from) {
-      const location = from as { pathname: string; search?: string };
-      if (location.pathname.startsWith('/') && !location.pathname.startsWith('//')) {
-         return `${location.pathname}${location.search ?? ''}`;
-      }
-   }
-   return '/dashboard';
-}
 
 export default function MfaChallengePage() {
    const dispatch = useDispatch<AppDispatch>();
@@ -35,7 +25,7 @@ export default function MfaChallengePage() {
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [isSigningOut, setIsSigningOut] = useState(false);
 
-   const returnPath = safeReturnPath((location.state as { from?: unknown } | null)?.from);
+   const returnPath = safeMfaReturnPath((location.state as { from?: unknown } | null)?.from);
 
    // Default to the passkey prompt when both are available — fewer taps — but let the
    // user fall back to their authenticator app if the passkey isn't on this device.
