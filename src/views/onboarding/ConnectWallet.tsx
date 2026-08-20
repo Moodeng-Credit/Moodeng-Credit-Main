@@ -44,11 +44,6 @@ export default function ConnectWallet() {
    const { showToast } = useToast();
    const { locale } = useLocalization();
    const openfort = useOpenfort();
-   // The instant wallet is our Philippines escape hatch (PLDT/Smart block keys.coinbase.com).
-   // Scope the OFFER to PH visitors: outside PH, Base is the wallet path and the instant wallet
-   // is hidden. Soft, client-side gate (append ?ph=1 to test from abroad); the server face-gate
-   // in openfort-shield-session still enforces one-per-person on mint. See isLikelyPhilippines.
-   const instantAvailable = openfort.isConfigured && isLikelyPhilippines(locale);
    const [pendingKey, setPendingKey] = useState<WalletConnectorKey | null>(null);
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
    const [userInitiatedConnection, setUserInitiatedConnection] = useState(false);
@@ -61,6 +56,13 @@ export default function ConnectWallet() {
    const instantWallet = useCreateInstantWallet(returnTo);
    const previewRole = new URLSearchParams(location.search).get('role') === 'lender' ? 'lender' : 'borrower';
    const role = user?.userRole || (isPreview ? previewRole : undefined);
+   // Lenders can always create an instant wallet — it's their "no app installed" path, and the
+   // one-per-person face check is enforced server-side on mint. Borrowers are the ones scoped to
+   // the Philippines: the instant wallet is our escape hatch around the PLDT/Smart block on
+   // keys.coinbase.com, so outside PH they stay on the Base path. Soft, client-side gate (append
+   // ?ph=1 to test from abroad); server face-gate in openfort-shield-session still enforces
+   // one-per-person on mint. See isLikelyPhilippines.
+   const instantAvailable = openfort.isConfigured && (role === 'lender' || isLikelyPhilippines(locale));
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();

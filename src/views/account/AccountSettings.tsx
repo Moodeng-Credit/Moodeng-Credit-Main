@@ -1002,10 +1002,13 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    const { disconnectAsync } = useDisconnect();
    const instantWallet = useCreateInstantWallet('account-settings');
    const isBorrower = user?.userRole === 'borrower';
-   // Instant wallet is the PH-market escape hatch — only offer it to visitors who look like
-   // they're in the Philippines (isLikelyPhilippines). Elsewhere the picker shows Base/other
-   // wallets only. Soft client-side gate; server face-gate still enforces one-per-person on mint.
-   const showInstantWallet = instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED && isLikelyPhilippines();
+   // Lenders can always create an instant wallet — it's their "no app installed" path, and the
+   // one-per-person face check is enforced server-side on mint, so it's offered wherever Openfort
+   // is configured. Borrowers are the ones scoped to the Philippines: the instant wallet exists to
+   // route around the PLDT/Smart ISP block on keys.coinbase.com, so outside PH they stay on the
+   // Base path (soft client-side gate; server face-gate still enforces one-per-person on mint).
+   const showInstantWallet =
+      instantWallet.isConfigured && (!isBorrower || (WALLET_FACE_GATE_ENABLED && isLikelyPhilippines()));
 
    const [step, setStep] = useState<'choose' | 'connecting'>('choose');
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
@@ -2063,7 +2066,9 @@ export default function AccountSettings() {
                                rather than only in onboarding: disconnecting is exactly when
                                someone discovers they have no wallet app to reconnect with, and
                                before this the only offer was "connect one you already own". */}
-                           {!hasWallet && instantWallet.isConfigured && WALLET_FACE_GATE_ENABLED && isLikelyPhilippines(locale) ? (
+                           {!hasWallet &&
+                           instantWallet.isConfigured &&
+                           (!isBorrower || (WALLET_FACE_GATE_ENABLED && isLikelyPhilippines(locale))) ? (
                               <div className="flex flex-col gap-md-2 border-t border-md-neutral-300 px-md-3 py-md-3">
                                  <div className="flex items-start gap-md-2">
                                     <img src="/hippos/hippo-wallet.png" alt="" className="size-9 shrink-0 object-contain" />
