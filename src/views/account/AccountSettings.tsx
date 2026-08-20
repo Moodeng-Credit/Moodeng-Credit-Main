@@ -1288,28 +1288,27 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                  </button>
                               );
                            })}
+                           <button
+                              type="button"
+                              onClick={handleConnectOther}
+                              disabled={isConnecting}
+                              className="flex flex-col gap-md-1 items-start p-md-2 rounded-md-md border border-md-neutral-600 bg-md-neutral-100 text-left transition-colors disabled:opacity-50"
+                           >
+                              <div className="size-7 rounded-md-xs bg-md-slate-600 inline-flex items-center justify-center shrink-0">
+                                 <span
+                                    className="block size-4 bg-white"
+                                    style={{
+                                       ...ICON_MASK,
+                                       WebkitMaskImage: "url('/icons/grid-4.svg')",
+                                       maskImage: "url('/icons/grid-4.svg')"
+                                    }}
+                                 />
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1">
+                                 <span className="text-md-b2 font-semibold text-md-heading">Other Wallets</span>
+                              </div>
+                           </button>
                         </div>
-                        <button
-                           type="button"
-                           onClick={handleConnectOther}
-                           disabled={isConnecting}
-                           className="flex gap-md-2 items-center p-md-2 rounded-md-md border border-md-neutral-600 bg-md-neutral-200 w-full text-left disabled:opacity-50"
-                        >
-                           <div className="size-7 rounded-md-xs bg-md-slate-600 inline-flex items-center justify-center shrink-0">
-                              <span
-                                 className="block size-4 bg-white"
-                                 style={{
-                                    ...ICON_MASK,
-                                    WebkitMaskImage: "url('/icons/grid-4.svg')",
-                                    maskImage: "url('/icons/grid-4.svg')"
-                                 }}
-                              />
-                           </div>
-                           <div className="flex flex-col gap-0 flex-1 min-w-0">
-                              <span className="text-md-b2 font-semibold text-md-heading">Other Wallets</span>
-                              <span className="text-md-b3 font-medium text-md-neutral-800">Trust, Rainbow &amp; more</span>
-                           </div>
-                        </button>
                         <button
                            type="button"
                            disabled={!selectedKey || isConnecting}
