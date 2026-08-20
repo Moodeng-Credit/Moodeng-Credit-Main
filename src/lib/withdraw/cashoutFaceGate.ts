@@ -76,6 +76,37 @@ type StartCashoutFaceCheckResult =
    | { required: true; url: string; checkId: string | null };
 
 /**
+ * Start an "unlock" face check — one with no transfer to bind to.
+ *
+ * Needed because the wallet-level hold (cashout_gate_holds_wallet) can refuse someone who isn't
+ * in the withdraw flow at all: the private-key export screen, or a plain connect. Without this
+ * they'd be told a face check is required with no way to take one, which is a dead end.
+ *
+ * Passing it clears the 24h wallet hold and authorises NO specific send — the withdraw step still
+ * asks for its own destination-bound check before money moves.
+ */
+export const startCashoutUnlockCheck = async (): Promise<StartCashoutFaceCheckResult> => {
+   const supabase = getSupabaseBrowserClient();
+   const { data, error } = await supabase.functions.invoke('create-didit-session', { body: { kind: 'cashout' } });
+
+   if (error) {
+      const response = (error as { context?: Response }).context;
+      if (response) {
+         const body = (await response
+            .clone()
+            .json()
+            .catch(() => null)) as { error?: string; code?: string } | null;
+         if (body?.error) throw new CashoutGateError(body.error, body.code ?? 'ERROR');
+      }
+      throw error;
+   }
+
+   if (data?.required === false) return { required: false };
+   if (!data?.url) throw new Error('Could not start the face check. Please try again.');
+   return { required: true, url: data.url as string, checkId: (data.checkId as string | undefined) ?? null };
+};
+
+/**
  * Ask the server whether this cash-out needs a scan, and — if so — start it.
  *
  * `destinationAddress`/`amount` bind the resulting approval to this exact transfer (see

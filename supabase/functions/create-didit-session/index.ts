@@ -199,9 +199,13 @@ serve(async (req) => {
          // No body / invalid JSON is fine — kind defaults to 'liveness', returnTo is optional.
       }
 
-      if (kind === 'cashout' && (!cashoutDestination || !cashoutAmount)) {
-         return jsonResponse({ error: 'destinationAddress and amount are required for a cash-out face check.' }, 400);
-      }
+      // A cash-out check normally binds to one transfer. With no destination/amount it is an
+      // "unlock" check instead: the caller is held out of their wallet entirely (see
+      // cashout_gate_holds_wallet in 20260820110000) and needs some way to prove their face when
+      // there is no transfer to bind to yet — the private-key export screen, or a plain connect.
+      // It clears the 24h wallet hold and authorises NO specific send, because the '' it records
+      // as a destination can never equal a real address in the binding check.
+      const isCashoutUnlock = kind === 'cashout' && (!cashoutDestination || !cashoutAmount);
 
       const workflowId = resolveWorkflowId(kind);
       if (!workflowId) {
@@ -253,20 +257,32 @@ serve(async (req) => {
       let cashoutCountryIso: string | null = null;
       if (kind === 'cashout') {
          cashoutCountryIso = await resolveCountryFromRequest(req);
-         const { data: gate, error: gateError } = await supabase.rpc('cashout_face_gate_required', {
-            p_user_id: user.id,
-            p_destination: cashoutDestination,
-            p_amount: cashoutAmount,
-            p_country_iso: cashoutCountryIso
-         });
+
+         // An unlock check asks a different question ("is this account's wallet currently held?")
+         // than a transfer-bound one ("does THIS transfer need a scan?"), so it consults the hold
+         // function instead — there is no destination to bind to.
+         const { data: gate, error: gateError } = isCashoutUnlock
+            ? await supabase.rpc('cashout_gate_holds_wallet', {
+                 p_user_id: user.id,
+                 p_country_iso: cashoutCountryIso
+              })
+            : await supabase.rpc('cashout_face_gate_required', {
+                 p_user_id: user.id,
+                 p_destination: cashoutDestination,
+                 p_amount: cashoutAmount,
+                 p_country_iso: cashoutCountryIso
+              });
+
          if (gateError) {
             console.error('[create-didit-session] Cash-out gate check failed:', gateError.message);
             return jsonResponse({ error: 'Could not check cash-out eligibility.' }, 500);
          }
-         const verdict = (gate ?? {}) as { required?: boolean; reason?: string };
-         if (!verdict.required) {
+
+         const verdict = (gate ?? {}) as { required?: boolean; held?: boolean; reason?: string };
+         const needsScan = isCashoutUnlock ? Boolean(verdict.held) : Boolean(verdict.required);
+         if (!needsScan) {
             // Not an error — the caller just doesn't need a scan (e.g. already has a valid,
-            // same-transfer approval, or isn't in scope for the gate at all).
+            // same-transfer approval, isn't held, or isn't in scope for the gate at all).
             return jsonResponse({ required: false, reason: verdict.reason ?? 'NOT_REQUIRED' });
          }
       }
@@ -368,8 +384,10 @@ serve(async (req) => {
                loan_id: cashoutLoanId ?? null,
                didit_session_id: diditBody.session_id,
                status: 'PENDING',
-               destination_address: cashoutDestination,
-               amount: cashoutAmount,
+               // Unlock checks record ''/0 — never equal to a real transfer, so passing one
+               // releases the wallet hold without authorising any particular send.
+               destination_address: cashoutDestination ?? '',
+               amount: cashoutAmount ?? 0,
                country_iso: cashoutCountryIso
             })
             .select('id')

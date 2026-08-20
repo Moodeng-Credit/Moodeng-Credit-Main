@@ -11,7 +11,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from 'wagmi';
 
-import { needsWalletFaceScan } from '@/lib/web3/openfort/walletFaceGate';
+import { isCashoutHoldCode, needsWalletFaceScan } from '@/lib/web3/openfort/walletFaceGate';
 import { useOpenfort } from '@/lib/web3/openfort/OpenfortContext';
 import type { RootState } from '@/store/store';
 
@@ -52,7 +52,13 @@ export const useCreateInstantWallet = (returnTo?: InstantWalletReturnTo) => {
       // a stale approval, or another tab that already spent it. Send them to the scan, which
       // explains a terminal refusal rather than looping them through a retry.
       if (openfort.gateCode) {
-         navigate('/onboarding/wallet/face-check', { state: returnTo ? { returnTo } : undefined });
+         // The cash-out hold is a different refusal arriving through the same endpoint: the
+         // wallet already exists and is fine, it's the undrawn first loan that needs a face
+         // check. Routing that to the wallet-creation scan would tell someone to create a
+         // wallet they already have.
+         navigate(isCashoutHoldCode(openfort.gateCode) ? '/withdraw/face-check' : '/onboarding/wallet/face-check', {
+            state: returnTo ? { returnTo } : undefined
+         });
       }
    }, [disconnectAsync, navigate, openfort, returnTo, user]);
 

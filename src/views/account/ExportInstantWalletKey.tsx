@@ -1,18 +1,29 @@
 import { useCallback, useState } from 'react';
 
+import { useNavigate } from 'react-router-dom';
+
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useOpenfort } from '@/lib/web3/openfort';
+import { isCashoutHoldCode } from '@/lib/web3/openfort/walletFaceGate';
+import { startCashoutUnlockCheck } from '@/lib/withdraw/cashoutFaceGate';
 
 // Makes the "you fully own this wallet" promise real: an Openfort embedded wallet is
 // self-custodial, and this reveals its private key so the borrower can import it into
 // MetaMask/Trust and leave Moodeng entirely. The key is fetched only on an explicit tap,
 // held in local state just long enough to copy, and cleared the moment the sheet closes —
 // it is never logged, persisted, or sent anywhere.
+//
+// Revealing the key also hands over the ability to move the loan out of the wallet with no
+// further checks, so exportPrivateKey() revalidates against the server first (see
+// assertEmbeddedWalletAccess). While the first-cash-out hold is active this refuses with
+// CASHOUT_FACE_REQUIRED and we route to the face check instead — otherwise this screen would
+// be a one-tap way around it.
 export default function ExportInstantWalletKey() {
    const { exportPrivateKey } = useOpenfort();
    const { showToast } = useToast();
+   const navigate = useNavigate();
    const [stage, setStage] = useState<'idle' | 'confirm' | 'revealing' | 'revealed'>('idle');
    const [privateKey, setPrivateKey] = useState<string | null>(null);
 
@@ -29,13 +40,32 @@ export default function ExportInstantWalletKey() {
          setStage('revealed');
       } catch (err) {
          setStage('confirm');
+
+         // Held by the cash-out gate: start an unlock check and send them to it, rather than
+         // showing a dead-end error for something they can actually resolve in ten seconds.
+         const code = (err as { code?: string } | null)?.code;
+         if (isCashoutHoldCode(code)) {
+            try {
+               const gate = await startCashoutUnlockCheck();
+               if (gate.required) {
+                  navigate('/withdraw/face-check', { state: { url: gate.url, returnTo: '/account-settings' } });
+                  return;
+               }
+               // Not held after all (a check landed in the meantime) — let them tap again.
+               showToast(TOAST_TYPES.INFO, 'Try again', 'Your face check just cleared. Tap to reveal your key.');
+               return;
+            } catch {
+               /* fall through to the generic message below */
+            }
+         }
+
          showToast(
             TOAST_TYPES.ERROR,
             "Couldn't export key",
             err instanceof Error ? err.message : 'Please try again in a moment.'
          );
       }
-   }, [exportPrivateKey, showToast]);
+   }, [exportPrivateKey, navigate, showToast]);
 
    const copyKey = useCallback(async () => {
       if (!privateKey) return;

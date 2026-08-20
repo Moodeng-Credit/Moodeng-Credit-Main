@@ -107,11 +107,34 @@ export const sendUsdcFromEmbeddedWallet = async ({ to, usdAmount }: { to: string
 };
 
 /**
+ * Ask the server whether this account may use its embedded wallet right now, throwing a
+ * WalletGateError (code `CASHOUT_FACE_REQUIRED`) if it may not.
+ *
+ * Implemented as a Shield-session mint whose result is discarded, deliberately: that mint IS the
+ * server-side boundary (openfort-shield-session runs cashout_gate_holds_wallet), so probing it
+ * asks the authoritative question instead of duplicating the rule client-side and letting the two
+ * drift. Costs one Shield session. The alternative — clearing the signer to force a real
+ * re-provision — risks leaving a working wallet unusable if that re-provision then fails, which
+ * isn't a trade worth making on a money path.
+ *
+ * Needed because a signer already READY in this tab never hits the server again, so a warm
+ * session would otherwise sail straight past the hold.
+ */
+export const assertEmbeddedWalletAccess = async (): Promise<void> => {
+   await createShieldEncryptionSession();
+};
+
+/**
  * Export the embedded wallet's private key so the borrower can leave Moodeng entirely
  * (import into MetaMask/Trust). This is what makes the wallet genuinely self-custodial —
  * surfaced in the wallet settings UI, never logged.
+ *
+ * Revalidates with the server first. Without that this is a one-tap bypass of every cash-out
+ * control: reveal the key, import it into MetaMask, and the money leaves without the withdraw
+ * flow — or its face check — ever running.
  */
 export const exportEmbeddedPrivateKey = async (): Promise<string> => {
+   await assertEmbeddedWalletAccess();
    const openfort = getOpenfortClient();
    return openfort.embeddedWallet.exportPrivateKey();
 };

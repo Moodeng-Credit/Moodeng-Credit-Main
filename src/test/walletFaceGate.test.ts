@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
    hasEmbeddedWallet,
+   isCashoutHoldCode,
    isRetryableGateCode,
    needsWalletFaceScan,
    walletFaceScanRequiredForUser,
@@ -100,6 +101,28 @@ describe('walletFaceGate', () => {
          expect(err).toBeInstanceOf(Error);
          expect(err.code).toBe('FACE_DUPLICATE');
          expect(err.name).toBe('WalletGateError');
+      });
+   });
+
+   // The cash-out hold arrives through the SAME endpoint as the wallet-creation refusals, so this
+   // code is the only thing separating "create a wallet" from "prove your face before moving your
+   // loan". Mis-routing it would tell a borrower to create a wallet they already have.
+   describe('isCashoutHoldCode', () => {
+      it('recognizes the cash-out hold', () => {
+         expect(isCashoutHoldCode(WALLET_GATE_CODE.CASHOUT_FACE_REQUIRED)).toBe(true);
+      });
+
+      it('does not confuse it with any wallet-creation refusal', () => {
+         expect(isCashoutHoldCode(WALLET_GATE_CODE.FACE_REQUIRED)).toBe(false);
+         expect(isCashoutHoldCode(WALLET_GATE_CODE.FACE_DUPLICATE)).toBe(false);
+         expect(isCashoutHoldCode(WALLET_GATE_CODE.FACE_MISMATCH)).toBe(false);
+         expect(isCashoutHoldCode(undefined)).toBe(false);
+         expect(isCashoutHoldCode(null)).toBe(false);
+      });
+
+      // A held borrower clears it with a fresh scan, so it must not be treated as terminal.
+      it('is retryable', () => {
+         expect(isRetryableGateCode(WALLET_GATE_CODE.CASHOUT_FACE_REQUIRED)).toBe(true);
       });
    });
 });
