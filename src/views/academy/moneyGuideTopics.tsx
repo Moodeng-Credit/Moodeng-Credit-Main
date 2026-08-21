@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 
-import { Building2, RefreshCw, UserRoundCheck, Wallet } from 'lucide-react';
+import { Building2, RefreshCw, Wallet } from 'lucide-react';
 
 import { BaseMark, BinanceTile, CoinsPhTile, GCashTile, PdaxTile, UsdcMark } from '@/components/brand/ProviderLogos';
 
@@ -30,24 +30,9 @@ export type MoneyGuideTopicConfig = {
    callout: string;
 };
 
+// 'verify' is deliberately absent: it has its own page at /academy/money/verify
+// (see VerifyGuide) because it needs real guide content rather than a provider list.
 export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
-   {
-      id: 'verify',
-      Icon: UserRoundCheck,
-      iconWrap: 'bg-md-primary-100',
-      iconColor: 'text-md-primary-1200',
-      title: 'Verify your identity',
-      subtitle: 'One-time · about 3 minutes',
-      summary: 'A quick national ID photo and selfie check confirms you’re a real, unique person. Most checks finish within minutes.',
-      intro: 'To keep Moodeng safe and fair, all borrowers complete a short one-time identity verification. It protects the community from fake and duplicate accounts, and it’s what lets lenders trust the requests they fund.',
-      steps: [
-         'Tap "Verify Yourself" in the app and choose "Verify Your ID".',
-         'Have your physical national ID ready and find good, even lighting.',
-         'Complete the quick ID photo + selfie check — it takes about 3 minutes.',
-         'Most checks finish in minutes. If yours needs a human review, we’ll notify you as soon as it’s done — usually within a few hours.'
-      ],
-      callout: 'Your ID is checked by our secure verification partner and is never stored by Moodeng.'
-   },
    {
       id: 'add-funds',
       Icon: Wallet,

@@ -47,6 +47,7 @@ import Guide from '@/app/guide/page';
 import HelpPage from '@/app/help/page';
 import MoneyGuide from '@/views/academy/MoneyGuide';
 import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
+import VerifyGuide from '@/views/academy/VerifyGuide';
 import LenderDiversityPage from '@/app/lender-diversity/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
@@ -602,6 +603,17 @@ export default function App() {
                element={
                   <MarketingPageShell>
                      <MoneyGuide />
+                  </MarketingPageShell>
+               }
+            />
+            {/* Verify has its own page rather than the generic topic renderer: it is the
+                one topic that needs real guide content (why KYC exists, what to bring,
+                troubleshooting, FAQ) instead of a provider list. Static beats :topic. */}
+            <Route
+               path="/academy/money/verify"
+               element={
+                  <MarketingPageShell>
+                     <VerifyGuide />
                   </MarketingPageShell>
                }
             />

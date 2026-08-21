@@ -1,10 +1,11 @@
 import type { ComponentType, ReactNode } from 'react';
 
 import { ArrowLeft, ArrowRight, Building2, RefreshCw, UserRoundCheck, Wallet } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { BaseMark, BinanceTile, CoinsPhTile, GCashTile, PdaxTile, UsdcMark } from '@/components/brand/ProviderLogos';
+import { useGoBack } from '@/hooks/useGoBack';
 import { usePageSeo } from '@/hooks/usePageSeo';
 
 // A logo chip: small brand tile/mark + label. Reuses the real provider marks so the
@@ -38,7 +39,7 @@ type TopicCard = {
 };
 
 export default function MoneyGuide() {
-   const navigate = useNavigate();
+   const goBack = useGoBack('/academy');
    usePageSeo({
       title: 'Money & getting started — Moodeng Academy',
       description: 'How to verify, add USDC to your wallet, withdraw to your bank, and repay your loan on Moodeng.',
@@ -132,7 +133,7 @@ export default function MoneyGuide() {
             <div className="relative overflow-hidden bg-md-primary-100 px-md-4 pb-md-5 pt-[max(20px,env(safe-area-inset-top))] md:rounded-md-xl md:px-md-5 md:pb-md-5 md:pt-md-5">
                <button
                   type="button"
-                  onClick={() => navigate(-1)}
+                  onClick={goBack}
                   aria-label="Go back"
                   className="mb-md-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-md-primary-300 bg-md-neutral-100 text-md-heading"
                >
