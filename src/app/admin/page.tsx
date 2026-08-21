@@ -44,6 +44,7 @@ import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 import MuleRiskSection from './MuleRiskSection';
+import OnChainSection from './OnChainSection';
 import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
 
@@ -51,6 +52,7 @@ type AdminTab =
    | 'users'
    | 'analytics'
    | 'ux-health'
+   | 'on-chain'
    | 'loans'
    | 'pricing'
    | 'coming-due'
@@ -85,7 +87,8 @@ const navGroups: NavGroup[] = [
       items: [
          { id: 'users', label: 'User directory' },
          { id: 'analytics', label: 'Growth & analytics' },
-         { id: 'ux-health', label: 'UX health' }
+         { id: 'ux-health', label: 'UX health' },
+         { id: 'on-chain', label: 'On-chain (Base)' }
       ]
    },
    {
@@ -303,6 +306,7 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'users',
    'analytics',
    'ux-health',
+   'on-chain',
    'loans',
    'coming-due',
    'extensions',
@@ -1527,6 +1531,16 @@ export default function AdminPanel() {
                         <p className="mt-3 text-2xl text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
                      </div>
                      <GrowthAnalyticsSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'on-chain' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">On-chain (Base)</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">Admin wallet & LoanManager activity, via Dune.</p>
+                     </div>
+                     <OnChainSection />
                   </section>
                ) : null}
 
