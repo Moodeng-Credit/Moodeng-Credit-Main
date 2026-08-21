@@ -21,6 +21,11 @@ applyThemeMode(getStoredThemeMode());
 setupStaleChunkReload();
 initClarity();
 
+// iOS Safari only evaluates `:active` CSS (our tap-feedback states) on elements
+// once some touch listener exists in the document — otherwise every button feels
+// unresponsive with no visual press state. A no-op listener is the standard fix.
+document.addEventListener('touchstart', () => {}, { passive: true });
+
 const posthogKey = import.meta.env.VITE_PUBLIC_POSTHOG_KEY;
 const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 // Require a real PostHog project key (`phc_…`). Guards against the case where the
