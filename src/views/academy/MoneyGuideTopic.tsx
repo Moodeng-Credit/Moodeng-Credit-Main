@@ -22,9 +22,9 @@ export default function MoneyGuideTopic() {
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
-         <div className="mx-auto w-full max-w-modal">
+         <div className="mx-auto w-full max-w-modal md:max-w-2xl">
             {/* Hero */}
-            <div className="relative overflow-hidden bg-md-primary-100 px-md-4 pb-md-5 pt-[max(20px,env(safe-area-inset-top))]">
+            <div className="relative overflow-hidden bg-md-primary-100 px-md-4 pb-md-5 pt-[max(20px,env(safe-area-inset-top))] md:rounded-md-xl md:px-md-5 md:pb-md-5 md:pt-md-5">
                <button
                   type="button"
                   onClick={() => navigate(-1)}
@@ -33,19 +33,19 @@ export default function MoneyGuideTopic() {
                >
                   <ArrowLeft className="h-5 w-5" strokeWidth={2.2} />
                </button>
-               <span className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">Moodeng Academy</span>
+               <span className="block text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">Moodeng Academy</span>
                <div className="mt-2 flex items-center gap-3">
                   <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-md-md ${iconWrap} ${iconColor}`}>
                      <Icon className="h-7 w-7" strokeWidth={2} />
                   </span>
                   <div className="min-w-0">
-                     <h1 className="text-md-h4 font-semibold leading-tight text-md-heading">{title}</h1>
+                     <h1 className="text-md-h4 font-semibold leading-tight text-md-heading md:text-md-h3">{title}</h1>
                      <p className="mt-0.5 text-md-b2 font-medium text-md-neutral-800">{subtitle}</p>
                   </div>
                </div>
             </div>
 
-            <div className="flex flex-col gap-md-3 px-md-4 py-md-4">
+            <div className="flex flex-col gap-md-3 px-md-4 py-md-4 md:px-md-5 md:py-md-5">
                {/* Intro */}
                <p className="text-md-b2 font-normal leading-[1.55] text-md-neutral-1200">{intro}</p>
 
