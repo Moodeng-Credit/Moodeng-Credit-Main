@@ -6,7 +6,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { useMfa } from '@/hooks/useMfa';
 import { usePasskeys } from '@/hooks/usePasskeys';
 
-import { SettingsGroup } from '@/views/account/AccountSettings';
+import { SettingsGroup, Toggle } from '@/views/account/AccountSettings';
 
 // ─── Enroll TOTP modal ───
 
@@ -314,13 +314,15 @@ export default function TwoFactorSettings() {
                   <p className="text-md-b1 font-semibold text-md-heading">Authenticator app</p>
                   <p className="text-md-b2 font-medium text-md-neutral-1200">{totpFactor ? 'Enabled' : 'Not set up'}</p>
                </div>
-               <button
-                  type="button"
-                  onClick={() => (totpFactor ? setPendingRemoval({ kind: 'totp', id: totpFactor.id, label: 'authenticator app' }) : setShowTotpModal(true))}
-                  className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
-               >
-                  {totpFactor ? 'Remove' : 'Enable'}
-               </button>
+               <Toggle
+                  checked={!!totpFactor}
+                  onChange={(next) =>
+                     next
+                        ? setShowTotpModal(true)
+                        : totpFactor && setPendingRemoval({ kind: 'totp', id: totpFactor.id, label: 'authenticator app' })
+                  }
+                  label={totpFactor ? 'Disable authenticator app' : 'Enable authenticator app'}
+               />
             </div>
          </SettingsGroup>
 
@@ -341,18 +343,16 @@ export default function TwoFactorSettings() {
                              : 'Face ID, Touch ID, or a security key'}
                      </p>
                   </div>
-                  <button
-                     type="button"
+                  <Toggle
+                     checked={hasPasskey}
                      disabled={isRegisteringPasskey}
-                     onClick={() =>
-                        hasPasskey
-                           ? setPendingRemoval({ kind: 'passkey', id: passkeys[0].id, label: 'passkey' })
-                           : void handleRegisterPasskey()
+                     onChange={(next) =>
+                        next
+                           ? void handleRegisterPasskey()
+                           : setPendingRemoval({ kind: 'passkey', id: passkeys[0].id, label: 'passkey' })
                      }
-                     className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 disabled:opacity-50"
-                  >
-                     {hasPasskey ? 'Remove' : isRegisteringPasskey ? '...' : 'Enable'}
-                  </button>
+                     label={hasPasskey ? 'Disable passkey' : 'Enable passkey'}
+                  />
                </div>
                {passkeyError ? <p className="px-md-3 pb-md-2 text-md-b3 text-md-red-400">{passkeyError}</p> : null}
             </SettingsGroup>
