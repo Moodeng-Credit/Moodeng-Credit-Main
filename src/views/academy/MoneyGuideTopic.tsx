@@ -1,12 +1,12 @@
 import { ArrowLeft, ExternalLink, PlayCircle, ShieldCheck } from 'lucide-react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useParams } from 'react-router-dom';
 
-import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
+import { useGoBack } from '@/hooks/useGoBack';
 import { usePageSeo } from '@/hooks/usePageSeo';
 import { getMoneyGuideTopic } from '@/views/academy/moneyGuideTopics';
 
 export default function MoneyGuideTopic() {
-   const navigate = useNavigate();
+   const goBack = useGoBack('/academy/money');
    const { topic: topicId } = useParams<{ topic: string }>();
    const topic = getMoneyGuideTopic(topicId);
 
@@ -27,7 +27,7 @@ export default function MoneyGuideTopic() {
             <div className="relative overflow-hidden bg-md-primary-100 px-md-4 pb-md-5 pt-[max(20px,env(safe-area-inset-top))] md:rounded-md-xl md:px-md-5 md:pb-md-5 md:pt-md-5">
                <button
                   type="button"
-                  onClick={() => navigate(-1)}
+                  onClick={goBack}
                   aria-label="Go back"
                   className="mb-md-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-md-primary-300 bg-md-neutral-100 text-md-heading"
                >
@@ -48,23 +48,6 @@ export default function MoneyGuideTopic() {
             <div className="flex flex-col gap-md-3 px-md-4 py-md-4 md:px-md-5 md:py-md-5">
                {/* Intro */}
                <p className="text-md-b2 font-normal leading-[1.55] text-md-neutral-1200">{intro}</p>
-
-               {/* Supported countries (verify only) */}
-               {topic.id === 'verify' ? (
-                  <div className="rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 shadow-md-card">
-                     <p className="mb-2 text-md-b3 font-semibold uppercase tracking-[0.06em] text-md-neutral-800">Supported countries</p>
-                     <div className="flex flex-wrap gap-x-3 gap-y-2">
-                        {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
-                           <span key={code} className="inline-flex items-center gap-1.5">
-                              <span className="h-3.5 w-[21px] overflow-hidden rounded-[2px] shadow-sm shadow-black/10">
-                                 <Flag className="block h-full w-full" />
-                              </span>
-                              <span className="text-md-b3 font-medium text-md-heading">{name}</span>
-                           </span>
-                        ))}
-                     </div>
-                  </div>
-               ) : null}
 
                {/* Video walkthrough */}
                {video ? (
