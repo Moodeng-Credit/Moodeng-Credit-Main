@@ -127,9 +127,9 @@ export default function MoneyGuide() {
 
    return (
       <div className="min-h-screen bg-md-neutral-200">
-         <div className="mx-auto w-full max-w-modal">
+         <div className="mx-auto w-full max-w-modal md:max-w-4xl">
             {/* Hero */}
-            <div className="relative overflow-hidden bg-md-primary-100 px-md-4 pb-md-5 pt-[max(20px,env(safe-area-inset-top))]">
+            <div className="relative overflow-hidden bg-md-primary-100 px-md-4 pb-md-5 pt-[max(20px,env(safe-area-inset-top))] md:rounded-md-xl md:px-md-5 md:pb-md-5 md:pt-md-5">
                <button
                   type="button"
                   onClick={() => navigate(-1)}
@@ -141,21 +141,21 @@ export default function MoneyGuide() {
                <div className="flex items-center gap-2">
                   <span className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-primary-1200">Moodeng Academy</span>
                </div>
-               <h1 className="mt-1 text-md-h3 font-semibold text-md-heading">Money &amp; getting started</h1>
-               <p className="mt-1 text-md-b2 font-medium text-md-neutral-800">
+               <h1 className="mt-1 text-md-h3 font-semibold text-md-heading md:text-md-display">Money &amp; getting started</h1>
+               <p className="mt-1 max-w-lg text-md-b2 font-medium text-md-neutral-800">
                   Getting verified, funding your wallet, cashing out, and repaying — in one friendly place.
                </p>
             </div>
 
             {/* Cards */}
-            <div className="flex flex-col gap-md-3 px-md-4 py-md-4">
+            <div className="grid grid-cols-1 gap-md-3 px-md-4 py-md-4 md:grid-cols-2 md:px-md-5 md:py-md-5">
                {cards.map(({ id, Icon, iconWrap, iconColor, title, subtitle, body, chips, topicPath }) => (
                   // A real <Link>, not a button+navigate(): crawlers only follow anchors,
                   // and these topic pages had no inbound link anywhere on the site.
                   <Link
                      key={id}
                      to={topicPath}
-                     className="block w-full rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 text-left shadow-md-card transition-transform duration-150 active:scale-[0.99]"
+                     className="flex w-full flex-col rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 text-left shadow-md-card transition-transform duration-150 active:scale-[0.99]"
                   >
                      <div className="mb-2 flex items-center gap-3">
                         <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md-md ${iconWrap} ${iconColor}`}>
@@ -168,7 +168,7 @@ export default function MoneyGuide() {
                      </div>
                      <p className="mb-3 text-md-b2 font-normal leading-[1.5] text-md-neutral-1200">{body}</p>
                      <div className="mb-3 flex flex-wrap gap-1.5">{chips}</div>
-                     <div className="flex items-center justify-between border-t border-md-neutral-400 pt-2.5">
+                     <div className="mt-auto flex items-center justify-between border-t border-md-neutral-400 pt-2.5">
                         <span className="text-md-b2 font-semibold text-md-primary-1200">Read more</span>
                         <ArrowRight className="h-4 w-4 text-md-primary-1200" strokeWidth={2.4} />
                      </div>
