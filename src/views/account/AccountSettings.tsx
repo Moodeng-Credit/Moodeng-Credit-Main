@@ -7,7 +7,6 @@ import {
    CheckCircle2,
    ChevronRight,
    Clock3,
-   Languages,
    WalletCards
 } from 'lucide-react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
@@ -1863,7 +1862,7 @@ export default function AccountSettings() {
                      <SettingsRow
                         title="Appearance & language"
                         summary={sectionSummaries.preferences}
-                        icon={<Languages size={19} strokeWidth={1.8} />}
+                        icon={<img src="/icons/translation-3d.png" alt="" className="size-7 object-contain" />}
                         onClick={() => openSettingsSection('preferences')}
                      />
                   </SettingsGroup>
