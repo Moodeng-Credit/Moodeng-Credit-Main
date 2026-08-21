@@ -42,6 +42,7 @@ import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
 import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import BaseNetworkSheet from '@/views/account/BaseNetworkSheet';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
 import { useCreateInstantWallet, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
@@ -1399,6 +1400,7 @@ export default function AccountSettings() {
    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
    const [walletCopied, setWalletCopied] = useState(false);
    const [showChangeWalletModal, setShowChangeWalletModal] = useState(false);
+   const [showBaseNetworkSheet, setShowBaseNetworkSheet] = useState(false);
    const [isDisconnectWalletPending, setIsDisconnectWalletPending] = useState(false);
    const [isSavingWallet, setIsSavingWallet] = useState(false);
    const [walletError, setWalletError] = useState('');
@@ -2027,14 +2029,14 @@ export default function AccountSettings() {
                                        type="button"
                                        onClick={handleCopyWallet}
                                        title="Copy wallet address"
-                                       className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                       className="flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-blue-800 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-blue-800"
                                        aria-label="Copy wallet address"
                                     >
                                        {walletCopied ? (
                                           'Copied'
                                        ) : (
                                           <span
-                                             className="block size-5 bg-md-primary-900"
+                                             className="block size-5 bg-md-blue-800"
                                              style={{
                                                 ...ICON_MASK,
                                                 WebkitMaskImage: "url('/icons/copy.svg')",
@@ -2098,13 +2100,19 @@ export default function AccountSettings() {
                            ) : null}
 
                            {hasWallet ? (
-                              <div className="flex min-h-[52px] items-center justify-between gap-md-2 px-md-3 py-md-1">
+                              <button
+                                 type="button"
+                                 onClick={() => setShowBaseNetworkSheet(true)}
+                                 aria-haspopup="dialog"
+                                 className="flex min-h-[52px] w-full items-center justify-between gap-md-2 rounded-md-md px-md-3 py-md-1 text-left transition-colors hover:bg-md-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900 active:bg-md-neutral-200"
+                              >
                                  <span className="text-md-b2 font-medium text-md-neutral-1200">Network</span>
                                  <span className="flex items-center gap-1.5 text-md-b2 font-semibold text-md-heading">
                                     <img src="/icons/base-account.svg" alt="" className="size-4 rounded-md-sm" />
                                     {chain?.name || 'Base'}
+                                    <ChevronRight className="size-4 text-md-neutral-800" aria-hidden="true" />
                                  </span>
-                              </div>
+                              </button>
                            ) : null}
 
                            {borrowerHasConfirmedBaseWallet ? (
@@ -2364,6 +2372,7 @@ export default function AccountSettings() {
          <ChangeDisplayNameModal isOpen={showNameModal} onClose={() => setShowNameModal(false)} currentName={currentDisplayName} />
          <EditBioInfoModal isOpen={showBioInfoModal} onClose={() => setShowBioInfoModal(false)} user={user} />
          <ChangeWalletModal isOpen={showChangeWalletModal} onClose={() => setShowChangeWalletModal(false)} />
+         <BaseNetworkSheet isOpen={showBaseNetworkSheet} onClose={() => setShowBaseNetworkSheet(false)} />
          <TelegramAlertsModal
             isOpen={showTelegramAlertsModal}
             onClose={() => setShowTelegramAlertsModal(false)}

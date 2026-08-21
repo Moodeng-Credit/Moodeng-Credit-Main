@@ -304,7 +304,12 @@ function ActivityRow({ item }: { item: WalletActivityItem }) {
          </div>
          <p
             className={`col-start-2 mt-1 shrink-0 text-md-b1 font-semibold min-[350px]:col-auto min-[350px]:mt-0 ${
-               item.direction === 'in' ? 'text-md-green-900' : 'text-md-heading'
+               item.direction === 'in'
+                  ? 'text-md-green-900'
+                  : item.kind === 'loan_funded'
+                    ? // Funding isn't a loss or a repayment — a neutral blue reads as "money out on purpose"
+                      'text-md-blue-800'
+                    : 'text-md-heading'
             }`}
          >
             {item.direction === 'in' ? '+' : item.direction === 'out' ? '−' : ''}
