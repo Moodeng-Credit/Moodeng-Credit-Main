@@ -164,15 +164,26 @@ export function SettingsFieldRow({
 
 // ─── Toggle ───
 
-export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+export function Toggle({
+   checked,
+   onChange,
+   label,
+   disabled = false
+}: {
+   checked: boolean;
+   onChange: (v: boolean) => void;
+   label: string;
+   disabled?: boolean;
+}) {
    return (
       <button
          type="button"
          role="switch"
          aria-checked={checked}
          aria-label={label}
+         disabled={disabled}
          onClick={() => onChange(!checked)}
-         className={`relative h-6 w-[42px] shrink-0 rounded-md-pill border transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+         className={`relative h-6 w-[42px] shrink-0 rounded-md-pill border transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 disabled:opacity-50 ${
             checked ? 'border-md-primary-100 bg-md-primary-900' : 'border-md-primary-300 bg-white'
          }`}
       >
