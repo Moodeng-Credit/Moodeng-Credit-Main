@@ -411,7 +411,7 @@ export default function Account() {
                         key={item.id}
                         type="button"
                         onClick={() => navigate(item.path)}
-                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                      >
                         <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.accountItems[item.id]}</span>
                         <ChevronRight />
@@ -419,7 +419,7 @@ export default function Account() {
                   ))}
                   <a
                      href="#account-get-in-touch"
-                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                     className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                   >
                      <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.getInTouch}</span>
                      <ChevronRight />
@@ -444,7 +444,7 @@ export default function Account() {
                      <button
                         type="button"
                         onClick={() => navigate(CREDIT_GUIDE_URL)}
-                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                      >
                         <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
                            {copy.creditGuide}
@@ -462,7 +462,7 @@ export default function Account() {
                               type="button"
                               onClick={() => setOpenFaqId(isOpen ? null : item.id)}
                               aria-expanded={isOpen}
-                              className="flex items-center justify-between gap-md-2 px-md-5 py-md-3 w-full text-left"
+                              className="flex items-center justify-between gap-md-2 px-md-5 py-md-3 w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                            >
                               <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em] flex-1">{item.question}</span>
                               <ChevronDown isOpen={isOpen} />
@@ -494,7 +494,7 @@ export default function Account() {
                         key={item.id}
                         type="button"
                         onClick={() => openExternal(item.url)}
-                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left"
+                        className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                      >
                         <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.contactItems[item.id]}</span>
                         <ExternalLinkIcon />
@@ -506,7 +506,7 @@ export default function Account() {
                <button
                   type="button"
                   onClick={() => setShowSignOutModal(true)}
-                  className="flex items-center justify-center gap-2.5 px-md-5 py-md-3 border border-md-red-300 rounded-md-md w-full"
+                  className="flex items-center justify-center gap-2.5 px-md-5 py-md-3 border border-md-red-300 rounded-md-md w-full transition-colors hover:bg-md-red-100 active:bg-md-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-red-500"
                >
                   <span className="text-md-h5 font-semibold text-md-red-300">{copy.signOut}</span>
                   <div
