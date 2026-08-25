@@ -34,6 +34,7 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import ComingDueSection from './ComingDueSection';
+import DemoB2BSection from './DemoB2BSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
@@ -68,7 +69,8 @@ type AdminTab =
    | 'referrals'
    | 'notifications'
    | 'chat'
-   | 'relay';
+   | 'relay'
+   | 'demo-b2b';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -138,6 +140,11 @@ const navGroups: NavGroup[] = [
       id: 'funding',
       label: 'Funding',
       items: [{ id: 'relay', label: 'Liquidity Relay' }]
+   },
+   {
+      id: 'demo',
+      label: 'Demo',
+      items: [{ id: 'demo-b2b', label: 'B2B demo' }]
    }
 ];
 
@@ -1620,6 +1627,8 @@ export default function AdminPanel() {
                {activeTab === 'chat' ? <SupportChatSection /> : null}
 
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
+
+               {activeTab === 'demo-b2b' ? <DemoB2BSection /> : null}
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">
