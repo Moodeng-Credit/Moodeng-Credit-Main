@@ -70,7 +70,10 @@ type AdminTab =
    | 'notifications'
    | 'chat'
    | 'relay'
-   | 'demo-b2b';
+   | 'demo-monday'
+   | 'demo-map'
+   | 'demo-console'
+   | 'demo-spec';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -143,8 +146,13 @@ const navGroups: NavGroup[] = [
    },
    {
       id: 'demo',
-      label: 'Demo',
-      items: [{ id: 'demo-b2b', label: 'B2B demo' }]
+      label: 'B2B demo',
+      items: [
+         { id: 'demo-monday', label: 'The Monday Problem' },
+         { id: 'demo-map', label: 'Pool map' },
+         { id: 'demo-console', label: 'Facility console' },
+         { id: 'demo-spec', label: 'Build spec' }
+      ]
    }
 ];
 
@@ -1628,7 +1636,10 @@ export default function AdminPanel() {
 
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 
-               {activeTab === 'demo-b2b' ? <DemoB2BSection /> : null}
+               {activeTab === 'demo-monday' ? <DemoB2BSection page="monday" /> : null}
+               {activeTab === 'demo-map' ? <DemoB2BSection page="map" /> : null}
+               {activeTab === 'demo-console' ? <DemoB2BSection page="console" /> : null}
+               {activeTab === 'demo-spec' ? <DemoB2BSection page="spec" /> : null}
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">

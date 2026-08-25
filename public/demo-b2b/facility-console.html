@@ -466,7 +466,7 @@ function seed(){
       {kind:"warn",text:"Borrowing base certificate <b>overdue</b> &mdash; draws suspended",t:new Date(TODAY-1*DAY),tx:null},
       {kind:"doc",text:"Servicer report accepted for July",t:new Date(TODAY-13*DAY),tx:null}
     ],
-    ui:{view:"overview",q:"",filters:{status:"live",elig:"all"},sort:{col:"due",dir:-1},page:0,range:"12W",mapPaid:false,pinned:null}
+    ui:{view:(()=>{const q=new URLSearchParams(location.search).get("view");return q&&["overview","base","map","collateral","covenants","reporting","service","draws","documents"].includes(q)?q:"map"})(),q:"",filters:{status:"live",elig:"all"},sort:{col:"due",dir:-1},page:0,range:"12W",mapPaid:false,pinned:null}
   };
 }
 
