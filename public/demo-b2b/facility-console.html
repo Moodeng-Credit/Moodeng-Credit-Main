@@ -1,0 +1,1055 @@
+<title>Kasama Facility Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F6F7F9; --panel:#FFFFFF; --panel-2:#FAFBFC; --sunk:#F1F2F5;
+  --rail:#FFFFFF; --rail-ink:#5B626F; --rail-on:#14171F;
+  --ink:#14171F; --ink-2:#454B58; --muted:#737A88;
+  --line:#E7E9EE; --line-2:#D5D9E2;
+  --amber:#1D3B6E; --amber-fill:#E9EEF7;
+  --teal:#0F7A5A; --teal-fill:#E3F2EC;
+  --danger:#B4342A; --danger-fill:#FBE7E4;
+  --warn:#9A6608; --warn-fill:#FBF1DC;
+  --on-amber:#FFFFFF; --grid:rgba(20,23,31,.07); --focus:#1D3B6E;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.04);
+  --shadow-lg:0 12px 32px -12px rgba(16,24,40,.22),0 2px 6px rgba(16,24,40,.06);
+  --r:12px; --r-sm:8px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;letter-spacing:-.005em}
+.mono,.id,.tx,code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.018em}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+@media (max-width:1000px){.app{grid-template-columns:1fr}.rail{display:none}}
+
+/* sidebar */
+.rail{background:var(--rail);color:var(--rail-ink);display:flex;flex-direction:column;
+  border-right:1px solid var(--line);position:sticky;top:0;height:100vh}
+.railtop{padding:20px 18px 14px;display:flex;align-items:center;gap:9px;color:var(--rail-on);font-weight:700;font-size:16px;letter-spacing:-.025em}
+.railtop svg{color:var(--amber);flex:none}
+.orgsw{margin:0 12px 16px;padding:9px 10px;border:1px solid var(--line);border-radius:var(--r-sm);
+  display:flex;align-items:center;gap:10px;background:var(--panel);text-align:left;width:calc(100% - 24px);color:inherit;
+  box-shadow:var(--shadow);transition:border-color .15s}
+.orgsw:hover{border-color:var(--line-2);background:var(--panel-2)}
+.orgsw .mark{width:26px;height:26px;border-radius:7px;background:var(--amber);color:var(--on-amber);
+  display:grid;place-items:center;font-weight:600;font-size:11px;flex:none;letter-spacing:0}
+.orgsw .txt{min-width:0;flex:1}
+.orgsw b{display:block;color:var(--rail-on);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.orgsw span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navsec{padding:0 12px;overflow-y:auto}
+.navlab{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 6px;font-weight:600}
+.navitem{display:flex;align-items:center;gap:11px;padding:8px 10px;border-radius:var(--r-sm);font-size:13.5px;
+  color:var(--rail-ink);font-weight:500;width:100%;background:transparent;border:0;text-align:left;margin-bottom:1px;transition:background .12s,color .12s}
+.navitem svg{width:17px;height:17px;flex:none;opacity:.7}
+.navitem:hover{background:var(--sunk);color:var(--rail-on)}
+.navitem.on{background:var(--amber-fill);color:var(--amber);font-weight:600}
+.navitem.on svg{color:var(--amber);opacity:1}
+.navbadge{margin-left:auto;font-size:11px;color:var(--muted);background:var(--sunk);padding:1px 7px;border-radius:20px;font-weight:500}
+.navitem.on .navbadge{background:var(--panel);color:var(--amber)}
+.navbadge.hot{background:var(--danger-fill);color:var(--danger)}
+.railfoot{margin-top:auto;padding:14px 16px 16px;border-top:1px solid var(--line)}
+.railfoot p{margin:0;font-size:11.5px;line-height:1.45;color:var(--muted)}
+.railfoot b{color:var(--ink);display:block;font-size:12px;font-weight:600}
+.reset{margin-top:10px;width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink-2);
+  border-radius:var(--r-sm);padding:6px;font-size:11.5px;font-weight:500}
+.reset:hover{border-color:var(--line-2);background:var(--panel-2)}
+
+/* top bar */
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 22px;height:58px}
+.search{display:flex;align-items:center;gap:9px;background:var(--sunk);border:1px solid transparent;
+  border-radius:var(--r-sm);padding:7px 11px;width:min(360px,42vw);color:var(--muted);transition:background .15s,border-color .15s}
+.search:focus-within{background:var(--panel);border-color:var(--line-2);box-shadow:var(--shadow)}
+.search input{border:0;background:transparent;outline:none;color:var(--ink);width:100%}
+.search input::placeholder{color:var(--muted)}
+.search kbd{font-family:"JetBrains Mono",monospace;font-size:10px;background:var(--panel);border:1px solid var(--line);
+  border-radius:4px;padding:1px 5px;color:var(--muted)}
+.sp{margin-left:auto}
+.iconbtn{background:transparent;border:1px solid transparent;border-radius:var(--r-sm);color:var(--muted);
+  width:32px;height:32px;display:grid;place-items:center}
+.iconbtn:hover{background:var(--sunk);color:var(--ink)}
+.bell{position:relative}
+.bell[data-unread="1"]::after{content:"";position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;
+  background:var(--danger);border:1.5px solid var(--panel)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--amber-fill);color:var(--amber);
+  display:grid;place-items:center;font-size:11.5px;font-weight:600;border:1px solid var(--line)}
+
+/* page header */
+.phead{padding:22px 22px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+.pheadrow{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.pheadrow h1{font-size:22px;letter-spacing:-.025em}
+.pheadrow p{margin:5px 0 0;color:var(--muted);font-size:13px;max-width:66ch}
+.acts{margin-left:auto;display:flex;gap:9px;align-items:center}
+.btn{font-size:13px;font-weight:600;border:1px solid var(--amber);background:var(--amber);color:var(--on-amber);
+  padding:8px 15px;border-radius:var(--r-sm);box-shadow:var(--shadow);transition:filter .15s,box-shadow .15s}
+.btn:hover{filter:brightness(1.14)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none;box-shadow:none}
+.btn.ghost{background:var(--panel);color:var(--ink);border-color:var(--line-2)}
+.btn.ghost:hover{background:var(--panel-2);border-color:var(--muted);filter:none}
+.btn.sm{padding:5px 11px;font-size:12px;border-radius:6px}
+.btn.danger{background:var(--panel);border-color:var(--line-2);color:var(--danger)}
+.btn.danger:hover{border-color:var(--danger);background:var(--danger-fill);filter:none}
+.tabs{display:flex;gap:4px;margin-top:16px;overflow-x:auto}
+.tab{padding:9px 12px;font-size:13.5px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;
+  font-weight:500;background:transparent;border-top:0;border-left:0;border-right:0}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--amber);border-bottom-color:var(--amber);font-weight:600}
+.content{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+
+/* chips */
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;padding:3px 9px;
+  border-radius:20px;white-space:nowrap;letter-spacing:0}
+.chip::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;flex:none}
+.chip.teal{color:var(--teal);background:var(--teal-fill)}
+.chip.amber{color:var(--amber);background:var(--amber-fill)}
+.chip.danger{color:var(--danger);background:var(--danger-fill)}
+.chip.warn{color:var(--warn);background:var(--warn-fill)}
+.chip.flat{color:var(--muted);background:var(--sunk)}
+.chip.sq{border-radius:6px}
+.chip.sq::before{display:none}
+
+/* stat tiles */
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media (max-width:1180px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:620px){.tiles{grid-template-columns:1fr}}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px 18px 19px;box-shadow:var(--shadow)}
+.tile .th{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12.5px;font-weight:500}
+.tile .v{font-size:30px;font-weight:600;letter-spacing:-.03em;margin-top:11px;line-height:1;
+  font-variant-numeric:tabular-nums;transition:color .25s}
+.tile .v.flash{color:var(--amber)}
+.tile .m{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+.d-up{color:var(--teal);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.d-down{color:var(--danger);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.bar{height:6px;border-radius:20px;background:var(--sunk);display:flex;overflow:hidden;margin-top:14px;gap:2px}
+.bar i{height:100%;border-radius:20px;transition:width .5s ease}
+.mini{display:flex;gap:14px;margin-top:11px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.mini span{display:flex;align-items:center;gap:6px}
+.sw{width:8px;height:8px;border-radius:3px;flex:none}
+
+/* cards */
+.grid{display:grid;grid-template-columns:1fr 344px;gap:16px;align-items:start}
+@media (max-width:1180px){.grid{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;gap:10px;padding:15px 18px;border-bottom:1px solid var(--line)}
+.ch h2{font-size:14.5px}
+.ch .r{margin-left:auto;display:flex;align-items:center;gap:9px}
+.cb{padding:18px}
+.seg{display:flex;background:var(--sunk);border-radius:var(--r-sm);padding:3px}
+.seg button{border:0;background:transparent;color:var(--muted);font-size:12px;padding:4px 10px;border-radius:6px;font-weight:500}
+.seg button.on{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.sel,.inp{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);color:var(--ink);
+  font-size:12.5px;padding:7px 10px}
+.inp{width:100%}
+.inp:focus,.sel:focus{outline:2px solid var(--focus);outline-offset:-1px;border-color:transparent}
+
+/* chart */
+.chartwrap{padding:14px 18px 0;position:relative}
+.xax{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);padding:8px 18px 14px;font-variant-numeric:tabular-nums}
+.clegend{display:flex;gap:20px;flex-wrap:wrap;padding:13px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-2)}
+.clegend span{display:flex;align-items:center;gap:7px}
+.clegend b{font-weight:600;font-variant-numeric:tabular-nums}
+.ctip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:7px;padding:7px 10px;
+  font-size:11.5px;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .12s;white-space:nowrap;z-index:5;box-shadow:var(--shadow-lg)}
+
+/* toolbar + table */
+.toolbar{display:flex;align-items:center;gap:9px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel-2)}
+.filter{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--line-2);
+  border-radius:20px;padding:4px 11px;font-size:12px;color:var(--ink-2)}
+.filter b{font-weight:600;color:var(--ink)}
+.filter button{background:transparent;border:0;color:var(--muted);padding:0 0 0 2px;font-size:13px;line-height:1}
+.filter button:hover{color:var(--danger)}
+.addf{border:1px dashed var(--line-2);background:transparent;color:var(--muted);border-radius:20px;padding:4px 11px;font-size:12px}
+.addf:hover{color:var(--amber);border-color:var(--amber)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:920px;font-size:13px}
+th{text-align:left;font-weight:600;font-size:11px;letter-spacing:.02em;color:var(--muted);
+  padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel);position:sticky;top:0}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--ink)}
+th .ar{opacity:.45;font-size:9px}
+td{padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+tbody tr{transition:background .1s}
+tbody tr:hover{background:var(--panel-2)}
+tbody tr:last-child td{border-bottom:0}
+th.num,td.num{text-align:right}
+td.num{font-weight:500}
+td.dim{color:var(--muted)}
+.stripe{border-left:3px solid transparent;width:32px}
+.stripe.ok{border-left-color:var(--teal)}
+.stripe.warn{border-left-color:var(--warn)}
+.stripe.bad{border-left-color:var(--danger)}
+.stripe.none,.stripe.paid{border-left-color:var(--line-2)}
+input[type=checkbox]{accent-color:var(--amber);width:14px;height:14px}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:28px;height:28px;border-radius:50%;background:var(--sunk);color:var(--ink-2);display:grid;place-items:center;
+  font-size:10.5px;font-weight:600;flex:none}
+.who b{display:block;font-weight:600;font-size:13px}
+.who span{display:block;font-size:11px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+.tx{color:var(--muted);font-size:11.5px}
+.tx:hover{color:var(--amber);text-decoration:underline}
+.rowbtns{display:flex;gap:6px;justify-content:flex-end}
+.pager{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.pgbtn{border:1px solid var(--line-2);background:var(--panel);border-radius:var(--r-sm);padding:5px 11px;color:var(--ink-2);font-size:12.5px;font-weight:500}
+.pgbtn:hover:not(:disabled){background:var(--panel-2)}
+.pgbtn:disabled{opacity:.4;cursor:default}
+.empty{padding:40px 14px;text-align:center;color:var(--muted);font-size:13px}
+
+/* side widgets */
+.kv{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;font-size:12.5px}
+.kv + .kv{border-top:1px solid var(--line)}
+.kv span{color:var(--muted)}
+.kv b{font-weight:600;font-variant-numeric:tabular-nums}
+pre{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r-sm);padding:13px;
+  overflow-x:auto;font-size:11.5px;line-height:1.65;color:var(--ink-2)}
+pre .k{color:var(--teal)} pre .s{color:var(--amber)} pre .c{color:var(--muted)}
+.gauge{display:flex;align-items:baseline;gap:10px}
+.gauge .g{font-size:32px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.feed .ev{display:grid;grid-template-columns:14px 1fr;gap:11px;padding:13px 18px;border-bottom:1px solid var(--line)}
+.feed .ev:last-child{border-bottom:0}
+.dot{width:8px;height:8px;border-radius:50%;margin-top:5px}
+.feed p{margin:0;font-size:12.5px;line-height:1.45}
+.feed .t{display:block;font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--muted);margin-top:3px}
+.banner{display:flex;align-items:flex-start;gap:11px;background:var(--warn-fill);border:1px solid transparent;
+  color:var(--warn);border-radius:var(--r);padding:13px 16px;font-size:13px}
+.banner.bad{background:var(--danger-fill);color:var(--danger)}
+.banner > button{margin-left:auto;color:inherit;background:transparent;border:0;font-size:15px;line-height:1;opacity:.6}
+.banner .btn{background:var(--danger);border-color:var(--danger);color:#fff;opacity:1}
+.banner .btn:hover{filter:brightness(1.12)}
+.banner button:hover{opacity:1}
+.pagefoot{color:var(--muted);font-size:11.5px;padding:4px 2px 26px;display:flex;gap:12px;flex-wrap:wrap}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(20,23,31,.32);backdrop-filter:blur(2px);display:grid;place-items:center;z-index:60;padding:20px}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(450px,100%);
+  box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto}
+.mh{display:flex;align-items:center;padding:17px 20px;border-bottom:1px solid var(--line)}
+.mh h2{font-size:15.5px}
+.mh button{margin-left:auto;background:transparent;border:0;color:var(--muted);font-size:18px;line-height:1}
+.mb{padding:20px}
+.mf{display:flex;gap:9px;padding:14px 20px;border-top:1px solid var(--line);background:var(--panel-2)}
+.mf .sp{margin-left:auto}
+label.fld{display:block;margin-bottom:15px}
+label.fld span{display:block;font-size:12px;color:var(--ink-2);margin-bottom:6px;font-weight:500}
+.hint{font-size:12px;color:var(--muted);margin:11px 0 0}
+.hint.bad{color:var(--danger)}
+.hint.good{color:var(--teal)}
+
+/* toasts */
+.toasts{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;flex-direction:column;gap:9px}
+.toast{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 15px;
+  font-size:13px;box-shadow:var(--shadow-lg);max-width:340px;border-left:3px solid var(--teal);animation:tin .2s ease}
+.toast.warn{border-left-color:var(--warn)}
+.toast.bad{border-left-color:var(--danger)}
+.toast b{display:block;font-size:13px;font-weight:600}
+.toast span{color:var(--muted);font-size:11.5px;font-family:"JetBrains Mono",monospace}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+<style>
+/* --- warehouse-facility additions --- */
+.wf{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;font-size:13px;border-bottom:1px solid var(--line)}
+.wf:last-child{border-bottom:0}
+.wf.tot{border-top:2px solid var(--line-2);border-bottom:0;margin-top:2px;padding-top:12px;font-weight:600}
+.wf .lbl{color:var(--ink-2)}
+.wf .lbl small{display:block;color:var(--muted);font-size:11px;font-weight:400;margin-top:1px}
+.wf .amt{font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.wf .amt.neg{color:var(--danger)}
+.wf.tot .amt{font-size:16px}
+.due{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line)}
+.due:last-of-type{border-bottom:0}
+.due .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;font-size:12px;font-weight:600}
+.due .ic.ok{background:var(--teal-fill);color:var(--teal)}
+.due .ic.soon{background:var(--warn-fill);color:var(--warn)}
+.due .ic.late{background:var(--danger-fill);color:var(--danger)}
+.due .body{min-width:0;flex:1}
+.due .body b{display:block;font-size:13px;font-weight:600}
+.due .body span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+.due .act{margin-left:auto;display:flex;align-items:center;gap:9px}
+.cov{display:grid;grid-template-columns:1fr 108px 108px 92px;gap:10px;padding:11px 18px;border-bottom:1px solid var(--line);
+  font-size:12.5px;align-items:center}
+.cov:last-child{border-bottom:0}
+.cov .nm{font-weight:500}
+.cov .nm small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:1px}
+.cov .n{text-align:right;font-variant-numeric:tabular-nums}
+.cov .n.act{font-weight:600}
+.cov.hd{background:var(--panel-2);font-size:10.5px;letter-spacing:.02em;color:var(--muted);text-transform:uppercase;font-weight:600}
+.cov.c2{grid-template-columns:1fr 72px 74px;gap:8px;padding:10px 18px}
+.cov.c2 .nm small{display:none}
+.cov.hd .n{text-align:right}
+@media (max-width:560px){.cov{grid-template-columns:1fr 80px}.cov .hide{display:none}}
+.ring{--p:0;width:74px;height:74px;border-radius:50%;flex:none;
+  background:conic-gradient(var(--amber) calc(var(--p)*1%),var(--sunk) 0);
+  display:grid;place-items:center}
+.ring::after{content:"";position:absolute;width:58px;height:58px;border-radius:50%;background:var(--panel)}
+.ringwrap{position:relative;display:grid;place-items:center}
+.ringwrap b{position:relative;z-index:1;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.timeline{display:flex;align-items:center;gap:0;margin:16px 0 6px}
+.tl{flex:1;height:7px;background:var(--sunk);border-radius:20px;overflow:hidden;display:flex}
+.tl i{height:100%}
+.tlx{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:7px}
+.tlx b{display:block;color:var(--ink);font-weight:600;font-size:12px}
+/* --- pool map --- */
+.maplegend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:11px 18px;border-bottom:1px solid var(--line);background:var(--panel-2);font-size:12px;color:var(--ink-2)}
+.maplegend .lg{display:flex;align-items:center;gap:6px}
+.maplegend .k{width:11px;height:11px;border-radius:3px;flex:none}
+.maplegend .ttl{font-weight:600;color:var(--ink);margin-right:2px}
+.mapwrap{padding:16px 18px 20px;position:relative}
+.maprow{display:grid;grid-template-columns:132px 1fr;gap:14px;align-items:start;padding:11px 0;border-bottom:1px solid var(--line)}
+.maprow:last-child{border-bottom:0}
+.maprow .rh b{display:block;font-size:13px;font-weight:600}
+.maprow .rh span{display:block;font-size:11px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.maprow .rh .flag{display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:10.5px;font-weight:600;
+  color:var(--danger);background:var(--danger-fill);padding:2px 7px;border-radius:20px}
+.cells{display:flex;flex-wrap:wrap;gap:3px}
+.cell{width:17px;height:26px;border-radius:4px;border:0;padding:0;cursor:pointer;position:relative;transition:transform .08s}
+.cell:hover{transform:translateY(-2px)}
+.cell.on{outline:2px solid var(--ink);outline-offset:1px;z-index:2}
+.cell.c-ok{background:#2FA36B}
+.cell.c-late{background:#E0A93B}
+.cell.c-bad{background:#DE5B4A}
+.cell.c-off{background:#8E2F25}
+.cell.c-paid{background:var(--line-2)}
+.cell.inel::after{content:"";position:absolute;inset:0;border-radius:4px;border:1.5px dashed rgba(255,255,255,.85)}
+.pin{position:absolute;z-index:20;width:224px;background:var(--panel);border:1px solid var(--line-2);border-radius:10px;
+  box-shadow:var(--shadow-lg);overflow:hidden;pointer-events:none}
+.pin.stuck{pointer-events:auto}
+.pin .ph{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.pin .ph .av{width:26px;height:26px}
+.pin .ph b{display:block;font-size:12.5px;font-weight:600}
+.pin .ph span{display:block;font-size:10.5px;color:var(--muted);font-family:"JetBrains Mono",monospace}
+.pin .pb{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.pin .pr{display:flex;justify-content:space-between;font-size:11.5px}
+.pin .pr span{color:var(--muted)}
+.pin .pr b{font-weight:600;font-variant-numeric:tabular-nums}
+.pin .why{font-size:11px;padding:6px 8px;border-radius:6px;background:var(--danger-fill);color:var(--danger);font-weight:500}
+.pin .why.ok{background:var(--teal-fill);color:var(--teal)}
+.pin .pf{padding:8px 12px;border-top:1px solid var(--line);font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--muted)}
+.mapfoot{display:flex;gap:16px;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+.mini .cells{gap:2px}
+.mini .cell{width:9px;height:14px;border-radius:2px}
+.mini .cell:hover{transform:none}
+.mini .maprow{grid-template-columns:96px 1fr;gap:10px;padding:7px 0}
+.mini .maprow .rh b{font-size:11.5px}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="railtop">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="1.7" y="1.7" width="20.6" height="20.6" rx="2.4" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M6 16.4V9.3l6 4.3 6-4.3v7.1" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+      </svg>
+      Moodeng
+    </div>
+    <button class="orgsw" id="orgsw">
+      <span class="mark">KL</span>
+      <span class="txt"><b>Kasama Lending</b><span>Facility KL-2026-01</span></span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="opacity:.55" aria-hidden="true"><path d="m8 10 4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <nav class="navsec" id="nav"></nav>
+    <div class="railfoot">
+      <p><b>Sandbox environment</b>Test data only.</p>
+      <button class="reset" id="resetBtn">Reset demo data</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <label class="search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="search" placeholder="Search loans, obligors, draw IDs" aria-label="Search">
+        <kbd>&#8984;K</kbd>
+      </label>
+      <span class="sp"></span>
+      <span class="chip amber sq">Sandbox</span>
+      <button class="iconbtn bell" id="bell" data-unread="1" aria-label="Notifications">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4 1.5 5.5 1.5 5.5H5S6.5 14 6.5 10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 19a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </button>
+      <button class="iconbtn" aria-label="Help">?</button>
+      <span class="avatar">GL</span>
+    </div>
+    <div class="phead">
+      <div class="pheadrow">
+        <div><h1 id="pgTitle">Facility overview</h1><p id="pgSub"></p></div>
+        <div class="acts">
+          <button class="btn ghost" id="exportBtn">Export loan tape</button>
+          <button class="btn" id="drawBtn">Request draw</button>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs"></nav>
+    </div>
+    <div class="content" id="view"></div>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
+<div id="modalRoot"></div>
+
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s);
+const fmt=n=>(n<0?"-$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US");
+const fmt2=n=>(n<0?"-$":"$")+Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=(n,d=1)=>(n*100).toFixed(d)+"%";
+const DAY=86400000, TODAY=new Date("2026-08-25T09:00:00Z");
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const dmy=d=>d.getUTCDate()+" "+MON[d.getUTCMonth()];
+const dmyy=d=>d.getUTCDate()+" "+MON[d.getUTCMonth()]+" "+d.getUTCFullYear();
+const clock=d=>String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0");
+const days=(a,b)=>Math.round((a-b)/DAY);
+const hex=()=>"0x"+Math.floor(Math.random()*65536).toString(16).padStart(4,"0")+"..."+Math.floor(Math.random()*65536).toString(16).padStart(4,"0");
+const initials=n=>n.split(" ").map(p=>p[0]).join("").slice(0,2).toUpperCase();
+const FIRST=["Maria","Jose","Ana","Ramon","Nicha","Somchai","Pim","Dara","Liza","Ben","Kanya","Arnel","Ploy","Rico","Tida","Malou","Nat","Grace","Ito","Sunee","Paolo","Wan","Erika","Chai"];
+const LAST=["Ratanapon","Villanueva","Santos","Dizon","Chaiyaphum","Aquino","Obispo","Reyes","Suwan","Bautista","Panya","Cruz","Intharat","Mendoza","Kaewkla","Ocampo","Sombat","Ilagan"];
+let S=null, uid=0;
+
+/* ---------------- seed ---------------- */
+function seed(){
+  let sd=97; const rnd=()=>((sd=sd*16807%2147483647)/2147483647);
+  const T=[150,180,200,220,250,280,300,350,400], loans=[];
+  for(let i=0;i<3400;i++){
+    const principal=T[Math.floor(rnd()*T.length)], tenor=[14,21,30][Math.floor(rnd()*3)];
+    const issued=new Date(TODAY-Math.floor(rnd()*150)*DAY), due=new Date(+issued+tenor*DAY);
+    const age=days(TODAY,due); let status="live", kyc="verified";
+    if(age>0) status = rnd()<0.955 ? "repaid" : "live";
+    if(status==="live"&&age>=30&&(age>=60||rnd()<0.7)){status="charged_off";kyc="banned"}
+    loans.push({id:"LN-"+(8100000+ ++uid*137).toString(36).toUpperCase().slice(0,6),
+      name:FIRST[Math.floor(rnd()*FIRST.length)]+" "+LAST[Math.floor(rnd()*LAST.length)],
+      user:"usr_"+Math.floor(rnd()*99999).toString(36).padStart(5,"0"),
+      market:rnd()<0.62?"PH":"TH",principal,tenor,apr:principal>=300?0.48:0.42,
+      issued,due,status,kyc,tx:hex()});
+  }
+  const elig=loans.filter(l=>l.status==="live"&&days(TODAY,l.due)<30&&l.kyc!=="banned")
+                  .reduce((a,l)=>a+l.principal,0);
+  const drawn=Math.round(elig*0.85*0.93/500)*500;
+  return {
+    f:{id:"KL-2026-01",commitment:500000,advance:0.85,sofr:0.0433,margin:0.0650,
+       revolvingEnd:new Date("2027-06-30T00:00:00Z"),maturity:new Date("2028-06-30T00:00:00Z"),
+       drawn,cash:82360,minLiquidity:50000,signed:new Date("2026-02-14T00:00:00Z")},
+    loans,
+    deliverables:[
+      {id:"bbc",name:"Borrowing base certificate",freq:"Weekly",due:new Date("2026-08-24T00:00:00Z"),last:new Date("2026-08-17T00:00:00Z"),blocks:true},
+      {id:"tape",name:"Collateral loan tape",freq:"Weekly",due:new Date("2026-08-31T00:00:00Z"),last:new Date("2026-08-24T00:00:00Z"),blocks:true},
+      {id:"fin",name:"Monthly financial statements",freq:"Monthly",due:new Date("2026-08-30T00:00:00Z"),last:new Date("2026-07-30T00:00:00Z"),blocks:false},
+      {id:"serv",name:"Servicer report",freq:"Monthly",due:new Date("2026-09-14T00:00:00Z"),last:new Date("2026-08-12T00:00:00Z"),blocks:false},
+      {id:"covcert",name:"Covenant compliance certificate",freq:"Quarterly",due:new Date("2026-11-14T00:00:00Z"),last:new Date("2026-08-14T00:00:00Z"),blocks:false},
+      {id:"aml",name:"AML / KYC programme attestation",freq:"Annual",due:new Date("2026-12-31T00:00:00Z"),last:new Date("2025-12-19T00:00:00Z"),blocks:false},
+      {id:"audit",name:"Audited financial statements",freq:"Annual",due:new Date("2027-04-30T00:00:00Z"),last:new Date("2026-04-22T00:00:00Z"),blocks:false}
+    ],
+    draws:[
+      {id:"DR-0006",req:new Date("2026-08-11T00:00:00Z"),amt:25000,status:"funded",tx:hex()},
+      {id:"DR-0005",req:new Date("2026-07-28T00:00:00Z"),amt:40000,status:"funded",tx:hex()},
+      {id:"DR-0004",req:new Date("2026-07-06T00:00:00Z"),amt:35000,status:"funded",tx:hex()},
+      {id:"DR-0003",req:new Date("2026-06-15T00:00:00Z"),amt:60000,status:"funded",tx:hex()},
+      {id:"DR-0002",req:new Date("2026-05-18T00:00:00Z"),amt:55000,status:"funded",tx:hex()},
+      {id:"DR-0001",req:new Date("2026-03-02T00:00:00Z"),amt:50000,status:"funded",tx:hex()}
+    ],
+    hist:[],
+    ledger:[
+      {kind:"pay",text:"Interest payment settled <b>$2,214.08</b>",t:new Date(TODAY-25*DAY),tx:hex()},
+      {kind:"draw",text:"Draw <b>DR-0006</b> funded &mdash; <b>$25,000</b>",t:new Date(TODAY-14*DAY),tx:hex()},
+      {kind:"doc",text:"Collateral loan tape accepted &mdash; 1,412 loans",t:new Date(TODAY-1*DAY),tx:null},
+      {kind:"warn",text:"Borrowing base certificate <b>overdue</b> &mdash; draws suspended",t:new Date(TODAY-1*DAY),tx:null},
+      {kind:"doc",text:"Servicer report accepted for July",t:new Date(TODAY-13*DAY),tx:null}
+    ],
+    ui:{view:(()=>{const q=new URLSearchParams(location.search).get("view");return q&&["overview","base","map","collateral","covenants","reporting","service","draws","documents"].includes(q)?q:"map"})(),q:"",filters:{status:"live",elig:"all"},sort:{col:"due",dir:-1},page:0,range:"12W",mapPaid:false,pinned:null}
+  };
+}
+
+/* ---------------- derived ---------------- */
+const live=()=>S.loans.filter(l=>l.status==="live");
+function eligibility(l){
+  if(l.status!=="live") return {ok:false,why:"Not outstanding"};
+  if(l.kyc==="banned") return {ok:false,why:"Obligor blacklisted"};
+  const d=days(TODAY,l.due);
+  if(d>=30) return {ok:false,why:"30+ days delinquent"};
+  if(days(TODAY,l.issued)>120) return {ok:false,why:"Exceeds 120d seasoning"};
+  return {ok:true,why:null};
+}
+const pool=()=>live().reduce((a,l)=>a+l.principal,0);
+const eligible=()=>live().filter(l=>eligibility(l).ok).reduce((a,l)=>a+l.principal,0);
+const ineligible=()=>pool()-eligible();
+const inelBreakdown=()=>{const o={};live().forEach(l=>{const e=eligibility(l);if(!e.ok)o[e.why]=(o[e.why]||0)+l.principal});return o};
+const base=()=>eligible()*S.f.advance;
+const availability=()=>Math.max(0,Math.min(S.f.commitment-S.f.drawn, base()-S.f.drawn));
+const deficiency=()=>Math.max(0,S.f.drawn-base());
+const rate=()=>S.f.sofr+S.f.margin;
+const utilisation=()=>S.f.drawn/S.f.commitment;
+const delinq30=()=>{const p=pool();if(!p)return 0;return live().filter(l=>days(TODAY,l.due)>=30).reduce((a,l)=>a+l.principal,0)/p};
+const delinq1=()=>{const p=pool();if(!p)return 0;return live().filter(l=>days(TODAY,l.due)>0).reduce((a,l)=>a+l.principal,0)/p};
+const cumLoss=()=>{const co=S.loans.filter(l=>l.status==="charged_off").reduce((a,l)=>a+l.principal,0);
+  const orig=S.loans.reduce((a,l)=>a+l.principal,0);return orig?co/orig:0};
+const waApr=()=>{const l=live();const p=pool();return p?l.reduce((a,x)=>a+x.apr*x.principal,0)/p:0};
+const waTerm=()=>{const l=live();const p=pool();return p?l.reduce((a,x)=>a+Math.max(days(x.due,TODAY),0)*x.principal,0)/p:0};
+const topObligor=()=>{const by={};live().forEach(l=>by[l.user]=(by[l.user]||0)+l.principal);
+  const p=pool();const m=Math.max(0,...Object.values(by));return p?m/p:0};
+const nextInterest=()=>S.f.drawn*rate()/12;
+const dStatus=d=>{const n=days(TODAY,d.due);return n>0?{k:"late",t:n+"d overdue",c:"danger"}:n>-7?{k:"soon",t:"Due "+dmy(d.due),c:"warn"}:{k:"ok",t:"Due "+dmy(d.due),c:"flat"}};
+const overdueBlocking=()=>S.deliverables.filter(d=>d.blocks&&days(TODAY,d.due)>0);
+
+function covenants(){
+  return [
+    {n:"30+ day delinquency",s:"of outstanding pool",lim:0.08,dir:"max",act:delinq30(),f:v=>pct(v,2)},
+    {n:"Cumulative net loss",s:"since facility close",lim:0.06,dir:"max",act:cumLoss(),f:v=>pct(v,2)},
+    {n:"Weighted average APR",s:"eligible collateral",lim:0.35,dir:"min",act:waApr(),f:v=>pct(v,2)},
+    {n:"Single obligor concentration",s:"share of pool",lim:0.015,dir:"max",act:topObligor(),f:v=>pct(v,2)},
+    {n:"Minimum liquidity",s:"unrestricted cash",lim:S.f.minLiquidity,dir:"min",act:S.f.cash,f:v=>fmt(v)},
+    {n:"Maximum advance rate",s:"drawn / eligible",lim:S.f.advance,dir:"max",act:eligible()?S.f.drawn/eligible():0,f:v=>pct(v,1)}
+  ].map(c=>{
+    const pass=c.dir==="max"?c.act<=c.lim:c.act>=c.lim;
+    const head=c.dir==="max"?c.lim-c.act:c.act-c.lim;
+    return Object.assign(c,{pass,head});
+  });
+}
+function drawBlockers(amount){
+  const b=[];
+  overdueBlocking().forEach(d=>b.push(d.name+" is "+days(TODAY,d.due)+" day(s) overdue"));
+  covenants().filter(c=>!c.pass).forEach(c=>b.push("Covenant breach: "+c.n));
+  if(deficiency()>0) b.push("Borrowing base deficiency of "+fmt(deficiency()));
+  if(amount!=null){
+    if(amount<=0) b.push("Amount must be greater than zero");
+    else if(amount>availability()) b.push("Exceeds availability of "+fmt(availability()));
+  }
+  return b;
+}
+
+/* ---------------- chrome ---------------- */
+const NAV=[["overview","Facility overview","M3 11.5 12 4l9 7.5M5.5 10v9.5h13V10"],
+["base","Borrowing base","M4 19.5h16M7 16V9.5M12 16V6M17 16v-4"],
+["map","Pool map","M4 5.5 9.5 3.5 15 5.5l5-2v15l-5 2-5.5-2L4 20.5zM9.5 3.5v17M15 5.5v17"],
+["collateral","Collateral pool","M5 3.5h11l3.5 3.5v13H5zM8.5 9.5h7M8.5 13h7M8.5 16.5h4"],
+["covenants","Covenants","M12 3.2 20 6.5v5.8c0 4.3-3.2 7.7-8 9-4.8-1.3-8-4.7-8-9V6.5l8-3.3ZM8.9 12l2.2 2.2 4-4.4"],
+["reporting","Reporting","M7 3.5h10a1.5 1.5 0 0 1 1.5 1.5v15l-3-2-3 2-3-2-3 2V5A1.5 1.5 0 0 1 7 3.5ZM9.5 8.5h5M9.5 12h5"],
+["service","Debt service","M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6M17.5 3v3.6h-3.6M6.5 21v-3.6h3.6"],
+["draws","Draw requests","M12 4v11M7.5 10.5 12 15l4.5-4.5M4.5 19.5h15"],
+["documents","Documents","M6 3.5h7l5 5v12H6zM13 3.5V9h5"]];
+const SUB={
+ overview:"Facility KL-2026-01. You borrow against your loan book; Moodeng is the lender. Availability is capped by the borrowing base, not the commitment.",
+ base:"Eligible collateral times the advance rate. This is the number that actually limits your draws.",
+ map:"Every loan in the facility drawn as one cell, grouped by the week it was originated. Colour is state; a dashed border means it is excluded from the borrowing base.",
+ collateral:"Every loan pledged to the facility, with its eligibility test result. This is the tape you submit weekly.",
+ covenants:"Portfolio tests measured continuously. A breach suspends draws until cured or waived.",
+ reporting:"What you owe Moodeng and when. Items marked blocking suspend draws while overdue.",
+ service:"Interest during the revolving period, then amortisation to final maturity.",
+ draws:"Draw history and requests. Each request is tested against availability, reporting, and covenants at submission.",
+ documents:"Executed facility documents and submitted reports."};
+const TABS=[["overview","Overview"],["base","Borrowing base"],["map","Pool map"],["collateral","Collateral"],["covenants","Covenants"],["reporting","Reporting"],["service","Debt service"],["draws","Draws"]];
+
+function chrome(){
+  const od=overdueBlocking().length, br=covenants().filter(c=>!c.pass).length;
+  $("#nav").innerHTML='<div class="navlab">Facility</div>'+NAV.map(([k,label,p])=>{
+    let badge="";
+    if(k==="reporting"&&od)badge='<span class="navbadge hot">'+od+' due</span>';
+    if(k==="covenants"&&br)badge='<span class="navbadge hot">'+br+'</span>';
+    if(k==="collateral")badge='<span class="navbadge">'+live().length.toLocaleString()+'</span>';
+    return '<button class="navitem'+(S.ui.view===k?" on":"")+'" data-nav="'+k+'"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="'+p+'" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>'+label+'</span>'+badge+'</button>'}).join("");
+  $("#tabs").innerHTML=TABS.map(([k,l])=>'<button class="tab'+(S.ui.view===k?" on":"")+'" data-nav="'+k+'">'+l+'</button>').join("");
+  $("#pgTitle").textContent={overview:"Facility overview",base:"Borrowing base",map:"Pool map",collateral:"Collateral pool",covenants:"Covenants",reporting:"Reporting calendar",service:"Debt service",draws:"Draw requests",documents:"Documents"}[S.ui.view];
+  $("#pgSub").innerHTML=SUB[S.ui.view]||"";
+  $("#drawBtn").disabled=drawBlockers().length>0;
+  $("#drawBtn").textContent=drawBlockers().length?"Draws suspended":"Request draw";
+}
+
+/* ---------------- pieces ---------------- */
+function alertBar(){
+  const b=drawBlockers();
+  if(!b.length) return "";
+  return `<div class="banner bad"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="margin-top:2px;flex:none"><path d="M12 4.5 21 19.5H3L12 4.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 16.6v.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <div><b>Draws are suspended.</b> ${b.join(". ")}. ${overdueBlocking().length?'Submit the outstanding certificate to restore availability.':''}</div>
+    ${overdueBlocking().length?`<button class="btn sm" style="margin-left:auto;flex:none" data-act="submitbbc">Submit certificate</button>`:""}</div>`;
+}
+function tiles(){
+  const av=availability(), covBreach=covenants().filter(c=>!c.pass).length;
+  const capped = (S.f.commitment-S.f.drawn) > (base()-S.f.drawn);
+  return `<div class="tiles">
+    <div class="tile"><div class="th">Commitment drawn</div>
+      <div class="v" data-k="drawn">${fmt(S.f.drawn)}</div>
+      <div class="m">of ${fmt(S.f.commitment)} committed</div>
+      <div class="bar"><i style="width:${(utilisation()*100).toFixed(1)}%;background:var(--amber)"></i></div>
+      <div class="mini"><span>${pct(utilisation())} utilised</span><span>Undrawn ${fmt(S.f.commitment-S.f.drawn)}</span></div></div>
+    <div class="tile"><div class="th">Available to draw</div>
+      <div class="v" data-k="avail">${fmt(av)}</div>
+      <div class="m">${drawBlockers().length?'<span class="chip danger">Suspended</span>':capped?'<span class="chip warn">Capped by borrowing base</span>':'<span class="chip teal">Available</span>'}</div>
+      <div class="bar"><i style="width:${Math.min(av/Math.max(S.f.commitment-S.f.drawn,1)*100,100).toFixed(1)}%;background:var(--teal)"></i></div>
+      <div class="mini"><span>Base ${fmt(base())}</span><span>Advance ${pct(S.f.advance,0)}</span></div></div>
+    <div class="tile"><div class="th">Collateral pool</div>
+      <div class="v" data-k="pool">${live().length.toLocaleString()}</div>
+      <div class="m">${fmt(pool())} principal &middot; ${fmt(eligible())} eligible</div>
+      <div class="bar"><i style="width:${(eligible()/Math.max(pool(),1)*100).toFixed(1)}%;background:var(--teal)"></i><i style="width:${(ineligible()/Math.max(pool(),1)*100).toFixed(1)}%;background:var(--danger)"></i></div>
+      <div class="mini"><span><i class="sw" style="background:var(--teal)"></i>Eligible</span><span><i class="sw" style="background:var(--danger)"></i>Ineligible ${fmt(ineligible())}</span></div></div>
+    <div class="tile"><div class="th">Compliance</div>
+      <div class="v" data-k="cov">${covBreach?covBreach+" breach":"In compliance"}</div>
+      <div class="m">${overdueBlocking().length?`<span class="chip danger">${overdueBlocking().length} report overdue</span>`:'<span class="chip teal">Reporting current</span>'}</div>
+      <div class="bar"><i style="width:${((6-covBreach)/6*100).toFixed(0)}%;background:var(--${covBreach?"danger":"teal"})"></i></div>
+      <div class="mini"><span>${6-covBreach} of 6 covenants passing</span></div></div>
+  </div>`;
+}
+function baseCard(full){
+  const inel=inelBreakdown(), av=availability(), def=deficiency();
+  return `<div class="card"><div class="ch"><h2>Borrowing base</h2><div class="r">
+      <span class="chip flat sq">As of ${dmy(TODAY)}</span>${full?"":`<button class="btn sm ghost" data-nav="base">Detail</button>`}</div></div>
+    <div class="cb">
+      <div class="wf"><span class="lbl">Gross collateral<small>${live().length.toLocaleString()} loans outstanding</small></span><span class="amt">${fmt(pool())}</span></div>
+      ${Object.entries(inel).map(([k,v])=>`<div class="wf"><span class="lbl" style="padding-left:14px">Less: ${k}</span><span class="amt neg">(${fmt(v)})</span></div>`).join("")}
+      <div class="wf"><span class="lbl">Eligible collateral</span><span class="amt">${fmt(eligible())}</span></div>
+      <div class="wf"><span class="lbl">Advance rate<small>per facility agreement &sect;4.1</small></span><span class="amt">&times; ${pct(S.f.advance,0)}</span></div>
+      <div class="wf tot"><span class="lbl">Borrowing base</span><span class="amt">${fmt(base())}</span></div>
+      <div class="wf"><span class="lbl">Less: current balance</span><span class="amt neg">(${fmt(S.f.drawn)})</span></div>
+      <div class="wf tot"><span class="lbl">${def>0?"Borrowing base deficiency":"Availability"}</span><span class="amt ${def>0?"neg":""}">${def>0?fmt(def):fmt(av)}</span></div>
+      ${full?`<p class="hint" style="margin-top:14px">Availability is the lesser of undrawn commitment (${fmt(S.f.commitment-S.f.drawn)}) and borrowing base less balance (${fmt(base()-S.f.drawn)}). Today the ${(S.f.commitment-S.f.drawn)>(base()-S.f.drawn)?"borrowing base":"commitment"} binds.</p>`:""}
+    </div></div>`;
+}
+function covCard(full){
+  const cs=covenants();
+  return `<div class="card"><div class="ch"><h2>Covenant compliance</h2><div class="r">
+    <span class="chip ${cs.some(c=>!c.pass)?"danger":"teal"}">${cs.filter(c=>c.pass).length}/${cs.length} passing</span>
+    ${full?"":`<button class="btn sm ghost" data-nav="covenants">All</button>`}</div></div>
+    <div class="cov hd${full?"":" c2"}"><span>Test</span>${full?'<span class="n">Threshold</span>':""}<span class="n">Actual</span><span class="n">Status</span></div>
+    ${cs.map(c=>`<div class="cov${full?"":" c2"}"><span class="nm">${c.n}<small>${c.s}</small></span>
+      ${full?`<span class="n">${c.dir==="max"?"&le; ":"&ge; "}${c.f(c.lim)}</span>`:""}
+      <span class="n act">${c.f(c.act)}</span>
+      <span class="n"><span class="chip ${c.pass?(Math.abs(c.head)/Math.max(Math.abs(c.lim),1e-9)<0.15?"warn":"teal"):"danger"}">${c.pass?(Math.abs(c.head)/Math.max(Math.abs(c.lim),1e-9)<0.15?"Tight":"Pass"):"Breach"}</span></span></div>`).join("")}</div>`;
+}
+function reportCard(full){
+  const ds=[...S.deliverables].sort((a,b)=>a.due-b.due);
+  return `<div class="card"><div class="ch"><h2>Reporting due</h2><div class="r">
+    ${overdueBlocking().length?`<span class="chip danger">${overdueBlocking().length} overdue</span>`:'<span class="chip teal">Current</span>'}
+    ${full?"":`<button class="btn sm ghost" data-nav="reporting">Calendar</button>`}</div></div>
+    ${ds.slice(0,full?99:4).map(d=>{const st=dStatus(d);
+      return `<div class="due"><span class="ic ${st.k}">${st.k==="ok"?"&#10003;":st.k==="soon"?"!":"&times;"}</span>
+      <span class="body"><b>${d.name}</b><span>${d.freq} &middot; ${st.t} &middot; last submitted ${dmy(d.last)}${d.blocks?" &middot; blocking":""}</span></span>
+      <span class="act">${st.k==="ok"?'<span class="chip flat">Scheduled</span>':`<button class="btn sm ${st.k==="late"?"":"ghost"}" data-act="submit" data-id="${d.id}">Submit</button>`}</span></div>`}).join("")}</div>`;
+}
+function serviceCard(full){
+  const sched=schedule().slice(0,full?24:4), tl=timeline();
+  return `<div class="card"><div class="ch"><h2>Debt service</h2><div class="r">
+    <span class="chip flat sq">${pct(rate(),2)} all-in</span>${full?"":`<button class="btn sm ghost" data-nav="service">Schedule</button>`}</div></div>
+    <div class="cb" style="padding-bottom:6px">
+      <div class="kv"><span>Next payment ${dmy(sched[0].d)}</span><b>${fmt2(sched[0].amt)}</b></div>
+      <div class="kv"><span>Rate (SOFR ${pct(S.f.sofr,2)} + ${pct(S.f.margin,2)})</span><b>${pct(rate(),2)}</b></div>
+      <div class="kv"><span>Revolving period ends</span><b>${dmyy(S.f.revolvingEnd)}</b></div>
+      <div class="kv"><span>Final maturity</span><b>${dmyy(S.f.maturity)}</b></div>
+      <div class="timeline"><div class="tl"><i style="width:${tl.a}%;background:var(--amber)"></i><i style="width:${tl.b}%;background:var(--teal-fill)"></i></div></div>
+      <div class="tlx"><span><b>Revolving</b>${tl.revLeft} days left</span><span style="text-align:right"><b>Amortisation</b>12 monthly instalments</span></div>
+    </div>
+    ${full?`<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th class="num">Interest</th><th class="num">Principal</th><th class="num">Total</th><th class="num">Balance after</th></tr></thead><tbody>
+      ${sched.map(r=>`<tr><td>${dmyy(r.d)}</td><td>${r.type}</td><td class="num">${fmt2(r.int)}</td><td class="num">${r.prin?fmt2(r.prin):'<span class="dim">&mdash;</span>'}</td><td class="num">${fmt2(r.amt)}</td><td class="num dim">${fmt(r.bal)}</td></tr>`).join("")}
+    </tbody></table></div>`:""}</div>`;
+}
+function timeline(){
+  const total=days(S.f.maturity,S.f.signed), a=days(S.f.revolvingEnd,S.f.signed), passed=days(TODAY,S.f.signed);
+  return {a:Math.round(passed/total*100),b:Math.round((a-passed)/total*100),revLeft:days(S.f.revolvingEnd,TODAY).toLocaleString()};
+}
+function schedule(){
+  const out=[]; let bal=S.f.drawn, d=new Date("2026-09-01T00:00:00Z");
+  for(let i=0;i<30;i++){
+    const amort = d>S.f.revolvingEnd;
+    const int=bal*rate()/12, prin=amort?Math.min(bal,S.f.drawn/12):0;
+    if(bal<=0) break;
+    out.push({d:new Date(d),type:amort?"Interest + principal":"Interest only",int,prin,amt:int+prin,bal:Math.max(bal-prin,0)});
+    bal-=prin; d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1));
+  }
+  return out;
+}
+function drawsCard(full){
+  return `<div class="card"><div class="ch"><h2>Draw requests</h2><div class="r">
+    <span class="chip flat sq">${S.draws.length} to date</span>
+    <button class="btn sm" data-act="draw"${drawBlockers().length?" disabled":""}>New request</button></div></div>
+    <div class="tw"><table style="min-width:640px"><thead><tr><th>Request</th><th>Submitted</th><th class="num">Amount</th><th>Status</th><th>Transaction</th></tr></thead><tbody>
+    ${S.draws.slice(0,full?99:5).map(d=>`<tr><td class="id">${d.id}</td><td class="dim">${dmyy(d.req)}</td><td class="num">${fmt(d.amt)}</td>
+      <td><span class="chip ${d.status==="funded"?"teal":d.status==="declined"?"danger":"warn"}">${d.status[0].toUpperCase()+d.status.slice(1)}</span></td>
+      <td>${d.tx?`<a class="tx" href="#" data-act="tx" data-tx="${d.tx}">${d.tx}</a>`:'<span class="dim">&mdash;</span>'}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+function feedCard(n){
+  return `<div class="card feed"><div class="ch"><h2>Facility activity</h2></div>
+  ${S.ledger.slice(0,n).map(e=>`<div class="ev"><i class="dot" style="background:var(--${e.kind==="pay"?"teal":e.kind==="warn"?"danger":e.kind==="doc"?"teal":"amber"})"></i>
+  <div><p>${e.text}</p><span class="t">${dmy(e.t)} ${clock(e.t)}${e.tx?" &middot; "+e.tx:""}</span></div></div>`).join("")}</div>`;
+}
+function chart(){
+  const W=760,H=140,pts=S.hist.slice(-(S.ui.range==="4W"?4:12));
+  const mx=Math.max(...pts.map(p=>Math.max(p.base,p.drawn)))*1.22||1;
+  const xy=(v,i)=>[+(i*(W/Math.max(pts.length-1,1))).toFixed(1),+(H-(v/mx)*H).toFixed(1)];
+  const ld=pts.map((p,i)=>xy(p.drawn,i).join(",")).join(" ");
+  const lb=pts.map((p,i)=>xy(p.base,i).join(",")).join(" ");
+  const lc=pts.map((p,i)=>xy(p.commit,i).join(",")).join(" ");
+  const e=xy(pts[pts.length-1].drawn,pts.length-1);
+  return `<div class="card"><div class="ch"><h2>Availability over time</h2><div class="r">
+      <div class="seg" id="rangeSeg">${["4W","12W"].map(r=>`<button data-range="${r}"${S.ui.range===r?' class="on"':""}>${r}</button>`).join("")}</div></div></div>
+    <div class="chartwrap"><div class="ctip" id="ctip"></div>
+      <svg id="chartSvg" viewBox="0 0 ${W} ${H}" width="100%" height="140" preserveAspectRatio="none" role="img" aria-label="Balance drawn against borrowing base and commitment over 12 weeks.">
+        <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--amber)" stop-opacity=".18"/><stop offset="100%" stop-color="var(--amber)" stop-opacity="0"/></linearGradient></defs>
+        <g stroke="var(--grid)" stroke-width="1"><line x1="0" y1="35" x2="${W}" y2="35"/><line x1="0" y1="70" x2="${W}" y2="70"/><line x1="0" y1="105" x2="${W}" y2="105"/><line x1="0" y1="139" x2="${W}" y2="139"/></g>
+        <polygon points="0,${H} ${ld} ${W},${H}" fill="url(#ag)"/>
+        <polyline points="${lb}" fill="none" stroke="var(--teal)" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+        <polyline points="${ld}" fill="none" stroke="var(--amber)" stroke-width="2" vector-effect="non-scaling-stroke"/>
+        <circle cx="${e[0]}" cy="${e[1]}" r="3.4" fill="var(--amber)"/>
+      </svg></div>
+    <div class="xax">${pts.map(p=>"<span>"+p.label+"</span>").join("")}</div>
+    <div class="clegend">
+      <span><i class="sw" style="background:var(--amber)"></i>Balance drawn <b>${fmt(S.f.drawn)}</b></span>
+      <span><i class="sw" style="background:var(--teal)"></i>Borrowing base <b>${fmt(base())}</b></span>
+      <span style="color:var(--muted)">Commitment ${fmt(S.f.commitment)} sits above this range &mdash; the base is what binds.</span>
+    </div></div>`;
+}
+
+/* ---------------- collateral table ---------------- */
+function filtered(){
+  const q=S.ui.q.toLowerCase(), f=S.ui.filters;
+  return S.loans.filter(l=>{
+    if(f.status==="live"&&l.status!=="live")return false;
+    if(f.status==="repaid"&&l.status!=="repaid")return false;
+    if(f.status==="charged_off"&&l.status!=="charged_off")return false;
+    const e=eligibility(l);
+    if(f.elig==="eligible"&&!e.ok)return false;
+    if(f.elig==="ineligible"&&e.ok)return false;
+    if(q&&!(l.id+" "+l.name+" "+l.user+" "+l.tx).toLowerCase().includes(q))return false;
+    return true;
+  }).sort((a,b)=>{const c=S.ui.sort.col,d=S.ui.sort.dir;
+    const v=c==="principal"?a.principal-b.principal:c==="due"?a.due-b.due:c==="id"?a.id.localeCompare(b.id):a.name.localeCompare(b.name);
+    return v*d});
+}
+function tape(compact){
+  const rows=filtered(),per=compact?6:14,pages=Math.max(1,Math.ceil(rows.length/per));
+  if(S.ui.page>=pages)S.ui.page=pages-1;
+  const page=rows.slice(S.ui.page*per,S.ui.page*per+per);
+  const th=(k,l,cls="")=>`<th class="sortable ${cls}" data-sort="${k}">${l} <span class="ar">${S.ui.sort.col===k?(S.ui.sort.dir>0?"&#9650;":"&#9660;"):"&#8597;"}</span></th>`;
+  return `<div class="card"><div class="ch"><h2>Collateral loan tape</h2><div class="r">
+      <span class="chip flat sq">${rows.length.toLocaleString()} rows</span>
+      <button class="btn sm ghost" data-act="exporttape">Export CSV</button></div></div>
+    <div class="toolbar">
+      <select class="sel" id="fStatus" aria-label="Loan status">
+        ${[["live","Outstanding"],["repaid","Repaid"],["charged_off","Charged off"],["all","All"]].map(([v,l])=>`<option value="${v}"${S.ui.filters.status===v?" selected":""}>${l}</option>`).join("")}</select>
+      <select class="sel" id="fElig" aria-label="Eligibility">
+        ${[["all","All collateral"],["eligible","Eligible only"],["ineligible","Ineligible only"]].map(([v,l])=>`<option value="${v}"${S.ui.filters.elig===v?" selected":""}>${l}</option>`).join("")}</select>
+      ${S.ui.q?`<span class="filter">Search <b>${S.ui.q}</b> <button data-clear="q" aria-label="Clear search">&times;</button></span>`:""}
+      <span class="sp"></span><span style="font-size:12px;color:var(--muted)">Sorted by ${S.ui.sort.col}</span>
+    </div>
+    <div class="tw"><table><thead><tr><th class="stripe"></th>${th("id","Loan")}${th("name","Obligor")}${th("principal","Principal","num")}<th class="num">APR</th>${th("due","Maturity","num")}<th>Status</th><th>Eligibility</th></tr></thead>
+    <tbody>${page.length?page.map(l=>{const e=eligibility(l),dl=days(TODAY,l.due);
+      const st=l.status==="repaid"?["flat","Repaid"]:l.status==="charged_off"?["danger","Charged off"]:dl>=30?["danger",dl+"d late"]:dl>0?["warn",dl+"d late"]:["teal","Current"];
+      return `<tr><td class="stripe ${e.ok?"ok":l.status==="live"?"bad":"none"}"></td>
+      <td class="id">${l.id}</td>
+      <td><div class="who"><span class="av">${initials(l.name)}</span><div><b>${l.name}</b><span>${l.user} &middot; ${l.market}</span></div></div></td>
+      <td class="num">${fmt2(l.principal)}</td><td class="num dim">${(l.apr*100).toFixed(1)}%</td>
+      <td class="num dim">${dmy(l.due)}</td>
+      <td><span class="chip ${st[0]}">${st[1]}</span></td>
+      <td>${e.ok?'<span class="chip teal">Eligible</span>':`<span class="chip danger">${e.why}</span>`}</td></tr>`}).join("")
+      :`<tr><td colspan="8"><div class="empty">No collateral matches these filters.</div></td></tr>`}</tbody></table></div>
+    <div class="pager"><span>Showing ${rows.length?(S.ui.page*per+1).toLocaleString():0}&ndash;${Math.min((S.ui.page+1)*per,rows.length).toLocaleString()} of ${rows.length.toLocaleString()}</span><span class="sp"></span>
+      <button class="pgbtn" data-page="-1"${S.ui.page===0?" disabled":""}>Previous</button>
+      <button class="pgbtn" data-page="1"${S.ui.page>=pages-1?" disabled":""}>Next</button></div></div>`;
+}
+
+/* ---------------- views ---------------- */
+const VIEWS={
+  overview:()=>alertBar()+tiles()+`<div class="grid"><div class="col">${poolMap(true)}${chart()}${baseCard(false)}${covCard(false)}</div>
+    <div class="col">${reportCard(false)}${serviceCard(false)}${feedCard(5)}</div></div>`,
+  base:()=>alertBar()+`<div class="grid"><div class="col">${baseCard(true)}${tape(true)}</div><div class="col">${covCard(false)}${reportCard(false)}</div></div>`,
+  map:()=>alertBar()+poolMap(false),
+  collateral:()=>tape(false),
+  covenants:()=>`<div class="grid"><div class="col">${covCard(true)}
+    <div class="card"><div class="ch"><h2>How these are measured</h2></div><div class="cb">
+      <p style="margin:0;color:var(--ink-2);font-size:13px">Tests run continuously against the pledged pool and are certified quarterly on the covenant compliance certificate. A breach suspends further draws immediately; it does not accelerate the facility unless uncured for 30 days.</p>
+      <div class="kv" style="margin-top:12px"><span>Measurement date</span><b>${dmyy(TODAY)}</b></div>
+      <div class="kv"><span>Next certification due</span><b>${dmyy(S.deliverables.find(d=>d.id==="covcert").due)}</b></div>
+      <div class="kv"><span>Cure period</span><b>30 days</b></div></div></div></div>
+    <div class="col">${reportCard(false)}${feedCard(4)}</div></div>`,
+  reporting:()=>alertBar()+`<div class="grid"><div class="col">${reportCard(true)}</div><div class="col">${covCard(false)}</div></div>`,
+  service:()=>`<div class="grid"><div class="col">${serviceCard(true)}</div><div class="col">
+    <div class="card"><div class="ch"><h2>Balance</h2></div><div class="cb">
+      <div class="kv"><span>Current balance</span><b>${fmt(S.f.drawn)}</b></div>
+      <div class="kv"><span>Accrued interest MTD</span><b>${fmt2(S.f.drawn*rate()/365*days(TODAY,new Date("2026-08-01T00:00:00Z")))}</b></div>
+      <div class="kv"><span>Interest paid to date</span><b>${fmt(28640)}</b></div>
+      <div class="kv"><span>Commitment fee (undrawn)</span><b>0.50% p.a.</b></div>
+      <button class="btn" style="width:100%;margin-top:12px" data-act="payint">Pay interest ${fmt2(nextInterest())}</button>
+      <button class="btn ghost" style="width:100%;margin-top:8px" data-act="prepay">Prepay principal</button>
+    </div></div>${feedCard(5)}</div></div>`,
+  draws:()=>alertBar()+`<div class="grid"><div class="col">${drawsCard(true)}</div><div class="col">${baseCard(false)}${reportCard(false)}</div></div>`,
+  documents:()=>`<div class="card"><div class="ch"><h2>Facility documents</h2></div>
+    ${[["Credit agreement","Executed 14 Feb 2026","PDF &middot; 1.8 MB"],["Security agreement","Executed 14 Feb 2026","PDF &middot; 640 KB"],
+       ["Servicing agreement","Executed 14 Feb 2026","PDF &middot; 410 KB"],["Borrowing base certificate &mdash; 17 Aug","Submitted 17 Aug 2026","XLSX &middot; 88 KB"],
+       ["Collateral tape &mdash; 24 Aug","Submitted 24 Aug 2026","CSV &middot; 1.2 MB"],["Servicer report &mdash; July","Accepted 12 Aug 2026","PDF &middot; 320 KB"]]
+      .map(([n,s,m])=>`<div class="due"><span class="ic ok">&#128196;</span><span class="body"><b>${n}</b><span>${s} &middot; ${m}</span></span>
+      <span class="act"><button class="btn sm ghost" data-act="doc">Download</button></span></div>`).join("")}</div>`
+};
+
+/* ---------------- pool map ---------------- */
+function vintages(){
+  const rows={}, ls=S.loans.filter(l=>S.ui.mapPaid?true:l.status!=="repaid");
+  ls.forEach(l=>{
+    const wk=new Date(Date.UTC(l.issued.getUTCFullYear(),l.issued.getUTCMonth(),l.issued.getUTCDate()-((l.issued.getUTCDay()+6)%7)));
+    const k=wk.toISOString().slice(0,10);
+    (rows[k]=rows[k]||{key:k,when:wk,loans:[]}).loans.push(l);
+  });
+  return Object.values(rows).sort((a,b)=>b.when-a.when).slice(0,10).map(r=>{
+    r.loans.sort((a,b)=>a.due-b.due);
+    const outstanding=r.loans.filter(l=>l.status==="live");
+    const bal=outstanding.reduce((a,l)=>a+l.principal,0);
+    const bad=outstanding.filter(l=>days(TODAY,l.due)>=30).reduce((a,l)=>a+l.principal,0);
+    const off=r.loans.filter(l=>l.status==="charged_off").reduce((a,l)=>a+l.principal,0);
+    r.bal=bal; r.dq=bal?bad/bal:0; r.off=off;
+    r.flag=r.dq>0.08||(off>0&&off/Math.max(r.loans.reduce((a,l)=>a+l.principal,0),1)>0.06);
+    return r;
+  });
+}
+function cellClass(l){
+  if(l.status==="repaid") return "c-paid";
+  if(l.status==="charged_off") return "c-off";
+  const d=days(TODAY,l.due);
+  if(d>=30) return "c-bad";
+  if(d>0) return "c-late";
+  return "c-ok";
+}
+function poolMap(mini){
+  const vs=vintages().slice(0,mini?4:10);
+  const total=vs.reduce((a,r)=>a+r.loans.length,0);
+  return `<div class="card${mini?" mini":""}"><div class="ch"><h2>Pool map</h2><div class="r">
+      <span class="chip flat sq">${total.toLocaleString()} loans</span>
+      ${mini?`<button class="btn sm ghost" data-nav="map">Open map</button>`:`
+      <button class="btn sm ghost" data-act="togglepaid">${S.ui.mapPaid?"Hide repaid":"Show repaid"}</button>`}</div></div>
+    ${mini?"":`<div class="maplegend"><span class="ttl">Collateral state</span>
+      <span class="lg"><i class="k" style="background:#2FA36B"></i>Current</span>
+      <span class="lg"><i class="k" style="background:#E0A93B"></i>1&ndash;29 days late</span>
+      <span class="lg"><i class="k" style="background:#DE5B4A"></i>30+ days late</span>
+      <span class="lg"><i class="k" style="background:#8E2F25"></i>Charged off</span>
+      <span class="lg"><i class="k" style="background:var(--line-2)"></i>Repaid</span>
+      <span class="lg" style="margin-left:auto"><i class="k" style="border:1.5px dashed var(--muted);background:transparent"></i>Dashed border = ineligible for the borrowing base</span></div>`}
+    <div class="mapwrap" id="mapwrap">
+      ${vs.map(r=>`<div class="maprow"><div class="rh">
+        <b>Week of ${dmy(r.when)}</b>
+        <span>${r.loans.length} loans &middot; ${fmt(r.bal)} live</span>
+        ${r.bal?`<span>${pct(r.dq,1)} 30d+ delinquent</span>`:""}
+        ${r.flag?`<span class="flag">! Watch vintage</span>`:""}
+      </div>
+      <div class="cells">${r.loans.map(l=>{const e=eligibility(l);
+        return `<button class="cell ${cellClass(l)}${(!e.ok&&l.status==="live")?" inel":""}" data-cell="${l.id}" aria-label="${l.id} ${l.name}"></button>`}).join("")}</div></div>`).join("")}
+    </div>
+    ${mini?"":`<div class="mapfoot"><span>Each cell is one loan, ordered by maturity.</span>
+      <span>Hover to inspect &middot; click to pin.</span>
+      <span style="margin-left:auto">Ineligible collateral is excluded from the borrowing base.</span></div>`}</div>`;
+}
+function pinCard(l){
+  const e=eligibility(l), d=days(TODAY,l.due);
+  const st=l.status==="repaid"?["flat","Repaid"]:l.status==="charged_off"?["danger","Charged off"]:d>=30?["danger",d+"d late"]:d>0?["warn",d+"d late"]:["teal","Current"];
+  return `<div class="ph"><span class="av">${initials(l.name)}</span><div><b>${l.name}</b><span>${l.user} &middot; ${l.market}</span></div></div>
+    <div class="pb">
+      <div class="pr"><span>Loan</span><b class="mono">${l.id}</b></div>
+      <div class="pr"><span>Principal</span><b>${fmt2(l.principal)}</b></div>
+      <div class="pr"><span>APR / tenor</span><b>${(l.apr*100).toFixed(1)}% &middot; ${l.tenor}d</b></div>
+      <div class="pr"><span>Maturity</span><b>${dmy(l.due)}</b></div>
+      <div class="pr"><span>State</span><span class="chip ${st[0]}">${st[1]}</span></div>
+      <div class="why ${e.ok?"ok":""}">${e.ok?"Eligible collateral":"Excluded: "+e.why}</div>
+    </div>
+    <div class="pf">${l.tx}</div>`;
+}
+function wireMap(){
+  const wrap=$("#mapwrap"); if(!wrap) return;
+  let pin=null;
+  const place=(cell,l,stuck)=>{
+    if(!pin){pin=document.createElement("div");pin.className="pin";wrap.appendChild(pin)}
+    pin.className="pin"+(stuck?" stuck":"");
+    pin.innerHTML=pinCard(l);
+    const wr=wrap.getBoundingClientRect(), cr=cell.getBoundingClientRect();
+    let x=cr.left-wr.left+cr.width/2-112;
+    x=Math.max(4,Math.min(x,wrap.clientWidth-232));
+    const above=cr.top-wr.top>190;
+    pin.style.left=x+"px";
+    pin.style.top=(above? cr.top-wr.top-(pin.offsetHeight||186)-8 : cr.bottom-wr.top+8)+"px";
+  };
+  wrap.addEventListener("mouseover",e=>{
+    const c=e.target.closest("[data-cell]"); if(!c||S.ui.pinned) return;
+    const l=S.loans.find(x=>x.id===c.dataset.cell); if(l) place(c,l,false);
+  });
+  wrap.addEventListener("mouseleave",()=>{if(!S.ui.pinned&&pin){pin.remove();pin=null}});
+  wrap.addEventListener("click",e=>{
+    const c=e.target.closest("[data-cell]"); if(!c) return;
+    const l=S.loans.find(x=>x.id===c.dataset.cell); if(!l) return;
+    wrap.querySelectorAll(".cell.on").forEach(x=>x.classList.remove("on"));
+    if(S.ui.pinned===l.id){S.ui.pinned=null; if(pin){pin.remove();pin=null}}
+    else{S.ui.pinned=l.id; c.classList.add("on"); place(c,l,true)}
+  });
+  if(S.ui.pinned){
+    const c=wrap.querySelector('[data-cell="'+S.ui.pinned+'"]');
+    const l=S.loans.find(x=>x.id===S.ui.pinned);
+    if(c&&l){c.classList.add("on"); place(c,l,true)}
+  }
+}
+
+/* ---------------- render ---------------- */
+function render(){
+  chrome();
+  $("#view").innerHTML=(VIEWS[S.ui.view]||VIEWS.overview)()+
+    `<div class="pagefoot"><span>Demo console &mdash; figures are illustrative.</span><span>&middot;</span><span>Facility KL-2026-01 &middot; USDC denominated &middot; settlement on Base.</span></div>`;
+  wireChart();
+  wireMap();
+}
+function wireChart(){
+  const svg=$("#chartSvg"),tip=$("#ctip");if(!svg)return;
+  const pts=S.hist.slice(-(S.ui.range==="4W"?4:12));
+  svg.addEventListener("mousemove",e=>{
+    const r=svg.getBoundingClientRect(),i=Math.round((e.clientX-r.left)/r.width*(pts.length-1));
+    const p=pts[Math.max(0,Math.min(i,pts.length-1))];if(!p)return;
+    tip.style.opacity="1";tip.style.left=Math.min(Math.max(e.clientX-r.left-40,0),r.width-190)+"px";tip.style.top="6px";
+    tip.innerHTML=p.label+" &middot; drawn "+fmt(p.drawn)+" &middot; base "+fmt(p.base);
+  });
+  svg.addEventListener("mouseleave",()=>tip.style.opacity="0");
+}
+function toast(title,sub,kind){
+  const el=document.createElement("div");el.className="toast"+(kind?" "+kind:"");
+  el.innerHTML="<b>"+title+"</b>"+(sub?"<span>"+sub+"</span>":"");
+  $("#toasts").appendChild(el);setTimeout(()=>{el.style.opacity="0";setTimeout(()=>el.remove(),250)},3800);
+}
+function snapshot(label){
+  S.hist.push({label:label||"now",drawn:S.f.drawn,base:Math.round(base()),commit:S.f.commitment});
+  if(S.hist.length>16)S.hist.shift();
+}
+function buildHist(){
+  S.hist=[]; const b=base(), d=S.f.drawn;
+  for(let i=0;i<12;i++){const f=(i+1)/12;
+    S.hist.push({label:"W"+(i+1),drawn:Math.round(d*(0.42+0.58*Math.pow(f,1.1))),
+      base:Math.round(b*(0.55+0.45*Math.pow(f,.8))),commit:S.f.commitment})}
+  S.hist[11]={label:"W12",drawn:d,base:Math.round(b),commit:S.f.commitment};
+}
+
+/* ---------------- actions ---------------- */
+function doDraw(amount){
+  amount=Math.round(amount||0);
+  const b=drawBlockers(amount);
+  if(b.length) return {ok:false,error:"draw_conditions_not_met",message:b[0]+".",blockers:b};
+  S.f.drawn+=amount; S.f.cash+=amount;
+  const id="DR-"+String(S.draws.length+1).padStart(4,"0"), tx=hex();
+  S.draws.unshift({id,req:new Date(),amt:amount,status:"funded",tx});
+  S.ledger.unshift({kind:"draw",text:"Draw <b>"+id+"</b> funded &mdash; <b>"+fmt(amount)+"</b>",t:new Date(),tx});
+  snapshot("now");
+  return {ok:true,draw_id:id,tx,balance:S.f.drawn,availability:Math.round(availability())};
+}
+function doSubmit(id){
+  const d=S.deliverables.find(x=>x.id===id); if(!d) return {ok:false,message:"Unknown deliverable."};
+  const step=d.freq==="Weekly"?7:d.freq==="Monthly"?30:d.freq==="Quarterly"?91:365;
+  d.last=new Date(TODAY); d.due=new Date(+TODAY+step*DAY);
+  S.ledger.unshift({kind:"doc",text:d.name+" accepted",t:new Date(),tx:null});
+  return {ok:true,name:d.name,next_due:d.due.toISOString().slice(0,10)};
+}
+function doPayInterest(){
+  const amt=nextInterest();
+  if(amt>S.f.cash) return {ok:false,message:"Insufficient cash. Available "+fmt(S.f.cash)+"."};
+  S.f.cash-=amt;
+  S.ledger.unshift({kind:"pay",text:"Interest payment settled <b>"+fmt2(amt)+"</b>",t:new Date(),tx:hex()});
+  return {ok:true,amount:+amt.toFixed(2),cash:Math.round(S.f.cash)};
+}
+function doPrepay(amount){
+  amount=Math.round(amount||0);
+  if(amount<=0) return {ok:false,message:"Amount must be greater than zero."};
+  if(amount>S.f.cash) return {ok:false,message:"Insufficient cash. Available "+fmt(S.f.cash)+"."};
+  if(amount>S.f.drawn) return {ok:false,message:"Prepayment exceeds outstanding balance."};
+  S.f.drawn-=amount; S.f.cash-=amount;
+  S.ledger.unshift({kind:"pay",text:"Principal prepayment <b>"+fmt(amount)+"</b>",t:new Date(),tx:hex()});
+  snapshot("now");
+  return {ok:true,balance:S.f.drawn,availability:Math.round(availability())};
+}
+
+/* ---------------- modals ---------------- */
+function closeModal(){$("#modalRoot").innerHTML=""}
+function modal(title,body,footer){
+  $("#modalRoot").innerHTML=`<div class="scrim" data-scrim="1"><div class="modal" role="dialog" aria-modal="true" aria-label="${title}">
+    <div class="mh"><h2>${title}</h2><button data-act="close" aria-label="Close">&times;</button></div>
+    <div class="mb">${body}</div><div class="mf">${footer}</div></div></div>`;
+  const f=$(".modal input,.modal select"); if(f)f.focus();
+}
+function drawModal(){
+  const av=availability();
+  modal("Request a draw",`
+    <label class="fld"><span>Amount (USDC)</span><input class="inp mono" id="dAmt" type="number" value="${Math.min(25000,Math.floor(av/1000)*1000)}" min="0" step="1000"></label>
+    <label class="fld"><span>Requested funding date</span><select class="sel" id="dDate" style="width:100%">
+      <option>27 Aug 2026 (T+2, standard notice)</option><option>28 Aug 2026</option><option>31 Aug 2026</option></select></label>
+    <div class="kv"><span>Availability</span><b>${fmt(av)}</b></div>
+    <div class="kv"><span>Borrowing base</span><b>${fmt(base())}</b></div>
+    <div class="kv"><span>Balance after draw</span><b id="dBal">&mdash;</b></div>
+    <div class="kv"><span>Advance rate after draw</span><b id="dAdv">&mdash;</b></div>
+    <p class="hint" id="dHint"></p>`,
+    `<button class="btn ghost" data-act="close">Cancel</button><span class="sp"></span><button class="btn" data-act="drawGo" id="dGo">Submit request</button>`);
+  const upd=()=>{
+    const a=+$("#dAmt").value||0, nb=S.f.drawn+a, adv=eligible()?nb/eligible():0;
+    $("#dBal").textContent=fmt(nb); $("#dAdv").textContent=pct(adv,1);
+    const b=drawBlockers(a);
+    $("#dHint").className="hint "+(b.length?"bad":"good");
+    $("#dHint").innerHTML=b.length?b[0]+".":"Funds settle to your custody address on the requested date. Notice period is two business days.";
+    $("#dGo").disabled=b.length>0;
+  };
+  $("#dAmt").addEventListener("input",upd); upd();
+}
+function prepayModal(){
+  modal("Prepay principal",`
+    <label class="fld"><span>Amount (USDC)</span><input class="inp mono" id="pAmt" type="number" value="10000" min="0" step="1000"></label>
+    <div class="kv"><span>Outstanding balance</span><b>${fmt(S.f.drawn)}</b></div>
+    <div class="kv"><span>Cash on hand</span><b>${fmt(S.f.cash)}</b></div>
+    <p class="hint">Prepayments are applied to principal and restore availability. No prepayment penalty during the revolving period.</p>`,
+    `<button class="btn ghost" data-act="close">Cancel</button><span class="sp"></span><button class="btn" data-act="prepayGo">Prepay</button>`);
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-nav],[data-act],[data-sort],[data-page],[data-clear],[data-range],[data-scrim]");
+  if(!t)return;
+  if(t.dataset.scrim&&e.target===t){closeModal();return}
+  if(t.dataset.nav){S.ui.view=t.dataset.nav;S.ui.page=0;render();window.scrollTo(0,0);return}
+  if(t.dataset.range){S.ui.range=t.dataset.range;render();return}
+  if(t.dataset.sort){const c=t.dataset.sort;S.ui.sort=S.ui.sort.col===c?{col:c,dir:-S.ui.sort.dir}:{col:c,dir:1};render();return}
+  if(t.dataset.page){S.ui.page+=+t.dataset.page;render();return}
+  if(t.dataset.clear){S.ui.q="";$("#search").value="";render();return}
+  const act=t.dataset.act; if(!act)return;
+  e.preventDefault();
+  switch(act){
+    case "close":closeModal();break;
+    case "draw":drawModal();break;
+    case "prepay":prepayModal();break;
+    case "tx":toast("Transaction "+t.dataset.tx,"Opens Basescan in production","warn");break;
+    case "doc":toast("Download started","Executed copy from the data room");break;
+    case "togglepaid":S.ui.mapPaid=!S.ui.mapPaid;S.ui.pinned=null;render();break;
+    case "exporttape":toast("Loan tape exported",filtered().length.toLocaleString()+" rows &middot; CSV");break;
+    case "submitbbc":{const r=doSubmit("bbc");toast("Certificate accepted","Next due "+r.next_due);render();break}
+    case "submit":{const r=doSubmit(t.dataset.id);if(r.ok)toast(r.name+" submitted","Next due "+r.next_due);render();break}
+    case "payint":{const r=doPayInterest();r.ok?toast("Interest paid",fmt2(r.amount)):toast("Declined",r.message,"bad");render();break}
+    case "drawGo":{const amt=+$("#dAmt").value||0,r=doDraw(amt);
+      if(r.ok){closeModal();toast("Draw "+r.draw_id+" submitted",fmt(amt)+" &middot; "+r.tx);flash("drawn")}
+      else toast("Request declined",r.message,"bad");render();break}
+    case "prepayGo":{const amt=+$("#pAmt").value||0,r=doPrepay(amt);
+      if(r.ok){closeModal();toast("Prepayment applied","Balance "+fmt(r.balance))}else toast("Declined",r.message,"bad");render();break}
+  }
+});
+function flash(k){const el=document.querySelector('[data-k="'+k+'"]');if(!el)return;el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),700)}
+document.addEventListener("change",e=>{
+  if(e.target.id==="fStatus"){S.ui.filters.status=e.target.value;S.ui.page=0;render()}
+  if(e.target.id==="fElig"){S.ui.filters.elig=e.target.value;S.ui.page=0;render()}
+});
+$("#search").addEventListener("input",e=>{S.ui.q=e.target.value;S.ui.page=0;
+  if(S.ui.view!=="collateral"&&S.ui.q)S.ui.view="collateral";render();$("#search").focus()});
+document.addEventListener("keydown",e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#search").focus()}
+  if(e.key==="Escape")closeModal();
+});
+$("#drawBtn").addEventListener("click",()=>{drawBlockers().length?toast("Draws suspended",drawBlockers()[0],"bad"):drawModal()});
+$("#exportBtn").addEventListener("click",()=>toast("Loan tape exported",live().length.toLocaleString()+" eligible rows &middot; CSV"));
+$("#bell").addEventListener("click",()=>{$("#bell").dataset.unread="0";
+  const b=drawBlockers();toast(b.length?"Action required":"Nothing outstanding",b[0]||"Reporting current, covenants passing",b.length?"bad":"")});
+$("#orgsw").addEventListener("click",()=>toast("Kasama Lending Co.","Facility KL-2026-01 &middot; only tenant in this sandbox"));
+$("#resetBtn").addEventListener("click",()=>{S=seed();buildHist();render();toast("Demo data reset","Back to the opening state")});
+
+S=seed(); buildHist(); render();
+
+</script>

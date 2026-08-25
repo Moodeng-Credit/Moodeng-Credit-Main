@@ -1,0 +1,154 @@
+<title>Facility &amp; Reserve Slice</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F6F7F9; --panel:#FFFFFF; --sunk:#F1F2F5; --ink:#14171F; --ink-2:#454B58; --muted:#737A88;
+  --line:#E7E9EE; --line-2:#D5D9E2; --amber:#1D3B6E; --amber-fill:#E9EEF7;
+  --teal:#0F7A5A; --teal-fill:#E3F2EC; --danger:#B4342A; --danger-fill:#FBE7E4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Instrument Sans",system-ui,-apple-system,sans-serif;font-size:14.5px;line-height:1.55}
+.mono,code,pre{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:860px;margin:0 auto;padding:38px 24px 60px}
+h1{font-size:24px;margin:0;letter-spacing:-.02em}
+h2{font-size:15px;margin:0;letter-spacing:.01em}
+.lede{color:var(--ink-2);margin:8px 0 0;max-width:66ch}
+.meta{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.tag{font-size:11px;letter-spacing:.01em;
+  padding:3px 8px;border-radius:3px;background:var(--sunk);color:var(--muted)}
+.tag.teal{background:var(--teal-fill);color:var(--teal)}
+.tag.amber{background:var(--amber-fill);color:var(--amber)}
+hr{border:0;border-top:1px solid var(--line);margin:26px 0}
+section{margin-top:26px}
+.shd{display:flex;align-items:baseline;gap:10px;border-bottom:1px solid var(--line);padding-bottom:7px;margin-bottom:14px}
+.shd .n{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--amber)}
+.shd .r{margin-left:auto;font-size:11.5px;color:var(--muted)}
+p{margin:0 0 10px}
+code{background:var(--sunk);border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-size:12.5px}
+pre{background:var(--sunk);border:1px solid var(--line);border-radius:5px;padding:12px 13px;overflow-x:auto;
+  font-size:12px;line-height:1.65;color:var(--ink-2);margin:0 0 12px}
+pre .c{color:var(--muted)} pre .k{color:var(--teal)} pre .t{color:var(--amber)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin-bottom:12px}
+th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  font-weight:500;padding:7px 10px;border-bottom:1px solid var(--line-2)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{white-space:nowrap;font-family:"JetBrains Mono",monospace;font-size:12px}
+tr:last-child td{border-bottom:0}
+.fn{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:13px 15px;margin-bottom:11px}
+.fn h3{margin:0 0 3px;font-size:13.5px;font-family:"JetBrains Mono",monospace;font-weight:600}
+.fn .rule{margin:8px 0 0;padding:8px 11px;background:var(--amber-fill);color:var(--amber);border-radius:4px;font-size:12.5px}
+.fn p{margin:0;color:var(--ink-2);font-size:13.5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:680px){.two{grid-template-columns:1fr}}
+.box{border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:var(--panel)}
+.box h3{margin:0 0 6px;font-size:12.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.box ul{margin:0;padding-left:17px;font-size:13.5px;color:var(--ink-2)}
+.box li{margin-bottom:4px}
+.box.out{border-color:var(--line-2)}
+.q{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+.q:last-child{border-bottom:0}
+.q b{font-family:"JetBrains Mono",monospace;font-weight:500;color:var(--amber);white-space:nowrap}
+footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px}
+</style>
+
+<div class="wrap">
+  <h1>Facility &amp; reserve: the smallest true slice</h1>
+  <p class="lede">What has to exist before the partner-lender demo stops being a mock. Two tables, three functions, one rule. Everything else in the console already has a live counterpart in production.</p>
+  <div class="meta">
+    <span class="tag amber">Spec &middot; not yet built</span>
+    <span class="tag">Target: prod Supabase <code style="background:none;border:0;padding:0">qplmmxynzxzkfxtayoqr</code></span>
+    <span class="tag teal">Reuses 6 live functions</span>
+  </div>
+
+  <section>
+    <div class="shd"><span class="n">01</span><h2>Why this slice</h2><span class="r">scope fence</span></div>
+    <p>The console's core loop is: <b>draw capital &rarr; issue loans &rarr; charge-offs eat reserve &rarr; coverage falls &rarr; draws get declined.</b> Money movement, identity, scoring and note custody are already live. The only fictional parts are the facility, the reserve, and the gate between them. Build those three and the demo becomes real without touching the API-key or funder layers.</p>
+    <div class="two">
+      <div class="box"><h3>In scope</h3><ul>
+        <li>Partner as an entity, distinct from a lender <em>user</em></li>
+        <li>Facility limit, draws, headroom</li>
+        <li>Reserve deposits and absorption</li>
+        <li>Coverage gate on every draw</li>
+      </ul></div>
+      <div class="box out"><h3>Deliberately out</h3><ul>
+        <li>Partner API keys, versioned routes, HMAC webhooks</li>
+        <li>KYB workflow (record the outcome by hand for now)</li>
+        <li>Funder-side accounting behind the reserve</li>
+        <li>Any borrower-facing change whatsoever</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shd"><span class="n">02</span><h2>Schema</h2><span class="r">2 new tables, 1 column, 1 view</span></div>
+    <table>
+      <thead><tr><th>Object</th><th>Shape and purpose</th></tr></thead>
+      <tbody>
+        <tr><td>lending_partners</td><td><code>id</code>, <code>name</code>, <code>custody_wallet</code>, <code>reserve_wallet</code>, <code>facility_limit</code>, <code>reserve_rate</code> (default 0.10), <code>cost_of_capital</code>, <code>kyb_status</code>, <code>status</code>. One row per partner. Kasama is row one.</td></tr>
+        <tr><td>facility_events</td><td><code>id</code>, <code>partner_id</code>, <code>kind</code> (<code>draw</code> | <code>reserve_deposit</code> | <code>reserve_absorb</code> | <code>repayment</code>), <code>amount</code>, <code>tx_hash</code>, <code>loan_id</code> (nullable), <code>idempotency_key</code>, <code>created_at</code>. Append-only.</td></tr>
+        <tr><td>loans.partner_id</td><td>Nullable FK. Set when the loan is issued under a partner's license; <code>NULL</code> keeps the existing P2P path untouched. <code>lender_user_id</code> semantics do not change.</td></tr>
+        <tr><td>v_facility_state</td><td>View deriving <code>drawn</code>, <code>reserve_balance</code>, <code>required</code>, <code>coverage</code>, <code>headroom</code> from the event log. Never a mutable counter &mdash; same reason the loan book is reconciled on-chain rather than trusted.</td></tr>
+      </tbody>
+    </table>
+<pre><span class="c">-- the whole model in one expression</span>
+drawn            = <span class="k">sum</span>(draw) - <span class="k">sum</span>(repayment)
+reserve_balance  = <span class="k">sum</span>(reserve_deposit) - <span class="k">sum</span>(reserve_absorb)
+required         = drawn * partner.reserve_rate
+coverage         = reserve_balance / <span class="k">nullif</span>(required, 0)
+headroom         = <span class="k">least</span>(facility_limit - drawn,
+                         reserve_balance / reserve_rate - drawn)   <span class="c">-- the gate</span></pre>
+  </section>
+
+  <section>
+    <div class="shd"><span class="n">03</span><h2>Functions</h2><span class="r">3 new edge functions</span></div>
+
+    <div class="fn">
+      <h3>facility-draw</h3>
+      <p>Body <code>{partner_id, amount, reserve_top_up?, idempotency_key}</code>. Computes state after the proposed draw; on pass, sends USDC to the partner's <code>custody_wallet</code> and appends a <code>draw</code> event with the tx hash.</p>
+      <div class="rule">Declines with <code>422 reserve_floor</code> when <code>coverage &lt; 1.0</code> after the draw, naming the exact top-up required. This single rule is the product.</div>
+    </div>
+
+    <div class="fn">
+      <h3>reserve-deposit</h3>
+      <p>Verifies a real on-chain USDC transfer into <code>reserve_wallet</code> before crediting anything &mdash; the same verify-then-write pattern <code>confirm-loan-payment</code> already uses, including a write to <code>used_payment_hashes</code> so a hash can never be credited twice.</p>
+      <div class="rule">Never credits on a claim. Only a confirmed transfer moves the number.</div>
+    </div>
+
+    <div class="fn">
+      <h3>facility-charge-off</h3>
+      <p>Marks a partner loan as a loss, appends <code>reserve_absorb</code> for the outstanding principal, and blacklists the borrower through the existing <code>kyc_blacklist</code> + Didit list push that <code>admin-refund-loan</code> already performs.</p>
+      <div class="rule">If absorbing pushes coverage under 1.0, draws stop automatically &mdash; no separate flag to set or forget.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="shd"><span class="n">04</span><h2>What it reuses</h2><span class="r">already in production</span></div>
+    <table>
+      <thead><tr><th>Live today</th><th>Role in this slice</th></tr></thead>
+      <tbody>
+        <tr><td>admin-fund-loan</td><td>Disburses partner-funded loans; gains a <code>partner_id</code> passthrough.</td></tr>
+        <tr><td>confirm-loan-payment</td><td>Repayment verification; appends a <code>repayment</code> event when the loan carries a partner.</td></tr>
+        <tr><td>used_payment_hashes</td><td>Idempotency for reserve deposits. No new mechanism needed.</td></tr>
+        <tr><td>risk-score-recompute</td><td>Unchanged. Scores already gate origination.</td></tr>
+        <tr><td>kyc_blacklist + didit-webhook</td><td>Charge-off bans reuse the refund flow's blacklist push verbatim.</td></tr>
+        <tr><td>loan_fund_flow</td><td>Already traces disbursements; partner loans appear with no change.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div class="shd"><span class="n">05</span><h2>Decisions I need from you</h2><span class="r">blocking</span></div>
+    <div class="q"><b>reserve_rate</b><span>Demo assumes 10% of drawn. Real number? It sets how much capital a partner must post to move.</span></div>
+    <div class="q"><b>cost_of_capital</b><span>Demo assumes 14% APR. Is the facility priced as a rate, a revenue share, or both?</span></div>
+    <div class="q"><b>charge-off trigger</b><span>Manual admin action, or automatic at N days past due? The console currently implies manual.</span></div>
+    <div class="q"><b>who holds reserve</b><span>A Moodeng-controlled wallet, or a contract neither side can unilaterally drain? Affects what a partner's counsel will accept.</span></div>
+  </section>
+
+  <footer>
+    Grounded against the live schema on 25 Aug 2026: <code>loans</code>, <code>loan_note_purchases</code>, <code>used_payment_hashes</code>, <code>kyc_blacklist</code> confirmed present; no facility or reserve objects exist yet. Nothing in this document has been deployed.
+  </footer>
+</div>

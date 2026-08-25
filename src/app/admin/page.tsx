@@ -34,6 +34,7 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import ComingDueSection from './ComingDueSection';
+import DemoB2BSection from './DemoB2BSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
@@ -68,7 +69,11 @@ type AdminTab =
    | 'referrals'
    | 'notifications'
    | 'chat'
-   | 'relay';
+   | 'relay'
+   | 'demo-monday'
+   | 'demo-map'
+   | 'demo-console'
+   | 'demo-spec';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -138,6 +143,16 @@ const navGroups: NavGroup[] = [
       id: 'funding',
       label: 'Funding',
       items: [{ id: 'relay', label: 'Liquidity Relay' }]
+   },
+   {
+      id: 'demo',
+      label: 'B2B demo',
+      items: [
+         { id: 'demo-monday', label: 'The Monday Problem' },
+         { id: 'demo-map', label: 'Pool map' },
+         { id: 'demo-console', label: 'Facility console' },
+         { id: 'demo-spec', label: 'Build spec' }
+      ]
    }
 ];
 
@@ -1620,6 +1635,11 @@ export default function AdminPanel() {
                {activeTab === 'chat' ? <SupportChatSection /> : null}
 
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
+
+               {activeTab === 'demo-monday' ? <DemoB2BSection page="monday" /> : null}
+               {activeTab === 'demo-map' ? <DemoB2BSection page="map" /> : null}
+               {activeTab === 'demo-console' ? <DemoB2BSection page="console" /> : null}
+               {activeTab === 'demo-spec' ? <DemoB2BSection page="spec" /> : null}
 
                {activeTab === 'notifications' ? (
                   <section className="space-y-6">
