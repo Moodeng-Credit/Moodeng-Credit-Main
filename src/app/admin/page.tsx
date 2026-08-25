@@ -323,6 +323,7 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'ux-health',
    'on-chain',
    'loans',
+   'pricing',
    'coming-due',
    'extensions',
    'points',
@@ -335,7 +336,12 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'mule-risk',
    'referrals',
    'notifications',
-   'relay'
+   'chat',
+   'relay',
+   'demo-monday',
+   'demo-map',
+   'demo-console',
+   'demo-spec'
 ];
 
 function isAdminTab(value: string): value is AdminTab {
