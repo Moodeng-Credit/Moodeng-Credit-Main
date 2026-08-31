@@ -1,4 +1,5 @@
 import { ALLOWED_CHAIN_ID } from '@/config/wagmiConfig';
+import { WALLET_CHAIN_SWITCH_TIMEOUT_MS, withTimeout } from '@/lib/withTimeout';
 
 type SwitchChainAsync = (args: { chainId: number }) => Promise<unknown>;
 
@@ -23,7 +24,10 @@ export async function ensureAllowedChain(
 ): Promise<boolean> {
    if (connectedChainId === ALLOWED_CHAIN_ID) return true;
    try {
-      await switchChainAsync({ chainId: ALLOWED_CHAIN_ID });
+      // Time-box the switch: a wallet that isn't actually reachable on this device
+      // (stale/cross-device connection) would otherwise leave this awaiting forever,
+      // stranding the caller before the transfer even starts.
+      await withTimeout(switchChainAsync({ chainId: ALLOWED_CHAIN_ID }), WALLET_CHAIN_SWITCH_TIMEOUT_MS);
       return true;
    } catch {
       return false;

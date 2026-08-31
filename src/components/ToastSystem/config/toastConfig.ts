@@ -374,6 +374,12 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'Please connect your wallet to continue.'
    },
 
+   wallet_unreachable: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'Wallet Not Responding',
+      message: "We couldn't reach your wallet on this device. Approve on the device where it's connected, or reconnect here."
+   },
+
    worldid_not_completed: {
       toastType: TOAST_TYPES.WARNING,
       title: 'Verification Not Completed',

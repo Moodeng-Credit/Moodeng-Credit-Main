@@ -183,6 +183,10 @@ export default function UserCard(loan: UserCardProps) {
    // resolves after the user has already backed out. (A broadcast that still lands is left
    // to the reconciler — the money moved, so we never silently drop it.)
    const cancelledRef = useRef(false);
+   // Flips true after a few seconds stuck on the pre-broadcast "Approve in your wallet"
+   // overlay, so we can surface guidance + a reconnect action instead of a bare spinner
+   // when a wallet isn't answering on this device.
+   const [processingSlow, setProcessingSlow] = useState(false);
    const [showDetails, setShowDetails] = useState(openByDefault);
 
    // Open the request fully when arriving via a shared link (the prop flips true once the board
@@ -191,7 +195,6 @@ export default function UserCard(loan: UserCardProps) {
       if (openByDefault) setShowDetails(true);
    }, [openByDefault]);
    const { showToast, showToastByConfig } = useToast();
-   const wallet = useSelector((state: RootState) => state.auth.user?.walletAddress);
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
@@ -231,6 +234,19 @@ export default function UserCard(loan: UserCardProps) {
       setPendingTxHash(null);
    };
 
+   // While we're still pre-broadcast (no hash yet) and waiting on the wallet, arm a short
+   // timer. If the wallet hasn't responded in a few seconds, reveal "not seeing a prompt?"
+   // help + a reconnect action so a lender whose wallet is asleep or on another device isn't
+   // left staring at a spinner. Resets the moment processing ends or the tx broadcasts.
+   useEffect(() => {
+      if (!isProcessing || pendingTxHash) {
+         setProcessingSlow(false);
+         return;
+      }
+      const timer = setTimeout(() => setProcessingSlow(true), 8000);
+      return () => clearTimeout(timer);
+   }, [isProcessing, pendingTxHash]);
+
    const executeLend = useCallback(
       async (method: PaymentMethod) => {
          if (isProcessing || loanData.loanStatus === 'Lent') return;
@@ -251,9 +267,16 @@ export default function UserCard(loan: UserCardProps) {
          // the chain inside its single popup, so the pre-checks below don't apply to it.
          const liveAccount = getAccount(config);
          if (method === 'wallet') {
-            const connectedWallet = liveAccount.address?.trim() || account.address?.trim() || wallet?.trim();
-            if (!connectedWallet) {
-               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_MISSING));
+            // Require a LIVE wallet connection in THIS browser — not just a wallet address
+            // remembered from an earlier session on another device. The old guard fell back
+            // to the persisted `wallet` address, so it would happily start a lend with no
+            // usable provider here and then hang on "Approve in your wallet" forever (the
+            // cross-device MetaMask case). If there's no live wallet, guide them to reconnect.
+            const liveConnected =
+               (liveAccount.isConnected && Boolean(liveAccount.address)) || (isConnected && Boolean(account.address));
+            if (!liveConnected) {
+               showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_UNREACHABLE));
+               openConnectModal?.();
                return;
             }
             if (!(await ensureAllowedChain(liveAccount.chainId ?? account.chainId, switchChainAsync))) {
@@ -375,8 +398,9 @@ export default function UserCard(loan: UserCardProps) {
          userId,
          account.address,
          account.chainId,
+         isConnected,
+         openConnectModal,
          switchChainAsync,
-         wallet,
          payUsdc,
          dispatch,
          showToast,
@@ -526,15 +550,33 @@ export default function UserCard(loan: UserCardProps) {
                      </a>
                   ) : null}
                   {/* Cancel is only offered before broadcast (no hash yet). Once it's confirming
-                      on-chain the money has left the wallet and can't be recalled from here. */}
+                      on-chain the money has left the wallet and can't be recalled from here.
+                      If the wallet hasn't answered after a few seconds, we also surface why
+                      and a way to reconnect, so a stuck lender is never left on a bare spinner. */}
                   {!pendingTxHash ? (
-                     <button
-                        type="button"
-                        onClick={handleCancelProcessing}
-                        className="mt-1 text-md-b3 font-semibold text-md-neutral-1200 underline underline-offset-2"
-                     >
-                        Cancel
-                     </button>
+                     <div className="mt-1 flex flex-col items-center gap-2">
+                        {processingSlow ? (
+                           <>
+                              <p className="text-md-b3 text-md-neutral-1200">
+                                 Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.
+                              </p>
+                              <button
+                                 type="button"
+                                 onClick={() => openConnectModal?.()}
+                                 className="text-md-b3 font-semibold text-md-primary-1200 underline underline-offset-2"
+                              >
+                                 Reconnect wallet
+                              </button>
+                           </>
+                        ) : null}
+                        <button
+                           type="button"
+                           onClick={handleCancelProcessing}
+                           className="text-md-b3 font-semibold text-md-neutral-1200 underline underline-offset-2"
+                        >
+                           Cancel
+                        </button>
+                     </div>
                   ) : null}
                </div>
             ) : null}

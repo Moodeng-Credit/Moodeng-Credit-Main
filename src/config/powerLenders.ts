@@ -2,6 +2,7 @@
 // appears, marking them as high-trust funders. Keyed by user id (public.users.id).
 export const POWER_LENDER_IDS = new Set<string>([
    '6b1055bc-7b5d-452a-8184-54b3377e8865', // Jeramie Saito
+   'eb7d89d7-5c00-4c29-b233-4a2a09a4ebb0', // Ludi (0x1ludi@gmail.com)
 ]);
 
 export function isPowerLender(userId?: string | null): boolean {

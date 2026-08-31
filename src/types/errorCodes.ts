@@ -49,6 +49,7 @@ export const ERROR_CODES = {
    WRONG_NETWORK: 'WRONG_NETWORK',
    INSUFFICIENT_FUNDS: 'INSUFFICIENT_FUNDS',
    WALLET_MISSING: 'WALLET_MISSING',
+   WALLET_UNREACHABLE: 'WALLET_UNREACHABLE',
 
    // Server Errors (1600-1699)
    SERVER_ERROR: 'SERVER_ERROR',
@@ -113,6 +114,8 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
    [ERROR_CODES.WRONG_NETWORK]: 'Please switch your wallet to the correct network and try again.',
    [ERROR_CODES.INSUFFICIENT_FUNDS]: 'Insufficient funds for this transaction.',
    [ERROR_CODES.WALLET_MISSING]: 'Wallet address is missing. Please connect your wallet.',
+   [ERROR_CODES.WALLET_UNREACHABLE]:
+      "We couldn't reach your wallet on this device. Approve on the device where it's connected (e.g. your phone), or reconnect here.",
 
    // Server
    [ERROR_CODES.SERVER_ERROR]: 'Internal server error. Please try again later.',
