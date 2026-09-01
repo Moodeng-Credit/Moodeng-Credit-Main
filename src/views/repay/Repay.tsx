@@ -40,12 +40,18 @@ const quickRepaymentFractions = [
 
 // Places a borrower can buy USDC and send it to their Base Account. The repay flow is the
 // same for all (send USDC on Base to the address below); only the "open" link differs.
-// The source list is geo-tailored (see `inPhilippines`). In the Philippines we surface the
-// local rails — Coins.ph leads as the featured exchange, Moneybees is offered as an
+// The local rails (Coins.ph, Moneybees, GCrypto, PDAX) are shown to EVERYONE, regardless of
+// detected location — Coins.ph leads as the featured exchange, Moneybees is offered as an
 // EXTERNAL user-directed option (no Moodeng partnership; they drive their own process),
-// GCrypto/PDAX sit under "Other options"; Binance is hidden since it's banned in PH.
-// Abroad those local rails aren't usable, so Binance is shown instead. Order matters:
-// index 0 renders as the hero card, index 1 as the pill below it.
+// GCrypto/PDAX sit under "Other options". Location (`inPhilippines`, see below) only ever
+// ADDS Binance under "Other options" for users detected outside the Philippines — it never
+// hides the local rails. Most of Moodeng's users are Filipino, including many living or
+// traveling abroad, and their Coins.ph/GCash/PDAX accounts work fine from anywhere; a
+// location-based lookup only knows where the phone's IP is, not the user's nationality or
+// which accounts they actually hold, so it must never be the thing that hides their own
+// rails. Binance stays excluded specifically for users detected IN the Philippines, where
+// Binance doesn't operate. Order matters: index 0 renders as the hero card, index 1 as the
+// pill below it.
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -74,10 +80,12 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
 };
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
+// coinsph is the only entry that's ever actually rendered (renderHeroSource is only ever
+// called with fundSources[0], i.e. coinsph) — the other entries are unused, kept from before
+// Binance was removed from the hero slot.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
    coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
-   moneybees: "External option · you follow Moneybees' own process",
-   binance: 'Best option outside the Philippines'
+   moneybees: "External option · you follow Moneybees' own process"
 };
 
 // Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
@@ -416,7 +424,7 @@ export default function Repay() {
       );
    };
 
-   // Prominent, full-width primary source (Moneybees in PH, Binance abroad).
+   // Prominent, full-width primary source — always Coins.ph (fundSources[0]), for everyone.
    // Fee badge sits inline with the name; selection is conveyed by border + fill alone (no checkmark).
    const renderHeroSource = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
@@ -665,14 +673,15 @@ export default function Repay() {
       }
    });
 
-   // Keep the selected source valid for the user's location once geo resolves: abroad only
-   // Binance is offered, while in PH Binance is hidden, so fall back to the recommended
-   // local rail. Skipped during loading so we don't flip away from the PH default.
+   // Keep the selected source valid once geo resolves: Binance is excluded specifically for
+   // users detected IN the Philippines (Binance doesn't operate there), so fall back to the
+   // recommended local rail if it was selected. Abroad, we do NOT force a switch to Binance —
+   // Coins.ph and the other local rails work fine for a Filipino traveling or living outside
+   // the Philippines, so the user's own default choice is left alone. Skipped during loading
+   // so we don't flip away from the default before geo resolves.
    useEffect(() => {
       if (geoLoading) return;
-      if (!geoAllowed) {
-         setFundSource('binance');
-      } else {
+      if (geoAllowed) {
          setFundSource((current) => (current === 'binance' ? 'coinsph' : current));
       }
    }, [geoAllowed, geoLoading]);
@@ -978,10 +987,12 @@ export default function Repay() {
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
 
-   // Geo no longer gates the page — anyone (including Filipinos abroad) can repay. It only
-   // tailors the fund-source list: in the Philippines we surface the local cash-out rails;
-   // abroad those aren't usable, so Binance leads instead. We don't assume a location while
-   // the check is still resolving — the source list shows a loader until `geoLoading` clears.
+   // Geo no longer gates the page — anyone (including Filipinos abroad) can repay. The local
+   // rails (Coins.ph, Moneybees, GCrypto, PDAX) are always shown; `inPhilippines` only decides
+   // whether Binance is ALSO offered (it's excluded specifically for users detected IN the
+   // Philippines, where Binance doesn't operate — see the fundSources comment above). We don't
+   // assume a location while the check is still resolving — the source list shows a loader
+   // until `geoLoading` clears.
    const inPhilippines = geoAllowed;
 
    const shouldShowLoanCheckLoading =
@@ -1301,61 +1312,59 @@ export default function Repay() {
                                  ) : (
                                     <>
                                        <p className="mb-3 text-xs text-[#6b6090]">
-                                          {inPhilippines ? (
+                                          Pick where you'll buy or withdraw USDC.{' '}
+                                          <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people
+                                          {!inPhilippines ? (
                                              <>
-                                                Pick where you'll buy or withdraw USDC.{' '}
-                                                <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people in
-                                                the Philippines.
+                                                {' '}
+                                                — and works the same whether you're in the Philippines or traveling.{' '}
+                                                <span className="font-semibold text-[#6c3fe0]">Binance</span> is also available under
+                                                "Other options".
                                              </>
                                           ) : (
-                                             <>
-                                                Outside the Philippines, withdraw USDC from{' '}
-                                                <span className="font-semibold text-[#6c3fe0]">Binance</span> on the Base network.
-                                             </>
+                                             '.'
                                           )}
                                        </p>
 
-                                       {inPhilippines ? (
-                                          <>
-                                             {renderHeroSource(fundSources[0])}
+                                       {renderHeroSource(fundSources[0])}
 
-                                             <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>
+                                       <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>
 
-                                             {(() => {
-                                                const otherSources = fundSources.filter(
-                                                   (source) => source.id === 'gcrypto' || source.id === 'pdax'
-                                                );
-                                                const otherSelected = otherSources.some((source) => source.id === fundSource);
-                                                const expanded = showMoreSources || otherSelected;
+                                       {(() => {
+                                          // Local rails always show. Binance is added here ONLY for users detected
+                                          // outside the Philippines (see the fundSources comment above for why) — it's
+                                          // an added option abroad, never a replacement for the local rails.
+                                          const otherSources = fundSources.filter(
+                                             (source) =>
+                                                source.id === 'gcrypto' || source.id === 'pdax' || (source.id === 'binance' && !inPhilippines)
+                                          );
+                                          const otherSelected = otherSources.some((source) => source.id === fundSource);
+                                          const expanded = showMoreSources || otherSelected;
 
-                                                return (
-                                                   <>
-                                                      <button
-                                                         type="button"
-                                                         onClick={() => setShowMoreSources((value) => !value)}
-                                                         aria-expanded={expanded}
-                                                         className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0] dark:text-[#a095c8]"
-                                                         style={{ touchAction: 'manipulation' }}
-                                                      >
-                                                         {expanded ? 'Fewer options' : 'Other options'}
-                                                         <ChevronDown
-                                                            className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-                                                            aria-hidden="true"
-                                                         />
-                                                      </button>
+                                          return (
+                                             <>
+                                                <button
+                                                   type="button"
+                                                   onClick={() => setShowMoreSources((value) => !value)}
+                                                   aria-expanded={expanded}
+                                                   className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1 cursor-pointer text-xs font-semibold text-[#6b6090] transition hover:text-[#6c3fe0] dark:text-[#a095c8]"
+                                                   style={{ touchAction: 'manipulation' }}
+                                                >
+                                                   {expanded ? 'Fewer options' : 'Other options'}
+                                                   <ChevronDown
+                                                      className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                                                      aria-hidden="true"
+                                                   />
+                                                </button>
 
-                                                      {expanded ? (
-                                                         <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-                                                            {otherSources.map((source) => renderSourcePill(source))}
-                                                         </div>
-                                                      ) : null}
-                                                   </>
-                                                );
-                                             })()}
-                                          </>
-                                       ) : (
-                                          renderHeroSource(fundSources.find((source) => source.id === 'binance') ?? fundSources[0])
-                                       )}
+                                                {expanded ? (
+                                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                                                      {otherSources.map((source) => renderSourcePill(source))}
+                                                   </div>
+                                                ) : null}
+                                             </>
+                                          );
+                                       })()}
                                        <p className="mt-2 text-xs text-[#6b6090] dark:text-[#a095c8]">
                                           You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is
                                           available in your country.{' '}
