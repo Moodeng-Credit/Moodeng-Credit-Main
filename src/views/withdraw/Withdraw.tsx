@@ -585,15 +585,14 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
-   const region = useRegion();
    const navigate = useNavigate();
-   const isPH = region !== 'other';
+   // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
+   // the user's actual location or nationality — a Filipino traveling or living abroad still
+   // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
+   // a PH mobile carrier as another country anyway. So every provider is always shown below,
+   // Coins.ph stays the recommended default for everyone, and a user genuinely abroad can still
+   // pick Binance themselves — location must never hide a rail or auto-switch the default.
    const [selected, setSelected] = useState<Provider>('coinsph');
-
-   useEffect(() => {
-      if (region === 'other') setSelected('binance');
-      else if (region === 'ph') setSelected('coinsph');
-   }, [region]);
 
    const NAMES: Record<Provider, string> = {
       moneybees: 'Moneybees',
@@ -649,97 +648,57 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto
                service.
             </p>
+            {/* Every provider is shown to everyone — see the note on `region` above for why
+                location must never hide or reorder these based on an IP guess. Coins.ph stays
+                the recommended default for everyone; a user genuinely abroad can still pick
+                Binance themselves. */}
             <div className="space-y-[10px]">
-               {isPH ? (
-                  <>
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="coinsph"
-                        recommended
-                        icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
-                        name="Coins.ph"
-                        line1="Sell for pesos, withdraw to bank or GCash"
-                        line2="Lowest fees · bank or GCash · ~30 min"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="gcash"
-                        icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
-                        name="GCrypto"
-                        line1="Cash out straight to your GCash"
-                        line2="GCash balance · ~5 min"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="pdax"
-                        icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
-                        name="PDAX"
-                        line1="Sell for pesos, withdraw to bank or e-wallet"
-                        line2="Bank, GCash or Maya · ~30 min"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="binance"
-                        icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
-                        name="Binance"
-                        line1="Sell for local currency via P2P marketplace"
-                        line2="GCash, Maya or Bank · 30 min–hours"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="moneybees"
-                        icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
-                        name="Moneybees"
-                        line1="External option · buy and sell via their own process"
-                        line2="You follow Moneybees' instructions directly"
-                     />
-                  </>
-               ) : (
-                  <>
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="binance"
-                        recommended
-                        icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
-                        name="Binance"
-                        line1="Sell for local currency via P2P marketplace"
-                        line2="Bank transfer · 30 min–hours"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="gcash"
-                        icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
-                        name="GCrypto"
-                        line1="Cash out straight to your GCash"
-                        line2="GCash balance · ~5 min"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="pdax"
-                        icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
-                        name="PDAX"
-                        line1="Sell for pesos, withdraw to bank or e-wallet"
-                        line2="Bank, GCash or Maya · ~30 min"
-                     />
-                     <PickerRow
-                        selected={selected}
-                        onSelect={setSelected}
-                        id="coinsph"
-                        icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
-                        name="Coins.ph"
-                        line1="Sell for pesos, withdraw to bank or GCash"
-                        line2="Bank or GCash · ~30 min"
-                     />
-                  </>
-               )}
+               <PickerRow
+                  selected={selected}
+                  onSelect={setSelected}
+                  id="coinsph"
+                  recommended
+                  icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
+                  name="Coins.ph"
+                  line1="Sell for pesos, withdraw to bank or GCash"
+                  line2="Lowest fees · bank or GCash · ~30 min"
+               />
+               <PickerRow
+                  selected={selected}
+                  onSelect={setSelected}
+                  id="gcash"
+                  icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
+                  name="GCrypto"
+                  line1="Cash out straight to your GCash"
+                  line2="GCash balance · ~5 min"
+               />
+               <PickerRow
+                  selected={selected}
+                  onSelect={setSelected}
+                  id="pdax"
+                  icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
+                  name="PDAX"
+                  line1="Sell for pesos, withdraw to bank or e-wallet"
+                  line2="Bank, GCash or Maya · ~30 min"
+               />
+               <PickerRow
+                  selected={selected}
+                  onSelect={setSelected}
+                  id="binance"
+                  icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
+                  name="Binance"
+                  line1="Sell for local currency via P2P marketplace"
+                  line2="GCash, Maya or Bank · 30 min–hours"
+               />
+               <PickerRow
+                  selected={selected}
+                  onSelect={setSelected}
+                  id="moneybees"
+                  icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
+                  name="Moneybees"
+                  line1="External option · buy and sell via their own process"
+                  line2="You follow Moneybees' instructions directly"
+               />
             </div>
 
             {selected !== 'moneybees' && <BaseOnlyNotice className="mt-[12px]" />}
