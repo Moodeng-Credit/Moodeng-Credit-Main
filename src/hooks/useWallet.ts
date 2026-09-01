@@ -8,6 +8,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
 import { openSupportChat } from '@/lib/support/liveChat';
+import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
 import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
@@ -36,6 +37,12 @@ export interface PaymentOutcome {
 // Inspects the (often deeply-wrapped) wagmi/viem error to route to a toast the
 // user can act on, instead of a generic "transaction failed" they can't self-correct.
 const classifyTransferError = (err: unknown): ErrorCode => {
+   // A wallet that never answered the request (dead/cross-device connection) — surface
+   // the actionable "reconnect / approve on the other device" guidance, not a generic fail.
+   if (err instanceof WalletTimeoutError) {
+      return ERROR_CODES.WALLET_UNREACHABLE;
+   }
+
    if (err instanceof BaseError) {
       if (err.walk((cause) => cause instanceof UserRejectedRequestError)) {
          return ERROR_CODES.TRANSACTION_REJECTED;
@@ -129,12 +136,20 @@ const useWallet = () => {
          const decimals = 6;
          const amounts = parseUnits(amount, decimals);
 
-         const hash = await writeContractAsync({
-            address: tokenAddress as unknown as `0x${string}`,
-            abi: ERC20_ABI,
-            functionName: 'transfer',
-            args: [recipient, amounts]
-         });
+         // Time-box the signature request. Without this, a request sent to a wallet that
+         // never responds (asleep phone over WalletConnect, stale connection with no live
+         // provider here) leaves this promise pending forever — the exact hang that stranded
+         // a lender on the "Approve in your wallet" spinner. On timeout we classify it as
+         // WALLET_UNREACHABLE and tell them what to do instead of spinning indefinitely.
+         const hash = await withTimeout(
+            writeContractAsync({
+               address: tokenAddress as unknown as `0x${string}`,
+               abi: ERC20_ABI,
+               functionName: 'transfer',
+               args: [recipient, amounts]
+            }),
+            WALLET_RESPONSE_TIMEOUT_MS
+         );
 
          return hash;
       } catch (err) {
