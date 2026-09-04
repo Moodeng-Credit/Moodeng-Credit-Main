@@ -70,6 +70,7 @@ type AdminTab =
    | 'notifications'
    | 'chat'
    | 'relay'
+   | 'demo-platform'
    | 'demo-monday'
    | 'demo-map'
    | 'demo-console'
@@ -147,6 +148,11 @@ const navGroups: NavGroup[] = [
    {
       id: 'demo',
       label: 'B2B demo',
+      items: [{ id: 'demo-platform', label: 'Platform demo' }]
+   },
+   {
+      id: 'demo-old',
+      label: 'Old version B2B demo',
       items: [
          { id: 'demo-monday', label: 'The Monday Problem' },
          { id: 'demo-map', label: 'Pool map' },
@@ -338,6 +344,7 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'notifications',
    'chat',
    'relay',
+   'demo-platform',
    'demo-monday',
    'demo-map',
    'demo-console',
@@ -1642,6 +1649,7 @@ export default function AdminPanel() {
 
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 
+               {activeTab === 'demo-platform' ? <DemoB2BSection page="platform" /> : null}
                {activeTab === 'demo-monday' ? <DemoB2BSection page="monday" /> : null}
                {activeTab === 'demo-map' ? <DemoB2BSection page="map" /> : null}
                {activeTab === 'demo-console' ? <DemoB2BSection page="console" /> : null}

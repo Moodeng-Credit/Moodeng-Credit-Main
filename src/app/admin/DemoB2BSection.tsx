@@ -1,6 +1,6 @@
 'use client';
 
-export type DemoKey = 'monday' | 'map' | 'console' | 'spec';
+export type DemoKey = 'platform' | 'monday' | 'map' | 'console' | 'spec';
 
 type DemoPage = {
    key: DemoKey;
@@ -12,6 +12,14 @@ type DemoPage = {
 };
 
 const demoPages: Record<DemoKey, DemoPage> = {
+   platform: {
+      key: 'platform',
+      file: '/demo-b2b/platform.html',
+      title: 'Moodeng Credit Platform',
+      blurb:
+         'The full B2B product, both sides of the vault. A Moodeng view (Overview, Integration, Underwriting, Marketplace, Vault, Traction) and a Partner Lender portal (Dashboard, Draw Funds, Loan Book) — switch with the toggle top-right. On brand, gamified lender milestones, no live data.',
+      tip: 'Toggle Moodeng / Partner Lender top-right. Every tab, button, animation and the Draw flow are live in-page. Open full screen to present it as its own page.'
+   },
    monday: {
       key: 'monday',
       file: '/demo-b2b/monday-problem.html',
