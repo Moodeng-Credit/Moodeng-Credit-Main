@@ -9,6 +9,8 @@
     { "src": "^/about/?$", "dest": "/landing/about.html" },
     { "src": "^/for-lenders/?$", "dest": "/landing/for-lenders.html" },
 
+    { "src": "^/b2b-demo/?$", "dest": "/demo-b2b/platform.html" },
+
     { "src": "^/blogs/?$", "dest": "/blogs/index.html" },
     { "src": "^/blogs/([^/]+)/?$", "dest": "/blogs/$1/index.html" },
     { "src": "^/academy/money/([^/]+)/?$", "dest": "/academy/money/$1/index.html" },
