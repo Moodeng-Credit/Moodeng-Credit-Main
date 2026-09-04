@@ -11,6 +11,9 @@
 
     { "src": "^/b2b-demo/?$", "dest": "/demo-b2b/platform.html" },
 
+    { "src": "^/b2c-dashboard-mockup/?$", "dest": "/demo-b2c/dashboard-mockup.html" },
+    { "src": "^/b2c-dashboard-mockup-assets/?$", "dest": "/demo-b2c/assets.html" },
+
     { "src": "^/blogs/?$", "dest": "/blogs/index.html" },
     { "src": "^/blogs/([^/]+)/?$", "dest": "/blogs/$1/index.html" },
     { "src": "^/academy/money/([^/]+)/?$", "dest": "/academy/money/$1/index.html" },
