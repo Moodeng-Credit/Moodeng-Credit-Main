@@ -17,23 +17,48 @@ export const MILESTONE_ICON_CONFIG: Record<
    { bg?: string; icon: string; iconClass?: string; label: string; labelClass: string }
 > = {
    next: {
+      bg: 'bg-md-primary-100',
       icon: '/icons/milestone-star-box.svg',
       iconClass: 'h-10 w-10',
       label: 'View Milestone',
       labelClass: MILESTONE_STATUS_CLASSES.next
    },
    unlocked: {
+      bg: 'bg-md-green-100',
       icon: '/icons/milestone-trophy-box.svg',
       iconClass: 'h-10 w-10',
       label: 'Unlocked',
       labelClass: MILESTONE_STATUS_CLASSES.unlocked
    },
    locked: {
-      bg: 'bg-[#9285a0]',
+      bg: 'bg-md-neutral-300',
       icon: '/icons/locked.svg',
       label: 'Locked',
       labelClass: MILESTONE_STATUS_CLASSES.locked
    }
+};
+
+/**
+ * Per-milestone icon art, keyed by DashboardMilestone.id. Only covers milestones with a
+ * bespoke icon; anything not listed here falls back to MILESTONE_ICON_CONFIG[status] via
+ * getMilestoneIconConfig below. "two-on-time-streak" is a TEMP stand-in (network icon) —
+ * swap for a flame icon once generated, see public/icons/milestones/two-on-time-streak-TEMP.png.
+ */
+export const MILESTONE_ID_ICON_OVERRIDES: Partial<Record<string, { bg: string; icon: string }>> = {
+   'first-funded-loan': { bg: 'bg-md-primary-100', icon: '/icons/milestones/first-funded-loan.png' },
+   'first-on-time-repayment': { bg: 'bg-md-primary-100', icon: '/icons/milestones/on-time-repayment.png' },
+   'two-on-time-streak': { bg: 'bg-md-primary-100', icon: '/icons/milestones/two-on-time-streak-TEMP.png' },
+   'repay-100-total': { bg: 'bg-md-primary-100', icon: '/icons/milestones/repay-100-total.png' },
+   'two-unique-lenders': { bg: 'bg-md-primary-100', icon: '/icons/milestones/two-unique-lenders.png' }
+};
+
+export const getMilestoneIconConfig = (milestone: Pick<DashboardMilestone, 'id' | 'status'>) => {
+   const base = MILESTONE_ICON_CONFIG[milestone.status];
+   const override = MILESTONE_ID_ICON_OVERRIDES[milestone.id];
+   if (!override) return base;
+   // Locked milestones keep their real icon (so the row previews what's coming) but stay muted —
+   // the consumer applies grayscale via className, not by swapping back to the generic lock icon.
+   return { ...base, icon: override.icon, bg: milestone.status === 'locked' ? 'bg-md-neutral-300' : override.bg, iconClass: 'h-10 w-10' };
 };
 
 const SheetShell = ({
@@ -76,7 +101,7 @@ export const MilestoneDetailSheet = ({
 
    if (!milestone) return null;
 
-   const config = MILESTONE_ICON_CONFIG[milestone.status];
+   const config = getMilestoneIconConfig(milestone);
    const actionHref = `${milestone.actionTo ?? '/milestones'}${previewQuery ? `?${previewQuery}` : ''}`;
    const opensWorldId = milestone.actionTo === '/verify-world-id';
    const isLocked = milestone.status === 'locked';

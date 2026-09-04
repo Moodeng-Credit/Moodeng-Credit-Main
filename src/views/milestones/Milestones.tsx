@@ -10,7 +10,7 @@ import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import {
-   MILESTONE_ICON_CONFIG,
+   getMilestoneIconConfig,
    MILESTONE_STATUS_CLASSES,
    MilestoneDetailSheet,
    MilestoneHelpSheet
@@ -78,7 +78,7 @@ const PREVIEW_REPAID_LOANS: Loan[] = [
 ];
 
 function MilestoneCard({ milestone, onView }: { milestone: DashboardMilestone; onView: (milestone: DashboardMilestone) => void }) {
-   const config = MILESTONE_ICON_CONFIG[milestone.status];
+   const config = getMilestoneIconConfig(milestone);
    const summary = getMilestoneSummary(milestone);
 
    return (
