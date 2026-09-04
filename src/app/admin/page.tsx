@@ -35,6 +35,7 @@ import {
 } from './adminSupabase';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
+import DemoB2CSection from './DemoB2CSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
@@ -71,6 +72,8 @@ type AdminTab =
    | 'chat'
    | 'relay'
    | 'demo-platform'
+   | 'demo-b2c-dashboard'
+   | 'demo-b2c-assets'
    | 'demo-monday'
    | 'demo-map'
    | 'demo-console'
@@ -149,6 +152,14 @@ const navGroups: NavGroup[] = [
       id: 'demo',
       label: 'B2B demo',
       items: [{ id: 'demo-platform', label: 'Platform demo' }]
+   },
+   {
+      id: 'demo-b2c',
+      label: 'B2C dashboard demo',
+      items: [
+         { id: 'demo-b2c-dashboard', label: 'Borrower dashboard' },
+         { id: 'demo-b2c-assets', label: 'Asset pack' }
+      ]
    },
    {
       id: 'demo-old',
@@ -345,6 +356,8 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'chat',
    'relay',
    'demo-platform',
+   'demo-b2c-dashboard',
+   'demo-b2c-assets',
    'demo-monday',
    'demo-map',
    'demo-console',
@@ -1650,6 +1663,8 @@ export default function AdminPanel() {
                {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
 
                {activeTab === 'demo-platform' ? <DemoB2BSection page="platform" /> : null}
+               {activeTab === 'demo-b2c-dashboard' ? <DemoB2CSection page="dashboard" /> : null}
+               {activeTab === 'demo-b2c-assets' ? <DemoB2CSection page="assets" /> : null}
                {activeTab === 'demo-monday' ? <DemoB2BSection page="monday" /> : null}
                {activeTab === 'demo-map' ? <DemoB2BSection page="map" /> : null}
                {activeTab === 'demo-console' ? <DemoB2BSection page="console" /> : null}
