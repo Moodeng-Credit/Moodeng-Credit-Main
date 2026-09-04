@@ -45,12 +45,16 @@ export const MILESTONE_ICON_CONFIG: Record<
  * swap for a flame icon once generated, see public/icons/milestones/two-on-time-streak-TEMP.png.
  */
 export const MILESTONE_ID_ICON_OVERRIDES: Partial<Record<string, { bg: string; icon: string }>> = {
+   'verify-identity': { bg: 'bg-md-primary-100', icon: '/icons/milestones/verify-identity.png' },
    'first-loan-request': { bg: 'bg-md-primary-100', icon: '/icons/milestones/first-loan-request.png' },
    'first-funded-loan': { bg: 'bg-md-primary-100', icon: '/icons/milestones/first-funded-loan.png' },
    'first-on-time-repayment': { bg: 'bg-md-primary-100', icon: '/icons/milestones/on-time-repayment.png' },
    'two-on-time-streak': { bg: 'bg-md-primary-100', icon: '/icons/milestones/two-on-time-streak-TEMP.png' },
+   'full-limit-credit-builder': { bg: 'bg-md-primary-100', icon: '/icons/milestones/full-limit-credit-builder.png' },
+   'two-unique-lenders': { bg: 'bg-md-primary-100', icon: '/icons/milestones/two-unique-lenders.png' },
    'repay-100-total': { bg: 'bg-md-primary-100', icon: '/icons/milestones/repay-100-total.png' },
-   'two-unique-lenders': { bg: 'bg-md-primary-100', icon: '/icons/milestones/two-unique-lenders.png' }
+   'reach-level-three': { bg: 'bg-md-primary-100', icon: '/icons/milestones/reach-level-three.png' },
+   'trusted-borrower-candidate': { bg: 'bg-md-primary-100', icon: '/icons/milestones/trusted-borrower-candidate.png' }
 };
 
 export const getMilestoneIconConfig = (milestone: Pick<DashboardMilestone, 'id' | 'status'>) => {
