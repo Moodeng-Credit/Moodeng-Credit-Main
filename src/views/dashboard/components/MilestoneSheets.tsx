@@ -45,6 +45,7 @@ export const MILESTONE_ICON_CONFIG: Record<
  * swap for a flame icon once generated, see public/icons/milestones/two-on-time-streak-TEMP.png.
  */
 export const MILESTONE_ID_ICON_OVERRIDES: Partial<Record<string, { bg: string; icon: string }>> = {
+   'first-loan-request': { bg: 'bg-md-primary-100', icon: '/icons/milestones/first-loan-request.png' },
    'first-funded-loan': { bg: 'bg-md-primary-100', icon: '/icons/milestones/first-funded-loan.png' },
    'first-on-time-repayment': { bg: 'bg-md-primary-100', icon: '/icons/milestones/on-time-repayment.png' },
    'two-on-time-streak': { bg: 'bg-md-primary-100', icon: '/icons/milestones/two-on-time-streak-TEMP.png' },
