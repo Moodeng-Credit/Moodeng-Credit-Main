@@ -150,6 +150,7 @@ html.dark .bg-md-neutral-300,
 html.dark .bg-md-neutral-400,
 html.dark .bg-md-neutral-500,
 html.dark [class*='bg-[#f2f0f5'],
+html.dark [class*='bg-[#f2eef8'],
 html.dark [class*='bg-[#f3f4f6'],
 html.dark [class*='bg-[#e5e7eb'] {
    background-color: #2a2235;

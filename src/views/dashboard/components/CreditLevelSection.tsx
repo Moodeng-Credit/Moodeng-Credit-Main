@@ -132,10 +132,10 @@ export default function CreditLevelSection({ currentCs, usedCreditAmount, isVeri
          </div>
 
          {!isLocked ? (
-            <p className="text-md-b3 text-md-neutral-1000">
+            <p className="text-md-b3 text-md-neutral-1000 [text-wrap:pretty]">
                {isAtMaxLevel
-                  ? "You're at the top credit level — nicely done."
-                  : `Repay on time to reach Level ${levelNumber + 1} — up to $${nextLimit}.`}
+                  ? "You're at the top credit level — nicely done."
+                  : `Repay on time to reach Level ${levelNumber + 1} — up to $${nextLimit}.`}
             </p>
          ) : null}
       </>
