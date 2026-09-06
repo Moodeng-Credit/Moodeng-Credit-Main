@@ -2,7 +2,7 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Trash2 } from 'lucide-react';
+import { Check, ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
@@ -188,6 +188,15 @@ export default function UserCard(loan: UserCardProps) {
    // when a wallet isn't answering on this device.
    const [processingSlow, setProcessingSlow] = useState(false);
    const [showDetails, setShowDetails] = useState(openByDefault);
+   // Drives the share notch's own feedback: 'busy' the instant it's pressed, 'copied' (check
+   // icon + label) for a beat afterwards, so the press is never silent.
+   const [shareState, setShareState] = useState<'idle' | 'busy' | 'copied'>('idle');
+
+   useEffect(() => {
+      if (shareState !== 'copied') return;
+      const timer = setTimeout(() => setShareState('idle'), 1800);
+      return () => clearTimeout(timer);
+   }, [shareState]);
 
    // Open the request fully when arriving via a shared link (the prop flips true once the board
    // resolves the shared loan, which can happen after this card has already mounted).
@@ -496,27 +505,74 @@ export default function UserCard(loan: UserCardProps) {
    // who opens the shared link lands on the loan they were sent and can fund it directly.
    const shareRequestUrl =
       typeof window !== 'undefined' ? `${window.location.origin}/request-board?highlight=${loanData.id}` : '';
+   // Last-resort copy for contexts where the async Clipboard API is missing or blocked
+   // (in-app webviews, non-secure origins): a throwaway textarea + the legacy copy command.
+   const copyViaTextarea = (text: string) => {
+      if (typeof document === 'undefined') return false;
+      const field = document.createElement('textarea');
+      field.value = text;
+      field.setAttribute('readonly', '');
+      field.style.position = 'fixed';
+      field.style.opacity = '0';
+      document.body.appendChild(field);
+      field.select();
+      field.setSelectionRange(0, text.length);
+      let copied = false;
+      try {
+         copied = document.execCommand('copy');
+      } catch {
+         copied = false;
+      }
+      document.body.removeChild(field);
+      return copied;
+   };
+
+   const copyShareLink = async () => {
+      try {
+         if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(shareRequestUrl);
+            return true;
+         }
+      } catch {
+         /* fall through to the legacy path below */
+      }
+      return copyViaTextarea(shareRequestUrl);
+   };
+
    const handleShareRequest = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      // Native share sheet on mobile (WhatsApp/Telegram/etc.); clipboard copy everywhere else.
-      if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      // Confirm the tap on the button itself right away: the notch is small, and on the share-sheet
+      // path the toast never fires, so without this there is no sign the press registered at all.
+      setShareState('busy');
+      // Native share sheet only on touch devices (WhatsApp/Telegram/etc.). On desktop the sheet is
+      // an unhelpful OS dialog, and admins here just want the link on their clipboard.
+      const canNativeShare =
+         typeof navigator !== 'undefined' &&
+         typeof navigator.share === 'function' &&
+         (navigator.maxTouchPoints ?? 0) > 0;
+      if (canNativeShare) {
          try {
             await navigator.share({
                title: 'Moodeng loan request',
                text: `Help fund ${borrowerDisplayName}'s loan on Moodeng`,
                url: shareRequestUrl
             });
+            setShareState('idle');
             return;
          } catch (shareError) {
             // AbortError = the user closed the share sheet on purpose; don't fall back to copy.
-            if ((shareError as Error)?.name === 'AbortError') return;
+            if ((shareError as Error)?.name === 'AbortError') {
+               setShareState('idle');
+               return;
+            }
          }
       }
-      try {
-         await navigator.clipboard.writeText(shareRequestUrl);
+      if (await copyShareLink()) {
+         setShareState('copied');
          showToast(TOAST_TYPES.SUCCESS, 'Link copied', 'Send it to a lender so they can fund this request.');
-      } catch {
+      } else {
+         setShareState('idle');
          showToast(TOAST_TYPES.ERROR, 'Could not copy link', shareRequestUrl);
       }
    };
@@ -592,11 +648,30 @@ export default function UserCard(loan: UserCardProps) {
                         <button
                            type="button"
                            onClick={handleShareRequest}
-                           aria-label="Share this request"
-                           title="Share this request"
-                           className="absolute right-0 top-0 z-10 flex h-[34px] w-10 items-center justify-center rounded-bl-[14px] rounded-tr-[24px] bg-[#faf8ff] pb-0.5 pl-1 text-md-primary-1200 transition hover:brightness-95 active:scale-[0.96] dark:bg-[#241b38] dark:text-[#c4a0ff]"
+                           disabled={shareState === 'busy'}
+                           aria-label="Copy the link to this request"
+                           aria-live="polite"
+                           title={shareState === 'copied' ? 'Link copied' : 'Copy the link to this request'}
+                           className={`absolute right-0 top-0 z-10 flex h-10 items-center justify-center gap-1 rounded-bl-[14px] rounded-tr-[24px] pb-0.5 pl-1.5 pr-1 text-md-primary-1200 transition-[width,background-color,transform] duration-150 touch-manipulation active:scale-[0.94] dark:text-[#c4a0ff] ${
+                              shareState === 'copied'
+                                 ? `${canDeleteOwnRequest ? 'w-11' : 'w-[86px]'} bg-[#efe7ff] dark:bg-[#31245a]`
+                                 : 'w-11 bg-[#faf8ff] hover:brightness-95 active:bg-[#efe7ff] dark:bg-[#241b38] dark:active:bg-[#31245a]'
+                           }`}
                         >
-                           <Share2 className="size-[15px]" strokeWidth={2} />
+                           {shareState === 'busy' ? (
+                              <Loader2 className="size-[15px] animate-spin" strokeWidth={2} aria-hidden="true" />
+                           ) : shareState === 'copied' ? (
+                              <>
+                                 <Check className="size-[15px]" strokeWidth={2.5} aria-hidden="true" />
+                                 {/* Label is dropped when the delete pill shares the corner, so the
+                                     widened notch can't slide under it. */}
+                                 {!canDeleteOwnRequest ? (
+                                    <span className="text-md-b4 font-semibold leading-none">Copied</span>
+                                 ) : null}
+                              </>
+                           ) : (
+                              <Share2 className="size-[15px]" strokeWidth={2} aria-hidden="true" />
+                           )}
                         </button>
                      ) : null}
                      {canDeleteOwnRequest ? (
