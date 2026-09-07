@@ -507,7 +507,7 @@ ${sender} · Moodeng Credit`);
           </tr>
           <tr>
             <td align="center" style="padding:14px 16px 16px;background:#f3e8ff;border-top:1px solid #e4d8f0;color:#786790;font-size:${emailFooterSize}px;line-height:16px;font-weight:${emailRegularWeight};letter-spacing:${emailBodyTracking};text-align:center;">
-              <span>You can also reach us on </span><a href="${escapeHtml(telegramUrl)}" style="color:#6010d2;text-decoration:none;font-weight:${emailSemiboldWeight};">Telegram</a><span> or </span><a href="${facebookUrl}" style="color:#6010d2;text-decoration:none;font-weight:${emailSemiboldWeight};">Facebook</a><span> any time.</span>
+              <span>You can also find us on </span><a href="${facebookUrl}" style="color:#6010d2;text-decoration:none;font-weight:${emailSemiboldWeight};">Facebook</a><span> any time.</span>
             </td>
           </tr>
         </table>
