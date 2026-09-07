@@ -24,7 +24,7 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-const SUPPORT_EMAIL = 'support@moodengcredit.com';
+const SUPPORT_EMAIL = 'support@moodeng.app';
 const SUPPORT_TELEGRAM = 'https://t.me/jimmymoodengcredit';
 const SUPPORT_CALENDLY = 'https://calendly.com/moodengcredit/30min';
 // Every borrower email this function sends is CC'd here so the team sees outreach as it happens.
