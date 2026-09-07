@@ -19,6 +19,16 @@ function money(value: number | null | undefined): string {
    return Number(value ?? 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
 
+function pct(value: number | null | undefined): string {
+   if (value == null || !Number.isFinite(value)) return '—';
+   return `${(value * 100).toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+}
+
+function average(values: number[]): number | null {
+   if (!values.length) return null;
+   return values.reduce((sum, v) => sum + v, 0) / values.length;
+}
+
 function shortDate(value: string | null): string {
    if (!value) return '—';
    const d = new Date(value);
@@ -110,6 +120,16 @@ export default function ComingDueSection({
 
    const totalOutstanding = useMemo(() => shown.reduce((sum, l) => sum + l.outstanding, 0), [shown]);
 
+   // Portfolio-wide analytics across every outstanding loan (not just the selected bucket/search),
+   // so these numbers read as "right now, across everything owed" rather than the filtered view.
+   const analytics = useMemo(() => {
+      const avgInterest = average(loans.map((l) => l.interest));
+      const avgInterestRate = average(loans.map((l) => l.interest_rate).filter((r): r is number => r != null));
+      const avgTenorDays = average(loans.map((l) => l.tenor_days).filter((d): d is number => d != null));
+      const totalInterest = loans.reduce((sum, l) => sum + l.interest, 0);
+      return { avgInterest, avgInterestRate, avgTenorDays, totalInterest, count: loans.length };
+   }, [loans]);
+
    return (
       <div className="space-y-4">
          <div className="flex flex-wrap items-center justify-between gap-3">
@@ -134,6 +154,30 @@ export default function ComingDueSection({
                </button>
             </div>
          </div>
+
+         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
+               <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">Avg interest / loan</p>
+               <strong className="mt-1 block text-2xl font-black text-white">{money(analytics.avgInterest)}</strong>
+            </div>
+            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
+               <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">Avg interest rate</p>
+               <strong className="mt-1 block text-2xl font-black text-white">{pct(analytics.avgInterestRate)}</strong>
+            </div>
+            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
+               <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">Avg tenor</p>
+               <strong className="mt-1 block text-2xl font-black text-white">
+                  {analytics.avgTenorDays == null ? '—' : `${Math.round(analytics.avgTenorDays)} days`}
+               </strong>
+            </div>
+            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
+               <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">Total interest owed</p>
+               <strong className="mt-1 block text-2xl font-black text-white">{money(analytics.totalInterest)}</strong>
+            </div>
+         </div>
+         <p className="text-xs font-bold text-[#6f6385]">
+            Across all {analytics.count} outstanding loan{analytics.count === 1 ? '' : 's'} — updates live as loans are funded, repaid, or added.
+         </p>
 
          <div className="flex flex-wrap items-center gap-2">
             {BUCKETS.map((b) => (
@@ -163,7 +207,7 @@ export default function ComingDueSection({
 
          {shown.length ? (
             <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
-               <table className="w-full min-w-[960px] border-collapse text-left">
+               <table className="w-full min-w-[1120px] border-collapse text-left">
                   <thead>
                      <tr className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
                         <th className="px-4 py-3">Countdown</th>
@@ -172,6 +216,7 @@ export default function ComingDueSection({
                         <th className="px-4 py-3">Borrower</th>
                         <th className="px-4 py-3">Contact</th>
                         <th className="px-4 py-3 text-right">Outstanding</th>
+                        <th className="px-4 py-3 text-right">Interest</th>
                         <th className="px-4 py-3">Lender</th>
                         <th className="px-4 py-3 text-right">Actions</th>
                      </tr>
@@ -196,6 +241,10 @@ export default function ComingDueSection({
                               </div>
                            </td>
                            <td className="px-4 py-3 text-right text-sm font-black text-white">{money(l.outstanding)}</td>
+                           <td className="px-4 py-3 text-right text-sm font-bold text-white">
+                              {money(l.interest)}
+                              <div className="text-xs font-medium text-[#a89bb8]">{pct(l.interest_rate)}</div>
+                           </td>
                            <td className="px-4 py-3 text-sm font-bold text-white">{l.lender?.username ?? '—'}</td>
                            <td className="px-4 py-3">
                               <div className="flex flex-wrap justify-end gap-2">

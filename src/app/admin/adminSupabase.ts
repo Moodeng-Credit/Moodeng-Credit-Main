@@ -696,8 +696,12 @@ export interface ComingDueLoan {
    loan_amount: number;
    total_repayment_amount: number;
    repaid_amount: number | null;
+   interest: number; // total_repayment_amount - loan_amount
+   interest_rate: number | null; // interest / loan_amount, null when loan_amount is 0
    outstanding: number;
+   funded_at: string | null;
    due_date: string;
+   tenor_days: number | null; // whole days between funded_at and due_date
    days_until_due: number; // 0 = due today, negative = overdue, positive = upcoming
    reason: string | null;
    coin: string | null;
@@ -719,6 +723,15 @@ function calendarDaysUntil(dueDate: string): number {
    return Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86_400_000);
 }
 
+// Whole-day loan term: funding date to due date. Null when either end is missing/invalid.
+function calendarTenorDays(fundedAt: string | null, dueDate: string | null): number | null {
+   if (!fundedAt || !dueDate) return null;
+   const start = new Date(fundedAt).getTime();
+   const end = new Date(dueDate).getTime();
+   if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+   return Math.round((end - start) / 86_400_000);
+}
+
 export async function listComingDueLoans({ includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}): Promise<
    ComingDueLoan[]
 > {
@@ -726,7 +739,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
    let query = supabase
       .from('loans')
       .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,repayment_status,is_test'
+         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,funded_at,created_at,reason,coin,repayment_status,is_test'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -753,22 +766,32 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
       }
    }
 
-   return rows.map((row) => ({
-      id: row.id,
-      tracking_id: row.tracking_id,
-      loan_amount: toNumber(row.loan_amount),
-      total_repayment_amount: toNumber(row.total_repayment_amount),
-      repaid_amount: row.repaid_amount == null ? null : toNumber(row.repaid_amount),
-      outstanding: outstandingDue({ total_repayment_amount: row.total_repayment_amount, repaid_amount: row.repaid_amount }),
-      due_date: row.due_date,
-      days_until_due: calendarDaysUntil(row.due_date),
-      reason: row.reason ?? null,
-      coin: row.coin ?? null,
-      repayment_status: row.repayment_status ?? null,
-      is_test: Boolean(row.is_test),
-      borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
-      lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
-   }));
+   return rows.map((row) => {
+      const loanAmount = toNumber(row.loan_amount);
+      const totalRepayment = toNumber(row.total_repayment_amount);
+      const interest = totalRepayment - loanAmount;
+      const fundedAt = row.funded_at ?? row.created_at ?? null;
+      return {
+         id: row.id,
+         tracking_id: row.tracking_id,
+         loan_amount: loanAmount,
+         total_repayment_amount: totalRepayment,
+         repaid_amount: row.repaid_amount == null ? null : toNumber(row.repaid_amount),
+         interest,
+         interest_rate: loanAmount > 0 ? interest / loanAmount : null,
+         outstanding: outstandingDue({ total_repayment_amount: row.total_repayment_amount, repaid_amount: row.repaid_amount }),
+         funded_at: fundedAt,
+         due_date: row.due_date,
+         tenor_days: calendarTenorDays(fundedAt, row.due_date),
+         days_until_due: calendarDaysUntil(row.due_date),
+         reason: row.reason ?? null,
+         coin: row.coin ?? null,
+         repayment_status: row.repayment_status ?? null,
+         is_test: Boolean(row.is_test),
+         borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
+         lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
+      };
+   });
 }
 
 // Delivery result shared by the nudge + extension notifications (email + Telegram to the
