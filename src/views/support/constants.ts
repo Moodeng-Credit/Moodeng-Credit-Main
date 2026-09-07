@@ -1,4 +1,4 @@
-export const SUPPORT_EMAIL = 'support@moodengcredit.com';
+export const SUPPORT_EMAIL = 'support@moodeng.app';
 export const SUPPORT_FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61589106561061';
 export const TELEGRAM_URL = 'https://t.me/jimmymoodengcredit';
 export const TELEGRAM_SUPPORT_MESSAGE = 'Hi there. I was on Moodeng Credit and need help';

@@ -73,9 +73,9 @@ message textarea, a "can re-apply" toggle, and a **Preview** button that posts `
 shows `preview.text` before the admin commits. That replaces whatever direct `loans` delete the
 panel does today — worth removing that path so every removal is notified and audited.
 
-## Known inconsistency
+## Support address (resolved)
 
-`admin-loan-notify` tells borrowers to write to `support@moodengcredit.com`, but all mail actually
-sends from `support@moodeng.app`. This function points at the Telegram support handle and "reply to
-this email" instead, to avoid sending people to an address I can't verify receives mail. Worth
-picking one and making it consistent across the notification functions.
+All borrower mail sends from `support@moodeng.app` (`RESEND_FROM`), and every notification function
++ landing page now points borrowers to that same `support@moodeng.app` address. The earlier
+inconsistency — copy pointing to `support@moodengcredit.com` while mail came from `support@moodeng.app`
+— has been standardized on `support@moodeng.app`.
