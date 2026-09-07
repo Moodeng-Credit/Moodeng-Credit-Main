@@ -7,8 +7,13 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 // Admin-triggered borrower notifications for the /admin "Coming due" + "Loan extensions" tabs.
 //   kind='extension' — a loan's due date was pushed out (admin_extend_loan already ran).
 //   kind='nudge'     — a reminder that a loan is coming due / overdue.
+//   kind='connect'   — a no-pressure check-in, deliberately NOT about the amount owed: offers a
+//                      Telegram DM, a free 30-min call, and the referral/feedback-video earn
+//                      offer. Meant as a warmer follow-up when a nudge goes unanswered, or any
+//                      time the team wants to open a line to a borrower without chasing them.
 // Borrowers get email + Telegram (lenders are intentionally NOT notified). A team Telegram
-// channel (George + Emma) gets a heads-up copy so the team can follow up.
+// channel (George + Emma) gets a heads-up copy so the team can follow up. Every borrower email
+// from this function is also CC'd to the team inbox below.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -21,6 +26,9 @@ const json = (body: unknown, status = 200) =>
 
 const SUPPORT_EMAIL = 'support@moodengcredit.com';
 const SUPPORT_TELEGRAM = 'https://t.me/jimmymoodengcredit';
+const SUPPORT_CALENDLY = 'https://calendly.com/moodengcredit/30min';
+// Every borrower email this function sends is CC'd here so the team sees outreach as it happens.
+const TEAM_CC_EMAIL = 'georgemlerner@gmail.com';
 
 const siteUrl = () => {
    const configured = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL');
@@ -60,9 +68,9 @@ serve(async (req) => {
    if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
 
    const body = await req.json().catch(() => ({}));
-   const kind: 'extension' | 'nudge' = body.kind;
+   const kind: 'extension' | 'nudge' | 'connect' = body.kind;
    const loanId: string | undefined = body.loanId;
-   if (kind !== 'extension' && kind !== 'nudge') return json({ error: 'Invalid kind' }, 400);
+   if (kind !== 'extension' && kind !== 'nudge' && kind !== 'connect') return json({ error: 'Invalid kind' }, 400);
    if (!loanId) return json({ error: 'Missing loanId' }, 400);
 
    const { data: loan, error: loanError } = await supabase
@@ -87,36 +95,70 @@ serve(async (req) => {
 
    // --- Compose borrower copy ---
    let subject: string;
-   let intro: string;
-   if (kind === 'extension') {
-      const prev = shortDate(body.previousDueDate ?? null);
-      const days = Number(body.daysExtended || 0);
-      const reason = typeof body.reason === 'string' && body.reason.trim() ? body.reason.trim() : null;
-      subject = 'Your Moodeng loan due date has been extended';
-      intro =
-         `Good news — we've extended your loan ${loan.tracking_id}. ` +
-         `Your new due date is ${dueLabel}${prev !== '—' ? ` (moved from ${prev}` : ''}${days > 0 ? `, ${dayWord(days)} more` : ''}${prev !== '—' ? ')' : ''}.` +
-         (reason ? `\n\nNote: ${reason}` : '') +
-         `\n\nYou still owe ${money(outstanding)}.`;
+   let emailText: string;
+   let emailHtml: string;
+   let telegramText: string;
+   const signOff = '— The Moodeng Credit team';
+   const name = borrower?.username ?? 'there';
+
+   if (kind === 'connect') {
+      // Deliberately NOT a repayment reminder — no amount owed, no due date, no repay button.
+      // A warm, no-pressure check-in offering a human line back to the team, for when a nudge
+      // goes unanswered or the team just wants to open a channel with a borrower.
+      subject = 'Just checking in 💚 (plus a couple of ways to earn with Moodeng)';
+      const body1 =
+         `Hey ${name}! Just checking in — no pressure about the loan. If anything's making repayment tricky, ` +
+         `we're happy to help:`;
+      const body2 =
+         `Message us on Telegram anytime: ${SUPPORT_TELEGRAM}\n` + `Or book a free 30-min call: ${SUPPORT_CALENDLY}`;
+      const body3 =
+         `And once you're paid up, two ways to earn with us:\n` +
+         `- Refer a friend -> $10 when they borrow and repay\n` +
+         `- $10-15 for a short feedback video about your experience`;
+      const body4 = `Just reply and let us know 💚`;
+      emailText = `Hi ${name},\n\n${body1}\n\n${body2}\n\n${body3}\n\n${body4}\n\n${signOff}`;
+      emailHtml =
+         `<div style="font-family:system-ui,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">` +
+         `<p>Hi ${name},</p>` +
+         `<p>${body1}</p>` +
+         `<p><a href="${SUPPORT_TELEGRAM}" style="display:inline-block;background:#0088cc;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700;margin-right:8px">Message us on Telegram</a>` +
+         `<a href="${SUPPORT_CALENDLY}" style="display:inline-block;background:#8336f0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Book a free call</a></p>` +
+         `<p>And once you're paid up, two ways to earn with us:</p>` +
+         `<ul><li>Refer a friend → <strong>$10</strong> when they borrow and repay</li><li><strong>$10–15</strong> for a short feedback video about your experience</li></ul>` +
+         `<p>Just reply and let us know 💚</p>` +
+         `<p>${signOff}</p></div>`;
+      telegramText = `${subject}\n\n${body1}\n\n${body2}\n\n${body3}\n\n${body4}`;
    } else {
-      const overdue = loan.due_date ? new Date(loan.due_date).getTime() < Date.now() : false;
-      subject = overdue ? 'Your Moodeng loan is overdue' : 'Your Moodeng loan is coming due';
-      intro = overdue
-         ? `This is a reminder that your loan ${loan.tracking_id} was due on ${dueLabel} and still has ${money(outstanding)} outstanding. Please repay as soon as you can.`
-         : `This is a friendly reminder that your loan ${loan.tracking_id} is due on ${dueLabel}, with ${money(outstanding)} outstanding. Please make sure you're ready to repay on time.`;
+      let intro: string;
+      if (kind === 'extension') {
+         const prev = shortDate(body.previousDueDate ?? null);
+         const days = Number(body.daysExtended || 0);
+         const reason = typeof body.reason === 'string' && body.reason.trim() ? body.reason.trim() : null;
+         subject = 'Your Moodeng loan due date has been extended';
+         intro =
+            `Good news — we've extended your loan ${loan.tracking_id}. ` +
+            `Your new due date is ${dueLabel}${prev !== '—' ? ` (moved from ${prev}` : ''}${days > 0 ? `, ${dayWord(days)} more` : ''}${prev !== '—' ? ')' : ''}.` +
+            (reason ? `\n\nNote: ${reason}` : '') +
+            `\n\nYou still owe ${money(outstanding)}.`;
+      } else {
+         const overdue = loan.due_date ? new Date(loan.due_date).getTime() < Date.now() : false;
+         subject = overdue ? 'Your Moodeng loan is overdue' : 'Your Moodeng loan is coming due';
+         intro = overdue
+            ? `This is a reminder that your loan ${loan.tracking_id} was due on ${dueLabel} and still has ${money(outstanding)} outstanding. Please repay as soon as you can.`
+            : `This is a friendly reminder that your loan ${loan.tracking_id} is due on ${dueLabel}, with ${money(outstanding)} outstanding. Please make sure you're ready to repay on time.`;
+      }
+
+      const helpLine = `If you're having any trouble repaying, please reach out — we're here to help. Email ${SUPPORT_EMAIL} or message us on Telegram at ${SUPPORT_TELEGRAM}.`;
+      emailText = `Hi ${name},\n\n${intro}\n\n${helpLine}\n\nRepay here: ${repayUrl}\n\n${signOff}`;
+      emailHtml =
+         `<div style="font-family:system-ui,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">` +
+         `<p>Hi ${name},</p>` +
+         `<p>${intro.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>` +
+         `<p><a href="${repayUrl}" style="display:inline-block;background:#8336f0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Repay now</a></p>` +
+         `<p>${helpLine.replace(SUPPORT_EMAIL, `<a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>`).replace(SUPPORT_TELEGRAM, `<a href="${SUPPORT_TELEGRAM}">Telegram</a>`)}</p>` +
+         `<p>${signOff}</p></div>`;
+      telegramText = `${subject}\n\n${intro}\n\n${helpLine}`;
    }
-
-   const helpLine = `If you're having any trouble repaying, please reach out — we're here to help. Email ${SUPPORT_EMAIL} or message us on Telegram at ${SUPPORT_TELEGRAM}.`;
-   const emailText = `Hi ${borrower?.username ?? 'there'},\n\n${intro}\n\n${helpLine}\n\nRepay here: ${repayUrl}\n\n— The Moodeng Credit team`;
-   const emailHtml =
-      `<div style="font-family:system-ui,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">` +
-      `<p>Hi ${borrower?.username ?? 'there'},</p>` +
-      `<p>${intro.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>` +
-      `<p><a href="${repayUrl}" style="display:inline-block;background:#8336f0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Repay now</a></p>` +
-      `<p>${helpLine.replace(SUPPORT_EMAIL, `<a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>`).replace(SUPPORT_TELEGRAM, `<a href="${SUPPORT_TELEGRAM}">Telegram</a>`)}</p>` +
-      `<p>— The Moodeng Credit team</p></div>`;
-
-   const telegramText = `${subject}\n\n${intro}\n\n${helpLine}`;
 
    let borrowerEmailSent = false;
    let borrowerTelegramSent = false;
@@ -124,7 +166,7 @@ serve(async (req) => {
 
    if (borrower?.email?.trim()) {
       try {
-         await sendEmail(borrower.email.trim(), subject, emailText, emailHtml);
+         await sendEmail(borrower.email.trim(), subject, emailText, emailHtml, TEAM_CC_EMAIL);
          borrowerEmailSent = true;
       } catch (e) {
          errors.push(`email: ${e instanceof Error ? e.message : String(e)}`);
@@ -133,9 +175,11 @@ serve(async (req) => {
 
    if (borrower?.chat_id) {
       try {
-         await sendTelegramMessage(borrower.chat_id, telegramText, {
-            inlineKeyboard: [[{ text: 'Open Repay', url: repayUrl }]]
-         });
+         const keyboard =
+            kind === 'connect'
+               ? [[{ text: 'Message us', url: SUPPORT_TELEGRAM }], [{ text: 'Book a free call', url: SUPPORT_CALENDLY }]]
+               : [[{ text: 'Open Repay', url: repayUrl }]];
+         await sendTelegramMessage(borrower.chat_id, telegramText, { inlineKeyboard: keyboard });
          borrowerTelegramSent = true;
       } catch (e) {
          errors.push(`telegram: ${e instanceof Error ? e.message : String(e)}`);
@@ -147,10 +191,13 @@ serve(async (req) => {
    const teamChatId = Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
    if (teamChatId) {
       const who = borrower?.username ?? borrowerId;
+      const notifiedLabel = [borrowerEmailSent ? 'email' : null, borrowerTelegramSent ? 'telegram' : null].filter(Boolean).join(' + ') || 'none';
       const teamText =
          kind === 'extension'
-            ? `📅 Loan extended\n${loan.tracking_id} · ${who}\nNew due date: ${dueLabel}${body.daysExtended ? ` (+${dayWord(Number(body.daysExtended))})` : ''}\nOutstanding: ${money(outstanding)}${body.reason ? `\nReason: ${String(body.reason).trim()}` : ''}\nBorrower notified: ${[borrowerEmailSent ? 'email' : null, borrowerTelegramSent ? 'telegram' : null].filter(Boolean).join(' + ') || 'none'}`
-            : `🔔 Nudge sent\n${loan.tracking_id} · ${who}\nDue: ${dueLabel} · Outstanding: ${money(outstanding)}\nBorrower notified: ${[borrowerEmailSent ? 'email' : null, borrowerTelegramSent ? 'telegram' : null].filter(Boolean).join(' + ') || 'none'}`;
+            ? `📅 Loan extended\n${loan.tracking_id} · ${who}\nNew due date: ${dueLabel}${body.daysExtended ? ` (+${dayWord(Number(body.daysExtended))})` : ''}\nOutstanding: ${money(outstanding)}${body.reason ? `\nReason: ${String(body.reason).trim()}` : ''}\nBorrower notified: ${notifiedLabel}`
+            : kind === 'connect'
+              ? `💚 Connect sent\n${loan.tracking_id} · ${who}\nOutstanding: ${money(outstanding)}\nBorrower notified: ${notifiedLabel}`
+              : `🔔 Nudge sent\n${loan.tracking_id} · ${who}\nDue: ${dueLabel} · Outstanding: ${money(outstanding)}\nBorrower notified: ${notifiedLabel}`;
       try {
          const threadId = Deno.env.get('TEAM_TELEGRAM_THREAD_ID');
          await sendTelegramMessage(teamChatId, teamText, threadId ? { messageThreadId: Number(threadId) } : {});

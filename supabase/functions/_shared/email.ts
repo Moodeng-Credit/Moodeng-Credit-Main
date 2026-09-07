@@ -1,10 +1,18 @@
-export const sendEmail = async (recipientEmail: string, subject: string, message: string, html?: string) => {
+export const sendEmail = async (
+   recipientEmail: string,
+   subject: string,
+   message: string,
+   html?: string,
+   cc?: string | string[]
+) => {
    const resendApiKey = Deno.env.get('RESEND_API_KEY');
    const resendFrom = Deno.env.get('RESEND_FROM') || 'support@moodeng.app';
 
    if (!resendApiKey) {
       throw new Error('Missing RESEND_API_KEY environment variable');
    }
+
+   const ccList = cc ? (Array.isArray(cc) ? cc : [cc]).filter((addr) => addr?.trim()) : [];
 
    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -17,7 +25,8 @@ export const sendEmail = async (recipientEmail: string, subject: string, message
          to: [recipientEmail],
          subject: subject,
          text: message,
-         ...(html ? { html } : {})
+         ...(html ? { html } : {}),
+         ...(ccList.length ? { cc: ccList } : {})
       })
    });
 
