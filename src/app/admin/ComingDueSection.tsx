@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { type ComingDueLoan, listComingDueLoans, nudgeBorrower } from './adminSupabase';
+import { type ComingDueLoan, connectBorrower, listComingDueLoans, nudgeBorrower } from './adminSupabase';
 
 type BucketId = 'overdue' | 'due3' | 'due7' | 'due14' | 'due30' | 'upcoming';
 
@@ -54,6 +54,8 @@ export default function ComingDueSection({
    const [search, setSearch] = useState('');
    const [nudging, setNudging] = useState<string | null>(null);
    const [nudged, setNudged] = useState<Record<string, string>>({});
+   const [connecting, setConnecting] = useState<string | null>(null);
+   const [connected, setConnected] = useState<Record<string, string>>({});
 
    const load = useCallback(async (includeTest: boolean) => {
       setLoading(true);
@@ -86,6 +88,26 @@ export default function ComingDueSection({
          setError(err instanceof Error ? err.message : 'Could not send the reminder.');
       } finally {
          setNudging(null);
+      }
+   }, []);
+
+   // "Connect" is deliberately not a repayment reminder — no amount owed, no due date. It's a
+   // warm check-in offering Telegram, a free call, and the referral/video earn offer. Use it
+   // instead of repeating Nudge so outreach escalates rather than looping the same message.
+   const handleConnect = useCallback(async (loan: ComingDueLoan) => {
+      setConnecting(loan.id);
+      setError(null);
+      try {
+         const r = await connectBorrower(loan);
+         const channels = [r.borrowerEmailSent ? 'email' : null, r.borrowerTelegramSent ? 'Telegram' : null].filter(Boolean);
+         setConnected((prev) => ({ ...prev, [loan.id]: channels.length ? `Sent (${channels.join(' + ')})` : 'No channel' }));
+         if (!channels.length) {
+            setError(`No check-in sent for ${loan.tracking_id}: borrower has no email or Telegram on file.`);
+         }
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not send the check-in.');
+      } finally {
+         setConnecting(null);
       }
    }, []);
 
@@ -207,6 +229,15 @@ export default function ComingDueSection({
                                     title="Email + Telegram the borrower a repayment reminder"
                                  >
                                     {nudging === l.id ? '…' : nudged[l.id] ? nudged[l.id] : 'Nudge'}
+                                 </button>
+                                 <button
+                                    type="button"
+                                    onClick={() => handleConnect(l)}
+                                    disabled={connecting === l.id || !l.borrower?.id}
+                                    className={`rounded-full px-3 py-1 text-xs font-black uppercase disabled:opacity-50 ${connected[l.id] ? 'bg-emerald-900/50 text-emerald-300' : 'bg-[#2a1453] text-[#cfc6dd]'}`}
+                                    title="No-pressure check-in: Telegram, a free call, and the referral/video earn offer — not about the amount owed"
+                                 >
+                                    {connecting === l.id ? '…' : connected[l.id] ? connected[l.id] : 'Connect'}
                                  </button>
                                  {onExtend ? (
                                     <button

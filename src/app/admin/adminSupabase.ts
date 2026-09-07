@@ -794,6 +794,15 @@ export async function nudgeBorrower(loan: ComingDueLoan): Promise<LoanNotifyResu
    return invokeLoanNotify({ kind: 'nudge', loanId: loan.id });
 }
 
+// Connect with a borrower — a warm, no-pressure check-in (NOT a repayment reminder): offers a
+// Telegram DM, a free 30-min call, and the referral/feedback-video earn offer. Use this instead
+// of repeating Nudge when a reminder has gone unanswered, so outreach escalates to something
+// human rather than the same "pay up" message on a loop.
+export async function connectBorrower(loan: ComingDueLoan): Promise<LoanNotifyResult> {
+   if (!loan.borrower?.id) throw new Error('This loan has no borrower profile to notify.');
+   return invokeLoanNotify({ kind: 'connect', loanId: loan.id });
+}
+
 // ---------------------------------------------------------------------------
 // Loan extension — move a funded loan's due date out and notify both parties.
 // ---------------------------------------------------------------------------
