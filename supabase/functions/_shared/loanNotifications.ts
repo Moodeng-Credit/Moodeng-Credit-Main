@@ -168,6 +168,10 @@ const buildHeroImageUrl = () => getConfiguredUrl('MOODENG_EMAIL_HIPPO_URL') ?? `
 
 const telegramUrl = 'https://t.me/jimmymoodengcredit';
 const facebookUrl = 'https://www.facebook.com/profile.php?id=61589106561061';
+const calendlyUrl = 'https://calendly.com/moodengcredit/30min';
+// Who the "Connect" check-in is signed by. Kept human on purpose — change to whoever is doing
+// borrower outreach (or override via CONNECT_SENDER_NAME).
+const connectSenderName = getEnvValue('CONNECT_SENDER_NAME')?.trim() || 'George';
 
 const escapeHtml = (value: string | number) =>
    String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -413,6 +417,106 @@ const buildLoanEmailHtml = (content: EmailContent, recipient: LoanNotificationRe
     </tr>
   </table>
 </div>`;
+};
+
+// Branded "Connect" check-in email — reuses the same shell as the loan emails (purple header,
+// hippo hero, Telegram/Facebook footer) but is deliberately NOT about the amount owed. It reads
+// like a short personal letter, with the Telegram / free-call buttons placed BELOW the note.
+export const buildConnectEmail = (rawName?: string | null): { subject: string; text: string; html: string } => {
+   const name = (rawName ?? '').trim() || 'there';
+   const heroImageUrl = buildHeroImageUrl();
+   const sender = connectSenderName;
+   const subject = 'A quick note from Moodeng \u{1F49A}';
+
+   const p1 = `It's ${sender} from Moodeng — just wanted to check in. This isn't about chasing the loan, promise. I know the repayment steps can be fiddly and life gets busy.`;
+   const p2 =
+      `If anything's making it hard right now — the crypto part, the timing, or money's just tight this week — ` +
+      `I'd much rather help you sort it out than have you worrying about it. You can reply straight to this email, ` +
+      `message me on Telegram, or grab a quick call whenever suits you.`;
+   const p3 =
+      `And whenever you're back on your feet, there are a couple of easy ways to earn with us too — $10 for ` +
+      `referring a friend who borrows and repays, and $10–15 for a short video about how it went. But honestly, ` +
+      `right now I just want to make sure you're okay.`;
+
+   const text = normalizeNotificationText(`Hi ${name},
+
+${p1}
+
+${p2}
+
+${p3}
+
+Message me on Telegram: ${telegramUrl}
+Book a free call: ${calendlyUrl}
+
+Talk soon,
+${sender} · Moodeng Credit`);
+
+   const para = (body: string) =>
+      `<p style="margin:0 0 14px;color:#33294c;font-size:${emailLabelSize}px;line-height:22px;font-weight:${emailRegularWeight};letter-spacing:${emailBodyTracking};">${body}</p>`;
+
+   const html = `<div style="margin:0;padding:0;background:#f9f8fa;font-family:${emailFontFamily};color:#100733;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;">
+  <style>
+    @media only screen and (max-width:480px) {
+      .moodeng-shell { padding:8px !important; }
+      .moodeng-email { max-width:430px !important; }
+      .moodeng-body { padding:20px !important; }
+      .moodeng-hero-img { width:104px !important; max-width:104px !important; }
+    }
+  </style>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;background:#f9f8fa;">
+    <tr>
+      <td align="center" class="moodeng-shell" style="padding:16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="moodeng-email" style="width:100%;max-width:430px;border-collapse:separate;border-spacing:0;background:#fdfcfd;border:1px solid #e4d8f0;border-radius:14px;overflow:hidden;">
+          <tr>
+            <td align="center" style="padding:16px;background:#1c053d;background:linear-gradient(135deg,#1c053d 0%,#170443 52%,#100229 100%);color:#fdfcfd;">
+              <div style="font-size:20px;line-height:24px;font-weight:${emailSemiboldWeight};letter-spacing:${emailTightTracking};text-align:center;">Moodeng Credit</div>
+            </td>
+          </tr>
+          <tr>
+            <td class="moodeng-body" style="padding:22px 22px 20px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td style="padding:0 10px 8px 0;vertical-align:middle;">
+                    <p style="margin:0;color:#1c053d;font-size:18px;line-height:24px;font-weight:${emailSemiboldWeight};letter-spacing:${emailTightTracking};">Hi ${escapeHtml(name)},</p>
+                  </td>
+                  <td align="right" style="padding:0 0 8px;vertical-align:top;width:104px;">
+                    <img class="moodeng-hero-img" src="${escapeHtml(heroImageUrl)}" alt="Moodeng mascot" width="104" style="display:block;width:104px;max-width:104px;height:auto;border:0;" />
+                  </td>
+                </tr>
+              </table>
+
+              ${para(p1)}
+              ${para(p2)}
+              ${para(p3)}
+
+              <p style="margin:0 0 18px;color:#33294c;font-size:${emailLabelSize}px;line-height:22px;font-weight:${emailRegularWeight};letter-spacing:${emailBodyTracking};">Talk soon,<br /><span style="color:#1c053d;font-weight:${emailSemiboldWeight};">${escapeHtml(sender)} · Moodeng Credit</span></p>
+
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;margin:0;border-collapse:collapse;">
+                <tr>
+                  <td style="padding-right:5px;width:50%;">
+                    <a href="${escapeHtml(telegramUrl)}" style="display:block;border-radius:14px;background:#6010d2;color:#fdfcfd;text-align:center;text-decoration:none;font-size:${emailActionSize}px;line-height:20px;font-weight:${emailSemiboldWeight};letter-spacing:${emailBodyTracking};padding:13px 10px;white-space:nowrap;">Chat on Telegram</a>
+                  </td>
+                  <td style="padding-left:5px;width:50%;">
+                    <a href="${escapeHtml(calendlyUrl)}" style="display:block;border:1px solid #6010d2;border-radius:14px;background:#fdfcfd;color:#6010d2;text-align:center;text-decoration:none;font-size:${emailActionSize}px;line-height:20px;font-weight:${emailSemiboldWeight};letter-spacing:${emailBodyTracking};padding:12px 10px;white-space:nowrap;">Book a free call</a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:14px 16px 16px;background:#f3e8ff;border-top:1px solid #e4d8f0;color:#786790;font-size:${emailFooterSize}px;line-height:16px;font-weight:${emailRegularWeight};letter-spacing:${emailBodyTracking};text-align:center;">
+              <span>You can also find us on </span><a href="${facebookUrl}" style="color:#6010d2;text-decoration:none;font-weight:${emailSemiboldWeight};">Facebook</a><span> any time.</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`;
+
+   return { subject, text, html };
 };
 
 const buildFundedContent = (loan: LoanNotificationLoan, recipient: LoanNotificationRecipient): EmailContent => {

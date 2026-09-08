@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
+import { buildConnectEmail } from '../_shared/loanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Admin-triggered borrower notifications for the /admin "Coming due" + "Loan extensions" tabs.
@@ -85,7 +86,7 @@ serve(async (req) => {
 
    const { data: borrower } = await supabase
       .from('users')
-      .select('id, username, email, chat_id')
+      .select('id, username, display_name, email, chat_id')
       .eq('id', borrowerId)
       .maybeSingle();
 
@@ -99,35 +100,19 @@ serve(async (req) => {
    let emailHtml: string;
    let telegramText: string;
    const signOff = '— The Moodeng Credit team';
+   // Prefer a real first name for the greeting (display name), then username, then "there" — the
+   // raw username slug (e.g. "jessacalipes41-25eb47") reads badly in a human check-in email.
+   const firstName = borrower?.display_name?.trim().split(/\s+/)[0] || borrower?.username || 'there';
    const name = borrower?.username ?? 'there';
 
    if (kind === 'connect') {
       // Deliberately NOT a repayment reminder — no amount owed, no due date, no repay button.
-      // A warm, no-pressure check-in offering a human line back to the team, for when a nudge
-      // goes unanswered or the team just wants to open a channel with a borrower.
-      subject = 'Just checking in 💚 (plus a couple of ways to earn with Moodeng)';
-      const body1 =
-         `Hey ${name}! Just checking in — no pressure about the loan. If anything's making repayment tricky, ` +
-         `we're happy to help:`;
-      const body2 =
-         `Message us on Telegram anytime: ${SUPPORT_TELEGRAM}\n` + `Or book a free 30-min call: ${SUPPORT_CALENDLY}`;
-      const body3 =
-         `And once you're paid up, two ways to earn with us:\n` +
-         `- Refer a friend -> $10 when they borrow and repay\n` +
-         `- $10-15 for a short feedback video about your experience`;
-      const body4 = `Just reply and let us know 💚`;
-      emailText = `Hi ${name},\n\n${body1}\n\n${body2}\n\n${body3}\n\n${body4}\n\n${signOff}`;
-      emailHtml =
-         `<div style="font-family:system-ui,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">` +
-         `<p>Hi ${name},</p>` +
-         `<p>${body1}</p>` +
-         `<p><a href="${SUPPORT_TELEGRAM}" style="display:inline-block;background:#0088cc;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700;margin-right:8px">Message us on Telegram</a>` +
-         `<a href="${SUPPORT_CALENDLY}" style="display:inline-block;background:#8336f0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Book a free call</a></p>` +
-         `<p>And once you're paid up, two ways to earn with us:</p>` +
-         `<ul><li>Refer a friend → <strong>$10</strong> when they borrow and repay</li><li><strong>$10–15</strong> for a short feedback video about your experience</li></ul>` +
-         `<p>Just reply and let us know 💚</p>` +
-         `<p>${signOff}</p></div>`;
-      telegramText = `${subject}\n\n${body1}\n\n${body2}\n\n${body3}\n\n${body4}`;
+      // Uses the shared branded email shell (hippo header/footer), same as the loan emails.
+      const connectEmail = buildConnectEmail(firstName);
+      subject = connectEmail.subject;
+      emailText = connectEmail.text;
+      emailHtml = connectEmail.html;
+      telegramText = connectEmail.text;
    } else {
       let intro: string;
       if (kind === 'extension') {
