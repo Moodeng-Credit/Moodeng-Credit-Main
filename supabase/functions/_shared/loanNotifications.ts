@@ -495,10 +495,10 @@ ${sender} · Moodeng Credit`);
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;margin:0;border-collapse:collapse;">
                 <tr>
                   <td style="padding-right:5px;width:50%;">
-                    <a href="${escapeHtml(telegramUrl)}" style="display:block;border-radius:14px;background:#6010d2;color:#fdfcfd;text-align:center;text-decoration:none;font-size:${emailActionSize}px;line-height:20px;font-weight:${emailSemiboldWeight};letter-spacing:${emailBodyTracking};padding:13px 12px;">Message me on Telegram</a>
+                    <a href="${escapeHtml(telegramUrl)}" style="display:block;border-radius:14px;background:#6010d2;color:#fdfcfd;text-align:center;text-decoration:none;font-size:${emailActionSize}px;line-height:20px;font-weight:${emailSemiboldWeight};letter-spacing:${emailBodyTracking};padding:13px 10px;white-space:nowrap;">Chat on Telegram</a>
                   </td>
                   <td style="padding-left:5px;width:50%;">
-                    <a href="${escapeHtml(calendlyUrl)}" style="display:block;border:1px solid #6010d2;border-radius:14px;background:#fdfcfd;color:#6010d2;text-align:center;text-decoration:none;font-size:${emailActionSize}px;line-height:20px;font-weight:${emailSemiboldWeight};letter-spacing:${emailBodyTracking};padding:12px 12px;">Book a free call</a>
+                    <a href="${escapeHtml(calendlyUrl)}" style="display:block;border:1px solid #6010d2;border-radius:14px;background:#fdfcfd;color:#6010d2;text-align:center;text-decoration:none;font-size:${emailActionSize}px;line-height:20px;font-weight:${emailSemiboldWeight};letter-spacing:${emailBodyTracking};padding:12px 10px;white-space:nowrap;">Book a free call</a>
                   </td>
                 </tr>
               </table>
