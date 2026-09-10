@@ -5,21 +5,35 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //
 // An active admin repays a LENDER out of the admin's own wallet for an outstanding loan, and this
 // function — the ONLY path allowed to write the loan money columns (a DB trigger rejects client
-// writes) — records it and applies the fallout:
-//   1. Verifies the on-chain USDC transfer to the lender's wallet (same gate as confirm-loan-payment).
-//   2. Cancels the loan: repayment_status = 'Paid', repaid_amount = total (never "due" again),
-//      + refunded_at/refund_reason/refunded_by/refund_hash provenance stamp.
+// writes) — records it and applies the fallout. Two modes:
+//
+//   • 'refund' (default): pays the lender their PRINCIPAL and tells them, transparently, that the loan
+//     was refunded — the admin's reason is included in the lender's message.
+//   • 'platform_settlement': the platform makes the lender whole for the FULL repayment (principal +
+//     interest), stamps repaid_amount to the total, and presents it to the lender as an ordinary
+//     REPAYMENT — no "refund" wording, no reason. Used when the loss is the platform's fault (e.g. a
+//     KYC/due-diligence gap) and we cover it silently. The truth is still recorded internally.
+//
+// In both modes:
+//   1. Verifies the on-chain USDC transfer to the lender's wallet (same gate as confirm-loan-payment)
+//      for the required amount (principal for refund, full repayment for platform settlement).
+//   2. Closes the loan: repayment_status = 'Paid' (+ repaid_amount = total for platform settlement),
+//      + refunded_at/refund_reason/refunded_by/refund_hash provenance stamp (the reason is ALWAYS the
+//      admin's true internal reason, even when the lender is shown a repayment).
 //   3. Immutable loan_refunds ledger row.
 //   4. Bans the BORROWER: users.account_status = 'banned' AND a 'banned' admin_account_restrictions row.
 //   5. KYC-blacklists the borrower: internal kyc_blacklist row + push to the DIDIT provider blocklists
 //      (wallet address, email, and vendor_data/user), so a future KYC session auto-declines.
-//   6. Notifies the lender (admin_user_notices + email + Telegram) with the admin's free-text reason.
-//   7. admin_audit_logs for the refund, the ban, and the blacklist.
+//   6. Notifies the lender (admin_user_notices + email + Telegram) — refund wording, or repayment
+//      wording for platform settlement (reason withheld from the lender in that mode only).
+//   7. admin_audit_logs for the refund (with settlement_mode + what the lender was told), the ban, and
+//      the blacklist — the internal record is truthful regardless of the lender-facing message.
 //
 // This same function also RECONCILES an already-sent refund: pass the hash of a transfer that already
 // went out and it records everything above without sending money (the send happens client-side first).
 //
-// Body: { loanId: string, hash: string, method: 'wallet' | 'base', reason: string }
+// Body: { loanId: string, hash: string, method: 'wallet' | 'base', reason: string,
+//         settlementMode?: 'refund' | 'platform_settlement' }
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -184,7 +198,7 @@ serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-   let body: { loanId?: string; hash?: string; method?: string; reason?: string };
+   let body: { loanId?: string; hash?: string; method?: string; reason?: string; settlementMode?: string };
    try {
       body = await req.json();
    } catch {
@@ -194,6 +208,12 @@ serve(async (req) => {
    const { loanId, hash } = body;
    const method = body.method;
    const reason = (body.reason ?? '').trim();
+   // 'refund' (default): pay the lender their PRINCIPAL back and tell them plainly the loan was refunded
+   // (the reason is included in the message). 'platform_settlement': the platform makes the lender whole
+   // for the FULL repayment (principal + interest) and presents it to the lender as an ordinary repayment
+   // — no "refund" wording and no reason — while still recording the truth internally (refunded_at +
+   // refund_reason + audit log). Both modes ban + KYC-blacklist the borrower.
+   const settlementMode = body.settlementMode === 'platform_settlement' ? 'platform_settlement' : 'refund';
    if (!loanId || !hash || (method !== 'wallet' && method !== 'base')) return json({ error: 'Missing or invalid loanId, hash, or method' }, 400);
    if (!reason) return json({ error: 'A refund reason is required' }, 400);
 
@@ -224,7 +244,9 @@ serve(async (req) => {
    if (loan.repayment_status === 'Paid') return json({ error: 'This loan is already fully repaid — nothing to refund' }, 409);
    if (!loan.lender_wallet) return json({ error: 'Loan is missing a lender wallet to refund to' }, 409);
 
-   const requiredMicros = BigInt(Math.round(Number(loan.loan_amount) * 1e6));
+   // Refund = principal only; platform settlement = the full repayment the lender was promised.
+   const settleAmount = settlementMode === 'platform_settlement' ? Number(loan.total_repayment_amount) : Number(loan.loan_amount);
+   const requiredMicros = BigInt(Math.round(settleAmount * 1e6));
    const expectedRecipient = loan.lender_wallet.toLowerCase();
 
    const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', hash).maybeSingle();
@@ -238,7 +260,16 @@ serve(async (req) => {
       return json({ error: err instanceof Error ? err.message : 'Payment verification failed' }, 402);
    }
    if (transfer.to !== expectedRecipient) return json({ error: 'Refund was not sent to the lender wallet' }, 402);
-   if (transfer.micros < requiredMicros) return json({ error: 'Refund amount is less than the loan principal' }, 402);
+   if (transfer.micros < requiredMicros)
+      return json(
+         {
+            error:
+               settlementMode === 'platform_settlement'
+                  ? 'Transfer is less than the full repayment amount'
+                  : 'Refund amount is less than the loan principal'
+         },
+         402
+      );
 
    const stateFloorIso = loan.funded_at ?? loan.created_at ?? null;
    if (stateFloorIso) {
@@ -255,7 +286,8 @@ serve(async (req) => {
 
    const recordHash = transfer.txHash ?? hash;
    const nowIso = new Date().toISOString();
-   const refundAmount = Number(loan.loan_amount);
+   const isPlatformSettlement = settlementMode === 'platform_settlement';
+   const refundAmount = settleAmount;
    const errors: string[] = [];
 
    // --- (2) Cancel the loan ---
@@ -263,9 +295,11 @@ serve(async (req) => {
       .from('loans')
       .update({
          repayment_status: 'Paid',
-         // Do NOT stamp repaid_amount to the total: the borrower repaid nothing (they defaulted and
-         // are banned). refunded_at + repayment_status='Paid' already mark the loan settled/closed;
-         // leaving repaid_amount at its real value keeps borrower repayment/credit stats honest.
+         // Platform settlement is presented to the lender as a full repayment, so stamp repaid_amount to
+         // the total — the lender's dashboard then reads "repaid in full" with $0 outstanding. A plain
+         // refund leaves repaid_amount at its real value (the borrower repaid nothing) so the borrower's
+         // repayment/credit stats stay honest. Either way refunded_at + refund_reason record the truth.
+         ...(isPlatformSettlement ? { repaid_amount: Number(loan.total_repayment_amount) } : {}),
          refunded_at: nowIso,
          refund_reason: reason,
          refunded_by: callerId,
@@ -364,18 +398,30 @@ serve(async (req) => {
    const lenderId = loan.lender_user_id as string | null;
    if (lenderId) {
       const { data: lender } = await admin.from('users').select('id, username, email, chat_id').eq('id', lenderId).maybeSingle();
-      const title = 'Your loan has been refunded';
-      const bodyText =
-         `We've refunded loan ${loan.tracking_id}. ${money(refundAmount)} (${loan.coin ?? 'USDC'}) has been sent back to your wallet. ` +
-         `This loan is now closed and nothing further is owed to you on it.\n\nReason: ${reason}\n\nOn-chain proof: ${recordHash}`;
+      // Platform settlement is presented to the lender as an ordinary repayment: no "refund" wording and
+      // no reason. A plain refund is transparent and includes the admin's reason. The true reason is kept
+      // internally on the loan (refund_reason) and in the audit log regardless of what the lender sees.
+      const title = isPlatformSettlement ? 'Your loan has been repaid in full' : 'Your loan has been refunded';
+      const bodyText = isPlatformSettlement
+         ? `Good news — loan ${loan.tracking_id} has been repaid in full. ${money(refundAmount)} (${loan.coin ?? 'USDC'}) ` +
+           `has been sent to your wallet. This loan is now complete and nothing further is owed to you on it.\n\nOn-chain proof: ${recordHash}`
+         : `We've refunded loan ${loan.tracking_id}. ${money(refundAmount)} (${loan.coin ?? 'USDC'}) has been sent back to your wallet. ` +
+           `This loan is now closed and nothing further is owed to you on it.\n\nReason: ${reason}\n\nOn-chain proof: ${recordHash}`;
 
       const { error: noticeError } = await admin.from('admin_user_notices').insert({
          recipient_user_id: lenderId,
          audience: 'lender',
-         notice_type: 'refund',
+         notice_type: isPlatformSettlement ? 'repayment' : 'refund',
          title,
          body: bodyText,
-         metadata: { loan_id: loanId, tracking_id: loan.tracking_id, amount: refundAmount, coin: loan.coin ?? 'USDC', tx_hash: recordHash },
+         metadata: {
+            loan_id: loanId,
+            tracking_id: loan.tracking_id,
+            amount: refundAmount,
+            coin: loan.coin ?? 'USDC',
+            tx_hash: recordHash,
+            ...(isPlatformSettlement ? { kind: 'repayment' } : {})
+         },
          created_by: callerId
       });
       if (noticeError) errors.push(`notice: ${noticeError.message}`);
@@ -414,7 +460,15 @@ serve(async (req) => {
          target_table: 'loans',
          target_id: loanId,
          target_user_id: lenderId,
-         metadata: { tracking_id: loan.tracking_id, amount: refundAmount, coin: loan.coin ?? 'USDC', tx_hash: recordHash, reason }
+         metadata: {
+            tracking_id: loan.tracking_id,
+            amount: refundAmount,
+            coin: loan.coin ?? 'USDC',
+            tx_hash: recordHash,
+            reason,
+            settlement_mode: settlementMode,
+            lender_told: isPlatformSettlement ? 'repaid_in_full' : 'refunded'
+         }
       },
       ...(borrowerId
          ? [
