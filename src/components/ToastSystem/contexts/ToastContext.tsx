@@ -32,6 +32,19 @@ type ToastAction =
 const toastReducer = (state: ToastState, action: ToastAction): ToastState => {
    switch (action.type) {
       case 'ADD_TOAST': {
+         // Collapse duplicates: if an identical toast (same type + title + message) is already
+         // on screen, don't stack another. Background/late sources — the Base-pay reconciler
+         // confirming a fund the live flow already toasted, a re-render re-firing the same
+         // message — otherwise pop the same toast twice and read as "random". Auto-close then
+         // clears the single toast normally.
+         const isDuplicate = state.toasts.some(
+            (toast) =>
+               toast.toastType === action.payload.toastType &&
+               toast.title === action.payload.title &&
+               toast.message === action.payload.message
+         );
+         if (isDuplicate) return state;
+
          let toasts = state.toasts;
          if (toasts.length >= TOAST_SETTINGS.MAX_TOASTS) {
             toasts = toasts.slice(1);
