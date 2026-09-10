@@ -9,10 +9,13 @@ import {
    getLoanRefundState,
    listComingDueLoans,
    refundLoan,
-   type RefundLoanResult
+   type RefundLoanResult,
+   type SettlementMode
 } from './adminSupabase';
 
 const DEFAULT_REASON = 'Insufficient credit check';
+// Internal-only default for a platform settlement: the lender never sees this — it's for our records.
+const DEFAULT_SETTLEMENT_REASON = 'Platform settlement — borrower KYC/due-diligence gap; lender made whole in full.';
 
 function money(value: number | null | undefined): string {
    return Number(value ?? 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
@@ -23,17 +26,28 @@ function shortWallet(w: string | null | undefined): string {
    return `${w.slice(0, 6)}…${w.slice(-4)}`;
 }
 
-// A refund unwinds the lender's PRINCIPAL only (loan_amount), matching how the loan was funded.
+// A plain refund unwinds the lender's PRINCIPAL only (loan_amount), matching how the loan was funded.
 function principal(loan: ComingDueLoan): number {
    return Number(loan.loan_amount ?? 0);
 }
 
-// A refund USDC transfer that already landed but whose server-side recording failed. We keep the
-// hash so the admin can FINISH RECORDING without sending money a second time.
+// The full repayment the lender was promised (principal + interest) — what a platform settlement pays.
+function fullRepayment(loan: ComingDueLoan): number {
+   return Number(loan.total_repayment_amount ?? 0);
+}
+
+// Amount to send for a given mode.
+function settleAmount(loan: ComingDueLoan, mode: SettlementMode): number {
+   return mode === 'platform_settlement' ? fullRepayment(loan) : principal(loan);
+}
+
+// A settlement USDC transfer that already landed but whose server-side recording failed. We keep the
+// hash + mode so the admin can FINISH RECORDING without sending money a second time.
 interface PendingRecord {
    hash: string;
    method: 'wallet' | 'base';
    reason: string;
+   mode: SettlementMode;
 }
 
 export default function RefundSection() {
@@ -45,6 +59,7 @@ export default function RefundSection() {
    const [search, setSearch] = useState('');
 
    const [target, setTarget] = useState<ComingDueLoan | null>(null);
+   const [mode, setMode] = useState<SettlementMode>('refund');
    const [reason, setReason] = useState(DEFAULT_REASON);
    const [step, setStep] = useState<'idle' | 'checking' | 'sending' | 'recording'>('idle');
    const [done, setDone] = useState<Record<string, RefundLoanResult>>({});
@@ -77,7 +92,7 @@ export default function RefundSection() {
    const shown = useMemo(() => {
       const q = search.trim().toLowerCase();
       return loans
-         .filter((l) => !done[l.id]) // refunded this session → gone from the page
+         .filter((l) => !done[l.id]) // settled this session → gone from the page
          .filter((l) => {
             if (!q) return true;
             const fields = [l.tracking_id, l.borrower?.username, l.lender?.username, l.reason];
@@ -85,26 +100,32 @@ export default function RefundSection() {
          });
    }, [loans, search, done]);
 
-   const openConfirm = useCallback((loan: ComingDueLoan) => {
-      setTarget(loan);
-      setReason(pending[loan.id]?.reason ?? DEFAULT_REASON);
-      setStep('idle');
-      setError(null);
-      setNotice(null);
-   }, [pending]);
+   const openConfirm = useCallback(
+      (loan: ComingDueLoan, requestedMode: SettlementMode) => {
+         // If a send already happened for this loan, its mode is locked to whatever was paid.
+         const effectiveMode = pending[loan.id]?.mode ?? requestedMode;
+         setTarget(loan);
+         setMode(effectiveMode);
+         setReason(pending[loan.id]?.reason ?? (effectiveMode === 'platform_settlement' ? DEFAULT_SETTLEMENT_REASON : DEFAULT_REASON));
+         setStep('idle');
+         setError(null);
+         setNotice(null);
+      },
+      [pending]
+   );
 
    const closeConfirm = useCallback(() => {
       if (step !== 'idle') return; // never close mid-flight
       setTarget(null);
    }, [step]);
 
-   // Persist the refund server-side (verify on-chain → cancel loan → ban + blacklist → notify).
+   // Persist the settlement server-side (verify on-chain → close loan → ban + blacklist → notify).
    // Shared by the first attempt and the "finish recording" retry so we never duplicate the send.
    const record = useCallback(
-      async (loan: ComingDueLoan, hash: string, settleMethod: 'wallet' | 'base', trimmedReason: string) => {
+      async (loan: ComingDueLoan, hash: string, settleMethod: 'wallet' | 'base', trimmedReason: string, recMode: SettlementMode) => {
          setStep('recording');
          try {
-            const result = await refundLoan({ loanId: loan.id, hash, method: settleMethod, reason: trimmedReason });
+            const result = await refundLoan({ loanId: loan.id, hash, method: settleMethod, reason: trimmedReason, settlementMode: recMode });
             setDone((prev) => ({ ...prev, [loan.id]: result }));
             setPending((prev) => {
                const next = { ...prev };
@@ -112,17 +133,21 @@ export default function RefundSection() {
                return next;
             });
             setTarget(null);
+            const amount = settleAmount(loan, recMode);
+            const lenderName = loan.lender?.username ?? 'the lender';
             setNotice(
-               `Refunded ${money(principal(loan))} to ${loan.lender?.username ?? 'the lender'} · loan ${loan.tracking_id} closed · borrower banned.` +
+               (recMode === 'platform_settlement'
+                  ? `Settled ${money(amount)} in full to ${lenderName} — lender told it was repaid in full · loan ${loan.tracking_id} closed · borrower banned.`
+                  : `Refunded ${money(amount)} to ${lenderName} · loan ${loan.tracking_id} closed · borrower banned.`) +
                   (result.errors.length ? ` Follow-up issues: ${result.errors.join('; ')}` : '')
             );
             void load(!hideTest); // refresh from server so the row (now Paid) is gone for good
             return true;
          } catch (err) {
-            // Money already left the wallet. Keep the hash so the admin can retry RECORDING only.
-            setPending((prev) => ({ ...prev, [loan.id]: { hash, method: settleMethod, reason: trimmedReason } }));
+            // Money already left the wallet. Keep the hash + mode so the admin can retry RECORDING only.
+            setPending((prev) => ({ ...prev, [loan.id]: { hash, method: settleMethod, reason: trimmedReason, mode: recMode } }));
             setError(
-               `${err instanceof Error ? err.message : 'Could not record the refund.'} ` +
+               `${err instanceof Error ? err.message : 'Could not record the settlement.'} ` +
                   `The on-chain transfer (${hash}) already went out — use “Finish recording” to complete it WITHOUT sending again.`
             );
             return false;
@@ -133,38 +158,42 @@ export default function RefundSection() {
       [load, hideTest]
    );
 
-   const handleRefund = useCallback(async () => {
+   const handleSettle = useCallback(async () => {
       if (!target) return;
       const loan = target;
 
       // If a send already succeeded for this loan but recording failed, retry recording only.
       const pendingRecord = pending[loan.id];
       if (pendingRecord) {
-         await record(loan, pendingRecord.hash, pendingRecord.method, pendingRecord.reason);
+         await record(loan, pendingRecord.hash, pendingRecord.method, pendingRecord.reason, pendingRecord.mode);
          return;
       }
 
       // Hard guard: refuse a second send for a loan we've already paid this session.
       if (sendInitiated.current.has(loan.id)) {
-         setError('A refund payment was already sent for this loan in this session. Refresh before trying again.');
+         setError('A payment was already sent for this loan in this session. Refresh before trying again.');
          return;
       }
 
       const lenderWallet = loan.lender?.wallet_address;
       if (!lenderWallet) {
-         setError('This lender has no wallet on file — cannot send a refund.');
+         setError('This lender has no wallet on file — cannot send a payment.');
          return;
       }
       const trimmedReason = reason.trim();
       if (!trimmedReason) {
-         setError('Please enter a reason for the refund.');
+         setError(mode === 'platform_settlement' ? 'Please enter an internal reason (for our records).' : 'Please enter a reason for the refund.');
          return;
       }
-      const amount = principal(loan);
+      const amount = settleAmount(loan, mode);
+      if (!(amount > 0)) {
+         setError('This loan has no amount to settle.');
+         return;
+      }
       setError(null);
 
       // Pre-send guard: re-check the loan's LIVE state so a stale row can't double-pay a loan that
-      // was already refunded (e.g. in another tab, or a moment ago).
+      // was already settled (e.g. in another tab, or a moment ago).
       setStep('checking');
       try {
          const state = await getLoanRefundState(loan.id);
@@ -202,11 +231,14 @@ export default function RefundSection() {
          return;
       }
 
-      // 2) Record it (verify + cancel + ban + notify).
-      await record(loan, outcome.hash, toSettlementMethod(method), trimmedReason);
-   }, [target, reason, method, payUsdc, pending, record, load, hideTest]);
+      // 2) Record it (verify + close + ban + notify).
+      await record(loan, outcome.hash, toSettlementMethod(method), trimmedReason, mode);
+   }, [target, mode, reason, method, payUsdc, pending, record, load, hideTest]);
 
    const totalRefundable = useMemo(() => shown.reduce((sum, l) => sum + principal(l), 0), [shown]);
+
+   const isPlatform = mode === 'platform_settlement';
+   const modalAmount = target ? settleAmount(target, mode) : 0;
 
    return (
       <div className="space-y-4">
@@ -233,11 +265,24 @@ export default function RefundSection() {
             </div>
          </div>
 
-         <p className="rounded-2xl border border-[#3d1f6e] bg-[#1c0a3a] px-5 py-3 text-sm font-bold text-[#a89bb8]">
-            Refund a lender their principal out of your own wallet ({method}). This closes the loan (no longer due) and{' '}
-            <span className="text-red-300">bans + KYC-blacklists the borrower</span>. Each loan can only be paid once per
-            session; refunded loans drop off the list. These actions are hard to undo.
-         </p>
+         <div className="space-y-2 rounded-2xl border border-[#3d1f6e] bg-[#1c0a3a] px-5 py-3 text-sm font-bold text-[#a89bb8]">
+            <p>
+               Two ways to make a lender whole out of your own wallet ({method}). Both close the loan (no longer due) and{' '}
+               <span className="text-red-300">ban + KYC-blacklist the borrower</span>. Each loan can only be paid once per session; settled
+               loans drop off the list. These actions are hard to undo.
+            </p>
+            <p>
+               <span className="text-[#cfc6dd]">Refund lender</span> — sends the <span className="text-[#cfc6dd]">principal</span> and tells the
+               lender, transparently, that the loan was refunded (your reason is shown to them).
+            </p>
+            <p>
+               <span className="text-[#cfc6dd]">Settle in full (platform)</span> — sends the{' '}
+               <span className="text-[#cfc6dd]">full repayment (principal + interest)</span> and presents it to the lender as an ordinary{' '}
+               <span className="text-[#cfc6dd]">repayment in full</span>: no “refund” wording and no reason. Use this when the loss is ours (e.g. a
+               KYC / due-diligence gap). Your reason is kept <span className="text-[#cfc6dd]">internally only</span> — on the loan record and the
+               audit log — never shown to the lender.
+            </p>
+         </div>
 
          <input
             value={search}
@@ -257,13 +302,14 @@ export default function RefundSection() {
 
          {shown.length ? (
             <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
-               <table className="w-full min-w-[960px] border-collapse text-left">
+               <table className="w-full min-w-[1040px] border-collapse text-left">
                   <thead>
                      <tr className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
                         <th className="px-4 py-3">Tracking</th>
-                        <th className="px-4 py-3">Lender (refund to)</th>
+                        <th className="px-4 py-3">Lender (pay to)</th>
                         <th className="px-4 py-3">Lender wallet</th>
                         <th className="px-4 py-3 text-right">Principal</th>
+                        <th className="px-4 py-3 text-right">Full repayment</th>
                         <th className="px-4 py-3">Borrower (will be banned)</th>
                         <th className="px-4 py-3 text-right">Action</th>
                      </tr>
@@ -272,6 +318,7 @@ export default function RefundSection() {
                      {shown.map((l) => {
                         const isPending = Boolean(pending[l.id]);
                         const isSent = sendInitiated.current.has(l.id) && !isPending;
+                        const noWallet = !l.lender?.wallet_address;
                         return (
                            <tr key={l.id} className="border-t border-[#241044] bg-[#150730] align-top">
                               <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
@@ -282,28 +329,62 @@ export default function RefundSection() {
                               <td className="px-4 py-3 text-right text-sm font-black text-white">
                                  {money(principal(l))} {l.coin ?? 'USDC'}
                               </td>
+                              <td className="px-4 py-3 text-right text-sm font-black text-white">
+                                 {money(fullRepayment(l))} {l.coin ?? 'USDC'}
+                              </td>
                               <td className="px-4 py-3 text-sm font-bold text-white">
                                  {l.borrower?.username ?? '—'}
                                  <div className="text-xs font-medium text-[#a89bb8]">{l.borrower?.email ?? ''}</div>
                               </td>
-                              <td className="px-4 py-3 text-right">
-                                 <button
-                                    type="button"
-                                    onClick={() => openConfirm(l)}
-                                    disabled={!l.lender?.wallet_address || isSent}
-                                    className={`rounded-full px-4 py-1.5 text-xs font-black uppercase text-white disabled:opacity-50 ${isPending ? 'bg-amber-700' : 'bg-[#8336f0]'}`}
-                                    title={
-                                       isPending
-                                          ? 'Payment already sent — finish recording without paying again'
-                                          : isSent
-                                            ? 'A refund was already sent for this loan this session'
-                                            : l.lender?.wallet_address
-                                              ? 'Refund this lender and ban the borrower'
-                                              : 'Lender has no wallet on file'
-                                    }
-                                 >
-                                    {isPending ? 'Finish recording' : isSent ? 'Sent — refresh' : 'Refund lender'}
-                                 </button>
+                              <td className="px-4 py-3">
+                                 {isPending ? (
+                                    <div className="flex justify-end">
+                                       <button
+                                          type="button"
+                                          onClick={() => openConfirm(l, pending[l.id].mode)}
+                                          className="rounded-full bg-amber-700 px-4 py-1.5 text-xs font-black uppercase text-white"
+                                          title="Payment already sent — finish recording without paying again"
+                                       >
+                                          Finish recording
+                                       </button>
+                                    </div>
+                                 ) : isSent ? (
+                                    <div className="flex justify-end">
+                                       <button
+                                          type="button"
+                                          disabled
+                                          className="rounded-full bg-[#8336f0] px-4 py-1.5 text-xs font-black uppercase text-white opacity-50"
+                                          title="A payment was already sent for this loan this session"
+                                       >
+                                          Sent — refresh
+                                       </button>
+                                    </div>
+                                 ) : (
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                       <button
+                                          type="button"
+                                          onClick={() => openConfirm(l, 'refund')}
+                                          disabled={noWallet}
+                                          className="rounded-full bg-[#1c053d] px-4 py-1.5 text-xs font-black uppercase text-white disabled:opacity-50"
+                                          title={noWallet ? 'Lender has no wallet on file' : 'Refund the principal and tell the lender it was refunded'}
+                                       >
+                                          Refund lender
+                                       </button>
+                                       <button
+                                          type="button"
+                                          onClick={() => openConfirm(l, 'platform_settlement')}
+                                          disabled={noWallet}
+                                          className="rounded-full bg-[#8336f0] px-4 py-1.5 text-xs font-black uppercase text-white disabled:opacity-50"
+                                          title={
+                                             noWallet
+                                                ? 'Lender has no wallet on file'
+                                                : 'Pay the full repayment; lender sees a normal repayment in full (no reason shown)'
+                                          }
+                                       >
+                                          Settle in full
+                                       </button>
+                                    </div>
+                                 )}
                               </td>
                            </tr>
                         );
@@ -313,25 +394,44 @@ export default function RefundSection() {
             </div>
          ) : (
             <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5 text-xl font-black text-[#a89bb8]">
-               {loading ? 'Loading loans…' : 'No outstanding loans to refund.'}
+               {loading ? 'Loading loans…' : 'No outstanding loans to settle.'}
             </div>
          )}
 
          {target ? (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={closeConfirm}>
                <div className="w-full max-w-lg space-y-4 rounded-2xl border border-[#3d1f6e] bg-[#150730] p-6" onClick={(e) => e.stopPropagation()}>
-                  <h4 className="text-2xl font-black text-white">{pending[target.id] ? 'Finish recording refund' : 'Confirm refund'}</h4>
+                  <h4 className="text-2xl font-black text-white">
+                     {pending[target.id]
+                        ? isPlatform
+                           ? 'Finish recording settlement'
+                           : 'Finish recording refund'
+                        : isPlatform
+                          ? 'Confirm platform settlement'
+                          : 'Confirm refund'}
+                  </h4>
+
                   {pending[target.id] ? (
                      <div className="rounded-xl border border-amber-800 bg-amber-950/40 p-3 text-sm font-bold text-amber-200">
                         The USDC for this loan was already sent (tx {pending[target.id].hash.slice(0, 10)}…). This will record the
-                        refund and ban the borrower <span className="font-black">without sending any more money</span>.
+                        {isPlatform ? ' settlement' : ' refund'} and ban the borrower{' '}
+                        <span className="font-black">without sending any more money</span>.
                      </div>
                   ) : null}
+
+                  {isPlatform ? (
+                     <div className="rounded-xl border border-[#3d1f6e] bg-[#1c0a3a] p-3 text-sm font-bold text-[#cfc6dd]">
+                        The lender will be told this loan was <span className="text-emerald-300">repaid in full</span> — they will{' '}
+                        <span className="text-white">not</span> see a refund or the reason below. The reason is stored internally only.
+                     </div>
+                  ) : null}
+
                   <div className="space-y-2 rounded-xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-sm font-bold text-[#cfc6dd]">
                      <div className="flex justify-between gap-4">
                         <span className="text-[#a89bb8]">{pending[target.id] ? 'Amount (already sent)' : 'Send'}</span>
                         <span className="text-white">
-                           {money(principal(target))} {target.coin ?? 'USDC'}
+                           {money(modalAmount)} {target.coin ?? 'USDC'}
+                           <span className="ml-2 text-xs font-bold text-[#a89bb8]">{isPlatform ? '(full repayment)' : '(principal)'}</span>
                         </span>
                      </div>
                      <div className="flex justify-between gap-4">
@@ -353,7 +453,7 @@ export default function RefundSection() {
                   </div>
 
                   <label className="block text-sm font-black text-[#a89bb8]">
-                     Reason (shown to the lender)
+                     {isPlatform ? 'Internal reason (admin only — the lender never sees this)' : 'Reason (shown to the lender)'}
                      <textarea
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
@@ -374,7 +474,7 @@ export default function RefundSection() {
                      </button>
                      <button
                         type="button"
-                        onClick={handleRefund}
+                        onClick={handleSettle}
                         disabled={step !== 'idle' || !target.lender?.wallet_address}
                         className="rounded-full bg-[#8336f0] px-5 py-2 text-sm font-black text-white disabled:opacity-50"
                      >
@@ -386,7 +486,9 @@ export default function RefundSection() {
                                ? 'Recording…'
                                : pending[target.id]
                                  ? 'Finish recording (no new payment)'
-                                 : `Send ${money(principal(target))} & refund`}
+                                 : isPlatform
+                                   ? `Send ${money(modalAmount)} & settle in full`
+                                   : `Send ${money(modalAmount)} & refund`}
                      </button>
                   </div>
                </div>

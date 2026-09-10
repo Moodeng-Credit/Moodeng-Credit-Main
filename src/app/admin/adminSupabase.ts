@@ -2099,12 +2099,22 @@ export async function removeLoanRequest(input: RemoveLoanRequestInput): Promise<
 // Admin loan refund — repay a lender out of the admin's own wallet for an
 // outstanding loan, cancel the loan, and ban + KYC-blacklist the borrower.
 // ---------------------------------------------------------------------------
+/**
+ * 'refund' (default): pay the lender their principal and tell them transparently it was a refund (the
+ * reason is shown to them). 'platform_settlement': pay the lender the FULL repayment and present it to
+ * them as an ordinary repayment — no refund wording, no reason. The reason is always kept internally.
+ */
+export type SettlementMode = 'refund' | 'platform_settlement';
+
 export interface RefundLoanInput {
    loanId: string;
    /** The on-chain hash of the refund the admin ALREADY sent to the lender's wallet. */
    hash: string;
    method: 'wallet' | 'base';
+   /** Admin's reason. Shown to the lender for 'refund'; kept internal-only for 'platform_settlement'. */
    reason: string;
+   /** Defaults to 'refund' when omitted. */
+   settlementMode?: SettlementMode;
 }
 
 export interface RefundLoanResult {
@@ -2137,7 +2147,13 @@ export async function getLoanRefundState(loanId: string): Promise<{ alreadyHandl
 // the lender. A 202 (not yet confirmed on-chain) surfaces as a retryable error.
 export async function refundLoan(input: RefundLoanInput): Promise<RefundLoanResult> {
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-refund-loan', {
-      body: { loanId: input.loanId, hash: input.hash, method: input.method, reason: input.reason.trim() }
+      body: {
+         loanId: input.loanId,
+         hash: input.hash,
+         method: input.method,
+         reason: input.reason.trim(),
+         settlementMode: input.settlementMode ?? 'refund'
+      }
    });
    if (error) {
       throw new Error((await readFunctionError(error)) || error.message || 'Refund failed.');
