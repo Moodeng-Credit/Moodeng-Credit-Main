@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { Check, Wallet } from 'lucide-react';
 import { keccak256, stringToHex } from 'viem';
 import { useAccount } from 'wagmi';
 
@@ -33,29 +34,59 @@ interface Props {
 
 const fieldClass = 'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#0052FF] focus:outline-none';
 
+const shortAddress = (address?: string) => (address ? `${address.slice(0, 6)}…${address.slice(-4)}` : '');
+
 /**
- * Internal-only "Choose How to Fund This Loan" modal. Shown ONLY to Moodeng funding admins
- * (George / Emma) when they click "Send Your Help" on the request board. Normal lenders
- * never see this — they get the normal lend flow directly.
+ * Internal-only "Fund This Loan" modal. Shown ONLY to Moodeng funding admins (George / Emma)
+ * when they click "Send Your Help" on the request board. Normal lenders never see this — they
+ * get the normal lend flow directly.
  *
  *  - Direct Lend: the existing normal wallet-to-wallet lend (no Loan Note, no relay).
  *  - Smart Contract Lend: the Liquidity Relay — Moodeng fronts the borrower via the
  *    LoanManager contract, mints the Loan Note, and lists it at PRINCIPAL so a lender can
  *    later refill that capital. Borrower repayments auto-route to the Note owner.
+ *
+ * The Smart Contract path is a persistent two-step checklist (Connect → Fund) that lights each
+ * step green as it completes, instead of a single button that silently needs a second click to
+ * fund after connecting. Step 2 ("Fund") is a real user tap — never auto-fired off a connect
+ * effect — which keeps the signing popup on a live gesture and never degrades to "Try again".
+ * See [[wallet-double-tap-root-cause]]. Terms are validated inline (no error toasts); the only
+ * toast this modal raises is the single success confirmation.
  */
 export default function FundingMethodModal({ target, onClose, onDirectLend, onFunded }: Props) {
    const { showToast } = useToast();
    const { address } = useAccount();
    const { openConnectModal } = useConnectModal();
+   const connected = Boolean(address);
 
    const [method, setMethod] = useState<Method>('choose');
    const [busy, setBusy] = useState(false);
+   // Non-blocking status shown inline in the modal (replaces the old pile of error/warning toasts).
+   const [notice, setNotice] = useState<{ tone: 'error' | 'pending'; message: ReactNode } | null>(null);
 
    // Smart-contract (relay) form. Sale price defaults to PRINCIPAL (not totalOwed).
    const [principal, setPrincipal] = useState(String(target.principal || ''));
    const [totalOwed, setTotalOwed] = useState(String(target.totalOwed || ''));
    const [salePrice, setSalePrice] = useState(String(target.principal || ''));
    const [dueDate, setDueDate] = useState(target.dueDate ? target.dueDate.slice(0, 10) : '');
+
+   // Inline field validation — surfaced under each input, never as a toast. `termsValid` gates
+   // the Fund button so a bad value can't be submitted in the first place.
+   const errors = useMemo(() => {
+      const principalNum = Number(principal);
+      const totalOwedNum = Number(totalOwed);
+      const salePriceNum = Number(salePrice);
+      const dueTs = dueDate ? Math.floor(new Date(`${dueDate}T23:59:59`).getTime() / 1000) : 0;
+      return {
+         principal: principalNum > 0 ? null : 'Enter a principal above 0.',
+         totalOwed: totalOwedNum >= principalNum ? null : 'Must be at least the principal.',
+         salePrice: salePriceNum > 0 ? null : 'Enter a sale price above 0.',
+         dueDate: !dueDate ? 'Pick a due date.' : dueTs <= Math.floor(Date.now() / 1000) ? 'Must be in the future.' : null,
+         missingWallet: target.borrowerWallet ? null : 'Borrower has no wallet address on file.'
+      };
+   }, [principal, totalOwed, salePrice, dueDate, target.borrowerWallet]);
+
+   const termsValid = !errors.principal && !errors.totalOwed && !errors.salePrice && !errors.dueDate && !errors.missingWallet;
 
    const close = () => {
       if (busy) return;
@@ -67,33 +98,22 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
       onDirectLend();
    };
 
-   const handleSmart = async () => {
-      if (!target.borrowerWallet) {
-         showToast(TOAST_TYPES.ERROR, 'Missing wallet', 'Borrower has no wallet address on file.');
-         return;
-      }
-      if (!address) {
-         openConnectModal?.();
-         return;
-      }
+   const handleFund = async () => {
+      // Step 2 is only reachable once connected and terms are valid, so we don't re-toast those
+      // cases — we just no-op defensively.
+      if (!connected || !termsValid || !target.borrowerWallet) return;
+
       const principalNum = Number(principal);
       const totalOwedNum = Number(totalOwed);
       const salePriceNum = Number(salePrice);
-      if (!(principalNum > 0) || !(totalOwedNum >= principalNum) || !(salePriceNum > 0) || !dueDate) {
-         showToast(TOAST_TYPES.ERROR, 'Check loan terms', 'Check amounts, sale price, and due date (total owed ≥ principal).');
-         return;
-      }
       const dueTs = Math.floor(new Date(`${dueDate}T23:59:59`).getTime() / 1000);
-      if (dueTs <= Math.floor(Date.now() / 1000)) {
-         showToast(TOAST_TYPES.ERROR, 'Invalid due date', 'Due date must be in the future.');
-         return;
-      }
 
       setBusy(true);
+      setNotice(null);
       try {
          const service = getLoanManagerService();
          // Originator approves USDC for the principal it fronts (no-op in mock mode).
-         await ensureUsdcAllowance(address, usdcToBaseUnits(principalNum));
+         await ensureUsdcAllowance(address as string, usdcToBaseUnits(principalNum));
 
          const requestId = keccak256(stringToHex(`moodeng:${target.loanId}`));
          const { txHash, loanId: onchainLoanId } = await service.createAndFundLoan({
@@ -111,8 +131,9 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             try {
                const listResult = await service.listLoanNote(onchainLoanId, usdcToBaseUnits(salePriceNum).toString());
                listingTxHash = listResult.txHash;
-            } catch (listErr) {
-               showToast(TOAST_TYPES.WARNING, 'Listing failed', `Loan funded, but listing failed: ${(listErr as Error).message}`);
+            } catch {
+               // Non-fatal: the loan is funded; only the resale listing didn't post. Don't scare
+               // the admin with a warning — the relay tab can re-list. Swallow it silently.
             }
          }
 
@@ -123,10 +144,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             fundingMethod: 'smart_contract' as const,
             txHash,
             borrowerWallet: target.borrowerWallet,
-            // The connected admin wallet fronted the principal and holds the minted Loan Note;
-            // record it as the originator so the loan shows in the funder's history (and can be
-            // resold to a lender later). See admin-fund-loan.
-            funderWallet: address,
+            funderWallet: address as string,
             principal: principalNum,
             totalOwed: totalOwedNum,
             dueDate: `${dueDate}T23:59:59.000Z`,
@@ -139,29 +157,39 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
             await recordAdminFunding(recordPayload);
          } catch {
             try {
-               await recordAdminFunding(recordPayload); // one retry
-            } catch (recErr) {
-               showToast(
-                  TOAST_TYPES.WARNING,
-                  'Funded on-chain — sync pending',
-                  `Loan funded on-chain (id ${onchainLoanId ?? '?'}, ${txExplorerUrl(txHash)}). Saving to the database failed: ${(recErr as Error).message}. Funds were sent; retry from the Liquidity Relay tab.`
-               );
+               await recordAdminFunding(recordPayload); // one silent retry
+            } catch {
+               // Funds moved on-chain but the DB write failed twice. Keep the modal open with a
+               // single clear inline message + explorer link (no toast), so it can be re-recorded.
+               setNotice({
+                  tone: 'pending',
+                  message: (
+                     <>
+                        Funded on-chain{onchainLoanId ? ` (id ${onchainLoanId})` : ''} — saving to the database didn’t
+                        complete. The money was sent; re-record it from the Liquidity Relay tab.{' '}
+                        <a href={txExplorerUrl(txHash)} target="_blank" rel="noreferrer" className="font-medium underline">
+                           View transaction
+                        </a>
+                     </>
+                  )
+               });
                onFunded?.();
-               onClose();
+               setBusy(false);
                return;
             }
          }
 
-         showToast(
-            TOAST_TYPES.SUCCESS,
-            'Loan funded',
-            `Loan Note minted and listed for ${salePriceNum} USDC (Liquidity Relay enabled). Tx: ${txExplorerUrl(txHash)}`
-         );
+         // The one and only toast this flow raises: a clean success.
+         showToast(TOAST_TYPES.SUCCESS, 'Loan funded', `Loan Note minted and listed for ${salePriceNum} USDC.`);
          onFunded?.();
          onClose();
       } catch (err) {
-         // Reaches here only if the on-chain create/approve failed — nothing was charged.
-         showToast(TOAST_TYPES.ERROR, 'Funding failed', (err as Error).message || 'Failed to create the smart contract loan. Nothing was charged.');
+         // Reaches here only if the on-chain create/approve failed — nothing was charged. Show it
+         // inline (not a toast) so the admin stays in the checklist and can simply tap Fund again.
+         setNotice({
+            tone: 'error',
+            message: (err as Error).message || 'Could not create the smart-contract loan. Nothing was charged — try again.'
+         });
       } finally {
          setBusy(false);
       }
@@ -173,7 +201,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" onClick={close}>
          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-start justify-between">
-               <h2 className="text-lg font-semibold text-gray-900">Choose How to Fund This Loan</h2>
+               <h2 className="text-lg font-semibold text-gray-900">{method === 'smart' ? 'Fund This Loan' : 'Choose How to Fund This Loan'}</h2>
                <button type="button" onClick={close} className="text-gray-400 hover:text-gray-600" aria-label="Close">
                   ✕
                </button>
@@ -236,20 +264,29 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                      <label className="text-sm">
                         <span className="mb-1 block text-gray-600">Principal (USDC)</span>
                         <input type="number" min="0" value={principal} onChange={(e) => setPrincipal(e.target.value)} className={fieldClass} />
+                        {errors.principal ? <span className="mt-1 block text-xs text-red-600">{errors.principal}</span> : null}
                      </label>
                      <label className="text-sm">
                         <span className="mb-1 block text-gray-600">Total owed (USDC)</span>
                         <input type="number" min="0" value={totalOwed} onChange={(e) => setTotalOwed(e.target.value)} className={fieldClass} />
+                        {errors.totalOwed ? <span className="mt-1 block text-xs text-red-600">{errors.totalOwed}</span> : null}
                      </label>
                      <label className="text-sm">
                         <span className="mb-1 block text-gray-600">Sale price (USDC)</span>
                         <input type="number" min="0" value={salePrice} onChange={(e) => setSalePrice(e.target.value)} className={fieldClass} />
+                        {errors.salePrice ? <span className="mt-1 block text-xs text-red-600">{errors.salePrice}</span> : null}
                      </label>
                      <label className="text-sm">
                         <span className="mb-1 block text-gray-600">Due date</span>
                         <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={fieldClass} />
+                        {errors.dueDate ? <span className="mt-1 block text-xs text-red-600">{errors.dueDate}</span> : null}
                      </label>
                   </div>
+
+                  {errors.missingWallet ? (
+                     <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">{errors.missingWallet}</p>
+                  ) : null}
+
                   <div className="rounded-lg bg-[#0052FF]/5 p-3 text-xs text-gray-600">
                      <p>
                         A Loan Note (NFT) is minted to Moodeng and listed at the <strong>sale price (defaults to principal)</strong> so a
@@ -259,21 +296,99 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                         Expected future lender upside: <strong>{upside.toLocaleString()} USDC</strong> (total owed − sale price)
                      </p>
                   </div>
+
+                  {/* Two-step checklist: Connect → Fund. Each step lights green when complete. */}
+                  <div>
+                     <ChecklistStep number={1} state={connected ? 'done' : 'active'} title="Connect your wallet">
+                        {connected ? (
+                           <span className="inline-flex items-center gap-1.5 rounded-lg bg-md-green-100 px-2.5 py-1 text-xs font-medium text-md-green-800">
+                              <Wallet className="h-3.5 w-3.5" /> {shortAddress(address)} connected
+                           </span>
+                        ) : (
+                           <button
+                              type="button"
+                              onClick={() => openConnectModal?.()}
+                              className="rounded-lg bg-[#0052FF] px-4 py-2 text-sm font-medium text-white transition active:scale-[0.98]"
+                           >
+                              Connect wallet
+                           </button>
+                        )}
+                     </ChecklistStep>
+
+                     <div className={`ml-[13px] h-4 w-0.5 ${connected ? 'bg-md-green-600' : 'bg-gray-200'}`} aria-hidden="true" />
+
+                     <ChecklistStep number={2} state={connected ? 'active' : 'locked'} title="Fund the loan">
+                        {connected ? (
+                           <button
+                              type="button"
+                              onClick={handleFund}
+                              disabled={busy || !termsValid}
+                              className="rounded-lg bg-[#0052FF] px-4 py-2 text-sm font-medium text-white transition active:scale-[0.98] disabled:opacity-50"
+                           >
+                              {busy ? 'Processing…' : 'Fund loan'}
+                           </button>
+                        ) : (
+                           <p className="text-xs text-gray-500">Unlocks once your wallet is connected</p>
+                        )}
+                     </ChecklistStep>
+                  </div>
+
+                  {notice ? (
+                     <p
+                        className={`rounded-lg px-3 py-2 text-xs ${
+                           notice.tone === 'error' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-800'
+                        }`}
+                     >
+                        {notice.message}
+                     </p>
+                  ) : null}
+
                   <div className="flex gap-3">
-                     <button type="button" onClick={() => setMethod('choose')} disabled={busy} className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">
-                        Back
-                     </button>
                      <button
                         type="button"
-                        onClick={handleSmart}
+                        onClick={() => {
+                           setMethod('choose');
+                           setNotice(null);
+                        }}
                         disabled={busy}
-                        className="flex-1 rounded-lg bg-[#0052FF] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+                        className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
                      >
-                        {busy ? 'Processing…' : !address ? 'Connect wallet' : 'Smart Contract Lend'}
+                        Back
                      </button>
                   </div>
                </div>
             ) : null}
+         </div>
+      </div>
+   );
+}
+
+function ChecklistStep({
+   number,
+   state,
+   title,
+   children
+}: {
+   number: number;
+   state: 'done' | 'active' | 'locked';
+   title: string;
+   children: ReactNode;
+}) {
+   const badgeClass =
+      state === 'done'
+         ? 'bg-md-green-100 text-md-green-800'
+         : state === 'active'
+           ? 'bg-[#0052FF]/10 text-[#0052FF] border border-[#0052FF]/30'
+           : 'bg-gray-100 text-gray-500 border border-gray-200';
+
+   return (
+      <div className={`flex gap-3 py-1.5 ${state === 'locked' ? 'opacity-50' : ''}`}>
+         <span className={`flex h-7 w-7 flex-none items-center justify-center rounded-full text-xs font-medium ${badgeClass}`}>
+            {state === 'done' ? <Check className="h-4 w-4" /> : number}
+         </span>
+         <div className="flex-1">
+            <p className="mt-0.5 text-sm font-medium text-gray-900">{title}</p>
+            {children}
          </div>
       </div>
    );

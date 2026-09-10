@@ -357,6 +357,12 @@ export default function UserCard(loan: UserCardProps) {
                      'Thank You!',
                      `You successfully funded $${formatCurrency(loanData.loanAmount)} to ${borrowerDisplayName}.`
                   );
+
+                  // The loan is now Lent, but the request board is a client-side list refreshed
+                  // only by an explicit fetch or the 60s poll (loans aren't realtime). Re-pull now
+                  // so this funded request drops off the funder's board immediately instead of
+                  // lingering behind the success modal until the next poll.
+                  void dispatch(fetchLoans());
                } else if (updateResult.error?.name === 'PaymentNotConfirmedError') {
                   // Payment sent but not yet confirmed on-chain — the reconciler (armed in
                   // onSubmitted) finishes the DB write once it settles. Not a failure.
@@ -365,6 +371,10 @@ export default function UserCard(loan: UserCardProps) {
                      'Still confirming',
                      'Your payment was sent and is taking a moment to confirm. This will update automatically.'
                   );
+                  // The reconciler flips the loan to Lent a few seconds after the tx settles on
+                  // Base. Re-pull the board on a short ladder so the funded request disappears
+                  // within seconds of settling, rather than waiting up to 60s for the auto-refresh.
+                  [6000, 15000, 30000].forEach((ms) => window.setTimeout(() => void dispatch(fetchLoans()), ms));
                } else {
                   const errorMessage = updateResult.error?.message ?? 'Unknown error';
                   console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
