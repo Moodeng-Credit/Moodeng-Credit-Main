@@ -49,8 +49,8 @@ interface ChartPoint {
 function getLoanDisplayStatus(loan: Loan): 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' {
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
    if (loan.loanStatus === 'Requested') return 'PENDING';
-   // Only a loss once the due day has fully elapsed (24h grace), matching the
-   // backend overdue rule — a loan due "today" is not yet a loss.
+   // Only a loss once the due date has fully passed — a loan due "today" is not
+   // yet a loss (see isLoanPastDue).
    if (isLoanPastDue(loan.dueDate)) return 'DEFAULT';
    return 'ACTIVE';
 }
