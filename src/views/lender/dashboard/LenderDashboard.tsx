@@ -19,6 +19,7 @@ import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,8 +44,9 @@ function getLoanDisplayStatus(loan: Loan): LoanDisplayStatus {
    if (loan.refundedAt) return 'REFUNDED';
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
    if (loan.loanStatus === 'Requested') return 'PENDING';
-   const dueDate = new Date(loan.dueDate);
-   if (dueDate < new Date()) return 'DEFAULT';
+   // Only a loss once the due date has fully passed — a loan due "today" is not
+   // yet a loss (see isLoanPastDue).
+   if (isLoanPastDue(loan.dueDate)) return 'DEFAULT';
    return 'ACTIVE';
 }
 

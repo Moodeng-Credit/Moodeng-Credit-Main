@@ -15,6 +15,7 @@ import { formatPointsMajor } from '@/shared/points';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,7 +49,9 @@ interface ChartPoint {
 function getLoanDisplayStatus(loan: Loan): 'REPAID' | 'ACTIVE' | 'DEFAULT' | 'PENDING' {
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
    if (loan.loanStatus === 'Requested') return 'PENDING';
-   if (new Date(loan.dueDate) < new Date()) return 'DEFAULT';
+   // Only a loss once the due date has fully passed — a loan due "today" is not
+   // yet a loss (see isLoanPastDue).
+   if (isLoanPastDue(loan.dueDate)) return 'DEFAULT';
    return 'ACTIVE';
 }
 
