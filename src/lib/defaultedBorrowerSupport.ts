@@ -1,4 +1,5 @@
 import { toNumber } from '@/utils/decimalHelpers';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
 export type DefaultableLoan = {
    due_date: string | null;
@@ -27,8 +28,11 @@ export function calculateDefaultedBorrowerSupport(
          return summary;
       }
 
-      const dueDate = new Date(loan.due_date);
-      if (Number.isNaN(dueDate.getTime()) || dueDate.getTime() >= now.getTime()) {
+      // A loan whose repayment is merely due (within the 24h grace window) is NOT yet a default.
+      // Use the shared graced check so the borrower side matches the lender side (PR #872/#873) and
+      // the backend loan-overdue-notifications job — otherwise a borrower repaying ON their due date
+      // is wrongly flagged overdue and bounced to /account-restricted, unable to reach /repay.
+      if (!isLoanPastDue(loan.due_date, now)) {
          return summary;
       }
 
