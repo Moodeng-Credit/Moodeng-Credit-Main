@@ -6,6 +6,7 @@ import {
    type DefaultedBorrowerSupport
 } from '@/lib/defaultedBorrowerSupport';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
+import { LOAN_OVERDUE_GRACE_HOURS } from '@/utils/loanOverdue';
 
 type DefaultedBorrowerSupportState = {
    support: DefaultedBorrowerSupport;
@@ -19,6 +20,11 @@ export async function fetchDefaultedBorrowerSupport(userId: string): Promise<Def
       return EMPTY_DEFAULTED_BORROWER_SUPPORT;
    }
 
+   // Only loans past the 24h grace window count as defaulted — a loan due today (within grace) must
+   // not flag the borrower, or they get bounced to /account-restricted and can't reach /repay to pay
+   // it off. Mirrors the lender-side grace (PR #872/#873) and the loan-overdue-notifications job.
+   // calculateDefaultedBorrowerSupport re-applies the same graced check as a safety net.
+   const graceThreshold = new Date(Date.now() - LOAN_OVERDUE_GRACE_HOURS * 60 * 60 * 1000).toISOString();
    const supabase = getSupabaseBrowserClient();
    const { data, error } = await supabase
       .from('loans')
@@ -26,7 +32,7 @@ export async function fetchDefaultedBorrowerSupport(userId: string): Promise<Def
       .eq('borrower_user_id', userId)
       .eq('loan_status', 'Lent')
       .neq('repayment_status', 'Paid')
-      .lt('due_date', new Date().toISOString());
+      .lt('due_date', graceThreshold);
 
    if (error) {
       throw new Error(error.message);
