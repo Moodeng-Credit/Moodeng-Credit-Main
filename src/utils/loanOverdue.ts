@@ -1,19 +1,26 @@
 import { parseDateSafely } from './dateFormatters';
 
 /**
- * Whether a loan should be treated as overdue / a realized loss.
+ * Grace period, in hours, after a loan's stored due date before it is treated as
+ * overdue / a realized loss.
  *
- * A loan counts as past due only once its due **date** has fully passed — a loan
- * due *today* is not a loss, because the borrower still has the whole day to
- * repay. There is no arbitrary grace window: we simply compare calendar days
- * (UTC, the same basis `due_date` is stored on — midnight UTC) rather than the
- * exact timestamp. So a loan due today flips to overdue at the start of the next
- * day, and a loan whose due date is already in the past stays a loss.
+ * `due_date` is stored as a single UTC instant (midnight UTC), but borrowers and
+ * lenders are spread across time zones, so that instant does not line up with
+ * the end of the borrower's local day. A flat 24-hour grace guarantees every
+ * borrower a full day past their due date, whatever their zone, before the loan
+ * counts against the lender — and matches the backend `loan-overdue-notifications`
+ * job (env `OVERDUE_GRACE_HOURS`, default 24). Keep this in sync with that job.
+ */
+export const LOAN_OVERDUE_GRACE_HOURS = 24;
+
+const GRACE_MS = LOAN_OVERDUE_GRACE_HOURS * 60 * 60 * 1000;
+
+/**
+ * Returns true once a loan is more than the grace window past its due date — i.e.
+ * it is genuinely a loss. A loan whose repayment is simply due (within the last
+ * {@link LOAN_OVERDUE_GRACE_HOURS} hours) is NOT yet past due.
  */
 export const isLoanPastDue = (dueDate: string | Date | null | undefined, now: Date = new Date()): boolean => {
    if (!dueDate) return false;
-   const due = parseDateSafely(dueDate);
-   const dueDay = Date.UTC(due.getUTCFullYear(), due.getUTCMonth(), due.getUTCDate());
-   const nowDay = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-   return nowDay > dueDay;
+   return parseDateSafely(dueDate).getTime() + GRACE_MS <= now.getTime();
 };
