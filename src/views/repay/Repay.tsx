@@ -739,6 +739,13 @@ export default function Repay() {
          return;
       }
 
+      // In Facebook's in-app browser a Base-Account borrower can't complete the wallet handshake,
+      // so never start the (doomed) flow — the screen shows RepayInAppBrowserGate instead. This also
+      // covers the global bottom-nav Pay button, which is registered before that gate's early return.
+      if (blockForInAppBase) {
+         return;
+      }
+
       // The borrower must have finished Base wallet setup. That wallet is their identity and
       // the address lenders send loans TO (the receiving wallet) — it is NOT enforced as the
       // paying wallet, because Base Pay lets them sign in with any Base Account and only reveals
@@ -958,7 +965,8 @@ export default function Repay() {
       payUsdc,
       dispatch,
       user.id,
-      usePreviewLoans
+      usePreviewLoans,
+      blockForInAppBase
    ]);
 
    const handleRepayRef = useRef(handleRepay);
