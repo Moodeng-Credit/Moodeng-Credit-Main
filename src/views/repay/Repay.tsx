@@ -25,7 +25,7 @@ import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/baseP
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -339,8 +339,11 @@ export default function Repay() {
    // swap the form for an escape hatch that opens the repay page in a real browser. Only Base
    // users are affected — embedded (Openfort) wallets work inside Facebook. Skipped in preview.
    const inApp = useMemo(() => detectInAppBrowser(), []);
-   const blockForInAppBase =
-      !usePreviewLoans && inApp.isInApp && isFacebookInApp(inApp) && isBaseWalletProvider(user?.walletProvider);
+   const blockForInAppBase = shouldBlockRepayForInAppBrowser({
+      info: inApp,
+      isBaseWallet: isBaseWalletProvider(user?.walletProvider),
+      isPreview: usePreviewLoans
+   });
    const { allowed: geoAllowed, loading: geoLoading } = useGeoCheck(usePreviewLoans);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({

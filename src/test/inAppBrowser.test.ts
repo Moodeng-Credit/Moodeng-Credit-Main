@@ -4,7 +4,8 @@ import {
    buildChromeUrl,
    buildSafariUrl,
    detectInAppBrowser,
-   isFacebookInApp
+   isFacebookInApp,
+   shouldBlockRepayForInAppBrowser
 } from '@/lib/inAppBrowser';
 
 const UA = {
@@ -61,5 +62,30 @@ describe('buildSafariUrl', () => {
    it('builds an iOS x-safari link and nothing on Android', () => {
       expect(buildSafariUrl(REPAY, detectInAppBrowser(UA.fbIos))).toBe('x-safari-https://moodeng.app/repay');
       expect(buildSafariUrl(REPAY, detectInAppBrowser(UA.fbAndroid))).toBeNull();
+   });
+});
+
+describe('shouldBlockRepayForInAppBrowser', () => {
+   const block = (ua: string, isBaseWallet: boolean, isPreview = false) =>
+      shouldBlockRepayForInAppBrowser({ info: detectInAppBrowser(ua), isBaseWallet, isPreview });
+
+   it('blocks a Base-wallet borrower inside Facebook / Messenger', () => {
+      expect(block(UA.fbIos, true)).toBe(true);
+      expect(block(UA.fbAndroid, true)).toBe(true);
+      expect(block(UA.messengerIos, true)).toBe(true);
+   });
+
+   it('does NOT block embedded-wallet users (they work inside Facebook)', () => {
+      expect(block(UA.fbIos, false)).toBe(false);
+   });
+
+   it('does NOT block non-Facebook in-app browsers or normal browsers', () => {
+      expect(block(UA.instagramIos, true)).toBe(false);
+      expect(block(UA.chromeAndroid, true)).toBe(false);
+      expect(block(UA.safariIos, true)).toBe(false);
+   });
+
+   it('never blocks in preview/demo mode', () => {
+      expect(block(UA.fbIos, true, true)).toBe(false);
    });
 });

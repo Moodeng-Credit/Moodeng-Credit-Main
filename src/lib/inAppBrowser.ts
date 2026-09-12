@@ -151,3 +151,18 @@ export function openInSafari(url: string, info?: InAppBrowserInfo): boolean {
       return false;
    }
 }
+
+/**
+ * The exact rule for swapping the /repay form for the in-app escape hatch: a Base-Account
+ * borrower inside Facebook's in-app browser, and not in preview/demo. Pure and unit-tested so the
+ * gate can't silently drift. Embedded (Openfort) wallets work inside the webview and are never
+ * gated; non-Facebook in-app browsers are out of scope here (see the repay gate's scope note).
+ */
+export function shouldBlockRepayForInAppBrowser(params: {
+   info: InAppBrowserInfo;
+   isBaseWallet: boolean;
+   isPreview?: boolean;
+}): boolean {
+   if (params.isPreview) return false;
+   return params.isBaseWallet && isFacebookInApp(params.info);
+}
