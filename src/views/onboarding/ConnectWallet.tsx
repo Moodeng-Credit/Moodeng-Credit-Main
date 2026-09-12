@@ -12,6 +12,7 @@ import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { checkCoinbaseKeysReachability } from '@/lib/coinbaseReachability';
+import { detectInAppBrowser } from '@/lib/inAppBrowser';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
@@ -62,7 +63,14 @@ export default function ConnectWallet() {
    // keys.coinbase.com, so outside PH they stay on the Base path. Soft, client-side gate (append
    // ?ph=1 to test from abroad); server face-gate in openfort-shield-session still enforces
    // one-per-person on mint. See isLikelyPhilippines.
-   const instantAvailable = openfort.isConfigured && (role === 'lender' || isLikelyPhilippines(locale));
+   // An in-app browser (Facebook / Instagram / Messenger / …) dead-ends Base Account the same way
+   // the PH ISP block does — the popup + passkey handshake can't complete inside a webview — and
+   // the embedded wallet is the escape hatch that DOES work there. So offer the instant wallet to
+   // in-app borrowers too, not just PH ones. Detected once from the UA; server face-gate still
+   // enforces one-per-person on mint.
+   const inApp = useMemo(() => detectInAppBrowser(), []);
+   const instantAvailable =
+      openfort.isConfigured && (role === 'lender' || isLikelyPhilippines(locale) || inApp.isInApp);
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();
