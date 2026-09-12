@@ -5,6 +5,7 @@ import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
+import posthog from 'posthog-js';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -893,6 +894,16 @@ export default function Repay() {
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
          const serverFullyRepaid = confirmedLoan.repaymentStatus === 'Paid';
+         // Success event so PostHog can compute repayment success rate BY BROWSER (esp. in-app vs
+         // real browser) — the "did the fix actually help" gauge. No-op unless PostHog is live.
+         if (import.meta.env.PROD) {
+            posthog.capture('repay_succeeded', {
+               method,
+               in_app_browser: inApp.isInApp,
+               in_app_name: inApp.appName ?? null,
+               fully_repaid: serverFullyRepaid
+            });
+         }
          if (cancelledRef.current) {
             // Borrower backed out of the overlay — the payment still recorded above, but don't
             // slam the full-screen payoff / partial UI over them. The success toast still confirms it.

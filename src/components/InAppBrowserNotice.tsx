@@ -90,10 +90,10 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                </p>
                <p className="mt-1 text-[13px] leading-snug text-[#5b5470] dark:text-[#B5ACBE]">
                   {info.canBreakOut ? (
-                     <>Sign-in with Google doesn&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
+                     <>Sign-in and wallet payments don&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
                   ) : (
                      <>
-                        Sign-in with Google doesn&apos;t work inside {appLabel}. Tap <span className="font-semibold">•••</span> at
+                        Sign-in and wallet payments don&apos;t work inside {appLabel}. Tap <span className="font-semibold">•••</span> at
                         the top, choose <span className="font-semibold">Open in Browser</span>, or copy the link below.
                      </>
                   )}
