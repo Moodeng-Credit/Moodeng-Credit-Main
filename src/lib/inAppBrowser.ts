@@ -153,10 +153,20 @@ export function openInSafari(url: string, info?: InAppBrowserInfo): boolean {
 }
 
 /**
+ * True when we're in a *named* social/messaging in-app browser — Facebook, Instagram, Messenger,
+ * LINE, TikTok, X, Snapchat, KakaoTalk — all of which dead-end Base Account's popup + passkey
+ * handshake. Excludes the generic, unnamed Android WebView (appName null), which is too broad to
+ * gate a payment on.
+ */
+export function isNamedInAppBrowser(info: InAppBrowserInfo): boolean {
+   return info.isInApp && info.appName !== null;
+}
+
+/**
  * The exact rule for swapping the /repay form for the in-app escape hatch: a Base-Account
- * borrower inside Facebook's in-app browser, and not in preview/demo. Pure and unit-tested so the
- * gate can't silently drift. Embedded (Openfort) wallets work inside the webview and are never
- * gated; non-Facebook in-app browsers are out of scope here (see the repay gate's scope note).
+ * borrower inside a named social in-app browser (Facebook, Instagram, Messenger, …), and not in
+ * preview/demo. Pure and unit-tested so the gate can't silently drift. Embedded (Openfort) wallets
+ * work inside the webview and are never gated.
  */
 export function shouldBlockRepayForInAppBrowser(params: {
    info: InAppBrowserInfo;
@@ -164,5 +174,5 @@ export function shouldBlockRepayForInAppBrowser(params: {
    isPreview?: boolean;
 }): boolean {
    if (params.isPreview) return false;
-   return params.isBaseWallet && isFacebookInApp(params.info);
+   return params.isBaseWallet && isNamedInAppBrowser(params.info);
 }

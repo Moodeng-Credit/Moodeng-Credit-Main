@@ -69,18 +69,19 @@ describe('shouldBlockRepayForInAppBrowser', () => {
    const block = (ua: string, isBaseWallet: boolean, isPreview = false) =>
       shouldBlockRepayForInAppBrowser({ info: detectInAppBrowser(ua), isBaseWallet, isPreview });
 
-   it('blocks a Base-wallet borrower inside Facebook / Messenger', () => {
+   it('blocks a Base-wallet borrower inside a named in-app browser (FB / Messenger / Instagram)', () => {
       expect(block(UA.fbIos, true)).toBe(true);
       expect(block(UA.fbAndroid, true)).toBe(true);
       expect(block(UA.messengerIos, true)).toBe(true);
+      expect(block(UA.instagramIos, true)).toBe(true);
    });
 
-   it('does NOT block embedded-wallet users (they work inside Facebook)', () => {
+   it('does NOT block embedded-wallet users (they work inside in-app browsers)', () => {
       expect(block(UA.fbIos, false)).toBe(false);
+      expect(block(UA.instagramIos, false)).toBe(false);
    });
 
-   it('does NOT block non-Facebook in-app browsers or normal browsers', () => {
-      expect(block(UA.instagramIos, true)).toBe(false);
+   it('does NOT block normal browsers', () => {
       expect(block(UA.chromeAndroid, true)).toBe(false);
       expect(block(UA.safariIos, true)).toBe(false);
    });
