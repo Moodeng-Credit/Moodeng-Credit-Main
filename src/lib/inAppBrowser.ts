@@ -95,3 +95,84 @@ export function openInSystemBrowser(url: string, info?: InAppBrowserInfo): boole
 
    return false;
 }
+
+/** True when the in-app browser is Facebook's own (the Facebook app or Messenger). */
+export function isFacebookInApp(info: InAppBrowserInfo): boolean {
+   return info.isInApp && (info.appName === 'Facebook' || info.appName === 'Messenger');
+}
+
+/**
+ * Build a Chrome deep link for an https URL, or null when there's no Chrome hand-off for the OS.
+ * - Android: an `intent://` that opens Chrome (falls back to the default browser / Play Store).
+ * - iOS: the `googlechrome(s)://` scheme, which opens Chrome when it is installed.
+ */
+export function buildChromeUrl(url: string, info?: InAppBrowserInfo): string | null {
+   const detected = info ?? detectInAppBrowser();
+   if (detected.os === 'android') return buildAndroidIntentUrl(url);
+   if (detected.os === 'ios') {
+      return url.replace(/^https:\/\//i, 'googlechromes://').replace(/^http:\/\//i, 'googlechrome://');
+   }
+   return null;
+}
+
+/**
+ * Build a best-effort Safari deep link (iOS only), or null off iOS (Safari doesn't exist there).
+ * `x-safari-` is undocumented and NOT honored inside every webview, so callers MUST pair this
+ * with a copy-link fallback and manual "tap ••• → Open in Browser" instructions.
+ */
+export function buildSafariUrl(url: string, info?: InAppBrowserInfo): string | null {
+   const detected = info ?? detectInAppBrowser();
+   if (detected.os !== 'ios') return null;
+   return `x-safari-${url}`;
+}
+
+/** Attempt to open `url` in Chrome. Returns true when a hand-off was attempted. */
+export function openInChrome(url: string, info?: InAppBrowserInfo): boolean {
+   if (typeof window === 'undefined') return false;
+   const target = buildChromeUrl(url, info);
+   if (!target) return false;
+   try {
+      window.location.href = target;
+      return true;
+   } catch {
+      return false;
+   }
+}
+
+/** Attempt to open `url` in Safari (iOS best-effort). Returns true when a hand-off was attempted. */
+export function openInSafari(url: string, info?: InAppBrowserInfo): boolean {
+   if (typeof window === 'undefined') return false;
+   const target = buildSafariUrl(url, info);
+   if (!target) return false;
+   try {
+      window.location.href = target;
+      return true;
+   } catch {
+      return false;
+   }
+}
+
+/**
+ * True when we're in a *named* social/messaging in-app browser — Facebook, Instagram, Messenger,
+ * LINE, TikTok, X, Snapchat, KakaoTalk — all of which dead-end Base Account's popup + passkey
+ * handshake. Excludes the generic, unnamed Android WebView (appName null), which is too broad to
+ * gate a payment on.
+ */
+export function isNamedInAppBrowser(info: InAppBrowserInfo): boolean {
+   return info.isInApp && info.appName !== null;
+}
+
+/**
+ * The exact rule for swapping the /repay form for the in-app escape hatch: a Base-Account
+ * borrower inside a named social in-app browser (Facebook, Instagram, Messenger, …), and not in
+ * preview/demo. Pure and unit-tested so the gate can't silently drift. Embedded (Openfort) wallets
+ * work inside the webview and are never gated.
+ */
+export function shouldBlockRepayForInAppBrowser(params: {
+   info: InAppBrowserInfo;
+   isBaseWallet: boolean;
+   isPreview?: boolean;
+}): boolean {
+   if (params.isPreview) return false;
+   return params.isBaseWallet && isNamedInAppBrowser(params.info);
+}

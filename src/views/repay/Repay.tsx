@@ -5,10 +5,12 @@ import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
+import posthog from 'posthog-js';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
+import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
@@ -24,7 +26,8 @@ import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/baseP
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus } from '@/lib/walletProvider';
+import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
+import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -331,6 +334,17 @@ export default function Repay() {
    const reduxStore = useStore<RootState>();
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const usePreviewLoans = shouldUsePreviewLoans(location.search, location.pathname);
+
+   // A Base-Account borrower inside Facebook's in-app browser can't complete the Base wallet's
+   // popup + passkey handshake, so repayment dead-spinners on "Sending payment…". Detect it and
+   // swap the form for an escape hatch that opens the repay page in a real browser. Only Base
+   // users are affected — embedded (Openfort) wallets work inside Facebook. Skipped in preview.
+   const inApp = useMemo(() => detectInAppBrowser(), []);
+   const blockForInAppBase = shouldBlockRepayForInAppBrowser({
+      info: inApp,
+      isBaseWallet: isBaseWalletProvider(user?.walletProvider),
+      isPreview: usePreviewLoans
+   });
    const { allowed: geoAllowed, loading: geoLoading } = useGeoCheck(usePreviewLoans);
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
@@ -726,6 +740,13 @@ export default function Repay() {
          return;
       }
 
+      // In Facebook's in-app browser a Base-Account borrower can't complete the wallet handshake,
+      // so never start the (doomed) flow — the screen shows RepayInAppBrowserGate instead. This also
+      // covers the global bottom-nav Pay button, which is registered before that gate's early return.
+      if (blockForInAppBase) {
+         return;
+      }
+
       // The borrower must have finished Base wallet setup. That wallet is their identity and
       // the address lenders send loans TO (the receiving wallet) — it is NOT enforced as the
       // paying wallet, because Base Pay lets them sign in with any Base Account and only reveals
@@ -873,6 +894,16 @@ export default function Repay() {
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
          setRepaymentAmount('');
          const serverFullyRepaid = confirmedLoan.repaymentStatus === 'Paid';
+         // Success event so PostHog can compute repayment success rate BY BROWSER (esp. in-app vs
+         // real browser) — the "did the fix actually help" gauge. No-op unless PostHog is live.
+         if (import.meta.env.PROD) {
+            posthog.capture('repay_succeeded', {
+               method,
+               in_app_browser: inApp.isInApp,
+               in_app_name: inApp.appName ?? null,
+               fully_repaid: serverFullyRepaid
+            });
+         }
          if (cancelledRef.current) {
             // Borrower backed out of the overlay — the payment still recorded above, but don't
             // slam the full-screen payoff / partial UI over them. The success toast still confirms it.
@@ -945,7 +976,8 @@ export default function Repay() {
       payUsdc,
       dispatch,
       user.id,
-      usePreviewLoans
+      usePreviewLoans,
+      blockForInAppBase
    ]);
 
    const handleRepayRef = useRef(handleRepay);
@@ -1006,6 +1038,16 @@ export default function Repay() {
                <div className="h-44 rounded-md-xl bg-md-neutral-300" />
                <div className="h-80 rounded-md-xl bg-md-neutral-300" />
             </div>
+         </main>
+      );
+   }
+
+   // In Facebook's in-app browser a Base-Account borrower can't complete the wallet handshake, so
+   // replace the (doomed) repay form with the escape hatch. Not shown once a repayment succeeded.
+   if (blockForInAppBase && !completion) {
+      return (
+         <main className="repay-page min-h-screen bg-md-neutral-200 px-4 pb-28 pt-10">
+            <RepayInAppBrowserGate info={inApp} />
          </main>
       );
    }
