@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>Moodeng Credit at Token2049</title>
+      <meta
+         name="description"
+         content="Watch the Moodeng Credit B2B Nexus demo, try the product, visit the site, or book time with the team at Token2049."
+      />
+      <meta property="og:title" content="Moodeng Credit at Token2049" />
+      <meta property="og:description" content="Watch the B2B Nexus demo and connect with the Moodeng Credit team at Token2049." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/token2049" />
+      <meta property="og:image" content="https://moodeng.app/landing/assets/token2049/yt-poster.jpg" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@moodengcredit" />
+      <link rel="canonical" href="https://moodeng.app/token2049" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,500..800&family=Archivo+Black&display=swap" />
+      <style>
+         :root{
+            color-scheme: light;
+            --ink: oklch(18% 0.055 292);
+            --ink-soft: oklch(34% 0.036 298);
+            --muted: oklch(47% 0.025 298);
+            --paper: oklch(99.2% 0.004 305);
+            --lavender-50: oklch(96.2% 0.028 305);
+            --lavender-100: oklch(92.5% 0.055 305);
+            --lavender-200: oklch(85.5% 0.09 305);
+            --purple: oklch(49% 0.245 298);
+            --purple-ink: oklch(28% 0.12 296);
+            --amber: oklch(53% 0.12 75);
+            --amber-soft: oklch(95% 0.04 75);
+            --butter: oklch(91% 0.105 88);
+            --line: oklch(88.5% 0.025 303);
+            --night: oklch(17% 0.05 296);
+            --font: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-display: 'Archivo Black', 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+            --radius-lg: 32px;
+            --shadow-sm: 0 8px 24px oklch(28% 0.08 296 / 0.08);
+            --shadow-md: 0 24px 64px oklch(28% 0.08 296 / 0.14);
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+         }
+
+         *,*::before,*::after{ box-sizing: border-box; }
+
+         body{
+            margin:0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--font);
+            font-weight: 500;
+            line-height: 1.5;
+            text-rendering: optimizeLegibility;
+         }
+         h1,h2,h3{
+            font-family: var(--font-display);
+            text-wrap: balance;
+            margin: 0;
+            letter-spacing: -0.01em;
+         }
+         p,li{ text-wrap: pretty; }
+         a{ color: inherit; }
+         img{ display:block; max-width: 100%; }
+
+         .frame{
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 24px;
+         }
+
+         header{
+            background: var(--night);
+            color: var(--paper);
+            border-bottom: 1px solid oklch(72% 0.1 299 / 0.24);
+         }
+         .header-row{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 16px 0;
+         }
+         .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+         .brand .logo-badge{
+            width: 44px; height:44px;
+            border-radius: 14px;
+            background: var(--lavender-50);
+            border: 1px solid oklch(100% 0 0 / 0.34);
+            box-shadow: inset 0 0 0 1px oklch(42% 0.16 299 / 0.08);
+            display:grid; place-items:center;
+            flex: none;
+         }
+         .brand .logo-badge img{ width:32px; height:32px; object-fit:contain; }
+         .brand span{ font-family: var(--font-display); font-size: 19px; letter-spacing: -0.01em; color: var(--paper); }
+         .event-pill{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            background: oklch(23% 0.07 296);
+            color: var(--paper);
+            border: 1px solid oklch(72% 0.1 299 / 0.3);
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 800;
+         }
+         .event-pill .dot{ width:7px; height:7px; border-radius:50%; background: oklch(86% 0.145 83); }
+
+         .hero-section{
+            background: var(--lavender-50);
+            padding-block: 32px 40px;
+         }
+         .hero-inner{ max-width: 800px; margin: 0 auto; text-align:center; }
+         .kicker{
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 12.5px;
+            font-weight: 800;
+            color: oklch(48% 0.17 22);
+            margin-bottom: 14px;
+         }
+         .eyebrow-line{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--ink-soft);
+            margin-bottom: 18px;
+         }
+         .eyebrow-line .dash{ width: 20px; height: 2px; background: var(--lavender-200); }
+
+         .video-shell{
+            background: var(--purple-ink);
+            border-radius: var(--radius-lg);
+            padding: 8px;
+            box-shadow: var(--shadow-md);
+         }
+         .video-frame{
+            position:relative;
+            width:100%;
+            padding-top: 56.25%;
+            border-radius: 24px;
+            overflow:hidden;
+            background:#000;
+         }
+         .video-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+         .video-frame .poster-btn{
+            position:absolute; inset:0;
+            width:100%; height:100%;
+            padding:0; margin:0; border:0;
+            background: #000;
+            cursor:pointer;
+         }
+         .video-frame .poster-btn img{
+            position:absolute; inset:0;
+            width:100%; height:100%;
+            object-fit:cover;
+            opacity: 0.88;
+         }
+         .video-frame .poster-btn .play-ring{
+            position:absolute; top:50%; left:50%;
+            translate: -50% -50%;
+            width: 76px; height:76px;
+            border-radius:50%;
+            background: var(--paper);
+            display:grid; place-items:center;
+            box-shadow: 0 12px 28px oklch(0% 0 0 / 0.4);
+            transition: scale 160ms var(--ease-out), background 160ms var(--ease-out);
+         }
+         .video-frame .poster-btn:hover .play-ring{ scale: 1.08; background: var(--butter); }
+         .video-frame .poster-btn .play-ring svg{ width:26px; height:26px; margin-left:4px; color: var(--purple-ink); }
+         .video-frame .poster-btn .play-label{
+            position:absolute; left:50%; bottom:22px; translate: -50% 0;
+            color: var(--paper);
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            text-shadow: 0 2px 8px oklch(0% 0 0 / 0.55);
+         }
+
+         .ctas{
+            margin-top: 60px;
+            display:grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+         }
+         @media (max-width: 720px){ .ctas{ grid-template-columns: 1fr; } }
+
+         .cta-card{
+            position: relative;
+            display:flex;
+            flex-direction:column;
+            gap: 12px;
+            text-decoration:none;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            padding-top: 20px;
+            text-align:left;
+            transition: translate 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms var(--ease-out);
+            overflow: visible;
+         }
+         .cta-card:hover{ translate: 0 -4px; box-shadow: var(--shadow-sm); border-color: var(--lavender-200); }
+         .cta-card:focus-visible{ outline: 3px solid var(--purple); outline-offset: 3px; }
+         .cta-card.meet{ border-color: var(--ink); }
+         .cta-card.meet:hover{ border-color: var(--ink); }
+
+         .cta-card .sticker{
+            position: absolute;
+            top: -34px;
+            width: 84px;
+            height: 84px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 10px oklch(28% 0.08 296 / 0.22));
+            transition: rotate 180ms var(--ease-out), translate 180ms var(--ease-out);
+         }
+         .cta-card:hover .sticker{ translate: 0 -4px; }
+         .cta-card.product .sticker{ left: 22px; rotate: -7deg; }
+         .cta-card.landing .sticker{ left: 22px; rotate: 5deg; }
+         .cta-card.meet .sticker{ left: 22px; rotate: -4deg; }
+
+         .cta-card .card-body{ margin-top: 46px; display:flex; flex-direction:column; gap:12px; flex:1; }
+         .cta-card h3{ font-size: 18px; color: var(--ink); }
+         .cta-card p{ margin:0; font-size: 13.5px; color: var(--ink-soft); line-height:1.45; }
+
+         .pill-btn{
+            margin-top: auto;
+            width: 100%;
+            display:flex;
+            align-items:center;
+            justify-content: space-between;
+            gap: 8px;
+            height: 44px;
+            border-radius: 999px;
+            padding: 0 18px;
+            font-size: 13.5px;
+            font-weight: 800;
+            text-decoration:none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+         }
+         .pill-btn.subtle{ background: var(--lavender-50); color: var(--purple-ink); border: 1px solid var(--lavender-200); }
+         .pill-btn.primary{ background: var(--ink); color: var(--paper); }
+         .pill-btn .arrow{ translate: 0 -0.04em; transition: translate 180ms var(--ease-out); }
+         .cta-card:hover .arrow{ translate: 3px -0.04em; }
+
+         .team-section{ padding-block: 60px 24px; }
+         .team-heading{ text-align:center; max-width: 560px; margin: 0 auto; }
+         .team-heading .kicker{ color: var(--purple); }
+         .team-heading h2{ font-size: clamp(26px, 3.4vw, 36px); }
+         .team-heading p{ margin: 12px 0 0; font-size: 15px; color: var(--ink-soft); }
+
+         .team-grid{
+            margin-top: 32px;
+            display:grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+         }
+         @media (max-width: 900px){ .team-grid{ grid-template-columns: repeat(2, 1fr); } }
+         @media (max-width: 520px){ .team-grid{ grid-template-columns: 1fr; } }
+
+         .member{
+            background: var(--lavender-50);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--line);
+            padding: 22px;
+            text-align:center;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+         }
+         .member .badge{
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--purple-ink);
+            background: var(--lavender-100);
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+         }
+         .member.advisor .badge{ background: var(--amber-soft); color: var(--amber); }
+         .member .portrait{
+            width: 84px; height: 84px;
+            border-radius: 50%;
+            overflow:hidden;
+            background: var(--butter);
+            border: 3px solid var(--paper);
+            box-shadow: 0 0 0 2px var(--line);
+         }
+         .member .portrait img{ width:100%; height:100%; object-fit:cover; }
+         .member h3{ margin-top: 14px; font-size: 17px; color: var(--ink); }
+         .member .role{ margin-top: 4px; font-size: 12.5px; color: var(--muted); font-weight:600; }
+         .member .location{
+            margin-top: 6px;
+            display:inline-flex;
+            align-items:center;
+            gap: 4px;
+            font-size: 11.5px;
+            color: var(--purple);
+            font-weight: 700;
+         }
+         .member .location svg{ width:11px; height:11px; flex:none; }
+         .member .li-link{
+            margin-top: 14px;
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            font-size: 12.5px;
+            font-weight: 800;
+            color: var(--purple-ink);
+            background: var(--paper);
+            border: 1px solid var(--lavender-200);
+            padding: 7px 14px;
+            border-radius: 999px;
+            text-decoration:none;
+         }
+         .member .li-link:hover{ background: var(--lavender-100); }
+
+         footer{
+            padding: 32px 0 56px;
+            text-align:center;
+            font-size: 12.5px;
+            color: var(--muted);
+         }
+      </style>
+   </head>
+   <body>
+      <header>
+         <div class="frame header-row">
+            <a class="brand" href="/">
+               <span class="logo-badge"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="Moodeng Credit logo" /></span>
+               <span>Moodeng&nbsp;Credit</span>
+            </a>
+            <div class="event-pill"><span class="dot"></span>TOKEN2049 &middot; Singapore</div>
+         </div>
+      </header>
+
+      <section class="hero-section">
+         <div class="frame hero-inner">
+            <div class="eyebrow-line"><span class="dash"></span>Moodeng Credit &middot; B2B Nexus Demo<span class="dash"></span></div>
+
+            <div class="video-shell">
+               <div class="video-frame" id="videoFrame">
+                  <button class="poster-btn" id="playBtn" type="button" aria-label="Play the Moodeng Credit B2B Nexus demo">
+                     <img src="/landing/assets/token2049/yt-poster.jpg" alt="" />
+                     <span class="play-ring">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                     </span>
+                     <span class="play-label">Click to play the demo</span>
+                  </button>
+               </div>
+            </div>
+
+            <div class="ctas">
+               <a class="cta-card product" href="https://app.moodeng.credit" target="_blank" rel="noreferrer">
+                  <img class="sticker" src="/landing/assets/token2049/hippo-product.png" alt="" />
+                  <div class="card-body">
+                     <h3>Try the product</h3>
+                     <p>Open the live app and see the borrower &amp; lender flow first-hand.</p>
+                     <span class="pill-btn subtle">Open the app <span class="arrow">&rarr;</span></span>
+                  </div>
+               </a>
+
+               <a class="cta-card landing" href="https://moodeng.app" target="_blank" rel="noreferrer">
+                  <img class="sticker" src="/landing/assets/token2049/hippo-landing.png" alt="" />
+                  <div class="card-body">
+                     <h3>Visit the site</h3>
+                     <p>The full story: how credit-building works, our lenders, and our roadmap.</p>
+                     <span class="pill-btn subtle">See the site <span class="arrow">&rarr;</span></span>
+                  </div>
+               </a>
+
+               <a class="cta-card meet" href="https://calendly.com/moodengcredit/30min" target="_blank" rel="noreferrer">
+                  <img class="sticker" src="/landing/assets/token2049/hippo-meet.png" alt="" />
+                  <div class="card-body">
+                     <h3>Schedule a meet</h3>
+                     <p>Grab 30 minutes with the team at TOKEN2049 or on a call.</p>
+                     <span class="pill-btn primary">Book a call <span class="arrow">&rarr;</span></span>
+                  </div>
+               </a>
+            </div>
+         </div>
+      </section>
+
+      <section class="team-section">
+         <div class="frame">
+            <div class="team-heading">
+               <div class="kicker">Say hi in Singapore</div>
+               <h2>The team for the black-car phase</h2>
+               <p>Small, technical, and close to the borrower — here to talk shop at Token2049.</p>
+            </div>
+
+            <div class="team-grid">
+               <div class="member">
+                  <span class="badge">Core Team</span>
+                  <div class="portrait"><img src="/team/emma-moodeng.jpeg" alt="Chonlagarn “Emma” Incharoensak" /></div>
+                  <h3>Emma Incharoensak</h3>
+                  <div class="role">Growth &amp; borrower ops</div>
+                  <div class="location"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>Bangkok</div>
+                  <a class="li-link" href="https://www.linkedin.com/in/cincharoensak/" target="_blank" rel="noreferrer">
+                     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.14 1.45-2.14 2.94v5.66H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.11 20.45H3.56V9h3.55v11.45z"/></svg>
+                     LinkedIn
+                  </a>
+               </div>
+
+               <div class="member">
+                  <span class="badge">Core Team</span>
+                  <div class="portrait"><img src="/team/george.jpeg" alt="George Lerner" /></div>
+                  <h3>George Lerner</h3>
+                  <div class="role">Product &amp; finance</div>
+                  <div class="location"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>Bangkok</div>
+                  <a class="li-link" href="https://www.linkedin.com/in/george-l-25a4b844/" target="_blank" rel="noreferrer">
+                     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.14 1.45-2.14 2.94v5.66H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.11 20.45H3.56V9h3.55v11.45z"/></svg>
+                     LinkedIn
+                  </a>
+               </div>
+
+               <div class="member">
+                  <span class="badge">Core Team</span>
+                  <div class="portrait"><img src="/landing/assets/token2049/jeff.jpeg" alt="Jeff Zhao" /></div>
+                  <h3>Jeff Zhao</h3>
+                  <div class="role">Tech ops</div>
+                  <div class="location"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>Toronto</div>
+                  <a class="li-link" href="https://www.linkedin.com/in/jiayii-zhao" target="_blank" rel="noreferrer">
+                     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.14 1.45-2.14 2.94v5.66H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.11 20.45H3.56V9h3.55v11.45z"/></svg>
+                     LinkedIn
+                  </a>
+               </div>
+
+               <div class="member advisor">
+                  <span class="badge">Advisor</span>
+                  <div class="portrait"><img src="/landing/assets/token2049/joe.jpeg" alt="Joe Kim" /></div>
+                  <h3>Joe Kim</h3>
+                  <div class="role">CEO &amp; co-founder, HypeLab</div>
+                  <div class="location"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9.5" r="2.5" stroke="currentColor" stroke-width="2"/></svg>San Francisco</div>
+                  <a class="li-link" href="https://www.linkedin.com/in/jky116" target="_blank" rel="noreferrer">
+                     <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.03-1.85-3.03-1.85 0-2.14 1.45-2.14 2.94v5.66H9.36V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.11 20.45H3.56V9h3.55v11.45z"/></svg>
+                     LinkedIn
+                  </a>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      <footer>
+         Moodeng Credit &middot; portable trust for borrowers, transparent impact for lenders
+      </footer>
+
+      <script>
+         document.getElementById('playBtn').addEventListener('click', function () {
+            var frame = document.getElementById('videoFrame');
+            var iframe = document.createElement('iframe');
+            iframe.src = 'https://www.youtube.com/embed/MURmZLMYpb0?autoplay=1';
+            iframe.title = 'Moodeng Credit B2B Nexus — Token2049';
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+            iframe.allowFullscreen = true;
+            iframe.referrerPolicy = 'strict-origin-when-cross-origin';
+            frame.innerHTML = '';
+            frame.appendChild(iframe);
+         });
+      </script>
+   </body>
+</html>
