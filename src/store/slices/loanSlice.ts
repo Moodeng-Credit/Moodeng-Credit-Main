@@ -60,7 +60,9 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    repaidAt: row.repaid_at ?? undefined,
    refundedAt: row.refunded_at ?? undefined,
    refundReason: row.refund_reason ?? undefined,
-   refundHash: row.refund_hash ?? undefined
+   refundHash: row.refund_hash ?? undefined,
+   offplatformSettledAt: row.offplatform_settled_at ?? undefined,
+   offplatformSettlementNote: row.offplatform_settlement_note ?? undefined
 });
 
 const initialState: LoanState = {
