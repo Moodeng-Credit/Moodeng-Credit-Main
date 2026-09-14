@@ -16,7 +16,7 @@ import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
-import { LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
+import { isOffPlatformSettledRefund, LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
 import { getTransactionLoanStatus, type TransactionLoanStatus } from '@/views/transactions/transactionHistoryFilters';
 
 function buildPreviewLoan(): Loan {
@@ -197,7 +197,7 @@ function buildTimeline(loan: Loan): TimelineStep[] {
    };
 
    const labelFor = (key: TimelineStep['key'], state: StepState): string => {
-      if (key === 'repaid' && loan.refundedAt) return 'Refunded';
+      if (key === 'repaid' && loan.refundedAt) return isOffPlatformSettledRefund(loan) ? 'Repaid' : 'Refunded';
       if (key === 'funded' && state === 'active') return 'Waiting for lender';
       if (key === 'repaid' && loan.loanStatus === 'Requested') return 'Repayment schedule';
       if (key === 'repaid' && state !== 'done') return 'Repayment due';
@@ -724,9 +724,11 @@ export default function TransactionDetail() {
                         <span className="text-md-b1 font-semibold text-md-primary-2000">{formatCurrency(loan.totalRepaymentAmount)}</span>
                      </div>
                      <div className="flex flex-col gap-1">
-                        <span className="text-md-b3 text-md-neutral-1000">{loan.refundedAt ? 'Refunded' : 'Repaid'}</span>
+                        <span className="text-md-b3 text-md-neutral-1000">
+                           {loan.refundedAt && !isOffPlatformSettledRefund(loan) ? 'Refunded' : 'Repaid'}
+                        </span>
                         <span className={`text-md-b1 font-semibold ${loan.refundedAt || loan.repaidAmount > 0 ? 'text-md-green-800' : 'text-md-neutral-600'}`}>
-                           {formatCurrency(loan.refundedAt ? loan.loanAmount : loan.repaidAmount)}
+                           {formatCurrency(loan.refundedAt && !isOffPlatformSettledRefund(loan) ? loan.loanAmount : loan.repaidAmount)}
                         </span>
                      </div>
                      <div className="flex flex-col gap-1">

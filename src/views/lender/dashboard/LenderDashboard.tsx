@@ -18,7 +18,7 @@ import { formatPointsMajor } from '@/shared/points';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import type { Loan } from '@/types/loanTypes';
+import { isOffPlatformSettledRefund, type Loan } from '@/types/loanTypes';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 
 // ---------------------------------------------------------------------------
@@ -41,7 +41,10 @@ interface FilterState {
 function getLoanDisplayStatus(loan: Loan): LoanDisplayStatus {
    // An admin refund cancels the loan and reads back as 'Paid'; surface it as REFUNDED (money
    // returned by the platform) so it's never mistaken for a borrower repayment. Checked first.
-   if (loan.refundedAt) return 'REFUNDED';
+   // Exception: if an admin has recorded that the borrower ultimately settled off-platform, the
+   // lender sees REPAID (they were made whole and the debt came good). This is display-only — the
+   // loan stays a refund for all credit/earnings/trust accounting (refundedAt is untouched).
+   if (loan.refundedAt) return isOffPlatformSettledRefund(loan) ? 'REPAID' : 'REFUNDED';
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
    if (loan.loanStatus === 'Requested') return 'PENDING';
    // Only a loss once the loan is past its 24h grace window (borrowers span time

@@ -1,7 +1,7 @@
 import { toNumber } from '@/utils/decimalHelpers';
 
 import type { User } from '@/types/authTypes';
-import { type Loan, LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
+import { isOffPlatformSettledRefund, type Loan, LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
 
 export type TransactionHistoryTab = 'all' | 'active' | 'completed';
 export type TransactionHistorySortBy = 'low-to-high' | 'high-to-low' | 'new-to-old' | 'old-to-new' | '';
@@ -19,7 +19,9 @@ export const DEFAULT_TRANSACTION_HISTORY_FILTERS: TransactionHistoryFilterState 
 export function getTransactionLoanStatus(loan: Loan, now = new Date()): TransactionLoanStatus {
    // An admin refund cancels the loan and reads back as 'Paid'; surface it as REFUNDED (money
    // returned by the platform) so it's never mistaken for a borrower repayment. Checked first.
-   if (loan.refundedAt) return 'REFUNDED';
+   // Exception: a refund the borrower later settled off-platform reads as REPAID to the lender.
+   // Display-only — the loan stays a refund for all credit/earnings/trust accounting.
+   if (loan.refundedAt) return isOffPlatformSettledRefund(loan) ? 'REPAID' : 'REFUNDED';
    if (loan.repaymentStatus === RepaymentStatus.PAID) return 'REPAID';
    if (loan.loanStatus === LoanStatusValue.REQUESTED) return 'PENDING';
 
