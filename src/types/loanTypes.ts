@@ -32,6 +32,25 @@ export interface Loan {
    refundedAt?: string;
    refundReason?: string;
    refundHash?: string;
+   // Off-platform settlement (DISPLAY-ONLY). Set by an admin when a refunded loan was ultimately
+   // settled by the borrower off-platform. When present, the lender-facing status reads as REPAID,
+   // but refundedAt stays set so the loan is STILL excluded from every credit/earnings/trust
+   // calculation (all of which key off `!refundedAt`). A refund is never counted as a repayment.
+   offplatformSettledAt?: string;
+   offplatformSettlementNote?: string;
+}
+
+/**
+ * A refunded loan that an admin has recorded as settled by the borrower off-platform.
+ *
+ * DISPLAY-ONLY: callers use this purely to decide the lender-facing status label (REPAID instead of
+ * REFUNDED). It must NEVER be used to include the loan in credit / earnings / trust / milestone
+ * calculations — those continue to gate on `!refundedAt`, and refundedAt is intentionally left set.
+ */
+export function isOffPlatformSettledRefund(
+   loan: Pick<Loan, 'refundedAt' | 'offplatformSettledAt'>
+): boolean {
+   return Boolean(loan.refundedAt && loan.offplatformSettledAt);
 }
 
 export interface CreateLoanData {

@@ -98,6 +98,9 @@ export type Database = {
           refund_reason: string | null
           refunded_by: string | null
           refund_hash: string | null
+          offplatform_settled_at: string | null
+          offplatform_settlement_note: string | null
+          offplatform_settled_by: string | null
           lender_user_id: string | null
           lender_wallet: string | null
           loan_amount: number
@@ -126,6 +129,9 @@ export type Database = {
           id?: string
           interest_return_hash?: string | null
           interest_returned_at?: string | null
+          offplatform_settled_at?: string | null
+          offplatform_settlement_note?: string | null
+          offplatform_settled_by?: string | null
           lender_user_id?: string | null
           lender_wallet?: string | null
           loan_amount: number
@@ -154,6 +160,9 @@ export type Database = {
           id?: string
           interest_return_hash?: string | null
           interest_returned_at?: string | null
+          offplatform_settled_at?: string | null
+          offplatform_settlement_note?: string | null
+          offplatform_settled_by?: string | null
           lender_user_id?: string | null
           lender_wallet?: string | null
           loan_amount?: number
