@@ -41,6 +41,76 @@ const ALCHEMY_ID = Deno.env.get('ALCHEMY_ID') ?? '';
 const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` : 'https://mainnet.base.org';
 const REQUEST_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
 
+// --- Repayment browser feed (Discord) --------------------------------------------------------
+// Surface which browser a borrower repays from. Base Account (passkey + popup) can't complete
+// inside social in-app browsers (Facebook / Instagram / Messenger / …), while the Openfort
+// embedded wallet can — so an in-app browser is exactly the case worth flagging. Best-effort:
+// the User-Agent comes from the borrower's own confirm-loan-payment request.
+const describeBrowser = (ua: string | null): { label: string; isInApp: boolean } => {
+   if (!ua) return { label: 'Unknown', isInApp: false };
+   // In-app webviews first — these are the ones that break the Base wallet popup/passkey.
+   if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return { label: 'Facebook in-app browser', isInApp: true };
+   if (/Messenger/i.test(ua)) return { label: 'Messenger in-app browser', isInApp: true };
+   if (/Instagram/i.test(ua)) return { label: 'Instagram in-app browser', isInApp: true };
+   if (/\bLine\//i.test(ua)) return { label: 'LINE in-app browser', isInApp: true };
+   if (/musical_ly|BytedanceWebview|TikTok/i.test(ua)) return { label: 'TikTok in-app browser', isInApp: true };
+   if (/Twitter/i.test(ua)) return { label: 'Twitter/X in-app browser', isInApp: true };
+   // Normal browsers (order matters: Samsung / Edge / Chrome UAs all also contain "Safari").
+   if (/SamsungBrowser/i.test(ua)) return { label: 'Samsung Internet', isInApp: false };
+   if (/Edg\//i.test(ua)) return { label: 'Edge', isInApp: false };
+   if (/OPR\/|Opera/i.test(ua)) return { label: 'Opera', isInApp: false };
+   if (/Firefox\//i.test(ua)) return { label: 'Firefox', isInApp: false };
+   if (/CriOS|Chrome\//i.test(ua)) return { label: 'Chrome', isInApp: false };
+   if (/Safari\//i.test(ua)) return { label: 'Safari', isInApp: false };
+   return { label: 'Other', isInApp: false };
+};
+
+// Posts one repayment line to a Discord channel. Uses a dedicated repay webhook when set, else
+// falls back to the same #login-feed webhook. Red embed for in-app browsers (the users who may
+// get stuck on Base), green otherwise. Fire-and-forget — never affects the payment response.
+const postRepayFeed = async (details: {
+   username: string | null;
+   email: string | null;
+   repaidAmount: number;
+   totalAmount: number;
+   coin: string;
+   trackingId: string | null;
+   fullyRepaid: boolean;
+   browser: { label: string; isInApp: boolean };
+   userAgent: string | null;
+}) => {
+   const webhook = Deno.env.get('DISCORD_REPAY_WEBHOOK_URL') || Deno.env.get('DISCORD_LOGIN_WEBHOOK_URL');
+   if (!webhook) return;
+
+   const { username, email, repaidAmount, totalAmount, coin, trackingId, fullyRepaid, browser, userAgent } = details;
+   const embed = {
+      title: `💸 Repayment — ${username ?? 'unknown user'}`,
+      color: browser.isInApp ? 0xe74c3c : 0x2ecc71,
+      fields: [
+         { name: 'User', value: `${username ?? '—'}\n${email ?? '—'}`, inline: true },
+         {
+            name: 'Amount',
+            value: `$${repaidAmount.toFixed(2)} / $${totalAmount.toFixed(2)} ${coin}${fullyRepaid ? ' ✅ paid in full' : ' (partial)'}`,
+            inline: true
+         },
+         { name: 'Browser', value: `${browser.isInApp ? '🚩 ' : ''}${browser.label}`, inline: true },
+         { name: 'Loan', value: trackingId ?? '—', inline: false }
+      ],
+      footer: { text: (userAgent ?? 'no user-agent').slice(0, 180) },
+      timestamp: new Date().toISOString()
+   };
+
+   try {
+      await fetch(webhook, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ embeds: [embed] })
+      });
+   } catch {
+      // Best-effort — the repay feed must never affect the payment response.
+   }
+};
+
 const topicToAddress = (topic: string) => `0x${topic.slice(-40)}`.toLowerCase();
 const hexToBigInt = (hex: string) => (hex && hex !== '0x' ? BigInt(hex) : 0n);
 
@@ -454,6 +524,28 @@ serve(async (req) => {
       sideEffectErrors.push(...(await applyCreditProgression(admin, updatedLoan)));
       const { error: notifyError } = await admin.functions.invoke('loan-repayment-received-notification', { body: { loanId } });
       if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
+   }
+
+   // Repay browser feed → Discord. Fires on every repayment (partial or full), flags in-app
+   // browsers (Facebook/etc.) where the Base wallet can't complete. Best-effort and awaited only
+   // so the fetch starts; failures are swallowed inside postRepayFeed and never block the response.
+   if (action === 'repay') {
+      const { data: borrowerRow } = await admin
+         .from('users')
+         .select('username, email')
+         .eq('id', updatedLoan.borrower_user_id)
+         .maybeSingle();
+      await postRepayFeed({
+         username: borrowerRow?.username ?? null,
+         email: borrowerRow?.email ?? null,
+         repaidAmount: toNumber(updatedLoan.repaid_amount as number | string | null),
+         totalAmount: toNumber(updatedLoan.total_repayment_amount as number | string | null),
+         coin: (updatedLoan.coin as string | null)?.trim() || 'USDC',
+         trackingId: (updatedLoan.tracking_id as string | null) ?? null,
+         fullyRepaid: updatedLoan.repayment_status === 'Paid',
+         browser: describeBrowser(req.headers.get('user-agent')),
+         userAgent: req.headers.get('user-agent')
+      });
    }
 
    return jsonResponse({ loan: updatedLoan, sideEffectErrors });
