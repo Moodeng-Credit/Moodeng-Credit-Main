@@ -185,10 +185,11 @@
          .ctas{
             margin-top: 60px;
             display:grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
          }
-         @media (max-width: 720px){ .ctas{ grid-template-columns: 1fr; } }
+         @media (max-width: 900px){ .ctas{ grid-template-columns: repeat(2, 1fr); } }
+         @media (max-width: 520px){ .ctas{ grid-template-columns: 1fr; } }
 
          .cta-card{
             position: relative;
@@ -223,6 +224,7 @@
          .cta-card.product .sticker{ left: 22px; rotate: -7deg; }
          .cta-card.landing .sticker{ left: 22px; rotate: 5deg; }
          .cta-card.meet .sticker{ left: 22px; rotate: -4deg; }
+         .cta-card.deck .sticker{ left: 22px; rotate: 6deg; }
 
          .cta-card .card-body{ margin-top: 46px; display:flex; flex-direction:column; gap:12px; flex:1; }
          .cta-card h3{ font-size: 18px; color: var(--ink); }
@@ -384,6 +386,15 @@
                      <h3>Schedule a meet</h3>
                      <p>Grab 30 minutes with the team at TOKEN2049 or on a call.</p>
                      <span class="pill-btn primary">Book a call <span class="arrow">&rarr;</span></span>
+                  </div>
+               </a>
+
+               <a class="cta-card deck" href="https://www.papermark.com/view/cms53535t0021jl049gj4f4ac" target="_blank" rel="noreferrer">
+                  <img class="sticker" src="/landing/assets/token2049/hippo-deck.png" alt="" />
+                  <div class="card-body">
+                     <h3>Read the deck</h3>
+                     <p>The full pitch: market, mechanics, and the team.</p>
+                     <span class="pill-btn subtle">View the deck <span class="arrow">&rarr;</span></span>
                   </div>
                </a>
             </div>
