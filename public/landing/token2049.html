@@ -247,7 +247,9 @@
             overflow: hidden;
             text-overflow: ellipsis;
          }
-         .pill-btn.subtle{ background: var(--lavender-50); color: var(--purple-ink); border: 1px solid var(--lavender-200); }
+         .pill-btn.subtle{ background: var(--lavender-50); color: var(--purple-ink); border: 1.5px solid var(--lavender-200); }
+         .pill-btn.subtle.border-green{ border-color: oklch(64% 0.12 151); }
+         .pill-btn.subtle.border-amber{ border-color: oklch(68% 0.13 75); }
          .pill-btn.primary{ background: var(--ink); color: var(--paper); }
          .pill-btn .arrow{ translate: 0 -0.04em; transition: translate 180ms var(--ease-out); }
          .cta-card:hover .arrow{ translate: 3px -0.04em; }
@@ -376,7 +378,7 @@
                   <div class="card-body">
                      <h3>Visit the site</h3>
                      <p>The full story: how credit-building works, our lenders, and our roadmap.</p>
-                     <span class="pill-btn subtle">See the site <span class="arrow">&rarr;</span></span>
+                     <span class="pill-btn subtle border-green">See the site <span class="arrow">&rarr;</span></span>
                   </div>
                </a>
 
@@ -394,7 +396,7 @@
                   <div class="card-body">
                      <h3>Read the deck</h3>
                      <p>The full pitch: market, mechanics, and the team.</p>
-                     <span class="pill-btn subtle">View the deck <span class="arrow">&rarr;</span></span>
+                     <span class="pill-btn subtle border-amber">View the deck <span class="arrow">&rarr;</span></span>
                   </div>
                </a>
             </div>
