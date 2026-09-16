@@ -9,6 +9,7 @@
     { "src": "^/about/?$", "dest": "/landing/about.html" },
     { "src": "^/for-lenders/?$", "dest": "/landing/for-lenders.html" },
     { "src": "^/token2049/?$", "dest": "/landing/token2049.html" },
+    { "src": "^/book/?$", "dest": "/landing/book.html" },
 
     { "src": "^/b2b-demo/?$", "dest": "/demo-b2b/platform.html" },
 

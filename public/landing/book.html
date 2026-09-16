@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>Book a Call · Moodeng Credit</title>
+      <meta
+         name="description"
+         content="Book 30 minutes with the Moodeng Credit team — talk borrower & lender flows, partnerships, or anything about portable credit."
+      />
+      <meta property="og:title" content="Book a Call · Moodeng Credit" />
+      <meta property="og:description" content="Grab 30 minutes with the Moodeng Credit team." />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/book" />
+      <meta property="og:image" content="https://moodeng.app/landing/assets/token2049/yt-poster.jpg" />
+      <link rel="canonical" href="https://moodeng.app/book" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,500..800&family=Archivo+Black&display=swap" />
+      <style>
+         :root{
+            color-scheme: light;
+            --ink: oklch(18% 0.055 292);
+            --ink-soft: oklch(34% 0.036 298);
+            --muted: oklch(47% 0.025 298);
+            --paper: oklch(99.2% 0.004 305);
+            --lavender-50: oklch(96.2% 0.028 305);
+            --lavender-100: oklch(92.5% 0.055 305);
+            --lavender-200: oklch(85.5% 0.09 305);
+            --purple: oklch(49% 0.245 298);
+            --purple-ink: oklch(28% 0.12 296);
+            --butter: oklch(91% 0.105 88);
+            --line: oklch(88.5% 0.025 303);
+            --night: oklch(17% 0.05 296);
+            --font: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-display: 'Archivo Black', 'Archivo', -apple-system, BlinkMacSystemFont, sans-serif;
+            --radius-lg: 32px;
+            --shadow-md: 0 24px 64px oklch(28% 0.08 296 / 0.14);
+         }
+
+         *,*::before,*::after{ box-sizing: border-box; }
+
+         body{
+            margin:0;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--font);
+            font-weight: 500;
+            line-height: 1.5;
+            text-rendering: optimizeLegibility;
+         }
+         h1,h2,h3{ font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+         p{ text-wrap: pretty; }
+         a{ color: inherit; }
+         img{ display:block; max-width: 100%; }
+
+         .frame{ max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+         header{
+            background: var(--night);
+            color: var(--paper);
+            border-bottom: 1px solid oklch(72% 0.1 299 / 0.24);
+         }
+         .header-row{
+            display:flex; align-items:center; justify-content:space-between;
+            gap: 16px; flex-wrap: wrap; padding: 16px 0;
+         }
+         .brand{ display:flex; align-items:center; gap:12px; text-decoration:none; }
+         .brand .logo-badge{
+            width: 44px; height:44px; border-radius: 14px;
+            background: var(--lavender-50); border: 1px solid oklch(100% 0 0 / 0.34);
+            box-shadow: inset 0 0 0 1px oklch(42% 0.16 299 / 0.08);
+            display:grid; place-items:center; flex: none;
+         }
+         .brand .logo-badge img{ width:32px; height:32px; object-fit:contain; }
+         .brand span{ font-family: var(--font-display); font-size: 19px; letter-spacing: -0.01em; color: var(--paper); }
+         .back-link{
+            display:inline-flex; align-items:center; gap:7px;
+            font-size: 13px; font-weight: 800; color: var(--paper);
+            text-decoration:none; opacity: 0.85;
+            border: 1px solid oklch(72% 0.1 299 / 0.3);
+            border-radius: 999px; padding: 9px 16px;
+         }
+         .back-link:hover{ opacity: 1; }
+
+         .hero-section{ background: var(--lavender-50); padding-block: 44px 28px; }
+         .hero-inner{ max-width: 720px; margin: 0 auto; text-align:center; }
+         .kicker{
+            text-transform: uppercase; letter-spacing: 0.14em;
+            font-size: 12.5px; font-weight: 800; color: var(--purple); margin-bottom: 14px;
+         }
+         .hero-inner h1{ font-size: clamp(30px, 4.6vw, 46px); line-height: 1.02; color: var(--ink); }
+         .hero-inner h1 .hl{
+            background: var(--butter);
+            box-decoration-break: clone; -webkit-box-decoration-break: clone;
+            padding: 0 6px;
+         }
+         .hero-inner p.lede{ max-width: 52ch; margin: 18px auto 0; font-size: 16.5px; color: var(--ink-soft); }
+
+         .booking-section{ padding-block: 8px 56px; background: var(--lavender-50); }
+         .booking-card{
+            max-width: 1000px; margin: 0 auto;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 12px;
+            overflow: hidden;
+         }
+         .calendly-inline-widget{ min-width: 320px; height: 720px; border-radius: 22px; overflow: hidden; }
+         @media (max-width: 640px){ .calendly-inline-widget{ height: 1000px; } }
+
+         .fallback{
+            text-align:center; padding: 20px; font-size: 14px; color: var(--ink-soft);
+         }
+         .fallback a{ color: var(--purple-ink); font-weight: 800; text-decoration: underline; text-decoration-color: var(--butter); }
+
+         footer{ padding: 28px 0 52px; text-align:center; font-size: 12.5px; color: var(--muted); background: var(--paper); }
+      </style>
+   </head>
+   <body>
+      <header>
+         <div class="frame header-row">
+            <a class="brand" href="/">
+               <span class="logo-badge"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="Moodeng Credit logo" /></span>
+               <span>Moodeng&nbsp;Credit</span>
+            </a>
+            <a class="back-link" href="/token2049">&larr; Back to Token2049</a>
+         </div>
+      </header>
+
+      <section class="hero-section">
+         <div class="frame hero-inner">
+            <div class="kicker">Let's talk</div>
+            <h1>Book <span class="hl">30 minutes</span> with the team</h1>
+            <p class="lede">Borrower &amp; lender flows, partnerships, the roadmap — or just say hi. Pick a time that works and we'll send the details.</p>
+         </div>
+      </section>
+
+      <section class="booking-section">
+         <div class="frame">
+            <div class="booking-card">
+               <div
+                  class="calendly-inline-widget"
+                  data-url="https://calendly.com/moodengcredit/30min?hide_gdpr_banner=1&primary_color=8336f0"
+               ></div>
+               <div class="fallback">
+                  Scheduler not loading? <a href="https://calendly.com/moodengcredit/30min" target="_blank" rel="noreferrer">Open the calendar directly &rarr;</a>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      <footer>
+         Moodeng Credit &middot; portable trust for borrowers, transparent impact for lenders
+      </footer>
+
+      <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
+   </body>
+</html>
