@@ -334,6 +334,38 @@
             font-size: 12.5px;
             color: var(--muted);
          }
+
+         /* ---------- Tour modal ---------- */
+         .tour-modal{ position:fixed; inset:0; z-index:100; display:none; }
+         .tour-modal.open{ display:block; }
+         .tour-modal .backdrop{ position:absolute; inset:0; background: oklch(17% 0.05 296 / 0.72); }
+         .tour-modal .dialog{
+            position:absolute; inset:0; margin:auto;
+            width:min(1200px, 94vw); height:min(880px, 92vh);
+            background: var(--paper); border-radius: 24px; overflow:hidden;
+            display:flex; flex-direction:column;
+            box-shadow: 0 30px 80px oklch(0% 0 0 / 0.45);
+         }
+         .tour-modal .dialog-head{
+            display:flex; align-items:center; justify-content:space-between; gap:12px;
+            padding:12px 16px; background: var(--night); color: var(--paper); flex:none;
+         }
+         .tour-modal .dialog-head .t{ display:flex; align-items:center; gap:10px; font-family: var(--font-display); font-size:15px; }
+         .tour-modal .dialog-head .t .dot{ width:8px; height:8px; border-radius:50%; background: oklch(64% 0.12 151); }
+         .tour-modal .dialog-head .actions{ display:flex; align-items:center; gap:8px; }
+         .tour-modal .dialog-head a.open-new{
+            font-size:12px; font-weight:800; color:var(--paper); text-decoration:none;
+            border:1px solid oklch(72% 0.1 299 / 0.3); border-radius:999px; padding:7px 12px; opacity:.85;
+         }
+         .tour-modal .dialog-head a.open-new:hover{ opacity:1; }
+         .tour-modal .dialog-head button.close{
+            width:34px; height:34px; border-radius:50%; border:1px solid oklch(72% 0.1 299 / 0.3);
+            background:transparent; color:var(--paper); font-size:20px; cursor:pointer; line-height:1;
+            display:grid; place-items:center;
+         }
+         .tour-modal .dialog-head button.close:hover{ background: oklch(23% 0.07 296); }
+         .tour-modal iframe{ flex:1; width:100%; border:0; background: var(--lavender-50); }
+         body.modal-open{ overflow:hidden; }
       </style>
    </head>
    <body>
@@ -364,7 +396,7 @@
             </div>
 
             <div class="ctas">
-               <a class="cta-card product" href="/request-board?tour=1" target="_blank" rel="noreferrer">
+               <a class="cta-card product" id="tourCard" href="/request-board?tour=1" target="_blank" rel="noreferrer">
                   <img class="sticker" src="/landing/assets/token2049/hippo-product.png" alt="" />
                   <div class="card-body">
                      <h3>Try the product</h3>
@@ -467,6 +499,20 @@
          Moodeng Credit &middot; portable trust for borrowers, transparent impact for lenders
       </footer>
 
+      <div class="tour-modal" id="tourModal" aria-hidden="true">
+         <div class="backdrop" data-close></div>
+         <div class="dialog" role="dialog" aria-modal="true" aria-label="Moodeng Credit product tour">
+            <div class="dialog-head">
+               <span class="t"><span class="dot"></span>Product tour &mdash; borrower &amp; lender</span>
+               <span class="actions">
+                  <a class="open-new" href="/request-board?tour=1" target="_blank" rel="noreferrer">Open in new tab &nearr;</a>
+                  <button class="close" type="button" data-close aria-label="Close tour">&times;</button>
+               </span>
+            </div>
+            <iframe id="tourFrame" title="Moodeng Credit product tour" allow="clipboard-write"></iframe>
+         </div>
+      </div>
+
       <script>
          document.getElementById('playBtn').addEventListener('click', function () {
             var frame = document.getElementById('videoFrame');
@@ -479,6 +525,38 @@
             frame.innerHTML = '';
             frame.appendChild(iframe);
          });
+
+         (function () {
+            var card = document.getElementById('tourCard');
+            var modal = document.getElementById('tourModal');
+            var frame = document.getElementById('tourFrame');
+            var TOUR_URL = '/request-board?tour=1';
+            function openTour() {
+               frame.src = TOUR_URL;
+               modal.classList.add('open');
+               modal.setAttribute('aria-hidden', 'false');
+               document.body.classList.add('modal-open');
+            }
+            function closeTour() {
+               modal.classList.remove('open');
+               modal.setAttribute('aria-hidden', 'true');
+               document.body.classList.remove('modal-open');
+               frame.src = 'about:blank';
+            }
+            if (card) {
+               card.addEventListener('click', function (e) {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                  e.preventDefault();
+                  openTour();
+               });
+            }
+            modal.addEventListener('click', function (e) {
+               if (e.target.hasAttribute('data-close')) closeTour();
+            });
+            document.addEventListener('keydown', function (e) {
+               if (e.key === 'Escape' && modal.classList.contains('open')) closeTour();
+            });
+         })();
       </script>
    </body>
 </html>
