@@ -98,6 +98,51 @@
             </div>
          </section>
 
+         <style>
+            .rv-wrap{ display:grid; grid-template-columns: 1fr minmax(280px, 340px); gap: clamp(28px, 5vw, 56px); align-items:center; }
+            @media (max-width: 760px){ .rv-wrap{ grid-template-columns: 1fr; justify-items:center; text-align:center; } }
+            .rv-player{ width:100%; max-width:340px; }
+            .rv-play, .rv-frame{ position:relative; display:block; width:100%; aspect-ratio: 9 / 16; border:0; padding:0; margin:0; border-radius:24px; overflow:hidden; background:#000; box-shadow: var(--shadow-md); }
+            .rv-play{ cursor:pointer; }
+            .rv-play img{ width:100%; height:100%; object-fit:cover; opacity:.92; display:block; }
+            .rv-play .rv-ring{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:66px; height:66px; border-radius:50%; background: var(--paper); color: var(--purple); display:grid; place-items:center; font-size:22px; padding-left:4px; box-shadow: 0 12px 28px oklch(0% 0 0 / 0.4); transition: transform .16s var(--ease-out); }
+            .rv-play:hover .rv-ring{ transform:translate(-50%,-50%) scale(1.08); }
+            .rv-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+         </style>
+         <section class="section" aria-labelledby="repay-video-heading">
+            <div class="container rv-wrap">
+               <div class="rv-copy stack-lg">
+                  <p class="eyebrow">Watch first</p>
+                  <h2 class="section-title" id="repay-video-heading">See a repayment in <em>60 seconds.</em></h2>
+                  <p class="lead">The whole flow, start to finish — pick the loan, pay, and watch the balance and Trust Points update in real time.</p>
+               </div>
+               <div class="rv-player">
+                  <button class="rv-play" id="repayShortBtn" type="button" aria-label="Play the repayment walkthrough">
+                     <img src="/landing/assets/how-to/repay-short-poster.jpg" alt="" />
+                     <span class="rv-ring" aria-hidden="true">▶</span>
+                  </button>
+               </div>
+            </div>
+         </section>
+         <script>
+            (function () {
+               var btn = document.getElementById('repayShortBtn');
+               if (!btn) return;
+               btn.addEventListener('click', function () {
+                  var frame = document.createElement('div');
+                  frame.className = 'rv-frame';
+                  var ifr = document.createElement('iframe');
+                  ifr.src = 'https://www.youtube.com/embed/Eu9JzDMOSmw?autoplay=1';
+                  ifr.title = 'Moodeng Credit — how to repay';
+                  ifr.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+                  ifr.allowFullscreen = true;
+                  ifr.referrerPolicy = 'strict-origin-when-cross-origin';
+                  frame.appendChild(ifr);
+                  btn.parentNode.replaceChild(frame, btn);
+               });
+            })();
+         </script>
+
          <section class="money-flow-section" aria-labelledby="repay-flow-heading">
             <div class="container">
                <div class="money-flow-heading">
