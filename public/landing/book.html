@@ -105,11 +105,38 @@
             padding: 12px;
             overflow: hidden;
          }
-         .calendly-inline-widget{ min-width: 320px; height: 720px; border-radius: 22px; overflow: hidden; }
+         /* person chooser */
+         .chooser{ display:flex; justify-content:center; gap: clamp(28px, 8vw, 72px); padding: 6px 0 22px; }
+         .head-btn{
+            appearance:none; background:transparent; border:0; cursor:pointer;
+            display:flex; flex-direction:column; align-items:center; gap:10px; padding:6px;
+            border-radius: 20px; transition: transform .2s var(--ease-out);
+         }
+         .head-btn .ring{
+            width: clamp(92px, 24vw, 132px); height: clamp(92px, 24vw, 132px);
+            border-radius:50%; overflow:hidden; background: var(--butter);
+            border: 3px solid var(--line); box-shadow: 0 8px 22px oklch(28% 0.08 296 / 0.12);
+            transition: border-color .2s var(--ease-out), box-shadow .2s var(--ease-out), filter .2s var(--ease-out);
+            filter: grayscale(0.4) opacity(0.7);
+         }
+         .head-btn .ring img{ width:100%; height:100%; object-fit:cover; display:block; }
+         .head-btn .name{ font-family: var(--font-display); font-size: 16px; color: var(--ink); }
+         .head-btn .role{ font-size: 11.5px; color: var(--muted); font-weight:600; margin-top:2px; }
+         .head-btn:hover{ transform: translateY(-3px); }
+         .head-btn.active{ transform: translateY(-3px); }
+         .head-btn.active .ring{ border-color: var(--purple); box-shadow: 0 12px 30px oklch(49% 0.2 298 / 0.28); filter: none; }
+         .head-btn:focus-visible{ outline: 3px solid var(--purple); outline-offset: 3px; }
+
+         /* stacked calendars — both load once, hover cross-fades */
+         .cal-stack{ position:relative; min-height: 720px; border-radius:22px; overflow:hidden; }
+         @media (max-width: 640px){ .cal-stack{ min-height: 1000px; } }
+         .cal-pane{ position:absolute; inset:0; opacity:0; pointer-events:none; transition: opacity .25s var(--ease-out); }
+         .cal-pane.active{ opacity:1; pointer-events:auto; }
+         .calendly-inline-widget{ min-width: 320px; height: 720px; }
          @media (max-width: 640px){ .calendly-inline-widget{ height: 1000px; } }
 
          .fallback{
-            text-align:center; padding: 20px; font-size: 14px; color: var(--ink-soft);
+            text-align:center; padding: 18px 20px 4px; font-size: 13px; color: var(--ink-soft);
          }
          .fallback a{ color: var(--purple-ink); font-weight: 800; text-decoration: underline; text-decoration-color: var(--butter); }
 
@@ -130,20 +157,38 @@
       <section class="hero-section">
          <div class="frame hero-inner">
             <div class="kicker">Let's talk</div>
-            <h1>Book <span class="hl">30 minutes</span> with the team</h1>
-            <p class="lede">Borrower &amp; lender flows, partnerships, the roadmap — or just say hi. Pick a time that works and we'll send the details.</p>
+            <h1>Book time with <span class="hl">George or Emma</span></h1>
+            <p class="lede">Hover a face to peek at their calendar, click to lock it in. Borrower &amp; lender flows, partnerships, the roadmap — or just say hi.</p>
          </div>
       </section>
 
       <section class="booking-section">
          <div class="frame">
             <div class="booking-card">
-               <div
-                  class="calendly-inline-widget"
-                  data-url="https://calendly.com/moodengcredit/30min?hide_gdpr_banner=1&primary_color=8336f0"
-               ></div>
+               <div class="chooser" id="chooser">
+                  <button class="head-btn" type="button" data-person="george" aria-label="Book with George">
+                     <span class="ring"><img src="/team/george.jpeg" alt="George" /></span>
+                     <span class="name">George</span>
+                     <span class="role">Product &amp; finance</span>
+                  </button>
+                  <button class="head-btn" type="button" data-person="emma" aria-label="Book with Emma">
+                     <span class="ring"><img src="/team/emma-moodeng.jpeg" alt="Emma" /></span>
+                     <span class="name">Emma</span>
+                     <span class="role">Growth &amp; community</span>
+                  </button>
+               </div>
+
+               <div class="cal-stack" id="calStack">
+                  <div class="cal-pane" data-person="george">
+                     <div class="calendly-inline-widget" data-url="https://calendly.com/moodengcredit/30min?hide_gdpr_banner=1&primary_color=8336f0"></div>
+                  </div>
+                  <div class="cal-pane" data-person="emma">
+                     <div class="calendly-inline-widget" data-url="https://calendly.com/emma-moodengcredit/?hide_gdpr_banner=1&primary_color=8336f0"></div>
+                  </div>
+               </div>
+
                <div class="fallback">
-                  Scheduler not loading? <a href="https://calendly.com/moodengcredit/30min" target="_blank" rel="noreferrer">Open the calendar directly &rarr;</a>
+                  Prefer a direct link? <a href="https://calendly.com/moodengcredit/30min" target="_blank" rel="noreferrer">George's calendar</a> &middot; <a href="https://calendly.com/emma-moodengcredit/" target="_blank" rel="noreferrer">Emma's calendar</a>
                </div>
             </div>
          </div>
@@ -154,5 +199,24 @@
       </footer>
 
       <script src="https://assets.calendly.com/assets/external/widget.js" async></script>
+      <script>
+         (function () {
+            var chooser = document.getElementById('chooser');
+            var heads = Array.prototype.slice.call(chooser.querySelectorAll('.head-btn'));
+            var panes = Array.prototype.slice.call(document.querySelectorAll('.cal-pane'));
+            var locked = 'george';
+            function show(person) {
+               heads.forEach(function (h) { h.classList.toggle('active', h.dataset.person === person); });
+               panes.forEach(function (p) { p.classList.toggle('active', p.dataset.person === person); });
+            }
+            heads.forEach(function (h) {
+               h.addEventListener('mouseenter', function () { show(h.dataset.person); });
+               h.addEventListener('focus', function () { show(h.dataset.person); });
+               h.addEventListener('click', function () { locked = h.dataset.person; show(locked); });
+            });
+            chooser.addEventListener('mouseleave', function () { show(locked); });
+            show(locked);
+         })();
+      </script>
    </body>
 </html>
