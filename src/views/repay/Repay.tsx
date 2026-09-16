@@ -1,6 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, ShieldCheck, TrendingUp, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, PlayCircle, ShieldCheck, TrendingUp, Wallet, X } from 'lucide-react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
@@ -383,6 +383,7 @@ export default function Repay() {
    const [showAddFunds, setShowAddFunds] = useState(true);
    const [fundSource, setFundSource] = useState<FundSourceId>('coinsph');
    const [copiedAddress, setCopiedAddress] = useState(false);
+   const [showHowToVideo, setShowHowToVideo] = useState(false);
    // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
    // collapsed so a first-timer isn't asked to evaluate four exchanges at once.
    const [showMoreSources, setShowMoreSources] = useState(false);
@@ -1217,6 +1218,14 @@ export default function Repay() {
                   <div>
                      <h1 className="text-md-h3 font-semibold text-md-heading">Repay</h1>
                      <p className="mt-1 text-md-b2 text-md-neutral-1200">Choose a loan and enter an amount.</p>
+                     <button
+                        type="button"
+                        onClick={() => setShowHowToVideo(true)}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-md-pill border border-md-primary-300 bg-md-primary-100 px-3 py-1.5 text-md-b3 font-semibold text-md-primary-1200 transition hover:bg-md-primary-300/40 focus:outline-none focus:ring-2 focus:ring-md-primary-300"
+                     >
+                        <PlayCircle className="h-4 w-4" aria-hidden="true" />
+                        Watch how to repay
+                     </button>
                   </div>
                </div>
                <UserAvatar alt={user.displayName ?? user.username ?? 'Profile'} size={48} className="shadow-md-card" />
@@ -1923,6 +1932,37 @@ export default function Repay() {
             )}
             {verifyModal}
          </div>
+
+         {showHowToVideo ? (
+            <div
+               className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4"
+               role="dialog"
+               aria-modal="true"
+               aria-label="How to repay"
+               onClick={() => setShowHowToVideo(false)}
+            >
+               <div className="relative w-full max-w-[360px]" onClick={(e) => e.stopPropagation()}>
+                  <button
+                     type="button"
+                     onClick={() => setShowHowToVideo(false)}
+                     className="absolute -top-12 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25 focus:outline-none focus:ring-2 focus:ring-white/60"
+                     aria-label="Close video"
+                  >
+                     <X className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  <div className="overflow-hidden rounded-2xl bg-black shadow-md-card" style={{ aspectRatio: '9 / 16' }}>
+                     <iframe
+                        src="https://www.youtube.com/embed/Eu9JzDMOSmw?autoplay=1"
+                        title="How to repay a Moodeng loan"
+                        className="h-full w-full"
+                        style={{ border: 0 }}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                     />
+                  </div>
+               </div>
+            </div>
+         ) : null}
       </main>
    );
 }
