@@ -62,6 +62,25 @@ export const extractPortraitUrl = (decision: unknown): string | null => {
    return typeof top === 'string' ? top : null;
 };
 
+/**
+ * The hosted workflow's OWN 1:1 face-match score, when the session already ran FACE_MATCH (e.g.
+ * the Biometric Authentication workflow the cash-out gate uses). Didit matches the live selfie
+ * against the face enrolled for this vendor_data — the account's KYC face — so this is exactly
+ * the 1:1 the gate needs, already computed and paid for. Returns 0-100, or null if the decision
+ * carries no usable face-match result.
+ */
+export const extractFaceMatchScore = (decision: unknown): number | null => {
+   if (!decision || typeof decision !== 'object') return null;
+   const d = decision as Record<string, unknown>;
+   for (const fm of asArray(d.face_matches)) {
+      const raw = Number(readField(fm, ['score', 'similarity_percentage', 'similarity']) ?? -1);
+      if (raw >= 0) return raw > 0 && raw <= 1 ? raw * 100 : raw;
+      const status = readField(fm, ['status']);
+      if (typeof status === 'string' && status.toLowerCase() === 'declined') return 0;
+   }
+   return null;
+};
+
 const fetchImageBlob = async (url: string): Promise<Blob | null> => {
    try {
       const res = await fetch(url);
@@ -148,10 +167,16 @@ export const faceSearch = async ({
 /** 1:1 compare two face image URLs. Returns the similarity 0-100, or null if it couldn't run. */
 export const faceMatch = async ({ imageUrl1, imageUrl2 }: { imageUrl1: string; imageUrl2: string }): Promise<number | null> => {
    const apiKey = Deno.env.get('DIDIT_API_KEY');
-   if (!apiKey) return null;
+   if (!apiKey) {
+      console.error('[diditFaceSearch] faceMatch: DIDIT_API_KEY not configured');
+      return null;
+   }
 
    const [b1, b2] = await Promise.all([fetchImageBlob(imageUrl1), fetchImageBlob(imageUrl2)]);
-   if (!b1 || !b2) return null;
+   if (!b1 || !b2) {
+      console.error('[diditFaceSearch] faceMatch: could not fetch one/both images', { got1: !!b1, got2: !!b2 });
+      return null;
+   }
 
    const form = new FormData();
    form.append('reference_image', b1, 'a.jpg');
@@ -163,12 +188,22 @@ export const faceMatch = async ({ imageUrl1, imageUrl2 }: { imageUrl1: string; i
          headers: { 'x-api-key': apiKey, Accept: 'application/json' },
          body: form
       });
-      if (!res.ok) return null;
+      if (!res.ok) {
+         // Silent nulls here are what hid this from the wallet-mint gate for so long: face-search
+         // works on this key but face-match was returning non-ok. Log status + body so the exact
+         // reason (403/402 = feature/plan not enabled, 422 = payload) is visible in prod.
+         console.error('[diditFaceSearch] faceMatch: non-ok', res.status, await res.text().catch(() => ''));
+         return null;
+      }
       const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
       const raw = Number(readField(body, ['similarity_percentage', 'similarity', 'score']) ?? -1);
-      if (raw < 0) return null;
+      if (raw < 0) {
+         console.error('[diditFaceSearch] faceMatch: no similarity in response', JSON.stringify(body));
+         return null;
+      }
       return raw > 0 && raw <= 1 ? raw * 100 : raw;
-   } catch {
+   } catch (err) {
+      console.error('[diditFaceSearch] faceMatch: request threw', err instanceof Error ? err.message : err);
       return null;
    }
 };
@@ -229,9 +264,14 @@ export const resolveWalletFaceOutcome = async ({
    // against the KYC portrait (reliable); fall back to the face-search self-match if we don't
    // have the KYC image.
    if (isKycdBorrower) {
-      if (kycPortraitUrl) {
-         const score = await faceMatch({ imageUrl1: portrait, imageUrl2: kycPortraitUrl });
-         if (score !== null && score < FACE_MATCH_THRESHOLD) return { status: 'MISMATCH', collisions: [] };
+      // Prefer the hosted workflow's OWN face-match score (same as the cash-out gate), so this
+      // does not depend on the standalone /face-match/ REST endpoint. Fall back to an explicit
+      // 1:1 against the KYC portrait, then to the 1:N self-match. Never silently skip the "must
+      // be their own KYC face" rule — a null result there fails OPEN.
+      const workflowScore = extractFaceMatchScore(decision);
+      const score = workflowScore ?? (kycPortraitUrl ? await faceMatch({ imageUrl1: portrait, imageUrl2: kycPortraitUrl }) : null);
+      if (score !== null) {
+         if (score < FACE_MATCH_THRESHOLD) return { status: 'MISMATCH', collisions: [] };
       } else {
          const selfMatched = strong.some((m) => m.vendorData === userId);
          if (!selfMatched) return { status: 'MISMATCH', collisions: [] };
@@ -276,7 +316,34 @@ export const resolveCashoutFaceOutcome = async ({
 }): Promise<CashoutFaceOutcome> => {
    if (!livenessApproved) return { status: 'DECLINED', matchScore: null, matchedUserId: null };
 
+   // Prefer the hosted workflow's OWN face-match verdict. The Biometric Authentication workflow
+   // this gate uses already matched the live selfie 1:1 against the face enrolled for this
+   // vendor_data (the account's KYC face) and returned a score. Re-running our own /face-match/
+   // REST call on top of it is redundant, costs an extra Didit credit per attempt, and — when
+   // that standalone call returned null — was failing SAFE to DECLINED even though the scan
+   // passed, which blocked every embedded-wallet first cash-out. Trust the workflow's score.
+   const workflowScore = extractFaceMatchScore(decision);
+   if (workflowScore !== null && workflowScore >= FACE_MATCH_THRESHOLD) {
+      return { status: 'APPROVED', matchScore: workflowScore, matchedUserId: null };
+   }
+
    const portrait = extractPortraitUrl(decision);
+
+   if (workflowScore !== null) {
+      // The workflow ran a 1:1 match and it did NOT pass — the exact incident this gate catches.
+      // A 1:N search may name the face as another Moodeng account (incl. a self-KYC'd attacker),
+      // turning "someone else's face" into an account the admin fraud queue can act on.
+      const named = portrait
+         ? (await faceSearch({ imageUrl: portrait, vendorData: userId })).matches.find(
+              (m) => m.vendorData && m.vendorData !== userId && m.similarity >= FACE_MATCH_THRESHOLD
+           )
+         : undefined;
+      return { status: 'MISMATCH', matchScore: workflowScore, matchedUserId: named?.vendorData ?? null };
+   }
+
+   // Fallback: the decision carried no face-match block (an older/other workflow). Run the 1:1
+   // ourselves against the account's KYC portrait. No reference on file => manual review, never
+   // an auto-approve (the enrolment trap).
    if (!portrait) {
       console.error('[diditFaceSearch] cashout check: no portrait in decision — failing safe');
       return { status: 'DECLINED', matchScore: null, matchedUserId: null };
