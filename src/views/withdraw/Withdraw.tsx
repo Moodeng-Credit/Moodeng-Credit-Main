@@ -941,6 +941,112 @@ function SuccessBanner({ exchange, amount }: { exchange: string; amount: number 
    );
 }
 
+/* ─── Staged send progress overlay (instant-wallet cash-out) ─────── */
+// A first cash-out from a fresh Openfort smart account deploys the account AND transfers in one
+// sponsored userOp — that can take a couple of minutes with no granular progress events from the
+// SDK (only "start" and "resolved/threw"). Rather than a single indefinite "Sending…" spinner,
+// we walk the user through three ordered steps whose visual auto-advances on a timer; the final
+// step holds "in progress" until the send actually resolves, then flips to a success state.
+const SEND_STEPS = ['Preparing your wallet', 'Sending your USDC', 'Confirming on Base'] as const;
+const SEND_STEP_2_AT_MS = 2500; // advance to "Sending your USDC"
+const SEND_STEP_3_AT_MS = 5500; // then to "Confirming on Base" (+3000ms)
+
+type SendPhase = 'progress' | 'success';
+
+function SendProgressOverlay({
+   phase,
+   exchange,
+   amount,
+   onDone
+}: {
+   phase: SendPhase;
+   exchange: string;
+   amount: number;
+   onDone: () => void;
+}) {
+   const succeeded = phase === 'success';
+   const [activeStep, setActiveStep] = useState(0);
+
+   // Auto-advance the first two steps on a timer while the send is in flight. Reset + rearm
+   // whenever we (re)enter the progress phase; the success view ignores this.
+   useEffect(() => {
+      if (succeeded) return;
+      setActiveStep(0);
+      const t1 = setTimeout(() => setActiveStep(1), SEND_STEP_2_AT_MS);
+      const t2 = setTimeout(() => setActiveStep(2), SEND_STEP_3_AT_MS);
+      return () => {
+         clearTimeout(t1);
+         clearTimeout(t2);
+      };
+   }, [succeeded]);
+
+   return (
+      <div
+         className="fixed inset-0 z-[60] flex items-center justify-center px-[24px]"
+         style={{ backgroundColor: 'var(--app-bg)', fontFamily: FONT }}
+      >
+         <div className="w-full max-w-[360px] flex flex-col items-center text-center">
+            {succeeded ? (
+               <>
+                  <img src="/icons/check-3d.png" alt="Sent" className="mb-[16px] size-[104px]" />
+                  <h2 className="text-[28px] font-semibold leading-[1.12] tracking-[-0.6px] text-[var(--ink)]">Sent!</h2>
+                  <p className="mt-[10px] mb-[28px] text-[15px] font-medium leading-[22px] text-[var(--text-muted)]">
+                     {amount} USDC is on its way to {exchange}.
+                  </p>
+                  <PrimaryBtn onClick={onDone}>
+                     Done <Check className="w-4 h-4" strokeWidth={3} />
+                  </PrimaryBtn>
+               </>
+            ) : (
+               <>
+                  <p className="mb-[22px] text-[20px] font-semibold tracking-[-0.4px] text-[var(--ink)]">Cashing out…</p>
+                  <div className="w-full space-y-[12px]">
+                     {SEND_STEPS.map((label, i) => {
+                        const done = i < activeStep;
+                        const active = i === activeStep;
+                        return (
+                           <div
+                              key={label}
+                              className={`flex items-center gap-[14px] rounded-[16px] px-[16px] py-[14px] border transition-all ${
+                                 active
+                                    ? 'bg-[var(--surface-1)] border-[var(--border-strong)]'
+                                    : 'bg-[var(--surface)] border-[var(--border-card-2)]'
+                              }`}
+                           >
+                              <div
+                                 className={`w-[28px] h-[28px] rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                                    done ? 'bg-[var(--green)]' : active ? 'bg-[var(--primary)]' : 'bg-[var(--surface-grey)]'
+                                 }`}
+                              >
+                                 {done ? (
+                                    <Check className="w-[16px] h-[16px] text-white" strokeWidth={3} />
+                                 ) : active ? (
+                                    <Loader2 className="w-[16px] h-[16px] text-white animate-spin" />
+                                 ) : (
+                                    <span className="text-[12px] font-semibold text-[var(--text-muted)]">{i + 1}</span>
+                                 )}
+                              </div>
+                              <p
+                                 className={`text-[15px] tracking-[-0.3px] ${
+                                    done || active ? 'font-semibold text-[var(--ink)]' : 'font-medium text-[var(--text-muted)]'
+                                 }`}
+                              >
+                                 {label}
+                              </p>
+                           </div>
+                        );
+                     })}
+                  </div>
+                  <p className="mt-[20px] text-[12px] leading-[18px] text-[var(--text-faint)]">
+                     This can take a couple of minutes the first time. Keep this screen open.
+                  </p>
+               </>
+            )}
+         </div>
+      </div>
+   );
+}
+
 /* ─── Shared address + amount form ──────────────────────────────── */
 type AppFlowConfig = {
    name: string;
@@ -965,6 +1071,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    // True once the payment is approved and we're waiting on-chain confirmation — flips the
    // button copy so the user isn't told to "Confirm in your wallet…" after they already did.
    const [confirming, setConfirming] = useState(false);
+   // Drives the staged send-progress overlay: 'progress' while the send is in flight, 'success'
+   // once it resolves, null when idle or after a failure (so the form returns and they can retry).
+   const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
    const [showCashOut, setShowCashOut] = useState(true);
    const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
@@ -988,18 +1097,26 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: cfg.name, amount: amtNum });
       setSending(true);
+      setSendPhase('progress');
       try {
          const result = await send(address.trim(), String(amtNum), cfg.name, () => setConfirming(true));
          if (result) {
             sentAmountRef.current = amtNum;
             track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
             onSent(result.hash, result.confirmed);
-         } else track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
+            setSendPhase('success');
+         } else {
+            track('withdraw_send_rejected', { exchange: cfg.name, amount: amtNum });
+            // Rejected / recoverable-soft-fail (payUsdc already toasted, or a stale-chunk reload is
+            // under way) — tear the overlay down so the form is usable again.
+            setSendPhase(null);
+         }
       } catch (err) {
          // `send` (useWallet) normally surfaces its own failure toast and returns null, but
          // if it throws we must still clear the pending state below (finally) so the button
          // can't hang on the spinner, and give the user an explicit failure signal.
          track('withdraw_send_failed', { exchange: cfg.name, amount: amtNum });
+         setSendPhase(null);
          showToast(
             TOAST_TYPES.ERROR,
             "Withdrawal didn't go through",
@@ -1013,6 +1130,10 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
 
    return (
       <div className="space-y-[12px]">
+         {sendPhase && (
+            <SendProgressOverlay phase={sendPhase} exchange={cfg.name} amount={sentAmountRef.current || amtNum} onDone={onDone} />
+         )}
+
          {cfg.topWarning}
 
          {arrived ? (
@@ -1422,6 +1543,8 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    // True once approved and waiting on-chain confirmation — flips the button copy off
    // "Confirm in your wallet…" so we don't ask again after they already confirmed.
    const [confirming, setConfirming] = useState(false);
+   // Staged send-progress overlay state (see AppFlow / SendProgressOverlay).
+   const [sendPhase, setSendPhase] = useState<SendPhase | null>(null);
    const [showP2P, setShowP2P] = useState(false);
    const { status: sentStatus, txHash, onSent, reset } = useSendStatus(isPreview);
    const arrived = sentStatus === 'arrived';
@@ -1448,17 +1571,23 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
       if (!canSend) return;
       track('withdraw_send_initiated', { exchange: 'Binance', amount: amtNum });
       setSending(true);
+      setSendPhase('progress');
       try {
          const result = await send(address.trim(), String(amtNum), 'Binance', () => setConfirming(true));
          if (result) {
             sentAmountRef.current = amtNum;
             track('withdraw_sent', { exchange: 'Binance', amount: amtNum });
             onSent(result.hash, result.confirmed);
-         } else track('withdraw_send_rejected', { exchange: 'Binance', amount: amtNum });
+            setSendPhase('success');
+         } else {
+            track('withdraw_send_rejected', { exchange: 'Binance', amount: amtNum });
+            setSendPhase(null);
+         }
       } catch (err) {
          // See AppFlow.handleSend: guard against a thrown send so the button can't hang and
          // the user always gets an explicit failure signal.
          track('withdraw_send_failed', { exchange: 'Binance', amount: amtNum });
+         setSendPhase(null);
          showToast(
             TOAST_TYPES.ERROR,
             "Withdrawal didn't go through",
@@ -1472,6 +1601,10 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
 
    return (
       <div className="space-y-[12px]">
+         {sendPhase && (
+            <SendProgressOverlay phase={sendPhase} exchange="Binance" amount={sentAmountRef.current || amtNum} onDone={onDone} />
+         )}
+
          {arrived ? (
             <SuccessBanner exchange="Binance" amount={sentAmountRef.current} />
          ) : sentStatus === 'in-progress' || sentStatus === 'delayed' || sentStatus === 'failed' ? (
@@ -2073,13 +2206,15 @@ export default function Withdraw() {
 
    const walletAddress = getBaseWalletLockStatus(user).address ?? account.address ?? (isPreview ? PREVIEW_ADDRESS : '');
 
-   const { data: usdcBalanceRaw } = useReadContract({
+   const { data: usdcBalanceRaw, refetch: refetchUsdcBalance } = useReadContract({
       abi: erc20Abi,
       address: BASE_USDC_ADDRESS,
       functionName: 'balanceOf',
       args: walletAddress ? [walletAddress as `0x${string}`] : undefined,
       chainId: ALLOWED_CHAIN_ID,
-      query: { enabled: Boolean(walletAddress) && !isPreview, refetchInterval: 30000 }
+      // Poll a bit more eagerly (10s) and re-read whenever the borrower returns to the tab, so
+      // the "Available" figure and Max cap don't lag behind an incoming/outgoing balance change.
+      query: { enabled: Boolean(walletAddress) && !isPreview, refetchInterval: 10000, refetchOnWindowFocus: true }
    });
 
    const fundedTotal = fundedLoans.reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
@@ -2169,6 +2304,14 @@ export default function Withdraw() {
                }
             });
             if (!outcome) return null;
+            // A real, successful send just moved USDC out of this wallet, so refresh the balance
+            // read now — and once more after the tx has had time to mine — instead of waiting for
+            // the 10s poll. (A stale-chunk reload path returns null above, so this only runs on a
+            // genuine send outcome and never fights an in-progress reload.)
+            void refetchUsdcBalance?.();
+            setTimeout(() => {
+               void refetchUsdcBalance?.();
+            }, 4000);
             // Confirmed: the reconciler no longer needs to record this cash-out.
             clearPendingBasePayment(outcome.hash);
             if (user.id) {
@@ -2187,7 +2330,7 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate]
+      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate, refetchUsdcBalance]
    );
 
    return (
