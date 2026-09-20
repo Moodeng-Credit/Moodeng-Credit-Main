@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
+import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { openSupportChat } from '@/lib/support/liveChat';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
 import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet } from '@/lib/web3/openfort';
@@ -153,6 +154,12 @@ const useWallet = () => {
 
          return hash;
       } catch (err) {
+         // A stale cached build can fail to import a renamed chunk mid-send; reload to the current
+         // build instead of surfacing a bogus "Transaction Error" (see staleChunkReload.ts).
+         if (isStaleChunkError(err instanceof Error ? err.message : err)) {
+            reloadOnceForStaleChunk();
+            return null;
+         }
          console.error('Tx failed:', err);
          toastTransferFailure(classifyTransferError(err));
          return null;
@@ -200,6 +207,11 @@ const useWallet = () => {
             const confirmed = await waitForBasePayment(id);
             return { hash: confirmed.id, payer: confirmed.sender };
          } catch (err) {
+            // Stale-build chunk failure → reload to the current build rather than a false error.
+            if (isStaleChunkError(err instanceof Error ? err.message : err)) {
+               reloadOnceForStaleChunk();
+               return null;
+            }
             const paymentError = err instanceof BasePaymentError ? err : null;
             // Once startBasePayment resolved, onSubmitted armed the reconciler and the userOp is in
             // flight. A `timeout` (not confirmed in our window) or an `unknown` (pay() threw a
@@ -227,6 +239,13 @@ const useWallet = () => {
             const hash = await sendUsdcFromEmbeddedWallet({ to, usdAmount });
             return { hash };
          } catch (err) {
+            // The embedded-wallet send code is lazily imported; a stale cached build can 404 that
+            // chunk and throw here. Reload to the current build instead of a false "Transaction
+            // Error" — this is the failure that stranded instant-wallet borrowers on withdrawal.
+            if (isStaleChunkError(err instanceof Error ? err.message : err)) {
+               reloadOnceForStaleChunk();
+               return null;
+            }
             console.error('[payUsdc:openfort] send failed', err);
             toastTransferFailure(classifyTransferError(err));
             return null;
