@@ -146,14 +146,16 @@ export default function LoanExplorerSection() {
 
          {shown.length ? (
             <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
-               <table className="w-full min-w-[860px] border-collapse text-left">
+               <table className="w-full min-w-[1040px] border-collapse text-left">
                   <thead>
                      <tr className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
                         <th className="px-4 py-3">Status</th>
                         <th className="px-4 py-3">Tracking</th>
                         <th className="px-4 py-3">Borrower</th>
                         <th className="px-4 py-3">Lender</th>
-                        <th className="px-4 py-3 text-right">Amount</th>
+                        <th className="px-4 py-3 text-right">Principal</th>
+                        <th className="px-4 py-3 text-right">Interest</th>
+                        <th className="px-4 py-3 text-right">Total payback</th>
                         <th className="px-4 py-3 text-right">Repaid</th>
                         <th className="px-4 py-3">Due</th>
                         <th className="px-4 py-3">Requested</th>
@@ -175,6 +177,10 @@ export default function LoanExplorerSection() {
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.borrower?.username ?? '—'}</td>
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.lender?.username ?? '—'}</td>
                               <td className="px-4 py-3 text-right text-sm font-black text-white">{money(l.loan_amount)}</td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-[#a89bb8]">
+                                 {money(l.total_repayment_amount - l.loan_amount)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-black text-emerald-300">{money(l.total_repayment_amount)}</td>
                               <td className="px-4 py-3 text-right text-sm font-bold text-[#cfc6dd]">
                                  {l.repaid_amount == null ? '—' : money(l.repaid_amount)}
                               </td>
