@@ -20,9 +20,17 @@ const openfortChain: Chain = OPENFORT_CHAIN_ID === baseSepolia.id ? baseSepolia 
 // Route Openfort's reads through our provisioned Alchemy endpoint when we have one — same
 // non-blocked infra the wagmi transports use (src/config/wagmiConfig.tsx). Falls back to
 // Openfort's managed RPC (api.openfort.io, also not ISP-blocked) when no key is set.
-const ALCHEMY_ID = import.meta.env.VITE_ALCHEMY_ID ?? '';
+// Prod's VITE_ALCHEMY_ID was the literal placeholder "your_alchemy_id", which built a dead RPC
+// URL (…/v2/your_alchemy_id). With no fallback here, every embedded-wallet send failed at network
+// detection ("could not detect network"), so the account never deployed and 0 userOps ever landed
+// — the Base rail only survived because its wagmi transport falls back to a public RPC. Treat a
+// missing/placeholder key as absent and fall back to a known-good public Base Alchemy key
+// (client-exposed by design, like every VITE_ key). A real VITE_ALCHEMY_ID still takes precedence.
+const DEFAULT_BASE_ALCHEMY_ID = 'E5yDrf19k4QC9THtY7xec';
+const rawAlchemyId = import.meta.env.VITE_ALCHEMY_ID?.trim();
+const ALCHEMY_ID = rawAlchemyId && rawAlchemyId !== 'your_alchemy_id' ? rawAlchemyId : DEFAULT_BASE_ALCHEMY_ID;
 const openfortChains: Record<number, string> | undefined =
-   OPENFORT_CHAIN_ID === base.id && ALCHEMY_ID ? { [base.id]: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` } : undefined;
+   OPENFORT_CHAIN_ID === base.id ? { [base.id]: `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID}` } : undefined;
 
 // Dedupe concurrent provisioning: both the connect tap and an on-demand send can trigger it, and
 // a rapid connect-then-pay must not mint two Shield sessions or run configure() twice. Callers
