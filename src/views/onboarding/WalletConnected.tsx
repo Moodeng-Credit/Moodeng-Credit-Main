@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -14,7 +14,6 @@ import {
 import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { WorldId } from '@/types/authTypes';
 import { LoanStatus } from '@/types/loanTypes';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
@@ -39,6 +38,27 @@ export default function WalletConnected() {
    const isConnectedWrongWallet =
       isConnectedBaseAccount && Boolean(baseWalletLock.address) && !areWalletAddressesEqual(address, baseWalletLock.address);
 
+   // The Base Account lock is borrower-only: borrowers must connect (and stay on) a single
+   // Base Account so loans/repayments are tied to one wallet. Lenders are deliberately NOT
+   // locked to one wallet — they can use any connector, and fraud is handled by the detection
+   // layer rather than by restricting the wallet here.
+   const isBorrower = user?.userRole === 'borrower';
+   const hasActiveRequest = gloans.some(
+      (loan) => loan.borrowerUser === user?.id && (loan.loanStatus === LoanStatus.REQUESTED || loan.loanStatus === LoanStatus.LENT)
+   );
+
+   // Mirror the early-return conditions below so the auto-return timer only fires when the
+   // success view is actually the one being rendered (never behind a FailureView / redirect).
+   const borrowerWalletCheckActive = !isPreview && isBorrower && status !== 'reconnecting';
+   const showWalletFailure =
+      borrowerWalletCheckActive &&
+      (isConnectedWrongProvider ||
+         isConnectedWrongWallet ||
+         (!baseWalletLock.isConfirmedBorrowerWallet && !isConnectedBaseAccount));
+   const isOnSuccessView = (isPreview || Boolean(user?.userRole)) && !showWalletFailure;
+
+   const hasNavigatedRef = useRef(false);
+
    useEffect(() => {
       if (!user?.id) {
          setLoansLoading(false);
@@ -48,15 +68,57 @@ export default function WalletConnected() {
       dispatch(getUserLoans({ userId: user.id })).finally(() => setLoansLoading(false));
    }, [user?.id, dispatch]);
 
+   const goNext = useCallback(() => {
+      // Guard against the auto-return timer and a manual tap both firing.
+      if (hasNavigatedRef.current) return;
+      hasNavigatedRef.current = true;
+      if (isPreview) {
+         navigate('/verify-world-id-preview', { replace: true });
+         return;
+      }
+      if (returnTo === 'account-settings') {
+         navigate('/account/settings', { replace: true });
+         return;
+      }
+      if (returnTo === 'loan-request') {
+         navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
+         return;
+      }
+      if (returnTo === 'repay') {
+         navigate('/repay', { replace: true });
+         return;
+      }
+      if (returnTo === 'milestones') {
+         navigate('/milestones', { replace: true });
+         return;
+      }
+      if (returnTo === 'dashboard-credit-level') {
+         navigate('/dashboard', { replace: true });
+         return;
+      }
+      // A new user who arrived via a shared request link finishes onboarding straight onto that
+      // request (not the generic board), completing the same return that sign-in already does.
+      const pendingSharedRequestId = getPendingSharedRequestId();
+      if (pendingSharedRequestId) {
+         clearPendingSharedRequestId();
+         navigate(`/request-board?highlight=${encodeURIComponent(pendingSharedRequestId)}`, { replace: true });
+         return;
+      }
+      const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
+      navigate(destination, { replace: true });
+   }, [isPreview, returnTo, user, hasActiveRequest, navigate]);
+
+   // Auto-return once the success view has settled (loans finished loading), so the borrower
+   // doesn't have to tap "Next". The manual button still works; goNext's ref guards double-nav.
+   useEffect(() => {
+      if (loansLoading || !isOnSuccessView) return undefined;
+      const timer = window.setTimeout(() => goNext(), 1800);
+      return () => window.clearTimeout(timer);
+   }, [loansLoading, isOnSuccessView, goNext]);
+
    if (!user?.userRole && !isPreview) {
       return <Navigate to="/onboarding/role" replace />;
    }
-
-   // The Base Account lock is borrower-only: borrowers must connect (and stay on) a single
-   // Base Account so loans/repayments are tied to one wallet. Lenders are deliberately NOT
-   // locked to one wallet — they can use any connector, and fraud is handled by the detection
-   // layer rather than by restricting the wallet here.
-   const isBorrower = user?.userRole === 'borrower';
 
    if (!isPreview && isBorrower && status !== 'reconnecting') {
       if (isConnectedWrongProvider) {
@@ -99,51 +161,6 @@ export default function WalletConnected() {
       }
    }
 
-   const hasActiveRequest = gloans.some(
-      (loan) => loan.borrowerUser === user.id && (loan.loanStatus === LoanStatus.REQUESTED || loan.loanStatus === LoanStatus.LENT)
-   );
-
-   const handleNext = () => {
-      if (isPreview) {
-         navigate('/verify-world-id-preview', { replace: true });
-         return;
-      }
-      if (returnTo === 'account-settings') {
-         navigate('/account/settings', { replace: true });
-         return;
-      }
-      if (user?.userRole === 'borrower' && user.isWorldId !== WorldId.ACTIVE) {
-         navigate('/verify-world-id', { replace: true, state: { returnTo } });
-         return;
-      }
-      if (returnTo === 'loan-request') {
-         navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
-         return;
-      }
-      if (returnTo === 'repay') {
-         navigate('/repay', { replace: true });
-         return;
-      }
-      if (returnTo === 'milestones') {
-         navigate('/milestones', { replace: true });
-         return;
-      }
-      if (returnTo === 'dashboard-credit-level') {
-         navigate('/dashboard', { replace: true });
-         return;
-      }
-      // A new user who arrived via a shared request link finishes onboarding straight onto that
-      // request (not the generic board), completing the same return that sign-in already does.
-      const pendingSharedRequestId = getPendingSharedRequestId();
-      if (pendingSharedRequestId) {
-         clearPendingSharedRequestId();
-         navigate(`/request-board?highlight=${encodeURIComponent(pendingSharedRequestId)}`, { replace: true });
-         return;
-      }
-      const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
-      navigate(destination, { replace: true });
-   };
-
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-[440px] mx-auto w-full">
          <OnboardingHeader hideBack />
@@ -163,7 +180,7 @@ export default function WalletConnected() {
             </div>
             <button
                type="button"
-               onClick={handleNext}
+               onClick={goNext}
                disabled={loansLoading}
                className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
