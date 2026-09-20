@@ -49,6 +49,7 @@ export default function LoanExplorerSection() {
    const [error, setError] = useState<string | null>(null);
    const [filter, setFilter] = useState<LoanExplorerStatus>('all');
    const [search, setSearch] = useState('');
+   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
    const [hideTest, setHideTest] = useState(true);
    const [busy, setBusy] = useState<string | null>(null);
    const [removing, setRemoving] = useState<AdminLoanRecord | null>(null);
@@ -84,19 +85,27 @@ export default function LoanExplorerSection() {
 
    const shown = useMemo(() => {
       const q = search.trim().toLowerCase();
-      if (!q) return loans;
-      return loans.filter((l) => {
-         const fields = [
-            l.tracking_id,
-            l.borrower?.username,
-            l.lender?.username,
-            l.borrower_wallet,
-            l.lender_wallet,
-            l.reason
-         ];
-         return fields.some((f) => (f ?? '').toLowerCase().includes(q));
+      const filtered = !q
+         ? loans
+         : loans.filter((l) => {
+              const fields = [
+                 l.tracking_id,
+                 l.borrower?.username,
+                 l.lender?.username,
+                 l.borrower_wallet,
+                 l.lender_wallet,
+                 l.reason
+              ];
+              return fields.some((f) => (f ?? '').toLowerCase().includes(q));
+           });
+      // Sort by Requested date (created_at); newest first by default, oldest when toggled.
+      const dir = sortOrder === 'newest' ? -1 : 1;
+      return [...filtered].sort((a, b) => {
+         const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+         const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+         return (ta - tb) * dir;
       });
-   }, [loans, search]);
+   }, [loans, search, sortOrder]);
 
    return (
       <div className="space-y-4">
@@ -115,6 +124,14 @@ export default function LoanExplorerSection() {
                      {f.label}
                   </button>
                ))}
+               <button
+                  type="button"
+                  onClick={() => setSortOrder((v) => (v === 'newest' ? 'oldest' : 'newest'))}
+                  title="Sort by requested date"
+                  className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+               >
+                  {sortOrder === 'newest' ? 'Newest first ↓' : 'Oldest first ↑'}
+               </button>
                <button
                   type="button"
                   onClick={() => setHideTest((v) => !v)}
