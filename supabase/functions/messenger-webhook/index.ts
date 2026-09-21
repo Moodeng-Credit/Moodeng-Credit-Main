@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { extractVerifications, type MessengerWebhookPayload } from './parse.ts';
+
 // Facebook Messenger webhook — the auto-confirm engine for the "Facebook" option on the
 // loan-application contacts step, mirroring whatsapp-webhook.
 //
@@ -30,33 +32,10 @@ const PAGE_ACCESS_TOKEN = Deno.env.get('MESSENGER_PAGE_ACCESS_TOKEN') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-// Matches the code shape start_contact_verification() generates: MDNG-6 uppercase hex chars.
-// Case-insensitive and tolerant of a stray separator, since it only has to match a ref WE minted
-// and round-tripped through Meta untouched.
-const CODE_PATTERN = /MDNG[-\s]?([A-Z0-9]{6})/i;
-
-type MessagingEvent = {
-   sender?: { id?: string };
-   referral?: { ref?: string };
-   postback?: { referral?: { ref?: string } };
-   message?: { referral?: { ref?: string } };
-};
-
-type MessengerWebhookPayload = {
-   object?: string;
-   entry?: Array<{
-      messaging?: MessagingEvent[];
-   }>;
-};
-
 const textResponse = (body: string, status = 200) => new Response(body, { status });
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-
-// Pull the referral ref out of whichever place Messenger put it for this event shape.
-const extractRef = (event: MessagingEvent): string | null =>
-   event.referral?.ref ?? event.postback?.referral?.ref ?? event.message?.referral?.ref ?? null;
 
 // Best-effort confirmation reply via the Send API. Never throws into the caller — a failed reply
 // shouldn't turn a successful verification into a 500 that makes Meta redeliver the webhook.
@@ -113,24 +92,15 @@ serve(async (req) => {
       return jsonResponse({ ok: true });
    }
 
-   const events = payload.entry?.flatMap((entry) => entry.messaging ?? []) ?? [];
+   const verifications = extractVerifications(payload);
 
-   if (events.length === 0) {
+   if (verifications.length === 0) {
       return jsonResponse({ ok: true });
    }
 
    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-   for (const event of events) {
-      const rawRef = extractRef(event);
-      const psid = event.sender?.id;
-      if (!rawRef || !psid) continue;
-
-      const match = rawRef.match(CODE_PATTERN);
-      if (!match) continue;
-
-      const code = `MDNG-${match[1].toUpperCase()}`;
-
+   for (const { code, psid } of verifications) {
       const { data: pending, error: lookupError } = await supabase
          .from('contact_verification_codes')
          .select('id, user_id, expires_at')
