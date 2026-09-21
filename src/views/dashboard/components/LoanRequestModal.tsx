@@ -53,6 +53,8 @@ import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
 import { termsTooltipIconSrc } from './termsTooltipIcon';
 
@@ -946,6 +948,15 @@ export default function LoanRequestModal({
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
    // The bio step is split into two short pages so borrowers never face one long scroll.
    const [bioPage, setBioPage] = useState<1 | 2>(1);
+   // Contacts (WhatsApp/Facebook) and the no-referral-code video-call gate sit after bio, before
+   // the real submit. The *Done flags track "already completed this request flow" so a returning
+   // borrower who's already verified/scheduled doesn't get routed back through the step UI itself
+   // (ContactsStep/VideoCallStep also self-check and would just show a checkmark, but skipping
+   // the step entirely is one less screen).
+   const [showContactsStep, setShowContactsStep] = useState(false);
+   const [contactsStepDone, setContactsStepDone] = useState(false);
+   const [showVideoCallStep, setShowVideoCallStep] = useState(false);
+   const [videoCallStepDone, setVideoCallStepDone] = useState(false);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1024,7 +1035,7 @@ export default function LoanRequestModal({
    // terms → bio-1 → bio-2 journey. Returning borrowers (bio already saved) submit straight
    // from the terms step, so no rail is shown for them, and never on the optional referral step.
    const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
-   const showStepProgress = isMultiStepRequestFlow && !shouldShowReferralStep;
+   const showStepProgress = isMultiStepRequestFlow && !shouldShowReferralStep && !showContactsStep && !showVideoCallStep;
    const currentStep: 1 | 2 | 3 = showBorrowerContextStep ? (bioPage === 1 ? 2 : 3) : 1;
 
    useEffect(() => {
@@ -1541,6 +1552,24 @@ export default function LoanRequestModal({
          return;
       }
 
+      // WhatsApp (verified) + Facebook (collected) contact step — required before submitting.
+      // ContactsStep's own onContinue sets contactsStepDone and re-fires this handler.
+      if (!contactsStepDone && !showContactsStep) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowContactsStep(true);
+         return;
+      }
+
+      // No referral code on file → a human at Moodeng hasn't vouched for this borrower yet, so
+      // they have to SCHEDULE (not complete) a short video call before their request goes out.
+      if (!appliedReferral && !videoCallStepDone && !showVideoCallStep) {
+         event.preventDefault();
+         setShowContactsStep(false);
+         setShowVideoCallStep(true);
+         return;
+      }
+
       handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
    };
 
@@ -1650,6 +1679,29 @@ export default function LoanRequestModal({
       }
    };
 
+   const handleContactsStepContinue = () => {
+      setContactsStepDone(true);
+      setShowContactsStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleContactsStepBack = () => {
+      setShowContactsStep(false);
+      setShowBorrowerContextStep(true);
+      setBioPage(2);
+   };
+
+   const handleVideoCallStepContinue = () => {
+      setVideoCallStepDone(true);
+      setShowVideoCallStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleVideoCallStepBack = () => {
+      setShowVideoCallStep(false);
+      setShowContactsStep(true);
+   };
+
    const handleBorrowerContextBack = () => {
       // From bio page 2, Back returns to page 1; from page 1, Back returns to the terms step.
       if (bioPage === 2) {
@@ -1750,6 +1802,10 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
+                  ) : showContactsStep ? (
+                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
+                  ) : showVideoCallStep ? (
+                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Schedule a video call</h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
                         <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
@@ -1871,6 +1927,10 @@ export default function LoanRequestModal({
 
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
+            ) : showContactsStep ? (
+               <ContactsStep userId={user.id} onBack={handleContactsStepBack} onContinue={handleContactsStepContinue} />
+            ) : showVideoCallStep ? (
+               <VideoCallStep userId={user.id} onBack={handleVideoCallStepBack} onContinue={handleVideoCallStepContinue} />
             ) : (
                <form
                   ref={formRef}
