@@ -1,6 +1,11 @@
 [functions.create-user]
 verify_jwt = false
 
+# Public Meta webhook — Facebook calls this unauthenticated (GET handshake + POST events), so it
+# must not require a Supabase JWT.
+[functions.messenger-webhook]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 
