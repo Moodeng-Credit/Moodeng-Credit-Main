@@ -6,6 +6,11 @@ verify_jwt = false
 [functions.messenger-webhook]
 verify_jwt = false
 
+# Public Cal.com webhook — Cal.com calls this unauthenticated and signs it with x-cal-signature-256,
+# so it must not require a Supabase JWT (the signature is what authenticates it).
+[functions.calcom-webhook]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 

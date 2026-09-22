@@ -2,126 +2,163 @@ import { useEffect, useRef, useState } from 'react';
 
 import { CheckCircle } from 'lucide-react';
 
-import { VIDEO_CALL_HOSTS, type VideoCallHostId } from '@/config/contactVerification';
+import { CALCOM_EMBED_ORIGIN, VIDEO_CALL_HOSTS, type VideoCallHostId } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+
+type CalApi = ((action: string, arg?: unknown) => void) & { loaded?: boolean; ns?: Record<string, unknown>; q?: unknown[] };
 
 declare global {
    interface Window {
-      Calendly?: {
-         initInlineWidget: (opts: { url: string; parentElement: HTMLElement; prefill?: Record<string, unknown> }) => void;
-      };
+      Cal?: CalApi;
    }
 }
 
-const CALENDLY_SCRIPT_SRC = 'https://assets.calendly.com/assets/external/widget.js';
-const CALENDLY_STYLESHEET_HREF = 'https://assets.calendly.com/assets/external/widget.css';
-
-let calendlyScriptPromise: Promise<void> | null = null;
-const loadCalendlyScript = (): Promise<void> => {
-   if (window.Calendly) return Promise.resolve();
-   if (calendlyScriptPromise) return calendlyScriptPromise;
-
-   if (!document.querySelector(`link[href="${CALENDLY_STYLESHEET_HREF}"]`)) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = CALENDLY_STYLESHEET_HREF;
-      document.head.appendChild(link);
+// Load Cal.com's embed queue-loader (the official snippet). Cal() can be called immediately after;
+// calls queue until embed.js finishes loading. Returns the Cal function, or null if we're not in a
+// browser. We attach an onerror to the injected script so a blocked/offline embed surfaces a
+// fallback link instead of a blank box.
+const ensureCal = (origin: string, onScriptError: () => void): CalApi | null => {
+   if (typeof window === 'undefined') return null;
+   if (!window.Cal) {
+      const src = `${origin}/embed/embed.js`;
+      (function (C: Window, A: string, L: string) {
+         const d = C.document;
+         const cal: CalApi = function (...args: unknown[]) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (cal as any).q = (cal as any).q || [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (cal as any).q.push(args);
+         } as unknown as CalApi;
+         C.Cal = cal;
+         if (!cal.loaded) {
+            cal.loaded = true;
+            const script = d.createElement('script');
+            script.src = A;
+            script.async = true;
+            script.onerror = onScriptError;
+            d.head.appendChild(script);
+         }
+         cal(L, { origin });
+      })(window, src, 'init');
    }
-
-   calendlyScriptPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = CALENDLY_SCRIPT_SRC;
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Calendly widget script'));
-      document.body.appendChild(script);
-   });
-   return calendlyScriptPromise;
+   return window.Cal ?? null;
 };
 
-// The no-referral-code gate: a borrower with no one at Moodeng to vouch for them has to
-// SCHEDULE (not complete) a short video call with George or Emma before they can post a loan
-// request. LoanRequestModal only renders this step when the borrower has no applied referral
-// code — a referral already vouches for them.
+// The no-referral-code gate: a borrower with nobody at Moodeng to vouch for them has to SCHEDULE
+// (not attend now) a short video call with George or Emma before they can post a loan request.
+// LoanRequestModal only renders this step when there's no applied referral code.
 //
-// Calendly's Webhooks API needs a paid Standard-tier org (Moodeng is on the free plan), so there
-// is no server-side confirmation available. Instead we embed Calendly inline and listen for its
-// own `calendly.event_scheduled` postMessage the moment a real booking completes in this same
-// page, then record it via the mark_video_call_scheduled RPC. That RPC is honest about being a
-// client-asserted fact, not an independently verified one — see the migration's comment for why
-// that's an acceptable trade-off here.
+// Trust model: we NEVER let the client assert its own booking. The borrower books inside an inline
+// Cal.com embed; we pass their user id + chosen host as embed metadata, and the signed
+// calcom-webhook confirms the real BOOKING_CREATED server-side and sets users.video_call_scheduled_at.
+// This component only *reads* that column (polling), so a borrower who closes the embed without
+// booking simply never gets past the gate. A cancellation reopens it (the webhook clears the column).
 export default function VideoCallStep({ userId, onBack, onContinue }: { userId: string; onBack: () => void; onContinue: () => void }) {
    const [selectedHost, setSelectedHost] = useState<VideoCallHostId | null>(null);
    const [isScheduled, setIsScheduled] = useState(false);
+   const [bookedHost, setBookedHost] = useState<VideoCallHostId | null>(null);
+   const [bookedStartsAt, setBookedStartsAt] = useState<string | null>(null);
+   const [isConfirming, setIsConfirming] = useState(false);
    const [widgetError, setWidgetError] = useState('');
    const widgetContainerRef = useRef<HTMLDivElement | null>(null);
+   const pollRef = useRef<number | null>(null);
 
+   const applyScheduled = (host: string | null, startsAt: string | null) => {
+      setIsScheduled(true);
+      setIsConfirming(false);
+      if (host === 'george' || host === 'emma') setBookedHost(host);
+      setBookedStartsAt(startsAt);
+   };
+
+   // Pick up a booking confirmed on a previous visit (webhook already stamped the columns).
    useEffect(() => {
       let cancelled = false;
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('video_call_scheduled_at')
+            .select('video_call_scheduled_at, video_call_host, video_call_starts_at')
             .eq('id', userId)
             .maybeSingle();
-         if (!cancelled && data?.video_call_scheduled_at) setIsScheduled(true);
+         if (!cancelled && data?.video_call_scheduled_at) applyScheduled(data.video_call_host, data.video_call_starts_at);
       })();
       return () => {
          cancelled = true;
       };
    }, [userId]);
 
+   const stopPolling = () => {
+      if (pollRef.current) {
+         window.clearInterval(pollRef.current);
+         pollRef.current = null;
+      }
+   };
+   useEffect(() => stopPolling, []);
+
+   // Mount the Cal.com embed once a host is picked, and poll for the webhook's confirmation.
    useEffect(() => {
       if (!selectedHost || isScheduled) return;
-
       let cancelled = false;
       setWidgetError('');
-      loadCalendlyScript()
-         .then(() => {
-            if (cancelled || !widgetContainerRef.current || !window.Calendly) return;
-            widgetContainerRef.current.innerHTML = '';
-            window.Calendly.initInlineWidget({
-               url: VIDEO_CALL_HOSTS[selectedHost].calendlyUrl,
-               parentElement: widgetContainerRef.current
-            });
-         })
-         .catch((err) => {
-            console.error('Calendly widget failed to load', err);
-            if (!cancelled) setWidgetError("Couldn't load the scheduler — check your connection and try again.");
+
+      const cal = ensureCal(CALCOM_EMBED_ORIGIN, () => {
+         if (!cancelled) setWidgetError("Couldn't load the scheduler — check your connection, or open it in a new tab below.");
+      });
+      if (cal && widgetContainerRef.current) {
+         widgetContainerRef.current.innerHTML = '';
+         cal('inline', {
+            elementOrSelector: widgetContainerRef.current,
+            calLink: VIDEO_CALL_HOSTS[selectedHost].calLink,
+            // Carried through to the webhook's payload so it can credit the right borrower + host.
+            config: { layout: 'month_view', metadata: { moodeng_user_id: userId, moodeng_host: selectedHost } }
          });
+         // Not a confirmation of anything — just lets us show a "confirming…" state while the
+         // webhook lands, instead of a silent gap. The DB poll remains the source of truth.
+         cal('on', { action: 'bookingSuccessful', callback: () => !cancelled && setIsConfirming(true) });
+      }
+
+      stopPolling();
+      pollRef.current = window.setInterval(async () => {
+         const { data } = await getSupabaseBrowserClient()
+            .from('users')
+            .select('video_call_scheduled_at, video_call_host, video_call_starts_at')
+            .eq('id', userId)
+            .maybeSingle();
+         if (data?.video_call_scheduled_at) {
+            applyScheduled(data.video_call_host, data.video_call_starts_at);
+            stopPolling();
+         }
+      }, 3000);
 
       return () => {
          cancelled = true;
+         stopPolling();
       };
-   }, [selectedHost, isScheduled]);
+   }, [selectedHost, isScheduled, userId]);
 
-   useEffect(() => {
-      const handleMessage = async (event: MessageEvent) => {
-         if (event.origin.indexOf('calendly.com') === -1) return;
-         if ((event.data as { event?: string })?.event !== 'calendly.event_scheduled') return;
-         if (!selectedHost) return;
+   const handleContinue = () => {
+      if (!isScheduled) return;
+      onContinue();
+   };
 
-         const { error } = await getSupabaseBrowserClient().rpc('mark_video_call_scheduled', { p_host: selectedHost });
-         if (error) {
-            console.error('mark_video_call_scheduled failed', error);
-            return;
-         }
-         setIsScheduled(true);
-      };
-      window.addEventListener('message', handleMessage);
-      return () => window.removeEventListener('message', handleMessage);
-   }, [selectedHost]);
+   const formattedStart = bookedStartsAt
+      ? new Date(bookedStartsAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : null;
+   const fallbackUrl = selectedHost ? `${CALCOM_EMBED_ORIGIN}/${VIDEO_CALL_HOSTS[selectedHost].calLink}` : null;
 
    return (
       <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-            Since you don't have a referral code, book a quick video call with the Moodeng team before your request goes out.
+            You don't have a referral code, so book a short 15-minute video call with the Moodeng team before your request goes out. You're
+            picking a time now — not calling right away.
          </p>
 
          {isScheduled ? (
             <div className="flex items-center gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
                <CheckCircle aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={2} />
-               <span>You're booked{selectedHost ? ` with ${VIDEO_CALL_HOSTS[selectedHost].name}` : ''} — you're all set.</span>
+               <span>
+                  You're booked{bookedHost ? ` with ${VIDEO_CALL_HOSTS[bookedHost].name}` : ''}
+                  {formattedStart ? ` — ${formattedStart}` : ''}. You're all set.
+               </span>
             </div>
          ) : (
             <>
@@ -145,11 +182,35 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
                </div>
 
                {selectedHost ? (
-                  widgetError ? (
-                     <p className="text-md-b3 font-normal text-md-red-500">{widgetError}</p>
-                  ) : (
-                     <div className="h-[600px] min-h-[600px] w-full overflow-hidden rounded-[16px] border border-[#ded6e8]" ref={widgetContainerRef} />
-                  )
+                  <>
+                     <div className="flex items-start gap-2 rounded-[12px] bg-[#f7f5fa] px-3 py-2.5">
+                        <span className="text-[12px] leading-[17px] text-md-neutral-1400">
+                           {isConfirming
+                              ? 'Confirming your booking… this unlocks Continue in a moment.'
+                              : 'Finish booking in the scheduler. Continue unlocks on its own once we confirm it — nothing to save. Cal.com emails you the details.'}
+                        </span>
+                     </div>
+
+                     {widgetError ? (
+                        <p className="text-md-b3 font-normal text-md-red-500">{widgetError}</p>
+                     ) : (
+                        <div
+                           className="h-[600px] min-h-[600px] w-full overflow-hidden rounded-[16px] border border-[#ded6e8]"
+                           ref={widgetContainerRef}
+                        />
+                     )}
+
+                     {fallbackUrl ? (
+                        <a
+                           className="text-[12px] font-normal text-md-primary-1200 underline"
+                           href={fallbackUrl}
+                           rel="noopener noreferrer"
+                           target="_blank"
+                        >
+                           Scheduler not loading? Open it in a new tab
+                        </a>
+                     ) : null}
+                  </>
                ) : null}
             </>
          )}
@@ -160,10 +221,10 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
                   isScheduled ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]' : 'bg-md-neutral-600'
                }`}
                disabled={!isScheduled}
-               onClick={onContinue}
+               onClick={handleContinue}
                type="button"
             >
-               Continue
+               {isScheduled ? 'Continue' : 'Continue — unlocks once your call is confirmed'}
             </button>
             <button
                className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"

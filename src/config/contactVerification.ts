@@ -14,22 +14,28 @@ export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_N
 // Set VITE_MESSENGER_PAGE_USERNAME once the real Page is live.
 export const MESSENGER_PAGE_USERNAME = import.meta.env.VITE_MESSENGER_PAGE_USERNAME || 'moodengcredit';
 
+// Cal.com replaces Calendly for the video-call gate: its free plan has signed webhooks, so the
+// calcom-webhook edge function can confirm a real booking server-side instead of trusting the
+// client. `calLink` is the "<username>/<event-slug>" part after cal.com/ — set the real ones via
+// env once George's and Emma's Cal.com event types exist (connected to the same Google Calendar
+// their Calendly used, so availability and existing bookings carry over).
 export const VIDEO_CALL_HOSTS = {
    george: {
       id: 'george' as const,
       name: 'George',
       photo: '/team/george.jpeg',
-      // Slug is a historical leftover ("30min") from before the event's duration was changed to
-      // 15 minutes — the URL didn't need to change with it.
-      calendlyUrl: 'https://calendly.com/moodengcredit/30min'
+      calLink: import.meta.env.VITE_CALCOM_GEORGE_LINK || 'moodeng/interview-george'
    },
    emma: {
       id: 'emma' as const,
       name: 'Emma',
       photo: '/team/emma-moodeng.jpeg',
-      calendlyUrl: 'https://calendly.com/emma-moodengcredit/15-minute-meeting'
+      calLink: import.meta.env.VITE_CALCOM_EMMA_LINK || 'moodeng/interview-emma'
    }
 };
+
+// The Cal.com origin the embed talks to — app.cal.com for cloud, or your self-hosted domain.
+export const CALCOM_EMBED_ORIGIN = import.meta.env.VITE_CALCOM_EMBED_ORIGIN || 'https://app.cal.com';
 
 export type VideoCallHostId = keyof typeof VIDEO_CALL_HOSTS;
 
