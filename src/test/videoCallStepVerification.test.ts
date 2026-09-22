@@ -8,46 +8,46 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 
 const supa = vi.hoisted(() => {
    const state = {
-      usersRow: {
-         video_call_scheduled_at: null as string | null,
-         video_call_host: null as string | null,
-         video_call_starts_at: null as string | null
-      }
+      usersRow: { video_call_scheduled_at: null as string | null, video_call_starts_at: null as string | null },
+      slots: [] as string[],
+      bookResult: { ok: true, start: '' } as { ok: boolean; start?: string; error?: string }
    };
-   return { state, maybeSingle: vi.fn(async () => ({ data: state.usersRow })) };
+   return {
+      state,
+      maybeSingle: vi.fn(async () => ({ data: state.usersRow })),
+      invoke: vi.fn(async (_fn: string, opts: { body?: { action?: string; start?: string } }) => {
+         const action = opts?.body?.action;
+         if (action === 'slots') return { data: { slots: state.slots }, error: null };
+         if (action === 'book') return { data: state.bookResult, error: null };
+         return { data: null, error: null };
+      })
+   };
 });
 
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
-      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) })
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
+      functions: { invoke: supa.invoke }
    })
 }));
 
 const { default: VideoCallStep } = await import('@/views/dashboard/components/VideoCallStep');
 
-const buttonByPrefix = (container: HTMLElement, prefix: string) =>
-   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim().startsWith(prefix));
-const buttonByText = (container: HTMLElement, text: string) =>
-   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes(text));
-const continueButton = (container: HTMLElement) => buttonByPrefix(container, 'Continue') as HTMLButtonElement;
+const allButtons = (c: HTMLElement) => Array.from(c.querySelectorAll('button'));
+const continueButton = (c: HTMLElement) => allButtons(c).find((b) => b.textContent?.trim().startsWith('Continue')) as HTMLButtonElement;
+const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Back|Try again)/.test(b.textContent?.trim() ?? ''));
 
-const lastInlineHost = (calls: unknown[][]): string | undefined => {
-   const inline = calls.filter((c) => c[0] === 'inline').at(-1);
-   return ((inline?.[1] ?? {}) as { config?: { metadata?: { moodeng_host?: string } } }).config?.metadata?.moodeng_host;
-};
-
-describe('VideoCallStep — free self-assigned round-robin booking gate', () => {
+describe('VideoCallStep — free round-robin anonymous booking', () => {
    let container: HTMLDivElement;
    let root: Root;
    let onContinue: ReturnType<typeof vi.fn>;
-   let calCalls: unknown[][];
 
    beforeEach(() => {
-      vi.useFakeTimers();
-      supa.state.usersRow = { video_call_scheduled_at: null, video_call_host: null, video_call_starts_at: null };
+      supa.state.usersRow = { video_call_scheduled_at: null, video_call_starts_at: null };
+      supa.state.slots = ['2026-10-01T09:00:00.000Z', '2026-10-01T09:30:00.000Z'];
+      supa.state.bookResult = { ok: true, start: '2026-10-01T09:00:00.000Z' };
+      supa.invoke.mockClear();
       onContinue = vi.fn();
-      calCalls = [];
-      (window as unknown as { Cal?: unknown }).Cal = (...args: unknown[]) => calCalls.push(args);
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -56,65 +56,60 @@ describe('VideoCallStep — free self-assigned round-robin booking gate', () => 
    afterEach(() => {
       act(() => root.unmount());
       container.remove();
-      delete (window as unknown as { Cal?: unknown }).Cal;
-      vi.useRealTimers();
    });
 
-   const render = async (userId = 'user-1') => {
+   const render = async () => {
       await act(async () => {
-         root.render(createElement(VideoCallStep, { userId, onBack: vi.fn(), onContinue }));
+         root.render(createElement(VideoCallStep, { userId: 'user-1', onBack: vi.fn(), onContinue }));
       });
       await act(async () => {
-         await Promise.resolve();
+         await new Promise((r) => setTimeout(r, 0));
       });
    };
 
-   it('mounts the matched host embed with borrower+host metadata, gated until the webhook confirms', async () => {
+   it('shows anonymous team time slots (no host name) and books server-side on pick', async () => {
       await render();
       expect(continueButton(container).disabled).toBe(true);
+      // No individual host is ever named.
+      expect(container.textContent).not.toContain('George');
+      expect(container.textContent).not.toContain('Emma');
 
-      const inlineCall = calCalls.find((c) => c[0] === 'inline');
-      const cfg = (inlineCall?.[1] ?? {}) as { calLink?: string; config?: { metadata?: Record<string, string> } };
-      expect(cfg.calLink).toBeTruthy();
-      expect(cfg.config?.metadata?.moodeng_user_id).toBe('user-1');
-      expect(['george', 'emma']).toContain(cfg.config?.metadata?.moodeng_host);
+      const slotButtons = timeButtons(container);
+      expect(slotButtons.length).toBe(2);
 
-      supa.state.usersRow = { video_call_scheduled_at: '2026-10-01T09:00:00Z', video_call_host: 'george', video_call_starts_at: '2026-10-01T09:00:00Z' };
       await act(async () => {
-         await vi.advanceTimersByTimeAsync(3100);
+         slotButtons[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await new Promise((r) => setTimeout(r, 0));
       });
 
+      // Booked via the edge function, and the gate unlocks.
+      const bookCall = supa.invoke.mock.calls.find((c) => (c[1] as { body?: { action?: string } })?.body?.action === 'book');
+      expect(bookCall).toBeTruthy();
+      expect((bookCall?.[1] as { body?: { start?: string } })?.body?.start).toBe('2026-10-01T09:00:00.000Z');
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("You're booked");
-      expect(container.textContent).toContain('George');
+      expect(container.textContent).toContain("You're booked with the Moodeng team");
    });
 
-   it('lets the borrower switch to the other host, re-embedding with that host', async () => {
+   it('enables Continue on load for a borrower already booked', async () => {
+      supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_starts_at: '2026-09-01T09:00:00Z' };
       await render();
-      const firstHost = lastInlineHost(calCalls);
-      expect(firstHost).toBeTruthy();
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).toContain("You're booked with the Moodeng team");
+   });
 
-      const switchBtn = buttonByText(container, 'times instead');
-      expect(switchBtn).toBeTruthy();
+   it('keeps the gate closed and warns when the slot was just taken', async () => {
+      supa.state.bookResult = { ok: false, error: 'slot_taken' };
+      await render();
       await act(async () => {
-         switchBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-         await Promise.resolve();
+         timeButtons(container)[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await new Promise((r) => setTimeout(r, 0));
       });
-
-      const secondHost = lastInlineHost(calCalls);
-      expect(secondHost).toBeTruthy();
-      expect(secondHost).not.toBe(firstHost);
+      expect(continueButton(container).disabled).toBe(true);
+      expect(container.textContent).toContain('just taken');
    });
 
-   it('enables Continue on load for a borrower whose booking was already confirmed', async () => {
-      supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_host: 'emma', video_call_starts_at: '2026-09-01T09:00:00Z' };
-      await render();
-      expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain('Emma');
-   });
-
-   it('calls onContinue only after the booking is confirmed', async () => {
-      supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_host: 'george', video_call_starts_at: null };
+   it('calls onContinue once the call is booked', async () => {
+      supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_starts_at: null };
       await render();
       await act(async () => {
          continueButton(container).dispatchEvent(new MouseEvent('click', { bubbles: true }));
