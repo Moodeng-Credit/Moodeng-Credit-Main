@@ -34,8 +34,9 @@ vi.mock('@/lib/supabase/client', () => ({
 const { default: VideoCallStep } = await import('@/views/dashboard/components/VideoCallStep');
 
 const allButtons = (c: HTMLElement) => Array.from(c.querySelectorAll('button'));
-const continueButton = (c: HTMLElement) => allButtons(c).find((b) => b.textContent?.trim().startsWith('Continue')) as HTMLButtonElement;
-const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Back|Try again)/.test(b.textContent?.trim() ?? ''));
+const continueButton = (c: HTMLElement) =>
+   allButtons(c).find((b) => /^(Continue|Book a time)/.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
+const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Back|Try again)/.test(b.textContent?.trim() ?? ''));
 
 describe('VideoCallStep — free round-robin anonymous booking', () => {
    let container: HTMLDivElement;

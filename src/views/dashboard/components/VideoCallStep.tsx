@@ -106,10 +106,7 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
 
    return (
       <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-            You don't have a referral code, so book a short 15-minute video call with the Moodeng team before your request goes out. You're
-            picking a time now — not calling right away.
-         </p>
+         <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">No referral code — book a call.</p>
 
          {isScheduled ? (
             <div className="flex items-center gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
@@ -162,7 +159,7 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
                onClick={() => isScheduled && onContinue()}
                type="button"
             >
-               {isScheduled ? 'Continue' : 'Continue — unlocks once your call is booked'}
+               {isScheduled ? 'Continue' : 'Book a time to continue'}
             </button>
             <button
                className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
