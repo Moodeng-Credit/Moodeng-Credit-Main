@@ -1,3 +1,4 @@
+import { postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -71,7 +72,6 @@ export const notifyAdmins = async (
          .eq('key', 'kyc_alert_chat_id')
          .maybeSingle();
       const chatId = (setting as { value?: string } | null)?.value?.trim();
-      if (!chatId) return;
 
       const { data: profile } = await adminSupabase
          .from('users')
@@ -81,9 +81,38 @@ export const notifyAdmins = async (
       const p = profile as { email?: string; username?: string } | null;
       const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
 
-      await sendTelegramMessage(
-         chatId,
-         `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
+      // Telegram (kyc_alert_chat_id) and Discord are independent best-effort channels: a missing
+      // chat id or a failed Telegram send must not stop the Discord alert, and vice-versa.
+      if (chatId) {
+         await sendTelegramMessage(
+            chatId,
+            `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
+         ).catch((err: unknown) => console.error('[diditNotifications] Telegram admin alert failed:', err instanceof Error ? err.message : err));
+      }
+
+      const outcomeColor: Record<string, number> = {
+         approved: 0x2ecc71,
+         review: 0xf1c40f,
+         declined: 0xe74c3c,
+         abandoned: 0x95a5a6,
+         duplicate: 0xe67e22
+      };
+      await postDiscord(
+         {
+            embeds: [
+               {
+                  title: `🪪 Didit KYC — ${outcome}`,
+                  color: outcomeColor[outcome.toLowerCase()] ?? 0x5865f2,
+                  fields: [
+                     { name: 'User', value: who, inline: true },
+                     { name: 'User ID', value: userId, inline: true },
+                     ...(sessionId ? [{ name: 'Session', value: sessionId, inline: false }] : [])
+                  ],
+                  timestamp: new Date().toISOString()
+               }
+            ]
+         },
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
       );
    } catch (err) {
       console.error('[diditNotifications] Admin alert failed:', err instanceof Error ? err.message : err);

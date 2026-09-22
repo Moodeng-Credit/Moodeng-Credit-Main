@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { postDiscord } from '../_shared/discord.ts';
 import { hostsFreeAt, mergeSlots, orderHostsToTry } from './lib.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
@@ -114,14 +115,8 @@ const notifyTeamBooking = async (hostId: string, start: string, attendee: { name
       }
    }
 
-   const discord = Deno.env.get('DISCORD_BOOKINGS_WEBHOOK_URL');
-   if (discord) {
-      try {
-         await fetch(discord, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) });
-      } catch (err) {
-         console.error('calcom-round-robin: discord booking notify failed', err);
-      }
-   }
+   // Prefers a dedicated bookings channel, falls back to the shared team channel (DISCORD_TEAM_WEBHOOK_URL).
+   await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
 };
 
 serve(async (req) => {
