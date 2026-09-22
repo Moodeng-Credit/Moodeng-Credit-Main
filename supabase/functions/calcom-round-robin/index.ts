@@ -85,6 +85,45 @@ const createBooking = async (
    return { error: msg.includes('no longer available') || msg.includes('already') || msg.includes('busy') ? 'taken' : 'other' };
 };
 
+// Best-effort team alert when a call is booked — on top of the Cal.com calendar invite the hosts
+// already get. Posts to Telegram and/or Discord only if their env is set, and never throws into the
+// booking flow (a failed ping must not fail the booking).
+const notifyTeamBooking = async (hostId: string, start: string, attendee: { name: string; email: string }, tgChat: string) => {
+   const whenBkk = new Date(start).toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+   });
+   const text = `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${whenBkk} (Bangkok)`;
+
+   // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
+   // caller — never the lender or support group.
+   const tgToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || Deno.env.get('TELEGRAM_API_TOKEN');
+   if (tgToken && tgChat) {
+      try {
+         await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: tgChat, text })
+         });
+      } catch (err) {
+         console.error('calcom-round-robin: telegram booking notify failed', err);
+      }
+   }
+
+   const discord = Deno.env.get('DISCORD_BOOKINGS_WEBHOOK_URL');
+   if (discord) {
+      try {
+         await fetch(discord, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) });
+      } catch (err) {
+         console.error('calcom-round-robin: discord booking notify failed', err);
+      }
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -167,6 +206,12 @@ serve(async (req) => {
                   video_call_booking_uid: result.uid
                })
                .eq('id', user.id);
+            let teamChat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || '';
+            if (!teamChat) {
+               const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+               teamChat = ((setting as { value?: string } | null)?.value) ?? '';
+            }
+            await notifyTeamBooking(hostId, start, attendee, teamChat);
             return json({ ok: true, host: hostId, start });
          }
          if (result.error !== 'taken') break;
