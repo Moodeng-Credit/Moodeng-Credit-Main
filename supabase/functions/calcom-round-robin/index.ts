@@ -198,7 +198,9 @@ serve(async (req) => {
                   video_call_scheduled_at: new Date().toISOString(),
                   video_call_host: hostId,
                   video_call_starts_at: start,
-                  video_call_booking_uid: result.uid
+                  video_call_booking_uid: result.uid,
+                  // Fresh booking → restart the reminder ladder (see video-call-reminders).
+                  video_call_reminder_stage: 0
                })
                .eq('id', user.id);
             let teamChat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || '';

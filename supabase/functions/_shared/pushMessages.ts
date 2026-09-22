@@ -20,7 +20,8 @@ export type PushNotificationType =
    | 'overdue'
    | 'funded'
    | 'repayment_received'
-   | 'request_expired';
+   | 'request_expired'
+   | 'video_call_reminder';
 
 export type PushLocale = 'en' | 'fil' | 'id';
 

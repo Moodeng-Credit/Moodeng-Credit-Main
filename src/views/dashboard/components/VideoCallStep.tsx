@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { CheckCircle } from 'lucide-react';
+import { CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
@@ -25,6 +25,21 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
          return 'UTC';
       }
    }, []);
+
+   // A friendly label for the detected zone, e.g. "Bangkok (GMT+7)" — same reassurance Calendly
+   // gives so the borrower knows the times are in THEIR local time, not ours.
+   const tzLabel = useMemo(() => {
+      try {
+         const offset =
+            new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'shortOffset' })
+               .formatToParts(new Date())
+               .find((part) => part.type === 'timeZoneName')?.value ?? '';
+         const city = timeZone.split('/').pop()?.replace(/_/g, ' ') ?? timeZone;
+         return offset ? `${city} (${offset})` : city;
+      } catch {
+         return timeZone;
+      }
+   }, [timeZone]);
 
    const [phase, setPhase] = useState<Phase>('loading');
    const [slots, setSlots] = useState<string[]>([]);
@@ -102,6 +117,26 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
       ? new Date(bookedStartsAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone })
       : null;
 
+   // Add-to-calendar links for the booked slot, so the call lands in the borrower's own calendar
+   // (with its native reminder) instead of only living in an email they might miss. Google gets a
+   // prefilled template URL; everyone else gets a downloadable .ics. 15-min block matches the event.
+   const calendarLinks = useMemo(() => {
+      if (!bookedStartsAt) return null;
+      const start = new Date(bookedStartsAt);
+      if (Number.isNaN(start.getTime())) return null;
+      const end = new Date(start.getTime() + 15 * 60000);
+      const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const title = 'Moodeng video call';
+      const details = 'Your short video hello with the Moodeng team — see how Moodeng works and ask anything.';
+      const google =
+         `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}` +
+         `&dates=${stamp(start)}/${stamp(end)}&details=${encodeURIComponent(details)}`;
+      const ics = `data:text/calendar;charset=utf8,${encodeURIComponent(
+         ['BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT', `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`, `SUMMARY:${title}`, `DESCRIPTION:${details}`, 'BEGIN:VALARM', 'TRIGGER:-PT30M', 'ACTION:DISPLAY', `DESCRIPTION:${title}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\n')
+      )}`;
+      return { google, ics };
+   }, [bookedStartsAt]);
+
    const isScheduled = phase === 'scheduled';
 
    return (
@@ -109,9 +144,38 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
          <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">No referral code — book a call.</p>
 
          {isScheduled ? (
-            <div className="flex items-center gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
-               <CheckCircle aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={2} />
-               <span>You're booked with the Moodeng team{formattedBooked ? ` — ${formattedBooked}` : ''}. We'll email you the details.</span>
+            <div className="flex flex-col gap-3">
+               <div className="flex items-start gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
+                  <CheckCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
+                  <span>
+                     You're booked with the Moodeng team{formattedBooked ? ` — ${formattedBooked}` : ''}. We'll email you the details and send a
+                     reminder before it starts.
+                  </span>
+               </div>
+               {calendarLinks ? (
+                  <div className="flex flex-col gap-2">
+                     <span className="text-[12px] font-normal text-md-neutral-1200">Add it to your calendar so you don't miss it:</span>
+                     <div className="flex flex-wrap gap-2">
+                        <a
+                           className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
+                           href={calendarLinks.google}
+                           rel="noreferrer"
+                           target="_blank"
+                        >
+                           <CalendarPlus aria-hidden="true" className="h-4 w-4 shrink-0 text-md-primary-900" strokeWidth={2} />
+                           Google Calendar
+                        </a>
+                        <a
+                           className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
+                           download="moodeng-call.ics"
+                           href={calendarLinks.ics}
+                        >
+                           <CalendarPlus aria-hidden="true" className="h-4 w-4 shrink-0 text-md-primary-900" strokeWidth={2} />
+                           Apple / Outlook
+                        </a>
+                     </div>
+                  </div>
+               ) : null}
             </div>
          ) : phase === 'loading' ? (
             <p className="text-[13px] font-normal text-md-neutral-1200">Loading available times…</p>
@@ -128,6 +192,12 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
             </p>
          ) : (
             <div className="flex flex-col gap-4">
+               <div className="flex items-center gap-1.5 text-[12px] font-normal leading-[16px] text-md-neutral-1200">
+                  <Globe aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-md-primary-900" strokeWidth={2} />
+                  <span>
+                     Times shown in your time zone — <span className="font-[590] text-md-heading">{tzLabel}</span>
+                  </span>
+               </div>
                {notice ? <p className="text-md-b3 font-normal text-md-red-500">{notice}</p> : null}
                {dayGroups.map(([day, daySlots]) => (
                   <div className="flex flex-col gap-2" key={day}>
