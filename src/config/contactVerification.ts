@@ -24,25 +24,18 @@ export const VIDEO_CALL_HOSTS = {
       id: 'george' as const,
       name: 'George',
       photo: '/team/george.jpeg',
-      calLink: import.meta.env.VITE_CALCOM_GEORGE_LINK || 'moodeng/interview-george'
+      calLink: import.meta.env.VITE_CALCOM_GEORGE_LINK || 'g.-l-4cmcyl/15min'
    },
    emma: {
       id: 'emma' as const,
       name: 'Emma',
       photo: '/team/emma-moodeng.jpeg',
-      calLink: import.meta.env.VITE_CALCOM_EMMA_LINK || 'moodeng/interview-emma'
+      calLink: import.meta.env.VITE_CALCOM_EMMA_LINK || 'emma-moodengcredit/15min'
    }
 };
 
 // The Cal.com origin the embed talks to — app.cal.com for cloud, or your self-hosted domain.
 export const CALCOM_EMBED_ORIGIN = import.meta.env.VITE_CALCOM_EMBED_ORIGIN || 'https://app.cal.com';
-
-// Single combined round-robin event for the whole Moodeng team (George + Emma): the borrower books
-// one "video interview" link and Cal.com assigns whichever host is free, checking both calendars.
-// This is the "<team/team-slug/event-slug>" part after cal.com/. Round-robin needs a Cal.com Teams
-// (paid) plan; set VITE_CALCOM_TEAM_LINK once that team event exists. The calcom-webhook reads the
-// assigned host back from the booking's organizer, so no host is chosen up front.
-export const CALCOM_TEAM_LINK = import.meta.env.VITE_CALCOM_TEAM_LINK || 'team/moodeng/video-interview';
 
 export type VideoCallHostId = keyof typeof VIDEO_CALL_HOSTS;
 

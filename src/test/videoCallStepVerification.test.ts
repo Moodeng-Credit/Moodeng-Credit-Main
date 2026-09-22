@@ -25,10 +25,18 @@ vi.mock('@/lib/supabase/client', () => ({
 
 const { default: VideoCallStep } = await import('@/views/dashboard/components/VideoCallStep');
 
-const continueButton = (container: HTMLElement) =>
-   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim().startsWith('Continue')) as HTMLButtonElement;
+const buttonByPrefix = (container: HTMLElement, prefix: string) =>
+   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim().startsWith(prefix));
+const buttonByText = (container: HTMLElement, text: string) =>
+   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes(text));
+const continueButton = (container: HTMLElement) => buttonByPrefix(container, 'Continue') as HTMLButtonElement;
 
-describe('VideoCallStep — server-verified Cal.com round-robin booking gate', () => {
+const lastInlineHost = (calls: unknown[][]): string | undefined => {
+   const inline = calls.filter((c) => c[0] === 'inline').at(-1);
+   return ((inline?.[1] ?? {}) as { config?: { metadata?: { moodeng_host?: string } } }).config?.metadata?.moodeng_host;
+};
+
+describe('VideoCallStep — free self-assigned round-robin booking gate', () => {
    let container: HTMLDivElement;
    let root: Root;
    let onContinue: ReturnType<typeof vi.fn>;
@@ -39,7 +47,6 @@ describe('VideoCallStep — server-verified Cal.com round-robin booking gate', (
       supa.state.usersRow = { video_call_scheduled_at: null, video_call_host: null, video_call_starts_at: null };
       onContinue = vi.fn();
       calCalls = [];
-      // Stand in for Cal.com's embed loader so no script is injected and we can inspect the calls.
       (window as unknown as { Cal?: unknown }).Cal = (...args: unknown[]) => calCalls.push(args);
       container = document.createElement('div');
       document.body.appendChild(container);
@@ -53,31 +60,25 @@ describe('VideoCallStep — server-verified Cal.com round-robin booking gate', (
       vi.useRealTimers();
    });
 
-   const render = async () => {
+   const render = async (userId = 'user-1') => {
       await act(async () => {
-         root.render(createElement(VideoCallStep, { userId: 'user-1', onBack: vi.fn(), onContinue }));
+         root.render(createElement(VideoCallStep, { userId, onBack: vi.fn(), onContinue }));
       });
       await act(async () => {
          await Promise.resolve();
       });
    };
 
-   it('mounts one combined embed with the borrower id (no host chosen), gated until the webhook confirms', async () => {
+   it('mounts the matched host embed with borrower+host metadata, gated until the webhook confirms', async () => {
       await render();
       expect(continueButton(container).disabled).toBe(true);
 
-      // A single round-robin embed is mounted immediately, carrying only the borrower id — the host
-      // is decided by Cal.com and read back from the webhook, so no moodeng_host is sent.
       const inlineCall = calCalls.find((c) => c[0] === 'inline');
-      expect(inlineCall).toBeTruthy();
       const cfg = (inlineCall?.[1] ?? {}) as { calLink?: string; config?: { metadata?: Record<string, string> } };
       expect(cfg.calLink).toBeTruthy();
-      expect(cfg.config?.metadata).toEqual({ moodeng_user_id: 'user-1' });
+      expect(cfg.config?.metadata?.moodeng_user_id).toBe('user-1');
+      expect(['george', 'emma']).toContain(cfg.config?.metadata?.moodeng_host);
 
-      // Still gated — the client never asserts the booking itself.
-      expect(continueButton(container).disabled).toBe(true);
-
-      // The webhook stamps the columns (host resolved from the organizer); the poll picks it up.
       supa.state.usersRow = { video_call_scheduled_at: '2026-10-01T09:00:00Z', video_call_host: 'george', video_call_starts_at: '2026-10-01T09:00:00Z' };
       await act(async () => {
          await vi.advanceTimersByTimeAsync(3100);
@@ -88,18 +89,28 @@ describe('VideoCallStep — server-verified Cal.com round-robin booking gate', (
       expect(container.textContent).toContain('George');
    });
 
+   it('lets the borrower switch to the other host, re-embedding with that host', async () => {
+      await render();
+      const firstHost = lastInlineHost(calCalls);
+      expect(firstHost).toBeTruthy();
+
+      const switchBtn = buttonByText(container, 'times instead');
+      expect(switchBtn).toBeTruthy();
+      await act(async () => {
+         switchBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+
+      const secondHost = lastInlineHost(calCalls);
+      expect(secondHost).toBeTruthy();
+      expect(secondHost).not.toBe(firstHost);
+   });
+
    it('enables Continue on load for a borrower whose booking was already confirmed', async () => {
       supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_host: 'emma', video_call_starts_at: '2026-09-01T09:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
       expect(container.textContent).toContain('Emma');
-   });
-
-   it('falls back to "the Moodeng team" when no host was recorded', async () => {
-      supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_host: null, video_call_starts_at: null };
-      await render();
-      expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain('the Moodeng team');
    });
 
    it('calls onContinue only after the booking is confirmed', async () => {

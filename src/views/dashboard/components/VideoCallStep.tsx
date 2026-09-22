@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CheckCircle } from 'lucide-react';
 
-import { CALCOM_EMBED_ORIGIN, CALCOM_TEAM_LINK, VIDEO_CALL_HOSTS } from '@/config/contactVerification';
+import { CALCOM_EMBED_ORIGIN, VIDEO_CALL_HOSTS, type VideoCallHostId } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type CalApi = ((action: string, arg?: unknown) => void) & { loaded?: boolean; ns?: Record<string, unknown>; q?: unknown[] };
@@ -12,6 +12,17 @@ declare global {
       Cal?: CalApi;
    }
 }
+
+const HOST_IDS = Object.keys(VIDEO_CALL_HOSTS) as VideoCallHostId[];
+
+// "Round-robin" without Cal.com's paid Teams feature: spread borrowers across the hosts ourselves.
+// Deterministic on the borrower's id so a given person always lands on the same host (no flip-flop
+// if they come back), but evenly split across people. They can switch to the other host's times.
+const assignHost = (userId: string): VideoCallHostId => {
+   let hash = 0;
+   for (let i = 0; i < userId.length; i += 1) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+   return HOST_IDS[hash % HOST_IDS.length];
+};
 
 // Load Cal.com's embed queue-loader (the official snippet). Cal() can be called immediately after;
 // calls queue until embed.js finishes loading. We attach an onerror to the injected script so a
@@ -47,12 +58,16 @@ const ensureCal = (origin: string, onScriptError: () => void): CalApi | null => 
 // (not attend now) a short video call with the Moodeng team before they can post a loan request.
 // LoanRequestModal only renders this step when there's no applied referral code.
 //
-// One combined round-robin booking link for the whole team — the borrower doesn't pick a host;
-// Cal.com assigns whoever's free across George's and Emma's calendars. Trust model is unchanged:
-// we never let the client assert its own booking. We pass the borrower's user id as embed metadata,
-// and the signed calcom-webhook confirms the real BOOKING_CREATED (reading the assigned host from
-// the organizer) and sets users.video_call_scheduled_at. This component only *reads* that column.
+// The borrower is auto-matched with one host (see assignHost) and can switch to the other. Trust
+// model is unchanged: we never let the client assert its own booking — we pass the borrower id and
+// the matched host as embed metadata, and the signed calcom-webhook confirms the real
+// BOOKING_CREATED and sets users.video_call_scheduled_at. This component only *reads* that column.
 export default function VideoCallStep({ userId, onBack, onContinue }: { userId: string; onBack: () => void; onContinue: () => void }) {
+   const assignedHost = useMemo(() => assignHost(userId), [userId]);
+   const [override, setOverride] = useState<VideoCallHostId | null>(null);
+   const activeHost = override ?? assignedHost;
+   const otherHost = HOST_IDS.find((id) => id !== activeHost) ?? activeHost;
+
    const [isScheduled, setIsScheduled] = useState(false);
    const [bookedHost, setBookedHost] = useState<string | null>(null);
    const [bookedStartsAt, setBookedStartsAt] = useState<string | null>(null);
@@ -92,7 +107,8 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
    };
    useEffect(() => stopPolling, []);
 
-   // Mount the Cal.com round-robin embed, and poll for the webhook's confirmation.
+   // Mount the matched host's Cal.com embed, and poll for the webhook's confirmation. Re-runs when
+   // the borrower switches hosts, so the embed and the metadata we send both follow activeHost.
    useEffect(() => {
       if (isScheduled) return;
       let cancelled = false;
@@ -105,11 +121,10 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
          widgetContainerRef.current.innerHTML = '';
          cal('inline', {
             elementOrSelector: widgetContainerRef.current,
-            calLink: CALCOM_TEAM_LINK,
-            // Carried through to the webhook's payload so it can credit the right borrower.
-            config: { layout: 'month_view', metadata: { moodeng_user_id: userId } }
+            calLink: VIDEO_CALL_HOSTS[activeHost].calLink,
+            // Carried through to the webhook so it credits the right borrower + host.
+            config: { layout: 'month_view', metadata: { moodeng_user_id: userId, moodeng_host: activeHost } }
          });
-         // Not a confirmation — just lets us show a "confirming…" state while the webhook lands.
          cal('on', { action: 'bookingSuccessful', callback: () => !cancelled && setIsConfirming(true) });
       }
 
@@ -130,18 +145,18 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
          cancelled = true;
          stopPolling();
       };
-   }, [isScheduled, userId]);
+   }, [activeHost, isScheduled, userId]);
 
    const handleContinue = () => {
       if (!isScheduled) return;
       onContinue();
    };
 
-   const hostName = bookedHost && bookedHost in VIDEO_CALL_HOSTS ? VIDEO_CALL_HOSTS[bookedHost as keyof typeof VIDEO_CALL_HOSTS].name : null;
+   const hostName = bookedHost && bookedHost in VIDEO_CALL_HOSTS ? VIDEO_CALL_HOSTS[bookedHost as VideoCallHostId].name : null;
    const formattedStart = bookedStartsAt
       ? new Date(bookedStartsAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
       : null;
-   const fallbackUrl = `${CALCOM_EMBED_ORIGIN}/${CALCOM_TEAM_LINK}`;
+   const fallbackUrl = `${CALCOM_EMBED_ORIGIN}/${VIDEO_CALL_HOSTS[activeHost].calLink}`;
 
    return (
       <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
@@ -160,6 +175,20 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
             </div>
          ) : (
             <>
+               <div className="flex items-center gap-3 rounded-[16px] border border-[#ded6e8] bg-white px-3 py-2.5">
+                  <img alt={VIDEO_CALL_HOSTS[activeHost].name} className="size-10 rounded-full object-cover" src={VIDEO_CALL_HOSTS[activeHost].photo} />
+                  <div className="flex min-w-0 flex-col">
+                     <span className="text-[13px] font-[590] leading-4 text-md-heading">You'll meet with {VIDEO_CALL_HOSTS[activeHost].name}</span>
+                     <button
+                        className="w-fit text-[12px] font-normal text-md-primary-1200 underline"
+                        onClick={() => setOverride(otherHost)}
+                        type="button"
+                     >
+                        See {VIDEO_CALL_HOSTS[otherHost].name}'s times instead
+                     </button>
+                  </div>
+               </div>
+
                <div className="flex items-start gap-2 rounded-[12px] bg-[#f7f5fa] px-3 py-2.5">
                   <span className="text-[12px] leading-[17px] text-md-neutral-1400">
                      {isConfirming
@@ -171,10 +200,7 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
                {widgetError ? (
                   <p className="text-md-b3 font-normal text-md-red-500">{widgetError}</p>
                ) : (
-                  <div
-                     className="h-[600px] min-h-[600px] w-full overflow-hidden rounded-[16px] border border-[#ded6e8]"
-                     ref={widgetContainerRef}
-                  />
+                  <div className="h-[600px] min-h-[600px] w-full overflow-hidden rounded-[16px] border border-[#ded6e8]" ref={widgetContainerRef} />
                )}
 
                <a className="text-[12px] font-normal text-md-primary-1200 underline" href={fallbackUrl} rel="noopener noreferrer" target="_blank">
