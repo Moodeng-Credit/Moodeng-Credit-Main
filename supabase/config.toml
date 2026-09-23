@@ -6,6 +6,11 @@ verify_jwt = false
 [functions.messenger-webhook]
 verify_jwt = false
 
+# SendPulse "External Request" bridge — SendPulse can't present a Supabase JWT, so it's gated by the
+# x-sendpulse-secret header (SENDPULSE_VERIFY_SECRET) inside the function instead.
+[functions.sendpulse-messenger-verify]
+verify_jwt = false
+
 # Public Cal.com webhook — Cal.com calls this unauthenticated and signs it with x-cal-signature-256,
 # so it must not require a Supabase JWT (the signature is what authenticates it).
 [functions.calcom-webhook]
@@ -99,3 +104,12 @@ verify_jwt = false
 # header check (checkCronAuth), so only the cron (which reads the token from vault) can run it.
 [functions.trace-loan-fund-flow]
 verify_jwt = false
+
+# Called by the sync_didit_user_status trigger via pg_net. No JWT: the caller only names a user, and
+# the function pushes that user's CURRENT ban status (read from the DB) to Didit, so a stray call can
+# only re-sync Didit to the truth.
+[functions.didit-sync-user-status]
+verify_jwt = false
+
+[functions.admin-ban-user]
+verify_jwt = true
