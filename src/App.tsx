@@ -99,6 +99,7 @@ import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
 import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AccountSettings from '@/views/account/AccountSettings';
 import Dashboard from '@/views/dashboard/Dashboard';
+import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import Repay from '@/views/repay/Repay';
 import CashoutFaceCheck from '@/views/withdraw/CashoutFaceCheck';
@@ -120,6 +121,7 @@ const BOTTOM_NAV_ROUTES = [
    '/request-board',
    '/repay',
    '/dashboard',
+   '/dashboard-v2-preview',
    '/lender/dashboard',
    '/lender/transactions',
    '/history',
@@ -349,6 +351,7 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {showPreviewRoutes ? <Route path="/dashboard-v2-preview" element={<DashboardV2 />} /> : null}
             <Route path="/request-board" element={<RequestBoard />} />
             <Route
                path="/repay"
