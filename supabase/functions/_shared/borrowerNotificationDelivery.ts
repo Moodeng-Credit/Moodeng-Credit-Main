@@ -47,6 +47,7 @@ const buildPushPayloadForType = (
    switch (type) {
       case 'final_reminder':
       case 'urgent_reminder':
+      case 'due_today':
       case 'overdue': {
          if (!aggregate) {
             return null;
