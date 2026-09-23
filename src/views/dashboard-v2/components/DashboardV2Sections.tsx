@@ -1,15 +1,18 @@
 import { Fragment } from 'react';
 
 import clsx from 'clsx';
+import { Check, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
+
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
+import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 
-const SECTION_TITLE = 'text-[22px] font-black italic leading-[18px] text-[#594d65]';
-const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6 text-white';
+const PILL_BUTTON =
+   'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6 text-white';
 const PRIMARY_GRADIENT = 'linear-gradient(85.47deg, #9584ff 0.5%, #6b55f7 98.16%)';
 // Design numerals use SF Pro Compressed, which the app does not load; tight tracking approximates it.
 const STAT_NUMBER = 'font-medium leading-[18px] tracking-[-0.06em]';
@@ -18,7 +21,13 @@ function Divider() {
    return <div className="h-px w-full bg-[#ece9f1]" aria-hidden="true" />;
 }
 
-function MilestoneAction({ milestone, onAction }: { milestone: DashboardV2Milestone; onAction: (milestone: DashboardV2Milestone) => void }) {
+function MilestoneAction({
+   milestone,
+   onAction
+}: {
+   milestone: DashboardV2Milestone;
+   onAction: (milestone: DashboardV2Milestone) => void;
+}) {
    if (milestone.status === 'unlocked') {
       return <span className={clsx(PILL_BUTTON, 'bg-[#e3f5e8] text-[#2f8a4a]')}>Done</span>;
    }
@@ -55,63 +64,65 @@ export function MilestonesSection({ model, onVerify }: { model: DashboardV2Model
    };
 
    return (
-      <section className="mx-5 flex flex-col" aria-labelledby="dv2-milestones-title">
-         <h2 id="dv2-milestones-title" className={SECTION_TITLE}>
-            Reputation Milestones
-         </h2>
-         <div className="relative h-[300px]">
-            <DesignImage src={DASHBOARD_V2_ASSETS.milestonesCard} className="absolute inset-0 h-full w-full" />
-            <div className="relative flex flex-col px-1.5 pt-[25px]">
-               {model.milestones.map((milestone, index) => (
-                  <Fragment key={milestone.id}>
-                     {index > 0 ? <Divider /> : null}
-                     <div
-                        className={clsx(
-                           'flex items-center justify-between gap-1',
-                           index > 0 && 'py-[14px]',
-                           index === 0 && 'pb-[14px]',
-                           milestone.isVoucher && '-mx-1.5 px-1.5'
-                        )}
-                        style={
-                           milestone.isVoucher
-                              ? { backgroundImage: 'linear-gradient(90deg, rgba(255,206,27,0.36) 10.88%, rgba(255,255,255,0) 108.81%)' }
-                              : undefined
-                        }
-                     >
-                        <div className="flex min-w-0 items-center gap-1">
-                           <DesignImage
-                              src={milestone.isVoucher ? DASHBOARD_V2_ASSETS.coupon : DASHBOARD_V2_ASSETS.pandesal}
-                              className="h-10 w-10 shrink-0 object-contain"
-                           />
-                           <div className="min-w-0">
-                              <p
-                                 className={clsx(
-                                    'font-medium leading-6',
-                                    index === 0 ? 'text-[20px]' : 'text-[18px]',
-                                    milestone.isVoucher ? 'text-[#833000]' : 'text-[#0f172b]'
-                                 )}
-                              >
-                                 {milestone.title}
-                              </p>
-                              <p className={clsx('text-[16px] leading-[18px]', milestone.isVoucher ? 'text-[#f90]' : 'text-[#45556c]')}>
-                                 Reward: {milestone.reward}
-                              </p>
-                           </div>
+      <TabbedCard title="Reputation Milestones" titleId="dv2-milestones-title" tabWidth="37%">
+         <div className="relative flex flex-col px-1.5 pb-7 pt-4">
+            {model.milestones.map((milestone, index) => (
+               <Fragment key={milestone.id}>
+                  {index > 0 ? <Divider /> : null}
+                  <div
+                     className={clsx(
+                        'flex items-center justify-between gap-1',
+                        index > 0 && 'py-[14px]',
+                        index === 0 && 'pb-[14px]',
+                        milestone.isVoucher && '-mx-1.5 px-1.5'
+                     )}
+                     style={
+                        milestone.isVoucher
+                           ? { backgroundImage: 'linear-gradient(90deg, rgba(255,206,27,0.36) 10.88%, rgba(255,255,255,0) 108.81%)' }
+                           : undefined
+                     }
+                  >
+                     <div className="flex min-w-0 items-center gap-1">
+                        <DesignImage
+                           src={milestone.isVoucher ? DASHBOARD_V2_ASSETS.coupon : DASHBOARD_V2_ASSETS.pandesal}
+                           className="h-10 w-10 shrink-0 object-contain"
+                        />
+                        <div className="min-w-0">
+                           <p
+                              className={clsx(
+                                 'font-medium leading-6',
+                                 index === 0 ? 'text-[20px]' : 'text-[18px]',
+                                 milestone.isVoucher ? 'text-[#833000]' : 'text-[#0f172b]'
+                              )}
+                           >
+                              {milestone.title}
+                           </p>
+                           <p className={clsx('text-[16px] leading-[18px]', milestone.isVoucher ? 'text-[#f90]' : 'text-[#45556c]')}>
+                              Reward: {milestone.reward}
+                           </p>
                         </div>
-                        <MilestoneAction milestone={milestone} onAction={handleAction} />
                      </div>
-                  </Fragment>
-               ))}
-               <Link
-                  to="/milestones"
-                  className="mt-5 flex items-center justify-center gap-0.5 self-center text-[16px] font-semibold leading-[21px] tracking-[-0.32px] text-[#4492f1]"
-               >
-                  View All Milestones
-                  <DesignImage src={DASHBOARD_V2_ASSETS.viewAllChevron} className="h-3.5 w-3.5" />
-               </Link>
-            </div>
+                     <MilestoneAction milestone={milestone} onAction={handleAction} />
+                  </div>
+               </Fragment>
+            ))}
+            <Link
+               to="/milestones"
+               className="mt-5 flex items-center justify-center gap-0.5 self-center text-[16px] font-semibold leading-[21px] tracking-[-0.32px] text-[#4492f1]"
+            >
+               View All Milestones
+               <DesignImage src={DASHBOARD_V2_ASSETS.viewAllChevron} className="h-3.5 w-3.5" />
+            </Link>
          </div>
-      </section>
+      </TabbedCard>
+   );
+}
+
+function RepaymentsBadge() {
+   return (
+      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#6b55f7]" aria-hidden="true">
+         <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
+      </span>
    );
 }
 
@@ -119,18 +130,21 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
    const { summary } = model;
 
    return (
-      <section className="relative mx-5 h-[123px]" aria-labelledby="dv2-loan-summary-title">
-         <DesignImage src={DASHBOARD_V2_ASSETS.loanSummaryCard} className="absolute inset-0 h-full w-full" />
-         <h2 id="dv2-loan-summary-title" className={clsx(SECTION_TITLE, 'relative')}>
-            Loan Summary
-         </h2>
-         <p className="absolute left-[186px] top-1.5 flex items-center gap-1 text-[16px] leading-[18px] text-[#45556c]">
-            <DesignImage src={DASHBOARD_V2_ASSETS.repayments} className="h-3.5 w-3.5" />
-            <span>
-               <span className="text-[#6b55f7]">${formatCurrency(summary.repaymentsTotal).replace(/\.00$/, '')}</span> Repayments
-            </span>
-         </p>
-         <div className="absolute left-[9px] right-2 top-14 flex items-center gap-[34px]">
+      <TabbedCard
+         title="Loan Summary"
+         titleId="dv2-loan-summary-title"
+         tabWidth="56%"
+         overlapTitle
+         tab={
+            <p className="flex items-center gap-1 text-[16px] leading-[18px] text-[#45556c]">
+               <RepaymentsBadge />
+               <span>
+                  <span className="text-[#6b55f7]">${formatCurrency(summary.repaymentsTotal).replace(/\.00$/, '')}</span> Repayments
+               </span>
+            </p>
+         }
+      >
+         <div className="flex items-center gap-[34px] px-[9px] pb-6 pt-7">
             <Link to="/repay" className="flex w-[105px] flex-col gap-[7px]">
                <span className="flex items-center gap-0.5">
                   <span className={clsx(STAT_NUMBER, 'text-[38px] text-[#5c44f1]')}>{formatCurrency(summary.active)}</span>
@@ -149,7 +163,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                <span className="text-[14px] leading-[18px] text-[#45556c]">Defaulted($)</span>
             </div>
          </div>
-      </section>
+      </TabbedCard>
    );
 }
 
@@ -179,7 +193,9 @@ function DueRow({ due }: { due: DashboardV2Due }) {
                   {formatDueLabel(due)}
                </span>
             </div>
-            <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8]')}>Lent by {due.lenderName}</span>
+            <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8]')}>
+               Lent by {due.lenderName}
+            </span>
          </div>
          {due.isOverdue ? (
             <Link to="/repay" className={PILL_BUTTON} style={{ backgroundImage: PRIMARY_GRADIENT }}>
@@ -199,7 +215,7 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
             </h2>
             <Link to={model.insightsHref} className="flex items-center text-[18px] leading-[18px] text-[#45556c]">
                My insights
-               <DesignImage src={DASHBOARD_V2_ASSETS.insightsChevron} className="h-4 w-4" />
+               <ChevronRight className="h-5 w-5 text-[#45556c]" strokeWidth={2} aria-hidden="true" />
             </Link>
          </div>
          <div className="mt-4">

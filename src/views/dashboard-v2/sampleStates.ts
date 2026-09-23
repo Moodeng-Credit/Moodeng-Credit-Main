@@ -27,7 +27,10 @@ const SAMPLE_MILESTONES: DashboardV2Milestone[] = [
    }
 ];
 
-const SAMPLE_BASE: Omit<DashboardV2Model, 'isVerified' | 'pandesal' | 'mood' | 'creditLevel' | 'creditProgress' | 'creditHint' | 'dues' | 'summary' | 'hasOverdue'> = {
+const SAMPLE_BASE: Omit<
+   DashboardV2Model,
+   'isVerified' | 'pandesal' | 'mood' | 'creditLevel' | 'creditProgress' | 'creditHint' | 'dues' | 'summary' | 'hasOverdue'
+> = {
    firstName: 'Jimmy',
    daysLive: 6,
    tier: 'rookie',
