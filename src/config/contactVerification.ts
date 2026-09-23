@@ -10,6 +10,11 @@
 // digits-only, no '+', the format wa.me needs. Falls back to the current Meta test number.
 export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '15551939271';
 
+// Facebook first: the WhatsApp option stays hidden until a real business number is connected (the
+// fallback above is Meta's sandbox number, not fit for real borrowers). Set
+// VITE_WHATSAPP_VERIFY_ENABLED=true to bring it back. Borrowers already WhatsApp-verified still pass.
+export const WHATSAPP_VERIFY_ENABLED = import.meta.env.VITE_WHATSAPP_VERIFY_ENABLED === 'true';
+
 // Cal.com replaces Calendly for the video-call gate: its free plan has signed webhooks, so the
 // calcom-webhook edge function can confirm a real booking server-side instead of trusting the
 // client. `calLink` is the "<username>/<event-slug>" part after cal.com/ — set the real ones via
