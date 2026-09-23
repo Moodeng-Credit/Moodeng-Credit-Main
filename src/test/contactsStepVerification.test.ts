@@ -67,9 +67,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       vi.useRealTimers();
    });
 
-   const render = async (userId = 'user-1') => {
+   const render = async (userId = 'user-1', whatsappEnabled?: boolean) => {
       await act(async () => {
-         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue }));
+         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled }));
       });
       // Flush the initial "already verified?" load.
       await act(async () => {
@@ -121,8 +121,22 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(onContinue).toHaveBeenCalledTimes(1);
    });
 
-   it('WhatsApp button keeps the original RPC entry point and opens a wa.me link', async () => {
+   it('hides WhatsApp by default (Facebook first) and offers only Messenger', async () => {
       await render();
+      expect(buttonByText(container, 'Verify via WhatsApp')).toBeUndefined();
+      expect(buttonByText(container, 'Verify via Messenger')).toBeTruthy();
+      expect(container.textContent).not.toContain('(one option)');
+   });
+
+   it('still shows WhatsApp to a returning borrower who already verified it', async () => {
+      supa.state.usersRow.whatsapp_verified_at = '2026-09-01T00:00:00Z';
+      await render();
+      expect(container.textContent).toContain('WhatsApp');
+      expect(container.textContent).toContain('Verified');
+   });
+
+   it('WhatsApp button keeps the original RPC entry point and opens a wa.me link', async () => {
+      await render('user-1', true);
       const verifyBtn = buttonByText(container, 'Verify via WhatsApp');
       await act(async () => {
          verifyBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
