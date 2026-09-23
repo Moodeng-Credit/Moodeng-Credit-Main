@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { CheckCircle, Facebook, MessageCircle } from 'lucide-react';
 
-import { buildMessengerVerifyLink, buildWhatsAppVerifyLink } from '@/config/contactVerification';
+import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, WHATSAPP_VERIFY_ENABLED } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
@@ -30,11 +30,14 @@ const VerifiedBadge = () => (
 export default function ContactsStep({
    userId,
    onBack,
-   onContinue
+   onContinue,
+   whatsappEnabled = WHATSAPP_VERIFY_ENABLED
 }: {
    userId: string;
    onBack: () => void;
    onContinue: () => void;
+   // Facebook first: WhatsApp is hidden until a real business number is connected.
+   whatsappEnabled?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
@@ -46,6 +49,9 @@ export default function ContactsStep({
    const pollRef = useRef<number | null>(null);
 
    const canContinue = whatsappVerified || messengerVerified;
+   // Still show WhatsApp to a returning borrower who verified it before, so they can see why
+   // Continue is already enabled.
+   const showWhatsApp = whatsappEnabled || whatsappVerified;
 
    // Pick up an already-verified line from a previous application — this is an account-level fact,
    // not a per-loan one, so a returning borrower shouldn't have to re-verify every time.
@@ -120,41 +126,46 @@ export default function ContactsStep({
    return (
       <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-            So we can reach you if you ever need help — like withdrawing, or extending a loan. Verify WhatsApp or Facebook Messenger;
-            either one is enough. Only Moodeng sees this; it's never shown to lenders.
+            So we can reach you if you ever need help — like withdrawing, or extending a loan.{' '}
+            {showWhatsApp ? 'Verify WhatsApp or Facebook Messenger; either one is enough.' : 'Verify your Facebook Messenger.'} Only Moodeng
+            sees this; it&apos;s never shown to lenders.
          </p>
 
-         <div className="flex flex-col gap-3 rounded-[16px] border border-[#ded6e8] bg-white p-4">
-            <div className="flex items-center gap-2">
-               <MessageCircle className="size-5 shrink-0 text-[#25D366]" strokeWidth={2} aria-hidden="true" />
-               <span className="text-[15px] font-[590] leading-5 text-md-heading">WhatsApp</span>
-               {whatsappVerified ? null : <span className="text-[12px] font-normal text-md-neutral-1200">(one option)</span>}
-            </div>
+         {showWhatsApp ? (
+            <div className="flex flex-col gap-3 rounded-[16px] border border-[#ded6e8] bg-white p-4">
+               <div className="flex items-center gap-2">
+                  <MessageCircle className="size-5 shrink-0 text-[#25D366]" strokeWidth={2} aria-hidden="true" />
+                  <span className="text-[15px] font-[590] leading-5 text-md-heading">WhatsApp</span>
+                  {whatsappVerified ? null : <span className="text-[12px] font-normal text-md-neutral-1200">(one option)</span>}
+               </div>
 
-            {whatsappVerified ? (
-               <VerifiedBadge />
-            ) : (
-               <>
-                  <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-                     Tap below, then just hit send on WhatsApp — no code to type.
-                  </p>
-                  <button
-                     className="w-fit rounded-[12px] bg-[#25D366] px-md-2 py-md-1 text-md-b2 font-semibold text-white transition duration-150 ease-out hover:bg-[#1fb958] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-                     disabled={startingChannel !== null}
-                     onClick={() => handleVerify('whatsapp')}
-                     type="button"
-                  >
-                     {startingChannel === 'whatsapp' ? 'Opening WhatsApp...' : 'Verify via WhatsApp'}
-                  </button>
-               </>
-            )}
-         </div>
+               {whatsappVerified ? (
+                  <VerifiedBadge />
+               ) : (
+                  <>
+                     <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+                        Tap below, then just hit send on WhatsApp — no code to type.
+                     </p>
+                     <button
+                        className="w-fit rounded-[12px] bg-[#25D366] px-md-2 py-md-1 text-md-b2 font-semibold text-white transition duration-150 ease-out hover:bg-[#1fb958] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+                        disabled={startingChannel !== null}
+                        onClick={() => handleVerify('whatsapp')}
+                        type="button"
+                     >
+                        {startingChannel === 'whatsapp' ? 'Opening WhatsApp...' : 'Verify via WhatsApp'}
+                     </button>
+                  </>
+               )}
+            </div>
+         ) : null}
 
          <div className="flex flex-col gap-3 rounded-[16px] border border-[#ded6e8] bg-white p-4">
             <div className="flex items-center gap-2">
                <Facebook className="size-5 shrink-0 text-[#0866FF]" strokeWidth={2} aria-hidden="true" />
                <span className="text-[15px] font-[590] leading-5 text-md-heading">Facebook Messenger</span>
-               {messengerVerified ? null : <span className="text-[12px] font-normal text-md-neutral-1200">(one option)</span>}
+               {messengerVerified || !showWhatsApp ? null : (
+                  <span className="text-[12px] font-normal text-md-neutral-1200">(one option)</span>
+               )}
             </div>
 
             {messengerVerified ? (
@@ -162,8 +173,8 @@ export default function ContactsStep({
             ) : messengerLink ? (
                <>
                   <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-                     Waiting for Messenger… If it shows a <span className="font-[590] text-md-heading">Get Started</span> button, tap it. The check
-                     appears here as soon as you&apos;re confirmed.
+                     Waiting for Messenger… If it shows a <span className="font-[590] text-md-heading">Get Started</span> button, tap it.
+                     The check appears here as soon as you&apos;re confirmed.
                   </p>
                   <button
                      className="w-fit rounded-[12px] border border-[#0866FF] bg-white px-md-2 py-md-1 text-md-b2 font-semibold text-[#0866FF] transition duration-150 ease-out hover:bg-[#eef4ff] active:scale-[0.97]"
