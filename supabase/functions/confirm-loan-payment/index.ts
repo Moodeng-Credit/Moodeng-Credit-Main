@@ -65,8 +65,8 @@ const describeBrowser = (ua: string | null): { label: string; isInApp: boolean }
    return { label: 'Other', isInApp: false };
 };
 
-// Posts one repayment line to a Discord channel. Uses a dedicated repay webhook when set, else
-// falls back to the same #login-feed webhook. Red embed for in-app browsers (the users who may
+// Posts one repayment line to a Discord channel via DISCORD_REPAY_WEBHOOK_URL; no-ops when unset.
+// Deliberately no fallback to the login webhook — #logins is login events only. Red embed for in-app browsers (the users who may
 // get stuck on Base), green otherwise. Fire-and-forget — never affects the payment response.
 const postRepayFeed = async (details: {
    username: string | null;
@@ -79,7 +79,7 @@ const postRepayFeed = async (details: {
    browser: { label: string; isInApp: boolean };
    userAgent: string | null;
 }) => {
-   const webhook = Deno.env.get('DISCORD_REPAY_WEBHOOK_URL') || Deno.env.get('DISCORD_LOGIN_WEBHOOK_URL');
+   const webhook = Deno.env.get('DISCORD_REPAY_WEBHOOK_URL');
    if (!webhook) return;
 
    const { username, email, repaidAmount, totalAmount, coin, trackingId, fullyRepaid, browser, userAgent } = details;
