@@ -111,5 +111,9 @@ verify_jwt = false
 [functions.didit-sync-user-status]
 verify_jwt = false
 
+# Daily KYC cross-check (pg_cron). Auth is the X-Admin-Token header, checked in the function.
+[functions.kyc-cross-check]
+verify_jwt = false
+
 [functions.admin-ban-user]
 verify_jwt = true

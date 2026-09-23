@@ -96,8 +96,23 @@ const redactBody = (body: unknown, url: string): unknown => {
 // (clears auth + redirects), so it's not an actionable app error.
 const KNOWN_BENIGN_EXCEPTION_PATTERNS = [
    /Object Not Found Matching Id/i, // browser-extension injected script
-   /Invalid Refresh Token: Refresh Token Not Found/i // Supabase background auto-refresh; handled via SIGNED_OUT
+   /Invalid Refresh Token: Refresh Token Not Found/i, // Supabase background auto-refresh; handled via SIGNED_OUT
+   // Wallet extensions (MetaMask & co.) reject from their own injected provider when they're
+   // locked, fighting another wallet over window.ethereum, or dismissed. Nothing in our code
+   // to fix, and they fire on ordinary page loads — they were flooding #ui-ux-alerts.
+   /Failed to connect to MetaMask/i,
+   /MetaMask extension not found/i,
+   /Cannot (redefine|set) property:? ethereum/i
 ];
+
+// Frames from browser-extension code (chrome-extension://, moz-extension://, safari-web-extension://).
+const EXTENSION_FRAME = /^(chrome|moz|safari(-web)?)-extension:\/\//i;
+
+type ExceptionFrame = { filename?: string | null; abs_path?: string | null };
+
+// An exception whose every frame is extension code was thrown by an extension, not by us.
+const isExtensionOnlyStack = (frames?: ExceptionFrame[] | null) =>
+   Boolean(frames?.length) && frames!.every((f) => EXTENSION_FRAME.test(f.filename ?? f.abs_path ?? ''));
 
 const isNonActionableException = (value?: string | null, type?: string | null, hasStack?: boolean) => {
    const text = value ?? '';
@@ -112,11 +127,13 @@ const dropSyntheticExceptions = (event: PostHogEvent | null): PostHogEvent | nul
    const list = (event.properties?.$exception_list ?? []) as Array<{
       type?: string | null;
       value?: string | null;
-      stacktrace?: { frames?: unknown[] } | null;
+      stacktrace?: { frames?: ExceptionFrame[] } | null;
    }>;
    if (list.length === 0) return event;
-   const everyEntryNoise = list.every((entry) =>
-      isNonActionableException(entry.value, entry.type, Boolean(entry.stacktrace?.frames?.length))
+   const everyEntryNoise = list.every(
+      (entry) =>
+         isExtensionOnlyStack(entry.stacktrace?.frames) ||
+         isNonActionableException(entry.value, entry.type, Boolean(entry.stacktrace?.frames?.length))
    );
    return everyEntryNoise ? null : event;
 };
