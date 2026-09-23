@@ -1,11 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import {
-   getBorrowerTelegramNotificationsEnabled,
-   sendBorrowerLoanNotification
-} from '../_shared/borrowerNotificationDelivery.ts';
-import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
+import { getBorrowerTelegramNotificationsEnabled, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
 import {
    getLoanOutstandingAmount,
    getReminderWindows,
@@ -13,15 +9,9 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from '../_shared/loanNotifications.ts';
-import {
-   calculateTrustPointRewardDelta,
-   markLoansRepaid
-} from '../_shared/trustPointRewards.ts';
-import type {
-   TrustPointMilestoneDefinition,
-   TrustPointRewardLoan,
-   TrustPointRewardUser
-} from '../_shared/trustPointRewards.ts';
+import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
+import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
+import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -109,10 +99,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
    );
 };
 
-const loadTrustPointRewardContext = async (
-   supabase: SupabaseClient,
-   userIds: string[]
-): Promise<TrustPointRewardContext> => {
+const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: string[]): Promise<TrustPointRewardContext> => {
    if (!userIds.length) {
       return {
          loansByBorrowerId: new Map(),
@@ -175,10 +162,7 @@ const loadTrustPointRewardContext = async (
    };
 };
 
-const loadSentLoanIds = async (
-   supabase: SupabaseClient,
-   payload: { loanIds: string[]; userId: string; type: LoanNotificationType }
-) => {
+const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string; type: LoanNotificationType }) => {
    if (!payload.loanIds.length) {
       return new Set<string>();
    }
@@ -197,12 +181,7 @@ const loadSentLoanIds = async (
    return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
 };
 
-const recordNotification = async (
-   supabase: SupabaseClient,
-   borrowerId: string,
-   type: LoanNotificationType,
-   loanIds: string[]
-) => {
+const recordNotification = async (supabase: SupabaseClient, borrowerId: string, type: LoanNotificationType, loanIds: string[]) => {
    if (!loanIds.length) {
       return;
    }
@@ -395,6 +374,7 @@ serve(async (req) => {
    }
 
    let sentCount = 0;
+   let failedCount = 0;
 
    for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
@@ -408,38 +388,51 @@ serve(async (req) => {
          continue;
       }
 
-      if (bucket.urgent.length) {
-         const wasSent = await notifyBorrower(
-            supabase,
-            borrower,
-            bucket.urgent,
-            'urgent_reminder',
-            urgentDueLabel,
-            trustPointRewardContext,
-            referenceDate,
-            telegramEnabled
-         );
-         if (wasSent) {
-            sentCount += 1;
+      // One borrower's delivery failure must not abort the run for everyone after them. An
+      // unrecorded reminder is simply retried on the next hourly run.
+      try {
+         if (bucket.urgent.length) {
+            const wasSent = await notifyBorrower(
+               supabase,
+               borrower,
+               bucket.urgent,
+               'urgent_reminder',
+               urgentDueLabel,
+               trustPointRewardContext,
+               referenceDate,
+               telegramEnabled
+            );
+            if (wasSent) {
+               sentCount += 1;
+            }
          }
-      }
 
-      if (bucket.final.length) {
-         const wasSent = await notifyBorrower(
-            supabase,
-            borrower,
-            bucket.final,
-            'final_reminder',
-            finalDueLabel,
-            trustPointRewardContext,
-            referenceDate,
-            telegramEnabled
-         );
-         if (wasSent) {
-            sentCount += 1;
+         if (bucket.final.length) {
+            const wasSent = await notifyBorrower(
+               supabase,
+               borrower,
+               bucket.final,
+               'final_reminder',
+               finalDueLabel,
+               trustPointRewardContext,
+               referenceDate,
+               telegramEnabled
+            );
+            if (wasSent) {
+               sentCount += 1;
+            }
          }
+      } catch (error) {
+         failedCount += 1;
+         console.error('Due reminder failed for borrower', {
+            borrowerId,
+            error: error instanceof Error ? error.message : String(error)
+         });
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount, failed: failedCount }), {
+      status: 200,
+      headers: corsHeaders
+   });
 });

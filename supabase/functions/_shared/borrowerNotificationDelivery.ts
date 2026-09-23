@@ -72,11 +72,7 @@ const buildPushPayloadForType = (
 };
 
 export const getTelegramBotSettingEnabled = async (supabase: any, key: string) => {
-   const { data, error } = await supabase
-      .from('telegram_bot_settings')
-      .select('value')
-      .eq('key', key)
-      .maybeSingle();
+   const { data, error } = await supabase.from('telegram_bot_settings').select('value').eq('key', key).maybeSingle();
 
    if (error) {
       throw new Error(error.message);
@@ -120,10 +116,23 @@ export const sendBorrowerLoanNotification = async (
            ? 'Open Dashboard'
            : 'Open Repay';
 
+   // Each channel is attempted independently: a broken email provider (e.g. a revoked Resend key)
+   // must not stop the Telegram and push copies going out. Only when nothing at all was delivered
+   // does the first channel error propagate, so callers still see a hard failure.
+   let firstError: unknown = null;
+
    if (recipientEmail) {
-      const { subject, text, html } = buildLoanNotificationEmail(type, loan, recipient, aggregate);
-      await sendEmail(recipientEmail, subject, text, html);
-      emailSent = true;
+      try {
+         const { subject, text, html } = buildLoanNotificationEmail(type, loan, recipient, aggregate);
+         await sendEmail(recipientEmail, subject, text, html);
+         emailSent = true;
+      } catch (error) {
+         firstError = error;
+         console.error('Borrower email notification failed', {
+            type,
+            error: error instanceof Error ? error.message : String(error)
+         });
+      }
    }
 
    if (options.telegramEnabled && recipient.chat_id) {
@@ -146,10 +155,7 @@ export const sendBorrowerLoanNotification = async (
             chat_id: recipient.chat_id,
             error: error instanceof Error ? error.message : String(error)
          });
-
-         if (!emailSent) {
-            throw error;
-         }
+         firstError = firstError ?? error;
       }
    }
 
@@ -174,6 +180,10 @@ export const sendBorrowerLoanNotification = async (
             error: error instanceof Error ? error.message : String(error)
          });
       }
+   }
+
+   if (firstError && !emailSent && !telegramSent && !pushSent) {
+      throw firstError;
    }
 
    return { emailSent, telegramSent, pushSent };

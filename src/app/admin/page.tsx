@@ -18,6 +18,7 @@ import {
    type AdminLoanRequest,
    type AdminOverview,
    type AdminUser,
+   banUser,
    getAdminOverview,
    getCurrentAdmin,
    getLatestAdminIntegrityRun,
@@ -301,6 +302,54 @@ function requestStatus(request: AdminLoanRequest) {
 // A user is verified if they passed EITHER identity method — World ID (legacy)
 // or Didit (current KYC). Checking only is_world_id showed Didit-verified users
 // as "not verified".
+function DirectoryFilter({
+   label,
+   value,
+   onChange,
+   children
+}: {
+   label: string;
+   value: string;
+   onChange: (value: string) => void;
+   children: ReactNode;
+}) {
+   return (
+      <label className="grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
+         {label}
+         <select
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="h-14 rounded-2xl border border-[#3d1f6e] bg-[#241044] px-4 text-lg font-bold normal-case tracking-normal text-white"
+         >
+            {children}
+         </select>
+      </label>
+   );
+}
+
+type JoinedFilter = 'any' | '24h' | '7d' | '30d';
+type VerificationFilter = 'all' | 'verified' | 'unverified' | 'didit' | 'world_id';
+type StatusFilter = 'all' | 'active' | 'blocked' | 'banned';
+
+const JOINED_WINDOW_MS: Record<Exclude<JoinedFilter, 'any'>, number> = {
+   '24h': 24 * 60 * 60 * 1000,
+   '7d': 7 * 24 * 60 * 60 * 1000,
+   '30d': 30 * 24 * 60 * 60 * 1000
+};
+
+const countryNames = typeof Intl !== 'undefined' && 'DisplayNames' in Intl ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
+
+function countryLabel(iso: string) {
+   const flag = iso.length === 2 ? String.fromCodePoint(...[...iso.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '';
+   let name = iso;
+   try {
+      name = countryNames?.of(iso.toUpperCase()) ?? iso;
+   } catch {
+      // Unknown region code — fall back to the raw ISO code.
+   }
+   return `${flag} ${name}`.trim();
+}
+
 function isUserVerified(user: { is_world_id?: string | null; is_didit?: string | null } | null | undefined) {
    return user?.is_world_id === 'ACTIVE' || user?.is_didit === 'ACTIVE';
 }
@@ -407,6 +456,10 @@ export default function AdminPanel() {
    const [loanRequests, setLoanRequests] = useState<AdminLoanRequest[]>([]);
    const [search, setSearch] = useState('');
    const [roleFilter, setRoleFilter] = useState<PersonRole>('all');
+   const [joinedFilter, setJoinedFilter] = useState<JoinedFilter>('any');
+   const [verificationFilter, setVerificationFilter] = useState<VerificationFilter>('all');
+   const [countryFilter, setCountryFilter] = useState('all');
+   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
    const [selectedUserId, setSelectedUserId] = useState('');
    const [selectedDefaultCaseId, setSelectedDefaultCaseId] = useState('');
    const [selectedRecoveryPath, setSelectedRecoveryPath] = useState<RecoveryPath>('repay_now');
@@ -426,7 +479,37 @@ export default function AdminPanel() {
       [admin?.display_name, reduxUser?.username]
    );
    const adminInitial = currentAdminName.trim().charAt(0).toUpperCase() || 'M';
-   const filteredDirectory = users.filter((user) => roleFilter === 'all' || user.user_role === roleFilter);
+   const countryOptions = useMemo(() => {
+      const counts = new Map<string, number>();
+      users.forEach((user) => {
+         const key = user.countryIso ?? 'unknown';
+         counts.set(key, (counts.get(key) ?? 0) + 1);
+      });
+      return [...counts.entries()].sort((first, second) => second[1] - first[1]);
+   }, [users]);
+   const directoryFiltersActive =
+      roleFilter !== 'all' || joinedFilter !== 'any' || verificationFilter !== 'all' || countryFilter !== 'all' || statusFilter !== 'all';
+   const clearDirectoryFilters = () => {
+      setRoleFilter('all');
+      setJoinedFilter('any');
+      setVerificationFilter('all');
+      setCountryFilter('all');
+      setStatusFilter('all');
+   };
+   const filteredDirectory = users.filter((user) => {
+      if (roleFilter !== 'all' && user.user_role !== roleFilter) return false;
+      if (joinedFilter !== 'any') {
+         const joinedAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+         if (!joinedAt || Date.now() - joinedAt > JOINED_WINDOW_MS[joinedFilter]) return false;
+      }
+      if (verificationFilter === 'verified' && !isUserVerified(user)) return false;
+      if (verificationFilter === 'unverified' && isUserVerified(user)) return false;
+      if (verificationFilter === 'didit' && user.is_didit !== 'ACTIVE') return false;
+      if (verificationFilter === 'world_id' && user.is_world_id !== 'ACTIVE') return false;
+      if (countryFilter !== 'all' && (user.countryIso ?? 'unknown') !== countryFilter) return false;
+      if (statusFilter !== 'all' && user.account_status !== statusFilter) return false;
+      return true;
+   });
    const selectedUser = users.find((user) => user.id === selectedUserId) ?? null;
    const selectedDefaultCase = defaultCases.find((item) => item.id === selectedDefaultCaseId) ?? defaultCases[0] ?? null;
    const selectedRequest = loanRequests.find((request) => request.id === selectedRequestId) ?? loanRequests[0] ?? null;
@@ -559,6 +642,37 @@ export default function AdminPanel() {
          await refresh(search);
       } catch (caught) {
          setError(caught instanceof Error ? caught.message : 'Could not clear this user.');
+      }
+   }
+
+   async function handleBanUser(user: AdminDirectoryUser) {
+      setError(null);
+      setStatusMessage(null);
+
+      const note = window.prompt(
+         `Ban ${user.username}?\n\nThis bans the account, blocks them in Didit, blacklists their KYC, deletes any open unfunded ` +
+            'requests, and emails/Telegrams them that the account is closed.\n\nWhy are you banning them? (saved as the admin note)'
+      );
+      if (note === null) return;
+      if (!note.trim()) {
+         setError('A ban note is required.');
+         return;
+      }
+
+      try {
+         const result = await banUser({ userId: user.id, note: note.trim() });
+         const parts = [
+            `${user.username} was banned and will be blocked in Didit`,
+            result.removedRequests > 0 ? `${result.removedRequests} open request${result.removedRequests > 1 ? 's' : ''} deleted` : null,
+            result.emailSent || result.telegramSent
+               ? `notified by ${[result.emailSent && 'email', result.telegramSent && 'Telegram'].filter(Boolean).join(' + ')}`
+               : 'no email/Telegram on file to notify'
+         ].filter(Boolean);
+         setStatusMessage(`${parts.join(' · ')}.`);
+         if (result.errors.length) setError(`Banned, but some steps failed: ${result.errors.join('; ')}`);
+         await refresh(search);
+      } catch (caught) {
+         setError(caught instanceof Error ? caught.message : 'Could not ban this user.');
       }
    }
 
@@ -790,6 +904,49 @@ export default function AdminPanel() {
                               </button>
                            ))}
                         </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                           <DirectoryFilter label="Joined" value={joinedFilter} onChange={(value) => setJoinedFilter(value as JoinedFilter)}>
+                              <option value="any">Any time</option>
+                              <option value="24h">Last 24 hours</option>
+                              <option value="7d">Last 7 days</option>
+                              <option value="30d">Last 30 days</option>
+                           </DirectoryFilter>
+                           <DirectoryFilter
+                              label="Verification"
+                              value={verificationFilter}
+                              onChange={(value) => setVerificationFilter(value as VerificationFilter)}
+                           >
+                              <option value="all">All</option>
+                              <option value="verified">Verified (any)</option>
+                              <option value="unverified">Not verified</option>
+                              <option value="didit">Didit KYC</option>
+                              <option value="world_id">World ID</option>
+                           </DirectoryFilter>
+                           <DirectoryFilter label="Country (login IP)" value={countryFilter} onChange={setCountryFilter}>
+                              <option value="all">All countries</option>
+                              {countryOptions.map(([iso, count]) => (
+                                 <option key={iso} value={iso}>
+                                    {iso === 'unknown' ? 'Unknown' : countryLabel(iso)} ({count})
+                                 </option>
+                              ))}
+                           </DirectoryFilter>
+                           <DirectoryFilter label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as StatusFilter)}>
+                              <option value="all">All</option>
+                              <option value="active">Active</option>
+                              <option value="blocked">Blocked</option>
+                              <option value="banned">Banned</option>
+                           </DirectoryFilter>
+                        </div>
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-lg text-[#a89bb8]">
+                           <span>
+                              Showing {filteredDirectory.length} of {users.length} users · newest first
+                           </span>
+                           {directoryFiltersActive ? (
+                              <button type="button" onClick={clearDirectoryFilters} className="font-black text-[#c9a7ff] underline">
+                                 Clear filters
+                              </button>
+                           ) : null}
+                        </div>
                      </form>
 
                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -841,6 +998,9 @@ export default function AdminPanel() {
                                                </div>
                                                <p className="mt-3 break-all text-xl text-[#a89bb8]">
                                                   {user.email ?? 'No email'} · {walletLabel(user)} · joined {formatDate(user.created_at)}
+                                                  {user.countryIso
+                                                     ? ` · ${countryLabel(user.countryIso)}${user.city ? ` (${user.city})` : ''}`
+                                                     : ''}
                                                </p>
                                             </div>
                                          </div>
@@ -1006,6 +1166,14 @@ export default function AdminPanel() {
                                             </button>
                                             <button
                                                type="button"
+                                               onClick={() => handleBanUser(user)}
+                                               disabled={user.account_status === 'banned'}
+                                               className="rounded-2xl bg-red-800 px-5 py-4 text-xl font-black text-white disabled:opacity-40"
+                                            >
+                                               {user.account_status === 'banned' ? 'Banned' : 'Ban'}
+                                            </button>
+                                            <button
+                                               type="button"
                                                onClick={() => handleResetMfa(user)}
                                                className="rounded-2xl bg-sky-600 px-5 py-4 text-xl font-black text-white"
                                             >
@@ -1013,7 +1181,7 @@ export default function AdminPanel() {
                                             </button>
                                          </div>
                                          <p className="mt-3 text-base font-bold text-[#a89bb8]">
-                                            Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
+                                            Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
                                             every authenticator/passkey factor this user has enrolled — use it when they're locked out.
                                          </p>
                                       </div>

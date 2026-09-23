@@ -86,6 +86,15 @@ serve(async (req) => {
          return json({ ok: false, error: 'expired' });
       }
 
+      // Borrowers only. Codes are minted inside the loan-application flow already; this is the
+      // second net. We reject accounts explicitly marked 'lender' rather than requiring 'borrower',
+      // because some real borrowers still have a NULL user_role. The code is NOT consumed on a
+      // rejection, so nothing is lost if a role is later corrected.
+      const { data: owner } = await svc.from('users').select('user_role').eq('id', pending.user_id).maybeSingle();
+      if ((owner as { user_role?: string | null } | null)?.user_role === 'lender') {
+         return json({ ok: false, error: 'not_borrower' });
+      }
+
       const { error: codeError } = await svc
          .from('contact_verification_codes')
          .update({ verified_at: nowIso, sender_psid: psid })

@@ -38,6 +38,15 @@ const getPostSignInPath = async (user: { id: string; accountStatus?: string }) =
    return '/dashboard';
 };
 
+// Supabase Auth refuses banned accounts with "User is banned" (code user_banned); the Google and
+// Telegram edge functions pass that through. Show it plainly instead of a credentials error.
+const isBannedError = (err: unknown) => {
+   const e = err as { code?: string; message?: string } | null;
+   return e?.code === 'user_banned' || /\bbanned\b/i.test(e?.message ?? '');
+};
+
+const BANNED_MESSAGE = 'This account has been closed. If you think this is a mistake, contact support on Telegram.';
+
 export default function SignInPage() {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
@@ -78,6 +87,10 @@ export default function SignInPage() {
          // .unwrap() throws a serialized plain object (SerializedError), not an
          // Error instance — read .message off it directly or every failure falls
          // into the generic branch below.
+         if (isBannedError(err)) {
+            toast.showToastByConfig('login_error', { error: BANNED_MESSAGE });
+            return;
+         }
          const errObj = err as { status?: number; message?: string };
          const msg =
             typeof errObj?.message === 'string' && errObj.message.length > 0
@@ -134,7 +147,11 @@ export default function SignInPage() {
          const result = await dispatch(loginWithGoogle({ googleCredential: credential })).unwrap();
          const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
-      } catch {
+      } catch (err) {
+         if (isBannedError(err)) {
+            toast.showToastByConfig('login_error', { error: BANNED_MESSAGE });
+            return;
+         }
          // No password involved — don't blame "credentials" for a failed provider handshake.
          setErrorProvider('Google');
          setErrorType('provider_failed');
@@ -152,7 +169,11 @@ export default function SignInPage() {
          ).unwrap();
          const nextPath = await getPostSignInPath(result.user);
          navigate(nextPath, { replace: true });
-      } catch {
+      } catch (err) {
+         if (isBannedError(err)) {
+            toast.showToastByConfig('login_error', { error: BANNED_MESSAGE });
+            return;
+         }
          // No password involved — don't blame "credentials" for a failed provider handshake.
          setErrorProvider('Telegram');
          setErrorType('provider_failed');

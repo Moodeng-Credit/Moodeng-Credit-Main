@@ -36,6 +36,10 @@ export default function ContactsStep({
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
    const [startingChannel, setStartingChannel] = useState<Channel | null>(null);
+   // The Messenger code the borrower must send to our Page. Once set, the card switches to the
+   // "send this code, waiting for confirmation" state — a human on the team confirms it via the
+   // /confirm command, since automated Messenger needs Meta App Review (months out).
+   const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [verifyError, setVerifyError] = useState('');
    const pollRef = useRef<number | null>(null);
 
@@ -81,6 +85,9 @@ export default function ContactsStep({
          if (error || !code) throw error ?? new Error('No code returned');
 
          const link = channel === 'whatsapp' ? buildWhatsAppVerifyLink(code) : buildMessengerVerifyLink(code);
+         // Messenger is human-confirmed, so the borrower must SEND the code (the ?ref= is invisible
+         // to whoever reads the Page inbox). Surface it and keep it for the "send this code" state.
+         if (channel === 'messenger') setMessengerCode(String(code));
          window.open(link, '_blank', 'noopener,noreferrer');
 
          // Poll rather than wait for a page-visibility event — the borrower may switch apps for a
@@ -152,10 +159,29 @@ export default function ContactsStep({
 
             {messengerVerified ? (
                <VerifiedBadge />
+            ) : messengerCode ? (
+               <>
+                  <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+                     In Messenger, send us <span className="font-[590] text-md-heading">exactly this code</span>:
+                  </p>
+                  <div className="flex w-fit select-all items-center rounded-[10px] border border-dashed border-[#0866FF] bg-[#eef4ff] px-3 py-2 text-[18px] font-[700] tracking-[0.12em] text-[#0654d1]">
+                     {messengerCode}
+                  </div>
+                  <button
+                     className="w-fit rounded-[12px] bg-[#0866FF] px-md-2 py-md-1 text-md-b2 font-semibold text-white transition duration-150 ease-out hover:bg-[#0654d1] active:scale-[0.97]"
+                     onClick={() => window.open(buildMessengerVerifyLink(messengerCode), '_blank', 'noopener,noreferrer')}
+                     type="button"
+                  >
+                     Open Messenger
+                  </button>
+                  <p className="text-[12px] font-normal leading-[16px] text-md-neutral-1200">
+                     ⏳ We'll confirm within a few minutes. You can leave and come back — the check appears here once we&apos;ve got your message.
+                  </p>
+               </>
             ) : (
                <>
                   <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-                     Tap below and open the chat with us on Messenger — no code to type.
+                     Message our Facebook Page with the code we give you, and we&apos;ll confirm it shortly.
                   </p>
                   <button
                      className="w-fit rounded-[12px] bg-[#0866FF] px-md-2 py-md-1 text-md-b2 font-semibold text-white transition duration-150 ease-out hover:bg-[#0654d1] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
@@ -163,7 +189,7 @@ export default function ContactsStep({
                      onClick={() => handleVerify('messenger')}
                      type="button"
                   >
-                     {startingChannel === 'messenger' ? 'Opening Messenger...' : 'Verify via Messenger'}
+                     {startingChannel === 'messenger' ? 'Getting your code...' : 'Verify via Messenger'}
                   </button>
                </>
             )}

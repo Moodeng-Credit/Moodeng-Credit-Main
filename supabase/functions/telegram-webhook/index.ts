@@ -173,6 +173,61 @@ const handleLenderRosterCommand = async (supabase: SupabaseClient, message: Tele
    return false;
 };
 
+// Manual Facebook Messenger verification, confirmed from the admin channel.
+//
+// Automated Messenger (m.me?ref= → messenger-webhook) needs Meta App Review for pages_messaging,
+// which takes months, so until that clears the loop is human-closed: the borrower sends a code to
+// the MoodengCredit Facebook Page, an admin reads it in the Page inbox and relays it here with
+//   /confirm MDNG-XXXX
+// We map the code → the borrower server-side and flip users.messenger_verified_at. Honored ONLY in
+// an admin channel (team or KYC), never a random group. Returns true if it handled the message.
+const handleMessengerConfirmCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/confirm(?:@\w+)?(?:\s+([A-Za-z0-9-]+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const code = (match[1] ?? '').trim();
+
+   if (!code) {
+      await sendTelegramMessage(
+         chatId,
+         'Usage: /confirm <code>\nThe code the borrower sent to the MoodengCredit Facebook Page inbox, e.g. /confirm MDNG-4821'
+      );
+      return true;
+   }
+
+   const { data: pending, error } = await supabase
+      .from('contact_verification_codes')
+      .select('id, user_id, expires_at, verified_at')
+      .ilike('code', code)
+      .eq('channel', 'messenger')
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+
+   if (!pending) {
+      await sendTelegramMessage(chatId, `No pending Messenger code "${code}" — it may be mistyped, already used, or from a different channel.`);
+      return true;
+   }
+   if (pending.verified_at) {
+      await sendTelegramMessage(chatId, `Code "${code}" is already verified. Nothing to do.`);
+      return true;
+   }
+   if (new Date(pending.expires_at).getTime() < Date.now()) {
+      await sendTelegramMessage(chatId, `Code "${code}" has expired — ask the borrower to tap "Verify via Messenger" again for a fresh code.`);
+      return true;
+   }
+
+   const now = new Date().toISOString();
+   const { error: codeError } = await supabase.from('contact_verification_codes').update({ verified_at: now }).eq('id', pending.id);
+   if (codeError) throw new Error(codeError.message);
+   const { error: userError } = await supabase.from('users').update({ messenger_verified_at: now }).eq('id', pending.user_id);
+   if (userError) throw new Error(userError.message);
+
+   const { data: prof } = await supabase.from('users').select('username, email').eq('id', pending.user_id).maybeSingle();
+   const who = [prof?.username, prof?.email].filter(Boolean).join(' · ') || pending.user_id;
+   await sendTelegramMessage(chatId, `✅ Messenger verified for ${who}. Their loan request can now continue.`);
+   return true;
+};
+
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
@@ -403,8 +458,12 @@ serve(async (req) => {
          return jsonResponse({ message: 'Private message handled' });
       }
 
-      // Lender-roster commands are honored only in the private team channel.
+      // Admin channels: the private team channel and the KYC admin channel.
       const teamChatId = await getTeamChatId(supabase);
+      const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+      const isAdminChannel = [teamChatId, kycChatId].some((id) => id && String(message.chat.id) === String(id));
+
+      // Lender-roster commands are honored only in the private team channel.
       if (
          teamChatId &&
          String(message.chat.id) === String(teamChatId) &&
@@ -412,6 +471,12 @@ serve(async (req) => {
       ) {
          await handleLenderRosterCommand(supabase, message);
          return jsonResponse({ message: 'Lender roster command handled' });
+      }
+
+      // Manual Messenger verification confirm — either admin channel.
+      if (isAdminChannel && /^\/confirm\b/i.test(message.text ?? '')) {
+         await handleMessengerConfirmCommand(supabase, message);
+         return jsonResponse({ message: 'Messenger confirm handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);
