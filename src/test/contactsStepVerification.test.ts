@@ -92,7 +92,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(supa.rpc).toHaveBeenCalledWith('start_contact_verification', { p_channel: 'messenger' });
       expect(openSpy).toHaveBeenCalledTimes(1);
       expect(openSpy.mock.calls[0][0]).toContain('m.me');
-      expect(openSpy.mock.calls[0][0]).toContain('ref=MDNG-ABC123');
+      expect(openSpy.mock.calls[0][0]).toContain('__mdng_code=MDNG-ABC123');
 
       // Still disabled until the webhook stamps the column the poll reads.
       expect(continueButton(container).disabled).toBe(true);
@@ -140,8 +140,9 @@ describe('contact verification link builders', () => {
       expect(decodeURIComponent(link)).toContain('MDNG-ABC123');
    });
 
-   it('builds an m.me link carrying the code as the ?ref= param', () => {
+   it('builds an m.me link that launches the SendPulse flow with the code as mdng_code', () => {
       const link = buildMessengerVerifyLink('MDNG-ABC123');
-      expect(link).toMatch(/^https:\/\/m\.me\/[^?]+\?ref=MDNG-ABC123$/);
+      // SendPulse's format: ref={flow_id}__{variable}={value}, unencoded.
+      expect(link).toMatch(/^https:\/\/m\.me\/\d+\?ref=[0-9a-f-]{36}__mdng_code=MDNG-ABC123$/);
    });
 });
