@@ -9,13 +9,27 @@
 // Every send is fire-and-forget and never throws: a failed ping must not break the flow that
 // triggered it (a booking, a loan request, a KYC outcome all persist first).
 
-export const resolveDiscordWebhook = (...preferKeys: string[]): string | null => {
+// #logins is reserved for the login feed (record-session-ip posts there directly). A webhook is
+// identified by its numeric id, so discord.com vs discordapp.com spellings compare equal.
+const webhookId = (url: string | undefined | null): string | null =>
+   url?.match(/\/webhooks\/(\d+)\//)?.[1] ?? null;
+
+export type ResolvedDiscordWebhook = { key: string; url: string };
+
+export const resolveDiscordWebhookWithKey = (...preferKeys: string[]): ResolvedDiscordWebhook | null => {
+   const loginId = webhookId(Deno.env.get('DISCORD_LOGIN_WEBHOOK_URL'));
    for (const key of [...preferKeys, 'DISCORD_TEAM_WEBHOOK_URL']) {
       const val = Deno.env.get(key)?.trim();
-      if (val) return val;
+      if (!val) continue;
+      // Never let a team alert land in #logins, even if a secret was pasted with the wrong URL.
+      if (loginId && webhookId(val) === loginId) continue;
+      return { key, url: val };
    }
    return null;
 };
+
+export const resolveDiscordWebhook = (...preferKeys: string[]): string | null =>
+   resolveDiscordWebhookWithKey(...preferKeys)?.url ?? null;
 
 export type DiscordEmbed = {
    title?: string;
