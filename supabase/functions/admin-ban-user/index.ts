@@ -10,8 +10,6 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   2. Revokes KYC (users.is_didit = 'INACTIVE') and adds the user to the internal kyc_blacklist.
 //   3. Blocks them in Didit — not called from here: the sync_didit_user_status trigger fires on the
 //      account_status change and calls didit-sync-user-status, so every ban path gets it.
-//      The same change fires enforce_ban_in_auth, which sets auth.users.banned_until and revokes all
-//      their sessions — they're signed out and can't sign back in or refresh a token.
 //   4. Deletes their open, unfunded loan requests so no lender can fund them. Funded loans are never
 //      touched — those still need to be repaid and go through the refund/default flow instead.
 //   5. Tells the user by email + Telegram that the account has been closed (unless notify: false).
