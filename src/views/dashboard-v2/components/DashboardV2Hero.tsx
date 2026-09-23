@@ -35,7 +35,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
       0
    );
    const [browsedTierIndex, setBrowsedTierIndex] = useState(currentTierIndex);
-   const [isTrustTipOpen, setIsTrustTipOpen] = useState(true);
+   const [isTrustTipOpen, setIsTrustTipOpen] = useState(!model.isVerified);
    const [isCreditTipOpen, setIsCreditTipOpen] = useState(model.creditLevel === 0);
    const browsedTier = MOODENG_TIERS[browsedTierIndex] ?? MOODENG_TIERS[0];
    const fillWidth = Math.max(PROGRESS_MIN_WIDTH, Math.round(model.creditProgress * PROGRESS_TRACK_INNER_WIDTH));
