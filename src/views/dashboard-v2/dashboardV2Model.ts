@@ -1,15 +1,10 @@
-import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getCreditLevelNumber } from '@/config/creditTiers';
-import { isRepaidOnTime } from '@/lib/creditLeveling';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
+import { CREDIT_TIERS, getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { isRepaidOnTime } from '@/lib/creditLeveling';
 import type { Loan } from '@/types/loanTypes';
+import type { CreditLevelHint, DashboardV2Milestone, MoodengMood, MoodengTierId } from '@/views/dashboard-v2/types';
 import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
-import type {
-   CreditLevelHint,
-   DashboardV2Milestone,
-   MoodengMood,
-   MoodengTierId
-} from '@/views/dashboard-v2/types';
 
 /**
  * Moodeng growth tiers from the Figma design. "Pandesal" is the design's name for Trust Points,

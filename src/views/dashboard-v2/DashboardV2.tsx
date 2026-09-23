@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+
 import { ConnectWalletBanner, VerifyIdentityBanner, VoucherReferralBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
@@ -16,8 +17,7 @@ const PREVIEW_STATES: { id: DashboardV2PreviewState; label: string }[] = [
    { id: 'defaulted', label: 'Defaulted' }
 ];
 
-const isPreviewState = (value: string | null): value is DashboardV2PreviewState =>
-   PREVIEW_STATES.some((state) => state.id === value);
+const isPreviewState = (value: string | null): value is DashboardV2PreviewState => PREVIEW_STATES.some((state) => state.id === value);
 
 /**
  * Preview of the redesigned borrower dashboard (Figma "New Dashboard for Borrowers").
@@ -29,11 +29,7 @@ export default function DashboardV2() {
    const { model: realModel, isSignedIn } = useDashboardV2Model();
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
    const requestedState = searchParams.get('state');
-   const previewState: DashboardV2PreviewState = isPreviewState(requestedState)
-      ? requestedState
-      : isSignedIn
-        ? 'real'
-        : 'verified';
+   const previewState: DashboardV2PreviewState = isPreviewState(requestedState) ? requestedState : isSignedIn ? 'real' : 'verified';
    const isReal = previewState === 'real' && isSignedIn;
    const model = isReal ? realModel : SAMPLE_STATES[previewState === 'real' ? 'verified' : previewState];
 

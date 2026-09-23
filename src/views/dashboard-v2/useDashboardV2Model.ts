@@ -3,15 +3,15 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
+
+import { calculateDaysBetween, calculateDaysRemaining, parseDateSafely } from '@/utils/dateFormatters';
+import { toNumber } from '@/utils/decimalHelpers';
+
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import { calculateDaysBetween, calculateDaysRemaining, parseDateSafely } from '@/utils/dateFormatters';
-import { toNumber } from '@/utils/decimalHelpers';
-import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
-import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import {
    getCreditLevelProgress,
    getMoodengMood,
@@ -20,6 +20,8 @@ import {
    toDashboardV2Milestones
 } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Model } from '@/views/dashboard-v2/types';
+import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
+import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 
 /** Read-only: builds the new dashboard's view model from the same sources as `/dashboard`. */
