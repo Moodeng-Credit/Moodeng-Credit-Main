@@ -18,8 +18,9 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   🟠 nearby_address       precise geocodes within 300 m
 //   🟠 family_district      same surname + same NIK district (first 6 digits: province/city/kecamatan)
 //
-// Called daily by pg_cron with {"report":"daily"} (always posts a summary) and on demand with {}
-// (posts only when there's something new). Pass {"refetch":true} to re-pull every session, and
+// Called on every Didit result by the kyc_cross_check_on_didit_change trigger with {} (posts only
+// when there's something new), daily by pg_cron with {"report":"daily"} (always posts a summary), and
+// on demand. Pass {"refetch":true} to re-pull every session, and
 // {"dry":true} to preview findings without posting or marking them reported.
 
 const corsHeaders = {
@@ -343,13 +344,20 @@ serve(async (req) => {
          );
       if (error) return jsonResponse({ error: `store matches: ${error.message}` }, 500);
    }
-   const { data: unreported } = await supabase
-      .from('kyc_identity_matches')
-      .select('id, kind, severity, user_a, user_b, detail, distance_m, session_a, session_b')
-      .is('reported_at', null)
-      .order('severity', { ascending: false })
-      .order('created_at', { ascending: true });
-   const newFindings = unreported ?? [];
+   // Claim unreported findings before posting: runs now fire on every KYC result, so two can overlap,
+   // and the conditional update means each finding is handed to exactly one of them. A dry run only
+   // peeks, leaving everything unreported.
+   const findingColumns = 'id, kind, severity, user_a, user_b, detail, distance_m, session_a, session_b, created_at';
+   const { data: unreported } = body.dry
+      ? await supabase.from('kyc_identity_matches').select(findingColumns).is('reported_at', null)
+      : await supabase
+           .from('kyc_identity_matches')
+           .update({ reported_at: new Date().toISOString() })
+           .is('reported_at', null)
+           .select(findingColumns);
+   const newFindings = (unreported ?? []).sort(
+      (a, b) => (a.severity === b.severity ? a.created_at.localeCompare(b.created_at) : a.severity === 'red' ? -1 : 1)
+   );
 
    // ---- 4. Report --------------------------------------------------------------------------------------
    const who = (id: string | null, session: string | null) =>
@@ -417,16 +425,6 @@ serve(async (req) => {
                console.error('[kyc-cross-check] telegram failed:', e instanceof Error ? e.message : e);
             }
          }
-      }
-
-      if (newFindings.length) {
-         await supabase
-            .from('kyc_identity_matches')
-            .update({ reported_at: new Date().toISOString() })
-            .in(
-               'id',
-               newFindings.map((f) => f.id)
-            );
       }
    }
 
