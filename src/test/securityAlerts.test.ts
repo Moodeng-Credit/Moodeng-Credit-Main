@@ -41,6 +41,13 @@ describe('formatTelegramMessage', () => {
          'ℹ️ [heartbeat] all systems OK'
       );
    });
+
+   it('trims to Telegram’s 4096-char limit and points to the email', () => {
+      const message = formatTelegramMessage(alert({ body: 'x'.repeat(10_000) }));
+      expect(message.length).toBeLessThanOrEqual(4096);
+      expect(message.startsWith('🔴 [fraud-scan]')).toBe(true);
+      expect(message).toContain('full details in the alert email');
+   });
 });
 
 describe('formatEmailSubject', () => {

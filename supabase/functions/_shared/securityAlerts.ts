@@ -53,8 +53,17 @@ const SEVERITY_RANK: Record<SecuritySeverity, number> = {
 export const severityEmoji = (severity: SecuritySeverity): string => SEVERITY_EMOJI[severity] ?? 'ℹ️';
 
 // Telegram body: «emoji» [source] title\n\nbody
-export const formatTelegramMessage = (alert: SecurityAlert): string =>
-   `${severityEmoji(alert.severity)} [${alert.source}] ${alert.title}\n\n${alert.body}`;
+// Telegram rejects messages over 4096 characters ("message is too long"), which silently dropped a
+// 36-signal fraud scan on 2026-09-23. Trim the body with a pointer to the email, which always carries
+// the full text (email is sent whenever the alert is a warning or worse).
+const TELEGRAM_MAX_CHARS = 4096;
+
+export const formatTelegramMessage = (alert: SecurityAlert): string => {
+   const full = `${severityEmoji(alert.severity)} [${alert.source}] ${alert.title}\n\n${alert.body}`;
+   if (full.length <= TELEGRAM_MAX_CHARS) return full;
+   const note = '\n\n… (truncated — full details in the alert email)';
+   return full.slice(0, TELEGRAM_MAX_CHARS - note.length) + note;
+};
 
 // Email subject: «emoji» Moodeng [source]: title
 export const formatEmailSubject = (alert: SecurityAlert): string =>
