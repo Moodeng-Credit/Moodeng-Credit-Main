@@ -94,6 +94,10 @@ export interface AdminDirectoryUser {
    recentTrustPointEvents: AdminPointEvent[];
    restriction: AdminRestriction | null;
    riskProfile: AdminRiskProfile | null;
+   // Latest login location from auth_ip_log (IP geolocation, not KYC). Null if never seen.
+   countryIso: string | null;
+   city: string | null;
+   lastSeenAt: string | null;
 }
 
 export interface AdminLoanRecord {
@@ -362,8 +366,18 @@ async function buildDirectoryRows(
    pointRows: AnyRow[],
    pointEventRows: AnyRow[],
    trustPointRows: AnyRow[],
-   trustPointEventRows: AnyRow[]
+   trustPointEventRows: AnyRow[],
+   ipLogRows: AnyRow[] = []
 ): Promise<AdminDirectoryUser[]> {
+   // Newest sighting first, so the first row per user with a country is their latest known location.
+   const latestIpByUserId = [...ipLogRows]
+      .sort((first, second) => new Date(second.last_seen_at).getTime() - new Date(first.last_seen_at).getTime())
+      .reduce((byUser, row) => {
+         const current = byUser.get(row.user_id);
+         if (!current) byUser.set(row.user_id, row);
+         else if (!current.country_iso && row.country_iso) byUser.set(row.user_id, { ...row, last_seen_at: current.last_seen_at });
+         return byUser;
+      }, new Map<string, AnyRow>());
    const restrictionsByUserId = new Map(restrictionRows.map((row) => [row.user_id, mapRestriction(row)]));
    const riskByUserId = new Map(riskRows.map((row) => [row.user_id, mapRiskProfile(row)]));
    const pointsByUserId = new Map(pointRows.map((row) => [row.user_id, row]));
@@ -446,7 +460,10 @@ async function buildDirectoryRows(
          latestTrustPointEventAt,
          recentTrustPointEvents: userTrustPointEvents.slice(0, 3),
          restriction: restrictionsByUserId.get(row.id) ?? null,
-         riskProfile: riskByUserId.get(row.id) ?? null
+         riskProfile: riskByUserId.get(row.id) ?? null,
+         countryIso: latestIpByUserId.get(row.id)?.country_iso ?? null,
+         city: latestIpByUserId.get(row.id)?.city_name ?? null,
+         lastSeenAt: latestIpByUserId.get(row.id)?.last_seen_at ?? null
       };
    });
 }
@@ -536,6 +553,18 @@ export async function getLatestAdminIntegrityRun(): Promise<AdminIntegrityRun | 
    );
 }
 
+// PostgREST filters go in the URL, so long `in.(...)` lists are split to keep requests well under
+// the gateway's URL limit.
+const ID_CHUNK = 100;
+async function queryByIdChunks(ids: string[], run: (chunk: string[]) => PromiseLike<AnyRow[]>): Promise<AnyRow[]> {
+   if (!ids.length) return [];
+   const chunks: string[][] = [];
+   for (let i = 0; i < ids.length; i += ID_CHUNK) chunks.push(ids.slice(i, i + ID_CHUNK));
+   return (await Promise.all(chunks.map(run))).flat();
+}
+
+// Loads the whole directory (newest sign-ups first) so the panel's sort/verification/country
+// filters see every user, not just a recent slice.
 export async function listAdminDirectoryUsers(search?: string): Promise<AdminDirectoryUser[]> {
    const supabase = getSupabaseBrowserClient();
    let query = supabase
@@ -543,8 +572,8 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
       .select(
          'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
       )
-      .order('updated_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false })
+      .limit(2000);
    const trimmedSearch = search?.trim();
 
    if (trimmedSearch) {
@@ -553,61 +582,54 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
 
    const users = await requireOk<AnyRow[]>(query);
    const userIds = users.map((user) => user.id);
+   const loanSelect =
+      'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,refunded_at,created_at,funded_at';
+   const pointEventSelect = 'id,user_id,event_type,delta,source_type,source_id,created_at,metadata';
 
-   const [loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents] = await Promise.all([
-      userIds.length
-         ? requireOk<AnyRow[]>(
-              supabase
-                 .from('loans')
-                 .select(
-                    'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,refunded_at,created_at,funded_at'
-                 )
-                 .or(`borrower_user_id.in.(${userIds.join(',')}),lender_user_id.in.(${userIds.join(',')})`)
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', userIds), [])
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', userIds), [])
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase.from('user_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', userIds),
-              []
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase
-                 .from('point_events')
-                 .select('id,user_id,event_type,delta,source_type,source_id,created_at,metadata')
-                 .in('user_id', userIds)
-                 .order('created_at', { ascending: false })
-                 .limit(300),
-              []
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase.from('user_trust_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', userIds),
-              []
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase
-                 .from('trust_point_events')
-                 .select('id,user_id,event_type,delta,source_type,source_id,created_at,metadata')
-                 .in('user_id', userIds)
-                 .order('created_at', { ascending: false })
-                 .limit(300),
-              []
-           )
-         : Promise.resolve([])
+   const [loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents, ipLog] = await Promise.all([
+      queryByIdChunks(userIds, async (ids) => {
+         const rows = await requireOk<AnyRow[]>(
+            supabase.from('loans').select(loanSelect).or(`borrower_user_id.in.(${ids.join(',')}),lender_user_id.in.(${ids.join(',')})`)
+         );
+         return rows;
+      }).then((rows) => [...new Map(rows.map((loan) => [loan.id, loan])).values()]),
+      queryByIdChunks(userIds, (ids) => optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', ids), [])),
+      queryByIdChunks(userIds, (ids) => optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', ids), [])),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(supabase.from('user_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', ids), [])
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase.from('point_events').select(pointEventSelect).in('user_id', ids).order('created_at', { ascending: false }).limit(300),
+            []
+         )
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase.from('user_trust_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', ids),
+            []
+         )
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase
+               .from('trust_point_events')
+               .select(pointEventSelect)
+               .in('user_id', ids)
+               .order('created_at', { ascending: false })
+               .limit(300),
+            []
+         )
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase.from('auth_ip_log').select('user_id,country_iso,city_name,last_seen_at').in('user_id', ids).order('last_seen_at', { ascending: false }),
+            []
+         )
+      )
    ]);
 
-   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents);
+   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents, ipLog);
 }
 
 export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {

@@ -1,6 +1,21 @@
 [functions.create-user]
 verify_jwt = false
 
+# Public Meta webhook — Facebook calls this unauthenticated (GET handshake + POST events), so it
+# must not require a Supabase JWT.
+[functions.messenger-webhook]
+verify_jwt = false
+
+# SendPulse "External Request" bridge — SendPulse can't present a Supabase JWT, so it's gated by the
+# x-sendpulse-secret header (SENDPULSE_VERIFY_SECRET) inside the function instead.
+[functions.sendpulse-messenger-verify]
+verify_jwt = false
+
+# Public Cal.com webhook — Cal.com calls this unauthenticated and signs it with x-cal-signature-256,
+# so it must not require a Supabase JWT (the signature is what authenticates it).
+[functions.calcom-webhook]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 

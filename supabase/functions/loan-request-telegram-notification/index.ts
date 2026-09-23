@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { postDiscord } from '../_shared/discord.ts';
 import { buildTelegramLoanRequestMessage } from '../_shared/telegramLoanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -122,15 +123,6 @@ serve(async (req) => {
          return new Response(JSON.stringify({ error: 'loanId is required' }), { status: 400, headers: corsHeaders });
       }
 
-      const enabled = (await getSetting(supabase, 'lender_notifications_enabled')) === 'true';
-
-      if (!enabled && !dryRun) {
-         return new Response(JSON.stringify({ message: 'Telegram lender notifications are disabled.' }), {
-            status: 200,
-            headers: corsHeaders
-         });
-      }
-
       const { data: loan, error: loanError } = await supabase
          .from('loans')
          .select('id, tracking_id, loan_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status')
@@ -165,6 +157,38 @@ serve(async (req) => {
 
       if (dryRun) {
          return new Response(JSON.stringify({ message, loanUrl }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+         });
+      }
+
+      // 1) Admin fan-out — fires on EVERY new request, independent of the public lender broadcast
+      //    toggle: the admins-only Telegram channel (kyc_alert_chat_id) and the team Discord channel.
+      //    Both are best-effort so neither can block the other or the lender broadcast below.
+      const adminChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+      if (adminChatId) {
+         await sendTelegramMessage(adminChatId, message, {
+            inlineKeyboard: [[{ text: 'View request', url: loanUrl }]]
+         }).catch((err) => console.error('loan-request admin Telegram failed:', err instanceof Error ? err.message : err));
+      }
+      await postDiscord(
+         {
+            embeds: [
+               {
+                  title: '💸 New loan request',
+                  description: message,
+                  color: 0x5865f2,
+                  timestamp: new Date().toISOString()
+               }
+            ]
+         },
+         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
+      );
+
+      // 2) Public lender-group broadcast — only when explicitly enabled.
+      const enabled = (await getSetting(supabase, 'lender_notifications_enabled')) === 'true';
+      if (!enabled) {
+         return new Response(JSON.stringify({ message: 'Admin + Discord notified; lender broadcast disabled.' }), {
             status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
          });

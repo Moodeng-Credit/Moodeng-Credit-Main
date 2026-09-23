@@ -53,6 +53,8 @@ import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
 import { termsTooltipIconSrc } from './termsTooltipIcon';
 
@@ -728,38 +730,62 @@ function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
    );
 }
 
-// Three-dot progress rail shown at the bottom of the multi-step request flow:
-// step 1 = terms, step 2 = bio page 1, step 3 = bio page 2. Completed steps turn green,
-// the current step is a purple ring, upcoming steps are grey — so borrowers can see the
-// request is progressing and that a tap did something.
-const STEP_LABELS = ['Your terms', 'About you', 'Repayment context'];
-function StepDots({ current }: { current: 1 | 2 | 3 }) {
+// The ordered set of screens a single loan-request flow can pass through. Which of these actually
+// appear depends on the borrower: bio pages only for first-time borrowers, the video call only when
+// there's no referral code. buildRequestSteps() assembles the real list for a given borrower.
+type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'contacts' | 'videocall';
+
+// Human labels for each possible step key, used by the progress rail below.
+const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
+   terms: 'Your terms',
+   bio1: 'About you',
+   bio2: 'Repayment context',
+   contacts: 'Contact',
+   videocall: 'Meet the team'
+};
+
+// Progress rail shown at the bottom of the multi-step request flow. Path-aware: the number of
+// dots reflects THIS borrower's actual journey — bio pages appear only for first-time borrowers
+// (no saved income context), and the "Meet the team" video-call step appears only when there's no
+// referral code (a referred borrower has one fewer step). Completed steps turn green, the current
+// one gets a purple ring, upcoming ones stay grey, and a "Step X of Y" line spells it out so the
+// borrower can see exactly how much is left — and that a referred path is shorter.
+function StepDots({ steps, current }: { steps: RequestStepKey[]; current: number }) {
+   const total = steps.length;
+   const label = STEP_KEY_LABEL[steps[current - 1]] ?? '';
+   const nodes: React.ReactNode[] = [];
+   steps.forEach((_key, index) => {
+      const step = index + 1;
+      const isDone = step < current;
+      const isNow = step === current;
+      nodes.push(
+         <span
+            key={`dot-${step}`}
+            className={`grid size-[22px] shrink-0 place-items-center rounded-full text-md-b4 font-[700] transition ${
+               isDone
+                  ? 'bg-md-green-700 text-md-neutral-100'
+                  : isNow
+                    ? 'bg-md-primary-1200 text-md-neutral-100 ring-4 ring-md-primary-100'
+                    : 'border-2 border-md-neutral-500 bg-md-neutral-300 text-md-neutral-600'
+            }`}
+         >
+            {isDone ? <Check className="size-3.5" strokeWidth={3} /> : step}
+         </span>
+      );
+      if (index < total - 1) {
+         nodes.push(
+            <span key={`bar-${step}`} className={`mx-1.5 h-[3px] flex-1 rounded-full ${step < current ? 'bg-md-green-700' : 'bg-md-neutral-400'}`} />
+         );
+      }
+   });
    return (
-      <div role="group" aria-label={`Loan request progress: step ${current} of 3, ${STEP_LABELS[current - 1]}`}>
-         <div className="flex items-center justify-center" aria-hidden="true">
-            {[1, 2, 3].map((step) => {
-               const isDone = step < current;
-               const isNow = step === current;
-               return (
-                  <div key={step} className="flex items-center">
-                     <span
-                        className={`grid size-[22px] place-items-center rounded-full text-md-b4 font-[700] transition ${
-                           isDone
-                              ? 'bg-md-green-700 text-md-neutral-100'
-                              : isNow
-                                ? 'bg-md-primary-1200 text-md-neutral-100 ring-4 ring-md-primary-100'
-                                : 'border-2 border-md-neutral-500 bg-md-neutral-300 text-md-neutral-600'
-                        }`}
-                     >
-                        {isDone ? <Check className="size-3.5" strokeWidth={3} /> : step}
-                     </span>
-                     {step < 3 ? (
-                        <span className={`h-[3px] w-[44px] rounded-full ${step < current ? 'bg-md-green-700' : 'bg-md-neutral-400'}`} />
-                     ) : null}
-                  </div>
-               );
-            })}
+      <div role="group" aria-label={`Loan request progress: step ${current} of ${total}, ${label}`}>
+         <div className="flex w-full items-center" aria-hidden="true">
+            {nodes}
          </div>
+         <p className="mt-1.5 text-center text-[12px] font-[590] leading-[16px] text-md-neutral-1200" aria-hidden="true">
+            Step {current} of {total} · {label}
+         </p>
       </div>
    );
 }
@@ -946,6 +972,15 @@ export default function LoanRequestModal({
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
    // The bio step is split into two short pages so borrowers never face one long scroll.
    const [bioPage, setBioPage] = useState<1 | 2>(1);
+   // Contacts (WhatsApp/Facebook) and the no-referral-code video-call gate sit after bio, before
+   // the real submit. The *Done flags track "already completed this request flow" so a returning
+   // borrower who's already verified/scheduled doesn't get routed back through the step UI itself
+   // (ContactsStep/VideoCallStep also self-check and would just show a checkmark, but skipping
+   // the step entirely is one less screen).
+   const [showContactsStep, setShowContactsStep] = useState(false);
+   const [contactsStepDone, setContactsStepDone] = useState(false);
+   const [showVideoCallStep, setShowVideoCallStep] = useState(false);
+   const [videoCallStepDone, setVideoCallStepDone] = useState(false);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1020,12 +1055,32 @@ export default function LoanRequestModal({
    const currentBorrowerDisplayName = user.displayName ?? user.username ?? '';
    const isPreviewUser = user.email.endsWith('@moodeng.local') || user.id.includes('preview');
 
-   // The 3-dot progress rail is only meaningful when the borrower goes through the full
-   // terms → bio-1 → bio-2 journey. Returning borrowers (bio already saved) submit straight
-   // from the terms step, so no rail is shown for them, and never on the optional referral step.
+   // Bio pages (terms → bio-1 → bio-2) only appear for first-time borrowers; returning borrowers
+   // with saved income context submit straight from the terms step.
    const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
-   const showStepProgress = isMultiStepRequestFlow && !shouldShowReferralStep;
-   const currentStep: 1 | 2 | 3 = showBorrowerContextStep ? (bioPage === 1 ? 2 : 3) : 1;
+
+   // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
+   // count and "Step X of Y" match exactly what they'll go through. A referred borrower skips the
+   // video call, so their rail is one dot shorter; that's the difference the borrower asked to see.
+   const requestSteps: RequestStepKey[] = [
+      'terms',
+      ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
+      'contacts',
+      ...(appliedReferral ? [] : (['videocall'] as const))
+   ];
+   const currentStepKey: RequestStepKey = showContactsStep
+      ? 'contacts'
+      : showVideoCallStep
+        ? 'videocall'
+        : showBorrowerContextStep
+          ? bioPage === 1
+             ? 'bio1'
+             : 'bio2'
+          : 'terms';
+   const currentStep = Math.max(1, requestSteps.indexOf(currentStepKey) + 1);
+   // Show the rail whenever the borrower is inside the request flow (verified, past the optional
+   // referral step) and the journey is more than a single screen.
+   const showStepProgress = isVerified && !shouldShowReferralStep && requestSteps.length > 1;
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -1541,6 +1596,24 @@ export default function LoanRequestModal({
          return;
       }
 
+      // WhatsApp (verified) + Facebook (collected) contact step — required before submitting.
+      // ContactsStep's own onContinue sets contactsStepDone and re-fires this handler.
+      if (!contactsStepDone && !showContactsStep) {
+         event.preventDefault();
+         setShowBorrowerContextStep(false);
+         setShowContactsStep(true);
+         return;
+      }
+
+      // No referral code on file → a human at Moodeng hasn't vouched for this borrower yet, so
+      // they have to SCHEDULE (not complete) a short video call before their request goes out.
+      if (!appliedReferral && !videoCallStepDone && !showVideoCallStep) {
+         event.preventDefault();
+         setShowContactsStep(false);
+         setShowVideoCallStep(true);
+         return;
+      }
+
       handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
    };
 
@@ -1650,6 +1723,29 @@ export default function LoanRequestModal({
       }
    };
 
+   const handleContactsStepContinue = () => {
+      setContactsStepDone(true);
+      setShowContactsStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleContactsStepBack = () => {
+      setShowContactsStep(false);
+      setShowBorrowerContextStep(true);
+      setBioPage(2);
+   };
+
+   const handleVideoCallStepContinue = () => {
+      setVideoCallStepDone(true);
+      setShowVideoCallStep(false);
+      handleLoanFormSubmit({ preventDefault: () => {} } as React.FormEvent<HTMLFormElement>);
+   };
+
+   const handleVideoCallStepBack = () => {
+      setShowVideoCallStep(false);
+      setShowContactsStep(true);
+   };
+
    const handleBorrowerContextBack = () => {
       // From bio page 2, Back returns to page 1; from page 1, Back returns to the terms step.
       if (bioPage === 2) {
@@ -1750,6 +1846,10 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
+                  ) : showContactsStep ? (
+                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
+                  ) : showVideoCallStep ? (
+                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Schedule a video call</h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
                         <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
@@ -1871,6 +1971,10 @@ export default function LoanRequestModal({
 
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
+            ) : showContactsStep ? (
+               <ContactsStep userId={user.id} onBack={handleContactsStepBack} onContinue={handleContactsStepContinue} />
+            ) : showVideoCallStep ? (
+               <VideoCallStep userId={user.id} onBack={handleVideoCallStepBack} onContinue={handleVideoCallStepContinue} />
             ) : (
                <form
                   ref={formRef}
@@ -2318,7 +2422,7 @@ export default function LoanRequestModal({
             )}
             {showStepProgress ? (
                <div className="shrink-0 border-t border-md-neutral-400 bg-md-neutral-100 px-md-3 py-md-2">
-                  <StepDots current={currentStep} />
+                  <StepDots steps={requestSteps} current={currentStep} />
                </div>
             ) : null}
          </section>
