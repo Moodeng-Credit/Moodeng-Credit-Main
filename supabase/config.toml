@@ -89,3 +89,12 @@ verify_jwt = false
 # header check (checkCronAuth), so only the cron (which reads the token from vault) can run it.
 [functions.trace-loan-fund-flow]
 verify_jwt = false
+
+# Called by the sync_didit_user_status trigger via pg_net. No JWT: the caller only names a user, and
+# the function pushes that user's CURRENT ban status (read from the DB) to Didit, so a stray call can
+# only re-sync Didit to the truth.
+[functions.didit-sync-user-status]
+verify_jwt = false
+
+[functions.admin-ban-user]
+verify_jwt = true
