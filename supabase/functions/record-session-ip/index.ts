@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { classifyLogin, LOGIN_COLOR } from '../_shared/loginRisk.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -91,9 +92,15 @@ const lookupGeo = async (ip: string): Promise<GeoResult | null> => {
 };
 
 // Post a single login line to the #login-feed Discord channel. Fire-and-forget:
-// any failure here must never affect the session-recording response. Red embed
-// when the login trips a flag (datacenter/VPN IP, or a subnet shared with other
-// accounts), green when it looks clean — so weird logins stand out at a glance.
+// any failure here must never affect the session-recording response.
+//
+// Three levels, so the channel separates "worth a glance" from "worth acting on":
+//   🟢 clean    — home/mobile network, nobody else on it.
+//   🟠 caution  — VPN / datacenter IP. It hides where the person really is, which is worth
+//                 noticing, but VPN exits (Cloudflare WARP, iCloud Private Relay…) are shared
+//                 by thousands of strangers, so "others on the same VPN address" is a WEAK signal.
+//   🔴 risk     — another account on the same real home/mobile network: the classic
+//                 multi-accounting pattern.
 const postLoginFeed = async (details: {
    username: string | null;
    email: string | null;
@@ -105,12 +112,7 @@ const postLoginFeed = async (details: {
 
    const { username, email, geo, sharedSubnetUsers } = details;
 
-   const flags: string[] = [];
-   if (geo?.is_hosting) flags.push('🚩 Datacenter / VPN IP');
-   if (sharedSubnetUsers > 0) {
-      flags.push(`🚩 Shared subnet with ${sharedSubnetUsers} other account${sharedSubnetUsers > 1 ? 's' : ''}`);
-   }
-   const flagged = flags.length > 0;
+   const { level, flags } = classifyLogin(Boolean(geo?.is_hosting), sharedSubnetUsers);
 
    const location = geo
       ? `${geo.city_name ?? 'Unknown city'}, ${geo.country_iso ?? '??'}`
@@ -121,7 +123,7 @@ const postLoginFeed = async (details: {
 
    const embed = {
       title: `🔐 Login — ${username ?? 'unknown user'}`,
-      color: flagged ? 0xe74c3c : 0x2ecc71,
+      color: LOGIN_COLOR[level],
       fields: [
          { name: 'User', value: `${username ?? '—'}\n${email ?? '—'}`, inline: true },
          { name: 'Location', value: location, inline: true },

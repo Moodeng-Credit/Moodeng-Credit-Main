@@ -28,7 +28,10 @@ const corsHeaders = {
 
 type SupabaseClient = any;
 
-type BorrowerRecord = LoanNotificationRecipient & TrustPointRewardUser & { id: string };
+// notif_transaction_activity is selected below and gates this notification, but isn't part of the
+// shared recipient type, so declare it here.
+type BorrowerRecord = LoanNotificationRecipient &
+   TrustPointRewardUser & { id: string; notif_transaction_activity?: boolean | null };
 type TrustPointRow = { user_id: string; points_total: number | string | null };
 type MilestoneCompletionRow = { user_id: string; milestone_id: string };
 type SentLoanNotificationRow = { loan_id: string };
