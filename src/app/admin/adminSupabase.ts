@@ -2190,3 +2190,32 @@ export async function resetUserMfa(userId: string): Promise<ResetUserMfaResult> 
    if (!result) throw new Error('Could not reset 2FA for this user.');
    return result;
 }
+
+// ---------------------------------------------------------------------------
+// One-step ban — bans the account, revokes KYC + blacklists it, deletes open
+// unfunded requests, and emails/Telegrams the user. The Didit BLOCKED status
+// follows automatically from the account_status change (DB trigger).
+// ---------------------------------------------------------------------------
+export interface BanUserResult {
+   ok: boolean;
+   banned: boolean;
+   removedRequests: number;
+   emailSent: boolean;
+   telegramSent: boolean;
+   errors: string[];
+}
+
+export async function banUser(input: {
+   userId: string;
+   note: string;
+   reason?: 'spam' | 'default' | 'duplicate' | 'abuse' | 'manual';
+   notify?: boolean;
+}): Promise<BanUserResult> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-ban-user', { body: input });
+   if (error) {
+      throw new Error((await readFunctionError(error)) || error.message || 'Could not ban this user.');
+   }
+   const result = data as BanUserResult | null;
+   if (!result) throw new Error('Could not ban this user.');
+   return result;
+}

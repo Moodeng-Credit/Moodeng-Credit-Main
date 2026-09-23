@@ -18,6 +18,7 @@ import {
    type AdminLoanRequest,
    type AdminOverview,
    type AdminUser,
+   banUser,
    getAdminOverview,
    getCurrentAdmin,
    getLatestAdminIntegrityRun,
@@ -562,6 +563,37 @@ export default function AdminPanel() {
       }
    }
 
+   async function handleBanUser(user: AdminDirectoryUser) {
+      setError(null);
+      setStatusMessage(null);
+
+      const note = window.prompt(
+         `Ban ${user.username}?\n\nThis bans the account, blocks them in Didit, blacklists their KYC, deletes any open unfunded ` +
+            'requests, and emails/Telegrams them that the account is closed.\n\nWhy are you banning them? (saved as the admin note)'
+      );
+      if (note === null) return;
+      if (!note.trim()) {
+         setError('A ban note is required.');
+         return;
+      }
+
+      try {
+         const result = await banUser({ userId: user.id, note: note.trim() });
+         const parts = [
+            `${user.username} was banned and will be blocked in Didit`,
+            result.removedRequests > 0 ? `${result.removedRequests} open request${result.removedRequests > 1 ? 's' : ''} deleted` : null,
+            result.emailSent || result.telegramSent
+               ? `notified by ${[result.emailSent && 'email', result.telegramSent && 'Telegram'].filter(Boolean).join(' + ')}`
+               : 'no email/Telegram on file to notify'
+         ].filter(Boolean);
+         setStatusMessage(`${parts.join(' · ')}.`);
+         if (result.errors.length) setError(`Banned, but some steps failed: ${result.errors.join('; ')}`);
+         await refresh(search);
+      } catch (caught) {
+         setError(caught instanceof Error ? caught.message : 'Could not ban this user.');
+      }
+   }
+
    async function handleResetMfa(user: AdminDirectoryUser) {
       setError(null);
       setStatusMessage(null);
@@ -1006,6 +1038,14 @@ export default function AdminPanel() {
                                             </button>
                                             <button
                                                type="button"
+                                               onClick={() => handleBanUser(user)}
+                                               disabled={user.account_status === 'banned'}
+                                               className="rounded-2xl bg-red-800 px-5 py-4 text-xl font-black text-white disabled:opacity-40"
+                                            >
+                                               {user.account_status === 'banned' ? 'Banned' : 'Ban'}
+                                            </button>
+                                            <button
+                                               type="button"
                                                onClick={() => handleResetMfa(user)}
                                                className="rounded-2xl bg-sky-600 px-5 py-4 text-xl font-black text-white"
                                             >
@@ -1013,7 +1053,7 @@ export default function AdminPanel() {
                                             </button>
                                          </div>
                                          <p className="mt-3 text-base font-bold text-[#a89bb8]">
-                                            Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
+                                            Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
                                             every authenticator/passkey factor this user has enrolled — use it when they're locked out.
                                          </p>
                                       </div>
