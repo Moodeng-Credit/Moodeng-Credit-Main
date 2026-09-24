@@ -114,9 +114,9 @@ export default function ConnectStep({
                      {wasRejected
                         ? "Want us to take another look? Reach out again and tell us what's changed."
                         : withEmma
-                          ? 'Before your first loan, you’ll have a quick 15-minute call with Emma to set you up with a local exchange — how to deposit, cash out and pay back. First, confirm your Messenger so we can remind you about it.'
+                          ? 'Glad you’re here! Next, let’s talk in person: a quick 15-minute call with Emma to set you up with a local exchange — how to deposit, cash out and pay back. First, confirm your Messenger so we can remind you about it.'
                           : mode === 'call'
-                            ? 'Before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
+                            ? 'Glad you’re here! Next, let’s talk in person about your loan needs and how we can serve you best — before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
                           : 'Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
                   </p>
                </div>
@@ -137,9 +137,14 @@ export default function ConnectStep({
                requireUpcoming
                host={withEmma ? 'emma' : undefined}
                intro={
-                  withEmma
-                     ? 'Pick a time for your 15-minute setup call with Emma. Once you’ve joined it, you can apply for your loan straight away.'
-                     : "Pick a time for a quick 15-minute video hello. Once you've joined the call, you can apply for your loan straight away."
+                  <div className="flex flex-col gap-2 text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+                     <p>
+                        <span className="font-[590] text-md-heading">Important — next step:</span> book a 15-minute meeting
+                        {withEmma ? ' with Emma' : ' with our team'} to set up your account, complete verification, and walk you through
+                        cashing out — so switching to your local currency is smooth once your USDC funding arrives.
+                     </p>
+                     <p>We’ll also unlock perks in the meeting, including your referral bonus. Once you’ve joined it, you can apply straight away.</p>
+                  </div>
                }
                continueLabel={isSending ? 'Sending...' : 'Send to the team'}
                onBack={() => setPage('intro')}
@@ -227,9 +232,26 @@ export function LoanAccessPendingCard({
          </h3>
          <p className="max-w-[320px] text-[13px] font-normal leading-[18px] text-md-neutral-1200">
             {mode === 'call'
-               ? 'Your video call is booked — the link is in your email and we’ll remind you on Messenger. Right after the call, the team unlocks your application and you can apply straight away.'
+               ? 'Thank you for confirming! Your meeting is booked — the Zoom link is in your email and we’ll remind you on Messenger. Right after the call, the team unlocks your application and you can apply straight away.'
                : 'Thanks for reaching out! The team usually replies within a day. We’ll message you on Messenger and send a notification the moment you’re approved — then you can apply right away.'}
          </p>
+         {mode === 'call' ? (
+            <div className="w-full max-w-[320px] rounded-[12px] border border-[#ded6e8] bg-white p-3 text-left text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+               <p className="font-[590] text-md-heading">Please have ready for the call:</p>
+               <ol className="mt-1 list-decimal pl-5">
+                  <li>Your original physical ID or passport — approval depends on passing this check.</li>
+                  <li>Camera on, a well-lit room, and your phone nearby.</li>
+               </ol>
+               <a
+                  className="mt-2 inline-block font-[590] text-md-primary-1200 underline"
+                  href="https://www.facebook.com/emmamoodengcredit"
+                  rel="noreferrer"
+                  target="_blank"
+               >
+                  Connect with Emma Moodeng on Facebook
+               </a>
+            </div>
+         ) : null}
          <button
             className="mt-2 w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]"
             onClick={onClose}

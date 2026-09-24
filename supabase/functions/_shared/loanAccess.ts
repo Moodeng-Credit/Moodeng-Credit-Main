@@ -14,7 +14,7 @@
 import { postDiscord } from './discord.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
-import { getMessengerContact, messengerDisplayName } from './sendpulse.ts';
+import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
 import { formatCallTime } from './videoCall.ts';
 
@@ -184,9 +184,11 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
 // ---- Borrower notification (on decision / expiry) ---------------------------------------------
 
 const BORROWER_MESSAGES = {
+   // Emma's "Post-meeting recap".
    approved: {
       title: "You're approved to borrow 🎉",
-      body: 'The Moodeng team approved you. Tap to apply for your loan.',
+      body:
+         'Great meeting you! Tap to apply for your loan. Important: keeping your account active means sticking to the repayment terms — loan defaults are flagged and permanently banned across all affiliated platforms.',
       url: APPLY_URL
    },
    rejected: {
@@ -194,9 +196,10 @@ const BORROWER_MESSAGES = {
       body: "We can't approve loan access right now. Message us on Messenger if you'd like to talk it through.",
       url: `${SITE_URL}/request-board`
    },
+   // Emma's "Decline the loan request" script (no-show).
    no_show: {
       title: 'We missed you on the call',
-      body: "Your Moodeng video call didn't happen. Tap to book a new time — your loan request unlocks right after the call.",
+      body: "We're sorry we missed you. Your loan request can't go ahead without the meeting — tap to book a new time, or connect with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
       url: APPLY_URL
    },
    // Open flow: their request is already on the board, so this is just "please talk to us".
@@ -227,6 +230,10 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    } catch (err) {
       console.error('loanAccess: push failed for', borrower.id, err instanceof Error ? err.message : err);
    }
+
+   // Messenger too (lands only inside Meta's 24h window — e.g. they chatted around the call).
+   const messenger = await sendMessengerMessage(borrower.messenger_psid, { text: `${msg.title}\n\n${msg.body}\n\n${msg.url}` });
+   if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
 
    if (borrower.chat_id && borrower.notif_account_activity !== false) {
       try {

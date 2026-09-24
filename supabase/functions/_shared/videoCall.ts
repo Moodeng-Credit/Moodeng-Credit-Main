@@ -54,8 +54,13 @@ type CallUser = {
 export const sendBookedMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   // Emma's "Confirm the initial meeting" script. The Zoom link itself comes in Cal.com's email.
    return sendMessengerMessage(u.messenger_psid, {
-      text: `📅 You're booked for a quick video call with the Moodeng team: ${when}.\n\nWe'll send the link by email and remind you here before it starts.`,
+      text:
+         `📅 Thank you for confirming! Your meeting with the Moodeng team is on ${when} via Zoom — the join link is in your email.\n\n` +
+         'To make it smooth, please have ready:\n1. Your original physical ID or passport (approval depends on passing this check)\n' +
+         '2. Camera on, a well-lit room, and your phone nearby\n\n' +
+         'To get funded after the meeting, connect with Emma Moodeng on Facebook: https://www.facebook.com/emmamoodengcredit',
       card: confirmCard('Will you make it?', u.video_call_confirm_token)
    });
 };
@@ -65,10 +70,11 @@ export const sendBookedMessenger = (u: CallUser) => {
 export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   // Emma's "Remind the initial meeting" script.
    const text =
       stage === 2
-         ? `⏰ Your Moodeng video call starts in under an hour — ${when}. The join link is in your email.`
-         : `👋 Reminder: your Moodeng video call is coming up — ${when}.`;
+         ? `⏰ Our meeting starts in under an hour — ${when}. The Zoom link is in your email. Please have your ID or passport ready.`
+         : `👋 Just a quick reminder about our meeting scheduled for ${when}. Please let us know here if that time still works for you or if you'd prefer to reschedule. Looking forward to meeting you!`;
    return sendMessengerMessage(u.messenger_psid, {
       text,
       card: u.video_call_confirmed_at ? undefined : confirmCard('Still coming?', u.video_call_confirm_token)

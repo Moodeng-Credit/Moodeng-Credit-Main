@@ -80,7 +80,7 @@ only exists after Emma marks them attended. They keep the +$5 referral boost.
 
 ---
 
-## 3. Emma's message scripts → where each goes (TO DO / in progress)
+## 3. Emma's message scripts → where each goes (DONE on the branch)
 
 Emma's existing manual scripts, mapped to the steps. The Zoom link and password live in Emma's
 own template; keep them out of the repo, since Cal.com emails the join link anyway.
@@ -198,7 +198,7 @@ Branch **`staging` = production** (Vercel deploys it).
 
 ## 7. Open items / decisions
 
-- **Add Emma's texts** (§3). Partly done in code; check the branch for what landed.
+- **Emma's texts** (§3) are in the code. Have Emma read them in the preview (`/loan-request-preview?flow=call&referral&referralTest`) and tweak the wording.
 - **$10 vs $5 referral bonus**: confirm with Emma.
 - **Emma's "pre-interview before verification" idea:** today the gate appears when tapping Apply,
   *after* KYC (Didit) + wallet. Moving it before KYC would save Didit costs on no-shows. That
