@@ -70,6 +70,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode, mapBorrowerContextForSave } from '@/views/dashboard/components/LoanRequestModal';
+import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -2041,7 +2042,7 @@ function RequestBoard$() {
                            </button>
                         </div>
                         <img
-                           src="/hippos/thumb-up-right.png"
+                           src={isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
                            alt=""
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
                         />

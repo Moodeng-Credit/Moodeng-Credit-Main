@@ -109,6 +109,23 @@ The decline script is used for both No-show and Reject.
 
 ---
 
+## 3b. Visual design (from Figma "Milestone_9.23version", pulled via the Figma MCP)
+
+The Connect screens follow the Figma's `verify_popup` / milestone style. They're built from
+`src/views/dashboard/components/connectKit.tsx`:
+- a lavender-to-white hero with a 3D hippo, a bold title and one line of copy;
+- a gamified **step trail** (Messenger → About you → Your goal → Book call);
+- big **option cards** (`#f8f1ff` fill, `#7661f9` border, speech-bubble badge);
+- a purple **gradient pill CTA**;
+- icon **perk rows** instead of paragraphs;
+- quick-pick **goal chips** on "What's the loan for?".
+
+**Hippo art:** `public/hippos/connect/{hello,call,waiting,approved}.png` are **placeholders**
+copied from the dashboard's Rookie hippos (Figma `slicing` → `Rookie_1/2/3`, original source
+images at 2× resolution). George will generate dedicated renders for these moments in the same 3D
+style: waving with a phone, on a video call, hugging a calendar, celebrating. Drop them in with the
+same filenames, with no code change needed. Use transparent PNG, ≥800×800 and no ground shadow.
+
 ## 4. What's in the branch (files)
 
 **Database**: `supabase/migrations/20260924000000_loan_access_gate.sql` (one migration):

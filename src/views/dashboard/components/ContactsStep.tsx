@@ -1,9 +1,10 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { CheckCircle, Facebook, MessageCircle } from 'lucide-react';
+import { Facebook, MessageCircle } from 'lucide-react';
 
 import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, WHATSAPP_VERIFY_ENABLED } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
 // Messenger line — either one is enough, since not everyone uses WhatsApp. Both are platform-only
@@ -19,13 +20,6 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 // Both stamp the verified-at column plus an id we can message them on. This component polls those
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
-
-const VerifiedBadge = () => (
-   <div className="flex items-center gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
-      <CheckCircle aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={2} />
-      <span>Verified</span>
-   </div>
-);
 
 export default function ContactsStep({
    userId,
@@ -127,107 +121,55 @@ export default function ContactsStep({
    };
 
    return (
-      <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          {intro ?? (
-            <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-               So we can reach you if you ever need help — like withdrawing, or extending a loan.{' '}
-               {showWhatsApp ? 'Verify WhatsApp or Facebook Messenger; either one is enough.' : 'Verify your Facebook Messenger.'} Only Moodeng
-               sees this; it&apos;s never shown to lenders.
-            </p>
+            <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
          )}
 
          {showWhatsApp ? (
-            <div className="flex flex-col gap-3 rounded-[16px] border border-[#ded6e8] bg-white p-4">
-               <div className="flex items-center gap-2">
-                  <MessageCircle className="size-5 shrink-0 text-[#25D366]" strokeWidth={2} aria-hidden="true" />
-                  <span className="text-[15px] font-[590] leading-5 text-md-heading">WhatsApp</span>
-                  {whatsappVerified ? null : <span className="text-[12px] font-normal text-md-neutral-1200">(one option)</span>}
-               </div>
-
-               {whatsappVerified ? (
-                  <VerifiedBadge />
-               ) : (
-                  <>
-                     <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-                        Tap below, then just hit send on WhatsApp — no code to type.
-                     </p>
-                     <button
-                        className="w-fit rounded-[12px] bg-[#25D366] px-md-2 py-md-1 text-md-b2 font-semibold text-white transition duration-150 ease-out hover:bg-[#1fb958] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={startingChannel !== null}
-                        onClick={() => handleVerify('whatsapp')}
-                        type="button"
-                     >
-                        {startingChannel === 'whatsapp' ? 'Opening WhatsApp...' : 'Verify via WhatsApp'}
-                     </button>
-                  </>
-               )}
-            </div>
+            <OptionCard
+               badge="1 tap"
+               disabled={startingChannel !== null}
+               done={whatsappVerified}
+               doneLabel="Verified"
+               icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
+               onClick={() => handleVerify('whatsapp')}
+               subtitle={startingChannel === 'whatsapp' ? 'Opening WhatsApp…' : 'Just hit send — nothing to type'}
+               title="WhatsApp"
+            />
          ) : null}
 
-         <div className="flex flex-col gap-3 rounded-[16px] border border-[#ded6e8] bg-white p-4">
-            <div className="flex items-center gap-2">
-               <Facebook className="size-5 shrink-0 text-[#0866FF]" strokeWidth={2} aria-hidden="true" />
-               <span className="text-[15px] font-[590] leading-5 text-md-heading">Facebook Messenger</span>
-               {messengerVerified || !showWhatsApp ? null : (
-                  <span className="text-[12px] font-normal text-md-neutral-1200">(one option)</span>
-               )}
-            </div>
+         {messengerLink && !messengerVerified ? (
+            <OptionCard
+               icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
+               onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+               subtitle={
+                  <>
+                     Waiting… tap <b>Get Started</b> if Messenger asks
+                  </>
+               }
+               title="Open Messenger again"
+            />
+         ) : (
+            <OptionCard
+               badge="1 tap"
+               disabled={startingChannel !== null}
+               done={messengerVerified}
+               doneLabel="Verified"
+               icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
+               onClick={() => handleVerify('messenger')}
+               subtitle={startingChannel === 'messenger' ? 'Opening Messenger…' : 'Confirms you automatically — nothing to type'}
+               title="Messenger"
+            />
+         )}
 
-            {messengerVerified ? (
-               <VerifiedBadge />
-            ) : messengerLink ? (
-               <>
-                  <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-                     Waiting for Messenger… If it shows a <span className="font-[590] text-md-heading">Get Started</span> button, tap it.
-                     The check appears here as soon as you&apos;re confirmed.
-                  </p>
-                  <button
-                     className="w-fit rounded-[12px] border border-[#0866FF] bg-white px-md-2 py-md-1 text-md-b2 font-semibold text-[#0866FF] transition duration-150 ease-out hover:bg-[#eef4ff] active:scale-[0.97]"
-                     onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
-                     type="button"
-                  >
-                     Open Messenger again
-                  </button>
-               </>
-            ) : (
-               <>
-                  <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-                     Tap below. Messenger opens and confirms you automatically — no code to type.
-                  </p>
-                  <button
-                     className="w-fit rounded-[12px] bg-[#0866FF] px-md-2 py-md-1 text-md-b2 font-semibold text-white transition duration-150 ease-out hover:bg-[#0654d1] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
-                     disabled={startingChannel !== null}
-                     onClick={() => handleVerify('messenger')}
-                     type="button"
-                  >
-                     {startingChannel === 'messenger' ? 'Opening Messenger...' : 'Verify via Messenger'}
-                  </button>
-               </>
-            )}
-         </div>
+         {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
-         {verifyError ? <p className="text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
-
-         <div className="mt-auto flex flex-col gap-2">
-            <button
-               className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                  canContinue
-                     ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]'
-                     : 'bg-md-neutral-600'
-               }`}
-               disabled={!canContinue}
-               onClick={handleContinue}
-               type="button"
-            >
+         <div className="mt-auto flex flex-col gap-1 pt-2">
+            <PrimaryButton disabled={!canContinue} onClick={handleContinue}>
                Continue
-            </button>
-            <button
-               className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
-               onClick={onBack}
-               type="button"
-            >
-               Back
-            </button>
+            </PrimaryButton>
+            <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
       </div>
    );

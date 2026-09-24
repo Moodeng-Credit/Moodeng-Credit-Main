@@ -90,13 +90,13 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
 
    const goToIntro = async () => {
       await click(buttonByText(container, 'Continue'));
-      expect(container.textContent).toContain('What do you need a loan for?');
+      expect(container.textContent).toContain("What's the loan for?");
    };
 
    it('opens with the "meet every borrower" pitch on the Messenger step', async () => {
       await render();
       expect(container.textContent).toContain('we like to meet every borrower');
-      expect(container.textContent).toContain('Facebook Messenger');
+      expect(container.textContent).toContain('Messenger');
    });
 
    it('shows the reach-out-again copy for a previously rejected borrower', async () => {
@@ -132,7 +132,7 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
       await click(buttonByText(container, 'Send to the team'));
 
       expect(onSubmitted).not.toHaveBeenCalled();
-      expect(container.textContent).toContain('Facebook Messenger');
+      expect(container.textContent).toContain('Messenger');
    });
 
    it('shows a retry message on an unexpected failure', async () => {
@@ -174,7 +174,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       await act(async () => {
          await Promise.resolve();
       });
-      expect(container.textContent).toContain('15-minute video call');
+      expect(container.textContent).toContain('15-min video call');
 
       await click(buttonByText(container, 'Continue'));
       await typeInto(container.querySelector('textarea') as HTMLTextAreaElement, 'Rent is due before payday');
@@ -224,10 +224,10 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
 
       await click(buttonByText(container, 'Continue'));
       expect(renderAbout).toHaveBeenCalled();
-      expect(container.textContent).not.toContain('What do you need a loan for?');
+      expect(container.textContent).not.toContain("What's the loan for?");
 
       await click(buttonByText(container, 'Bio done'));
-      expect(container.textContent).toContain('What do you need a loan for?');
+      expect(container.textContent).toContain("What's the loan for?");
    });
 
    it('books a referred borrower\u2019s call with Emma only', async () => {
@@ -274,7 +274,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
          root.render(createElement(LoanAccessPendingCard, { onClose, mode: 'call' }));
       });
       expect(container.textContent).toContain('See you on the call');
-      expect(container.textContent).toContain('Right after the call');
+      expect(container.textContent).toContain('right after the call');
    });
 });
 

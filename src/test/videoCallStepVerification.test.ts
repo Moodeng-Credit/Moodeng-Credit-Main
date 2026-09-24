@@ -35,8 +35,8 @@ const { default: VideoCallStep } = await import('@/views/dashboard/components/Vi
 
 const allButtons = (c: HTMLElement) => Array.from(c.querySelectorAll('button'));
 const continueButton = (c: HTMLElement) =>
-   allButtons(c).find((b) => /^(Continue|Book a time)/.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
-const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Back|Try again)/.test(b.textContent?.trim() ?? ''));
+   allButtons(c).find((b) => /^(Continue|Book a time|Pick a time)/.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
+const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Pick a time|Back|Try again)/.test(b.textContent?.trim() ?? ''));
 
 describe('VideoCallStep — free round-robin anonymous booking', () => {
    let container: HTMLDivElement;
@@ -88,14 +88,14 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       expect(bookCall).toBeTruthy();
       expect((bookCall?.[1] as { body?: { start?: string } })?.body?.start).toBe('2026-10-01T09:00:00.000Z');
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("You're booked with the Moodeng team");
+      expect(container.textContent).toContain("booked with the Moodeng team");
    });
 
    it('enables Continue on load for a borrower already booked', async () => {
       supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_starts_at: '2026-09-01T09:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("You're booked with the Moodeng team");
+      expect(container.textContent).toContain("booked with the Moodeng team");
    });
 
    it('keeps the gate closed and warns when the slot was just taken', async () => {

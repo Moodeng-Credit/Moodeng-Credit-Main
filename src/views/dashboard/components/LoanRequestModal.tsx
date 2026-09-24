@@ -1997,7 +1997,11 @@ export default function LoanRequestModal({
             ) : null}
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
-               className="flex touch-none cursor-grab select-none items-center justify-between border-b border-[#e7e0ec] px-5 pb-4 pt-6 active:cursor-grabbing sm:pt-4"
+               className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
+                  isLoanAccessGated || showContactsStep
+                     ? 'bg-[#f3ecff] pb-0 pt-5 sm:pt-3'
+                     : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
+               }`}
                onPointerDown={(event) => startDismissGesture(event, 'down')}
                onPointerMove={moveDismissGesture}
                onPointerUp={endDismissGesture}
@@ -2006,12 +2010,9 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
-                  ) : isLoanAccessPending ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Almost there</h2>
-                  ) : needsLoanAccessConnect ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Let&apos;s connect</h2>
-                  ) : showContactsStep ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
+                  ) : isLoanAccessGated || showContactsStep ? (
+                     // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
+                     <h2 className="sr-only">{isLoanAccessPending ? 'Almost there' : showContactsStep ? 'How can we reach you' : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
                         Schedule a video call
