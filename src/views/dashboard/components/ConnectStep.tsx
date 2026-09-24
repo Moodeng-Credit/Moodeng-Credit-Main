@@ -125,7 +125,7 @@ export default function ConnectStep({
             }}
             intro={
                <ConnectHero
-                  image={CONNECT_HIPPOS.hello}
+                  image={wasRejected ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
                   subtitle={
                      wasRejected
                         ? "Want us to take another look? Reach out again and tell us what's changed."
@@ -198,7 +198,7 @@ export default function ConnectStep({
 
    return (
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="A quick note so the team knows how to help." title="What's the loan for?" trail={trail('intro')} />
+         <ConnectHero image={CONNECT_HIPPOS.cashout} subtitle="A quick note so the team knows how to help." title="What's the loan for?" trail={trail('intro')} />
 
          <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Quick picks">
             {GOAL_CHIPS.map((chip) => {

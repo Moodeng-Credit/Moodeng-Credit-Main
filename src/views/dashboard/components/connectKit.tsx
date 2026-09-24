@@ -7,13 +7,14 @@ import { Check } from 'lucide-react';
 // step trail, big tappable option cards (#f8f1ff fill, #7661f9 border, speech-bubble badge) and a
 // purple gradient pill CTA. Kept deliberately text-light — one line of copy per idea.
 
-// Per-moment hippo art. These are placeholders copied from the dashboard's Rookie hippos until the
-// dedicated renders land — drop new PNGs in with the same names to swap them, no code change.
+// Per-moment hippo art (same character as the dashboard's Rookie hippos, one pose per moment).
 export const CONNECT_HIPPOS = {
-   hello: '/hippos/connect/hello.png',
-   call: '/hippos/connect/call.png',
-   waiting: '/hippos/connect/waiting.png',
-   approved: '/hippos/connect/approved.png'
+   hello: '/hippos/connect/hello.png', // waving with a phone — Messenger
+   call: '/hippos/connect/call.png', // headset + laptop — book the call
+   waiting: '/hippos/connect/waiting.png', // hugging the calendar — call booked
+   approved: '/hippos/connect/approved.png', // confetti — ready to apply
+   cashout: '/hippos/connect/cashout.png', // wallet — what's the loan for
+   missed: '/hippos/connect/missed.png' // "oops" + reschedule — coming back after a rejection
 } as const;
 
 const FIGMA = {

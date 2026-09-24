@@ -120,11 +120,12 @@ The Connect screens follow the Figma's `verify_popup` / milestone style. They're
 - icon **perk rows** instead of paragraphs;
 - quick-pick **goal chips** on "What's the loan for?".
 
-**Hippo art:** `public/hippos/connect/{hello,call,waiting,approved}.png` are **placeholders**
-copied from the dashboard's Rookie hippos (Figma `slicing` → `Rookie_1/2/3`, original source
-images at 2× resolution). George will generate dedicated renders for these moments in the same 3D
-style: waving with a phone, on a video call, hugging a calendar, celebrating. Drop them in with the
-same filenames, with no code change needed. Use transparent PNG, ≥800×800 and no ground shadow.
+**Hippo art:** `public/hippos/connect/` holds six dedicated poses of the dashboard hippo:
+`hello` (Messenger), `call` (book call), `waiting` (booked), `approved` (Apply card after approval),
+`cashout` ("What's the loan for?") and `missed` (returning after a rejection). They were cleaned from
+George's generated cutouts: stray crop scraps removed, trimmed, and 480px tall (about 4× the 112px
+display size). `call` and `approved` keep a slight hard edge on the right from the generator's crop,
+so regenerate them with more margin if it bothers anyone.
 
 ## 4. What's in the branch (files)
 
