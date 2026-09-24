@@ -30,25 +30,27 @@ import Loading from '@/components/Loading';
 import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
+import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit, isRepaidOnTime } from '@/lib/creditLeveling';
-import { useFriendReferrals } from '@/hooks/useFriendReferrals';
-import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
-import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
-import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isCurrentUserAdmin } from '@/lib/isCurrentUserAdmin';
 import { isUserVerified } from '@/lib/isUserVerified';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
+import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
+import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
+import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
 
 import {
    DEMO_BORROWER_INSIGHTS_LOANS,
@@ -157,7 +159,16 @@ const UserProfile = () => {
       const loadProfile = async () => {
          try {
             const { user: fetchedUser } = await dispatch(getUserProfile(username)).unwrap();
-            setProfileUser(fetchedUser);
+            // public_user_profiles blanks the credit limit, which made every borrower read as LV1 here.
+            // Fill in the real limit (and paused flag) so this page matches the dashboard.
+            const { data: credit } = await getSupabaseBrowserClient()
+               .rpc('get_public_credit_limit', { p_user_id: fetchedUser.id })
+               .maybeSingle<{ cs: number | null; credit_progression_paused: boolean | null }>();
+            setProfileUser(
+               credit
+                  ? { ...fetchedUser, cs: credit.cs ?? fetchedUser.cs, creditProgressionPaused: Boolean(credit.credit_progression_paused) }
+                  : fetchedUser
+            );
             await dispatch(getUserLoans({ userId: fetchedUser.id })).unwrap();
          } catch (error) {
             console.error('Error fetching profile:', (error as Error).message || error);
@@ -1055,12 +1066,16 @@ const UserProfile = () => {
                               ) : ownVoucherState === 'pending' ? (
                                  <div className="flex items-center justify-between gap-2">
                                     <span className="text-[14px] font-medium text-md-neutral-1400">₱50 GrabFood voucher</span>
-                                    <span className="shrink-0 rounded-full bg-[#fff4cc] px-2.5 py-1 text-[12px] font-semibold text-[#a06a00]">Pending</span>
+                                    <span className="shrink-0 rounded-full bg-[#fff4cc] px-2.5 py-1 text-[12px] font-semibold text-[#a06a00]">
+                                       Pending
+                                    </span>
                                  </div>
                               ) : ownVoucherState === 'sent' ? (
                                  <div className="flex items-center justify-between gap-2">
                                     <span className="text-[14px] font-medium text-md-neutral-1400">₱50 GrabFood voucher</span>
-                                    <span className="shrink-0 rounded-full bg-[#eefbf3] px-2.5 py-1 text-[12px] font-semibold text-[#166534]">Sent</span>
+                                    <span className="shrink-0 rounded-full bg-[#eefbf3] px-2.5 py-1 text-[12px] font-semibold text-[#166534]">
+                                       Sent
+                                    </span>
                                  </div>
                               ) : ownVoucherState === 'loading' ? (
                                  <div className="h-4 w-40 animate-pulse rounded bg-[#eee8f4]" />
@@ -1368,7 +1383,8 @@ const UserProfile = () => {
             onClose={() => setIsLenderDiversitySheetOpen(false)}
             onOpenDocs={() => window.open(LENDER_DIVERSITY_DOCS_URL, '_blank', 'noopener,noreferrer')}
          />
-         {showLenderInsightsTour ? <GuidedTourPreview
+         {showLenderInsightsTour ? (
+            <GuidedTourPreview
                // The visitor already opted in on the request board — re-showing the
                // "Want a quick tour?" intro card here would feel like the tour reset
                // rather than continued, so jump straight into step 4.
@@ -1402,7 +1418,8 @@ const UserProfile = () => {
                   // board rather than the lender-preview URL that looks like a fake login.
                   navigate(isGuestLenderTourContinuation ? '/request-board' : '/request-board?lenderTourPreview=1');
                }}
-            /> : null}
+            />
+         ) : null}
       </div>
    );
 };
