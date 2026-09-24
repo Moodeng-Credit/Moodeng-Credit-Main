@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
+import { isPreviewHost } from '@/lib/previewHost';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { VerifyIdentityBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
@@ -124,7 +125,7 @@ export default function DashboardV2Milestones() {
    return (
       <div className="min-h-screen bg-[#f7f7f7]">
          <div className="mx-auto max-w-[440px] pb-28">
-            <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} />
+            {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 
             <header className="relative flex h-16 items-end justify-center px-5 pb-1">
                <Link
