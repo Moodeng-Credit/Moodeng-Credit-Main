@@ -211,7 +211,22 @@ Branch **`staging` = production** (Vercel deploys it).
      admins are pinged) and reschedule (reminders restart).
    - Each host's Google Calendar is connected, so Cal.com avoids double-booking against Calendly or
      personal events.
-7. Check the Telegram **buttons** actually arrive at the webhook. If they don't, run `setWebhook`
+7. **Telegram facts found 2026-09-24:**
+   - The KYC group's alerts come from the *main* bot (edge secret `TELEGRAM_API_TOKEN`), whose
+     webhook is `telegram-webhook`, which is receiving traffic.
+   - The vault token `TELEGRAM_NOTIFICATION_API_TOKEN` is a *different* bot
+     (@moodengnewbranchbot). It has no webhook and is **not** in the KYC group, only the team
+     group, so it's irrelevant here.
+   - The vault copy of `TELEGRAM_API_TOKEN` is stale (401), so `getWebhookInfo` for the main bot
+     couldn't be read.
+   - If typed commands get no reply, the bot is in privacy mode and another bot spoke last: use
+     `/approve@<botusername> …`.
+   - Site links: the app is **https://moodeng.app**. `app.moodeng.credit` does NOT resolve. New
+     code falls back to moodeng.app. Older functions (`loan-request-telegram-notification`,
+     `loan-request-lender-suggestions`, `support-chat`) still fall back to `app.moodeng.credit`.
+     They're fine only if the `VITE_SITE_URL` / `SITE_URL` edge secret is set, so check it.
+   - The service key used by crons and triggers works: `video-call-reminders` had 96/96 × 200.
+7b. Check the Telegram **buttons** actually arrive at the webhook. If they don't, run `setWebhook`
    with `allowed_updates` including `callback_query`. Meanwhile the typed commands work.
 8. Leave `/loanflow call` on, or go back to `open`.
 9. Then update `docs/HANDOFF_BORROWER_VERIFICATION.md` §13 and merge PR #915 (George said don't

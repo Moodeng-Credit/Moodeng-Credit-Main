@@ -15,7 +15,7 @@ import { formatCallTime } from '../_shared/videoCall.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://app.moodeng.credit').replace(/\/$/, '');
+const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 
 const redirect = (result: 'yes' | 'expired') =>
    new Response(null, { status: 302, headers: { Location: `${SITE_URL}/request-board?callConfirmed=${result}` } });

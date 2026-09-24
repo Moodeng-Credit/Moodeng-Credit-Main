@@ -24,7 +24,9 @@ type SupabaseClient = any;
 // 'no_show' only applies to 'call' requests: back to none, so they can book again.
 export type LoanAccessDecision = 'approved' | 'rejected' | 'no_show';
 
-export const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://app.moodeng.credit').replace(/\/$/, '');
+// The borrower app lives at moodeng.app (app.moodeng.credit doesn't resolve) — the fallback only
+// matters if none of the env vars are set.
+export const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 // Opens the loan-request flow straight away (RequestBoard reads ?applyLoan=1).
 export const APPLY_URL = `${SITE_URL}/request-board?applyLoan=1`;
 // Where admins actually talk to the borrower: the Moodeng Credit Page inbox (SendPulse mirrors it).
