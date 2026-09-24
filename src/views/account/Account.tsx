@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
+import { History, type LucideIcon, MessageCircle, Settings } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -30,9 +31,16 @@ const ICON_MASK_BASE: React.CSSProperties = {
 };
 
 const ACCOUNT_ITEMS = [
-   { id: 'settings', path: '/account/settings' },
-   { id: 'loanHistory', path: '/history' }
+   { id: 'settings', path: '/account/settings', icon: Settings },
+   { id: 'loanHistory', path: '/history', icon: History }
 ] as const;
+
+// A small tinted tile so each row is recognisable at a glance (gear = settings, etc.).
+const RowIcon = ({ icon: Icon }: { icon: LucideIcon }) => (
+   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#f3effe] text-[#6c3fe0] dark:bg-md-primary-100/10 dark:text-md-primary-500">
+      <Icon className="h-5 w-5" strokeWidth={2} aria-hidden="true" />
+   </span>
+);
 
 const TELEGRAM_SUPPORT_URL =
    'https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more.';
@@ -413,7 +421,12 @@ export default function Account() {
                         onClick={() => navigate(item.path)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                      >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.accountItems[item.id]}</span>
+                        <span className="flex items-center gap-3">
+                           <RowIcon icon={item.icon} />
+                           <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
+                              {copy.accountItems[item.id]}
+                           </span>
+                        </span>
                         <ChevronRight />
                      </button>
                   ))}
@@ -421,7 +434,10 @@ export default function Account() {
                      href="#account-get-in-touch"
                      className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                   >
-                     <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.getInTouch}</span>
+                     <span className="flex items-center gap-3">
+                        <RowIcon icon={MessageCircle} />
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.getInTouch}</span>
+                     </span>
                      <ChevronRight />
                   </a>
                </div>
