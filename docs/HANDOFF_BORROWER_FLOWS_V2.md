@@ -192,7 +192,7 @@ as before.
 
 ## 4. What's in the branch (files)
 
-**Database**: `supabase/migrations/20260924000000_loan_access_gate.sql` (one migration):
+**Database**: `supabase/migrations/20260924150000_loan_access_gate.sql` (one migration):
 - enum `loan_access_status` (`none|pending|approved|rejected`); `users.loan_access_status`
   (default `none`; **existing users get `approved` via a column default**, with no UPDATE, so no
   triggers fire and `updated_at` isn't touched), `loan_access_approved_at`, `loan_access_seen_at`
