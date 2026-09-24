@@ -5,7 +5,7 @@
 > alerts). Read that first for background; this doc covers everything built **after** it.
 
 **Status: built, tested, NOT live.** Everything is on branch **`feat/connect-approve-apply`**
-(pushed to GitHub, no PR, not merged). The migration is **not applied** to production. The live
+(pushed to GitHub as **draft PR #916** — https://github.com/Moodeng-Credit/Moodeng-Credit-Main/pull/916 — do NOT merge until George says "launch"). The migration is **not applied** to production. The live
 site still runs today's flow.
 
 ---
@@ -177,7 +177,7 @@ Branch **`staging` = production** (Vercel deploys it).
    changes in before deploying, so you don't overwrite someone else's work.
 2. Rebase `feat/connect-approve-apply` on `origin/staging`; run `pnpm run type-check`,
    `pnpm test`, and the Deno tests.
-3. Open a PR → merge to `staging`. The frontend treats a missing column as "approved", so the
+3. Mark draft PR #916 ready → merge to `staging`. The frontend treats a missing column as "approved", so the
    deploy is safe before the migration.
 4. **Right after:** apply the migration (Supabase MCP `apply_migration`).
 5. Deploy the edge functions: `loan-access`, `video-call-confirm`, `telegram-webhook`,
