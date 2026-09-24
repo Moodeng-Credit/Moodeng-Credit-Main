@@ -19,7 +19,7 @@ Filters apply while you choose them, so you can narrow results without pressing 
 
 This release also cleans up the borrower path around loan actions:
 • unverified borrowers are guided back into onboarding before requesting a loan
-• verified borrowers without a Base Wallet go straight to the wallet step
+• verified borrowers without a wallet (Instant Wallet or Base Account) go straight to the wallet step
 • filter panels stay focused on browsing instead of blocking the board
 
 The goal is simple: fewer dead ends, fewer confusing taps, and a request board that updates the moment you make a choice.`
@@ -66,7 +66,7 @@ Most of this work sits behind the scenes, but it matters: borrower records, lend
       publishedAt: 'May 16, 2026',
       body: `The support area has been refreshed around the questions borrowers and lenders actually ask.
 
-Guides now explain repayment, Trust Score, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language.
+Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language.
 
 We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.`
    }

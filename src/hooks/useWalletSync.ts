@@ -9,17 +9,17 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import {
-   areWalletAddressesEqual,
-   formatWalletAddressShort,
-   getWalletProviderFromConnector,
-   isBaseWalletProvider
-} from '@/lib/walletProvider';
-import {
    completeWalletChangeIntent,
    getWalletChangeDisposition,
    getWalletChangeIntent,
    reportWalletChangeFailure
 } from '@/lib/walletChangeIntent';
+import {
+   areWalletAddressesEqual,
+   formatWalletAddressShort,
+   getWalletProviderFromConnector,
+   isBaseWalletProvider
+} from '@/lib/walletProvider';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -83,10 +83,7 @@ export function useWalletSync() {
       if (account.address.toLowerCase() === storedWalletAddress.toLowerCase()) {
          showSuccessToast(account.address);
          const walletChangeIntent = getWalletChangeIntent();
-         if (
-            walletChangeIntent?.status === 'active' &&
-            walletChangeIntent.previousAddress === storedWalletAddress.toLowerCase()
-         ) {
+         if (walletChangeIntent?.status === 'active' && walletChangeIntent.previousAddress === storedWalletAddress.toLowerCase()) {
             completeWalletChangeIntent(walletChangeIntent.id);
          }
          isConnecting.current = false; // Reset intent so it doesn't fire again on re-renders
@@ -114,8 +111,8 @@ export function useWalletSync() {
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          showToast(
             TOAST_TYPES.ERROR,
-            'Use Base Account',
-            'Borrowers must lock a Base Account so loans and repayments stay tied to one public record.',
+            'Use your Instant Wallet or a Base Account',
+            'Borrowers use their Instant Wallet (or a Base Account, if they prefer) so loans and repayments stay tied to one public record.',
             undefined,
             undefined
          );
@@ -144,7 +141,7 @@ export function useWalletSync() {
             showToast(
                TOAST_TYPES.ERROR,
                'Saved wallet mismatch',
-               `This account is saved to ${formatWalletAddressShort(storedWalletAddress)}. Connect that Base Account, or update the saved wallet from Account Settings.`,
+               `This account is saved to ${formatWalletAddressShort(storedWalletAddress)}. Switch back to that wallet, or update the saved wallet from Account Settings.`,
                undefined,
                undefined
             );
@@ -272,7 +269,7 @@ export function useWalletSync() {
                   showToast(
                      TOAST_TYPES.ERROR,
                      'Sign in again',
-                     'Your login session expired before Moodeng could lock this wallet. Please sign in again, then connect your Base wallet.',
+                     'Your login session expired before Moodeng could lock this wallet. Please sign in again, then connect your wallet.',
                      undefined,
                      undefined
                   );

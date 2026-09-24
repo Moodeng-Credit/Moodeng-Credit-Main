@@ -111,7 +111,7 @@ export const MilestoneDetailSheet = ({
    const isLocked = milestone.status === 'locked';
    const isUnlocked = milestone.status === 'unlocked';
    const pointReward = formatMilestoneTrustPoints(milestone);
-   const pointTitle = isUnlocked ? 'Trust Points earned' : milestone.status === 'next' ? 'Reward for completing this' : 'Locked reward';
+   const pointTitle = isUnlocked ? 'Pandesal points earned' : milestone.status === 'next' ? 'Reward for completing this' : 'Locked reward';
    const pointDescription = isUnlocked
       ? 'These points are added to your borrower reputation.'
       : 'Complete this milestone to add these points to your borrower reputation.';
@@ -223,8 +223,8 @@ export const MilestoneHelpSheet = ({ onClose }: { onClose: () => void }) => (
             </button>
          </div>
          <p className="mt-3 text-[14px] font-normal leading-6 text-md-neutral-1200">
-            Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Trust Points to your
-            borrower profile.
+            Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Pandesal points to
+            your borrower profile.
          </p>
          <div className="mt-5 divide-y divide-[#eee7f5] rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] px-4">
             <div className="py-4">

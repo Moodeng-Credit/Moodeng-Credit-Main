@@ -565,7 +565,7 @@ export const blogPosts: BlogPost[] = [
             heading: 'Infrastructure is also restraint',
             body: [
                'Building credit infrastructure for small loans does not mean pushing people to borrow more. It means making the loan they already need safer, clearer, and less dependent on coercion.',
-               'That requires restraint in the product. Do not hide the terms. Do not blur credit limit with trust score. Do not let borrowers request beyond available capacity. Do not use referral boosts where a borrower has already proven themselves through real repayment history.',
+               'That requires restraint in the product. Do not hide the terms. Do not blur credit limit with Pandesal points. Do not let borrowers request beyond available capacity. Do not use referral boosts where a borrower has already proven themselves through real repayment history.',
                'The point is to replace predatory improvisation with rules people can see.'
             ]
          }
@@ -1003,7 +1003,7 @@ export const blogPosts: BlogPost[] = [
             heading: 'How a fair platform reduces the risk',
             body: [
                'Moodeng is built around a few plain rules. Every participant verifies that they are a single, real human being, which blocks duplicates and bots. Every loan states one amount and one payback date, shown in full before anyone commits. No app permission is used as collection pressure, so your contacts are never leverage.',
-               'On the borrower side, repaying on time builds a portable Trust Score and Credit Level that you carry forward. Good behavior compounds into better options, which is the opposite of a loan-shark relationship that keeps you dependent.',
+               'On the borrower side, repaying on time builds portable Pandesal points and a Credit Level that you carry forward. Good behavior compounds into better options, which is the opposite of a loan-shark relationship that keeps you dependent.',
                'On the lender side, context and limits let a lender judge a request and diversify across many small loans, so no single late payment is a disaster. Structure is what turns a risky idea into a fair marketplace.'
             ]
          },
@@ -1059,9 +1059,7 @@ export const blogPosts: BlogPost[] = [
                'Borrowing more than you can repay on time to look impressive. One large missed payment sets you back further than several small on-time ones move you forward.'
          }
       ],
-      sources: [
-         { label: 'World Bank Global Findex database', href: globalFindexUrl }
-      ],
+      sources: [{ label: 'World Bank Global Findex database', href: globalFindexUrl }],
       publishedAt: 'July 2026',
       readTime: '6 min read',
       audience: 'Borrowers',
@@ -1089,7 +1087,7 @@ export const blogPosts: BlogPost[] = [
             heading: 'Make your good behavior portable',
             body: [
                'Here is the part most people miss. Repaying a loan only builds credit if the record is portable. If you repay perfectly into a private app ledger that you cannot carry anywhere else, you have cleared a balance but built nothing you own.',
-               'On Moodeng, on-time repayment builds a Trust Score and a Credit Level that belong to you and travel with you. Each good loan raises the ceiling on the next one. The record is evidence you control, not a collection tool controlled by the lender.',
+               'On Moodeng, on-time repayment earns Pandesal points and a Credit Level that belong to you and travel with you. Each good loan raises the ceiling on the next one. The record is evidence you control, not a collection tool controlled by the lender.',
                'That is the difference between paying off a debt and building credit. One ends when the balance hits zero. The other leaves you better positioned than you were before you borrowed.'
             ]
          },
@@ -1105,7 +1103,7 @@ export const blogPosts: BlogPost[] = [
             heading: 'A simple plan to start',
             body: [
                'Verify that you are a real person and set up your wallet. Make one small request with an amount you are certain you can repay, a clear reason, and a date you will not miss. Repay it on time.',
-               'Do that two or three more times over the next few months, keeping each loan small and each repayment punctual. Watch your Trust Score and Credit Level rise as the record accumulates.',
+               'Do that two or three more times over the next few months, keeping each loan small and each repayment punctual. Watch your Pandesal points and Credit Level rise as the record accumulates.',
                'Within roughly 90 days of consistent small, on-time loans, you will have something you never had before: real, portable evidence that you are a reliable borrower, written in your name and owned by you.'
             ]
          }

@@ -216,20 +216,20 @@ const buildTrustPointHighlight = (
 
    if (reward) {
       return {
-         title: isEarnedReward ? 'Trust points earned' : 'Trust point opportunity',
+         title: isEarnedReward ? 'Pandesal points earned' : 'Pandesal points to earn',
          copy: isEarnedReward ? (copy.earned ?? 'This action unlocked eligible milestones.') : copy.potential,
          value: reward,
-         textLine: `${isEarnedReward ? 'Trust points earned' : 'Trust point opportunity'}: ${reward}. ${
+         textLine: `${isEarnedReward ? 'Pandesal points earned' : 'Pandesal points to earn'}: ${reward}. ${
             isEarnedReward ? (copy.earned ?? 'This action unlocked eligible milestones.') : copy.potential
          }`
       };
    }
 
    return {
-      title: 'Trust points',
+      title: 'Pandesal points',
       copy: copy.fallback,
       value: copy.fallbackValue ?? 'Review',
-      textLine: `Trust point note: ${copy.fallback}`
+      textLine: `Pandesal points note: ${copy.fallback}`
    };
 };
 
@@ -1032,7 +1032,11 @@ export const buildLenderRepaymentTelegram = (
       ? `Sent to your funding wallet ${shortenWallet(loan.lender_wallet)} — the wallet you used for this loan.`
       : '';
    const hashes = Array.isArray(loan.hash) ? loan.hash : [];
-   const explorerLink = hashes.map((h) => buildTxExplorerLink(h)).filter(Boolean).at(-1) ?? '';
+   const explorerLink =
+      hashes
+         .map((h) => buildTxExplorerLink(h))
+         .filter(Boolean)
+         .at(-1) ?? '';
    const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
 
    const text = normalizeNotificationText(`Repayment received
@@ -1060,11 +1064,13 @@ export const buildRepaymentTeamFeedMessage = (
       return u?.username?.trim() || 'someone';
    };
    const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
-   const walletLine = shortenWallet(loan.lender_wallet)
-      ? `Returned to funding wallet ${shortenWallet(loan.lender_wallet)}.`
-      : '';
+   const walletLine = shortenWallet(loan.lender_wallet) ? `Returned to funding wallet ${shortenWallet(loan.lender_wallet)}.` : '';
    const hashes = Array.isArray(loan.hash) ? loan.hash : [];
-   const explorerLink = hashes.map((h) => buildTxExplorerLink(h)).filter(Boolean).at(-1) ?? '';
+   const explorerLink =
+      hashes
+         .map((h) => buildTxExplorerLink(h))
+         .filter(Boolean)
+         .at(-1) ?? '';
    const verifyLine = explorerLink ? `Verify on-chain: ${explorerLink}` : '';
    const actionUrl = buildDashboardLink();
 

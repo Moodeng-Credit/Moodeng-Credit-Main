@@ -28,8 +28,8 @@ const GUIDE_CATEGORY_LABELS = {
    en: {
       All: 'All',
       [GUIDE_CATEGORIES.gettingStarted]: 'Getting Started',
-      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
-      [GUIDE_CATEGORIES.creditLevel]: 'Antas ng kredito',
+      [GUIDE_CATEGORIES.trustScore]: 'Pandesal points',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
       [GUIDE_CATEGORIES.repayment]: 'Repayment',
       [GUIDE_CATEGORIES.wallet]: 'Wallet',
       [GUIDE_CATEGORIES.security]: 'Security'
@@ -37,8 +37,8 @@ const GUIDE_CATEGORY_LABELS = {
    fil: {
       All: 'Lahat',
       [GUIDE_CATEGORIES.gettingStarted]: 'Magsimula',
-      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
-      [GUIDE_CATEGORIES.creditLevel]: 'Level kredit',
+      [GUIDE_CATEGORIES.trustScore]: 'Pandesal points',
+      [GUIDE_CATEGORIES.creditLevel]: 'Antas ng kredito',
       [GUIDE_CATEGORIES.repayment]: 'Repayment',
       [GUIDE_CATEGORIES.wallet]: 'Wallet',
       [GUIDE_CATEGORIES.security]: 'Security'
@@ -46,8 +46,8 @@ const GUIDE_CATEGORY_LABELS = {
    id: {
       All: 'Semua',
       [GUIDE_CATEGORIES.gettingStarted]: 'Mulai',
-      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
-      [GUIDE_CATEGORIES.creditLevel]: 'ระดับเครดิต',
+      [GUIDE_CATEGORIES.trustScore]: 'Poin Pandesal',
+      [GUIDE_CATEGORIES.creditLevel]: 'Level kredit',
       [GUIDE_CATEGORIES.repayment]: 'Pembayaran',
       [GUIDE_CATEGORIES.wallet]: 'Wallet',
       [GUIDE_CATEGORIES.security]: 'Keamanan'
@@ -55,8 +55,8 @@ const GUIDE_CATEGORY_LABELS = {
    th: {
       All: 'ทั้งหมด',
       [GUIDE_CATEGORIES.gettingStarted]: 'เริ่มต้น',
-      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
-      [GUIDE_CATEGORIES.creditLevel]: 'Hạng tín dụng',
+      [GUIDE_CATEGORIES.trustScore]: 'แต้ม Pandesal',
+      [GUIDE_CATEGORIES.creditLevel]: 'ระดับเครดิต',
       [GUIDE_CATEGORIES.repayment]: 'การชำระคืน',
       [GUIDE_CATEGORIES.wallet]: 'กระเป๋าเงิน',
       [GUIDE_CATEGORIES.security]: 'ความปลอดภัย'
@@ -64,8 +64,8 @@ const GUIDE_CATEGORY_LABELS = {
    vi: {
       All: 'Tất cả',
       [GUIDE_CATEGORIES.gettingStarted]: 'Bắt đầu',
-      [GUIDE_CATEGORIES.trustScore]: 'Trust Score',
-      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.trustScore]: 'Điểm Pandesal',
+      [GUIDE_CATEGORIES.creditLevel]: 'Hạng tín dụng',
       [GUIDE_CATEGORIES.repayment]: 'Trả nợ',
       [GUIDE_CATEGORIES.wallet]: 'Ví',
       [GUIDE_CATEGORIES.security]: 'Bảo mật'

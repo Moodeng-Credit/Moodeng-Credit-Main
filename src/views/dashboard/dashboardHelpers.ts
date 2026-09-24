@@ -25,7 +25,7 @@ export interface DashboardMilestone {
 }
 
 export const formatMilestoneTrustPoints = (milestone: Pick<DashboardMilestone, 'points'>) =>
-   milestone.points ? `+${milestone.points} Trust Points` : 'Trust Points';
+   milestone.points ? `+${milestone.points} Pandesal points` : 'Pandesal points';
 
 export const getMilestoneSummary = (milestone: DashboardMilestone) => {
    const pointReward = formatMilestoneTrustPoints(milestone);
@@ -203,8 +203,8 @@ export const buildReputationMilestones = ({
          title: 'Repay a loan on time',
          description: 'Pay the full amount before the due date to start your repayment record.',
          points: trustPointMilestoneRuleById['first-on-time-repayment'].points,
-         reward: `Trust Points earned${currentLevelAmount ? ` · up to $${currentLevelAmount}` : ''}`,
-         outcome: 'Trust Points earned',
+         reward: `Pandesal points earned${currentLevelAmount ? ` · up to $${currentLevelAmount}` : ''}`,
+         outcome: 'Pandesal points earned',
          benefit: currentLevelAmount ? `Up to $${currentLevelAmount}` : 'Limit progress',
          isComplete: onTimePaidLoans.length >= 1,
          actionLabel: 'Pay loans',

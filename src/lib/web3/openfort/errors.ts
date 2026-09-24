@@ -7,7 +7,7 @@ export const friendlyConnectError = (err: unknown): string => {
    // Order matters, most-specific first: "…session endpoint is not configured" contains "session",
    // so the config check must win over the auth check (which would otherwise grab it).
    if (/not configured|endpoint/.test(raw)) {
-      return 'Instant wallet isn’t available right now. Please try again in a little while.';
+      return 'Instant Wallet isn’t available right now. Please try again in a little while.';
    }
    if (/fetch|network|reach|timeout|timed out|offline|connection|502|503|504/.test(raw)) {
       return "We couldn't reach the wallet service. Check your internet and try again.";

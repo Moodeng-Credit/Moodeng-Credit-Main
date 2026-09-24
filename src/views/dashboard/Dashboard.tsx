@@ -6,9 +6,9 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
-import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import type { WalletLivenessData } from '@/utils/diversityScore';
 
@@ -21,6 +21,7 @@ import { getWalletAgeInfo } from '@/lib/web3/walletAge';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
+import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import CreditLevelSection from '@/views/dashboard/components/CreditLevelSection';
 import DashboardHeader from '@/views/dashboard/components/DashboardHeader';
 import LenderDiversitySection from '@/views/dashboard/components/LenderDiversitySection';
@@ -28,12 +29,11 @@ import LoanSummarySection from '@/views/dashboard/components/LoanSummarySection'
 import ReputationMilestones from '@/views/dashboard/components/ReputationMilestones';
 import TrustScoreSection from '@/views/dashboard/components/TrustScoreSection';
 import UpcomingLoanDues from '@/views/dashboard/components/UpcomingLoanDues';
-import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import UserGreeting from '@/views/dashboard/components/UserGreeting';
 import VerificationCTA from '@/views/dashboard/components/VerificationCTA';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
-import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
+import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 import { DEMO_LENDER_PROFILES } from '@/views/user-profile/demoBorrowerInsights';
 
 const REQUEST_BOARD_TOUR_STEP_COUNT = 5;
@@ -397,8 +397,8 @@ export default function Dashboard() {
                steps={[
                   {
                      target: '[data-tour-target="dashboard-trust-score-heading"]',
-                     title: 'Trust Score',
-                     body: 'Trust is your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.',
+                     title: 'Pandesal points',
+                     body: 'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.',
                      durationMs: 6500
                   },
                   {
@@ -410,7 +410,7 @@ export default function Dashboard() {
                   {
                      target: '[data-tour-target="dashboard-milestones-heading"]',
                      title: 'Milestones',
-                     body: 'Milestones are extra ways to earn Trust Points. Complete them to strengthen your profile and make lenders more confident in your requests.',
+                     body: 'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.',
                      durationMs: 7600
                   }
                ]}

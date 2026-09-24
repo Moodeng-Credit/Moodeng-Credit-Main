@@ -9,7 +9,9 @@
 
   COPY RULES (same as app-map.md and troubleshooting.md):
   - Never say "KYC", "Didit", "liveness", "eID", or "Openfort" to a user.
-    The ID check is "Verify Your ID"; the embedded wallet is the "instant wallet".
+    The ID check is "Verify Your ID"; the embedded wallet is the "Instant Wallet" (the default wallet for
+    borrowers, with a Base Account as the optional alternative; lenders are recommended a Base
+    Account but can use an Instant Wallet too).
   - Use exact on-screen labels, bolded.
   - Numbers change over time — treat stats below as "as of" the date given,
     and if a user needs the current number, say to check the live page rather
@@ -24,18 +26,18 @@ The marketing site (`public/landing/`) explains Moodeng before someone signs up.
 - **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$18 stays $18") — it just becomes part of your record.
 - **Four honest promises:** Moodeng never digs through your phone (no contacts/photos/messages access), never sells your information, never shames you (reminders stay private, nothing posted publicly), and never makes you prove yourself twice (one ID check proves you're one person; lenders see your verification status, never your documents).
 - **Funding is not automatic** — a real person on the Request Board decides to fund each request; if nobody funds it before it expires, you owe nothing.
-- Loans settle in **USDC** and land in your **Base Account**; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
+- Loans settle in **USDC** and land in your wallet — your **Instant Wallet** by default (created from your Moodeng login, no app or seed phrase), or a **Base Account** if you connected one instead; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
 - Credit limit grows over time with on-time repayment — the $15 first limit can grow to $20, then higher, the more full-limit loans you repay on time (see "How Credit Levels work" below for the exact ladder).
 
-There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Base Account → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
+There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Instant Wallet (or a Base Account, if you use one) → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
 
 A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for lenders) make the same case in the signed-in app, and a **Team** page introduces the people behind Moodeng.
 
-**IOU rewards for lenders (the specifics shown on the Why Lend page):** lending earns IOU — up to **25 IOU** for funding a first-time borrower, plus **1 IOU for every $1 lent**. Lend to a 2nd-time borrower and you earn 20 IOU, and so on. Lend **5 times** and you're invited to the Moodeng Credit DAO. For now these show as IOU points; when the IOU token airdrop happens, your points help determine your token reward. IOU is for lenders only — borrowers build a Trust Score and Credit Level instead.
+**IOU rewards for lenders (the specifics shown on the Why Lend page):** lending earns IOU — up to **25 IOU** for funding a first-time borrower, plus **1 IOU for every $1 lent**. Lend to a 2nd-time borrower and you earn 20 IOU, and so on. Lend **5 times** and you're invited to the Moodeng Credit DAO. For now these show as IOU points; when the IOU token airdrop happens, your points help determine your token reward. IOU is for lenders only — borrowers build a Pandesal points and Credit Level instead.
 
 ## Moodeng Academy (`/academy`)
 
-An interactive, illustrated walkthrough of how to use the app, with a short tutorial video and a quiz at the end. It walks through: creating an account, verifying (to prove you're a real, unique person), adding a Base Account, understanding that your requested amount decides whether a loan is "trust-building" (below your limit) or "credit-building" (at your full limit), submitting a request, getting matched on the Request Board, repaying clearly and on time, and growing your next credit limit.
+An interactive, illustrated walkthrough of how to use the app, with a short tutorial video and a quiz at the end. It walks through: creating an account, verifying (to prove you're a real, unique person), setting up your wallet (the Instant Wallet by default, or a Base Account if you prefer), understanding that your requested amount decides whether a loan is "trust-building" (below your limit) or "credit-building" (at your full limit), submitting a request, getting matched on the Request Board, repaying clearly and on time, and growing your next credit limit.
 
 ### Academy → Money & getting started (`/academy/money`)
 
@@ -50,7 +52,7 @@ Four short guides, each about the practical mechanics of using USDC on Base:
 
 Two in-depth articles live here (plus the same guide library also reachable from Support → Guides):
 
-- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $20 → Level 3 = $40 → Level 4 = $60**. You start at Level 1. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Trust Score but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Trust Score, but your level itself never resets.
+- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $20 → Level 3 = $40 → Level 4 = $60**. You start at Level 1. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Pandesal points but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Pandesal points, but your level itself never resets.
 - **Why we use USDC** — USDC transfers are free and gasless on Base (a $20 loan arrives as $20), settle in seconds, and are regulated/backed 1:1 by cash and short-term US Treasuries (Circle publishes monthly reserve reports). It holds a stable $1 value, unlike volatile crypto. Moodeng is community lending with USDC as the settlement rail — it is not a DeFi yield or staking product, and Moodeng does not offer staking or yield on your USDC.
 
 ## Blogs (`/blogs`)
@@ -61,24 +63,24 @@ Longer editorial pieces on predatory lending, borrower dignity, and fair credit 
 
 A dedicated page spelling out the same ladder as "How Credit Levels work": **$15 → $20 → $40 → $60**. The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
 
-## Reputation Milestones / Trust Points (`/milestones`)
+## Reputation Milestones / Pandesal points (`/milestones`)
 
-**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards as you cross point thresholds:
+**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Pandesal points. Pandesal points unlock cosmetic profile rewards as you cross point thresholds:
 
-- **Silver avatar ring** at **50** Trust Points
-- **Gold avatar ring** at **120** Trust Points
-- **Trusted profile badge** at **250** Trust Points
-- **Top borrower award** at **500** Trust Points
+- **Silver avatar ring** at **50** Pandesal points
+- **Gold avatar ring** at **120** Pandesal points
+- **Trusted profile badge** at **250** Pandesal points
+- **Top borrower award** at **500** Pandesal points
 
-(There are also one-off collectibles, like a Founding Lucky Cat for early borrowers.) Important: **Trust Points unlock profile rewards — they do not guarantee funding**, and they are self-facing (only you see them, not lenders).
+(There are also one-off collectibles, like a Founding Lucky Cat for early borrowers.) Important: **Pandesal points unlock profile rewards — they do not guarantee funding**, and they are self-facing (only you see them, not lenders).
 
 ## Support Hub (`/support`)
 
 The Help & Support Center, with four sections:
 
 - **Getting started** — a hub of links into the Academy, Benefits/Why-Lend pages, the USDC and Credit Levels articles, and the Blogs.
-- **Guides** — a searchable library of short how-to articles (categories: Getting Started, Trust Score, Credit Level, Repayment, Wallet, Security) covering things like requesting your first loan, how your Trust Score is calculated and how repayments affect it, the difference between trust-building and credit-building loans, ways to repay and ways to add funds, withdrawing to a bank (with Coins.ph typically the cheapest round-trip route in the Philippines), what fees you'll pay (Moodeng charges none — the only cost is the exchange's own conversion fee), and managing your account/security settings. (The Trust Score guides are borrower-specific and not shown to lenders.)
-- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what a Trust Score and Credit Level are, what a Base wallet is and why borrowers need one, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
+- **Guides** — a searchable library of short how-to articles (categories: Getting Started, Pandesal points, Credit Level, Repayment, Wallet, Security) covering things like requesting your first loan, how your Pandesal points are earned and how repayments affect them, the difference between trust-building and credit-building loans, ways to repay and ways to add funds, withdrawing to a bank (with Coins.ph typically the cheapest round-trip route in the Philippines), what fees you'll pay (Moodeng charges none — the only cost is the exchange's own conversion fee), and managing your account/security settings. (The Pandesal points guides are borrower-specific and not shown to lenders.)
+- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what Pandesal points and Credit Levels are, what the Instant Wallet is (set up for you from your login — a Base Account is optional) and why borrowers need a wallet, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
 - **Updates** — a changelog of recent product improvements (filters on the Request Board, wallet/verification onboarding polish, clearer loan states, etc.).
 
 ## Help Hub (`/help`)

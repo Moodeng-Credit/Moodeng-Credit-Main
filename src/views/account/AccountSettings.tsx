@@ -1,15 +1,7 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import {
-   AlertCircle,
-   ArrowLeft,
-   Camera,
-   CheckCircle2,
-   ChevronRight,
-   Clock3,
-   WalletCards
-} from 'lucide-react';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { AlertCircle, ArrowLeft, Camera, CheckCircle2, ChevronRight, Clock3, WalletCards } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
@@ -23,11 +15,13 @@ import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
+import type { WalletConnectorKey } from '@/config/wagmiConfig';
+import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
-import { getVerificationUiState, VERIFICATION_STATE_LABEL, type VerificationUiState } from '@/lib/verificationUiState';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getVerificationUiState, VERIFICATION_STATE_LABEL, type VerificationUiState } from '@/lib/verificationUiState';
 import {
    beginWalletChangeIntent,
    cancelWalletChangeIntent,
@@ -35,18 +29,16 @@ import {
    WALLET_CHANGE_FAILED_EVENT
 } from '@/lib/walletChangeIntent';
 import { getBaseAccountConnector, getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
-import type { WalletConnectorKey } from '@/config/wagmiConfig';
-import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
-import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
+import { useCreateInstantWallet, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import BaseNetworkSheet from '@/views/account/BaseNetworkSheet';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
-import { useCreateInstantWallet, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
 import TwoFactorSettings from '@/views/account/TwoFactorSettings';
 import WalletAccountInsights from '@/views/account/WalletAccountInsights';
+import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
 
 const ICON_MASK: React.CSSProperties = {
    WebkitMaskSize: 'contain',
@@ -79,15 +71,12 @@ function loadNotificationPrefs(): NotificationPrefs {
          if (parsed && typeof parsed === 'object') {
             return {
                accountActivity:
-                  typeof parsed.accountActivity === 'boolean'
-                     ? parsed.accountActivity
-                     : DEFAULT_NOTIFICATION_PREFS.accountActivity,
+                  typeof parsed.accountActivity === 'boolean' ? parsed.accountActivity : DEFAULT_NOTIFICATION_PREFS.accountActivity,
                transactionActivity:
                   typeof parsed.transactionActivity === 'boolean'
                      ? parsed.transactionActivity
                      : DEFAULT_NOTIFICATION_PREFS.transactionActivity,
-               moodengBlogs:
-                  typeof parsed.moodengBlogs === 'boolean' ? parsed.moodengBlogs : DEFAULT_NOTIFICATION_PREFS.moodengBlogs
+               moodengBlogs: typeof parsed.moodengBlogs === 'boolean' ? parsed.moodengBlogs : DEFAULT_NOTIFICATION_PREFS.moodengBlogs
             };
          }
       }
@@ -277,15 +266,7 @@ function VerificationStateIcon({ state, className = 'size-4' }: { state: Verific
    return <AlertCircle className={`${className} text-md-red-500`} strokeWidth={2.2} aria-hidden="true" />;
 }
 
-export function SettingsGroup({
-   label,
-   description,
-   children
-}: {
-   label: string;
-   description?: string;
-   children: React.ReactNode;
-}) {
+export function SettingsGroup({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) {
    return (
       <section>
          {/* Section heading per the Figma settings spec (md-h5 in the dark heading
@@ -705,7 +686,12 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
                            />
                         </div>
                      </div>
-                     <button type="button" onClick={handleResendCode} disabled={isResending || isSubmitting} className="text-md-b2 font-semibold text-md-primary-1200 disabled:opacity-50">
+                     <button
+                        type="button"
+                        onClick={handleResendCode}
+                        disabled={isResending || isSubmitting}
+                        className="text-md-b2 font-semibold text-md-primary-1200 disabled:opacity-50"
+                     >
                         {isResending ? 'Resending...' : "Didn't get a code? Resend"}
                      </button>
                   </div>
@@ -745,15 +731,7 @@ function ChangeEmailModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
    );
 }
 
-function ChangeDisplayNameModal({
-   isOpen,
-   onClose,
-   currentName
-}: {
-   isOpen: boolean;
-   onClose: () => void;
-   currentName: string;
-}) {
+function ChangeDisplayNameModal({ isOpen, onClose, currentName }: { isOpen: boolean; onClose: () => void; currentName: string }) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToast } = useToast();
    const [name, setName] = useState(currentName);
@@ -1018,8 +996,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
    // is configured. Borrowers are the ones scoped to the Philippines: the instant wallet exists to
    // route around the PLDT/Smart ISP block on keys.coinbase.com, so outside PH they stay on the
    // Base path (soft client-side gate; server face-gate still enforces one-per-person on mint).
-   const showInstantWallet =
-      instantWallet.isConfigured && (!isBorrower || (WALLET_FACE_GATE_ENABLED && isLikelyPhilippines()));
+   const showInstantWallet = instantWallet.isConfigured && (!isBorrower || (WALLET_FACE_GATE_ENABLED && isLikelyPhilippines()));
 
    const [step, setStep] = useState<'choose' | 'connecting'>('choose');
    const [selectedKey, setSelectedKey] = useState<WalletConnectorKey | null>(null);
@@ -1197,62 +1174,24 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-[#12071f]/50 px-5 pb-5 sm:pb-0"
          onClick={step === 'choose' ? handleClose : undefined}
       >
-         <div
-            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3"
-            onClick={(e) => e.stopPropagation()}
-         >
+         <div className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3" onClick={(e) => e.stopPropagation()}>
             {step === 'choose' ? (
                <>
                   <div className="flex flex-col gap-md-1 items-center text-center">
                      <h2 className="text-md-h4 font-semibold text-md-heading">Change Wallet</h2>
                      <p className="text-md-b1 text-md-neutral-1200">
                         {isBorrower
-                           ? 'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.'
+                           ? showInstantWallet
+                              ? 'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.'
+                              : 'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.'
                            : 'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.'}
                      </p>
                   </div>
 
                   {isBorrower ? (
                      <div className="flex flex-col gap-md-2">
-                        <button
-                           type="button"
-                           disabled={isConnecting}
-                           onClick={() => void handleConnectWithKey('coinbase')}
-                           className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                           {isConnecting ? 'Connecting...' : 'Connect Base Account'}
-                           {!isConnecting ? (
-                              <div
-                                 className="w-6 h-6 bg-md-neutral-100"
-                                 style={{
-                                    ...ICON_MASK,
-                                    WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                                    maskImage: "url('/icons/chevron-right.svg')"
-                                 }}
-                              />
-                           ) : null}
-                        </button>
-                        {/* Base Account was the ONLY option here, which is the second half of
-                            the dead end borrowers hit: a legacy Base borrower prompted to
-                            "Confirm your Base Account" had no route to an Instant Wallet, only
-                            back to the wallet they couldn't reach. */}
-                        {showInstantWallet ? (
-                           <button
-                              type="button"
-                              disabled={isConnecting || instantWallet.isCreating}
-                              onClick={() => void instantWallet.createInstantWallet()}
-                              className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
-                           >
-                              {instantWallet.isCreating ? 'Creating your wallet…' : 'Create an Instant Wallet instead'}
-                           </button>
-                        ) : null}
-                     </div>
-                  ) : (
-                     <div className="flex flex-col gap-md-2">
-                        {/* Instant Wallet as a first-class option here too, so a lender who lost
-                            their wallet can create one straight from the picker without fully
-                            disconnecting first. A card, not a tile — it CREATES a wallet rather
-                            than connecting an existing one. Flag-gated like every other surface. */}
+                        {/* Borrowers: the Instant Wallet is the default, so it's the main button; a Base
+                            Account is the alternative. Without Openfort, Base Account is the main button. */}
                         {showInstantWallet ? (
                            <>
                               <button
@@ -1266,13 +1205,33 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                               {instantWallet.error ? (
                                  <p className="text-md-b3 text-md-red-400 text-center w-full">{instantWallet.error}</p>
                               ) : null}
-                              <div className="flex items-center gap-md-2">
-                                 <span className="h-px flex-1 bg-md-neutral-600" />
-                                 <span className="text-md-b3 font-medium text-md-neutral-800">or connect one you own</span>
-                                 <span className="h-px flex-1 bg-md-neutral-600" />
-                              </div>
                            </>
                         ) : null}
+                        <button
+                           type="button"
+                           disabled={isConnecting || instantWallet.isCreating}
+                           onClick={() => void handleConnectWithKey('coinbase')}
+                           className={
+                              showInstantWallet
+                                 ? 'w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50'
+                                 : 'w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50'
+                           }
+                        >
+                           {isConnecting ? 'Connecting...' : showInstantWallet ? 'Connect a Base Account instead' : 'Connect Base Account'}
+                           {!isConnecting && !showInstantWallet ? (
+                              <div
+                                 className="w-6 h-6 bg-md-neutral-100"
+                                 style={{
+                                    ...ICON_MASK,
+                                    WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                    maskImage: "url('/icons/chevron-right.svg')"
+                                 }}
+                              />
+                           ) : null}
+                        </button>
+                     </div>
+                  ) : (
+                     <div className="flex flex-col gap-md-2">
                         <div className="grid grid-cols-2 gap-md-2">
                            {LENDER_WALLET_OPTIONS.map((option) => {
                               const isSelected = selectedKey === option.key;
@@ -1283,9 +1242,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                     onClick={() => setSelectedKey(option.key)}
                                     className={[
                                        'flex flex-col gap-md-1 items-start p-md-2 rounded-md-md border text-left transition-colors',
-                                       isSelected
-                                          ? 'bg-md-primary-900/10 border-md-primary-900'
-                                          : 'bg-md-neutral-100 border-md-neutral-600'
+                                       isSelected ? 'bg-md-primary-900/10 border-md-primary-900' : 'bg-md-neutral-100 border-md-neutral-600'
                                     ].join(' ')}
                                  >
                                     <div className="size-7 rounded-md-xs inline-flex items-center justify-center overflow-hidden shrink-0">
@@ -1294,7 +1251,9 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                                     <div className="flex flex-wrap items-center gap-1">
                                        <span className="text-md-b2 font-semibold text-md-heading">{option.name}</span>
                                        {option.tag ? (
-                                          <span className={`text-md-b4 font-semibold px-1 rounded-md-sm ${option.tag.bgClass} ${option.tag.textClass}`}>
+                                          <span
+                                             className={`text-md-b4 font-semibold px-1 rounded-md-sm ${option.tag.bgClass} ${option.tag.textClass}`}
+                                          >
                                              {option.tag.label}
                                           </span>
                                        ) : null}
@@ -1341,6 +1300,28 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                               />
                            ) : null}
                         </button>
+                        {/* Lenders: a Base Account is recommended (Top Pick above); the Instant Wallet is
+                            the no-app alternative, e.g. for a lender who lost their wallet. */}
+                        {showInstantWallet ? (
+                           <>
+                              <div className="flex items-center gap-md-2">
+                                 <span className="h-px flex-1 bg-md-neutral-600" />
+                                 <span className="text-md-b3 font-medium text-md-neutral-800">or, no wallet app?</span>
+                                 <span className="h-px flex-1 bg-md-neutral-600" />
+                              </div>
+                              <button
+                                 type="button"
+                                 disabled={isConnecting || instantWallet.isCreating}
+                                 onClick={() => void instantWallet.createInstantWallet()}
+                                 className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+                              >
+                                 {instantWallet.isCreating ? 'Creating your wallet…' : 'Create an Instant Wallet instead'}
+                              </button>
+                              {instantWallet.error ? (
+                                 <p className="text-md-b3 text-md-red-400 text-center w-full">{instantWallet.error}</p>
+                              ) : null}
+                           </>
+                        ) : null}
                      </div>
                   )}
 
@@ -1385,11 +1366,7 @@ export default function AccountSettings() {
    const { t, locale, locales } = useLocalization();
    const editTarget = searchParams.get('edit');
    const sectionTarget = searchParams.get('section');
-   const activeSection: SettingsSectionKey | null = editTarget
-      ? 'profile'
-      : isSettingsSectionKey(sectionTarget)
-        ? sectionTarget
-        : null;
+   const activeSection: SettingsSectionKey | null = editTarget ? 'profile' : isSettingsSectionKey(sectionTarget) ? sectionTarget : null;
    const handledEditTargetRef = useRef<string | null>(null);
    const detailHeadingRef = useRef<HTMLHeadingElement>(null);
    const dispatch = useDispatch<AppDispatch>();
@@ -1760,12 +1737,8 @@ export default function AccountSettings() {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.set('section', section);
       nextParams.delete('edit');
-      const currentState =
-         location.state && typeof location.state === 'object' ? (location.state as Record<string, unknown>) : {};
-      navigate(
-         { pathname: location.pathname, search: nextParams.toString() },
-         { state: { ...currentState, settingsFromOverview: true } }
-      );
+      const currentState = location.state && typeof location.state === 'object' ? (location.state as Record<string, unknown>) : {};
+      navigate({ pathname: location.pathname, search: nextParams.toString() }, { state: { ...currentState, settingsFromOverview: true } });
       window.scrollTo({ top: 0, behavior: 'auto' });
    };
 
@@ -1817,9 +1790,7 @@ export default function AccountSettings() {
                <h1
                   ref={detailHeadingRef}
                   tabIndex={activeSection ? -1 : undefined}
-                  className={`truncate font-semibold text-md-heading outline-none ${
-                     activeSection ? 'text-md-h6' : 'text-md-h3'
-                  }`}
+                  className={`truncate font-semibold text-md-heading outline-none ${activeSection ? 'text-md-h6' : 'text-md-h3'}`}
                >
                   {activeSection
                      ? activeSection === 'security'
@@ -1932,7 +1903,7 @@ export default function AccountSettings() {
                      </div>
                   ) : null}
 
-               {/* Preferences (Appearance + Language) */}
+                  {/* Preferences (Appearance + Language) */}
                   {activeSection === 'preferences' ? (
                      <div className="flex flex-col gap-md-4">
                         <SettingsGroup label="Appearance">
@@ -2087,8 +2058,8 @@ export default function AccountSettings() {
                                     <div className="min-w-0 flex-1">
                                        <p className="text-md-b1 font-semibold text-md-heading">No wallet app? Create one</p>
                                        <p className="text-md-b2 font-medium leading-5 text-md-neutral-1200">
-                                          An Instant Wallet is made from your Moodeng login — no app, no seed phrase — and the
-                                          key is yours to export anytime.
+                                          An Instant Wallet is made from your Moodeng login — no app, no seed phrase — and the key is yours
+                                          to export anytime.
                                        </p>
                                     </div>
                                  </div>
@@ -2101,7 +2072,7 @@ export default function AccountSettings() {
                                     {instantWallet.isCreating ? 'Creating your wallet…' : 'Create Instant Wallet'}
                                  </button>
                                  <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                    Includes a ten-second face check, so instant wallets stay one per person.
+                                    Includes a ten-second face check, so Instant Wallets stay one per person.
                                  </p>
                                  {instantWallet.error ? (
                                     <p className="text-md-b2 font-medium text-md-red-500">{instantWallet.error}</p>
@@ -2183,7 +2154,7 @@ export default function AccountSettings() {
                               <p className="text-md-b1 font-semibold text-md-heading">Disconnect wallet?</p>
                               <p className="text-md-b2 font-medium leading-5 text-md-heading">
                                  {isBorrower
-                                    ? 'This removes your saved Base Account. You will need to connect one again before borrowing or repaying.'
+                                    ? 'This removes your saved wallet. You will need to connect or create one again before borrowing or repaying.'
                                     : 'This removes the wallet from your account. You can reconnect it anytime.'}
                               </p>
                               {!isBorrower && walletSafetyWarning ? (
@@ -2216,10 +2187,10 @@ export default function AccountSettings() {
                               <div className="flex items-start gap-md-2">
                                  <img src="/icons/base-account.svg" alt="" className="size-9 shrink-0 rounded-md-md" />
                                  <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
+                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your wallet</p>
                                     <p className="text-md-b2 font-medium text-md-heading">
                                        {borrowerHasNonBaseWallet
-                                          ? `Your account is using ${walletLabel}. Connect a Base Account so loans and repayments use the right wallet.`
+                                          ? `Your account is using ${walletLabel}. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.`
                                           : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
                                     </p>
                                  </div>
@@ -2229,7 +2200,7 @@ export default function AccountSettings() {
                                  onClick={() => setShowChangeWalletModal(true)}
                                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                               >
-                                 Confirm Base Account
+                                 Confirm wallet
                               </button>
                            </div>
                         ) : null}
@@ -2271,9 +2242,7 @@ export default function AccountSettings() {
                                  <span className="min-w-0 flex-1">
                                     <span className="block text-md-b1 font-semibold text-md-red-500">Disconnect wallet</span>
                                     <span className="block truncate text-md-b2 font-medium text-md-neutral-1200">
-                                       {isBorrower
-                                          ? 'Remove this saved wallet from your account'
-                                          : 'Stop using this wallet for new loans'}
+                                       {isBorrower ? 'Remove this saved wallet from your account' : 'Stop using this wallet for new loans'}
                                     </span>
                                  </span>
                                  <ChevronRight

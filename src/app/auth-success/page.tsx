@@ -4,6 +4,7 @@ import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { ThemeToggle } from '@/components/ThemeToggle';
+
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
@@ -43,7 +44,9 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
                      </div>
                      <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0]">{eyebrow}</p>
                      <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033] dark:text-white">{title}</h1>
-                     <div className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#c8b8e8]">{body}</div>
+                     <div className="mt-3 max-w-[350px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#c8b8e8]">
+                        {body}
+                     </div>
                   </div>
 
                   {children}
@@ -72,7 +75,7 @@ function AccountCreatedView(): JSX.Element {
                   Your account has been created
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] dark:text-[#c8b8e8]">
-                  Your wallet is used to build your Trust Score and receive USDC loans.
+                  Your wallet is used to earn Pandesal points and receive USDC loans.
                </p>
                <button
                   type="button"

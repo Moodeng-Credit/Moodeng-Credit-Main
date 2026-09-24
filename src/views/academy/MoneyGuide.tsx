@@ -3,8 +3,9 @@ import type { ComponentType, ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Building2, RefreshCw, UserRoundCheck, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { BaseMark, BinanceTile, CoinsPhTile, GCashTile, PdaxTile, UsdcMark } from '@/components/brand/ProviderLogos';
+import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
+
 import { useGoBack } from '@/hooks/useGoBack';
 import { usePageSeo } from '@/hooks/usePageSeo';
 
@@ -21,9 +22,7 @@ function LogoChip({ logo, label }: { logo: ReactNode; label: string }) {
 
 // A plain (logo-less) chip for concepts like "Base network" or "Selfie".
 function TextChip({ label }: { label: string }) {
-   return (
-      <span className="rounded-full bg-md-primary-100 px-2.5 py-1 text-md-b3 font-medium text-md-primary-1200">{label}</span>
-   );
+   return <span className="rounded-full bg-md-primary-100 px-2.5 py-1 text-md-b3 font-medium text-md-primary-1200">{label}</span>;
 }
 
 type TopicCard = {
@@ -114,7 +113,7 @@ export default function MoneyGuide() {
          iconColor: 'text-[#a2481f]',
          title: 'Repay your loan',
          subtitle: 'On-time repayment builds trust',
-         body: 'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Trust Score and credit limit.',
+         body: 'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Pandesal points and credit limit.',
          chips: (
             <>
                <LogoChip logo={<UsdcMark className="h-4 w-4" />} label="From a wallet" />

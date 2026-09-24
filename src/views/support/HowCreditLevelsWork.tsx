@@ -2,10 +2,9 @@ import { type CSSProperties, type JSX, useEffect, useMemo, useState } from 'reac
 
 import { Link } from 'react-router-dom';
 
-import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
-
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
+import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import '@/views/support/HowCreditLevelsWork.css';
 
 /** Where this guide is rendered from. `public` is the crawlable marketing route. */
@@ -89,7 +88,7 @@ const tips = [
 const relatedGuides = [
    {
       slug: 'understanding-your-trust-score',
-      title: 'Understanding your Trust Score',
+      title: 'Understanding your Pandesal points',
       blurb: 'How reliable repayment becomes a portable reputation lenders trust.'
    },
    {
@@ -99,7 +98,7 @@ const relatedGuides = [
    },
    {
       slug: 'how-repayments-affect-your-trust-score',
-      title: 'How repayments affect your Trust Score',
+      title: 'How repayments affect your Pandesal points',
       blurb: 'Exactly how on-time, partial, and late repayments are scored.'
    }
 ];
@@ -131,11 +130,11 @@ const faqs = [
    },
    {
       q: 'What happens if I miss a repayment?',
-      a: 'A late or missed repayment lowers your Trust Score and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.'
+      a: 'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.'
    },
    {
       q: 'Does my Credit Level ever reset?',
-      a: 'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they lower your Trust Score and can slow further growth.'
+      a: 'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.'
    }
 ];
 
@@ -180,7 +179,7 @@ const quizQuestions: QuizQuestion[] = [
       q: 'What slows your climb the most?',
       options: ['Repaying early', 'A late or missed repayment', 'Borrowing your full limit', 'Asking questions'],
       answer: 1,
-      correctLine: 'You got it — a missed repayment pauses progress and dents your Trust Score.',
+      correctLine: 'You got it — a missed repayment pauses progress and dents your Pandesal points.',
       wrongLine: 'Actually it’s a late or missed repayment — that’s what pauses your climb.'
    }
 ];
@@ -188,7 +187,12 @@ const quizQuestions: QuizQuestion[] = [
 const quizResultTiers = [
    { min: 5, title: 'Credit Level Legend', blurb: 'Flawless run. You could teach the hippos.', hippo: '/hippos/party.png' },
    { min: 3, title: 'Rising Star', blurb: 'Solid! You’ve basically got this down.', hippo: '/hippos/thumb-up-right.png' },
-   { min: 0, title: 'Just getting started', blurb: 'No worries — scroll back up and you’ll ace the rematch.', hippo: '/hippos/thinking.png' }
+   {
+      min: 0,
+      title: 'Just getting started',
+      blurb: 'No worries — scroll back up and you’ll ace the rematch.',
+      hippo: '/hippos/thinking.png'
+   }
 ];
 
 function CreditLevelsQuiz(): JSX.Element {
@@ -529,20 +533,13 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
       };
    }, []);
 
-   const progressStyle = useMemo(
-      () => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties,
-      [readingProgress]
-   );
+   const progressStyle = useMemo(() => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties, [readingProgress]);
 
    const breadcrumbTrail = getBreadcrumbs(variant);
 
    return (
       <main className="credit-leveling-guide hclw-page">
-         <div
-            className="academy-reading-progress"
-            style={progressStyle}
-            aria-label={`Credit Levels guide progress ${readingProgress}%`}
-         >
+         <div className="academy-reading-progress" style={progressStyle} aria-label={`Credit Levels guide progress ${readingProgress}%`}>
             <span>{readingProgress}%</span>
          </div>
 
@@ -564,8 +561,8 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                </div>
                <h1>How Credit Levels work</h1>
                <p>
-                  Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay
-                  a full-limit loan on time.
+                  Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay a full-limit loan on
+                  time.
                </p>
                <div className="credit-leveling-hero__actions">
                   <Link to="/request-board">Request a loan</Link>
@@ -665,8 +662,8 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   loading="lazy"
                />
                <figcaption>
-                  Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing
-                  power compounds with every clean repayment.
+                  Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing power compounds with
+                  every clean repayment.
                </figcaption>
             </figure>
          </section>
@@ -676,7 +673,10 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                <div className="credit-leveling-section__header">
                   <div className="credit-leveling-kicker">Two kinds of loan</div>
                   <h2>Trust-Building vs Credit-Building</h2>
-                  <p>Moodeng has two loan types. Both lift your Trust Score — but only a full-limit Credit-Building Loan raises your borrowing limit.</p>
+                  <p>
+                     Moodeng has two loan types. Both earn you Pandesal points — but only a full-limit Credit-Building Loan raises your
+                     borrowing limit.
+                  </p>
                </div>
                <img src="/hippos/thumb-up-right.png" alt="" className="hclw-section-mascot" loading="lazy" />
             </div>
@@ -693,7 +693,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                            <strong>{loan.effectLimit}</strong>
                         </div>
                         <div>
-                           <span>Trust Score</span>
+                           <span>Pandesal points</span>
                            <strong>{loan.effectTrust}</strong>
                         </div>
                      </div>
@@ -713,8 +713,8 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   loading="lazy"
                />
                <figcaption>
-                  Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can
-                  see. That trust is what gets your next request funded faster.
+                  Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is
+                  what gets your next request funded faster.
                </figcaption>
             </figure>
          </section>
@@ -724,7 +724,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                <div className="credit-leveling-section__header">
                   <div className="credit-leveling-kicker">Level up faster</div>
                   <h2>Do this, not that</h2>
-                  <p>A few habits keep your climb steady and protect the Trust Score you are building.</p>
+                  <p>A few habits keep your climb steady and protect the Pandesal points you are earning.</p>
                </div>
                <img src="/hippos/hippo-friendly-lock.png" alt="" className="hclw-section-mascot" loading="lazy" />
             </div>
@@ -764,7 +764,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                <div className="credit-leveling-section__header">
                   <div className="credit-leveling-kicker">Keep learning</div>
                   <h2>Related guides</h2>
-                  <p>Credit Levels work hand in hand with your Trust Score and repayment history.</p>
+                  <p>Credit Levels work hand in hand with your Pandesal points and repayment history.</p>
                </div>
                <img src="/hippos/community.png" alt="" className="hclw-section-mascot hclw-section-mascot--wide" loading="lazy" />
             </div>

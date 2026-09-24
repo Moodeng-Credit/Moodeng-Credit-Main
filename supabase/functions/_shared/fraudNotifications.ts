@@ -40,7 +40,9 @@ export type FraudSignal = {
 export const describeFraudSignal = (s: FraudSignal): string => {
    switch (s.type) {
       case 'shared_wallet':
-         return `Same wallet on ${s.account_count} accounts${s.borrower_and_lender ? ' — INCLUDING a borrower AND a lender' : ''}\n  wallet: ${s.wallet_address}\n  accounts: ${(s.accounts ?? [])
+         return `Same wallet on ${s.account_count} accounts${s.borrower_and_lender ? ' — INCLUDING a borrower AND a lender' : ''}\n  wallet: ${s.wallet_address}\n  accounts: ${(
+            s.accounts ?? []
+         )
             .map((a) => `${a.username ?? a.user_id} (${a.role}, ${a.email ?? 'no email'})`)
             .join('; ')}`;
       case 'self_deal_wallet':
@@ -56,26 +58,26 @@ export const describeFraudSignal = (s: FraudSignal): string => {
       case 'impossible_travel':
          return `${s.username ?? s.user_id} impossible travel: ${s.location_a} → ${s.location_b} (${s.distance_km} km in ${s.hours_apart} h)`;
       case 'subnet_cluster':
-         return `${s.account_count} accounts from the same network block${s.asn_org ? ` (${s.asn_org})` : ''}\n  accounts: ${(s.accounts ?? [])
+         return `${s.account_count} accounts from the same network block${s.asn_org ? ` (${s.asn_org})` : ''}\n  accounts: ${(
+            s.accounts ?? []
+         )
             .map((a) => `${a.username ?? a.user_id} (${a.role})`)
             .join('; ')}`;
       // --- Embedded-wallet face gate ---
       case 'embedded_wallet_face_collision':
-         return `Instant wallet REFUSED — this face is already enrolled on another account${
+         return `Instant Wallet REFUSED — this face is already enrolled on another account${
             s.borrower_and_lender ? ' — INCLUDING a borrower AND a lender (one person on both sides)' : ''
          }\n  user: ${s.user_id} (${s.user_role ?? 'unknown role'})\n  matched: ${JSON.stringify(
             (s.details as { matched_accounts?: unknown } | undefined)?.matched_accounts ?? []
          )}`;
       case 'wallet_face_unverified_self_match':
-         return `Instant wallet allowed, but the scan did not confirm the account's own enrolled face\n  user: ${s.user_id} (${s.user_role ?? 'unknown role'}) — informational; review only if takeover is suspected`;
+         return `Instant Wallet allowed, but the scan did not confirm the account's own enrolled face\n  user: ${s.user_id} (${s.user_role ?? 'unknown role'}) — informational; review only if takeover is suspected`;
       case 'embedded_wallet_grant_stuck':
-         return `${s.stuck_count} instant wallet grant(s) claimed but never completed — users may have scanned and received no wallet. Check Openfort Shield health.`;
+         return `${s.stuck_count} Instant Wallet grant(s) claimed but never completed — users may have scanned and received no wallet. Check Openfort Shield health.`;
       // --- Follow-the-money convergence ---
       case 'shared_payout_destination': {
          const dest = s.destination_label ? `${s.destination_label} (${s.terminal_destination})` : s.terminal_destination;
-         const who = (s.accounts ?? [])
-            .map((a) => `${a.username ?? a.user_id}${a.loan_id ? ` [loan ${a.loan_id}]` : ''}`)
-            .join('; ');
+         const who = (s.accounts ?? []).map((a) => `${a.username ?? a.user_id}${a.loan_id ? ` [loan ${a.loan_id}]` : ''}`).join('; ');
          return `${s.account_count} borrower accounts' loans all cashed out to the SAME destination${
             s.is_exchange_deposit ? ' (exchange deposit)' : ''
          } — one beneficiary behind multiple borrowers\n  destination: ${dest}\n  borrowers: ${who}`;
@@ -131,7 +133,9 @@ export const buildFraudAlertMessage = (signals: FraudSignal[]): FraudAlertMessag
       warnings.forEach((s, i) => detailLines.push(`${i + 1}. ${describeFraudSignal(s)}`));
    }
    detailLines.push('');
-   detailLines.push('These are detection signals, not proof — review before acting. Already-seen findings are suppressed, so each only alerts once.');
+   detailLines.push(
+      'These are detection signals, not proof — review before acting. Already-seen findings are suppressed, so each only alerts once.'
+   );
 
    const header = `🚨 Moodeng fraud scan — ${signals.length} new signal(s).`;
    const detail = detailLines.join('\n');

@@ -2,8 +2,8 @@ import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import { useOpenfort } from '@/lib/web3/openfort';
 import { isCashoutHoldCode } from '@/lib/web3/openfort/walletFaceGate';
@@ -59,11 +59,7 @@ export default function ExportInstantWalletKey() {
             }
          }
 
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Couldn't export key",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Couldn't export key", err instanceof Error ? err.message : 'Please try again in a moment.');
       }
    }, [exportPrivateKey, navigate, showToast]);
 
@@ -89,17 +85,14 @@ export default function ExportInstantWalletKey() {
 
          {stage !== 'idle' ? (
             <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 px-md-3 pb-md-4 sm:items-center" onClick={close}>
-               <div
-                  className="w-full max-w-modal rounded-md-lg bg-white p-md-4 shadow-md-card"
-                  onClick={(e) => e.stopPropagation()}
-               >
+               <div className="w-full max-w-modal rounded-md-lg bg-white p-md-4 shadow-md-card" onClick={(e) => e.stopPropagation()}>
                   {stage === 'revealed' && privateKey ? (
                      <div className="flex flex-col gap-md-3">
                         <div className="flex flex-col gap-md-1">
                            <h3 className="text-md-h5 font-semibold text-md-heading">Your private key</h3>
                            <p className="text-md-b3 font-medium leading-5 text-md-red-500">
-                              Anyone with this key controls your funds. Never share it or type it into any website. Moodeng will never
-                              ask for it.
+                              Anyone with this key controls your funds. Never share it or type it into any website. Moodeng will never ask
+                              for it.
                            </p>
                         </div>
                         <code className="block w-full break-all rounded-md-md border border-md-neutral-600 bg-md-neutral-200 p-md-3 text-md-b3 font-mono text-md-heading">
@@ -127,8 +120,8 @@ export default function ExportInstantWalletKey() {
                         <div className="flex flex-col gap-md-1">
                            <h3 className="text-md-h5 font-semibold text-md-heading">Export your wallet key</h3>
                            <p className="text-md-b2 font-medium leading-6 text-md-neutral-1200">
-                              This reveals the private key to your instant wallet so you can import it into another wallet app like
-                              MetaMask or Trust. Make sure no one is looking at your screen.
+                              This reveals the private key to your Instant Wallet so you can import it into another wallet app like MetaMask
+                              or Trust. Make sure no one is looking at your screen.
                            </p>
                         </div>
                         <div className="grid grid-cols-2 gap-md-2">

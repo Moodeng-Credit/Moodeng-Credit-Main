@@ -1058,7 +1058,7 @@ function RequestBoard$() {
             {
                target: '[data-tour-target="request-latest-list"]',
                title: 'Get funded, then repay',
-               body: 'A lender funds your request and USDC lands in your wallet. Repay on time and your Trust Score — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.',
+               body: 'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.',
                cardPlacement: 'bottom',
                durationMs: 7500
             },

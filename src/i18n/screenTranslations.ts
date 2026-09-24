@@ -21,7 +21,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    Active: 'Aktibo',
    'Active Loans': 'Mga aktibong loan',
    'Add Base Wallet': 'Idagdag ang Base Wallet',
-   'Add your Base Account': 'Idagdag ang iyong Base Account',
+   'Add a wallet': 'Magdagdag ng wallet',
+   'Add your wallet': 'Idagdag ang iyong wallet',
    Admin: 'Admin',
    'Already have a Base wallet? Connect it here.': 'May Base wallet ka na? Ikonek ito dito.',
    'Already verified? Log in': 'Verified na? Mag-log in',
@@ -285,7 +286,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'User directory': 'Mga user',
    'User profile': 'User profile',
    Users: 'Users',
-   'Use Base Account': 'Gamitin ang Base Account',
+   'Use your Instant Wallet or a Base Account': 'Gamitin ang Instant Wallet mo o ang Base Account',
    VERIFY: 'I-VERIFY',
    Verified: 'Beripikado',
    'Verification code': 'Code sa verification',
@@ -393,8 +394,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Your Moodeng account is fully set up and you’re ready to go!': 'Fully set up na ang Moodeng account mo at ready ka na!',
    'Your amount sets the loan type': 'Ang amount mo ang nagse-set ng loan type',
    'Your first credit record should not belong to a loan shark': 'Hindi dapat mapunta sa loan shark ang unang credit record mo',
-   'Your wallet is used to build your Trust Score and receive USDC loans.':
-      'Ginagamit ang wallet mo para buuin ang Trust Score mo at tumanggap ng USDC loans.',
+   'Your wallet is used to earn Pandesal points and receive USDC loans.':
+      'Ginagamit ang wallet mo para kumita ng Pandesal points at tumanggap ng USDC loans.',
    'Your Capital, Your Growth': 'Iyong capital, iyong growth',
    'Welcome back to Moodeng': 'Welcome back sa Moodeng',
    'Sign in to access your account.': 'Mag-sign in para ma-access ang account mo.',
@@ -474,13 +475,13 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
       'Mag-verify isang beses para patunayang unique ka. Pagkatapos noon, mas makakatiwala ang lenders na ang request mo ay tied sa isang totoong borrower.',
    'Base Wallet Locked In': 'Base Wallet naka-lock in',
-   'Base Account Not Added': 'Hindi pa naidagdag ang Base Account',
+   'Wallet Not Added': 'Hindi pa naidagdag ang wallet',
    'Change Base wallet': 'Palitan ang Base wallet',
    'Connection Failed': 'Hindi nagtagumpay ang connection',
-   'Borrowers need to connect with the Base Account option. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'Kailangan ng borrowers kumonek gamit ang Base Account option. Hindi puwedeng i-lock ang ibang wallet connectors para sa Moodeng borrowing.',
-   "We couldn't detect a Base Account. Please connect one to continue.":
-      'Hindi namin ma-detect ang Base Account. Kumonek muna ng isa para magpatuloy.',
+   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
+      'Ginagamit ng mga borrower ang Moodeng Instant Wallet, na ginagawa mula sa login mo — o puwede kang kumonek ng Base Account. Hindi puwedeng i-lock ang ibang wallet connectors para sa paghiram sa Moodeng.',
+   "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
+      'Walang nakitang wallet. I-set up ang Instant Wallet mo (o kumonek ng Base Account kung mas gusto mo) para magpatuloy.',
    'Browse Guides': 'Tingnan ang mga gabay',
    'Quick Start for New Users': 'Mabilis na gabay para sa bagong users',
    'Get Help via Telegram': 'Humingi ng Tulong sa Telegram',
@@ -513,27 +514,27 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Frequently Asked Questions': 'Mga Madalas Itanong',
    'What is Moodeng Credit?': 'Ano ang Moodeng Credit?',
    'How does borrowing on Moodeng work?': 'Paano gumagana ang borrowing sa Moodeng?',
-   'What is a Trust Score and how is it calculated?': 'Ano ang Trust Score at paano ito kinakalkula?',
+   'What are Pandesal points and how are they calculated?': 'Ano ang Pandesal points at paano ito kinakalkula?',
    'What is a Credit Level?': 'Ano ang antas ng kredito?',
-   'What is a Base wallet?': 'Ano ang Base wallet?',
+   'Which wallet does Moodeng use?': 'Anong wallet ang ginagamit ng Moodeng?',
    'What is USDC, and why does Moodeng use it?': 'Ano ang USDC, at bakit ito ginagamit ng Moodeng?',
    'Does Moodeng charge fees?': 'May fees ba ang Moodeng?',
    'How does Moodeng help fight loan sharks?': 'Paano tumutulong ang Moodeng laban sa loan sharks?',
    'What is a credit-building loan?': 'Ano ang credit-building loan?',
    'Can I get a small loan with Moodeng?': 'Puwede ba akong makakuha ng maliit na loan sa Moodeng?',
-   'Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while building a Trust Score linked to your wallet.':
-      'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang bumubuo ng Trust Score na naka-link sa wallet mo.',
+   'Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while earning Pandesal points linked to your wallet.':
+      'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang kumikita ng Pandesal points na naka-link sa wallet mo.',
    'Instead of focusing on traditional credit scores, Moodeng helps you build trust through responsible borrowing and on-time repayments. Over time, this trust allows you to unlock higher Credit Levels and request larger loan amounts.':
       'Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na antas ng kredito at mas malaking loan amounts.',
-   "Your Trust Score isn't locked inside one app. It's designed to reflect your reliability and help you build a reputation you can carry forward.":
-      'Hindi nakakulong sa isang app ang Trust Score mo. Dinisenyo ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
+   "Your Pandesal points aren't locked inside one app. They're designed to reflect your reliability and help you build a reputation you can carry forward.":
+      'Hindi nakakulong sa isang app ang Pandesal points mo. Dinisenyo ang mga ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
    'LIVE ADMIN PANEL': 'LIVE ADMIN PANEL',
    'George admin': 'George admin',
    'Data source': 'Source ng data',
    'Preview data': 'Preview data',
    'Design preview only. No writes.': 'Design preview lang. Walang writes.',
    'Borrower-only source of truth for trust points, repayment status, and what is missing today.':
-      'Borrower-only source of truth para sa trust points, repayment status, at kung ano ang kulang ngayon.',
+      'Borrower-only source of truth para sa Pandesal points, repayment status, at kung ano ang kulang ngayon.',
    'QUICK ANSWER': 'MABILIS NA SAGOT',
    'We do not have a borrower trust-points balance in Supabase yet.': 'Wala pa tayong borrower trust-points balance sa Supabase.',
    "We've sent a verification email. Click the link or enter the code to finish creating your account.":
@@ -545,7 +546,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    paid: 'nabayaran',
    'Apply Filter': 'I-apply ang filter',
    'Borrowed by': 'Hiniram ng',
-   'Borrowing, Base wallet, Trust Score, and Credit Level': 'Paghiram, Base wallet, Trust Score, at antas ng kredito',
+   'Borrowing, wallets, Pandesal points, and Credit Level': 'Paghiram, wallets, Pandesal points, at antas ng kredito',
    'Browse Benefits': 'Tingnan ang mga benepisyo',
    Completed: 'Tapos na',
    Connecting: 'Kumokonekta',
@@ -612,8 +613,8 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'remaining after this payment': 'matitira pagkatapos ng bayad na ito',
    'You’re paying': 'Babayaran mo',
    "You're paying": 'Babayaran mo',
-   'You can sign back in anytime. Your Trust Score stays with your wallet.':
-      'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Trust Score mo.',
+   'You can sign back in anytime. Your Pandesal points stay with your wallet.':
+      'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Pandesal points mo.',
    'Your loan activity will appear here once you start borrowing.': 'Lalabas dito ang loan activity mo kapag nagsimula ka nang humiram.',
    'Your transactions will appear here once you start lending.': 'Lalabas dito ang mga transaksyon mo kapag nagsimula ka nang magpahiram.',
 
@@ -998,15 +999,15 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'It has to change what data is collected, how repayment pressure works, and who owns the record after the loan is done.':
       'Kailangan nitong baguhin kung anong data ang kinokolekta, paano gumagana ang repayment pressure, at sino ang may-ari ng record pagkatapos ng loan.',
    'Explore request board': 'I-explore ang request board',
-   "Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while building a Trust Score linked to your wallet. Instead of focusing on traditional credit scores, Moodeng helps you build trust through responsible borrowing and on-time repayments. Over time, this trust allows you to unlock higher Credit Levels and request larger loan amounts. Your Trust Score isn't locked inside one app. It's designed to reflect your reliability and help you build a reputation you can carry forward.":
-      'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang bumubuo ng Trust Score na naka-link sa wallet mo. Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na antas ng kredito at mas malaking loan amounts. Hindi nakakulong sa isang app ang Trust Score mo. Dinisenyo ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
+   "Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. Instead of focusing on traditional credit scores, Moodeng helps you build trust through responsible borrowing and on-time repayments. Over time, this trust allows you to unlock higher Credit Levels and request larger loan amounts. Your Pandesal points aren't locked inside one app. They're designed to reflect your reliability and help you build a reputation you can carry forward.":
+      'Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang kumikita ng Pandesal points na naka-link sa wallet mo. Sa halip na traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Over time, puwede nitong i-unlock ang mas mataas na antas ng kredito at mas malaking loan amounts. Hindi nakakulong sa isang app ang Pandesal points mo. Dinisenyo ang mga ito para ipakita ang reliability mo at tulungan kang bumuo ng reputasyong madadala mo forward.',
 
    'Prove you are a real person. This is a one-time step before larger borrowing limits.':
       'Patunayan na totoong tao ka. One-time step ito bago ang mas malaking borrowing limits.',
-   'Create or connect your Base Account once so lenders can fund loans directly there and Moodeng can track repayment history.':
-      'Gumawa o kumonek ng Base Account isang beses para direktang makapag-fund ang lenders doon at ma-track ng Moodeng ang repayment history.',
-   'Create one or connect the Base Account you already use. Moodeng keeps the flow inside the app.':
-      'Gumawa ng isa o ikonek ang Base Account na ginagamit mo na. Pinapanatili ng Moodeng ang flow sa loob ng app.',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
+      'I-set up ang Instant Wallet mo mula sa Moodeng login mo (o kumonek ng Base Account kung mas gusto mo), para direktang makapag-fund ang lenders doon at ma-track ng Moodeng ang repayment history.',
+   'Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one instead. Moodeng keeps the flow inside the app.':
+      'Ginagawa ang Instant Wallet mo mula sa Moodeng login mo — walang app at walang seed phrase. Mas gusto mo ang Base Account? Puwede mo itong ikonek. Pinapanatili ng Moodeng ang flow sa loob ng app.',
    'If your request is below your credit limit, it is trust-building. If it is above your credit limit, it is credit-building.':
       'Kung mas mababa sa credit limit mo ang request, trust-building ito. Kung lampas sa credit limit mo, credit-building ito.',
    'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
@@ -1048,15 +1049,15 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'This is the borrower credit-limit field shown across borrower credit and leveling surfaces.':
       'Ito ang borrower credit-limit field na ipinapakita sa borrower credit at leveling surfaces.',
    'IOU balances come from lender funding events. Trust points should not reuse those totals.':
-      'Galing sa lender funding events ang IOU balances. Hindi dapat gamitin muli ng trust points ang totals na iyon.',
+      'Galing sa lender funding events ang IOU balances. Hindi dapat gamitin muli ng Pandesal points ang totals na iyon.',
    'These are borrower repayment and credit-limit fields, not stored trust-point balances.':
       'Borrower repayment at credit-limit fields ang mga ito, hindi stored trust-point balances.',
    'Borrower trust points are a product concept right now. The live database-backed borrower measure is the credit-limit field plus loan repayment history.':
-      'Product concept pa lang ngayon ang borrower trust points. Ang live database-backed borrower measure ay ang credit-limit field plus loan repayment history.',
+      'Product concept pa lang ngayon ang borrower Pandesal points. Ang live database-backed borrower measure ay ang credit-limit field plus loan repayment history.',
    'If we want actual trust-point balances, we should add dedicated borrower storage or extend point events with a separate point-system type before showing totals.':
       'Kung gusto natin ng actual trust-point balances, dapat magdagdag ng dedicated borrower storage o i-extend ang point events gamit ang hiwalay na point-system type bago magpakita ng totals.',
    'This guide only describes borrower trust points. It separates current credit-limit behavior from point awards that do not exist yet.':
-      'Inilalarawan lang ng guide na ito ang borrower trust points. Pinaghihiwalay nito ang current credit-limit behavior mula sa point awards na wala pa ngayon.'
+      'Inilalarawan lang ng guide na ito ang borrower Pandesal points. Pinaghihiwalay nito ang current credit-limit behavior mula sa point awards na wala pa ngayon.'
 };
 
 export const indonesianScreenTranslations: Record<string, string> = {
@@ -1069,7 +1070,7 @@ export const indonesianScreenTranslations: Record<string, string> = {
    'Active Loans': 'Pinjaman aktif',
    Amount: 'Jumlah',
    'Apply for a loan': 'Ajukan pinjaman',
-   'Base Account Not Added': 'Base Account belum ditambahkan',
+   'Wallet Not Added': 'Wallet belum ditambahkan',
    'Base Account': 'Akun Base',
    'Base Wallet': 'Wallet Base',
    Benefits: 'Manfaat',
@@ -1199,7 +1200,8 @@ export const indonesianScreenTranslations: Record<string, string> = {
    Terms: 'Ketentuan',
    Timeline: 'Timeline',
    'Transaction History': 'Riwayat transaksi',
-   'Trust Score': 'Trust Score',
+   'Trust Score': 'Poin Pandesal',
+   'Pandesal points': 'Poin Pandesal',
    'Credit Level': 'Level kredit',
    'Verified Borrower': 'Peminjam terverifikasi',
    'Reputation Milestones': 'Milestone reputasi',
@@ -1211,8 +1213,8 @@ export const indonesianScreenTranslations: Record<string, string> = {
    Wallet: 'Wallet',
    'Wallet Not Connected': 'Wallet belum terhubung',
    'World ID': 'World ID',
-   'You can sign back in anytime. Your Trust Score stays with your wallet.':
-      'Kamu bisa masuk lagi kapan saja. Trust Score tetap bersama wallet kamu.'
+   'You can sign back in anytime. Your Pandesal points stay with your wallet.':
+      'Kamu bisa masuk lagi kapan saja. Poin Pandesal tetap bersama wallet kamu.'
 };
 
 export const thaiScreenTranslations: Record<string, string> = {
@@ -1225,7 +1227,7 @@ export const thaiScreenTranslations: Record<string, string> = {
    'Active Loans': 'เงินกู้ที่ใช้งานอยู่',
    Amount: 'จำนวนเงิน',
    'Apply for a loan': 'ขอเงินกู้',
-   'Base Account Not Added': 'ยังไม่ได้เพิ่มบัญชี Base',
+   'Wallet Not Added': 'ยังไม่ได้เพิ่มกระเป๋า',
    'Base Account': 'บัญชี Base',
    'Base Wallet': 'กระเป๋า Base',
    Benefits: 'ประโยชน์',
@@ -1354,7 +1356,8 @@ export const thaiScreenTranslations: Record<string, string> = {
    Terms: 'ข้อกำหนด',
    Timeline: 'ไทม์ไลน์',
    'Transaction History': 'ประวัติธุรกรรม',
-   'Trust Score': 'คะแนนความน่าเชื่อถือ',
+   'Trust Score': 'แต้ม Pandesal',
+   'Pandesal points': 'แต้ม Pandesal',
    'Credit Level': 'ระดับเครดิต',
    'Verified Borrower': 'ผู้ยืมที่ยืนยันแล้ว',
    'Reputation Milestones': 'เป้าหมายชื่อเสียง',
@@ -1366,8 +1369,8 @@ export const thaiScreenTranslations: Record<string, string> = {
    Wallet: 'กระเป๋าเงิน',
    'Wallet Not Connected': 'ยังไม่ได้เชื่อมต่อกระเป๋า',
    'World ID': 'World ID',
-   'You can sign back in anytime. Your Trust Score stays with your wallet.':
-      'คุณสามารถกลับมาเข้าสู่ระบบได้ทุกเมื่อ คะแนนความน่าเชื่อถือจะอยู่กับกระเป๋าของคุณ'
+   'You can sign back in anytime. Your Pandesal points stay with your wallet.':
+      'คุณสามารถกลับมาเข้าสู่ระบบได้ทุกเมื่อ แต้ม Pandesal จะอยู่กับกระเป๋าของคุณ'
 };
 
 export const vietnameseScreenTranslations: Record<string, string> = {
@@ -1380,7 +1383,7 @@ export const vietnameseScreenTranslations: Record<string, string> = {
    'Active Loans': 'Khoản vay đang hoạt động',
    Amount: 'Số tiền',
    'Apply for a loan': 'Yêu cầu khoản vay',
-   'Base Account Not Added': 'Chưa thêm tài khoản Base',
+   'Wallet Not Added': 'Chưa thêm ví',
    'Base Account': 'Tài khoản Base',
    'Base Wallet': 'Ví Base',
    Benefits: 'Lợi ích',
@@ -1509,7 +1512,8 @@ export const vietnameseScreenTranslations: Record<string, string> = {
    Terms: 'Điều khoản',
    Timeline: 'Dòng thời gian',
    'Transaction History': 'Lịch sử giao dịch',
-   'Trust Score': 'Điểm tin cậy',
+   'Trust Score': 'Điểm Pandesal',
+   'Pandesal points': 'Điểm Pandesal',
    'Credit Level': 'Cấp tín dụng',
    'Verified Borrower': 'Người vay đã xác minh',
    'Reputation Milestones': 'Mốc uy tín',
@@ -1521,8 +1525,8 @@ export const vietnameseScreenTranslations: Record<string, string> = {
    Wallet: 'Ví',
    'Wallet Not Connected': 'Chưa kết nối ví',
    'World ID': 'World ID',
-   'You can sign back in anytime. Your Trust Score stays with your wallet.':
-      'Bạn có thể đăng nhập lại bất cứ lúc nào. Điểm tin cậy vẫn đi cùng ví của bạn.'
+   'You can sign back in anytime. Your Pandesal points stay with your wallet.':
+      'Bạn có thể đăng nhập lại bất cứ lúc nào. Điểm Pandesal vẫn đi cùng ví của bạn.'
 };
 
 export const screenTranslationsByLocale = {

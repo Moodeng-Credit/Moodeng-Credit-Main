@@ -264,8 +264,8 @@ function BorrowerConnectView({
       return (
          <div className={CONNECT_WALLET_SCREEN_CLASS}>
             <OnboardingHeader
-               title="Create Your Wallet"
-               tooltip="Your Moodeng wallet holds your USDC loans and builds your Trust Score. It's created instantly from your login — no app and no seed phrase — and it's fully yours: you can export its key anytime. We never ask for your private keys or seed phrase."
+               title="Create Your Instant Wallet"
+               tooltip="Your Instant Wallet holds your USDC loans and earns you Pandesal points. It's created instantly from your Moodeng login — no app and no seed phrase — and it's fully yours: you can export its key anytime. Prefer a Base Account? You can connect one instead. We never ask for your private keys or seed phrase."
             />
 
             <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
@@ -279,10 +279,10 @@ function BorrowerConnectView({
                />
                <div className="mb-md-5 flex max-w-[320px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
-                     Create your wallet
+                     Create your Instant Wallet
                   </h2>
                   <p className="max-w-[280px] text-md-b1 font-medium leading-7 text-md-neutral-700">
-                     Hold your loans and build your Trust Score.
+                     Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.
                   </p>
                </div>
                <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} />
@@ -303,7 +303,7 @@ function BorrowerConnectView({
                      disabled={isConnecting || isCreatingInstantWallet}
                      className="mt-md-4 text-md-b2 font-semibold text-md-primary-1200 underline underline-offset-4 disabled:opacity-60 dark:text-md-primary-500"
                   >
-                     {isConnecting ? 'Connecting…' : 'Already have a wallet? Connect it'}
+                     {isConnecting ? 'Connecting…' : 'Prefer a Base Account? Connect it instead'}
                   </button>
                ) : null}
                <WalletConnectHelp />
@@ -316,7 +316,7 @@ function BorrowerConnectView({
       <div className={CONNECT_WALLET_SCREEN_CLASS}>
          <OnboardingHeader
             title="Add Base Wallet"
-            tooltip="Connecting your wallet lets Moodeng read your on-chain activity to build your Trust Score and send USDC loans directly to you. We never ask for your private keys or seed phrase."
+            tooltip="Connecting your wallet lets Moodeng read your on-chain activity to award Pandesal points and send USDC loans directly to you. We never ask for your private keys or seed phrase."
          />
 
          <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
@@ -330,7 +330,7 @@ function BorrowerConnectView({
                   Connect Your Base Wallet
                </h2>
                <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
-                  Your wallet is used to build your Trust Score and receive USDC loans.
+                  Your wallet is used to earn Pandesal points and receive USDC loans.
                </p>
             </div>
             <ConnectBaseAccountButton onClick={connectBase} isDisabled={isConnecting || isCreatingInstantWallet} />
@@ -348,7 +348,7 @@ function InstantWalletButton({ onClick, isDisabled }: { onClick: () => void; isD
          disabled={isDisabled}
          className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_18px_50px_rgba(96,16,210,0.24)] disabled:opacity-60 dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]"
       >
-         {isDisabled ? 'Creating your wallet…' : 'Create wallet'}
+         {isDisabled ? 'Creating your wallet…' : 'Create Instant Wallet'}
          {isDisabled ? null : (
             <span
                className="block size-6 bg-md-neutral-100"
@@ -514,18 +514,16 @@ function LenderConnectView({
                   </button>
                   {/* Set expectations before the camera opens, not after. */}
                   <p className="text-md-b3 font-medium text-md-slate-600">
-                     Includes a ten-second face check, so instant wallets stay one per person.
+                     Includes a ten-second face check, so Instant Wallets stay one per person.
                   </p>
-                  {instantWalletError ? (
-                     <p className="text-md-b3 font-medium text-md-red-500">{instantWalletError}</p>
-                  ) : null}
+                  {instantWalletError ? <p className="text-md-b3 font-medium text-md-red-500">{instantWalletError}</p> : null}
                </div>
             ) : null}
 
             {instantWalletConfigured && !isPreview ? (
                <div className="flex items-center gap-md-2">
                   <span className="h-px flex-1 bg-md-neutral-600" />
-                  <span className="text-md-b3 font-medium text-md-slate-600">or connect one you already own</span>
+                  <span className="text-md-b3 font-medium text-md-slate-600">or connect a Base Account or another wallet</span>
                   <span className="h-px flex-1 bg-md-neutral-600" />
                </div>
             ) : null}

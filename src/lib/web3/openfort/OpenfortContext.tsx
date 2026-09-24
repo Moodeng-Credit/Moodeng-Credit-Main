@@ -5,7 +5,6 @@
 // into the borrower's wallet-lock via the existing `updateUser` path — the Openfort equivalent
 // of what useWalletSync does for wagmi wallets. It never touches wagmi, so the Base rail is
 // unaffected whether or not Openfort is configured.
-
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { EmbeddedState } from '@openfort/openfort-js';
@@ -15,19 +14,14 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import { getOpenfortClient } from '@/lib/web3/openfort/client';
-import {
-   OPENFORT_CHAIN_ID,
-   OPENFORT_CONNECTOR_NAME,
-   OPENFORT_WALLET_PROVIDER,
-   isOpenfortConfigured
-} from '@/lib/web3/openfort/config';
-import { friendlyConnectError } from '@/lib/web3/openfort/errors';
+import { isOpenfortConfigured, OPENFORT_CHAIN_ID, OPENFORT_CONNECTOR_NAME, OPENFORT_WALLET_PROVIDER } from '@/lib/web3/openfort/config';
 import {
    exportEmbeddedPrivateKey,
    logoutEmbeddedWallet,
    provisionEmbeddedWallet,
    sendUsdcFromEmbeddedWallet
 } from '@/lib/web3/openfort/embeddedWallet';
+import { friendlyConnectError } from '@/lib/web3/openfort/errors';
 import { WalletGateError } from '@/lib/web3/openfort/walletFaceGate';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -99,7 +93,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
 
    const connect = useCallback(async (): Promise<string | null> => {
       if (!configured) {
-         setError('Instant wallet is not available right now.');
+         setError('The Instant Wallet is not available right now.');
          return null;
       }
       setStatus('connecting');

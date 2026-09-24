@@ -2,7 +2,6 @@
 // (Direction 02, the setup co-pilot) everywhere, without wiring each page.
 // The always-mounted launcher reads location → derives a step → feeds it to the
 // edge function as context AND drives the proactive nudge.
-
 import { readVerifyFlow } from '@/lib/verifyFlow';
 
 // Chips and nudges are user-visible, so they carry both languages; `page`/`id`
@@ -30,14 +29,14 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
       match: (p) => p.startsWith('/onboarding/wallet'),
       step: {
          id: 'base-account',
-         page: 'Set up / connect your Base Account',
+         page: 'Set up your Instant Wallet (or connect a Base Account)',
          nudge: {
-            en: "Setting up your wallet? Don't download the Coinbase app — I can show you the right way.",
-            fil: 'Nagse-set up ng wallet? Huwag i-download ang Coinbase app — ituturo ko sa iyo ang tamang paraan.'
+            en: 'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.',
+            fil: 'Nagse-set up ng wallet? Gagawin ang Instant Wallet mo mula sa Moodeng login mo — walang app na ida-download. Gagabayan kita.'
          },
          quickReplies: {
-            en: ['Do I need the Coinbase app?', 'How do I create a Base Account?', 'My wallet won’t connect'],
-            fil: ['Kailangan ko ba ang Coinbase app?', 'Paano gumawa ng Base Account?', 'Ayaw kumonekta ng wallet ko']
+            en: ['What is the Instant Wallet?', 'Can I use a Base Account instead?', 'My wallet won’t connect'],
+            fil: ['Ano ang Instant Wallet?', 'Puwede bang Base Account ang gamitin ko?', 'Ayaw kumonekta ng wallet ko']
          }
       }
    },
@@ -84,8 +83,8 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          id: 'request-board',
          page: 'Request board',
          quickReplies: {
-            en: ['How do I request a loan?', 'How does funding work?', 'What is a Trust Score?'],
-            fil: ['Paano mag-request ng loan?', 'Paano gumagana ang funding?', 'Ano ang Trust Score?']
+            en: ['How do I request a loan?', 'How does funding work?', 'What are Pandesal points?'],
+            fil: ['Paano mag-request ng loan?', 'Paano gumagana ang funding?', 'Ano ang Pandesal points?']
          }
       }
    },

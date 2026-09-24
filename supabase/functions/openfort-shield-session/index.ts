@@ -29,9 +29,9 @@ const SHIELD_TIMEOUT_MS = 8000;
 // Copy for each refusal from may_mint_embedded_wallet. The client routes on the CODE, not the
 // text, but a user who hits this outside the normal flow still deserves a real sentence.
 const GATE_MESSAGES: Record<string, string> = {
-   FACE_REQUIRED: 'A quick face scan is needed before we can create your instant wallet.',
+   FACE_REQUIRED: 'A quick face scan is needed before we can create your Instant Wallet.',
    FACE_PENDING: 'Your face scan is still being checked. This usually takes a few seconds.',
-   FACE_DUPLICATE: 'This face is already linked to another Moodeng account. Each person can have one instant wallet.',
+   FACE_DUPLICATE: 'This face is already linked to another Moodeng account. Each person can have one Instant Wallet.',
    FACE_MISMATCH: "This doesn't match the face used to verify this account. Please scan again as the account holder.",
    FACE_DECLINED: "We couldn't complete your face scan. Please try again in good lighting.",
    // The first-cash-out hold (20260820110000). Distinct code so the client routes to the
@@ -108,7 +108,7 @@ serve(async (req) => {
          if (!grant) {
             const { data: profile } = await supabase.from('users').select('user_role').eq('id', userData.user.id).maybeSingle();
             if (profile?.user_role !== 'borrower') {
-               return jsonResponse({ error: 'Instant wallet is available to borrowers only.', code: 'BORROWER_ONLY' }, 403);
+               return jsonResponse({ error: 'The Instant Wallet is available to borrowers only.', code: 'BORROWER_ONLY' }, 403);
             }
          }
       } else {
@@ -139,7 +139,7 @@ serve(async (req) => {
             });
             if (claimError) {
                console.error('[openfort-shield-session] Grant claim failed', claimError.message);
-               return jsonResponse({ error: 'Could not reserve your instant wallet. Please try again.' }, 500);
+               return jsonResponse({ error: 'Could not reserve your Instant Wallet. Please try again.' }, 500);
             }
          }
       }

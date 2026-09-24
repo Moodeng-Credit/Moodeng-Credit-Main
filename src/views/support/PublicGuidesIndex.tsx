@@ -3,14 +3,14 @@ import type { JSX } from 'react';
 import { Link } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
+
 import { useLocalization } from '@/i18n';
 import { getGuidesForLocale } from '@/views/support/data/guides';
-
 import '@/views/support/PublicGuide.css';
 
 const PAGE_TITLE = 'Moodeng Academy — Guides';
 const PAGE_DESCRIPTION =
-   'Plain-language guides to borrowing on Moodeng Credit: Credit Levels, Trust Scores, USDC loans, repayments, verification, and account security.';
+   'Plain-language guides to borrowing on Moodeng Credit: Credit Levels, Pandesal points, USDC loans, repayments, verification, and account security.';
 
 function firstLine(body: string): string {
    const flat = body.replace(/\s+/g, ' ').trim();
@@ -52,8 +52,8 @@ export default function PublicGuidesIndex(): JSX.Element {
             <p className="public-guide__eyebrow">Moodeng Academy</p>
             <h1>Guides</h1>
             <p className="public-guide__index-sub">
-               Everything you need to borrow with confidence — how Credit Levels grow, what your Trust Score means, and
-               how USDC loans work.
+               Everything you need to borrow with confidence — how Credit Levels grow, what your Pandesal points mean, and how USDC loans
+               work.
             </p>
          </header>
 

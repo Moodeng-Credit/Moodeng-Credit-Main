@@ -20,11 +20,11 @@ Register on the Moodeng platform by entering your preferred username, email, and
 Step 2: Start Your Loan Application
 Once logged in, tap the "Apply for a Loan" button to start the process.
 
-Step 3: Set Up Your Base Account
-Secure transactions on Moodeng require a Base Account. Visit https://account.base.app and follow the registration instructions.
+Step 3: Set Up Your Wallet
+Secure transactions on Moodeng need a wallet. By default, you use a Moodeng Instant Wallet — it is created from your Moodeng login, with no separate app or seed phrase. If you prefer, you can use a Base Account instead: visit https://account.base.app and follow the registration instructions.
 
 Step 4: Connect Your Wallet
-Return to the Moodeng platform and tap "Connect Wallet" to securely link your new Base Account to your Moodeng account.
+Return to the Moodeng platform and tap "Connect Wallet" to create your Instant Wallet — or securely link your Base Account if you chose one — so it is tied to your Moodeng account.
 
 Step 5: Verify Your Identity
 To ensure community safety, tap "Verify Yourself" and complete the quick ID + selfie check ("Verify Your ID") — it takes about 3 minutes. Already a World App user? You can choose "Verify with World ID" instead.
@@ -37,13 +37,13 @@ Tap "Explore the Request Board" to set your specific loan terms. You will need t
    },
    {
       slug: 'understanding-your-trust-score',
-      title: 'Understanding your Trust Score',
+      title: 'Understanding your Pandesal points',
       lastUpdated: 'Jun 9, 2026',
-      body: `Your Trust Score reflects how reliably you repay loans on Moodeng Credit.
+      body: `Your Pandesal points reflect how reliably you repay loans on Moodeng Credit.
 
-It rises with every on-time repayment and drops when you miss or default. Lenders use it as a quick signal to decide whether to fund your request.
+They rise with every on-time repayment and drop when you miss or default. Lenders use them as a quick signal to decide whether to fund your request.
 
-Because your Trust Score is tied to your wallet, it travels with you — it's not locked inside a single app.`
+Because your Pandesal points are tied to your wallet, they travel with you — they're not locked inside a single app.`
    },
    {
       slug: 'how-credit-levels-work',
@@ -69,17 +69,17 @@ Most borrowers use both — trust loans to keep activity healthy, credit loans t
    },
    {
       slug: 'how-repayments-affect-your-trust-score',
-      title: 'How Repayments Affect Your Trust Score',
+      title: 'How Repayments Affect Your Pandesal Points',
       lastUpdated: 'Jun 9, 2026',
-      body: `Every repayment for either Credit-Building or Trust-Building loans directly impacts your Trust Score (TS), which serves as your reputation on the platform. Our system is designed to reward consistent, reliable, and honest behavior; small loans repaid cleanly are more valuable for your reputation than large loans repaid sloppily.
+      body: `Every repayment for either Credit-Building or Trust-Building loans directly impacts your Pandesal points, which serve as your reputation on the platform. Our system is designed to reward consistent, reliable, and honest behavior; small loans repaid cleanly are more valuable for your reputation than large loans repaid sloppily.
 
 Scoring Breakdown
 
-- On-Time, Full Repayments: Completing a 100% repayment on or before the due date maximizes your score (10 TS).
+- On-Time, Full Repayments: Completing a 100% repayment on or before the due date earns the maximum (10 points).
 
-- Partial Repayments: Failing to repay the full amount reduces your score proportionally — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
+- Partial Repayments: Failing to repay the full amount reduces your points proportionally — 75% = 7 points · 50% = 5 points · 25% = 3 points.
 
-- Late Repayments: Any payment received after the agreed-upon deadline results in a 0 TS for that transaction.
+- Late Repayments: Any payment received after the agreed-upon deadline results in 0 points for that transaction.
 
 - Defaults: Unpaid loans leave a permanent mark on your profile that is visible to all future lenders.`
    },
@@ -91,17 +91,17 @@ Scoring Breakdown
 
 When you repay on time, the following benefits are applied to your profile:
 
-- Trust Score Enhancement: Your Trust Score increases for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
+- More Pandesal Points: Your Pandesal points increase for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
 - Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $20).
 - Verified Lending History: Your successful repayment history becomes visible to potential lenders, significantly streamlining the funding process for your future requests.
 
 Repayment Scoring Breakdown
 
-Your Trust Score (TS) reflects your reliability and determines your future funding success:
+Your Pandesal points reflect your reliability and determine your future funding success:
 
-- On-Time, Full Repayment: Awards the maximum 10 TS.
-- Partial Repayment: Your score is reduced proportionally based on the amount paid (e.g., 75% = 7 TS; 50% = 5 TS).
-- Late Repayment: Any payment made after the deadline results in 0 TS, regardless of the amount.
+- On-Time, Full Repayment: Awards the maximum 10 points.
+- Partial Repayment: Your points are reduced proportionally based on the amount paid (e.g., 75% = 7 points; 50% = 5 points).
+- Late Repayment: Any payment made after the deadline results in 0 points, regardless of the amount.
 - Default: Unpaid loans result in a permanent mark on your public on-chain profile.`
    },
    {
@@ -157,7 +157,7 @@ The key detail: always choose Base as the network. Sending on the wrong network 
       lastUpdated: 'Jul 3, 2026',
       body: `You can withdraw by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account.
 
-Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+Video walkthrough — sending USDC from your Base Account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
 
 Common options:
 
@@ -189,7 +189,7 @@ The key detail: always select Base as the network when depositing to an exchange
 
 Using USDC means loan values stay consistent. A $20 loan today is still a $20 loan when you repay it, regardless of crypto market movement.
 
-We recommend using a Base Account on Base, where USDC transfers are gasless — you pay no network fees.`
+Your Instant Wallet (or a Base Account, if you prefer) runs on Base, where USDC transfers are gasless — you pay no network fees.`
    },
    {
       slug: 'verification-and-why-its-required',
@@ -199,7 +199,7 @@ We recommend using a Base Account on Base, where USDC transfers are gasless — 
 
 Why verify?
 - Security: ensures every request comes from a real, unique person, preventing fraud.
-- Access: completed verification unlocks loan requests and starts your Trust Score.
+- Access: completed verification unlocks loan requests and starts your Pandesal points.
 
 The recommended way: Verify Your ID
 1. Tap "Verify Yourself" in the app and choose "Verify Your ID".
@@ -231,15 +231,15 @@ const FILIPINO_GUIDES: Record<string, LocalizedGuideArticle> = {
 Step 1: Gumawa ng account
 Mag-register sa Moodeng platform gamit ang preferred username, email, at password mo. I-click ang "Create Account" para magpatuloy.
 
-Step 2: Simulan ang BASE application
+Step 2: Simulan ang loan application
 Kapag naka-log in ka na, i-tap ang "Apply for a Loan" button para simulan ang proseso.
 
-Step 3: I-set up ang Base Account mo
-Kailangan ng Base Account para sa secure transactions sa Moodeng. Pumunta sa https://account.base.app at sundin ang registration instructions.
+Step 3: I-set up ang wallet mo
+Kailangan ng wallet para sa secure transactions sa Moodeng. Bilang default, Moodeng Instant Wallet ang gamit mo — ginagawa ito mula sa Moodeng login mo, walang hiwalay na app o seed phrase. Kung mas gusto mo, puwede kang gumamit ng Base Account: pumunta sa https://account.base.app at sundin ang registration instructions.
 
 
 Step 4: Ikonek ang wallet mo
-Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para secure na mai-link ang bagong Base Account mo sa Moodeng account mo.
+Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para gumawa ng Instant Wallet mo — o secure na i-link ang Base Account mo kung iyon ang pinili mo — sa Moodeng account mo.
 
 Step 5: I-verify ang identity mo
 Para mapanatiling safe ang community, i-download ang World App at kumpletuhin ang human identity verification sa physical World Orb location.
@@ -256,17 +256,17 @@ I-tap ang "Explore the Request Board" para i-set ang specific loan terms mo. Kai
 Important notes tungkol sa credit limit mo
 - Starting limit: Bawat bagong borrower ay nagsisimula sa initial borrowing limit na $15.
 - Credit-building loans: Full-limit loan ito na gumagamit ng buong current credit limit mo, halimbawa full $15 request. Ang successful repayment ng ganitong loan lang ang paraan para tumaas ang limit mo sa next level, halimbawa $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 at pataas. Isang credit-building loan request lang ang puwedeng active at a time.
-- Trust-building loans: Mas maliit na loans ito na below sa current credit limit mo. Nakakatulong ito bumuo ng Trust Score mo sa lenders, pero hindi nito tinataas ang overall credit limit mo. Puwede kang magkaroon ng multiple trust-building loan requests at the same time basta ang total ay nasa ilalim ng current limit mo.
+- Trust-building loans: Mas maliit na loans ito na below sa current credit limit mo. Nakakatulong ito bumuo ng Pandesal points mo sa lenders, pero hindi nito tinataas ang overall credit limit mo. Puwede kang magkaroon ng multiple trust-building loan requests at the same time basta ang total ay nasa ilalim ng current limit mo.
 - Pag-unlock ng next level: Para umakyat, kailangan mong hiramin at fully repay ang buong limit mo. Halimbawa, kung $15 ang limit mo at $12 trust-building loan lang ang ni-request mo at nagbayad ka ng $15, hindi tataas ang limit mo. Kailangan mong hiramin ang buong $15 at bayaran ang total agreed amount, kasama ang anumang maliit na interest o additional repayment amount na inoffer mo at tinanggap ng lender, para ma-unlock ang next level.`
    },
    'understanding-your-trust-score': {
-      title: 'Pag-unawa sa Trust Score mo',
+      title: 'Pag-unawa sa Pandesal points mo',
       lastUpdated: 'Jun 9, 2026',
-      body: `Ipinapakita ng Trust Score mo kung gaano ka reliable magbayad ng loans sa Moodeng Credit.
+      body: `Ipinapakita ng Pandesal points mo kung gaano ka reliable magbayad ng loans sa Moodeng Credit.
 
 Tumataas ito sa bawat on-time repayment at bumababa kapag late ka o nag-default. Ginagamit ito ng lenders bilang mabilis na signal para mag-decide kung i-fund nila ang request mo.
 
-Dahil naka-tie ang Trust Score mo sa wallet mo, dala mo ito kahit saan. Hindi ito nakakulong sa isang app lang.`
+Dahil naka-tie ang Pandesal points mo sa wallet mo, dala mo ito kahit saan. Hindi ito nakakulong sa isang app lang.`
    },
    'how-credit-levels-work': {
       title: 'Paano gumagana ang mga antas ng kredito',
@@ -289,17 +289,17 @@ Ang Credit-building loans ay full-limit loans. Kapag nabayaran mo ito on time, t
 Karamihan ng borrowers ay gumagamit ng pareho: trust loans para manatiling healthy ang activity, at credit loans para palakihin ang limit over time.`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'Paano naaapektuhan ng repayments ang Trust Score mo',
+      title: 'Paano naaapektuhan ng repayments ang Pandesal points mo',
       lastUpdated: 'Jun 9, 2026',
-      body: `Bawat repayment para sa Credit-building o Trust-building loans ay direktang nakakaapekto sa Trust Score (TS) mo, na nagsisilbing reputation mo sa platform. Dinisenyo ang system namin para i-reward ang consistent, reliable, at honest behavior; mas mahalaga sa reputation mo ang maliit na loans na malinis ang repayment kaysa malaking loans na magulo ang repayment.
+      body: `Bawat repayment para sa Credit-building o Trust-building loans ay direktang nakakaapekto sa Pandesal points mo, na nagsisilbing reputation mo sa platform. Dinisenyo ang system namin para i-reward ang consistent, reliable, at honest behavior; mas mahalaga sa reputation mo ang maliit na loans na malinis ang repayment kaysa malaking loans na magulo ang repayment.
 
 Scoring breakdown
 
-- On-time, full repayments: Kapag nakumpleto ang 100% repayment on or before the due date, maximized ang score mo (10 TS).
+- On-time, full repayments: Kapag nakumpleto ang 100% repayment on or before the due date, maximized ang points mo (10 points).
 
-- Partial repayments: Kapag hindi nabayaran ang buong amount, nababawasan ang score mo proportionally — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
+- Partial repayments: Kapag hindi nabayaran ang buong amount, nababawasan ang points mo proportionally — 75% = 7 points · 50% = 5 points · 25% = 3 points.
 
-- Late repayments: Anumang payment na natanggap pagkatapos ng agreed deadline ay nagreresulta sa 0 TS para sa transaction na iyon.
+- Late repayments: Anumang payment na natanggap pagkatapos ng agreed deadline ay nagreresulta sa 0 points para sa transaction na iyon.
 
 - Defaults: Ang unpaid loans ay nag-iiwan ng permanent mark sa profile mo na makikita ng lahat ng future lenders.`
    },
@@ -310,17 +310,17 @@ Scoring breakdown
 
 Kapag nagbayad ka on time, maa-apply sa profile mo ang mga benepisyong ito:
 
-- Trust Score enhancement: Tumataas ang Trust Score mo para sa Credit-building o Trust-building loans, na nagpapakita ng reliability mo sa community.
+- Mas maraming Pandesal points: Tumataas ang Pandesal points mo para sa Credit-building o Trust-building loans, na nagpapakita ng reliability mo sa community.
 - Credit limit progression: Para sa Credit-building loans, tataas ang current borrowing limit mo at maa-unlock ang next credit level, halimbawa mula $15 papuntang $20.
 - Verified lending history: Makikita ng potential lenders ang successful repayment history mo, kaya mas madali nilang ma-review ang future requests mo.
 
 Repayment scoring breakdown
 
-Ipinapakita ng Trust Score (TS) mo ang reliability mo at tumutulong sa future funding success mo:
+Ipinapakita ng Pandesal points mo ang reliability mo at tumutulong sa future funding success mo:
 
-- On-time, full repayment: Nagbibigay ng maximum 10 TS.
-- Partial repayment: Nababawasan ang score mo proportionally base sa amount na nabayaran, halimbawa 75% = 7 TS; 50% = 5 TS.
-- Late repayment: Anumang payment pagkatapos ng deadline ay nagreresulta sa 0 TS, kahit magkano ang amount.
+- On-time, full repayment: Nagbibigay ng maximum 10 points.
+- Partial repayment: Nababawasan ang points mo proportionally base sa amount na nabayaran, halimbawa 75% = 7 points; 50% = 5 points.
+- Late repayment: Anumang payment pagkatapos ng deadline ay nagreresulta sa 0 points, kahit magkano ang amount.
 - Default: Ang unpaid loans ay nagreresulta sa permanent mark sa public on-chain profile mo.`
    },
    'using-usdc-on-moodeng-credit': {
@@ -330,7 +330,7 @@ Ipinapakita ng Trust Score (TS) mo ang reliability mo at tumutulong sa future fu
 
 Kapag USDC ang gamit, consistent ang loan values. Ang $20 loan ngayon ay $20 pa rin kapag binayaran mo ito, kahit gumalaw ang crypto market.
 
-Inirerekomenda namin ang Base Account sa Base, kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
+Tumatakbo sa Base ang Instant Wallet mo (o Base Account, kung iyon ang gusto mo), kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
    },
    'verification-and-why-its-required': {
       title: 'Verification at security',
@@ -342,7 +342,7 @@ Bakit kailangan mag-verify?
 
 - Rewards: Puwedeng mag-claim ang new users ng humigit-kumulang $10 sa Worldcoin rewards pagkatapos ng successful verification.
 
-- Access: Kapag complete ang verification, puwede ka nang mag-request ng loans at magsimulang bumuo ng community trust score.
+- Access: Kapag complete ang verification, puwede ka nang mag-request ng loans at magsimulang bumuo ng Pandesal points.
 
 Step-by-step guide
 1. I-download ang World App
@@ -378,12 +378,12 @@ Daftar di platform Moodeng dengan username, email, dan password yang kamu pilih.
 Langkah 2: Mulai aplikasi pinjaman
 Setelah login, tap tombol "Apply for a Loan" untuk memulai proses.
 
-Langkah 3: Siapkan Base Account
-Transaksi aman di Moodeng membutuhkan Base Account. Kunjungi https://account.base.app dan ikuti instruksi pendaftaran.
+Langkah 3: Siapkan wallet
+Transaksi aman di Moodeng membutuhkan wallet. Secara default, kamu memakai Instant Wallet Moodeng — dibuat dari login Moodeng kamu, tanpa aplikasi terpisah atau seed phrase. Jika lebih suka, kamu bisa memakai Base Account: kunjungi https://account.base.app dan ikuti instruksi pendaftaran.
 
 
 Langkah 4: Hubungkan wallet
-Kembali ke platform Moodeng dan tap "Connect Wallet" untuk menautkan Base Account baru kamu ke akun Moodeng dengan aman.
+Kembali ke platform Moodeng dan tap "Connect Wallet" untuk membuat Instant Wallet kamu — atau menautkan Base Account dengan aman jika kamu memilihnya — ke akun Moodeng.
 
 Langkah 5: Verifikasi identitas
 Agar komunitas tetap aman, download World App dan selesaikan verifikasi identitas manusia di lokasi World Orb fisik.
@@ -400,17 +400,17 @@ Tap "Explore the Request Board" untuk mengatur syarat pinjaman. Kamu perlu menen
 Catatan penting tentang credit limit
 - Limit awal: Setiap peminjam baru mulai dengan limit $15.
 - Credit-building loans: Ini adalah pinjaman full-limit yang memakai seluruh credit limit saat ini, misalnya meminta penuh $15. Membayar pinjaman jenis ini dengan sukses adalah satu-satunya cara menaikkan limit ke level berikutnya, misalnya $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140 dan seterusnya. Kamu hanya boleh memiliki satu permintaan credit-building loan aktif dalam satu waktu.
-- Trust-building loans: Ini adalah pinjaman lebih kecil di bawah credit limit saat ini. Pinjaman ini membangun Trust Score dengan pemberi pinjaman, tetapi tidak menaikkan credit limit keseluruhan. Kamu boleh memiliki beberapa trust-building loan aktif selama totalnya tetap di bawah limit saat ini.
+- Trust-building loans: Ini adalah pinjaman lebih kecil di bawah credit limit saat ini. Pinjaman ini membangun poin Pandesal dengan pemberi pinjaman, tetapi tidak menaikkan credit limit keseluruhan. Kamu boleh memiliki beberapa trust-building loan aktif selama totalnya tetap di bawah limit saat ini.
 - Membuka level berikutnya: Untuk naik level, kamu harus meminjam dan membayar penuh seluruh limit. Misalnya, jika limit kamu $15 dan kamu hanya meminta trust-building loan $12 lalu membayar $15, limit kamu tidak naik. Kamu harus meminjam penuh $15 dan membayar total yang disepakati, termasuk bunga kecil atau tambahan pembayaran yang kamu tawarkan dan diterima pemberi pinjaman.`
    },
    'understanding-your-trust-score': {
-      title: 'Memahami Trust Score kamu',
+      title: 'Memahami poin Pandesal kamu',
       lastUpdated: 'Jun 9, 2026',
-      body: `Trust Score menunjukkan seberapa andal kamu membayar pinjaman di Moodeng Credit.
+      body: `Poin Pandesal menunjukkan seberapa andal kamu membayar pinjaman di Moodeng Credit.
 
 Skor ini naik setiap kali kamu membayar tepat waktu dan turun saat kamu terlambat atau gagal bayar. Pemberi pinjaman memakai skor ini sebagai sinyal cepat untuk memutuskan apakah mereka ingin mendanai permintaan kamu.
 
-Karena Trust Score tertaut ke wallet, skor ini ikut bersama kamu. Skor ini tidak terkunci di satu app saja.`
+Karena poin Pandesal tertaut ke wallet, poin ini ikut bersama kamu. Poin ini tidak terkunci di satu app saja.`
    },
    'how-credit-levels-work': {
       title: 'Cara kerja level kredit',
@@ -433,17 +433,17 @@ Credit-building loans adalah pinjaman full-limit. Membayar satu pinjaman ini tep
 Sebagian besar peminjam memakai keduanya: trust loans untuk menjaga aktivitas sehat, dan credit loans untuk menaikkan limit dari waktu ke waktu.`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'Bagaimana pembayaran memengaruhi Trust Score',
+      title: 'Bagaimana pembayaran memengaruhi poin Pandesal',
       lastUpdated: 'Jun 9, 2026',
-      body: `Setiap pembayaran untuk Credit-building atau Trust-building loans langsung memengaruhi Trust Score (TS), yaitu reputasi kamu di platform. Sistem kami dirancang untuk memberi reward pada perilaku yang konsisten, andal, dan jujur. Pinjaman kecil yang dibayar rapi lebih bernilai untuk reputasi daripada pinjaman besar yang dibayar berantakan.
+      body: `Setiap pembayaran untuk Credit-building atau Trust-building loans langsung memengaruhi poin Pandesal, yaitu reputasi kamu di platform. Sistem kami dirancang untuk memberi reward pada perilaku yang konsisten, andal, dan jujur. Pinjaman kecil yang dibayar rapi lebih bernilai untuk reputasi daripada pinjaman besar yang dibayar berantakan.
 
 Rincian skor
 
-- Pembayaran penuh tepat waktu: Menyelesaikan 100% pembayaran pada atau sebelum jatuh tempo memaksimalkan skor kamu (10 TS).
+- Pembayaran penuh tepat waktu: Menyelesaikan 100% pembayaran pada atau sebelum jatuh tempo memaksimalkan poin kamu (10 poin).
 
-- Pembayaran sebagian: Jika jumlah penuh tidak dibayar, skor berkurang secara proporsional — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
+- Pembayaran sebagian: Jika jumlah penuh tidak dibayar, poin berkurang secara proporsional — 75% = 7 poin · 50% = 5 poin · 25% = 3 poin.
 
-- Pembayaran terlambat: Pembayaran apa pun yang diterima setelah deadline yang disepakati menghasilkan 0 TS untuk transaksi itu.
+- Pembayaran terlambat: Pembayaran apa pun yang diterima setelah deadline yang disepakati menghasilkan 0 poin untuk transaksi itu.
 
 - Gagal bayar: Pinjaman yang tidak dibayar meninggalkan tanda permanen di profil yang terlihat oleh semua pemberi pinjaman berikutnya.`
    },
@@ -454,17 +454,17 @@ Rincian skor
 
 Saat kamu membayar tepat waktu, manfaat berikut diterapkan ke profil kamu:
 
-- Peningkatan Trust Score: Trust Score kamu naik untuk Credit-building atau Trust-building loans, mencerminkan keandalan kamu kepada komunitas.
+- Poin Pandesal bertambah: Poin Pandesal kamu naik untuk Credit-building atau Trust-building loans, mencerminkan keandalan kamu kepada komunitas.
 - Progression credit limit: Untuk Credit-building loans, limit pinjaman saat ini naik dan membuka credit level berikutnya, misalnya dari $15 ke $20.
 - Riwayat pembayaran terverifikasi: Riwayat pembayaran sukses kamu terlihat oleh calon pemberi pinjaman, sehingga proses pendanaan permintaan berikutnya menjadi lebih mudah.
 
 Rincian skor pembayaran
 
-Trust Score (TS) mencerminkan keandalan kamu dan menentukan peluang pendanaan ke depan:
+Poin Pandesal mencerminkan keandalan kamu dan menentukan peluang pendanaan ke depan:
 
-- Pembayaran penuh tepat waktu: Mendapat maksimum 10 TS.
-- Pembayaran sebagian: Skor berkurang proporsional berdasarkan jumlah yang dibayar, misalnya 75% = 7 TS; 50% = 5 TS.
-- Pembayaran terlambat: Pembayaran setelah deadline menghasilkan 0 TS, berapa pun jumlahnya.
+- Pembayaran penuh tepat waktu: Mendapat maksimum 10 poin.
+- Pembayaran sebagian: Poin berkurang proporsional berdasarkan jumlah yang dibayar, misalnya 75% = 7 poin; 50% = 5 poin.
+- Pembayaran terlambat: Pembayaran setelah deadline menghasilkan 0 poin, berapa pun jumlahnya.
 - Gagal bayar: Pinjaman yang tidak dibayar menghasilkan tanda permanen di profil on-chain publik kamu.`
    },
    'using-usdc-on-moodeng-credit': {
@@ -474,7 +474,7 @@ Trust Score (TS) mencerminkan keandalan kamu dan menentukan peluang pendanaan ke
 
 Dengan USDC, nilai pinjaman tetap konsisten. Pinjaman $20 hari ini tetap pinjaman $20 saat kamu membayarnya, terlepas dari pergerakan pasar kripto.
 
-Kami merekomendasikan Base Account di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
+Instant Wallet kamu (atau Base Account, jika kamu memilihnya) berjalan di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
    },
    'verification-and-why-its-required': {
       title: 'Verifikasi dan keamanan',
@@ -486,7 +486,7 @@ Mengapa perlu verifikasi?
 
 - Reward: Pengguna baru bisa mengklaim sekitar $10 dalam reward Worldcoin setelah verifikasi berhasil.
 
-- Akses: Verifikasi selesai memungkinkan kamu mengajukan pinjaman dan mulai membangun community trust score.
+- Akses: Verifikasi selesai memungkinkan kamu mengajukan pinjaman dan mulai membangun poin Pandesal.
 
 Panduan langkah demi langkah
 1. Download World App
@@ -522,11 +522,11 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 ขั้นตอนที่ 2: เริ่มสมัครเงินกู้
 หลังเข้าสู่ระบบ แตะ "Apply for a Loan" เพื่อเริ่มขั้นตอน
 
-ขั้นตอนที่ 3: ตั้งค่า Base Account
-ธุรกรรมบน Moodeng ต้องใช้ Base Account ไปที่ https://account.base.app และทำตามคำแนะนำ
+ขั้นตอนที่ 3: ตั้งค่ากระเป๋า
+ธุรกรรมบน Moodeng ต้องใช้กระเป๋า โดยค่าเริ่มต้นคุณจะใช้ Instant Wallet ของ Moodeng ซึ่งสร้างจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องใช้แอปแยกหรือ seed phrase หากต้องการ คุณสามารถใช้ Base Account แทนได้ โดยไปที่ https://account.base.app และทำตามคำแนะนำ
 
 ขั้นตอนที่ 4: เชื่อมต่อกระเป๋า
-กลับมาที่ Moodeng แล้วแตะ "Connect Wallet" เพื่อเชื่อม Base Account กับบัญชี Moodeng
+กลับมาที่ Moodeng แล้วแตะ "Connect Wallet" เพื่อสร้าง Instant Wallet หรือเชื่อม Base Account หากคุณเลือกใช้ กับบัญชี Moodeng
 
 ขั้นตอนที่ 5: ยืนยันตัวตน
 ดาวน์โหลด World App และยืนยันตัวตนมนุษย์ที่ World Orb จริง
@@ -540,16 +540,16 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 หมายเหตุเกี่ยวกับวงเงินเครดิต
 - ผู้ยืมใหม่เริ่มที่วงเงิน $15
 - Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบัน การชำระคืนสำเร็จเท่านั้นที่เพิ่มวงเงินไปยังระดับถัดไป
-- Trust-Building Loan คือเงินกู้ที่ต่ำกว่าวงเงิน ช่วยสร้าง Trust Score แต่ไม่เพิ่มระดับเครดิต`
+- Trust-Building Loan คือเงินกู้ที่ต่ำกว่าวงเงิน ช่วยสร้าง แต้ม Pandesal แต่ไม่เพิ่มระดับเครดิต`
    },
    'understanding-your-trust-score': {
-      title: 'ทำความเข้าใจ Trust Score',
+      title: 'ทำความเข้าใจ แต้ม Pandesal',
       lastUpdated: 'Jun 9, 2026',
-      body: `Trust Score แสดงว่าคุณชำระเงินกู้บน Moodeng Credit ได้สม่ำเสมอแค่ไหน
+      body: `แต้ม Pandesal แสดงว่าคุณชำระเงินกู้บน Moodeng Credit ได้สม่ำเสมอแค่ไหน
 
 คะแนนจะเพิ่มขึ้นเมื่อชำระตรงเวลา และลดลงเมื่อชำระล่าช้าหรือผิดนัด ผู้ให้กู้ใช้คะแนนนี้เป็นสัญญาณเร็ว ๆ ในการตัดสินใจว่าจะให้ทุนคำขอของคุณหรือไม่
 
-เพราะ Trust Score ผูกกับกระเป๋าเงิน มันจึงติดตามคุณไปได้ ไม่ได้อยู่แค่ในแอปเดียว`
+เพราะ แต้ม Pandesal ผูกกับกระเป๋าเงิน มันจึงติดตามคุณไปได้ ไม่ได้อยู่แค่ในแอปเดียว`
    },
    'how-credit-levels-work': {
       title: 'ระดับเครดิตทำงานอย่างไร',
@@ -572,18 +572,18 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
 ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ: trust loans เพื่อรักษาประวัติให้แข็งแรง และ credit loans เพื่อเพิ่มวงเงินเมื่อพร้อม`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'การชำระคืนมีผลต่อ Trust Score อย่างไร',
+      title: 'การชำระคืนมีผลต่อ แต้ม Pandesal อย่างไร',
       lastUpdated: 'Jun 9, 2026',
-      body: `การชำระคืนของ Credit-Building หรือ Trust-Building Loan มีผลโดยตรงต่อ Trust Score ซึ่งเป็นชื่อเสียงของคุณบนแพลตฟอร์ม
+      body: `การชำระคืนของ Credit-Building หรือ Trust-Building Loan มีผลโดยตรงต่อ แต้ม Pandesal ซึ่งเป็นชื่อเสียงของคุณบนแพลตฟอร์ม
 
-ชำระเต็มจำนวนตรงเวลาจะได้คะแนนสูงสุด การชำระบางส่วนจะลดคะแนนตามสัดส่วน การชำระล่าช้าได้ 0 TS สำหรับธุรกรรมนั้น และการผิดนัดจะทิ้งเครื่องหมายถาวรบนโปรไฟล์ที่ผู้ให้กู้ในอนาคตเห็นได้`
+ชำระเต็มจำนวนตรงเวลาจะได้คะแนนสูงสุด การชำระบางส่วนจะลดคะแนนตามสัดส่วน การชำระล่าช้าได้ 0 แต้ม สำหรับธุรกรรมนั้น และการผิดนัดจะทิ้งเครื่องหมายถาวรบนโปรไฟล์ที่ผู้ให้กู้ในอนาคตเห็นได้`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'ประโยชน์ของการชำระตรงเวลา',
       lastUpdated: 'Jun 9, 2026',
       body: `การชำระในหรือก่อนกำหนดเป็นวิธีที่ดีที่สุดในการเสริมสถานะของคุณในระบบ Moodeng Credit
 
-เมื่อคุณชำระตรงเวลา Trust Score จะเพิ่มขึ้น ประวัติการชำระที่ดีจะมองเห็นได้ต่อผู้ให้กู้ และสำหรับ Credit-Building Loan วงเงินของคุณจะเพิ่มขึ้นเพื่อปลดล็อกระดับถัดไป
+เมื่อคุณชำระตรงเวลา แต้ม Pandesal จะเพิ่มขึ้น ประวัติการชำระที่ดีจะมองเห็นได้ต่อผู้ให้กู้ และสำหรับ Credit-Building Loan วงเงินของคุณจะเพิ่มขึ้นเพื่อปลดล็อกระดับถัดไป
 
 การชำระทั้งหมดถูกยืนยันบนเชน เมื่อ USDC settle แล้ว สถานะเงินกู้จะอัปเดตโดยอัตโนมัติ`
    },
@@ -594,7 +594,7 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
 
 การใช้ USDC ทำให้มูลค่าเงินกู้คงที่ เงินกู้ $20 วันนี้ยังเป็น $20 เมื่อคุณชำระคืน ไม่ขึ้นอยู่กับความผันผวนของตลาดคริปโต
 
-เราแนะนำ Base Account บน Base เพราะการโอน USDC ไม่มีค่า gas`
+Instant Wallet ของคุณ (หรือ Base Account หากคุณเลือกใช้) ทำงานบน Base ซึ่งการโอน USDC ไม่มีค่า gas`
    },
    'verification-and-why-its-required': {
       title: 'การยืนยันและความปลอดภัย',
@@ -604,7 +604,7 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
 ทำไมต้องยืนยัน?
 - ความปลอดภัย: ทำให้ทุกคำขอมาจากคนจริงและช่วยป้องกัน fraud
 - รางวัล: ผู้ใช้ใหม่อาจรับรางวัล Worldcoin ได้หลังยืนยันสำเร็จ
-- การเข้าถึง: เมื่อยืนยันแล้ว คุณจึงขอเงินกู้และเริ่มสร้าง Trust Score ได้
+- การเข้าถึง: เมื่อยืนยันแล้ว คุณจึงขอเงินกู้และเริ่มสร้าง แต้ม Pandesal ได้
 
 ดาวน์โหลด World App ค้นหา Orb ใกล้คุณ ทำการยืนยันแบบพบหน้า แล้วกลับมาเชื่อม World ID กับบัญชี Moodeng`
    },
@@ -629,11 +629,11 @@ Bước 1: Tạo tài khoản
 Bước 2: Bắt đầu đăng ký vay
 Sau khi đăng nhập, bấm "Apply for a Loan" để bắt đầu.
 
-Bước 3: Thiết lập Base Account
-Giao dịch an toàn trên Moodeng cần Base Account. Vào https://account.base.app và làm theo hướng dẫn.
+Bước 3: Thiết lập ví
+Giao dịch an toàn trên Moodeng cần một ví. Mặc định, bạn dùng Instant Wallet của Moodeng — được tạo từ đăng nhập Moodeng của bạn, không cần ứng dụng riêng hay seed phrase. Nếu muốn, bạn có thể dùng Base Account: vào https://account.base.app và làm theo hướng dẫn.
 
 Bước 4: Kết nối ví
-Quay lại Moodeng và bấm "Connect Wallet" để liên kết Base Account với tài khoản Moodeng.
+Quay lại Moodeng và bấm "Connect Wallet" để tạo Instant Wallet — hoặc liên kết Base Account nếu bạn chọn dùng — với tài khoản Moodeng.
 
 Bước 5: Xác minh danh tính
 Tải World App và hoàn tất xác minh người thật tại địa điểm World Orb.
@@ -647,16 +647,16 @@ Bấm "Explore the Request Board" để đặt số tiền vay, ngày trả, s�
 Lưu ý về hạn mức tín dụng
 - Người vay mới bắt đầu với hạn mức $15.
 - Credit-Building Loan là khoản vay toàn bộ hạn mức hiện tại; trả thành công là cách tăng hạn mức.
-- Trust-Building Loan là khoản nhỏ hơn hạn mức; chúng xây dựng Trust Score nhưng không tăng hạng tín dụng.`
+- Trust-Building Loan là khoản nhỏ hơn hạn mức; chúng xây dựng điểm Pandesal nhưng không tăng hạng tín dụng.`
    },
    'understanding-your-trust-score': {
-      title: 'Hiểu Trust Score của bạn',
+      title: 'Hiểu điểm Pandesal của bạn',
       lastUpdated: 'Jun 9, 2026',
-      body: `Trust Score phản ánh bạn trả các khoản vay trên Moodeng Credit đáng tin cậy đến mức nào.
+      body: `Điểm Pandesal phản ánh bạn trả các khoản vay trên Moodeng Credit đáng tin cậy đến mức nào.
 
 Điểm tăng với mỗi lần trả đúng hạn và giảm khi bạn trả muộn hoặc vỡ nợ. Người cho vay dùng nó như tín hiệu nhanh để quyết định có cấp vốn cho yêu cầu của bạn không.
 
-Vì Trust Score gắn với ví của bạn, nó đi cùng bạn và không bị khóa trong một ứng dụng duy nhất.`
+Vì điểm Pandesal gắn với ví của bạn, nó đi cùng bạn và không bị khóa trong một ứng dụng duy nhất.`
    },
    'how-credit-levels-work': {
       title: 'Hạng tín dụng hoạt động như thế nào',
@@ -679,18 +679,18 @@ Credit-Building Loan là khoản vay toàn bộ hạn mức. Trả đúng hạn 
 Hầu hết người vay dùng cả hai: trust loans để giữ hoạt động lành mạnh, credit loans để tăng hạn mức theo thời gian.`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'Khoản trả ảnh hưởng Trust Score như thế nào',
+      title: 'Khoản trả ảnh hưởng điểm Pandesal như thế nào',
       lastUpdated: 'Jun 9, 2026',
-      body: `Mỗi khoản trả cho Credit-Building hoặc Trust-Building Loan ảnh hưởng trực tiếp đến Trust Score, tức uy tín của bạn trên nền tảng.
+      body: `Mỗi khoản trả cho Credit-Building hoặc Trust-Building Loan ảnh hưởng trực tiếp đến điểm Pandesal, tức uy tín của bạn trên nền tảng.
 
-Trả đủ đúng hạn tối đa hóa điểm. Trả một phần làm giảm điểm theo tỷ lệ. Trả muộn nhận 0 TS cho giao dịch đó. Vỡ nợ để lại dấu vĩnh viễn trên hồ sơ mà người cho vay tương lai có thể thấy.`
+Trả đủ đúng hạn tối đa hóa điểm. Trả một phần làm giảm điểm theo tỷ lệ. Trả muộn nhận 0 điểm cho giao dịch đó. Vỡ nợ để lại dấu vĩnh viễn trên hồ sơ mà người cho vay tương lai có thể thấy.`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
       title: 'Lợi ích của việc trả đúng hạn',
       lastUpdated: 'Jun 9, 2026',
       body: `Trả vào hoặc trước hạn là cách hiệu quả nhất để củng cố vị thế của bạn trong hệ sinh thái Moodeng Credit.
 
-Khi bạn trả đúng hạn, Trust Score tăng, lịch sử trả tốt hiển thị với người cho vay, và với Credit-Building Loan, hạn mức hiện tại tăng để mở khóa cấp tiếp theo.
+Khi bạn trả đúng hạn, điểm Pandesal tăng, lịch sử trả tốt hiển thị với người cho vay, và với Credit-Building Loan, hạn mức hiện tại tăng để mở khóa cấp tiếp theo.
 
 Mọi khoản trả được xác nhận on-chain; khi chuyển USDC settle, trạng thái khoản vay tự động cập nhật.`
    },
@@ -701,7 +701,7 @@ Mọi khoản trả được xác nhận on-chain; khi chuyển USDC settle, tr�
 
 Dùng USDC giúp giá trị khoản vay ổn định. Khoản vay $20 hôm nay vẫn là $20 khi bạn trả, bất kể thị trường crypto biến động.
 
-Chúng tôi khuyến nghị Base Account trên Base, nơi chuyển USDC không tốn gas.`
+Instant Wallet của bạn (hoặc Base Account nếu bạn chọn dùng) chạy trên Base, nơi chuyển USDC không tốn gas.`
    },
    'verification-and-why-its-required': {
       title: 'Xác minh và bảo mật',
@@ -711,7 +711,7 @@ Chúng tôi khuyến nghị Base Account trên Base, nơi chuyển USDC không t
 Vì sao cần xác minh?
 - Bảo mật: đảm bảo mỗi yêu cầu đến từ người thật và ngăn gian lận.
 - Phần thưởng: người dùng mới có thể nhận phần thưởng Worldcoin sau khi xác minh thành công.
-- Quyền truy cập: xác minh xong cho phép bạn yêu cầu khoản vay và bắt đầu xây dựng Trust Score.
+- Quyền truy cập: xác minh xong cho phép bạn yêu cầu khoản vay và bắt đầu xây dựng điểm Pandesal.
 
 Tải World App, tìm Orb gần bạn, hoàn tất xác minh trực tiếp, rồi quay lại liên kết World ID với tài khoản Moodeng.`
    },
