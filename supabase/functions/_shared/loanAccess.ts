@@ -107,6 +107,8 @@ export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referra
 
 export const shortId = (id: string) => id.slice(0, 8);
 
+export const escapeLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
+
 export const who = (u: Pick<BorrowerRow, 'display_name' | 'username' | 'email' | 'id'>, fallbackName?: string | null) =>
    [fallbackName || u.display_name, u.username ? `@${u.username}` : null, u.email].filter(Boolean).join(' · ') || u.id;
 
@@ -277,7 +279,8 @@ export const findPendingRequest = async (svc: SupabaseClient, arg: string): Prom
    if (byId.length === 1) return byId[0];
    if (byId.length > 1) return 'ambiguous';
 
-   const { data: user } = await svc.from('users').select('id').ilike('username', clean).maybeSingle();
+   // Case-insensitive exact match: escape ilike's wildcards, since usernames often contain "_".
+   const { data: user } = await svc.from('users').select('id').ilike('username', escapeLike(clean)).maybeSingle();
    return rows.find((r) => r.user_id === user?.id) ?? null;
 };
 

@@ -193,8 +193,15 @@ Branch **`staging` = production** (Vercel deploys it).
 3. Mark draft PR #916 ready → merge to `staging`. The frontend treats a missing column as "approved", so the
    deploy is safe before the migration.
 4. **Right after:** apply the migration (Supabase MCP `apply_migration`).
-5. Deploy the edge functions: `loan-access`, `video-call-confirm`, `telegram-webhook`,
-   `calcom-round-robin`, `video-call-reminders`. `config.toml` needs `video-call-confirm`
+5. **Apply the migration first, then** deploy the edge functions: `loan-access`, `video-call-confirm`,
+   `telegram-webhook`, `calcom-round-robin`, `video-call-reminders`, `calcom-webhook` and
+   `sendpulse-messenger-verify`. The last two changed too:
+   - `calcom-webhook` handles cancel/reschedule and join links.
+   - `sendpulse-messenger-verify` now stores the **SendPulse contact id**, looked up by the code
+     via `getByVariable`. That's the only id SendPulse's send API accepts; Facebook's numeric PSID
+     is rejected, which was checked live.
+
+   Functions write the new columns, so the migration must be in first. `config.toml` needs `video-call-confirm`
    `verify_jwt = false`.
 6. **Live test with a real borrower account** while still on `open`:
    - Set `/loanflow call` in the Telegram group.

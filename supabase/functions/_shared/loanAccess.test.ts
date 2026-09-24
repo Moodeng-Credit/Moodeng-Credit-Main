@@ -3,6 +3,7 @@ import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 import {
    buildDecisionCallback,
    decideLoanAccess,
+   escapeLike,
    findPendingRequest,
    parseDecisionCallback,
    shortId
@@ -104,4 +105,10 @@ Deno.test('the decision update is conditional on the request still being pending
          ['eq', 'status', 'pending']
       ]
    );
+});
+
+Deno.test('username lookups escape LIKE wildcards ("maria_s" must not match "mariaXs")', () => {
+   assertEquals(escapeLike('maria_s'), 'maria\\_s');
+   assertEquals(escapeLike('50%off'), '50\\%off');
+   assertEquals(escapeLike('plain'), 'plain');
 });

@@ -73,10 +73,23 @@ serve(async (req) => {
             video_call_starts_at: booking.startsAt,
             video_call_booking_uid: booking.bookingUid,
             // New or moved time → restart the reminder ladder and the "did they show up?" prompt.
-            video_call_reminder_stage: 0
+            video_call_reminder_stage: 0,
+            // Keep the join link in step with the (possibly moved) booking — never show a stale one.
+            ...(booking.joinUrl ? { video_call_join_url: booking.joinUrl } : {})
          })
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);
+
+      // A pending call request stays open until a week after the call — follow the new time.
+      if (booking.startsAt) {
+         const { error: expiryError } = await supabase
+            .from('loan_access_requests')
+            .update({ expires_at: new Date(Date.parse(booking.startsAt) + 7 * 86400000).toISOString() })
+            .eq('user_id', booking.userId)
+            .eq('status', 'pending')
+            .eq('kind', 'call');
+         if (expiryError) console.error('calcom-webhook: move request expiry failed', expiryError.message);
+      }
       return jsonResponse({ ok: true });
    }
 

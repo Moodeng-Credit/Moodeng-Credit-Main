@@ -36,7 +36,8 @@ Deno.test('BOOKING_CREATED: user id + host come from embed metadata', () => {
       bookingUid: 'bk_abc',
       userId: 'user-123',
       host: 'george',
-      startsAt: '2026-10-01T09:00:00Z'
+      startsAt: '2026-10-01T09:00:00Z',
+      joinUrl: 'https://cal.example/x'
    });
 });
 
@@ -57,7 +58,8 @@ Deno.test('falls back to a hidden response field when metadata is absent', () =>
       bookingUid: 'bk_def',
       userId: 'user-777',
       host: 'emma',
-      startsAt: '2026-10-02T10:30:00Z'
+      startsAt: '2026-10-02T10:30:00Z',
+      joinUrl: null
    });
 });
 
@@ -77,4 +79,19 @@ Deno.test('cancellation keeps the uid so the right booking can be reopened', () 
 Deno.test('a body with no triggerEvent is ignored', () => {
    assertEquals(extractBooking({}), null);
    assertEquals(extractBooking({ payload: { uid: 'x' } }), null);
+});
+
+Deno.test('extractBooking picks up the meeting join link (Zoom / Cal Video)', () => {
+   const booking = extractBooking({
+      triggerEvent: 'BOOKING_RESCHEDULED',
+      payload: {
+         uid: 'b2',
+         startTime: '2026-10-03T03:00:00Z',
+         location: 'integrations:zoom',
+         metadata: { moodeng_user_id: 'u1', moodeng_host: 'emma', videoCallUrl: 'https://us06web.zoom.us/j/999' }
+      }
+   });
+   assertEquals(booking?.joinUrl, 'https://us06web.zoom.us/j/999');
+   const plain = extractBooking({ triggerEvent: 'BOOKING_CREATED', payload: { uid: 'b3', location: 'https://cal.com/video/abc' } });
+   assertEquals(plain?.joinUrl, 'https://cal.com/video/abc');
 });

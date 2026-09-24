@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
    answerCallback,
    decideLoanAccess,
+   escapeLike,
    findPendingRequest,
    parseDecisionCallback,
    shortId,
@@ -283,7 +284,7 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
    if (!request) {
       // Open flow: no request to decide — record attendance on their call instead.
       if (command === 'showed' || command === 'noshow') {
-         const { data: user } = await supabase.from('users').select('id').ilike('username', arg.replace(/^@/, '')).maybeSingle();
+         const { data: user } = await supabase.from('users').select('id').ilike('username', escapeLike(arg.replace(/^@/, ''))).maybeSingle();
          if (user?.id) {
             const result = await recordCallOutcome(supabase, user.id, command === 'showed' ? 'attended' : 'no_show', adminHandle(message.from));
             await sendTelegramMessage(chatId, result.summary);

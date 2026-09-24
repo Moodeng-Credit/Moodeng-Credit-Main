@@ -72,6 +72,29 @@ export const getMessengerContact = async (contactId: string): Promise<SendPulseC
    }
 };
 
+// The bot behind the "Confirm Facebook" flow (Moodeng Credit Page).
+export const SENDPULSE_BOT_ID = Deno.env.get('SENDPULSE_BOT_ID')?.trim() || '81acb48b-e32c-4c85-b29f-0efae2ca2716';
+
+// The flow stores the borrower's one-time code on their SendPulse contact as the `mdng_code`
+// variable. Looking the contact up by that code gives the SendPulse contact id — the only id the
+// send API accepts (Facebook's numeric PSID is rejected) — whatever the flow's API request sends us.
+export const findMessengerContactIdByCode = async (code: string): Promise<string | null> => {
+   try {
+      const token = await getToken();
+      if (!token || !code) return null;
+      const url =
+         `${API}/messenger/contacts/getByVariable?bot_id=${encodeURIComponent(SENDPULSE_BOT_ID)}` +
+         `&variable_name=mdng_code&variable_value=${encodeURIComponent(code)}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      const body = await res.json().catch(() => null);
+      const contacts = (res.ok && Array.isArray(body?.data) ? body.data : []) as Array<{ id?: string }>;
+      return contacts.length === 1 && contacts[0].id ? contacts[0].id : null;
+   } catch (err) {
+      console.error('[sendpulse] getByVariable failed', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
 // The Facebook profile name SendPulse holds for this contact — shown to admins next to the KYC name.
 export const messengerDisplayName = (contact: SendPulseContact | null) => {
    const data = contact?.channel_data;
