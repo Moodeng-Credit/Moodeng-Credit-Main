@@ -1804,6 +1804,11 @@ export default function LoanRequestModal({
    // the call, and after approval the application skips it because user.incomeType is set).
    const handleConnectAboutContinue = async (done: () => void) => {
       if (!canContinueBorrowerContext) return;
+      // The DEV preview borrower has no session to save with (same as saveBorrowerProfile).
+      if (isPreviewUser) {
+         done();
+         return;
+      }
       if (isBioSubmittingRef.current) return;
       isBioSubmittingRef.current = true;
       try {

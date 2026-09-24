@@ -157,10 +157,12 @@ serve(async (req) => {
    if (resolved.length === 0) return json({ error: 'no_events' }, 500);
 
    // Pinned host (e.g. Emma for referred borrowers): only that host's calendar is offered/booked.
+   // If that host isn't configured (no API key / event type), fall back to the whole team rather
+   // than leave the borrower unable to book at all — and log it so it gets fixed.
    if (payload.host) {
       const pinned = resolved.filter((h) => h.id === payload.host);
-      if (pinned.length === 0) return json({ error: 'unknown_host' }, 400);
-      resolved.splice(0, resolved.length, ...pinned);
+      if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
+      else console.error(`calcom-round-robin: host '${payload.host}' not configured — falling back to round-robin`);
    }
 
    if (payload.action === 'slots') {
