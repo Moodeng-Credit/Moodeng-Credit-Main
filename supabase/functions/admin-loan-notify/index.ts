@@ -33,7 +33,7 @@ const TEAM_CC_EMAIL = 'georgemlerner@gmail.com';
 
 const siteUrl = () => {
    const configured = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL');
-   const url = configured && /^https?:\/\//.test(configured) ? configured : 'https://dashboard.moodeng.app';
+   const url = configured && /^https?:\/\//.test(configured) ? configured : 'https://moodeng.app';
    return url.replace(/\/$/, '');
 };
 

@@ -77,7 +77,8 @@ export type DuePushContext = {
    dueLabel: string;
 };
 
-const SITE_URL_FALLBACK = 'https://dashboard.moodeng.app';
+// The live app is moodeng.app (dashboard.moodeng.app doesn't resolve); only used if no env is set.
+const SITE_URL_FALLBACK = 'https://moodeng.app';
 
 const getSiteUrl = () => {
    const configured = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL');

@@ -222,9 +222,17 @@ Branch **`staging` = production** (Vercel deploys it).
    - If typed commands get no reply, the bot is in privacy mode and another bot spoke last: use
      `/approve@<botusername> …`.
    - Site links: the app is **https://moodeng.app**. `app.moodeng.credit` does NOT resolve. New
-     code falls back to moodeng.app. Older functions (`loan-request-telegram-notification`,
-     `loan-request-lender-suggestions`, `support-chat`) still fall back to `app.moodeng.credit`.
-     They're fine only if the `VITE_SITE_URL` / `SITE_URL` edge secret is set, so check it.
+     code falls back to moodeng.app. **Fixed in this branch:** every link fallback that pointed at a
+     dead domain (`app.moodeng.credit`, `dashboard.moodeng.app`) now points at moodeng.app:
+     - `loan-request-telegram-notification`, `loan-request-lender-suggestions`, `support-chat`,
+       `admin-loan-notify`, `admin-loan-request-removed`
+     - `_shared/diditNotifications|loanNotifications|pushMessages`
+     - the privacy page's back link
+
+     Fallbacks only matter when the `VITE_SITE_URL` / `MOODENG_APP_URL` / `SITE_URL` edge secret
+     is unset. If it's unset, redeploy those functions (and the ones importing those shared files:
+     `didit-webhook`, `check-didit-status`, the `loan-*-notification(s)` functions,
+     `loan-request-repeat-lender-push`) so lender/borrower links stop pointing at a dead site.
    - The service key used by crons and triggers works: `video-call-reminders` had 96/96 × 200.
 7b. Check the Telegram **buttons** actually arrive at the webhook. If they don't, run `setWebhook`
    with `allowed_updates` including `callback_query`. Meanwhile the typed commands work.

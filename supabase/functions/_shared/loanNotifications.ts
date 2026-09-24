@@ -138,7 +138,7 @@ const getConfiguredUrl = (key: string) => {
 };
 
 const getSiteUrl = () => {
-   const configuredUrl = getConfiguredUrl('VITE_SITE_URL') ?? getConfiguredUrl('MOODENG_APP_URL') ?? 'https://dashboard.moodeng.app';
+   const configuredUrl = getConfiguredUrl('VITE_SITE_URL') ?? getConfiguredUrl('MOODENG_APP_URL') ?? 'https://moodeng.app';
    return configuredUrl.replace(/\/$/, '');
 };
 
