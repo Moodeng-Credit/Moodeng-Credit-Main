@@ -22,10 +22,20 @@ EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;
 
+-- Grandfather: everyone who exists right now keeps applying exactly as before. Done with column
+-- defaults rather than an UPDATE: ADD COLUMN ... DEFAULT fills existing rows as metadata only — no
+-- table rewrite, no row triggers, and users.updated_at isn't bumped for every account. Seen is
+-- stamped too, so nobody gets a surprise "you're approved!" glow for something they already had.
+-- The defaults are then switched so accounts created from here on start at 'none' / NULL.
 ALTER TABLE public.users
-  ADD COLUMN IF NOT EXISTS loan_access_status public.loan_access_status NOT NULL DEFAULT 'none',
-  ADD COLUMN IF NOT EXISTS loan_access_approved_at TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS loan_access_seen_at TIMESTAMPTZ;
+  ADD COLUMN IF NOT EXISTS loan_access_status public.loan_access_status NOT NULL DEFAULT 'approved',
+  ADD COLUMN IF NOT EXISTS loan_access_approved_at TIMESTAMPTZ DEFAULT now(),
+  ADD COLUMN IF NOT EXISTS loan_access_seen_at TIMESTAMPTZ DEFAULT now();
+
+ALTER TABLE public.users
+  ALTER COLUMN loan_access_status SET DEFAULT 'none',
+  ALTER COLUMN loan_access_approved_at DROP DEFAULT,
+  ALTER COLUMN loan_access_seen_at DROP DEFAULT;
 
 COMMENT ON COLUMN public.users.loan_access_status IS
   'Connect → Approve → Apply gate. Only approved borrowers can insert loans. Server-written only (privileged-column guard).';
@@ -33,14 +43,6 @@ COMMENT ON COLUMN public.users.loan_access_approved_at IS
   'When an admin approved this borrower (or when they were grandfathered in).';
 COMMENT ON COLUMN public.users.loan_access_seen_at IS
   'When the borrower first saw the "you''re approved" glow. Client-writable — only drives a one-time highlight.';
-
--- Grandfather: everyone who exists right now keeps applying exactly as before. Seen is stamped too,
--- so nobody gets a surprise "you're approved!" glow for something they already had.
-UPDATE public.users
-SET loan_access_status = 'approved',
-    loan_access_approved_at = COALESCE(loan_access_approved_at, now()),
-    loan_access_seen_at = COALESCE(loan_access_seen_at, now())
-WHERE loan_access_status = 'none';
 
 -- 2) One row per reach-out -----------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.loan_access_requests (

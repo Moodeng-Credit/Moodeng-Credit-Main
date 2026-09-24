@@ -49,7 +49,9 @@ export const postDiscord = async (
       const res = await fetch(url, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify(payload)
+         // Alerts often quote user-typed text (a borrower's reason, a name). Never let that text
+         // ping anyone — "@everyone" in a loan reason must stay inert.
+         body: JSON.stringify({ ...payload, allowed_mentions: { parse: [] } })
       });
       if (!res.ok) {
          console.error(`[discord] webhook responded ${res.status}`);
