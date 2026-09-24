@@ -31,7 +31,7 @@ const SAMPLE_BASE: Omit<
    pandesalGoal: 50,
    referralCode: 'SDOIVU01381',
    rewards: EMPTY_REWARDS,
-   insightsHref: '/dashboard-v2-preview'
+   insightsHref: '/dashboard'
 };
 
 export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, DashboardV2Model> = {

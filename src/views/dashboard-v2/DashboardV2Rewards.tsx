@@ -302,7 +302,7 @@ export function DashboardV2Referral() {
                   className="absolute inset-0 h-full w-full"
                />
                <Link
-                  to={`/dashboard-v2-preview${previewSearch}`}
+                  to={`/dashboard${previewSearch}`}
                   className="absolute left-[4.5%] top-[81px] h-6 w-6"
                   aria-label="Back to dashboard"
                >
