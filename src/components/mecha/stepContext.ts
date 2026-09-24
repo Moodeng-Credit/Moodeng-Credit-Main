@@ -29,14 +29,14 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
       match: (p) => p.startsWith('/onboarding/wallet'),
       step: {
          id: 'base-account',
-         page: 'Set up / connect your Base Account',
+         page: 'Set up your Instant Wallet (or connect a Base Account)',
          nudge: {
-            en: "Setting up your wallet? Don't download the Coinbase app — I can show you the right way.",
-            fil: 'Nagse-set up ng wallet? Huwag i-download ang Coinbase app — ituturo ko sa iyo ang tamang paraan.'
+            en: 'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.',
+            fil: 'Nagse-set up ng wallet? Gagawin ang Instant Wallet mo mula sa Moodeng login mo — walang app na ida-download. Gagabayan kita.'
          },
          quickReplies: {
-            en: ['Do I need the Coinbase app?', 'How do I create a Base Account?', 'My wallet won’t connect'],
-            fil: ['Kailangan ko ba ang Coinbase app?', 'Paano gumawa ng Base Account?', 'Ayaw kumonekta ng wallet ko']
+            en: ['What is the Instant Wallet?', 'Can I use a Base Account instead?', 'My wallet won’t connect'],
+            fil: ['Ano ang Instant Wallet?', 'Puwede bang Base Account ang gamitin ko?', 'Ayaw kumonekta ng wallet ko']
          }
       }
    },

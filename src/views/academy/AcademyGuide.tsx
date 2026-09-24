@@ -58,8 +58,8 @@ const steps: AcademyStep[] = [
       id: 'wallet',
       eyebrow: 'Step 3',
       title: 'Add your wallet',
-      body: 'Create or connect a Base Account, or set up an Instant Wallet from your login, so lenders can fund loans directly there and Moodeng can track repayment history.',
-      action: 'Create or connect',
+      body: 'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.',
+      action: 'Set up wallet',
       screen: 'wallet'
    },
    {
@@ -124,7 +124,7 @@ const quizQuestions: QuizQuestion[] = [
    },
    {
       id: 'wallet',
-      question: 'Why do borrowers add a wallet (Base or Instant Wallet)?',
+      question: 'Why do borrowers set up a wallet (Instant Wallet or Base Account)?',
       options: ['To receive USDC loans and build onchain reputation', 'To hide repayment history', 'To skip World ID'],
       answer: 'To receive USDC loans and build onchain reputation'
    },
@@ -184,10 +184,10 @@ const WalletScreen = (): JSX.Element => (
          <div className="academy-wallet-card__icon">
             <img src="/icons/base-account.svg" alt="" />
          </div>
-         <h3>Add Your Base Account</h3>
+         <h3>Set Up Your Instant Wallet</h3>
          <p>
-            Create one or connect the Base Account you already use, or set up an Instant Wallet instead. Moodeng keeps the flow inside the
-            app.
+            Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one
+            instead. Moodeng keeps the flow inside the app.
          </p>
          <div className="academy-wallet-network">
             <span>Network</span>
@@ -195,7 +195,7 @@ const WalletScreen = (): JSX.Element => (
          </div>
          <div className="academy-wallet-actions">
             <Link className="academy-primary academy-primary--dark" to={baseWalletOnboardingPath}>
-               Create or Connect Base Account
+               Set Up Your Wallet
             </Link>
          </div>
          <small>Gasless transactions are supported on Base.</small>
@@ -450,7 +450,7 @@ export default function AcademyGuide(): JSX.Element {
    usePageSeo({
       title: 'Moodeng Academy | Moodeng Credit',
       description:
-         'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, connect a Base wallet or set up an Instant Wallet, request a loan, repay, and grow your credit limit.',
+         'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.',
       canonicalPath: '/academy'
    });
 

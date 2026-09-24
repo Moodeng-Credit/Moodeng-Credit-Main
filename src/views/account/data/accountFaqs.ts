@@ -22,7 +22,7 @@ Loans go directly from the lender's wallet to the borrower's wallet. Repayments 
       question: 'Why does Moodeng use USDC?',
       answer: `USDC is a stablecoin pegged 1:1 to the US dollar. Issued by Circle, a regulated US financial company, it keeps loan values predictable — a $20 loan today is still $20 at repayment, not $15 or $30. Lenders and borrowers don't take on currency risk just by participating.
 
-USDC is also fast to send globally and, when used on Base with a Base Account or Instant Wallet, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
+USDC is also fast to send globally and, when used on Base with your Instant Wallet or a Base Account, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
 
 It's also widely accepted: every major crypto exchange supports USDC deposits, and you can convert it to fiat (US dollars, pesos, naira, etc.) almost anywhere. So when you receive a loan or get repaid, you can spend it on-chain, hold it, or cash it out — your choice.`
    },
@@ -109,7 +109,7 @@ If they borrow below their limit, it is a Trust-Building Loan instead. That does
       question: 'How do I fund a loan?',
       answer: `Go to the Request Board and browse open loan requests. Each request shows the borrower's stats, credit limit, requested amount, and repayment term.
 
-When you find one you want to fund, tap Fund and confirm. The USDC leaves your Base account immediately and goes directly to the borrower's wallet — no middleman, no delay.
+When you find one you want to fund, tap Fund and confirm. The USDC leaves your Instant Wallet (or your Base Account, if you connected one) immediately and goes directly to the borrower's wallet — no middleman, no delay.
 
 You can track all your active loans and repayment statuses from your Lender Dashboard.`
    },
@@ -118,7 +118,7 @@ You can track all your active loans and repayment statuses from your Lender Dash
       question: 'When do I get repaid?',
       answer: `The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
 
-Once the loan is due, the borrower repays directly to your Base account. You can track the status of all your active loans on your Lender Dashboard.`
+Once the loan is due, the borrower repays directly to your wallet — your Instant Wallet, or your Base Account if you connected one. You can track the status of all your active loans on your Lender Dashboard.`
    }
 ];
 
@@ -135,7 +135,7 @@ Direkta ang loan mula sa wallet ng nagpapahiram papunta sa wallet ng borrower. D
       question: 'Bakit USDC ang ginagamit ng Moodeng?',
       answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated US financial company, kaya predictable ang halaga ng loan. Ang $20 na loan ngayon ay $20 pa rin kapag binayaran, hindi biglang $15 o $30. Hindi nagkakaroon ng currency risk ang lenders at borrowers dahil lang sumali sila.
 
-Mabilis ding ipadala ang USDC globally at, kapag ginamit sa Base gamit ang Base Account o Instant Wallet, gasless ito. Ibig sabihin, walang network fees na kakain sa repayment mo - 100% ng ipinadala mo ang makakarating sa lender.
+Mabilis ding ipadala ang USDC globally at, kapag ginamit sa Base gamit ang Instant Wallet mo o Base Account, gasless ito. Ibig sabihin, walang network fees na kakain sa repayment mo - 100% ng ipinadala mo ang makakarating sa lender.
 
 Malawak din itong tinatanggap: supported ang USDC deposits sa major crypto exchanges, at puwede mo itong i-convert sa fiat gaya ng US dollars, pesos, naira, at iba pa. Kapag nakatanggap ka ng loan o repayment, puwede mo itong gamitin on-chain, i-hold, o i-cash out - ikaw ang pipili.`
    },
@@ -220,7 +220,7 @@ Kung mas mababa sa limit ang hiniram nila, Trust-Building Loan iyon. Hindi iyon 
       question: 'Paano ako magfa-fund ng loan?',
       answer: `Pumunta sa Request Board at tingnan ang open loan requests. Ipinapakita ng bawat request ang stats ng borrower, credit limit, requested amount, at repayment term.
 
-Kapag may nakita kang gusto mong pondohan, i-tap ang Fund at i-confirm. Aalis agad ang USDC mula sa Base account mo at diretsong pupunta sa wallet ng borrower. Walang middleman at walang delay.
+Kapag may nakita kang gusto mong pondohan, i-tap ang Fund at i-confirm. Aalis agad ang USDC mula sa Instant Wallet mo (o sa Base Account mo, kung iyon ang ikinonekta mo) at diretsong pupunta sa wallet ng borrower. Walang middleman at walang delay.
 
 Makikita mo ang lahat ng active loans at repayment statuses mo sa Lender Dashboard.`
    },
@@ -229,7 +229,7 @@ Makikita mo ang lahat ng active loans at repayment statuses mo sa Lender Dashboa
       question: 'Kailan ako mababayaran?',
       answer: `Ang due date ay sine-set ng borrower kapag nag-post sila ng request. Makikita mo ito nang malinaw sa loan card bago ka mag-fund, kaya alam mo agad ang timeline.
 
-Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa Base account mo. Makikita mo ang status ng lahat ng active loans mo sa Lender Dashboard.`
+Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa wallet mo — sa Instant Wallet mo, o sa Base Account mo kung iyon ang ikinonekta mo. Makikita mo ang status ng lahat ng active loans mo sa Lender Dashboard.`
    }
 ];
 
@@ -246,7 +246,7 @@ Pinjaman berjalan langsung dari wallet pemberi pinjaman ke wallet peminjam. Pemb
       question: 'Mengapa Moodeng memakai USDC?',
       answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS. Diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi, USDC menjaga nilai pinjaman tetap dapat diprediksi. Pinjaman $20 hari ini tetap $20 saat dibayar, bukan tiba-tiba $15 atau $30. Pemberi pinjaman dan peminjam tidak menanggung risiko mata uang hanya karena memakai platform.
 
-USDC juga cepat dikirim secara global dan, saat dipakai di Base dengan Base Account atau Instant Wallet, sepenuhnya gasless. Artinya tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
+USDC juga cepat dikirim secara global dan, saat dipakai di Base dengan Instant Wallet kamu atau Base Account, sepenuhnya gasless. Artinya tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
 
 USDC juga didukung luas. Hampir semua bursa kripto besar mendukung deposit USDC, dan kamu bisa mengubahnya ke fiat seperti dolar AS, peso, naira, dan lainnya di banyak tempat. Saat menerima pinjaman atau pembayaran, kamu bisa memakai on-chain, menyimpan, atau cash out. Pilihannya ada di kamu.`
    },
@@ -331,7 +331,7 @@ Jika mereka meminjam di bawah limit, itu adalah Trust-Building Loan. Itu tidak m
       question: 'Bagaimana cara mendanai pinjaman?',
       answer: `Buka Papan Permintaan dan lihat permintaan pinjaman yang terbuka. Setiap permintaan menunjukkan statistik peminjam, credit limit, jumlah yang diminta, dan tenor pembayaran.
 
-Saat menemukan pinjaman yang ingin kamu danai, tap Danai dan konfirmasi. USDC langsung keluar dari Base account kamu dan masuk langsung ke wallet peminjam. Tidak ada perantara dan tidak ada penundaan.
+Saat menemukan pinjaman yang ingin kamu danai, tap Danai dan konfirmasi. USDC langsung keluar dari Instant Wallet kamu (atau Base Account kamu, jika kamu menghubungkannya) dan masuk langsung ke wallet peminjam. Tidak ada perantara dan tidak ada penundaan.
 
 Kamu bisa melacak semua pinjaman aktif dan status pembayaran dari Lender Dashboard.`
    },
@@ -340,7 +340,7 @@ Kamu bisa melacak semua pinjaman aktif dan status pembayaran dari Lender Dashboa
       question: 'Kapan saya dibayar kembali?',
       answer: `Tanggal jatuh tempo ditentukan oleh peminjam saat mereka membuat permintaan. Kamu akan melihatnya dengan jelas di kartu pinjaman sebelum mendanai, jadi timeline selalu jelas sejak awal.
 
-Saat pinjaman jatuh tempo, peminjam membayar langsung ke Base account kamu. Kamu bisa melacak status semua pinjaman aktif di Lender Dashboard.`
+Saat pinjaman jatuh tempo, peminjam membayar langsung ke wallet kamu — Instant Wallet kamu, atau Base Account kamu jika kamu menghubungkannya. Kamu bisa melacak status semua pinjaman aktif di Lender Dashboard.`
    }
 ];
 
@@ -357,7 +357,7 @@ const THAI_SHARED_FAQS: AccountFAQItem[] = [
       question: 'ทำไม Moodeng ใช้ USDC?',
       answer: `USDC เป็น stablecoin ที่ผูก 1:1 กับดอลลาร์สหรัฐ ทำให้มูลค่าเงินกู้คาดเดาได้ เงินกู้ $20 วันนี้ยังเป็น $20 ตอนชำระคืน
 
-USDC ยังส่งได้รวดเร็วทั่วโลก และเมื่อใช้บน Base กับ Base Account หรือ Instant Wallet จะไม่มีค่า gas จึงไม่มีค่าธรรมเนียมเครือข่ายมาหักเงินที่คุณชำระคืน`
+USDC ยังส่งได้รวดเร็วทั่วโลก และเมื่อใช้บน Base กับ Instant Wallet ของคุณหรือ Base Account จะไม่มีค่า gas จึงไม่มีค่าธรรมเนียมเครือข่ายมาหักเงินที่คุณชำระคืน`
    },
    {
       id: 'how-to-get-verified',
@@ -432,14 +432,14 @@ const THAI_LENDER_FAQS: AccountFAQItem[] = [
       question: 'ฉันจะให้ทุนเงินกู้ได้อย่างไร?',
       answer: `ไปที่กระดานคำขอและดูคำขอเงินกู้ที่เปิดอยู่ แต่ละคำขอจะแสดงสถิติผู้ยืม วงเงิน จำนวนเงินที่ต้องการ และเงื่อนไขการชำระคืน
 
-เมื่อพบคำขอที่ต้องการ ให้แตะ Fund และยืนยัน USDC จะออกจากบัญชี Base ของคุณไปยังกระเป๋าของผู้ยืมโดยตรง`
+เมื่อพบคำขอที่ต้องการ ให้แตะ Fund และยืนยัน USDC จะออกจาก Instant Wallet ของคุณ (หรือ Base Account หากคุณเชื่อมต่อไว้) ไปยังกระเป๋าของผู้ยืมโดยตรง`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'ฉันจะได้รับชำระคืนเมื่อไหร่?',
       answer: `วันครบกำหนดถูกกำหนดโดยผู้ยืมเมื่อโพสต์คำขอ คุณจะเห็นชัดเจนบนการ์ดเงินกู้ก่อนให้ทุน
 
-เมื่อถึงกำหนด ผู้ยืมจะชำระคืนตรงเข้าบัญชี Base ของคุณ และคุณติดตามสถานะได้จาก Lender Dashboard`
+เมื่อถึงกำหนด ผู้ยืมจะชำระคืนตรงเข้ากระเป๋าของคุณ (Instant Wallet หรือ Base Account หากคุณเชื่อมต่อไว้) และคุณติดตามสถานะได้จาก Lender Dashboard`
    }
 ];
 
@@ -456,7 +456,7 @@ Khoản vay đi trực tiếp từ ví người cho vay sang ví người vay. K
       question: 'Vì sao Moodeng dùng USDC?',
       answer: `USDC là stablecoin neo 1:1 với đô la Mỹ, giúp giá trị khoản vay dễ dự đoán. Khoản vay $20 hôm nay vẫn là $20 khi trả, không thành $15 hay $30.
 
-USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Base Account hoặc Instant Wallet thì hoàn toàn không tốn gas. Điều đó có nghĩa là không có phí mạng ăn vào khoản trả của bạn.`
+USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Instant Wallet của bạn hoặc Base Account thì hoàn toàn không tốn gas. Điều đó có nghĩa là không có phí mạng ăn vào khoản trả của bạn.`
    },
    {
       id: 'how-to-get-verified',
@@ -531,14 +531,14 @@ Mỗi người chỉ xác minh được một tài khoản, nên hồ sơ và l�
       question: 'Tôi cấp vốn cho khoản vay bằng cách nào?',
       answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị thống kê người vay, hạn mức, số tiền yêu cầu và kỳ hạn trả.
 
-Khi thấy khoản muốn cấp vốn, bấm Fund và xác nhận. USDC rời tài khoản Base của bạn ngay lập tức và đi thẳng đến ví của người vay.`
+Khi thấy khoản muốn cấp vốn, bấm Fund và xác nhận. USDC rời Instant Wallet của bạn (hoặc Base Account nếu bạn đã kết nối) ngay lập tức và đi thẳng đến ví của người vay.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Khi nào tôi được trả?',
       answer: `Ngày đến hạn do người vay đặt khi đăng yêu cầu. Bạn sẽ thấy rõ trên thẻ khoản vay trước khi cấp vốn.
 
-Khi khoản vay đến hạn, người vay trả trực tiếp về tài khoản Base của bạn. Bạn có thể theo dõi trạng thái các khoản vay đang hoạt động trong Lender Dashboard.`
+Khi khoản vay đến hạn, người vay trả trực tiếp về ví của bạn — Instant Wallet, hoặc Base Account nếu bạn đã kết nối. Bạn có thể theo dõi trạng thái các khoản vay đang hoạt động trong Lender Dashboard.`
    }
 ];
 

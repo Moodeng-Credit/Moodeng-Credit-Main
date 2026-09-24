@@ -31,7 +31,7 @@ For actions that live on a bottom-nav tab (Repay, Withdraw-from-Dashboard, Accou
 
   COPY RULES (same as troubleshooting.md and site-map.md):
   - Never say "KYC", "Didit", "liveness", "eID", or "Openfort" to a user.
-    The ID check is "Verify Your ID"; the embedded wallet is the "instant wallet".
+    The ID check is "Verify Your ID"; the embedded wallet is the "Instant Wallet" (the default wallet for borrowers and lenders).
   - Use the exact on-screen labels, bolded, so users can match what they see.
 -->
 
@@ -54,7 +54,7 @@ Two places show your own wallet address:
 1. **Account → Account Settings**, in the **Wallet** section under **Connected Wallet**. The address is shown shortened (like 0x12…34ab) — tap the address or the copy icon next to it to copy the full address.
 2. On the **Repay** screen, when you're short on USDC an add-funds card appears with your address to **copy** (tap it → shows "Copied"). It's there so you can send USDC to yourself from an exchange before paying.
 
-Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show an **Add Base Wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first, and after that the address appears in Account Settings.
+Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show a **Set up wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first (the Instant Wallet by default, or a Base Account if they prefer), and after that the address appears in Account Settings.
 
 ## Borrower Dashboard (Dashboard tab)
 
@@ -76,18 +76,18 @@ Everything here, section by section:
 - **Basic Information** — your **Display Name** (edit it right at the top of Account Settings, next to your avatar), your **Email Address** (change/verify), and for borrowers **Bio Info** ("Work, income, and what you need help with" — the same bio collected on your first loan application; edit it here any time).
 - **Preferences** — **Dark Mode** toggle and app **language** switcher.
 - **Security & Verification** — two read-only rows, **World ID** and **ID Verification**, each showing **Verified** or **Not Verified**. Email/password users also see a **Password** row with **Change**.
-- **Wallet** — **Connected Wallet** (address shown shortened; tap or the copy icon to copy), buttons **Change wallet** and **Disconnect wallet** (asks "Disconnect wallet?" to confirm), and a **Network** row showing **Base**. Borrowers with an active loan see their wallet marked **locked** — that's intentional, so the loan and repayment history stay tied to one wallet. Borrowers who still need a Base wallet see a **Confirm your Base Account** prompt here instead.
+- **Wallet** — **Connected Wallet** (address shown shortened; tap or the copy icon to copy), buttons **Change wallet** and **Disconnect wallet** (asks "Disconnect wallet?" to confirm), and a **Network** row showing **Base**. Borrowers with an active loan see their wallet marked **locked** — that's intentional, so the loan and repayment history stay tied to one wallet. Borrowers who have a Base Account saved but not yet confirmed see a **Confirm your Base Account** prompt here instead (where available, with an option to create an Instant Wallet instead).
 - **Notifications** — **Telegram Alerts** (**Connect**), **WhatsApp** and **LINE** (both "Coming soon"), plus toggles for **Account Activity**, **Transaction Activity**, and **Moodeng Blogs**.
 
-Users with an **instant wallet** also see an **Export wallet key** link in the Wallet section. Tapping it opens a confirm sheet ("Export your wallet key," for importing into MetaMask/Trust) with **Cancel** / **Reveal key**; the key is then shown as copyable text with **Copy key** and **I've saved it**. The key is only fetched when you tap Reveal and is cleared again once you close the sheet.
+Users with an **Instant Wallet** also see an **Export wallet key** link in the Wallet section. Tapping it opens a confirm sheet ("Export your wallet key," for importing into MetaMask/Trust) with **Cancel** / **Reveal key**; the key is then shown as copyable text with **Copy key** and **I've saved it**. The key is only fetched when you tap Reveal and is cleared again once you close the sheet.
 
 ## Repaying (the Repay tab)
 
 The **Repay** tab lists your active (funded, unpaid) loans, soonest due first.
 
-- If you haven't finished setup yet, you'll see one of: **Finish setup to start borrowing** (**Start Setup**), **Verify yourself to borrow** (**Verify Yourself**), **Add Base Wallet to borrow** (**Add Base Wallet**), or, with nothing due, **No repayments yet** (**Request a loan**).
+- If you haven't finished setup yet, you'll see one of: **Finish setup to start borrowing** (**Start Setup**), **Verify yourself to borrow** (**Verify Yourself**), **Add a wallet to borrow** (**Add Wallet**), or, with nothing due, **No repayments yet** (**Request a loan**).
 - If your USDC balance is short of what you owe, an add-funds card appears automatically with your wallet address to copy and a list of places to buy/send USDC on Base — in the Philippines it leads with **Coins.ph** (with **Moneybees**, **GCrypto**, **PDAX** as other options, **Show more** to see the rest); outside the Philippines it leads with **Binance**. It updates live and shows **Received $X USDC** once funds land.
-- To pay: pick the loan (defaults to the one due soonest), enter an amount or tap **25%**, **50%**, **75%**, or **Full**, then tap the **Pay Now** button that appears in the bottom nav. With a Base Account or instant wallet the payment is gasless and goes straight to the lender.
+- To pay: pick the loan (defaults to the one due soonest), enter an amount or tap **25%**, **50%**, **75%**, or **Full**, then tap the **Pay Now** button that appears in the bottom nav. With your Instant Wallet or a Base Account the payment is gasless and goes straight to the lender.
 - Paying off a loan in full shows a **Loan fully repaid** screen with Pandesal points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
 
 ## Cashing out (Withdraw)

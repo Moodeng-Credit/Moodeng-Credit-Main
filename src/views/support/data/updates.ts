@@ -19,7 +19,7 @@ Filters apply while you choose them, so you can narrow results without pressing 
 
 This release also cleans up the borrower path around loan actions:
 • unverified borrowers are guided back into onboarding before requesting a loan
-• verified borrowers without a wallet (Base or Instant Wallet) go straight to the wallet step
+• verified borrowers without a wallet (Instant Wallet or Base Account) go straight to the wallet step
 • filter panels stay focused on browsing instead of blocking the board
 
 The goal is simple: fewer dead ends, fewer confusing taps, and a request board that updates the moment you make a choice.`

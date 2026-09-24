@@ -9,7 +9,7 @@ import { ICON_MASK_BASE } from '@/views/support/constants';
 import { getFaqsForLocale } from '@/views/support/data/faqs';
 
 const FAQ_SEO_DESCRIPTION =
-   'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, Base and Instant Wallets, fees, and staying safe from loan sharks.';
+   'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, the Instant Wallet (and Base Accounts), fees, and staying safe from loan sharks.';
 
 const FAQ_CATEGORIES = {
    general: 'General',

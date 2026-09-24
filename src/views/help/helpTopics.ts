@@ -45,7 +45,7 @@ export const HELP_CATEGORIES: HelpCategory[] = [
    {
       id: 'wallet',
       emoji: '🔗',
-      label: { en: 'Wallet: Base or Instant', fil: 'Wallet: Base o Instant' },
+      label: { en: 'Wallet: Instant or Base', fil: 'Wallet: Instant o Base' },
       blurb: { en: 'Set up, connect, and fix wallet problems', fil: 'I-set up, ikonekta, at ayusin ang wallet' }
    },
    {
@@ -130,14 +130,14 @@ export const HELP_TOPICS: HelpTopic[] = [
          en: [
             'Create your account with a username, email, and password.',
             'Tap "Apply for a Loan" to start.',
-            'Set up a Base Account at account.base.app, then tap "Connect Wallet" to link it — or create an instant wallet straight from your login.',
+            'Tap "Create Instant Wallet" — your wallet is created straight from your Moodeng login, no app needed. (Prefer a Base Account? Set one up at account.base.app and connect it instead.)',
             'Tap "Verify Yourself" and complete "Verify Your ID" — about 3 minutes.',
             'Open the Request Board and set your amount (up to your limit), repayment date, and a clear reason.'
          ],
          fil: [
             'Gumawa ng account gamit ang username, email, at password.',
             'I-tap ang "Apply for a Loan" para magsimula.',
-            'Mag-set up ng Base Account sa account.base.app, tapos i-tap ang "Connect Wallet" para ikabit ito — o gumawa ng instant wallet diretso mula sa login mo.',
+            'I-tap ang "Create Instant Wallet" — gagawin ang wallet mo diretso mula sa Moodeng login mo, walang app na kailangan. (Mas gusto ang Base Account? Mag-set up nito sa account.base.app at ikonekta na lang.)',
             'I-tap ang "Verify Yourself" at kumpletuhin ang "Verify Your ID" — mga 3 minuto.',
             'Buksan ang Request Board at itakda ang halaga (hanggang sa limit mo), petsa ng bayad, at malinaw na dahilan.'
          ]
@@ -157,8 +157,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'No platform fees, no gas on Base', fil: 'Walang platform fee, walang gas sa Base' },
       question: { en: 'Does Moodeng charge any fees?', fil: 'May sinisingil bang bayad ang Moodeng?' },
       intro: {
-         en: 'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use a Base Account or the instant wallet on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.',
-         fil: 'Wala. Libre ang Moodeng — walang platform fee sa paghiram o pagpapahiram, walang subscription, walang setup cost. 100% ng ini-fund ng lender ay napupunta sa iyo, at 100% ng bayad mo ay napupunta sa lender. Zero din ang network fee (gas) kapag Base Account o instant wallet sa Base ang gamit. Ang tanging gastos ay ang interest na inaalok ng borrower, at napupunta iyon nang buo sa lender, hindi sa amin.'
+         en: 'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.',
+         fil: 'Wala. Libre ang Moodeng — walang platform fee sa paghiram o pagpapahiram, walang subscription, walang setup cost. 100% ng ini-fund ng lender ay napupunta sa iyo, at 100% ng bayad mo ay napupunta sa lender. Zero din ang network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit. Ang tanging gastos ay ang interest na inaalok ng borrower, at napupunta iyon nang buo sa lender, hindi sa amin.'
       },
       keywords: ['cost', 'price', 'fee', 'charge', 'free', 'gas']
    },
@@ -245,20 +245,40 @@ export const HELP_TOPICS: HelpTopic[] = [
 
    // ─── Wallet & Base Account ────────────────────────────────────────────────
    {
+      id: 'instant-wallet',
+      category: 'wallet',
+      emoji: '⚡',
+      title: { en: 'The Instant Wallet', fil: 'Ang Instant Wallet' },
+      subtitle: { en: 'Your default wallet — no app, no seed phrase', fil: 'Default wallet mo — walang app, walang seed phrase' },
+      question: { en: 'What is the Instant Wallet and is it safe?', fil: 'Ano ang Instant Wallet at ligtas ba ito?' },
+      intro: {
+         en: "The Instant Wallet is Moodeng's default wallet: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it and lenders fund loans from it. It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.",
+         fil: 'Ang Instant Wallet ang default wallet ng Moodeng: totoo at self-custodial na wallet na ise-set up para sa iyo diretso mula sa Moodeng login mo — walang app na ida-download at walang seed phrase na isusulat. Dito tumatanggap ng USDC loan ang borrowers at dito rin nagfu-fund ng loan ang lenders. Nag-iipon ito ng Pandesal points gaya ng ibang wallet, gumagana kahit naka-block ang Base Account sign-in (gaya ng PLDT / Smart block), at gasless — kami ang sa network fees, kaya hindi mo kailangan ng ETH para magbayad o mag-cash out. Mas gusto ang Base Account? Puwede mo itong ikonekta sa halip.'
+      },
+      watchOut: {
+         en: 'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.',
+         fil: 'Ikaw ang ganap na may-ari. Puwede mong i-export ang private key anumang oras sa Account → Account Settings → Wallet → "Export wallet key" at i-import sa MetaMask, Trust, o kahit anong wallet — tapos malaya kang umalis sa Moodeng.'
+      },
+      keywords: ['instant wallet', 'create my wallet', 'no seed', 'export key', 'embedded wallet']
+   },
+   {
       id: 'coinbase-vs-base',
       category: 'wallet',
       emoji: '🟣',
       title: { en: 'Coinbase app vs Base Account', fil: 'Coinbase app vs Base Account' },
-      subtitle: { en: 'You need Base, not the Coinbase app', fil: 'Base ang kailangan, hindi Coinbase app' },
+      subtitle: {
+         en: 'No Coinbase app needed — Base Account is optional',
+         fil: 'Hindi kailangan ang Coinbase app — opsyonal ang Base Account'
+      },
       question: { en: 'Do I need the Coinbase app or a Base Account?', fil: 'Kailangan ko ba ang Coinbase app o Base Account?' },
       steps: {
          en: [
-            "To use Base, you need a Base Account. Create it at account.base.app. (Can't use Base? The instant wallet works instead.)",
+            "You don't need either to get started — Moodeng sets up your Instant Wallet from your login. If you'd rather use a Base Account, create it at account.base.app.",
             'You do not need the Coinbase app. Base is a network built by Coinbase, but the app is a different thing.',
             'A Base Account is passwordless and seedless — you sign in with email or a passkey.'
          ],
          fil: [
-            'Para sa Base, Base Account ang kailangan mo. Gawin ito sa account.base.app. (Hindi magamit ang Base? Puwede ang instant wallet.)',
+            'Hindi mo kailangan ang alinman para magsimula — ise-set up ng Moodeng ang Instant Wallet mo mula sa login mo. Kung mas gusto mo ang Base Account, gawin ito sa account.base.app.',
             'Hindi mo kailangan ang Coinbase app. Ang Base ay network na ginawa ng Coinbase, pero ibang bagay ang app.',
             'Ang Base Account ay walang password at walang seed phrase — email o passkey ang gamit sa pag-sign in.'
          ]
@@ -312,13 +332,13 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       steps: {
          en: [
-            'Easiest — create an instant wallet instead. When we detect the block, the wallet screen shows "Create your wallet instantly". No app, no seed phrase, and network fees are covered for you.',
+            'Easiest — use your Instant Wallet instead. Tap "Create Instant Wallet" on the wallet screen. No app, no seed phrase, and network fees are covered for you.',
             'Switch Wi-Fi ↔ mobile data. If one network blocks it, the other often works.',
             'Install the free "1.1.1.1" app by Cloudflare, turn it On, then reopen account.base.app.',
             'Or use a reputable free VPN like Proton VPN — turn it on before opening the sign-in page, connect to a nearby location, then reopen Moodeng.'
          ],
          fil: [
-            'Pinakamadali — gumawa na lang ng instant wallet. Kapag na-detect ang block, may lalabas na "Create your wallet instantly" sa wallet screen. Walang app, walang seed phrase, at kami na ang sa network fees.',
+            'Pinakamadali — Instant Wallet na lang ang gamitin. I-tap ang "Create Instant Wallet" sa wallet screen. Walang app, walang seed phrase, at kami na ang sa network fees.',
             'Lumipat ng Wi-Fi ↔ mobile data. Kung isa ang naka-block, madalas gumagana ang isa.',
             'I-install ang libreng "1.1.1.1" app ng Cloudflare, i-On ito, tapos buksan ulit ang account.base.app.',
             'O gumamit ng maaasahang libreng VPN gaya ng Proton VPN — i-on bago buksan ang sign-in page, kumonekta sa malapit na lokasyon, tapos buksan ulit ang Moodeng.'
@@ -329,23 +349,6 @@ export const HELP_TOPICS: HelpTopic[] = [
          fil: 'Ang VPN ay nagbabago lang kung paano dumadaan ang koneksyon mo — hindi nito hinahawakan ang pera mo. Gumamit lang ng kilalang VPN o ang opisyal na 1.1.1.1 app, at tandaan na hindi hihingin ng Moodeng ang seed o recovery phrase mo.'
       },
       keywords: ['pldt', 'smart', 'vpn', '1.1.1.1', 'cloudflare', 'proton', 'blocked', 'connection not private']
-   },
-   {
-      id: 'instant-wallet',
-      category: 'wallet',
-      emoji: '⚡',
-      title: { en: 'The instant wallet', fil: 'Ang instant wallet' },
-      subtitle: { en: 'A wallet without Base — no seed phrase', fil: 'Wallet na walang Base — walang seed phrase' },
-      question: { en: 'What is the instant wallet and is it safe?', fil: 'Ano ang instant wallet at ligtas ba ito?' },
-      intro: {
-         en: "The instant wallet is a real, self-custodial wallet Moodeng sets up for a borrower straight from your login — no app to download and no seed phrase to write down. It is the escape hatch for people who can't use a Base Account (most often the PLDT / Smart block). It receives USDC loans and earns Pandesal points exactly like any other wallet, and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out.",
-         fil: 'Ang instant wallet ay totoo at self-custodial na wallet na ise-set up ng Moodeng para sa borrower diretso mula sa login mo — walang app na ida-download at walang seed phrase na isusulat. Ito ang escape hatch para sa hindi makagamit ng Base Account (kadalasan ang PLDT / Smart block). Tumatanggap ito ng USDC loan at nag-iipon ng Pandesal points gaya ng ibang wallet, at gasless — kami ang sa network fees, kaya hindi mo kailangan ng ETH para magbayad o mag-cash out.'
-      },
-      watchOut: {
-         en: 'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely. Only borrowers get this; lenders use the normal wallet picker.',
-         fil: 'Ikaw ang ganap na may-ari. Puwede mong i-export ang private key anumang oras sa Account → Account Settings → Wallet → "Export wallet key" at i-import sa MetaMask, Trust, o kahit anong wallet — tapos malaya kang umalis sa Moodeng. Borrower lang ang may ganito; ang lenders ay gumagamit ng normal na wallet picker.'
-      },
-      keywords: ['instant wallet', 'create my wallet', 'no seed', 'export key', 'embedded wallet']
    },
    {
       id: 'in-app-browser',
@@ -402,8 +405,8 @@ export const HELP_TOPICS: HelpTopic[] = [
          ]
       },
       watchOut: {
-         en: 'On PLDT and Smart the sign-in is sometimes blocked by the network itself. If the page won\'t load or shows a security warning, use the instant wallet or see "Base won\'t load (PLDT / Smart)".',
-         fil: 'Sa PLDT at Smart, minsan hina-block mismo ng network ang sign-in. Kung ayaw mag-load o may security warning, gamitin ang instant wallet o tingnan ang "Ayaw mag-load ng Base (PLDT / Smart)".'
+         en: 'On PLDT and Smart the sign-in is sometimes blocked by the network itself. If the page won\'t load or shows a security warning, use your Instant Wallet or see "Base won\'t load (PLDT / Smart)".',
+         fil: 'Sa PLDT at Smart, minsan hina-block mismo ng network ang sign-in. Kung ayaw mag-load o may security warning, gamitin ang Instant Wallet mo o tingnan ang "Ayaw mag-load ng Base (PLDT / Smart)".'
       },
       keywords: ['connect wallet', 'reset', 'disconnect', 'approve']
    },
@@ -753,8 +756,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'The rules that are always true', fil: 'Ang mga tuntuning laging totoo' },
       question: { en: 'How do I stay safe and avoid scams?', fil: 'Paano manatiling ligtas at maiwasan ang scam?' },
       intro: {
-         en: 'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. A Base Account and the instant wallet are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.',
-         fil: 'May ilang bagay na laging totoo. Hindi kailanman hinahawakan o inililipat ng Moodeng ang pera mo — dumadaan ang loans wallet-to-wallet nang diretso sa pagitan ng lender at borrower. Laging ipadala ang USDC sa Base network; ang maling network ay nawawalang pera. Seedless ang Base Account at ang instant wallet, kaya hindi kailanman hihingin ng Moodeng ang "seed phrase" o "recovery phrase" — at walang lehitimong katulong ang hihingi nito. Kapag hindi ka sigurado, laging ligtas na maghintay at magtanong kaysa manghula, lalo na bago magpadala ng pera.'
+         en: 'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.',
+         fil: 'May ilang bagay na laging totoo. Hindi kailanman hinahawakan o inililipat ng Moodeng ang pera mo — dumadaan ang loans wallet-to-wallet nang diretso sa pagitan ng lender at borrower. Laging ipadala ang USDC sa Base network; ang maling network ay nawawalang pera. Seedless ang Instant Wallet at ang Base Account, kaya hindi kailanman hihingin ng Moodeng ang "seed phrase" o "recovery phrase" — at walang lehitimong katulong ang hihingi nito. Kapag hindi ka sigurado, laging ligtas na maghintay at magtanong kaysa manghula, lalo na bago magpadala ng pera.'
       },
       keywords: ['safety', 'scam', 'seed phrase', 'recovery phrase', 'security']
    },
@@ -766,8 +769,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'Name, email, password, sign out', fil: 'Pangalan, email, password, sign out' },
       question: { en: 'How do I manage my account and security settings?', fil: 'Paano i-manage ang account at security settings ko?' },
       intro: {
-         en: "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the instant wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).",
-         fil: 'Nakakabit ang account mo sa wallet, kaya ang seguridad ng wallet ay seguridad ng account. Mula sa Account screen puwede mong baguhin ang display name, i-manage ang email, palitan ang password, at mag-sign out. Kung instant wallet ang gamit mo, doon mo rin ie-export ang wallet key (Account → Account Settings → Wallet).'
+         en: "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).",
+         fil: 'Nakakabit ang account mo sa wallet, kaya ang seguridad ng wallet ay seguridad ng account. Mula sa Account screen puwede mong baguhin ang display name, i-manage ang email, palitan ang password, at mag-sign out. Kung Instant Wallet ang gamit mo, doon mo rin ie-export ang wallet key (Account → Account Settings → Wallet).'
       },
       guide: {
          path: '/learn/managing-your-account-and-security-settings',

@@ -286,7 +286,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'User directory': 'Mga user',
    'User profile': 'User profile',
    Users: 'Users',
-   'Use Base Account or Instant Wallet': 'Gamitin ang Base Account o Instant Wallet',
+   'Use your Instant Wallet or a Base Account': 'Gamitin ang Instant Wallet mo o ang Base Account',
    VERIFY: 'I-VERIFY',
    Verified: 'Beripikado',
    'Verification code': 'Code sa verification',
@@ -478,10 +478,10 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'Wallet Not Added': 'Hindi pa naidagdag ang wallet',
    'Change Base wallet': 'Palitan ang Base wallet',
    'Connection Failed': 'Hindi nagtagumpay ang connection',
-   'Borrowers need to connect with the Base Account option or set up an Instant Wallet. Other wallet connectors cannot be locked for Moodeng borrowing.':
-      'Kailangan ng borrowers kumonek gamit ang Base Account option o mag-set up ng Instant Wallet. Hindi puwedeng i-lock ang ibang wallet connectors para sa Moodeng borrowing.',
-   "We couldn't detect a wallet. Connect a Base Account or set up an Instant Wallet to continue.":
-      'Hindi namin ma-detect ang wallet mo. Kumonek ng Base Account o mag-set up ng Instant Wallet para magpatuloy.',
+   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
+      'Ginagamit ng mga borrower ang Moodeng Instant Wallet, na ginagawa mula sa login mo — o puwede kang kumonek ng Base Account. Hindi puwedeng i-lock ang ibang wallet connectors para sa paghiram sa Moodeng.',
+   "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
+      'Walang nakitang wallet. I-set up ang Instant Wallet mo (o kumonek ng Base Account kung mas gusto mo) para magpatuloy.',
    'Browse Guides': 'Tingnan ang mga gabay',
    'Quick Start for New Users': 'Mabilis na gabay para sa bagong users',
    'Get Help via Telegram': 'Humingi ng Tulong sa Telegram',
@@ -516,7 +516,7 @@ export const filipinoScreenTranslations: Record<string, string> = {
    'How does borrowing on Moodeng work?': 'Paano gumagana ang borrowing sa Moodeng?',
    'What are Pandesal points and how are they calculated?': 'Ano ang Pandesal points at paano ito kinakalkula?',
    'What is a Credit Level?': 'Ano ang antas ng kredito?',
-   'What is a Base wallet?': 'Ano ang Base wallet?',
+   'Which wallet does Moodeng use?': 'Anong wallet ang ginagamit ng Moodeng?',
    'What is USDC, and why does Moodeng use it?': 'Ano ang USDC, at bakit ito ginagamit ng Moodeng?',
    'Does Moodeng charge fees?': 'May fees ba ang Moodeng?',
    'How does Moodeng help fight loan sharks?': 'Paano tumutulong ang Moodeng laban sa loan sharks?',
@@ -1004,10 +1004,10 @@ export const filipinoScreenTranslations: Record<string, string> = {
 
    'Prove you are a real person. This is a one-time step before larger borrowing limits.':
       'Patunayan na totoong tao ka. One-time step ito bago ang mas malaking borrowing limits.',
-   'Create or connect a Base Account, or set up an Instant Wallet from your login, so lenders can fund loans directly there and Moodeng can track repayment history.':
-      'Gumawa o kumonek ng Base Account, o mag-set up ng Instant Wallet mula sa login mo, para direktang makapag-fund ang lenders doon at ma-track ng Moodeng ang repayment history.',
-   'Create one or connect the Base Account you already use, or set up an Instant Wallet instead. Moodeng keeps the flow inside the app.':
-      'Gumawa ng isa o ikonek ang Base Account na ginagamit mo na, o mag-set up na lang ng Instant Wallet. Pinapanatili ng Moodeng ang flow sa loob ng app.',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
+      'I-set up ang Instant Wallet mo mula sa Moodeng login mo (o kumonek ng Base Account kung mas gusto mo), para direktang makapag-fund ang lenders doon at ma-track ng Moodeng ang repayment history.',
+   'Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one instead. Moodeng keeps the flow inside the app.':
+      'Ginagawa ang Instant Wallet mo mula sa Moodeng login mo — walang app at walang seed phrase. Mas gusto mo ang Base Account? Puwede mo itong ikonek. Pinapanatili ng Moodeng ang flow sa loob ng app.',
    'If your request is below your credit limit, it is trust-building. If it is above your credit limit, it is credit-building.':
       'Kung mas mababa sa credit limit mo ang request, trust-building ito. Kung lampas sa credit limit mo, credit-building ito.',
    'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':

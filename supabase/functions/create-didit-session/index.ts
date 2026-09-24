@@ -58,13 +58,7 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 
 // Short enum of in-app destinations the verify page understands. Only these are
 // echoed into the callback URL, so an attacker can't turn this into an open redirect.
-const ALLOWED_RETURN_TO = new Set([
-   'loan-request',
-   'account-settings',
-   'repay',
-   'milestones',
-   'dashboard-credit-level'
-]);
+const ALLOWED_RETURN_TO = new Set(['loan-request', 'account-settings', 'repay', 'milestones', 'dashboard-credit-level']);
 
 type SessionKind = 'liveness' | 'id' | 'combined' | 'wallet' | 'cashout';
 
@@ -146,16 +140,17 @@ serve(async (req) => {
          return jsonResponse({ error: 'Server misconfigured' }, 500);
       }
 
-      const accessToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim();
+      const accessToken = req.headers
+         .get('Authorization')
+         ?.replace(/^Bearer\s+/i, '')
+         .trim();
       if (!accessToken) {
          return jsonResponse({ error: 'Missing authorization token' }, 401);
       }
 
-      const supabase = createClient(
-         Deno.env.get('SUPABASE_URL') ?? '',
-         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-         { auth: { autoRefreshToken: false, persistSession: false } }
-      );
+      const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', {
+         auth: { autoRefreshToken: false, persistSession: false }
+      });
 
       const {
          data: { user },
@@ -245,7 +240,7 @@ serve(async (req) => {
             return jsonResponse({ error: 'Database error' }, 500);
          }
          if (grant) {
-            return jsonResponse({ error: 'This account already has an instant wallet.', code: 'ALREADY_GRANTED' }, 409);
+            return jsonResponse({ error: 'This account already has an Instant Wallet.', code: 'ALREADY_GRANTED' }, 409);
          }
       }
 
@@ -312,9 +307,11 @@ serve(async (req) => {
          })
       });
 
-      const diditBody = (await diditResponse.json().catch(() => null)) as
-         | { session_id?: string; url?: string; [key: string]: unknown }
-         | null;
+      const diditBody = (await diditResponse.json().catch(() => null)) as {
+         session_id?: string;
+         url?: string;
+         [key: string]: unknown;
+      } | null;
 
       if (!diditResponse.ok || !diditBody?.url) {
          console.error('[create-didit-session] Didit session creation failed:', diditResponse.status, diditBody);

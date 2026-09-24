@@ -62,8 +62,8 @@ export default function WalletConnected() {
       if (isConnectedWrongProvider) {
          return (
             <FailureView
-               title="Use Base Account or Instant Wallet"
-               body="Borrowers need to connect with the Base Account option or set up an Instant Wallet. Other wallet connectors cannot be locked for Moodeng borrowing."
+               title="Use Your Instant Wallet or a Base Account"
+               body="Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing."
                onRetry={() => navigate('/onboarding/wallet')}
             />
          );
@@ -91,7 +91,7 @@ export default function WalletConnected() {
                body={
                   baseWalletLock.hasStoredWallet
                      ? `Connect ${formatWalletAddressShort(baseWalletLock.address)} with Base Account so Moodeng can confirm the saved wallet before borrowing or repayment.`
-                     : "We couldn't detect a wallet. Connect a Base Account or set up an Instant Wallet to continue."
+                     : "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue."
                }
                onRetry={() => navigate('/onboarding/wallet')}
             />
@@ -153,7 +153,7 @@ export default function WalletConnected() {
             <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
                {/* Instant-wallet borrowers get instant-wallet words — "connected" is Base language. */}
                <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">
-                  {baseWalletLock.isConfirmedOpenfort ? 'Your Wallet Is Ready' : 'Wallet Connected'}
+                  {baseWalletLock.isConfirmedOpenfort ? 'Your Instant Wallet Is Ready' : 'Wallet Connected'}
                </h2>
                <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
                   {baseWalletLock.isConfirmedOpenfort

@@ -13,7 +13,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
-import useWallet, { type PaymentMethod } from '@/hooks/useWallet';
+import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
@@ -163,6 +163,8 @@ export default function UserCard(loan: UserCardProps) {
 
    const dispatch = useDispatch<AppDispatch>();
    const { payUsdc } = useWallet();
+   // 'openfort' when the lender's wallet is their Instant Wallet (no wagmi connection).
+   const activePaymentMethod = useActivePaymentMethod();
    const account = useAccount();
    const { isConnected } = account;
    const { switchChainAsync } = useSwitchChain();
@@ -272,8 +274,7 @@ export default function UserCard(loan: UserCardProps) {
             // to the persisted `wallet` address, so it would happily start a lend with no
             // usable provider here and then hang on "Approve in your wallet" forever (the
             // cross-device MetaMask case). If there's no live wallet, guide them to reconnect.
-            const liveConnected =
-               (liveAccount.isConnected && Boolean(liveAccount.address)) || (isConnected && Boolean(account.address));
+            const liveConnected = (liveAccount.isConnected && Boolean(liveAccount.address)) || (isConnected && Boolean(account.address));
             if (!liveConnected) {
                showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.WALLET_UNREACHABLE));
                openConnectModal?.();
@@ -313,8 +314,15 @@ export default function UserCard(loan: UserCardProps) {
                // The wagmi path has no onSubmitted: the money is in flight from here, so arm
                // reconciliation now — a DB confirm that fails below gets retried instead of
                // stranding a funded loan that still reads Requested.
-               if (method === 'wallet') {
-                  registerPendingBasePayment({ kind: 'fund', id: outcome.hash, loanId: loanData.id, userId, method });
+               // Openfort settles on-chain like a wallet transfer.
+               if (method === 'wallet' || method === 'openfort') {
+                  registerPendingBasePayment({
+                     kind: 'fund',
+                     id: outcome.hash,
+                     loanId: loanData.id,
+                     userId,
+                     method: toSettlementMethod(method)
+                  });
                }
 
                // Server verifies the on-chain transfer before marking the loan Lent; it derives the
@@ -324,7 +332,7 @@ export default function UserCard(loan: UserCardProps) {
                   confirmLoanPayment({
                      loanId: loanData.id,
                      hash: outcome.hash,
-                     method,
+                     method: toSettlementMethod(method),
                      action: 'fund'
                   })
                );
@@ -423,9 +431,10 @@ export default function UserCard(loan: UserCardProps) {
    // popup, no connect step). Not connected → Base Pay: a single popup that fuses Base Account
    // sign-in and the USDC send, so even a cold lender funds in one tap. Lenders who
    // specifically want a non-Base wallet use "Use a different wallet" below.
+   // An Instant Wallet lender sends straight from it (gasless, no popup), like Instant Wallet repayments.
    const runDirectLend = useCallback(async () => {
-      await executeLend(isConnected ? 'wallet' : 'base');
-   }, [executeLend, isConnected]);
+      await executeLend(activePaymentMethod === 'openfort' ? 'openfort' : isConnected ? 'wallet' : 'base');
+   }, [activePaymentMethod, executeLend, isConnected]);
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -504,8 +513,7 @@ export default function UserCard(loan: UserCardProps) {
 
    // Deep-links to this exact request on the board (card scrolled-to + highlighted), so a lender
    // who opens the shared link lands on the loan they were sent and can fund it directly.
-   const shareRequestUrl =
-      typeof window !== 'undefined' ? `${window.location.origin}/request-board?highlight=${loanData.id}` : '';
+   const shareRequestUrl = typeof window !== 'undefined' ? `${window.location.origin}/request-board?highlight=${loanData.id}` : '';
    const handleShareRequest = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       e.stopPropagation();

@@ -8,9 +8,7 @@
 //
 // This keeps the promise in the borrower onboarding copy true: Moodeng never sees or
 // holds the key, and the user can still `exportPrivateKey()` to leave for MetaMask.
-
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-
 import { OPENFORT_SHIELD_SESSION_URL } from '@/lib/web3/openfort/config';
 import { WalletGateError } from '@/lib/web3/openfort/walletFaceGate';
 
@@ -29,7 +27,7 @@ export const createShieldEncryptionSession = async (): Promise<string> => {
    } = await getSupabaseBrowserClient().auth.getSession();
 
    if (!session?.access_token) {
-      throw new Error('You need to be signed in to create your instant wallet.');
+      throw new Error('You need to be signed in to create your Instant Wallet.');
    }
 
    const response = await fetch(OPENFORT_SHIELD_SESSION_URL, {
@@ -55,7 +53,7 @@ export const createShieldEncryptionSession = async (): Promise<string> => {
             }
          })();
          throw new WalletGateError(
-            body?.error ?? 'A quick face check is needed before we can create your instant wallet.',
+            body?.error ?? 'A quick face check is needed before we can create your Instant Wallet.',
             body?.code ?? 'FACE_REQUIRED'
          );
       }

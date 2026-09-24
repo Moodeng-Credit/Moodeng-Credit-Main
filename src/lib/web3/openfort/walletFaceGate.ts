@@ -13,7 +13,6 @@
 // provisioning runs in the browser and only the Shield session mint requires our server.
 // Everything in this file is a fast path to avoid a pointless round trip, plus the copy — it
 // is NOT the security boundary, and must never be treated as one.
-
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OPENFORT_WALLET_PROVIDER } from '@/lib/web3/openfort/config';
 import type { User, WalletFaceStatus } from '@/types/authTypes';
@@ -99,14 +98,12 @@ export const needsWalletFaceScan = (user?: Pick<User, 'walletProvider' | 'wallet
    WALLET_FACE_GATE_ENABLED && walletFaceScanRequiredForUser(user);
 
 /** User-facing copy for a resolved scan. Keep in sync with GATE_MESSAGES in openfort-shield-session. */
-export const walletFaceStatusCopy = (
-   status?: WalletFaceStatus | null
-): { title: string; body: string; canRetry: boolean } => {
+export const walletFaceStatusCopy = (status?: WalletFaceStatus | null): { title: string; body: string; canRetry: boolean } => {
    switch (status) {
       case 'DUPLICATE':
          return {
             title: 'This face already has a wallet',
-            body: 'Each person can have one Moodeng instant wallet. If you already have a Moodeng account, sign in to that one — or connect a wallet you already own instead.',
+            body: 'Each person can have one Moodeng Instant Wallet. If you already have a Moodeng account, sign in to that one — or connect a Base Account instead.',
             canRetry: false
          };
       case 'MISMATCH':
