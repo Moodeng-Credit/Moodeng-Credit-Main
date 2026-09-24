@@ -21,6 +21,10 @@ import { classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } fr
 //   * joined / left times → the "did they show up?" card says "joined 11:02, stayed 14 min".
 //   * any signed event → marks that host's Zoom as wired up, which is what allows
 //     video-call-reminders to treat "never joined" as a no-show.
+//
+// One Zoom account can host several of our hosts' calls (George and Emma share the team account,
+// with one app pointed at ?host=emma). Events are matched to bookings by meeting id, never by the
+// URL's host, and every matched booking also marks ITS host as wired up — so one app covers all.
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -69,7 +73,7 @@ serve(async (req) => {
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
    await markZoomSeen(svc, host);
-   if (event.kind === 'ignore' || event.isHost) return json({ ok: true });
+   if (event.kind === 'ignore') return json({ ok: true });
 
    const atMs = Date.parse(event.at);
    const { data: rows, error } = await svc
@@ -86,6 +90,13 @@ serve(async (req) => {
    }
    const booking = pickBooking((rows ?? []) as BookingRow[], atMs);
    if (!booking) return json({ ok: true, matched: false });
+
+   // Shared Zoom account: this booking's host gets its alerts through this app too.
+   if (booking.video_call_host && booking.video_call_host !== host && HOSTS.has(booking.video_call_host)) {
+      await markZoomSeen(svc, booking.video_call_host);
+   }
+   // The host coming and going says nothing about the borrower — only the heartbeat above.
+   if (event.isHost) return json({ ok: true });
 
    if (event.kind === 'left') {
       await svc.from('users').update({ video_call_left_at: event.at }).eq('id', booking.id);
