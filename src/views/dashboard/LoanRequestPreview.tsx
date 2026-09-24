@@ -2,7 +2,7 @@ import { type ChangeEvent, useRef, useState } from 'react';
 
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
-import type { User } from '@/types/authTypes';
+import type { LoanAccessStatus, User } from '@/types/authTypes';
 
 // DEV-only screenshot harness for the loan-request flow (terms → bio page 1 → bio page 2).
 // Mounts LoanRequestModal with a mock verified borrower that has no saved bio context, so the
@@ -31,8 +31,14 @@ export default function LoanRequestPreview() {
    const [days, setDays] = useState('');
    const [submitted, setSubmitted] = useState(false);
    const today = new Date().toISOString().slice(0, 10);
+   const params = new URLSearchParams(window.location.search);
    // ?unverified renders the not-yet-verified state (verify blocker + inert submit button).
-   const showVerify = new URLSearchParams(window.location.search).has('unverified');
+   const showVerify = params.has('unverified');
+   // ?access=none|pending|rejected renders the Connect → Approve → Apply gate (PART 1 / reviewing
+   // card); ?referral adds the referral card in front of it. Default = approved (the application).
+   const access = (params.get('access') as LoanAccessStatus | null) ?? 'approved';
+   const withReferral = params.has('referral');
+   const previewUser: User = { ...PREVIEW_BORROWER, loanAccessStatus: access };
 
    return (
       <div className="min-h-screen bg-md-neutral-300">
@@ -42,7 +48,7 @@ export default function LoanRequestPreview() {
                isOpen
                onClose={() => {}}
                showVerify={showVerify}
-               user={PREVIEW_BORROWER}
+               user={previewUser}
                loanAmount={loanAmount}
                setLoanAmount={setLoanAmount}
                totalRepaymentAmount={totalRepaymentAmount}
@@ -55,9 +61,9 @@ export default function LoanRequestPreview() {
                handleSubmit={() => setSubmitted(true)}
                isSubmitting={false}
                availableCreditLimit={15}
-               canUseReferralBoost={false}
+               canUseReferralBoost={withReferral}
                requireBorrowerContextStep
-               startOnReferralStep={false}
+               startOnReferralStep={withReferral}
             />
          ) : null}
          {/* Shows the real post-submit success screen so the preview demonstrates the full flow. */}

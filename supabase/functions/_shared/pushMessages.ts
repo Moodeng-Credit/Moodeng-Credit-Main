@@ -22,7 +22,8 @@ export type PushNotificationType =
    | 'funded'
    | 'repayment_received'
    | 'request_expired'
-   | 'video_call_reminder';
+   | 'video_call_reminder'
+   | 'loan_access_decision';
 
 export type PushLocale = 'en' | 'fil' | 'id';
 

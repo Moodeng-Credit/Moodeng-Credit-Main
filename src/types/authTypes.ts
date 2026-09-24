@@ -23,6 +23,8 @@ export type WalletProvider =
    | 'walletconnect'
    | 'unknown';
 
+export type LoanAccessStatus = 'none' | 'pending' | 'approved' | 'rejected';
+
 export interface User {
    id: string;
    username: string;
@@ -78,6 +80,15 @@ export interface User {
    accountStatus?: AccountStatus;
    /** Single source of truth for role-based routing, wallet connect options, and tab bar */
    userRole?: UserRole | null;
+   /**
+    * Connect → Approve → Apply gate. Only 'approved' borrowers can post a loan request; undefined
+    * (column not deployed yet) is treated as approved so the app never locks anyone out early.
+    */
+   loanAccessStatus?: LoanAccessStatus;
+   /** When the borrower first saw the "you're approved" glow; null/undefined = not seen yet. */
+   loanAccessSeenAt?: string;
+   /** True once the borrower has proven a contact line (Messenger or WhatsApp verification). */
+   hasVerifiedContact?: boolean;
    incomeType?: string;
    paydayType?: string;
    paydayStart?: number | null;

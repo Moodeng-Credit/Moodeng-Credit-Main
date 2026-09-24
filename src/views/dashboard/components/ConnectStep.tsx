@@ -1,0 +1,181 @@
+import { useState } from 'react';
+
+import { Clock3, HeartHandshake } from 'lucide-react';
+
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import type { LoanAccessStatus } from '@/types/authTypes';
+import ContactsStep from '@/views/dashboard/components/ContactsStep';
+
+// PART 1 of Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
+//
+// A borrower who hasn't been approved yet can't post a loan request. Instead they reach out to the
+// team first — B2C treated like a B2B lead:
+//   1. "Let's connect": open Messenger (proves a real line we can message back on — same SendPulse
+//      one-tap flow as ContactsStep; skipped straight through if they're already verified),
+//   2. a short intro (what they need the loan for),
+//   3. "Send to the team" → loan-access edge function flips them to pending and pings admins, who
+//      approve or reject from Telegram. The borrower then gets a push (+ Telegram) either way.
+// The referral card (optional credit boost) runs before this, inside LoanRequestModal. A referral
+// never skips approval — everyone goes through the same process.
+
+const MIN_REASON = 10;
+const MAX_REASON = 500;
+
+const ERROR_COPY: Record<string, string> = {
+   contact_not_verified: 'Please confirm Messenger first, then send.',
+   reason_required: 'Tell us a little about what you need.',
+   not_borrower: 'Only borrower accounts can apply for loans.',
+   account_inactive: "Your account can't apply right now. Message us on Messenger for help."
+};
+
+export default function ConnectStep({
+   userId,
+   displayName,
+   referralCode,
+   wasRejected = false,
+   onBack,
+   onSubmitted
+}: {
+   userId: string;
+   displayName: string;
+   referralCode?: string;
+   wasRejected?: boolean;
+   onBack: () => void;
+   onSubmitted: (status: LoanAccessStatus) => void | Promise<void>;
+}) {
+   const [page, setPage] = useState<'contact' | 'intro'>('contact');
+   const [reason, setReason] = useState('');
+   const [isSending, setIsSending] = useState(false);
+   const [error, setError] = useState('');
+
+   const trimmedReason = reason.trim();
+   const canSend = trimmedReason.length >= MIN_REASON && !isSending;
+
+   const handleSend = async () => {
+      if (!canSend) return;
+      setError('');
+      setIsSending(true);
+      try {
+         const { data, error: invokeError } = await getSupabaseBrowserClient().functions.invoke('loan-access', {
+            body: { action: 'submit', reason: trimmedReason, displayName, referralCode: referralCode || undefined }
+         });
+         // functions.invoke surfaces non-2xx as an error whose context holds the JSON body.
+         let payload = data as { ok?: boolean; status?: LoanAccessStatus; error?: string } | null;
+         if (invokeError) {
+            const ctx = (invokeError as { context?: Response }).context;
+            payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+         }
+         if (!payload?.ok || !payload.status) {
+            setError(ERROR_COPY[payload?.error ?? ''] ?? "Couldn't send right now — please try again in a moment.");
+            if (payload?.error === 'contact_not_verified') setPage('contact');
+            return;
+         }
+         await onSubmitted(payload.status);
+      } catch (err) {
+         console.error('loan-access submit failed', err);
+         setError("Couldn't send right now — please try again in a moment.");
+      } finally {
+         setIsSending(false);
+      }
+   };
+
+   if (page === 'contact') {
+      return (
+         <ContactsStep
+            userId={userId}
+            onBack={onBack}
+            onContinue={() => {
+               setError('');
+               setPage('intro');
+            }}
+            intro={
+               <div className="flex items-start gap-3">
+                  <HeartHandshake aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-md-primary-1200" strokeWidth={1.8} />
+                  <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+                     {wasRejected
+                        ? "Want us to take another look? Reach out again and tell us what's changed."
+                        : 'Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
+                  </p>
+               </div>
+            }
+         />
+      );
+   }
+
+   return (
+      <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+         <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+            Last step: a quick hello to the team. Only Moodeng sees this — it isn&apos;t shown to lenders.
+         </p>
+
+         <label className="flex flex-col gap-2" htmlFor="connect-reason">
+            <span className="text-[15px] font-[590] leading-5 text-md-heading">What do you need a loan for?</span>
+            <textarea
+               className="min-h-[112px] w-full resize-none rounded-[12px] border border-md-neutral-600 bg-md-neutral-100 px-md-2 py-md-2 text-md-b2 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:border-md-primary-900 focus:outline-none focus:ring-2 focus:ring-md-primary-100"
+               id="connect-reason"
+               maxLength={MAX_REASON}
+               onChange={(event) => setReason(event.target.value)}
+               placeholder="e.g. Rent is due before my payday on the 15th — I work at a café in Makati."
+               value={reason}
+            />
+            <span className="self-end text-[12px] font-normal text-md-neutral-1200">
+               {trimmedReason.length < MIN_REASON ? `At least ${MIN_REASON} characters` : `${trimmedReason.length}/${MAX_REASON}`}
+            </span>
+         </label>
+
+         {referralCode ? (
+            <p className="text-[12px] font-normal text-md-neutral-1200">
+               Referral code <span className="font-[590] text-md-heading">{referralCode}</span> is on your account.
+            </p>
+         ) : null}
+
+         {error ? <p className="text-md-b3 font-normal text-md-red-500">{error}</p> : null}
+
+         <div className="mt-auto flex flex-col gap-2">
+            <button
+               className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
+                  canSend
+                     ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]'
+                     : 'bg-md-neutral-600'
+               }`}
+               disabled={!canSend}
+               onClick={handleSend}
+               type="button"
+            >
+               {isSending ? 'Sending...' : 'Send to the team'}
+            </button>
+            <button
+               className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
+               onClick={() => setPage('contact')}
+               type="button"
+            >
+               Back
+            </button>
+         </div>
+      </div>
+   );
+}
+
+// Shown instead of the application while an admin decides. Nothing to do but wait — so say so,
+// say how they'll hear back, and let them close.
+export function LoanAccessPendingCard({ onClose }: { onClose: () => void }) {
+   return (
+      <div className="flex min-h-0 flex-col items-center gap-4 overflow-y-auto overscroll-contain px-5 py-8 text-center text-md-b2 text-md-heading">
+         <span className="grid size-14 place-items-center rounded-full bg-md-primary-100">
+            <Clock3 aria-hidden="true" className="size-7 text-md-primary-1200" strokeWidth={1.8} />
+         </span>
+         <h3 className="text-[20px] font-[590] leading-6">We&apos;re reviewing your request</h3>
+         <p className="max-w-[320px] text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+            Thanks for reaching out! The team usually replies within a day. We&apos;ll message you on Messenger and send a notification the
+            moment you&apos;re approved — then you can apply right away.
+         </p>
+         <button
+            className="mt-2 w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]"
+            onClick={onClose}
+            type="button"
+         >
+            Got it
+         </button>
+      </div>
+   );
+}

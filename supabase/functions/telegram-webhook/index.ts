@@ -2,6 +2,14 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
+   answerCallback,
+   decideLoanAccess,
+   findPendingRequest,
+   parseDecisionCallback,
+   shortId,
+   stampAdminCard
+} from '../_shared/loanAccess.ts';
+import {
    closeTelegramForumTopic,
    createTelegramForumTopic,
    sendTelegramMessage
@@ -39,8 +47,16 @@ type TelegramMessage = {
    from?: TelegramUser;
 };
 
+type TelegramCallbackQuery = {
+   id: string;
+   from: TelegramUser;
+   data?: string;
+   message?: TelegramMessage;
+};
+
 type TelegramUpdate = {
    message?: TelegramMessage;
+   callback_query?: TelegramCallbackQuery;
 };
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
@@ -226,6 +242,58 @@ const handleMessengerConfirmCommand = async (supabase: SupabaseClient, message: 
    const who = [prof?.username, prof?.email].filter(Boolean).join(' · ') || pending.user_id;
    await sendTelegramMessage(chatId, `✅ Messenger verified for ${who}. Their loan request can now continue.`);
    return true;
+};
+
+const adminHandle = (from?: TelegramUser) =>
+   from?.username ? `@${from.username}` : [from?.first_name, from?.last_name].filter(Boolean).join(' ') || String(from?.id ?? 'admin');
+
+// Connect → Approve → Apply, typed form (works even if a card's buttons are gone):
+//   /approve <id or @username>   /reject <id or @username>
+// <id> is the 8-char request id printed on the admin card. Admin channels only.
+const handleLoanAccessCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/(approve|reject)(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const decision = match[1].toLowerCase() === 'approve' ? 'approved' : 'rejected';
+   const arg = (match[2] ?? '').trim();
+
+   if (!arg) {
+      await sendTelegramMessage(chatId, `Usage: /${match[1].toLowerCase()} <request id or @username>\nThe id is on the "wants to connect" card.`);
+      return true;
+   }
+
+   const request = await findPendingRequest(supabase, arg);
+   if (request === 'ambiguous') {
+      await sendTelegramMessage(chatId, `"${arg}" matches more than one pending request — use more of the id.`);
+      return true;
+   }
+   if (!request) {
+      await sendTelegramMessage(chatId, `No pending loan-access request matches "${arg}".`);
+      return true;
+   }
+
+   const result = await decideLoanAccess(supabase, request.id, decision, adminHandle(message.from));
+   await sendTelegramMessage(chatId, result.ok ? `${result.summary} (${shortId(request.id)})` : result.summary);
+   return true;
+};
+
+// The inline ✅ Approve / ❌ Reject buttons on the admin card. Honored only when the card sits in
+// an admin channel, so a forwarded card can't be tapped from anywhere else.
+const handleLoanAccessCallback = async (supabase: SupabaseClient, query: TelegramCallbackQuery, adminChatIds: string[]) => {
+   const parsed = parseDecisionCallback(query.data);
+   if (!parsed) {
+      await answerCallback(query.id, 'Unknown action.');
+      return;
+   }
+   const cardChatId = query.message?.chat.id;
+   if (!cardChatId || !adminChatIds.includes(String(cardChatId))) {
+      await answerCallback(query.id, 'Not allowed here.');
+      return;
+   }
+
+   const result = await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from));
+   await answerCallback(query.id, result.summary);
+   if (query.message) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
 };
 
 const verifyTelegramSecret = (req: Request) => {
@@ -433,6 +501,17 @@ serve(async (req) => {
    const message = update.message;
 
    try {
+      if (update.callback_query) {
+         const teamChatId = await getTeamChatId(supabase);
+         const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+         await handleLoanAccessCallback(
+            supabase,
+            update.callback_query,
+            [teamChatId, kycChatId].filter(Boolean).map(String)
+         );
+         return jsonResponse({ message: 'Callback handled' });
+      }
+
       if (!message || message.from?.is_bot) {
          return jsonResponse({ message: 'Ignored' });
       }
@@ -477,6 +556,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/confirm\b/i.test(message.text ?? '')) {
          await handleMessengerConfirmCommand(supabase, message);
          return jsonResponse({ message: 'Messenger confirm handled' });
+      }
+
+      // Connect → Approve → Apply typed decisions — either admin channel.
+      if (isAdminChannel && /^\/(approve|reject)\b/i.test(message.text ?? '')) {
+         await handleLoanAccessCommand(supabase, message);
+         return jsonResponse({ message: 'Loan access command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { CheckCircle, Facebook, MessageCircle } from 'lucide-react';
 
@@ -31,11 +31,14 @@ export default function ContactsStep({
    userId,
    onBack,
    onContinue,
+   intro,
    whatsappEnabled = WHATSAPP_VERIFY_ENABLED
 }: {
    userId: string;
    onBack: () => void;
    onContinue: () => void;
+   // Replaces the default "so we can reach you" line — ConnectStep uses it for its "let's meet" pitch.
+   intro?: ReactNode;
    // Facebook first: WhatsApp is hidden until a real business number is connected.
    whatsappEnabled?: boolean;
 }) {
@@ -125,11 +128,13 @@ export default function ContactsStep({
 
    return (
       <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-            So we can reach you if you ever need help — like withdrawing, or extending a loan.{' '}
-            {showWhatsApp ? 'Verify WhatsApp or Facebook Messenger; either one is enough.' : 'Verify your Facebook Messenger.'} Only Moodeng
-            sees this; it&apos;s never shown to lenders.
-         </p>
+         {intro ?? (
+            <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
+               So we can reach you if you ever need help — like withdrawing, or extending a loan.{' '}
+               {showWhatsApp ? 'Verify WhatsApp or Facebook Messenger; either one is enough.' : 'Verify your Facebook Messenger.'} Only Moodeng
+               sees this; it&apos;s never shown to lenders.
+            </p>
+         )}
 
          {showWhatsApp ? (
             <div className="flex flex-col gap-3 rounded-[16px] border border-[#ded6e8] bg-white p-4">
