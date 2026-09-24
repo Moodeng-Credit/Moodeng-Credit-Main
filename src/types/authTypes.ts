@@ -87,6 +87,8 @@ export interface User {
    loanAccessStatus?: LoanAccessStatus;
    /** When the borrower first saw the "you're approved" glow; null/undefined = not seen yet. */
    loanAccessSeenAt?: string;
+   /** An admin marked their last video call a no-show — the Connect screen says "we missed you". */
+   missedLastCall?: boolean;
    /** True once the borrower has proven a contact line (Messenger or WhatsApp verification). */
    hasVerifiedContact?: boolean;
    /** True once the borrower redeemed a referral code — referred borrowers skip the Connect gate. */

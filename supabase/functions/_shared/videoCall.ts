@@ -33,6 +33,30 @@ export const formatCallTime = (iso: string, timeZone?: string | null): string =>
    return `${when} (${city} time)`;
 };
 
+// Team-facing: Bangkok time, plus the borrower's own clock when it differs, so the host can say
+// "see you at 11 your time". "Fri, Sep 25, 10:00 AM (Bangkok time) · 11:00 AM their time (Manila)".
+export const formatCallTimeForTeam = (iso: string, borrowerZone?: string | null): string => {
+   const team = formatCallTime(iso, 'Asia/Bangkok');
+   if (!borrowerZone || borrowerZone === 'Asia/Bangkok') return team;
+   const clock = (zone: string, withDay: boolean) =>
+      new Date(iso).toLocaleString('en-US', {
+         timeZone: zone,
+         ...(withDay ? { weekday: 'short' as const } : {}),
+         hour: 'numeric',
+         minute: '2-digit'
+      });
+   let theirs: string;
+   try {
+      theirs = clock(borrowerZone, false);
+   } catch {
+      return team; // unknown zone name — Bangkok alone is still unambiguous
+   }
+   if (theirs === clock('Asia/Bangkok', false)) return team; // same wall clock (e.g. Jakarta)
+   const otherDay = clock(borrowerZone, true).split(' ')[0] !== clock('Asia/Bangkok', true).split(' ')[0];
+   const city = borrowerZone.split('/').pop()?.replace(/_/g, ' ') ?? borrowerZone;
+   return `${team} · ${otherDay ? clock(borrowerZone, true) : theirs} their time (${city})`;
+};
+
 const confirmCard = (title: string, token: string | null | undefined): MessengerCard | undefined =>
    token
       ? {

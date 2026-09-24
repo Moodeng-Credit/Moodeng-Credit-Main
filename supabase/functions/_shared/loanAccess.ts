@@ -16,7 +16,7 @@ import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
-import { formatCallTime } from './videoCall.ts';
+import { formatCallTimeForTeam } from './videoCall.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -98,11 +98,12 @@ export type BorrowerRow = {
    whatsapp_verified_at: string | null;
    loan_access_status: string | null;
    video_call_starts_at?: string | null;
+   video_call_timezone?: string | null;
    video_call_confirmed_at?: string | null;
 };
 
 export const BORROWER_COLUMNS =
-   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_confirmed_at';
+   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at';
 export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referral_code, channel, status, created_at';
 
 export const shortId = (id: string) => id.slice(0, 8);
@@ -157,7 +158,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       `Line: ${line}`,
       work ? `Work: ${work}` : null,
       money ? `Money: ${money}` : null,
-      isCall && borrower.video_call_starts_at ? `Call: ${formatCallTime(borrower.video_call_starts_at, 'Asia/Bangkok')}` : null,
+      isCall && borrower.video_call_starts_at ? `Call: ${formatCallTimeForTeam(borrower.video_call_starts_at, borrower.video_call_timezone)}` : null,
       referral ? `Referral: ${referral}` : null,
       `Why: ${request.reason?.trim() || '—'}`,
       '',

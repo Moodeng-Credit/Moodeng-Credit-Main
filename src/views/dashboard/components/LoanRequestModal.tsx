@@ -2146,6 +2146,7 @@ export default function LoanRequestModal({
                   displayName={currentBorrowerDisplayName}
                   referralCode={appliedReferral?.code}
                   wasRejected={loanAccessStatus === 'rejected'}
+                  missedCall={loanAccessStatus === 'none' && Boolean(user.missedLastCall)}
                   mode={connectMode}
                   withEmma={hasReferral}
                   needsAbout={!user.incomeType}

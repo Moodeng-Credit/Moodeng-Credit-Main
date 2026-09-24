@@ -127,6 +127,28 @@ George's generated cutouts: stray crop scraps removed, trimmed, and 480px tall (
 display size). `call` and `approved` keep a slight hard edge on the right from the generator's crop,
 so regenerate them with more margin if it bothers anyone.
 
+## 3c. Time zones & timing (like Calendly)
+
+- **Borrower always sees their own time.** The booking screen reads the phone's time zone
+  (shown as "Your time zone · Manila (GMT+8)"), and the slots, booked card and waiting screen all
+  show the borrower's local time. Cal.com's email invite uses it too (the attendee zone is sent).
+- **Messenger / Telegram / push reminders** use the zone saved at booking
+  (`users.video_call_timezone`): "Fri, Sep 25, 11:00 AM (Manila time)".
+- **Team cards** (booking ping, admin card, "did they show up?") show Bangkok time plus the
+  borrower's clock when it differs: "10:00 AM (Bangkok time) · 11:00 AM their time (Manila)".
+- **Stored in UTC.** The booking is sent to Cal.com and stored in UTC. The pre-booking re-check
+  looks a day either side, so an early-morning slot in Manila (the previous UTC day) isn't
+  wrongly reported as taken.
+- **Reminder ladder** (cron every 15 min):
+  - day-before, except when booked less than 20h ahead, since the booking confirmation already
+    covers it;
+  - about 1h before;
+  - admin "did they show up?" 20–35 min after the start.
+- **Cal.com webhook echo.** Cal.com's echo of our own booking no longer restarts reminders. Only a
+  real time change (reschedule) does, and it also clears the old "I'll be there" confirmation.
+- **After the call** (start + 30 min), the waiting screen says "Thanks for joining!" and hides Join.
+- **After a no-show**, the borrower sees "We missed you!" with the "oops" hippo and rebooks.
+
 ## 4. What's in the branch (files)
 
 **Database**: `supabase/migrations/20260924000000_loan_access_gate.sql` (one migration):

@@ -99,6 +99,13 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
       expect(container.textContent).toContain('Messenger');
    });
 
+   it('welcomes a borrower who missed their call back with a "pick a new time" pitch', async () => {
+      await render({ missedCall: true, mode: 'call', withEmma: true });
+      expect(container.textContent).toContain('We missed you!');
+      expect(container.textContent).toContain('Pick a new time for your 15-min call with Emma');
+      expect(container.querySelector('img')?.getAttribute('src')).toBe('/hippos/connect/missed.png');
+   });
+
    it('shows the reach-out-again copy for a previously rejected borrower', async () => {
       await render({ wasRejected: true });
       expect(container.textContent).toContain('take another look');
@@ -254,7 +261,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
    it('shows the booked time and this meeting\u2019s own join link on the waiting screen', async () => {
       supa.state.usersRow = {
          ...supa.state.usersRow,
-         video_call_starts_at: '2026-09-25T03:00:00.000Z',
+         video_call_starts_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
          video_call_join_url: 'https://us06web.zoom.us/j/123'
       } as typeof supa.state.usersRow;
       await act(async () => {
@@ -266,6 +273,23 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(container.textContent).toContain('Say hi to Emma on Facebook');
       const join = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Join the meeting');
       expect(join?.getAttribute('href')).toBe('https://us06web.zoom.us/j/123');
+   });
+
+   it('flips to "thanks for joining" (no Join button) once the call is over', async () => {
+      supa.state.usersRow = {
+         ...supa.state.usersRow,
+         video_call_starts_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+         video_call_join_url: 'https://us06web.zoom.us/j/123'
+      } as typeof supa.state.usersRow;
+      await act(async () => {
+         root.render(createElement(LoanAccessPendingCard, { onClose: vi.fn(), mode: 'call', withEmma: true, userId: 'user-1' }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain('Thanks for joining!');
+      expect(container.textContent).not.toContain('See you on the call');
+      expect(Array.from(container.querySelectorAll('a')).some((a) => a.textContent === 'Join the meeting')).toBe(false);
    });
 
    it('shows the "see you on the call" pending card in call mode', async () => {

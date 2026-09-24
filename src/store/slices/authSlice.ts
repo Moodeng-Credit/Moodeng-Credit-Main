@@ -215,6 +215,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    userRole: row.user_role ?? undefined,
    loanAccessStatus: (row as UserRow & { loan_access_status?: LoanAccessStatus | null }).loan_access_status ?? undefined,
    loanAccessSeenAt: (row as UserRow & { loan_access_seen_at?: string | null }).loan_access_seen_at ?? undefined,
+   missedLastCall: (row as UserRow & { video_call_outcome?: string | null }).video_call_outcome === 'no_show',
    hasReferral: Boolean(row.redeemed_referral_code_id),
    hasVerifiedContact: Boolean(
       (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at ||

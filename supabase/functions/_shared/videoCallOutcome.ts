@@ -19,7 +19,7 @@ import {
    who
 } from './loanAccess.ts';
 import { sendTelegramMessage } from './telegram.ts';
-import { formatCallTime } from './videoCall.ts';
+import { formatCallTimeForTeam } from './videoCall.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -67,7 +67,7 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
          : 'Their loan request is already on the board (open flow).';
    const lines = [
       `📞 Did ${who(user, request?.display_name)} show up?`,
-      `Call was: ${formatCallTime(user.video_call_starts_at, 'Asia/Bangkok')}`,
+      `Call was: ${formatCallTimeForTeam(user.video_call_starts_at, user.video_call_timezone)}`,
       user.video_call_confirmed_at ? "They'd tapped ✅ I'll be there." : "They never confirmed on Messenger.",
       request ? 'Showed up = they can apply for a loan now. No-show = they have to book again.' : noRequestNote
    ];

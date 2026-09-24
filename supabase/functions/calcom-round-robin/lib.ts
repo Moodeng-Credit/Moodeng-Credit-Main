@@ -50,3 +50,12 @@ export const preferSoonSlots = (slots: string[], now: number, windowHours = 22, 
    });
    return soon.length >= minCount ? soon : slots;
 };
+
+// Date range for re-checking one slot right before booking. Cal.com reads date-only bounds in the
+// borrower's time zone, so the slot's UTC date alone can miss it (7:00 AM Manila is the previous
+// day in UTC). A day either side covers every zone on Earth (±14h).
+export const recheckRange = (start: string): { from: string; to: string } => {
+   const t = Date.parse(start);
+   const day = 86400000;
+   return { from: new Date(t - day).toISOString().slice(0, 10), to: new Date(t + 2 * day).toISOString().slice(0, 10) };
+};

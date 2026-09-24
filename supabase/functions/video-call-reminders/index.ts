@@ -5,7 +5,8 @@ import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import type { PushLocale, PushPayload } from '../_shared/pushMessages.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
-import { sendReminderMessenger } from '../_shared/videoCall.ts';
+import { formatCallTime, sendReminderMessenger } from '../_shared/videoCall.ts';
+import { skipsDayBeforeReminder } from './lib.ts';
 
 // Cron-driven (every 15 min) reminders for booked video calls, so borrowers actually show up.
 // Rungs per booking, deduped by users.video_call_reminder_stage (0 none, 1 day-before,
@@ -41,6 +42,7 @@ type ReminderUser = {
    notif_account_activity: boolean | null;
    messenger_psid: string | null;
    video_call_starts_at: string;
+   video_call_scheduled_at: string | null;
    video_call_timezone: string | null;
    video_call_join_url: string | null;
    video_call_host: string | null;
@@ -70,7 +72,7 @@ serve(async (req) => {
    const { data, error } = await svc
       .from('users')
       .select(
-         'id, username, chat_id, notif_account_activity, messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_reminder_stage'
+         'id, username, chat_id, notif_account_activity, messenger_psid, video_call_host, video_call_starts_at, video_call_scheduled_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_reminder_stage'
       )
       .not('video_call_starts_at', 'is', null)
       .gt('video_call_starts_at', nowIso)
@@ -95,10 +97,19 @@ serve(async (req) => {
       const targetStage = minutesUntil <= SOON_MINUTES ? 2 : minutesUntil <= DAY_MINUTES ? 1 : 0;
       if (targetStage <= stage) continue;
 
+      // Booked for later today: the booking confirmation just went out, so a "coming up" nudge 15 min
+      // later is noise. Mark the rung done silently — the hour-before reminder still fires.
+      if (targetStage === 1 && skipsDayBeforeReminder(u.video_call_scheduled_at, startsAt)) {
+         await svc.from('users').update({ video_call_reminder_stage: 1 }).eq('id', u.id).lt('video_call_reminder_stage', 1);
+         continue;
+      }
+
       const soon = targetStage === 2;
       const title = soon ? 'Your Moodeng call is starting soon' : 'Reminder: your Moodeng video call';
-      const when = soon ? 'in under an hour' : 'coming up in the next day';
-      const body = `Your quick video hello with the Moodeng team is ${when}. Tap for the details and link.`;
+      // Their own clock, from the zone saved at booking: "Fri, Sep 25, 11:00 AM (Manila time)".
+      const at = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+      const when = soon ? 'starting in under an hour' : 'coming up';
+      const body = `Your quick video hello with the Moodeng team is ${when}: ${at}. Tap for the details and link.`;
       const url = `${SITE_URL}/request-board`;
 
       // Web push — borrowers opt in by subscribing, so a booked call is fair game to remind on.

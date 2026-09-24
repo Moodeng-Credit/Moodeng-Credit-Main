@@ -25,6 +25,8 @@ import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 // option cards, gradient CTA — one short line per idea instead of paragraphs.
 
 const MIN_REASON = 10;
+// The call is 15 min; after start + 30 the waiting screen stops saying "see you on the call".
+const CALL_OVER_AFTER_MS = 30 * 60 * 1000;
 const MAX_REASON = 500;
 
 // Tap to start the sentence — most borrowers need one of these, and typing on a phone is friction.
@@ -43,6 +45,7 @@ export default function ConnectStep({
    displayName,
    referralCode,
    wasRejected = false,
+   missedCall = false,
    mode = 'approval',
    withEmma = false,
    needsAbout = false,
@@ -54,6 +57,8 @@ export default function ConnectStep({
    displayName: string;
    referralCode?: string;
    wasRejected?: boolean;
+   // An admin marked their last call a no-show: same path, but a friendly "let's pick a new time".
+   missedCall?: boolean;
    mode?: 'approval' | 'call';
    // Referred borrowers: the call is Emma's setup call (local exchange — deposit, cash out, repay).
    withEmma?: boolean;
@@ -125,17 +130,19 @@ export default function ConnectStep({
             }}
             intro={
                <ConnectHero
-                  image={wasRejected ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
+                  image={wasRejected || missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
                   subtitle={
                      wasRejected
                         ? "Want us to take another look? Reach out again and tell us what's changed."
-                        : withEmma
+                        : missedCall
+                          ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
+                          : withEmma
                           ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
                           : mode === 'call'
                             ? 'We meet every borrower on a quick 15-min video call before their first loan.'
                             : 'Before your first loan, we like to meet every borrower — we approve within a day.'
                   }
-                  title={wasRejected ? 'Welcome back' : "Glad you're here!"}
+                  title={wasRejected ? 'Welcome back' : missedCall ? 'We missed you!' : "Glad you're here!"}
                   trail={trail('contact')}
                />
             }
@@ -284,19 +291,40 @@ export function LoanAccessPendingCard({
          cancelled = true;
       };
    }, [mode, userId]);
+   // Shown in the device's own time zone ("your local time"), like Calendly.
    const meetingDay = meeting?.startsAt ? new Date(meeting.startsAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : null;
    const meetingTime = meeting?.startsAt ? new Date(meeting.startsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
+
+   // Re-evaluated every minute so an open screen flips to "thanks for joining" once the call is over
+   // (15-min call + grace) instead of still saying "see you" with a Join button.
+   const [now, setNow] = useState(() => Date.now());
+   useEffect(() => {
+      const timer = window.setInterval(() => setNow(Date.now()), 60_000);
+      return () => window.clearInterval(timer);
+   }, []);
+   const startsMs = meeting?.startsAt ? Date.parse(meeting.startsAt) : NaN;
+   const callOver = mode === 'call' && !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
 
    return (
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
          <ConnectHero
             image={CONNECT_HIPPOS.waiting}
             subtitle={
-               mode === 'call'
-                  ? 'Thank you for confirming! You can apply right after the call.'
-                  : 'Thanks for reaching out! We usually reply within a day on Messenger.'
+               callOver
+                  ? 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
+                  : mode === 'call'
+                    ? 'Thank you for confirming! You can apply right after the call.'
+                    : 'Thanks for reaching out! We usually reply within a day on Messenger.'
             }
-            title={mode === 'call' ? (withEmma ? 'See you on the call with Emma' : 'See you on the call') : 'We’re reviewing your request'}
+            title={
+               callOver
+                  ? 'Thanks for joining!'
+                  : mode === 'call'
+                    ? withEmma
+                       ? 'See you on the call with Emma'
+                       : 'See you on the call'
+                    : 'We’re reviewing your request'
+            }
          />
 
          {mode === 'call' ? (
@@ -314,7 +342,7 @@ export function LoanAccessPendingCard({
                   ) : (
                      <span className="text-[15px] text-[#7b6b8c]">Your time is in your email</span>
                   )}
-                  {meeting?.joinUrl ? (
+                  {meeting?.joinUrl && !callOver ? (
                      <a
                         className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.35)] active:scale-[0.98]"
                         href={meeting.joinUrl}

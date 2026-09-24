@@ -65,15 +65,31 @@ serve(async (req) => {
          console.error('calcom-webhook: booking with no moodeng_user_id metadata', booking.triggerEvent);
          return jsonResponse({ ok: true });
       }
+      // Our own booking (calcom-round-robin) already stamped this exact time, and Cal.com then echoes
+      // BOOKING_CREATED — possibly late or retried. Only a genuinely new time restarts the reminder
+      // ladder and clears the old "I'll be there" / attendance; an echo must not re-send reminders.
+      const { data: current } = await supabase
+         .from('users')
+         .select('video_call_starts_at')
+         .eq('id', booking.userId)
+         .maybeSingle();
+      const currentMs = Date.parse((current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? '');
+      const timeMoved = !booking.startsAt || currentMs !== Date.parse(booking.startsAt);
       const { error } = await supabase
          .from('users')
          .update({
-            video_call_scheduled_at: new Date().toISOString(),
             video_call_host: booking.host,
             video_call_starts_at: booking.startsAt,
             video_call_booking_uid: booking.bookingUid,
-            // New or moved time → restart the reminder ladder and the "did they show up?" prompt.
-            video_call_reminder_stage: 0,
+            ...(timeMoved
+               ? {
+                    video_call_scheduled_at: new Date().toISOString(),
+                    video_call_reminder_stage: 0,
+                    video_call_confirmed_at: null,
+                    video_call_outcome: null,
+                    video_call_outcome_at: null
+                 }
+               : {}),
             // Keep the join link in step with the (possibly moved) booking — never show a stale one.
             ...(booking.joinUrl ? { video_call_join_url: booking.joinUrl } : {})
          })

@@ -2,8 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
-import { newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
-import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots } from './lib.ts';
+import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
+import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange } from './lib.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -97,16 +97,13 @@ const createBooking = async (
 // Best-effort team alert when a call is booked — on top of the Cal.com calendar invite the hosts
 // already get. Posts to Telegram and/or Discord only if their env is set, and never throws into the
 // booking flow (a failed ping must not fail the booking).
-const notifyTeamBooking = async (hostId: string, start: string, attendee: { name: string; email: string }, tgChat: string) => {
-   const whenBkk = new Date(start).toLocaleString('en-US', {
-      timeZone: 'Asia/Bangkok',
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-   });
-   const text = `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${whenBkk} (Bangkok)`;
+const notifyTeamBooking = async (
+   hostId: string,
+   start: string,
+   attendee: { name: string; email: string; timeZone: string },
+   tgChat: string
+) => {
+   const text = `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}`;
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
    // caller — never the lender or support group.
@@ -171,23 +168,28 @@ serve(async (req) => {
    }
 
    if (payload.action === 'slots') {
-      const start = ymd(new Date());
+      // From yesterday's UTC date: Cal.com reads date-only bounds in the borrower's zone, and it
+      // never returns past times anyway — so this can't lose "later today" for anyone.
+      const start = ymd(new Date(Date.now() - 86400000));
       const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
       const perHost = await Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone)));
       return json({ slots: preferSoonSlots(mergeSlots(perHost), Date.now()) });
    }
 
    if (payload.action === 'book') {
-      const start = payload.start;
-      if (!start) return json({ error: 'missing_start' }, 400);
+      // Slots arrive with the borrower's offset (…T07:00:00.000+08:00); book and store the instant in
+      // UTC so Cal.com, the database and every reminder agree on one unambiguous time.
+      const startMs = payload.start ? Date.parse(payload.start) : NaN;
+      if (Number.isNaN(startMs)) return json({ error: 'missing_start' }, 400);
+      if (startMs <= Date.now()) return json({ ok: false, error: 'slot_taken' });
+      const start = new Date(startMs).toISOString();
 
       // Re-check who's actually free at this instant right now (availability may have moved).
-      const day = ymd(new Date(Date.parse(start)));
-      const nextDay = ymd(new Date(Date.parse(start) + 86400000));
+      const range = recheckRange(start);
       const perHostMap: Record<string, string[]> = {};
       await Promise.all(
          resolved.map(async (h) => {
-            perHostMap[h.id] = await fetchSlots(h.apiKey, h.eventTypeId, day, nextDay, timeZone);
+            perHostMap[h.id] = await fetchSlots(h.apiKey, h.eventTypeId, range.from, range.to, timeZone);
          })
       );
       const free = hostsFreeAt(start, perHostMap);
