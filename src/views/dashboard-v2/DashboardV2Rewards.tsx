@@ -201,13 +201,16 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
 
    return (
       <div
-         className="fixed inset-0 z-[80] flex items-end justify-center"
+         className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 sm:items-center sm:px-5"
          role="dialog"
          aria-modal="true"
          aria-labelledby="dv2-share-title"
          onClick={onClose}
       >
-         <div className="relative w-full max-w-[440px] rounded-t-[28px] bg-white pb-8 pt-5" onClick={(event) => event.stopPropagation()}>
+         <div
+            className="relative w-full max-w-[440px] rounded-t-[28px] bg-white pb-8 pt-5 sm:rounded-[28px] sm:pb-6"
+            onClick={(event) => event.stopPropagation()}
+         >
             <div className="flex items-center justify-between px-5">
                <h2 id="dv2-share-title" className="text-[20px] font-medium text-[#594d65]">
                   Share
@@ -216,7 +219,11 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
                   <DesignImage src={DASHBOARD_V2_ASSETS.shareClose} className="h-4 w-4" />
                </button>
             </div>
-            <div ref={rowRef} className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1 pr-16" style={{ scrollbarWidth: 'none' }}>
+            <div
+               ref={rowRef}
+               className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1 pr-16 sm:justify-between sm:gap-0 sm:overflow-visible sm:px-5"
+               style={{ scrollbarWidth: 'none' }}
+            >
                {SHARE_TARGETS.map((target) =>
                   target.id === 'embed' ? (
                      <button
@@ -245,7 +252,7 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
             <button
                type="button"
                onClick={() => rowRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-               className="absolute right-2 top-[62px] h-[52px] w-[52px]"
+               className="absolute right-2 top-[62px] h-[52px] w-[52px] sm:hidden"
                aria-label="More share options"
             >
                <DesignImage src={DASHBOARD_V2_ASSETS.shareNext} className="h-[52px] w-[52px]" />
