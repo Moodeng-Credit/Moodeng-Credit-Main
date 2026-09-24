@@ -5,16 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useReadContract } from 'wagmi';
 
-import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
-
-import { type LocaleCode, useLocalization } from '@/i18n';
-import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
+import { type LocaleCode, useLocalization } from '@/i18n';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
+import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
 
 // The borrower's "money home" — a GCash/Atome-style balance card, deliberately NOT a
 // crypto wallet screen. Big balance up top, one plain action (Cash out — Repay lives on the
@@ -158,8 +157,7 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
 
 const shortenAddress = (address: string) => (address.length > 12 ? `${address.slice(0, 6)}…${address.slice(-4)}` : address);
 
-const formatUsd = (value: number) =>
-   value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatUsd = (value: number) => value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // DEV-only: lets the /account-wallet-preview route render the real card with mock data,
 // so the design can be reviewed without a logged-in, wallet-locked borrower. No effect in prod.
@@ -228,10 +226,6 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
       }
    }, [balance, address, isInstant, previewAddress, phpRate.value, showToast, copy.moneyArrivedTitle, copy.moneyArrivedBody]);
 
-   // Instant wallet only. No wallet → the Account header's "Set up wallet" button handles it;
-   // Base Account borrowers manage money in their own wallet app, so no card for them either.
-   if (!address || !isInstant) return null;
-
    // Clear the "Copied ✓" reset timer if the card unmounts before it fires.
    useEffect(
       () => () => {
@@ -239,6 +233,10 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
       },
       []
    );
+
+   // Instant wallet only. No wallet → the Account header's "Set up wallet" button handles it;
+   // Base Account borrowers manage money in their own wallet app, so no card for them either.
+   if (!address || !isInstant) return null;
 
    const copyAddress = async () => {
       try {
@@ -257,7 +255,19 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
       <div className="flex flex-col">
          {/* Balance hero — reads as "here's your money", GCash/Atome style. */}
          <div className="relative z-10 rounded-[20px] bg-gradient-to-br from-[#7B5FFF] to-[#6010D2] p-5 text-white shadow-[0_14px_40px_rgba(96,16,210,0.28)]">
-            <p className="text-md-b3 font-medium text-white/80">{copy.availableBalance}</p>
+            <div className="flex items-center justify-between gap-3">
+               <p className="text-md-b3 font-medium text-white/80">{copy.availableBalance}</p>
+               {/* Wallet details — the crypto plumbing, kept to a quiet pill in the card's corner so
+                   it never fronts a non-crypto borrower or adds height under the card. */}
+               <button
+                  type="button"
+                  onClick={() => setShowDetails(true)}
+                  aria-haspopup="dialog"
+                  className="-my-1 rounded-full bg-white/15 px-3 py-1 text-md-b3 font-semibold text-white/90 transition-colors hover:bg-white/25"
+               >
+                  {copy.details}
+               </button>
+            </div>
             <div className="mt-1 flex items-baseline gap-1">
                <span className="text-[40px] font-bold leading-none tracking-[-0.02em]">
                   {balance == null ? (isLoading ? '—' : '0.00') : formatUsd(balance)}
@@ -292,90 +302,72 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
             </div>
          </div>
 
-         {/* Wallet details — the crypto plumbing, deliberately folded away so it never fronts
-             a non-crypto borrower. Tucked under the card like an attached drawer (inset +
-             pulled up behind it) so card and details read as one object. */}
-         <div className="mx-3 -mt-3 overflow-hidden rounded-b-[16px] border border-t-0 border-md-neutral-400 bg-white pt-3 dark:bg-md-neutral-200">
-            <button
-               type="button"
-               onClick={() => setShowDetails((v) => !v)}
-               aria-expanded={showDetails}
-               className="flex w-full items-center justify-between px-md-4 py-md-3 text-left"
-            >
-               <span className="text-md-b2 font-medium text-md-neutral-1200">{copy.details}</span>
+         {/* Wallet details sheet — same bottom-sheet pattern as Add money. */}
+         {showDetails ? (
+            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={() => setShowDetails(false)}>
                <div
-                  className="h-5 w-5 shrink-0 bg-md-neutral-800 transition-transform duration-200"
-                  style={{
-                     WebkitMaskImage: "url('/icons/chevron-down.svg')",
-                     maskImage: "url('/icons/chevron-down.svg')",
-                     WebkitMaskRepeat: 'no-repeat',
-                     maskRepeat: 'no-repeat',
-                     WebkitMaskPosition: 'center',
-                     maskPosition: 'center',
-                     WebkitMaskSize: 'contain',
-                     maskSize: 'contain',
-                     transform: showDetails ? 'rotate(180deg)' : 'rotate(0deg)'
-                  }}
-               />
-            </button>
-
-            {showDetails ? (
-               <div className="flex flex-col gap-md-3 border-t border-md-neutral-400 px-md-4 py-md-3">
-                  <div className="flex items-center justify-between gap-3">
-                     <span className="text-md-b3 font-medium text-md-neutral-700">{copy.walletType}</span>
-                     <span className="text-md-b2 font-semibold text-md-heading">{copy.instantWallet}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                     <span className="text-md-b3 font-medium text-md-neutral-700">{copy.address}</span>
-                     <button
-                        type="button"
-                        onClick={copyAddress}
-                        className="flex items-center gap-1.5 text-md-b2 font-semibold text-md-heading"
-                        title={justCopied ? copy.copied : copy.copyAddress}
-                     >
-                        <span className="font-mono">{shortenAddress(address)}</span>
-                        <span
-                           className="h-4 w-4 bg-md-primary-1200 dark:bg-md-primary-500"
-                           style={{
-                              WebkitMaskImage: `url('${justCopied ? '/icons/check-fill.svg' : '/icons/copy.svg'}')`,
-                              maskImage: `url('${justCopied ? '/icons/check-fill.svg' : '/icons/copy.svg'}')`,
-                              WebkitMaskRepeat: 'no-repeat',
-                              maskRepeat: 'no-repeat',
-                              WebkitMaskPosition: 'center',
-                              maskPosition: 'center',
-                              WebkitMaskSize: 'contain',
-                              maskSize: 'contain'
-                           }}
-                        />
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={copy.details}
+                  className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white dark:bg-[#1a1425]"
+                  onClick={(e) => e.stopPropagation()}
+               >
+                  <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-5 py-md-3">
+                     <h2 className="text-md-h5 font-semibold text-md-heading dark:text-white">{copy.details}</h2>
+                     <button type="button" onClick={() => setShowDetails(false)} className="text-md-b1 font-semibold text-md-primary-900">
+                        {copy.done}
                      </button>
                   </div>
-                  {isInstant ? (
-                     <div className="pt-1">
-                        <ExportInstantWalletKey />
+                  <div className="flex flex-col gap-md-3 px-md-5 py-md-4 pb-[calc(env(safe-area-inset-bottom,0px)+20px)]">
+                     <div className="flex items-center justify-between gap-3">
+                        <span className="text-md-b3 font-medium text-md-neutral-700">{copy.walletType}</span>
+                        <span className="text-md-b2 font-semibold text-md-heading">{copy.instantWallet}</span>
                      </div>
-                  ) : null}
+                     <div className="flex items-center justify-between gap-3">
+                        <span className="text-md-b3 font-medium text-md-neutral-700">{copy.address}</span>
+                        <button
+                           type="button"
+                           onClick={copyAddress}
+                           className="flex items-center gap-1.5 text-md-b2 font-semibold text-md-heading"
+                           title={justCopied ? copy.copied : copy.copyAddress}
+                        >
+                           <span className="font-mono">{shortenAddress(address)}</span>
+                           <span
+                              className="h-4 w-4 bg-md-primary-1200 dark:bg-md-primary-500"
+                              style={{
+                                 WebkitMaskImage: `url('${justCopied ? '/icons/check-fill.svg' : '/icons/copy.svg'}')`,
+                                 maskImage: `url('${justCopied ? '/icons/check-fill.svg' : '/icons/copy.svg'}')`,
+                                 WebkitMaskRepeat: 'no-repeat',
+                                 maskRepeat: 'no-repeat',
+                                 WebkitMaskPosition: 'center',
+                                 maskPosition: 'center',
+                                 WebkitMaskSize: 'contain',
+                                 maskSize: 'contain'
+                              }}
+                           />
+                        </button>
+                     </div>
+                     {isInstant ? (
+                        <div className="pt-1">
+                           <ExportInstantWalletKey />
+                        </div>
+                     ) : null}
+                  </div>
                </div>
-            ) : null}
-         </div>
+            </div>
+         ) : null}
 
          {/* Add money — the cash-in path. Same copy-address pattern the repay top-up helper
              uses, framed in plain money words. One quiet reassurance line, not a paragraph. */}
          {showAddMoney ? (
-            <div
-               className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50"
-               onClick={() => setShowAddMoney(false)}
-            >
+            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={() => setShowAddMoney(false)}>
                <div
                   className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white dark:bg-[#1a1425]"
                   onClick={(e) => e.stopPropagation()}
                >
                   <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-5 py-md-3">
                      <h2 className="text-md-h5 font-semibold text-md-heading dark:text-white">{copy.addMoney}</h2>
-                     <button
-                        type="button"
-                        onClick={() => setShowAddMoney(false)}
-                        className="text-md-b1 font-semibold text-md-primary-900"
-                     >
+                     <button type="button" onClick={() => setShowAddMoney(false)} className="text-md-b1 font-semibold text-md-primary-900">
                         {copy.done}
                      </button>
                   </div>
