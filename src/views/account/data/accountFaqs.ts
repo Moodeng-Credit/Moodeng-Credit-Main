@@ -109,7 +109,7 @@ If they borrow below their limit, it is a Trust-Building Loan instead. That does
       question: 'How do I fund a loan?',
       answer: `Go to the Request Board and browse open loan requests. Each request shows the borrower's stats, credit limit, requested amount, and repayment term.
 
-When you find one you want to fund, tap Fund and confirm. The USDC leaves your Instant Wallet (or your Base Account, if you connected one) immediately and goes directly to the borrower's wallet — no middleman, no delay.
+When you find one you want to fund, tap Fund and confirm. The USDC leaves your wallet (usually your Base Account, or your Instant Wallet if you use one) immediately and goes directly to the borrower's wallet — no middleman, no delay.
 
 You can track all your active loans and repayment statuses from your Lender Dashboard.`
    },
@@ -118,7 +118,7 @@ You can track all your active loans and repayment statuses from your Lender Dash
       question: 'When do I get repaid?',
       answer: `The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
 
-Once the loan is due, the borrower repays directly to your wallet — your Instant Wallet, or your Base Account if you connected one. You can track the status of all your active loans on your Lender Dashboard.`
+Once the loan is due, the borrower repays directly to your wallet — usually your Base Account (or your Instant Wallet, if you use one). You can track the status of all your active loans on your Lender Dashboard.`
    }
 ];
 
@@ -220,7 +220,7 @@ Kung mas mababa sa limit ang hiniram nila, Trust-Building Loan iyon. Hindi iyon 
       question: 'Paano ako magfa-fund ng loan?',
       answer: `Pumunta sa Request Board at tingnan ang open loan requests. Ipinapakita ng bawat request ang stats ng borrower, credit limit, requested amount, at repayment term.
 
-Kapag may nakita kang gusto mong pondohan, i-tap ang Fund at i-confirm. Aalis agad ang USDC mula sa Instant Wallet mo (o sa Base Account mo, kung iyon ang ikinonekta mo) at diretsong pupunta sa wallet ng borrower. Walang middleman at walang delay.
+Kapag may nakita kang gusto mong pondohan, i-tap ang Fund at i-confirm. Aalis agad ang USDC mula sa wallet mo (kadalasan ang Base Account mo, o ang Instant Wallet mo kung iyon ang gamit mo) at diretsong pupunta sa wallet ng borrower. Walang middleman at walang delay.
 
 Makikita mo ang lahat ng active loans at repayment statuses mo sa Lender Dashboard.`
    },
@@ -229,7 +229,7 @@ Makikita mo ang lahat ng active loans at repayment statuses mo sa Lender Dashboa
       question: 'Kailan ako mababayaran?',
       answer: `Ang due date ay sine-set ng borrower kapag nag-post sila ng request. Makikita mo ito nang malinaw sa loan card bago ka mag-fund, kaya alam mo agad ang timeline.
 
-Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa wallet mo — sa Instant Wallet mo, o sa Base Account mo kung iyon ang ikinonekta mo. Makikita mo ang status ng lahat ng active loans mo sa Lender Dashboard.`
+Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Makikita mo ang status ng lahat ng active loans mo sa Lender Dashboard.`
    }
 ];
 
@@ -331,7 +331,7 @@ Jika mereka meminjam di bawah limit, itu adalah Trust-Building Loan. Itu tidak m
       question: 'Bagaimana cara mendanai pinjaman?',
       answer: `Buka Papan Permintaan dan lihat permintaan pinjaman yang terbuka. Setiap permintaan menunjukkan statistik peminjam, credit limit, jumlah yang diminta, dan tenor pembayaran.
 
-Saat menemukan pinjaman yang ingin kamu danai, tap Danai dan konfirmasi. USDC langsung keluar dari Instant Wallet kamu (atau Base Account kamu, jika kamu menghubungkannya) dan masuk langsung ke wallet peminjam. Tidak ada perantara dan tidak ada penundaan.
+Saat menemukan pinjaman yang ingin kamu danai, tap Danai dan konfirmasi. USDC langsung keluar dari wallet kamu (biasanya Base Account kamu, atau Instant Wallet kamu jika kamu memakainya) dan masuk langsung ke wallet peminjam. Tidak ada perantara dan tidak ada penundaan.
 
 Kamu bisa melacak semua pinjaman aktif dan status pembayaran dari Lender Dashboard.`
    },
@@ -340,7 +340,7 @@ Kamu bisa melacak semua pinjaman aktif dan status pembayaran dari Lender Dashboa
       question: 'Kapan saya dibayar kembali?',
       answer: `Tanggal jatuh tempo ditentukan oleh peminjam saat mereka membuat permintaan. Kamu akan melihatnya dengan jelas di kartu pinjaman sebelum mendanai, jadi timeline selalu jelas sejak awal.
 
-Saat pinjaman jatuh tempo, peminjam membayar langsung ke wallet kamu — Instant Wallet kamu, atau Base Account kamu jika kamu menghubungkannya. Kamu bisa melacak status semua pinjaman aktif di Lender Dashboard.`
+Saat pinjaman jatuh tempo, peminjam membayar langsung ke wallet kamu — biasanya Base Account kamu (atau Instant Wallet kamu, jika kamu memakainya). Kamu bisa melacak status semua pinjaman aktif di Lender Dashboard.`
    }
 ];
 
@@ -432,14 +432,14 @@ const THAI_LENDER_FAQS: AccountFAQItem[] = [
       question: 'ฉันจะให้ทุนเงินกู้ได้อย่างไร?',
       answer: `ไปที่กระดานคำขอและดูคำขอเงินกู้ที่เปิดอยู่ แต่ละคำขอจะแสดงสถิติผู้ยืม วงเงิน จำนวนเงินที่ต้องการ และเงื่อนไขการชำระคืน
 
-เมื่อพบคำขอที่ต้องการ ให้แตะ Fund และยืนยัน USDC จะออกจาก Instant Wallet ของคุณ (หรือ Base Account หากคุณเชื่อมต่อไว้) ไปยังกระเป๋าของผู้ยืมโดยตรง`
+เมื่อพบคำขอที่ต้องการ ให้แตะ Fund และยืนยัน USDC จะออกจากกระเป๋าของคุณ (ปกติคือ Base Account หรือ Instant Wallet หากคุณใช้) ไปยังกระเป๋าของผู้ยืมโดยตรง`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'ฉันจะได้รับชำระคืนเมื่อไหร่?',
       answer: `วันครบกำหนดถูกกำหนดโดยผู้ยืมเมื่อโพสต์คำขอ คุณจะเห็นชัดเจนบนการ์ดเงินกู้ก่อนให้ทุน
 
-เมื่อถึงกำหนด ผู้ยืมจะชำระคืนตรงเข้ากระเป๋าของคุณ (Instant Wallet หรือ Base Account หากคุณเชื่อมต่อไว้) และคุณติดตามสถานะได้จาก Lender Dashboard`
+เมื่อถึงกำหนด ผู้ยืมจะชำระคืนตรงเข้ากระเป๋าของคุณ (ปกติคือ Base Account หรือ Instant Wallet หากคุณใช้) และคุณติดตามสถานะได้จาก Lender Dashboard`
    }
 ];
 
@@ -531,14 +531,14 @@ Mỗi người chỉ xác minh được một tài khoản, nên hồ sơ và l�
       question: 'Tôi cấp vốn cho khoản vay bằng cách nào?',
       answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị thống kê người vay, hạn mức, số tiền yêu cầu và kỳ hạn trả.
 
-Khi thấy khoản muốn cấp vốn, bấm Fund và xác nhận. USDC rời Instant Wallet của bạn (hoặc Base Account nếu bạn đã kết nối) ngay lập tức và đi thẳng đến ví của người vay.`
+Khi thấy khoản muốn cấp vốn, bấm Fund và xác nhận. USDC rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đi thẳng đến ví của người vay.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Khi nào tôi được trả?',
       answer: `Ngày đến hạn do người vay đặt khi đăng yêu cầu. Bạn sẽ thấy rõ trên thẻ khoản vay trước khi cấp vốn.
 
-Khi khoản vay đến hạn, người vay trả trực tiếp về ví của bạn — Instant Wallet, hoặc Base Account nếu bạn đã kết nối. Bạn có thể theo dõi trạng thái các khoản vay đang hoạt động trong Lender Dashboard.`
+Khi khoản vay đến hạn, người vay trả trực tiếp về ví của bạn — thường là Base Account (hoặc Instant Wallet, nếu bạn dùng). Bạn có thể theo dõi trạng thái các khoản vay đang hoạt động trong Lender Dashboard.`
    }
 ];
 

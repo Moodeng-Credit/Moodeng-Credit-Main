@@ -10,7 +10,8 @@
   COPY RULES (same as app-map.md and troubleshooting.md):
   - Never say "KYC", "Didit", "liveness", "eID", or "Openfort" to a user.
     The ID check is "Verify Your ID"; the embedded wallet is the "Instant Wallet" (the default wallet for
-    everyone; a Base Account is the optional alternative).
+    borrowers, with a Base Account as the optional alternative; lenders are recommended a Base
+    Account but can use an Instant Wallet too).
   - Use exact on-screen labels, bolded.
   - Numbers change over time — treat stats below as "as of" the date given,
     and if a user needs the current number, say to check the live page rather

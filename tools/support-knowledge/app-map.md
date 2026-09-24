@@ -31,7 +31,7 @@ For actions that live on a bottom-nav tab (Repay, Withdraw-from-Dashboard, Accou
 
   COPY RULES (same as troubleshooting.md and site-map.md):
   - Never say "KYC", "Didit", "liveness", "eID", or "Openfort" to a user.
-    The ID check is "Verify Your ID"; the embedded wallet is the "Instant Wallet" (the default wallet for borrowers and lenders).
+    The ID check is "Verify Your ID"; the embedded wallet is the "Instant Wallet" (the default wallet for borrowers; lenders are recommended a Base Account but can use an Instant Wallet too).
   - Use the exact on-screen labels, bolded, so users can match what they see.
 -->
 
@@ -54,7 +54,7 @@ Two places show your own wallet address:
 1. **Account → Account Settings**, in the **Wallet** section under **Connected Wallet**. The address is shown shortened (like 0x12…34ab) — tap the address or the copy icon next to it to copy the full address.
 2. On the **Repay** screen, when you're short on USDC an add-funds card appears with your address to **copy** (tap it → shows "Copied"). It's there so you can send USDC to yourself from an exchange before paying.
 
-Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show a **Set up wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first (the Instant Wallet by default, or a Base Account if they prefer), and after that the address appears in Account Settings.
+Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show a **Set up wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first (for borrowers, the Instant Wallet by default, or a Base Account if they prefer; for lenders, a Base Account is recommended, though an Instant Wallet or another wallet also works), and after that the address appears in Account Settings.
 
 ## Borrower Dashboard (Dashboard tab)
 

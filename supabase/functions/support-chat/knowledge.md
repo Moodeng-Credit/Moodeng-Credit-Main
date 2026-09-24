@@ -38,11 +38,11 @@ You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building 
 
 ### Which wallet does Moodeng use?
 
-Everyone on Moodeng — borrowers and lenders — uses the Instant Wallet by default. It's Moodeng's own wallet, created straight from your Moodeng login: no app to download and no seed phrase to write down. Borrowers receive loans in it, lenders fund loans from it, and it's fully yours — you can export its key anytime.
+Borrowers on Moodeng use the Instant Wallet by default. It's Moodeng's own wallet, created straight from your Moodeng login: no app to download and no seed phrase to write down. Your loan lands in it, and it's fully yours — you can export its key anytime.
 
 The Instant Wallet runs on Base, a Layer 2 blockchain network built by Coinbase, designed for fast, cheap, secure crypto transactions. Moodeng uses Base for one big reason: gasless USDC transactions. Sending or receiving USDC with the Instant Wallet or a Base Account on Base costs nothing in network fees. When you receive a loan, the full amount lands in your wallet. When you repay, the lender gets every cent back.
 
-Prefer a Base Account? You can connect one instead. A Base Account is the Base app's smart wallet — also passwordless and seedless, so you sign in with email or passkey and there's no 12-word recovery phrase to lose. Lenders can also connect other wallets, but the Instant Wallet or a Base Account keeps transactions gasless.
+Prefer a Base Account? You can connect one instead. A Base Account is the Base app's smart wallet — also passwordless and seedless, so you sign in with email or passkey and there's no 12-word recovery phrase to lose. For lenders, we recommend a Base Account. Lenders can also use an Instant Wallet or connect another wallet (like MetaMask) — the Instant Wallet and a Base Account keep transactions gasless.
 
 ### What is USDC, and why does Moodeng use it?
 
@@ -166,7 +166,7 @@ If they borrow below their limit, it is a Trust-Building Loan instead. That does
 
 Go to the Request Board and browse open loan requests. Each request shows the borrower's stats, credit limit, requested amount, and repayment term.
 
-When you find one you want to fund, tap Fund and confirm. The USDC leaves your Instant Wallet (or your Base Account, if you connected one) immediately and goes directly to the borrower's wallet — no middleman, no delay.
+When you find one you want to fund, tap Fund and confirm. The USDC leaves your wallet (usually your Base Account, or your Instant Wallet if you use one) immediately and goes directly to the borrower's wallet — no middleman, no delay.
 
 You can track all your active loans and repayment statuses from your Lender Dashboard.
 
@@ -174,7 +174,7 @@ You can track all your active loans and repayment statuses from your Lender Dash
 
 The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
 
-Once the loan is due, the borrower repays directly to your wallet — your Instant Wallet, or your Base Account if you connected one. You can track the status of all your active loans on your Lender Dashboard.
+Once the loan is due, the borrower repays directly to your wallet — usually your Base Account (or your Instant Wallet, if you use one). You can track the status of all your active loans on your Lender Dashboard.
 
 ## Step-by-step Guides
 
@@ -409,7 +409,7 @@ Two places show your own wallet address:
 1. **Account → Account Settings**, in the **Wallet** section under **Connected Wallet**. The address is shown shortened (like 0x12…34ab) — tap the address or the copy icon next to it to copy the full address.
 2. On the **Repay** screen, when you're short on USDC an add-funds card appears with your address to **copy** (tap it → shows "Copied"). It's there so you can send USDC to yourself from an exchange before paying.
 
-Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show a **Set up wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first (the Instant Wallet by default, or a Base Account if they prefer), and after that the address appears in Account Settings.
+Important: if the user hasn't added a wallet yet, there is no address to show. The **Account** page will show a **Set up wallet** button (borrowers) or **Connect Wallet** (lenders) instead — they need to set up their wallet first (for borrowers, the Instant Wallet by default, or a Base Account if they prefer; for lenders, a Base Account is recommended, though an Instant Wallet or another wallet also works), and after that the address appears in Account Settings.
 
 ## Borrower Dashboard (Dashboard tab)
 
@@ -587,13 +587,15 @@ Admin-only screens and tools are intentionally left out of this knowledge base �
 
 # Moodeng Credit — Common Confusions & Troubleshooting
 
-## The Instant Wallet (the default wallet)
+## The Instant Wallet (the default wallet for borrowers)
 
-**What it is:** Moodeng's own wallet, and the **default for everyone — borrowers and lenders**. Moodeng sets it up from the user's existing Moodeng login — no app to download and no seed phrase to write down. Borrowers receive loans in it; lenders fund loans from it. A **Base Account** is still supported as an optional alternative for anyone who prefers one.
+**What it is:** Moodeng's own wallet, and the **default wallet for borrowers**. Moodeng sets it up from the user's existing Moodeng login — no app to download and no seed phrase to write down. Borrowers receive loans in it; a **Base Account** is still supported as an optional alternative for borrowers who prefer one.
+
+**Lenders:** lenders are usually outside the Philippines, and for them a **Base Account** is the recommended wallet (it's the **Top Pick** in the lender wallet picker). Lenders can also use an Instant Wallet, or another wallet like MetaMask — it just isn't their default.
 
 **Where it shows up:** on the wallet screen. Borrowers see **Create your Instant Wallet** with a **Create Instant Wallet** button, plus a smaller **"Prefer a Base Account? Connect it instead"** link for anyone who wants to use a Base Account. Lenders see an **Instant Wallet** card with **Create Instant Wallet** at the top, then **"or connect a Base Account or another wallet"** above the wallet picker.
 
-**Should a user use it?** Yes — it's the quickest path, and it also works when Base Account sign-in is blocked (it doesn't use `keys.coinbase.com`, so the PLDT/Smart block below doesn't affect it). If someone already has a Base Account that works and prefers it, they can connect that instead.
+**Should a user use it?** For borrowers, yes — it's the quickest path, and it also works when Base Account sign-in is blocked (it doesn't use `keys.coinbase.com`, so the PLDT/Smart block below doesn't affect it). If a borrower already has a Base Account that works and prefers it, they can connect that instead. For lenders, suggest a Base Account first; the Instant Wallet is a fine option if they don't want to set one up.
 
 **How it works / is it safe:**
 - It's a **real self-custodial wallet** on Base — it receives USDC loans and earns Pandesal points exactly like any other wallet.
@@ -609,8 +611,8 @@ Admin-only screens and tools are intentionally left out of this knowledge base �
 
 Many new users download the **Coinbase app** and get stuck, because they think that's what Moodeng uses. It isn't.
 
-- By default, Moodeng uses the **Instant Wallet**, created from the user's Moodeng login — no app needed (see above).
-- Users who prefer a Base Account can connect one instead. A **Base Account** is created at **https://account.base.app**.
+- By default, borrowers use the **Instant Wallet**, created from the user's Moodeng login — no app needed (see above).
+- Borrowers who prefer a Base Account can connect one instead, and lenders are recommended to use one. A **Base Account** is created at **https://account.base.app**.
 - Base is a network built *by* Coinbase, but the **Coinbase app is a different thing** — you do **not** need it to use Moodeng.
 - If someone shows a Coinbase screen and asks "is this the one?" — gently redirect them: "You don't need the Coinbase app. Your Moodeng Instant Wallet is set up from your Moodeng login. If you'd rather use a Base Account, go to account.base.app and sign in with your email."
 - A Base Account is **passwordless and seedless** — you sign in with email or a passkey. There is no 12-word recovery phrase to write down or lose.

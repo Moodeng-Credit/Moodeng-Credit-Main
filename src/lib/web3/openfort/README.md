@@ -1,10 +1,12 @@
 # Openfort embedded wallet (the "Instant Wallet")
 
-The Instant Wallet is Moodeng's **default wallet for everyone** — borrowers and lenders. It is a
+The Instant Wallet is Moodeng's **default wallet for borrowers**. It is a
 self-custodial embedded wallet created from the user's existing Moodeng login — no app, no seed
 phrase — and it sends USDC **gaslessly** (Openfort's paymaster) on `api.openfort.io`. That host is
 not subject to the PLDT/Smart block on `keys.coinbase.com` that dead-ends Base Account, which is
-how this rail started (as a PH escape hatch). A Base Account is still supported as an alternative.
+how this rail started (as a PH escape hatch). A Base Account is still supported as an alternative for
+borrowers. Lenders (usually outside the Philippines) are recommended a Base Account — it stays the
+"Top Pick" in the lender wallet picker — but they can create an Instant Wallet too.
 
 It never touches the wagmi / RainbowKit / Base-Account stack. When the env vars below are
 unset, `isOpenfortConfigured()` is false and nothing about the app changes.

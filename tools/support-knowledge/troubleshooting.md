@@ -14,13 +14,15 @@
     Never tell a user whether to hold/sell crypto or give investment advice.
 -->
 
-## The Instant Wallet (the default wallet)
+## The Instant Wallet (the default wallet for borrowers)
 
-**What it is:** Moodeng's own wallet, and the **default for everyone — borrowers and lenders**. Moodeng sets it up from the user's existing Moodeng login — no app to download and no seed phrase to write down. Borrowers receive loans in it; lenders fund loans from it. A **Base Account** is still supported as an optional alternative for anyone who prefers one.
+**What it is:** Moodeng's own wallet, and the **default wallet for borrowers**. Moodeng sets it up from the user's existing Moodeng login — no app to download and no seed phrase to write down. Borrowers receive loans in it; a **Base Account** is still supported as an optional alternative for borrowers who prefer one.
+
+**Lenders:** lenders are usually outside the Philippines, and for them a **Base Account** is the recommended wallet (it's the **Top Pick** in the lender wallet picker). Lenders can also use an Instant Wallet, or another wallet like MetaMask — it just isn't their default.
 
 **Where it shows up:** on the wallet screen. Borrowers see **Create your Instant Wallet** with a **Create Instant Wallet** button, plus a smaller **"Prefer a Base Account? Connect it instead"** link for anyone who wants to use a Base Account. Lenders see an **Instant Wallet** card with **Create Instant Wallet** at the top, then **"or connect a Base Account or another wallet"** above the wallet picker.
 
-**Should a user use it?** Yes — it's the quickest path, and it also works when Base Account sign-in is blocked (it doesn't use `keys.coinbase.com`, so the PLDT/Smart block below doesn't affect it). If someone already has a Base Account that works and prefers it, they can connect that instead.
+**Should a user use it?** For borrowers, yes — it's the quickest path, and it also works when Base Account sign-in is blocked (it doesn't use `keys.coinbase.com`, so the PLDT/Smart block below doesn't affect it). If a borrower already has a Base Account that works and prefers it, they can connect that instead. For lenders, suggest a Base Account first; the Instant Wallet is a fine option if they don't want to set one up.
 
 **How it works / is it safe:**
 - It's a **real self-custodial wallet** on Base — it receives USDC loans and earns Pandesal points exactly like any other wallet.
@@ -36,8 +38,8 @@
 
 Many new users download the **Coinbase app** and get stuck, because they think that's what Moodeng uses. It isn't.
 
-- By default, Moodeng uses the **Instant Wallet**, created from the user's Moodeng login — no app needed (see above).
-- Users who prefer a Base Account can connect one instead. A **Base Account** is created at **https://account.base.app**.
+- By default, borrowers use the **Instant Wallet**, created from the user's Moodeng login — no app needed (see above).
+- Borrowers who prefer a Base Account can connect one instead, and lenders are recommended to use one. A **Base Account** is created at **https://account.base.app**.
 - Base is a network built *by* Coinbase, but the **Coinbase app is a different thing** — you do **not** need it to use Moodeng.
 - If someone shows a Coinbase screen and asks "is this the one?" — gently redirect them: "You don't need the Coinbase app. Your Moodeng Instant Wallet is set up from your Moodeng login. If you'd rather use a Base Account, go to account.base.app and sign in with your email."
 - A Base Account is **passwordless and seedless** — you sign in with email or a passkey. There is no 12-word recovery phrase to write down or lose.
