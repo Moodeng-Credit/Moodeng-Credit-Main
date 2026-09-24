@@ -35,7 +35,11 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { getEffectiveCreditLimit, isRepaidOnTime } from '@/lib/creditLeveling';
+import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
+import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
+import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isCurrentUserAdmin } from '@/lib/isCurrentUserAdmin';
@@ -101,6 +105,9 @@ const UserProfile = () => {
         ? DEMO_BORROWER_INSIGHTS_USER
         : (profileUser ?? (username === user.username ? user : null));
    const isRealUserAuthenticated = Boolean(user?.id && user?.username);
+   // GrabFood voucher rewards are per signed-in user (RLS: read your own), so the Milestones &
+   // Rewards card only renders on a borrower's own insights (isOwnInsights, computed below).
+   const { rewards: friendRewards, isLoading: friendRewardsLoading } = useFriendReferrals();
    // A guest who follows the lender-tour bridge link from UserCard arrives with
    // ?demo=rich&lenderTourPreview=1&tourPreview=1 but has no real session — the DEV-only
    // `forceTourPreview` gate would hide the tour continuation for them in production.
@@ -322,6 +329,35 @@ const UserProfile = () => {
    const creditBuildingCount = uniqueLoans.length;
    const trustBuildingCount = trustBuildingLoans.length;
    const hasLoanHistory = fundedLoans.length > 0;
+
+   // ── Milestones & rewards (own insights only) ──────────────────────────────────────────────
+   // Rewards are RLS-scoped to the signed-in user, so this only makes sense when a borrower is
+   // viewing their own profile. Everything below is gated on isOwnInsights in the render.
+   const isOwnInsights = isRealUserAuthenticated && !isDemoMode && !isLenderProfile && user?.id === resolvedUser.id;
+   const ownMilestones = isOwnInsights
+      ? buildReputationMilestones({
+           creditLevels: buildCreditLevels({ user: resolvedUser, loans: borrowedLoans }),
+           borrowerLoans: borrowedLoans,
+           isVerified: isVerifiedBorrower
+        })
+      : [];
+   const milestonesHit = ownMilestones.filter((milestone) => milestone.status === 'unlocked').length;
+   const milestonesTotal = ownMilestones.length;
+   const milestoneProgress = milestonesTotal > 0 ? Math.round((milestonesHit / milestonesTotal) * 100) : 0;
+   // Current on-time streak: consecutive fully-repaid, on-time loans counting back from the newest.
+   const onTimeStreak = (() => {
+      const paid = borrowedLoans
+         .filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt)
+         .sort((a, b) => parseDateSafely(b.updatedAt).getTime() - parseDateSafely(a.updatedAt).getTime());
+      let streak = 0;
+      for (const loan of paid) {
+         if (!isRepaidOnTime(loan.updatedAt, loan.dueDate)) break;
+         streak += 1;
+      }
+      return streak;
+   })();
+   const ownVoucherState = getVoucherState(friendRewards, OWN_VOUCHER, friendRewardsLoading).state;
+
    const hasEnoughLenderDiversityHistory = lenderDiversity.hasEnoughHistory;
    const isEarlyLenderDiversityScore = hasEnoughLenderDiversityHistory && lenderDiversity.confidence < 1;
    const recentLoansShouldScroll = fundedLoans.length > 5;
@@ -957,6 +993,92 @@ const UserProfile = () => {
                         </div>
                      </div>
 
+                     {/* Milestones & Rewards — own insights only (rewards are RLS-scoped to the viewer) */}
+                     {isOwnInsights ? (
+                        <div className="flex flex-col gap-4 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+                           <div className="flex items-center justify-between gap-2">
+                              <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">
+                                 Milestones &amp; Rewards
+                              </span>
+                              <span className="text-[11px] font-[590] leading-none text-md-neutral-1200">Only you can see this</span>
+                           </div>
+
+                           {/* Milestones hit */}
+                           <div className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between gap-2">
+                                 <span className="text-[14px] font-medium text-md-neutral-1400">
+                                    {milestonesHit} of {milestonesTotal} milestones hit
+                                 </span>
+                                 <span className="text-[14px] font-semibold text-md-primary-900">{milestoneProgress}%</span>
+                              </div>
+                              <div className="h-2.5 overflow-hidden rounded-md-pill bg-[#eee8f4]">
+                                 <div
+                                    className="h-full rounded-md-pill bg-md-primary-900 transition-all duration-500"
+                                    style={{ width: `${milestonesHit > 0 ? Math.max(milestoneProgress, 8) : 0}%` }}
+                                 />
+                              </div>
+                           </div>
+
+                           {/* On-time streak */}
+                           <div className="flex items-center justify-between gap-2 border-t border-[#f1edf8] pt-3">
+                              <span className="text-[14px] font-medium text-md-neutral-1400">
+                                 {onTimeStreak > 0
+                                    ? `${onTimeStreak} ${onTimeStreak === 1 ? 'loan' : 'loans'} repaid on time in a row`
+                                    : 'Repay a loan on time to start a streak'}
+                              </span>
+                              {onTimeStreak > 0 ? (
+                                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eefbf3] px-2.5 py-1 text-[12px] font-semibold text-[#166534]">
+                                    🔥 {onTimeStreak} in a row
+                                 </span>
+                              ) : null}
+                           </div>
+
+                           {/* GrabFood voucher */}
+                           <div className="border-t border-[#f1edf8] pt-3">
+                              {ownVoucherState === 'claimable' ? (
+                                 <div className="flex items-center gap-3 rounded-[14px] bg-[#fff8e1] p-3">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#ffce1b] text-[13px] font-extrabold text-[#704518]">
+                                       ₱50
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                       <p className="text-[14px] font-bold text-[#8a5a12]">GrabFood voucher ready</p>
+                                       <p className="text-[12px] text-[#a07b2a]">Earned from your first on-time repayment</p>
+                                    </div>
+                                    <button
+                                       type="button"
+                                       onClick={() => navigate('/dashboard')}
+                                       className="h-9 shrink-0 rounded-full bg-[#ffce1b] px-4 text-[13px] font-extrabold text-[#704518] active:scale-95"
+                                    >
+                                       Claim
+                                    </button>
+                                 </div>
+                              ) : ownVoucherState === 'pending' ? (
+                                 <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[14px] font-medium text-md-neutral-1400">₱50 GrabFood voucher</span>
+                                    <span className="shrink-0 rounded-full bg-[#fff4cc] px-2.5 py-1 text-[12px] font-semibold text-[#a06a00]">Pending</span>
+                                 </div>
+                              ) : ownVoucherState === 'sent' ? (
+                                 <div className="flex items-center justify-between gap-2">
+                                    <span className="text-[14px] font-medium text-md-neutral-1400">₱50 GrabFood voucher</span>
+                                    <span className="shrink-0 rounded-full bg-[#eefbf3] px-2.5 py-1 text-[12px] font-semibold text-[#166534]">Sent</span>
+                                 </div>
+                              ) : ownVoucherState === 'loading' ? (
+                                 <div className="h-4 w-40 animate-pulse rounded bg-[#eee8f4]" />
+                              ) : (
+                                 <div className="flex items-center gap-3 rounded-[14px] bg-[#faf8ff] p-3">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#efe9fb] text-[13px] font-extrabold text-md-primary-1200">
+                                       ₱50
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                       <p className="text-[14px] font-semibold text-md-heading">₱50 GrabFood voucher</p>
+                                       <p className="text-[12px] text-md-neutral-1200">Repay your first loan on time to unlock it</p>
+                                    </div>
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+                     ) : null}
+
                      {/* Loan Summary */}
                      <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4" data-tour-target="borrower-loan-summary">
                         <div className="flex items-center justify-between gap-3">
@@ -1246,8 +1368,7 @@ const UserProfile = () => {
             onClose={() => setIsLenderDiversitySheetOpen(false)}
             onOpenDocs={() => window.open(LENDER_DIVERSITY_DOCS_URL, '_blank', 'noopener,noreferrer')}
          />
-         {showLenderInsightsTour && (
-            <GuidedTourPreview
+         {showLenderInsightsTour ? <GuidedTourPreview
                // The visitor already opted in on the request board — re-showing the
                // "Want a quick tour?" intro card here would feel like the tour reset
                // rather than continued, so jump straight into step 4.
@@ -1281,8 +1402,7 @@ const UserProfile = () => {
                   // board rather than the lender-preview URL that looks like a fake login.
                   navigate(isGuestLenderTourContinuation ? '/request-board' : '/request-board?lenderTourPreview=1');
                }}
-            />
-         )}
+            /> : null}
       </div>
    );
 };
