@@ -267,7 +267,7 @@ export default function VideoCallStep({
 
          <div className="mt-auto flex flex-col gap-1 pt-1">
             <PrimaryButton disabled={!isScheduled} onClick={() => isScheduled && onContinue()}>
-               {isScheduled ? continueLabel : 'Pick a time above'}
+               {isScheduled ? continueLabel : phase === 'cooldown' ? 'Booking paused' : 'Pick a time above'}
             </PrimaryButton>
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>

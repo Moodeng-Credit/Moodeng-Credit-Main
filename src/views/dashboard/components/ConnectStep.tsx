@@ -328,7 +328,9 @@ export function LoanAccessPendingCard({
                callOver
                   ? 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
                   : mode === 'call'
-                    ? 'Thank you for confirming! You can apply right after the call.'
+                    ? meeting?.confirmToken && !meeting.confirmed
+                       ? 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
+                       : 'Thank you for confirming! You can apply right after the call.'
                     : 'Thanks for reaching out! We usually reply within a day on Messenger.'
             }
             title={
@@ -383,13 +385,15 @@ export function LoanAccessPendingCard({
                   ) : null}
                </div>
 
-               <div className="text-left">
-                  <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em] text-[#877897]">Have ready</p>
-                  <ul className="flex flex-col gap-2.5">
-                     <PerkRow icon={<IdCard aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Your original ID or passport</PerkRow>
-                     <PerkRow icon={<Camera aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Camera on, good light, phone nearby</PerkRow>
-                  </ul>
-               </div>
+               {callOver ? null : (
+                  <div className="text-left">
+                     <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em] text-[#877897]">Have ready</p>
+                     <ul className="flex flex-col gap-2.5">
+                        <PerkRow icon={<IdCard aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Your original ID or passport</PerkRow>
+                        <PerkRow icon={<Camera aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Camera on, good light, phone nearby</PerkRow>
+                     </ul>
+                  </div>
+               )}
 
                <a className="text-[15px] font-semibold text-[#4492f1]" href="https://www.facebook.com/emmamoodengcredit" rel="noreferrer" target="_blank">
                   Say hi to Emma on Facebook ›

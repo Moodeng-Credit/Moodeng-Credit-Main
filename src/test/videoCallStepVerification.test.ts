@@ -36,7 +36,7 @@ const { default: VideoCallStep } = await import('@/views/dashboard/components/Vi
 const allButtons = (c: HTMLElement) => Array.from(c.querySelectorAll('button'));
 const continueButton = (c: HTMLElement) =>
    allButtons(c).find((b) => /^(Continue|Book a time|Pick a time)/.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
-const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Pick a time|Back|Try again)/.test(b.textContent?.trim() ?? ''));
+const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Pick a time|Booking paused|Back|Try again)/.test(b.textContent?.trim() ?? ''));
 
 describe('VideoCallStep — free round-robin anonymous booking', () => {
    let container: HTMLDivElement;
@@ -104,7 +104,8 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       expect(container.textContent).toContain("missed two calls");
       expect(container.textContent).toContain('You can pick a new time from');
       expect(timeButtons(container)).toHaveLength(0);
-      expect(continueButton(container).disabled).toBe(true);
+      const paused = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Booking paused');
+      expect(paused?.disabled).toBe(true);
    });
 
    it('keeps the gate closed and warns when the slot was just taken', async () => {
