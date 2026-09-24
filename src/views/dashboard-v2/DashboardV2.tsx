@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { ConnectWalletBanner, VerifyIdentityBanner, VoucherReferralBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
@@ -40,9 +41,11 @@ export default function DashboardV2() {
    const { model, previewState, isReal, isSignedIn, isReady, language, previewSearch } = useDashboardV2Preview();
    const [openMilestone, setOpenMilestone] = useState<DashboardV2Milestone | null>(null);
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
-   const [isVoucherOpen, setIsVoucherOpen] = useState(false);
+   // Snapshot of the voucher being claimed: the rewards refetch after submitting removes it from `claimable`,
+   // and the popup must stay open to show its thank-you screen.
+   const [claimingVoucher, setClaimingVoucher] = useState<ClaimableVoucher | null>(null);
    const isLoading = isReal && !isReady;
-   const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER);
+   const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
 
    const milestonesAndVoucher = (
       <div className="flex flex-col">
@@ -50,7 +53,7 @@ export default function DashboardV2() {
             model={model}
             allMilestonesHref={`/dashboard-v2-preview/milestones${previewSearch}`}
             onGet={setOpenMilestone}
-            onClaim={() => setIsVoucherOpen(true)}
+            onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
          <div className="-mt-[5px]">
             <VoucherReferralBanner language={language} onRefer={() => navigate(`/dashboard-v2-preview/refer${previewSearch}`)} />
@@ -63,7 +66,11 @@ export default function DashboardV2() {
          <div className="mx-auto max-w-[440px] pb-28">
             <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} />
 
-            <DashboardV2Hero key={previewState} model={model} showRealAvatar={isReal} />
+            <DashboardV2Hero
+               key={`${previewState}-${model.tier}-${model.isVerified}-${model.creditLevel}`}
+               model={model}
+               showRealAvatar={isReal}
+            />
 
             {isLoading ? (
                <DashboardV2Skeleton />
@@ -87,9 +94,9 @@ export default function DashboardV2() {
                onVerify={() => setIsVerifyOpen(true)}
             />
          ) : null}
-         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo="/dashboard-v2-preview" /> : null}
-         {isVoucherOpen && ownVoucher.voucher ? (
-            <VoucherClaimPopup voucher={ownVoucher.voucher} isPreview={!isReal} onClose={() => setIsVoucherOpen(false)} />
+         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard-v2-preview${previewSearch}`} /> : null}
+         {claimingVoucher ? (
+            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
       </div>
    );

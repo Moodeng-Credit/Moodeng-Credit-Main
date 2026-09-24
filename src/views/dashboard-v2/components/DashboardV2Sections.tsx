@@ -23,13 +23,16 @@ function Divider() {
 /** Claim / Pending / Sent pill for an earned voucher. */
 export function VoucherStatusPill({ state, onClaim }: { state: VoucherState; onClaim: () => void }) {
    if (state === 'claimable') return <ClaimVoucherButton onClaim={onClaim} />;
-   const label = state === 'sent' ? 'Sent' : state === 'pending' ? 'Pending' : state === 'rejected' ? 'Help' : 'Done';
-   const tone =
-      state === 'sent' || state === 'none'
-         ? 'bg-[#e3f5e8] text-[#2f8a4a]'
-         : state === 'rejected'
-           ? 'bg-[#fde8ea] text-[#d51728]'
-           : 'bg-[#fff4cc] text-[#a06a00]';
+   if (state === 'loading') return <span className={clsx(PILL_BUTTON, 'animate-pulse bg-[#ece9f1]')} aria-label="Loading voucher" />;
+   if (state === 'rejected') {
+      return (
+         <Link to="/help" className={clsx(PILL_BUTTON, 'bg-[#fde8ea] text-[#d51728]')}>
+            Help
+         </Link>
+      );
+   }
+   const label = state === 'sent' ? 'Sent' : state === 'pending' ? 'Pending' : 'Done';
+   const tone = state === 'sent' || state === 'none' ? 'bg-[#e3f5e8] text-[#2f8a4a]' : 'bg-[#fff4cc] text-[#a06a00]';
    return <span className={clsx(PILL_BUTTON, tone)}>{label}</span>;
 }
 
@@ -57,7 +60,8 @@ function MilestoneAction({
    onClaim: () => void;
    voucherState: VoucherState;
 }) {
-   if (milestone.status === 'unlocked' && milestone.isVoucher) {
+   // The database decides voucher eligibility, so its answer wins over the milestone's own status.
+   if (milestone.isVoucher && (milestone.status === 'unlocked' || voucherState !== 'none')) {
       return <VoucherStatusPill state={voucherState} onClaim={onClaim} />;
    }
 
@@ -102,7 +106,7 @@ export function MilestonesSection({
    onGet: (milestone: DashboardV2Milestone) => void;
    onClaim: () => void;
 }) {
-   const voucherState = getVoucherState(model.rewards, OWN_VOUCHER).state;
+   const voucherState = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading).state;
 
    return (
       <TabbedCard title="Reputation Milestones" titleId="dv2-milestones-title" tabWidth="37%">
@@ -166,10 +170,10 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
       <TabbedCard
          title="Loan Summary"
          titleId="dv2-loan-summary-title"
-         tabWidth="56%"
+         tabWidth="min(56%, calc(100% - 150px))"
          overlapTitle
          tab={
-            <p className="flex items-center gap-1 text-[16px] leading-[18px] text-[#45556c]">
+            <p className="flex items-center gap-1 whitespace-nowrap text-[clamp(13px,4vw,16px)] leading-[18px] text-[#45556c]">
                <DesignImage src={DASHBOARD_V2_ASSETS.repayments} className="h-3.5 w-3.5 shrink-0" />
                <span>
                   <span className="text-[#6b55f7]">${formatCurrency(summary.repaymentsTotal).replace(/\.00$/, '')}</span> Repayments
@@ -177,20 +181,28 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
             </p>
          }
       >
-         <div className="flex items-center gap-[34px] px-[9px] pb-6 pt-7">
-            <Link to="/repay" className="flex w-[105px] flex-col gap-[7px]">
-               <span className="flex items-center gap-0.5">
-                  <span className={clsx(STAT_NUMBER, 'text-[38px] text-[#5c44f1]')}>{formatCurrency(summary.active)}</span>
+         <div className="flex items-start justify-between gap-3 px-[9px] pb-6 pt-7">
+            <Link to="/repay" className="flex min-w-0 flex-1 flex-col gap-[7px]">
+               <span className="mb-1 flex items-center gap-0.5">
+                  <span className={clsx(STAT_NUMBER, 'text-[clamp(28px,8.6vw,38px)] text-[#5c44f1]')}>
+                     {formatCurrency(summary.active)}
+                  </span>
                   <DesignImage src={DASHBOARD_V2_ASSETS.activeLoanChevron} className="h-4 w-4" />
                </span>
                <span className="text-[14px] leading-[18px] text-[#45556c]">Active Loans($)</span>
             </Link>
-            <div className="flex w-[117px] flex-col gap-[7px]">
-               <span className={clsx(STAT_NUMBER, 'text-[28px] text-[#594d65]')}>{formatCurrency(summary.pending)}</span>
+            <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
+               <span className={clsx(STAT_NUMBER, 'text-[clamp(22px,6.4vw,28px)] text-[#594d65]')}>{formatCurrency(summary.pending)}</span>
                <span className="text-[14px] leading-[18px] text-[#45556c]">Pending Loans($)</span>
             </div>
-            <div className="flex w-[110px] flex-col gap-[7px]">
-               <span className={clsx(STAT_NUMBER, 'text-[28px]', summary.defaulted > 0 ? 'text-[#d51728]' : 'text-[#c0b9c8]')}>
+            <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
+               <span
+                  className={clsx(
+                     STAT_NUMBER,
+                     'text-[clamp(22px,6.4vw,28px)]',
+                     summary.defaulted > 0 ? 'text-[#d51728]' : 'text-[#c0b9c8]'
+                  )}
+               >
                   {formatCurrency(summary.defaulted)}
                </span>
                <span className="text-[14px] leading-[18px] text-[#45556c]">Defaulted($)</span>
@@ -243,10 +255,13 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
    return (
       <section className="mx-5 rounded-[8px] bg-white px-2.5 pb-3.5 pt-5" aria-labelledby="dv2-dues-title">
          <div className="flex items-center justify-between">
-            <h2 id="dv2-dues-title" className="text-[20px] font-medium leading-6 text-[#0f172b]">
+            <h2 id="dv2-dues-title" className="whitespace-nowrap text-[clamp(17px,5vw,20px)] font-medium leading-6 text-[#0f172b]">
                Upcoming Loan Dues
             </h2>
-            <Link to={model.insightsHref} className="flex items-center text-[18px] leading-[18px] text-[#45556c]">
+            <Link
+               to={model.insightsHref}
+               className="flex shrink-0 items-center whitespace-nowrap text-[clamp(15px,4.5vw,18px)] leading-[18px] text-[#45556c]"
+            >
                My insights
                <DesignImage src={DASHBOARD_V2_ASSETS.insightsChevron} className="h-4 w-4" />
             </Link>

@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
@@ -79,13 +79,14 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
 
    return (
       <div
-         className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 px-5"
+         className="fixed inset-0 z-[80] flex overflow-y-auto overscroll-contain bg-black/80 px-5 py-6"
          role="dialog"
          aria-modal="true"
          aria-labelledby="dv2-voucher-title"
          onClick={onClose}
       >
-         <div className="flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
+         {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
+         <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
             <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8">
                Voucher Unlocked!
             </p>
@@ -188,6 +189,7 @@ const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text
 
 /** Figma "invite_popup" share sheet. "Embed" hands off to the phone's own share menu (or copies the link). */
 export function ShareSheet({ link, text, onClose, onCopied }: { link: string; text: string; onClose: () => void; onCopied: () => void }) {
+   const rowRef = useRef<HTMLDivElement>(null);
    const shareNative = async () => {
       if (navigator.share) {
          await navigator.share({ title: SHARE_TITLE, text, url: link }).catch(() => undefined);
@@ -213,7 +215,7 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
                   <DesignImage src={DASHBOARD_V2_ASSETS.shareClose} className="h-4 w-4" />
                </button>
             </div>
-            <div className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1" style={{ scrollbarWidth: 'none' }}>
+            <div ref={rowRef} className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1 pr-16" style={{ scrollbarWidth: 'none' }}>
                {SHARE_TARGETS.map((target) =>
                   target.id === 'embed' ? (
                      <button
@@ -239,10 +241,14 @@ export function ShareSheet({ link, text, onClose, onCopied }: { link: string; te
                   )
                )}
             </div>
-            <DesignImage
-               src={DASHBOARD_V2_ASSETS.shareNext}
-               className="pointer-events-none absolute right-2 top-[62px] h-[52px] w-[52px]"
-            />
+            <button
+               type="button"
+               onClick={() => rowRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+               className="absolute right-2 top-[62px] h-[52px] w-[52px]"
+               aria-label="More share options"
+            >
+               <DesignImage src={DASHBOARD_V2_ASSETS.shareNext} className="h-[52px] w-[52px]" />
+            </button>
          </div>
       </div>
    );
@@ -255,10 +261,16 @@ const LOCKED_GRADIENT = 'linear-gradient(85.47deg, #b9aeff 0.5%, #8b7afa 57.57%,
 export function DashboardV2Referral() {
    const { model, previewState, isReal, isSignedIn, language, previewSearch } = useDashboardV2Preview();
    const [isShareOpen, setIsShareOpen] = useState(false);
-   const [isClaimOpen, setIsClaimOpen] = useState(false);
-   const referralVoucher = getVoucherState(model.rewards, REFERRAL_VOUCHERS);
+   const [claimingVoucher, setClaimingVoucher] = useState<ClaimableVoucher | null>(null);
+   const referralVoucher = getVoucherState(model.rewards, REFERRAL_VOUCHERS, model.referralLoading);
    const [copied, setCopied] = useState<'code' | null>(null);
-   const code = model.referralCode ? model.referralCode.toUpperCase() : '—';
+   const code = model.referralCode
+      ? model.referralCode.toUpperCase()
+      : model.referralUnavailable
+        ? 'Unavailable right now'
+        : isReal
+          ? 'Loading…'
+          : '—';
    const inviteLink = model.referralCode ? buildInviteLink(model.referralCode) : null;
    const shareText =
       language === 'fil'
@@ -314,7 +326,7 @@ export function DashboardV2Referral() {
                {referralVoucher.state === 'claimable' ? (
                   <button
                      type="button"
-                     onClick={() => setIsClaimOpen(true)}
+                     onClick={() => setClaimingVoucher(referralVoucher.voucher)}
                      className="absolute left-[17%] top-[78.2%] flex h-[4.6%] w-[25.5%] items-center justify-center rounded-full text-[18px] font-semibold text-[#704518]"
                      style={{ backgroundImage: COPY_GRADIENT }}
                   >
@@ -325,7 +337,13 @@ export function DashboardV2Referral() {
                      <span className="absolute inset-0" style={{ backgroundImage: LOCKED_GRADIENT }} aria-hidden="true" />
                      <span className="absolute inset-0 bg-white/80 mix-blend-color" aria-hidden="true" />
                      <span className="relative">
-                        {referralVoucher.state === 'pending' ? 'Pending' : referralVoucher.state === 'sent' ? 'Sent' : 'Locked'}
+                        {referralVoucher.state === 'pending'
+                           ? 'Pending'
+                           : referralVoucher.state === 'sent'
+                             ? 'Sent'
+                             : referralVoucher.state === 'rejected'
+                               ? 'Rejected'
+                               : 'Locked'}
                      </span>
                   </span>
                )}
@@ -340,8 +358,7 @@ export function DashboardV2Referral() {
                </button>
 
                <p className="absolute inset-x-[10%] top-[91.8%] text-center text-[14px] leading-[14px] text-[#c0b9c8]">
-                  You can invite friends to help you get the ₱100 voucher. The voucher you have obtained can be viewed on your event main
-                  page.
+                  You both get a ₱100 voucher once your friend repays their first loan on time. Claim yours here or on your dashboard.
                </p>
             </div>
             {isReal || model.rewards.invitedCount > 0 ? (
@@ -352,11 +369,19 @@ export function DashboardV2Referral() {
             ) : null}
          </div>
 
-         {isClaimOpen && referralVoucher.voucher ? (
-            <VoucherClaimPopup voucher={referralVoucher.voucher} isPreview={!isReal} onClose={() => setIsClaimOpen(false)} />
+         {claimingVoucher ? (
+            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
          {isShareOpen && inviteLink ? (
-            <ShareSheet link={inviteLink} text={shareText} onClose={() => setIsShareOpen(false)} onCopied={() => setCopied('code')} />
+            <ShareSheet
+               link={inviteLink}
+               text={shareText}
+               onClose={() => setIsShareOpen(false)}
+               onCopied={() => {
+                  setCopied('code');
+                  window.setTimeout(() => setCopied(null), 2000);
+               }}
+            />
          ) : null}
       </div>
    );
@@ -365,7 +390,8 @@ export function DashboardV2Referral() {
 /** Public page an invited friend lands on from the shared link. */
 export function DashboardV2InviteLanding() {
    const { code: rawCode = '' } = useParams();
-   const code = normalizeInviteCode(decodeURIComponent(rawCode));
+   // useParams already decodes the segment; decoding again would throw on codes like "%".
+   const code = normalizeInviteCode(rawCode);
    const isCodeValid = isValidInviteCode(code);
    const inviterQuery = useQuery({
       queryKey: ['friend-referrals', 'inviter', code],

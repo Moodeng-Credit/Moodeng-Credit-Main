@@ -199,7 +199,8 @@ describe('dashboard v2 all milestones', () => {
    });
 
    it('builds an encoded invite link', () => {
-      expect(buildInviteLink('maria cruz')).toBe('https://moodeng.app/invite/maria%20cruz');
+      expect(buildInviteLink('maria cruz', 'https://moodeng.app')).toBe('https://moodeng.app/invite/maria%20cruz');
+      expect(buildInviteLink('ABCDEF12345', 'null')).toBe('https://moodeng.app/invite/ABCDEF12345');
    });
 
    it('renders the milestone popup reward and call to action', () => {

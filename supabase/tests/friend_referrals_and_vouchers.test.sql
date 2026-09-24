@@ -9,7 +9,7 @@
 --   psql -d reftest -f supabase/migrations/20260924000000_friend_referrals_and_vouchers.sql
 --   psql -d reftest -v run_tests=1 -f supabase/tests/friend_referrals_and_vouchers.test.sql
 --
--- Expected final line: "24/24 passed".
+-- Expected final line: "32/32 passed".
 
 \if :{?run_tests}
 \set ON_ERROR_STOP 1
@@ -111,6 +111,69 @@ exception when others then insert into results values ('admin cannot change amou
 end $$;
 reset role;
 
+-- 9: a rejected claim can be submitted again
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+select submit_voucher_claim('referral_invitee', (select id from public.friend_referrals limit 1), 'Bea Cruz', '0917 000 0000', null);
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000ad');
+update public.voucher_claims set status = 'rejected', admin_note = 'wrong number' where reward = 'referral_invitee';
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000b');
+insert into results select 'rejected claim is claimable again', (get_my_rewards() -> 'claimable' -> 0 ->> 'reward') = 'referral_invitee', (get_my_rewards())::text;
+insert into results select 're-claim after rejection accepted', submit_voucher_claim('referral_invitee', (select id from public.friend_referrals limit 1), 'Bea Cruz', '09171234567', null) is not null, null;
+do $$ begin
+  perform submit_voucher_claim('referral_invitee', (select id from public.friend_referrals limit 1), 'Bea Cruz', '09171234567', null);
+  insert into results values ('only one live claim after re-claim', false, 'accepted twice');
+exception when others then insert into results values ('only one live claim after re-claim', sqlerrm = 'voucher already claimed', sqlerrm);
+end $$;
+reset role;
+
+-- 10: no circular referrals; loans funded by the inviter do not earn referral vouchers
+insert into public.users (id, username, display_name, created_at) values
+  ('00000000-0000-0000-0000-00000000000e', 'ella', null, now()),
+  ('00000000-0000-0000-0000-00000000000f', 'finn', null, now());
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
+select get_my_invite_code();
+reset role;
+create temp table ella_code as select code from public.borrower_invite_codes where user_id = '00000000-0000-0000-0000-00000000000e';
+grant select on ella_code to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000f');
+insert into results select 'finn joins with ella code', redeem_friend_invite((select code from ella_code)) = 'joined', null;
+reset role;
+create temp table finn_code as select code from public.borrower_invite_codes where false;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000f');
+select get_my_invite_code();
+reset role;
+insert into finn_code select code from public.borrower_invite_codes where user_id = '00000000-0000-0000-0000-00000000000f';
+grant select on finn_code to authenticated;
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
+insert into results select 'circular referral blocked', redeem_friend_invite((select code from finn_code)) = 'self_referral', null;
+reset role;
+insert into public.loans (borrower_user_id, lender_user_id, loan_amount, repaid_amount, total_repayment_amount, repayment_status, loan_status, due_date, repaid_at) values
+  ('00000000-0000-0000-0000-00000000000f', '00000000-0000-0000-0000-00000000000e', 1, 1.2, 1.2, 'Paid', 'Lent', now() - interval '2 days', now() - interval '3 days');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000f');
+insert into results select 'inviter-funded loan: only own ₱50', (get_my_rewards() -> 'claimable') = '[{"reward": "first_on_time_repayment", "amountPhp": 50, "friendReferralId": null}]'::jsonb, (get_my_rewards() -> 'claimable')::text;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000e');
+insert into results select 'inviter-funded loan: no inviter ₱100', (get_my_rewards() -> 'claimable') = '[]'::jsonb, (get_my_rewards() -> 'claimable')::text;
+reset role;
+
+-- 11: deleting a friend keeps the other side's claim history and does not block the delete
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-00000000000a');
+select submit_voucher_claim('referral_inviter', (select id from public.friend_referrals where referred_user_id = '00000000-0000-0000-0000-00000000000b'), 'Alice Reyes', '09170001111', null);
+reset role;
+delete from public.loans where borrower_user_id = '00000000-0000-0000-0000-00000000000b';
+do $$ begin
+  delete from public.users where id = '00000000-0000-0000-0000-00000000000b';
+  insert into results select 'deleting a referred friend succeeds, inviter claim kept',
+    exists (select 1 from public.voucher_claims where user_id = '00000000-0000-0000-0000-00000000000a' and reward = 'referral_inviter' and friend_referral_id is null), null;
+exception when others then insert into results values ('deleting a referred friend succeeds, inviter claim kept', false, sqlerrm);
+end $$;
+
 select case when ok then 'PASS' else 'FAIL' end as result, name, left(coalesce(detail, ''), 90) as detail from results;
 select count(*) filter (where ok) || '/' || count(*) || ' passed' as summary from results;
 \else
@@ -130,7 +193,8 @@ create table public.admin_users (user_id uuid primary key, active boolean defaul
 create table public.loans (
   id uuid primary key default gen_random_uuid(), borrower_user_id uuid references public.users(id), loan_amount numeric,
   repaid_amount numeric, total_repayment_amount numeric, repayment_status text, loan_status text,
-  due_date timestamptz, repaid_at timestamptz, updated_at timestamptz default now(), refunded_at timestamptz);
+  due_date timestamptz, repaid_at timestamptz, updated_at timestamptz default now(), refunded_at timestamptz,
+  lender_user_id uuid references public.users(id), is_test boolean not null default false);
 create or replace function app_private.is_moodeng_admin() returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.admin_users where user_id = auth.uid() and active) $$;
 grant execute on function app_private.is_moodeng_admin() to authenticated;

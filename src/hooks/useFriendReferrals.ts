@@ -8,6 +8,7 @@ import {
    EMPTY_REWARDS,
    getMyInviteCode,
    getMyRewards,
+   isAccountNewerThanInvite,
    readPendingInvite,
    redeemFriendInvite,
    submitVoucherClaim,
@@ -62,19 +63,28 @@ export function useSubmitVoucherClaim() {
  * on any definite answer from the server; network errors leave it for the next page load.
  */
 export function usePendingInviteRedemption() {
+   const queryClient = useQueryClient();
    const userId = useSelector((state: RootState) => state.auth.user?.id);
+   const createdAt = useSelector((state: RootState) => state.auth.user?.createdAt);
    const attemptedFor = useRef<string | null>(null);
 
    useEffect(() => {
-      if (!userId || attemptedFor.current === userId || !isSupabaseBrowserConfigured()) return;
-      const code = readPendingInvite();
-      if (!code) return;
+      if (!userId || !createdAt || attemptedFor.current === userId || !isSupabaseBrowserConfigured()) return;
+      const invite = readPendingInvite();
+      if (!invite) return;
 
       attemptedFor.current = userId;
-      redeemFriendInvite(code)
-         .then(() => clearPendingInvite())
+      if (!isAccountNewerThanInvite(createdAt, invite)) {
+         clearPendingInvite();
+         return;
+      }
+      redeemFriendInvite(invite.code)
+         .then(() => {
+            clearPendingInvite();
+            return queryClient.invalidateQueries({ queryKey: ['friend-referrals', 'rewards', userId] });
+         })
          .catch(() => {
             attemptedFor.current = null;
          });
-   }, [userId]);
+   }, [createdAt, queryClient, userId]);
 }

@@ -58,7 +58,7 @@ export const getOnTimeRepaidTotal = (loans: Loan[]): number =>
          const repaidAmount = toNumber(loan.repaidAmount);
          const totalRepayment = toNumber(loan.totalRepaymentAmount);
          const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
-         return isFullyRepaid && isRepaidOnTime(loan.updatedAt, loan.dueDate);
+         return isFullyRepaid && isRepaidOnTime(loan.repaidAt ?? loan.updatedAt, loan.dueDate);
       })
       .reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0);
 
@@ -159,16 +159,24 @@ export const toDashboardV2Milestones = (milestones: DashboardMilestone[]): Dashb
 export const getNextTierGoal = (pandesal: number): number | null =>
    MOODENG_TIERS.find((tier) => tier.minPandesal > pandesal)?.minPandesal ?? null;
 
-/** Public invite link for the referral screen. The /invite route itself is not live yet (preview only). */
-export const buildInviteLink = (code: string) => `https://moodeng.app/invite/${encodeURIComponent(code)}`;
+const PRODUCTION_ORIGIN = 'https://moodeng.app';
 
-export type VoucherState = 'claimable' | 'pending' | 'sent' | 'rejected' | 'none';
+/**
+ * Public invite link for the referral screen, on the site the borrower is using (so a link shared from a
+ * preview deployment opens that preview, where the code exists).
+ */
+export const buildInviteLink = (code: string, origin = typeof window === 'undefined' ? PRODUCTION_ORIGIN : window.location.origin) =>
+   `${origin.startsWith('http') ? origin : PRODUCTION_ORIGIN}/invite/${encodeURIComponent(code)}`;
+
+export type VoucherState = 'claimable' | 'pending' | 'sent' | 'rejected' | 'none' | 'loading';
 
 /** Where a voucher stands, as reported by the database (the UI never decides eligibility itself). */
 export const getVoucherState = (
    rewards: MyRewards,
-   rewardsFor: VoucherReward[]
+   rewardsFor: VoucherReward[],
+   isLoading = false
 ): { state: VoucherState; voucher: ClaimableVoucher | null } => {
+   if (isLoading) return { state: 'loading', voucher: null };
    const voucher = rewards.claimable.find((item) => rewardsFor.includes(item.reward)) ?? null;
    if (voucher) return { state: 'claimable', voucher };
 

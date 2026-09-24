@@ -20,11 +20,12 @@ interface DashboardV2HeroProps {
 // 54px iOS status bar) and converts horizontal ones to percentages of the 440px frame.
 const CHARACTER_TOP: Record<MoodengMood, number> = { waiting: 117, loan: 98, repaid: 109 };
 
+// Widths are the Figma px over the 440px frame, so the labels scale down on narrow phones.
 const TIER_LABEL_LAYOUT = [
-   { left: '7.5%', width: 72, top: 284 },
-   { left: '28.64%', width: 87, top: 294 },
-   { left: '50.9%', width: 91, top: 294 },
-   { left: '73.86%', width: 91, top: 284 }
+   { left: '7.5%', width: '16.4%', top: 284 },
+   { left: '28.64%', width: '19.8%', top: 294 },
+   { left: '50.9%', width: '20.7%', top: 294 },
+   { left: '73.86%', width: '20.7%', top: 284 }
 ];
 
 const PROGRESS_TRACK_INNER_WIDTH = 394;
@@ -52,8 +53,9 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          />
 
          {/* Greeting */}
-         <div className="absolute left-5 top-5 flex items-center gap-2.5">
-            <div className="flex w-[73px] flex-col items-center">
+         {/* right-[125px] keeps the greeting clear of Help + Home on narrow phones. */}
+         <div className="absolute left-5 right-[125px] top-5 flex min-w-0 items-center gap-2.5">
+            <div className="flex w-[73px] shrink-0 flex-col items-center">
                {showRealAvatar ? (
                   <UserAvatar size={63} alt={model.firstName} clickable={false} className="-mb-3.5" />
                ) : (
@@ -64,9 +66,9 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                   {model.isVerified ? 'Verified' : 'Unverified'}
                </span>
             </div>
-            <div className="flex flex-col">
-               <p className="text-[22px] font-semibold leading-[1.2] text-[#1c053d]">Hi {model.firstName}!</p>
-               <p className="text-[16px] leading-[18px] text-[#594d65]">
+            <div className="flex min-w-0 flex-col">
+               <p className="truncate text-[clamp(18px,5.4vw,22px)] font-semibold leading-[1.2] text-[#1c053d]">Hi {model.firstName}!</p>
+               <p className="whitespace-nowrap text-[clamp(13px,4vw,16px)] leading-[18px] text-[#594d65]">
                   Live for {model.daysLive} {model.daysLive === 1 ? 'day' : 'days'}
                </p>
             </div>
@@ -145,7 +147,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                   style={{ left: layout.left, top: layout.top, width: layout.width }}
                >
                   <span className="text-[16px] font-black leading-[10px]">{tier.label}</span>
-                  <span className="whitespace-nowrap text-[14px] font-semibold leading-[18px]">
+                  <span className="whitespace-nowrap text-[clamp(12px,3.2vw,14px)] font-semibold leading-[18px]">
                      {isCurrent ? model.pandesal : tier.minPandesal}pandesal
                   </span>
                </div>
@@ -153,10 +155,12 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          })}
 
          {/* Credit level */}
-         <div className="absolute inset-x-5 top-[347px] flex items-end justify-between">
-            <div className="flex items-baseline gap-0.5">
-               <span className="text-[34px] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">LV{model.creditLevel}</span>
-               <span className="bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[20px] font-semibold leading-9 text-transparent">
+         <div className="absolute inset-x-5 top-[347px] flex items-end justify-between gap-2">
+            <div className="flex shrink-0 items-baseline gap-0.5">
+               <span className="text-[clamp(28px,7.7vw,34px)] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">
+                  LV{model.creditLevel}
+               </span>
+               <span className="bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[clamp(16px,4.6vw,20px)] font-semibold leading-9 text-transparent">
                   Credit Level
                </span>
                <button
@@ -169,7 +173,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                   <DesignImage src={DASHBOARD_V2_ASSETS.info} className="h-3.5 w-3.5" />
                </button>
             </div>
-            <p className="pb-2 text-right text-[20px] font-medium leading-4 tracking-[0.4px]">
+            <p className="min-w-0 whitespace-nowrap pb-2 text-right text-[clamp(14px,4.5vw,20px)] font-medium leading-4 tracking-[0.2px]">
                <span className="text-[#4f36ef]">{model.creditHint.highlight}</span>
                <span className="text-[#c0b9c8]">{model.creditHint.rest}</span>
             </p>

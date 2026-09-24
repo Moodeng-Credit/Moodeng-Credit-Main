@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { VerifyIdentityBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
@@ -29,6 +30,11 @@ function MilestoneRowAction({
    onClaim: () => void;
    voucherState: VoucherState;
 }) {
+   // The database decides voucher eligibility, so its answer wins over the milestone's own status.
+   if (milestone.isVoucher && voucherState !== 'none') {
+      return <VoucherStatusPill state={voucherState} onClaim={onClaim} />;
+   }
+
    if (milestone.status === 'next') {
       return (
          <button
@@ -107,11 +113,11 @@ function MilestoneRow({
 /** Figma "milestone_unverified" / "milestone_verified" — the full reputation milestone list. */
 export default function DashboardV2Milestones() {
    const navigate = useNavigate();
-   const { model, previewState, isReal, isSignedIn, language, previewSearch } = useDashboardV2Preview();
+   const { model, previewState, isReal, isSignedIn, isReady, language, previewSearch } = useDashboardV2Preview();
    const [openMilestone, setOpenMilestone] = useState<DashboardV2Milestone | null>(null);
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
-   const [isVoucherOpen, setIsVoucherOpen] = useState(false);
-   const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER);
+   const [claimingVoucher, setClaimingVoucher] = useState<ClaimableVoucher | null>(null);
+   const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
    const goal = model.pandesalGoal;
    const goalProgress = goal ? Math.min(model.pandesal / goal, 1) : 1;
 
@@ -131,7 +137,13 @@ export default function DashboardV2Milestones() {
                <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65]">All Milestones</h1>
             </header>
 
-            {!model.isVerified ? (
+            {isReal && !isReady ? (
+               <div className="mx-5 mt-[58px] flex flex-col gap-3" aria-busy="true" aria-label="Loading milestones">
+                  {['m1', 'm2', 'm3', 'm4'].map((id) => (
+                     <div key={id} className="h-[70px] animate-pulse rounded-[8px] bg-[#ece9f1]" />
+                  ))}
+               </div>
+            ) : !model.isVerified ? (
                <>
                   <div className="mt-[58px]">
                      <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} />
@@ -186,7 +198,7 @@ export default function DashboardV2Milestones() {
                            <MilestoneRow
                               milestone={milestone}
                               onGet={() => setOpenMilestone(milestone)}
-                              onClaim={() => setIsVoucherOpen(true)}
+                              onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
                               voucherState={ownVoucher.state}
                            />
                         </Fragment>
@@ -204,10 +216,12 @@ export default function DashboardV2Milestones() {
                onVerify={() => setIsVerifyOpen(true)}
             />
          ) : null}
-         {isVoucherOpen && ownVoucher.voucher ? (
-            <VoucherClaimPopup voucher={ownVoucher.voucher} isPreview={!isReal} onClose={() => setIsVoucherOpen(false)} />
+         {claimingVoucher ? (
+            <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
-         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo="/dashboard-v2-preview/milestones" /> : null}
+         {isVerifyOpen ? (
+            <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard-v2-preview/milestones${previewSearch}`} />
+         ) : null}
       </div>
    );
 }

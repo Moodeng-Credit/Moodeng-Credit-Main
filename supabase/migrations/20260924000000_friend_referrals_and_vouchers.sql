@@ -54,12 +54,19 @@ create table if not exists public.voucher_claims (
   constraint voucher_claims_full_name_length check (char_length(full_name) between 2 and 120),
   constraint voucher_claims_mobile_format check (mobile ~ '^\+?[0-9][0-9 ()-]{6,19}$'),
   constraint voucher_claims_email_format check (email is null or email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
-  constraint voucher_claims_referral_link check ((reward = 'first_on_time_repayment') = (friend_referral_id is null))
+  -- Referral claims keep their history (friend_referral_id becomes null) if the other person deletes their account.
+  constraint voucher_claims_referral_link check (reward <> 'first_on_time_repayment' or friend_referral_id is null)
 );
 
--- One claim per reward: the own voucher once, each referral side once.
-create unique index if not exists voucher_claims_one_per_reward
-  on public.voucher_claims (user_id, reward, coalesce(friend_referral_id, '00000000-0000-0000-0000-000000000000'::uuid));
+-- One live claim per reward: the own voucher once, each referral side once. A rejected claim (e.g. a
+-- mistyped GCash number) does not count, so the borrower can submit again.
+drop index if exists public.voucher_claims_one_per_reward;
+create unique index if not exists voucher_claims_own_once
+  on public.voucher_claims (user_id)
+  where reward = 'first_on_time_repayment' and status <> 'rejected';
+create unique index if not exists voucher_claims_referral_once
+  on public.voucher_claims (user_id, reward, friend_referral_id)
+  where friend_referral_id is not null and status <> 'rejected';
 
 drop trigger if exists update_voucher_claims_updated_at on public.voucher_claims;
 create trigger update_voucher_claims_updated_at before update on public.voucher_claims
@@ -103,7 +110,9 @@ grant update (status, admin_note, sent_at) on public.voucher_claims to authentic
 -- Helpers
 -- ---------------------------------------------------------------------------------------------
 
-create or replace function app_private.has_on_time_repayment(p_user_id uuid)
+-- p_exclude_lender: for referral rewards, a loan funded by the inviter does not count (stops an
+-- inviter from funding and "earning" their own referral bonus). Test loans never count.
+create or replace function app_private.has_on_time_repayment(p_user_id uuid, p_exclude_lender uuid default null)
 returns boolean
 language sql
 stable
@@ -116,6 +125,8 @@ as $$
     where l.borrower_user_id = p_user_id
       and l.repayment_status = 'Paid'
       and l.refunded_at is null
+      and not coalesce(l.is_test, false)
+      and (p_exclude_lender is null or l.lender_user_id is distinct from p_exclude_lender)
       and case
             when coalesce(l.total_repayment_amount, 0) > 0 then coalesce(l.repaid_amount, 0) >= l.total_repayment_amount
             else coalesce(l.repaid_amount, 0) > 0
@@ -219,6 +230,10 @@ begin
   if exists (select 1 from public.friend_referrals where referred_user_id = v_user_id) then
     return 'already_referred';
   end if;
+  -- No circular pairs: the person who invited you cannot also be invited by you.
+  if exists (select 1 from public.friend_referrals where referrer_user_id = v_user_id and referred_user_id = v_referrer) then
+    return 'self_referral';
+  end if;
 
   select created_at into v_created_at from public.users where id = v_user_id;
   if v_created_at is null or v_created_at < now() - interval '14 days'
@@ -243,21 +258,21 @@ set search_path = public, pg_temp
 as $$
   with me as (select auth.uid() as id),
   invited as (
-    select r.id, app_private.has_on_time_repayment(r.referred_user_id) as qualified
+    select r.id, r.created_at, app_private.has_on_time_repayment(r.referred_user_id, r.referrer_user_id) as qualified
     from public.friend_referrals r, me
     where r.referrer_user_id = me.id
   ),
   referred_by as (
-    select r.id from public.friend_referrals r, me where r.referred_user_id = me.id
+    select r.id, r.referrer_user_id from public.friend_referrals r, me where r.referred_user_id = me.id
   ),
   claims as (
-    select c.reward, c.friend_referral_id, c.status from public.voucher_claims c, me where c.user_id = me.id
+    select c.reward, c.friend_referral_id, c.status, c.created_at from public.voucher_claims c, me where c.user_id = me.id
   ),
   eligible as (
     select 'first_on_time_repayment'::text as reward, null::uuid as friend_referral_id, 50::numeric as amount_php
     from me where app_private.has_on_time_repayment(me.id)
     union all
-    select 'referral_invitee', rb.id, 100 from referred_by rb, me where app_private.has_on_time_repayment(me.id)
+    select 'referral_invitee', rb.id, 100 from referred_by rb, me where app_private.has_on_time_repayment(me.id, rb.referrer_user_id)
     union all
     select 'referral_inviter', i.id, 100 from invited i where i.qualified
   )
@@ -265,13 +280,13 @@ as $$
     'invitedCount', (select count(*) from invited),
     'qualifiedCount', (select count(*) from invited where qualified),
     'wasReferred', exists (select 1 from referred_by),
-    'claims', coalesce((select jsonb_agg(jsonb_build_object('reward', reward, 'friendReferralId', friend_referral_id, 'status', status)) from claims), '[]'::jsonb),
+    'claims', coalesce((select jsonb_agg(jsonb_build_object('reward', reward, 'friendReferralId', friend_referral_id, 'status', status) order by created_at desc) from claims), '[]'::jsonb),
     'claimable', coalesce((
       select jsonb_agg(jsonb_build_object('reward', e.reward, 'friendReferralId', e.friend_referral_id, 'amountPhp', e.amount_php))
       from eligible e
       where not exists (
         select 1 from claims c
-        where c.reward = e.reward and c.friend_referral_id is not distinct from e.friend_referral_id
+        where c.reward = e.reward and c.friend_referral_id is not distinct from e.friend_referral_id and c.status <> 'rejected'
       )
     ), '[]'::jsonb)
   )
@@ -311,13 +326,14 @@ begin
     v_eligible := exists (
       select 1 from public.friend_referrals r
       where r.id = p_friend_referral_id and r.referred_user_id = v_user_id
-    ) and app_private.has_on_time_repayment(v_user_id);
+        and app_private.has_on_time_repayment(v_user_id, r.referrer_user_id)
+    );
   elsif p_reward = 'referral_inviter' then
     v_amount := 100;
     v_eligible := exists (
       select 1 from public.friend_referrals r
       where r.id = p_friend_referral_id and r.referrer_user_id = v_user_id
-        and app_private.has_on_time_repayment(r.referred_user_id)
+        and app_private.has_on_time_repayment(r.referred_user_id, r.referrer_user_id)
     );
   else
     raise exception 'unknown reward %', p_reward using errcode = '22023';
@@ -342,7 +358,7 @@ revoke all on function public.get_invite_inviter(text) from public;
 revoke all on function public.redeem_friend_invite(text) from public;
 revoke all on function public.get_my_rewards() from public;
 revoke all on function public.submit_voucher_claim(text, uuid, text, text, text) from public;
-revoke all on function app_private.has_on_time_repayment(uuid) from public;
+revoke all on function app_private.has_on_time_repayment(uuid, uuid) from public;
 revoke all on function app_private.generate_invite_code() from public;
 
 grant execute on function public.get_my_invite_code() to authenticated;

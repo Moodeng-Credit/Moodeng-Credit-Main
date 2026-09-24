@@ -31,13 +31,14 @@ function PopupShell({
 
    return (
       <div
-         className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 px-5"
+         className="fixed inset-0 z-[80] flex overflow-y-auto overscroll-contain bg-black/80 px-5 py-6"
          role="dialog"
          aria-modal="true"
          aria-labelledby={labelledBy}
          onClick={onClose}
       >
-         <div className="flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
+         {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
+         <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
             {title}
             <div className="w-full rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white shadow-[0_-1px_0_0_#fff]">
                {children}

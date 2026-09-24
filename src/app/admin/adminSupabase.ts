@@ -1957,12 +1957,14 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
 
 export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {
    const supabase = getSupabaseBrowserClient();
-   await requireOk(
-      supabase
-         .from('voucher_claims')
-         .update({ status, admin_note: adminNote ?? null, sent_at: status === 'sent' ? new Date().toISOString() : null })
-         .eq('id', id)
-   );
+   const { data, error } = await supabase
+      .from('voucher_claims')
+      .update({ status, admin_note: adminNote ?? null, sent_at: status === 'sent' ? new Date().toISOString() : null })
+      .eq('id', id)
+      .select('id');
+   if (error) throw error;
+   // RLS hides rows it refuses to update, so "no error" alone does not mean it worked.
+   if (!data || data.length === 0) throw new Error('Claim was not updated (not found or not allowed).');
 }
 
 // ---------------------------------------------------------------------------

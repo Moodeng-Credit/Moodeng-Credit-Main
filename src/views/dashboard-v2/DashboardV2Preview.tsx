@@ -18,7 +18,7 @@ export default function DashboardV2PreviewBar({
    return (
       <div className="sticky top-0 z-30 flex items-center gap-2 bg-[#1c053d]/90 px-3 py-2 backdrop-blur">
          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[#c9bfe6]">Preview</span>
-         <div className="flex flex-1 gap-1 overflow-x-auto" role="tablist" aria-label="Dashboard preview state">
+         <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto" role="tablist" aria-label="Dashboard preview state">
             {PREVIEW_STATES.map((state) => {
                const isDisabled = state.id === 'real' && !isSignedIn;
                const isActive = state.id === previewState && !isDisabled;

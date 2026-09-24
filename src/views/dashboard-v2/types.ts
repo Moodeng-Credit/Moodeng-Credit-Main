@@ -57,6 +57,10 @@ export interface DashboardV2Model {
    pandesalGoal: number | null;
    /** The borrower's generated invite code (e.g. SDOIVU01381), or null until it loads / when signed out. */
    referralCode: string | null;
+   /** True when the invite code or rewards could not be loaded (e.g. the backend is not deployed yet). */
+   referralUnavailable?: boolean;
+   /** True while the invite code / rewards are still loading from the database. */
+   referralLoading?: boolean;
    /** Voucher rewards as computed by the database (what can be claimed, and claim statuses). */
    rewards: MyRewards;
    summary: {

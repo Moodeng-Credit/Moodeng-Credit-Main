@@ -39,7 +39,10 @@ export function TabbedCard({
          >
             {tab}
          </div>
-         <h2 id={titleId} className="relative text-[22px] font-black italic leading-[18px] text-[#594d65]">
+         <h2
+            id={titleId}
+            className="relative whitespace-nowrap text-[clamp(18px,5.6vw,22px)] font-black italic leading-[18px] text-[#594d65]"
+         >
             {title}
          </h2>
          <div

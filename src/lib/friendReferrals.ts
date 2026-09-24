@@ -106,21 +106,56 @@ export async function submitVoucherClaim(input: {
 }
 
 /** Invite codes arrive before sign-up, so the landing page parks the code until the user has an account. */
+/** Invite links are credited to an account made after the link was opened, within a week. */
+const PENDING_INVITE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+// Sign-up can finish slightly before the landing page stores the code (e.g. clock skew).
+const PENDING_INVITE_SIGNUP_SLACK_MS = 60 * 60 * 1000;
+
+export interface PendingInvite {
+   code: string;
+   parkedAt: number;
+}
+
 export function rememberPendingInvite(code: string): void {
    try {
-      window.localStorage.setItem(PENDING_INVITE_KEY, normalizeInviteCode(code));
+      const pending: PendingInvite = { code: normalizeInviteCode(code), parkedAt: Date.now() };
+      window.localStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(pending));
    } catch {
       // Storage can be unavailable (private mode); the invite simply won't be credited.
    }
 }
 
-export function readPendingInvite(): string | null {
+export function readPendingInvite(now = Date.now()): PendingInvite | null {
+   let raw: string | null = null;
    try {
-      return window.localStorage.getItem(PENDING_INVITE_KEY);
+      raw = window.localStorage.getItem(PENDING_INVITE_KEY);
    } catch {
       return null;
    }
+   if (!raw) return null;
+   let pending: Partial<PendingInvite> | null = null;
+   try {
+      pending = JSON.parse(raw) as Partial<PendingInvite>;
+   } catch {
+      pending = null;
+   }
+   if (
+      !pending ||
+      typeof pending.code !== 'string' ||
+      typeof pending.parkedAt !== 'number' ||
+      now - pending.parkedAt > PENDING_INVITE_MAX_AGE_MS
+   ) {
+      clearPendingInvite();
+      return null;
+   }
+   return { code: pending.code, parkedAt: pending.parkedAt };
 }
+
+/** Only an account created after the invite link was opened is credited — not whoever signs in next on a shared phone. */
+export const isAccountNewerThanInvite = (accountCreatedAt: string | undefined, invite: PendingInvite): boolean => {
+   const created = accountCreatedAt ? Date.parse(accountCreatedAt) : Number.NaN;
+   return Number.isFinite(created) && created >= invite.parkedAt - PENDING_INVITE_SIGNUP_SLACK_MS;
+};
 
 export function clearPendingInvite(): void {
    try {
