@@ -201,6 +201,35 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(onSubmitted).toHaveBeenCalledWith('pending');
    });
 
+   it('shows the "about you" bio page between Messenger and the intro when the bio is not saved yet', async () => {
+      const renderAbout = vi.fn(({ onDone }: { onBack: () => void; onDone: () => void }) =>
+         createElement('button', { type: 'button', onClick: onDone }, 'Bio done')
+      );
+      await act(async () => {
+         root.render(
+            createElement(ConnectStep, {
+               userId: 'user-1',
+               displayName: 'Maria',
+               mode: 'call',
+               needsAbout: true,
+               renderAbout,
+               onBack: vi.fn(),
+               onSubmitted
+            })
+         );
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+
+      await click(buttonByText(container, 'Continue'));
+      expect(renderAbout).toHaveBeenCalled();
+      expect(container.textContent).not.toContain('What do you need a loan for?');
+
+      await click(buttonByText(container, 'Bio done'));
+      expect(container.textContent).toContain('What do you need a loan for?');
+   });
+
    it('shows the "see you on the call" pending card in call mode', async () => {
       const onClose = vi.fn();
       await act(async () => {

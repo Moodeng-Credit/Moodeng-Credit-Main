@@ -12,6 +12,8 @@ import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots } from './lib
 //
 // Two actions (POST JSON): { action: 'slots', timeZone } returns the merged available start times;
 // { action: 'book', start, timeZone } books the slot and stamps users.video_call_scheduled_at.
+// Optional { host: 'emma' | 'george' } on both pins the call to one host — referred borrowers book
+// Emma's exchange-setup call (how to deposit and repay locally) instead of the round-robin.
 // verify_jwt is on, so only a signed-in borrower can call it; we take their identity from the JWT,
 // never from the body, so nobody can book as someone else. The host Cal.com API keys live only in
 // this function's env, never in the client.
@@ -136,7 +138,7 @@ serve(async (req) => {
    const user = auth?.user;
    if (!user) return json({ error: 'unauthorized' }, 401);
 
-   let payload: { action?: string; start?: string; timeZone?: string };
+   let payload: { action?: string; start?: string; timeZone?: string; host?: string };
    try {
       payload = await req.json();
    } catch {
@@ -153,6 +155,13 @@ serve(async (req) => {
       if (eid) resolved.push({ ...host, eventTypeId: eid });
    }
    if (resolved.length === 0) return json({ error: 'no_events' }, 500);
+
+   // Pinned host (e.g. Emma for referred borrowers): only that host's calendar is offered/booked.
+   if (payload.host) {
+      const pinned = resolved.filter((h) => h.id === payload.host);
+      if (pinned.length === 0) return json({ error: 'unknown_host' }, 400);
+      resolved.splice(0, resolved.length, ...pinned);
+   }
 
    if (payload.action === 'slots') {
       const start = ymd(new Date());

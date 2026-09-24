@@ -2303,6 +2303,7 @@ function RequestBoard$() {
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
                   loanFlow={loanFlow}
+                  isFirstLoan={borrowerCreditLoans.length === 0}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   showBioStep={showBioStep}
                   onBioSave={handleBioSave}

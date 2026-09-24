@@ -119,12 +119,29 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       : borrower.whatsapp_verified_at
         ? 'WhatsApp ✅'
         : 'no verified line';
+   // The bio they filled in the Connect filter — so you know their situation before the call.
+   const { data: bio } = await svc
+      .from('users')
+      .select('profession, income_type, income_description, monthly_income, monthly_expenses, payday_type')
+      .eq('id', borrower.id)
+      .maybeSingle();
+   const work = [bio?.profession, bio?.income_type, bio?.income_description].filter(Boolean).join(' · ');
+   const money = [
+      bio?.monthly_income ? `income ${bio.monthly_income}` : null,
+      bio?.monthly_expenses ? `expenses ${bio.monthly_expenses}` : null,
+      bio?.payday_type ? `payday ${bio.payday_type}` : null
+   ]
+      .filter(Boolean)
+      .join(' · ');
+
    const isCall = request.kind === 'call';
    const lines = [
       isCall ? '📞 New borrower booked their intro call' : '🤝 New borrower wants to connect',
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
       `Line: ${line}`,
+      work ? `Work: ${work}` : null,
+      money ? `Money: ${money}` : null,
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTime(borrower.video_call_starts_at, 'Asia/Bangkok')}` : null,
       request.referral_code ? `Referral: ${request.referral_code}` : null,
       `Why: ${request.reason?.trim() || '—'}`,

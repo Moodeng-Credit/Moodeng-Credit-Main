@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { Clock3, HeartHandshake } from 'lucide-react';
 
@@ -14,9 +14,11 @@ import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 // team first — B2C treated like a B2B lead:
 //   1. "Let's connect": open Messenger (proves a real line we can message back on — same SendPulse
 //      one-tap flow as ContactsStep; skipped straight through if they're already verified),
-//   2. a short intro (what they need the loan for),
-//   3. call mode only: book the video call (the request unlocks only after they actually show up),
-//   4. "Send to the team" → loan-access edge function flips them to pending and pings admins, who
+//   2. about you — the two-page bio (work, income, payday), rendered by LoanRequestModal and saved to
+//      the profile right away, so admins see it before the call and the application skips it later,
+//   3. a short intro (what they need the loan for),
+//   4. call mode only: book the video call (the request unlocks only after they actually show up),
+//   5. "Send to the team" → loan-access edge function flips them to pending and pings admins, who
 //      decide from Telegram (Approve/Reject, or Showed up/No-show after the call). The borrower
 //      then gets a push (+ Telegram, + Messenger reminders for the call).
 // The referral card (optional credit boost) runs before this, inside LoanRequestModal. A referral
@@ -39,6 +41,8 @@ export default function ConnectStep({
    referralCode,
    wasRejected = false,
    mode = 'approval',
+   needsAbout = false,
+   renderAbout,
    onBack,
    onSubmitted
 }: {
@@ -47,10 +51,14 @@ export default function ConnectStep({
    referralCode?: string;
    wasRejected?: boolean;
    mode?: 'approval' | 'call';
+   // Bio not saved yet → show the "about you" page (rendered by the modal, which owns the bio state).
+   needsAbout?: boolean;
+   renderAbout?: (nav: { onBack: () => void; onDone: () => void }) => ReactNode;
    onBack: () => void;
    onSubmitted: (status: LoanAccessStatus) => void | Promise<void>;
 }) {
-   const [page, setPage] = useState<'contact' | 'intro' | 'call'>('contact');
+   const [page, setPage] = useState<'contact' | 'about' | 'intro' | 'call'>('contact');
+   const showAbout = needsAbout && Boolean(renderAbout);
    const [reason, setReason] = useState('');
    const [isSending, setIsSending] = useState(false);
    const [error, setError] = useState('');
@@ -94,7 +102,7 @@ export default function ConnectStep({
             onBack={onBack}
             onContinue={() => {
                setError('');
-               setPage('intro');
+               setPage(showAbout ? 'about' : 'intro');
             }}
             intro={
                <div className="flex items-start gap-3">
@@ -110,6 +118,10 @@ export default function ConnectStep({
             }
          />
       );
+   }
+
+   if (page === 'about' && renderAbout) {
+      return <>{renderAbout({ onBack: () => setPage('contact'), onDone: () => setPage('intro') })}</>;
    }
 
    if (page === 'call') {
@@ -174,7 +186,7 @@ export default function ConnectStep({
             </button>
             <button
                className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
-               onClick={() => setPage('contact')}
+               onClick={() => setPage(showAbout ? 'about' : 'contact')}
                type="button"
             >
                Back

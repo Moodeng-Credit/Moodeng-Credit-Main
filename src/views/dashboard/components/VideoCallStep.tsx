@@ -24,7 +24,7 @@ export default function VideoCallStep({
    intro = 'No referral code — book a call.',
    continueLabel = 'Continue',
    requireUpcoming = false,
-   optional = false
+   host
 }: {
    userId: string;
    onBack: () => void;
@@ -34,8 +34,8 @@ export default function VideoCallStep({
    // Call flow (ConnectStep): only a call that's still ahead counts — after a no-show the old,
    // past booking must not show as "booked", or the borrower could never pick a new time.
    requireUpcoming?: boolean;
-   // Referred borrowers: the call is a friendly extra, so they can skip it and still continue.
-   optional?: boolean;
+   // Pin the call to one host — referred borrowers book Emma for their local-exchange setup.
+   host?: 'emma' | 'george';
 }) {
    const timeZone = useMemo(() => {
       try {
@@ -67,7 +67,7 @@ export default function VideoCallStep({
    const [notice, setNotice] = useState('');
 
    const loadSlots = async () => {
-      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'slots', timeZone } });
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'slots', timeZone, host } });
       if (error || !data) {
          setPhase('error');
          return;
@@ -105,7 +105,7 @@ export default function VideoCallStep({
       if (bookingStart) return;
       setBookingStart(start);
       setNotice('');
-      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'book', start, timeZone } });
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'book', start, timeZone, host } });
       setBookingStart(null);
 
       const result = data as { ok?: boolean; start?: string; error?: string } | null;
@@ -249,17 +249,8 @@ export default function VideoCallStep({
                onClick={() => isScheduled && onContinue()}
                type="button"
             >
-               {isScheduled ? continueLabel : optional ? 'Pick a time above' : 'Book a time to continue'}
+               {isScheduled ? continueLabel : 'Book a time to continue'}
             </button>
-            {optional && !isScheduled ? (
-               <button
-                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-2 text-md-b2 font-medium text-md-heading transition duration-150 ease-out hover:border-md-primary-900 active:scale-[0.98]"
-                  onClick={onContinue}
-                  type="button"
-               >
-                  Skip for now
-               </button>
-            ) : null}
             <button
                className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
                onClick={onBack}

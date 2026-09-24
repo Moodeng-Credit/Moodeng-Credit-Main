@@ -51,7 +51,7 @@ import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
-import { fetchUser, updateUser } from '@/store/slices/authSlice';
+import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
@@ -89,6 +89,8 @@ interface LoanRequestModalProps {
    startOnReferralStep?: boolean;
    /** Which borrower flow is live (useLoanFlow in RequestBoard). Defaults to 'open' — no gate. */
    loanFlow?: LoanFlow;
+   /** No loan requests yet — referred borrowers book Emma's exchange-setup call on their first. */
+   isFirstLoan?: boolean;
 }
 
 export type AppliedReferralCode = {
@@ -416,8 +418,12 @@ function BorrowerContextLoanStep({
    onProfileImageClick,
    onProfileNameChange,
    profileName,
-   profileSaveError
+   profileSaveError,
+   submitLabel = 'Submit request'
 }: {
+   // Last-page button: "Submit request" in the application; "Continue" when the bio is part of the
+   // Connect filter (PART 1), where nothing is submitted yet.
+   submitLabel?: string;
    page: 1 | 2;
    context: BorrowerContextState;
    currentAvatarBackground?: string | null;
@@ -677,7 +683,7 @@ function BorrowerContextLoanStep({
                onClick={onContinue}
                type="button"
             >
-               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : 'Submit request'}
+               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : submitLabel}
             </button>
          </div>
       </div>
@@ -958,7 +964,8 @@ export default function LoanRequestModal({
    requireBorrowerContextStep = true,
    startOnBorrowerContextStep = false,
    startOnReferralStep = true,
-   loanFlow = 'open'
+   loanFlow = 'open',
+   isFirstLoan = false
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -1088,16 +1095,19 @@ export default function LoanRequestModal({
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
-   // The video call: required in the open flow without a referral (today's rule); optional for a
-   // referred borrower on their first loan (a friendly hello — the request posts either way).
-   const needsVideoCallStep = loanFlow === 'open' && !hasReferral;
-   const offersOptionalCall = hasReferral && isMultiStepRequestFlow;
-   const showsVideoCallStep = needsVideoCallStep || offersOptionalCall;
+   // The video call before the request posts (booked, not attended):
+   //   * open flow, no referral → the round-robin "meet the team" call (today's rule);
+   //   * referred, first loan (any flow) → Emma's call to get them set up with a local exchange, so
+   //     they can actually deposit and repay (lesson learned: borrowers who couldn't pay back on time
+   //     for lack of a way to deposit, and kept needing due-date extensions).
+   // Unreferred borrowers in the call/approval flows had their call before applying (PART 1).
+   const needsExchangeSetupCall = hasReferral && isFirstLoan;
+   const needsVideoCallStep = (loanFlow === 'open' && !hasReferral) || needsExchangeSetupCall;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
       ...(needsContactsStep ? (['contacts'] as const) : []),
-      ...(showsVideoCallStep ? (['videocall'] as const) : [])
+      ...(needsVideoCallStep ? (['videocall'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showContactsStep
       ? 'contacts'
@@ -1640,7 +1650,7 @@ export default function LoanRequestModal({
       // Open flow, no referral code → a human at Moodeng hasn't vouched for this borrower yet, so
       // they SCHEDULE (not complete) a short video call before their request goes out. (The call
       // flow moves the call before the application instead, and unlocks it only after attendance.)
-      if (showsVideoCallStep && !videoCallStepDone && !showVideoCallStep) {
+      if (needsVideoCallStep && !videoCallStepDone && !showVideoCallStep) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
          setShowContactsStep(false);
@@ -1795,6 +1805,40 @@ export default function LoanRequestModal({
       }
    };
 
+   // Bio inside the Connect filter: save it to the profile right away (the admin card shows it before
+   // the call, and after approval the application skips it because user.incomeType is set).
+   const handleConnectAboutContinue = async (done: () => void) => {
+      if (!canContinueBorrowerContext) return;
+      if (isBioSubmittingRef.current) return;
+      isBioSubmittingRef.current = true;
+      try {
+         const isProfileSaved = await saveBorrowerProfile();
+         if (!isProfileSaved) return;
+         const mapped = mapBorrowerContextForSave(borrowerContext);
+         await dispatch(
+            updateBorrowerContext({
+               incomeType: mapped.incomeType,
+               paydayType: mapped.paydayType,
+               paydayStart: mapped.paydayStart,
+               paydayEnd: mapped.paydayEnd,
+               gapReasons: mapped.gapReasons,
+               monthlyIncome: mapped.monthlyIncome,
+               monthlyExpenses: mapped.monthlyExpenses,
+               otherIncome: mapped.otherIncome,
+               profession: mapped.profession,
+               incomeDescription: mapped.incomeDescription
+            })
+         ).unwrap();
+         setBorrowerContextPromptSeen(true);
+         done();
+      } catch (error) {
+         console.error('Failed to save borrower context (connect):', error);
+         setBorrowerProfileError("Couldn't save — please try again.");
+      } finally {
+         isBioSubmittingRef.current = false;
+      }
+   };
+
    // Back from the Connect step returns to the referral card when there is one, else closes.
    const handleConnectBack = () => {
       if (isVerified && canUseReferralBoost) {
@@ -1822,6 +1866,47 @@ export default function LoanRequestModal({
          };
       });
    };
+
+   // The two-page bio ("How lenders see you"). Rendered by the application (PART 2) and, for
+   // unreferred borrowers in the call/approval flows, inside the Connect filter (PART 1).
+   const renderBioStep = (opts: { onBack: () => void; onContinue: () => void; submitLabel?: string }) => (
+      <BorrowerContextLoanStep
+         page={bioPage}
+         context={borrowerContext}
+         currentAvatarBackground={user.avatarBackground}
+         currentAvatarUrl={user.avatarUrl}
+         isSubmitting={isSubmitting}
+         isSavingProfile={isSavingBorrowerProfile || isCheckingBio}
+         monthlyIncome={borrowerContext.monthlyIncome ?? ''}
+         monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
+         onBack={opts.onBack}
+         onNextPage={handleBioPage1Continue}
+         onCashGapToggle={handleCashGapToggle}
+         onContinue={opts.onContinue}
+         onIncomeSelect={(value) =>
+            setBorrowerContext((current) => ({
+               ...current,
+               incomeSetup: value,
+               // Drop the free-text explanation if they move off "Something else".
+               incomeDescription: value === 'contract' ? current.incomeDescription : ''
+            }))
+         }
+         onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
+         onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
+         onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
+         onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
+         onIncomeDescriptionChange={(v) => setBorrowerContext((prev) => ({ ...prev, incomeDescription: v }))}
+         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
+         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
+         onProfileNameChange={(value) => {
+            setBorrowerProfileName(value);
+            setBorrowerProfileError('');
+         }}
+         profileName={borrowerProfileName}
+         profileSaveError={borrowerProfileError}
+         submitLabel={opts.submitLabel}
+      />
+   );
 
    if (!isOpen) return null;
 
@@ -1912,7 +1997,7 @@ export default function LoanRequestModal({
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
-                        {needsVideoCallStep ? 'Schedule a video call' : 'Meet the team (optional)'}
+                        {needsExchangeSetupCall ? 'Book your setup call' : 'Schedule a video call'}
                      </h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
@@ -2044,6 +2129,16 @@ export default function LoanRequestModal({
                   referralCode={appliedReferral?.code}
                   wasRejected={loanAccessStatus === 'rejected'}
                   mode={loanFlow === 'call' ? 'call' : 'approval'}
+                  needsAbout={!user.incomeType}
+                  renderAbout={({ onBack: aboutBack, onDone }) => (
+                     <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+                        {renderBioStep({
+                           onBack: () => (bioPage === 2 ? setBioPage(1) : aboutBack()),
+                           onContinue: () => void handleConnectAboutContinue(onDone),
+                           submitLabel: 'Continue'
+                        })}
+                     </div>
+                  )}
                   onBack={handleConnectBack}
                   onSubmitted={handleLoanAccessSubmitted}
                />
@@ -2054,13 +2149,12 @@ export default function LoanRequestModal({
                   userId={user.id}
                   onBack={handleVideoCallStepBack}
                   onContinue={handleVideoCallStepContinue}
-                  {...(needsVideoCallStep
-                     ? {}
-                     : {
-                          optional: true,
-                          intro: 'Want a quick 15-minute hello with the team? Totally optional — your request posts either way.',
-                          continueLabel: 'Post my request'
-                       })}
+                  {...(needsExchangeSetupCall
+                     ? {
+                          host: 'emma' as const,
+                          intro: 'A quick 15-minute call with Emma to set you up with a local exchange — so depositing and paying back is easy when the time comes.'
+                       }
+                     : {})}
                />
             ) : (
                <form
@@ -2069,41 +2163,7 @@ export default function LoanRequestModal({
                   className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading"
                >
                   {showBorrowerContextStep ? (
-                     <BorrowerContextLoanStep
-                        page={bioPage}
-                        context={borrowerContext}
-                        currentAvatarBackground={user.avatarBackground}
-                        currentAvatarUrl={user.avatarUrl}
-                        isSubmitting={isSubmitting}
-                        isSavingProfile={isSavingBorrowerProfile || isCheckingBio}
-                        monthlyIncome={borrowerContext.monthlyIncome ?? ''}
-                        monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
-                        onBack={handleBorrowerContextBack}
-                        onNextPage={handleBioPage1Continue}
-                        onCashGapToggle={handleCashGapToggle}
-                        onContinue={handleBorrowerContextContinue}
-                        onIncomeSelect={(value) =>
-                           setBorrowerContext((current) => ({
-                              ...current,
-                              incomeSetup: value,
-                              // Drop the free-text explanation if they move off "Something else".
-                              incomeDescription: value === 'contract' ? current.incomeDescription : ''
-                           }))
-                        }
-                        onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
-                        onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
-                        onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
-                        onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
-                        onIncomeDescriptionChange={(v) => setBorrowerContext((prev) => ({ ...prev, incomeDescription: v }))}
-                        onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
-                        onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
-                        onProfileNameChange={(value) => {
-                           setBorrowerProfileName(value);
-                           setBorrowerProfileError('');
-                        }}
-                        profileName={borrowerProfileName}
-                        profileSaveError={borrowerProfileError}
-                     />
+                     renderBioStep({ onBack: handleBorrowerContextBack, onContinue: handleBorrowerContextContinue })
                   ) : (
                      <>
                         {showVerify ? (

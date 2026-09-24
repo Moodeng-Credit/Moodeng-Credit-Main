@@ -214,7 +214,7 @@ describe('LoanRequestModal borrowing gate', () => {
    });
 
    describe('borrower flow split (call/approval gate)', () => {
-      const render = (user: User, loanFlow: 'open' | 'call' | 'approval') =>
+      const render = (user: User, loanFlow: 'open' | 'call' | 'approval', isFirstLoan = false) =>
          renderToStaticMarkup(
             createElement(LoanRequestModal, {
                ...sharedProps,
@@ -222,6 +222,7 @@ describe('LoanRequestModal borrowing gate', () => {
                availableCreditLimit: 15,
                startOnReferralStep: false,
                loanFlow,
+               isFirstLoan,
                user
             })
          );
@@ -246,6 +247,13 @@ describe('LoanRequestModal borrowing gate', () => {
       it('changes nothing in the open flow — no gate for anyone', () => {
          const markup = render({ ...baseUser, loanAccessStatus: 'none' }, 'open');
          expect(markup).toContain('Set your loan terms');
+      });
+
+      it('adds the required Emma setup call to a referred borrower\u2019s first loan (terms, 2 bio pages, contact, call)', () => {
+         const first = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'call', true);
+         expect(first).toContain('Step 1 of 5');
+         const later = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'call', false);
+         expect(later).toContain('Step 1 of 4');
       });
 
       it('lets an approved borrower apply without a referral', () => {
