@@ -1,6 +1,31 @@
 [functions.create-user]
 verify_jwt = false
 
+# Public Meta webhook — Facebook calls this unauthenticated (GET handshake + POST events), so it
+# must not require a Supabase JWT.
+[functions.messenger-webhook]
+verify_jwt = false
+
+# SendPulse "External Request" bridge — SendPulse can't present a Supabase JWT, so it's gated by the
+# x-sendpulse-secret header (SENDPULSE_VERIFY_SECRET) inside the function instead.
+[functions.sendpulse-messenger-verify]
+verify_jwt = false
+
+# Public Cal.com webhook — Cal.com calls this unauthenticated and signs it with x-cal-signature-256,
+# so it must not require a Supabase JWT (the signature is what authenticates it).
+[functions.calcom-webhook]
+verify_jwt = false
+
+# "✅ I'll be there" button in Messenger call reminders — tapped from Messenger's in-app browser with
+# no Supabase session. Gated by the per-booking random token (users.video_call_confirm_token).
+[functions.video-call-confirm]
+verify_jwt = false
+
+# Zoom participant events (borrower arrived / joined / left). Zoom can't send a Supabase token; every
+# request is verified against the host's Zoom app Secret Token (x-zm-signature) instead.
+[functions.zoom-webhook]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 
@@ -64,6 +89,11 @@ verify_jwt = true
 [functions.admin-loan-notify]
 verify_jwt = true
 
+# Admin → Borrower contacts: Facebook names + "Message on Messenger" via SendPulse. Re-checks the
+# caller is an active admin inside the function.
+[functions.admin-messenger]
+verify_jwt = true
+
 # Admin refund: repays a lender for an outstanding loan, cancels the loan, and bans +
 # KYC-blacklists the borrower. Re-verifies the caller is an active admin inside the function.
 [functions.admin-refund-loan]
@@ -89,3 +119,16 @@ verify_jwt = false
 # header check (checkCronAuth), so only the cron (which reads the token from vault) can run it.
 [functions.trace-loan-fund-flow]
 verify_jwt = false
+
+# Called by the sync_didit_user_status trigger via pg_net. No JWT: the caller only names a user, and
+# the function pushes that user's CURRENT ban status (read from the DB) to Didit, so a stray call can
+# only re-sync Didit to the truth.
+[functions.didit-sync-user-status]
+verify_jwt = false
+
+# Daily KYC cross-check (pg_cron). Auth is the X-Admin-Token header, checked in the function.
+[functions.kyc-cross-check]
+verify_jwt = false
+
+[functions.admin-ban-user]
+verify_jwt = true

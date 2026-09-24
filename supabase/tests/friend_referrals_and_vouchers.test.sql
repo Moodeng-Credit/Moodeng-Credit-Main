@@ -1,4 +1,4 @@
--- Behaviour tests for migration 20260924000000_friend_referrals_and_vouchers.sql.
+-- Behaviour tests for migration 20260924160000_friend_referrals_and_vouchers.sql.
 --
 -- Run against a THROWAWAY Postgres database only (never production). This file creates minimal
 -- stand-ins for the Supabase pieces the migration needs (auth.uid(), anon/authenticated roles,
@@ -6,7 +6,7 @@
 --
 --   createdb reftest
 --   psql -d reftest -f supabase/tests/friend_referrals_and_vouchers.test.sql   -- part 1 creates stubs
---   psql -d reftest -f supabase/migrations/20260924000000_friend_referrals_and_vouchers.sql
+--   psql -d reftest -f supabase/migrations/20260924160000_friend_referrals_and_vouchers.sql
 --   psql -d reftest -v run_tests=1 -f supabase/tests/friend_referrals_and_vouchers.test.sql
 --
 -- Expected final line: "32/32 passed".

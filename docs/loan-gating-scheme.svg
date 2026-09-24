@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 860" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <rect width="820" height="860" fill="#ffffff"/>
+  <text x="30" y="38" font-size="20" font-weight="700" fill="#26143f">Moodeng · Loan Gating — Connect → Approve → Apply</text>
+  <text x="30" y="60" font-size="12.5" fill="#695b7b">Trigger: tap “Apply for a loan”. Referral = credit boost only. Everyone connects + is manually approved. No video call.</text>
+
+  <!-- entry -->
+  <rect x="290" y="80" width="240" height="40" rx="12" fill="#f8f4fc" stroke="#7c4dcf" stroke-width="1.5"/>
+  <text x="410" y="105" font-size="13.5" font-weight="600" fill="#3a1d6e" text-anchor="middle">Borrower taps “Apply for a loan”</text>
+
+  <!-- router -->
+  <rect x="250" y="134" width="320" height="46" rx="12" fill="#efe9f8" stroke="#7c4dcf" stroke-width="1.5"/>
+  <text x="410" y="153" font-size="12.5" font-weight="700" fill="#3a1d6e" text-anchor="middle">Route on users.loan_access_status</text>
+  <text x="410" y="170" font-size="11" fill="#695b7b" text-anchor="middle">none/rejected → Part 1 · pending → Locked · approved → Part 2</text>
+  <line x1="410" y1="120" x2="410" y2="134" stroke="#7c4dcf" stroke-width="1.5"/>
+  <line x1="410" y1="180" x2="410" y2="196" stroke="#7c4dcf" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- PART 1 -->
+  <rect x="30" y="198" width="760" height="150" rx="14" fill="#eef4ff" stroke="#0866FF" stroke-width="1.5"/>
+  <text x="48" y="224" font-size="13.5" font-weight="700" fill="#0654d1">PART 1 · CONNECT  (status: none)</text>
+  <text x="48" y="252" font-size="13" fill="#26143f">1 · Referral card — enter code (credit boost) or skip</text>
+  <text x="48" y="280" font-size="13" fill="#26143f">2 · Reach out — copy intro (name · username · reason), message us on WhatsApp / Facebook</text>
+  <text x="48" y="308" font-size="13" fill="#26143f">3 · “I’ve messaged you”  →  status = <tspan font-weight="700">pending</tspan>  (unverified; you confirm by reading the inbox)</text>
+  <text x="48" y="334" font-size="11.5" fill="#4b6b9c" font-style="italic">Treat the B2C borrower like a B2B lead — they come to us first.</text>
+  <line x1="410" y1="348" x2="410" y2="366" stroke="#0866FF" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- APPROVAL -->
+  <rect x="30" y="368" width="760" height="132" rx="14" fill="#fff7e6" stroke="#d99100" stroke-width="1.5"/>
+  <text x="48" y="394" font-size="13.5" font-weight="700" fill="#a86a00">APPROVAL  (status: pending)</text>
+  <text x="48" y="420" font-size="13" fill="#26143f">Admins pinged — Telegram buttons + Discord  (name · username · KYC status · their message · WA/FB links)</text>
+  <text x="48" y="448" font-size="13" fill="#26143f"><tspan font-weight="700" fill="#178447">Approve</tspan> → approved (push + glowing button)   ·   <tspan font-weight="700" fill="#c0392b">Reject</tspan> → rejected   ·   7 days no action → reset to none</text>
+  <text x="48" y="476" font-size="11.5" fill="#a86a00" font-style="italic">The human approval is the real gate — you’ve actually spoken to them before a request can exist.</text>
+  <line x1="410" y1="500" x2="410" y2="518" stroke="#d99100" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- PART 2 -->
+  <rect x="30" y="520" width="760" height="150" rx="14" fill="#eefbf2" stroke="#178447" stroke-width="1.5"/>
+  <text x="48" y="546" font-size="13.5" font-weight="700" fill="#0f6b38">PART 2 · APPLY  (status: approved — push notification + glowing Apply button)</text>
+  <text x="48" y="574" font-size="13" fill="#26143f">1 · Bio / context</text>
+  <text x="48" y="602" font-size="13" fill="#26143f">2 · Verify contact — <tspan font-weight="700">WhatsApp + Telegram</tspan>  (the real, cryptographic verification)</text>
+  <text x="48" y="630" font-size="13" fill="#26143f">3 · Post loan request</text>
+  <text x="48" y="656" font-size="11.5" fill="#0f6b38" font-style="italic">No video call — Part 1’s chat + approval replaced it.</text>
+  <line x1="410" y1="670" x2="410" y2="688" stroke="#178447" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- outcome -->
+  <rect x="210" y="690" width="400" height="44" rx="12" fill="#178447"/>
+  <text x="410" y="717" font-size="13.5" font-weight="700" fill="#ffffff" text-anchor="middle">Request visible to lenders — already vetted ✓</text>
+
+  <!-- state legend -->
+  <text x="30" y="772" font-size="12.5" font-weight="700" fill="#26143f">State machine</text>
+  <g font-size="12" font-weight="600">
+    <rect x="30" y="784" width="86" height="30" rx="15" fill="#eceff4" stroke="#9aa5b1"/><text x="73" y="803" fill="#3a4a5c" text-anchor="middle">none</text>
+    <rect x="150" y="784" width="100" height="30" rx="15" fill="#fff7e6" stroke="#d99100"/><text x="200" y="803" fill="#a86a00" text-anchor="middle">pending</text>
+    <rect x="284" y="784" width="106" height="30" rx="15" fill="#eefbf2" stroke="#178447"/><text x="337" y="803" fill="#0f6b38" text-anchor="middle">approved</text>
+    <rect x="424" y="784" width="100" height="30" rx="15" fill="#fdecec" stroke="#c0392b"/><text x="474" y="803" fill="#c0392b" text-anchor="middle">rejected</text>
+  </g>
+  <line x1="116" y1="799" x2="150" y2="799" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="250" y1="799" x2="284" y2="799" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#a)"/>
+  <line x1="390" y1="799" x2="424" y2="799" stroke="#9aa5b1" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="548" y="803" font-size="11.5" fill="#695b7b">existing users grandfathered → approved</text>
+
+  <defs>
+    <marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#5b6472"/></marker>
+  </defs>
+</svg>

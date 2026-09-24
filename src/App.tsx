@@ -8,6 +8,8 @@ import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
+import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
+import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import Header from '@/components/Header/Header';
@@ -17,7 +19,6 @@ import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
-import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import WalletNetworkBlockNotice from '@/components/WalletNetworkBlockNotice';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
@@ -225,6 +226,7 @@ export default function App() {
          <WalletNetworkBlockNotice />
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
+         <SocialContactRequiredNotifier />
          <VerifiedCelebrationNotifier />
          <LenderFundingPrompt />
          <Routes key={location.pathname}>

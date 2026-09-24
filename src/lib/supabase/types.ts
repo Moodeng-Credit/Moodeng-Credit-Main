@@ -809,7 +809,7 @@ export type Database = {
          };
       };
       Functions: {
-         // Friend referrals + voucher claims (migration 20260924000000_friend_referrals_and_vouchers).
+         // Friend referrals + voucher claims (migration 20260924160000_friend_referrals_and_vouchers).
          get_my_invite_code: {
             Args: Record<PropertyKey, never>;
             Returns: string;

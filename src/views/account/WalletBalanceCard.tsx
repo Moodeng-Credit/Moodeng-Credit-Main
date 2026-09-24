@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -176,6 +176,8 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
    const user = useSelector((state: RootState) => state.auth.user);
    const [showDetails, setShowDetails] = useState(false);
    const [showAddMoney, setShowAddMoney] = useState(false);
+   const [justCopied, setJustCopied] = useState(false);
+   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
    const copy = WALLET_COPY[locale];
    const walletLock = getBaseWalletLockStatus(user);
@@ -230,10 +232,22 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
    // Base Account borrowers manage money in their own wallet app, so no card for them either.
    if (!address || !isInstant) return null;
 
+   // Clear the "Copied ✓" reset timer if the card unmounts before it fires.
+   useEffect(
+      () => () => {
+         if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      },
+      []
+   );
+
    const copyAddress = async () => {
       try {
          await navigator.clipboard.writeText(address);
          showToast(TOAST_TYPES.SUCCESS, copy.copied, '');
+         // Inline confirmation on the button itself, on top of the toast.
+         setJustCopied(true);
+         if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+         copiedTimerRef.current = setTimeout(() => setJustCopied(false), 1500);
       } catch {
          showToast(TOAST_TYPES.ERROR, copy.copyFailed, '');
       }
@@ -317,14 +331,14 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
                         type="button"
                         onClick={copyAddress}
                         className="flex items-center gap-1.5 text-md-b2 font-semibold text-md-heading"
-                        title={copy.copyAddress}
+                        title={justCopied ? copy.copied : copy.copyAddress}
                      >
                         <span className="font-mono">{shortenAddress(address)}</span>
                         <span
                            className="h-4 w-4 bg-md-primary-1200 dark:bg-md-primary-500"
                            style={{
-                              WebkitMaskImage: "url('/icons/copy.svg')",
-                              maskImage: "url('/icons/copy.svg')",
+                              WebkitMaskImage: `url('${justCopied ? '/icons/check-fill.svg' : '/icons/copy.svg'}')`,
+                              maskImage: `url('${justCopied ? '/icons/check-fill.svg' : '/icons/copy.svg'}')`,
                               WebkitMaskRepeat: 'no-repeat',
                               maskRepeat: 'no-repeat',
                               WebkitMaskPosition: 'center',

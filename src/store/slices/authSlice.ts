@@ -12,6 +12,7 @@ import {
    type AccountStatus,
    type AuthState,
    type LivenessStatus,
+   type LoanAccessStatus,
    type User,
    type UserRole,
    type WalletFaceStatus,
@@ -212,6 +213,14 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    creditProgressionPaused: row.credit_progression_paused ?? false,
    accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
+   loanAccessStatus: (row as UserRow & { loan_access_status?: LoanAccessStatus | null }).loan_access_status ?? undefined,
+   loanAccessSeenAt: (row as UserRow & { loan_access_seen_at?: string | null }).loan_access_seen_at ?? undefined,
+   missedLastCall: (row as UserRow & { video_call_outcome?: string | null }).video_call_outcome === 'no_show',
+   hasReferral: Boolean(row.redeemed_referral_code_id),
+   hasVerifiedContact: Boolean(
+      (row as UserRow & { messenger_verified_at?: string | null }).messenger_verified_at ||
+         (row as UserRow & { whatsapp_verified_at?: string | null }).whatsapp_verified_at
+   ),
    incomeType: (row as UserRow & { income_type?: string | null }).income_type ?? undefined,
    paydayType: (row as UserRow & { payday_type?: string | null }).payday_type ?? undefined,
    paydayStart: (row as UserRow & { payday_start?: number | null }).payday_start ?? undefined,

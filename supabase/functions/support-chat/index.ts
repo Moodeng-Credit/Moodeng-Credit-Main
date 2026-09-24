@@ -146,7 +146,7 @@ const getTeamChatId = async (): Promise<string | undefined> => {
    return Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
 };
 
-const siteUrl = () => (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://app.moodeng.credit').replace(/\/$/, '');
+const siteUrl = () => (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 
 // Escalate a chat to the team feed. The user pressed "talk to a person", so we
 // hand the whole transcript over with a deep link back into the app.

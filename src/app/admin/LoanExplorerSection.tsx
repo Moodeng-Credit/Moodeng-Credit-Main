@@ -49,6 +49,7 @@ export default function LoanExplorerSection() {
    const [error, setError] = useState<string | null>(null);
    const [filter, setFilter] = useState<LoanExplorerStatus>('all');
    const [search, setSearch] = useState('');
+   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
    const [hideTest, setHideTest] = useState(true);
    const [busy, setBusy] = useState<string | null>(null);
    const [removing, setRemoving] = useState<AdminLoanRecord | null>(null);
@@ -84,19 +85,27 @@ export default function LoanExplorerSection() {
 
    const shown = useMemo(() => {
       const q = search.trim().toLowerCase();
-      if (!q) return loans;
-      return loans.filter((l) => {
-         const fields = [
-            l.tracking_id,
-            l.borrower?.username,
-            l.lender?.username,
-            l.borrower_wallet,
-            l.lender_wallet,
-            l.reason
-         ];
-         return fields.some((f) => (f ?? '').toLowerCase().includes(q));
+      const filtered = !q
+         ? loans
+         : loans.filter((l) => {
+              const fields = [
+                 l.tracking_id,
+                 l.borrower?.username,
+                 l.lender?.username,
+                 l.borrower_wallet,
+                 l.lender_wallet,
+                 l.reason
+              ];
+              return fields.some((f) => (f ?? '').toLowerCase().includes(q));
+           });
+      // Sort by Requested date (created_at); newest first by default, oldest when toggled.
+      const dir = sortOrder === 'newest' ? -1 : 1;
+      return [...filtered].sort((a, b) => {
+         const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+         const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+         return (ta - tb) * dir;
       });
-   }, [loans, search]);
+   }, [loans, search, sortOrder]);
 
    return (
       <div className="space-y-4">
@@ -115,6 +124,14 @@ export default function LoanExplorerSection() {
                      {f.label}
                   </button>
                ))}
+               <button
+                  type="button"
+                  onClick={() => setSortOrder((v) => (v === 'newest' ? 'oldest' : 'newest'))}
+                  title="Sort by requested date"
+                  className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+               >
+                  {sortOrder === 'newest' ? 'Newest first ↓' : 'Oldest first ↑'}
+               </button>
                <button
                   type="button"
                   onClick={() => setHideTest((v) => !v)}
@@ -146,14 +163,16 @@ export default function LoanExplorerSection() {
 
          {shown.length ? (
             <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
-               <table className="w-full min-w-[860px] border-collapse text-left">
+               <table className="w-full min-w-[1040px] border-collapse text-left">
                   <thead>
                      <tr className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
                         <th className="px-4 py-3">Status</th>
                         <th className="px-4 py-3">Tracking</th>
                         <th className="px-4 py-3">Borrower</th>
                         <th className="px-4 py-3">Lender</th>
-                        <th className="px-4 py-3 text-right">Amount</th>
+                        <th className="px-4 py-3 text-right">Principal</th>
+                        <th className="px-4 py-3 text-right">Interest</th>
+                        <th className="px-4 py-3 text-right">Total payback</th>
                         <th className="px-4 py-3 text-right">Repaid</th>
                         <th className="px-4 py-3">Due</th>
                         <th className="px-4 py-3">Requested</th>
@@ -175,6 +194,10 @@ export default function LoanExplorerSection() {
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.borrower?.username ?? '—'}</td>
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.lender?.username ?? '—'}</td>
                               <td className="px-4 py-3 text-right text-sm font-black text-white">{money(l.loan_amount)}</td>
+                              <td className="px-4 py-3 text-right text-sm font-bold text-[#a89bb8]">
+                                 {money(l.total_repayment_amount - l.loan_amount)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-sm font-black text-emerald-300">{money(l.total_repayment_amount)}</td>
                               <td className="px-4 py-3 text-right text-sm font-bold text-[#cfc6dd]">
                                  {l.repaid_amount == null ? '—' : money(l.repaid_amount)}
                               </td>

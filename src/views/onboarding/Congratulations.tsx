@@ -12,7 +12,7 @@ const FACEBOOK_COMMUNITY_URL = 'https://www.facebook.com/groups/1593629908540434
 
 const CONGRATULATIONS_COPY = {
    en: {
-      headerTitle: 'Verify World ID',
+      headerTitle: "You're all set",
       title: 'Congratulations! 🎉',
       body: "Your Moodeng account is fully set up and you're ready to go!",
       nextTitle: "What's Next?",
@@ -41,7 +41,7 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'Join Our Community'
    },
    fil: {
-      headerTitle: 'I-verify ang World ID',
+      headerTitle: 'Handa ka na!',
       title: 'Binabati ka namin! 🎉',
       body: 'Naka-set up na ang Moodeng account mo at handa ka nang magsimula!',
       nextTitle: 'Ano ang susunod?',
@@ -70,7 +70,7 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'Sumali sa komunidad'
    },
    id: {
-      headerTitle: 'Verifikasi World ID',
+      headerTitle: 'Kamu siap!',
       title: 'Selamat! 🎉',
       body: 'Akun Moodeng kamu sudah siap dan kamu bisa mulai sekarang!',
       nextTitle: 'Berikutnya apa?',
@@ -99,7 +99,7 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'Gabung komunitas'
    },
    th: {
-      headerTitle: 'ยืนยัน World ID',
+      headerTitle: 'พร้อมแล้ว!',
       title: 'ยินดีด้วย! 🎉',
       body: 'บัญชี Moodeng ของคุณตั้งค่าเสร็จแล้วและพร้อมเริ่มใช้งาน',
       nextTitle: 'ต่อไปคืออะไร?',
@@ -128,7 +128,7 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'เข้าร่วมชุมชน'
    },
    vi: {
-      headerTitle: 'Xác minh World ID',
+      headerTitle: 'Đã sẵn sàng!',
       title: 'Chúc mừng! 🎉',
       body: 'Tài khoản Moodeng của bạn đã được thiết lập và sẵn sàng sử dụng!',
       nextTitle: 'Tiếp theo là gì?',

@@ -1505,6 +1505,18 @@ export default function Repay() {
                                           </p>
                                        )}
                                     </button>
+                                    {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
+                                        at the exact moment the borrower copies the address to paste as a destination. */}
+                                    <div className="mt-3 rounded-xl bg-[#fef2f2] p-3 ring-1 ring-[#fca5a5] dark:bg-[#3a1414] dark:ring-[#7f1d1d]">
+                                       <p className="text-[13px] font-extrabold leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                                          ⚠️ Send on the BASE network only
+                                       </p>
+                                       <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
+                                          USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong
+                                          chain and is lost forever — it cannot be recovered. When {activeSource.label} asks which
+                                          network, choose <span className="font-extrabold underline">Base</span>.
+                                       </p>
+                                    </div>
                                  </div>
                               ) : null}
 

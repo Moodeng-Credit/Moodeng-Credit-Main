@@ -28,6 +28,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useLoanFlow } from '@/hooks/useLoanFlow';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -69,6 +70,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import LoanRequestModal, { type AppliedReferralCode, mapBorrowerContextForSave } from '@/views/dashboard/components/LoanRequestModal';
+import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -1179,6 +1181,51 @@ function RequestBoard$() {
          durationMs: 6500
       }
    ];
+   // Connect → Approve → Apply: a freshly approved borrower gets a glowing Apply card until they open
+   // the application once. Only an explicit 'approved' (column deployed) with no seen stamp glows —
+   // grandfathered users were stamped as seen by the migration.
+   const loanFlow = useLoanFlow();
+   const loanAccessStatus = effectiveUser?.loanAccessStatus;
+   const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
+   const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+
+   // While waiting for approval, re-check whenever they come back to the tab (after the call, or
+   // after tapping the approval notification in another app) so the "You're approved" glow appears.
+   useEffect(() => {
+      if (!isLoanAccessPending) return undefined;
+      const onFocus = () => void dispatch(fetchUser());
+      window.addEventListener('focus', onFocus);
+      return () => window.removeEventListener('focus', onFocus);
+   }, [dispatch, isLoanAccessPending]);
+
+   // Landing here from the "✅ I'll be there" button in a Messenger call reminder
+   // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
+   const callConfirmedParam = new URLSearchParams(location.search).get('callConfirmed');
+   useEffect(() => {
+      if (!callConfirmedParam) return;
+      if (callConfirmedParam === 'yes') {
+         showToast(TOAST_TYPES.SUCCESS, "Thanks — see you on the call!", "The team knows you're coming. The join link is in your email.", 'OK', 'acknowledge');
+      } else {
+         showToast(TOAST_TYPES.INFO, 'That link has expired', 'That call reminder is for an older booking. Check your latest message from Moodeng.', 'OK', 'acknowledge');
+      }
+      navigate(pathname, { replace: true });
+   }, [callConfirmedParam, navigate, pathname, showToast]);
+
+   useEffect(() => {
+      if (!showModal || !isFreshlyApproved || !effectiveUser?.id) return;
+      void (async () => {
+         const { error } = await getSupabaseBrowserClient()
+            .from('users')
+            .update({ loan_access_seen_at: new Date().toISOString() } as never)
+            .eq('id', effectiveUser.id);
+         if (error) {
+            console.error('Error stamping loan access seen:', error.message);
+            return;
+         }
+         void dispatch(fetchUser());
+      })();
+   }, [dispatch, effectiveUser?.id, isFreshlyApproved, showModal]);
+
    const handleReferralRedeemed = useCallback(async () => {
       try {
          await dispatch(fetchUser()).unwrap();
@@ -1936,27 +1983,53 @@ function RequestBoard$() {
                   {/* Apply Loan Card — visible for authenticated borrowers, or as CTA for public */}
                   {isAuthenticated && isBorrower && hasSelectedRole ? (
                      <div
-                        className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3"
+                        className={`bg-md-primary-100 border rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3 ${
+                           isFreshlyApproved
+                              ? 'border-md-primary-900 shadow-[0_0_0_4px_rgba(98,0,238,0.12),0_0_28px_rgba(98,0,238,0.35)]'
+                              : 'border-[#f0f0f0]'
+                        }`}
                         data-tour-target="request-apply-card"
                      >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
-                              <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
-                              <p className="text-md-b2 font-medium text-md-neutral-700">
-                                 <span className="max-[374px]:hidden">
-                                    Borrow USDC to build trust and
-                                    <br />
-                                    unlock higher loan levels.
-                                 </span>
-                                 <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
-                              </p>
+                              {isFreshlyApproved ? (
+                                 <>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">You&apos;re approved 🎉</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">The team approved you — apply for your loan now.</p>
+                                 </>
+                              ) : isLoanAccessPending ? (
+                                 <>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">
+                                       {loanFlow === 'call' || effectiveUser?.hasReferral ? 'See you on the call' : 'We’re reviewing you'}
+                                    </p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">
+                                       {loanFlow === 'call' || effectiveUser?.hasReferral
+                                          ? 'You can apply right after your video call.'
+                                          : 'Thanks for reaching out — we’ll message you on Messenger soon.'}
+                                    </p>
+                                 </>
+                              ) : (
+                                 <>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">
+                                       <span className="max-[374px]:hidden">
+                                          Borrow USDC to build trust and
+                                          <br />
+                                          unlock higher loan levels.
+                                       </span>
+                                       <span className="hidden max-[374px]:inline">Borrow USDC to build trust. Unlock higher levels.</span>
+                                    </p>
+                                 </>
+                              )}
                            </div>
                            <button
                               onClick={handleApplyLoanClick}
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
-                              className="inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-75 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px]"
+                              className={`inline-flex min-h-[56px] w-fit items-center justify-center gap-md-1 rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-md-card transition-all duration-150 hover:brightness-110 active:scale-[0.97] active:brightness-90 disabled:pointer-events-none disabled:opacity-75 max-[374px]:min-h-12 max-[374px]:px-5 max-[374px]:py-3 max-[374px]:text-[15px] ${
+                                 isFreshlyApproved ? 'animate-pulse ring-4 ring-md-primary-900/30' : ''
+                              }`}
                            >
                               {isOpeningLoanRequest ? (
                                  <>
@@ -1969,7 +2042,7 @@ function RequestBoard$() {
                            </button>
                         </div>
                         <img
-                           src="/hippos/thumb-up-right.png"
+                           src={isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
                            alt=""
                            className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
                         />
@@ -2238,6 +2311,7 @@ function RequestBoard$() {
                   isSubmitting={isSubmitting || isCheckingReason}
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
+                  loanFlow={loanFlow}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   showBioStep={showBioStep}
                   onBioSave={handleBioSave}

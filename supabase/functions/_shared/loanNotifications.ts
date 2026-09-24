@@ -2,6 +2,7 @@ export type LoanNotificationType =
    | 'funded'
    | 'urgent_reminder'
    | 'final_reminder'
+   | 'due_today'
    | 'weekly_digest'
    | 'overdue'
    | 'repayment_received'
@@ -137,7 +138,7 @@ const getConfiguredUrl = (key: string) => {
 };
 
 const getSiteUrl = () => {
-   const configuredUrl = getConfiguredUrl('VITE_SITE_URL') ?? getConfiguredUrl('MOODENG_APP_URL') ?? 'https://dashboard.moodeng.app';
+   const configuredUrl = getConfiguredUrl('VITE_SITE_URL') ?? getConfiguredUrl('MOODENG_APP_URL') ?? 'https://moodeng.app';
    return configuredUrl.replace(/\/$/, '');
 };
 
@@ -650,6 +651,46 @@ For help, contact support@moodeng.app`);
    };
 };
 
+const buildDueTodayContent = (recipient: LoanNotificationRecipient, aggregate?: LoanNotificationAggregate): EmailContent => {
+   const count = aggregate?.count ?? 0;
+   const nextDueDate = formatDate(aggregate?.nextDueDate ?? null);
+   const totalDue = formatUsdcAmount(aggregate?.totalAmount ?? 0);
+   const trustPointHighlight = buildTrustPointHighlight(recipient, {
+      potential: 'Repay today to unlock eligible milestones.',
+      fallback: 'Repay today to keep your borrower record in good standing.',
+      fallbackValue: 'On time'
+   });
+   const repayLink = buildRepayLink();
+   const text = normalizeNotificationText(`Hi ${getRecipientName(recipient)},
+${formatLoanCount(count)} ${count === 1 ? 'is' : 'are'} due today.
+Due date: ${nextDueDate}
+Total due: ${totalDue}
+${trustPointHighlight.textLine}
+Repay any time today to stay in good standing: ${repayLink}
+For help, contact support@moodeng.app`);
+
+   return {
+      subject: count === 1 ? 'Your repayment is due today' : 'Your repayments are due today',
+      title: count === 1 ? 'Your loan is due today' : 'Your loans are due today',
+      intro: 'A friendly heads-up — you have the full day to repay.',
+      amountLabel: 'Total due',
+      amountValue: totalDue,
+      details: [
+         { label: 'Loans due', value: String(count) },
+         { label: 'Due date', value: nextDueDate },
+         { label: 'Due', value: 'Today', icon: '&check;', tone: 'good' }
+      ],
+      highlightTitle: trustPointHighlight.title,
+      highlightCopy: trustPointHighlight.copy,
+      highlightValue: trustPointHighlight.value,
+      ctaLabel: 'Repay in Moodeng',
+      ctaHref: repayLink,
+      supportText: 'Start a chat if you need help repaying today.',
+      telegramText: `Hi Moodeng Credit, I need help repaying ${formatLoanCount(count)} due today. My total due is ${totalDue}.`,
+      text
+   };
+};
+
 const buildOverdueContent = (recipient: LoanNotificationRecipient, aggregate?: LoanNotificationAggregate): EmailContent => {
    const count = aggregate?.count ?? 0;
    const overdueBy = aggregate?.dueLabel ?? 'overdue';
@@ -837,6 +878,8 @@ export const buildLoanNotificationEmail = (
       content = buildUrgentReminderContent(recipient, aggregate);
    } else if (type === 'final_reminder') {
       content = buildFinalReminderContent(recipient, aggregate);
+   } else if (type === 'due_today') {
+      content = buildDueTodayContent(recipient, aggregate);
    } else if (type === 'overdue') {
       content = buildOverdueContent(recipient, aggregate);
    } else if (type === 'repayment_received') {
@@ -905,6 +948,17 @@ ${actionUrl}`);
 Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due within ${dueLabel}.
 Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
 Please make sure your wallet has the stablecoins ready so your Moodeng history stays on track.
+${actionUrl}`);
+
+      return { actionUrl, text };
+   }
+
+   if (type === 'due_today') {
+      const actionUrl = buildRepayLink();
+      const text = normalizeNotificationText(`Amount due today
+Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due today.
+Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
+You have the full day to repay — settle any time today to stay in good standing.
 ${actionUrl}`);
 
       return { actionUrl, text };

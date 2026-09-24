@@ -2,7 +2,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 /**
  * Friend referrals ("FREE MEAL for both of you") and GrabFood voucher claims.
- * Every rule is enforced in the database (migration 20260924000000_friend_referrals_and_vouchers);
+ * Every rule is enforced in the database (migration 20260924160000_friend_referrals_and_vouchers);
  * these helpers only call its functions.
  */
 

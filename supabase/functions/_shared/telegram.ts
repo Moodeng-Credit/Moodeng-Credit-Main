@@ -1,4 +1,5 @@
-export type TelegramInlineKeyboard = Array<Array<{ text: string; url: string }>>;
+// A button either opens a link (url) or calls back into telegram-webhook (callback_data, ≤64 bytes).
+export type TelegramInlineKeyboard = Array<Array<{ text: string; url: string } | { text: string; callback_data: string }>>;
 
 type TelegramApiResult<T> = {
    ok: boolean;

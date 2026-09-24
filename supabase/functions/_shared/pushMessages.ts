@@ -17,10 +17,13 @@ export type PushNotificationType =
    | 'repeat_borrower_request'
    | 'final_reminder'
    | 'urgent_reminder'
+   | 'due_today'
    | 'overdue'
    | 'funded'
    | 'repayment_received'
-   | 'request_expired';
+   | 'request_expired'
+   | 'video_call_reminder'
+   | 'loan_access_decision';
 
 export type PushLocale = 'en' | 'fil' | 'id';
 
@@ -74,7 +77,8 @@ export type DuePushContext = {
    dueLabel: string;
 };
 
-const SITE_URL_FALLBACK = 'https://dashboard.moodeng.app';
+// The live app is moodeng.app (dashboard.moodeng.app doesn't resolve); only used if no env is set.
+const SITE_URL_FALLBACK = 'https://moodeng.app';
 
 const getSiteUrl = () => {
    const configured = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL');
@@ -193,7 +197,7 @@ const buildRepeatBorrowerPush = (context: RepeatBorrowerPushContext, locale: Pus
  * on this product actually respond to.
  */
 const buildDuePush = (
-   type: 'final_reminder' | 'urgent_reminder' | 'overdue',
+   type: 'final_reminder' | 'urgent_reminder' | 'due_today' | 'overdue',
    context: DuePushContext,
    locale: PushLocale
 ): PushPayload => {
@@ -215,6 +219,12 @@ const buildDuePush = (
                ? `${context.loanCount} repayments are due in ${dueLabel}. Tap to repay early and stay on track.`
                : `Due in ${dueLabel}. Tap to repay early and stay on track.`
          },
+         due_today: {
+            title: `${amount} USDC due today`,
+            body: isMulti
+               ? `${context.loanCount} repayments are due today. You have the full day — tap to repay and stay in good standing.`
+               : `Your repayment is due today. You have the full day — tap to repay and stay in good standing.`
+         },
          overdue: {
             title: `${amount} USDC is overdue`,
             body: isMulti
@@ -234,6 +244,12 @@ const buildDuePush = (
             body: isMulti
                ? `May ${context.loanCount} bayarin sa loob ng ${dueLabel}. Mag-tap para magbayad nang maaga.`
                : `Due sa loob ng ${dueLabel}. Mag-tap para magbayad nang maaga.`
+         },
+         due_today: {
+            title: `${amount} USDC, due ngayong araw`,
+            body: isMulti
+               ? `May ${context.loanCount} bayarin na due ngayong araw. Buong araw kang may oras — mag-tap para magbayad at manatiling good standing.`
+               : `Due na ngayong araw ang bayarin mo. Buong araw kang may oras — mag-tap para magbayad at manatiling good standing.`
          },
          overdue: {
             title: `Overdue na ang ${amount} USDC`,
@@ -255,6 +271,12 @@ const buildDuePush = (
                ? `${context.loanCount} pembayaran jatuh tempo dalam ${dueLabel}. Ketuk untuk bayar lebih awal.`
                : `Jatuh tempo dalam ${dueLabel}. Ketuk untuk bayar lebih awal.`
          },
+         due_today: {
+            title: `${amount} USDC jatuh tempo hari ini`,
+            body: isMulti
+               ? `${context.loanCount} pembayaran jatuh tempo hari ini. Kamu punya waktu seharian — ketuk untuk bayar dan tetap good standing.`
+               : `Pembayaran kamu jatuh tempo hari ini. Kamu punya waktu seharian — ketuk untuk bayar dan tetap good standing.`
+         },
          overdue: {
             title: `${amount} USDC lewat jatuh tempo`,
             body: isMulti
@@ -271,8 +293,9 @@ const buildDuePush = (
       url: buildAppUrl('/repay'),
       // Collapsed per type, so the hourly cron can retry without stacking.
       tag: `repayment:${type}`,
-      // Money owed shouldn't quietly scroll off the lock screen.
-      requireInteraction: type !== 'urgent_reminder'
+      // Money owed shouldn't quietly scroll off the lock screen — except the
+      // gentle same-day "due today" nudge and the early ≤72h heads-up.
+      requireInteraction: type !== 'urgent_reminder' && type !== 'due_today'
    };
 };
 

@@ -13,6 +13,7 @@
 // Both are best-effort: a delivery failure must never block the refusal itself, which is already
 // persisted in cashout_face_checks + fraud_signal_alerts before this is called.
 
+import { postDiscord } from './discord.ts';
 import { deliverSecurityAlert } from './securityAlerts.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -46,25 +47,12 @@ const formatMismatchBody = (d: CashoutFaceMismatchDetails): string => {
 };
 
 const postDiscordKycAlert = async (title: string, body: string): Promise<void> => {
-   const webhook = Deno.env.get('DISCORD_KYC_WEBHOOK_URL') || Deno.env.get('DISCORD_SECURITY_WEBHOOK_URL');
-   if (!webhook) return;
-   try {
-      await fetch(webhook, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({
-            embeds: [
-               {
-                  title,
-                  description: body,
-                  color: 0xe74c3c
-               }
-            ]
-         })
-      });
-   } catch (err) {
-      console.error('[cashoutFaceNotify] Discord KYC webhook failed:', err instanceof Error ? err.message : err);
-   }
+   // Dedicated KYC channel first, then the security channel, then the shared team channel
+   // (DISCORD_TEAM_WEBHOOK_URL) — so the alert always lands somewhere a human looks.
+   await postDiscord(
+      { embeds: [{ title, description: body, color: 0xe74c3c }] },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL', 'DISCORD_SECURITY_WEBHOOK_URL'] }
+   );
 };
 
 /**

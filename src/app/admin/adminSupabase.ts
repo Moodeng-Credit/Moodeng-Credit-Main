@@ -94,6 +94,10 @@ export interface AdminDirectoryUser {
    recentTrustPointEvents: AdminPointEvent[];
    restriction: AdminRestriction | null;
    riskProfile: AdminRiskProfile | null;
+   // Latest login location from auth_ip_log (IP geolocation, not KYC). Null if never seen.
+   countryIso: string | null;
+   city: string | null;
+   lastSeenAt: string | null;
 }
 
 export interface AdminLoanRecord {
@@ -368,8 +372,18 @@ async function buildDirectoryRows(
    pointRows: AnyRow[],
    pointEventRows: AnyRow[],
    trustPointRows: AnyRow[],
-   trustPointEventRows: AnyRow[]
+   trustPointEventRows: AnyRow[],
+   ipLogRows: AnyRow[] = []
 ): Promise<AdminDirectoryUser[]> {
+   // Newest sighting first, so the first row per user with a country is their latest known location.
+   const latestIpByUserId = [...ipLogRows]
+      .sort((first, second) => new Date(second.last_seen_at).getTime() - new Date(first.last_seen_at).getTime())
+      .reduce((byUser, row) => {
+         const current = byUser.get(row.user_id);
+         if (!current) byUser.set(row.user_id, row);
+         else if (!current.country_iso && row.country_iso) byUser.set(row.user_id, { ...row, last_seen_at: current.last_seen_at });
+         return byUser;
+      }, new Map<string, AnyRow>());
    const restrictionsByUserId = new Map(restrictionRows.map((row) => [row.user_id, mapRestriction(row)]));
    const riskByUserId = new Map(riskRows.map((row) => [row.user_id, mapRiskProfile(row)]));
    const pointsByUserId = new Map(pointRows.map((row) => [row.user_id, row]));
@@ -452,7 +466,10 @@ async function buildDirectoryRows(
          latestTrustPointEventAt,
          recentTrustPointEvents: userTrustPointEvents.slice(0, 3),
          restriction: restrictionsByUserId.get(row.id) ?? null,
-         riskProfile: riskByUserId.get(row.id) ?? null
+         riskProfile: riskByUserId.get(row.id) ?? null,
+         countryIso: latestIpByUserId.get(row.id)?.country_iso ?? null,
+         city: latestIpByUserId.get(row.id)?.city_name ?? null,
+         lastSeenAt: latestIpByUserId.get(row.id)?.last_seen_at ?? null
       };
    });
 }
@@ -542,6 +559,18 @@ export async function getLatestAdminIntegrityRun(): Promise<AdminIntegrityRun | 
    );
 }
 
+// PostgREST filters go in the URL, so long `in.(...)` lists are split to keep requests well under
+// the gateway's URL limit.
+const ID_CHUNK = 100;
+async function queryByIdChunks(ids: string[], run: (chunk: string[]) => PromiseLike<AnyRow[]>): Promise<AnyRow[]> {
+   if (!ids.length) return [];
+   const chunks: string[][] = [];
+   for (let i = 0; i < ids.length; i += ID_CHUNK) chunks.push(ids.slice(i, i + ID_CHUNK));
+   return (await Promise.all(chunks.map(run))).flat();
+}
+
+// Loads the whole directory (newest sign-ups first) so the panel's sort/verification/country
+// filters see every user, not just a recent slice.
 export async function listAdminDirectoryUsers(search?: string): Promise<AdminDirectoryUser[]> {
    const supabase = getSupabaseBrowserClient();
    let query = supabase
@@ -549,8 +578,8 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
       .select(
          'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
       )
-      .order('updated_at', { ascending: false })
-      .limit(100);
+      .order('created_at', { ascending: false })
+      .limit(2000);
    const trimmedSearch = search?.trim();
 
    if (trimmedSearch) {
@@ -559,61 +588,54 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
 
    const users = await requireOk<AnyRow[]>(query);
    const userIds = users.map((user) => user.id);
+   const loanSelect =
+      'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,refunded_at,created_at,funded_at';
+   const pointEventSelect = 'id,user_id,event_type,delta,source_type,source_id,created_at,metadata';
 
-   const [loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents] = await Promise.all([
-      userIds.length
-         ? requireOk<AnyRow[]>(
-              supabase
-                 .from('loans')
-                 .select(
-                    'id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,loan_status,repayment_status,refunded_at,created_at,funded_at'
-                 )
-                 .or(`borrower_user_id.in.(${userIds.join(',')}),lender_user_id.in.(${userIds.join(',')})`)
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', userIds), [])
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', userIds), [])
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase.from('user_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', userIds),
-              []
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase
-                 .from('point_events')
-                 .select('id,user_id,event_type,delta,source_type,source_id,created_at,metadata')
-                 .in('user_id', userIds)
-                 .order('created_at', { ascending: false })
-                 .limit(300),
-              []
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase.from('user_trust_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', userIds),
-              []
-           )
-         : Promise.resolve([]),
-      userIds.length
-         ? optionalOk<AnyRow[]>(
-              supabase
-                 .from('trust_point_events')
-                 .select('id,user_id,event_type,delta,source_type,source_id,created_at,metadata')
-                 .in('user_id', userIds)
-                 .order('created_at', { ascending: false })
-                 .limit(300),
-              []
-           )
-         : Promise.resolve([])
+   const [loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents, ipLog] = await Promise.all([
+      queryByIdChunks(userIds, async (ids) => {
+         const rows = await requireOk<AnyRow[]>(
+            supabase.from('loans').select(loanSelect).or(`borrower_user_id.in.(${ids.join(',')}),lender_user_id.in.(${ids.join(',')})`)
+         );
+         return rows;
+      }).then((rows) => [...new Map(rows.map((loan) => [loan.id, loan])).values()]),
+      queryByIdChunks(userIds, (ids) => optionalOk<AnyRow[]>(supabase.from('admin_account_restrictions').select('*').in('user_id', ids), [])),
+      queryByIdChunks(userIds, (ids) => optionalOk<AnyRow[]>(supabase.from('admin_risk_profiles').select('*').in('user_id', ids), [])),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(supabase.from('user_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', ids), [])
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase.from('point_events').select(pointEventSelect).in('user_id', ids).order('created_at', { ascending: false }).limit(300),
+            []
+         )
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase.from('user_trust_points').select('user_id,points_total,updated_at,last_event_id').in('user_id', ids),
+            []
+         )
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase
+               .from('trust_point_events')
+               .select(pointEventSelect)
+               .in('user_id', ids)
+               .order('created_at', { ascending: false })
+               .limit(300),
+            []
+         )
+      ),
+      queryByIdChunks(userIds, (ids) =>
+         optionalOk<AnyRow[]>(
+            supabase.from('auth_ip_log').select('user_id,country_iso,city_name,last_seen_at').in('user_id', ids).order('last_seen_at', { ascending: false }),
+            []
+         )
+      )
    ]);
 
-   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents);
+   return buildDirectoryRows(users, loans, restrictions, riskProfiles, points, pointEvents, trustPoints, trustPointEvents, ipLog);
 }
 
 export async function listAdminLoanRequests(): Promise<AdminLoanRequest[]> {
@@ -2256,4 +2278,164 @@ export async function resetUserMfa(userId: string): Promise<ResetUserMfaResult> 
    const result = data as ResetUserMfaResult | null;
    if (!result) throw new Error('Could not reset 2FA for this user.');
    return result;
+}
+
+// ---------------------------------------------------------------------------
+// One-step ban — bans the account, revokes KYC + blacklists it, deletes open
+// unfunded requests, and emails/Telegrams the user. The Didit BLOCKED status
+// follows automatically from the account_status change (DB trigger).
+// ---------------------------------------------------------------------------
+export interface BanUserResult {
+   ok: boolean;
+   banned: boolean;
+   removedRequests: number;
+   emailSent: boolean;
+   telegramSent: boolean;
+   errors: string[];
+}
+
+export async function banUser(input: {
+   userId: string;
+   note: string;
+   reason?: 'spam' | 'default' | 'duplicate' | 'abuse' | 'manual';
+   notify?: boolean;
+}): Promise<BanUserResult> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-ban-user', { body: input });
+   if (error) {
+      throw new Error((await readFunctionError(error)) || error.message || 'Could not ban this user.');
+   }
+   const result = data as BanUserResult | null;
+   if (!result) throw new Error('Could not ban this user.');
+   return result;
+}
+
+// ---- Borrower contacts ------------------------------------------------------------------------
+// Every way we can reach each borrower, gathered in one place: the verified Messenger line
+// (ContactsStep), any Facebook / WhatsApp / LINE / Telegram details on their profile, and the
+// legal name from KYC — plus their repayment record, so late payers without Facebook stand out.
+
+export interface BorrowerContactRow {
+   id: string;
+   username: string;
+   displayName: string | null;
+   kycName: string | null;
+   email: string | null;
+   messengerVerifiedAt: string | null;
+   facebookContact: string | null;
+   whatsappNumber: string | null;
+   whatsappVerifiedAt: string | null;
+   telegramUsername: string | null;
+   lineId: string | null;
+   fundedLoanCount: number;
+   repaidLateCount: number;
+   overdueNowCount: number;
+   createdAt: string | null;
+   accountStatus: string | null;
+}
+
+const clean = (value: unknown): string | null => {
+   const text = typeof value === 'string' ? value.trim() : '';
+   return text ? text : null;
+};
+
+export function buildBorrowerContactRows(users: AnyRow[], loans: AnyRow[], kyc: AnyRow[], now = Date.now()): BorrowerContactRow[] {
+   const kycName = new Map<string, string>();
+   for (const row of kyc) {
+      const name = clean(row.full_name) ?? clean([row.first_name, row.last_name].filter(Boolean).join(' '));
+      if (row.user_id && name && !kycName.has(row.user_id)) kycName.set(row.user_id, name);
+   }
+   const stats = new Map<string, { funded: number; late: number; overdue: number }>();
+   for (const loan of loans) {
+      if (!loan.borrower_user_id || !loan.funded_at || loan.is_test) continue;
+      const s = stats.get(loan.borrower_user_id) ?? { funded: 0, late: 0, overdue: 0 };
+      s.funded += 1;
+      const due = loan.due_date ? Date.parse(loan.due_date) : NaN;
+      const repaid = loan.repaid_at ? Date.parse(loan.repaid_at) : NaN;
+      const closed = Boolean(loan.repaid_at || loan.refunded_at || loan.offplatform_settled_at);
+      if (!Number.isNaN(due) && !Number.isNaN(repaid) && repaid > due) s.late += 1;
+      if (!closed && !Number.isNaN(due) && due < now) s.overdue += 1;
+      stats.set(loan.borrower_user_id, s);
+   }
+   return users.map((u) => {
+      const s = stats.get(u.id) ?? { funded: 0, late: 0, overdue: 0 };
+      return {
+         id: u.id,
+         username: u.username,
+         displayName: clean(u.display_name),
+         kycName: kycName.get(u.id) ?? null,
+         email: clean(u.email),
+         messengerVerifiedAt: u.messenger_verified_at ?? null,
+         facebookContact: clean(u.facebook_contact),
+         whatsappNumber: clean(u.whatsapp_number),
+         whatsappVerifiedAt: u.whatsapp_verified_at ?? null,
+         telegramUsername: clean(u.telegram_username),
+         lineId: clean(u.line_id),
+         fundedLoanCount: s.funded,
+         repaidLateCount: s.late,
+         overdueNowCount: s.overdue,
+         createdAt: u.created_at ?? null,
+         accountStatus: u.account_status ?? null
+      };
+   });
+}
+
+export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
+   const supabase = getSupabaseBrowserClient();
+   const users = await requireOk<AnyRow[]>(
+      supabase
+         .from('users')
+         .select(
+            'id,username,display_name,email,messenger_verified_at,facebook_contact,whatsapp_number,whatsapp_verified_at,telegram_username,line_id,created_at,account_status,is_test'
+         )
+         .eq('user_role', 'borrower')
+         .order('created_at', { ascending: false })
+         .limit(5000)
+   );
+   const borrowers = users.filter((u) => !u.is_test);
+   const ids = borrowers.map((u) => u.id);
+   const [loans, kyc] = await Promise.all([
+      queryByIdChunks(ids, (chunk) =>
+         requireOk<AnyRow[]>(
+            supabase
+               .from('loans')
+               .select('id,borrower_user_id,funded_at,due_date,repaid_at,refunded_at,offplatform_settled_at,is_test')
+               .in('borrower_user_id', chunk)
+         )
+      ),
+      queryByIdChunks(ids, (chunk) =>
+         optionalOk<AnyRow[]>(supabase.from('kyc_identities').select('user_id,full_name,first_name,last_name').in('user_id', chunk), [])
+      )
+   ]);
+   return buildBorrowerContactRows(borrowers, loans, kyc);
+}
+
+export interface MessengerProfile {
+   userId: string;
+   name: string | null;
+   // Inside Messenger's 24h window — a message sent now will be delivered.
+   canMessageNow: boolean;
+   lastActivityAt: string | null;
+   found: boolean;
+}
+
+// Facebook names (and whether we can message right now) for verified borrowers, via SendPulse.
+export async function getMessengerProfiles(userIds: string[]): Promise<MessengerProfile[]> {
+   if (!userIds.length) return [];
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', {
+      body: { action: 'profiles', userIds }
+   });
+   if (error) throw error;
+   return ((data as { profiles?: MessengerProfile[] } | null)?.profiles ?? []) as MessengerProfile[];
+}
+
+export async function sendMessengerToBorrower(userId: string, text: string): Promise<{ ok: boolean; reason?: string }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', {
+      body: { action: 'send', userId, text }
+   });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      return { ok: false, reason: (payload as { reason?: string; error?: string } | null)?.reason ?? 'request_failed' };
+   }
+   return (data as { ok: boolean; reason?: string }) ?? { ok: false, reason: 'request_failed' };
 }

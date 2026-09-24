@@ -69,7 +69,15 @@ export default function ConnectWallet() {
    // in-app borrowers too, not just PH ones. Detected once from the UA; server face-gate still
    // enforces one-per-person on mint.
    const inApp = useMemo(() => detectInAppBrowser(), []);
-   const instantAvailable = openfort.isConfigured && (role === 'lender' || isLikelyPhilippines(locale) || inApp.isInApp);
+   // Roll the instant wallet out to EVERYONE (not just lenders / likely-PH / in-app borrowers)
+   // by setting VITE_INSTANT_WALLET_FOR_ALL=true. Kept behind a flag on purpose: it must not go
+   // live before the Openfort gas policy has real credit + a spend cap, or every new user's
+   // sponsored cash-out would fail once the tiny balance drains. Base Account stays available as
+   // the secondary "connect an existing wallet" path either way (server face-gate still enforces
+   // one wallet per person on mint).
+   const instantForAll = import.meta.env.VITE_INSTANT_WALLET_FOR_ALL === 'true';
+   const instantAvailable =
+      openfort.isConfigured && (instantForAll || role === 'lender' || isLikelyPhilippines(locale) || inApp.isInApp);
 
    const connectorsByName = useMemo(() => {
       const map = new Map<string, (typeof connectors)[number]>();

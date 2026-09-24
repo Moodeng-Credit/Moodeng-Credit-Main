@@ -1,11 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import {
-   getBorrowerTelegramNotificationsEnabled,
-   sendBorrowerLoanNotification
-} from '../_shared/borrowerNotificationDelivery.ts';
-import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
+import { getBorrowerTelegramNotificationsEnabled, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
 import {
    getLoanOutstandingAmount,
    getReminderWindows,
@@ -13,15 +9,9 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from '../_shared/loanNotifications.ts';
-import {
-   calculateTrustPointRewardDelta,
-   markLoansRepaid
-} from '../_shared/trustPointRewards.ts';
-import type {
-   TrustPointMilestoneDefinition,
-   TrustPointRewardLoan,
-   TrustPointRewardUser
-} from '../_shared/trustPointRewards.ts';
+import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
+import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
+import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -109,10 +99,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
    );
 };
 
-const loadTrustPointRewardContext = async (
-   supabase: SupabaseClient,
-   userIds: string[]
-): Promise<TrustPointRewardContext> => {
+const loadTrustPointRewardContext = async (supabase: SupabaseClient, userIds: string[]): Promise<TrustPointRewardContext> => {
    if (!userIds.length) {
       return {
          loansByBorrowerId: new Map(),
@@ -175,10 +162,7 @@ const loadTrustPointRewardContext = async (
    };
 };
 
-const loadSentLoanIds = async (
-   supabase: SupabaseClient,
-   payload: { loanIds: string[]; userId: string; type: LoanNotificationType }
-) => {
+const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string; type: LoanNotificationType }) => {
    if (!payload.loanIds.length) {
       return new Set<string>();
    }
@@ -197,12 +181,7 @@ const loadSentLoanIds = async (
    return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
 };
 
-const recordNotification = async (
-   supabase: SupabaseClient,
-   borrowerId: string,
-   type: LoanNotificationType,
-   loanIds: string[]
-) => {
+const recordNotification = async (supabase: SupabaseClient, borrowerId: string, type: LoanNotificationType, loanIds: string[]) => {
    if (!loanIds.length) {
       return;
    }
@@ -285,11 +264,11 @@ const notifyBorrower = async (
       {
          telegramEnabled,
          notifEnabled: (borrower as any).notif_transaction_activity !== false,
-         // Push only for the ≤24h final reminder, not the ≤72h urgent one. Email
-         // and Telegram still go out at both windows as before; a lock-screen
-         // interruption is reserved for "due tomorrow", which is the moment the
-         // borrower actually needs to act on.
-         push: type === 'final_reminder' ? { supabase, userId: borrower.id } : undefined
+         // Push for the ≤24h final reminder ("due tomorrow") and the same-day
+         // "due today" nudge — the moments the borrower actually needs to act on.
+         // Not the ≤72h urgent one. Email and Telegram still go out at every
+         // window as before; only the lock-screen interruption is gated here.
+         push: type === 'final_reminder' || type === 'due_today' ? { supabase, userId: borrower.id } : undefined
       }
    );
 
@@ -362,11 +341,19 @@ serve(async (req) => {
    const urgentDueLabel = formatHoursAsDueLabel(Number.isNaN(urgentReminderHours) ? 72 : urgentReminderHours);
    const finalDueLabel = formatHoursAsDueLabel(Number.isNaN(finalReminderHours) ? 24 : finalReminderHours);
 
+   // Boundaries of "today" in UTC. due_date is stored at midnight UTC, so a loan
+   // due on calendar day D lands exactly on startOfToday when the cron runs on D.
+   const startOfToday = new Date(referenceDate);
+   startOfToday.setUTCHours(0, 0, 0, 0);
+   const startOfTomorrow = new Date(startOfToday);
+   startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
+
    const borrowerBuckets = new Map<
       string,
       {
          urgent: Array<LoanNotificationLoan & { id: string }>;
          final: Array<LoanNotificationLoan & { id: string }>;
+         dueToday: Array<LoanNotificationLoan & { id: string }>;
       }
    >();
 
@@ -377,15 +364,22 @@ serve(async (req) => {
 
       const dueDate = new Date(loan.due_date);
 
-      const isFinalWindow = dueDate.getTime() >= final.start.getTime() && dueDate.getTime() <= final.end.getTime();
-      const isUrgentWindow = dueDate.getTime() > urgent.start.getTime() && dueDate.getTime() <= urgent.end.getTime();
+      // "Due today" wins over the ≤24h final window: a loan due at midnight today
+      // is already ~0h away (or seconds past), so without this it would either
+      // re-trigger the already-sent "due tomorrow" final or fall straight to the
+      // overdue cron. This gives the borrower a gentle same-day nudge instead.
+      const isDueToday = dueDate.getTime() >= startOfToday.getTime() && dueDate.getTime() < startOfTomorrow.getTime();
+      const isFinalWindow = !isDueToday && dueDate.getTime() >= final.start.getTime() && dueDate.getTime() <= final.end.getTime();
+      const isUrgentWindow = !isDueToday && dueDate.getTime() > urgent.start.getTime() && dueDate.getTime() <= urgent.end.getTime();
 
-      if (!isFinalWindow && !isUrgentWindow) {
+      if (!isDueToday && !isFinalWindow && !isUrgentWindow) {
          continue;
       }
 
-      const bucket = borrowerBuckets.get(loan.borrower_user_id) ?? { urgent: [], final: [] };
-      if (isFinalWindow) {
+      const bucket = borrowerBuckets.get(loan.borrower_user_id) ?? { urgent: [], final: [], dueToday: [] };
+      if (isDueToday) {
+         bucket.dueToday.push(loan);
+      } else if (isFinalWindow) {
          bucket.final.push(loan);
       } else if (isUrgentWindow) {
          bucket.urgent.push(loan);
@@ -395,6 +389,7 @@ serve(async (req) => {
    }
 
    let sentCount = 0;
+   let failedCount = 0;
 
    for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
@@ -408,38 +403,67 @@ serve(async (req) => {
          continue;
       }
 
-      if (bucket.urgent.length) {
-         const wasSent = await notifyBorrower(
-            supabase,
-            borrower,
-            bucket.urgent,
-            'urgent_reminder',
-            urgentDueLabel,
-            trustPointRewardContext,
-            referenceDate,
-            telegramEnabled
-         );
-         if (wasSent) {
-            sentCount += 1;
+      // One borrower's delivery failure must not abort the run for everyone after them. An
+      // unrecorded reminder is simply retried on the next hourly run.
+      try {
+         if (bucket.urgent.length) {
+            const wasSent = await notifyBorrower(
+               supabase,
+               borrower,
+               bucket.urgent,
+               'urgent_reminder',
+               urgentDueLabel,
+               trustPointRewardContext,
+               referenceDate,
+               telegramEnabled
+            );
+            if (wasSent) {
+               sentCount += 1;
+            }
          }
-      }
 
-      if (bucket.final.length) {
-         const wasSent = await notifyBorrower(
-            supabase,
-            borrower,
-            bucket.final,
-            'final_reminder',
-            finalDueLabel,
-            trustPointRewardContext,
-            referenceDate,
-            telegramEnabled
-         );
-         if (wasSent) {
-            sentCount += 1;
+         if (bucket.final.length) {
+            const wasSent = await notifyBorrower(
+               supabase,
+               borrower,
+               bucket.final,
+               'final_reminder',
+               finalDueLabel,
+               trustPointRewardContext,
+               referenceDate,
+               telegramEnabled
+            );
+            if (wasSent) {
+               sentCount += 1;
+            }
          }
+
+         if (bucket.dueToday.length) {
+            const wasSent = await notifyBorrower(
+               supabase,
+               borrower,
+               bucket.dueToday,
+               'due_today',
+               'today',
+               trustPointRewardContext,
+               referenceDate,
+               telegramEnabled
+            );
+            if (wasSent) {
+               sentCount += 1;
+            }
+         }
+      } catch (error) {
+         failedCount += 1;
+         console.error('Due reminder failed for borrower', {
+            borrowerId,
+            error: error instanceof Error ? error.message : String(error)
+         });
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount, failed: failedCount }), {
+      status: 200,
+      headers: corsHeaders
+   });
 });
