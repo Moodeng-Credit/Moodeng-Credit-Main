@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { findMessengerContactIdByCode } from '../_shared/sendpulse.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -52,7 +53,7 @@ serve(async (req) => {
       return json({ ok: false, error: 'not_configured' }, 500);
    }
 
-   let body: { code?: string; ref?: string; message?: string; psid?: string; name?: string };
+   let body: { code?: string; ref?: string; message?: string; psid?: string; contact_id?: string; name?: string };
    try {
       body = await req.json();
    } catch {
@@ -70,7 +71,7 @@ serve(async (req) => {
    for (const cand of candidateCodes(raw)) {
       const { data, error } = await svc
          .from('contact_verification_codes')
-         .select('id, user_id, expires_at, verified_at')
+         .select('id, code, user_id, expires_at, verified_at')
          .ilike('code', cand)
          .eq('channel', 'messenger')
          .is('verified_at', null)
@@ -95,9 +96,13 @@ serve(async (req) => {
          return json({ ok: false, error: 'not_borrower' });
       }
 
+      // Store the SendPulse contact id (what the send API needs for reminders), looked up by the code
+      // the flow saved on the contact; fall back to whatever id the flow's request carried.
+      const contactId = (await findMessengerContactIdByCode(pending.code)) ?? (body.contact_id ? String(body.contact_id) : null) ?? psid;
+
       const { error: codeError } = await svc
          .from('contact_verification_codes')
-         .update({ verified_at: nowIso, sender_psid: psid })
+         .update({ verified_at: nowIso, sender_psid: contactId })
          .eq('id', pending.id);
       if (codeError) {
          console.error('sendpulse-messenger-verify: mark code failed', codeError.message);
@@ -106,7 +111,7 @@ serve(async (req) => {
 
       const { error: userError } = await svc
          .from('users')
-         .update({ messenger_verified_at: nowIso, ...(psid ? { messenger_psid: psid } : {}) })
+         .update({ messenger_verified_at: nowIso, ...(contactId ? { messenger_psid: contactId } : {}) })
          .eq('id', pending.user_id);
       if (userError) {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);

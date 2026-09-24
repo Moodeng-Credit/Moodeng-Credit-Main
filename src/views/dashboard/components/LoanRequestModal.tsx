@@ -54,6 +54,7 @@ import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -1857,7 +1858,12 @@ export default function LoanRequestModal({
             ) : null}
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
-               className="flex touch-none cursor-grab select-none items-center justify-between border-b border-[#e7e0ec] px-5 pb-4 pt-6 active:cursor-grabbing sm:pt-4"
+               className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
+                  showContactsStep
+                     ? // The hippo hero below carries the title; the header just blends into its lavender.
+                       'bg-[#f3ecff] pb-0 pt-5'
+                     : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
+               }`}
                onPointerDown={(event) => startDismissGesture(event, 'down')}
                onPointerMove={moveDismissGesture}
                onPointerUp={endDismissGesture}
@@ -1867,9 +1873,7 @@ export default function LoanRequestModal({
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
                   ) : showContactsStep ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
-                        {isExistingBorrower ? 'Add your Facebook' : 'How can we reach you'}
-                     </h2>
+                     <h2 className="sr-only">{isExistingBorrower ? 'Add your Facebook' : 'How can we reach you'}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Schedule a video call</h2>
                   ) : showBorrowerContextStep ? (
@@ -2000,14 +2004,16 @@ export default function LoanRequestModal({
                   onContinue={handleContactsStepContinue}
                   intro={
                      isExistingBorrower ? (
-                        <div className="flex flex-col gap-2 rounded-[16px] bg-[#f3ecff] px-4 py-4">
-                           <p className="text-[17px] font-[700] leading-[22px] text-md-heading">So we can help you more 💜</p>
-                           <p className="text-[14px] font-normal leading-[20px] text-md-neutral-1200">
-                              Please add your Facebook so we can reach out to you. We also have a <b>$10 referral program</b> we&apos;d love
-                              to tell you about!
-                           </p>
-                           <p className="text-[12px] font-normal leading-[16px] text-md-neutral-1200">Only Moodeng sees this — never lenders.</p>
-                        </div>
+                        <ConnectHero
+                           image={CONNECT_HIPPOS.hello}
+                           subtitle={
+                              <>
+                                 Please add your Facebook so we can reach out to you. We also have a <b>$10 referral program</b> we&apos;d love to
+                                 tell you about!
+                              </>
+                           }
+                           title="So we can help you more 💜"
+                        />
                      ) : undefined
                   }
                />

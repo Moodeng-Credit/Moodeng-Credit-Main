@@ -2341,3 +2341,34 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
    ]);
    return buildBorrowerContactRows(borrowers, loans, kyc);
 }
+
+export interface MessengerProfile {
+   userId: string;
+   name: string | null;
+   // Inside Messenger's 24h window — a message sent now will be delivered.
+   canMessageNow: boolean;
+   lastActivityAt: string | null;
+   found: boolean;
+}
+
+// Facebook names (and whether we can message right now) for verified borrowers, via SendPulse.
+export async function getMessengerProfiles(userIds: string[]): Promise<MessengerProfile[]> {
+   if (!userIds.length) return [];
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', {
+      body: { action: 'profiles', userIds }
+   });
+   if (error) throw error;
+   return ((data as { profiles?: MessengerProfile[] } | null)?.profiles ?? []) as MessengerProfile[];
+}
+
+export async function sendMessengerToBorrower(userId: string, text: string): Promise<{ ok: boolean; reason?: string }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', {
+      body: { action: 'send', userId, text }
+   });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      return { ok: false, reason: (payload as { reason?: string; error?: string } | null)?.reason ?? 'request_failed' };
+   }
+   return (data as { ok: boolean; reason?: string }) ?? { ok: false, reason: 'request_failed' };
+}
