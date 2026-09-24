@@ -5,7 +5,7 @@
 > account/workspace can understand the **purpose**, the **current live state**, the **database schema**,
 > every **moving part**, and the **next system to build** — without any prior context.
 >
-> **Last updated:** 2026-09-24. **Repo:** `Moodeng-Credit/Moodeng-Credit-Main`.
+> **Last updated:** 2026-09-25 (§13 marked live). **Repo:** `Moodeng-Credit/Moodeng-Credit-Main`.
 > **Secrets:** this doc lists secret _names_ only, never values. Every secret must be regenerated in a new
 > account (see [§14 Transfer checklist](#14-transfer-checklist)).
 
@@ -25,7 +25,7 @@
 10.   [Database schema (the important part)](#10-database-schema-the-important-part)
 11.   [Edge functions reference](#11-edge-functions-reference)
 12.   [Configuration: secrets, env vars, settings rows](#12-configuration-secrets-env-vars-settings-rows)
-13.   [THE NEXT SYSTEM: Connect → Approve → Apply](#13-the-next-system-connect--approve--apply)
+13.   [Connect → Approve → Apply (now live)](#13-connect--approve--apply-now-live)
 14.   [Transfer checklist](#14-transfer-checklist)
 15.   [Known issues, risks & open decisions](#15-known-issues-risks--open-decisions)
 16.   [History: PRs and key commits](#16-history-prs-and-key-commits)
@@ -101,7 +101,7 @@ flowchart LR
 | Video-call step (no-referral borrowers)   | ✅ Live                                   | Free Cal.com round-robin + reminders; to be replaced by next system                                        |
 | Calendly-read availability                | 🟡 Tokens set, **rewrite not done**       | Booker still reads Cal.com availability                                                                    |
 | Team alerts (Discord/Telegram)            | ✅ Live                                   | Per-feed Discord webhooks; admin Telegram channel                                                          |
-| **Connect → Approve → Apply**             | 📝 **Designed, not built**                | Full spec in [§13](#13-the-next-system-connect--approve--apply)                                            |
+| **Connect → Approve → Apply**             | ✅ **Live** (PRs #916 + #917, 2026-09-24) | Original spec in [§13](#13-connect--approve--apply-now-live); as built: `docs/HANDOFF_BORROWER_FLOWS_V2.md` |
 | SendPulse billing                         | ⚠️ PRO **trial ends Oct 1 2026** ($12/mo) | Reminder set for Sep 29; free-plan version under investigation                                             |
 
 **Important:** the `staging` branch **is production** — merging to `staging` deploys to the live app
@@ -518,7 +518,15 @@ Shared helpers: `_shared/discord.ts`, `_shared/telegram.ts`, `_shared/pushDelive
 
 ---
 
-## 13. THE NEXT SYSTEM: Connect → Approve → Apply
+## 13. Connect → Approve → Apply (now live)
+
+> **Status (updated 2026-09-25):** built and **live**. It shipped as "Borrower flows v2" in PR #916
+> (call-first filter, Emma setup call, Messenger reminders, no-show defence) and PR #917 (existing
+> borrowers: Facebook card only; admin borrower contacts). The migration is applied and the functions are
+> deployed. The gate is switched with `/loanflow call` in the admin Telegram group; `open` turns it off.
+> **What was actually built, and where it differs from the spec below, is in
+> `docs/HANDOFF_BORROWER_FLOWS_V2.md`. Read that for the current behaviour.** The rest of this section is
+> the original design, kept for the reasoning behind it.
 
 ### 13.1 Purpose
 
