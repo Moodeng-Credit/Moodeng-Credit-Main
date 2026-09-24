@@ -61,7 +61,7 @@ const getTeamChatId = async (supabase: SupabaseClient) =>
    (await getSetting(supabase, 'team_group_chat_id')) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
 
 const buildLoanUrl = (loanId: string) => {
-   const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://app.moodeng.credit';
+   const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app';
    return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
 };
 

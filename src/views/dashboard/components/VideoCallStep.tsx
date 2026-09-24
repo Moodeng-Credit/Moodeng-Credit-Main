@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // The no-referral-code gate: a borrower with nobody at Moodeng to vouch for them has to SCHEDULE a
 // short video call with the Moodeng team before they can post a loan request. LoanRequestModal only
@@ -13,11 +14,34 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 // list, never an individual. The booking is created and confirmed server-side (the function stamps
 // users.video_call_scheduled_at), so the client can't fake it.
 
-type Phase = 'loading' | 'picking' | 'scheduled' | 'error';
+type Phase = 'loading' | 'picking' | 'scheduled' | 'error' | 'cooldown';
 
 const RR_FN = 'calcom-round-robin';
 
-export default function VideoCallStep({ userId, onBack, onContinue }: { userId: string; onBack: () => void; onContinue: () => void }) {
+export default function VideoCallStep({
+   userId,
+   onBack,
+   onContinue,
+   intro = 'No referral code — book a call.',
+   continueLabel = 'Continue',
+   requireUpcoming = false,
+   host,
+   onBooked
+}: {
+   userId: string;
+   onBack: () => void;
+   onContinue: () => void;
+   intro?: ReactNode;
+   continueLabel?: string;
+   // Call flow (ConnectStep): only a call that's still ahead counts — after a no-show the old,
+   // past booking must not show as "booked", or the borrower could never pick a new time.
+   requireUpcoming?: boolean;
+   // Pin the call to one host — referred borrowers book Emma for their local-exchange setup.
+   host?: 'emma' | 'george';
+   // Called right after a successful booking (ConnectStep sends the request to the team then, so
+   // closing the app straight after booking can't leave a call with no request behind it).
+   onBooked?: () => void;
+}) {
    const timeZone = useMemo(() => {
       try {
          return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -46,11 +70,18 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
    const [bookingStart, setBookingStart] = useState<string | null>(null);
    const [bookedStartsAt, setBookedStartsAt] = useState<string | null>(null);
    const [notice, setNotice] = useState('');
+   // Two missed calls → no new booking until this time (calcom-round-robin enforces it).
+   const [cooldownUntil, setCooldownUntil] = useState<string | null>(null);
 
    const loadSlots = async () => {
-      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'slots', timeZone } });
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'slots', timeZone, host } });
       if (error || !data) {
          setPhase('error');
+         return;
+      }
+      if ((data as { error?: string }).error === 'cooldown') {
+         setCooldownUntil((data as { until?: string }).until ?? null);
+         setPhase('cooldown');
          return;
       }
       setSlots((data as { slots?: string[] }).slots ?? []);
@@ -68,7 +99,8 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
             .eq('id', userId)
             .maybeSingle();
          if (cancelled) return;
-         if (data?.video_call_scheduled_at) {
+         const isPast = data?.video_call_starts_at ? Date.parse(data.video_call_starts_at) < Date.now() : true;
+         if (data?.video_call_scheduled_at && !(requireUpcoming && isPast)) {
             setBookedStartsAt(data.video_call_starts_at);
             setPhase('scheduled');
             return;
@@ -85,12 +117,15 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
       if (bookingStart) return;
       setBookingStart(start);
       setNotice('');
-      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'book', start, timeZone } });
+      const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'book', start, timeZone, host } });
       setBookingStart(null);
 
-      const result = data as { ok?: boolean; start?: string; error?: string } | null;
+      const result = data as { ok?: boolean; start?: string; error?: string; until?: string } | null;
       if (error || !result?.ok) {
-         if (result?.error === 'slot_taken') {
+         if (result?.error === 'cooldown') {
+            setCooldownUntil(result.until ?? null);
+            setPhase('cooldown');
+         } else if (result?.error === 'slot_taken') {
             setNotice('That time was just taken — pick another, please.');
             await loadSlots();
          } else {
@@ -100,6 +135,7 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
       }
       setBookedStartsAt(result.start ?? start);
       setPhase('scheduled');
+      onBooked?.();
    };
 
    const dayGroups = useMemo(() => {
@@ -140,72 +176,81 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
    const isScheduled = phase === 'scheduled';
 
    return (
-      <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">No referral code — book a call.</p>
+      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+         {typeof intro === 'string' ? <p className="text-[14px] font-normal leading-[20px] text-[#7b6b8c]">{intro}</p> : intro}
 
          {isScheduled ? (
             <div className="flex flex-col gap-3">
-               <div className="flex items-start gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
-                  <CheckCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
-                  <span>
-                     You're booked with the Moodeng team{formattedBooked ? ` — ${formattedBooked}` : ''}. We'll email you the details and send a
-                     reminder before it starts.
+               <div className="flex items-center gap-3 rounded-[18px] border-2 border-[#4aa256] bg-[#eefbf2] px-4 py-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#4aa256] text-white">
+                     <CheckCircle aria-hidden="true" className="size-6" strokeWidth={2.4} />
+                  </span>
+                  <span className="flex min-w-0 flex-col text-left">
+                     <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a]">You&apos;re booked with {host === 'emma' ? 'Emma' : 'the Moodeng team'}!</span>
+                     {formattedBooked ? <span className="text-[15px] leading-[20px] text-[#3c8248]">{formattedBooked}</span> : null}
+                     <span className="text-[13px] leading-[18px] text-[#3c8248]/80">Zoom link by email · reminder on Messenger</span>
                   </span>
                </div>
                {calendarLinks ? (
-                  <div className="flex flex-col gap-2">
-                     <span className="text-[12px] font-normal text-md-neutral-1200">Add it to your calendar so you don't miss it:</span>
-                     <div className="flex flex-wrap gap-2">
-                        <a
-                           className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
-                           href={calendarLinks.google}
-                           rel="noreferrer"
-                           target="_blank"
-                        >
-                           <CalendarPlus aria-hidden="true" className="h-4 w-4 shrink-0 text-md-primary-900" strokeWidth={2} />
-                           Google Calendar
-                        </a>
-                        <a
-                           className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
-                           download="moodeng-call.ics"
-                           href={calendarLinks.ics}
-                        >
-                           <CalendarPlus aria-hidden="true" className="h-4 w-4 shrink-0 text-md-primary-900" strokeWidth={2} />
-                           Apple / Outlook
-                        </a>
-                     </div>
+                  <div className="grid grid-cols-2 gap-2">
+                     <a
+                        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border-2 border-[#e2dcee] bg-white px-3 text-[14px] font-semibold text-[#594d65] transition hover:border-[#7661f9] active:scale-[0.98]"
+                        href={calendarLinks.google}
+                        rel="noreferrer"
+                        target="_blank"
+                     >
+                        <CalendarPlus aria-hidden="true" className="size-4 shrink-0 text-[#6b55f7]" strokeWidth={2} />
+                        Google Calendar
+                     </a>
+                     <a
+                        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full border-2 border-[#e2dcee] bg-white px-3 text-[14px] font-semibold text-[#594d65] transition hover:border-[#7661f9] active:scale-[0.98]"
+                        download="moodeng-call.ics"
+                        href={calendarLinks.ics}
+                     >
+                        <CalendarPlus aria-hidden="true" className="size-4 shrink-0 text-[#6b55f7]" strokeWidth={2} />
+                        Apple / Outlook
+                     </a>
                   </div>
                ) : null}
             </div>
          ) : phase === 'loading' ? (
-            <p className="text-[13px] font-normal text-md-neutral-1200">Loading available times…</p>
+            <p className="text-center text-[14px] font-normal text-[#877897]">Finding open times…</p>
+         ) : phase === 'cooldown' ? (
+            <p className="rounded-[18px] bg-[#f8f1ff] px-4 py-4 text-center text-[15px] leading-[20px] text-[#594d65]">
+               You&apos;ve missed two calls, so booking is paused for a week.
+               {cooldownUntil ? (
+                  <>
+                     {' '}
+                     You can pick a new time from{' '}
+                     <b>{new Date(cooldownUntil).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</b>.
+                  </>
+               ) : null}
+            </p>
          ) : phase === 'error' ? (
-            <div className="flex flex-col gap-2">
-               <p className="text-md-b3 font-normal text-md-red-500">Couldn't load available times.</p>
-               <button className="w-fit text-[13px] font-medium text-md-primary-1200 underline" onClick={loadSlots} type="button">
+            <div className="flex flex-col items-center gap-2">
+               <p className="text-md-b3 font-normal text-md-red-500">Couldn&apos;t load available times.</p>
+               <button className="min-h-[44px] px-4 text-[14px] font-semibold text-[#6b55f7] underline" onClick={loadSlots} type="button">
                   Try again
                </button>
             </div>
          ) : dayGroups.length === 0 ? (
-            <p className="text-[13px] font-normal text-md-neutral-1200">
-               No times are open in the next two weeks. Please contact support and we'll sort out a time.
+            <p className="text-center text-[14px] font-normal text-[#877897]">
+               No times are open in the next two weeks. Message us on Messenger and we&apos;ll find one.
             </p>
          ) : (
             <div className="flex flex-col gap-4">
-               <div className="flex items-center gap-1.5 text-[12px] font-normal leading-[16px] text-md-neutral-1200">
-                  <Globe aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-md-primary-900" strokeWidth={2} />
-                  <span>
-                     Times shown in your time zone — <span className="font-[590] text-md-heading">{tzLabel}</span>
-                  </span>
+               <div className="mx-auto flex w-fit items-center gap-1.5 rounded-full bg-[#f3ecff] px-3 py-1 text-[12px] font-semibold text-[#6b55f7]">
+                  <Globe aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={2} />
+                  <span>Your time zone · {tzLabel}</span>
                </div>
-               {notice ? <p className="text-md-b3 font-normal text-md-red-500">{notice}</p> : null}
+               {notice ? <p className="text-center text-md-b3 font-normal text-md-red-500">{notice}</p> : null}
                {dayGroups.map(([day, daySlots]) => (
                   <div className="flex flex-col gap-2" key={day}>
-                     <span className="text-[13px] font-[590] text-md-heading">{day}</span>
+                     <span className="text-[14px] font-bold text-[#594d65]">{day}</span>
                      <div className="grid grid-cols-3 gap-2">
                         {daySlots.map((s) => (
                            <button
-                              className="rounded-[10px] border border-[#ded6e8] bg-white px-2 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                              className="min-h-[44px] rounded-full border-2 border-[#e2dcee] bg-white px-2 text-[14px] font-semibold text-[#594d65] transition hover:border-[#7661f9] hover:bg-[#f8f1ff] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
                               disabled={bookingStart !== null}
                               key={s}
                               onClick={() => book(s)}
@@ -220,24 +265,11 @@ export default function VideoCallStep({ userId, onBack, onContinue }: { userId: 
             </div>
          )}
 
-         <div className="mt-auto flex flex-col gap-2">
-            <button
-               className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                  isScheduled ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]' : 'bg-md-neutral-600'
-               }`}
-               disabled={!isScheduled}
-               onClick={() => isScheduled && onContinue()}
-               type="button"
-            >
-               {isScheduled ? 'Continue' : 'Book a time to continue'}
-            </button>
-            <button
-               className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
-               onClick={onBack}
-               type="button"
-            >
-               Back
-            </button>
+         <div className="mt-auto flex flex-col gap-1 pt-1">
+            <PrimaryButton disabled={!isScheduled} onClick={() => isScheduled && onContinue()}>
+               {isScheduled ? continueLabel : phase === 'cooldown' ? 'Booking paused' : 'Pick a time above'}
+            </PrimaryButton>
+            <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
       </div>
    );

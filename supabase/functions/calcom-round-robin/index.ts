@@ -1,8 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { hostsFreeAt, mergeSlots, orderHostsToTry } from './lib.ts';
+import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
+import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange } from './lib.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -11,6 +13,8 @@ import { hostsFreeAt, mergeSlots, orderHostsToTry } from './lib.ts';
 //
 // Two actions (POST JSON): { action: 'slots', timeZone } returns the merged available start times;
 // { action: 'book', start, timeZone } books the slot and stamps users.video_call_scheduled_at.
+// Optional { host: 'emma' | 'george' } on both pins the call to one host — referred borrowers book
+// Emma's exchange-setup call (how to deposit and repay locally) instead of the round-robin.
 // verify_jwt is on, so only a signed-in borrower can call it; we take their identity from the JWT,
 // never from the body, so nobody can book as someone else. The host Cal.com API keys live only in
 // this function's env, never in the client.
@@ -74,14 +78,19 @@ const createBooking = async (
    start: string,
    attendee: Attendee,
    metadata: Record<string, string>
-): Promise<{ uid: string } | { error: 'taken' | 'other' }> => {
+): Promise<{ uid: string; joinUrl: string | null } | { error: 'taken' | 'other' }> => {
    const res = await fetch(`${CAL_BASE}/bookings`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-08-13', 'Content-Type': 'application/json' },
       body: JSON.stringify({ start, eventTypeId, attendee, metadata })
    });
    const body = await res.json().catch(() => ({}));
-   if (res.ok && body?.data?.uid) return { uid: body.data.uid as string };
+   if (res.ok && body?.data?.uid) {
+      // The meeting's join link: `location` when it's a URL (Zoom / Cal Video), else the older meetingUrl.
+      const location = typeof body.data.location === 'string' && /^https?:\/\//.test(body.data.location) ? body.data.location : null;
+      const meetingUrl = typeof body.data.meetingUrl === 'string' && /^https?:\/\//.test(body.data.meetingUrl) ? body.data.meetingUrl : null;
+      return { uid: body.data.uid as string, joinUrl: location ?? meetingUrl };
+   }
    const msg = String(body?.message ?? body?.error?.message ?? '').toLowerCase();
    return { error: msg.includes('no longer available') || msg.includes('already') || msg.includes('busy') ? 'taken' : 'other' };
 };
@@ -89,16 +98,13 @@ const createBooking = async (
 // Best-effort team alert when a call is booked — on top of the Cal.com calendar invite the hosts
 // already get. Posts to Telegram and/or Discord only if their env is set, and never throws into the
 // booking flow (a failed ping must not fail the booking).
-const notifyTeamBooking = async (hostId: string, start: string, attendee: { name: string; email: string }, tgChat: string) => {
-   const whenBkk = new Date(start).toLocaleString('en-US', {
-      timeZone: 'Asia/Bangkok',
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-   });
-   const text = `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${whenBkk} (Bangkok)`;
+const notifyTeamBooking = async (
+   hostId: string,
+   start: string,
+   attendee: { name: string; email: string; timeZone: string },
+   tgChat: string
+) => {
+   const text = `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}`;
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
    // caller — never the lender or support group.
@@ -135,7 +141,7 @@ serve(async (req) => {
    const user = auth?.user;
    if (!user) return json({ error: 'unauthorized' }, 401);
 
-   let payload: { action?: string; start?: string; timeZone?: string };
+   let payload: { action?: string; start?: string; timeZone?: string; host?: string };
    try {
       payload = await req.json();
    } catch {
@@ -153,24 +159,49 @@ serve(async (req) => {
    }
    if (resolved.length === 0) return json({ error: 'no_events' }, 500);
 
+   // Pinned host (e.g. Emma for referred borrowers): only that host's calendar is offered/booked.
+   // If that host isn't configured (no API key / event type), fall back to the whole team rather
+   // than leave the borrower unable to book at all — and log it so it gets fixed.
+   if (payload.host) {
+      const pinned = resolved.filter((h) => h.id === payload.host);
+      if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
+      else console.error(`calcom-round-robin: host '${payload.host}' not configured — falling back to round-robin`);
+   }
+
+   // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
+   const { data: strikes } = await svc
+      .from('loan_access_requests')
+      .select('decided_at')
+      .eq('user_id', user.id)
+      .eq('status', 'no_show');
+   const cooldownUntil = bookingCooldownUntil(((strikes ?? []) as Array<{ decided_at: string | null }>).map((r) => r.decided_at), Date.now());
+   if (cooldownUntil && (payload.action === 'slots' || payload.action === 'book')) {
+      return json({ ok: false, error: 'cooldown', until: cooldownUntil, slots: [] });
+   }
+
    if (payload.action === 'slots') {
-      const start = ymd(new Date());
+      // From yesterday's UTC date: Cal.com reads date-only bounds in the borrower's zone, and it
+      // never returns past times anyway — so this can't lose "later today" for anyone.
+      const start = ymd(new Date(Date.now() - 86400000));
       const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
       const perHost = await Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone)));
-      return json({ slots: mergeSlots(perHost) });
+      return json({ slots: preferSoonSlots(mergeSlots(perHost), Date.now()) });
    }
 
    if (payload.action === 'book') {
-      const start = payload.start;
-      if (!start) return json({ error: 'missing_start' }, 400);
+      // Slots arrive with the borrower's offset (…T07:00:00.000+08:00); book and store the instant in
+      // UTC so Cal.com, the database and every reminder agree on one unambiguous time.
+      const startMs = payload.start ? Date.parse(payload.start) : NaN;
+      if (Number.isNaN(startMs)) return json({ error: 'missing_start' }, 400);
+      if (startMs <= Date.now()) return json({ ok: false, error: 'slot_taken' });
+      const start = new Date(startMs).toISOString();
 
       // Re-check who's actually free at this instant right now (availability may have moved).
-      const day = ymd(new Date(Date.parse(start)));
-      const nextDay = ymd(new Date(Date.parse(start) + 86400000));
+      const range = recheckRange(start);
       const perHostMap: Record<string, string[]> = {};
       await Promise.all(
          resolved.map(async (h) => {
-            perHostMap[h.id] = await fetchSlots(h.apiKey, h.eventTypeId, day, nextDay, timeZone);
+            perHostMap[h.id] = await fetchSlots(h.apiKey, h.eventTypeId, range.from, range.to, timeZone);
          })
       );
       const free = hostsFreeAt(start, perHostMap);
@@ -192,17 +223,37 @@ serve(async (req) => {
          if ('uid' in result) {
             // Source of truth: we made the booking, so stamp the gate directly (the signed webhook
             // will also fire and land on the same values).
-            await svc
+            const confirmToken = newConfirmToken();
+            const { data: booked } = await svc
                .from('users')
                .update({
                   video_call_scheduled_at: new Date().toISOString(),
                   video_call_host: hostId,
                   video_call_starts_at: start,
                   video_call_booking_uid: result.uid,
-                  // Fresh booking → restart the reminder ladder (see video-call-reminders).
-                  video_call_reminder_stage: 0
+                  video_call_timezone: timeZone,
+                  video_call_join_url: result.joinUrl,
+                  // Lets zoom-webhook match "participant joined" events to this booking.
+                  video_call_meeting_id: meetingIdFromJoinUrl(result.joinUrl),
+                  ...ATTENDANCE_RESET,
+                  // Fresh booking → restart the reminder ladder (see video-call-reminders) and
+                  // clear the last call's confirm/attendance.
+                  video_call_reminder_stage: 0,
+                  video_call_confirm_token: confirmToken,
+                  video_call_confirmed_at: null,
+                  video_call_outcome: null,
+                  video_call_outcome_at: null
                })
-               .eq('id', user.id);
+               .eq('id', user.id)
+               .select(
+                  'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at'
+               )
+               .maybeSingle();
+            // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
+            if (booked) {
+               const sent = await sendBookedMessenger(booked);
+               if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
+            }
             let teamChat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || '';
             if (!teamChat) {
                const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();

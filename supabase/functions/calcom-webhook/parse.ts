@@ -12,6 +12,8 @@ export type CalcomWebhookBody = {
    payload?: {
       uid?: string;
       startTime?: string;
+      location?: string;
+      videoCallData?: { url?: string };
       metadata?: Record<string, unknown>;
       responses?: Record<string, unknown>;
    };
@@ -23,7 +25,11 @@ export type CalcomBooking = {
    userId: string | null;
    host: 'george' | 'emma' | null;
    startsAt: string | null;
+   // The meeting's join link (Zoom / Cal Video), when the payload carries one.
+   joinUrl: string | null;
 };
+
+const asUrl = (value: unknown): string | null => (typeof value === 'string' && /^https?:\/\//.test(value) ? value : null);
 
 const toHex = (buf: ArrayBuffer) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
 
@@ -63,6 +69,7 @@ export const extractBooking = (body: CalcomWebhookBody): CalcomBooking | null =>
       bookingUid: typeof payload.uid === 'string' && payload.uid ? payload.uid : null,
       userId: readInjectedField(payload, 'moodeng_user_id'),
       host: hostRaw === 'george' || hostRaw === 'emma' ? hostRaw : null,
-      startsAt: typeof payload.startTime === 'string' && payload.startTime ? payload.startTime : null
+      startsAt: typeof payload.startTime === 'string' && payload.startTime ? payload.startTime : null,
+      joinUrl: asUrl(payload.metadata?.videoCallUrl) ?? asUrl(payload.videoCallData?.url) ?? asUrl(payload.location)
    };
 };

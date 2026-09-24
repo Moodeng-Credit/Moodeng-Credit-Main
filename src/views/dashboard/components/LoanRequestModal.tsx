@@ -42,6 +42,8 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
+import type { LoanFlow } from '@/hooks/useLoanFlow';
+
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
@@ -50,10 +52,11 @@ import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
-import { updateUser } from '@/store/slices/authSlice';
+import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
@@ -86,6 +89,8 @@ interface LoanRequestModalProps {
    requireBorrowerContextStep?: boolean;
    startOnBorrowerContextStep?: boolean;
    startOnReferralStep?: boolean;
+   /** Which borrower flow is live (useLoanFlow in RequestBoard). Defaults to 'open' — no gate. */
+   loanFlow?: LoanFlow;
 }
 
 export type AppliedReferralCode = {
@@ -413,8 +418,12 @@ function BorrowerContextLoanStep({
    onProfileImageClick,
    onProfileNameChange,
    profileName,
-   profileSaveError
+   profileSaveError,
+   submitLabel = 'Submit request'
 }: {
+   // Last-page button: "Submit request" in the application; "Continue" when the bio is part of the
+   // Connect filter (PART 1), where nothing is submitted yet.
+   submitLabel?: string;
    page: 1 | 2;
    context: BorrowerContextState;
    currentAvatarBackground?: string | null;
@@ -674,7 +683,7 @@ function BorrowerContextLoanStep({
                onClick={onContinue}
                type="button"
             >
-               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : 'Submit request'}
+               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : submitLabel}
             </button>
          </div>
       </div>
@@ -732,9 +741,11 @@ function ReturnHint({ lo, hi }: { lo: number; hi: number }) {
    );
 }
 
-// The ordered set of screens a single loan-request flow can pass through. Which of these actually
-// appear depends on the borrower: bio pages only for first-time borrowers, the video call only when
-// there's no referral code. buildRequestSteps() assembles the real list for a given borrower.
+// The ordered set of screens a single loan-request flow (PART 2 · Apply) can pass through. Which of
+// these actually appear depends on the borrower: bio pages only for first-time borrowers, the
+// contact step only when they have no verified line yet, and — in the 'open' flow only — the
+// video call when there's no referral code. (In the call/approval flows, PART 1 · Connect happens
+// before any of this; see ConnectStep.)
 type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'contacts' | 'videocall';
 
 // Human labels for each possible step key, used by the progress rail below.
@@ -748,10 +759,10 @@ const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
 
 // Progress rail shown at the bottom of the multi-step request flow. Path-aware: the number of
 // dots reflects THIS borrower's actual journey — bio pages appear only for first-time borrowers
-// (no saved income context), and the "Meet the team" video-call step appears only when there's no
-// referral code (a referred borrower has one fewer step). Completed steps turn green, the current
-// one gets a purple ring, upcoming ones stay grey, and a "Step X of Y" line spells it out so the
-// borrower can see exactly how much is left — and that a referred path is shorter.
+// (no saved income context), the contact step only until they've verified a line, and the video
+// call only in the open flow without a referral code. Completed
+// steps turn green, the current one gets a purple ring, upcoming ones stay grey, and a "Step X of Y"
+// line spells it out so the borrower can see exactly how much is left.
 function StepDots({ steps, current }: { steps: RequestStepKey[]; current: number }) {
    const total = steps.length;
    const label = STEP_KEY_LABEL[steps[current - 1]] ?? '';
@@ -952,7 +963,8 @@ export default function LoanRequestModal({
    canUseReferralBoost = true,
    requireBorrowerContextStep = true,
    startOnBorrowerContextStep = false,
-   startOnReferralStep = true
+   startOnReferralStep = true,
+   loanFlow = 'open'
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -966,7 +978,11 @@ export default function LoanRequestModal({
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
    const [activeTooltip, setActiveTooltip] = useState<TooltipId | null>(null);
-   const [showReferralStep, setShowReferralStep] = useState(startOnReferralStep);
+   // Skip the referral card for a borrower already waiting on the team (gated flows) — also on the
+   // very first paint, not just after the open-reset effect runs.
+   const [showReferralStep, setShowReferralStep] = useState(
+      startOnReferralStep && !(loanFlow !== 'open' && user.loanAccessStatus === 'pending')
+   );
    const [referralCode, setReferralCode] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const [referralCodeError, setReferralCodeError] = useState('');
@@ -974,17 +990,11 @@ export default function LoanRequestModal({
    const [showBorrowerContextStep, setShowBorrowerContextStep] = useState(startOnBorrowerContextStep);
    // The bio step is split into two short pages so borrowers never face one long scroll.
    const [bioPage, setBioPage] = useState<1 | 2>(1);
-   // Contacts (WhatsApp/Facebook) and the no-referral-code video-call gate sit after bio, before
-   // the real submit. The *Done flags track "already completed this request flow" so a returning
-   // borrower who's already verified/scheduled doesn't get routed back through the step UI itself
-   // (ContactsStep/VideoCallStep also self-check and would just show a checkmark, but skipping
-   // the step entirely is one less screen).
+   // The contact step (verified Messenger/WhatsApp) sits after bio, before the real submit — only
+   // for borrowers without a verified line yet. contactsStepDone tracks "completed in this flow".
    const [showContactsStep, setShowContactsStep] = useState(false);
-   const [contactsStepDone, setContactsStepDone] = useState(false);
-   const [showVideoCallStep, setShowVideoCallStep] = useState(false);
-   const [videoCallStepDone, setVideoCallStepDone] = useState(false);
    // Existing borrowers (at least one funded loan before) only add their Facebook — one card, no
-   // video call; the call is for brand-new borrowers. The exempt list (Belle) skips the card too.
+   // video call; the call is for brand-new borrowers. See requestContactSteps.
    const [isExistingBorrower, setIsExistingBorrower] = useState(false);
    useEffect(() => {
       let cancelled = false;
@@ -1000,8 +1010,10 @@ export default function LoanRequestModal({
          cancelled = true;
       };
    }, [user.id]);
-   const contactSteps = requestContactSteps({ userId: user.id, isExistingBorrower, hasAppliedReferral: appliedReferral !== null });
-   const needsVideoCallStep = contactSteps.videoCall;
+   const [contactsStepDone, setContactsStepDone] = useState(false);
+   // Open flow only: the no-referral video call, booked (not attended) before the request posts.
+   const [showVideoCallStep, setShowVideoCallStep] = useState(false);
+   const [videoCallStepDone, setVideoCallStepDone] = useState(false);
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1063,8 +1075,14 @@ export default function LoanRequestModal({
    const hasAppliedReferralCode = appliedReferral !== null;
    const hasReferralCodeError = referralCodeError.length > 0;
    const isReferralTestMode = import.meta.env.DEV && new URLSearchParams(window.location.search).has('referralTest');
+   // Unapproved borrowers (call/approval flows) go from the referral card to "Let's connect", not to
+   // the application.
+   const referralContinueText =
+      loanFlow !== 'open' && (user.loanAccessStatus === 'none' || user.loanAccessStatus === 'rejected')
+         ? 'Continue'
+         : 'Continue to application';
    const referralPrimaryActionText =
-      hasAppliedReferralCode || !hasReferralCode ? 'Continue to application' : hasReferralCodeError ? 'Try again' : 'Apply code';
+      hasAppliedReferralCode || !hasReferralCode ? referralContinueText : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
    const canContinueBorrowerContext = Boolean(
       borrowerContext.incomeSetup &&
@@ -1080,13 +1098,42 @@ export default function LoanRequestModal({
    // with saved income context submit straight from the terms step.
    const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
 
+   // Connect → Approve → Apply gate (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — in the call and
+   // approval flows. A verified borrower who hasn't been approved yet goes through PART 1
+   // (ConnectStep) instead of the application; while an admin decides (or their call is still
+   // ahead) they see a "reviewing" card. Everyone new attends a call before a request can exist:
+   //   * referred → a setup call with Emma (local exchange: how to deposit, cash out and repay —
+   //     lesson from borrowers who couldn't pay back on time), whichever flow is on;
+   //   * no referral → the round-robin call ('call' flow) or admin approval ('approval' flow).
+   // undefined status = the column isn't deployed yet → treated as approved, so this can never lock
+   // anyone out ahead of the migration.
+   const hasReferral = Boolean(user.hasReferral || appliedReferral);
+   const isGateOn = loanFlow !== 'open';
+   const connectMode: 'call' | 'approval' = hasReferral || loanFlow === 'call' ? 'call' : 'approval';
+   const loanAccessStatus = user.loanAccessStatus ?? 'approved';
+   const isLoanAccessPending = isGateOn && isVerified && loanAccessStatus === 'pending';
+   const needsLoanAccessConnect = isGateOn && isVerified && (loanAccessStatus === 'none' || loanAccessStatus === 'rejected');
+   const isLoanAccessGated = isLoanAccessPending || needsLoanAccessConnect;
+
+   // An admin may have decided while this tab was open — re-check when the waiting borrower opens
+   // the modal, so an approval shows up without a page reload.
+   useEffect(() => {
+      if (!isOpen || !isLoanAccessPending) return;
+      void dispatch(fetchUser());
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [isOpen]);
+   const contactSteps = requestContactSteps({ userId: user.id, isExistingBorrower, hasAppliedReferral: hasReferral });
+   const needsContactsStep = contactSteps.contacts && !user.hasVerifiedContact;
+
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
-   // count and "Step X of Y" match exactly what they'll go through. A referred borrower skips the
-   // video call, so their rail is one dot shorter; that's the difference the borrower asked to see.
+   // count and "Step X of Y" match exactly what they'll go through.
+   // Open flow only (today's rule): no referral → book (not attend) the round-robin call before the
+   // request posts. In the call/approval flows the call happened before applying (PART 1).
+   const needsVideoCallStep = loanFlow === 'open' && contactSteps.videoCall;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
-      ...(contactSteps.contacts ? (['contacts'] as const) : []),
+      ...(needsContactsStep ? (['contacts'] as const) : []),
       ...(needsVideoCallStep ? (['videocall'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showContactsStep
@@ -1099,9 +1146,9 @@ export default function LoanRequestModal({
              : 'bio2'
           : 'terms';
    const currentStep = Math.max(1, requestSteps.indexOf(currentStepKey) + 1);
-   // Show the rail whenever the borrower is inside the request flow (verified, past the optional
-   // referral step) and the journey is more than a single screen.
-   const showStepProgress = isVerified && !shouldShowReferralStep && requestSteps.length > 1;
+   // Show the rail whenever the borrower is inside the request flow (verified, approved, past the
+   // optional referral step) and the journey is more than a single screen.
+   const showStepProgress = isVerified && !isLoanAccessGated && !shouldShowReferralStep && requestSteps.length > 1;
 
    useEffect(() => {
       setTypedDate(selectedDateLabel);
@@ -1115,7 +1162,10 @@ export default function LoanRequestModal({
    useEffect(() => {
       if (!isOpen) return;
 
-      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost);
+      // A borrower already waiting on the team (gated flows) goes straight to their "reviewing"
+      // card — not back through the referral card first.
+      const isWaitingOnTeam = loanFlow !== 'open' && user.loanAccessStatus === 'pending';
+      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost && !isWaitingOnTeam);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
       setTermErrors({});
@@ -1137,7 +1187,9 @@ export default function LoanRequestModal({
       startOnBorrowerContextStep,
       startOnReferralStep,
       user.displayName,
-      user.username
+      user.username,
+      loanFlow,
+      user.loanAccessStatus
    ]);
 
    useEffect(() => {
@@ -1617,19 +1669,22 @@ export default function LoanRequestModal({
          return;
       }
 
-      // WhatsApp (verified) + Facebook (collected) contact step — required before submitting.
-      // ContactsStep's own onContinue sets contactsStepDone and re-fires this handler.
-      if (contactSteps.contacts && !contactsStepDone && !showContactsStep) {
+      // Verified contact line (Messenger, or WhatsApp once live) — required before submitting, for
+      // anyone who doesn't have one yet. ContactsStep's onContinue sets contactsStepDone and
+      // re-fires this handler. (Borrowers approved through Connect already verified in PART 1.)
+      if (needsContactsStep && !contactsStepDone && !showContactsStep) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
          setShowContactsStep(true);
          return;
       }
 
-      // No referral code on file → a human at Moodeng hasn't vouched for this borrower yet, so
-      // they have to SCHEDULE (not complete) a short video call before their request goes out.
+      // Open flow, no referral code → a human at Moodeng hasn't vouched for this borrower yet, so
+      // they SCHEDULE (not complete) a short video call before their request goes out. (The call
+      // flow moves the call before the application instead, and unlocks it only after attendance.)
       if (needsVideoCallStep && !videoCallStepDone && !showVideoCallStep) {
          event.preventDefault();
+         setShowBorrowerContextStep(false);
          setShowContactsStep(false);
          setShowVideoCallStep(true);
          return;
@@ -1764,7 +1819,70 @@ export default function LoanRequestModal({
 
    const handleVideoCallStepBack = () => {
       setShowVideoCallStep(false);
-      setShowContactsStep(true);
+      if (needsContactsStep) {
+         setShowContactsStep(true);
+         return;
+      }
+      setShowBorrowerContextStep(isMultiStepRequestFlow);
+      if (isMultiStepRequestFlow) setBioPage(2);
+   };
+
+   // PART 1 done: the request is with the team. Refresh the profile so loan_access_status flips to
+   // pending and the modal swaps to the "reviewing" card.
+   const handleLoanAccessSubmitted = async () => {
+      try {
+         await dispatch(fetchUser()).unwrap();
+      } catch (error) {
+         console.error('Error refreshing user after loan-access submit:', (error as Error).message || error);
+      }
+   };
+
+   // Bio inside the Connect filter: save it to the profile right away (the admin card shows it before
+   // the call, and after approval the application skips it because user.incomeType is set).
+   const handleConnectAboutContinue = async (done: () => void) => {
+      if (!canContinueBorrowerContext) return;
+      // The DEV preview borrower has no session to save with (same as saveBorrowerProfile).
+      if (isPreviewUser) {
+         done();
+         return;
+      }
+      if (isBioSubmittingRef.current) return;
+      isBioSubmittingRef.current = true;
+      try {
+         const isProfileSaved = await saveBorrowerProfile();
+         if (!isProfileSaved) return;
+         const mapped = mapBorrowerContextForSave(borrowerContext);
+         await dispatch(
+            updateBorrowerContext({
+               incomeType: mapped.incomeType,
+               paydayType: mapped.paydayType,
+               paydayStart: mapped.paydayStart,
+               paydayEnd: mapped.paydayEnd,
+               gapReasons: mapped.gapReasons,
+               monthlyIncome: mapped.monthlyIncome,
+               monthlyExpenses: mapped.monthlyExpenses,
+               otherIncome: mapped.otherIncome,
+               profession: mapped.profession,
+               incomeDescription: mapped.incomeDescription
+            })
+         ).unwrap();
+         setBorrowerContextPromptSeen(true);
+         done();
+      } catch (error) {
+         console.error('Failed to save borrower context (connect):', error);
+         setBorrowerProfileError("Couldn't save — please try again.");
+      } finally {
+         isBioSubmittingRef.current = false;
+      }
+   };
+
+   // Back from the Connect step returns to the referral card when there is one, else closes.
+   const handleConnectBack = () => {
+      if (isVerified && canUseReferralBoost) {
+         setShowReferralStep(true);
+         return;
+      }
+      onClose();
    };
 
    const handleBorrowerContextBack = () => {
@@ -1785,6 +1903,47 @@ export default function LoanRequestModal({
          };
       });
    };
+
+   // The two-page bio ("How lenders see you"). Rendered by the application (PART 2) and, for
+   // unreferred borrowers in the call/approval flows, inside the Connect filter (PART 1).
+   const renderBioStep = (opts: { onBack: () => void; onContinue: () => void; submitLabel?: string }) => (
+      <BorrowerContextLoanStep
+         page={bioPage}
+         context={borrowerContext}
+         currentAvatarBackground={user.avatarBackground}
+         currentAvatarUrl={user.avatarUrl}
+         isSubmitting={isSubmitting}
+         isSavingProfile={isSavingBorrowerProfile || isCheckingBio}
+         monthlyIncome={borrowerContext.monthlyIncome ?? ''}
+         monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
+         onBack={opts.onBack}
+         onNextPage={handleBioPage1Continue}
+         onCashGapToggle={handleCashGapToggle}
+         onContinue={opts.onContinue}
+         onIncomeSelect={(value) =>
+            setBorrowerContext((current) => ({
+               ...current,
+               incomeSetup: value,
+               // Drop the free-text explanation if they move off "Something else".
+               incomeDescription: value === 'contract' ? current.incomeDescription : ''
+            }))
+         }
+         onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
+         onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
+         onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
+         onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
+         onIncomeDescriptionChange={(v) => setBorrowerContext((prev) => ({ ...prev, incomeDescription: v }))}
+         onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
+         onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
+         onProfileNameChange={(value) => {
+            setBorrowerProfileName(value);
+            setBorrowerProfileError('');
+         }}
+         profileName={borrowerProfileName}
+         profileSaveError={borrowerProfileError}
+         submitLabel={opts.submitLabel}
+      />
+   );
 
    if (!isOpen) return null;
 
@@ -1859,9 +2018,8 @@ export default function LoanRequestModal({
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
                className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
-                  showContactsStep
-                     ? // The hippo hero below carries the title; the header just blends into its lavender.
-                       'bg-[#f3ecff] pb-0 pt-5'
+                  isLoanAccessGated || showContactsStep
+                     ? 'bg-[#f3ecff] pb-0 pt-5 sm:pt-3'
                      : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
                }`}
                onPointerDown={(event) => startDismissGesture(event, 'down')}
@@ -1872,10 +2030,13 @@ export default function LoanRequestModal({
                <div className="flex min-w-0 items-center gap-md-1 pr-3">
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
-                  ) : showContactsStep ? (
-                     <h2 className="sr-only">{isExistingBorrower ? 'Add your Facebook' : 'How can we reach you'}</h2>
+                  ) : isLoanAccessGated || showContactsStep ? (
+                     // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
+                     <h2 className="sr-only">{isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Schedule a video call</h2>
+                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
+                        Schedule a video call
+                     </h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
                         <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
@@ -1997,6 +2158,30 @@ export default function LoanRequestModal({
 
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
+            ) : isLoanAccessPending ? (
+               <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} userId={user.id} onClose={onClose} />
+            ) : needsLoanAccessConnect ? (
+               <ConnectStep
+                  userId={user.id}
+                  displayName={currentBorrowerDisplayName}
+                  referralCode={appliedReferral?.code}
+                  wasRejected={loanAccessStatus === 'rejected'}
+                  missedCall={loanAccessStatus === 'none' && Boolean(user.missedLastCall)}
+                  mode={connectMode}
+                  withEmma={hasReferral}
+                  needsAbout={!user.incomeType}
+                  renderAbout={({ onBack: aboutBack, onDone }) => (
+                     <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+                        {renderBioStep({
+                           onBack: () => (bioPage === 2 ? setBioPage(1) : aboutBack()),
+                           onContinue: () => void handleConnectAboutContinue(onDone),
+                           submitLabel: 'Continue'
+                        })}
+                     </div>
+                  )}
+                  onBack={handleConnectBack}
+                  onSubmitted={handleLoanAccessSubmitted}
+               />
             ) : showContactsStep ? (
                <ContactsStep
                   userId={user.id}
@@ -2018,7 +2203,11 @@ export default function LoanRequestModal({
                   }
                />
             ) : showVideoCallStep ? (
-               <VideoCallStep userId={user.id} onBack={handleVideoCallStepBack} onContinue={handleVideoCallStepContinue} />
+               <VideoCallStep
+                  userId={user.id}
+                  onBack={handleVideoCallStepBack}
+                  onContinue={handleVideoCallStepContinue}
+               />
             ) : (
                <form
                   ref={formRef}
@@ -2026,41 +2215,7 @@ export default function LoanRequestModal({
                   className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading"
                >
                   {showBorrowerContextStep ? (
-                     <BorrowerContextLoanStep
-                        page={bioPage}
-                        context={borrowerContext}
-                        currentAvatarBackground={user.avatarBackground}
-                        currentAvatarUrl={user.avatarUrl}
-                        isSubmitting={isSubmitting}
-                        isSavingProfile={isSavingBorrowerProfile || isCheckingBio}
-                        monthlyIncome={borrowerContext.monthlyIncome ?? ''}
-                        monthlyExpenses={borrowerContext.monthlyExpenses ?? ''}
-                        onBack={handleBorrowerContextBack}
-                        onNextPage={handleBioPage1Continue}
-                        onCashGapToggle={handleCashGapToggle}
-                        onContinue={handleBorrowerContextContinue}
-                        onIncomeSelect={(value) =>
-                           setBorrowerContext((current) => ({
-                              ...current,
-                              incomeSetup: value,
-                              // Drop the free-text explanation if they move off "Something else".
-                              incomeDescription: value === 'contract' ? current.incomeDescription : ''
-                           }))
-                        }
-                        onMonthlyIncomeSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyIncome: v }))}
-                        onMonthlyExpensesSelect={(v) => setBorrowerContext((prev) => ({ ...prev, monthlyExpenses: v }))}
-                        onOtherIncomeChange={(v) => setBorrowerContext((prev) => ({ ...prev, otherIncome: v }))}
-                        onProfessionChange={(v) => setBorrowerContext((prev) => ({ ...prev, profession: v }))}
-                        onIncomeDescriptionChange={(v) => setBorrowerContext((prev) => ({ ...prev, incomeDescription: v }))}
-                        onPaydaySelect={(value) => setBorrowerContext((current) => ({ ...current, paydayWindow: value }))}
-                        onProfileImageClick={() => setShowBorrowerAvatarModal(true)}
-                        onProfileNameChange={(value) => {
-                           setBorrowerProfileName(value);
-                           setBorrowerProfileError('');
-                        }}
-                        profileName={borrowerProfileName}
-                        profileSaveError={borrowerProfileError}
-                     />
+                     renderBioStep({ onBack: handleBorrowerContextBack, onContinue: handleBorrowerContextContinue })
                   ) : (
                      <>
                         {showVerify ? (

@@ -2,6 +2,17 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
+   answerCallback,
+   decideLoanAccess,
+   escapeLike,
+   findPendingRequest,
+   parseDecisionCallback,
+   shortId,
+   stampAdminCard
+} from '../_shared/loanAccess.ts';
+import { formatCallTime } from '../_shared/videoCall.ts';
+import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
+import {
    closeTelegramForumTopic,
    createTelegramForumTopic,
    sendTelegramMessage
@@ -39,8 +50,16 @@ type TelegramMessage = {
    from?: TelegramUser;
 };
 
+type TelegramCallbackQuery = {
+   id: string;
+   from: TelegramUser;
+   data?: string;
+   message?: TelegramMessage;
+};
+
 type TelegramUpdate = {
    message?: TelegramMessage;
+   callback_query?: TelegramCallbackQuery;
 };
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
@@ -225,6 +244,149 @@ const handleMessengerConfirmCommand = async (supabase: SupabaseClient, message: 
    const { data: prof } = await supabase.from('users').select('username, email').eq('id', pending.user_id).maybeSingle();
    const who = [prof?.username, prof?.email].filter(Boolean).join(' · ') || pending.user_id;
    await sendTelegramMessage(chatId, `✅ Messenger verified for ${who}. Their loan request can now continue.`);
+   return true;
+};
+
+const adminHandle = (from?: TelegramUser) =>
+   from?.username ? `@${from.username}` : [from?.first_name, from?.last_name].filter(Boolean).join(' ') || String(from?.id ?? 'admin');
+
+// Connect → Approve → Apply, typed form (works even if a card's buttons are gone):
+//   /approve <id or @username>   /reject <id or @username>
+//   /showed <id or @username>    /noshow <id or @username>   (video-call attendance)
+// <id> is the 8-char request id printed on the admin card. Admin channels only.
+// /showed and /noshow decide a pending 'call' request; with no pending request (open flow) they
+// just record attendance on the borrower's latest call.
+const COMMAND_DECISION: Record<string, 'approved' | 'rejected' | 'no_show'> = {
+   approve: 'approved',
+   reject: 'rejected',
+   showed: 'approved',
+   noshow: 'no_show'
+};
+
+const handleLoanAccessCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/(approve|reject|showed|noshow)(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const command = match[1].toLowerCase();
+   const decision = COMMAND_DECISION[command];
+   const arg = (match[2] ?? '').trim();
+
+   if (!arg) {
+      await sendTelegramMessage(chatId, `Usage: /${match[1].toLowerCase()} <request id or @username>\nThe id is on the "wants to connect" card.`);
+      return true;
+   }
+
+   const request = await findPendingRequest(supabase, arg);
+   if (request === 'ambiguous') {
+      await sendTelegramMessage(chatId, `"${arg}" matches more than one pending request — use more of the id.`);
+      return true;
+   }
+   if (!request) {
+      // Open flow: no request to decide — record attendance on their call instead.
+      if (command === 'showed' || command === 'noshow') {
+         const { data: user } = await supabase.from('users').select('id').ilike('username', escapeLike(arg.replace(/^@/, ''))).maybeSingle();
+         if (user?.id) {
+            const result = await recordCallOutcome(supabase, user.id, command === 'showed' ? 'attended' : 'no_show', adminHandle(message.from));
+            await sendTelegramMessage(chatId, result.summary);
+            return true;
+         }
+      }
+      await sendTelegramMessage(chatId, `No pending loan-access request matches "${arg}".`);
+      return true;
+   }
+
+   const result = await decideLoanAccess(supabase, request.id, decision, adminHandle(message.from));
+   await sendTelegramMessage(chatId, result.ok ? `${result.summary} (${shortId(request.id)})` : result.summary);
+   return true;
+};
+
+// The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show) and
+// vc: (open-flow call attendance). Honored only when the card sits in an admin channel, so a
+// forwarded card can't be tapped from anywhere else.
+const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCallbackQuery, adminChatIds: string[]) => {
+   const parsed = parseDecisionCallback(query.data);
+   const outcome = parsed ? null : parseOutcomeCallback(query.data);
+   if (!parsed && !outcome) {
+      await answerCallback(query.id, 'Unknown action.');
+      return;
+   }
+   const cardChatId = query.message?.chat.id;
+   if (!cardChatId || !adminChatIds.includes(String(cardChatId))) {
+      await answerCallback(query.id, 'Not allowed here.');
+      return;
+   }
+
+   const result = parsed
+      ? await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from))
+      : await recordCallOutcome(supabase, outcome!.userId, outcome!.outcome, adminHandle(query.from));
+   await answerCallback(query.id, result.summary);
+   if (query.message) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
+};
+
+// /pending — everyone waiting on a decision, oldest first, with the id for /approve etc. A safety
+// net for when a card scrolls away. Admin channels only.
+const handlePendingCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const { data, error } = await supabase
+      .from('loan_access_requests')
+      .select('id, user_id, kind, display_name, created_at, users!inner(username, email, video_call_starts_at)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(30);
+   if (error) throw new Error(error.message);
+   const rows = (data ?? []) as Array<{
+      id: string;
+      kind: string;
+      display_name: string | null;
+      users: { username: string | null; email: string | null; video_call_starts_at: string | null };
+   }>;
+   if (!rows.length) {
+      await sendTelegramMessage(message.chat.id, 'Nobody is waiting — no pending requests. 🎉');
+      return;
+   }
+   const lines = rows.map((r, i) => {
+      const name = [r.display_name, r.users?.username ? `@${r.users.username}` : null].filter(Boolean).join(' ') || r.users?.email || r.id;
+      const call = r.kind === 'call' && r.users?.video_call_starts_at ? ` · call ${formatCallTime(r.users.video_call_starts_at, 'Asia/Bangkok')}` : '';
+      return `${i + 1}. ${name}${call} — ${shortId(r.id)}`;
+   });
+   await sendTelegramMessage(
+      message.chat.id,
+      `⏳ Waiting on you (${rows.length}):\n${lines.join('\n')}\n\nDecide with /showed · /noshow · /approve · /reject + the id.`
+   );
+};
+
+// Which borrower flow is live (docs/HANDOFF_BORROWER_VERIFICATION.md §13):
+//   /loanflow                  show the current one
+//   /loanflow open|call|approval   switch — takes effect for borrowers immediately, no deploy
+const LOAN_FLOWS: Record<string, string> = {
+   open: 'OPEN — book a call, request posts right away (the old flow)',
+   call: 'CALL — request unlocks only after you tap ✅ Showed up',
+   approval: 'APPROVAL — you approve in Telegram, no call'
+};
+
+const handleLoanFlowCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/loanflow(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+
+   if (!wanted) {
+      const current = (await getSetting(supabase, 'loan_flow')) ?? 'open';
+      await sendTelegramMessage(
+         chatId,
+         `Borrower flow now: ${LOAN_FLOWS[current] ?? LOAN_FLOWS.open}\n\nSwitch with /loanflow open · /loanflow call · /loanflow approval`
+      );
+      return true;
+   }
+   if (!LOAN_FLOWS[wanted]) {
+      await sendTelegramMessage(chatId, 'Usage: /loanflow open | call | approval');
+      return true;
+   }
+
+   const { error } = await supabase
+      .from('telegram_bot_settings')
+      .upsert({ key: 'loan_flow', value: wanted }, { onConflict: 'key' });
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(chatId, `✅ Borrower flow switched to ${LOAN_FLOWS[wanted]} — by ${adminHandle(message.from)}`);
    return true;
 };
 
@@ -433,6 +595,17 @@ serve(async (req) => {
    const message = update.message;
 
    try {
+      if (update.callback_query) {
+         const teamChatId = await getTeamChatId(supabase);
+         const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+         await handleAdminCallback(
+            supabase,
+            update.callback_query,
+            [teamChatId, kycChatId].filter(Boolean).map(String)
+         );
+         return jsonResponse({ message: 'Callback handled' });
+      }
+
       if (!message || message.from?.is_bot) {
          return jsonResponse({ message: 'Ignored' });
       }
@@ -477,6 +650,24 @@ serve(async (req) => {
       if (isAdminChannel && /^\/confirm\b/i.test(message.text ?? '')) {
          await handleMessengerConfirmCommand(supabase, message);
          return jsonResponse({ message: 'Messenger confirm handled' });
+      }
+
+      // Connect → Approve → Apply typed decisions + call attendance — either admin channel.
+      if (isAdminChannel && /^\/(approve|reject|showed|noshow)\b/i.test(message.text ?? '')) {
+         await handleLoanAccessCommand(supabase, message);
+         return jsonResponse({ message: 'Loan access command handled' });
+      }
+
+      // Who's waiting on a decision — either admin channel.
+      if (isAdminChannel && /^\/pending\b/i.test(message.text ?? '')) {
+         await handlePendingCommand(supabase, message);
+         return jsonResponse({ message: 'Pending list handled' });
+      }
+
+      // Borrower-flow switch — either admin channel.
+      if (isAdminChannel && /^\/loanflow\b/i.test(message.text ?? '')) {
+         await handleLoanFlowCommand(supabase, message);
+         return jsonResponse({ message: 'Loan flow command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

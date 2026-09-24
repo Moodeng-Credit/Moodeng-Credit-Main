@@ -35,8 +35,8 @@ const { default: VideoCallStep } = await import('@/views/dashboard/components/Vi
 
 const allButtons = (c: HTMLElement) => Array.from(c.querySelectorAll('button'));
 const continueButton = (c: HTMLElement) =>
-   allButtons(c).find((b) => /^(Continue|Book a time)/.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
-const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Back|Try again)/.test(b.textContent?.trim() ?? ''));
+   allButtons(c).find((b) => /^(Continue|Book a time|Pick a time)/.test(b.textContent?.trim() ?? '')) as HTMLButtonElement;
+const timeButtons = (c: HTMLElement) => allButtons(c).filter((b) => !/^(Continue|Book a time|Pick a time|Booking paused|Back|Try again)/.test(b.textContent?.trim() ?? ''));
 
 describe('VideoCallStep — free round-robin anonymous booking', () => {
    let container: HTMLDivElement;
@@ -88,14 +88,24 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       expect(bookCall).toBeTruthy();
       expect((bookCall?.[1] as { body?: { start?: string } })?.body?.start).toBe('2026-10-01T09:00:00.000Z');
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("You're booked with the Moodeng team");
+      expect(container.textContent).toContain("booked with the Moodeng team");
    });
 
    it('enables Continue on load for a borrower already booked', async () => {
       supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_starts_at: '2026-09-01T09:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("You're booked with the Moodeng team");
+      expect(container.textContent).toContain("booked with the Moodeng team");
+   });
+
+   it('explains the one-week pause (and offers no times) after two missed calls', async () => {
+      supa.invoke.mockImplementationOnce(async () => ({ data: { ok: false, error: 'cooldown', until: '2026-10-02T00:00:00.000Z', slots: [] }, error: null }));
+      await render();
+      expect(container.textContent).toContain("missed two calls");
+      expect(container.textContent).toContain('You can pick a new time from');
+      expect(timeButtons(container)).toHaveLength(0);
+      const paused = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Booking paused');
+      expect(paused?.disabled).toBe(true);
    });
 
    it('keeps the gate closed and warns when the slot was just taken', async () => {

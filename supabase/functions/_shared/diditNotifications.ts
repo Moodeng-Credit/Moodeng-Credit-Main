@@ -168,7 +168,7 @@ export const notifyUser = async (
       if (!user || user.notif_account_activity === false) return;
 
       const copy = USER_NOTIFY_COPY[outcome];
-      const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://dashboard.moodeng.app').replace(/\/$/, '');
+      const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
       const verifyUrl = `${siteUrl}/verify`;
       const text = `${copy.body(reason)}\n\n${copy.cta}: ${verifyUrl}`;
 

@@ -1,6 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
+import { postDiscord } from '../_shared/discord.ts';
+import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
@@ -62,16 +66,49 @@ serve(async (req) => {
          console.error('calcom-webhook: booking with no moodeng_user_id metadata', booking.triggerEvent);
          return jsonResponse({ ok: true });
       }
+      // Our own booking (calcom-round-robin) already stamped this exact time, and Cal.com then echoes
+      // BOOKING_CREATED — possibly late or retried. Only a genuinely new time restarts the reminder
+      // ladder and clears the old "I'll be there" / attendance; an echo must not re-send reminders.
+      const { data: current } = await supabase
+         .from('users')
+         .select('video_call_starts_at')
+         .eq('id', booking.userId)
+         .maybeSingle();
+      const currentMs = Date.parse((current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? '');
+      const timeMoved = !booking.startsAt || currentMs !== Date.parse(booking.startsAt);
       const { error } = await supabase
          .from('users')
          .update({
-            video_call_scheduled_at: new Date().toISOString(),
             video_call_host: booking.host,
             video_call_starts_at: booking.startsAt,
-            video_call_booking_uid: booking.bookingUid
+            video_call_booking_uid: booking.bookingUid,
+            ...(timeMoved
+               ? {
+                    video_call_scheduled_at: new Date().toISOString(),
+                    video_call_reminder_stage: 0,
+                    video_call_confirmed_at: null,
+                    video_call_outcome: null,
+                    video_call_outcome_at: null,
+                    ...ATTENDANCE_RESET
+                 }
+               : {}),
+            // Keep the join link (and the Zoom meeting id attendance is matched on) in step with the
+            // (possibly moved) booking — never a stale one.
+            ...(booking.joinUrl ? { video_call_join_url: booking.joinUrl, video_call_meeting_id: meetingIdFromJoinUrl(booking.joinUrl) } : {})
          })
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);
+
+      // A pending call request stays open until a week after the call — follow the new time.
+      if (booking.startsAt) {
+         const { error: expiryError } = await supabase
+            .from('loan_access_requests')
+            .update({ expires_at: new Date(Date.parse(booking.startsAt) + 7 * 86400000).toISOString() })
+            .eq('user_id', booking.userId)
+            .eq('status', 'pending')
+            .eq('kind', 'call');
+         if (expiryError) console.error('calcom-webhook: move request expiry failed', expiryError.message);
+      }
       return jsonResponse({ ok: true });
    }
 
@@ -82,16 +119,49 @@ serve(async (req) => {
       if (!booking.bookingUid) {
          return jsonResponse({ ok: true });
       }
-      const { error } = await supabase
+      const { data: released, error } = await supabase
          .from('users')
          .update({
             video_call_scheduled_at: null,
             video_call_host: null,
             video_call_starts_at: null,
-            video_call_booking_uid: null
+            video_call_booking_uid: null,
+            video_call_join_url: null
          })
-         .eq('video_call_booking_uid', booking.bookingUid);
+         .eq('video_call_booking_uid', booking.bookingUid)
+         .select('id');
       if (error) console.error('calcom-webhook: reopen gate failed', error);
+
+      // Connect → Approve → Apply: a borrower whose call was their reach-out would otherwise sit on
+      // "See you on the call" with no call and no way to rebook. Close their pending call request,
+      // put them back to 'none' (they can book again), and tell them + the admins.
+      for (const row of (released ?? []) as Array<{ id: string }>) {
+         const { data: closed } = await supabase
+            .from('loan_access_requests')
+            .update({ status: 'expired', decided_at: new Date().toISOString(), decided_by: 'booking-cancelled' })
+            .eq('user_id', row.id)
+            .eq('status', 'pending')
+            .eq('kind', 'call')
+            .select('id');
+         if (!closed?.length) continue;
+         const { data: borrower } = await supabase
+            .from('users')
+            .update({ loan_access_status: 'none' })
+            .eq('id', row.id)
+            .eq('loan_access_status', 'pending')
+            .select(BORROWER_COLUMNS)
+            .maybeSingle();
+         if (!borrower) continue;
+         await notifyBorrower(supabase, borrower, 'call_cancelled');
+         const text = `🗓️ ${who(borrower)} cancelled their call — their request is closed and they've been asked to rebook.`;
+         try {
+            const chat = await getAdminChatId(supabase);
+            if (chat) await sendTelegramMessage(chat, text);
+         } catch (err) {
+            console.error('calcom-webhook: admin telegram failed', err instanceof Error ? err.message : err);
+         }
+         await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+      }
       return jsonResponse({ ok: true });
    }
 
