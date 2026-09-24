@@ -24,6 +24,7 @@ import {
 } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Model } from '@/views/dashboard-v2/types';
 import { buildReputationMilestones, getBorrowerLoans } from '@/views/dashboard/dashboardHelpers';
+import { useMilestonePointAwards } from '@/views/dashboard/useMilestonePointAwards';
 import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import { useDashboardData } from '@/views/profile/components/tabs/useDashboardData';
 
@@ -66,9 +67,16 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       dispatch(fetchUserProfiles(missingLenderIds)).catch(() => undefined);
    }, [dispatch, missingLenderIds]);
 
+   const sharedMilestones = useMemo(
+      () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified }),
+      [borrowerLoans, creditLevels, isVerified]
+   );
+   // Same as the live dashboard: unlocked milestones are recorded server-side (the RPC re-checks
+   // each rule), which is what actually awards their Pandesal.
+   useMilestonePointAwards({ userId: user.id, milestones: sharedMilestones, enabled: isSignedIn && isReady });
+
    const model = useMemo<DashboardV2Model>(() => {
       const pandesal = isVerified ? pointsTotal : 0;
-      const sharedMilestones = buildReputationMilestones({ creditLevels, borrowerLoans, isVerified });
       const credit = getCreditLevelProgress({
          creditLimit: getEffectiveCreditLimit(user.cs, isVerified),
          isVerified,
@@ -120,7 +128,6 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       };
    }, [
       borrowerLoans,
-      creditLevels,
       dueLoans,
       inviteCode,
       isVerified,
@@ -129,6 +136,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       referralError,
       referralLoading,
       rewards,
+      sharedMilestones,
       stats,
       user,
       userProfiles
