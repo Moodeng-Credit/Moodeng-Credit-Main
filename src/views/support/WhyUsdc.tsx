@@ -2,12 +2,11 @@ import { type CSSProperties, type JSX, useEffect, useMemo, useState } from 'reac
 
 import { Link } from 'react-router-dom';
 
-import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
-
 import { usePageSeo } from '@/hooks/usePageSeo';
 
 import '@/views/academy/AcademyGuide.css';
 import '@/views/creditLevelingGuide/CreditLevelingGuide.css';
+import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
 import '@/views/support/HowCreditLevelsWork.css';
 import '@/views/support/WhyUsdc.css';
 
@@ -128,7 +127,7 @@ const faqs = [
    },
    {
       q: 'Do I pay fees to send USDC on Moodeng?',
-      a: 'No. Moodeng uses a Base Account on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.'
+      a: 'No. Moodeng uses a Base Account or Instant Wallet on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.'
    },
    {
       q: 'Does Moodeng offer USDC staking or yield?',
@@ -145,7 +144,7 @@ const relatedGuides = [
    {
       slug: 'how-to-request-your-first-loan',
       title: 'How to request your first loan',
-      blurb: 'Set up your Base Account, connect your wallet, and send your first request.'
+      blurb: 'Set up your wallet (Base Account or Instant Wallet) and send your first request.'
    },
    {
       slug: 'how-credit-levels-work',
@@ -257,10 +256,7 @@ export default function WhyUsdc(): JSX.Element {
       };
    }, []);
 
-   const progressStyle = useMemo(
-      () => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties,
-      [readingProgress]
-   );
+   const progressStyle = useMemo(() => ({ '--academy-reading-progress': `${readingProgress}%` }) as CSSProperties, [readingProgress]);
 
    return (
       <main className="credit-leveling-guide hclw-page why-usdc">
@@ -284,8 +280,8 @@ export default function WhyUsdc(): JSX.Element {
                </div>
                <h1>Why Moodeng uses USDC</h1>
                <p>
-                  Every loan on Moodeng is sent and repaid in USDC — a regulated digital dollar pegged 1:1 to the US
-                  dollar. Here is what that means, and why it makes small loans faster, cheaper, and safer.
+                  Every loan on Moodeng is sent and repaid in USDC — a regulated digital dollar pegged 1:1 to the US dollar. Here is what
+                  that means, and why it makes small loans faster, cheaper, and safer.
                </p>
                <div className="credit-leveling-hero__actions">
                   <Link to="/request-board">Request a loan</Link>
@@ -313,11 +309,10 @@ export default function WhyUsdc(): JSX.Element {
                   <div className="credit-leveling-kicker">Start here</div>
                   <h2>What is USDC?</h2>
                   <p>
-                     USDC (USD Coin) is a <strong>stablecoin</strong>: a cryptocurrency built to stay worth exactly one
-                     US dollar. It is issued by Circle, backed fully by cash and short-term US Treasuries, and its
-                     reserves are attested by independent accounting firms every month. Because it lives on a
-                     blockchain, it can move between wallets in seconds — while staying as steady as the dollar it
-                     tracks.
+                     USDC (USD Coin) is a <strong>stablecoin</strong>: a cryptocurrency built to stay worth exactly one US dollar. It is
+                     issued by Circle, backed fully by cash and short-term US Treasuries, and its reserves are attested by independent
+                     accounting firms every month. Because it lives on a blockchain, it can move between wallets in seconds — while staying
+                     as steady as the dollar it tracks.
                   </p>
                </div>
                <img src="/hippos/thinking.png" alt="" className="hclw-section-mascot" loading="lazy" />
@@ -398,9 +393,9 @@ export default function WhyUsdc(): JSX.Element {
                ))}
             </div>
             <div className="why-usdc-callout">
-               <strong>Staking vs yield, side by side:</strong> Staking secures a blockchain and pays rewards for doing
-               so — you cannot stake USDC that way. Yield is simply the return for lending or supplying USDC in DeFi.
-               Moodeng does neither: it uses USDC to fund and repay community loans.
+               <strong>Staking vs yield, side by side:</strong> Staking secures a blockchain and pays rewards for doing so — you cannot
+               stake USDC that way. Yield is simply the return for lending or supplying USDC in DeFi. Moodeng does neither: it uses USDC to
+               fund and repay community loans.
             </div>
          </section>
 

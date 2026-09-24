@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
+
 import { useLocalization } from '@/i18n';
 import SearchBar from '@/views/support/components/SearchBar';
 import SupportHeader from '@/views/support/components/SupportHeader';
@@ -8,7 +9,7 @@ import { ICON_MASK_BASE } from '@/views/support/constants';
 import { getFaqsForLocale } from '@/views/support/data/faqs';
 
 const FAQ_SEO_DESCRIPTION =
-   'Answers about how Moodeng Credit works — borrowing in USDC, Trust Scores, Credit Levels, Base wallets, fees, and staying safe from loan sharks.';
+   'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, Base and Instant Wallets, fees, and staying safe from loan sharks.';
 
 const FAQ_CATEGORIES = {
    general: 'General',
@@ -70,7 +71,7 @@ export default function FAQ() {
               all: 'Lahat',
               [FAQ_CATEGORIES.general]: 'Pangkalahatan',
               [FAQ_CATEGORIES.borrowing]: 'Paghiram',
-              [FAQ_CATEGORIES.trustScore]: 'Trust Score',
+              [FAQ_CATEGORIES.trustScore]: 'Pandesal points',
               [FAQ_CATEGORIES.creditLevel]: 'Antas ng kredito',
               [FAQ_CATEGORIES.wallet]: 'Wallet'
            }
@@ -82,7 +83,7 @@ export default function FAQ() {
                 all: 'Semua',
                 [FAQ_CATEGORIES.general]: 'Umum',
                 [FAQ_CATEGORIES.borrowing]: 'Pinjaman',
-                [FAQ_CATEGORIES.trustScore]: 'Trust Score',
+                [FAQ_CATEGORIES.trustScore]: 'Poin Pandesal',
                 [FAQ_CATEGORIES.creditLevel]: 'Level Kredit',
                 [FAQ_CATEGORIES.wallet]: 'Wallet'
              }
@@ -93,14 +94,13 @@ export default function FAQ() {
                 all: 'All',
                 [FAQ_CATEGORIES.general]: 'General',
                 [FAQ_CATEGORIES.borrowing]: 'Borrowing',
-                [FAQ_CATEGORIES.trustScore]: 'Trust Score',
+                [FAQ_CATEGORIES.trustScore]: 'Pandesal points',
                 [FAQ_CATEGORIES.creditLevel]: 'Credit Level',
                 [FAQ_CATEGORIES.wallet]: 'Wallet'
              };
 
    const filtered = useMemo(() => {
-      const categoryFiltered =
-         selectedCategory === 'All' ? faqs : faqs.filter((f) => getFaqCategory(f.id) === selectedCategory);
+      const categoryFiltered = selectedCategory === 'All' ? faqs : faqs.filter((f) => getFaqCategory(f.id) === selectedCategory);
       const q = query.trim().toLowerCase();
       if (!q) return categoryFiltered;
       return categoryFiltered.filter((f) => f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q));

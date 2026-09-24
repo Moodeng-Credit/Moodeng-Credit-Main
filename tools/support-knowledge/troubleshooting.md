@@ -54,7 +54,7 @@ Safety: the instant wallet is a real self-custodial wallet you fully own (you ca
 **Should a user use it?** If they're a borrower and Base won't connect (blocked network, "page won't load", certificate warning), yes — it's the quickest path and avoids the block entirely (it doesn't use `keys.coinbase.com`). If their Base Account already works, they can keep using it; the instant wallet is there for when Base is the problem.
 
 **How it works / is it safe:**
-- It's a **real self-custodial wallet** on Base — it receives USDC loans and builds Trust Score exactly like any other wallet.
+- It's a **real self-custodial wallet** on Base — it receives USDC loans and earns Pandesal points exactly like any other wallet.
 - **Gasless:** Moodeng covers the network fees, so the borrower doesn't need ETH to repay or cash out.
 - **You fully own it.** You can reveal and export its private key anytime from **Account → Account Settings → Wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
 - Moodeng never asks for (and the user should never share) their private key. The export screen is the only place the key is shown, and only when the user taps to reveal it.
@@ -131,7 +131,7 @@ Users borrow **USDC on the Base network**. To turn it into pesos (or local curre
 If a user doesn't hold USDC yet and needs to repay:
 1. Buy USDC on **Binance P2P, Coins.ph, PDAX, or GCrypto**.
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
-3. Repay **before the due date** — on-time repayment builds Trust Score and unlocks higher credit levels.
+3. Repay **before the due date** — on-time repayment earns Pandesal points and unlocks higher credit levels.
 
 ## Can I have more than one loan at a time?
 
@@ -139,7 +139,7 @@ Yes — you can have more than one active loan at the same time, as long as the 
 
 ## Paying in parts (some now, some later)
 
-You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Trust Points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Trust Points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
+You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Pandesal points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Pandesal points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
 
 ## How much does cashing out cost?
 

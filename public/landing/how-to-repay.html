@@ -70,8 +70,8 @@
                   <p class="eyebrow">Repayment, in the real app</p>
                   <h1 class="page-title">Choose what you can pay. See exactly <em>what is left.</em></h1>
                   <p class="lead">
-                     Pick the loan, add USDC to your Base Account if needed, then use the slider or quick amounts. The screen shows the due
-                     date, the remaining balance, and the Trust Points before you confirm.
+                     Pick the loan, add USDC to your wallet (Base Account or Instant Wallet) if needed, then use the slider or quick
+                     amounts. The screen shows the due date, the remaining balance, and the Pandesal points before you confirm.
                   </p>
                   <ul class="hero-assurances" aria-label="Repayment assurances">
                      <li><span aria-hidden="true">✓</span>Pay early, in parts, or in full</li>
@@ -87,34 +87,97 @@
                   <div class="device">
                      <img
                         src="/landing/assets/app/repay-product-amount-hd.png"
-                        alt="Current Moodeng repayment screen showing loan selection, a repayment slider, quick amounts, due date, and Trust Points"
+                        alt="Current Moodeng repayment screen showing loan selection, a repayment slider, quick amounts, due date, and Pandesal points"
                         width="853"
                         height="1844"
                         fetchpriority="high"
                      />
                   </div>
-                  <p class="visual-caption"><span class="live-dot" aria-hidden="true"></span>Current product flow, recreated in high resolution.</p>
+                  <p class="visual-caption">
+                     <span class="live-dot" aria-hidden="true"></span>Current product flow, recreated in high resolution.
+                  </p>
                </div>
             </div>
          </section>
 
          <style>
-            .rv-wrap{ display:grid; grid-template-columns: 1fr minmax(280px, 340px); gap: clamp(28px, 5vw, 56px); align-items:center; }
-            @media (max-width: 760px){ .rv-wrap{ grid-template-columns: 1fr; justify-items:center; text-align:center; } }
-            .rv-player{ width:100%; max-width:340px; }
-            .rv-play, .rv-frame{ position:relative; display:block; width:100%; aspect-ratio: 9 / 16; border:0; padding:0; margin:0; border-radius:24px; overflow:hidden; background:#000; box-shadow: var(--shadow-md); }
-            .rv-play{ cursor:pointer; }
-            .rv-play img{ width:100%; height:100%; object-fit:cover; opacity:.92; display:block; }
-            .rv-play .rv-ring{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:66px; height:66px; border-radius:50%; background: var(--paper); color: var(--purple); display:grid; place-items:center; font-size:22px; padding-left:4px; box-shadow: 0 12px 28px oklch(0% 0 0 / 0.4); transition: transform .16s var(--ease-out); }
-            .rv-play:hover .rv-ring{ transform:translate(-50%,-50%) scale(1.08); }
-            .rv-frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+            .rv-wrap {
+               display: grid;
+               grid-template-columns: 1fr minmax(280px, 340px);
+               gap: clamp(28px, 5vw, 56px);
+               align-items: center;
+            }
+            @media (max-width: 760px) {
+               .rv-wrap {
+                  grid-template-columns: 1fr;
+                  justify-items: center;
+                  text-align: center;
+               }
+            }
+            .rv-player {
+               width: 100%;
+               max-width: 340px;
+            }
+            .rv-play,
+            .rv-frame {
+               position: relative;
+               display: block;
+               width: 100%;
+               aspect-ratio: 9 / 16;
+               border: 0;
+               padding: 0;
+               margin: 0;
+               border-radius: 24px;
+               overflow: hidden;
+               background: #000;
+               box-shadow: var(--shadow-md);
+            }
+            .rv-play {
+               cursor: pointer;
+            }
+            .rv-play img {
+               width: 100%;
+               height: 100%;
+               object-fit: cover;
+               opacity: 0.92;
+               display: block;
+            }
+            .rv-play .rv-ring {
+               position: absolute;
+               top: 50%;
+               left: 50%;
+               transform: translate(-50%, -50%);
+               width: 66px;
+               height: 66px;
+               border-radius: 50%;
+               background: var(--paper);
+               color: var(--purple);
+               display: grid;
+               place-items: center;
+               font-size: 22px;
+               padding-left: 4px;
+               box-shadow: 0 12px 28px oklch(0% 0 0 / 0.4);
+               transition: transform 0.16s var(--ease-out);
+            }
+            .rv-play:hover .rv-ring {
+               transform: translate(-50%, -50%) scale(1.08);
+            }
+            .rv-frame iframe {
+               position: absolute;
+               inset: 0;
+               width: 100%;
+               height: 100%;
+               border: 0;
+            }
          </style>
          <section class="section" aria-labelledby="repay-video-heading">
             <div class="container rv-wrap">
                <div class="rv-copy stack-lg">
                   <p class="eyebrow">Watch first</p>
                   <h2 class="section-title" id="repay-video-heading">See a repayment in <em>60 seconds.</em></h2>
-                  <p class="lead">The whole flow, start to finish — pick the loan, pay, and watch the balance and Trust Points update in real time.</p>
+                  <p class="lead">
+                     The whole flow, start to finish — pick the loan, pay, and watch the balance and Pandesal points update in real time.
+                  </p>
                </div>
                <div class="rv-player">
                   <button class="rv-play" id="repayShortBtn" type="button" aria-label="Play the repayment walkthrough">
@@ -147,7 +210,7 @@
             <div class="container">
                <div class="money-flow-heading">
                   <p class="eyebrow">The return route</p>
-                  <h2 id="repay-flow-heading">Bring USDC back to the same Base Account, then choose the payment.</h2>
+                  <h2 id="repay-flow-heading">Bring USDC back to the same wallet, then choose the payment.</h2>
                </div>
                <div class="money-flow" aria-label="Repayment flow from pesos to Moodeng">
                   <div class="flow-node">
@@ -188,8 +251,8 @@
                      </h2>
                   </div>
                   <p class="lead">
-                     That distinction matters. First you move USDC to the Base Account. Then you decide how much of that balance to apply to
-                     a specific loan.
+                     That distinction matters. First you move USDC to your wallet. Then you decide how much of that balance to apply to a
+                     specific loan.
                   </p>
                </div>
                <div class="guide-list">
@@ -221,7 +284,7 @@
                   <article class="guide-step reveal">
                      <div class="guide-copy">
                         <span class="step-number">02</span>
-                        <h2>Add USDC to the same Base Account.</h2>
+                        <h2>Add USDC to the same wallet.</h2>
                         <p>
                            The app shows the wallet address, recommends a source for the region, and repeats the Base-network warning. It
                            also separates the provider’s fee from Moodeng’s repayment fee.
@@ -248,7 +311,7 @@
                         <h2>Choose an amount and see the result first.</h2>
                         <p>
                            Type an amount, drag the slider, or use 25%, 50%, 75%, and Full. Before payment, the screen says whether the loan
-                           will clear, what remains, and how many Trust Points the payment can add.
+                           will clear, what remains, and how many Pandesal points the payment can add.
                         </p>
                         <ul class="chapter-points">
                            <li><span aria-hidden="true">01</span>Partial payments reduce what remains.</li>
@@ -418,8 +481,8 @@
                   </div>
                   <div>
                      <h2>About</h2>
-                     <a href="/about">Our story</a><a href="/for-lenders">For lenders</a
-                     ><a href="/credit-levels">Credit levels</a><a href="/team">Our team</a><a href="/blogs">Blog</a>
+                     <a href="/about">Our story</a><a href="/for-lenders">For lenders</a><a href="/credit-levels">Credit levels</a
+                     ><a href="/team">Our team</a><a href="/blogs">Blog</a>
                   </div>
                   <div>
                      <h2>Talk to us</h2>
@@ -439,6 +502,5 @@
       <script type="module" src="/landing/site.js?v=20260717-hero-note-1"></script>
       <!-- Moodeng support chat — Discord-backed live chat widget -->
       <script src="https://web-iota-sage-38.vercel.app/widget.js" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
-
    </body>
 </html>

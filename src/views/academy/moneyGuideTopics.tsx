@@ -127,7 +127,8 @@ export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
             }
          ]
       },
-      callout: 'The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.'
+      callout:
+         'The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.'
    },
    {
       id: 'repay',
@@ -173,9 +174,9 @@ export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
             }
          ]
       },
-      callout: 'Always repay before the due date — on-time repayment builds your Trust Score and unlocks higher credit levels. And always choose Base as the network.'
+      callout:
+         'Always repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. And always choose Base as the network.'
    }
 ];
 
 export const getMoneyGuideTopic = (id: string | undefined) => MONEY_GUIDE_TOPICS.find((topic) => topic.id === id);
-

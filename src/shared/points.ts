@@ -109,7 +109,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Verify your identity',
       points: 10,
       criteria: 'Borrower has ACTIVE World ID verification.',
-      example: 'World ID verified = +10 Trust Points'
+      example: 'World ID verified = +10 Pandesal points'
    },
    {
       id: 'first-loan-request',
@@ -117,7 +117,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Post your first loan request',
       points: 10,
       criteria: 'Borrower has at least one loan request record.',
-      example: 'First request posted = +10 Trust Points'
+      example: 'First request posted = +10 Pandesal points'
    },
    {
       id: 'first-funded-loan',
@@ -125,7 +125,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Get funded by a lender',
       points: 15,
       criteria: 'Borrower has at least one funded loan.',
-      example: 'First funded loan = +15 Trust Points'
+      example: 'First funded loan = +15 Pandesal points'
    },
    {
       id: 'first-on-time-repayment',
@@ -133,7 +133,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Repay a loan on time',
       points: 20,
       criteria: 'Borrower fully repays at least one loan on or before its due date.',
-      example: 'First on-time full repayment = +20 Trust Points'
+      example: 'First on-time full repayment = +20 Pandesal points'
    },
    {
       id: 'two-on-time-streak',
@@ -141,7 +141,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Build a 2-loan on-time streak',
       points: 25,
       criteria: 'Borrower fully repays at least two loans on or before their due dates.',
-      example: 'Second on-time full repayment = +25 Trust Points'
+      example: 'Second on-time full repayment = +25 Pandesal points'
    },
    {
       id: 'full-limit-credit-builder',
@@ -149,7 +149,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Repay a full-limit credit-builder',
       points: 30,
       criteria: 'Borrower fully repays a credit-tier amount on time.',
-      example: 'On-time repayment of a $15, $20, $40, $60, $80, $100, $120, or $140 loan = +30 Trust Points'
+      example: 'On-time repayment of a $15, $20, $40, $60, $80, $100, $120, or $140 loan = +30 Pandesal points'
    },
    {
       id: 'two-unique-lenders',
@@ -157,7 +157,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Borrow from 2 different lenders',
       points: 30,
       criteria: 'Borrower has funded loans from at least two unique lenders.',
-      example: 'Second unique lender relationship = +30 Trust Points'
+      example: 'Second unique lender relationship = +30 Pandesal points'
    },
    {
       id: 'repay-100-total',
@@ -165,7 +165,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Repay $100 total',
       points: 40,
       criteria: 'Borrower has at least $100 in total repaid amount across paid loans.',
-      example: '$100 total repaid = +40 Trust Points'
+      example: '$100 total repaid = +40 Pandesal points'
    },
    {
       id: 'reach-level-three',
@@ -173,7 +173,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Reach Credit Level 3',
       points: 50,
       criteria: 'Borrower is verified and has unlocked a $40 or higher credit limit.',
-      example: 'Credit limit reaches $40 = +50 Trust Points'
+      example: 'Credit limit reaches $40 = +50 Pandesal points'
    },
    {
       id: 'trusted-borrower-candidate',
@@ -181,7 +181,7 @@ export const trustPointMilestoneRules: TrustPointMilestoneRule[] = [
       title: 'Become a trusted borrower candidate',
       points: 75,
       criteria: 'Borrower has five on-time repayments, three unique lenders, and no unresolved defaults.',
-      example: 'Trusted borrower candidate criteria met = +75 Trust Points'
+      example: 'Trusted borrower candidate criteria met = +75 Pandesal points'
    }
 ];
 
@@ -234,7 +234,7 @@ export type PointsAwardRuleStatus = 'live' | 'display-only' | 'not-awarded';
 
 export type PointsAwardRule = {
    id: string;
-   system: 'IOU points' | 'Trust points' | 'Academy reward';
+   system: 'IOU points' | 'Pandesal points' | 'Academy reward';
    action: string;
    eventType: string;
    sourceType: string;
@@ -249,12 +249,12 @@ export type PointsAwardRule = {
 
 const trustPointMilestoneAwardRules: PointsAwardRule[] = trustPointMilestoneRules.map((rule) => ({
    id: `trust-${rule.id}`,
-   system: 'Trust points',
+   system: 'Pandesal points',
    action: rule.title,
    eventType: 'completed',
    sourceType: 'reputation_milestone',
    actor: 'Borrower',
-   points: `+${rule.points} Trust Points`,
+   points: `+${rule.points} Pandesal points`,
    criteria: rule.criteria,
    sourceOfTruth: 'milestone_definitions, record_milestone_completion(), trust_point_events, and user_trust_points',
    status: 'live',
@@ -294,4 +294,4 @@ export const pointsAwardRules: PointsAwardRule[] = [
 ];
 
 export const iouPointsAwardRules = pointsAwardRules.filter((rule) => rule.system === 'IOU points');
-export const trustPointsAwardRules = pointsAwardRules.filter((rule) => rule.system === 'Trust points');
+export const trustPointsAwardRules = pointsAwardRules.filter((rule) => rule.system === 'Pandesal points');

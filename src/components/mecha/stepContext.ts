@@ -2,7 +2,6 @@
 // (Direction 02, the setup co-pilot) everywhere, without wiring each page.
 // The always-mounted launcher reads location → derives a step → feeds it to the
 // edge function as context AND drives the proactive nudge.
-
 import { readVerifyFlow } from '@/lib/verifyFlow';
 
 // Chips and nudges are user-visible, so they carry both languages; `page`/`id`
@@ -84,8 +83,8 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          id: 'request-board',
          page: 'Request board',
          quickReplies: {
-            en: ['How do I request a loan?', 'How does funding work?', 'What is a Trust Score?'],
-            fil: ['Paano mag-request ng loan?', 'Paano gumagana ang funding?', 'Ano ang Trust Score?']
+            en: ['How do I request a loan?', 'How does funding work?', 'What are Pandesal points?'],
+            fil: ['Paano mag-request ng loan?', 'Paano gumagana ang funding?', 'Ano ang Pandesal points?']
          }
       }
    },

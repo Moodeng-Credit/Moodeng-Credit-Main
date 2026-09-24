@@ -8,6 +8,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
+import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
 
@@ -49,7 +50,6 @@ import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
-import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 
 type AdminTab =
    | 'users'
@@ -119,7 +119,7 @@ const navGroups: NavGroup[] = [
       label: 'Points',
       items: [
          { id: 'points', label: 'IOU points' },
-         { id: 'trust-points', label: 'Trust points' }
+         { id: 'trust-points', label: 'Pandesal points' }
       ]
    },
    {
@@ -1189,9 +1189,9 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Trust points</h2>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Pandesal points</h2>
                         <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
-                           Borrower-only Trust Points from <span className="font-black text-white">user_trust_points</span> and{' '}
+                           Borrower-only Pandesal points from <span className="font-black text-white">user_trust_points</span> and{' '}
                            <span className="font-black text-white">trust_point_events</span>. These are separate from lender IOU points.
                         </p>
                      </div>
@@ -1199,15 +1199,15 @@ export default function AdminPanel() {
                      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
                         <div className="rounded-3xl border border-emerald-900 bg-emerald-950/60 p-6 ">
                            <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
-                           <h3 className="mt-2 text-3xl font-black text-white">Live Trust Point ledger</h3>
+                           <h3 className="mt-2 text-3xl font-black text-white">Live Pandesal points ledger</h3>
                            <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
-                              Milestone completions write borrower Trust Point events into Supabase. Credit limit fields such as users.cs
-                              stay separate.
+                              Milestone completions write borrower Pandesal points events into Supabase. Credit limit fields such as
+                              users.cs stay separate.
                            </p>
                         </div>
                         <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                            <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
-                           <h3 className="mt-2 text-3xl font-black text-white">Trust guide only</h3>
+                           <h3 className="mt-2 text-3xl font-black text-white">Pandesal points guide only</h3>
                            <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
                               This page is intentionally separate from lender IOU points so we do not mix borrower trust with lender
                               rewards.
@@ -1216,7 +1216,7 @@ export default function AdminPanel() {
                               href="#trust-points-reference-guide"
                               className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
                            >
-                              Open Trust reference guide
+                              Open Pandesal points reference guide
                            </a>
                         </div>
                      </div>
@@ -1224,22 +1224,22 @@ export default function AdminPanel() {
                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <StatCard label="Borrowers loaded" value={borrowerTrustRows.length} note="Admin directory rows" />
                         <StatCard
-                           label="With Trust Points"
+                           label="With Pandesal points"
                            value={borrowerTrustRows.filter((user) => hasPositivePoints(user.trustPointsTotal)).length}
                            note="Stored borrower totals"
                         />
                         <StatCard
-                           label="Live trust rules"
+                           label="Live Pandesal points rules"
                            value={trustPointsAwardRules.filter((rule) => rule.status === 'live').length}
                            note="Milestone rules"
                         />
-                        <StatCard label="Trust point tables" value={2} note="Balance + event ledger" />
+                        <StatCard label="Pandesal points tables" value={2} note="Balance + event ledger" />
                      </div>
 
                      <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                        <h3 className="text-3xl font-black">Current Trust Point balances</h3>
+                        <h3 className="text-3xl font-black">Current Pandesal points balances</h3>
                         <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                           Sorted by highest stored Trust Point balance in the currently loaded admin directory.
+                           Sorted by highest stored Pandesal points balance in the currently loaded admin directory.
                         </p>
                         <div className="mt-5 grid gap-4 lg:grid-cols-2">
                            {usersByTrustPoints.map((user) => (
@@ -1256,8 +1256,8 @@ export default function AdminPanel() {
                                     </strong>
                                  </div>
                                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <DirectoryMetric label="Trust updated" value={formatDate(user.trustPointsUpdatedAt)} />
-                                    <DirectoryMetric label="Trust events" value={user.trustPointEventCount} />
+                                    <DirectoryMetric label="Pandesal updated" value={formatDate(user.trustPointsUpdatedAt)} />
+                                    <DirectoryMetric label="Pandesal events" value={user.trustPointEventCount} />
                                     <DirectoryMetric label="Paid loans" value={user.paidLoanCount} />
                                     <DirectoryMetric label="Credit limit" value={`$${user.cs ?? 0}`} />
                                  </div>
@@ -1267,7 +1267,7 @@ export default function AdminPanel() {
                                           <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
                                              <div className="flex flex-wrap items-center justify-between gap-3">
                                                 <strong className="text-lg font-black text-white">{trustPointEventRuleLabel(event)}</strong>
-                                                <Badge tone="active">+{formatPointsMajor(event.delta)} Trust</Badge>
+                                                <Badge tone="active">+{formatPointsMajor(event.delta)} Pandesal</Badge>
                                              </div>
                                              <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
                                           </div>
@@ -1275,7 +1275,7 @@ export default function AdminPanel() {
                                     </div>
                                  ) : (
                                     <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
-                                       No Trust Point events loaded yet.
+                                       No Pandesal points events loaded yet.
                                     </p>
                                  )}
                               </article>
@@ -1287,9 +1287,9 @@ export default function AdminPanel() {
                      <section id="trust-points-reference-guide" className="space-y-5 scroll-mt-8">
                         <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
                            <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
-                           <h3 className="mt-2 text-4xl font-black text-white">Trust points reference guide</h3>
+                           <h3 className="mt-2 text-4xl font-black text-white">Pandesal points reference guide</h3>
                            <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
-                              These live rules are stored as milestone definitions and awarded through the borrower Trust Point ledger.
+                              These live rules are stored as milestone definitions and awarded through the borrower Pandesal points ledger.
                            </p>
                         </div>
                         <div className="grid gap-5 xl:grid-cols-2">

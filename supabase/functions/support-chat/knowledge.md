@@ -12,11 +12,11 @@ to connect the user with the team — never guess about money, wallets, or verif
 
 ### What is Moodeng Credit?
 
-Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while building a Trust Score linked to your wallet.
+Moodeng Credit is a borrowing platform that lets you request short-term loans in USDC while earning Pandesal points linked to your wallet.
 
 Instead of focusing on traditional credit scores, Moodeng helps you build trust through responsible borrowing and on-time repayments. Over time, this trust allows you to unlock higher Credit Levels and request larger loan amounts.
 
-Your Trust Score isn't locked inside one app. It's designed to reflect your reliability and help you build a reputation you can carry forward.
+Your Pandesal points aren't locked inside one app. They're designed to reflect your reliability and help you build a reputation you can carry forward.
 
 ### How does borrowing on Moodeng work?
 
@@ -24,17 +24,17 @@ You post a loan request from the Request Board with your desired amount (up to y
 
 Lenders browse open requests and choose which to fund. Once a lender funds you, USDC is transferred directly to your wallet. You repay them on or before the agreed date from any wallet that holds USDC.
 
-### What is a Trust Score and how is it calculated?
+### What are Pandesal points and how are they calculated?
 
-Your Trust Score is a reputation signal that reflects how reliably you repay loans.
+Your Pandesal points are a reputation signal that reflects how reliably you repay loans.
 
-It goes up with on-time, in-full repayments and drops with late payments or defaults. Lenders use it to gauge risk when deciding whether to fund your requests.
+They go up with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests.
 
 ### What is a Credit Level?
 
 Credit Levels control how much you can borrow at a time.
 
-You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan raises your limit and unlocks the next level — $15 → $20 → $40 → $60 — and beyond.
+You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan raises your limit and unlocks the next level — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.
 
 ### What is a Base wallet?
 
@@ -44,7 +44,7 @@ Moodeng uses Base wallets for one big reason: gasless USDC transactions. On Base
 
 Base Account is also passwordless and seedless — you sign in with email or passkey, no 12-word recovery phrase to lose. For a borrowing platform where new users may have never touched crypto, that's a meaningful improvement over older wallets like MetaMask.
 
-Borrowers on Moodeng must use a Base Account on Base. Lenders have more flexibility but we recommend the same setup to keep transactions gasless.
+Borrowers on Moodeng can use either a Base Account on Base or Moodeng's own Instant Wallet, which is set up straight from your login with no app to download and no seed phrase. Lenders have more flexibility, but we recommend a Base Account to keep transactions gasless.
 
 ### What is USDC, and why does Moodeng use it?
 
@@ -58,7 +58,7 @@ USDC also moves anywhere in the world in seconds, is widely accepted by every ma
 
 No. Moodeng Credit is free to use. There are no platform fees on borrowing, no fees on lending, no monthly subscriptions, no setup costs. 100% of what a lender funds reaches the borrower, and 100% of a repayment reaches the lender.
 
-Network fees (gas) are also zero when you use a Base Account on Base. So the only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the lender, not to us.
+Network fees (gas) are also zero when you use a Base Account or the Instant Wallet on Base. So the only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the lender, not to us.
 
 How do we keep things free? We don't take a cut. Our future business model is the IOU token, which we'll launch via airdrop to active lenders. Until then, Moodeng is fully fee-free.
 
@@ -68,7 +68,7 @@ Loan sharks — informal lenders who charge 20–100% weekly interest, threaten 
 
 Moodeng Credit is built as a fairer alternative. Interest rates are set by the borrower and accepted (or passed on) by lenders in a transparent marketplace — no hidden charges, no compounding tricks. Small starter loans ($15–$60 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
 
-There's no collateral, no government ID, and no bank account required — just a verified World ID and a Base Account. Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and World ID), so you build genuine credit history that lenders trust — instead of staying stuck in a cycle.
+There's no collateral, no government ID, and no bank account required — just a verified World ID and a wallet (a Base Account or Moodeng's Instant Wallet). Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and World ID), so you build genuine credit history that lenders trust — instead of staying stuck in a cycle.
 
 We don't claim to replace banks for everyone. But for the people currently using loan sharks because they have no other option, Moodeng aims to be a safer, fairer, more dignified path.
 
@@ -88,7 +88,7 @@ Yes — small loans are exactly what Moodeng is built for. New borrowers start a
 
 There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit), set the repayment date and interest rate, and lenders decide whether to fund you.
 
-Each successful repayment grows your limit step by step — $15 → $20 → $40 → $60, and beyond. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.
+Each successful repayment grows your limit step by step — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.
 
 ## Account FAQ — everyone
 
@@ -102,7 +102,7 @@ Loans go directly from the lender's wallet to the borrower's wallet. Repayments 
 
 USDC is a stablecoin pegged 1:1 to the US dollar. Issued by Circle, a regulated US financial company, it keeps loan values predictable — a $20 loan today is still $20 at repayment, not $15 or $30. Lenders and borrowers don't take on currency risk just by participating.
 
-USDC is also fast to send globally and, when used on Base with a Base Account, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
+USDC is also fast to send globally and, when used on Base with a Base Account or Instant Wallet, is completely gasless. That means no network fees eat into your repayment — 100% of what you send reaches your lender.
 
 It's also widely accepted: every major crypto exchange supports USDC deposits, and you can convert it to fiat (US dollars, pesos, naira, etc.) almost anywhere. So when you receive a loan or get repaid, you can spend it on-chain, hold it, or cash it out — your choice.
 
@@ -124,13 +124,13 @@ The key detail: always choose Base as the network when sending USDC. The full gu
 
 Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph, PDAX, GCrypto, and more) — always on the Base network.
 
-Repay before the due date — on-time repayment builds your Trust Score and unlocks higher credit levels. The full guide walks through each way to repay.
+Repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. The full guide walks through each way to repay.
 
 ### Can I borrow below my credit limit?
 
 Yes — and we actually recommend it, especially when you're starting out. Borrowing below your limit is called a Trust-Building Loan.
 
-These smaller loans don't count toward unlocking the next Credit Level (for that, you need to borrow your full limit and repay on time), but they do build your repayment history and earn you more Trust Points than borrowing your maximum would.
+These smaller loans don't count toward unlocking the next Credit Level (for that, you need to borrow your full limit and repay on time), but they do build your repayment history and earn you more Pandesal points than borrowing your maximum would.
 
 So if you want to grow your reputation quickly, Trust-Building Loans are a great way to do it.
 
@@ -150,7 +150,7 @@ IOU Points are reputation points earned by lenders. In the Year 1 model, each fu
 
 Right now IOU is just points. Down the line, we'll launch a token also called IOU, and your accumulated points will convert via an airdrop. Holding IOU will unlock additional benefits tied to the platform.
 
-IOU is for lenders only — borrowers build their Trust Score and Credit Level instead. So if you want to earn IOU, fund a loan request from the Request Board.
+IOU is for lenders only — borrowers build their Pandesal points and Credit Level instead. So if you want to earn IOU, fund a loan request from the Request Board.
 
 ### How do borrowers verify?
 
@@ -168,7 +168,7 @@ If they borrow below their limit, it is a Trust-Building Loan instead. That does
 
 Go to the Request Board and browse open loan requests. Each request shows the borrower's stats, credit limit, requested amount, and repayment term.
 
-When you find one you want to fund, tap Fund and confirm. The USDC leaves your Base account immediately and goes directly to the borrower's Base account — no middleman, no delay.
+When you find one you want to fund, tap Fund and confirm. The USDC leaves your Base account immediately and goes directly to the borrower's wallet — no middleman, no delay.
 
 You can track all your active loans and repayment statuses from your Lender Dashboard.
 
@@ -190,11 +190,11 @@ Register on the Moodeng platform by entering your preferred username, email, and
 Step 2: Start Your Loan Application
 Once logged in, tap the "Apply for a Loan" button to start the process.
 
-Step 3: Set Up Your Base Account
-Secure transactions on Moodeng require a Base Account. Visit https://account.base.app and follow the registration instructions.
+Step 3: Set Up Your Wallet
+Secure transactions on Moodeng need a wallet: either a Base Account or a Moodeng Instant Wallet. For a Base Account, visit https://account.base.app and follow the registration instructions. An Instant Wallet is created from your Moodeng login — no separate app needed.
 
 Step 4: Connect Your Wallet
-Return to the Moodeng platform and tap "Connect Wallet" to securely link your new Base Account to your Moodeng account.
+Return to the Moodeng platform and tap "Connect Wallet" to securely link your new Base Account, or create your Instant Wallet, so it is tied to your Moodeng account.
 
 Step 5: Verify Your Identity
 To ensure community safety, tap "Verify Yourself" and complete the quick ID + selfie check ("Verify Your ID") — it takes about 3 minutes. Already a World App user? You can choose "Verify with World ID" instead.
@@ -205,19 +205,19 @@ Tap "Explore the Request Board" to set your specific loan terms. You will need t
 - The repayment amount and date.
 - A clear reason for your borrowing request to help build trust with potential lenders.
 
-### Understanding your Trust Score
+### Understanding your Pandesal points
 
-Your Trust Score reflects how reliably you repay loans on Moodeng Credit.
+Your Pandesal points reflect how reliably you repay loans on Moodeng Credit.
 
-It rises with every on-time repayment and drops when you miss or default. Lenders use it as a quick signal to decide whether to fund your request.
+They rise with every on-time repayment and drop when you miss or default. Lenders use them as a quick signal to decide whether to fund your request.
 
-Because your Trust Score is tied to your wallet, it travels with you — it's not locked inside a single app.
+Because your Pandesal points are tied to your wallet, they travel with you — they're not locked inside a single app.
 
 ### How Credit Levels work
 
 Credit Levels determine how much you can borrow at a time.
 
-Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 — and unlocks new levels.
+Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — and unlocks new levels.
 
 You only advance by completing a Credit Growth Loan: a loan at your full current limit, repaid in full and on time.
 
@@ -231,17 +231,17 @@ Credit-Building Loans are full-limit loans. Repaying one on time raises your lim
 
 Most borrowers use both — trust loans to keep activity healthy, credit loans to grow their limit over time.
 
-### How Repayments Affect Your Trust Score
+### How Repayments Affect Your Pandesal Points
 
-Every repayment for either Credit-Building or Trust-Building loans directly impacts your Trust Score (TS), which serves as your reputation on the platform. Our system is designed to reward consistent, reliable, and honest behavior; small loans repaid cleanly are more valuable for your reputation than large loans repaid sloppily.
+Every repayment for either Credit-Building or Trust-Building loans directly impacts your Pandesal points, which serve as your reputation on the platform. Our system is designed to reward consistent, reliable, and honest behavior; small loans repaid cleanly are more valuable for your reputation than large loans repaid sloppily.
 
 Scoring Breakdown
 
-- On-Time, Full Repayments: Completing a 100% repayment on or before the due date maximizes your score (10 TS).
+- On-Time, Full Repayments: Completing a 100% repayment on or before the due date earns the maximum (10 points).
 
-- Partial Repayments: Failing to repay the full amount reduces your score proportionally — 75% = 7 TS · 50% = 5 TS · 25% = 3 TS.
+- Partial Repayments: Failing to repay the full amount reduces your points proportionally — 75% = 7 points · 50% = 5 points · 25% = 3 points.
 
-- Late Repayments: Any payment received after the agreed-upon deadline results in a 0 TS for that transaction.
+- Late Repayments: Any payment received after the agreed-upon deadline results in 0 points for that transaction.
 
 - Defaults: Unpaid loans leave a permanent mark on your profile that is visible to all future lenders.
 
@@ -251,17 +251,17 @@ Submitting your repayment on or before the scheduled deadline is the most effect
 
 When you repay on time, the following benefits are applied to your profile:
 
-- Trust Score Enhancement: Your Trust Score increases for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
+- More Pandesal Points: Your Pandesal points increase for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
 - Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $20).
 - Verified Lending History: Your successful repayment history becomes visible to potential lenders, significantly streamlining the funding process for your future requests.
 
 Repayment Scoring Breakdown
 
-Your Trust Score (TS) reflects your reliability and determines your future funding success:
+Your Pandesal points reflect your reliability and determine your future funding success:
 
-- On-Time, Full Repayment: Awards the maximum 10 TS.
-- Partial Repayment: Your score is reduced proportionally based on the amount paid (e.g., 75% = 7 TS; 50% = 5 TS).
-- Late Repayment: Any payment made after the deadline results in 0 TS, regardless of the amount.
+- On-Time, Full Repayment: Awards the maximum 10 points.
+- Partial Repayment: Your points are reduced proportionally based on the amount paid (e.g., 75% = 7 points; 50% = 5 points).
+- Late Repayment: Any payment made after the deadline results in 0 points, regardless of the amount.
 - Default: Unpaid loans result in a permanent mark on your public on-chain profile.
 
 ### Ways to repay your loan
@@ -311,7 +311,7 @@ The key detail: always choose Base as the network. Sending on the wrong network 
 
 You can withdraw by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account.
 
-Video walkthrough — sending USDC from your Base account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+Video walkthrough — sending USDC from your Base Account to Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
 
 Common options:
 
@@ -341,7 +341,7 @@ All loans on Moodeng Credit are denominated in USDC — a regulated stablecoin p
 
 Using USDC means loan values stay consistent. A $20 loan today is still a $20 loan when you repay it, regardless of crypto market movement.
 
-We recommend using a Base Account on Base, where USDC transfers are gasless — you pay no network fees.
+We recommend using a Base Account or Instant Wallet on Base, where USDC transfers are gasless — you pay no network fees.
 
 ### Verification & Security
 
@@ -349,7 +349,7 @@ To keep Moodeng safe and fair, all borrowers complete a short one-time identity 
 
 Why verify?
 - Security: ensures every request comes from a real, unique person, preventing fraud.
-- Access: completed verification unlocks loan requests and starts your Trust Score.
+- Access: completed verification unlocks loan requests and starts your Pandesal points.
 
 The recommended way: Verify Your ID
 1. Tap "Verify Yourself" in the app and choose "Verify Your ID".
@@ -385,7 +385,7 @@ You can include a tappable link to any of these pages using markdown, e.g. `[bro
 - Why we use USDC — `/learn/why-we-use-usdc`
 - Credit leveling guide — `/credit-leveling-guide`
 - Moodeng blog — `/blogs`
-- Reputation Milestones / Trust Points (borrowers) — `/milestones`
+- Reputation Milestones / Pandesal points (borrowers) — `/milestones`
 - Borrower benefits — `/benefits`
 - Why lend (for lenders) — `/whylend`
 - The Request Board — `/request-board`
@@ -415,7 +415,7 @@ Important: if the user hasn't added a wallet yet, there is no address to show. T
 
 ## Borrower Dashboard (Dashboard tab)
 
-Top to bottom: a score card with **Trust Score** and **Credit Level** (shows current limit and how much is used; unverified users see a "verify to unlock" action); a **Withdraw your USDC** card — only appears once at least one loan is funded, subtitle "Cash out your funded loan to local currency," taps through to the Withdraw flow; a **Milestones** (Reputation Milestones) section; a verification prompt if not yet verified; a **Loan Summary** (repayments / active / defaulted / pending); a **Lender Diversity** section; and an **Upcoming Loan Dues** list.
+Top to bottom: a score card with **Pandesal points** and **Credit Level** (shows current limit and how much is used; unverified users see a "verify to unlock" action); a **Withdraw your USDC** card — only appears once at least one loan is funded, subtitle "Cash out your funded loan to local currency," taps through to the Withdraw flow; a **Milestones** (Reputation Milestones) section; a verification prompt if not yet verified; a **Loan Summary** (repayments / active / defaulted / pending); a **Lender Diversity** section; and an **Upcoming Loan Dues** list.
 
 ## The Account tab
 
@@ -445,7 +445,7 @@ The **Repay** tab lists your active (funded, unpaid) loans, soonest due first.
 - If you haven't finished setup yet, you'll see one of: **Finish setup to start borrowing** (**Start Setup**), **Verify yourself to borrow** (**Verify Yourself**), **Add Base Wallet to borrow** (**Add Base Wallet**), or, with nothing due, **No repayments yet** (**Request a loan**).
 - If your USDC balance is short of what you owe, an add-funds card appears automatically with your wallet address to copy and a list of places to buy/send USDC on Base — in the Philippines it leads with **Coins.ph** (with **Moneybees**, **GCrypto**, **PDAX** as other options, **Show more** to see the rest); outside the Philippines it leads with **Binance**. It updates live and shows **Received $X USDC** once funds land.
 - To pay: pick the loan (defaults to the one due soonest), enter an amount or tap **25%**, **50%**, **75%**, or **Full**, then tap the **Pay Now** button that appears in the bottom nav. With a Base Account or instant wallet the payment is gasless and goes straight to the lender.
-- Paying off a loan in full shows a **Loan fully repaid** screen with Trust Points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
+- Paying off a loan in full shows a **Loan fully repaid** screen with Pandesal points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
 
 ## Cashing out (Withdraw)
 
@@ -506,14 +506,14 @@ The marketing site (`public/landing/`) explains Moodeng before someone signs up.
 - **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$18 stays $18") — it just becomes part of your record.
 - **Four honest promises:** Moodeng never digs through your phone (no contacts/photos/messages access), never sells your information, never shames you (reminders stay private, nothing posted publicly), and never makes you prove yourself twice (one ID check proves you're one person; lenders see your verification status, never your documents).
 - **Funding is not automatic** — a real person on the Request Board decides to fund each request; if nobody funds it before it expires, you owe nothing.
-- Loans settle in **USDC** and land in your **Base Account**; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
+- Loans settle in **USDC** and land in your wallet (**Base Account** or **Instant Wallet**); cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
 - Credit limit grows over time with on-time repayment — the $15 first limit can grow to $20, then higher, the more full-limit loans you repay on time (see "How Credit Levels work" below for the exact ladder).
 
-There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Base Account → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
+There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Base Account or Instant Wallet → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
 
 A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for lenders) make the same case in the signed-in app, and a **Team** page introduces the people behind Moodeng.
 
-**IOU rewards for lenders (the specifics shown on the Why Lend page):** lending earns IOU — up to **25 IOU** for funding a first-time borrower, plus **1 IOU for every $1 lent**. Lend to a 2nd-time borrower and you earn 20 IOU, and so on. Lend **5 times** and you're invited to the Moodeng Credit DAO. For now these show as IOU points; when the IOU token airdrop happens, your points help determine your token reward. IOU is for lenders only — borrowers build a Trust Score and Credit Level instead.
+**IOU rewards for lenders (the specifics shown on the Why Lend page):** lending earns IOU — up to **25 IOU** for funding a first-time borrower, plus **1 IOU for every $1 lent**. Lend to a 2nd-time borrower and you earn 20 IOU, and so on. Lend **5 times** and you're invited to the Moodeng Credit DAO. For now these show as IOU points; when the IOU token airdrop happens, your points help determine your token reward. IOU is for lenders only — borrowers build a Pandesal points and Credit Level instead.
 
 ## Moodeng Academy (`/academy`)
 
@@ -532,7 +532,7 @@ Four short guides, each about the practical mechanics of using USDC on Base:
 
 Two in-depth articles live here (plus the same guide library also reachable from Support → Guides):
 
-- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $20 → Level 3 = $40 → Level 4 = $60**. You start at Level 1. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Trust Score but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Trust Score, but your level itself never resets.
+- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $20 → Level 3 = $40 → Level 4 = $60**. You start at Level 1. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Pandesal points but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Pandesal points, but your level itself never resets.
 - **Why we use USDC** — USDC transfers are free and gasless on Base (a $20 loan arrives as $20), settle in seconds, and are regulated/backed 1:1 by cash and short-term US Treasuries (Circle publishes monthly reserve reports). It holds a stable $1 value, unlike volatile crypto. Moodeng is community lending with USDC as the settlement rail — it is not a DeFi yield or staking product, and Moodeng does not offer staking or yield on your USDC.
 
 ## Blogs (`/blogs`)
@@ -543,24 +543,24 @@ Longer editorial pieces on predatory lending, borrower dignity, and fair credit 
 
 A dedicated page spelling out the same ladder as "How Credit Levels work": **$15 → $20 → $40 → $60**. The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
 
-## Reputation Milestones / Trust Points (`/milestones`)
+## Reputation Milestones / Pandesal points (`/milestones`)
 
-**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Trust Points. Trust Points unlock cosmetic profile rewards as you cross point thresholds:
+**Borrower-only** — lenders never see this page. It shows your progress toward reputation milestones like getting verified, your first request, your first funded loan, your first on-time repayment, building a repayment streak, and reaching higher credit levels — each worth a number of Pandesal points. Pandesal points unlock cosmetic profile rewards as you cross point thresholds:
 
-- **Silver avatar ring** at **50** Trust Points
-- **Gold avatar ring** at **120** Trust Points
-- **Trusted profile badge** at **250** Trust Points
-- **Top borrower award** at **500** Trust Points
+- **Silver avatar ring** at **50** Pandesal points
+- **Gold avatar ring** at **120** Pandesal points
+- **Trusted profile badge** at **250** Pandesal points
+- **Top borrower award** at **500** Pandesal points
 
-(There are also one-off collectibles, like a Founding Lucky Cat for early borrowers.) Important: **Trust Points unlock profile rewards — they do not guarantee funding**, and they are self-facing (only you see them, not lenders).
+(There are also one-off collectibles, like a Founding Lucky Cat for early borrowers.) Important: **Pandesal points unlock profile rewards — they do not guarantee funding**, and they are self-facing (only you see them, not lenders).
 
 ## Support Hub (`/support`)
 
 The Help & Support Center, with four sections:
 
 - **Getting started** — a hub of links into the Academy, Benefits/Why-Lend pages, the USDC and Credit Levels articles, and the Blogs.
-- **Guides** — a searchable library of short how-to articles (categories: Getting Started, Trust Score, Credit Level, Repayment, Wallet, Security) covering things like requesting your first loan, how your Trust Score is calculated and how repayments affect it, the difference between trust-building and credit-building loans, ways to repay and ways to add funds, withdrawing to a bank (with Coins.ph typically the cheapest round-trip route in the Philippines), what fees you'll pay (Moodeng charges none — the only cost is the exchange's own conversion fee), and managing your account/security settings. (The Trust Score guides are borrower-specific and not shown to lenders.)
-- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what a Trust Score and Credit Level are, what a Base wallet is and why borrowers need one, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
+- **Guides** — a searchable library of short how-to articles (categories: Getting Started, Pandesal points, Credit Level, Repayment, Wallet, Security) covering things like requesting your first loan, how your Pandesal points are earned and how repayments affect them, the difference between trust-building and credit-building loans, ways to repay and ways to add funds, withdrawing to a bank (with Coins.ph typically the cheapest round-trip route in the Philippines), what fees you'll pay (Moodeng charges none — the only cost is the exchange's own conversion fee), and managing your account/security settings. (The Pandesal points guides are borrower-specific and not shown to lenders.)
+- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what Pandesal points and Credit Levels are, what a Base wallet or Instant Wallet is and why borrowers need one, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
 - **Updates** — a changelog of recent product improvements (filters on the Request Board, wallet/verification onboarding polish, clearer loan states, etc.).
 
 ## Help Hub (`/help`)
@@ -629,7 +629,7 @@ Safety: the instant wallet is a real self-custodial wallet you fully own (you ca
 **Should a user use it?** If they're a borrower and Base won't connect (blocked network, "page won't load", certificate warning), yes — it's the quickest path and avoids the block entirely (it doesn't use `keys.coinbase.com`). If their Base Account already works, they can keep using it; the instant wallet is there for when Base is the problem.
 
 **How it works / is it safe:**
-- It's a **real self-custodial wallet** on Base — it receives USDC loans and builds Trust Score exactly like any other wallet.
+- It's a **real self-custodial wallet** on Base — it receives USDC loans and earns Pandesal points exactly like any other wallet.
 - **Gasless:** Moodeng covers the network fees, so the borrower doesn't need ETH to repay or cash out.
 - **You fully own it.** You can reveal and export its private key anytime from **Account → Account Settings → Wallet → "Export wallet key"** and import it into MetaMask, Trust, or any wallet app — then you're free to leave Moodeng entirely.
 - Moodeng never asks for (and the user should never share) their private key. The export screen is the only place the key is shown, and only when the user taps to reveal it.
@@ -706,15 +706,15 @@ Users borrow **USDC on the Base network**. To turn it into pesos (or local curre
 If a user doesn't hold USDC yet and needs to repay:
 1. Buy USDC on **Binance P2P, Coins.ph, PDAX, or GCrypto**.
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
-3. Repay **before the due date** — on-time repayment builds Trust Score and unlocks higher credit levels.
+3. Repay **before the due date** — on-time repayment earns Pandesal points and unlocks higher credit levels.
 
 ## Can I have more than one loan at a time?
 
-Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit ($15 / $20 / $40 / $60) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
+Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit (from $15 up to $140) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
 
 ## Paying in parts (some now, some later)
 
-You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Trust Points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Trust Points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
+You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** buttons or a custom amount, and the loan stays active until it's fully paid. Paying part of it on time still helps: partial on-time payments earn some Pandesal points (about 7 for 75% paid, 5 for 50%, 3 for 25%), and a full on-time payment earns the most (10). If part of the payment lands **after** the due date, that late part earns 0 Pandesal points and counts as late on your record — but the amount you owe still never grows (no late fees, no rollover). So paying as much as you can before the due date is always better than nothing.
 
 ## How much does cashing out cost?
 

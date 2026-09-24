@@ -184,6 +184,6 @@ export const getBaseAccountConnector = <T extends { id?: string; name?: string }
 
 export const formatWalletAddressShort = (address?: string | null) => {
    const trimmed = address?.trim();
-   if (!trimmed) return 'your locked Base wallet';
+   if (!trimmed) return 'your locked wallet';
    return `${trimmed.slice(0, 6)}...${trimmed.slice(-4)}`;
 };

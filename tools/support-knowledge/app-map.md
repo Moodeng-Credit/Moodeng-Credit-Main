@@ -13,7 +13,7 @@ You can include a tappable link to any of these pages using markdown, e.g. `[bro
 - Why we use USDC — `/learn/why-we-use-usdc`
 - Credit leveling guide — `/credit-leveling-guide`
 - Moodeng blog — `/blogs`
-- Reputation Milestones / Trust Points (borrowers) — `/milestones`
+- Reputation Milestones / Pandesal points (borrowers) — `/milestones`
 - Borrower benefits — `/benefits`
 - Why lend (for lenders) — `/whylend`
 - The Request Board — `/request-board`
@@ -58,7 +58,7 @@ Important: if the user hasn't added a wallet yet, there is no address to show. T
 
 ## Borrower Dashboard (Dashboard tab)
 
-Top to bottom: a score card with **Trust Score** and **Credit Level** (shows current limit and how much is used; unverified users see a "verify to unlock" action); a **Withdraw your USDC** card — only appears once at least one loan is funded, subtitle "Cash out your funded loan to local currency," taps through to the Withdraw flow; a **Milestones** (Reputation Milestones) section; a verification prompt if not yet verified; a **Loan Summary** (repayments / active / defaulted / pending); a **Lender Diversity** section; and an **Upcoming Loan Dues** list.
+Top to bottom: a score card with **Pandesal points** and **Credit Level** (shows current limit and how much is used; unverified users see a "verify to unlock" action); a **Withdraw your USDC** card — only appears once at least one loan is funded, subtitle "Cash out your funded loan to local currency," taps through to the Withdraw flow; a **Milestones** (Reputation Milestones) section; a verification prompt if not yet verified; a **Loan Summary** (repayments / active / defaulted / pending); a **Lender Diversity** section; and an **Upcoming Loan Dues** list.
 
 ## The Account tab
 
@@ -88,7 +88,7 @@ The **Repay** tab lists your active (funded, unpaid) loans, soonest due first.
 - If you haven't finished setup yet, you'll see one of: **Finish setup to start borrowing** (**Start Setup**), **Verify yourself to borrow** (**Verify Yourself**), **Add Base Wallet to borrow** (**Add Base Wallet**), or, with nothing due, **No repayments yet** (**Request a loan**).
 - If your USDC balance is short of what you owe, an add-funds card appears automatically with your wallet address to copy and a list of places to buy/send USDC on Base — in the Philippines it leads with **Coins.ph** (with **Moneybees**, **GCrypto**, **PDAX** as other options, **Show more** to see the rest); outside the Philippines it leads with **Binance**. It updates live and shows **Received $X USDC** once funds land.
 - To pay: pick the loan (defaults to the one due soonest), enter an amount or tap **25%**, **50%**, **75%**, or **Full**, then tap the **Pay Now** button that appears in the bottom nav. With a Base Account or instant wallet the payment is gasless and goes straight to the lender.
-- Paying off a loan in full shows a **Loan fully repaid** screen with Trust Points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
+- Paying off a loan in full shows a **Loan fully repaid** screen with Pandesal points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
 
 ## Cashing out (Withdraw)
 

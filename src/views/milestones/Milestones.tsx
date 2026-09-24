@@ -197,7 +197,7 @@ function RewardPreviewIcon({
 
 function getRewardThresholdCopy(reward: TrustPointRewardProgress) {
    const action = reward.status === 'unlocked' ? 'Unlocked' : 'Unlocks';
-   return `${action} at ${reward.threshold} Trust Points`;
+   return `${action} at ${reward.threshold} Pandesal points`;
 }
 
 function RewardsHelpSheet({ rewards, onClose }: { rewards: TrustPointRewardProgress[]; onClose: () => void }) {
@@ -228,7 +228,7 @@ function RewardsHelpSheet({ rewards, onClose }: { rewards: TrustPointRewardProgr
                </button>
             </div>
             <p className="mt-3 text-[14px] font-normal leading-5 text-md-neutral-700">
-               Complete milestones to earn Trust Points. Profile rewards unlock automatically when you reach the required points.
+               Complete milestones to earn Pandesal points. Profile rewards unlock automatically when you reach the required points.
             </p>
             <div className="mt-5 flex flex-col gap-2">
                {rewards.map((reward) => (
@@ -274,10 +274,10 @@ function TrustPointRewardsPanel({
                   Rewards
                </div>
                <h2 className="mt-3 text-[22px] font-[590] leading-[1.1] tracking-[-0.44px] text-md-heading">
-                  {progress.pointsTotal} Trust Points
+                  {progress.pointsTotal} Pandesal points
                </h2>
                <p className="mt-1 text-[13px] font-normal leading-5 text-md-neutral-700">
-                  Trust Points unlock profile rewards. They do not guarantee funding.
+                  Pandesal points unlock profile rewards. They do not guarantee funding.
                </p>
                <button
                   type="button"
@@ -405,12 +405,12 @@ export default function Milestones() {
    const hasFinishedBorrowerSetup = isVerified && hasCompletedBaseWalletSetup;
    const { open: openVerify, modal: verifyModal } = useVerifyYourself('milestones');
    const setupCtaLabel =
-      !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add Base Wallet' : 'Verify Yourself';
+      !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add a wallet' : 'Verify Yourself';
    const setupEmptyCopy =
       !isVerified && !hasCompletedBaseWalletSetup
-         ? 'Finish setup with identity verification and a Base Wallet to unlock borrowing and start building your public trust record.'
+         ? 'Finish setup with identity verification and a wallet (Base or Instant Wallet) to unlock borrowing and start building your public trust record.'
          : !hasCompletedBaseWalletSetup
-           ? 'Add a Base Wallet to unlock borrowing and start building your public trust record.'
+           ? 'Add a Base Wallet or Instant Wallet to unlock borrowing and start building your public trust record.'
            : 'Verify your identity to unlock borrowing and start building your public trust record.';
    const handleSetupCtaClick = useCallback(() => {
       if (!isVerified && !hasCompletedBaseWalletSetup) {
