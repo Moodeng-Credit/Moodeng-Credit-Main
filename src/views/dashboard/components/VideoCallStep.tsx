@@ -23,7 +23,8 @@ export default function VideoCallStep({
    onContinue,
    intro = 'No referral code — book a call.',
    continueLabel = 'Continue',
-   requireUpcoming = false
+   requireUpcoming = false,
+   optional = false
 }: {
    userId: string;
    onBack: () => void;
@@ -33,6 +34,8 @@ export default function VideoCallStep({
    // Call flow (ConnectStep): only a call that's still ahead counts — after a no-show the old,
    // past booking must not show as "booked", or the borrower could never pick a new time.
    requireUpcoming?: boolean;
+   // Referred borrowers: the call is a friendly extra, so they can skip it and still continue.
+   optional?: boolean;
 }) {
    const timeZone = useMemo(() => {
       try {
@@ -246,8 +249,17 @@ export default function VideoCallStep({
                onClick={() => isScheduled && onContinue()}
                type="button"
             >
-               {isScheduled ? continueLabel : 'Book a time to continue'}
+               {isScheduled ? continueLabel : optional ? 'Pick a time above' : 'Book a time to continue'}
             </button>
+            {optional && !isScheduled ? (
+               <button
+                  className="w-full rounded-md-lg border border-md-neutral-500 px-md-4 py-md-2 text-md-b2 font-medium text-md-heading transition duration-150 ease-out hover:border-md-primary-900 active:scale-[0.98]"
+                  onClick={onContinue}
+                  type="button"
+               >
+                  Skip for now
+               </button>
+            ) : null}
             <button
                className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
                onClick={onBack}

@@ -227,7 +227,55 @@ CREATE TRIGGER trg_enforce_loan_access_approved
   BEFORE INSERT ON public.loans
   FOR EACH ROW EXECUTE FUNCTION public.enforce_loan_access_approved();
 
--- 7) Expire stale pending requests (7 days) with a nudge — hourly --------------------------------
+-- 7) Referral redemptions: a log + a Telegram/Discord alert per redemption ------------------------
+-- A referral now skips the strong filter, so admins want to see every code as it's used (who, which
+-- code). redeem_referral_code stamps users.redeemed_referral_code_id; this trigger logs it once per
+-- user and asks the loan-access function (action=referral_alert) to post the alert. The log row is
+-- also the dedupe: the function only alerts for a row not yet alerted, so calling it twice — or
+-- calling it without a real redemption — sends nothing.
+CREATE TABLE IF NOT EXISTS public.referral_redemptions (
+  user_id          UUID PRIMARY KEY REFERENCES public.users(id) ON DELETE CASCADE,
+  referral_code_id UUID REFERENCES public.referral_codes(id) ON DELETE SET NULL,
+  code             TEXT,
+  redeemed_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  alerted_at       TIMESTAMPTZ
+);
+ALTER TABLE public.referral_redemptions ENABLE ROW LEVEL SECURITY;
+-- No policies: service role only.
+
+CREATE OR REPLACE FUNCTION private.log_referral_redemption()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $$
+DECLARE
+  project_url TEXT := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'SUPABASE_PROJECT_URL' LIMIT 1);
+  service_key TEXT := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'SUPABASE_SECRET_KEY' LIMIT 1);
+BEGIN
+  INSERT INTO public.referral_redemptions (user_id, referral_code_id, code)
+  VALUES (new.id, new.redeemed_referral_code_id, (SELECT rc.code FROM public.referral_codes rc WHERE rc.id = new.redeemed_referral_code_id))
+  ON CONFLICT (user_id) DO NOTHING;
+
+  IF project_url IS NOT NULL AND service_key IS NOT NULL THEN
+    PERFORM net.http_post(
+      url := project_url || '/functions/v1/loan-access',
+      headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || service_key),
+      body := jsonb_build_object('action', 'referral_alert', 'userId', new.id)
+    );
+  END IF;
+  RETURN new;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS log_referral_redemption ON public.users;
+CREATE TRIGGER log_referral_redemption
+  AFTER UPDATE OF redeemed_referral_code_id ON public.users
+  FOR EACH ROW
+  WHEN (new.redeemed_referral_code_id IS NOT NULL AND old.redeemed_referral_code_id IS DISTINCT FROM new.redeemed_referral_code_id)
+  EXECUTE FUNCTION private.log_referral_redemption();
+
+-- 8) Expire stale pending requests (7 days) with a nudge — hourly --------------------------------
 DO $$
 BEGIN
   PERFORM cron.unschedule('loan-access-expire-hourly');

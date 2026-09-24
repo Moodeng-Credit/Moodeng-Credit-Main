@@ -1,7 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { BORROWER_COLUMNS, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS } from '../_shared/loanAccess.ts';
+import { postDiscord } from '../_shared/discord.ts';
+import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
 //
@@ -15,6 +17,9 @@ import { BORROWER_COLUMNS, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMN
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
+//   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
+//                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
+//                                   so it can only ever fire once per real redemption.
 //
 // The decision itself happens in telegram-webhook (buttons or /approve /reject).
 // verify_jwt stays on (project default): every caller needs a valid project token, and submit
@@ -137,6 +142,47 @@ const expire = async (svc: any) => {
    return json({ ok: true, expired: stale?.length ?? 0, nudged });
 };
 
+// deno-lint-ignore no-explicit-any
+const referralAlert = async (svc: any, body: Record<string, unknown>) => {
+   const userId = typeof body.userId === 'string' ? body.userId : '';
+   if (!/^[0-9a-f-]{36}$/i.test(userId)) return json({ ok: false, error: 'bad_user' }, 400);
+
+   // Claim the alert: only a logged, not-yet-alerted redemption gets through.
+   const { data: redemption, error } = await svc
+      .from('referral_redemptions')
+      .update({ alerted_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('alerted_at', null)
+      .select('code, referral_code_id')
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!redemption) return json({ ok: true, alerted: false });
+
+   const { data: borrower } = await svc.from('users').select('id, username, email, display_name').eq('id', userId).maybeSingle();
+   const { count } = redemption.referral_code_id
+      ? await svc.from('referral_redemptions').select('user_id', { count: 'exact', head: true }).eq('referral_code_id', redemption.referral_code_id)
+      : { count: null };
+   const text = [
+      `🎟️ Referral code ${redemption.code ?? '?'} just used`,
+      `By: ${borrower ? who(borrower) : userId}`,
+      count ? `Times this code has been used: ${count}` : null,
+      'Referred borrowers skip the call and apply straight away.'
+   ]
+      .filter(Boolean)
+      .join('\n');
+
+   const chat = await getAdminChatId(svc);
+   if (chat) {
+      try {
+         await sendTelegramMessage(chat, text);
+      } catch (err) {
+         console.error('loan-access: referral alert telegram failed', err instanceof Error ? err.message : err);
+      }
+   }
+   await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return json({ ok: true, alerted: true });
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
@@ -151,6 +197,7 @@ serve(async (req) => {
    try {
       if (body.action === 'submit') return await submit(req, svc, body);
       if (body.action === 'expire') return await expire(svc);
+      if (body.action === 'referral_alert') return await referralAlert(svc, body);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

@@ -8,7 +8,9 @@
 // Templates — needs Meta's own approval. So we check the contact's last_activity_at first and only
 // send inside the window (with a margin). Outside it we skip quietly; push + Telegram still go out.
 //
-// Credentials: SENDPULSE_API_ID / SENDPULSE_API_SECRET (SendPulse → Account settings → API).
+// Credentials (SendPulse → Account settings → API), either:
+//   SENDPULSE_API_KEY                        — a static "sp_apikey_…" key, sent as the Bearer token; or
+//   SENDPULSE_API_ID + SENDPULSE_API_SECRET  — OAuth client credentials, exchanged for an hour-long token.
 // Unset → every call is a no-op returning { ok: false, reason: 'not_configured' }. Never throws.
 
 const API = 'https://api.sendpulse.com';
@@ -20,9 +22,14 @@ export type SendPulseResult = { ok: true } | { ok: false; reason: string };
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
 export const isSendPulseConfigured = () =>
-   Boolean(Deno.env.get('SENDPULSE_API_ID')?.trim() && Deno.env.get('SENDPULSE_API_SECRET')?.trim());
+   Boolean(
+      Deno.env.get('SENDPULSE_API_KEY')?.trim() ||
+         (Deno.env.get('SENDPULSE_API_ID')?.trim() && Deno.env.get('SENDPULSE_API_SECRET')?.trim())
+   );
 
 const getToken = async (): Promise<string | null> => {
+   const staticKey = Deno.env.get('SENDPULSE_API_KEY')?.trim();
+   if (staticKey) return staticKey;
    if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.value;
    const clientId = Deno.env.get('SENDPULSE_API_ID')?.trim();
    const clientSecret = Deno.env.get('SENDPULSE_API_SECRET')?.trim();

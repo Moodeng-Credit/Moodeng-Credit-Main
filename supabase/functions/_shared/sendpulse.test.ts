@@ -37,6 +37,7 @@ Deno.test('Facebook name comes from channel_data', () => {
 });
 
 Deno.test('sending is a quiet no-op without credentials or a contact', async () => {
+   Deno.env.delete('SENDPULSE_API_KEY');
    Deno.env.delete('SENDPULSE_API_ID');
    Deno.env.delete('SENDPULSE_API_SECRET');
    assertEquals(await sendMessengerMessage(null, { text: 'hi' }), { ok: false, reason: 'no_contact' });

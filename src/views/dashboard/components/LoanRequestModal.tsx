@@ -1088,12 +1088,16 @@ export default function LoanRequestModal({
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
-   const needsVideoCallStep = loanFlow === 'open' && !appliedReferral;
+   // The video call: required in the open flow without a referral (today's rule); optional for a
+   // referred borrower on their first loan (a friendly hello — the request posts either way).
+   const needsVideoCallStep = loanFlow === 'open' && !hasReferral;
+   const offersOptionalCall = hasReferral && isMultiStepRequestFlow;
+   const showsVideoCallStep = needsVideoCallStep || offersOptionalCall;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
       ...(needsContactsStep ? (['contacts'] as const) : []),
-      ...(needsVideoCallStep ? (['videocall'] as const) : [])
+      ...(showsVideoCallStep ? (['videocall'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showContactsStep
       ? 'contacts'
@@ -1636,7 +1640,7 @@ export default function LoanRequestModal({
       // Open flow, no referral code → a human at Moodeng hasn't vouched for this borrower yet, so
       // they SCHEDULE (not complete) a short video call before their request goes out. (The call
       // flow moves the call before the application instead, and unlocks it only after attendance.)
-      if (needsVideoCallStep && !videoCallStepDone && !showVideoCallStep) {
+      if (showsVideoCallStep && !videoCallStepDone && !showVideoCallStep) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
          setShowContactsStep(false);
@@ -1907,7 +1911,9 @@ export default function LoanRequestModal({
                   ) : showContactsStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
                   ) : showVideoCallStep ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Schedule a video call</h2>
+                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
+                        {needsVideoCallStep ? 'Schedule a video call' : 'Meet the team (optional)'}
+                     </h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
                         <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How lenders see you</h2>
@@ -2044,7 +2050,18 @@ export default function LoanRequestModal({
             ) : showContactsStep ? (
                <ContactsStep userId={user.id} onBack={handleContactsStepBack} onContinue={handleContactsStepContinue} />
             ) : showVideoCallStep ? (
-               <VideoCallStep userId={user.id} onBack={handleVideoCallStepBack} onContinue={handleVideoCallStepContinue} />
+               <VideoCallStep
+                  userId={user.id}
+                  onBack={handleVideoCallStepBack}
+                  onContinue={handleVideoCallStepContinue}
+                  {...(needsVideoCallStep
+                     ? {}
+                     : {
+                          optional: true,
+                          intro: 'Want a quick 15-minute hello with the team? Totally optional — your request posts either way.',
+                          continueLabel: 'Post my request'
+                       })}
+               />
             ) : (
                <form
                   ref={formRef}
