@@ -28,6 +28,24 @@ const TIER_LABEL_LAYOUT = [
    { left: '73.86%', width: '20.7%', top: 284 }
 ];
 
+// Where the four tier dots sit inside the 440×28 tier-track artwork (measured from the PNGs).
+const TRACK_TOP = 260;
+const TRACK_WIDTH = 440;
+const TIER_DOT_X = [68.5, 169.2, 270.2, 371];
+// The track is a shallow arc: highest at the ends (y≈13.8), lowest mid-way (y≈21.6).
+const trackYAt = (x: number) => 21.6 - 0.00034 * (x - TRACK_WIDTH / 2) ** 2;
+
+/** The pandesal marker's spot on the track: between the dot of the tier you're in and the next one. */
+const getPandesalMarkerX = (pandesal: number) => {
+   const nextIndex = MOODENG_TIERS.findIndex((tier) => tier.minPandesal > pandesal);
+   if (nextIndex === -1) return TIER_DOT_X[TIER_DOT_X.length - 1];
+   const index = Math.max(nextIndex - 1, 0);
+   const from = MOODENG_TIERS[index].minPandesal;
+   const to = MOODENG_TIERS[nextIndex].minPandesal;
+   const progress = Math.min(Math.max((pandesal - from) / (to - from), 0), 1);
+   return TIER_DOT_X[index] + progress * (TIER_DOT_X[nextIndex] - TIER_DOT_X[index]);
+};
+
 // Keep a sliver of fill visible whenever any credit is available, like the design's empty state.
 const CREDIT_BAR_MIN_PERCENT = 3;
 
@@ -42,6 +60,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
    const [isTrustTipOpen, setIsTrustTipOpen] = useState(!model.isVerified);
    const [isCreditTipOpen, setIsCreditTipOpen] = useState(model.creditLevel === 0);
    const browsedTier = MOODENG_TIERS[browsedTierIndex] ?? MOODENG_TIERS[0];
+   const markerX = getPandesalMarkerX(model.pandesal);
    const creditAvailable = Math.max(model.creditLimit - model.creditInUse, 0);
    const availablePercent = model.creditLimit > 0 ? (creditAvailable / model.creditLimit) * 100 : 0;
    const fillPercent = availablePercent > 0 ? Math.max(availablePercent, CREDIT_BAR_MIN_PERCENT) : 0;
@@ -143,6 +162,15 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             aria-hidden="true"
          />
          <DesignImage src={getTierTrackAsset(model.tier)} className="absolute left-0 top-[260px] h-7 w-full" />
+         {/* "You are here": a pandesal sitting on the track at the user's progress toward the next tier.
+             The track stretches horizontally with the screen but keeps its 28px height, so x is a
+             percentage and y is pixels. */}
+         <DesignImage
+            src={DASHBOARD_V2_ASSETS.pandesalSmall}
+            alt={`You have ${model.pandesal} pandesal`}
+            className="pointer-events-none absolute h-6 w-6 -translate-x-1/2 -translate-y-[85%] object-contain drop-shadow-[0_2px_2px_rgba(60,40,0,0.35)] transition-[left,top] duration-500"
+            style={{ left: `${(markerX / TRACK_WIDTH) * 100}%`, top: TRACK_TOP + trackYAt(markerX) }}
+         />
          {MOODENG_TIERS.map((tier, index) => {
             const layout = TIER_LABEL_LAYOUT[index];
             const isCurrent = index === currentTierIndex;
