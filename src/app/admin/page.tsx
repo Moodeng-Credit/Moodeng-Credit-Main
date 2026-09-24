@@ -34,6 +34,7 @@ import {
    upsertAccountRestrictionByUserId,
    upsertLoanRequestReview
 } from './adminSupabase';
+import BorrowerContactsSection from './BorrowerContactsSection';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
 import DemoB2CSection from './DemoB2CSection';
@@ -69,6 +70,7 @@ type AdminTab =
    | 'self-lending'
    | 'mule-risk'
    | 'referrals'
+   | 'borrower-contacts'
    | 'notifications'
    | 'chat'
    | 'relay'
@@ -96,6 +98,7 @@ const navGroups: NavGroup[] = [
       label: 'Overview',
       items: [
          { id: 'users', label: 'User directory' },
+         { id: 'borrower-contacts', label: 'Borrower contacts' },
          { id: 'analytics', label: 'Growth & analytics' },
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain (Base)' }
@@ -401,6 +404,7 @@ const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'self-lending',
    'mule-risk',
    'referrals',
+   'borrower-contacts',
    'notifications',
    'chat',
    'relay',
@@ -1823,6 +1827,18 @@ export default function AdminPanel() {
                         <p className="mt-3 text-2xl text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                      </div>
                      <ReferralCodesSection />
+                  </section>
+               ) : null}
+
+               {activeTab === 'borrower-contacts' ? (
+                  <section className="space-y-6">
+                     <div>
+                        <h2 className="break-words text-4xl font-black sm:text-5xl">Borrower contacts</h2>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Facebook, WhatsApp, Telegram and LINE for every borrower, with who repaid late. Borrowers only.
+                        </p>
+                     </div>
+                     <BorrowerContactsSection />
                   </section>
                ) : null}
 

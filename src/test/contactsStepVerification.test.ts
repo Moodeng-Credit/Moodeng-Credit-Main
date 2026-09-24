@@ -145,6 +145,20 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(supa.rpc).toHaveBeenCalledWith('start_whatsapp_verification');
       expect(openSpy.mock.calls[0][0]).toContain('wa.me');
    });
+   it('shows a custom intro (the existing-borrower ask) in place of the default line', async () => {
+      await act(async () => {
+         root.render(
+            createElement(ContactsStep, {
+               userId: 'user-1',
+               onBack: vi.fn(),
+               onContinue,
+               intro: createElement('p', null, 'So we can help you more — $10 referral program')
+            })
+         );
+      });
+      expect(container.textContent).toContain('$10 referral program');
+      expect(container.textContent).not.toContain('like withdrawing, or extending a loan');
+   });
 });
 
 describe('contact verification link builders', () => {

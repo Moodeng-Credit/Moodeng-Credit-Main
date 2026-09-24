@@ -15,6 +15,31 @@ export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_N
 // VITE_WHATSAPP_VERIFY_ENABLED=true to bring it back. Borrowers already WhatsApp-verified still pass.
 export const WHATSAPP_VERIFY_ENABLED = import.meta.env.VITE_WHATSAPP_VERIFY_ENABLED === 'true';
 
+// Borrowers the team already knows well — they skip the "how can we reach you" (Facebook) card at
+// request time. Both of Belle's accounts (George, 2026-09-24).
+export const CONTACT_STEP_EXEMPT_USER_IDS: ReadonlySet<string> = new Set([
+   '28cd3b3e-a975-48ab-9db3-a23f74c01d42', // d.rosebellejane
+   'a629dfa3-ebe0-4365-b267-294b19a6ead1' // enadrosebellejane
+]);
+
+// Which end-of-request steps a borrower gets:
+//   * brand-new borrower   → Facebook card + video call (unless they applied a referral code);
+//   * existing borrower    → Facebook card only (had a funded loan before — no call needed);
+//   * exempt (Belle)       → neither.
+// ContactsStep skips itself with a checkmark when Facebook is already verified.
+export const requestContactSteps = ({
+   userId,
+   isExistingBorrower,
+   hasAppliedReferral
+}: {
+   userId: string;
+   isExistingBorrower: boolean;
+   hasAppliedReferral: boolean;
+}): { contacts: boolean; videoCall: boolean } => {
+   if (CONTACT_STEP_EXEMPT_USER_IDS.has(userId)) return { contacts: false, videoCall: false };
+   return { contacts: true, videoCall: !isExistingBorrower && !hasAppliedReferral };
+};
+
 // Cal.com replaces Calendly for the video-call gate: its free plan has signed webhooks, so the
 // calcom-webhook edge function can confirm a real booking server-side instead of trusting the
 // client. `calLink` is the "<username>/<event-slug>" part after cal.com/ — set the real ones via
