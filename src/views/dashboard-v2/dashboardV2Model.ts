@@ -3,6 +3,7 @@ import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 import { CREDIT_TIERS, getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import { isRepaidOnTime } from '@/lib/creditLeveling';
 import type { ClaimableVoucher, MyRewards, VoucherReward } from '@/lib/friendReferrals';
+import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevelHint, DashboardV2Milestone, MoodengMood, MoodengTierId } from '@/views/dashboard-v2/types';
 import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
@@ -112,6 +113,9 @@ const MILESTONE_TITLES: Record<string, string> = {
    'repay-100-total': 'Repay $100 total',
    'trusted-borrower-candidate': 'Become a trusted borrower'
 };
+
+/** The dashboard's title for a milestone id, falling back to the shared rule's title. */
+export const getMilestoneTitle = (id: string): string => MILESTONE_TITLES[id] ?? trustPointMilestoneRuleById[id]?.title ?? id;
 
 const TOP_REWARD_MILESTONE_ID = 'trusted-borrower-candidate';
 

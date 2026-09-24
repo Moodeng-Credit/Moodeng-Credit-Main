@@ -20,13 +20,14 @@ import {
    WithdrawBanner
 } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
-import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
+import { MilestonePopup, MilestoneStreakPopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
 import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Preview';
+import { STREAK_MIN_MILESTONES, type StreakMilestone, useWeeklyMilestoneStreak } from '@/views/dashboard-v2/useWeeklyMilestoneStreak';
 
 // Mirrors the live dashboard's tour (the request board hands off with ?tour=1&requestBoardTourSteps=N).
 const REQUEST_BOARD_TOUR_STEP_COUNT = 5;
@@ -50,6 +51,27 @@ const DASHBOARD_TOUR_STEPS = [
       durationMs: 7600
    }
 ];
+
+// Preview-only sample for ?streak=1 on dev / Vercel previews.
+const SAMPLE_STREAK: StreakMilestone[] = [
+   {
+      id: 'first-loan-request',
+      title: 'Post your first loan request',
+      points: 10,
+      completedAt: new Date(Date.now() - 3 * 864e5).toISOString()
+   },
+   { id: 'first-funded-loan', title: 'Get funded by a lender', points: 15, completedAt: new Date(Date.now() - 864e5).toISOString() }
+];
+
+const streakSeenKey = (userId: string) => `moodeng:milestone-streak-seen:${userId}`;
+
+const readSeenStreak = (userId: string): string | null => {
+   try {
+      return window.localStorage.getItem(streakSeenKey(userId));
+   } catch {
+      return null;
+   }
+};
 
 const SKELETON_BLOCKS = [
    { id: 'banner', height: 64 },
@@ -91,6 +113,31 @@ export default function DashboardV2() {
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
+
+   // Milestone streak: 2+ milestones in the last 7 days. Shown once per new set of milestones (so the
+   // next milestone inside the week celebrates again), remembered per device.
+   const weeklyStreak = useWeeklyMilestoneStreak(isReal);
+   const isStreakPreview = isPreviewHost() && searchParams.get('streak') === '1';
+   const streakMilestones = isStreakPreview ? SAMPLE_STREAK : weeklyStreak.milestones;
+   const streakSignature = streakMilestones.map((milestone) => milestone.id).join(',');
+   // Read at render time: the user id arrives after the first render, so a lazy initial state would miss it.
+   const [dismissedStreak, setDismissedStreak] = useState<string | null>(null);
+   const isStreakSeen = dismissedStreak === streakSignature || (Boolean(userId) && readSeenStreak(userId) === streakSignature);
+   const showStreak =
+      streakMilestones.length >= STREAK_MIN_MILESTONES &&
+      (isStreakPreview || (Boolean(userId) && !isStreakSeen)) &&
+      !showTour &&
+      !openMilestone &&
+      !isVerifyOpen &&
+      !claimingVoucher;
+   const dismissStreak = () => {
+      setDismissedStreak(streakSignature);
+      try {
+         window.localStorage.setItem(streakSeenKey(userId), streakSignature);
+      } catch {
+         // Storage blocked: it just shows again next visit.
+      }
+   };
 
    // Same as /dashboard: lenders have their own dashboard. Sample states stay viewable for the team.
    if (isReal && !isBorrower) {
@@ -177,6 +224,17 @@ export default function DashboardV2() {
                stepOffset={requestBoardTourStepCount}
                totalSteps={requestBoardTourStepCount + DASHBOARD_TOUR_STEPS.length}
                steps={DASHBOARD_TOUR_STEPS}
+            />
+         ) : null}
+         {showStreak ? (
+            <MilestoneStreakPopup
+               milestones={streakMilestones}
+               language={language}
+               onClose={dismissStreak}
+               onSeeNext={() => {
+                  dismissStreak();
+                  navigate(`/dashboard/milestones${previewSearch}`);
+               }}
             />
          ) : null}
          {claimingVoucher ? (
