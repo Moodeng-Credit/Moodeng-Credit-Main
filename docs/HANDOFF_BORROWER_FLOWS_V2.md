@@ -64,6 +64,9 @@ only exists after Emma marks them attended. They keep the +$5 referral boost.
 - **~20 min after each call:** "📞 Did Maria show up?" with the same buttons.
 - **"✅ Maria confirmed she'll attend"** when the borrower taps the Messenger button.
 - **"🎟️ Referral code BELLE just used"** on every code redemption, with a use count.
+- **Booking = sending.** The request goes to the team the moment the call is booked (the borrower
+  doesn't have to tap "Send"). As a safety net, if "Showed up" is tapped for someone whose request
+  never arrived, the tap still approves them.
 - **Typed fallbacks** (if buttons fail): `/approve <id|@user>`, `/reject`, `/showed`, `/noshow`.
   The `<id>` is the 8-character id on the card.
 - **Discord** gets the same messages as notifications only (#kyc, bookings channel). There are no

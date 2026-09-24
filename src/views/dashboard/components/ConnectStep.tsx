@@ -117,7 +117,7 @@ export default function ConnectStep({
                           ? 'Glad you’re here! Next, let’s talk in person: a quick 15-minute call with Emma to set you up with a local exchange — how to deposit, cash out and pay back. First, confirm your Messenger so we can remind you about it.'
                           : mode === 'call'
                             ? 'Glad you’re here! Next, let’s talk in person about your loan needs and how we can serve you best — before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
-                          : 'Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
+                          : 'Glad you’re here! Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
                   </p>
                </div>
             }
@@ -151,6 +151,7 @@ export default function ConnectStep({
                }
                continueLabel={isSending ? 'Sending...' : 'Send to the team'}
                onBack={() => setPage('intro')}
+               onBooked={() => void handleSend()}
                onContinue={() => void handleSend()}
             />
             {error ? <p className="px-5 pb-4 text-md-b3 font-normal text-md-red-500">{error}</p> : null}

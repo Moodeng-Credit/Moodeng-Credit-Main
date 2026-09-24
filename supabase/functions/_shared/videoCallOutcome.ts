@@ -59,11 +59,17 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
    if (!chat) return;
 
    const request = await findPendingCallRequest(svc, userId);
+   const { data: flowData } = await svc.rpc('get_loan_flow');
+   const gateOn = typeof flowData === 'string' && flowData !== 'open';
+   const noRequestNote =
+      gateOn && user.loan_access_status !== 'approved'
+         ? 'Their request never reached us (app closed after booking?) — Showed up still approves them.'
+         : 'Their loan request is already on the board (open flow).';
    const lines = [
       `📞 Did ${who(user, request?.display_name)} show up?`,
       `Call was: ${formatCallTime(user.video_call_starts_at, 'Asia/Bangkok')}`,
       user.video_call_confirmed_at ? "They'd tapped ✅ I'll be there." : "They never confirmed on Messenger.",
-      request ? 'Showed up = they can apply for a loan now. No-show = they have to book again.' : 'Their loan request is already on the board (open flow).'
+      request ? 'Showed up = they can apply for a loan now. No-show = they have to book again.' : noRequestNote
    ];
 
    await sendTelegramMessage(chat, lines.join('\n'), {
@@ -103,9 +109,26 @@ export const recordCallOutcome = async (
       };
    }
 
-   if (outcome === 'no_show') await notifyBorrower(svc, updated as BorrowerRow, 'missed_call');
+   // Gated flows (call/approval): a borrower who isn't approved yet but booked and attended — e.g.
+   // they closed the app before their request reached us — is approved by this same tap, so
+   // "Showed up" always unlocks the application. A no-show stays locked and is asked to rebook.
+   const { data: flowData } = await svc.rpc('get_loan_flow');
+   const gateOn = typeof flowData === 'string' && flowData !== 'open';
+   const unapproved = (updated as BorrowerRow).loan_access_status !== 'approved';
+   let approvedNow = false;
+   if (gateOn && unapproved && outcome === 'attended') {
+      const { error: approveError } = await svc
+         .from('users')
+         .update({ loan_access_status: 'approved', loan_access_approved_at: new Date().toISOString(), loan_access_seen_at: null })
+         .eq('id', userId);
+      if (approveError) throw new Error(approveError.message);
+      approvedNow = true;
+      await notifyBorrower(svc, updated as BorrowerRow, 'approved');
+   } else if (outcome === 'no_show') {
+      await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : 'missed_call');
+   }
 
-   const summary = `${outcome === 'attended' ? '✅ Showed up' : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}`;
+   const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}`;
    await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
    return { ok: true, summary };
 };

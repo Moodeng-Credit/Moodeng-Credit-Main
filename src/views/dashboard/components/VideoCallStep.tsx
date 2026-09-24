@@ -24,7 +24,8 @@ export default function VideoCallStep({
    intro = 'No referral code — book a call.',
    continueLabel = 'Continue',
    requireUpcoming = false,
-   host
+   host,
+   onBooked
 }: {
    userId: string;
    onBack: () => void;
@@ -36,6 +37,9 @@ export default function VideoCallStep({
    requireUpcoming?: boolean;
    // Pin the call to one host — referred borrowers book Emma for their local-exchange setup.
    host?: 'emma' | 'george';
+   // Called right after a successful booking (ConnectStep sends the request to the team then, so
+   // closing the app straight after booking can't leave a call with no request behind it).
+   onBooked?: () => void;
 }) {
    const timeZone = useMemo(() => {
       try {
@@ -120,6 +124,7 @@ export default function VideoCallStep({
       }
       setBookedStartsAt(result.start ?? start);
       setPhase('scheduled');
+      onBooked?.();
    };
 
    const dayGroups = useMemo(() => {
@@ -168,7 +173,7 @@ export default function VideoCallStep({
                <div className="flex items-start gap-1.5 rounded-md-md bg-[#eefbf2] px-md-2 py-md-1 text-md-b3 font-normal text-[#178447]">
                   <CheckCircle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2} />
                   <span>
-                     You're booked with the Moodeng team{formattedBooked ? ` — ${formattedBooked}` : ''}. We'll email you the details and remind
+                     You're booked with {host === 'emma' ? 'Emma' : 'the Moodeng team'}{formattedBooked ? ` — ${formattedBooked}` : ''}. We'll email you the details and remind
                      you on Messenger before it starts.
                   </span>
                </div>
