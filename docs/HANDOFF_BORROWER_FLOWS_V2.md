@@ -85,8 +85,13 @@ only exists after Emma marks them attended. They keep the +$5 referral boost.
 
 ## 3. Emma's message scripts → where each goes (DONE on the branch)
 
-Emma's existing manual scripts, mapped to the steps. The Zoom link and password live in Emma's
-own template; keep them out of the repo, since Cal.com emails the join link anyway.
+Emma's existing manual scripts, mapped to the steps. **All six rows are in the code.** The Zoom
+link is **not hard-coded**: each booking's own join link comes from Cal.com's booking response
+(`location`), is saved to `users.video_call_join_url`, and is shown on the waiting screen ("Join the
+meeting") and in the Messenger confirmation and hour-before reminder. Emma's personal Zoom
+password and dial-in numbers stay out of the repo, since the Cal.com link already carries them.
+"Send me your contact details and social handles" is in the approval (post-meeting) message.
+The decline script is used for both No-show and Reject.
 
 | Step | Emma's script (short) | Put it in |
 |---|---|---|

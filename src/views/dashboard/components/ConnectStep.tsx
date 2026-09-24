@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { Clock3, HeartHandshake } from 'lucide-react';
 
@@ -114,9 +114,9 @@ export default function ConnectStep({
                      {wasRejected
                         ? "Want us to take another look? Reach out again and tell us what's changed."
                         : withEmma
-                          ? 'Glad you’re here! Next, let’s talk in person: a quick 15-minute call with Emma to set you up with a local exchange — how to deposit, cash out and pay back. First, confirm your Messenger so we can remind you about it.'
+                          ? 'Glad you’re here! Next, let’s talk in person: a quick 15-minute call with Emma to set you up with a local exchange — how to deposit, cash out and pay back. First, confirm your Messenger so we can remind you about it. We look forward to meeting you soon!'
                           : mode === 'call'
-                            ? 'Glad you’re here! Next, let’s talk in person about your loan needs and how we can serve you best — before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
+                            ? 'Glad you’re here! Next, let’s talk in person about your loan needs and how we can serve you best — before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it. We look forward to meeting you soon!'
                           : 'Glad you’re here! Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
                   </p>
                </div>
@@ -220,12 +220,37 @@ export default function ConnectStep({
 export function LoanAccessPendingCard({
    onClose,
    mode = 'approval',
-   withEmma = false
+   withEmma = false,
+   userId
 }: {
    onClose: () => void;
    mode?: 'approval' | 'call';
    withEmma?: boolean;
+   // When given (call mode), the card shows the booked time and this meeting's own join link.
+   userId?: string;
 }) {
+   const [meeting, setMeeting] = useState<{ startsAt: string | null; joinUrl: string | null } | null>(null);
+   useEffect(() => {
+      if (mode !== 'call' || !userId) return;
+      let cancelled = false;
+      (async () => {
+         const { data } = await getSupabaseBrowserClient()
+            .from('users')
+            .select('video_call_starts_at, video_call_join_url')
+            .eq('id', userId)
+            .maybeSingle();
+         if (cancelled || !data) return;
+         const row = data as { video_call_starts_at?: string | null; video_call_join_url?: string | null };
+         setMeeting({ startsAt: row.video_call_starts_at ?? null, joinUrl: row.video_call_join_url ?? null });
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, [mode, userId]);
+   const meetingWhen = meeting?.startsAt
+      ? new Date(meeting.startsAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : null;
+
    return (
       <div className="flex min-h-0 flex-col items-center gap-4 overflow-y-auto overscroll-contain px-5 py-8 text-center text-md-b2 text-md-heading">
          <span className="grid size-14 place-items-center rounded-full bg-md-primary-100">
@@ -236,14 +261,24 @@ export function LoanAccessPendingCard({
          </h3>
          <p className="max-w-[320px] text-[13px] font-normal leading-[18px] text-md-neutral-1200">
             {mode === 'call'
-               ? 'Thank you for confirming! Your meeting is booked — the Zoom link is in your email and we’ll remind you on Messenger. Right after the call, the team unlocks your application and you can apply straight away.'
+               ? `Thank you for confirming! Your meeting${withEmma ? ' with Emma Moodeng' : ''} is booked${meetingWhen ? ` for ${meetingWhen} (your local time)` : ''} via Zoom, and we’ll remind you on Messenger. Right after the call, the team unlocks your application and you can apply straight away.`
                : 'Thanks for reaching out! The team usually replies within a day. We’ll message you on Messenger and send a notification the moment you’re approved — then you can apply right away.'}
          </p>
+         {mode === 'call' && meeting?.joinUrl ? (
+            <a
+               className="w-full max-w-[320px] rounded-md-lg border border-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-primary-1200 transition duration-150 ease-out hover:bg-md-primary-100"
+               href={meeting.joinUrl}
+               rel="noreferrer"
+               target="_blank"
+            >
+               Join the meeting
+            </a>
+         ) : null}
          {mode === 'call' ? (
             <div className="w-full max-w-[320px] rounded-[12px] border border-[#ded6e8] bg-white p-3 text-left text-[13px] font-normal leading-[18px] text-md-neutral-1200">
                <p className="font-[590] text-md-heading">Please have ready for the call:</p>
                <ol className="mt-1 list-decimal pl-5">
-                  <li>Your original physical ID or passport — approval depends on passing this check.</li>
+                  <li>Your original physical ID or passport — account approval depends on passing this compliance check.</li>
                   <li>Camera on, a well-lit room, and your phone nearby.</li>
                </ol>
                <a

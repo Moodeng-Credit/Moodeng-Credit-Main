@@ -188,18 +188,19 @@ const BORROWER_MESSAGES = {
    approved: {
       title: "You're approved to borrow 🎉",
       body:
-         'Great meeting you! Tap to apply for your loan. Important: keeping your account active means sticking to the repayment terms — loan defaults are flagged and permanently banned across all affiliated platforms.',
+         'Great meeting you! Tap to apply for your loan. Please reply on Messenger with your current contact details and social media handles so the team can reach you when your loan lands in your wallet. IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.',
       url: APPLY_URL
    },
+   // Emma's "Decline the loan request" script.
    rejected: {
-      title: 'About your Moodeng loan access',
-      body: "We can't approve loan access right now. Message us on Messenger if you'd like to talk it through.",
+      title: 'About your Moodeng application',
+      body: "We're sorry to see you go — your application has been closed. If you have any questions or concerns, please let us know. Should you wish to pursue funding in the future, connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
       url: `${SITE_URL}/request-board`
    },
    // Emma's "Decline the loan request" script (no-show).
    no_show: {
       title: 'We missed you on the call',
-      body: "We're sorry we missed you. Your loan request can't go ahead without the meeting — tap to book a new time, or connect with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
+      body: "We're sorry we missed you — your application can't go ahead without the meeting. If you have any questions, please let us know. Should you wish to pursue funding, tap to book a new call, or connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
       url: APPLY_URL
    },
    // Open flow: their request is already on the board, so this is just "please talk to us".

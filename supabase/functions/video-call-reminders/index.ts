@@ -42,6 +42,8 @@ type ReminderUser = {
    messenger_psid: string | null;
    video_call_starts_at: string;
    video_call_timezone: string | null;
+   video_call_join_url: string | null;
+   video_call_host: string | null;
    video_call_confirm_token: string | null;
    video_call_confirmed_at: string | null;
    video_call_reminder_stage: number | null;
@@ -68,7 +70,7 @@ serve(async (req) => {
    const { data, error } = await svc
       .from('users')
       .select(
-         'id, username, chat_id, notif_account_activity, messenger_psid, video_call_starts_at, video_call_timezone, video_call_confirm_token, video_call_confirmed_at, video_call_reminder_stage'
+         'id, username, chat_id, notif_account_activity, messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_reminder_stage'
       )
       .not('video_call_starts_at', 'is', null)
       .gt('video_call_starts_at', nowIso)

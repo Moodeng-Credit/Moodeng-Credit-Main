@@ -251,6 +251,23 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(supa.invoke).toHaveBeenCalledWith('calcom-round-robin', { body: expect.objectContaining({ action: 'slots', host: 'emma' }) });
    });
 
+   it('shows the booked time and this meeting\u2019s own join link on the waiting screen', async () => {
+      supa.state.usersRow = {
+         ...supa.state.usersRow,
+         video_call_starts_at: '2026-09-25T03:00:00.000Z',
+         video_call_join_url: 'https://us06web.zoom.us/j/123'
+      } as typeof supa.state.usersRow;
+      await act(async () => {
+         root.render(createElement(LoanAccessPendingCard, { onClose: vi.fn(), mode: 'call', withEmma: true, userId: 'user-1' }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain('with Emma Moodeng');
+      const join = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Join the meeting');
+      expect(join?.getAttribute('href')).toBe('https://us06web.zoom.us/j/123');
+   });
+
    it('shows the "see you on the call" pending card in call mode', async () => {
       const onClose = vi.fn();
       await act(async () => {

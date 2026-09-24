@@ -77,14 +77,19 @@ const createBooking = async (
    start: string,
    attendee: Attendee,
    metadata: Record<string, string>
-): Promise<{ uid: string } | { error: 'taken' | 'other' }> => {
+): Promise<{ uid: string; joinUrl: string | null } | { error: 'taken' | 'other' }> => {
    const res = await fetch(`${CAL_BASE}/bookings`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-08-13', 'Content-Type': 'application/json' },
       body: JSON.stringify({ start, eventTypeId, attendee, metadata })
    });
    const body = await res.json().catch(() => ({}));
-   if (res.ok && body?.data?.uid) return { uid: body.data.uid as string };
+   if (res.ok && body?.data?.uid) {
+      // The meeting's join link: `location` when it's a URL (Zoom / Cal Video), else the older meetingUrl.
+      const location = typeof body.data.location === 'string' && /^https?:\/\//.test(body.data.location) ? body.data.location : null;
+      const meetingUrl = typeof body.data.meetingUrl === 'string' && /^https?:\/\//.test(body.data.meetingUrl) ? body.data.meetingUrl : null;
+      return { uid: body.data.uid as string, joinUrl: location ?? meetingUrl };
+   }
    const msg = String(body?.message ?? body?.error?.message ?? '').toLowerCase();
    return { error: msg.includes('no longer available') || msg.includes('already') || msg.includes('busy') ? 'taken' : 'other' };
 };
@@ -213,6 +218,7 @@ serve(async (req) => {
                   video_call_starts_at: start,
                   video_call_booking_uid: result.uid,
                   video_call_timezone: timeZone,
+                  video_call_join_url: result.joinUrl,
                   // Fresh booking → restart the reminder ladder (see video-call-reminders) and
                   // clear the last call's confirm/attendance.
                   video_call_reminder_stage: 0,
@@ -222,7 +228,9 @@ serve(async (req) => {
                   video_call_outcome_at: null
                })
                .eq('id', user.id)
-               .select('messenger_psid, video_call_starts_at, video_call_timezone, video_call_confirm_token, video_call_confirmed_at')
+               .select(
+                  'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at'
+               )
                .maybeSingle();
             // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
             if (booked) {

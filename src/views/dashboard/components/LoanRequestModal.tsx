@@ -2121,7 +2121,7 @@ export default function LoanRequestModal({
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
             ) : isLoanAccessPending ? (
-               <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} onClose={onClose} />
+               <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} userId={user.id} onClose={onClose} />
             ) : needsLoanAccessConnect ? (
                <ConnectStep
                   userId={user.id}

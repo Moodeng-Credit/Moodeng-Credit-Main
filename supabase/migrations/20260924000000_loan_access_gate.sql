@@ -98,7 +98,10 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS video_call_outcome TEXT CHECK (video_call_outcome IN ('attended', 'no_show')),
   ADD COLUMN IF NOT EXISTS video_call_outcome_at TIMESTAMPTZ,
   -- The borrower's IANA time zone at booking, so reminders show the time the way they saw it.
-  ADD COLUMN IF NOT EXISTS video_call_timezone TEXT;
+  ADD COLUMN IF NOT EXISTS video_call_timezone TEXT,
+  -- This booking's own join link (Zoom / Cal Video) from Cal.com's booking response — shown on the
+  -- waiting screen and in the Messenger confirmation/reminders, per Emma's meeting-confirmation script.
+  ADD COLUMN IF NOT EXISTS video_call_join_url TEXT;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_video_call_confirm_token_key
   ON public.users (video_call_confirm_token) WHERE video_call_confirm_token IS NOT NULL;
@@ -180,6 +183,7 @@ BEGIN
      OR new.video_call_confirmed_at IS DISTINCT FROM old.video_call_confirmed_at
      OR new.video_call_outcome IS DISTINCT FROM old.video_call_outcome
      OR new.video_call_outcome_at IS DISTINCT FROM old.video_call_outcome_at
+     OR new.video_call_join_url IS DISTINCT FROM old.video_call_join_url
      -- Referral (gate bypass as of this migration).
      OR new.redeemed_referral_code_id IS DISTINCT FROM old.redeemed_referral_code_id
      OR new.referral_boost_amount IS DISTINCT FROM old.referral_boost_amount
