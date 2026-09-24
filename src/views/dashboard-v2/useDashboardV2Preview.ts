@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
+import { useLocalization } from '@/i18n';
 import { isPreviewHost } from '@/lib/previewHost';
 import { SAMPLE_STATES } from '@/views/dashboard-v2/sampleStates';
 import type { DashboardV2Language, DashboardV2Model, DashboardV2PreviewState } from '@/views/dashboard-v2/types';
@@ -29,11 +30,16 @@ export interface DashboardV2PreviewContext {
 /** Real data when signed in ("My data"), otherwise the Figma sample for the chosen state. */
 export function useDashboardV2Preview(): DashboardV2PreviewContext {
    const [searchParams] = useSearchParams();
+   const { locale } = useLocalization();
    const { model: realModel, isSignedIn, isReady } = useDashboardV2Model();
    const requestedState = searchParams.get('state');
    const previewState: DashboardV2PreviewState = isPreviewState(requestedState) ? requestedState : isSignedIn ? 'real' : 'verified';
    const isReal = previewState === 'real' && isSignedIn;
-   const language: DashboardV2Language = searchParams.get('lang') === 'en' ? 'en' : 'fil';
+   // Follow the language the user picked in the app: Filipino copy only for Filipino, English for
+   // everyone else. The preview bar's ?lang= toggle still overrides it for the team.
+   const requestedLanguage = searchParams.get('lang');
+   const language: DashboardV2Language =
+      requestedLanguage === 'en' || requestedLanguage === 'fil' ? requestedLanguage : locale === 'fil' ? 'fil' : 'en';
    // On the live domain, real users get clean URLs (no ?state=/lang=). The preview
    // state only rides along on dev and Vercel preview hosts, where the team uses it.
    const previewSearch = isPreviewHost() ? `?${new URLSearchParams({ state: previewState, lang: language }).toString()}` : '';
