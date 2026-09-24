@@ -101,12 +101,12 @@ export default function DashboardV2() {
       <div className="flex flex-col" data-tour-target="dashboard-milestones-heading">
          <MilestonesSection
             model={model}
-            allMilestonesHref={`/dashboard-v2-preview/milestones${previewSearch}`}
+            allMilestonesHref={`/dashboard/milestones${previewSearch}`}
             onGet={setOpenMilestone}
             onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
          <div className="-mt-[5px]">
-            <VoucherReferralBanner language={language} onRefer={() => navigate(`/dashboard-v2-preview/refer${previewSearch}`)} />
+            <VoucherReferralBanner language={language} onRefer={() => navigate(`/dashboard/refer${previewSearch}`)} />
          </div>
       </div>
    );
@@ -151,7 +151,7 @@ export default function DashboardV2() {
                onVerify={() => setIsVerifyOpen(true)}
             />
          ) : null}
-         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard-v2-preview${previewSearch}`} /> : null}
+         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard${previewSearch}`} /> : null}
          {showTour ? (
             <GuidedTourPreview
                startImmediately={searchParams.get('tour') === '1' || searchParams.get('startTour') === '1'}
@@ -168,7 +168,7 @@ export default function DashboardV2() {
                   markGuidedTourCompleted(BORROWER_GUIDED_TOUR_ID, userId);
                   void recordGuidedTourEvent({
                      eventType: reason === 'skip' ? 'skipped' : 'completed',
-                     metadata: { path: '/dashboard-v2-preview', role: 'borrower' },
+                     metadata: { path: '/dashboard', role: 'borrower' },
                      tourId: BORROWER_GUIDED_TOUR_ID,
                      userId
                   });

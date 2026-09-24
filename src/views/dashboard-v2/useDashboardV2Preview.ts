@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
+import { isPreviewHost } from '@/lib/previewHost';
 import { SAMPLE_STATES } from '@/views/dashboard-v2/sampleStates';
 import type { DashboardV2Language, DashboardV2Model, DashboardV2PreviewState } from '@/views/dashboard-v2/types';
 import { useDashboardV2Model } from '@/views/dashboard-v2/useDashboardV2Model';
@@ -33,7 +34,9 @@ export function useDashboardV2Preview(): DashboardV2PreviewContext {
    const previewState: DashboardV2PreviewState = isPreviewState(requestedState) ? requestedState : isSignedIn ? 'real' : 'verified';
    const isReal = previewState === 'real' && isSignedIn;
    const language: DashboardV2Language = searchParams.get('lang') === 'en' ? 'en' : 'fil';
-   const previewSearch = `?${new URLSearchParams({ state: previewState, lang: language }).toString()}`;
+   // On the live domain, real users get clean URLs (no ?state=/lang=). The preview
+   // state only rides along on dev and Vercel preview hosts, where the team uses it.
+   const previewSearch = isPreviewHost() ? `?${new URLSearchParams({ state: previewState, lang: language }).toString()}` : '';
 
    return {
       model: isReal ? realModel : SAMPLE_STATES[previewState === 'real' ? 'verified' : previewState],

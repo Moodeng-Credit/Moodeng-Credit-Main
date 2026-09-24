@@ -129,7 +129,7 @@ export default function DashboardV2Milestones() {
 
             <header className="relative flex h-16 items-end justify-center px-5 pb-1">
                <Link
-                  to={`/dashboard-v2-preview${previewSearch}`}
+                  to={`/dashboard${previewSearch}`}
                   className="absolute bottom-1 left-5 text-[#594d65]"
                   aria-label="Back to dashboard"
                >
@@ -221,7 +221,7 @@ export default function DashboardV2Milestones() {
             <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
          {isVerifyOpen ? (
-            <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard-v2-preview/milestones${previewSearch}`} />
+            <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard/milestones${previewSearch}`} />
          ) : null}
       </div>
    );

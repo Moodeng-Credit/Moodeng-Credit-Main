@@ -350,6 +350,26 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            <Route
+               path="/dashboard/milestones"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <DashboardV2Milestones />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
+               path="/dashboard/refer"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <DashboardV2Referral />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
             <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
             <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} />
             <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} />
