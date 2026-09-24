@@ -1,13 +1,11 @@
 import { useState } from 'react';
 
 import clsx from 'clsx';
-import { BookOpen, Check, House, Info, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
 
-import { DASHBOARD_V2_ASSETS, getMoodengAsset } from '@/views/dashboard-v2/assets';
-import { SceneArrow, TierTrack } from '@/views/dashboard-v2/components/DashboardV2Graphics';
+import { DASHBOARD_V2_ASSETS, getMoodengAsset, getTierTrackAsset } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import { MOODENG_TIERS } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Model, MoodengMood } from '@/views/dashboard-v2/types';
@@ -62,11 +60,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                   <DesignImage src={DASHBOARD_V2_ASSETS.sampleAvatar} className="-mb-3.5 h-[63px] w-[63px] rounded-full object-cover" />
                )}
                <span className="relative flex h-5 w-full items-center justify-center gap-0.5 rounded-full border-[0.675px] border-[#c0b9c8] bg-[#efedf1] text-[14px] font-medium leading-none tracking-[-0.84px] text-[#7b6b8c]">
-                  {model.isVerified ? (
-                     <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#7b6b8c]" aria-hidden="true">
-                        <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
-                     </span>
-                  ) : null}
+                  {model.isVerified ? <DesignImage src={DASHBOARD_V2_ASSETS.verified} className="h-3.5 w-3.5" /> : null}
                   {model.isVerified ? 'Verified' : 'Unverified'}
                </span>
             </div>
@@ -81,12 +75,12 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          {/* Help + Home */}
          <div className="absolute right-0 top-7 flex items-center gap-[11px]">
             <Link to="/help" className="flex w-[38px] flex-col items-center">
-               <BookOpen className="-mb-1 h-7 w-7 p-0.5 text-[#594d65]" strokeWidth={1.6} aria-hidden="true" />
+               <DesignImage src={DASHBOARD_V2_ASSETS.help} className="-mb-1 h-7 w-7" />
                <span className="text-[14px] leading-[18px] tracking-[-0.56px] text-[#594d65]">Help</span>
             </Link>
             <Link to="/" className="flex h-12 w-[72px] items-start rounded-l-[27px] bg-[rgba(137,153,163,0.62)] py-[3px] pl-3.5 pr-5">
                <span className="flex w-[38px] flex-col items-center">
-                  <House className="-mb-1 h-7 w-7 p-0.5 text-white" strokeWidth={1.6} aria-hidden="true" />
+                  <DesignImage src={DASHBOARD_V2_ASSETS.home} className="-mb-1 h-7 w-7" />
                   <span className="text-[14px] leading-[18px] tracking-[-0.56px] text-white">Home</span>
                </span>
             </Link>
@@ -105,9 +99,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                   className="absolute right-0 top-0 h-5 w-5"
                   aria-label="Dismiss tip"
                >
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#b9aee0]">
-                     <X className="h-3 w-3 text-white" strokeWidth={3} aria-hidden="true" />
-                  </span>
+                  <DesignImage src={DASHBOARD_V2_ASSETS.close} className="h-5 w-5" />
                </button>
             </div>
          ) : null}
@@ -126,7 +118,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             className="absolute left-0 top-[163px] h-20 w-20 disabled:opacity-40"
             aria-label="Previous Moodeng tier"
          >
-            <SceneArrow direction="left" className="h-20 w-20" />
+            <DesignImage src={DASHBOARD_V2_ASSETS.arrowLeft} className="h-20 w-20" />
          </button>
          <button
             type="button"
@@ -135,11 +127,11 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             className="absolute right-0 top-[163px] h-20 w-20 disabled:opacity-40"
             aria-label="Next Moodeng tier"
          >
-            <SceneArrow direction="right" className="h-20 w-20" />
+            <DesignImage src={DASHBOARD_V2_ASSETS.arrowRight} className="h-20 w-20" />
          </button>
 
          {/* Tier track */}
-         <TierTrack currentIndex={currentTierIndex} className="absolute left-0 top-[260px] h-7 w-full" />
+         <DesignImage src={getTierTrackAsset(model.tier)} className="absolute left-0 top-[260px] h-7 w-full" />
          {MOODENG_TIERS.map((tier, index) => {
             const layout = TIER_LABEL_LAYOUT[index];
             const isCurrent = index === currentTierIndex;
@@ -174,7 +166,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                   aria-label="About credit level"
                   aria-expanded={isCreditTipOpen}
                >
-                  <Info className="h-3.5 w-3.5 text-[#a78acf]" strokeWidth={2} aria-hidden="true" />
+                  <DesignImage src={DASHBOARD_V2_ASSETS.info} className="h-3.5 w-3.5" />
                </button>
             </div>
             <p className="pb-2 text-right text-[20px] font-medium leading-4 tracking-[0.4px]">

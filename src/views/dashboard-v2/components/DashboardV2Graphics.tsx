@@ -2,60 +2,8 @@ import type { ReactNode } from 'react';
 
 import clsx from 'clsx';
 
-// Vector pieces of the Figma design (tier track, scene arrows, tabbed cards) drawn in code so they
-// scale cleanly and follow real data (e.g. the highlighted tier) instead of shipping one export per state.
-
-const TRACK_NODE_X = [69, 170, 270, 371];
-// Quadratic curve M20,4 Q220,40 420,4 — node y values sit on that curve.
-const trackY = (x: number) => {
-   const t = (x - 20) / 400;
-   return 4 + 72 * t * (1 - t);
-};
-
-export function TierTrack({ currentIndex, className }: { currentIndex: number; className?: string }) {
-   const currentX = TRACK_NODE_X[currentIndex] ?? TRACK_NODE_X[0];
-   const gradientId = `dv2-track-${currentIndex}`;
-
-   return (
-      <svg viewBox="0 0 440 28" className={className} aria-hidden="true">
-         <defs>
-            <linearGradient id={gradientId} x1="0" x2="440" y1="0" y2="0" gradientUnits="userSpaceOnUse">
-               <stop offset="0" stopColor="#ec6a82" stopOpacity="0" />
-               <stop offset={currentX / 440} stopColor="#ec6a82" stopOpacity="0.95" />
-               <stop offset="1" stopColor="#ec6a82" stopOpacity="0.08" />
-            </linearGradient>
-         </defs>
-         <path d="M20 4 Q220 40 420 4" fill="none" stroke={`url(#${gradientId})`} strokeWidth="2" strokeLinecap="round" />
-         {TRACK_NODE_X.map((x, index) => {
-            const y = trackY(x);
-            if (index === currentIndex) {
-               return <circle key={x} cx={x} cy={y} r="4.5" fill="#fff" stroke="#e5334b" strokeWidth="2.5" />;
-            }
-            const isMiddle = index === 1 || index === 2;
-            return isMiddle ? (
-               <circle key={x} cx={x} cy={y} r="6" fill="#f6dfbf" stroke="#c8634c" strokeWidth="2.5" />
-            ) : (
-               <circle key={x} cx={x} cy={y} r="4" fill="#fff" stroke="#eba196" strokeWidth="2" />
-            );
-         })}
-      </svg>
-   );
-}
-
-export function SceneArrow({ direction, className }: { direction: 'left' | 'right'; className?: string }) {
-   return (
-      <svg viewBox="0 0 80 80" className={className} aria-hidden="true">
-         <path
-            d="M29 13c-4-3-8 1-5.5 5L39 40 23.5 62c-2.5 4 1.5 8 5.5 5l27-22.5c3.2-2.6 3.2-6.4 0-9Z"
-            fill="rgba(255,255,255,0.72)"
-            stroke="rgba(214,210,196,0.95)"
-            strokeWidth="2"
-            strokeLinejoin="round"
-            transform={direction === 'left' ? 'translate(80 0) scale(-1 1)' : undefined}
-         />
-      </svg>
-   );
-}
+// The tabbed card shape (white card with a lavender tab behind the title) is drawn in code so it
+// stretches to its content; the designer exported it only as a fixed-size vector.
 
 /**
  * White card with the lavender tab that rises behind the section title on the right

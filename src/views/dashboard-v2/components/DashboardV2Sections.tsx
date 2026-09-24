@@ -1,7 +1,6 @@
 import { Fragment } from 'react';
 
 import clsx from 'clsx';
-import { Check, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
@@ -118,14 +117,6 @@ export function MilestonesSection({ model, onVerify }: { model: DashboardV2Model
    );
 }
 
-function RepaymentsBadge() {
-   return (
-      <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#6b55f7]" aria-hidden="true">
-         <Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} />
-      </span>
-   );
-}
-
 export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
    const { summary } = model;
 
@@ -137,7 +128,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
          overlapTitle
          tab={
             <p className="flex items-center gap-1 text-[16px] leading-[18px] text-[#45556c]">
-               <RepaymentsBadge />
+               <DesignImage src={DASHBOARD_V2_ASSETS.repayments} className="h-3.5 w-3.5 shrink-0" />
                <span>
                   <span className="text-[#6b55f7]">${formatCurrency(summary.repaymentsTotal).replace(/\.00$/, '')}</span> Repayments
                </span>
@@ -215,7 +206,7 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
             </h2>
             <Link to={model.insightsHref} className="flex items-center text-[18px] leading-[18px] text-[#45556c]">
                My insights
-               <ChevronRight className="h-5 w-5 text-[#45556c]" strokeWidth={2} aria-hidden="true" />
+               <DesignImage src={DASHBOARD_V2_ASSETS.insightsChevron} className="h-4 w-4" />
             </Link>
          </div>
          <div className="mt-4">
