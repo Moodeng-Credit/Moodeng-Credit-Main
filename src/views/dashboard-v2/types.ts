@@ -12,6 +12,11 @@ export interface DashboardV2Milestone {
    status: DashboardV2MilestoneStatus;
    /** Voucher-style reward row (yellow highlight + coupon icon in the design). */
    isVoucher: boolean;
+   /** Pandesal (Trust Points) awarded; the voucher milestone also carries its points. */
+   points: number;
+   /** Highest-value milestone — gets the "Top Reward" badge and the yellow highlight. */
+   isTopReward: boolean;
+   actionLabel?: string;
    actionTo?: string;
 }
 
@@ -42,7 +47,14 @@ export interface DashboardV2Model {
    creditProgress: number;
    creditHint: CreditLevelHint;
    showConnectWallet: boolean;
+   /** The three milestones the dashboard card shows. */
    milestones: DashboardV2Milestone[];
+   /** Every borrower milestone, in order, for the All Milestones page. */
+   allMilestones: DashboardV2Milestone[];
+   /** Pandesal needed for the next Moodeng tier, or null at Apex. */
+   pandesalGoal: number | null;
+   /** Shareable referral code (the borrower's username), or null when signed out. */
+   referralCode: string | null;
    summary: {
       repaymentsTotal: number;
       active: number;
@@ -54,4 +66,6 @@ export interface DashboardV2Model {
    insightsHref: string;
 }
 
-export type DashboardV2PreviewState = 'real' | 'unverified' | 'verified' | 'defaulted';
+export type DashboardV2PreviewState = 'real' | 'unverified' | 'verified' | 'defaulted' | 'rewarded';
+
+export type DashboardV2Language = 'en' | 'fil';

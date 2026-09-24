@@ -23,10 +23,19 @@ export const DASHBOARD_V2_ASSETS = {
    repayments: `${BASE}/icon-repayments.png`, // icon_repayments
    pandesal: `${BASE}/pandesal.png`, // icon_pandesal
    coupon: `${BASE}/coupon.png`, // icon_coupon
+   pandesalSmall: `${BASE}/pandesal-small.png`, // icon_s_pandesal
+   pandesalLarge: `${BASE}/pandesal-large.png`, // icon_l_pandseal
+   lock: `${BASE}/icon-lock.png`, // icon_lock
+   shield: `${BASE}/icon-shield.png`, // icon_verify
+   closeLarge: `${BASE}/icon-close-large.png`, // btn_close (popups)
+   firstLoanTitle: `${BASE}/title-first-loan.png`, // title ("Post Your First Loan")
+   emptyMoodeng: `${BASE}/empty-moodeng.png`, // pic_empty
+   verifyHippo: `${BASE}/verify-hippo.png`, // hippo with ID card, cut from verify_popup (card bg #f8f1ff)
    // Banners are exported whole (440px frame incl. 20px side margins, copy baked in).
    verifyBanner: `${BASE}/banner-verify.png`, // banner_1
    connectWalletBanner: `${BASE}/banner-connect-wallet.png`, // banner_2
-   voucherBanner: `${BASE}/banner-voucher.png` // banner_3
+   voucherBanner: `${BASE}/banner-voucher.png`, // banner_3
+   voucherBannerFood: `${BASE}/banner-voucher-food.png` // right side of banner_3 (no copy), for the English banner
 } as const;
 
 /** process_bar_{tier} — 440×28 track with the current tier's node highlighted. */

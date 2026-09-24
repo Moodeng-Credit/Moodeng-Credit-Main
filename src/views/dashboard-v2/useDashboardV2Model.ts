@@ -16,7 +16,9 @@ import {
    getCreditLevelProgress,
    getMoodengMood,
    getMoodengTier,
+   getNextTierGoal,
    getOnTimeRepaidTotal,
+   toDashboardV2MilestoneList,
    toDashboardV2Milestones
 } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Model } from '@/views/dashboard-v2/types';
@@ -64,6 +66,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
 
    const model = useMemo<DashboardV2Model>(() => {
       const pandesal = isVerified ? pointsTotal : 0;
+      const sharedMilestones = buildReputationMilestones({ creditLevels, borrowerLoans, isVerified });
       const credit = getCreditLevelProgress({
          creditLimit: getEffectiveCreditLimit(user.cs, isVerified),
          isVerified,
@@ -96,7 +99,10 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          creditProgress: credit.progress,
          creditHint: credit.hint,
          showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet,
-         milestones: toDashboardV2Milestones(buildReputationMilestones({ creditLevels, borrowerLoans, isVerified })),
+         milestones: toDashboardV2Milestones(sharedMilestones),
+         allMilestones: toDashboardV2MilestoneList(sharedMilestones),
+         pandesalGoal: getNextTierGoal(pandesal),
+         referralCode: user.username || null,
          summary: {
             repaymentsTotal: stats.repayments.total,
             active: stats.active.total,

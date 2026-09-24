@@ -100,15 +100,29 @@ export const getCreditLevelProgress = ({
    return { level, progress, hint: { highlight: `$${formatCurrency(remaining)}`, rest: ` left to LV.${level + 1}` } };
 };
 
+/** The designer's shorter titles for the shared milestones (same rules, same points). */
+const MILESTONE_TITLES: Record<string, string> = {
+   'first-loan-request': 'Post your first loan request',
+   'first-funded-loan': 'Get funded by a lender',
+   'first-on-time-repayment': 'Repay a loan on time',
+   'two-on-time-streak': '2-loan on-time streak',
+   'full-limit-credit-builder': 'Repay a full-limit credit',
+   'two-unique-lenders': 'Borrow from 2 lenders',
+   'repay-100-total': 'Repay $100 total',
+   'trusted-borrower-candidate': 'Become a trusted borrower'
+};
+
+const TOP_REWARD_MILESTONE_ID = 'trusted-borrower-candidate';
+
 /**
- * Picks the design's three dashboard milestones from the shared milestone list and re-assigns
- * next/locked after dropping verification (which the design shows as a banner instead).
+ * Every borrower milestone except verification (the design shows that as a banner), with next/locked
+ * re-assigned so the first open milestone is the one to "Get".
  */
-export const toDashboardV2Milestones = (milestones: DashboardMilestone[]): DashboardV2Milestone[] => {
+export const toDashboardV2MilestoneList = (milestones: DashboardMilestone[]): DashboardV2Milestone[] => {
    let nextAssigned = false;
 
-   return DASHBOARD_MILESTONE_IDS.map((id) => milestones.find((milestone) => milestone.id === id))
-      .filter((milestone): milestone is DashboardMilestone => Boolean(milestone))
+   return milestones
+      .filter((milestone) => milestone.id !== 'verify-identity')
       .map((milestone) => {
          let status: DashboardV2Milestone['status'] = 'unlocked';
          if (milestone.status !== 'unlocked') {
@@ -120,11 +134,29 @@ export const toDashboardV2Milestones = (milestones: DashboardMilestone[]): Dashb
 
          return {
             id: milestone.id,
-            title: milestone.title,
+            title: MILESTONE_TITLES[milestone.id] ?? milestone.title,
             reward: voucherReward ?? `+${milestone.points ?? 0} Pandesal`,
             status,
             isVoucher: Boolean(voucherReward),
+            points: milestone.points ?? 0,
+            isTopReward: milestone.id === TOP_REWARD_MILESTONE_ID,
+            actionLabel: milestone.actionLabel,
             actionTo: milestone.actionTo
          };
       });
 };
+
+/** The three milestones the dashboard card shows, in design order. */
+export const toDashboardV2Milestones = (milestones: DashboardMilestone[]): DashboardV2Milestone[] => {
+   const list = toDashboardV2MilestoneList(milestones);
+   return DASHBOARD_MILESTONE_IDS.map((id) => list.find((milestone) => milestone.id === id)).filter(
+      (milestone): milestone is DashboardV2Milestone => Boolean(milestone)
+   );
+};
+
+/** Pandesal needed for the next Moodeng tier ("Grow Trust with feeding 10/50"), or null at Apex. */
+export const getNextTierGoal = (pandesal: number): number | null =>
+   MOODENG_TIERS.find((tier) => tier.minPandesal > pandesal)?.minPandesal ?? null;
+
+/** Public invite link for the referral screen. The /invite route itself is not live yet (preview only). */
+export const buildInviteLink = (code: string) => `https://moodeng.app/invite/${encodeURIComponent(code)}`;

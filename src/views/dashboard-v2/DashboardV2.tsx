@@ -1,23 +1,34 @@
-import clsx from 'clsx';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 
-import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useNavigate } from 'react-router-dom';
 
 import { ConnectWalletBanner, VerifyIdentityBanner, VoucherReferralBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
+import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
-import { SAMPLE_STATES } from '@/views/dashboard-v2/sampleStates';
-import type { DashboardV2PreviewState } from '@/views/dashboard-v2/types';
-import { useDashboardV2Model } from '@/views/dashboard-v2/useDashboardV2Model';
+import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
+import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
+import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
+import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Preview';
 
-const PREVIEW_STATES: { id: DashboardV2PreviewState; label: string }[] = [
-   { id: 'real', label: 'My data' },
-   { id: 'unverified', label: 'Unverified' },
-   { id: 'verified', label: 'Verified' },
-   { id: 'defaulted', label: 'Defaulted' }
+const SKELETON_BLOCKS = [
+   { id: 'banner', height: 64 },
+   { id: 'milestones', height: 300 },
+   { id: 'voucher', height: 81 },
+   { id: 'summary', height: 123 },
+   { id: 'dues', height: 113 }
 ];
 
-const isPreviewState = (value: string | null): value is DashboardV2PreviewState => PREVIEW_STATES.some((state) => state.id === value);
+/** Loading state: the sections keep their shape so the page doesn't jump when data lands. */
+function DashboardV2Skeleton() {
+   return (
+      <div className="mt-[30px] flex flex-col gap-[30px] px-5" aria-busy="true" aria-label="Loading your dashboard">
+         {SKELETON_BLOCKS.map(({ id, height }) => (
+            <div key={id} className="animate-pulse rounded-[8px] bg-[#ece9f1]" style={{ height }} />
+         ))}
+      </div>
+   );
+}
 
 /**
  * Preview of the redesigned borrower dashboard (Figma "New Dashboard for Borrowers").
@@ -25,19 +36,22 @@ const isPreviewState = (value: string | null): value is DashboardV2PreviewState 
  */
 export default function DashboardV2() {
    const navigate = useNavigate();
-   const [searchParams, setSearchParams] = useSearchParams();
-   const { model: realModel, isSignedIn } = useDashboardV2Model();
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
-   const requestedState = searchParams.get('state');
-   const previewState: DashboardV2PreviewState = isPreviewState(requestedState) ? requestedState : isSignedIn ? 'real' : 'verified';
-   const isReal = previewState === 'real' && isSignedIn;
-   const model = isReal ? realModel : SAMPLE_STATES[previewState === 'real' ? 'verified' : previewState];
+   const { model, previewState, isReal, isSignedIn, isReady, language, previewSearch } = useDashboardV2Preview();
+   const [openMilestone, setOpenMilestone] = useState<DashboardV2Milestone | null>(null);
+   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+   const [isVoucherOpen, setIsVoucherOpen] = useState(false);
+   const isLoading = isReal && !isReady;
 
    const milestonesAndVoucher = (
       <div className="flex flex-col">
-         <MilestonesSection model={model} onVerify={openVerify} />
+         <MilestonesSection
+            model={model}
+            allMilestonesHref={`/dashboard-v2-preview/milestones${previewSearch}`}
+            onGet={setOpenMilestone}
+            onClaim={() => setIsVoucherOpen(true)}
+         />
          <div className="-mt-[5px]">
-            <VoucherReferralBanner />
+            <VoucherReferralBanner language={language} onRefer={() => navigate(`/dashboard-v2-preview/refer${previewSearch}`)} />
          </div>
       </div>
    );
@@ -45,46 +59,34 @@ export default function DashboardV2() {
    return (
       <div className="min-h-screen bg-[#f7f7f7]">
          <div className="mx-auto max-w-[440px] pb-28">
-            <div className="sticky top-0 z-30 flex items-center gap-2 bg-[#1c053d]/90 px-3 py-2 backdrop-blur">
-               <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[#c9bfe6]">Preview</span>
-               <div className="flex flex-1 gap-1 overflow-x-auto" role="tablist" aria-label="Dashboard preview state">
-                  {PREVIEW_STATES.map((state) => {
-                     const isDisabled = state.id === 'real' && !isSignedIn;
-                     const isActive = state.id === previewState && !isDisabled;
-                     return (
-                        <button
-                           key={state.id}
-                           type="button"
-                           role="tab"
-                           aria-selected={isActive}
-                           disabled={isDisabled}
-                           title={isDisabled ? 'Sign in to see your real data' : undefined}
-                           onClick={() => setSearchParams({ state: state.id }, { replace: true })}
-                           className={clsx(
-                              'shrink-0 rounded-full px-2.5 py-1 text-[12px] font-semibold transition',
-                              isActive ? 'bg-white text-[#1c053d]' : 'text-white/80',
-                              isDisabled && 'cursor-not-allowed opacity-40'
-                           )}
-                        >
-                           {state.label}
-                        </button>
-                     );
-                  })}
-               </div>
-            </div>
+            <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} />
 
             <DashboardV2Hero key={previewState} model={model} showRealAvatar={isReal} />
 
-            <div className="mt-[30px] flex flex-col gap-[30px]">
-               {!model.isVerified ? <VerifyIdentityBanner onVerify={openVerify} /> : null}
-               {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
-               {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
-               {milestonesAndVoucher}
-               <LoanSummarySection model={model} />
-               {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
-            </div>
+            {isLoading ? (
+               <DashboardV2Skeleton />
+            ) : (
+               <div className="mt-[30px] flex flex-col gap-[30px]">
+                  {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
+                  {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
+                  {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {milestonesAndVoucher}
+                  <LoanSummarySection model={model} />
+                  {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+               </div>
+            )}
          </div>
-         {verifyModal}
+
+         {openMilestone ? (
+            <MilestonePopup
+               milestone={openMilestone}
+               isVerified={model.isVerified}
+               onClose={() => setOpenMilestone(null)}
+               onVerify={() => setIsVerifyOpen(true)}
+            />
+         ) : null}
+         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo="/dashboard-v2-preview" /> : null}
+         {isVoucherOpen ? <VoucherClaimPopup onClose={() => setIsVoucherOpen(false)} /> : null}
       </div>
    );
 }

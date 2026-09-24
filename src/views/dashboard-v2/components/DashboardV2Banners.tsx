@@ -1,5 +1,8 @@
+import clsx from 'clsx';
+
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
+import type { DashboardV2Language } from '@/views/dashboard-v2/types';
 
 // Banners are exported from Figma as whole 440px-wide frames (20px side margins and copy baked in),
 // so each renders full width at its native aspect ratio.
@@ -29,13 +32,39 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
    );
 }
 
-/** SAMPLE DATA: referral vouchers have no backend yet, so this banner is display-only. */
-export function VoucherReferralBanner() {
+/**
+ * Referral entry point. Filipino uses the designer's exported banner as-is; English re-sets the copy
+ * over the same yellow card and the text-free food art cut from that banner.
+ */
+export function VoucherReferralBanner({ language, onRefer }: { language: DashboardV2Language; onRefer: () => void }) {
+   if (language === 'fil') {
+      return (
+         <button type="button" onClick={onRefer} className={BANNER_BUTTON}>
+            <DesignImage
+               src={DASHBOARD_V2_ASSETS.voucherBanner}
+               alt="₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer."
+               className="aspect-[880/162] h-auto w-full"
+            />
+         </button>
+      );
+   }
+
    return (
-      <DesignImage
-         src={DASHBOARD_V2_ASSETS.voucherBanner}
-         alt="₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer."
-         className="aspect-[880/162] h-auto w-full"
-      />
+      <button type="button" onClick={onRefer} className={clsx(BANNER_BUTTON, 'relative h-[81px] text-left')}>
+         <span className="absolute inset-x-5 bottom-0 h-16 rounded-[8px] bg-[#ffef85]" aria-hidden="true" />
+         <DesignImage src={DASHBOARD_V2_ASSETS.voucherBannerFood} className="absolute right-0 top-0 h-[81px] w-[144px] object-contain" />
+         <span className="absolute bottom-0 left-[30px] flex h-16 flex-col justify-center">
+            <span className="flex items-baseline gap-1 font-black italic leading-[1.2] text-[#3c8248]">
+               <span className="text-[26px]">₱100</span>
+               <span className="text-[20px]">GrabFood Voucher</span>
+            </span>
+            <span className="flex items-center gap-2">
+               <span className="text-[14px] font-medium tracking-[-0.28px] text-[#96aa26]">treat a friend, eat together</span>
+               <span className="flex h-5 items-center rounded-full bg-[#4aa256] px-2.5 text-[12px] font-bold tracking-[-0.24px] text-white shadow-[0_1px_1px_rgba(0,0,0,0.3),0_-1px_1px_rgba(255,255,255,0.2)]">
+                  Refer
+               </span>
+            </span>
+         </span>
+      </button>
    );
 }

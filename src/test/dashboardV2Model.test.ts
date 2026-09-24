@@ -1,21 +1,25 @@
 import { createElement } from 'react';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-
 import { describe, expect, it } from 'vitest';
 
-import { LoanStatus, RepaymentStatus, type Loan } from '@/types/loanTypes';
-import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
+import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
+import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import {
+   buildInviteLink,
    getCreditLevelProgress,
    getMoodengMood,
    getMoodengTier,
+   getNextTierGoal,
    getOnTimeRepaidTotal,
+   toDashboardV2MilestoneList,
    toDashboardV2Milestones
 } from '@/views/dashboard-v2/dashboardV2Model';
 import { SAMPLE_STATES } from '@/views/dashboard-v2/sampleStates';
+import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 
 const buildPaidLoan = (overrides: Partial<Loan>): Loan => ({
    id: 'loan',
@@ -92,8 +96,12 @@ describe('dashboard v2 credit level progress', () => {
    });
 
    it('handles the top level and paused progression', () => {
-      expect(getCreditLevelProgress({ creditLimit: 140, isVerified: true, onTimeRepaidTotal: 0, isPaused: false }).hint.highlight).toBe('Top');
-      expect(getCreditLevelProgress({ creditLimit: 15, isVerified: true, onTimeRepaidTotal: 0, isPaused: true }).hint.highlight).toBe('Paused');
+      expect(getCreditLevelProgress({ creditLimit: 140, isVerified: true, onTimeRepaidTotal: 0, isPaused: false }).hint.highlight).toBe(
+         'Top'
+      );
+      expect(getCreditLevelProgress({ creditLimit: 15, isVerified: true, onTimeRepaidTotal: 0, isPaused: true }).hint.highlight).toBe(
+         'Paused'
+      );
    });
 
    it('only counts fully repaid, on-time, non-refunded loans', () => {
@@ -136,14 +144,11 @@ describe('dashboard v2 milestones', () => {
 });
 
 describe('dashboard v2 sample states render', () => {
-   const render = (element: ReturnType<typeof createElement>) =>
-      renderToStaticMarkup(createElement(MemoryRouter, null, element));
+   const render = (element: ReturnType<typeof createElement>) => renderToStaticMarkup(createElement(MemoryRouter, null, element));
 
    it('renders the hero for each design state', () => {
       expect(render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.unverified, showRealAvatar: false }))).toContain('LV0');
-      expect(render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.verified, showRealAvatar: false }))).toContain(
-         'left to LV.2'
-      );
+      expect(render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.verified, showRealAvatar: false }))).toContain('left to LV.2');
    });
 
    it('renders the overdue row with Pay Now and empty dues copy', () => {
@@ -152,9 +157,57 @@ describe('dashboard v2 sample states render', () => {
    });
 
    it('renders milestones and loan summary values', () => {
-      expect(render(createElement(MilestonesSection, { model: SAMPLE_STATES.verified, onVerify: () => undefined }))).toContain(
-         'Post your first loan request'
-      );
+      expect(
+         render(
+            createElement(MilestonesSection, {
+               model: SAMPLE_STATES.verified,
+               allMilestonesHref: '/x',
+               onGet: () => undefined,
+               onClaim: () => undefined
+            })
+         )
+      ).toContain('Post your first loan request');
       expect(render(createElement(LoanSummarySection, { model: SAMPLE_STATES.defaulted }))).toContain('3.00');
+   });
+});
+
+describe('dashboard v2 all milestones', () => {
+   it('lists every borrower milestone except verification, with the top reward flagged', () => {
+      const list = toDashboardV2MilestoneList([
+         buildMilestone('verify-identity', 'unlocked', 10),
+         buildMilestone('first-loan-request', 'unlocked', 10),
+         buildMilestone('first-funded-loan', 'locked', 15),
+         buildMilestone('trusted-borrower-candidate', 'locked', 75)
+      ]);
+
+      expect(list.map((milestone) => [milestone.id, milestone.status, milestone.points, milestone.isTopReward])).toEqual([
+         ['first-loan-request', 'unlocked', 10, false],
+         ['first-funded-loan', 'next', 15, false],
+         ['trusted-borrower-candidate', 'locked', 75, true]
+      ]);
+      expect(list[2].title).toBe('Become a trusted borrower');
+   });
+
+   it('sets the feeding goal to the next Moodeng tier', () => {
+      expect(getNextTierGoal(10)).toBe(50);
+      expect(getNextTierGoal(50)).toBe(300);
+      expect(getNextTierGoal(600)).toBeNull();
+   });
+
+   it('builds an encoded invite link', () => {
+      expect(buildInviteLink('maria cruz')).toBe('https://moodeng.app/invite/maria%20cruz');
+   });
+
+   it('renders the milestone popup reward and call to action', () => {
+      const milestone = SAMPLE_STATES.verified.milestones[0];
+      const html = renderToStaticMarkup(
+         createElement(
+            MemoryRouter,
+            null,
+            createElement(MilestonePopup, { milestone, isVerified: true, onClose: () => undefined, onVerify: () => undefined })
+         )
+      );
+      expect(html).toContain('Feed Moodeng to level up.');
+      expect(html).toContain('Request Loan &amp; Feed Moodeng');
    });
 });

@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 
 import clsx from 'clsx';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
@@ -11,7 +11,7 @@ import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 
 const PILL_BUTTON =
-   'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6 text-white';
+   'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
 const PRIMARY_GRADIENT = 'linear-gradient(85.47deg, #9584ff 0.5%, #6b55f7 98.16%)';
 // Design numerals use SF Pro Compressed, which the app does not load; tight tracking approximates it.
 const STAT_NUMBER = 'font-medium leading-[18px] tracking-[-0.06em]';
@@ -20,20 +20,39 @@ function Divider() {
    return <div className="h-px w-full bg-[#ece9f1]" aria-hidden="true" />;
 }
 
+/** Gold "Claim" pill — same treatment as the "+10Pandesal" pill on the Verify banner. */
+export function ClaimVoucherButton({ onClaim }: { onClaim: () => void }) {
+   return (
+      <button
+         type="button"
+         onClick={onClaim}
+         className="flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full bg-[#ffce1b] text-[16px] font-bold tracking-[-0.3px] text-[#704518] shadow-[0_-2px_1px_rgba(255,255,255,0.3),0_2px_1px_rgba(63,89,79,0.4)]"
+      >
+         Claim
+      </button>
+   );
+}
+
 function MilestoneAction({
    milestone,
-   onAction
+   onAction,
+   onClaim
 }: {
    milestone: DashboardV2Milestone;
    onAction: (milestone: DashboardV2Milestone) => void;
+   onClaim: () => void;
 }) {
+   if (milestone.status === 'unlocked' && milestone.isVoucher) {
+      return <ClaimVoucherButton onClaim={onClaim} />;
+   }
+
    if (milestone.status === 'unlocked') {
       return <span className={clsx(PILL_BUTTON, 'bg-[#e3f5e8] text-[#2f8a4a]')}>Done</span>;
    }
 
    if (milestone.status === 'locked') {
       return (
-         <span className={clsx(PILL_BUTTON, 'relative overflow-hidden')}>
+         <span className={clsx(PILL_BUTTON, 'relative overflow-hidden text-white')}>
             <span
                className="absolute inset-0"
                style={{ backgroundImage: 'linear-gradient(85.47deg, #b9aeff 0.5%, #8b7afa 57.57%, #6b55f7 98.16%)' }}
@@ -46,22 +65,23 @@ function MilestoneAction({
    }
 
    return (
-      <button type="button" onClick={() => onAction(milestone)} className={PILL_BUTTON} style={{ backgroundImage: PRIMARY_GRADIENT }}>
+      <button type="button" onClick={() => onAction(milestone)} className={clsx(PILL_BUTTON, 'text-white')} style={{ backgroundImage: PRIMARY_GRADIENT }}>
          Get
       </button>
    );
 }
 
-export function MilestonesSection({ model, onVerify }: { model: DashboardV2Model; onVerify: () => void }) {
-   const navigate = useNavigate();
-   const handleAction = (milestone: DashboardV2Milestone) => {
-      if (!model.isVerified) {
-         onVerify();
-         return;
-      }
-      navigate(milestone.actionTo ?? '/request-board');
-   };
-
+export function MilestonesSection({
+   model,
+   allMilestonesHref,
+   onGet,
+   onClaim
+}: {
+   model: DashboardV2Model;
+   allMilestonesHref: string;
+   onGet: (milestone: DashboardV2Milestone) => void;
+   onClaim: () => void;
+}) {
    return (
       <TabbedCard title="Reputation Milestones" titleId="dv2-milestones-title" tabWidth="37%">
          <div className="relative flex flex-col px-1.5 pb-7 pt-4">
@@ -101,12 +121,12 @@ export function MilestonesSection({ model, onVerify }: { model: DashboardV2Model
                            </p>
                         </div>
                      </div>
-                     <MilestoneAction milestone={milestone} onAction={handleAction} />
+                     <MilestoneAction milestone={milestone} onAction={onGet} onClaim={onClaim} />
                   </div>
                </Fragment>
             ))}
             <Link
-               to="/milestones"
+               to={allMilestonesHref}
                className="mt-5 flex items-center justify-center gap-0.5 self-center text-[16px] font-semibold leading-[21px] tracking-[-0.32px] text-[#4492f1]"
             >
                View All Milestones
@@ -189,7 +209,7 @@ function DueRow({ due }: { due: DashboardV2Due }) {
             </span>
          </div>
          {due.isOverdue ? (
-            <Link to="/repay" className={PILL_BUTTON} style={{ backgroundImage: PRIMARY_GRADIENT }}>
+            <Link to="/repay" className={clsx(PILL_BUTTON, 'text-white')} style={{ backgroundImage: PRIMARY_GRADIENT }}>
                Pay Now
             </Link>
          ) : null}

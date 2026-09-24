@@ -1,31 +1,20 @@
-import type { DashboardV2Milestone, DashboardV2Model, DashboardV2PreviewState } from '@/views/dashboard-v2/types';
+import { toDashboardV2MilestoneList, toDashboardV2Milestones } from '@/views/dashboard-v2/dashboardV2Model';
+import type { DashboardV2Model, DashboardV2PreviewState } from '@/views/dashboard-v2/types';
+import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
 
 // SAMPLE DATA: values copied from the Figma frames so each design state can be reviewed as drawn.
 
-const SAMPLE_MILESTONES: DashboardV2Milestone[] = [
-   {
-      id: 'first-loan-request',
-      title: 'Post your first loan request',
-      reward: '+10 Pandesal',
-      status: 'next',
-      isVoucher: false,
-      actionTo: '/request-board'
-   },
-   {
-      id: 'first-funded-loan',
-      title: 'Get funded by a lender',
-      reward: '+15 Pandesal',
-      status: 'locked',
-      isVoucher: false
-   },
-   {
-      id: 'first-on-time-repayment',
-      title: 'Repay a loan on time',
-      reward: '₱50 GrabFood voucher',
-      status: 'locked',
-      isVoucher: true
-   }
-];
+// Milestones come from the real shared definitions, evaluated for a borrower with no loans yet.
+const SAMPLE_ALL_MILESTONES = toDashboardV2MilestoneList(
+   buildReputationMilestones({ creditLevels: [], borrowerLoans: [], isVerified: true })
+);
+const SAMPLE_MILESTONES = toDashboardV2Milestones(buildReputationMilestones({ creditLevels: [], borrowerLoans: [], isVerified: true }));
+
+// Not in the Figma: a borrower who repaid their first loan on time and can claim the GrabFood voucher.
+const REWARDED_ALL_MILESTONES = SAMPLE_ALL_MILESTONES.map((milestone, index) => ({
+   ...milestone,
+   status: index < 3 ? ('unlocked' as const) : index === 3 ? ('next' as const) : ('locked' as const)
+}));
 
 const SAMPLE_BASE: Omit<
    DashboardV2Model,
@@ -36,6 +25,9 @@ const SAMPLE_BASE: Omit<
    tier: 'rookie',
    showConnectWallet: true,
    milestones: SAMPLE_MILESTONES,
+   allMilestones: SAMPLE_ALL_MILESTONES,
+   pandesalGoal: 50,
+   referralCode: 'jimmy',
    insightsHref: '/dashboard-v2-preview'
 };
 
@@ -82,5 +74,19 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, lenderName: 'Milagros Reyes', isOverdue: false }
       ],
       hasOverdue: true
+   },
+   rewarded: {
+      ...SAMPLE_BASE,
+      isVerified: true,
+      pandesal: 45,
+      mood: 'repaid',
+      creditLevel: 2,
+      creditProgress: 0.25,
+      creditHint: { highlight: '$15.00', rest: ' left to LV.3' },
+      milestones: REWARDED_ALL_MILESTONES.slice(0, 3),
+      allMilestones: REWARDED_ALL_MILESTONES,
+      summary: { repaymentsTotal: 18, active: 0, pending: 0, defaulted: 0 },
+      dues: [],
+      hasOverdue: false
    }
 };

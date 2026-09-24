@@ -8,27 +8,25 @@ import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
-import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import Header from '@/components/Header/Header';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
-import WalletNetworkBlockNotice from '@/components/WalletNetworkBlockNotice';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
+import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
+import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
+import WalletNetworkBlockNotice from '@/components/WalletNetworkBlockNotice';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
-import { identifyClarity } from '@/lib/analytics/clarity';
-
 import AccountRestrictedPage from '@/app/account-restricted/page';
-import LendLoanPage from '@/app/lend/loan/[loanId]/page';
-import LenderSupportedPage from '@/app/lender/supported/page';
 import AdminPanel from '@/app/admin/page';
+import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
@@ -38,20 +36,20 @@ import Benefits from '@/app/benefits/page';
 import BlogDetailPage from '@/app/blogs/[slug]/page';
 import BlogsPage from '@/app/blogs/page';
 import CreditLevelingGuidePage from '@/app/credit-leveling-guide/page';
-import LearnHowCreditLevelsWorkPage from '@/app/learn/how-credit-levels-work/page';
-import LearnWhyWeUseUsdcPage from '@/app/learn/why-we-use-usdc/page';
-import LearnIndexPage from '@/app/learn/page';
-import PublicGuidePage from '@/app/learn/[slug]/page';
+import DataDeletionPage from '@/app/data-deletion/page';
 import ForgotPassword from '@/app/forgot-password/page';
 import Guide from '@/app/guide/page';
 import HelpPage from '@/app/help/page';
-import MoneyGuide from '@/views/academy/MoneyGuide';
-import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
-import VerifyGuide from '@/views/academy/VerifyGuide';
+import PublicGuidePage from '@/app/learn/[slug]/page';
+import LearnHowCreditLevelsWorkPage from '@/app/learn/how-credit-levels-work/page';
+import LearnIndexPage from '@/app/learn/page';
+import LearnWhyWeUseUsdcPage from '@/app/learn/why-we-use-usdc/page';
+import LendLoanPage from '@/app/lend/loan/[loanId]/page';
 import LenderDiversityPage from '@/app/lender-diversity/page';
 import LenderDashboard from '@/app/lender/dashboard/page';
 import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
+import LenderSupportedPage from '@/app/lender/supported/page';
 import Login from '@/app/login/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
@@ -63,10 +61,9 @@ import WalletConnect from '@/app/onboarding/wallet/page';
 import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
-import Profile from '@/app/profile/page';
-import DataDeletionPage from '@/app/data-deletion/page';
-import PrivacyPage from '@/app/privacy/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
+import PrivacyPage from '@/app/privacy/page';
+import Profile from '@/app/profile/page';
 import ResetPassword from '@/app/reset-password/page';
 import RoleSelection from '@/app/role-selection/page';
 import SignUp from '@/app/signup/page';
@@ -85,27 +82,31 @@ import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page
 import UserProfile from '@/app/user/[username]/page';
 import UserProgressHistoryPage from '@/app/user/[username]/progress-history/page';
 import Ut from '@/app/ut/page';
-import WorldIdVerification from '@/app/verify-world-id/page';
 import DiditVerification from '@/app/verify-didit/page';
+import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
-import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
+import { identifyClarity } from '@/lib/analytics/clarity';
 import { type RootState } from '@/store/store';
+import MoneyGuide from '@/views/academy/MoneyGuide';
+import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
+import VerifyGuide from '@/views/academy/VerifyGuide';
 import Account from '@/views/account/Account';
+import AccountSettings from '@/views/account/AccountSettings';
 import AccountWalletPreview from '@/views/account/AccountWalletPreview';
 import SettingsStylePreview from '@/views/account/SettingsStylePreview';
-import FundWalletPreview from '@/views/fund/FundWalletPreview';
-import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
-import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
-import AccountSettings from '@/views/account/AccountSettings';
-import Dashboard from '@/views/dashboard/Dashboard';
 import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
+import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
+import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
+import Dashboard from '@/views/dashboard/Dashboard';
+import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
 import RequestBoard from '@/views/dashboard/RequestBoard';
+import FundWalletPreview from '@/views/fund/FundWalletPreview';
 import Repay from '@/views/repay/Repay';
-import CashoutFaceCheck from '@/views/withdraw/CashoutFaceCheck';
-import Withdraw from '@/views/withdraw/Withdraw';
 import TransactionDetail from '@/views/transactions/TransactionDetail';
 import TransactionHistory from '@/views/transactions/TransactionHistory';
+import CashoutFaceCheck from '@/views/withdraw/CashoutFaceCheck';
+import Withdraw from '@/views/withdraw/Withdraw';
 
 function Layout({ children }: { children: React.ReactNode }) {
    return (
@@ -164,14 +165,12 @@ export default function App() {
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';
    const canRepayWhileDefaulted =
-      isDefaultedBorrower &&
-      (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
+      isDefaultedBorrower && (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const accountSettingsParams = new URLSearchParams(location.search);
    const isAccountSettingsDetail =
-      location.pathname === '/account/settings' &&
-      (accountSettingsParams.has('section') || accountSettingsParams.has('edit'));
+      location.pathname === '/account/settings' && (accountSettingsParams.has('section') || accountSettingsParams.has('edit'));
    const showPreviewRoutes = canShowPreviewRoutes();
    const showBottomNav =
       Boolean(user?.id) &&
@@ -236,10 +235,7 @@ export default function App() {
             <Route path="/mfa-challenge" element={<MfaChallengePage />} />
 
             {/* Onboarding */}
-            <Route
-               path="/onboarding/role"
-               element={<RoleSelection />}
-            />
+            <Route path="/onboarding/role" element={<RoleSelection />} />
             <Route
                path="/onboarding/welcome"
                element={
@@ -352,6 +348,9 @@ export default function App() {
                }
             />
             {showPreviewRoutes ? <Route path="/dashboard-v2-preview" element={<DashboardV2 />} /> : null}
+            {showPreviewRoutes ? <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} /> : null}
+            {showPreviewRoutes ? <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} /> : null}
+            {showPreviewRoutes ? <Route path="/dashboard-v2-preview/invite/:code" element={<DashboardV2InviteLanding />} /> : null}
             <Route path="/request-board" element={<RequestBoard />} />
             <Route
                path="/repay"
@@ -549,10 +548,7 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            <Route
-               path="/support/getting-started"
-               element={<SupportGettingStartedPage />}
-            />
+            <Route path="/support/getting-started" element={<SupportGettingStartedPage />} />
             <Route
                path="/support/guides"
                element={
