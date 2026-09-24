@@ -49,6 +49,7 @@ import { suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
+import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
@@ -56,6 +57,7 @@ import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -991,6 +993,23 @@ export default function LoanRequestModal({
    // The contact step (verified Messenger/WhatsApp) sits after bio, before the real submit — only
    // for borrowers without a verified line yet. contactsStepDone tracks "completed in this flow".
    const [showContactsStep, setShowContactsStep] = useState(false);
+   // Existing borrowers (at least one funded loan before) only add their Facebook — one card, no
+   // video call; the call is for brand-new borrowers. See requestContactSteps.
+   const [isExistingBorrower, setIsExistingBorrower] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         const { count } = await getSupabaseBrowserClient()
+            .from('loans')
+            .select('id', { count: 'exact', head: true })
+            .eq('borrower_user_id', user.id)
+            .not('funded_at', 'is', null);
+         if (!cancelled) setIsExistingBorrower((count ?? 0) > 0);
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, [user.id]);
    const [contactsStepDone, setContactsStepDone] = useState(false);
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
@@ -1103,13 +1122,14 @@ export default function LoanRequestModal({
       void dispatch(fetchUser());
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
-   const needsContactsStep = !user.hasVerifiedContact;
+   const contactSteps = requestContactSteps({ userId: user.id, isExistingBorrower, hasAppliedReferral: hasReferral });
+   const needsContactsStep = contactSteps.contacts && !user.hasVerifiedContact;
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
    // Open flow only (today's rule): no referral → book (not attend) the round-robin call before the
    // request posts. In the call/approval flows the call happened before applying (PART 1).
-   const needsVideoCallStep = loanFlow === 'open' && !hasReferral;
+   const needsVideoCallStep = loanFlow === 'open' && contactSteps.videoCall;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
@@ -2012,7 +2032,7 @@ export default function LoanRequestModal({
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
                   ) : isLoanAccessGated || showContactsStep ? (
                      // These screens carry their own hippo hero + title (Figma style) — no duplicate header.
-                     <h2 className="sr-only">{isLoanAccessPending ? 'Almost there' : showContactsStep ? 'How can we reach you' : "Let's connect"}</h2>
+                     <h2 className="sr-only">{isLoanAccessPending ? 'Almost there' : showContactsStep ? (isExistingBorrower ? 'Add your Facebook' : 'How can we reach you') : "Let's connect"}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
                         Schedule a video call
@@ -2163,7 +2183,25 @@ export default function LoanRequestModal({
                   onSubmitted={handleLoanAccessSubmitted}
                />
             ) : showContactsStep ? (
-               <ContactsStep userId={user.id} onBack={handleContactsStepBack} onContinue={handleContactsStepContinue} />
+               <ContactsStep
+                  userId={user.id}
+                  onBack={handleContactsStepBack}
+                  onContinue={handleContactsStepContinue}
+                  intro={
+                     isExistingBorrower ? (
+                        <ConnectHero
+                           image={CONNECT_HIPPOS.hello}
+                           subtitle={
+                              <>
+                                 Please add your Facebook so we can reach out to you. We also have a <b>$10 referral program</b> we&apos;d love to
+                                 tell you about!
+                              </>
+                           }
+                           title="So we can help you more 💜"
+                        />
+                     ) : undefined
+                  }
+               />
             ) : showVideoCallStep ? (
                <VideoCallStep
                   userId={user.id}
