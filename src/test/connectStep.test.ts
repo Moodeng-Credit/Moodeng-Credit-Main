@@ -263,7 +263,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       await act(async () => {
          await Promise.resolve();
       });
-      expect(container.textContent).toContain('with Emma Moodeng');
+      expect(container.textContent).toContain('Say hi to Emma on Facebook');
       const join = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Join the meeting');
       expect(join?.getAttribute('href')).toBe('https://us06web.zoom.us/j/123');
    });
