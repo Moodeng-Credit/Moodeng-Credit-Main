@@ -47,7 +47,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
    const fillPercent = availablePercent > 0 ? Math.max(availablePercent, CREDIT_BAR_MIN_PERCENT) : 0;
 
    return (
-      <section className="relative h-[430px] w-full" aria-label="Your Moodeng">
+      <section className="relative h-[408px] w-full" aria-label="Your Moodeng">
          <div className="absolute inset-x-0 top-0 h-[360px] overflow-hidden">
             <DesignImage src={DASHBOARD_V2_ASSETS.heroBackground} className="absolute left-0 top-[-54px] h-[414px] w-full object-cover" />
          </div>
@@ -183,8 +183,19 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                </button>
             </div>
             <p className="min-w-0 whitespace-nowrap pb-2 text-right text-[clamp(14px,4.5vw,20px)] font-medium leading-4 tracking-[0.2px]">
-               <span className="text-[#4f36ef]">{model.creditHint.highlight}</span>
-               <span className="text-[#c0b9c8]">{model.creditHint.rest}</span>
+               {/* Borrowing room, which is what a borrower actually needs here. Before a limit exists
+                   (unverified) it falls back to the "Verify to unlock LV.1" hint. */}
+               {model.creditLimit > 0 ? (
+                  <>
+                     <span className="text-[#4f36ef]">{formatUsd(creditAvailable)}</span>
+                     <span className="text-[#c0b9c8]"> of {formatUsd(model.creditLimit)} left</span>
+                  </>
+               ) : (
+                  <>
+                     <span className="text-[#4f36ef]">{model.creditHint.highlight}</span>
+                     <span className="text-[#c0b9c8]">{model.creditHint.rest}</span>
+                  </>
+               )}
             </p>
          </div>
          {/* Credit limit gauge: how much of the limit is free to borrow right now. */}
@@ -202,16 +213,6 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                style={{ width: `${fillPercent}%` }}
             />
          </div>
-         {/* Unverified borrowers have no limit yet; the Verify banner below already says how to get one. */}
-         {model.creditLimit > 0 ? (
-            <div className="absolute inset-x-6 top-[412px] flex items-center justify-between text-[14px] font-medium leading-[18px]">
-               <span className="text-[#594d65]">
-                  <span className="font-semibold text-[#4f36ef]">{formatUsd(creditAvailable)}</span> available
-                  {model.creditInUse > 0 ? <span className="text-[#c0b9c8]"> · {formatUsd(model.creditInUse)} in use</span> : null}
-               </span>
-               <span className="text-[#877897]">{formatUsd(model.creditLimit)} limit</span>
-            </div>
-         ) : null}
          {isCreditTipOpen ? (
             <div className="absolute left-[calc(50%-43px)] top-[384px] z-10 w-[167px]" role="tooltip">
                <span className="absolute left-[17px] top-0 h-0 w-0 border-x-[7px] border-b-[8px] border-x-transparent border-b-[#34268e]/80" />
