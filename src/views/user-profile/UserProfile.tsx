@@ -23,7 +23,7 @@ import {
    X
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import Loading from '@/components/Loading';
@@ -37,6 +37,7 @@ import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
+import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit, isRepaidOnTime } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
@@ -48,8 +49,13 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
-import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
+import { DASHBOARD_V2_ASSETS, getMoodengAsset } from '@/views/dashboard-v2/assets';
+import { ClaimVoucherButton } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import DesignImage from '@/views/dashboard-v2/components/DesignImage';
+import { getMoodengTier, getNextTierGoal, getVoucherState, MOODENG_TIERS, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
+import type { MoodengMood } from '@/views/dashboard-v2/types';
 import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
+import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
 
 import {
@@ -110,6 +116,8 @@ const UserProfile = () => {
    // GrabFood voucher rewards are per signed-in user (RLS: read your own), so the Milestones &
    // Rewards card only renders on a borrower's own insights (isOwnInsights, computed below).
    const { rewards: friendRewards, isLoading: friendRewardsLoading } = useFriendReferrals();
+   // The signed-in borrower's own pandesal (RLS: read your own), shown only on their own insights.
+   const { pointsTotal: ownPandesal } = useTrustPointTotal({ userId: user?.id ?? '', fallbackPoints: 0, enabled: Boolean(user?.id) });
    // A guest who follows the lender-tour bridge link from UserCard arrives with
    // ?demo=rich&lenderTourPreview=1&tourPreview=1 but has no real session — the DEV-only
    // `forceTourPreview` gate would hide the tour continuation for them in production.
@@ -332,7 +340,6 @@ const UserProfile = () => {
    const displayedCreditLimit = getEffectiveCreditLimit(resolvedUser.cs, isVerifiedBorrower);
    const creditMax = displayedCreditLimit;
    const creditLevel = creditMax > 0 ? getCreditLevelNumber(creditMax) : 0;
-   const creditProgress = creditMax > 0 ? 100 : 0;
 
    const diversityScore = lenderDiversity.score;
    const diversityStatus = getDiversityStatus(diversityScore);
@@ -345,6 +352,16 @@ const UserProfile = () => {
    // Rewards are RLS-scoped to the signed-in user, so this only makes sense when a borrower is
    // viewing their own profile. Everything below is gated on isOwnInsights in the render.
    const isOwnInsights = isRealUserAuthenticated && !isDemoMode && !isLenderProfile && user?.id === resolvedUser.id;
+   // Same look as the borrower dashboard: the Moodeng for this borrower's tier, and credit room.
+   const insightsPandesal = isOwnInsights && isVerifiedBorrower ? ownPandesal : 0;
+   const insightsTier = getMoodengTier(insightsPandesal);
+   const insightsTierLabel = MOODENG_TIERS.find((tier) => tier.id === insightsTier)?.label ?? 'Rookie';
+   const insightsNextGoal = getNextTierGoal(insightsPandesal);
+   const insightsMood: MoodengMood =
+      borrowedLoans.some((loan) => loan.repaymentStatus === 'Paid') && isVerifiedBorrower ? 'repaid' : 'waiting';
+   const creditInUse = Math.min(getBorrowerUsedCreditAmount(borrowedLoans), creditMax);
+   const creditAvailable = Math.max(creditMax - creditInUse, 0);
+   const creditAvailablePercent = creditMax > 0 ? (creditAvailable / creditMax) * 100 : 0;
    const ownMilestones = isOwnInsights
       ? buildReputationMilestones({
            creditLevels: buildCreditLevels({ user: resolvedUser, loans: borrowedLoans }),
@@ -354,7 +371,6 @@ const UserProfile = () => {
       : [];
    const milestonesHit = ownMilestones.filter((milestone) => milestone.status === 'unlocked').length;
    const milestonesTotal = ownMilestones.length;
-   const milestoneProgress = milestonesTotal > 0 ? Math.round((milestonesHit / milestonesTotal) * 100) : 0;
    // Current on-time streak: consecutive fully-repaid, on-time loans counting back from the newest.
    const onTimeStreak = (() => {
       const paid = borrowedLoans
@@ -433,6 +449,12 @@ const UserProfile = () => {
             .borrower-insights-dark {
                background: #0f1117;
                color: #eef2ff;
+            }
+            .borrower-insights-dark .dv2-heading {
+               color: #e9e4ff !important;
+            }
+            .borrower-insights-dark .dv2-card {
+               background-image: none !important;
             }
 
             .borrower-insights-dark .bg-white {
@@ -687,9 +709,29 @@ const UserProfile = () => {
             <div className="flex flex-col gap-5 px-5 py-3 sm:gap-6 sm:px-6">
                {/* User Profile */}
                <div
-                  className="borrower-identity-card rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)] transition-colors duration-200"
+                  className="borrower-identity-card dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)] transition-colors duration-200"
                   data-tour-target="borrower-identity"
                >
+                  {/* Borrower hero: the dashboard's meadow + this borrower's Moodeng. */}
+                  {isLenderProfile ? null : (
+                     <div className="relative -mx-4 -mt-4 mb-3 h-[132px] overflow-hidden rounded-t-[8px]">
+                        <DesignImage
+                           src={DASHBOARD_V2_ASSETS.heroBackground}
+                           className="absolute inset-0 h-full w-full object-cover object-[center_62%]"
+                        />
+                        <DesignImage
+                           src={getMoodengAsset(insightsTier, insightsMood)}
+                           alt={`${insightsTierLabel} Moodeng`}
+                           className="absolute -bottom-1.5 left-1/2 h-[120px] w-[120px] -translate-x-1/2 object-contain"
+                        />
+                        {isOwnInsights && isVerifiedBorrower ? (
+                           <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-[#fffef7]/85 px-2.5 py-1 text-[13px] font-black italic text-[#4c239f]">
+                              <DesignImage src={DASHBOARD_V2_ASSETS.pandesalSmall} className="h-4 w-4 object-contain" />
+                              {insightsTierLabel} · {insightsPandesal}
+                           </span>
+                        ) : null}
+                     </div>
+                  )}
                   <div className="flex items-center gap-3">
                      <img
                         src={PLACEHOLDER_AVATAR}
@@ -947,21 +989,26 @@ const UserProfile = () => {
                   </>
                ) : isLenderProfile ? null : (
                   <>
-                     {/* Credit Level */}
+                     {/* Credit Level — the borrower dashboard's LV + credit-room bar */}
                      <div
-                        className="flex flex-col gap-4 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
+                        className="dv2-card flex flex-col gap-3 rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]"
                         data-tour-target="borrower-credit-level"
                      >
-                        <div className="flex items-center justify-between">
-                           <div className="flex items-center gap-2">
-                              <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Credit Level</span>
+                        <div className="flex items-center justify-between gap-2">
+                           <div className="flex items-baseline gap-0.5">
+                              <span className="text-[clamp(26px,7.2vw,32px)] font-black italic leading-[1.1] tracking-[-0.6px] text-[#735dfa]">
+                                 LV{creditLevel}
+                              </span>
+                              <span className="bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[clamp(15px,4.4vw,18px)] font-semibold text-transparent">
+                                 Credit Level
+                              </span>
                               <button
                                  type="button"
                                  onClick={() => setIsCreditLevelSheetOpen(true)}
                                  aria-label="How Credit Level works"
-                                 className="flex h-7 w-7 items-center justify-center rounded-full active:scale-95"
+                                 className="ml-0.5 self-center active:scale-95"
                               >
-                                 <HelpCircle className="w-5 h-5 text-md-primary-900" strokeWidth={1.5} />
+                                 <DesignImage src={DASHBOARD_V2_ASSETS.info} className="h-3.5 w-3.5" />
                               </button>
                            </div>
                            <button
@@ -973,131 +1020,126 @@ const UserProfile = () => {
                                     }`
                                  )
                               }
-                              className="text-[12px] font-[590] leading-[18px] text-md-blue-600 underline underline-offset-2"
+                              className="shrink-0 text-[13px] font-semibold text-[#4f36ef]"
                            >
-                              View Progress History
+                              Progress history ›
                            </button>
                         </div>
-                        <div className="flex flex-col gap-3">
-                           <div className="flex items-center gap-2">
-                              {/* LVL Badge */}
-                              <div className="flex items-center">
-                                 <div className="w-[28px] h-[28px] rounded-full bg-md-neutral-500 flex items-center justify-center z-10">
-                                    <div className="w-4 h-4 rounded-full bg-md-neutral-1400" />
-                                 </div>
-                                 <div className="bg-md-neutral-500 rounded-md-sm flex items-center justify-end px-md-1 h-[22px] w-[58px] -ml-2">
-                                    <span className="font-knewave text-md-b2 text-md-neutral-1400 text-center">LVL {creditLevel}</span>
-                                 </div>
-                              </div>
-                              <div className="flex-1 flex items-center justify-end gap-1 text-md-b2">
-                                 <span className="font-semibold text-md-primary-800">${formatNumber(creditMax)}</span>
-                                 <span className="font-normal text-md-neutral-700">/ ${formatNumber(creditMax)}</span>
-                              </div>
-                           </div>
-                           {/* Progress Bar */}
-                           <div className="h-2.5 overflow-hidden rounded-md-pill bg-[#eee8f4]">
-                              <div
-                                 className="h-full bg-md-primary-900 rounded-md-pill transition-all duration-500"
-                                 style={{ width: creditProgress > 0 ? `${Math.max(creditProgress, 8)}%` : '0%' }}
-                              />
-                           </div>
+                        <div
+                           className="h-[17px] rounded-full border-[3px] border-white bg-[#eee]"
+                           role="meter"
+                           aria-label="Credit available to borrow"
+                           aria-valuemin={0}
+                           aria-valuemax={creditMax}
+                           aria-valuenow={creditAvailable}
+                        >
+                           <div
+                              className="h-[11px] max-w-full rounded-full bg-gradient-to-r from-[#ebddff] to-[#4f36f0] transition-[width] duration-500"
+                              style={{ width: creditAvailablePercent > 0 ? `${Math.max(creditAvailablePercent, 3)}%` : '0%' }}
+                           />
                         </div>
+                        <p className="text-right text-[15px] font-medium">
+                           {creditMax > 0 ? (
+                              <>
+                                 <span className="text-[#4f36ef]">${formatNumber(creditAvailable)}</span>
+                                 <span className="text-[#c0b9c8]"> of ${formatNumber(creditMax)} left</span>
+                              </>
+                           ) : (
+                              <span className="text-[#c0b9c8]">Verify to unlock LV.1</span>
+                           )}
+                        </p>
                      </div>
 
-                     {/* Milestones & Rewards — own insights only (rewards are RLS-scoped to the viewer) */}
+                     {/* Milestones & Rewards — own insights only (rewards are RLS-scoped to the viewer). Dashboard styling. */}
                      {isOwnInsights ? (
-                        <div className="flex flex-col gap-4 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+                        <div className="dv2-card flex flex-col gap-4 rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">
-                                 Milestones &amp; Rewards
+                              <span className="dv2-heading text-[clamp(18px,5.6vw,22px)] font-black italic leading-6 text-[#594d65]">
+                                 Reputation Milestones
                               </span>
-                              <span className="text-[11px] font-[590] leading-none text-md-neutral-1200">Only you can see this</span>
+                              <span className="text-[11px] font-semibold leading-none text-[#c0b9c8]">Only you can see this</span>
                            </div>
 
-                           {/* Milestones hit */}
-                           <div className="flex flex-col gap-2">
-                              <div className="flex items-center justify-between gap-2">
-                                 <span className="text-[14px] font-medium text-md-neutral-1400">
-                                    {milestonesHit} of {milestonesTotal} milestones hit
-                                 </span>
-                                 <span className="text-[14px] font-semibold text-md-primary-900">{milestoneProgress}%</span>
+                           {/* Pandesal toward the next Moodeng tier */}
+                           <div className="flex flex-col gap-[5px]">
+                              <div className="flex items-center justify-between">
+                                 <p className="flex items-center gap-1 text-[15px] font-medium text-[#7b6b8c]">
+                                    <DesignImage src={DASHBOARD_V2_ASSETS.pandesalSmall} className="h-5 w-5 object-contain" />
+                                    {insightsTierLabel} Moodeng
+                                 </p>
+                                 <p className="text-[15px] font-semibold text-[#877897]">
+                                    <span className="text-[#7e6afa]">{insightsPandesal}</span>
+                                    {insightsNextGoal ? `/${insightsNextGoal}` : ''} pandesal
+                                 </p>
                               </div>
-                              <div className="h-2.5 overflow-hidden rounded-md-pill bg-[#eee8f4]">
+                              <div className="h-[7px] w-full rounded-full bg-[#e0dbff]">
                                  <div
-                                    className="h-full rounded-md-pill bg-md-primary-900 transition-all duration-500"
-                                    style={{ width: `${milestonesHit > 0 ? Math.max(milestoneProgress, 8) : 0}%` }}
+                                    className="h-full rounded-full bg-[#7e6afa] transition-[width] duration-500"
+                                    style={{
+                                       width: `${Math.max(insightsNextGoal ? Math.min(insightsPandesal / insightsNextGoal, 1) * 100 : 100, 4)}%`
+                                    }}
                                  />
                               </div>
                            </div>
 
-                           {/* On-time streak */}
                            <div className="flex items-center justify-between gap-2 border-t border-[#f1edf8] pt-3">
-                              <span className="text-[14px] font-medium text-md-neutral-1400">
+                              <span className="text-[15px] font-medium text-[#45556c]">
+                                 <span className="font-bold text-[#4f36ef]">{milestonesHit}</span> of {milestonesTotal} milestones hit
+                              </span>
+                              <Link to="/dashboard/milestones" className="shrink-0 text-[13px] font-semibold text-[#4f36ef]">
+                                 View all ›
+                              </Link>
+                           </div>
+
+                           <div className="flex items-center gap-2.5 rounded-[12px] bg-[#f6f3ff] px-3 py-2.5">
+                              <DesignImage src={DASHBOARD_V2_ASSETS.pandesal} className="h-8 w-8 shrink-0 object-contain" />
+                              <span className="min-w-0 flex-1 text-[15px] font-medium leading-5 text-[#0f172b]">
                                  {onTimeStreak > 0
                                     ? `${onTimeStreak} ${onTimeStreak === 1 ? 'loan' : 'loans'} repaid on time in a row`
                                     : 'Repay a loan on time to start a streak'}
                               </span>
                               {onTimeStreak > 0 ? (
-                                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#eefbf3] px-2.5 py-1 text-[12px] font-semibold text-[#166534]">
-                                    🔥 {onTimeStreak} in a row
-                                 </span>
+                                 <span className="shrink-0 text-[15px] font-black italic text-[#7e6afa]">×{onTimeStreak}</span>
                               ) : null}
                            </div>
 
-                           {/* GrabFood voucher */}
-                           <div className="border-t border-[#f1edf8] pt-3">
-                              {ownVoucherState === 'claimable' ? (
-                                 <div className="flex items-center gap-3 rounded-[14px] bg-[#fff8e1] p-3">
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#ffce1b] text-[13px] font-extrabold text-[#704518]">
-                                       ₱50
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                       <p className="text-[14px] font-bold text-[#8a5a12]">GrabFood voucher ready</p>
-                                       <p className="text-[12px] text-[#a07b2a]">Earned from your first on-time repayment</p>
-                                    </div>
-                                    <button
-                                       type="button"
-                                       onClick={() => navigate('/dashboard')}
-                                       className="h-9 shrink-0 rounded-full bg-[#ffce1b] px-4 text-[13px] font-extrabold text-[#704518] active:scale-95"
-                                    >
-                                       Claim
-                                    </button>
+                           {/* GrabFood voucher, in the dashboard's yellow voucher style */}
+                           {ownVoucherState === 'loading' ? (
+                              <div className="h-14 animate-pulse rounded-[12px] bg-[#fff8dc]" />
+                           ) : (
+                              <div
+                                 className="flex items-center gap-3 rounded-[12px] px-3 py-2.5"
+                                 style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
+                              >
+                                 <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-11 w-11 shrink-0 object-contain" />
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-[16px] font-black italic leading-5 text-[#3c8248]">₱50 GrabFood voucher</p>
+                                    <p className="text-[13px] font-medium leading-[18px] text-[#6f7d1d]">
+                                       {ownVoucherState === 'claimable'
+                                          ? 'Earned from your first on-time repayment'
+                                          : ownVoucherState === 'pending'
+                                            ? 'Claimed: we’re sending your code'
+                                            : ownVoucherState === 'sent'
+                                              ? 'Sent to your mobile'
+                                              : 'Repay your first loan on time to unlock it'}
+                                    </p>
                                  </div>
-                              ) : ownVoucherState === 'pending' ? (
-                                 <div className="flex items-center justify-between gap-2">
-                                    <span className="text-[14px] font-medium text-md-neutral-1400">₱50 GrabFood voucher</span>
-                                    <span className="shrink-0 rounded-full bg-[#fff4cc] px-2.5 py-1 text-[12px] font-semibold text-[#a06a00]">
-                                       Pending
-                                    </span>
-                                 </div>
-                              ) : ownVoucherState === 'sent' ? (
-                                 <div className="flex items-center justify-between gap-2">
-                                    <span className="text-[14px] font-medium text-md-neutral-1400">₱50 GrabFood voucher</span>
-                                    <span className="shrink-0 rounded-full bg-[#eefbf3] px-2.5 py-1 text-[12px] font-semibold text-[#166534]">
-                                       Sent
-                                    </span>
-                                 </div>
-                              ) : ownVoucherState === 'loading' ? (
-                                 <div className="h-4 w-40 animate-pulse rounded bg-[#eee8f4]" />
-                              ) : (
-                                 <div className="flex items-center gap-3 rounded-[14px] bg-[#faf8ff] p-3">
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-[#efe9fb] text-[13px] font-extrabold text-md-primary-1200">
-                                       ₱50
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                       <p className="text-[14px] font-semibold text-md-heading">₱50 GrabFood voucher</p>
-                                       <p className="text-[12px] text-md-neutral-1200">Repay your first loan on time to unlock it</p>
-                                    </div>
-                                 </div>
-                              )}
-                           </div>
+                                 {ownVoucherState === 'claimable' ? (
+                                    <ClaimVoucherButton onClaim={() => navigate('/dashboard')} />
+                                 ) : ownVoucherState === 'none' ? (
+                                    <DesignImage src={DASHBOARD_V2_ASSETS.lock} className="h-5 w-5 shrink-0 object-contain" />
+                                 ) : null}
+                              </div>
+                           )}
                         </div>
                      ) : null}
 
                      {/* Loan Summary */}
                      <div id="loan-summary" className="scroll-mt-4 flex flex-col gap-4" data-tour-target="borrower-loan-summary">
                         <div className="flex items-center justify-between gap-3">
-                           <span className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Loan Summary</span>
+                           <span className="dv2-heading text-[clamp(18px,5.6vw,22px)] font-black italic leading-6 text-[#594d65]">
+                              Loan Summary
+                           </span>
                            {isGoodStanding ? (
                               <span className="inline-flex items-center justify-center rounded-full border border-[#bfe8cf] bg-[#eefbf3] px-2.5 py-1.5">
                                  <span className="text-[11px] font-[590] leading-none text-[#166534]">Good standing</span>
@@ -1183,7 +1225,7 @@ const UserProfile = () => {
                            </SummaryMetricCard>
 
                            <div
-                              className="diversity-score-card relative col-span-2 overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]"
+                              className="diversity-score-card relative col-span-2 overflow-hidden dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]"
                               data-tour-target="borrower-diversity-score"
                            >
                               <div className="relative z-10 flex items-start justify-between gap-3">
@@ -1270,7 +1312,9 @@ const UserProfile = () => {
                            <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#ede2ff]">
                               <BarChart3 className="h-[18px] w-[18px] text-md-primary-1200" strokeWidth={2.2} />
                            </span>
-                           <p className="text-[18px] font-[590] leading-[22px] tracking-[-0.36px] text-md-heading">Borrower patterns</p>
+                           <p className="dv2-heading text-[clamp(18px,5.6vw,22px)] font-black italic leading-6 text-[#594d65]">
+                              Borrower patterns
+                           </p>
                         </div>
                         {hasLoanHistory ? (
                            <div className="divide-y divide-[#eee7f5] overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
@@ -1319,7 +1363,9 @@ const UserProfile = () => {
                      <div className="flex flex-col gap-2" data-tour-target="borrower-recent-loans">
                         <div className="flex flex-col gap-2">
                            <div className="flex items-center justify-between">
-                              <span className="text-md-h5 font-semibold text-md-heading">Recent Loans</span>
+                              <span className="dv2-heading text-[clamp(18px,5.6vw,22px)] font-black italic leading-6 text-[#594d65]">
+                                 Recent Loans
+                              </span>
                            </div>
                            <p className="text-md-b3 font-normal text-md-neutral-1500">
                               View who has funded this borrower and the status of each loan.
@@ -1439,7 +1485,7 @@ const SummaryMetricCard = ({
    value: string;
    children: ReactNode;
 }) => (
-   <div className="relative min-h-[166px] overflow-hidden rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+   <div className="relative min-h-[166px] overflow-hidden dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
       <div className="summary-metric-icon mb-4 flex h-9 w-9 items-center justify-center rounded-[12px] bg-md-primary-1200">{icon}</div>
       <p className="mb-1.5 text-[12px] font-[590] leading-[18px] text-md-neutral-1200">{title}</p>
       <p className="mb-3 text-[28px] font-[590] leading-none tracking-[-0.56px] text-md-heading">{value}</p>
@@ -1470,7 +1516,7 @@ const InsightRow = ({
 );
 
 const NewBorrowerInsightsCard = () => (
-   <div className="flex items-start gap-3 rounded-[20px] border border-[#e7d8ff] bg-white p-4 shadow-[0_6px_20px_rgba(48,24,92,0.05)]">
+   <div className="flex items-start gap-3 dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ede2ff]">
          <FileText className="h-5 w-5 text-md-primary-1200" strokeWidth={2.2} />
       </span>
