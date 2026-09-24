@@ -41,6 +41,7 @@ export default function ConnectStep({
    referralCode,
    wasRejected = false,
    mode = 'approval',
+   withEmma = false,
    needsAbout = false,
    renderAbout,
    onBack,
@@ -51,6 +52,8 @@ export default function ConnectStep({
    referralCode?: string;
    wasRejected?: boolean;
    mode?: 'approval' | 'call';
+   // Referred borrowers: the call is Emma's setup call (local exchange — deposit, cash out, repay).
+   withEmma?: boolean;
    // Bio not saved yet → show the "about you" page (rendered by the modal, which owns the bio state).
    needsAbout?: boolean;
    renderAbout?: (nav: { onBack: () => void; onDone: () => void }) => ReactNode;
@@ -110,8 +113,10 @@ export default function ConnectStep({
                   <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
                      {wasRejected
                         ? "Want us to take another look? Reach out again and tell us what's changed."
-                        : mode === 'call'
-                          ? 'Before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
+                        : withEmma
+                          ? 'Before your first loan, you’ll have a quick 15-minute call with Emma to set you up with a local exchange — how to deposit, cash out and pay back. First, confirm your Messenger so we can remind you about it.'
+                          : mode === 'call'
+                            ? 'Before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
                           : 'Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
                   </p>
                </div>
@@ -130,7 +135,12 @@ export default function ConnectStep({
             <VideoCallStep
                userId={userId}
                requireUpcoming
-               intro="Pick a time for a quick 15-minute video hello. Once you've joined the call, you can apply for your loan straight away."
+               host={withEmma ? 'emma' : undefined}
+               intro={
+                  withEmma
+                     ? 'Pick a time for your 15-minute setup call with Emma. Once you’ve joined it, you can apply for your loan straight away.'
+                     : "Pick a time for a quick 15-minute video hello. Once you've joined the call, you can apply for your loan straight away."
+               }
                continueLabel={isSending ? 'Sending...' : 'Send to the team'}
                onBack={() => setPage('intro')}
                onContinue={() => void handleSend()}
@@ -198,13 +208,23 @@ export default function ConnectStep({
 
 // Shown instead of the application while an admin decides (or, in call mode, until the call has
 // happened). Nothing to do but wait — so say so, say how they'll hear back, and let them close.
-export function LoanAccessPendingCard({ onClose, mode = 'approval' }: { onClose: () => void; mode?: 'approval' | 'call' }) {
+export function LoanAccessPendingCard({
+   onClose,
+   mode = 'approval',
+   withEmma = false
+}: {
+   onClose: () => void;
+   mode?: 'approval' | 'call';
+   withEmma?: boolean;
+}) {
    return (
       <div className="flex min-h-0 flex-col items-center gap-4 overflow-y-auto overscroll-contain px-5 py-8 text-center text-md-b2 text-md-heading">
          <span className="grid size-14 place-items-center rounded-full bg-md-primary-100">
             <Clock3 aria-hidden="true" className="size-7 text-md-primary-1200" strokeWidth={1.8} />
          </span>
-         <h3 className="text-[20px] font-[590] leading-6">{mode === 'call' ? 'See you on the call' : 'We’re reviewing your request'}</h3>
+         <h3 className="text-[20px] font-[590] leading-6">
+            {mode === 'call' ? (withEmma ? 'See you on the call with Emma' : 'See you on the call') : 'We’re reviewing your request'}
+         </h3>
          <p className="max-w-[320px] text-[13px] font-normal leading-[18px] text-md-neutral-1200">
             {mode === 'call'
                ? 'Your video call is booked — the link is in your email and we’ll remind you on Messenger. Right after the call, the team unlocks your application and you can apply straight away.'

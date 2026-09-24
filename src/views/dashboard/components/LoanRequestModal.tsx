@@ -89,8 +89,6 @@ interface LoanRequestModalProps {
    startOnReferralStep?: boolean;
    /** Which borrower flow is live (useLoanFlow in RequestBoard). Defaults to 'open' — no gate. */
    loanFlow?: LoanFlow;
-   /** No loan requests yet — referred borrowers book Emma's exchange-setup call on their first. */
-   isFirstLoan?: boolean;
 }
 
 export type AppliedReferralCode = {
@@ -964,8 +962,7 @@ export default function LoanRequestModal({
    requireBorrowerContextStep = true,
    startOnBorrowerContextStep = false,
    startOnReferralStep = true,
-   loanFlow = 'open',
-   isFirstLoan = false
+   loanFlow = 'open'
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -1058,7 +1055,7 @@ export default function LoanRequestModal({
    // Unapproved borrowers (call/approval flows) go from the referral card to "Let's connect", not to
    // the application.
    const referralContinueText =
-      loanFlow !== 'open' && !appliedReferral && (user.loanAccessStatus === 'none' || user.loanAccessStatus === 'rejected')
+      loanFlow !== 'open' && (user.loanAccessStatus === 'none' || user.loanAccessStatus === 'rejected')
          ? 'Continue'
          : 'Continue to application';
    const referralPrimaryActionText =
@@ -1078,15 +1075,18 @@ export default function LoanRequestModal({
    // with saved income context submit straight from the terms step.
    const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
 
-   // Connect → Approve → Apply gate (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — only in the call
-   // and approval flows, and only for borrowers WITHOUT a referral (someone vouched for a referred
-   // borrower, so they go straight to the application; the referral card comes first, so entering a
-   // code there opens the application instead of "Let's connect"). A verified, unreferred borrower who
-   // hasn't been approved yet goes through PART 1 (ConnectStep) instead; while an admin decides (or
-   // their call is still ahead) they see a "reviewing" card. undefined status = the column isn't
-   // deployed yet → treated as approved, so this can never lock anyone out ahead of the migration.
+   // Connect → Approve → Apply gate (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — in the call and
+   // approval flows. A verified borrower who hasn't been approved yet goes through PART 1
+   // (ConnectStep) instead of the application; while an admin decides (or their call is still
+   // ahead) they see a "reviewing" card. Everyone new attends a call before a request can exist:
+   //   * referred → a setup call with Emma (local exchange: how to deposit, cash out and repay —
+   //     lesson from borrowers who couldn't pay back on time), whichever flow is on;
+   //   * no referral → the round-robin call ('call' flow) or admin approval ('approval' flow).
+   // undefined status = the column isn't deployed yet → treated as approved, so this can never lock
+   // anyone out ahead of the migration.
    const hasReferral = Boolean(user.hasReferral || appliedReferral);
-   const isGateOn = loanFlow !== 'open' && !hasReferral;
+   const isGateOn = loanFlow !== 'open';
+   const connectMode: 'call' | 'approval' = hasReferral || loanFlow === 'call' ? 'call' : 'approval';
    const loanAccessStatus = user.loanAccessStatus ?? 'approved';
    const isLoanAccessPending = isGateOn && isVerified && loanAccessStatus === 'pending';
    const needsLoanAccessConnect = isGateOn && isVerified && (loanAccessStatus === 'none' || loanAccessStatus === 'rejected');
@@ -1095,14 +1095,9 @@ export default function LoanRequestModal({
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
-   // The video call before the request posts (booked, not attended):
-   //   * open flow, no referral → the round-robin "meet the team" call (today's rule);
-   //   * referred, first loan (any flow) → Emma's call to get them set up with a local exchange, so
-   //     they can actually deposit and repay (lesson learned: borrowers who couldn't pay back on time
-   //     for lack of a way to deposit, and kept needing due-date extensions).
-   // Unreferred borrowers in the call/approval flows had their call before applying (PART 1).
-   const needsExchangeSetupCall = hasReferral && isFirstLoan;
-   const needsVideoCallStep = (loanFlow === 'open' && !hasReferral) || needsExchangeSetupCall;
+   // Open flow only (today's rule): no referral → book (not attend) the round-robin call before the
+   // request posts. In the call/approval flows the call happened before applying (PART 1).
+   const needsVideoCallStep = loanFlow === 'open' && !hasReferral;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
@@ -1997,7 +1992,7 @@ export default function LoanRequestModal({
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">
-                        {needsExchangeSetupCall ? 'Book your setup call' : 'Schedule a video call'}
+                        Schedule a video call
                      </h2>
                   ) : showBorrowerContextStep ? (
                      <div className="min-w-0">
@@ -2121,14 +2116,15 @@ export default function LoanRequestModal({
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
             ) : isLoanAccessPending ? (
-               <LoanAccessPendingCard mode={loanFlow === 'call' ? 'call' : 'approval'} onClose={onClose} />
+               <LoanAccessPendingCard mode={connectMode} withEmma={hasReferral} onClose={onClose} />
             ) : needsLoanAccessConnect ? (
                <ConnectStep
                   userId={user.id}
                   displayName={currentBorrowerDisplayName}
                   referralCode={appliedReferral?.code}
                   wasRejected={loanAccessStatus === 'rejected'}
-                  mode={loanFlow === 'call' ? 'call' : 'approval'}
+                  mode={connectMode}
+                  withEmma={hasReferral}
                   needsAbout={!user.incomeType}
                   renderAbout={({ onBack: aboutBack, onDone }) => (
                      <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
@@ -2149,12 +2145,6 @@ export default function LoanRequestModal({
                   userId={user.id}
                   onBack={handleVideoCallStepBack}
                   onContinue={handleVideoCallStepContinue}
-                  {...(needsExchangeSetupCall
-                     ? {
-                          host: 'emma' as const,
-                          intro: 'A quick 15-minute call with Emma to set you up with a local exchange — so depositing and paying back is easy when the time comes.'
-                       }
-                     : {})}
                />
             ) : (
                <form

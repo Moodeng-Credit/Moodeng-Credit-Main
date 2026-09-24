@@ -214,7 +214,7 @@ describe('LoanRequestModal borrowing gate', () => {
    });
 
    describe('borrower flow split (call/approval gate)', () => {
-      const render = (user: User, loanFlow: 'open' | 'call' | 'approval', isFirstLoan = false) =>
+      const render = (user: User, loanFlow: 'open' | 'call' | 'approval') =>
          renderToStaticMarkup(
             createElement(LoanRequestModal, {
                ...sharedProps,
@@ -222,7 +222,6 @@ describe('LoanRequestModal borrowing gate', () => {
                availableCreditLimit: 15,
                startOnReferralStep: false,
                loanFlow,
-               isFirstLoan,
                user
             })
          );
@@ -233,10 +232,13 @@ describe('LoanRequestModal borrowing gate', () => {
          expect(markup).not.toContain('Set your loan terms');
       });
 
-      it('lets a new borrower WITH a referral go straight to the loan form in the call flow', () => {
-         const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'call');
-         expect(markup).toContain('Set your loan terms');
-         expect(markup).not.toContain('Let&#x27;s connect');
+      it('also gates a new REFERRED borrower — their call is Emma\u2019s setup call — even in the approval flow', () => {
+         for (const flow of ['call', 'approval'] as const) {
+            const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, flow);
+            expect(markup).toContain('Let&#x27;s connect');
+            expect(markup).toContain('call with Emma');
+            expect(markup).not.toContain('Set your loan terms');
+         }
       });
 
       it('shows the "see you on the call" card while an unreferred borrower waits', () => {
@@ -249,11 +251,10 @@ describe('LoanRequestModal borrowing gate', () => {
          expect(markup).toContain('Set your loan terms');
       });
 
-      it('adds the required Emma setup call to a referred borrower\u2019s first loan (terms, 2 bio pages, contact, call)', () => {
-         const first = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'call', true);
-         expect(first).toContain('Step 1 of 5');
-         const later = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'call', false);
-         expect(later).toContain('Step 1 of 4');
+      it('keeps today\u2019s open flow for referred borrowers: straight to the form, no call step', () => {
+         const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'open');
+         expect(markup).toContain('Set your loan terms');
+         expect(markup).toContain('Step 1 of 4');
       });
 
       it('lets an approved borrower apply without a referral', () => {

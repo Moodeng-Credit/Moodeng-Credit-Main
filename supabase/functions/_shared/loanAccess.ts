@@ -134,16 +134,27 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       .filter(Boolean)
       .join(' · ');
 
+   // Referred borrowers' calls are Emma's setup calls (local exchange: deposit, cash out, repay).
+   const { data: ref } = await svc.from('users').select('redeemed_referral_code_id').eq('id', borrower.id).maybeSingle();
+   const { data: refCode } = ref?.redeemed_referral_code_id
+      ? await svc.from('referral_codes').select('code').eq('id', ref.redeemed_referral_code_id).maybeSingle()
+      : { data: null };
+   const referral = refCode?.code ?? request.referral_code ?? null;
+
    const isCall = request.kind === 'call';
    const lines = [
-      isCall ? '📞 New borrower booked their intro call' : '🤝 New borrower wants to connect',
+      isCall
+         ? referral
+            ? '📞 Referred borrower booked their setup call with Emma'
+            : '📞 New borrower booked their intro call'
+         : '🤝 New borrower wants to connect',
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
       `Line: ${line}`,
       work ? `Work: ${work}` : null,
       money ? `Money: ${money}` : null,
       isCall && borrower.video_call_starts_at ? `Call: ${formatCallTime(borrower.video_call_starts_at, 'Asia/Bangkok')}` : null,
-      request.referral_code ? `Referral: ${request.referral_code}` : null,
+      referral ? `Referral: ${referral}` : null,
       `Why: ${request.reason?.trim() || '—'}`,
       '',
       isCall

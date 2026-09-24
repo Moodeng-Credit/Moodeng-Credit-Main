@@ -230,6 +230,27 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(container.textContent).toContain('What do you need a loan for?');
    });
 
+   it('books a referred borrower\u2019s call with Emma only', async () => {
+      await act(async () => {
+         root.render(
+            createElement(ConnectStep, { userId: 'user-1', displayName: 'Maria', mode: 'call', withEmma: true, onBack: vi.fn(), onSubmitted })
+         );
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain('call with Emma');
+
+      await click(buttonByText(container, 'Continue'));
+      await typeInto(container.querySelector('textarea') as HTMLTextAreaElement, 'Rent is due before payday');
+      await click(buttonByText(container, 'Next: book your call'));
+      await act(async () => {
+         await Promise.resolve();
+         await Promise.resolve();
+      });
+      expect(supa.invoke).toHaveBeenCalledWith('calcom-round-robin', { body: expect.objectContaining({ action: 'slots', host: 'emma' }) });
+   });
+
    it('shows the "see you on the call" pending card in call mode', async () => {
       const onClose = vi.fn();
       await act(async () => {

@@ -13,7 +13,9 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //                                   + Discord. The live flow (telegram_bot_settings.loan_flow) sets
 //                                   the kind: 'approval' → Approve/Reject buttons; 'call' → needs a
 //                                   booked video call, decided by Showed up / No-show after it.
-//                                   In 'open' there's no gate, and referred borrowers skip it, so both are refused.
+//                                   Referred borrowers are always 'call' requests — a setup call
+//                                   with Emma (local exchange) — whichever gated flow is on.
+//                                   In 'open' there's no gate, so submit is refused.
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
@@ -71,11 +73,11 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
    const { data: flowData } = await svc.rpc('get_loan_flow');
    const flow = typeof flowData === 'string' ? flowData : 'open';
    if (flow === 'open') return json({ ok: false, error: 'gate_off' }, 409);
-   // Referred borrowers skip the gate entirely (they apply straight away), so nothing to request.
-   if (borrower.redeemed_referral_code_id) return json({ ok: false, error: 'has_referral' }, 409);
+   // Referred → Emma's setup call, even in the approval flow.
+   const isCallRequest = flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
 
-   // Call flow: the reach-out IS the booked call, so there must be one coming up.
-   if (flow === 'call' && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
+   // Call request: the reach-out IS the booked call, so there must be one coming up.
+   if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
       return json({ ok: false, error: 'call_not_booked' }, 400);
    }
 
@@ -94,9 +96,9 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
          reason,
          referral_code: clip(body.referralCode, MAX_REFERRAL).toUpperCase() || null,
          channel,
-         kind: flow === 'call' ? 'call' : 'approval',
+         kind: isCallRequest ? 'call' : 'approval',
          // A call request stays open until a week after the call, not a week after booking.
-         ...(flow === 'call' && borrower.video_call_starts_at
+         ...(isCallRequest && borrower.video_call_starts_at
             ? { expires_at: new Date(Date.parse(borrower.video_call_starts_at) + 7 * 86400000).toISOString() }
             : {})
       })

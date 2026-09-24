@@ -1186,8 +1186,7 @@ function RequestBoard$() {
    const loanFlow = useLoanFlow();
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
-   // Referred borrowers skip the gate, so they never sit in "reviewing".
-   const isLoanAccessPending = isBorrower && loanFlow !== 'open' && !effectiveUser?.hasReferral && loanAccessStatus === 'pending';
+   const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
 
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
    // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
@@ -1991,10 +1990,10 @@ function RequestBoard$() {
                               ) : isLoanAccessPending ? (
                                  <>
                                     <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">
-                                       {loanFlow === 'call' ? 'See you on the call' : 'We’re reviewing you'}
+                                       {loanFlow === 'call' || effectiveUser?.hasReferral ? 'See you on the call' : 'We’re reviewing you'}
                                     </p>
                                     <p className="text-md-b2 font-medium text-md-neutral-700">
-                                       {loanFlow === 'call'
+                                       {loanFlow === 'call' || effectiveUser?.hasReferral
                                           ? 'You can apply right after your video call.'
                                           : 'Thanks for reaching out — we’ll message you on Messenger soon.'}
                                     </p>
@@ -2303,7 +2302,6 @@ function RequestBoard$() {
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
                   loanFlow={loanFlow}
-                  isFirstLoan={borrowerCreditLoans.length === 0}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   showBioStep={showBioStep}
                   onBioSave={handleBioSave}
