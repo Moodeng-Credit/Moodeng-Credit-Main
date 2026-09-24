@@ -1182,7 +1182,7 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                      <p className="text-md-b1 text-md-neutral-1200">
                         {isBorrower
                            ? showInstantWallet
-                              ? 'Choose a new Base Account or create an Instant Wallet. Your current wallet stays saved until the new one is confirmed.'
+                              ? 'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.'
                               : 'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.'
                            : 'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.'}
                      </p>
@@ -2067,7 +2067,7 @@ export default function AccountSettings() {
                                     {instantWallet.isCreating ? 'Creating your wallet…' : 'Create Instant Wallet'}
                                  </button>
                                  <p className="text-md-b2 font-medium text-md-neutral-1200">
-                                    Includes a ten-second face check, so instant wallets stay one per person.
+                                    Includes a ten-second face check, so Instant Wallets stay one per person.
                                  </p>
                                  {instantWallet.error ? (
                                     <p className="text-md-b2 font-medium text-md-red-500">{instantWallet.error}</p>
@@ -2182,10 +2182,10 @@ export default function AccountSettings() {
                               <div className="flex items-start gap-md-2">
                                  <img src="/icons/base-account.svg" alt="" className="size-9 shrink-0 rounded-md-md" />
                                  <div className="flex min-w-0 flex-1 flex-col gap-md-0">
-                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your Base Account</p>
+                                    <p className="text-md-b1 font-semibold text-md-heading">Confirm your wallet</p>
                                     <p className="text-md-b2 font-medium text-md-heading">
                                        {borrowerHasNonBaseWallet
-                                          ? `Your account is using ${walletLabel}. Connect a Base Account so loans and repayments use the right wallet.`
+                                          ? `Your account is using ${walletLabel}. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.`
                                           : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
                                     </p>
                                  </div>
@@ -2195,7 +2195,7 @@ export default function AccountSettings() {
                                  onClick={() => setShowChangeWalletModal(true)}
                                  className="inline-flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 active:scale-[0.99]"
                               >
-                                 Confirm Base Account
+                                 Confirm wallet
                               </button>
                            </div>
                         ) : null}

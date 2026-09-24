@@ -73,13 +73,12 @@ serve(async (req) => {
          return jsonResponse({ ok: false, error: 'no_chat_id' });
       }
 
-      const balanceLine =
-         balance != null ? `Balance: ${balance}${threshold != null ? ` / ${threshold}` : ''} ${currency}\n` : '';
+      const balanceLine = balance != null ? `Balance: ${balance}${threshold != null ? ` / ${threshold}` : ''} ${currency}\n` : '';
       await sendTelegramMessage(
          chatId,
          `⛽ <b>Openfort gas is low</b> — sponsored wallet fees are about to run out.\n` +
             balanceLine +
-            `Borrowers with an instant wallet can't repay or cash out gaslessly once it's empty.\n` +
+            `Instant Wallet users can't repay, fund, or cash out gaslessly once it's empty.\n` +
             `Top up the gas balance: https://dashboard.openfort.io → Billing → Gas\n\n` +
             `<i>(event: ${type})</i>`
       );

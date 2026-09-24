@@ -10,7 +10,6 @@
 // Shape mirrors the liveness step in src/app/verify/page.tsx on purpose — same redirect
 // handling, same lost-webhook recovery — because those behaviours were learned the hard way
 // on real Philippine mobile networks.
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -65,8 +64,7 @@ export default function WalletFaceCheck() {
    const user = useSelector((state: RootState) => state.auth.user);
    const openfort = useOpenfort();
 
-   const returnTo =
-      (location.state as { returnTo?: string } | null)?.returnTo || searchParams.get('returnTo') || undefined;
+   const returnTo = (location.state as { returnTo?: string } | null)?.returnTo || searchParams.get('returnTo') || undefined;
 
    const [step, setStep] = useState<Step>('intro');
    const [scanUrl, setScanUrl] = useState<string | null>(null);
@@ -213,7 +211,7 @@ export default function WalletFaceCheck() {
       <div className={SCREEN_CLASS}>
          <OnboardingHeader
             title="Quick face check"
-            tooltip="A short liveness scan keeps instant wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay."
+            tooltip="A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay."
          />
 
          <div className="flex flex-1 flex-col items-center justify-center gap-md-3 px-md-4 text-center">
@@ -251,9 +249,7 @@ export default function WalletFaceCheck() {
                </>
             ) : step === 'waiting' ? (
                <>
-                  <h2 className="text-[28px] font-semibold leading-[1.14] text-md-heading dark:text-md-neutral-100">
-                     Still checking
-                  </h2>
+                  <h2 className="text-[28px] font-semibold leading-[1.14] text-md-heading dark:text-md-neutral-100">Still checking</h2>
                   <p className="max-w-[320px] text-md-b1 font-medium leading-7 text-md-neutral-700">
                      This is taking longer than usual. Your scan is safe — check again in a moment.
                   </p>
@@ -273,13 +269,10 @@ export default function WalletFaceCheck() {
                      One quick face check
                   </h2>
                   <p className="max-w-[320px] text-md-b1 font-medium leading-7 text-md-neutral-700">
-                     Instant wallets are one per person, so we ask for a ten-second scan before creating yours. You will not
-                     need it again.
+                     Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.
                   </p>
 
-                  {errorMessage ? (
-                     <p className="max-w-[340px] text-md-b3 font-medium text-md-red-500">{errorMessage}</p>
-                  ) : null}
+                  {errorMessage ? <p className="max-w-[340px] text-md-b3 font-medium text-md-red-500">{errorMessage}</p> : null}
 
                   <div className="mt-md-2 flex w-full flex-col gap-md-2">
                      {step === 'ready' && scanUrl ? (

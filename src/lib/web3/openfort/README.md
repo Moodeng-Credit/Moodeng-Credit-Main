@@ -1,10 +1,10 @@
-# Openfort embedded wallet (PH escape hatch)
+# Openfort embedded wallet (the "Instant Wallet")
 
-An additive, self-custodial embedded-wallet rail for borrowers whose ISP blocks
-`keys.coinbase.com` (PLDT/Smart in the Philippines), which dead-ends Base Account.
-A borrower creates a wallet from their existing Moodeng login — no app, no seed phrase —
-and it sends USDC **gaslessly** (Openfort's paymaster) on `api.openfort.io`, which is not
-subject to the block.
+The Instant Wallet is Moodeng's **default wallet for everyone** — borrowers and lenders. It is a
+self-custodial embedded wallet created from the user's existing Moodeng login — no app, no seed
+phrase — and it sends USDC **gaslessly** (Openfort's paymaster) on `api.openfort.io`. That host is
+not subject to the PLDT/Smart block on `keys.coinbase.com` that dead-ends Base Account, which is
+how this rail started (as a PH escape hatch). A Base Account is still supported as an alternative.
 
 It never touches the wagmi / RainbowKit / Base-Account stack. When the env vars below are
 unset, `isOpenfortConfigured()` is false and nothing about the app changes.

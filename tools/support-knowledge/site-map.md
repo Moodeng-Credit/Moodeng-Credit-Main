@@ -9,7 +9,8 @@
 
   COPY RULES (same as app-map.md and troubleshooting.md):
   - Never say "KYC", "Didit", "liveness", "eID", or "Openfort" to a user.
-    The ID check is "Verify Your ID"; the embedded wallet is the "instant wallet".
+    The ID check is "Verify Your ID"; the embedded wallet is the "Instant Wallet" (the default wallet for
+    everyone; a Base Account is the optional alternative).
   - Use exact on-screen labels, bolded.
   - Numbers change over time — treat stats below as "as of" the date given,
     and if a user needs the current number, say to check the live page rather
@@ -24,10 +25,10 @@ The marketing site (`public/landing/`) explains Moodeng before someone signs up.
 - **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$18 stays $18") — it just becomes part of your record.
 - **Four honest promises:** Moodeng never digs through your phone (no contacts/photos/messages access), never sells your information, never shames you (reminders stay private, nothing posted publicly), and never makes you prove yourself twice (one ID check proves you're one person; lenders see your verification status, never your documents).
 - **Funding is not automatic** — a real person on the Request Board decides to fund each request; if nobody funds it before it expires, you owe nothing.
-- Loans settle in **USDC** and land in your wallet (**Base Account** or **Instant Wallet**); cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
+- Loans settle in **USDC** and land in your wallet — your **Instant Wallet** by default (created from your Moodeng login, no app or seed phrase), or a **Base Account** if you connected one instead; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
 - Credit limit grows over time with on-time repayment — the $15 first limit can grow to $20, then higher, the more full-limit loans you repay on time (see "How Credit Levels work" below for the exact ladder).
 
-There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Base Account or Instant Wallet → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
+There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Instant Wallet (or a Base Account, if you use one) → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
 
 A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for lenders) make the same case in the signed-in app, and a **Team** page introduces the people behind Moodeng.
 
@@ -35,7 +36,7 @@ A separate in-app **Benefits** page (for borrowers) and **Why Lend** page (for l
 
 ## Moodeng Academy (`/academy`)
 
-An interactive, illustrated walkthrough of how to use the app, with a short tutorial video and a quiz at the end. It walks through: creating an account, verifying (to prove you're a real, unique person), adding a Base Account, understanding that your requested amount decides whether a loan is "trust-building" (below your limit) or "credit-building" (at your full limit), submitting a request, getting matched on the Request Board, repaying clearly and on time, and growing your next credit limit.
+An interactive, illustrated walkthrough of how to use the app, with a short tutorial video and a quiz at the end. It walks through: creating an account, verifying (to prove you're a real, unique person), setting up your wallet (the Instant Wallet by default, or a Base Account if you prefer), understanding that your requested amount decides whether a loan is "trust-building" (below your limit) or "credit-building" (at your full limit), submitting a request, getting matched on the Request Board, repaying clearly and on time, and growing your next credit limit.
 
 ### Academy → Money & getting started (`/academy/money`)
 
@@ -78,7 +79,7 @@ The Help & Support Center, with four sections:
 
 - **Getting started** — a hub of links into the Academy, Benefits/Why-Lend pages, the USDC and Credit Levels articles, and the Blogs.
 - **Guides** — a searchable library of short how-to articles (categories: Getting Started, Pandesal points, Credit Level, Repayment, Wallet, Security) covering things like requesting your first loan, how your Pandesal points are earned and how repayments affect them, the difference between trust-building and credit-building loans, ways to repay and ways to add funds, withdrawing to a bank (with Coins.ph typically the cheapest round-trip route in the Philippines), what fees you'll pay (Moodeng charges none — the only cost is the exchange's own conversion fee), and managing your account/security settings. (The Pandesal points guides are borrower-specific and not shown to lenders.)
-- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what Pandesal points and Credit Levels are, what a Base wallet or Instant Wallet is and why borrowers need one, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
+- **FAQs** (`/support/faq`, also reachable at `/faq`) — the standard question list: what Moodeng is, how borrowing works, what Pandesal points and Credit Levels are, what the Instant Wallet is (set up for you from your login — a Base Account is optional) and why borrowers need a wallet, why USDC, whether Moodeng charges fees (no), what a credit-building loan is, and whether new borrowers can get a small loan (yes, starting at $15, no minimums or setup fees).
 - **Updates** — a changelog of recent product improvements (filters on the Request Board, wallet/verification onboarding polish, clearer loan states, etc.).
 
 ## Help Hub (`/help`)

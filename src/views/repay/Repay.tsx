@@ -566,7 +566,7 @@ export default function Repay() {
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
          ? {
               actionLabel: 'Start Setup',
-              body: 'Verify yourself and add a wallet (Base or Instant Wallet) before requesting loans. Repayments will show here after a lender funds your first loan.',
+              body: 'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.',
               onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
               title: 'Finish setup to start borrowing'
            }
@@ -580,7 +580,7 @@ export default function Repay() {
            : !hasCompletedBaseWalletSetup
              ? {
                   actionLabel: 'Add Wallet',
-                  body: 'You are verified. Add a Base Wallet or set up an Instant Wallet so loans and repayments can stay tied to your Moodeng account.',
+                  body: 'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.',
                   onAction: () => navigate('/onboarding/wallet', { state: { returnTo: 'repay' } }),
                   title: 'Add a wallet to borrow'
                }
@@ -1742,7 +1742,7 @@ export default function Repay() {
                                  {pendingTxHash
                                     ? 'Recording your repayment — hang tight.'
                                     : activePaymentMethod === 'openfort'
-                                      ? 'Sending from your instant wallet — no confirmation needed.'
+                                      ? 'Sending from your Instant Wallet — no confirmation needed.'
                                       : 'Approve the transaction in your wallet.'}
                               </p>
                            </div>

@@ -127,7 +127,7 @@ const faqs = [
    },
    {
       q: 'Do I pay fees to send USDC on Moodeng?',
-      a: 'No. Moodeng uses a Base Account or Instant Wallet on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.'
+      a: 'No. Moodeng uses your Instant Wallet (or a Base Account, if you prefer) on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.'
    },
    {
       q: 'Does Moodeng offer USDC staking or yield?',
@@ -144,7 +144,7 @@ const relatedGuides = [
    {
       slug: 'how-to-request-your-first-loan',
       title: 'How to request your first loan',
-      blurb: 'Set up your wallet (Base Account or Instant Wallet) and send your first request.'
+      blurb: 'Your Instant Wallet is set up from your login (or connect a Base Account) — then send your first request.'
    },
    {
       slug: 'how-credit-levels-work',

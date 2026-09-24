@@ -408,9 +408,9 @@ export default function Milestones() {
       !isVerified && !hasCompletedBaseWalletSetup ? 'Start setup' : !hasCompletedBaseWalletSetup ? 'Add a wallet' : 'Verify Yourself';
    const setupEmptyCopy =
       !isVerified && !hasCompletedBaseWalletSetup
-         ? 'Finish setup with identity verification and a wallet (Base or Instant Wallet) to unlock borrowing and start building your public trust record.'
+         ? 'Finish setup with identity verification and your wallet (an Instant Wallet, or a Base Account if you prefer) to unlock borrowing and start building your public trust record.'
          : !hasCompletedBaseWalletSetup
-           ? 'Add a Base Wallet or Instant Wallet to unlock borrowing and start building your public trust record.'
+           ? 'Set up your Instant Wallet (or connect a Base Account) to unlock borrowing and start building your public trust record.'
            : 'Verify your identity to unlock borrowing and start building your public trust record.';
    const handleSetupCtaClick = useCallback(() => {
       if (!isVerified && !hasCompletedBaseWalletSetup) {

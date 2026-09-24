@@ -21,10 +21,10 @@ Step 2: Start Your Loan Application
 Once logged in, tap the "Apply for a Loan" button to start the process.
 
 Step 3: Set Up Your Wallet
-Secure transactions on Moodeng need a wallet: either a Base Account or a Moodeng Instant Wallet. For a Base Account, visit https://account.base.app and follow the registration instructions. An Instant Wallet is created from your Moodeng login — no separate app needed.
+Secure transactions on Moodeng need a wallet. By default, you use a Moodeng Instant Wallet — it is created from your Moodeng login, with no separate app or seed phrase. If you prefer, you can use a Base Account instead: visit https://account.base.app and follow the registration instructions.
 
 Step 4: Connect Your Wallet
-Return to the Moodeng platform and tap "Connect Wallet" to securely link your new Base Account, or create your Instant Wallet, so it is tied to your Moodeng account.
+Return to the Moodeng platform and tap "Connect Wallet" to create your Instant Wallet — or securely link your Base Account if you chose one — so it is tied to your Moodeng account.
 
 Step 5: Verify Your Identity
 To ensure community safety, tap "Verify Yourself" and complete the quick ID + selfie check ("Verify Your ID") — it takes about 3 minutes. Already a World App user? You can choose "Verify with World ID" instead.
@@ -189,7 +189,7 @@ The key detail: always select Base as the network when depositing to an exchange
 
 Using USDC means loan values stay consistent. A $20 loan today is still a $20 loan when you repay it, regardless of crypto market movement.
 
-We recommend using a Base Account or Instant Wallet on Base, where USDC transfers are gasless — you pay no network fees.`
+Your Instant Wallet (or a Base Account, if you prefer) runs on Base, where USDC transfers are gasless — you pay no network fees.`
    },
    {
       slug: 'verification-and-why-its-required',
@@ -231,15 +231,15 @@ const FILIPINO_GUIDES: Record<string, LocalizedGuideArticle> = {
 Step 1: Gumawa ng account
 Mag-register sa Moodeng platform gamit ang preferred username, email, at password mo. I-click ang "Create Account" para magpatuloy.
 
-Step 2: Simulan ang BASE application
+Step 2: Simulan ang loan application
 Kapag naka-log in ka na, i-tap ang "Apply for a Loan" button para simulan ang proseso.
 
 Step 3: I-set up ang wallet mo
-Kailangan ng wallet para sa secure transactions sa Moodeng: Base Account o Moodeng Instant Wallet. Para sa Base Account, pumunta sa https://account.base.app at sundin ang registration instructions. Ang Instant Wallet ay ginagawa mula sa Moodeng login mo — hindi na kailangan ng hiwalay na app.
+Kailangan ng wallet para sa secure transactions sa Moodeng. Bilang default, Moodeng Instant Wallet ang gamit mo — ginagawa ito mula sa Moodeng login mo, walang hiwalay na app o seed phrase. Kung mas gusto mo, puwede kang gumamit ng Base Account: pumunta sa https://account.base.app at sundin ang registration instructions.
 
 
 Step 4: Ikonek ang wallet mo
-Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para secure na mai-link ang bagong Base Account mo, o gumawa ng Instant Wallet mo, sa Moodeng account mo.
+Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para gumawa ng Instant Wallet mo — o secure na i-link ang Base Account mo kung iyon ang pinili mo — sa Moodeng account mo.
 
 Step 5: I-verify ang identity mo
 Para mapanatiling safe ang community, i-download ang World App at kumpletuhin ang human identity verification sa physical World Orb location.
@@ -330,7 +330,7 @@ Ipinapakita ng Pandesal points mo ang reliability mo at tumutulong sa future fun
 
 Kapag USDC ang gamit, consistent ang loan values. Ang $20 loan ngayon ay $20 pa rin kapag binayaran mo ito, kahit gumalaw ang crypto market.
 
-Inirerekomenda namin ang Base Account o Instant Wallet sa Base, kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
+Tumatakbo sa Base ang Instant Wallet mo (o Base Account, kung iyon ang gusto mo), kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
    },
    'verification-and-why-its-required': {
       title: 'Verification at security',
@@ -379,11 +379,11 @@ Langkah 2: Mulai aplikasi pinjaman
 Setelah login, tap tombol "Apply for a Loan" untuk memulai proses.
 
 Langkah 3: Siapkan wallet
-Transaksi aman di Moodeng membutuhkan wallet: Base Account atau Instant Wallet Moodeng. Untuk Base Account, kunjungi https://account.base.app dan ikuti instruksi pendaftaran. Instant Wallet dibuat dari login Moodeng kamu — tanpa aplikasi terpisah.
+Transaksi aman di Moodeng membutuhkan wallet. Secara default, kamu memakai Instant Wallet Moodeng — dibuat dari login Moodeng kamu, tanpa aplikasi terpisah atau seed phrase. Jika lebih suka, kamu bisa memakai Base Account: kunjungi https://account.base.app dan ikuti instruksi pendaftaran.
 
 
 Langkah 4: Hubungkan wallet
-Kembali ke platform Moodeng dan tap "Connect Wallet" untuk menautkan Base Account baru kamu, atau membuat Instant Wallet, ke akun Moodeng dengan aman.
+Kembali ke platform Moodeng dan tap "Connect Wallet" untuk membuat Instant Wallet kamu — atau menautkan Base Account dengan aman jika kamu memilihnya — ke akun Moodeng.
 
 Langkah 5: Verifikasi identitas
 Agar komunitas tetap aman, download World App dan selesaikan verifikasi identitas manusia di lokasi World Orb fisik.
@@ -474,7 +474,7 @@ Poin Pandesal mencerminkan keandalan kamu dan menentukan peluang pendanaan ke de
 
 Dengan USDC, nilai pinjaman tetap konsisten. Pinjaman $20 hari ini tetap pinjaman $20 saat kamu membayarnya, terlepas dari pergerakan pasar kripto.
 
-Kami merekomendasikan Base Account atau Instant Wallet di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
+Instant Wallet kamu (atau Base Account, jika kamu memilihnya) berjalan di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
    },
    'verification-and-why-its-required': {
       title: 'Verifikasi dan keamanan',
@@ -523,10 +523,10 @@ const THAI_GUIDES: Record<string, LocalizedGuideArticle> = {
 หลังเข้าสู่ระบบ แตะ "Apply for a Loan" เพื่อเริ่มขั้นตอน
 
 ขั้นตอนที่ 3: ตั้งค่ากระเป๋า
-ธุรกรรมบน Moodeng ต้องใช้กระเป๋า: Base Account หรือ Instant Wallet ของ Moodeng สำหรับ Base Account ไปที่ https://account.base.app และทำตามคำแนะนำ ส่วน Instant Wallet สร้างจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องใช้แอปแยก
+ธุรกรรมบน Moodeng ต้องใช้กระเป๋า โดยค่าเริ่มต้นคุณจะใช้ Instant Wallet ของ Moodeng ซึ่งสร้างจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องใช้แอปแยกหรือ seed phrase หากต้องการ คุณสามารถใช้ Base Account แทนได้ โดยไปที่ https://account.base.app และทำตามคำแนะนำ
 
 ขั้นตอนที่ 4: เชื่อมต่อกระเป๋า
-กลับมาที่ Moodeng แล้วแตะ "Connect Wallet" เพื่อเชื่อม Base Account หรือสร้าง Instant Wallet กับบัญชี Moodeng
+กลับมาที่ Moodeng แล้วแตะ "Connect Wallet" เพื่อสร้าง Instant Wallet หรือเชื่อม Base Account หากคุณเลือกใช้ กับบัญชี Moodeng
 
 ขั้นตอนที่ 5: ยืนยันตัวตน
 ดาวน์โหลด World App และยืนยันตัวตนมนุษย์ที่ World Orb จริง
@@ -594,7 +594,7 @@ Credit-Building Loan คือเงินกู้เต็มวงเงิ�
 
 การใช้ USDC ทำให้มูลค่าเงินกู้คงที่ เงินกู้ $20 วันนี้ยังเป็น $20 เมื่อคุณชำระคืน ไม่ขึ้นอยู่กับความผันผวนของตลาดคริปโต
 
-เราแนะนำ Base Account หรือ Instant Wallet บน Base เพราะการโอน USDC ไม่มีค่า gas`
+Instant Wallet ของคุณ (หรือ Base Account หากคุณเลือกใช้) ทำงานบน Base ซึ่งการโอน USDC ไม่มีค่า gas`
    },
    'verification-and-why-its-required': {
       title: 'การยืนยันและความปลอดภัย',
@@ -630,10 +630,10 @@ Bước 2: Bắt đầu đăng ký vay
 Sau khi đăng nhập, bấm "Apply for a Loan" để bắt đầu.
 
 Bước 3: Thiết lập ví
-Giao dịch an toàn trên Moodeng cần một ví: Base Account hoặc Instant Wallet của Moodeng. Với Base Account, vào https://account.base.app và làm theo hướng dẫn. Instant Wallet được tạo từ đăng nhập Moodeng của bạn — không cần ứng dụng riêng.
+Giao dịch an toàn trên Moodeng cần một ví. Mặc định, bạn dùng Instant Wallet của Moodeng — được tạo từ đăng nhập Moodeng của bạn, không cần ứng dụng riêng hay seed phrase. Nếu muốn, bạn có thể dùng Base Account: vào https://account.base.app và làm theo hướng dẫn.
 
 Bước 4: Kết nối ví
-Quay lại Moodeng và bấm "Connect Wallet" để liên kết Base Account hoặc tạo Instant Wallet với tài khoản Moodeng.
+Quay lại Moodeng và bấm "Connect Wallet" để tạo Instant Wallet — hoặc liên kết Base Account nếu bạn chọn dùng — với tài khoản Moodeng.
 
 Bước 5: Xác minh danh tính
 Tải World App và hoàn tất xác minh người thật tại địa điểm World Orb.
@@ -701,7 +701,7 @@ Mọi khoản trả được xác nhận on-chain; khi chuyển USDC settle, tr�
 
 Dùng USDC giúp giá trị khoản vay ổn định. Khoản vay $20 hôm nay vẫn là $20 khi bạn trả, bất kể thị trường crypto biến động.
 
-Chúng tôi khuyến nghị Base Account hoặc Instant Wallet trên Base, nơi chuyển USDC không tốn gas.`
+Instant Wallet của bạn (hoặc Base Account nếu bạn chọn dùng) chạy trên Base, nơi chuyển USDC không tốn gas.`
    },
    'verification-and-why-its-required': {
       title: 'Xác minh và bảo mật',

@@ -111,8 +111,8 @@ export function useWalletSync() {
       if (userRole === 'borrower' && !isBaseWalletProvider(walletProvider)) {
          showToast(
             TOAST_TYPES.ERROR,
-            'Use Base Account or Instant Wallet',
-            'Borrowers must lock a Base Account or use an Instant Wallet so loans and repayments stay tied to one public record.',
+            'Use your Instant Wallet or a Base Account',
+            'Borrowers use their Instant Wallet (or a Base Account, if they prefer) so loans and repayments stay tied to one public record.',
             undefined,
             undefined
          );
@@ -141,7 +141,7 @@ export function useWalletSync() {
             showToast(
                TOAST_TYPES.ERROR,
                'Saved wallet mismatch',
-               `This account is saved to ${formatWalletAddressShort(storedWalletAddress)}. Connect that Base Account, or update the saved wallet from Account Settings.`,
+               `This account is saved to ${formatWalletAddressShort(storedWalletAddress)}. Switch back to that wallet, or update the saved wallet from Account Settings.`,
                undefined,
                undefined
             );
