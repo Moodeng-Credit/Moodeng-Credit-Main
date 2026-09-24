@@ -182,7 +182,7 @@ export default function VideoCallStep({
                      <span className="text-[12px] font-normal text-md-neutral-1200">Add it to your calendar so you don't miss it:</span>
                      <div className="flex flex-wrap gap-2">
                         <a
-                           className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
+                           className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
                            href={calendarLinks.google}
                            rel="noreferrer"
                            target="_blank"
@@ -191,7 +191,7 @@ export default function VideoCallStep({
                            Google Calendar
                         </a>
                         <a
-                           className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
+                           className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[10px] border border-[#ded6e8] bg-white px-3 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98]"
                            download="moodeng-call.ics"
                            href={calendarLinks.ics}
                         >
@@ -230,7 +230,7 @@ export default function VideoCallStep({
                      <div className="grid grid-cols-3 gap-2">
                         {daySlots.map((s) => (
                            <button
-                              className="rounded-[10px] border border-[#ded6e8] bg-white px-2 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                              className="min-h-[44px] rounded-[10px] border border-[#ded6e8] bg-white px-2 py-2 text-[13px] font-medium text-md-heading transition hover:border-md-primary-900 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                               disabled={bookingStart !== null}
                               key={s}
                               onClick={() => book(s)}

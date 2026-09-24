@@ -266,7 +266,7 @@ export function LoanAccessPendingCard({
          </p>
          {mode === 'call' && meeting?.joinUrl ? (
             <a
-               className="w-full max-w-[320px] rounded-md-lg border border-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-primary-1200 transition duration-150 ease-out hover:bg-md-primary-100"
+               className="flex min-h-[44px] w-full max-w-[320px] items-center justify-center rounded-md-lg border border-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-medium text-md-primary-1200 transition duration-150 ease-out hover:bg-md-primary-100"
                href={meeting.joinUrl}
                rel="noreferrer"
                target="_blank"
