@@ -42,6 +42,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
    const { pointsTotal } = useTrustPointTotal({ userId: user.id, fallbackPoints: 0, enabled: isSignedIn && isVerified });
 
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
+   // Same rule as the live dashboard's "Withdraw your USDC" button.
+   const hasFundedLoan = gloanRequests.some((loan) => loan.borrowerUser === user.id && loan.loanStatus === 'Lent');
 
    const dueLoans = useMemo(() => {
       const overdueIds = new Set(loanArrays.defaultedLoans.map((loan) => loan.id));
@@ -109,6 +111,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          creditProgress: credit.progress,
          creditHint: credit.hint,
          showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet,
+         showWithdraw: hasFundedLoan && !getBaseWalletLockStatus(user).isConfirmedOpenfort,
          milestones: toDashboardV2Milestones(sharedMilestones),
          allMilestones: toDashboardV2MilestoneList(sharedMilestones),
          pandesalGoal: getNextTierGoal(pandesal),
@@ -129,6 +132,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
    }, [
       borrowerLoans,
       dueLoans,
+      hasFundedLoan,
       inviteCode,
       isVerified,
       loanArrays,

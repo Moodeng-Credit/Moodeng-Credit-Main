@@ -49,6 +49,8 @@ export interface DashboardV2Model {
    creditProgress: number;
    creditHint: CreditLevelHint;
    showConnectWallet: boolean;
+   /** A funded loan is waiting to be cashed out and there is no instant wallet (whose balance card owns Cash out). */
+   showWithdraw: boolean;
    /** The three milestones the dashboard card shows. */
    milestones: DashboardV2Milestone[];
    /** Every borrower milestone, in order, for the All Milestones page. */

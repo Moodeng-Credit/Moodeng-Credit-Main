@@ -25,6 +25,7 @@ const SAMPLE_BASE: Omit<
    daysLive: 6,
    tier: 'rookie',
    showConnectWallet: true,
+   showWithdraw: false,
    milestones: SAMPLE_MILESTONES,
    allMilestones: SAMPLE_ALL_MILESTONES,
    pandesalGoal: 50,
@@ -59,7 +60,9 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          { id: 'sample-due-1', amount: 5, daysRemaining: 5, lenderName: 'Maricar Cruz', isOverdue: false },
          { id: 'sample-due-2', amount: 1.68, daysRemaining: 13, lenderName: 'Milagros Reyes', isOverdue: false }
       ],
-      hasOverdue: false
+      hasOverdue: false,
+      // Not in the Figma: shows where the live dashboard's "Withdraw your USDC" button sits.
+      showWithdraw: true
    },
    defaulted: {
       ...SAMPLE_BASE,

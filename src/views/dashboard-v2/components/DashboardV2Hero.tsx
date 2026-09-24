@@ -132,7 +132,12 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             <DesignImage src={DASHBOARD_V2_ASSETS.arrowRight} className="h-20 w-20" />
          </button>
 
-         {/* Tier track */}
+         {/* Tier track (also the guided tour's "Trust" stop) */}
+         <div
+            className="pointer-events-none absolute inset-x-0 top-[255px] h-[70px]"
+            data-tour-target="dashboard-trust-score-heading"
+            aria-hidden="true"
+         />
          <DesignImage src={getTierTrackAsset(model.tier)} className="absolute left-0 top-[260px] h-7 w-full" />
          {MOODENG_TIERS.map((tier, index) => {
             const layout = TIER_LABEL_LAYOUT[index];
@@ -155,7 +160,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          })}
 
          {/* Credit level */}
-         <div className="absolute inset-x-5 top-[347px] flex items-end justify-between gap-2">
+         <div className="absolute inset-x-5 top-[347px] flex items-end justify-between gap-2" data-tour-target="dashboard-credit-level">
             <div className="flex shrink-0 items-baseline gap-0.5">
                <span className="text-[clamp(28px,7.7vw,34px)] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">
                   LV{model.creditLevel}

@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { ArrowUpRight, Wallet } from 'lucide-react';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -71,6 +72,26 @@ export function VoucherReferralBanner({ language, onRefer }: { language: Dashboa
                Grab Now
             </span>
          </span>
+      </button>
+   );
+}
+
+/** The live dashboard's "Withdraw your USDC" button, in the new card style (not in the Figma). */
+export function WithdrawBanner({ onWithdraw }: { onWithdraw: () => void }) {
+   return (
+      <button
+         type="button"
+         onClick={onWithdraw}
+         className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
+      >
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
+            <Wallet className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+         </span>
+         <span className="min-w-0 flex-1">
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">Withdraw your USDC</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c]">Cash out your funded loan to local currency.</span>
+         </span>
+         <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6b55f7]" aria-hidden="true" />
       </button>
    );
 }
