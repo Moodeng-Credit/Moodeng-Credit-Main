@@ -183,9 +183,11 @@ Branch **`staging` = production** (Vercel deploys it).
 
 ## 6. Launch checklist (only when George says "launch")
 
-1. **Re-check `telegram-webhook`.** It was redeployed from another session on 2026-09-24
-   (version 53). Diff the deployed code (`get_edge_function`) against the branch, and merge any
-   changes in before deploying, so you don't overwrite someone else's work.
+1. **Drift check** (last done 2026-09-24): the deployed `telegram-webhook` (v53) was byte-identical to
+   the branch's starting point, `staging` had no new commits since `da1e6c8`, no migrations after
+   `20260923150440`, and `enforce_user_privileged_columns_server_only` was unchanged. Repeat these
+   checks at launch (`get_edge_function`, `git log origin/staging`, `schema_migrations`,
+   `pg_get_functiondef`) in case someone deployed in between.
 2. Rebase `feat/connect-approve-apply` on `origin/staging`; run `pnpm run type-check`,
    `pnpm test`, and the Deno tests.
 3. Mark draft PR #916 ready → merge to `staging`. The frontend treats a missing column as "approved", so the
