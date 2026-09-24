@@ -31,6 +31,17 @@ export const DASHBOARD_V2_ASSETS = {
    firstLoanTitle: `${BASE}/title-first-loan.png`, // title ("Post Your First Loan")
    emptyMoodeng: `${BASE}/empty-moodeng.png`, // pic_empty
    verifyHippo: `${BASE}/verify-hippo.png`, // hippo with ID card, cut from verify_popup (card bg #f8f1ff)
+   // Invite ("FREE MEAL for both of you") — invite_1 export. The sample code is baked into invite-bg at 30,418.
+   inviteBackground: `${BASE}/invite-bg.png`, // bg_2 (440×735)
+   back: `${BASE}/icon-back.png`, // btn_back
+   shareClose: `${BASE}/icon-share-close.png`, // btn_share_close
+   shareNext: `${BASE}/icon-share-next.png`, // btn_next
+   shareEmbed: `${BASE}/share-others.png`, // others
+   shareWhatsapp: `${BASE}/share-whatsapp.png`,
+   shareFacebook: `${BASE}/share-facebook.png`,
+   shareX: `${BASE}/share-x.png`,
+   shareEmail: `${BASE}/share-email.png`,
+   shareReddit: `${BASE}/share-reddit.png`, // raddit
    // Banners are exported whole (440px frame incl. 20px side margins, copy baked in).
    verifyBanner: `${BASE}/banner-verify.png`, // banner_1
    connectWalletBanner: `${BASE}/banner-connect-wallet.png`, // banner_2

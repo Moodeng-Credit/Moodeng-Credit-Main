@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react';
 
-import { Check, ChevronLeft, Copy, MessageCircle, Share2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
 import { DASHBOARD_V2_ASSETS, getMoodengAsset } from '@/views/dashboard-v2/assets';
@@ -100,144 +100,195 @@ export function VoucherClaimPopup({ onClose }: { onClose: () => void }) {
    );
 }
 
-const STEPS = [
-   { title: 'Share your link', body: 'Send it to a friend on Messenger, WhatsApp or SMS.' },
-   { title: 'Your friend joins & verifies', body: 'They sign up with your link and verify their ID.' },
-   { title: 'They repay their first loan on time', body: 'You both get a ₱50 GrabFood voucher — kumain kayong dalawa!' }
-];
+const SHARE_TARGETS = [
+   { id: 'embed', label: 'Embed', icon: DASHBOARD_V2_ASSETS.shareEmbed },
+   { id: 'whatsapp', label: 'WhatsApp', icon: DASHBOARD_V2_ASSETS.shareWhatsapp },
+   { id: 'facebook', label: 'Facebook', icon: DASHBOARD_V2_ASSETS.shareFacebook },
+   { id: 'x', label: 'X', icon: DASHBOARD_V2_ASSETS.shareX },
+   { id: 'email', label: 'Email', icon: DASHBOARD_V2_ASSETS.shareEmail },
+   { id: 'reddit', label: 'Reddit', icon: DASHBOARD_V2_ASSETS.shareReddit }
+] as const;
 
-/** Invite screen behind the "Mag-refer" banner. */
-export function DashboardV2Referral() {
-   const { model, previewState, isSignedIn, language, previewSearch } = useDashboardV2Preview();
-   const [isCopied, setIsCopied] = useState(false);
-   const inviteLink = model.referralCode ? buildInviteLink(model.referralCode) : null;
-   const shareText = `Join me on Moodeng Credit — small loans with clear terms. Repay your first loan on time and we both get a GrabFood voucher! ${inviteLink ?? ''}`;
+type ShareTargetId = (typeof SHARE_TARGETS)[number]['id'];
 
-   const copyLink = async () => {
-      if (!inviteLink) return;
-      try {
-         await navigator.clipboard.writeText(inviteLink);
-         setIsCopied(true);
-         window.setTimeout(() => setIsCopied(false), 2000);
-      } catch {
-         setIsCopied(false);
-      }
-   };
+const SHARE_TITLE = 'Free meal for both of us — Moodeng Credit';
 
+const getShareUrl = (target: Exclude<ShareTargetId, 'embed'>, link: string, text: string) => {
+   const url = encodeURIComponent(link);
+   const message = encodeURIComponent(`${text} ${link}`);
+   switch (target) {
+      case 'whatsapp':
+         return `https://wa.me/?text=${message}`;
+      case 'facebook':
+         return `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+      case 'x':
+         return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${url}`;
+      case 'email':
+         return `mailto:?subject=${encodeURIComponent(SHARE_TITLE)}&body=${message}`;
+      case 'reddit':
+         return `https://www.reddit.com/submit?url=${url}&title=${encodeURIComponent(SHARE_TITLE)}`;
+   }
+};
+
+/** Figma "invite_popup" share sheet. "Embed" hands off to the phone's own share menu (or copies the link). */
+export function ShareSheet({ link, text, onClose, onCopied }: { link: string; text: string; onClose: () => void; onCopied: () => void }) {
    const shareNative = async () => {
-      if (!inviteLink) return;
       if (navigator.share) {
-         await navigator.share({ title: 'Moodeng Credit', text: shareText, url: inviteLink }).catch(() => undefined);
+         await navigator.share({ title: SHARE_TITLE, text, url: link }).catch(() => undefined);
          return;
       }
-      await copyLink();
+      await navigator.clipboard.writeText(link).then(onCopied, () => undefined);
    };
 
    return (
-      <div className="min-h-screen bg-[#f7f7f7]">
-         <div className="mx-auto max-w-[440px] pb-28">
+      <div
+         className="fixed inset-0 z-[80] flex items-end justify-center"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="dv2-share-title"
+         onClick={onClose}
+      >
+         <div className="relative w-full max-w-[440px] rounded-t-[28px] bg-white pb-8 pt-5" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between px-5">
+               <h2 id="dv2-share-title" className="text-[20px] font-medium text-[#594d65]">
+                  Share
+               </h2>
+               <button type="button" onClick={onClose} className="h-6 w-6" aria-label="Close share">
+                  <DesignImage src={DASHBOARD_V2_ASSETS.shareClose} className="h-4 w-4" />
+               </button>
+            </div>
+            <div className="mt-4 flex gap-[14.5px] overflow-x-auto px-[27px] pb-1" style={{ scrollbarWidth: 'none' }}>
+               {SHARE_TARGETS.map((target) =>
+                  target.id === 'embed' ? (
+                     <button
+                        key={target.id}
+                        type="button"
+                        onClick={shareNative}
+                        className="flex w-[52px] shrink-0 flex-col items-center gap-1.5"
+                     >
+                        <DesignImage src={target.icon} className="h-[52px] w-[52px]" />
+                        <span className="text-[13px] text-[#c0b9c8]">{target.label}</span>
+                     </button>
+                  ) : (
+                     <a
+                        key={target.id}
+                        href={getShareUrl(target.id, link, text)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex w-[52px] shrink-0 flex-col items-center gap-1.5"
+                     >
+                        <DesignImage src={target.icon} className="h-[52px] w-[52px]" />
+                        <span className="whitespace-nowrap text-[13px] text-[#c0b9c8]">{target.label}</span>
+                     </a>
+                  )
+               )}
+            </div>
+            <DesignImage
+               src={DASHBOARD_V2_ASSETS.shareNext}
+               className="pointer-events-none absolute right-2 top-[62px] h-[52px] w-[52px]"
+            />
+         </div>
+      </div>
+   );
+}
+
+const COPY_GRADIENT = 'linear-gradient(90deg, #ffe27a 0%, #f6b73c 100%)';
+const LOCKED_GRADIENT = 'linear-gradient(85.47deg, #b9aeff 0.5%, #8b7afa 57.57%, #6b55f7 98.16%)';
+
+/** Figma "invite" — "FREE MEAL for both of you": referral code, the two ₱100 vouchers, and sharing. */
+export function DashboardV2Referral() {
+   const { model, previewState, isSignedIn, language, previewSearch } = useDashboardV2Preview();
+   const [isShareOpen, setIsShareOpen] = useState(false);
+   const [copied, setCopied] = useState<'code' | null>(null);
+   const code = model.referralCode ? model.referralCode.toUpperCase() : '—';
+   const inviteLink = model.referralCode ? buildInviteLink(model.referralCode) : null;
+   const hasOwnVoucher = model.allMilestones.some((milestone) => milestone.isVoucher && milestone.status === 'unlocked');
+   const shareText =
+      language === 'fil'
+         ? 'Libreng pagkain para sa ating dalawa! Sumali sa Moodeng Credit gamit ang code ko:'
+         : `Free meal for both of us! Join Moodeng Credit with my code ${code}:`;
+
+   const copyCode = async () => {
+      if (!model.referralCode) return;
+      try {
+         await navigator.clipboard.writeText(code);
+         setCopied('code');
+         window.setTimeout(() => setCopied(null), 2000);
+      } catch {
+         setCopied(null);
+      }
+   };
+
+   return (
+      <div className="min-h-screen bg-[#efecff]">
+         <div className="relative mx-auto max-w-[440px] pb-28">
             <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} />
-            <header className="relative flex h-16 items-end justify-center px-5 pb-1">
+
+            {/* The designer's full illustrated card; interactive pieces sit on top at her positions. */}
+            <div className="relative aspect-[440/735] w-full">
+               <DesignImage
+                  src={DASHBOARD_V2_ASSETS.inviteBackground}
+                  alt="Free meal for both of you: a ₱100 voucher for you and a ₱100 voucher for your friend."
+                  className="absolute inset-0 h-full w-full"
+               />
                <Link
                   to={`/dashboard-v2-preview${previewSearch}`}
-                  className="absolute bottom-1 left-5 text-[#594d65]"
+                  className="absolute left-[4.5%] top-[81px] h-6 w-6"
                   aria-label="Back to dashboard"
                >
-                  <ChevronLeft className="h-6 w-6" strokeWidth={2} />
+                  <DesignImage src={DASHBOARD_V2_ASSETS.back} className="h-6 w-6" />
                </Link>
-               <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65]">
-                  {language === 'fil' ? 'Mag-refer' : 'Invite a Friend'}
-               </h1>
-            </header>
 
-            <section className="relative mx-5 mt-8 overflow-hidden rounded-[16px] bg-[#ffef85] px-5 pb-5 pt-5">
-               <DesignImage
-                  src={DASHBOARD_V2_ASSETS.voucherBannerFood}
-                  className="absolute -right-3 top-0 h-[104px] w-[185px] object-contain"
-               />
-               <p className="relative text-[30px] font-black italic leading-[1.1] text-[#3c8248]">₱100</p>
-               <p className="relative text-[22px] font-black italic leading-[1.2] text-[#3c8248]">GrabFood Voucher</p>
-               <p className="relative mt-3 max-w-[58%] text-[15px] font-medium leading-5 text-[#6f7d1d]">
-                  ₱50 for you, ₱50 for your friend — {language === 'fil' ? 'kumain kayong dalawa!' : 'eat together!'}
+               {/* Live referral code over the sample code baked into the artwork. */}
+               <p className="absolute left-[6.8%] top-[56.4%] flex h-[4%] min-w-[26%] items-center bg-[#745ff8] text-[16px] tracking-[0.5px] text-white">
+                  {code}
                </p>
-            </section>
-
-            <section className="mx-5 mt-6 rounded-[16px] bg-white p-4">
-               <p className="text-[18px] font-medium text-[#0f172b]">Your invite link</p>
-               <div className="mt-3 flex items-center gap-2 rounded-[12px] border-2 border-[#e8e4ff] bg-[#f8f6ff] px-3 py-2.5">
-                  <span className="min-w-0 flex-1 truncate text-[15px] text-[#594d65]">{inviteLink ?? 'Sign in to get your link'}</span>
-                  <button
-                     type="button"
-                     onClick={copyLink}
-                     disabled={!inviteLink}
-                     className="flex items-center gap-1 text-[15px] font-semibold text-[#6b55f7] disabled:opacity-40"
-                  >
-                     {isCopied ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-                     {isCopied ? 'Copied' : 'Copy'}
-                  </button>
-               </div>
-               <div className="mt-3 grid grid-cols-2 gap-2">
-                  <a
-                     href={inviteLink ? `fb-messenger://share/?link=${encodeURIComponent(inviteLink)}` : undefined}
-                     target="_blank"
-                     rel="noreferrer"
-                     className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-[#e0dbff] text-[15px] font-semibold text-[#5640e0]"
-                  >
-                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                     Messenger
-                  </a>
-                  <a
-                     href={inviteLink ? `https://wa.me/?text=${encodeURIComponent(shareText)}` : undefined}
-                     target="_blank"
-                     rel="noreferrer"
-                     className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-[#e3f5e8] text-[15px] font-semibold text-[#2f8a4a]"
-                  >
-                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
-                     WhatsApp
-                  </a>
-               </div>
                <button
                   type="button"
-                  onClick={shareNative}
+                  onClick={copyCode}
+                  disabled={!model.referralCode}
+                  className="absolute left-[74.8%] top-[54.1%] flex h-[4.6%] w-[18.6%] items-center justify-center rounded-full text-[18px] font-semibold text-[#704518] disabled:opacity-60"
+                  style={{ backgroundImage: COPY_GRADIENT }}
+               >
+                  {copied === 'code' ? 'Copied' : 'Copy'}
+               </button>
+
+               {/* For You — unlocks once the borrower has earned their own voucher. */}
+               <button
+                  type="button"
+                  disabled={!hasOwnVoucher}
+                  onClick={copyCode}
+                  className="absolute left-[17%] top-[78.2%] flex h-[4.6%] w-[25.5%] items-center justify-center overflow-hidden rounded-full text-[18px] font-semibold text-white"
+                  style={{ backgroundImage: hasOwnVoucher ? COPY_GRADIENT : undefined }}
+               >
+                  {!hasOwnVoucher ? (
+                     <>
+                        <span className="absolute inset-0" style={{ backgroundImage: LOCKED_GRADIENT }} aria-hidden="true" />
+                        <span className="absolute inset-0 bg-white/80 mix-blend-color" aria-hidden="true" />
+                     </>
+                  ) : null}
+                  <span className="relative">Copy</span>
+               </button>
+               <button
+                  type="button"
+                  onClick={() => setIsShareOpen(true)}
                   disabled={!inviteLink}
-                  className="mt-3 flex h-[52px] w-full items-center justify-center gap-2 rounded-[35px] text-[20px] font-semibold text-white disabled:opacity-50"
+                  className="absolute left-[59.5%] top-[78.2%] flex h-[4.6%] w-[25.5%] items-center justify-center rounded-full text-[18px] font-semibold text-white disabled:opacity-60"
                   style={{ backgroundImage: PRIMARY_GRADIENT }}
                >
-                  <Share2 className="h-5 w-5" aria-hidden="true" />
-                  Share Invite
+                  Invite
                </button>
-            </section>
 
-            <section className="mx-5 mt-6">
-               <h2 className="text-[22px] font-black italic leading-[18px] text-[#594d65]">How it works</h2>
-               <ol className="mt-4 flex flex-col rounded-[16px] bg-white px-3">
-                  {STEPS.map((step, index) => (
-                     <li key={step.title} className="flex items-center gap-2 border-b border-[#ece9f1] py-3.5 last:border-0">
-                        <span className="relative h-10 w-10 shrink-0">
-                           <DesignImage
-                              src={index === 2 ? DASHBOARD_V2_ASSETS.coupon : DASHBOARD_V2_ASSETS.pandesal}
-                              className="h-10 w-10 object-contain"
-                           />
-                           <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#6b55f7] text-[11px] font-bold text-white">
-                              {index + 1}
-                           </span>
-                        </span>
-                        <span>
-                           <span className="block text-[17px] font-medium leading-6 text-[#0f172b]">{step.title}</span>
-                           <span className="block text-[15px] leading-[18px] text-[#45556c]">{step.body}</span>
-                        </span>
-                     </li>
-                  ))}
-               </ol>
-            </section>
-
-            <section className="mx-5 mt-6 rounded-[16px] bg-white px-4 py-5 text-center">
-               <p className="text-[18px] font-medium text-[#0f172b]">Your invites</p>
-               <p className="mt-1 text-[14px] font-medium tracking-[-0.28px] text-[#877897]">
-                  No friends invited yet. Share your link to start!
+               <p className="absolute inset-x-[10%] top-[91.8%] text-center text-[14px] leading-[14px] text-[#c0b9c8]">
+                  You can invite friends to help you get the ₱100 voucher. The voucher you have obtained can be viewed on your event main
+                  page.
                </p>
-            </section>
+            </div>
          </div>
+
+         {isShareOpen && inviteLink ? (
+            <ShareSheet link={inviteLink} text={shareText} onClose={() => setIsShareOpen(false)} onCopied={() => setCopied('code')} />
+         ) : null}
       </div>
    );
 }
@@ -282,7 +333,7 @@ export function DashboardV2InviteLanding() {
                   src={DASHBOARD_V2_ASSETS.voucherBannerFood}
                   className="absolute -right-4 top-0 h-[90px] w-[160px] object-contain"
                />
-               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱50 GrabFood voucher each</p>
+               <p className="relative max-w-[60%] text-[20px] font-black italic leading-6 text-[#3c8248]">₱100 GrabFood voucher each</p>
                <p className="relative mt-1 max-w-[60%] text-[14px] font-medium leading-5 text-[#6f7d1d]">
                   When you repay your first loan on time, you and {inviter || 'your friend'} both get one.
                </p>

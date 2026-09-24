@@ -10,8 +10,7 @@ import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics'
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 
-const PILL_BUTTON =
-   'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
+const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
 const PRIMARY_GRADIENT = 'linear-gradient(85.47deg, #9584ff 0.5%, #6b55f7 98.16%)';
 // Design numerals use SF Pro Compressed, which the app does not load; tight tracking approximates it.
 const STAT_NUMBER = 'font-medium leading-[18px] tracking-[-0.06em]';
@@ -65,7 +64,12 @@ function MilestoneAction({
    }
 
    return (
-      <button type="button" onClick={() => onAction(milestone)} className={clsx(PILL_BUTTON, 'text-white')} style={{ backgroundImage: PRIMARY_GRADIENT }}>
+      <button
+         type="button"
+         onClick={() => onAction(milestone)}
+         className={clsx(PILL_BUTTON, 'text-white')}
+         style={{ backgroundImage: PRIMARY_GRADIENT }}
+      >
          Get
       </button>
    );
