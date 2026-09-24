@@ -28,8 +28,10 @@ const TIER_LABEL_LAYOUT = [
    { left: '73.86%', width: '20.7%', top: 284 }
 ];
 
-const PROGRESS_TRACK_INNER_WIDTH = 394;
-const PROGRESS_MIN_WIDTH = 13;
+// Keep a sliver of fill visible whenever any credit is available, like the design's empty state.
+const CREDIT_BAR_MIN_PERCENT = 3;
+
+const formatUsd = (value: number) => `$${Number.isInteger(value) ? value : value.toFixed(2)}`;
 
 export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2HeroProps) {
    const currentTierIndex = Math.max(
@@ -40,7 +42,9 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
    const [isTrustTipOpen, setIsTrustTipOpen] = useState(!model.isVerified);
    const [isCreditTipOpen, setIsCreditTipOpen] = useState(model.creditLevel === 0);
    const browsedTier = MOODENG_TIERS[browsedTierIndex] ?? MOODENG_TIERS[0];
-   const fillWidth = Math.max(PROGRESS_MIN_WIDTH, Math.round(model.creditProgress * PROGRESS_TRACK_INNER_WIDTH));
+   const creditAvailable = Math.max(model.creditLimit - model.creditInUse, 0);
+   const availablePercent = model.creditLimit > 0 ? (creditAvailable / model.creditLimit) * 100 : 0;
+   const fillPercent = availablePercent > 0 ? Math.max(availablePercent, CREDIT_BAR_MIN_PERCENT) : 0;
 
    return (
       <section className="relative h-[408px] w-full" aria-label="Your Moodeng">
@@ -179,21 +183,34 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                </button>
             </div>
             <p className="min-w-0 whitespace-nowrap pb-2 text-right text-[clamp(14px,4.5vw,20px)] font-medium leading-4 tracking-[0.2px]">
-               <span className="text-[#4f36ef]">{model.creditHint.highlight}</span>
-               <span className="text-[#c0b9c8]">{model.creditHint.rest}</span>
+               {/* Borrowing room, which is what a borrower actually needs here. Before a limit exists
+                   (unverified) it falls back to the "Verify to unlock LV.1" hint. */}
+               {model.creditLimit > 0 ? (
+                  <>
+                     <span className="text-[#4f36ef]">{formatUsd(creditAvailable)}</span>
+                     <span className="text-[#c0b9c8]"> of {formatUsd(model.creditLimit)} left</span>
+                  </>
+               ) : (
+                  <>
+                     <span className="text-[#4f36ef]">{model.creditHint.highlight}</span>
+                     <span className="text-[#c0b9c8]">{model.creditHint.rest}</span>
+                  </>
+               )}
             </p>
          </div>
+         {/* Credit limit gauge: how much of the limit is free to borrow right now. */}
          <div
             className="absolute inset-x-5 top-[391px] h-[17px] rounded-full border-[3px] border-white bg-[#eee]"
-            role="progressbar"
-            aria-label="Progress to next credit level"
+            role="meter"
+            aria-label="Credit available to borrow"
             aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(model.creditProgress * 100)}
+            aria-valuemax={model.creditLimit}
+            aria-valuenow={creditAvailable}
+            aria-valuetext={`${formatUsd(creditAvailable)} of ${formatUsd(model.creditLimit)} available`}
          >
             <div
                className="h-[11px] max-w-full rounded-full bg-gradient-to-r from-[#ebddff] to-[#4f36f0] transition-[width] duration-500"
-               style={{ width: fillWidth }}
+               style={{ width: `${fillPercent}%` }}
             />
          </div>
          {isCreditTipOpen ? (

@@ -8,6 +8,7 @@ import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 import { calculateDaysBetween, calculateDaysRemaining, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
+import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
@@ -79,8 +80,11 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
 
    const model = useMemo<DashboardV2Model>(() => {
       const pandesal = isVerified ? pointsTotal : 0;
+      const creditLimit = getEffectiveCreditLimit(user.cs, isVerified);
+      // Same expiry-aware helper and loan set as the old dashboard's credit card and the request board.
+      const creditInUse = Math.min(getBorrowerUsedCreditAmount([...loanArrays.activeLoans, ...loanArrays.defaultedLoans]), creditLimit);
       const credit = getCreditLevelProgress({
-         creditLimit: getEffectiveCreditLimit(user.cs, isVerified),
+         creditLimit,
          isVerified,
          onTimeRepaidTotal: getOnTimeRepaidTotal(borrowerLoans),
          isPaused: Boolean(user.creditProgressionPaused)
@@ -108,7 +112,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
             hasRepaidLoan: loanArrays.repayments.length > 0
          }),
          creditLevel: credit.level,
-         creditProgress: credit.progress,
+         creditLimit,
+         creditInUse,
          creditHint: credit.hint,
          showConnectWallet: !getBaseWalletLockStatus(user).isConfirmedBorrowerWallet,
          showWithdraw: hasFundedLoan && !getBaseWalletLockStatus(user).isConfirmedOpenfort,

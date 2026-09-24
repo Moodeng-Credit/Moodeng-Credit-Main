@@ -151,8 +151,13 @@ describe('dashboard v2 sample states render', () => {
    const render = (element: ReturnType<typeof createElement>) => renderToStaticMarkup(createElement(MemoryRouter, null, element));
 
    it('renders the hero for each design state', () => {
-      expect(render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.unverified, showRealAvatar: false }))).toContain('LV0');
-      expect(render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.verified, showRealAvatar: false }))).toContain('left to LV.2');
+      const unverifiedHero = render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.unverified, showRealAvatar: false }));
+      expect(unverifiedHero).toContain('LV0');
+      expect(unverifiedHero).toContain('left to LV.1');
+      // Verified: the top-right shows borrowing room ($15 limit − $6.68 in use).
+      const verifiedHero = render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.verified, showRealAvatar: false }));
+      expect(verifiedHero).toContain('$8.32');
+      expect(verifiedHero).toContain(' of $15 left');
    });
 
    it('renders the overdue row with Pay Now and empty dues copy', () => {

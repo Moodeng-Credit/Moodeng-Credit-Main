@@ -19,7 +19,7 @@ const REWARDED_ALL_MILESTONES = SAMPLE_ALL_MILESTONES.map((milestone, index) => 
 
 const SAMPLE_BASE: Omit<
    DashboardV2Model,
-   'isVerified' | 'pandesal' | 'mood' | 'creditLevel' | 'creditProgress' | 'creditHint' | 'dues' | 'summary' | 'hasOverdue'
+   'isVerified' | 'pandesal' | 'mood' | 'creditLevel' | 'creditLimit' | 'creditInUse' | 'creditHint' | 'dues' | 'summary' | 'hasOverdue'
 > = {
    firstName: 'Jimmy',
    daysLive: 6,
@@ -41,7 +41,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       pandesal: 0,
       mood: 'waiting',
       creditLevel: 0,
-      creditProgress: 0,
+      creditLimit: 0,
+      creditInUse: 0,
       creditHint: { highlight: '$20', rest: ' left to LV.1' },
       summary: { repaymentsTotal: 0, active: 0, pending: 0, defaulted: 0 },
       dues: [],
@@ -53,7 +54,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       pandesal: 30,
       mood: 'loan',
       creditLevel: 1,
-      creditProgress: 0.4,
+      creditLimit: 15,
+      creditInUse: 6.68,
       creditHint: { highlight: '$13.32', rest: ' left to LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 0 },
       dues: [
@@ -70,7 +72,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       pandesal: 30,
       mood: 'repaid',
       creditLevel: 1,
-      creditProgress: 0.35,
+      creditLimit: 15,
+      creditInUse: 9.68,
       creditHint: { highlight: '$10.32', rest: ' left to LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 3 },
       dues: [
@@ -86,7 +89,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       pandesal: 45,
       mood: 'repaid',
       creditLevel: 2,
-      creditProgress: 0.25,
+      creditLimit: 20,
+      creditInUse: 0,
       creditHint: { highlight: '$15.00', rest: ' left to LV.3' },
       milestones: REWARDED_ALL_MILESTONES.slice(0, 3),
       allMilestones: REWARDED_ALL_MILESTONES,
