@@ -585,7 +585,7 @@ const UserProfile = () => {
                border-radius: 999px;
             }
          `}</style>
-         <div className="mx-auto max-w-[820px] pb-28">
+         <div className="mx-auto max-w-[440px] pb-28">
             {/* Header */}
             <div className="flex items-center justify-between gap-3 px-5 pb-3 pt-5 sm:px-6">
                <div className="flex min-w-0 flex-1 items-center gap-3">
