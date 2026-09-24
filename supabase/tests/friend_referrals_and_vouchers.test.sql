@@ -7,9 +7,10 @@
 --   createdb reftest
 --   psql -d reftest -f supabase/tests/friend_referrals_and_vouchers.test.sql   -- part 1 creates stubs
 --   psql -d reftest -f supabase/migrations/20260924160000_friend_referrals_and_vouchers.sql
+--   psql -d reftest -f supabase/migrations/20260924200000_voucher_claim_notification.sql
 --   psql -d reftest -v run_tests=1 -f supabase/tests/friend_referrals_and_vouchers.test.sql
 --
--- Expected final line: "32/32 passed".
+-- Expected final line: "35/35 passed".
 
 \if :{?run_tests}
 \set ON_ERROR_STOP 1
@@ -174,6 +175,26 @@ do $$ begin
 exception when others then insert into results values ('deleting a referred friend succeeds, inviter claim kept', false, sqlerrm);
 end $$;
 
+-- 12: a new claim notifies the team (trigger -> voucher-claim-notification); no vault secret never blocks a claim
+insert into public.users (id, username, display_name, created_at) values ('00000000-0000-0000-0000-000000000001', 'gia', null, now());
+insert into public.loans (borrower_user_id, loan_amount, repaid_amount, total_repayment_amount, repayment_status, loan_status, due_date, repaid_at) values
+  ('00000000-0000-0000-0000-000000000001', 15, 18, 18, 'Paid', 'Lent', now() - interval '2 days', now() - interval '3 days');
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+insert into results select 'claim saved without vault secrets', submit_voucher_claim('first_on_time_repayment', null, 'Gia Santos', '09171112222', null) is not null, null;
+reset role;
+insert into results select 'no call without vault secrets', (select count(*) from net.calls) = 0, null;
+insert into vault.decrypted_secrets values ('SUPABASE_PROJECT_URL', 'https://example.supabase.co'), ('SUPABASE_SECRET_KEY', 'sk_test');
+update public.voucher_claims set status = 'rejected' where user_id = '00000000-0000-0000-0000-000000000001';
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-000000000001');
+select submit_voucher_claim('first_on_time_repayment', null, 'Gia Santos', '09171112222', null);
+reset role;
+insert into results select 'new claim posts to voucher-claim-notification',
+  exists (select 1 from net.calls c join public.voucher_claims v on v.id::text = c.body ->> 'claimId'
+          where c.url = 'https://example.supabase.co/functions/v1/voucher-claim-notification' and v.status = 'pending'),
+  (select string_agg(url || ' ' || body::text, '; ') from net.calls);
+
 select case when ok then 'PASS' else 'FAIL' end as result, name, left(coalesce(detail, ''), 90) as detail from results;
 select count(*) filter (where ok) || '/' || count(*) || ' passed' as summary from results;
 \else
@@ -200,4 +221,11 @@ create or replace function app_private.is_moodeng_admin() returns boolean langua
 grant execute on function app_private.is_moodeng_admin() to authenticated;
 create or replace function public.update_updated_at_column() returns trigger language plpgsql as $$ begin new.updated_at = now(); return new; end $$;
 grant usage on schema public to anon, authenticated;
+create schema if not exists private;
+create schema if not exists vault;
+create table if not exists vault.decrypted_secrets (name text, decrypted_secret text);
+create schema if not exists net;
+create table if not exists net.calls (url text, body jsonb);
+create or replace function net.http_post(url text, headers jsonb default '{}'::jsonb, body jsonb default '{}'::jsonb)
+returns bigint language sql as $$ insert into net.calls (url, body) values (url, body); select 1::bigint $$;
 \endif
