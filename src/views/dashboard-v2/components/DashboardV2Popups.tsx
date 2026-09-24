@@ -184,3 +184,137 @@ export function VerifyPopup({ onClose, returnTo }: { onClose: () => void; return
       </PopupShell>
    );
 }
+
+const STREAK_COPY = {
+   en: {
+      title: 'Milestone Streak!',
+      unit: (count: number) => (count === 1 ? 'milestone this week' : 'milestones this week'),
+      fed: 'Pandesal fed to Moodeng',
+      nudge: 'Keep the streak going: your next milestone is waiting.',
+      cta: 'See My Next Milestone'
+   },
+   fil: {
+      title: 'Milestone Streak!',
+      unit: () => 'milestone ngayong linggo',
+      fed: 'Pandesal na naipakain kay Moodeng',
+      nudge: 'Ituloy mo lang: naghihintay na ang susunod mong milestone.',
+      cta: 'Tingnan ang Susunod'
+   }
+} as const;
+
+const WEEKDAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+/** Local-date key so "which day" matches the borrower's own calendar. */
+const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+/**
+ * Duolingo-style celebration for 2+ milestones completed in the last 7 days: a big streak number, the
+ * week as seven day dots (checked on days a milestone landed), and what earned it.
+ */
+export function MilestoneStreakPopup({
+   milestones,
+   language,
+   onClose,
+   onSeeNext
+}: {
+   milestones: { id: string; title: string; points: number; completedAt: string }[];
+   language: 'en' | 'fil';
+   onClose: () => void;
+   onSeeNext: () => void;
+}) {
+   const copy = STREAK_COPY[language];
+   const totalPandesal = milestones.reduce((sum, milestone) => sum + milestone.points, 0);
+   const hitDays = new Set(milestones.map((milestone) => dayKey(new Date(milestone.completedAt))));
+   const today = new Date();
+   const week = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (6 - index));
+      return { key: dayKey(date), letter: WEEKDAY_LETTERS[date.getDay()], isToday: index === 6 };
+   });
+
+   return (
+      <PopupShell
+         title={
+            <p className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8">
+               {copy.title}
+            </p>
+         }
+         onClose={onClose}
+         labelledBy="dv2-streak-popup-title"
+      >
+         <div className="flex flex-col items-center px-5 pb-6 pt-5 text-center">
+            <div className="relative flex items-center justify-center">
+               <span className="absolute h-28 w-28 rounded-full bg-[#ffe27a]/60 blur-2xl" aria-hidden="true" />
+               <DesignImage src={DASHBOARD_V2_ASSETS.pandesalLarge} className="relative h-[88px] w-[88px] object-contain" />
+            </div>
+            <p id="dv2-streak-popup-title" className="-mt-2 flex flex-col items-center">
+               <span
+                  className="bg-clip-text text-[72px] font-black italic leading-none tracking-[-2px] text-transparent"
+                  style={{ backgroundImage: 'linear-gradient(180deg, #9584ff 0%, #4f36ef 100%)' }}
+               >
+                  {milestones.length}
+               </span>
+               <span className="text-[22px] font-bold leading-6 text-[#594d65]">{copy.unit(milestones.length)}</span>
+            </p>
+
+            <ol className="mt-4 flex w-full justify-between px-1" aria-label="This week">
+               {week.map((day) => {
+                  const isHit = hitDays.has(day.key);
+                  return (
+                     <li key={day.key} className="flex flex-col items-center gap-1">
+                        <span className={day.isToday ? 'text-[12px] font-bold text-[#4f36ef]' : 'text-[12px] font-medium text-[#c0b9c8]'}>
+                           {day.letter}
+                        </span>
+                        <span
+                           className={
+                              isHit
+                                 ? 'flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_6px_rgba(79,54,239,0.35)]'
+                                 : 'flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#e0dbff] bg-white'
+                           }
+                           style={isHit ? { backgroundImage: PRIMARY_GRADIENT } : undefined}
+                        >
+                           {isHit ? (
+                              <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+                                 <path
+                                    d="M3 8.5l3 3 7-7"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                 />
+                              </svg>
+                           ) : null}
+                        </span>
+                     </li>
+                  );
+               })}
+            </ol>
+
+            <ul className="mt-5 flex w-full flex-col gap-2 text-left">
+               {milestones.map((milestone) => (
+                  <li key={milestone.id} className="flex items-center gap-2.5 rounded-[12px] bg-[#f6f3ff] px-3 py-2.5">
+                     <DesignImage src={DASHBOARD_V2_ASSETS.pandesalSmall} className="h-6 w-6 shrink-0 object-contain" />
+                     <span className="min-w-0 flex-1 text-[16px] font-medium leading-5 text-[#0f172b]">{milestone.title}</span>
+                     <span className="shrink-0 text-[16px] font-bold text-[#7e6afa]">+{milestone.points}</span>
+                  </li>
+               ))}
+            </ul>
+
+            <p className="mt-4 text-[18px] font-bold text-[#594d65]">
+               <span className="text-[#4f36ef]">+{totalPandesal}</span> {copy.fed}
+            </p>
+            <p className="mt-1 text-[15px] leading-5 text-[#877897]">{copy.nudge}</p>
+
+            <button
+               type="button"
+               onClick={onSeeNext}
+               className="mt-5 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
+               style={{ backgroundImage: PRIMARY_GRADIENT }}
+            >
+               {copy.cta}
+            </button>
+         </div>
+      </PopupShell>
+   );
+}
