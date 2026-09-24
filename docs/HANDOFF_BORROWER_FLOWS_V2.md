@@ -149,6 +149,47 @@ so regenerate them with more margin if it bothers anyone.
 - **After the call** (start + 30 min), the waiting screen says "Thanks for joining!" and hides Join.
 - **After a no-show**, the borrower sees "We missed you!" with the "oops" hippo and rebooks.
 
+## 3d. No-show defence (Zoom arrival pings, auto no-show)
+
+**Ladder per booking** (`video-call-reminders`, cron every 5 min; rules in its `lib.ts`):
+
+| When | What |
+|---|---|
+| 24h before | Day-before reminder (skipped if booked less than 20h ahead) |
+| 2h before | Unconfirmed only: "Still coming? Tap ✅ to keep your spot" (Messenger, Telegram, push) |
+| 1h before | Still unconfirmed and that ask verifiably landed → **slot released**: Cal.com booking cancelled, borrower asked to pick a new time, admins told. Otherwise the "under an hour" reminder |
+| Start | "Starting now 👋 tap to join" (skipped if Zoom already saw them) |
+| +3 min | Zoom hasn't seen them → "We're ready for you!" |
+| +20 min | Admins: "Did Maria show up?" with Zoom evidence ("✅ joined 11:02, stayed 14 min" / "🟡 waiting room only" / "❌ never joined") |
+| +60 min | Zoom never saw them and nobody tapped → **no-show recorded automatically**, borrower asked to rebook |
+
+**The host doesn't wait in empty rooms.** When the borrower enters the waiting room or the call,
+Telegram gets "🟢 Maria is in the waiting room now" with a Join button, and Discord gets it with the
+link.
+
+**Two strikes.** After 2 no-shows, booking pauses for 7 days after the latest one.
+
+**In-app confirm.** The waiting screen has its own "✅ I'll be there" button, so keeping the slot
+never depends on Messenger alone.
+
+**Safety.** Nothing is inferred from silence until that host's Zoom app has sent a signed event in
+the last 14 days. A borrower an admin already decided on (approved or rejected) is never touched.
+
+**Setup, once per host (George, Emma), about 10 minutes each:**
+1. At marketplace.zoom.us, go to *Develop → Build App → General App* (or *Webhook only*), signed in
+   to **that host's** Zoom account.
+2. Under *Features → Event Subscriptions*, add the endpoint
+   `https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/zoom-webhook?host=george` (or `?host=emma`).
+   Subscribe to *Meeting → Participant/Host joined meeting, Participant/Host left meeting,
+   Participant joined waiting room, Participant waiting for host, Participant admitted*.
+3. Copy the app's **Secret Token** into Supabase function secrets as `ZOOM_WEBHOOK_SECRET_GEORGE` /
+   `ZOOM_WEBHOOK_SECRET_EMMA`, deploy `zoom-webhook`, then click *Validate* in Zoom.
+4. In Zoom settings, turn **Waiting Room on**, so arrivals show up before the host joins.
+
+Some of these events may need a paid Zoom plan. If the webhook never fires on a free account,
+everything above still works minus the Zoom evidence and auto no-show, and the admin tap decides
+as before.
+
 ## 4. What's in the branch (files)
 
 **Database**: `supabase/migrations/20260924000000_loan_access_gate.sql` (one migration):
