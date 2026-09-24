@@ -36,3 +36,17 @@ export const orderHostsToTry = (freeHosts: string[], seed: string): string[] => 
    const start = hash % freeHosts.length;
    return freeHosts.map((_, i) => freeHosts[(start + i) % freeHosts.length]);
 };
+
+// Soonest-first slot offer. Calls booked inside ~a day get far fewer no-shows, and they're the only
+// ones our Messenger reminders can reach (Messenger allows free messages for 24h after the
+// borrower's last interaction, which is the verify tap just before booking). So when there are at
+// least `minCount` open times within `windowHours`, offer only those; otherwise fall back to the
+// full list so a quiet weekend never leaves a borrower with nothing to pick.
+export const preferSoonSlots = (slots: string[], now: number, windowHours = 22, minCount = 3): string[] => {
+   const cutoff = now + windowHours * 60 * 60 * 1000;
+   const soon = slots.filter((s) => {
+      const t = Date.parse(s);
+      return !Number.isNaN(t) && t > now && t <= cutoff;
+   });
+   return soon.length >= minCount ? soon : slots;
+};

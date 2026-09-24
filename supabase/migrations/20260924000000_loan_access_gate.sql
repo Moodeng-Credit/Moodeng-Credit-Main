@@ -1,5 +1,13 @@
 -- Connect → Approve → Apply: a borrower must reach out to us and be manually approved (once, per
--- user) before they can post a loan request. Replaces the video-call step as the human touch.
+-- user) before they can post a loan request.
+--
+-- Which borrower flow is live is a switch, flipped by an admin from Telegram (/loanflow):
+--   open      today's flow — no gate; a borrower without a referral books a video call and their
+--             request posts immediately. (Default, so applying this changes nothing by itself.)
+--   call      "post only after the call": reach out on Messenger + book a video call; an admin taps
+--             ✅ Showed up (→ approved, can apply) or ❌ No-show (→ must rebook) after the call.
+--   approval  reach out on Messenger; an admin approves/rejects in Telegram — no call.
+-- The gate below (loan_access_status + the loans insert guard) only bites in call/approval.
 --
 --   none      → never reached out (or a pending request expired)
 --   pending   → reached out via the in-app "Let's connect" card; admins pinged on Telegram/Discord
@@ -54,7 +62,9 @@ CREATE TABLE IF NOT EXISTS public.loan_access_requests (
   -- when the borrower is approved. It's a credit boost only — never a bypass of this gate.
   referral_code TEXT,
   channel       TEXT NOT NULL CHECK (channel IN ('messenger', 'whatsapp')),
-  status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'expired')),
+  -- 'call' requests are decided by attendance (Showed up / No-show); 'approval' ones directly.
+  kind          TEXT NOT NULL DEFAULT 'approval' CHECK (kind IN ('approval', 'call')),
+  status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected', 'no_show', 'expired')),
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   expires_at    TIMESTAMPTZ NOT NULL DEFAULT now() + INTERVAL '7 days',
   decided_at    TIMESTAMPTZ,
@@ -77,12 +87,49 @@ CREATE POLICY "Borrowers read own loan access requests"
   USING (user_id = auth.uid());
 -- No insert/update/delete policies: all writes go through the service role.
 
--- 3) Privileged-column guard ---------------------------------------------------------------------
+-- 3) Video-call attendance + Messenger confirm -------------------------------------------------
+-- Reset on every new booking by calcom-round-robin. The confirm token rides in the "✅ I'll be
+-- there" button of the Messenger reminder (video-call-confirm edge function).
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS video_call_confirm_token TEXT,
+  ADD COLUMN IF NOT EXISTS video_call_confirmed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS video_call_outcome TEXT CHECK (video_call_outcome IN ('attended', 'no_show')),
+  ADD COLUMN IF NOT EXISTS video_call_outcome_at TIMESTAMPTZ,
+  -- The borrower's IANA time zone at booking, so reminders show the time the way they saw it.
+  ADD COLUMN IF NOT EXISTS video_call_timezone TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_video_call_confirm_token_key
+  ON public.users (video_call_confirm_token) WHERE video_call_confirm_token IS NOT NULL;
+
+-- 4) The flow switch -----------------------------------------------------------------------------
+INSERT INTO public.telegram_bot_settings (key, value)
+VALUES ('loan_flow', 'open')
+ON CONFLICT (key) DO NOTHING;
+
+-- Readable by the app (telegram_bot_settings itself holds chat ids, so it stays private).
+-- Anything unexpected reads as 'open' — the flow that never locks anyone out.
+CREATE OR REPLACE FUNCTION public.get_loan_flow()
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT CASE WHEN value IN ('open', 'call', 'approval') THEN value ELSE 'open' END
+  FROM (SELECT (SELECT value FROM public.telegram_bot_settings WHERE key = 'loan_flow') AS value) s;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_loan_flow() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_loan_flow() TO anon, authenticated;
+
+-- 5) Privileged-column guard ---------------------------------------------------------------------
 -- Re-declared from the deployed body (pg_get_functiondef, 2026-09-24) — see the LESSON in
 -- 20260811020000. Adds:
 --   * loan_access_status / loan_access_approved_at — client-writable would mean self-approval.
 --   * whatsapp_verified_at / messenger_verified_at / messenger_psid — these were never guarded, so
 --     a signed-in user could stamp their own "verified" contact line through the REST API.
+--   * video_call_* — same hole: a user could mark their own call as booked (skipping the video-call
+--     step) or, now, as attended. Only calcom-round-robin / calcom-webhook / admins write these.
 -- loan_access_seen_at stays client-writable on purpose (the app stamps it when the glow is seen).
 CREATE OR REPLACE FUNCTION public.enforce_user_privileged_columns_server_only()
 RETURNS trigger AS $$
@@ -118,6 +165,16 @@ BEGIN
      -- Connect → Approve → Apply gate (this migration).
      OR new.loan_access_status IS DISTINCT FROM old.loan_access_status
      OR new.loan_access_approved_at IS DISTINCT FROM old.loan_access_approved_at
+     -- Video-call booking + attendance (this migration).
+     OR new.video_call_scheduled_at IS DISTINCT FROM old.video_call_scheduled_at
+     OR new.video_call_starts_at IS DISTINCT FROM old.video_call_starts_at
+     OR new.video_call_host IS DISTINCT FROM old.video_call_host
+     OR new.video_call_booking_uid IS DISTINCT FROM old.video_call_booking_uid
+     OR new.video_call_reminder_stage IS DISTINCT FROM old.video_call_reminder_stage
+     OR new.video_call_confirm_token IS DISTINCT FROM old.video_call_confirm_token
+     OR new.video_call_confirmed_at IS DISTINCT FROM old.video_call_confirmed_at
+     OR new.video_call_outcome IS DISTINCT FROM old.video_call_outcome
+     OR new.video_call_outcome_at IS DISTINCT FROM old.video_call_outcome_at
   THEN
     RAISE EXCEPTION 'users: verification/credit columns can only be written by verified server-side code';
   END IF;
@@ -126,16 +183,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY INVOKER SET search_path = public;
 
--- 4) Server-side enforcement: a loan request can only come from an approved borrower -------------
--- The UI gate is a convenience; this is the rule. Only client inserts are checked (service-role /
--- admin tooling passes through), mirroring the privileged-column guard. SECURITY INVOKER for the
--- same reason: current_user must be the caller's role.
+-- 6) Server-side enforcement: a loan request can only come from an approved borrower -------------
+-- The UI gate is a convenience; this is the rule — in the call/approval flows. In 'open' it stands
+-- down, exactly like today. Only client inserts are checked (service-role / admin tooling passes
+-- through), mirroring the privileged-column guard. SECURITY INVOKER for the same reason:
+-- current_user must be the caller's role (get_loan_flow is DEFINER, so it can read the setting).
 CREATE OR REPLACE FUNCTION public.enforce_loan_access_approved()
 RETURNS trigger AS $$
 DECLARE
   v_status public.loan_access_status;
 BEGIN
   IF current_user NOT IN ('authenticated', 'anon') OR new.borrower_user_id IS NULL THEN
+    RETURN new;
+  END IF;
+
+  IF public.get_loan_flow() = 'open' THEN
     RETURN new;
   END IF;
 
@@ -155,7 +217,7 @@ CREATE TRIGGER trg_enforce_loan_access_approved
   BEFORE INSERT ON public.loans
   FOR EACH ROW EXECUTE FUNCTION public.enforce_loan_access_approved();
 
--- 5) Expire stale pending requests (7 days) with a nudge — hourly --------------------------------
+-- 7) Expire stale pending requests (7 days) with a nudge — hourly --------------------------------
 DO $$
 BEGIN
   PERFORM cron.unschedule('loan-access-expire-hourly');

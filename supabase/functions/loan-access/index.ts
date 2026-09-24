@@ -1,14 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { BORROWER_COLUMNS, notifyAdminsOfRequest, notifyBorrower } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS } from '../_shared/loanAccess.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
 //
 //   action=submit  (borrower JWT)  — the "Let's connect" card. Requires a proven contact line
 //                                   (Messenger, or WhatsApp once live), flips the borrower to
 //                                   pending, records the reach-out, and pings admins on Telegram
-//                                   (Approve/Reject buttons) + Discord.
+//                                   + Discord. The live flow (telegram_bot_settings.loan_flow) sets
+//                                   the kind: 'approval' → Approve/Reject buttons; 'call' → needs a
+//                                   booked video call, decided by Showed up / No-show after it.
+//                                   In 'open' there's no gate, so submit is refused.
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
@@ -60,6 +63,15 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
       return json({ ok: true, status: borrower.loan_access_status });
    }
 
+   const { data: flowData } = await svc.rpc('get_loan_flow');
+   const flow = typeof flowData === 'string' ? flowData : 'open';
+   if (flow === 'open') return json({ ok: false, error: 'gate_off' }, 409);
+
+   // Call flow: the reach-out IS the booked call, so there must be one coming up.
+   if (flow === 'call' && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
+      return json({ ok: false, error: 'call_not_booked' }, 400);
+   }
+
    // The whole point of connecting: we must have a line we've proven works.
    const channel = borrower.messenger_verified_at ? 'messenger' : borrower.whatsapp_verified_at ? 'whatsapp' : null;
    if (!channel) return json({ ok: false, error: 'contact_not_verified' }, 400);
@@ -74,9 +86,14 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
          display_name: clip(body.displayName, MAX_NAME) || borrower.display_name || null,
          reason,
          referral_code: clip(body.referralCode, MAX_REFERRAL).toUpperCase() || null,
-         channel
+         channel,
+         kind: flow === 'call' ? 'call' : 'approval',
+         // A call request stays open until a week after the call, not a week after booking.
+         ...(flow === 'call' && borrower.video_call_starts_at
+            ? { expires_at: new Date(Date.parse(borrower.video_call_starts_at) + 7 * 86400000).toISOString() }
+            : {})
       })
-      .select('id, user_id, display_name, reason, referral_code, channel, status, created_at')
+      .select(REQUEST_COLUMNS)
       .single();
    if (insertError) {
       // Unique open-request index: a concurrent submit already created it.

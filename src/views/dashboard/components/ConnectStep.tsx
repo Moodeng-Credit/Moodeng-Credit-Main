@@ -5,16 +5,20 @@ import { Clock3, HeartHandshake } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { LoanAccessStatus } from '@/types/authTypes';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
+import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
-// PART 1 of Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
+// PART 1 of Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — shown in the
+// 'approval' and 'call' borrower flows (never in 'open').
 //
 // A borrower who hasn't been approved yet can't post a loan request. Instead they reach out to the
 // team first — B2C treated like a B2B lead:
 //   1. "Let's connect": open Messenger (proves a real line we can message back on — same SendPulse
 //      one-tap flow as ContactsStep; skipped straight through if they're already verified),
 //   2. a short intro (what they need the loan for),
-//   3. "Send to the team" → loan-access edge function flips them to pending and pings admins, who
-//      approve or reject from Telegram. The borrower then gets a push (+ Telegram) either way.
+//   3. call mode only: book the video call (the request unlocks only after they actually show up),
+//   4. "Send to the team" → loan-access edge function flips them to pending and pings admins, who
+//      decide from Telegram (Approve/Reject, or Showed up/No-show after the call). The borrower
+//      then gets a push (+ Telegram, + Messenger reminders for the call).
 // The referral card (optional credit boost) runs before this, inside LoanRequestModal. A referral
 // never skips approval — everyone goes through the same process.
 
@@ -25,6 +29,7 @@ const ERROR_COPY: Record<string, string> = {
    contact_not_verified: 'Please confirm Messenger first, then send.',
    reason_required: 'Tell us a little about what you need.',
    not_borrower: 'Only borrower accounts can apply for loans.',
+   call_not_booked: 'Please book your call first.',
    account_inactive: "Your account can't apply right now. Message us on Messenger for help."
 };
 
@@ -33,6 +38,7 @@ export default function ConnectStep({
    displayName,
    referralCode,
    wasRejected = false,
+   mode = 'approval',
    onBack,
    onSubmitted
 }: {
@@ -40,10 +46,11 @@ export default function ConnectStep({
    displayName: string;
    referralCode?: string;
    wasRejected?: boolean;
+   mode?: 'approval' | 'call';
    onBack: () => void;
    onSubmitted: (status: LoanAccessStatus) => void | Promise<void>;
 }) {
-   const [page, setPage] = useState<'contact' | 'intro'>('contact');
+   const [page, setPage] = useState<'contact' | 'intro' | 'call'>('contact');
    const [reason, setReason] = useState('');
    const [isSending, setIsSending] = useState(false);
    const [error, setError] = useState('');
@@ -68,6 +75,7 @@ export default function ConnectStep({
          if (!payload?.ok || !payload.status) {
             setError(ERROR_COPY[payload?.error ?? ''] ?? "Couldn't send right now — please try again in a moment.");
             if (payload?.error === 'contact_not_verified') setPage('contact');
+            if (payload?.error === 'call_not_booked') setPage('call');
             return;
          }
          await onSubmitted(payload.status);
@@ -94,7 +102,9 @@ export default function ConnectStep({
                   <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
                      {wasRejected
                         ? "Want us to take another look? Reach out again and tell us what's changed."
-                        : 'Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
+                        : mode === 'call'
+                          ? 'Before your first loan, we meet every borrower on a quick 15-minute video call. First, confirm your Messenger so we can remind you about it.'
+                          : 'Before your first loan, we like to meet every borrower. Confirm your Messenger so the team can chat with you — we review and approve, usually within a day.'}
                   </p>
                </div>
             }
@@ -102,10 +112,28 @@ export default function ConnectStep({
       );
    }
 
+   if (page === 'call') {
+      return (
+         <div className="flex min-h-0 flex-col">
+            <VideoCallStep
+               userId={userId}
+               requireUpcoming
+               intro="Pick a time for a quick 15-minute video hello. Once you've joined the call, you can apply for your loan straight away."
+               continueLabel={isSending ? 'Sending...' : 'Send to the team'}
+               onBack={() => setPage('intro')}
+               onContinue={() => void handleSend()}
+            />
+            {error ? <p className="px-5 pb-4 text-md-b3 font-normal text-md-red-500">{error}</p> : null}
+         </div>
+      );
+   }
+
    return (
       <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          <p className="text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-            Last step: a quick hello to the team. Only Moodeng sees this — it isn&apos;t shown to lenders.
+            {mode === 'call'
+               ? 'A quick hello before your call, so the team knows what you need. Only Moodeng sees this — it isn’t shown to lenders.'
+               : 'Last step: a quick hello to the team. Only Moodeng sees this — it isn’t shown to lenders.'}
          </p>
 
          <label className="flex flex-col gap-2" htmlFor="connect-reason">
@@ -139,10 +167,10 @@ export default function ConnectStep({
                      : 'bg-md-neutral-600'
                }`}
                disabled={!canSend}
-               onClick={handleSend}
+               onClick={() => (mode === 'call' ? setPage('call') : void handleSend())}
                type="button"
             >
-               {isSending ? 'Sending...' : 'Send to the team'}
+               {mode === 'call' ? 'Next: book your call' : isSending ? 'Sending...' : 'Send to the team'}
             </button>
             <button
                className="w-full rounded-md-lg px-md-4 py-md-2 text-md-b2 font-medium text-md-neutral-1200 transition duration-150 ease-out hover:text-md-heading"
@@ -156,18 +184,19 @@ export default function ConnectStep({
    );
 }
 
-// Shown instead of the application while an admin decides. Nothing to do but wait — so say so,
-// say how they'll hear back, and let them close.
-export function LoanAccessPendingCard({ onClose }: { onClose: () => void }) {
+// Shown instead of the application while an admin decides (or, in call mode, until the call has
+// happened). Nothing to do but wait — so say so, say how they'll hear back, and let them close.
+export function LoanAccessPendingCard({ onClose, mode = 'approval' }: { onClose: () => void; mode?: 'approval' | 'call' }) {
    return (
       <div className="flex min-h-0 flex-col items-center gap-4 overflow-y-auto overscroll-contain px-5 py-8 text-center text-md-b2 text-md-heading">
          <span className="grid size-14 place-items-center rounded-full bg-md-primary-100">
             <Clock3 aria-hidden="true" className="size-7 text-md-primary-1200" strokeWidth={1.8} />
          </span>
-         <h3 className="text-[20px] font-[590] leading-6">We&apos;re reviewing your request</h3>
+         <h3 className="text-[20px] font-[590] leading-6">{mode === 'call' ? 'See you on the call' : 'We’re reviewing your request'}</h3>
          <p className="max-w-[320px] text-[13px] font-normal leading-[18px] text-md-neutral-1200">
-            Thanks for reaching out! The team usually replies within a day. We&apos;ll message you on Messenger and send a notification the
-            moment you&apos;re approved — then you can apply right away.
+            {mode === 'call'
+               ? 'Your video call is booked — the link is in your email and we’ll remind you on Messenger. Right after the call, the team unlocks your application and you can apply straight away.'
+               : 'Thanks for reaching out! The team usually replies within a day. We’ll message you on Messenger and send a notification the moment you’re approved — then you can apply right away.'}
          </p>
          <button
             className="mt-2 w-full rounded-md-lg bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98]"

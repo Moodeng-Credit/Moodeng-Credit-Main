@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { hostsFreeAt, mergeSlots, orderHostsToTry } from './lib.ts';
+import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
    const george = ['2026-09-22T19:00:00.000+07:00', '2026-09-22T20:00:00.000+07:00'];
@@ -34,4 +34,16 @@ Deno.test('different seeds can prefer different hosts (spreads load)', () => {
    const seen = new Set<string>();
    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f']) seen.add(orderHostsToTry(['george', 'emma'], seed)[0]);
    assertEquals(seen.size, 2); // both hosts get picked first across borrowers
+});
+
+Deno.test('preferSoonSlots offers only the next-day times when there are enough of them', () => {
+   const now = Date.parse('2026-09-24T02:00:00Z');
+   const slots = ['2026-09-24T04:00:00Z', '2026-09-24T06:00:00Z', '2026-09-24T09:00:00Z', '2026-09-26T04:00:00Z'];
+   assertEquals(preferSoonSlots(slots, now), slots.slice(0, 3));
+});
+
+Deno.test('preferSoonSlots falls back to every slot when the next day is too thin', () => {
+   const now = Date.parse('2026-09-24T02:00:00Z');
+   const slots = ['2026-09-24T04:00:00Z', '2026-09-26T04:00:00Z', '2026-09-27T04:00:00Z'];
+   assertEquals(preferSoonSlots(slots, now), slots);
 });

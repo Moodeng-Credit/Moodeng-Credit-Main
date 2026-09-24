@@ -11,11 +11,20 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const supa = vi.hoisted(() => {
    const state = {
       usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: '2026-09-24T00:00:00Z' as string | null },
-      invokeResult: { data: { ok: true, status: 'pending' } as unknown, error: null as unknown }
+      invokeResult: { data: { ok: true, status: 'pending' } as unknown, error: null as unknown },
+      // What calcom-round-robin answers (call mode): open slots, then a successful booking.
+      slots: ['2026-09-25T03:00:00.000Z', '2026-09-25T04:00:00.000Z']
    };
    return {
       state,
-      invoke: vi.fn(async () => state.invokeResult),
+      invoke: vi.fn(async (fn: string, opts?: { body?: { action?: string; start?: string } }) => {
+         if (fn === 'calcom-round-robin') {
+            return opts?.body?.action === 'book'
+               ? { data: { ok: true, start: opts.body.start }, error: null }
+               : { data: { slots: state.slots }, error: null };
+         }
+         return state.invokeResult;
+      }),
       maybeSingle: vi.fn(async () => ({ data: state.usersRow }))
    };
 });
@@ -138,6 +147,70 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
    });
 });
 
+describe('ConnectStep — call mode (request unlocks only after the call)', () => {
+   let container: HTMLDivElement;
+   let root: Root;
+   let onSubmitted: ReturnType<typeof vi.fn>;
+
+   beforeEach(() => {
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-24T00:00:00Z' };
+      supa.state.invokeResult = { data: { ok: true, status: 'pending' }, error: null };
+      supa.invoke.mockClear();
+      onSubmitted = vi.fn();
+      container = document.createElement('div');
+      document.body.appendChild(container);
+      root = createRoot(container);
+   });
+
+   afterEach(() => {
+      act(() => root.unmount());
+      container.remove();
+   });
+
+   it('goes Messenger → intro → book a call, and only then sends to the team', async () => {
+      await act(async () => {
+         root.render(createElement(ConnectStep, { userId: 'user-1', displayName: 'Maria', mode: 'call', onBack: vi.fn(), onSubmitted }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain('15-minute video call');
+
+      await click(buttonByText(container, 'Continue'));
+      await typeInto(container.querySelector('textarea') as HTMLTextAreaElement, 'Rent is due before payday');
+      await click(buttonByText(container, 'Next: book your call'));
+      expect(supa.invoke).not.toHaveBeenCalledWith('loan-access', expect.anything());
+
+      // Slots load, pick the first one → booked → the continue button sends the request.
+      await act(async () => {
+         await Promise.resolve();
+         await Promise.resolve();
+      });
+      const slotButton = Array.from(container.querySelectorAll('button')).find((b) => /AM|PM/.test(b.textContent ?? ''));
+      expect(slotButton).toBeTruthy();
+      await click(slotButton);
+      await act(async () => {
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain("You're booked");
+
+      await click(buttonByText(container, 'Send to the team'));
+      expect(supa.invoke).toHaveBeenCalledWith('loan-access', {
+         body: { action: 'submit', reason: 'Rent is due before payday', displayName: 'Maria', referralCode: undefined }
+      });
+      expect(onSubmitted).toHaveBeenCalledWith('pending');
+   });
+
+   it('shows the "see you on the call" pending card in call mode', async () => {
+      const onClose = vi.fn();
+      await act(async () => {
+         root.render(createElement(LoanAccessPendingCard, { onClose, mode: 'call' }));
+      });
+      expect(container.textContent).toContain('See you on the call');
+      expect(container.textContent).toContain('Right after the call');
+   });
+});
+
 describe('LoanAccessPendingCard', () => {
    it('tells the borrower they are being reviewed and closes on "Got it"', async () => {
       const container = document.createElement('div');
@@ -147,7 +220,7 @@ describe('LoanAccessPendingCard', () => {
       await act(async () => {
          root.render(createElement(LoanAccessPendingCard, { onClose }));
       });
-      expect(container.textContent).toContain("We're reviewing your request");
+      expect(container.textContent).toContain('We’re reviewing your request');
       await click(buttonByText(container, 'Got it'));
       expect(onClose).toHaveBeenCalledTimes(1);
       act(() => root.unmount());

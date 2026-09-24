@@ -16,6 +16,11 @@ verify_jwt = false
 [functions.calcom-webhook]
 verify_jwt = false
 
+# "✅ I'll be there" button in Messenger call reminders — tapped from Messenger's in-app browser with
+# no Supabase session. Gated by the per-booking random token (users.video_call_confirm_token).
+[functions.video-call-confirm]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 

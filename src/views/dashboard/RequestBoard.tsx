@@ -28,6 +28,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useLoanFlow } from '@/hooks/useLoanFlow';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -1182,9 +1183,23 @@ function RequestBoard$() {
    // Connect → Approve → Apply: a freshly approved borrower gets a glowing Apply card until they open
    // the application once. Only an explicit 'approved' (column deployed) with no seen stamp glows —
    // grandfathered users were stamped as seen by the migration.
+   const loanFlow = useLoanFlow();
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
-   const isLoanAccessPending = isBorrower && loanAccessStatus === 'pending';
+   const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+
+   // Landing here from the "✅ I'll be there" button in a Messenger call reminder
+   // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
+   const callConfirmedParam = new URLSearchParams(location.search).get('callConfirmed');
+   useEffect(() => {
+      if (!callConfirmedParam) return;
+      if (callConfirmedParam === 'yes') {
+         showToast(TOAST_TYPES.SUCCESS, "Thanks — see you on the call!", "The team knows you're coming. The join link is in your email.", 'OK', 'acknowledge');
+      } else {
+         showToast(TOAST_TYPES.INFO, 'That link has expired', 'That call reminder is for an older booking. Check your latest message from Moodeng.', 'OK', 'acknowledge');
+      }
+      navigate(pathname, { replace: true });
+   }, [callConfirmedParam, navigate, pathname, showToast]);
 
    useEffect(() => {
       if (!showModal || !isFreshlyApproved || !effectiveUser?.id) return;
@@ -1974,9 +1989,13 @@ function RequestBoard$() {
                                  </>
                               ) : isLoanAccessPending ? (
                                  <>
-                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">We&apos;re reviewing you</p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">
+                                       {loanFlow === 'call' ? 'See you on the call' : 'We’re reviewing you'}
+                                    </p>
                                     <p className="text-md-b2 font-medium text-md-neutral-700">
-                                       Thanks for reaching out — we&apos;ll message you on Messenger soon.
+                                       {loanFlow === 'call'
+                                          ? 'You can apply right after your video call.'
+                                          : 'Thanks for reaching out — we’ll message you on Messenger soon.'}
                                     </p>
                                  </>
                               ) : (
@@ -2282,6 +2301,7 @@ function RequestBoard$() {
                   isSubmitting={isSubmitting || isCheckingReason}
                   availableCreditLimit={availableCreditLimit}
                   canUseReferralBoost={canUseReferralBoost}
+                  loanFlow={loanFlow}
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   showBioStep={showBioStep}
                   onBioSave={handleBioSave}

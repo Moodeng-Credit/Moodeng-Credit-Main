@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
-import { hostsFreeAt, mergeSlots, orderHostsToTry } from './lib.ts';
+import { newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
+import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots } from './lib.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -157,7 +158,7 @@ serve(async (req) => {
       const start = ymd(new Date());
       const end = ymd(new Date(Date.now() + DAYS_AHEAD * 86400000));
       const perHost = await Promise.all(resolved.map((h) => fetchSlots(h.apiKey, h.eventTypeId, start, end, timeZone)));
-      return json({ slots: mergeSlots(perHost) });
+      return json({ slots: preferSoonSlots(mergeSlots(perHost), Date.now()) });
    }
 
    if (payload.action === 'book') {
@@ -192,17 +193,31 @@ serve(async (req) => {
          if ('uid' in result) {
             // Source of truth: we made the booking, so stamp the gate directly (the signed webhook
             // will also fire and land on the same values).
-            await svc
+            const confirmToken = newConfirmToken();
+            const { data: booked } = await svc
                .from('users')
                .update({
                   video_call_scheduled_at: new Date().toISOString(),
                   video_call_host: hostId,
                   video_call_starts_at: start,
                   video_call_booking_uid: result.uid,
-                  // Fresh booking → restart the reminder ladder (see video-call-reminders).
-                  video_call_reminder_stage: 0
+                  video_call_timezone: timeZone,
+                  // Fresh booking → restart the reminder ladder (see video-call-reminders) and
+                  // clear the last call's confirm/attendance.
+                  video_call_reminder_stage: 0,
+                  video_call_confirm_token: confirmToken,
+                  video_call_confirmed_at: null,
+                  video_call_outcome: null,
+                  video_call_outcome_at: null
                })
-               .eq('id', user.id);
+               .eq('id', user.id)
+               .select('messenger_psid, video_call_starts_at, video_call_timezone, video_call_confirm_token, video_call_confirmed_at')
+               .maybeSingle();
+            // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
+            if (booked) {
+               const sent = await sendBookedMessenger(booked);
+               if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
+            }
             let teamChat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || '';
             if (!teamChat) {
                const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();

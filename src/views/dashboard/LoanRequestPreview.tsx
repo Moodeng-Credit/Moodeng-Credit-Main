@@ -2,6 +2,7 @@ import { type ChangeEvent, useRef, useState } from 'react';
 
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
+import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { LoanAccessStatus, User } from '@/types/authTypes';
 
 // DEV-only screenshot harness for the loan-request flow (terms → bio page 1 → bio page 2).
@@ -34,9 +35,11 @@ export default function LoanRequestPreview() {
    const params = new URLSearchParams(window.location.search);
    // ?unverified renders the not-yet-verified state (verify blocker + inert submit button).
    const showVerify = params.has('unverified');
-   // ?access=none|pending|rejected renders the Connect → Approve → Apply gate (PART 1 / reviewing
-   // card); ?referral adds the referral card in front of it. Default = approved (the application).
-   const access = (params.get('access') as LoanAccessStatus | null) ?? 'approved';
+   // ?flow=open|call|approval picks the borrower flow (default open). In call/approval,
+   // ?access=none|pending|rejected renders the Connect gate (PART 1 / the "reviewing" card) — a
+   // gated flow defaults to 'none', i.e. a brand-new borrower. ?referral adds the referral card.
+   const flow = (params.get('flow') as LoanFlow | null) ?? 'open';
+   const access = (params.get('access') as LoanAccessStatus | null) ?? (flow === 'open' ? 'approved' : 'none');
    const withReferral = params.has('referral');
    const previewUser: User = { ...PREVIEW_BORROWER, loanAccessStatus: access };
 
@@ -64,6 +67,7 @@ export default function LoanRequestPreview() {
                canUseReferralBoost={withReferral}
                requireBorrowerContextStep
                startOnReferralStep={withReferral}
+               loanFlow={flow}
             />
          ) : null}
          {/* Shows the real post-submit success screen so the preview demonstrates the full flow. */}

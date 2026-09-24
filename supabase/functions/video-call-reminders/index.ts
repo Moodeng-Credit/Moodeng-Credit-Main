@@ -4,11 +4,15 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import type { PushLocale, PushPayload } from '../_shared/pushMessages.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
+import { sendReminderMessenger } from '../_shared/videoCall.ts';
 
 // Cron-driven (every 15 min) reminders for booked video calls, so borrowers actually show up.
-// Two rungs per booking, deduped by users.video_call_reminder_stage (0 none, 1 day-before,
-// 2 hour-before): a "tomorrow" nudge inside 24h, and a "starting soon" nudge inside ~1h. Delivered
-// over web push (they subscribed) and Telegram (when connected + account-activity notifications on).
+// Rungs per booking, deduped by users.video_call_reminder_stage (0 none, 1 day-before,
+// 2 hour-before, 3 admins asked "did they show up?"): a "tomorrow" nudge inside 24h and a "starting
+// soon" nudge inside ~1h — over web push, Telegram (when connected + account-activity on) and
+// Messenger (SendPulse, only inside Messenger's 24h window, with the "✅ I'll be there" button until
+// they tap it). Then ~20 min after the start, admins get Showed up / No-show buttons.
 //
 // verify_jwt stays on (no config.toml entry → project default), and the pg_cron job calls it with
 // the service key, so only a valid project token reaches it. Never throws per-user: one borrower's
@@ -35,9 +39,18 @@ type ReminderUser = {
    username: string | null;
    chat_id: string | number | null;
    notif_account_activity: boolean | null;
+   messenger_psid: string | null;
    video_call_starts_at: string;
+   video_call_timezone: string | null;
+   video_call_confirm_token: string | null;
+   video_call_confirmed_at: string | null;
    video_call_reminder_stage: number | null;
 };
+
+// How long after the start we ask admins about attendance (the call is 15 min).
+const OUTCOME_PROMPT_AFTER_MIN = 20;
+// Don't dig up ancient calls (e.g. the first run after deploy) — only ask about recent ones.
+const OUTCOME_PROMPT_LOOKBACK_H = 6;
 
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -54,7 +67,9 @@ serve(async (req) => {
    // Only future calls within the next ~25h that haven't had the final reminder yet.
    const { data, error } = await svc
       .from('users')
-      .select('id, username, chat_id, notif_account_activity, video_call_starts_at, video_call_reminder_stage')
+      .select(
+         'id, username, chat_id, notif_account_activity, messenger_psid, video_call_starts_at, video_call_timezone, video_call_confirm_token, video_call_confirmed_at, video_call_reminder_stage'
+      )
       .not('video_call_starts_at', 'is', null)
       .gt('video_call_starts_at', nowIso)
       .lt('video_call_starts_at', horizonIso)
@@ -108,6 +123,12 @@ serve(async (req) => {
          }
       }
 
+      // Messenger — the channel they actually use. Skips itself outside the 24h window.
+      const messenger = await sendReminderMessenger(u, targetStage === 2 ? 2 : 1);
+      if (!messenger.ok && messenger.reason !== 'no_contact') {
+         console.log('video-call-reminders: messenger skipped for', u.id, messenger.reason);
+      }
+
       const { error: updateError } = await svc.from('users').update({ video_call_reminder_stage: targetStage }).eq('id', u.id);
       if (updateError) {
          console.error('video-call-reminders: stage update failed for', u.id, updateError.message);
@@ -116,5 +137,37 @@ serve(async (req) => {
       sent++;
    }
 
-   return json({ ok: true, scanned: users.length, sent });
+   // After the call: ask admins whether they showed up (stage 3), once per booking.
+   const promptBeforeIso = new Date(now - OUTCOME_PROMPT_AFTER_MIN * 60 * 1000).toISOString();
+   const promptAfterIso = new Date(now - OUTCOME_PROMPT_LOOKBACK_H * 60 * 60 * 1000).toISOString();
+   const { data: finished, error: finishedError } = await svc
+      .from('users')
+      .select('id')
+      .not('video_call_starts_at', 'is', null)
+      .lt('video_call_starts_at', promptBeforeIso)
+      .gt('video_call_starts_at', promptAfterIso)
+      .lt('video_call_reminder_stage', 3)
+      .is('video_call_outcome', null);
+   if (finishedError) console.error('video-call-reminders: outcome query failed', finishedError.message);
+
+   let prompted = 0;
+   for (const row of (finished ?? []) as Array<{ id: string }>) {
+      // Claim the rung first so a slow send can't double-prompt on the next tick.
+      const { data: claimed } = await svc
+         .from('users')
+         .update({ video_call_reminder_stage: 3 })
+         .eq('id', row.id)
+         .lt('video_call_reminder_stage', 3)
+         .select('id')
+         .maybeSingle();
+      if (!claimed) continue;
+      try {
+         await promptAdminsForAttendance(svc, row.id);
+         prompted++;
+      } catch (err) {
+         console.error('video-call-reminders: outcome prompt failed for', row.id, err instanceof Error ? err.message : err);
+      }
+   }
+
+   return json({ ok: true, scanned: users.length, sent, prompted });
 });
