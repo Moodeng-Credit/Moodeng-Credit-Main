@@ -11,7 +11,7 @@ import { BORROWER_COLUMNS, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMN
 //                                   + Discord. The live flow (telegram_bot_settings.loan_flow) sets
 //                                   the kind: 'approval' → Approve/Reject buttons; 'call' → needs a
 //                                   booked video call, decided by Showed up / No-show after it.
-//                                   In 'open' there's no gate, so submit is refused.
+//                                   In 'open' there's no gate, and referred borrowers skip it, so both are refused.
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
@@ -49,7 +49,7 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
 
    const { data: borrower, error } = await svc
       .from('users')
-      .select(`${BORROWER_COLUMNS}, user_role, account_status`)
+      .select(`${BORROWER_COLUMNS}, user_role, account_status, redeemed_referral_code_id`)
       .eq('id', userId)
       .maybeSingle();
    if (error) throw new Error(error.message);
@@ -66,6 +66,8 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
    const { data: flowData } = await svc.rpc('get_loan_flow');
    const flow = typeof flowData === 'string' ? flowData : 'open';
    if (flow === 'open') return json({ ok: false, error: 'gate_off' }, 409);
+   // Referred borrowers skip the gate entirely (they apply straight away), so nothing to request.
+   if (borrower.redeemed_referral_code_id) return json({ ok: false, error: 'has_referral' }, 409);
 
    // Call flow: the reach-out IS the booked call, so there must be one coming up.
    if (flow === 'call' && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {

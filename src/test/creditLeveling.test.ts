@@ -213,6 +213,47 @@ describe('LoanRequestModal borrowing gate', () => {
       expect(markup).not.toContain('disabled');
    });
 
+   describe('borrower flow split (call/approval gate)', () => {
+      const render = (user: User, loanFlow: 'open' | 'call' | 'approval') =>
+         renderToStaticMarkup(
+            createElement(LoanRequestModal, {
+               ...sharedProps,
+               showVerify: false,
+               availableCreditLimit: 15,
+               startOnReferralStep: false,
+               loanFlow,
+               user
+            })
+         );
+
+      it('sends a new borrower WITHOUT a referral to "Let\u2019s connect" in the call flow', () => {
+         const markup = render({ ...baseUser, loanAccessStatus: 'none' }, 'call');
+         expect(markup).toContain('Let&#x27;s connect');
+         expect(markup).not.toContain('Set your loan terms');
+      });
+
+      it('lets a new borrower WITH a referral go straight to the loan form in the call flow', () => {
+         const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'call');
+         expect(markup).toContain('Set your loan terms');
+         expect(markup).not.toContain('Let&#x27;s connect');
+      });
+
+      it('shows the "see you on the call" card while an unreferred borrower waits', () => {
+         const markup = render({ ...baseUser, loanAccessStatus: 'pending' }, 'call');
+         expect(markup).toContain('See you on the call');
+      });
+
+      it('changes nothing in the open flow — no gate for anyone', () => {
+         const markup = render({ ...baseUser, loanAccessStatus: 'none' }, 'open');
+         expect(markup).toContain('Set your loan terms');
+      });
+
+      it('lets an approved borrower apply without a referral', () => {
+         const markup = render({ ...baseUser, loanAccessStatus: 'approved' }, 'call');
+         expect(markup).toContain('Set your loan terms');
+      });
+   });
+
    it('uses the verified credit limit when showing the loan cap', () => {
       const markup = renderToStaticMarkup(
          createElement(LoanRequestModal, {

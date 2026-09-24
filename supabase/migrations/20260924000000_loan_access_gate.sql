@@ -7,7 +7,9 @@
 --   call      "post only after the call": reach out on Messenger + book a video call; an admin taps
 --             ✅ Showed up (→ approved, can apply) or ❌ No-show (→ must rebook) after the call.
 --   approval  reach out on Messenger; an admin approves/rejects in Telegram — no call.
--- The gate below (loan_access_status + the loans insert guard) only bites in call/approval.
+-- The gate below (loan_access_status + the loans insert guard) only bites in call/approval, and
+-- only for borrowers WITHOUT a redeemed referral code: someone vouched for a referred borrower, so
+-- they apply straight away (the strong filter is for strangers).
 --
 --   none      → never reached out (or a pending request expired)
 --   pending   → reached out via the in-app "Let's connect" card; admins pinged on Telegram/Discord
@@ -130,6 +132,8 @@ GRANT EXECUTE ON FUNCTION public.get_loan_flow() TO anon, authenticated;
 --     a signed-in user could stamp their own "verified" contact line through the REST API.
 --   * video_call_* — same hole: a user could mark their own call as booked (skipping the video-call
 --     step) or, now, as attended. Only calcom-round-robin / calcom-webhook / admins write these.
+--   * redeemed_referral_code_id / referral_boost_amount — a referral now skips the gate, so a user
+--     must not be able to set their own. Only redeem_referral_code (SECURITY DEFINER) writes them.
 -- loan_access_seen_at stays client-writable on purpose (the app stamps it when the glow is seen).
 CREATE OR REPLACE FUNCTION public.enforce_user_privileged_columns_server_only()
 RETURNS trigger AS $$
@@ -175,6 +179,9 @@ BEGIN
      OR new.video_call_confirmed_at IS DISTINCT FROM old.video_call_confirmed_at
      OR new.video_call_outcome IS DISTINCT FROM old.video_call_outcome
      OR new.video_call_outcome_at IS DISTINCT FROM old.video_call_outcome_at
+     -- Referral (gate bypass as of this migration).
+     OR new.redeemed_referral_code_id IS DISTINCT FROM old.redeemed_referral_code_id
+     OR new.referral_boost_amount IS DISTINCT FROM old.referral_boost_amount
   THEN
     RAISE EXCEPTION 'users: verification/credit columns can only be written by verified server-side code';
   END IF;
@@ -192,6 +199,7 @@ CREATE OR REPLACE FUNCTION public.enforce_loan_access_approved()
 RETURNS trigger AS $$
 DECLARE
   v_status public.loan_access_status;
+  v_referral uuid;
 BEGIN
   IF current_user NOT IN ('authenticated', 'anon') OR new.borrower_user_id IS NULL THEN
     RETURN new;
@@ -201,9 +209,11 @@ BEGIN
     RETURN new;
   END IF;
 
-  SELECT loan_access_status INTO v_status FROM public.users WHERE id = new.borrower_user_id;
+  SELECT loan_access_status, redeemed_referral_code_id INTO v_status, v_referral
+  FROM public.users WHERE id = new.borrower_user_id;
 
-  IF v_status IS DISTINCT FROM 'approved' THEN
+  -- Referred borrowers skip the gate; everyone else must be approved.
+  IF v_referral IS NULL AND v_status IS DISTINCT FROM 'approved' THEN
     RAISE EXCEPTION 'loan_access_not_approved: connect with the Moodeng team and get approved before requesting a loan'
       USING ERRCODE = 'P0001';
   END IF;

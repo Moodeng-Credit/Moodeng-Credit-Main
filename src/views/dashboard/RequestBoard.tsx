@@ -1186,7 +1186,8 @@ function RequestBoard$() {
    const loanFlow = useLoanFlow();
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
-   const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+   // Referred borrowers skip the gate, so they never sit in "reviewing".
+   const isLoanAccessPending = isBorrower && loanFlow !== 'open' && !effectiveUser?.hasReferral && loanAccessStatus === 'pending';
 
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
    // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.

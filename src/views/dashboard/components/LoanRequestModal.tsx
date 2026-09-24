@@ -1051,7 +1051,9 @@ export default function LoanRequestModal({
    // Unapproved borrowers (call/approval flows) go from the referral card to "Let's connect", not to
    // the application.
    const referralContinueText =
-      loanFlow !== 'open' && (user.loanAccessStatus === 'none' || user.loanAccessStatus === 'rejected') ? 'Continue' : 'Continue to application';
+      loanFlow !== 'open' && !appliedReferral && (user.loanAccessStatus === 'none' || user.loanAccessStatus === 'rejected')
+         ? 'Continue'
+         : 'Continue to application';
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? referralContinueText : hasReferralCodeError ? 'Try again' : 'Apply code';
    const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
@@ -1070,11 +1072,14 @@ export default function LoanRequestModal({
    const isMultiStepRequestFlow = requireBorrowerContextStep && !user.incomeType && isVerified;
 
    // Connect → Approve → Apply gate (docs/HANDOFF_BORROWER_VERIFICATION.md §13) — only in the call
-   // and approval flows. A verified borrower who hasn't been approved yet goes through PART 1
-   // (referral card → ConnectStep) instead of the application; while an admin decides (or their call
-   // is still ahead) they see a "reviewing" card. undefined status = the column isn't deployed yet →
-   // treated as approved, so this can never lock anyone out ahead of the migration.
-   const isGateOn = loanFlow !== 'open';
+   // and approval flows, and only for borrowers WITHOUT a referral (someone vouched for a referred
+   // borrower, so they go straight to the application; the referral card comes first, so entering a
+   // code there opens the application instead of "Let's connect"). A verified, unreferred borrower who
+   // hasn't been approved yet goes through PART 1 (ConnectStep) instead; while an admin decides (or
+   // their call is still ahead) they see a "reviewing" card. undefined status = the column isn't
+   // deployed yet → treated as approved, so this can never lock anyone out ahead of the migration.
+   const hasReferral = Boolean(user.hasReferral || appliedReferral);
+   const isGateOn = loanFlow !== 'open' && !hasReferral;
    const loanAccessStatus = user.loanAccessStatus ?? 'approved';
    const isLoanAccessPending = isGateOn && isVerified && loanAccessStatus === 'pending';
    const needsLoanAccessConnect = isGateOn && isVerified && (loanAccessStatus === 'none' || loanAccessStatus === 'rejected');
