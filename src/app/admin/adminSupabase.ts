@@ -2241,3 +2241,134 @@ export async function banUser(input: {
    if (!result) throw new Error('Could not ban this user.');
    return result;
 }
+
+// ---- Borrower contacts ------------------------------------------------------------------------
+// Every way we can reach each borrower, gathered in one place: the verified Messenger line
+// (ContactsStep), any Facebook / WhatsApp / LINE / Telegram details on their profile, and the
+// legal name from KYC — plus their repayment record, so late payers without Facebook stand out.
+
+export interface BorrowerContactRow {
+   id: string;
+   username: string;
+   displayName: string | null;
+   kycName: string | null;
+   email: string | null;
+   messengerVerifiedAt: string | null;
+   facebookContact: string | null;
+   whatsappNumber: string | null;
+   whatsappVerifiedAt: string | null;
+   telegramUsername: string | null;
+   lineId: string | null;
+   fundedLoanCount: number;
+   repaidLateCount: number;
+   overdueNowCount: number;
+   createdAt: string | null;
+   accountStatus: string | null;
+}
+
+const clean = (value: unknown): string | null => {
+   const text = typeof value === 'string' ? value.trim() : '';
+   return text ? text : null;
+};
+
+export function buildBorrowerContactRows(users: AnyRow[], loans: AnyRow[], kyc: AnyRow[], now = Date.now()): BorrowerContactRow[] {
+   const kycName = new Map<string, string>();
+   for (const row of kyc) {
+      const name = clean(row.full_name) ?? clean([row.first_name, row.last_name].filter(Boolean).join(' '));
+      if (row.user_id && name && !kycName.has(row.user_id)) kycName.set(row.user_id, name);
+   }
+   const stats = new Map<string, { funded: number; late: number; overdue: number }>();
+   for (const loan of loans) {
+      if (!loan.borrower_user_id || !loan.funded_at || loan.is_test) continue;
+      const s = stats.get(loan.borrower_user_id) ?? { funded: 0, late: 0, overdue: 0 };
+      s.funded += 1;
+      const due = loan.due_date ? Date.parse(loan.due_date) : NaN;
+      const repaid = loan.repaid_at ? Date.parse(loan.repaid_at) : NaN;
+      const closed = Boolean(loan.repaid_at || loan.refunded_at || loan.offplatform_settled_at);
+      if (!Number.isNaN(due) && !Number.isNaN(repaid) && repaid > due) s.late += 1;
+      if (!closed && !Number.isNaN(due) && due < now) s.overdue += 1;
+      stats.set(loan.borrower_user_id, s);
+   }
+   return users.map((u) => {
+      const s = stats.get(u.id) ?? { funded: 0, late: 0, overdue: 0 };
+      return {
+         id: u.id,
+         username: u.username,
+         displayName: clean(u.display_name),
+         kycName: kycName.get(u.id) ?? null,
+         email: clean(u.email),
+         messengerVerifiedAt: u.messenger_verified_at ?? null,
+         facebookContact: clean(u.facebook_contact),
+         whatsappNumber: clean(u.whatsapp_number),
+         whatsappVerifiedAt: u.whatsapp_verified_at ?? null,
+         telegramUsername: clean(u.telegram_username),
+         lineId: clean(u.line_id),
+         fundedLoanCount: s.funded,
+         repaidLateCount: s.late,
+         overdueNowCount: s.overdue,
+         createdAt: u.created_at ?? null,
+         accountStatus: u.account_status ?? null
+      };
+   });
+}
+
+export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
+   const supabase = getSupabaseBrowserClient();
+   const users = await requireOk<AnyRow[]>(
+      supabase
+         .from('users')
+         .select(
+            'id,username,display_name,email,messenger_verified_at,facebook_contact,whatsapp_number,whatsapp_verified_at,telegram_username,line_id,created_at,account_status,is_test'
+         )
+         .eq('user_role', 'borrower')
+         .order('created_at', { ascending: false })
+         .limit(5000)
+   );
+   const borrowers = users.filter((u) => !u.is_test);
+   const ids = borrowers.map((u) => u.id);
+   const [loans, kyc] = await Promise.all([
+      queryByIdChunks(ids, (chunk) =>
+         requireOk<AnyRow[]>(
+            supabase
+               .from('loans')
+               .select('id,borrower_user_id,funded_at,due_date,repaid_at,refunded_at,offplatform_settled_at,is_test')
+               .in('borrower_user_id', chunk)
+         )
+      ),
+      queryByIdChunks(ids, (chunk) =>
+         optionalOk<AnyRow[]>(supabase.from('kyc_identities').select('user_id,full_name,first_name,last_name').in('user_id', chunk), [])
+      )
+   ]);
+   return buildBorrowerContactRows(borrowers, loans, kyc);
+}
+
+export interface MessengerProfile {
+   userId: string;
+   name: string | null;
+   // Inside Messenger's 24h window — a message sent now will be delivered.
+   canMessageNow: boolean;
+   lastActivityAt: string | null;
+   found: boolean;
+}
+
+// Facebook names (and whether we can message right now) for verified borrowers, via SendPulse.
+export async function getMessengerProfiles(userIds: string[]): Promise<MessengerProfile[]> {
+   if (!userIds.length) return [];
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', {
+      body: { action: 'profiles', userIds }
+   });
+   if (error) throw error;
+   return ((data as { profiles?: MessengerProfile[] } | null)?.profiles ?? []) as MessengerProfile[];
+}
+
+export async function sendMessengerToBorrower(userId: string, text: string): Promise<{ ok: boolean; reason?: string }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-messenger', {
+      body: { action: 'send', userId, text }
+   });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      return { ok: false, reason: (payload as { reason?: string; error?: string } | null)?.reason ?? 'request_failed' };
+   }
+   return (data as { ok: boolean; reason?: string }) ?? { ok: false, reason: 'request_failed' };
+}

@@ -47,12 +47,14 @@ import { suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
+import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
+import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -981,6 +983,25 @@ export default function LoanRequestModal({
    const [contactsStepDone, setContactsStepDone] = useState(false);
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
    const [videoCallStepDone, setVideoCallStepDone] = useState(false);
+   // Existing borrowers (at least one funded loan before) only add their Facebook — one card, no
+   // video call; the call is for brand-new borrowers. The exempt list (Belle) skips the card too.
+   const [isExistingBorrower, setIsExistingBorrower] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         const { count } = await getSupabaseBrowserClient()
+            .from('loans')
+            .select('id', { count: 'exact', head: true })
+            .eq('borrower_user_id', user.id)
+            .not('funded_at', 'is', null);
+         if (!cancelled) setIsExistingBorrower((count ?? 0) > 0);
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, [user.id]);
+   const contactSteps = requestContactSteps({ userId: user.id, isExistingBorrower, hasAppliedReferral: appliedReferral !== null });
+   const needsVideoCallStep = contactSteps.videoCall;
    useEffect(() => {
       if (!showBorrowerContextStep) return;
       formRef.current?.scrollTo({ top: 0 });
@@ -1065,8 +1086,8 @@ export default function LoanRequestModal({
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
-      'contacts',
-      ...(appliedReferral ? [] : (['videocall'] as const))
+      ...(contactSteps.contacts ? (['contacts'] as const) : []),
+      ...(needsVideoCallStep ? (['videocall'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showContactsStep
       ? 'contacts'
@@ -1598,7 +1619,7 @@ export default function LoanRequestModal({
 
       // WhatsApp (verified) + Facebook (collected) contact step — required before submitting.
       // ContactsStep's own onContinue sets contactsStepDone and re-fires this handler.
-      if (!contactsStepDone && !showContactsStep) {
+      if (contactSteps.contacts && !contactsStepDone && !showContactsStep) {
          event.preventDefault();
          setShowBorrowerContextStep(false);
          setShowContactsStep(true);
@@ -1607,7 +1628,7 @@ export default function LoanRequestModal({
 
       // No referral code on file → a human at Moodeng hasn't vouched for this borrower yet, so
       // they have to SCHEDULE (not complete) a short video call before their request goes out.
-      if (!appliedReferral && !videoCallStepDone && !showVideoCallStep) {
+      if (needsVideoCallStep && !videoCallStepDone && !showVideoCallStep) {
          event.preventDefault();
          setShowContactsStep(false);
          setShowVideoCallStep(true);
@@ -1837,7 +1858,12 @@ export default function LoanRequestModal({
             ) : null}
             <div className="pointer-events-none absolute left-1/2 top-2 z-20 h-1 w-11 -translate-x-1/2 rounded-full bg-[#cec6d7] sm:hidden" />
             <header
-               className="flex touch-none cursor-grab select-none items-center justify-between border-b border-[#e7e0ec] px-5 pb-4 pt-6 active:cursor-grabbing sm:pt-4"
+               className={`flex touch-none cursor-grab select-none items-center justify-between px-5 active:cursor-grabbing ${
+                  showContactsStep
+                     ? // The hippo hero below carries the title; the header just blends into its lavender.
+                       'bg-[#f3ecff] pb-0 pt-5'
+                     : 'border-b border-[#e7e0ec] pb-4 pt-6 sm:pt-4'
+               }`}
                onPointerDown={(event) => startDismissGesture(event, 'down')}
                onPointerMove={moveDismissGesture}
                onPointerUp={endDismissGesture}
@@ -1847,7 +1873,7 @@ export default function LoanRequestModal({
                   {shouldShowReferralStep ? (
                      <h2 className="text-md-h6 text-md-heading">Referral Boost</h2>
                   ) : showContactsStep ? (
-                     <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">How can we reach you</h2>
+                     <h2 className="sr-only">{isExistingBorrower ? 'Add your Facebook' : 'How can we reach you'}</h2>
                   ) : showVideoCallStep ? (
                      <h2 className="text-[22px] font-[590] leading-[26px] tracking-[-0.44px] text-md-heading">Schedule a video call</h2>
                   ) : showBorrowerContextStep ? (
@@ -1972,7 +1998,25 @@ export default function LoanRequestModal({
                   <p className="text-center text-md-b3 font-normal text-md-neutral-1200">No code needed. You can continue normally.</p>
                </div>
             ) : showContactsStep ? (
-               <ContactsStep userId={user.id} onBack={handleContactsStepBack} onContinue={handleContactsStepContinue} />
+               <ContactsStep
+                  userId={user.id}
+                  onBack={handleContactsStepBack}
+                  onContinue={handleContactsStepContinue}
+                  intro={
+                     isExistingBorrower ? (
+                        <ConnectHero
+                           image={CONNECT_HIPPOS.hello}
+                           subtitle={
+                              <>
+                                 Please add your Facebook so we can reach out to you. We also have a <b>$10 referral program</b> we&apos;d love to
+                                 tell you about!
+                              </>
+                           }
+                           title="So we can help you more 💜"
+                        />
+                     ) : undefined
+                  }
+               />
             ) : showVideoCallStep ? (
                <VideoCallStep userId={user.id} onBack={handleVideoCallStepBack} onContinue={handleVideoCallStepContinue} />
             ) : (

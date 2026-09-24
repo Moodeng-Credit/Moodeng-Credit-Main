@@ -1,5 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { postDiscord } from '../_shared/discord.ts';
+import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
+import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName } from '../_shared/sendpulse.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -35,6 +39,29 @@ const candidateCodes = (raw: string): string[] => {
    return [...new Set([trimmed, ...tokens].filter(Boolean))];
 };
 
+// deno-lint-ignore no-explicit-any
+type Svc = any;
+
+// First-time connection → the KYC Telegram group + Discord #kyc, with who they are and their
+// repayment record. Best-effort: a failed ping must never fail the borrower's verification.
+const announceConnected = async (svc: Svc, userId: string, contactId: string | null, flowName: string | null) => {
+   try {
+      const [{ data: borrower }, { data: loans }, { data: chatRow }, contact] = await Promise.all([
+         svc.from('users').select('username, display_name, email').eq('id', userId).maybeSingle(),
+         svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
+         svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
+         contactId ? getMessengerContact(contactId) : Promise.resolve(null)
+      ]);
+      if (!borrower) return;
+      const text = buildFacebookConnectedAlert(borrower, messengerDisplayName(contact) ?? flowName, (loans ?? []) as LoanRecord[]);
+      const chat = (chatRow as { value?: string } | null)?.value;
+      if (chat) await sendTelegramMessage(chat, text).catch((err: unknown) => console.error('sendpulse-messenger-verify: telegram ping failed', err));
+      await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   } catch (err) {
+      console.error('sendpulse-messenger-verify: announce failed', err instanceof Error ? err.message : err);
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
@@ -52,7 +79,7 @@ serve(async (req) => {
       return json({ ok: false, error: 'not_configured' }, 500);
    }
 
-   let body: { code?: string; ref?: string; message?: string; psid?: string; name?: string };
+   let body: { code?: string; ref?: string; message?: string; psid?: string; contact_id?: string; name?: string };
    try {
       body = await req.json();
    } catch {
@@ -70,7 +97,7 @@ serve(async (req) => {
    for (const cand of candidateCodes(raw)) {
       const { data, error } = await svc
          .from('contact_verification_codes')
-         .select('id, user_id, expires_at, verified_at')
+         .select('id, code, user_id, expires_at, verified_at')
          .ilike('code', cand)
          .eq('channel', 'messenger')
          .is('verified_at', null)
@@ -95,21 +122,28 @@ serve(async (req) => {
          return json({ ok: false, error: 'not_borrower' });
       }
 
+      // Store the SendPulse contact id (what the send API needs for reminders), looked up by the code
+      // the flow saved on the contact; fall back to whatever id the flow's request carried.
+      const contactId = (await findMessengerContactIdByCode(pending.code)) ?? (body.contact_id ? String(body.contact_id) : null) ?? psid;
+
       const { error: codeError } = await svc
          .from('contact_verification_codes')
-         .update({ verified_at: nowIso, sender_psid: psid })
+         .update({ verified_at: nowIso, sender_psid: contactId })
          .eq('id', pending.id);
       if (codeError) {
          console.error('sendpulse-messenger-verify: mark code failed', codeError.message);
          return json({ ok: false, error: 'update_failed' }, 500);
       }
 
+      const { data: before } = await svc.from('users').select('messenger_verified_at').eq('id', pending.user_id).maybeSingle();
       const { error: userError } = await svc
          .from('users')
-         .update({ messenger_verified_at: nowIso, ...(psid ? { messenger_psid: psid } : {}) })
+         .update({ messenger_verified_at: nowIso, ...(contactId ? { messenger_psid: contactId } : {}) })
          .eq('id', pending.user_id);
       if (userError) {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
+      } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
+         await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
       }
 
       return json({ ok: true });

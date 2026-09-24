@@ -79,6 +79,11 @@ verify_jwt = true
 [functions.admin-loan-notify]
 verify_jwt = true
 
+# Admin → Borrower contacts: Facebook names + "Message on Messenger" via SendPulse. Re-checks the
+# caller is an active admin inside the function.
+[functions.admin-messenger]
+verify_jwt = true
+
 # Admin refund: repays a lender for an outstanding loan, cancels the loan, and bans +
 # KYC-blacklists the borrower. Re-verifies the caller is an active admin inside the function.
 [functions.admin-refund-loan]
