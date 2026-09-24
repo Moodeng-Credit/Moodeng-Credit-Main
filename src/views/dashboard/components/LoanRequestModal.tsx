@@ -976,7 +976,11 @@ export default function LoanRequestModal({
    const [dismissOffset, setDismissOffset] = useState({ x: 0, y: 0 });
    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
    const [activeTooltip, setActiveTooltip] = useState<TooltipId | null>(null);
-   const [showReferralStep, setShowReferralStep] = useState(startOnReferralStep);
+   // Skip the referral card for a borrower already waiting on the team (gated flows) — also on the
+   // very first paint, not just after the open-reset effect runs.
+   const [showReferralStep, setShowReferralStep] = useState(
+      startOnReferralStep && !(loanFlow !== 'open' && user.loanAccessStatus === 'pending')
+   );
    const [referralCode, setReferralCode] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const [referralCodeError, setReferralCodeError] = useState('');
@@ -1138,7 +1142,10 @@ export default function LoanRequestModal({
    useEffect(() => {
       if (!isOpen) return;
 
-      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost);
+      // A borrower already waiting on the team (gated flows) goes straight to their "reviewing"
+      // card — not back through the referral card first.
+      const isWaitingOnTeam = loanFlow !== 'open' && user.loanAccessStatus === 'pending';
+      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost && !isWaitingOnTeam);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
       setTermErrors({});
@@ -1160,7 +1167,9 @@ export default function LoanRequestModal({
       startOnBorrowerContextStep,
       startOnReferralStep,
       user.displayName,
-      user.username
+      user.username,
+      loanFlow,
+      user.loanAccessStatus
    ]);
 
    useEffect(() => {

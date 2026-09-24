@@ -241,6 +241,22 @@ describe('LoanRequestModal borrowing gate', () => {
          }
       });
 
+      it('does not put a waiting borrower back through the referral card', () => {
+         const markup = renderToStaticMarkup(
+            createElement(LoanRequestModal, {
+               ...sharedProps,
+               showVerify: false,
+               availableCreditLimit: 15,
+               canUseReferralBoost: true,
+               startOnReferralStep: true,
+               loanFlow: 'call',
+               user: { ...baseUser, loanAccessStatus: 'pending' }
+            })
+         );
+         expect(markup).not.toContain('Have a referral code?');
+         expect(markup).toContain('See you on the call');
+      });
+
       it('shows the "see you on the call" card while an unreferred borrower waits', () => {
          const markup = render({ ...baseUser, loanAccessStatus: 'pending' }, 'call');
          expect(markup).toContain('See you on the call');

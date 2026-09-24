@@ -127,6 +127,9 @@ The decline script is used for both No-show and Reject.
   `redeemed_referral_code_id` / `referral_boost_amount`. All of these are now server-only.
 - trigger `trg_enforce_loan_access_approved` on `loans` insert: in call/approval flows, only
   `approved` borrowers can create a request (client inserts only).
+- trigger `private.approve_borrower_on_open_flow_loan`: a loan made while `loan_flow = open`
+  approves its borrower and closes any waiting request, so switching to `call` later never locks out
+  people who already borrow. Dry-run verified.
 - `referral_redemptions` table + trigger `private.log_referral_redemption` → alert.
 - pg_cron `loan-access-expire-hourly` → `loan-access {action:"expire"}`.
 - Dry-run verified against production **inside rolled-back transactions** (all guards, the flow

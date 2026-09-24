@@ -229,6 +229,44 @@ CREATE TRIGGER trg_enforce_loan_access_approved
   BEFORE INSERT ON public.loans
   FOR EACH ROW EXECUTE FUNCTION public.enforce_loan_access_approved();
 
+-- 6b) Borrowing while the gate is off counts as approval --------------------------------------------
+-- Accounts created while loan_flow = 'open' start at 'none' and can borrow freely. Without this,
+-- flipping to 'call'/'approval' later would suddenly lock out people who already have loans. So a
+-- loan request made in the open flow approves its borrower (once), and closes any request of theirs
+-- still waiting on an admin. SECURITY DEFINER: it must write loan_access_status, which the
+-- privileged-column guard reserves for server-side code (current_user is the owner here).
+CREATE OR REPLACE FUNCTION private.approve_borrower_on_open_flow_loan()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $$
+BEGIN
+  IF new.borrower_user_id IS NULL OR public.get_loan_flow() <> 'open' THEN
+    RETURN new;
+  END IF;
+
+  UPDATE public.users
+  SET loan_access_status = 'approved',
+      loan_access_approved_at = now(),
+      loan_access_seen_at = COALESCE(loan_access_seen_at, now())
+  WHERE id = new.borrower_user_id
+    AND loan_access_status <> 'approved';
+
+  UPDATE public.loan_access_requests
+  SET status = 'approved', decided_at = now(), decided_by = 'open-flow-loan'
+  WHERE user_id = new.borrower_user_id
+    AND status = 'pending';
+
+  RETURN new;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS approve_borrower_on_open_flow_loan ON public.loans;
+CREATE TRIGGER approve_borrower_on_open_flow_loan
+  AFTER INSERT ON public.loans
+  FOR EACH ROW EXECUTE FUNCTION private.approve_borrower_on_open_flow_loan();
+
 -- 7) Referral redemptions: a log + a Telegram/Discord alert per redemption ------------------------
 -- A referral now skips the strong filter, so admins want to see every code as it's used (who, which
 -- code). redeem_referral_code stamps users.redeemed_referral_code_id; this trigger logs it once per
