@@ -21,6 +21,7 @@ import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedC
 import WalletNetworkBlockNotice from '@/components/WalletNetworkBlockNotice';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+import { usePendingInviteRedemption } from '@/hooks/useFriendReferrals';
 import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -153,6 +154,7 @@ export default function App() {
    const location = useLocation();
    const isPosthogEnabled = import.meta.env.PROD && Boolean(import.meta.env.VITE_PUBLIC_POSTHOG_KEY);
    usePostLoginReturn();
+   usePendingInviteRedemption();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
    const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const isAuthenticated = Boolean(user?.id && username);
@@ -351,6 +353,8 @@ export default function App() {
             {showPreviewRoutes ? <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} /> : null}
             {showPreviewRoutes ? <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} /> : null}
             {showPreviewRoutes ? <Route path="/dashboard-v2-preview/invite/:code" element={<DashboardV2InviteLanding />} /> : null}
+            {/* Public: the friend-invite link people share (moodeng.app/invite/CODE). */}
+            <Route path="/invite/:code" element={<DashboardV2InviteLanding />} />
             <Route path="/request-board" element={<RequestBoard />} />
             <Route
                path="/repay"

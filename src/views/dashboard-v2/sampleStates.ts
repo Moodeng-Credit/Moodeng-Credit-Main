@@ -1,3 +1,4 @@
+import { EMPTY_REWARDS } from '@/lib/friendReferrals';
 import { toDashboardV2MilestoneList, toDashboardV2Milestones } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Model, DashboardV2PreviewState } from '@/views/dashboard-v2/types';
 import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
@@ -27,7 +28,8 @@ const SAMPLE_BASE: Omit<
    milestones: SAMPLE_MILESTONES,
    allMilestones: SAMPLE_ALL_MILESTONES,
    pandesalGoal: 50,
-   referralCode: 'jimmy',
+   referralCode: 'SDOIVU01381',
+   rewards: EMPTY_REWARDS,
    insightsHref: '/dashboard-v2-preview'
 };
 
@@ -87,6 +89,16 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       allMilestones: REWARDED_ALL_MILESTONES,
       summary: { repaymentsTotal: 18, active: 0, pending: 0, defaulted: 0 },
       dues: [],
-      hasOverdue: false
+      hasOverdue: false,
+      rewards: {
+         invitedCount: 2,
+         qualifiedCount: 1,
+         wasReferred: false,
+         claimable: [
+            { reward: 'first_on_time_repayment', friendReferralId: null, amountPhp: 50 },
+            { reward: 'referral_inviter', friendReferralId: 'sample-referral-1', amountPhp: 100 }
+         ],
+         claims: []
+      }
    }
 };

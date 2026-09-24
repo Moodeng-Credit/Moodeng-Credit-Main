@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
+import { EMPTY_REWARDS, isValidInviteCode, normalizeInviteCode, parseMyRewards } from '@/lib/friendReferrals';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
@@ -15,6 +16,9 @@ import {
    getMoodengTier,
    getNextTierGoal,
    getOnTimeRepaidTotal,
+   getVoucherState,
+   OWN_VOUCHER,
+   REFERRAL_VOUCHERS,
    toDashboardV2MilestoneList,
    toDashboardV2Milestones
 } from '@/views/dashboard-v2/dashboardV2Model';
@@ -209,5 +213,40 @@ describe('dashboard v2 all milestones', () => {
       );
       expect(html).toContain('Feed Moodeng to level up.');
       expect(html).toContain('Request Loan &amp; Feed Moodeng');
+   });
+});
+
+describe('friend referrals client', () => {
+   it('validates and normalizes invite codes', () => {
+      expect(isValidInviteCode(' sdoivu01381 ')).toBe(true);
+      expect(normalizeInviteCode(' sdoivu01381 ')).toBe('SDOIVU01381');
+      expect(isValidInviteCode('BOOST5')).toBe(false);
+   });
+
+   it('parses get_my_rewards() defensively', () => {
+      expect(parseMyRewards(null)).toEqual(EMPTY_REWARDS);
+      const parsed = parseMyRewards({
+         invitedCount: '2',
+         qualifiedCount: 1,
+         wasReferred: true,
+         claimable: [{ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: '100' }],
+         claims: [{ reward: 'first_on_time_repayment', friendReferralId: null, status: 'pending' }]
+      });
+      expect(parsed.invitedCount).toBe(2);
+      expect(parsed.claimable[0]).toEqual({ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 });
+      expect(parsed.claims[0].status).toBe('pending');
+   });
+
+   it('reports voucher state from the server data', () => {
+      const rewards = parseMyRewards({
+         claimable: [{ reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 }],
+         claims: [{ reward: 'first_on_time_repayment', friendReferralId: null, status: 'sent' }]
+      });
+      expect(getVoucherState(rewards, OWN_VOUCHER).state).toBe('sent');
+      expect(getVoucherState(rewards, REFERRAL_VOUCHERS)).toEqual({
+         state: 'claimable',
+         voucher: { reward: 'referral_inviter', friendReferralId: 'r1', amountPhp: 100 }
+      });
+      expect(getVoucherState(EMPTY_REWARDS, OWN_VOUCHER).state).toBe('none');
    });
 });

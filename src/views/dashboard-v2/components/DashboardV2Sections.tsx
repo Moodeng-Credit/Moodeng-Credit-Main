@@ -8,6 +8,7 @@ import { formatCurrency } from '@/utils/decimalHelpers';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
+import { getVoucherState, OWN_VOUCHER, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 
 const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
@@ -17,6 +18,19 @@ const STAT_NUMBER = 'font-medium leading-[18px] tracking-[-0.06em]';
 
 function Divider() {
    return <div className="h-px w-full bg-[#ece9f1]" aria-hidden="true" />;
+}
+
+/** Claim / Pending / Sent pill for an earned voucher. */
+export function VoucherStatusPill({ state, onClaim }: { state: VoucherState; onClaim: () => void }) {
+   if (state === 'claimable') return <ClaimVoucherButton onClaim={onClaim} />;
+   const label = state === 'sent' ? 'Sent' : state === 'pending' ? 'Pending' : state === 'rejected' ? 'Help' : 'Done';
+   const tone =
+      state === 'sent' || state === 'none'
+         ? 'bg-[#e3f5e8] text-[#2f8a4a]'
+         : state === 'rejected'
+           ? 'bg-[#fde8ea] text-[#d51728]'
+           : 'bg-[#fff4cc] text-[#a06a00]';
+   return <span className={clsx(PILL_BUTTON, tone)}>{label}</span>;
 }
 
 /** Gold "Claim" pill — same treatment as the "+10Pandesal" pill on the Verify banner. */
@@ -35,14 +49,16 @@ export function ClaimVoucherButton({ onClaim }: { onClaim: () => void }) {
 function MilestoneAction({
    milestone,
    onAction,
-   onClaim
+   onClaim,
+   voucherState
 }: {
    milestone: DashboardV2Milestone;
    onAction: (milestone: DashboardV2Milestone) => void;
    onClaim: () => void;
+   voucherState: VoucherState;
 }) {
    if (milestone.status === 'unlocked' && milestone.isVoucher) {
-      return <ClaimVoucherButton onClaim={onClaim} />;
+      return <VoucherStatusPill state={voucherState} onClaim={onClaim} />;
    }
 
    if (milestone.status === 'unlocked') {
@@ -86,6 +102,8 @@ export function MilestonesSection({
    onGet: (milestone: DashboardV2Milestone) => void;
    onClaim: () => void;
 }) {
+   const voucherState = getVoucherState(model.rewards, OWN_VOUCHER).state;
+
    return (
       <TabbedCard title="Reputation Milestones" titleId="dv2-milestones-title" tabWidth="37%">
          <div className="relative flex flex-col px-1.5 pb-7 pt-4">
@@ -125,7 +143,7 @@ export function MilestonesSection({
                            </p>
                         </div>
                      </div>
-                     <MilestoneAction milestone={milestone} onAction={onGet} onClaim={onClaim} />
+                     <MilestoneAction milestone={milestone} onAction={onGet} onClaim={onClaim} voucherState={voucherState} />
                   </div>
                </Fragment>
             ))}

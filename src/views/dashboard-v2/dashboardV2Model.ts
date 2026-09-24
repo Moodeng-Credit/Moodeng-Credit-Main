@@ -2,6 +2,7 @@ import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
 import { CREDIT_TIERS, getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import { isRepaidOnTime } from '@/lib/creditLeveling';
+import type { ClaimableVoucher, MyRewards, VoucherReward } from '@/lib/friendReferrals';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevelHint, DashboardV2Milestone, MoodengMood, MoodengTierId } from '@/views/dashboard-v2/types';
 import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
@@ -160,3 +161,20 @@ export const getNextTierGoal = (pandesal: number): number | null =>
 
 /** Public invite link for the referral screen. The /invite route itself is not live yet (preview only). */
 export const buildInviteLink = (code: string) => `https://moodeng.app/invite/${encodeURIComponent(code)}`;
+
+export type VoucherState = 'claimable' | 'pending' | 'sent' | 'rejected' | 'none';
+
+/** Where a voucher stands, as reported by the database (the UI never decides eligibility itself). */
+export const getVoucherState = (
+   rewards: MyRewards,
+   rewardsFor: VoucherReward[]
+): { state: VoucherState; voucher: ClaimableVoucher | null } => {
+   const voucher = rewards.claimable.find((item) => rewardsFor.includes(item.reward)) ?? null;
+   if (voucher) return { state: 'claimable', voucher };
+
+   const claim = rewards.claims.find((item) => rewardsFor.includes(item.reward));
+   return { state: claim ? claim.status : 'none', voucher: null };
+};
+
+export const OWN_VOUCHER: VoucherReward[] = ['first_on_time_repayment'];
+export const REFERRAL_VOUCHERS: VoucherReward[] = ['referral_invitee', 'referral_inviter'];

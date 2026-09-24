@@ -1,3 +1,5 @@
+import type { MyRewards } from '@/lib/friendReferrals';
+
 export type MoodengTierId = 'rookie' | 'rising' | 'prime' | 'apex';
 
 /** Figma "slicing" frame: waiting for a loan (or unverified) / has a loan / repaid. */
@@ -53,8 +55,10 @@ export interface DashboardV2Model {
    allMilestones: DashboardV2Milestone[];
    /** Pandesal needed for the next Moodeng tier, or null at Apex. */
    pandesalGoal: number | null;
-   /** Shareable referral code (the borrower's username), or null when signed out. */
+   /** The borrower's generated invite code (e.g. SDOIVU01381), or null until it loads / when signed out. */
    referralCode: string | null;
+   /** Voucher rewards as computed by the database (what can be claimed, and claim statuses). */
+   rewards: MyRewards;
    summary: {
       repaymentsTotal: number;
       active: number;

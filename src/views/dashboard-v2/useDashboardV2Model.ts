@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
+import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import { calculateDaysBetween, calculateDaysRemaining, parseDateSafely } from '@/utils/dateFormatters';
@@ -36,6 +37,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
    const { stats, creditLevels, loanArrays, isReady } = useDashboardData('borrower');
    const isSignedIn = Boolean(user?.id);
    const isVerified = isUserVerified(user);
+   const { inviteCode, rewards } = useFriendReferrals(isSignedIn);
    const { pointsTotal } = useTrustPointTotal({ userId: user.id, fallbackPoints: 0, enabled: isSignedIn && isVerified });
 
    const borrowerLoans = useMemo(() => getBorrowerLoans(gloanRequests, user.id), [gloanRequests, user.id]);
@@ -102,7 +104,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          milestones: toDashboardV2Milestones(sharedMilestones),
          allMilestones: toDashboardV2MilestoneList(sharedMilestones),
          pandesalGoal: getNextTierGoal(pandesal),
-         referralCode: user.username || null,
+         referralCode: inviteCode,
+         rewards,
          summary: {
             repaymentsTotal: stats.repayments.total,
             active: stats.active.total,
@@ -113,7 +116,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          hasOverdue: dues.some((due) => due.isOverdue),
          insightsHref: user.username ? `/user/${encodeURIComponent(user.username)}#loan-summary` : '/dashboard'
       };
-   }, [borrowerLoans, creditLevels, dueLoans, isVerified, loanArrays, pointsTotal, stats, user, userProfiles]);
+   }, [borrowerLoans, creditLevels, dueLoans, inviteCode, isVerified, loanArrays, pointsTotal, rewards, stats, user, userProfiles]);
 
    return { model, isSignedIn, isReady };
 }

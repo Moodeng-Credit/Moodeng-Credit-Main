@@ -6,6 +6,7 @@ import { ConnectWalletBanner, VerifyIdentityBanner, VoucherReferralBanner } from
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -41,6 +42,7 @@ export default function DashboardV2() {
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
    const [isVoucherOpen, setIsVoucherOpen] = useState(false);
    const isLoading = isReal && !isReady;
+   const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER);
 
    const milestonesAndVoucher = (
       <div className="flex flex-col">
@@ -86,7 +88,9 @@ export default function DashboardV2() {
             />
          ) : null}
          {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo="/dashboard-v2-preview" /> : null}
-         {isVoucherOpen ? <VoucherClaimPopup onClose={() => setIsVoucherOpen(false)} /> : null}
+         {isVoucherOpen && ownVoucher.voucher ? (
+            <VoucherClaimPopup voucher={ownVoucher.voucher} isPreview={!isReal} onClose={() => setIsVoucherOpen(false)} />
+         ) : null}
       </div>
    );
 }

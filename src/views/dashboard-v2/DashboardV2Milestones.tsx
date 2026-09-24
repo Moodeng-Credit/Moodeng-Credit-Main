@@ -7,8 +7,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { VerifyIdentityBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
-import { ClaimVoucherButton } from '@/views/dashboard-v2/components/DashboardV2Sections';
+import { VoucherStatusPill } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
+import { getVoucherState, OWN_VOUCHER, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -17,7 +18,17 @@ import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Previe
 const PRIMARY_GRADIENT = 'linear-gradient(77.58deg, #9584ff 0.5%, #6b55f7 98.16%)';
 const HIGHLIGHT_GRADIENT = 'linear-gradient(90deg, rgba(255,206,27,0.36) 10.88%, rgba(255,255,255,0) 108.81%)';
 
-function MilestoneRowAction({ milestone, onGet, onClaim }: { milestone: DashboardV2Milestone; onGet: () => void; onClaim: () => void }) {
+function MilestoneRowAction({
+   milestone,
+   onGet,
+   onClaim,
+   voucherState
+}: {
+   milestone: DashboardV2Milestone;
+   onGet: () => void;
+   onClaim: () => void;
+   voucherState: VoucherState;
+}) {
    if (milestone.status === 'next') {
       return (
          <button
@@ -32,7 +43,7 @@ function MilestoneRowAction({ milestone, onGet, onClaim }: { milestone: Dashboar
    }
 
    if (milestone.status === 'unlocked' && milestone.isVoucher) {
-      return <ClaimVoucherButton onClaim={onClaim} />;
+      return <VoucherStatusPill state={voucherState} onClaim={onClaim} />;
    }
 
    if (milestone.status === 'unlocked') {
@@ -51,7 +62,17 @@ function MilestoneRowAction({ milestone, onGet, onClaim }: { milestone: Dashboar
    );
 }
 
-function MilestoneRow({ milestone, onGet, onClaim }: { milestone: DashboardV2Milestone; onGet: () => void; onClaim: () => void }) {
+function MilestoneRow({
+   milestone,
+   onGet,
+   onClaim,
+   voucherState
+}: {
+   milestone: DashboardV2Milestone;
+   onGet: () => void;
+   onClaim: () => void;
+   voucherState: VoucherState;
+}) {
    const isHighlighted = milestone.isVoucher || milestone.isTopReward;
 
    return (
@@ -78,7 +99,7 @@ function MilestoneRow({ milestone, onGet, onClaim }: { milestone: DashboardV2Mil
                </p>
             </div>
          </div>
-         <MilestoneRowAction milestone={milestone} onGet={onGet} onClaim={onClaim} />
+         <MilestoneRowAction milestone={milestone} onGet={onGet} onClaim={onClaim} voucherState={voucherState} />
       </div>
    );
 }
@@ -86,10 +107,11 @@ function MilestoneRow({ milestone, onGet, onClaim }: { milestone: DashboardV2Mil
 /** Figma "milestone_unverified" / "milestone_verified" — the full reputation milestone list. */
 export default function DashboardV2Milestones() {
    const navigate = useNavigate();
-   const { model, previewState, isSignedIn, language, previewSearch } = useDashboardV2Preview();
+   const { model, previewState, isReal, isSignedIn, language, previewSearch } = useDashboardV2Preview();
    const [openMilestone, setOpenMilestone] = useState<DashboardV2Milestone | null>(null);
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
    const [isVoucherOpen, setIsVoucherOpen] = useState(false);
+   const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER);
    const goal = model.pandesalGoal;
    const goalProgress = goal ? Math.min(model.pandesal / goal, 1) : 1;
 
@@ -165,6 +187,7 @@ export default function DashboardV2Milestones() {
                               milestone={milestone}
                               onGet={() => setOpenMilestone(milestone)}
                               onClaim={() => setIsVoucherOpen(true)}
+                              voucherState={ownVoucher.state}
                            />
                         </Fragment>
                      ))}
@@ -181,7 +204,9 @@ export default function DashboardV2Milestones() {
                onVerify={() => setIsVerifyOpen(true)}
             />
          ) : null}
-         {isVoucherOpen ? <VoucherClaimPopup onClose={() => setIsVoucherOpen(false)} /> : null}
+         {isVoucherOpen && ownVoucher.voucher ? (
+            <VoucherClaimPopup voucher={ownVoucher.voucher} isPreview={!isReal} onClose={() => setIsVoucherOpen(false)} />
+         ) : null}
          {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo="/dashboard-v2-preview/milestones" /> : null}
       </div>
    );

@@ -1,11 +1,23 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 
+import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
+import { useSubmitVoucherClaim } from '@/hooks/useFriendReferrals';
+
+import {
+   type ClaimableVoucher,
+   getInviteInviter,
+   isValidInviteCode,
+   normalizeInviteCode,
+   rememberPendingInvite,
+   type VoucherReward
+} from '@/lib/friendReferrals';
+import { isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { DASHBOARD_V2_ASSETS, getMoodengAsset } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
-import { buildInviteLink } from '@/views/dashboard-v2/dashboardV2Model';
+import { buildInviteLink, getVoucherState, REFERRAL_VOUCHERS } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Preview';
 
@@ -17,14 +29,52 @@ const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%
 const FIELD =
    'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-white px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9]';
 
-/** "You earned a GrabFood voucher" — contact capture so the team can send the voucher code. */
-export function VoucherClaimPopup({ onClose }: { onClose: () => void }) {
+const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
+   first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
+   referral_inviter: {
+      headline: 'Your friend repaid on time. Free meal!',
+      body: 'Thanks for inviting them. Where should we send your voucher code?'
+   },
+   referral_invitee: {
+      headline: 'You repaid on time. Free meal!',
+      body: 'Thanks for joining with a friend. Where should we send your voucher code?'
+   }
+};
+
+const describeClaimError = (error: unknown) => {
+   const message = error instanceof Error ? error.message : String((error as { message?: string } | null)?.message ?? '');
+   if (message.includes('already claimed')) return 'This voucher was already claimed.';
+   if (message.includes('not eligible')) return "This voucher isn't unlocked yet.";
+   if (message.includes('check constraint')) return 'Please check your name and mobile number.';
+   return 'Something went wrong. Please try again.';
+};
+
+/**
+ * "You earned a GrabFood voucher" — collects where to send the code. Real claims are validated and
+ * stored by submit_voucher_claim(); preview samples only simulate the submission.
+ */
+export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: ClaimableVoucher; isPreview: boolean; onClose: () => void }) {
    const [isSubmitted, setIsSubmitted] = useState(false);
+   const submitClaim = useSubmitVoucherClaim();
+   const copy = CLAIM_COPY[voucher.reward];
 
    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      // TODO(backend): persist the claim (name, mobile, email) and notify the team.
-      setIsSubmitted(true);
+      if (isPreview) {
+         setIsSubmitted(true);
+         return;
+      }
+      const form = new FormData(event.currentTarget);
+      submitClaim.mutate(
+         {
+            reward: voucher.reward,
+            friendReferralId: voucher.friendReferralId,
+            fullName: String(form.get('name') ?? ''),
+            mobile: String(form.get('mobile') ?? ''),
+            email: String(form.get('email') ?? '')
+         },
+         { onSuccess: () => setIsSubmitted(true) }
+      );
    };
 
    return (
@@ -49,20 +99,20 @@ export function VoucherClaimPopup({ onClose }: { onClose: () => void }) {
                         Salamat! We got it.
                      </p>
                      <p className="text-[16px] leading-[22px] text-[#45556c]">
-                        We&apos;ll send your ₱50 GrabFood voucher code to your mobile within 2 business days.
+                        We&apos;ll send your ₱{voucher.amountPhp} GrabFood voucher code to your mobile within 2 business days.
                      </p>
-                     <p className="text-[12px] text-[#c0b9c8]">Preview only — details are not sent yet.</p>
+                     {isPreview ? <p className="text-[12px] text-[#c0b9c8]">Preview sample — nothing was sent.</p> : null}
                   </div>
                ) : (
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-3">
                      <div className="flex items-center gap-2">
                         <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-20 w-20 object-contain" />
-                        <span className="text-[34px] font-black text-[#3c8248]">₱50</span>
+                        <span className="text-[34px] font-black text-[#3c8248]">₱{voucher.amountPhp}</span>
                      </div>
                      <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65]">
-                        You repaid on time. Treat yourself!
+                        {copy.headline}
                      </p>
-                     <p className="text-[16px] leading-5 text-[#45556c]">Tell us where to send your GrabFood voucher code.</p>
+                     <p className="text-[16px] leading-5 text-[#45556c]">{copy.body}</p>
                      <input className={FIELD} name="name" required autoComplete="name" placeholder="Full name" aria-label="Full name" />
                      <input
                         className={FIELD}
@@ -82,12 +132,18 @@ export function VoucherClaimPopup({ onClose }: { onClose: () => void }) {
                         placeholder="Email (optional)"
                         aria-label="Email"
                      />
+                     {submitClaim.error ? (
+                        <p className="text-[14px] font-medium text-[#d51728]" role="alert">
+                           {describeClaimError(submitClaim.error)}
+                        </p>
+                     ) : null}
                      <button
                         type="submit"
-                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
+                        disabled={submitClaim.isPending}
+                        className="mt-1 flex h-[52px] w-full items-center justify-center rounded-[35px] text-[20px] font-semibold text-white disabled:opacity-60"
                         style={{ backgroundImage: PRIMARY_GRADIENT }}
                      >
-                        Send My Voucher
+                        {submitClaim.isPending ? 'Sending…' : 'Send My Voucher'}
                      </button>
                   </form>
                )}
@@ -197,12 +253,13 @@ const LOCKED_GRADIENT = 'linear-gradient(85.47deg, #b9aeff 0.5%, #8b7afa 57.57%,
 
 /** Figma "invite" — "FREE MEAL for both of you": referral code, the two ₱100 vouchers, and sharing. */
 export function DashboardV2Referral() {
-   const { model, previewState, isSignedIn, language, previewSearch } = useDashboardV2Preview();
+   const { model, previewState, isReal, isSignedIn, language, previewSearch } = useDashboardV2Preview();
    const [isShareOpen, setIsShareOpen] = useState(false);
+   const [isClaimOpen, setIsClaimOpen] = useState(false);
+   const referralVoucher = getVoucherState(model.rewards, REFERRAL_VOUCHERS);
    const [copied, setCopied] = useState<'code' | null>(null);
    const code = model.referralCode ? model.referralCode.toUpperCase() : '—';
    const inviteLink = model.referralCode ? buildInviteLink(model.referralCode) : null;
-   const hasOwnVoucher = model.allMilestones.some((milestone) => milestone.isVoucher && milestone.status === 'unlocked');
    const shareText =
       language === 'fil'
          ? 'Libreng pagkain para sa ating dalawa! Sumali sa Moodeng Credit gamit ang code ko:'
@@ -253,22 +310,25 @@ export function DashboardV2Referral() {
                   {copied === 'code' ? 'Copied' : 'Copy'}
                </button>
 
-               {/* For You — unlocks once the borrower has earned their own voucher. */}
-               <button
-                  type="button"
-                  disabled={!hasOwnVoucher}
-                  onClick={copyCode}
-                  className="absolute left-[17%] top-[78.2%] flex h-[4.6%] w-[25.5%] items-center justify-center overflow-hidden rounded-full text-[18px] font-semibold text-white"
-                  style={{ backgroundImage: hasOwnVoucher ? COPY_GRADIENT : undefined }}
-               >
-                  {!hasOwnVoucher ? (
-                     <>
-                        <span className="absolute inset-0" style={{ backgroundImage: LOCKED_GRADIENT }} aria-hidden="true" />
-                        <span className="absolute inset-0 bg-white/80 mix-blend-color" aria-hidden="true" />
-                     </>
-                  ) : null}
-                  <span className="relative">Copy</span>
-               </button>
+               {/* For You — claimable once a friend's (or your own, if you were invited) on-time repayment unlocks it. */}
+               {referralVoucher.state === 'claimable' ? (
+                  <button
+                     type="button"
+                     onClick={() => setIsClaimOpen(true)}
+                     className="absolute left-[17%] top-[78.2%] flex h-[4.6%] w-[25.5%] items-center justify-center rounded-full text-[18px] font-semibold text-[#704518]"
+                     style={{ backgroundImage: COPY_GRADIENT }}
+                  >
+                     Claim
+                  </button>
+               ) : (
+                  <span className="absolute left-[17%] top-[78.2%] flex h-[4.6%] w-[25.5%] items-center justify-center overflow-hidden rounded-full text-[18px] font-semibold text-white">
+                     <span className="absolute inset-0" style={{ backgroundImage: LOCKED_GRADIENT }} aria-hidden="true" />
+                     <span className="absolute inset-0 bg-white/80 mix-blend-color" aria-hidden="true" />
+                     <span className="relative">
+                        {referralVoucher.state === 'pending' ? 'Pending' : referralVoucher.state === 'sent' ? 'Sent' : 'Locked'}
+                     </span>
+                  </span>
+               )}
                <button
                   type="button"
                   onClick={() => setIsShareOpen(true)}
@@ -284,8 +344,17 @@ export function DashboardV2Referral() {
                   page.
                </p>
             </div>
+            {isReal || model.rewards.invitedCount > 0 ? (
+               <p className="mt-4 text-center text-[14px] font-medium text-[#7b6b8c]">
+                  Friends joined: <span className="text-[#6b55f7]">{model.rewards.invitedCount}</span> · Repaid on time:{' '}
+                  <span className="text-[#6b55f7]">{model.rewards.qualifiedCount}</span>
+               </p>
+            ) : null}
          </div>
 
+         {isClaimOpen && referralVoucher.voucher ? (
+            <VoucherClaimPopup voucher={referralVoucher.voucher} isPreview={!isReal} onClose={() => setIsClaimOpen(false)} />
+         ) : null}
          {isShareOpen && inviteLink ? (
             <ShareSheet link={inviteLink} text={shareText} onClose={() => setIsShareOpen(false)} onCopied={() => setCopied('code')} />
          ) : null}
@@ -295,8 +364,22 @@ export function DashboardV2Referral() {
 
 /** Public page an invited friend lands on from the shared link. */
 export function DashboardV2InviteLanding() {
-   const { code = '' } = useParams();
-   const inviter = decodeURIComponent(code);
+   const { code: rawCode = '' } = useParams();
+   const code = normalizeInviteCode(decodeURIComponent(rawCode));
+   const isCodeValid = isValidInviteCode(code);
+   const inviterQuery = useQuery({
+      queryKey: ['friend-referrals', 'inviter', code],
+      queryFn: () => getInviteInviter(code),
+      enabled: isCodeValid && isSupabaseBrowserConfigured(),
+      staleTime: Infinity
+   });
+   const inviter = inviterQuery.data ?? '';
+   const isUnknownCode = !isCodeValid || (inviterQuery.isSuccess && !inviterQuery.data);
+
+   // Park the code so it can be credited right after sign-up (see usePendingInviteRedemption).
+   useEffect(() => {
+      if (isCodeValid && inviterQuery.data) rememberPendingInvite(code);
+   }, [code, isCodeValid, inviterQuery.data]);
 
    return (
       <div className="min-h-screen bg-[#f7f7f7]">
@@ -313,7 +396,7 @@ export function DashboardV2InviteLanding() {
                />
                <div className="absolute inset-x-5 top-10 rounded-[16px] bg-[#fffef7]/85 px-4 py-3 text-center">
                   <p className="text-[15px] font-medium text-[#7b6b8c]">You&apos;re invited by</p>
-                  <p className="text-[24px] font-black italic leading-7 text-[#4c239f]">{inviter || 'a friend'}</p>
+                  <p className="text-[24px] font-black italic leading-7 text-[#4c239f]">{isUnknownCode ? 'a friend' : inviter || '…'}</p>
                </div>
                <div
                   className="absolute inset-x-0 bottom-0 h-[70px] rounded-t-[28px] bg-gradient-to-b from-[#efeaff] to-[#f7f7f7]"
@@ -340,7 +423,7 @@ export function DashboardV2InviteLanding() {
             </div>
 
             <Link
-               to={`/sign-up?ref=${encodeURIComponent(inviter)}`}
+               to={isUnknownCode ? '/sign-up' : `/sign-up?invite=${encodeURIComponent(code)}`}
                className="mx-5 mt-6 flex h-[52px] items-center justify-center rounded-[35px] text-[20px] font-semibold text-white"
                style={{ backgroundImage: PRIMARY_GRADIENT }}
             >

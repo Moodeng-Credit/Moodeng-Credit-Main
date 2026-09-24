@@ -114,8 +114,14 @@ export interface AdminLoanRecord {
    is_test: boolean;
    created_at: string | null;
    funded_at: string | null;
-   borrower: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'> | null;
-   lender: Pick<AdminDirectoryUser, 'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'> | null;
+   borrower: Pick<
+      AdminDirectoryUser,
+      'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'
+   > | null;
+   lender: Pick<
+      AdminDirectoryUser,
+      'id' | 'username' | 'wallet_address' | 'user_role' | 'account_status' | 'is_world_id' | 'is_didit'
+   > | null;
 }
 
 export interface AdminLoanRequestReview {
@@ -1062,7 +1068,9 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
       .limit(5000);
    let loansQuery = supabase
       .from('loans')
-      .select('id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,loan_status,repayment_status,due_date,created_at,funded_at,repaid_at,refunded_at')
+      .select(
+         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,loan_status,repayment_status,due_date,created_at,funded_at,repaid_at,refunded_at'
+      )
       .limit(5000);
    if (!includeTest) {
       usersQuery = usersQuery.eq('is_test', false);
@@ -1196,7 +1204,18 @@ export async function getGrowthAnalytics({ includeTest = false }: { includeTest?
    const monthFor = (key: string): AnalyticsMonth => {
       let m = monthMap.get(key);
       if (!m) {
-         m = { monthKey: key, label: monthLabelOf(key), shortLabel: monthShortLabelOf(key), newUsers: 0, newBorrowers: 0, newLenders: 0, loansOut: 0, loansRepaid: 0, volumeOut: 0, volumeRepaid: 0 };
+         m = {
+            monthKey: key,
+            label: monthLabelOf(key),
+            shortLabel: monthShortLabelOf(key),
+            newUsers: 0,
+            newBorrowers: 0,
+            newLenders: 0,
+            loansOut: 0,
+            loansRepaid: 0,
+            volumeOut: 0,
+            volumeRepaid: 0
+         };
          monthMap.set(key, m);
       }
       return m;
@@ -1898,6 +1917,52 @@ export async function deleteReferralCode(id: string): Promise<void> {
    const supabase = getSupabaseBrowserClient();
    const { error } = await supabase.from('referral_codes').delete().eq('id', id);
    if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Friend-referral voucher claims (voucher_claims) — admins read all and update fulfilment only.
+// ---------------------------------------------------------------------------
+
+export type AdminVoucherClaimStatus = 'pending' | 'sent' | 'rejected';
+
+export interface AdminVoucherClaim {
+   id: string;
+   user_id: string;
+   username: string | null;
+   reward: 'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee';
+   amount_php: number;
+   full_name: string;
+   mobile: string;
+   email: string | null;
+   status: AdminVoucherClaimStatus;
+   admin_note: string | null;
+   sent_at: string | null;
+   created_at: string;
+}
+
+export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = (await requireOk(
+      supabase
+         .from('voucher_claims')
+         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username)')
+         .order('created_at', { ascending: false })
+   )) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({
+      ...row,
+      amount_php: toNumber(row.amount_php),
+      username: (Array.isArray(row.users) ? row.users[0]?.username : row.users?.username) ?? null
+   })) as AdminVoucherClaim[];
+}
+
+export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {
+   const supabase = getSupabaseBrowserClient();
+   await requireOk(
+      supabase
+         .from('voucher_claims')
+         .update({ status, admin_note: adminNote ?? null, sent_at: status === 'sent' ? new Date().toISOString() : null })
+         .eq('id', id)
+   );
 }
 
 // ---------------------------------------------------------------------------

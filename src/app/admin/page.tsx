@@ -39,16 +39,17 @@ import DemoB2CSection from './DemoB2CSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
+import MuleRiskSection from './MuleRiskSection';
+import OnChainSection from './OnChainSection';
 import PricingHealthSection from './PricingHealthSection';
 import ReferralCodesSection from './ReferralCodesSection';
 import RefundSection from './RefundSection';
 import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
-import MuleRiskSection from './MuleRiskSection';
-import OnChainSection from './OnChainSection';
 import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
+import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 
 type AdminTab =
    | 'users'
@@ -1589,7 +1590,9 @@ export default function AdminPanel() {
                   <section className="space-y-6">
                      <div>
                         <h2 className="break-words text-4xl font-black sm:text-5xl">UX health</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">Where users get stuck or frustrated — sign-in, onboarding, rage clicks, and errors.</p>
+                        <p className="mt-3 text-2xl text-[#a89bb8]">
+                           Where users get stuck or frustrated — sign-in, onboarding, rage clicks, and errors.
+                        </p>
                      </div>
                      <UxHealthSection />
                   </section>
@@ -1655,6 +1658,7 @@ export default function AdminPanel() {
                         <p className="mt-3 text-2xl text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                      </div>
                      <ReferralCodesSection />
+                     <VoucherClaimsSection />
                   </section>
                ) : null}
 
