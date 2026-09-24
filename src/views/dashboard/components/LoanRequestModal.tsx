@@ -1091,6 +1091,14 @@ export default function LoanRequestModal({
    const isLoanAccessPending = isGateOn && isVerified && loanAccessStatus === 'pending';
    const needsLoanAccessConnect = isGateOn && isVerified && (loanAccessStatus === 'none' || loanAccessStatus === 'rejected');
    const isLoanAccessGated = isLoanAccessPending || needsLoanAccessConnect;
+
+   // An admin may have decided while this tab was open — re-check when the waiting borrower opens
+   // the modal, so an approval shows up without a page reload.
+   useEffect(() => {
+      if (!isOpen || !isLoanAccessPending) return;
+      void dispatch(fetchUser());
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [isOpen]);
    const needsContactsStep = !user.hasVerifiedContact;
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot

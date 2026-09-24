@@ -9,6 +9,7 @@ import {
    shortId,
    stampAdminCard
 } from '../_shared/loanAccess.ts';
+import { formatCallTime } from '../_shared/videoCall.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import {
    closeTelegramForumTopic,
@@ -321,6 +322,37 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    if (query.message) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
 };
 
+// /pending — everyone waiting on a decision, oldest first, with the id for /approve etc. A safety
+// net for when a card scrolls away. Admin channels only.
+const handlePendingCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const { data, error } = await supabase
+      .from('loan_access_requests')
+      .select('id, user_id, kind, display_name, created_at, users!inner(username, email, video_call_starts_at)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+      .limit(30);
+   if (error) throw new Error(error.message);
+   const rows = (data ?? []) as Array<{
+      id: string;
+      kind: string;
+      display_name: string | null;
+      users: { username: string | null; email: string | null; video_call_starts_at: string | null };
+   }>;
+   if (!rows.length) {
+      await sendTelegramMessage(message.chat.id, 'Nobody is waiting — no pending requests. 🎉');
+      return;
+   }
+   const lines = rows.map((r, i) => {
+      const name = [r.display_name, r.users?.username ? `@${r.users.username}` : null].filter(Boolean).join(' ') || r.users?.email || r.id;
+      const call = r.kind === 'call' && r.users?.video_call_starts_at ? ` · call ${formatCallTime(r.users.video_call_starts_at, 'Asia/Bangkok')}` : '';
+      return `${i + 1}. ${name}${call} — ${shortId(r.id)}`;
+   });
+   await sendTelegramMessage(
+      message.chat.id,
+      `⏳ Waiting on you (${rows.length}):\n${lines.join('\n')}\n\nDecide with /showed · /noshow · /approve · /reject + the id.`
+   );
+};
+
 // Which borrower flow is live (docs/HANDOFF_BORROWER_VERIFICATION.md §13):
 //   /loanflow                  show the current one
 //   /loanflow open|call|approval   switch — takes effect for borrowers immediately, no deploy
@@ -623,6 +655,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/(approve|reject|showed|noshow)\b/i.test(message.text ?? '')) {
          await handleLoanAccessCommand(supabase, message);
          return jsonResponse({ message: 'Loan access command handled' });
+      }
+
+      // Who's waiting on a decision — either admin channel.
+      if (isAdminChannel && /^\/pending\b/i.test(message.text ?? '')) {
+         await handlePendingCommand(supabase, message);
+         return jsonResponse({ message: 'Pending list handled' });
       }
 
       // Borrower-flow switch — either admin channel.

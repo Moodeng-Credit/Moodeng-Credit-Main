@@ -203,6 +203,12 @@ const BORROWER_MESSAGES = {
       body: "We're sorry we missed you — your application can't go ahead without the meeting. If you have any questions, please let us know. Should you wish to pursue funding, tap to book a new call, or connect directly with Emma Moodeng on Facebook: facebook.com/emmamoodengcredit",
       url: APPLY_URL
    },
+   // Their call was cancelled (e.g. via Cal.com's email link) before it happened — let them rebook.
+   call_cancelled: {
+      title: 'Your Moodeng call was cancelled',
+      body: 'No problem — tap to pick a new time for your 15-minute call. Your application continues right after it.',
+      url: APPLY_URL
+   },
    // Open flow: their request is already on the board, so this is just "please talk to us".
    missed_call: {
       title: 'We missed you on the call',

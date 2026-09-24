@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { postDiscord } from '../_shared/discord.ts';
+import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
@@ -68,7 +71,9 @@ serve(async (req) => {
             video_call_scheduled_at: new Date().toISOString(),
             video_call_host: booking.host,
             video_call_starts_at: booking.startsAt,
-            video_call_booking_uid: booking.bookingUid
+            video_call_booking_uid: booking.bookingUid,
+            // New or moved time → restart the reminder ladder and the "did they show up?" prompt.
+            video_call_reminder_stage: 0
          })
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);
@@ -82,16 +87,49 @@ serve(async (req) => {
       if (!booking.bookingUid) {
          return jsonResponse({ ok: true });
       }
-      const { error } = await supabase
+      const { data: released, error } = await supabase
          .from('users')
          .update({
             video_call_scheduled_at: null,
             video_call_host: null,
             video_call_starts_at: null,
-            video_call_booking_uid: null
+            video_call_booking_uid: null,
+            video_call_join_url: null
          })
-         .eq('video_call_booking_uid', booking.bookingUid);
+         .eq('video_call_booking_uid', booking.bookingUid)
+         .select('id');
       if (error) console.error('calcom-webhook: reopen gate failed', error);
+
+      // Connect → Approve → Apply: a borrower whose call was their reach-out would otherwise sit on
+      // "See you on the call" with no call and no way to rebook. Close their pending call request,
+      // put them back to 'none' (they can book again), and tell them + the admins.
+      for (const row of (released ?? []) as Array<{ id: string }>) {
+         const { data: closed } = await supabase
+            .from('loan_access_requests')
+            .update({ status: 'expired', decided_at: new Date().toISOString(), decided_by: 'booking-cancelled' })
+            .eq('user_id', row.id)
+            .eq('status', 'pending')
+            .eq('kind', 'call')
+            .select('id');
+         if (!closed?.length) continue;
+         const { data: borrower } = await supabase
+            .from('users')
+            .update({ loan_access_status: 'none' })
+            .eq('id', row.id)
+            .eq('loan_access_status', 'pending')
+            .select(BORROWER_COLUMNS)
+            .maybeSingle();
+         if (!borrower) continue;
+         await notifyBorrower(supabase, borrower, 'call_cancelled');
+         const text = `🗓️ ${who(borrower)} cancelled their call — their request is closed and they've been asked to rebook.`;
+         try {
+            const chat = await getAdminChatId(supabase);
+            if (chat) await sendTelegramMessage(chat, text);
+         } catch (err) {
+            console.error('calcom-webhook: admin telegram failed', err instanceof Error ? err.message : err);
+         }
+         await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+      }
       return jsonResponse({ ok: true });
    }
 

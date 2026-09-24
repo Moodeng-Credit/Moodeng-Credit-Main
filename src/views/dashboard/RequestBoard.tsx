@@ -1188,6 +1188,15 @@ function RequestBoard$() {
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
    const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
 
+   // While waiting for approval, re-check whenever they come back to the tab (after the call, or
+   // after tapping the approval notification in another app) so the "You're approved" glow appears.
+   useEffect(() => {
+      if (!isLoanAccessPending) return undefined;
+      const onFocus = () => void dispatch(fetchUser());
+      window.addEventListener('focus', onFocus);
+      return () => window.removeEventListener('focus', onFocus);
+   }, [dispatch, isLoanAccessPending]);
+
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
    // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
    const callConfirmedParam = new URLSearchParams(location.search).get('callConfirmed');

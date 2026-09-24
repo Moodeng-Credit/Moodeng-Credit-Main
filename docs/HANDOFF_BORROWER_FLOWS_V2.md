@@ -67,6 +67,7 @@ only exists after Emma marks them attended. They keep the +$5 referral boost.
 - **Booking = sending.** The request goes to the team the moment the call is booked (the borrower
   doesn't have to tap "Send"). As a safety net, if "Showed up" is tapped for someone whose request
   never arrived, the tap still approves them.
+- **`/pending`** lists everyone waiting on a decision, with ids.
 - **Typed fallbacks** (if buttons fail): `/approve <id|@user>`, `/reject`, `/showed`, `/noshow`.
   The `<id>` is the 8-character id on the card.
 - **Discord** gets the same messages as notifications only (#kyc, bookings channel). There are no
@@ -198,6 +199,16 @@ Branch **`staging` = production** (Vercel deploys it).
    - Messenger confirm → bio → why → book (check the Cal.com booking and the Messenger
      confirmation) → tap "I'll be there" → the admin card → tap **Showed up** → loan terms → posted.
    - Also test No-show → rebook, and a referral code → Emma-only slots + the 🎟️ alert.
+6b. **Cal.com has never booked a call in production** (the old no-shows came via Calendly). Before
+   the live test, check:
+   - Edge secrets `CALCOM_API_KEY_GEORGE` and `CALCOM_API_KEY_EMMA` exist.
+   - Each host has an event type with slug `15min`, with **Location = Zoom** (Zoom app connected in
+     Cal.com) so `video_call_join_url` is a Zoom link.
+   - The Cal.com webhook points at `…/functions/v1/calcom-webhook` with the `CALCOM_WEBHOOK_SECRET`
+     secret. It now also handles cancel (the request is closed, the borrower is asked to rebook, the
+     admins are pinged) and reschedule (reminders restart).
+   - Each host's Google Calendar is connected, so Cal.com avoids double-booking against Calendly or
+     personal events.
 7. Check the Telegram **buttons** actually arrive at the webhook. If they don't, run `setWebhook`
    with `allowed_updates` including `callback_query`. Meanwhile the typed commands work.
 8. Leave `/loanflow call` on, or go back to `open`.
