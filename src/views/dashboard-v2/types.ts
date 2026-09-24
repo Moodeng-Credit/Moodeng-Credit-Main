@@ -45,8 +45,10 @@ export interface DashboardV2Model {
    tier: MoodengTierId;
    mood: MoodengMood;
    creditLevel: number;
-   /** 0–1 progress toward the next credit level. */
-   creditProgress: number;
+   /** Current borrowing limit in USD (0 until verified). */
+   creditLimit: number;
+   /** How much of the limit open loans and live requests are using right now, in USD. */
+   creditInUse: number;
    creditHint: CreditLevelHint;
    showConnectWallet: boolean;
    /** A funded loan is waiting to be cashed out and there is no instant wallet (whose balance card owns Cash out). */
