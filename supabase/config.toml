@@ -71,6 +71,10 @@ verify_jwt = false
 [functions.loan-request-lender-suggestions]
 verify_jwt = false
 
+# Internal only: called by the voucher_claims insert trigger with the vault secret key.
+[functions.voucher-claim-notification]
+verify_jwt = false
+
 [functions.telegram-webhook]
 verify_jwt = false
 

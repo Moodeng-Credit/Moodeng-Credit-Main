@@ -14,7 +14,8 @@ const FEEDS: Record<string, string[]> = {
    loan_requests: ['DISCORD_REQUESTS_WEBHOOK_URL'],
    new_users: ['DISCORD_NEW_USERS_WEBHOOK_URL'],
    cashout_face: ['DISCORD_KYC_WEBHOOK_URL', 'DISCORD_SECURITY_WEBHOOK_URL'],
-   repayments: ['DISCORD_REPAY_WEBHOOK_URL']
+   repayments: ['DISCORD_REPAY_WEBHOOK_URL'],
+   voucher_claims: ['DISCORD_REWARDS_WEBHOOK_URL', 'DISCORD_REPAY_WEBHOOK_URL']
 };
 
 // GET on a webhook URL returns its metadata (channel_id, name) without posting anything.
