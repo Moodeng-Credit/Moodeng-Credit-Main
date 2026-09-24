@@ -11,7 +11,7 @@ import { VerifyIdentityBanner } from '@/views/dashboard-v2/components/DashboardV
 import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { VoucherStatusPill } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
-import { getVoucherState, OWN_VOUCHER, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
+import { getVoucherState, OWN_VOUCHER, TIER_VOUCHERS, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -128,11 +128,7 @@ export default function DashboardV2Milestones() {
             {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 
             <header className="relative flex h-16 items-end justify-center px-5 pb-1">
-               <Link
-                  to={`/dashboard${previewSearch}`}
-                  className="absolute bottom-1 left-5 text-[#594d65]"
-                  aria-label="Back to dashboard"
-               >
+               <Link to={`/dashboard${previewSearch}`} className="absolute bottom-1 left-5 text-[#594d65]" aria-label="Back to dashboard">
                   <ChevronLeft className="h-6 w-6" strokeWidth={2} />
                </Link>
                <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65]">All Milestones</h1>
@@ -205,6 +201,40 @@ export default function DashboardV2Milestones() {
                         </Fragment>
                      ))}
                   </div>
+
+                  {/* A GrabFood voucher for each Moodeng tier (Rising / Prime / Apex). */}
+                  <h2 className="mt-8 text-[20px] font-bold italic leading-6 text-[#594d65]">Grow Moodeng, eat on us</h2>
+                  <div className="mt-3 rounded-[8px] bg-white px-1.5 py-2">
+                     {TIER_VOUCHERS.map((tier, index) => {
+                        const tierVoucher = getVoucherState(model.rewards, [tier.reward], model.referralLoading);
+                        const isReached = model.pandesal >= tier.minPandesal;
+                        return (
+                           <Fragment key={tier.reward}>
+                              {index > 0 ? <div className="h-px bg-[#ece9f1]" aria-hidden="true" /> : null}
+                              <div
+                                 className={clsx(
+                                    '-mx-1.5 flex items-center gap-3 px-3 py-3',
+                                    isReached && 'bg-gradient-to-r from-[#fff3c4] to-[#fffdf5]'
+                                 )}
+                              >
+                                 <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-10 w-10 shrink-0 object-contain" />
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-[18px] font-medium leading-6 text-[#833000]">Grow Moodeng to {tier.label}</p>
+                                    <p className="text-[16px] leading-[18px] text-[#f90]">Reward: ₱{tier.amountPhp} GrabFood voucher</p>
+                                 </div>
+                                 {tierVoucher.state !== 'none' ? (
+                                    <VoucherStatusPill state={tierVoucher.state} onClaim={() => setClaimingVoucher(tierVoucher.voucher)} />
+                                 ) : (
+                                    <span className="flex shrink-0 flex-col items-center text-[12px] font-semibold text-[#c0b9c8]">
+                                       <DesignImage src={DASHBOARD_V2_ASSETS.lock} className="h-5 w-5 object-contain" />
+                                       {tier.minPandesal}
+                                    </span>
+                                 )}
+                              </div>
+                           </Fragment>
+                        );
+                     })}
+                  </div>
                </section>
             )}
          </div>
@@ -220,9 +250,7 @@ export default function DashboardV2Milestones() {
          {claimingVoucher ? (
             <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
-         {isVerifyOpen ? (
-            <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard/milestones${previewSearch}`} />
-         ) : null}
+         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard/milestones${previewSearch}`} /> : null}
       </div>
    );
 }

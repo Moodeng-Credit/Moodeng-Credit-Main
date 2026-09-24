@@ -39,7 +39,10 @@ const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
    referral_invitee: {
       headline: 'You repaid on time. Free meal!',
       body: 'Thanks for joining with a friend. Where should we send your voucher code?'
-   }
+   },
+   tier_rising: { headline: 'Moodeng grew to Rising. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
+   tier_prime: { headline: 'Moodeng grew to Prime. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
+   tier_apex: { headline: 'Moodeng reached Apex. Feast time!', body: 'Tell us where to send your GrabFood voucher code.' }
 };
 
 const describeClaimError = (error: unknown) => {
@@ -308,11 +311,7 @@ export function DashboardV2Referral() {
                   alt="Free meal for both of you: a ₱100 voucher for you and a ₱100 voucher for your friend."
                   className="absolute inset-0 h-full w-full"
                />
-               <Link
-                  to={`/dashboard${previewSearch}`}
-                  className="absolute left-[4.5%] top-[81px] h-6 w-6"
-                  aria-label="Back to dashboard"
-               >
+               <Link to={`/dashboard${previewSearch}`} className="absolute left-[4.5%] top-[81px] h-6 w-6" aria-label="Back to dashboard">
                   <DesignImage src={DASHBOARD_V2_ASSETS.back} className="h-6 w-6" />
                </Link>
 
