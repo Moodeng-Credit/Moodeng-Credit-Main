@@ -100,7 +100,6 @@ import SettingsStylePreview from '@/views/account/SettingsStylePreview';
 import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
-import Dashboard from '@/views/dashboard/Dashboard';
 import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import FundWalletPreview from '@/views/fund/FundWalletPreview';
@@ -340,21 +339,21 @@ export default function App() {
             />
             {import.meta.env.DEV ? <Route path="/verify-didit-preview" element={<DiditVerification />} /> : null}
 
-            {/* Borrower */}
+            {/* Borrower — the redesigned v2 dashboard is the live borrower dashboard. */}
             <Route
                path="/dashboard"
                element={
                   <ProtectedRoute>
                      <RoleGuard>
-                        <Dashboard />
+                        <DashboardV2 />
                      </RoleGuard>
                   </ProtectedRoute>
                }
             />
-            {showPreviewRoutes ? <Route path="/dashboard-v2-preview" element={<DashboardV2 />} /> : null}
-            {showPreviewRoutes ? <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} /> : null}
-            {showPreviewRoutes ? <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} /> : null}
-            {showPreviewRoutes ? <Route path="/dashboard-v2-preview/invite/:code" element={<DashboardV2InviteLanding />} /> : null}
+            <Route path="/dashboard-v2-preview" element={<DashboardV2 />} />
+            <Route path="/dashboard-v2-preview/milestones" element={<DashboardV2Milestones />} />
+            <Route path="/dashboard-v2-preview/refer" element={<DashboardV2Referral />} />
+            <Route path="/dashboard-v2-preview/invite/:code" element={<DashboardV2InviteLanding />} />
             {/* Public: the friend-invite link people share (moodeng.app/invite/CODE). */}
             <Route path="/invite/:code" element={<DashboardV2InviteLanding />} />
             <Route path="/request-board" element={<RequestBoard />} />

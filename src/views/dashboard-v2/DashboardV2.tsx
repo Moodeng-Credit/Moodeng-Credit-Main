@@ -10,6 +10,7 @@ import { useIsBorrower } from '@/hooks/useIsBorrower';
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
+import { isPreviewHost } from '@/lib/previewHost';
 import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import {
@@ -113,7 +114,7 @@ export default function DashboardV2() {
    return (
       <div className="min-h-screen bg-[#f7f7f7]">
          <div className="mx-auto max-w-[440px] pb-28">
-            <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} />
+            {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 
             <DashboardV2Hero
                key={`${previewState}-${model.tier}-${model.isVerified}-${model.creditLevel}`}

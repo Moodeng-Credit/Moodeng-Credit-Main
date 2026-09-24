@@ -14,6 +14,7 @@ import {
    rememberPendingInvite,
    type VoucherReward
 } from '@/lib/friendReferrals';
+import { isPreviewHost } from '@/lib/previewHost';
 import { isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { DASHBOARD_V2_ASSETS, getMoodengAsset } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -291,7 +292,7 @@ export function DashboardV2Referral() {
    return (
       <div className="min-h-screen bg-[#efecff]">
          <div className="relative mx-auto max-w-[440px] pb-28">
-            <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} />
+            {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 
             {/* The designer's full illustrated card; interactive pieces sit on top at her positions. */}
             <div className="relative aspect-[440/735] w-full">
