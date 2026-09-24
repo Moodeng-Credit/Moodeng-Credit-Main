@@ -1190,45 +1190,8 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
                   {isBorrower ? (
                      <div className="flex flex-col gap-md-2">
-                        <button
-                           type="button"
-                           disabled={isConnecting}
-                           onClick={() => void handleConnectWithKey('coinbase')}
-                           className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50"
-                        >
-                           {isConnecting ? 'Connecting...' : 'Connect Base Account'}
-                           {!isConnecting ? (
-                              <div
-                                 className="w-6 h-6 bg-md-neutral-100"
-                                 style={{
-                                    ...ICON_MASK,
-                                    WebkitMaskImage: "url('/icons/chevron-right.svg')",
-                                    maskImage: "url('/icons/chevron-right.svg')"
-                                 }}
-                              />
-                           ) : null}
-                        </button>
-                        {/* Base Account was the ONLY option here, which is the second half of
-                            the dead end borrowers hit: a legacy Base borrower prompted to
-                            "Confirm your Base Account" had no route to an Instant Wallet, only
-                            back to the wallet they couldn't reach. */}
-                        {showInstantWallet ? (
-                           <button
-                              type="button"
-                              disabled={isConnecting || instantWallet.isCreating}
-                              onClick={() => void instantWallet.createInstantWallet()}
-                              className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
-                           >
-                              {instantWallet.isCreating ? 'Creating your wallet…' : 'Create an Instant Wallet instead'}
-                           </button>
-                        ) : null}
-                     </div>
-                  ) : (
-                     <div className="flex flex-col gap-md-2">
-                        {/* Instant Wallet as a first-class option here too, so a lender who lost
-                            their wallet can create one straight from the picker without fully
-                            disconnecting first. A card, not a tile — it CREATES a wallet rather
-                            than connecting an existing one. Flag-gated like every other surface. */}
+                        {/* Borrowers: the Instant Wallet is the default, so it's the main button; a Base
+                            Account is the alternative. Without Openfort, Base Account is the main button. */}
                         {showInstantWallet ? (
                            <>
                               <button
@@ -1242,13 +1205,33 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                               {instantWallet.error ? (
                                  <p className="text-md-b3 text-md-red-400 text-center w-full">{instantWallet.error}</p>
                               ) : null}
-                              <div className="flex items-center gap-md-2">
-                                 <span className="h-px flex-1 bg-md-neutral-600" />
-                                 <span className="text-md-b3 font-medium text-md-neutral-800">or connect one you own</span>
-                                 <span className="h-px flex-1 bg-md-neutral-600" />
-                              </div>
                            </>
                         ) : null}
+                        <button
+                           type="button"
+                           disabled={isConnecting || instantWallet.isCreating}
+                           onClick={() => void handleConnectWithKey('coinbase')}
+                           className={
+                              showInstantWallet
+                                 ? 'w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50'
+                                 : 'w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 flex items-center justify-center gap-2 disabled:opacity-50'
+                           }
+                        >
+                           {isConnecting ? 'Connecting...' : showInstantWallet ? 'Connect a Base Account instead' : 'Connect Base Account'}
+                           {!isConnecting && !showInstantWallet ? (
+                              <div
+                                 className="w-6 h-6 bg-md-neutral-100"
+                                 style={{
+                                    ...ICON_MASK,
+                                    WebkitMaskImage: "url('/icons/chevron-right.svg')",
+                                    maskImage: "url('/icons/chevron-right.svg')"
+                                 }}
+                              />
+                           ) : null}
+                        </button>
+                     </div>
+                  ) : (
+                     <div className="flex flex-col gap-md-2">
                         <div className="grid grid-cols-2 gap-md-2">
                            {LENDER_WALLET_OPTIONS.map((option) => {
                               const isSelected = selectedKey === option.key;
@@ -1317,6 +1300,28 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
                               />
                            ) : null}
                         </button>
+                        {/* Lenders: a Base Account is recommended (Top Pick above); the Instant Wallet is
+                            the no-app alternative, e.g. for a lender who lost their wallet. */}
+                        {showInstantWallet ? (
+                           <>
+                              <div className="flex items-center gap-md-2">
+                                 <span className="h-px flex-1 bg-md-neutral-600" />
+                                 <span className="text-md-b3 font-medium text-md-neutral-800">or, no wallet app?</span>
+                                 <span className="h-px flex-1 bg-md-neutral-600" />
+                              </div>
+                              <button
+                                 type="button"
+                                 disabled={isConnecting || instantWallet.isCreating}
+                                 onClick={() => void instantWallet.createInstantWallet()}
+                                 className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200 disabled:opacity-50"
+                              >
+                                 {instantWallet.isCreating ? 'Creating your wallet…' : 'Create an Instant Wallet instead'}
+                              </button>
+                              {instantWallet.error ? (
+                                 <p className="text-md-b3 text-md-red-400 text-center w-full">{instantWallet.error}</p>
+                              ) : null}
+                           </>
+                        ) : null}
                      </div>
                   )}
 
