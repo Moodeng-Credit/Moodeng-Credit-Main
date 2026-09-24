@@ -94,7 +94,9 @@ own template; keep them out of the repo, since Cal.com emails the join link anyw
 | 5 After "Showed up" (post-meeting recap) | "Connect with Emma on Facebook … IMPORTANT: Maintaining an active account requires adhering to our repayment terms. Loan defaults result in immediate flagging and a permanent ban across all affiliated platforms." | `BORROWER_MESSAGES.approved` in `_shared/loanAccess.ts` (push + Telegram) |
 | No-show ("Decline the loan request") | "We're sorry to see you go … Should you wish to pursue funding in the future, you can reschedule a call with me again or connect directly with Emma Moodeng on Facebook here https://www.facebook.com/emmamoodengcredit" | `BORROWER_MESSAGES.no_show` in `_shared/loanAccess.ts` |
 
-(The $10 referral bonus in Emma's script differs from the code's +$5 boost in `referral_codes.boost_amount`. Confirm the number with Emma.)
+**Two different referral rewards (not a conflict):**
+- **+$5 credit-limit boost** for the *new borrower* who enters a code. This is in the code (`redeem_referral_code`, `referral_codes.boost_amount`).
+- **$10 cash** for the *person who referred them* once that friend joins. This is Emma's "perk". It is **not in the code; it's paid manually.** The `referral_redemptions` table and the 🎟️ Telegram alert (who used which code, use count) are the record for working out who's owed. Automating the payout is a possible follow-up.
 
 ---
 

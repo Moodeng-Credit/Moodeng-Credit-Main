@@ -143,7 +143,10 @@ export default function ConnectStep({
                         {withEmma ? ' with Emma' : ' with our team'} to set up your account, complete verification, and walk you through
                         cashing out — so switching to your local currency is smooth once your USDC funding arrives.
                      </p>
-                     <p>We’ll also unlock perks in the meeting, including your referral bonus. Once you’ve joined it, you can apply straight away.</p>
+                     <p>
+                        We’ll also unlock perks in the meeting — including <span className="font-[590] text-md-heading">$10 cash</span> for
+                        every friend you refer who joins. Once you’ve joined the call, you can apply straight away.
+                     </p>
                   </div>
                }
                continueLabel={isSending ? 'Sending...' : 'Send to the team'}
