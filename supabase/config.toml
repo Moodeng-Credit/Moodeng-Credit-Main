@@ -21,6 +21,11 @@ verify_jwt = false
 [functions.video-call-confirm]
 verify_jwt = false
 
+# Zoom participant events (borrower arrived / joined / left). Zoom can't send a Supabase token; every
+# request is verified against the host's Zoom app Secret Token (x-zm-signature) instead.
+[functions.zoom-webhook]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 

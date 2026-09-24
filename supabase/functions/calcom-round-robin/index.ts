@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
-import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange } from './lib.ts';
+import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange } from './lib.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -167,6 +168,17 @@ serve(async (req) => {
       else console.error(`calcom-round-robin: host '${payload.host}' not configured — falling back to round-robin`);
    }
 
+   // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
+   const { data: strikes } = await svc
+      .from('loan_access_requests')
+      .select('decided_at')
+      .eq('user_id', user.id)
+      .eq('status', 'no_show');
+   const cooldownUntil = bookingCooldownUntil(((strikes ?? []) as Array<{ decided_at: string | null }>).map((r) => r.decided_at), Date.now());
+   if (cooldownUntil && (payload.action === 'slots' || payload.action === 'book')) {
+      return json({ ok: false, error: 'cooldown', until: cooldownUntil, slots: [] });
+   }
+
    if (payload.action === 'slots') {
       // From yesterday's UTC date: Cal.com reads date-only bounds in the borrower's zone, and it
       // never returns past times anyway — so this can't lose "later today" for anyone.
@@ -221,6 +233,9 @@ serve(async (req) => {
                   video_call_booking_uid: result.uid,
                   video_call_timezone: timeZone,
                   video_call_join_url: result.joinUrl,
+                  // Lets zoom-webhook match "participant joined" events to this booking.
+                  video_call_meeting_id: meetingIdFromJoinUrl(result.joinUrl),
+                  ...ATTENDANCE_RESET,
                   // Fresh booking → restart the reminder ladder (see video-call-reminders) and
                   // clear the last call's confirm/attendance.
                   video_call_reminder_stage: 0,

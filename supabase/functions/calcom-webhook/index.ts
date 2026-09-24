@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -87,11 +88,13 @@ serve(async (req) => {
                     video_call_reminder_stage: 0,
                     video_call_confirmed_at: null,
                     video_call_outcome: null,
-                    video_call_outcome_at: null
+                    video_call_outcome_at: null,
+                    ...ATTENDANCE_RESET
                  }
                : {}),
-            // Keep the join link in step with the (possibly moved) booking — never show a stale one.
-            ...(booking.joinUrl ? { video_call_join_url: booking.joinUrl } : {})
+            // Keep the join link (and the Zoom meeting id attendance is matched on) in step with the
+            // (possibly moved) booking — never a stale one.
+            ...(booking.joinUrl ? { video_call_join_url: booking.joinUrl, video_call_meeting_id: meetingIdFromJoinUrl(booking.joinUrl) } : {})
          })
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);

@@ -262,7 +262,9 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       supa.state.usersRow = {
          ...supa.state.usersRow,
          video_call_starts_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-         video_call_join_url: 'https://us06web.zoom.us/j/123'
+         video_call_join_url: 'https://us06web.zoom.us/j/123',
+         video_call_confirm_token: 'abc123',
+         video_call_confirmed_at: null
       } as typeof supa.state.usersRow;
       await act(async () => {
          root.render(createElement(LoanAccessPendingCard, { onClose: vi.fn(), mode: 'call', withEmma: true, userId: 'user-1' }));
@@ -273,6 +275,9 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(container.textContent).toContain('Say hi to Emma on Facebook');
       const join = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Join the meeting');
       expect(join?.getAttribute('href')).toBe('https://us06web.zoom.us/j/123');
+      // Not confirmed yet → the in-app "I'll be there" hits the same confirm endpoint as Messenger.
+      const confirm = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes("I'll be there"));
+      expect(confirm?.getAttribute('href')).toContain('/functions/v1/video-call-confirm?t=abc123');
    });
 
    it('flips to "thanks for joining" (no Join button) once the call is over', async () => {

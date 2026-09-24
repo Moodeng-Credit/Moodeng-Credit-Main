@@ -98,6 +98,15 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       expect(container.textContent).toContain("booked with the Moodeng team");
    });
 
+   it('explains the one-week pause (and offers no times) after two missed calls', async () => {
+      supa.invoke.mockImplementationOnce(async () => ({ data: { ok: false, error: 'cooldown', until: '2026-10-02T00:00:00.000Z', slots: [] }, error: null }));
+      await render();
+      expect(container.textContent).toContain("missed two calls");
+      expect(container.textContent).toContain('You can pick a new time from');
+      expect(timeButtons(container)).toHaveLength(0);
+      expect(continueButton(container).disabled).toBe(true);
+   });
+
    it('keeps the gate closed and warns when the slot was just taken', async () => {
       supa.state.bookResult = { ok: false, error: 'slot_taken' };
       await render();

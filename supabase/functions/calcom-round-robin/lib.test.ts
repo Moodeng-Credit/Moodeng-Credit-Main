@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange } from './lib.ts';
+import { hostsFreeAt, mergeSlots, orderHostsToTry, bookingCooldownUntil, preferSoonSlots, recheckRange } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
    const george = ['2026-09-22T19:00:00.000+07:00', '2026-09-22T20:00:00.000+07:00'];
@@ -52,4 +52,12 @@ Deno.test('recheckRange covers a Manila 7 AM slot that falls on the previous UTC
    // 07:00 +08:00 on Oct 2 = 23:00 UTC on Oct 1. Cal.com reads the bounds in Manila time, so the
    // range must reach past Oct 2 00:00 Manila — Oct 1..Oct 3 does.
    assertEquals(recheckRange('2026-10-01T23:00:00.000Z'), { from: '2026-09-30', to: '2026-10-03' });
+});
+
+Deno.test('two strikes: a second no-show blocks booking for 7 days after the latest', () => {
+   const now = Date.parse('2026-09-25T00:00:00Z');
+   assertEquals(bookingCooldownUntil(['2026-09-20T00:00:00Z'], now), null);
+   assertEquals(bookingCooldownUntil(['2026-09-10T00:00:00Z', '2026-09-22T00:00:00Z'], now), '2026-09-29T00:00:00.000Z');
+   assertEquals(bookingCooldownUntil(['2026-09-01T00:00:00Z', '2026-09-10T00:00:00Z'], now), null);
+   assertEquals(bookingCooldownUntil([null, '2026-09-22T00:00:00Z'], now), null);
 });

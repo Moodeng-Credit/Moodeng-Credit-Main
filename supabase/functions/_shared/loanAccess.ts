@@ -214,6 +214,12 @@ const BORROWER_MESSAGES = {
       body: 'No problem — tap to pick a new time for your 15-minute call. Your application continues right after it.',
       url: APPLY_URL
    },
+   // They never tapped "I'll be there" (asked twice), so the slot went back to the calendar.
+   spot_released: {
+      title: 'We freed up your call time',
+      body: "You didn't confirm your call, so we gave the slot to someone else. No problem — tap to pick a new time that works for you.",
+      url: APPLY_URL
+   },
    // Open flow: their request is already on the board, so this is just "please talk to us".
    missed_call: {
       title: 'We missed you on the call',
@@ -250,7 +256,7 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    if (borrower.chat_id && borrower.notif_account_activity !== false) {
       try {
          await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, {
-            inlineKeyboard: [[{ text: msg.url === APPLY_URL ? (kind === 'no_show' ? 'Book a new time' : 'Apply for a loan') : 'Open Moodeng', url: msg.url }]]
+            inlineKeyboard: [[{ text: msg.url === APPLY_URL ? (kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released' ? 'Book a new time' : 'Apply for a loan') : 'Open Moodeng', url: msg.url }]]
          });
       } catch (err) {
          console.error('loanAccess: telegram failed for', borrower.id, err instanceof Error ? err.message : err);

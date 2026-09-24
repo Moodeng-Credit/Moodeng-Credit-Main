@@ -101,10 +101,22 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS video_call_timezone TEXT,
   -- This booking's own join link (Zoom / Cal Video) from Cal.com's booking response — shown on the
   -- waiting screen and in the Messenger confirmation/reminders, per Emma's meeting-confirmation script.
-  ADD COLUMN IF NOT EXISTS video_call_join_url TEXT;
+  ADD COLUMN IF NOT EXISTS video_call_join_url TEXT,
+  -- Zoom attendance (zoom-webhook): the meeting id parsed from the join link, when the borrower
+  -- first showed up (waiting room or call), first got into the call, and last left it. Reset on
+  -- every new booking; feeds the host's "Maria is here" ping and the "did they show up?" evidence.
+  ADD COLUMN IF NOT EXISTS video_call_meeting_id TEXT,
+  ADD COLUMN IF NOT EXISTS video_call_arrived_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS video_call_joined_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS video_call_left_at TIMESTAMPTZ,
+  -- When the "Still coming? Tap to keep your spot" message actually reached them. Only then may an
+  -- unconfirmed slot be released an hour before (video-call-reminders) — never on a silent miss.
+  ADD COLUMN IF NOT EXISTS video_call_keep_spot_asked_at TIMESTAMPTZ;
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_video_call_confirm_token_key
   ON public.users (video_call_confirm_token) WHERE video_call_confirm_token IS NOT NULL;
+CREATE INDEX IF NOT EXISTS users_video_call_meeting_id_idx
+  ON public.users (video_call_meeting_id) WHERE video_call_meeting_id IS NOT NULL;
 
 -- 4) The flow switch -----------------------------------------------------------------------------
 INSERT INTO public.telegram_bot_settings (key, value)
@@ -184,6 +196,11 @@ BEGIN
      OR new.video_call_outcome IS DISTINCT FROM old.video_call_outcome
      OR new.video_call_outcome_at IS DISTINCT FROM old.video_call_outcome_at
      OR new.video_call_join_url IS DISTINCT FROM old.video_call_join_url
+     OR new.video_call_meeting_id IS DISTINCT FROM old.video_call_meeting_id
+     OR new.video_call_arrived_at IS DISTINCT FROM old.video_call_arrived_at
+     OR new.video_call_joined_at IS DISTINCT FROM old.video_call_joined_at
+     OR new.video_call_left_at IS DISTINCT FROM old.video_call_left_at
+     OR new.video_call_keep_spot_asked_at IS DISTINCT FROM old.video_call_keep_spot_asked_at
      -- Referral (gate bypass as of this migration).
      OR new.redeemed_referral_code_id IS DISTINCT FROM old.redeemed_referral_code_id
      OR new.referral_boost_amount IS DISTINCT FROM old.referral_boost_amount
@@ -338,3 +355,10 @@ SELECT cron.schedule(
   )
   $$
 );
+
+-- 9) Video-call reminders every 5 minutes (was 15) ---------------------------------------------
+-- The ladder now has minute-level rungs ("starting now", "we're waiting for you" 3 min in), which a
+-- 15-minute tick would miss. Only the schedule changes; the job keeps its name and command.
+SELECT cron.alter_job(jobid, schedule := '*/5 * * * *')
+  FROM cron.job
+ WHERE jobname = 'video-call-reminders-15min';

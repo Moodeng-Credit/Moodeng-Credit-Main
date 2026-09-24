@@ -110,3 +110,33 @@ export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {
       card: u.video_call_confirmed_at ? undefined : confirmCard('Still coming?', u.video_call_confirm_token)
    });
 };
+
+const joinLine = (u: CallUser) => (u.video_call_join_url ? `Tap to join: ${u.video_call_join_url}` : 'The Zoom link is in your email.');
+
+// ~2h before, only if they haven't tapped "I'll be there": the last call before the slot is freed.
+export const sendKeepSpotMessenger = (u: CallUser) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   return sendMessengerMessage(u.messenger_psid, {
+      text: `🙋 Still coming to our meeting at ${when}? Tap ✅ below to keep your spot — unconfirmed spots are released 1 hour before so someone else can book.`,
+      card: confirmCard('Keep your spot?', u.video_call_confirm_token)
+   });
+};
+
+// At the start time — the single most effective no-show nudge.
+export const sendStartingMessenger = (u: CallUser) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   return sendMessengerMessage(u.messenger_psid, {
+      text: `👋 Our meeting is starting now! ${joinLine(u)}
+Please have your ID or passport ready.`
+   });
+};
+
+// A few minutes in and Zoom hasn't seen them: one friendly nudge, with a way out.
+export const sendWaitingMessenger = (u: CallUser) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   return sendMessengerMessage(u.messenger_psid, {
+      text: `🙂 We're ready for you! ${joinLine(u)}
+Can't make it? Just reply here and we'll find a new time.`
+   });
+};

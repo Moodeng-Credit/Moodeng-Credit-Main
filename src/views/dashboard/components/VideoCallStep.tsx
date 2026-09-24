@@ -14,7 +14,7 @@ import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connect
 // list, never an individual. The booking is created and confirmed server-side (the function stamps
 // users.video_call_scheduled_at), so the client can't fake it.
 
-type Phase = 'loading' | 'picking' | 'scheduled' | 'error';
+type Phase = 'loading' | 'picking' | 'scheduled' | 'error' | 'cooldown';
 
 const RR_FN = 'calcom-round-robin';
 
@@ -70,11 +70,18 @@ export default function VideoCallStep({
    const [bookingStart, setBookingStart] = useState<string | null>(null);
    const [bookedStartsAt, setBookedStartsAt] = useState<string | null>(null);
    const [notice, setNotice] = useState('');
+   // Two missed calls → no new booking until this time (calcom-round-robin enforces it).
+   const [cooldownUntil, setCooldownUntil] = useState<string | null>(null);
 
    const loadSlots = async () => {
       const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'slots', timeZone, host } });
       if (error || !data) {
          setPhase('error');
+         return;
+      }
+      if ((data as { error?: string }).error === 'cooldown') {
+         setCooldownUntil((data as { until?: string }).until ?? null);
+         setPhase('cooldown');
          return;
       }
       setSlots((data as { slots?: string[] }).slots ?? []);
@@ -113,9 +120,12 @@ export default function VideoCallStep({
       const { data, error } = await getSupabaseBrowserClient().functions.invoke(RR_FN, { body: { action: 'book', start, timeZone, host } });
       setBookingStart(null);
 
-      const result = data as { ok?: boolean; start?: string; error?: string } | null;
+      const result = data as { ok?: boolean; start?: string; error?: string; until?: string } | null;
       if (error || !result?.ok) {
-         if (result?.error === 'slot_taken') {
+         if (result?.error === 'cooldown') {
+            setCooldownUntil(result.until ?? null);
+            setPhase('cooldown');
+         } else if (result?.error === 'slot_taken') {
             setNotice('That time was just taken — pick another, please.');
             await loadSlots();
          } else {
@@ -205,6 +215,17 @@ export default function VideoCallStep({
             </div>
          ) : phase === 'loading' ? (
             <p className="text-center text-[14px] font-normal text-[#877897]">Finding open times…</p>
+         ) : phase === 'cooldown' ? (
+            <p className="rounded-[18px] bg-[#f8f1ff] px-4 py-4 text-center text-[15px] leading-[20px] text-[#594d65]">
+               You&apos;ve missed two calls, so booking is paused for a week.
+               {cooldownUntil ? (
+                  <>
+                     {' '}
+                     You can pick a new time from{' '}
+                     <b>{new Date(cooldownUntil).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</b>.
+                  </>
+               ) : null}
+            </p>
          ) : phase === 'error' ? (
             <div className="flex flex-col items-center gap-2">
                <p className="text-md-b3 font-normal text-md-red-500">Couldn&apos;t load available times.</p>

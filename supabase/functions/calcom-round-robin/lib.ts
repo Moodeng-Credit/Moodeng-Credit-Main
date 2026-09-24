@@ -59,3 +59,15 @@ export const recheckRange = (start: string): { from: string; to: string } => {
    const day = 86400000;
    return { from: new Date(t - day).toISOString().slice(0, 10), to: new Date(t + 2 * day).toISOString().slice(0, 10) };
 };
+
+// Two strikes: after NO_SHOW_STRIKES recorded no-shows, a borrower can't book again until
+// COOLDOWN_DAYS after the latest one (each further no-show restarts the wait). Returns the ISO time
+// they can book again, or null when they can book now.
+export const NO_SHOW_STRIKES = 2;
+export const COOLDOWN_DAYS = 7;
+export const bookingCooldownUntil = (noShowAtIsos: Array<string | null>, now: number): string | null => {
+   const times = noShowAtIsos.map((iso) => (iso ? Date.parse(iso) : NaN)).filter((t) => !Number.isNaN(t));
+   if (times.length < NO_SHOW_STRIKES) return null;
+   const until = Math.max(...times) + COOLDOWN_DAYS * 86400000;
+   return until > now ? new Date(until).toISOString() : null;
+};

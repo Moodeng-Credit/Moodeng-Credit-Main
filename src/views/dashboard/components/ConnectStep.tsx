@@ -273,19 +273,34 @@ export function LoanAccessPendingCard({
    // When given (call mode), the card shows the booked time and this meeting's own join link.
    userId?: string;
 }) {
-   const [meeting, setMeeting] = useState<{ startsAt: string | null; joinUrl: string | null } | null>(null);
+   const [meeting, setMeeting] = useState<{
+      startsAt: string | null;
+      joinUrl: string | null;
+      confirmToken: string | null;
+      confirmed: boolean;
+   } | null>(null);
    useEffect(() => {
       if (mode !== 'call' || !userId) return;
       let cancelled = false;
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('video_call_starts_at, video_call_join_url')
+            .select('video_call_starts_at, video_call_join_url, video_call_confirm_token, video_call_confirmed_at')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
-         const row = data as { video_call_starts_at?: string | null; video_call_join_url?: string | null };
-         setMeeting({ startsAt: row.video_call_starts_at ?? null, joinUrl: row.video_call_join_url ?? null });
+         const row = data as {
+            video_call_starts_at?: string | null;
+            video_call_join_url?: string | null;
+            video_call_confirm_token?: string | null;
+            video_call_confirmed_at?: string | null;
+         };
+         setMeeting({
+            startsAt: row.video_call_starts_at ?? null,
+            joinUrl: row.video_call_join_url ?? null,
+            confirmToken: row.video_call_confirm_token ?? null,
+            confirmed: Boolean(row.video_call_confirmed_at)
+         });
       })();
       return () => {
          cancelled = true;
@@ -342,6 +357,18 @@ export function LoanAccessPendingCard({
                   ) : (
                      <span className="text-[15px] text-[#7b6b8c]">Your time is in your email</span>
                   )}
+                  {/* Same "I'll be there" as the Messenger button (video-call-confirm) — so confirming,
+                      and keeping the slot from being released, never depends on Messenger alone. */}
+                  {meeting?.confirmToken && !meeting.confirmed && !callOver ? (
+                     <a
+                        className="flex min-h-[44px] w-full items-center justify-center rounded-full border-2 border-[#6b55f7] bg-white text-[16px] font-semibold text-[#6b55f7] active:scale-[0.98]"
+                        href={`${(import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/$/, '')}/functions/v1/video-call-confirm?t=${encodeURIComponent(meeting.confirmToken)}`}
+                     >
+                        ✅ I&apos;ll be there
+                     </a>
+                  ) : meeting?.confirmed && !callOver ? (
+                     <span className="text-[14px] font-semibold text-[#2f7a3a]">✅ You confirmed — see you there!</span>
+                  ) : null}
                   {meeting?.joinUrl && !callOver ? (
                      <a
                         className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full text-[16px] font-semibold text-white shadow-[0_6px_16px_rgba(107,85,247,0.35)] active:scale-[0.98]"
