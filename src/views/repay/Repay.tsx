@@ -1,16 +1,30 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock, Copy, ExternalLink, Loader2, PlayCircle, ShieldCheck, TrendingUp, Wallet, X } from 'lucide-react';
+import {
+   AlertTriangle,
+   ArrowLeft,
+   Check,
+   ChevronDown,
+   Clock,
+   Copy,
+   ExternalLink,
+   Loader2,
+   PlayCircle,
+   ShieldCheck,
+   TrendingUp,
+   Wallet,
+   X
+} from 'lucide-react';
+import posthog from 'posthog-js';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
-import posthog from 'posthog-js';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
+import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
-import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
@@ -21,12 +35,12 @@ import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMeth
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
+import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
-import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
-import { isUserVerified } from '@/lib/isUserVerified';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -552,23 +566,23 @@ export default function Repay() {
       ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
          ? {
               actionLabel: 'Start Setup',
-              body: 'Verify yourself and add a Base Wallet before requesting loans. Repayments will show here after a lender funds your first loan.',
+              body: 'Verify yourself and add a wallet (Base or Instant Wallet) before requesting loans. Repayments will show here after a lender funds your first loan.',
               onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
               title: 'Finish setup to start borrowing'
            }
          : !isWorldIdVerified
            ? {
                 actionLabel: 'Verify Yourself',
-                body: 'Your Base Wallet is added. Complete verification before requesting loans. Repayments will show here after funding.',
+                body: 'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.',
                 onAction: openVerify,
                 title: 'Verify yourself to borrow'
              }
            : !hasCompletedBaseWalletSetup
              ? {
-                  actionLabel: 'Add Base Wallet',
-                  body: 'You are verified. Add a Base Wallet so loans and repayments can stay tied to your Moodeng account.',
+                  actionLabel: 'Add Wallet',
+                  body: 'You are verified. Add a Base Wallet or set up an Instant Wallet so loans and repayments can stay tied to your Moodeng account.',
                   onAction: () => navigate('/onboarding/wallet', { state: { returnTo: 'repay' } }),
-                  title: 'Add Base Wallet to borrow'
+                  title: 'Add a wallet to borrow'
                }
              : {
                   actionLabel: 'Request a loan',
@@ -1072,7 +1086,7 @@ export default function Repay() {
                   {completion.trustPoints > 0 ? (
                      <span className="mt-4 inline-flex items-center gap-1.5 rounded-md-pill bg-md-green-100 px-3 py-1.5 text-md-b3 font-semibold text-md-green-900">
                         <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-                        Trust Points +{completion.trustPoints}
+                        Pandesal points +{completion.trustPoints}
                      </span>
                   ) : null}
 
@@ -1369,8 +1383,8 @@ export default function Repay() {
                                              <>
                                                 {' '}
                                                 — and works the same whether you're in the Philippines or traveling.{' '}
-                                                <span className="font-semibold text-[#6c3fe0]">Binance</span> is also available under
-                                                "Other options".
+                                                <span className="font-semibold text-[#6c3fe0]">Binance</span> is also available under "Other
+                                                options".
                                              </>
                                           ) : (
                                              '.'
@@ -1387,7 +1401,9 @@ export default function Repay() {
                                           // an added option abroad, never a replacement for the local rails.
                                           const otherSources = fundSources.filter(
                                              (source) =>
-                                                source.id === 'gcrypto' || source.id === 'pdax' || (source.id === 'binance' && !inPhilippines)
+                                                source.id === 'gcrypto' ||
+                                                source.id === 'pdax' ||
+                                                (source.id === 'binance' && !inPhilippines)
                                           );
                                           const otherSelected = otherSources.some((source) => source.id === fundSource);
                                           const expanded = showMoreSources || otherSelected;
@@ -1831,7 +1847,7 @@ export default function Repay() {
                         )}
                         {validPreviewPayment > 0 && !isLoanOverdue(selectedLoan) && estimatedTrustPoints > 0 ? (
                            <span className="trust-badge mt-3 mb-2 inline-flex items-center gap-1.5 rounded-md-pill border border-[#e9e3f8] bg-[#f0ebff] px-3 py-1 text-md-b3 font-semibold text-[#6c3fe0]">
-                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Trust Points
+                              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />+{estimatedTrustPoints} Pandesal points
                            </span>
                         ) : null}
 

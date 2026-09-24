@@ -1,8 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 // Statically imported so Supabase's bundler always ships it (a runtime file read
 // of knowledge.md would find nothing on the deployed function). Regenerate both
 // with: node tools/build-support-knowledge.mjs
@@ -50,8 +50,7 @@ const EMPTY_FALLBACK_EN =
    "I want to make sure I get this right for you 🙂 — could you say that once more in a few words? Or I can connect you with the Moodeng team right now and they'll help you directly.";
 const EMPTY_FALLBACK_FIL =
    'Gusto kong masagot ito nang tama para sa iyo 🙂 — pwede mo bang ulitin sa maikling salita? O pwede rin kitang ikonekta agad sa Moodeng team para matulungan ka nang direkta.';
-const emptyFallback = (context: ChatContext): string =>
-   context.locale === 'fil' ? EMPTY_FALLBACK_FIL : EMPTY_FALLBACK_EN;
+const emptyFallback = (context: ChatContext): string => (context.locale === 'fil' ? EMPTY_FALLBACK_FIL : EMPTY_FALLBACK_EN);
 
 // Best-effort per-IP throttle. The help hub is public + shareable, so a burst
 // cap keeps one visitor (or script) from burning DeepSeek credit. In-memory per
@@ -94,7 +93,7 @@ HOW TO ANSWER
 - Never return an empty answer. Always put a real, helpful sentence in "reply".
 - When you name the best option, also give its steps. Don't stop at "Coins.ph is cheapest" — follow with how to use it. Don't half-answer.
 - When you point someone to one of the pages in the "Shareable links you can put in a reply" list, include it as a tappable markdown link, e.g. [browse all guides](/support/guides) or [see the FAQs](/support/faq). Use ONLY the exact paths from that list — never invent a URL. A link is a nice extra, not a replacement for a short answer.
-- Give the complete facts when the knowledge base has them. If it lists a full scale (e.g. the Trust Score points for on-time/75%/50%/25%/late/default, or the IOU rewards), give the whole thing, not a partial "e.g."
+- Give the complete facts when the knowledge base has them. If it lists a full scale (e.g. the Pandesal points for on-time/75%/50%/25%/late/default, or the IOU rewards), give the whole thing, not a partial "e.g."
 - If someone sounds scared, anxious, angry, or overwhelmed about their money, LEAD WITH REASSURANCE before anything else: their funds are their own (Moodeng never holds them), the amount they owe never grows, and a real person is here to help. Only after reassuring do you troubleshoot or ask a question. Never answer a distressed message with just a clarifying question — that reads as cold.
 - Match the user's language. If they write in Tagalog/Taglish, reply the same way.
 
@@ -179,7 +178,9 @@ const handleEscalate = async (messages: ChatMessage[], context: ChatContext, con
       return jsonResponse({ ok: false, error: 'send_failed' }, 200);
    }
 
-   console.log(JSON.stringify({ evt: 'support_chat_escalate', turns: messages.length, step: context.step ?? null, hasContact: Boolean(contact) }));
+   console.log(
+      JSON.stringify({ evt: 'support_chat_escalate', turns: messages.length, step: context.step ?? null, hasContact: Boolean(contact) })
+   );
    return jsonResponse({ ok: true });
 };
 
@@ -209,7 +210,10 @@ const parseAiReply = (content: string): { reply: string; offer_human?: boolean }
    if (!raw) return { reply: '' };
 
    // 1) strict, then 2) de-fenced
-   const defenced = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+   const defenced = raw
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+      .trim();
    const direct = tryParse(raw) || tryParse(defenced);
    if (direct) return direct;
 
@@ -334,7 +338,7 @@ serve(async (req) => {
       const lastUser = [...messages].reverse().find((m) => m.role === 'user');
       if (!lastUser) {
          return jsonResponse({
-            reply: 'Hi! I\'m Mecha 🤖 — ask me anything about Moodeng: verifying, wallets, borrowing, or cashing out.',
+            reply: "Hi! I'm Mecha 🤖 — ask me anything about Moodeng: verifying, wallets, borrowing, or cashing out.",
             offer_human: false
          });
       }
@@ -377,8 +381,8 @@ serve(async (req) => {
          const nudge =
             systemPrompt +
             "\n\nIMPORTANT: Respond to the user's LAST message now, in plain warm text (no JSON, no code fences, never blank). " +
-            "If it is a short follow-up like \"and then?\", \"the first one\", or \"the cheapest one\", continue your previous message with the next concrete steps or the specific option from the knowledge base. " +
-            "If they sound worried, scared, or frustrated, reassure them first (their funds are their own, the amount owed never grows, a real person can help) and offer to connect them with the team. " +
+            'If it is a short follow-up like "and then?", "the first one", or "the cheapest one", continue your previous message with the next concrete steps or the specific option from the knowledge base. ' +
+            'If they sound worried, scared, or frustrated, reassure them first (their funds are their own, the amount owed never grows, a real person can help) and offer to connect them with the team. ' +
             'Always give a real, helpful sentence.';
          const retryTemps = [0.7, 0.95];
          for (const temperature of retryTemps) {
@@ -386,7 +390,10 @@ serve(async (req) => {
             // instruction to the last user turn (does not change what we log).
             const augmented = messages.map((m, i) =>
                i === messages.length - 1 && m.role === 'user'
-                  ? { ...m, content: `${m.content}\n\n(Please answer this directly and helpfully using the Moodeng knowledge base — give the concrete steps or facts, never a blank or a refusal.)` }
+                  ? {
+                       ...m,
+                       content: `${m.content}\n\n(Please answer this directly and helpfully using the Moodeng knowledge base — give the concrete steps or facts, never a blank or a refusal.)`
+                    }
                   : m
             );
             const retry = await callDeepSeek(apiKey, nudge, augmented, { jsonMode: false, temperature });

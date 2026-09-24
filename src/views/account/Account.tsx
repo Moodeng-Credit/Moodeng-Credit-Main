@@ -6,8 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 import IouPointHistoryModal from '@/components/IouPointHistoryModal';
 import UserAvatar from '@/components/UserAvatar';
-import WalletActivity from '@/views/account/WalletActivity';
-import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -16,6 +14,8 @@ import { formatPointsMajor } from '@/shared/points';
 import { logoutUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { getAccountFaqsForLocale } from '@/views/account/data/accountFaqs';
+import WalletActivity from '@/views/account/WalletActivity';
+import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 
 // TODO: Replace with YouTube video URL when available
 const CREDIT_GUIDE_URL = '/credit-leveling-guide';
@@ -93,7 +93,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'Set up wallet',
       signOut: 'Sign Out',
       signOutTitle: 'Sign out?',
-      signOutBody: 'You can sign back in anytime. Your Trust Score stays with your wallet.',
+      signOutBody: 'You can sign back in anytime. Your Pandesal points stay with your wallet.',
       signingOut: 'Signing Out...',
       cancel: 'Cancel',
       settingsAria: 'Go to Account Settings',
@@ -120,7 +120,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'I-set up ang wallet',
       signOut: 'Mag-sign out',
       signOutTitle: 'Mag-sign out?',
-      signOutBody: 'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Trust Score mo.',
+      signOutBody: 'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Pandesal points mo.',
       signingOut: 'Nag-sign out...',
       cancel: 'Kanselahin',
       settingsAria: 'Pumunta sa Account Settings',
@@ -147,7 +147,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'Siapkan dompet',
       signOut: 'Keluar',
       signOutTitle: 'Keluar?',
-      signOutBody: 'Kamu bisa masuk lagi kapan saja. Trust Score tetap bersama wallet kamu.',
+      signOutBody: 'Kamu bisa masuk lagi kapan saja. Pandesal points tetap bersama wallet kamu.',
       signingOut: 'Keluar...',
       cancel: 'Batal',
       settingsAria: 'Buka Pengaturan Akun',
@@ -174,7 +174,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'ตั้งค่ากระเป๋าเงิน',
       signOut: 'ออกจากระบบ',
       signOutTitle: 'ออกจากระบบ?',
-      signOutBody: 'คุณสามารถเข้าสู่ระบบใหม่ได้ทุกเมื่อ Trust Score จะยังอยู่กับกระเป๋าเงินของคุณ',
+      signOutBody: 'คุณสามารถเข้าสู่ระบบใหม่ได้ทุกเมื่อ Pandesal points จะยังอยู่กับกระเป๋าเงินของคุณ',
       signingOut: 'กำลังออกจากระบบ...',
       cancel: 'ยกเลิก',
       settingsAria: 'ไปที่การตั้งค่าบัญชี',
@@ -201,7 +201,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'Thiết lập ví',
       signOut: 'Đăng xuất',
       signOutTitle: 'Đăng xuất?',
-      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Trust Score vẫn đi cùng ví của bạn.',
+      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Pandesal points vẫn đi cùng ví của bạn.',
       signingOut: 'Đang đăng xuất...',
       cancel: 'Hủy',
       settingsAria: 'Đi tới Cài đặt tài khoản',
@@ -446,9 +446,7 @@ export default function Account() {
                         onClick={() => navigate(CREDIT_GUIDE_URL)}
                         className="flex items-center justify-between px-md-5 py-md-3 border border-md-neutral-400 rounded-md-md w-full text-left transition-colors hover:bg-md-neutral-100 active:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-md-primary-900"
                      >
-                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">
-                           {copy.creditGuide}
-                        </span>
+                        <span className="text-md-b1 font-medium text-md-neutral-1900 tracking-[-0.02em]">{copy.creditGuide}</span>
                         <PlayIcon />
                      </button>
                   ) : null}

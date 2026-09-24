@@ -43,7 +43,7 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'Guides',
-            description: 'Step-by-step guides for Trust Score, Credit Level, and repayments.',
+            description: 'Step-by-step guides for Pandesal points, Credit Level, and repayments.',
             icon: 'guide.png',
             path: '/support/guides'
          },
@@ -77,7 +77,7 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'Mga gabay',
-            description: 'Mga gabay na step-by-step tungkol sa Trust Score, antas ng kredito, at pagbabayad.',
+            description: 'Mga gabay na step-by-step tungkol sa Pandesal points, antas ng kredito, at pagbabayad.',
             icon: 'guide.png',
             path: '/support/guides'
          },
@@ -111,7 +111,7 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'Panduan',
-            description: 'Panduan langkah demi langkah untuk Trust Score, level kredit, dan pembayaran.',
+            description: 'Panduan langkah demi langkah untuk Pandesal points, level kredit, dan pembayaran.',
             icon: 'guide.png',
             path: '/support/guides'
          },
@@ -145,7 +145,7 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'คู่มือ',
-            description: 'คู่มือทีละขั้นตอนสำหรับ Trust Score, ระดับเครดิต และการชำระคืน',
+            description: 'คู่มือทีละขั้นตอนสำหรับ Pandesal points, ระดับเครดิต และการชำระคืน',
             icon: 'guide.png',
             path: '/support/guides'
          },
@@ -179,7 +179,7 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'Hướng dẫn',
-            description: 'Hướng dẫn từng bước về Trust Score, hạng tín dụng và trả nợ.',
+            description: 'Hướng dẫn từng bước về Pandesal points, hạng tín dụng và trả nợ.',
             icon: 'guide.png',
             path: '/support/guides'
          },

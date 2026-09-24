@@ -3,6 +3,7 @@ import { type CSSProperties, type JSX, type MouseEvent, useEffect, useMemo, useS
 import { Link } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
+
 import { ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER, computeAcademyQuizPoints } from '@/shared/points';
 import '@/views/academy/AcademyGuide.css';
 
@@ -56,8 +57,8 @@ const steps: AcademyStep[] = [
    {
       id: 'wallet',
       eyebrow: 'Step 3',
-      title: 'Add your Base Account',
-      body: 'Create or connect your Base Account once so lenders can fund loans directly there and Moodeng can track repayment history.',
+      title: 'Add your wallet',
+      body: 'Create or connect a Base Account, or set up an Instant Wallet from your login, so lenders can fund loans directly there and Moodeng can track repayment history.',
       action: 'Create or connect',
       screen: 'wallet'
    },
@@ -123,7 +124,7 @@ const quizQuestions: QuizQuestion[] = [
    },
    {
       id: 'wallet',
-      question: 'Why do borrowers connect a Base wallet?',
+      question: 'Why do borrowers add a wallet (Base or Instant Wallet)?',
       options: ['To receive USDC loans and build onchain reputation', 'To hide repayment history', 'To skip World ID'],
       answer: 'To receive USDC loans and build onchain reputation'
    },
@@ -184,7 +185,10 @@ const WalletScreen = (): JSX.Element => (
             <img src="/icons/base-account.svg" alt="" />
          </div>
          <h3>Add Your Base Account</h3>
-         <p>Create one or connect the Base Account you already use. Moodeng keeps the flow inside the app.</p>
+         <p>
+            Create one or connect the Base Account you already use, or set up an Instant Wallet instead. Moodeng keeps the flow inside the
+            app.
+         </p>
          <div className="academy-wallet-network">
             <span>Network</span>
             <strong>Base</strong>
@@ -446,7 +450,7 @@ export default function AcademyGuide(): JSX.Element {
    usePageSeo({
       title: 'Moodeng Academy | Moodeng Credit',
       description:
-         'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, connect a Base wallet, request a loan, repay, and grow your credit limit.',
+         'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, connect a Base wallet or set up an Instant Wallet, request a loan, repay, and grow your credit limit.',
       canonicalPath: '/academy'
    });
 

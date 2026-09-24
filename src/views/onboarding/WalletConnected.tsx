@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import {
    areWalletAddressesEqual,
    formatWalletAddressShort,
@@ -11,7 +12,6 @@ import {
    getWalletProviderFromConnector,
    isBaseWalletProvider
 } from '@/lib/walletProvider';
-import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -62,8 +62,8 @@ export default function WalletConnected() {
       if (isConnectedWrongProvider) {
          return (
             <FailureView
-               title="Use Base Account"
-               body="Borrowers need to connect with the Base Account option. Other wallet connectors cannot be locked for Moodeng borrowing."
+               title="Use Base Account or Instant Wallet"
+               body="Borrowers need to connect with the Base Account option or set up an Instant Wallet. Other wallet connectors cannot be locked for Moodeng borrowing."
                onRetry={() => navigate('/onboarding/wallet')}
             />
          );
@@ -87,11 +87,11 @@ export default function WalletConnected() {
       if (!baseWalletLock.isConfirmedBorrowerWallet && !isConnectedBaseAccount) {
          return (
             <FailureView
-               title={baseWalletLock.hasStoredWallet ? 'Confirm Your Base Account' : 'Base Account Not Added'}
+               title={baseWalletLock.hasStoredWallet ? 'Confirm Your Base Account' : 'Wallet Not Added'}
                body={
                   baseWalletLock.hasStoredWallet
                      ? `Connect ${formatWalletAddressShort(baseWalletLock.address)} with Base Account so Moodeng can confirm the saved wallet before borrowing or repayment.`
-                     : "We couldn't detect a Base Account. Please connect one to continue."
+                     : "We couldn't detect a wallet. Connect a Base Account or set up an Instant Wallet to continue."
                }
                onRetry={() => navigate('/onboarding/wallet')}
             />
@@ -157,8 +157,8 @@ export default function WalletConnected() {
                </h2>
                <p className="max-w-[360px] text-md-b1 font-medium leading-7 text-md-neutral-700">
                   {baseWalletLock.isConfirmedOpenfort
-                     ? 'Loans you receive land right in the app — no other app needed. It also builds your Trust Score.'
-                     : 'Your wallet is used to build your Trust Score and receive USDC loans.'}
+                     ? 'Loans you receive land right in the app — no other app needed. It also earns you Pandesal points.'
+                     : 'Your wallet is used to earn Pandesal points and receive USDC loans.'}
                </p>
             </div>
             <button

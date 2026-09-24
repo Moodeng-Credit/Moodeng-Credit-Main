@@ -18,6 +18,7 @@ import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
+
 import { useGoBack } from '@/hooks/useGoBack';
 import { usePageSeo } from '@/hooks/usePageSeo';
 
@@ -38,7 +39,7 @@ const REASONS: { Icon: ComponentType<{ className?: string; strokeWidth?: number 
    {
       Icon: Lock,
       title: 'Access',
-      body: 'Finishing verification is what unlocks loan requests, and it is the point where your Trust Score starts building.'
+      body: 'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.'
    },
    {
       Icon: Users,
@@ -93,7 +94,7 @@ const FAQS: { q: string; a: string }[] = [
 const RELATED: { to: string; title: string; blurb: string }[] = [
    { to: '/academy/money/add-funds', title: 'Add funds to your wallet', blurb: 'Buy USDC and send it to your wallet on Base.' },
    { to: '/academy/money/withdraw', title: 'Withdraw to your bank', blurb: 'Cash out USDC to your bank or e-wallet.' },
-   { to: '/academy/money/repay', title: 'Repay your loan', blurb: 'Repay on time to build your Trust Score.' }
+   { to: '/academy/money/repay', title: 'Repay your loan', blurb: 'Repay on time to earn Pandesal points.' }
 ];
 
 function SectionCard({ title, children }: { title: string; children: ReactNode }) {
@@ -201,8 +202,8 @@ export default function VerifyGuide() {
                </div>
 
                <p className="mt-md-3 max-w-2xl text-md-b2 font-normal leading-[1.6] text-md-neutral-1200 md:text-md-b1">
-                  To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts
-                  out of the community, and it is what lets lenders trust the requests they fund.
+                  To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out
+                  of the community, and it is what lets lenders trust the requests they fund.
                </p>
             </div>
 
@@ -330,7 +331,8 @@ export default function VerifyGuide() {
                <section className="rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 p-md-3 shadow-md-card md:p-md-4">
                   <h2 className="text-md-b1 font-semibold text-md-heading">Ready to verify?</h2>
                   <p className="mt-1 text-md-b2 font-normal leading-[1.5] text-md-neutral-1200">
-                     Verification lives inside the app under &ldquo;Verify Yourself&rdquo;. It takes about 3 minutes and you only do it once.
+                     Verification lives inside the app under &ldquo;Verify Yourself&rdquo;. It takes about 3 minutes and you only do it
+                     once.
                   </p>
                   <div className="mt-md-3 flex flex-col gap-md-1 sm:flex-row sm:items-center">
                      <Link

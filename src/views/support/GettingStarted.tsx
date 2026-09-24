@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
+
 import { useLocalization } from '@/i18n';
 import type { RootState } from '@/store/store';
 import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
@@ -51,7 +52,7 @@ const BASICS: BasicsItem[] = [
    },
    {
       title: 'Learn more at the Academy',
-      description: 'Borrowing, Base wallet, Trust Score, and Credit Level',
+      description: 'Borrowing, wallets, Pandesal points, and Credit Level',
       icon: 'book-open.svg',
       bg: 'bg-md-primary-1200',
       path: '/academy'
@@ -78,7 +79,7 @@ const GETTING_STARTED_COPY = {
          { title: 'Browse Benefits', description: "See Why It's Worth It" },
          { title: 'Why Moodeng uses USDC', description: 'Learn how USDC works' },
          { title: 'Learn Credit Leveling System', description: 'Grow Limits, Build Trust' },
-         { title: 'Learn more at the Academy', description: 'Borrowing, Base wallet, Trust Score, and Credit Level' },
+         { title: 'Learn more at the Academy', description: 'Borrowing, wallets, Pandesal points, and Credit Level' },
          { title: 'Read Moodeng Blogs', description: 'Stories on fair credit, loan sharks, and trust' }
       ]
    },
@@ -94,7 +95,7 @@ const GETTING_STARTED_COPY = {
          { title: 'Tingnan ang benefits', description: 'Alamin kung bakit sulit ito' },
          { title: 'Bakit USDC ang gamit ng Moodeng', description: 'Alamin kung paano gumagana ang USDC' },
          { title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito', description: 'Palakihin ang limits, bumuo ng trust' },
-         { title: 'Matuto pa sa Academy', description: 'Paghiram, Base wallet, Trust Score, at antas ng kredito' },
+         { title: 'Matuto pa sa Academy', description: 'Paghiram, wallet, Pandesal points, at antas ng kredito' },
          { title: 'Basahin ang Moodeng Blogs', description: 'Mga kwento tungkol sa patas na credit, loan sharks, at trust' }
       ]
    },
@@ -110,7 +111,7 @@ const GETTING_STARTED_COPY = {
          { title: 'Lihat manfaat', description: 'Lihat mengapa ini berguna' },
          { title: 'Mengapa Moodeng memakai USDC', description: 'Pelajari cara kerja USDC' },
          { title: 'Pelajari sistem peningkatan level kredit', description: 'Naikkan limit, bangun kepercayaan' },
-         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, Base wallet, Trust Score, dan level kredit' },
+         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, wallet, Pandesal points, dan level kredit' },
          { title: 'Baca Blog Moodeng', description: 'Cerita tentang kredit adil, rentenir, dan kepercayaan' }
       ]
    },
@@ -126,7 +127,7 @@ const GETTING_STARTED_COPY = {
          { title: 'ดูประโยชน์', description: 'ดูว่าทำไมจึงคุ้มค่า' },
          { title: 'ทำไม Moodeng ใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
          { title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
-         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, Base wallet, Trust Score และระดับเครดิต' },
+         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, กระเป๋าเงิน, Pandesal points และระดับเครดิต' },
          { title: 'อ่านบล็อก Moodeng', description: 'เรื่องราวเกี่ยวกับเครดิตที่เป็นธรรม เงินกู้นอกระบบ และความน่าเชื่อถือ' }
       ]
    },
@@ -142,7 +143,7 @@ const GETTING_STARTED_COPY = {
          { title: 'Xem lợi ích', description: 'Xem vì sao đáng dùng' },
          { title: 'Vì sao Moodeng dùng USDC', description: 'Tìm hiểu USDC hoạt động ra sao' },
          { title: 'Tìm hiểu hệ thống nâng hạng tín dụng', description: 'Tăng hạn mức, xây dựng niềm tin' },
-         { title: 'Học thêm tại Academy', description: 'Vay, Base wallet, Trust Score và hạng tín dụng' },
+         { title: 'Học thêm tại Academy', description: 'Vay, ví, Pandesal points và hạng tín dụng' },
          { title: 'Đọc Blog Moodeng', description: 'Câu chuyện về tín dụng công bằng, cho vay nặng lãi và niềm tin' }
       ]
    }
