@@ -6,7 +6,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  * these helpers only call its functions.
  */
 
-export type VoucherReward = 'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee';
+export type VoucherReward =
+   'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee' | 'tier_rising' | 'tier_prime' | 'tier_apex';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 export type RedeemInviteResult = 'joined' | 'invalid_code' | 'self_referral' | 'already_referred' | 'not_a_new_account';
 

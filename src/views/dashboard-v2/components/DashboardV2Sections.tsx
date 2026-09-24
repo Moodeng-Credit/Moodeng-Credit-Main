@@ -282,3 +282,21 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
       </section>
    );
 }
+
+/** "Moodeng grew to Rising!": shown on the dashboard while a tier's GrabFood voucher is waiting to be claimed. */
+export function TierVoucherCard({ label, amountPhp, onClaim }: { label: string; amountPhp: number; onClaim: () => void }) {
+   return (
+      <section
+         className="mx-5 flex items-center gap-3 rounded-[8px] px-3 py-3"
+         style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
+         aria-label={`${label} tier voucher`}
+      >
+         <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-12 w-12 shrink-0 object-contain" />
+         <div className="min-w-0 flex-1">
+            <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">Moodeng grew to {label}!</p>
+            <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">Claim your ₱{amountPhp} GrabFood voucher</p>
+         </div>
+         <ClaimVoucherButton onClaim={onClaim} />
+      </section>
+   );
+}

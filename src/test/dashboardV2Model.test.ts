@@ -62,9 +62,11 @@ const buildMilestone = (id: string, status: DashboardMilestone['status'], points
 describe('dashboard v2 Moodeng tiers', () => {
    it('maps pandesal (trust points) to the design tiers', () => {
       expect(getMoodengTier(0)).toBe('rookie');
-      expect(getMoodengTier(49)).toBe('rookie');
-      expect(getMoodengTier(50)).toBe('rising');
-      expect(getMoodengTier(300)).toBe('prime');
+      expect(getMoodengTier(59)).toBe('rookie');
+      expect(getMoodengTier(60)).toBe('rising');
+      expect(getMoodengTier(200)).toBe('prime');
+      expect(getMoodengTier(399)).toBe('prime');
+      expect(getMoodengTier(400)).toBe('apex');
       expect(getMoodengTier(1200)).toBe('apex');
    });
 
@@ -198,9 +200,9 @@ describe('dashboard v2 all milestones', () => {
    });
 
    it('sets the feeding goal to the next Moodeng tier', () => {
-      expect(getNextTierGoal(10)).toBe(50);
-      expect(getNextTierGoal(50)).toBe(300);
-      expect(getNextTierGoal(600)).toBeNull();
+      expect(getNextTierGoal(10)).toBe(60);
+      expect(getNextTierGoal(60)).toBe(200);
+      expect(getNextTierGoal(400)).toBeNull();
    });
 
    it('builds an encoded invite link', () => {

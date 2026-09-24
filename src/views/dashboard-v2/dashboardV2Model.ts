@@ -11,14 +11,24 @@ import type { DashboardMilestone } from '@/views/dashboard/dashboardHelpers';
 /**
  * Moodeng growth tiers from the Figma design. "Pandesal" is the design's name for Trust Points,
  * so thresholds are compared against `user_trust_points.points_total`.
- * NOTE: thresholds come from the design (0 / 50 / 300 / 600) — confirm with product before launch.
+ * Pandesal comes from milestones plus +10 per on-time repayment and streak bonuses, so Prime lands
+ * around 10 on-time loans and Apex around 20. Keep in sync with app_private.tier_voucher() in
+ * migration 20260925090000_pandesal_repayments_and_tier_vouchers.
  */
 export const MOODENG_TIERS: { id: MoodengTierId; label: string; minPandesal: number }[] = [
    { id: 'rookie', label: 'Rookie', minPandesal: 0 },
-   { id: 'rising', label: 'Rising', minPandesal: 50 },
-   { id: 'prime', label: 'Prime', minPandesal: 300 },
-   { id: 'apex', label: 'Apex', minPandesal: 600 }
+   { id: 'rising', label: 'Rising', minPandesal: 60 },
+   { id: 'prime', label: 'Prime', minPandesal: 200 },
+   { id: 'apex', label: 'Apex', minPandesal: 400 }
 ];
+
+/** The GrabFood voucher each tier unlocks (validated and paid out by the database, not here). */
+export const TIER_VOUCHERS: { reward: VoucherReward; tier: MoodengTierId; label: string; minPandesal: number; amountPhp: number }[] = [
+   { reward: 'tier_rising', tier: 'rising', label: 'Rising', minPandesal: 60, amountPhp: 50 },
+   { reward: 'tier_prime', tier: 'prime', label: 'Prime', minPandesal: 200, amountPhp: 100 },
+   { reward: 'tier_apex', tier: 'apex', label: 'Apex', minPandesal: 400, amountPhp: 150 }
+];
+export const TIER_VOUCHER_REWARDS: VoucherReward[] = TIER_VOUCHERS.map((voucher) => voucher.reward);
 
 /** Milestones the new design shows on the dashboard, in order. Verification has its own banner. */
 const DASHBOARD_MILESTONE_IDS = ['first-loan-request', 'first-funded-loan', 'first-on-time-repayment'];

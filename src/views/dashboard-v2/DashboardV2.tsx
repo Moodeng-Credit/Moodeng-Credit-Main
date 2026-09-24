@@ -21,8 +21,13 @@ import {
 } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
 import { MilestonePopup, MilestoneStreakPopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
-import { LoanSummarySection, MilestonesSection, UpcomingDuesSection } from '@/views/dashboard-v2/components/DashboardV2Sections';
-import { getVoucherState, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
+import {
+   LoanSummarySection,
+   MilestonesSection,
+   TierVoucherCard,
+   UpcomingDuesSection
+} from '@/views/dashboard-v2/components/DashboardV2Sections';
+import { getVoucherState, OWN_VOUCHER, TIER_VOUCHERS } from '@/views/dashboard-v2/dashboardV2Model';
 import DashboardV2PreviewBar from '@/views/dashboard-v2/DashboardV2Preview';
 import { VoucherClaimPopup } from '@/views/dashboard-v2/DashboardV2Rewards';
 import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
@@ -113,6 +118,11 @@ export default function DashboardV2() {
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    const ownVoucher = getVoucherState(model.rewards, OWN_VOUCHER, model.referralLoading);
+   // The lowest tier whose GrabFood voucher is waiting to be claimed (one card at a time).
+   const claimableTierVoucher = TIER_VOUCHERS.map((tier) => ({
+      tier,
+      claimable: model.rewards.claimable.find((item) => item.reward === tier.reward) ?? null
+   })).find((entry) => entry.claimable);
 
    // Milestone streak: 2+ milestones in the last 7 days. Shown once per new set of milestones (so the
    // next milestone inside the week celebrates again), remembered per device.
@@ -183,6 +193,13 @@ export default function DashboardV2() {
                   {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
                   {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
+                  {claimableTierVoucher ? (
+                     <TierVoucherCard
+                        label={claimableTierVoucher.tier.label}
+                        amountPhp={claimableTierVoucher.tier.amountPhp}
+                        onClaim={() => setClaimingVoucher(claimableTierVoucher.claimable)}
+                     />
+                  ) : null}
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
                   {!model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}

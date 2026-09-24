@@ -86,7 +86,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
    rewarded: {
       ...SAMPLE_BASE,
       isVerified: true,
-      pandesal: 45,
+      pandesal: 75,
+      tier: 'rising',
       mood: 'repaid',
       creditLevel: 2,
       creditLimit: 20,
@@ -103,7 +104,8 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
          wasReferred: false,
          claimable: [
             { reward: 'first_on_time_repayment', friendReferralId: null, amountPhp: 50 },
-            { reward: 'referral_inviter', friendReferralId: 'sample-referral-1', amountPhp: 100 }
+            { reward: 'referral_inviter', friendReferralId: 'sample-referral-1', amountPhp: 100 },
+            { reward: 'tier_rising', friendReferralId: null, amountPhp: 50 }
          ],
          claims: []
       }
