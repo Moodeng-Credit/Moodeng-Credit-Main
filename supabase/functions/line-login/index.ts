@@ -120,19 +120,26 @@ Deno.serve(async (req) => {
       if (error) throw error
     }
 
-    if (existingProfile) {
+    // Sign in first and only reset the password when that fails (first login after a secret
+    // change, or an unconfirmed email). Setting a password through the admin API makes Supabase
+    // revoke EVERY session the user has, so doing it on each login signed people out of their
+    // other tabs/devices — and out of the tab they had just logged into, if a second login raced it.
+    const signIn = () => supabaseAdmin.auth.signInWithPassword({ email, password })
+    let { data: signInData } = await signIn()
+
+    if (!signInData?.session && existingProfile) {
       const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(existingProfile.id, {
         password,
         user_metadata: lineMetadata,
         email_confirm: true,
       })
+
       if (updateAuthError) {
         throw updateAuthError
       }
-    }
 
-    // Try to sign in first.
-    const { data: signInData } = await supabaseAdmin.auth.signInWithPassword({ email, password })
+      ;({ data: signInData } = await signIn())
+    }
 
     if (signInData?.session) {
       await supabaseAdmin.auth.admin.updateUserById(signInData.session.user.id, {
