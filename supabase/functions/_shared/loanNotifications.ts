@@ -936,7 +936,7 @@ export const buildLoanNotificationEmail = (
    if (REMINDER_TYPES.includes(type)) {
       return {
          subject: content.subject,
-         text: `${content.text}\n\nNeed more time? Just reply to this email.\n\n${CONTACTS_NOTE}`,
+         text: `${content.text}\nNeed more time? Just reply to this email.\n${CONTACTS_NOTE}`,
          html: buildPlainReminderHtml(content, recipient)
       };
    }
