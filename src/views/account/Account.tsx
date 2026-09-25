@@ -35,7 +35,12 @@ const ACCOUNT_ITEMS = [
 ] as const;
 
 // The same 3D icon family as the Settings page, so each row is recognisable at a glance.
-const RowIcon = ({ src }: { src: string }) => <img src={src} alt="" className="h-8 w-8 shrink-0 object-contain" />;
+// Same tinted tile + glyph size as the Account settings rows, so the 3D icons read at one scale.
+const RowIcon = ({ src }: { src: string }) => (
+   <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100">
+      <img src={src} alt="" className="size-6 object-contain" />
+   </span>
+);
 const TELEGRAM_SUPPORT_URL =
    'https://t.me/jimmymoodengcredit?text=Hi%2C%20I%20found%20you%20through%20Moodeng%20Credit%20and%20I%27d%20like%20to%20learn%20more.';
 
