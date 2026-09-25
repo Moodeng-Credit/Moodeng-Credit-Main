@@ -101,17 +101,99 @@ export const getVapidKeysFromEnv = (): VapidKeys | null => {
    return { publicKey, privateKey, subject };
 };
 
+const stripWrapping = (value: string) => value.trim().replace(/^['"`]+|['"`]+$/g, '').trim();
+
+const hexToBytes = (hex: string): Bytes => {
+   const bytes = new Uint8Array(hex.length / 2);
+   for (let index = 0; index < bytes.length; index += 1) bytes[index] = parseInt(hex.slice(index * 2, index * 2 + 2), 16);
+   return bytes;
+};
+
+// The 32-byte EC private key inside a DER (SEC1 or PKCS#8) blob sits in an OCTET STRING: 0x04 0x20 <32 bytes>.
+const findDerPrivateScalar = (der: Uint8Array): Bytes | null => {
+   for (let index = 0; index + 34 <= der.length; index += 1) {
+      if (der[index] === 0x04 && der[index + 1] === 0x20) return der.slice(index + 2, index + 34) as Bytes;
+   }
+   return null;
+};
+
+/** Describes a secret's shape for logs without ever revealing it. */
+const describeKeyShape = (raw: string) => {
+   const value = stripWrapping(raw);
+   const kind = value.startsWith('{')
+      ? 'json'
+      : value.includes('BEGIN')
+        ? 'pem'
+        : /^[0-9a-fA-F]+$/.test(value)
+          ? 'hex'
+          : /^[A-Za-z0-9+/=_-]+$/.test(value)
+            ? 'base64'
+            : 'other';
+   return `${kind}, ${value.length} chars`;
+};
+
+/**
+ * VAPID private keys get pasted in many shapes (quoted, hex, standard base64, PEM, a JWK, a DER body).
+ * Accept all of them and return the bare 32-byte scalar, or null if nothing fits.
+ */
+export const parseVapidPrivateKey = (raw: string): Bytes | null => {
+   const value = stripWrapping(raw);
+   if (value.startsWith('{')) {
+      try {
+         const jwk = JSON.parse(value) as { d?: string; privateKey?: string };
+         const inner = jwk.d ?? jwk.privateKey;
+         return inner ? parseVapidPrivateKey(inner) : null;
+      } catch {
+         return null;
+      }
+   }
+   if (value.includes('BEGIN')) {
+      const body = value.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+      try {
+         return findDerPrivateScalar(base64UrlToBytes(body));
+      } catch {
+         return null;
+      }
+   }
+   if (/^[0-9a-fA-F]{64}$/.test(value)) return hexToBytes(value);
+   try {
+      const bytes = base64UrlToBytes(value.replace(/\s+/g, ''));
+      if (bytes.length === 32) return bytes;
+      if (bytes.length === 33 && bytes[0] === 0) return bytes.slice(1) as Bytes;
+      return findDerPrivateScalar(bytes);
+   } catch {
+      return null;
+   }
+};
+
+export const parseVapidPublicKey = (raw: string): Bytes | null => {
+   const value = stripWrapping(raw).replace(/\s+/g, '');
+   try {
+      const bytes = /^[0-9a-fA-F]{130}$/.test(value) ? hexToBytes(value) : base64UrlToBytes(value);
+      if (bytes.length === 65 && bytes[0] === 0x04) return bytes;
+      // A DER SubjectPublicKeyInfo ends with the 65-byte uncompressed point.
+      if (bytes.length > 65 && bytes[bytes.length - 65] === 0x04) return bytes.slice(bytes.length - 65) as Bytes;
+      return null;
+   } catch {
+      return null;
+   }
+};
+
 // The VAPID private key is a bare 32-byte scalar; WebCrypto wants a full JWK, so
 // the x/y coordinates are lifted out of the matching uncompressed public key.
 const importVapidSigningKey = async (keys: VapidKeys): Promise<CryptoKey> => {
-   const publicKeyBytes = base64UrlToBytes(keys.publicKey);
-   if (publicKeyBytes.length !== 65 || publicKeyBytes[0] !== 0x04) {
-      throw new Error('VAPID_PUBLIC_KEY must be a 65-byte uncompressed P-256 point in base64url.');
+   const publicKeyBytes = parseVapidPublicKey(keys.publicKey);
+   if (!publicKeyBytes) {
+      throw new Error(
+         `VAPID_PUBLIC_KEY must be a 65-byte uncompressed P-256 point in base64url (got ${describeKeyShape(keys.publicKey)}).`
+      );
    }
 
-   const privateKeyBytes = base64UrlToBytes(keys.privateKey);
-   if (privateKeyBytes.length !== 32) {
-      throw new Error('VAPID_PRIVATE_KEY must be a 32-byte P-256 scalar in base64url.');
+   const privateKeyBytes = parseVapidPrivateKey(keys.privateKey);
+   if (!privateKeyBytes) {
+      throw new Error(
+         `VAPID_PRIVATE_KEY must be a 32-byte P-256 scalar in base64url (got ${describeKeyShape(keys.privateKey)}).`
+      );
    }
 
    return crypto.subtle.importKey(
@@ -130,6 +212,12 @@ const importVapidSigningKey = async (keys: VapidKeys): Promise<CryptoKey> => {
    );
 };
 
+// The push service wants the public key in the header as plain base64url, whatever shape the env var used.
+const normalizedPublicKey = (keys: VapidKeys) => {
+   const bytes = parseVapidPublicKey(keys.publicKey);
+   return bytes ? bytesToBase64Url(bytes) : keys.publicKey;
+};
+
 // One JWT per push-service origin. Cached for the life of the isolate so a
 // fan-out to 200 lenders signs once per origin instead of 200 times.
 const vapidTokenCache = new Map<string, { token: string; expiresAt: number }>();
@@ -140,7 +228,7 @@ const buildVapidAuthorization = async (endpoint: string, keys: VapidKeys): Promi
    const cached = vapidTokenCache.get(audience);
 
    if (cached && cached.expiresAt - now > 60) {
-      return `vapid t=${cached.token}, k=${keys.publicKey}`;
+      return `vapid t=${cached.token}, k=${normalizedPublicKey(keys)}`;
    }
 
    const expiresAt = now + VAPID_TOKEN_TTL_SECONDS;
@@ -157,7 +245,7 @@ const buildVapidAuthorization = async (endpoint: string, keys: VapidKeys): Promi
    const token = `${signingInput}.${bytesToBase64Url(signature)}`;
    vapidTokenCache.set(audience, { token, expiresAt });
 
-   return `vapid t=${token}, k=${keys.publicKey}`;
+   return `vapid t=${token}, k=${normalizedPublicKey(keys)}`;
 };
 
 // RFC 8291 §3.4: derive the content key from an ephemeral ECDH with the client's
