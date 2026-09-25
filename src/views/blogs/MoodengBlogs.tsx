@@ -4,7 +4,7 @@ import { ArrowRight, CalendarDays, Clock3, Headphones } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
-import { type BlogPost, blogPosts, featuredBlogPost, leadBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
+import { type BlogPost, blogPosts, featuredBlogPost, getBlogPostIsoDate, leadBlogPost, podcastUrl } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
 
 const BLOG_INDEX_DESCRIPTION =
@@ -28,7 +28,11 @@ export default function MoodengBlogs(): JSX.Element {
             blogPost: blogPosts.map((post) => ({
                '@type': 'BlogPosting',
                headline: post.title,
-               url: `${origin}/blogs/${post.slug}`
+               description: post.metaDescription ?? post.dek,
+               url: `${origin}/blogs/${post.slug}`,
+               datePublished: getBlogPostIsoDate(post.slug),
+               image: `${origin}${post.image}`,
+               author: { '@type': 'Organization', name: 'Moodeng Credit' }
             }))
          }
       ]
