@@ -3,7 +3,12 @@
    <head>
       <meta charset="UTF-8" />
       <link rel="icon" type="image/png" href="/brand/moodeng-logo.png" />
-      <link rel="apple-touch-icon" href="/brand/moodeng-logo.png" />
+      <link rel="apple-touch-icon" href="/app-icons/apple-touch-icon.png" />
+      <!-- Installable web app. iPhone only offers web push to sites added to the Home Screen, and only
+           when they ship a manifest like this one (display: standalone). -->
+      <link rel="manifest" href="/manifest.webmanifest" />
+      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="apple-mobile-web-app-title" content="Moodeng" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta name="color-scheme" content="light dark" />
       <!-- Facebook domain verification (Meta Business). Must stay in the static <head>, not JS-injected. -->

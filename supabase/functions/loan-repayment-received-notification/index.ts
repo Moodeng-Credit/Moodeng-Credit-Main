@@ -9,6 +9,8 @@ import {
    buildRepaymentTeamFeedMessage,
    LoanNotificationType
 } from '../_shared/loanNotifications.ts';
+import { sendPushToUser } from '../_shared/pushDelivery.ts';
+import { buildRepaymentReceivedPushPayload } from '../_shared/pushMessages.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -160,14 +162,14 @@ serve(async (req) => {
    }
 
    const { data: lender, error: lenderError } = loan.lender_user_id
-      ? await supabase.from('users').select('id, username, telegram_username, email, chat_id').eq('id', loan.lender_user_id).maybeSingle()
+      ? await supabase.from('users').select('id, username, telegram_username, email, chat_id, notif_push').eq('id', loan.lender_user_id).maybeSingle()
       : { data: null, error: null };
 
    if (lenderError) {
       return new Response(JSON.stringify({ error: lenderError.message }), { status: 500, headers: corsHeaders });
    }
 
-   if (!borrower?.email && !lender?.chat_id) {
+   if (!borrower?.email && !lender) {
       return new Response(JSON.stringify({ error: 'Repayment notification target not found' }), { status: 404, headers: corsHeaders });
    }
 
@@ -221,6 +223,7 @@ serve(async (req) => {
 
    let emailSent = false;
    let telegramSent = false;
+   let pushSent = false;
    const notificationRows: Array<{ loan_id: string; user_id: string; notification_type: LoanNotificationType }> = [];
 
    if (borrower?.email && !borrowerAlreadySent) {
@@ -265,7 +268,24 @@ serve(async (req) => {
       });
    }
 
-   if (!emailSent && !telegramSent) {
+   // "X USDC repaid to you" on the lender's phone. Recorded like the Telegram DM (once per loan), so a
+   // lender without Telegram still isn't pinged twice.
+   if (lender?.id && lender.notif_push !== false && !lenderAlreadySent) {
+      try {
+         const amount = Number(loan.repaid_amount ?? loan.total_repayment_amount ?? 0);
+         const result = await sendPushToUser(supabase, lender.id, (locale) => buildRepaymentReceivedPushPayload({ amount }, locale), {
+            urgency: 'normal'
+         });
+         pushSent = result.sent > 0;
+         if (pushSent && !telegramSent) {
+            notificationRows.push({ loan_id: loan.id, user_id: lender.id, notification_type: 'repayment_received' });
+         }
+      } catch (error) {
+         console.error('Lender repayment push failed', error instanceof Error ? error.message : String(error));
+      }
+   }
+
+   if (!emailSent && !telegramSent && !pushSent) {
       return new Response(
          JSON.stringify({ message: 'No eligible borrower/lender target', teamFeedSent }),
          { status: 200, headers: corsHeaders }

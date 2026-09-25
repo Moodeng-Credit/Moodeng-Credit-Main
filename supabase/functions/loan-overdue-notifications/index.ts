@@ -35,7 +35,20 @@ type BorrowerRecord = LoanNotificationRecipient &
    TrustPointRewardUser & { id: string; notif_transaction_activity?: boolean | null };
 type TrustPointRow = { user_id: string; points_total: number | string | null };
 type MilestoneCompletionRow = { user_id: string; milestone_id: string };
-type SentLoanNotificationRow = { loan_id: string };
+type SentLoanNotificationRow = { loan_id: string; notification_type: OverdueStage };
+
+// One overdue notice when the loan goes overdue, then a gentle check-in at 3 and at 7 days late.
+// Each stage is recorded per loan, so every stage goes out at most once.
+type OverdueStage = 'overdue' | 'overdue_followup_3' | 'overdue_followup_7';
+const OVERDUE_STAGES: OverdueStage[] = ['overdue', 'overdue_followup_3', 'overdue_followup_7'];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const getOverdueStage = (referenceDate: Date, dueDateValue: string | null): OverdueStage => {
+   const daysLate = dueDateValue ? Math.floor((referenceDate.getTime() - new Date(dueDateValue).getTime()) / DAY_MS) : 0;
+   if (daysLate >= 7) return 'overdue_followup_7';
+   if (daysLate >= 3) return 'overdue_followup_3';
+   return 'overdue';
+};
 
 type TrustPointRewardContext = {
    loansByBorrowerId: Map<string, TrustPointRewardLoan[]>;
@@ -179,35 +192,42 @@ const loadTrustPointRewardContext = async (
    };
 };
 
-const loadSentLoanIds = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string }) => {
+const loadSentStagesByLoanId = async (supabase: SupabaseClient, payload: { loanIds: string[]; userId: string }) => {
+   const sent = new Map<string, Set<OverdueStage>>();
    if (!payload.loanIds.length) {
-      return new Set<string>();
+      return sent;
    }
 
    const { data, error } = await supabase
       .from('loan_notifications')
-      .select('loan_id')
+      .select('loan_id, notification_type')
       .in('loan_id', payload.loanIds)
       .eq('user_id', payload.userId)
-      .eq('notification_type', 'overdue');
+      .in('notification_type', OVERDUE_STAGES);
 
    if (error) {
       throw new Error(error.message);
    }
 
-   return new Set(((data ?? []) as SentLoanNotificationRow[]).map((item) => item.loan_id));
+   for (const row of (data ?? []) as SentLoanNotificationRow[]) {
+      const stages = sent.get(row.loan_id) ?? new Set<OverdueStage>();
+      stages.add(row.notification_type);
+      sent.set(row.loan_id, stages);
+   }
+
+   return sent;
 };
 
-const recordOverdueNotification = async (supabase: SupabaseClient, borrowerId: string, loanIds: string[]) => {
-   if (!loanIds.length) {
+const recordOverdueNotifications = async (supabase: SupabaseClient, borrowerId: string, rows: Array<{ loanId: string; stage: OverdueStage }>) => {
+   if (!rows.length) {
       return;
    }
 
    const { error } = await supabase.from('loan_notifications').insert(
-      loanIds.map((loanId) => ({
-         loan_id: loanId,
+      rows.map((row) => ({
+         loan_id: row.loanId,
          user_id: borrowerId,
-         notification_type: 'overdue'
+         notification_type: row.stage
       }))
    );
 
@@ -299,8 +319,9 @@ serve(async (req) => {
       }
 
       const loanIds = borrowerLoans.map((loan) => loan.id);
-      const sentLoanIds = await loadSentLoanIds(supabase, { loanIds, userId: borrower.id });
-      const pendingLoans = borrowerLoans.filter((loan) => !sentLoanIds.has(loan.id));
+      const sentStages = await loadSentStagesByLoanId(supabase, { loanIds, userId: borrower.id });
+      const stageByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, getOverdueStage(referenceDate, loan.due_date ?? null)]));
+      const pendingLoans = borrowerLoans.filter((loan) => !sentStages.get(loan.id)?.has(stageByLoanId.get(loan.id)!));
 
       if (!pendingLoans.length) {
          continue;
@@ -311,7 +332,9 @@ serve(async (req) => {
          count: pendingLoans.length,
          totalAmount: pendingLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
          dueLabel: formatOverdueBy(referenceDate, nextDueDate),
-         nextDueDate
+         nextDueDate,
+         // A check-in when every loan here already had its first overdue notice.
+         followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue'))
       };
       const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
       const trustPointsReward = calculateTrustPointRewardDelta({
@@ -347,10 +370,10 @@ serve(async (req) => {
          continue;
       }
 
-      await recordOverdueNotification(
+      await recordOverdueNotifications(
          supabase,
          borrower.id,
-         pendingLoans.map((loan) => loan.id)
+         pendingLoans.map((loan) => ({ loanId: loan.id, stage: stageByLoanId.get(loan.id)! }))
       );
 
       sentCount += 1;

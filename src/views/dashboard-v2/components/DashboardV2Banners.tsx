@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Bell, BellOff, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Share, Wallet } from 'lucide-react';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -101,47 +101,55 @@ const REMINDERS_COPY = {
       title: 'Turn on repayment reminders',
       body: 'Get a heads-up before your due date so you never pay late.',
       blockedTitle: 'Reminders are blocked',
-      blockedBody: 'Allow notifications for moodeng.app in your browser settings.'
+      blockedBody: 'Allow notifications for moodeng.app in your browser settings.',
+      homeScreenTitle: 'Get reminders on your iPhone',
+      homeScreenBody: 'Tap Share, then "Add to Home Screen". Open Moodeng from your Home Screen, log in and turn on reminders.'
    },
    fil: {
       title: 'I-on ang repayment reminders',
       body: 'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
       blockedTitle: 'Naka-block ang reminders',
-      blockedBody: 'I-allow ang notifications para sa moodeng.app sa browser settings mo.'
+      blockedBody: 'I-allow ang notifications para sa moodeng.app sa browser settings mo.',
+      homeScreenTitle: 'Makakuha ng reminders sa iPhone mo',
+      homeScreenBody:
+         'I-tap ang Share, tapos "Add to Home Screen". Buksan ang Moodeng mula sa Home Screen, mag-log in at i-on ang reminders.'
    }
 } as const;
 
 /**
- * Shown to borrowers with a loan to repay who haven't allowed push. If the browser has blocked
- * notifications only the borrower can undo that in their settings, so it explains how instead.
+ * Shown to borrowers with a loan to repay who haven't allowed push. When push can't be turned on
+ * from here (the browser blocked it, or it's iPhone Safari, which only offers push from the Home
+ * Screen) it explains what to do instead of offering a button.
  */
 export function TurnOnRemindersBanner({
    language,
-   isBlocked,
+   variant,
    isBusy,
    onEnable
 }: {
    language: DashboardV2Language;
-   isBlocked: boolean;
+   variant: 'enable' | 'blocked' | 'home-screen';
    isBusy: boolean;
    onEnable: () => void;
 }) {
    const copy = REMINDERS_COPY[language];
-   const Icon = isBlocked ? BellOff : Bell;
+   const Icon = variant === 'blocked' ? BellOff : variant === 'home-screen' ? Share : Bell;
+   const title = variant === 'blocked' ? copy.blockedTitle : variant === 'home-screen' ? copy.homeScreenTitle : copy.title;
+   const body = variant === 'blocked' ? copy.blockedBody : variant === 'home-screen' ? copy.homeScreenBody : copy.body;
    const content = (
       <>
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
             <Icon className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
-            <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{isBlocked ? copy.blockedTitle : copy.title}</span>
-            <span className="block text-[14px] leading-[18px] text-[#45556c]">{isBlocked ? copy.blockedBody : copy.body}</span>
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{title}</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c]">{body}</span>
          </span>
       </>
    );
    const cardClass = 'mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]';
 
-   if (isBlocked) {
+   if (variant !== 'enable') {
       return <div className={cardClass}>{content}</div>;
    }
 
