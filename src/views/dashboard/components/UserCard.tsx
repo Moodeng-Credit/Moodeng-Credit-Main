@@ -458,6 +458,9 @@ export default function UserCard(loan: UserCardProps) {
    const dueFormatted = format(due, 'MMM dd yyyy');
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
+   // Mirrors runDirectLend: no Instant Wallet and no connected wallet means Base Pay (Coinbase's popup).
+   const willUseBasePay =
+      isLenderCard && showDetails && !isFundingAdmin && !isProcessing && activePaymentMethod !== 'openfort' && !isConnected;
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
    const borrowerContextProfileData = useMemo(
       () => borrowerContextProfile ?? normalizeBorrowerContextProfile(borrowerProfile),
@@ -751,16 +754,27 @@ export default function UserCard(loan: UserCardProps) {
                      <ChevronRight className="w-5 h-5" />
                   </button>
                ) : (
-                  <button
-                     onClick={handleLend}
-                     disabled={isProcessing}
-                     type="button"
-                     data-tour-target="lender-send-help-button"
-                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
-                  >
-                     {isProcessing ? 'Processing...' : 'Send Your Help'}
-                     {!isProcessing && <Send className="w-5 h-5" />}
-                  </button>
+                  <>
+                     {/* The one-tap path is Base Pay: Coinbase opens its own window (creating a Base Account
+                         for first-timers, who are then asked to set up a backup). Say so up front, or the
+                         Coinbase pop-ups look like they came from nowhere. */}
+                     {willUseBasePay ? (
+                        <p className="rounded-[12px] bg-[#eef3ff] px-3 py-2.5 text-md-b3 font-medium leading-5 text-[#1d3f8f]">
+                           A Coinbase window will open. That’s your wallet: approve the payment there. It may also ask you to set up a
+                           backup, which is worth doing so you never lose access.
+                        </p>
+                     ) : null}
+                     <button
+                        onClick={handleLend}
+                        disabled={isProcessing}
+                        type="button"
+                        data-tour-target="lender-send-help-button"
+                        className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                     >
+                        {isProcessing ? 'Processing...' : 'Send Your Help'}
+                        {!isProcessing && <Send className="w-5 h-5" />}
+                     </button>
+                  </>
                )}
 
                {/* Base Pay is the one-tap default; give non-Base lenders an explicit way in. */}
