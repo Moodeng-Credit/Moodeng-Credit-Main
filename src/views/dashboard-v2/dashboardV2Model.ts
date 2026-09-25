@@ -49,13 +49,16 @@ export const getMoodengTier = (pandesal: number): MoodengTierId => {
 export const getMoodengMood = ({
    isVerified,
    hasUnpaidFundedLoan,
-   hasRepaidLoan
+   hasRepaidLoan,
+   hasOverdueLoan = false
 }: {
    isVerified: boolean;
    hasUnpaidFundedLoan: boolean;
    hasRepaidLoan: boolean;
+   /** Designer: an overdue loan shows the waiting hippo, not the happy eating one. */
+   hasOverdueLoan?: boolean;
 }): MoodengMood => {
-   if (!isVerified) return 'waiting';
+   if (!isVerified || hasOverdueLoan) return 'waiting';
    if (hasUnpaidFundedLoan) return 'loan';
    if (hasRepaidLoan) return 'repaid';
    return 'waiting';

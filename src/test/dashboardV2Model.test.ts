@@ -71,6 +71,7 @@ describe('dashboard v2 Moodeng tiers', () => {
    });
 
    it('picks the Moodeng mood from verification and loan state', () => {
+      expect(getMoodengMood({ isVerified: true, hasUnpaidFundedLoan: true, hasRepaidLoan: false, hasOverdueLoan: true })).toBe('waiting');
       expect(getMoodengMood({ isVerified: false, hasUnpaidFundedLoan: true, hasRepaidLoan: true })).toBe('waiting');
       expect(getMoodengMood({ isVerified: true, hasUnpaidFundedLoan: true, hasRepaidLoan: true })).toBe('loan');
       expect(getMoodengMood({ isVerified: true, hasUnpaidFundedLoan: false, hasRepaidLoan: true })).toBe('repaid');
