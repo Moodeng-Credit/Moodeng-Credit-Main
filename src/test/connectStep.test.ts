@@ -29,6 +29,18 @@ const supa = vi.hoisted(() => {
    };
 });
 
+// Push reminders need a real browser; in tests the device "can't do push", so the step doesn't require it.
+vi.mock('@/hooks/usePushNotifications', () => ({
+   usePushNotifications: () => ({
+      isSupported: false,
+      permission: 'unsupported',
+      isSubscribed: false,
+      isBusy: false,
+      enable: async () => 'unsupported',
+      disable: async () => undefined
+   })
+}));
+
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
@@ -79,9 +91,7 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
 
    const render = async (props: Record<string, unknown> = {}) => {
       await act(async () => {
-         root.render(
-            createElement(ConnectStep, { userId: 'user-1', displayName: 'Maria', onBack: vi.fn(), onSubmitted, ...props })
-         );
+         root.render(createElement(ConnectStep, { userId: 'user-1', displayName: 'Maria', onBack: vi.fn(), onSubmitted, ...props }));
       });
       await act(async () => {
          await Promise.resolve();
@@ -240,7 +250,14 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
    it('books a referred borrower\u2019s call with Emma only', async () => {
       await act(async () => {
          root.render(
-            createElement(ConnectStep, { userId: 'user-1', displayName: 'Maria', mode: 'call', withEmma: true, onBack: vi.fn(), onSubmitted })
+            createElement(ConnectStep, {
+               userId: 'user-1',
+               displayName: 'Maria',
+               mode: 'call',
+               withEmma: true,
+               onBack: vi.fn(),
+               onSubmitted
+            })
          );
       });
       await act(async () => {

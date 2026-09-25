@@ -1,6 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { Facebook, MessageCircle } from 'lucide-react';
+import { BellRing, Facebook, MessageCircle } from 'lucide-react';
+
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, WHATSAPP_VERIFY_ENABLED } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -45,7 +47,27 @@ export default function ContactsStep({
    const [verifyError, setVerifyError] = useState('');
    const pollRef = useRef<number | null>(null);
 
-   const canContinue = whatsappVerified || messengerVerified;
+   // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
+   // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
+   // those borrowers see how to fix it but aren't blocked — Messenger and email still reach them.
+   const push = usePushNotifications(userId);
+   const [pushError, setPushError] = useState('');
+   const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
+   const pushRequired = push.isSupported;
+   const contactVerified = whatsappVerified || messengerVerified;
+   const canContinue = contactVerified && (pushOn || !pushRequired);
+
+   const handleEnablePush = async () => {
+      setPushError('');
+      const outcome = await push.enable();
+      if (outcome === 'permission-denied') {
+         setPushError('Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.');
+      } else if (outcome === 'permission-dismissed') {
+         setPushError('Tap Allow when your phone asks, so we can remind you before your due date.');
+      } else if (outcome === 'failed') {
+         setPushError("Couldn't turn on reminders — try again in a moment.");
+      }
+   };
    // Still show WhatsApp to a returning borrower who verified it before, so they can see why
    // Continue is already enabled.
    const showWhatsApp = whatsappEnabled || whatsappVerified;
@@ -165,10 +187,36 @@ export default function ContactsStep({
 
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
+         {pushRequired ? (
+            <OptionCard
+               badge="Required"
+               disabled={push.isBusy}
+               done={pushOn}
+               doneLabel="On"
+               icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
+               onClick={() => void handleEnablePush()}
+               subtitle={push.isBusy ? 'Turning on…' : 'We remind you before your due date'}
+               title="Turn on reminders"
+            />
+         ) : (
+            <div className="rounded-[18px] border border-dashed border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
+               <p className="font-semibold text-[#4c239f]">Get due-date reminders on your phone</p>
+               <p className="mt-1">
+                  On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>, open Moodeng from there and turn on notifications. In the
+                  Facebook app, open this page in Chrome or Safari instead.
+               </p>
+            </div>
+         )}
+
+         {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
+
          <div className="mt-auto flex flex-col gap-1 pt-2">
             <PrimaryButton disabled={!canContinue} onClick={handleContinue}>
                Continue
             </PrimaryButton>
+            {contactVerified && pushRequired && !pushOn ? (
+               <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
+            ) : null}
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
       </div>
