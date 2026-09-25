@@ -263,7 +263,7 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
                   type="button"
                   onClick={() => setShowDetails(true)}
                   aria-haspopup="dialog"
-                  className="-my-1 rounded-full bg-white/15 px-3 py-1 text-md-b3 font-semibold text-white/90 transition-colors hover:bg-white/25"
+                  className="-my-1 rounded-full bg-white/15 px-3 py-1 text-md-b3 font-semibold text-white/90 transition duration-150 hover:bg-white/25 active:scale-95"
                >
                   {copy.details}
                </button>
@@ -304,12 +304,15 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
 
          {/* Wallet details sheet — same bottom-sheet pattern as Add money. */}
          {showDetails ? (
-            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={() => setShowDetails(false)}>
+            <div
+               className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 sm:items-center sm:px-5"
+               onClick={() => setShowDetails(false)}
+            >
                <div
                   role="dialog"
                   aria-modal="true"
                   aria-label={copy.details}
-                  className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white dark:bg-[#1a1425]"
+                  className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white sm:rounded-[24px] dark:bg-[#1a1425]"
                   onClick={(e) => e.stopPropagation()}
                >
                   <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-5 py-md-3">
@@ -360,9 +363,12 @@ export default function WalletBalanceCard({ previewAddress, previewBalance, prev
          {/* Add money — the cash-in path. Same copy-address pattern the repay top-up helper
              uses, framed in plain money words. One quiet reassurance line, not a paragraph. */}
          {showAddMoney ? (
-            <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={() => setShowAddMoney(false)}>
+            <div
+               className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 sm:items-center sm:px-5"
+               onClick={() => setShowAddMoney(false)}
+            >
                <div
-                  className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white dark:bg-[#1a1425]"
+                  className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-t-[24px] bg-white sm:rounded-[24px] dark:bg-[#1a1425]"
                   onClick={(e) => e.stopPropagation()}
                >
                   <div className="flex items-center justify-between border-b border-md-neutral-400 px-md-5 py-md-3">

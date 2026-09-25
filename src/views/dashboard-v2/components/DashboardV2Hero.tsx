@@ -99,11 +99,14 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
 
          {/* Help + Home */}
          <div className="absolute right-0 top-7 flex items-center gap-[11px]">
-            <Link to="/help" className="flex w-[38px] flex-col items-center">
+            <Link to="/help" className="flex w-[38px] flex-col items-center transition duration-150 hover:opacity-80 active:scale-90">
                <DesignImage src={DASHBOARD_V2_ASSETS.help} className="-mb-1 h-7 w-7" />
                <span className="text-[14px] leading-[18px] tracking-[-0.56px] text-[#594d65]">Help</span>
             </Link>
-            <Link to="/" className="flex h-12 w-[72px] items-start rounded-l-[27px] bg-[rgba(137,153,163,0.62)] py-[3px] pl-3.5 pr-5">
+            <Link
+               to="/"
+               className="flex h-12 w-[72px] items-start rounded-l-[27px] bg-[rgba(137,153,163,0.62)] py-[3px] pl-3.5 pr-5 transition duration-150 hover:bg-[rgba(137,153,163,0.8)] active:scale-95"
+            >
                <span className="flex w-[38px] flex-col items-center">
                   <DesignImage src={DASHBOARD_V2_ASSETS.home} className="-mb-1 h-7 w-7" />
                   <span className="text-[14px] leading-[18px] tracking-[-0.56px] text-white">Home</span>
@@ -140,7 +143,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             type="button"
             onClick={() => setBrowsedTierIndex((index) => Math.max(index - 1, 0))}
             disabled={browsedTierIndex === 0}
-            className="absolute left-0 top-[163px] h-20 w-20 disabled:opacity-40"
+            className="absolute left-0 top-[163px] h-20 w-20 transition-transform duration-150 enabled:hover:-translate-x-0.5 enabled:hover:scale-105 enabled:active:scale-90 disabled:opacity-40"
             aria-label="Previous Moodeng tier"
          >
             <DesignImage src={DASHBOARD_V2_ASSETS.arrowLeft} className="h-20 w-20" />
@@ -149,7 +152,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             type="button"
             onClick={() => setBrowsedTierIndex((index) => Math.min(index + 1, MOODENG_TIERS.length - 1))}
             disabled={browsedTierIndex === MOODENG_TIERS.length - 1}
-            className="absolute right-0 top-[163px] h-20 w-20 disabled:opacity-40"
+            className="absolute right-0 top-[163px] h-20 w-20 transition-transform duration-150 enabled:hover:translate-x-0.5 enabled:hover:scale-105 enabled:active:scale-90 disabled:opacity-40"
             aria-label="Next Moodeng tier"
          >
             <DesignImage src={DASHBOARD_V2_ASSETS.arrowRight} className="h-20 w-20" />
