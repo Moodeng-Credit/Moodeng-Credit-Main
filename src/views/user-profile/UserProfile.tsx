@@ -1108,7 +1108,8 @@ const UserProfile = () => {
                               Loan Summary
                            </span>
                            {isGoodStanding ? (
-                              <span className="inline-flex items-center justify-center rounded-full border border-[#bfe8cf] bg-[#eefbf3] px-2.5 py-1.5">
+                              <span className="inline-flex items-center justify-center gap-1 rounded-full border border-[#bfe8cf] bg-[#eefbf3] py-1 pl-1 pr-2.5">
+                                 <img src="/icons/good-standing-3d.png" alt="" className="h-5 w-5 object-contain" />
                                  <span className="text-[11px] font-[590] leading-none text-[#166534]">Good standing</span>
                               </span>
                            ) : (
@@ -1131,6 +1132,7 @@ const UserProfile = () => {
                               waveId="borrowed-wave"
                               waveStart="#e9d5ff"
                               waveEnd="#ddd6fe"
+                              iconSrc="/icons/total-borrowed-3d.png"
                               title="Total Borrowed"
                               value={`$${formatNumber(totalBorrowed)}`}
                            >
@@ -1164,6 +1166,7 @@ const UserProfile = () => {
                               waveId="loans-wave"
                               waveStart="#ddd6fe"
                               waveEnd="#c4b5fd"
+                              iconSrc="/icons/total-loans-3d.png"
                               title="Total Loans"
                               value={String(fundedLoans.length)}
                            >
@@ -1245,9 +1248,7 @@ const UserProfile = () => {
                                              }
                                              className="flex items-center gap-1.5 rounded-full bg-white/15 py-1 pl-1 pr-3 transition hover:bg-white/25 active:scale-[0.97]"
                                           >
-                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
-                                                <Users className="h-3.5 w-3.5 text-[#745ff8]" strokeWidth={2.5} />
-                                             </span>
+                                             <img src="/icons/lender-diversity-3d.png" alt="" className="h-7 w-7 object-contain" />
                                              <span className="text-[13px] font-semibold text-white">
                                                 {lenderDiversity.uniqueLenders} Unique{' '}
                                                 {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'} ›
@@ -1284,9 +1285,7 @@ const UserProfile = () => {
                      {/* Borrower Insights */}
                      <div className="flex flex-col gap-4" data-tour-target="borrower-insights">
                         <div className="flex items-center gap-2">
-                           <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#ede2ff]">
-                              <BarChart3 className="h-[18px] w-[18px] text-md-primary-1200" strokeWidth={2.2} />
-                           </span>
+                           <img src="/icons/borrower-patterns-3d.png" alt="" className="h-9 w-9 object-contain" />
                            <p className="dv2-heading text-[clamp(18px,5.6vw,22px)] font-black italic leading-6 text-[#594d65]">
                               Borrower patterns
                            </p>
@@ -1371,7 +1370,10 @@ const UserProfile = () => {
                                     </div>
                                  </>
                               ) : (
-                                 <p className="text-md-b2 text-md-neutral-1200 text-center py-6">No funded loans yet</p>
+                                 <div className="flex flex-col items-center gap-2 py-6">
+                                    <img src="/icons/empty-loans-3d.png" alt="" className="h-16 w-16 object-contain" />
+                                    <p className="text-md-b2 text-md-neutral-1200 text-center">No funded loans yet</p>
+                                 </div>
                               )}
                            </div>
                         </div>
@@ -1447,11 +1449,14 @@ const UserProfile = () => {
 
 const SummaryMetricCard = ({
    icon,
+   iconSrc,
    title,
    value,
    children
 }: {
    icon: ReactNode;
+   /** A 3D icon (borrower view); replaces the purple icon square when set. */
+   iconSrc?: string;
    iconClassName: string;
    waveId: string;
    waveStart: string;
@@ -1461,7 +1466,11 @@ const SummaryMetricCard = ({
    children: ReactNode;
 }) => (
    <div className="relative min-h-[166px] overflow-hidden dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
-      <div className="summary-metric-icon mb-4 flex h-9 w-9 items-center justify-center rounded-[12px] bg-md-primary-1200">{icon}</div>
+      {iconSrc ? (
+         <img src={iconSrc} alt="" className="mb-3 h-12 w-12 object-contain" />
+      ) : (
+         <div className="summary-metric-icon mb-4 flex h-9 w-9 items-center justify-center rounded-[12px] bg-md-primary-1200">{icon}</div>
+      )}
       <p className="mb-1.5 text-[12px] font-[590] leading-[18px] text-md-neutral-1200">{title}</p>
       <p className="mb-3 text-[28px] font-[590] leading-none tracking-[-0.56px] text-md-heading">{value}</p>
       {children}
@@ -1492,9 +1501,7 @@ const InsightRow = ({
 
 const NewBorrowerInsightsCard = () => (
    <div className="flex items-start gap-3 dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#ede2ff]">
-         <FileText className="h-5 w-5 text-md-primary-1200" strokeWidth={2.2} />
-      </span>
+      <img src="/icons/no-history-3d.png" alt="" className="h-12 w-12 shrink-0 object-contain" />
       <div className="min-w-0 flex-1">
          <p className="text-[15px] font-[590] leading-5 text-md-heading">Not enough loan history yet</p>
          <p className="mt-1 text-[13px] leading-5 text-md-neutral-1200">
