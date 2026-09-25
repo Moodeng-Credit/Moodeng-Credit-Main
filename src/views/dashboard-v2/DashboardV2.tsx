@@ -6,6 +6,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -15,6 +16,7 @@ import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import {
    ConnectWalletBanner,
+   TurnOnRemindersBanner,
    VerifyIdentityBanner,
    VoucherReferralBanner,
    WithdrawBanner
@@ -112,6 +114,10 @@ export default function DashboardV2() {
    const isLoading = isReal && !isReady;
    const isBorrower = useIsBorrower();
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
+   const push = usePushNotifications(isReal ? userId : null);
+   // Borrowers with something to repay who haven't allowed push. Only permission is checked (not the
+   // subscription, which resolves asynchronously) so the card never flashes for someone who has it on.
+   const showRemindersBanner = isReal && push.isSupported && model.dues.length > 0 && push.permission !== 'granted';
    const [searchParams] = useSearchParams();
    const tourStepsParam = Number(searchParams.get('requestBoardTourSteps'));
    const requestBoardTourStepCount =
@@ -192,6 +198,14 @@ export default function DashboardV2() {
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
+                  {showRemindersBanner ? (
+                     <TurnOnRemindersBanner
+                        language={language}
+                        isBlocked={push.permission === 'denied'}
+                        isBusy={push.isBusy}
+                        onEnable={() => void push.enable()}
+                     />
+                  ) : null}
                   {model.hasOverdue ? <UpcomingDuesSection model={model} /> : null}
                   {claimableTierVoucher ? (
                      <TierVoucherCard

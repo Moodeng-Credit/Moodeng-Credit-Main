@@ -7,20 +7,13 @@
 // permission at any time from browser settings. None of those cases is an error
 // worth surfacing; each just means this user is reached by email and Telegram
 // instead.
-
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 const SERVICE_WORKER_URL = '/sw.js';
 const SERVICE_WORKER_SCOPE = '/';
 
 export type PushRegistrationOutcome =
-   | 'subscribed'
-   | 'already-subscribed'
-   | 'permission-denied'
-   | 'permission-dismissed'
-   | 'unsupported'
-   | 'not-configured'
-   | 'failed';
+   'subscribed' | 'already-subscribed' | 'permission-denied' | 'permission-dismissed' | 'unsupported' | 'not-configured' | 'failed';
 
 export type PushPermissionState = 'granted' | 'denied' | 'default' | 'unsupported';
 
@@ -33,10 +26,7 @@ const getVapidPublicKey = () => (import.meta.env.VITE_VAPID_PUBLIC_KEY ?? '').tr
  * the tree down with it.
  */
 export const isPushSupported = (): boolean =>
-   typeof window !== 'undefined' &&
-   'serviceWorker' in navigator &&
-   'PushManager' in window &&
-   'Notification' in window;
+   typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 
 export const isPushConfigured = (): boolean => getVapidPublicKey().length > 0;
 
@@ -147,6 +137,12 @@ const persistSubscription = async (subscription: PushSubscription, locale: strin
    return true;
 };
 
+// Several components mount the push hook at once (App, the dashboard, the loan-request step), and
+// each silently re-syncs on mount. Concurrent silent syncs would race to resubscribe and leave
+// duplicate subscriptions, so they share one in-flight run. A prompting call (a tap on "Turn on")
+// always runs itself, straight from the user's gesture.
+let syncInFlight: Promise<PushRegistrationOutcome> | null = null;
+
 /**
  * Ensures this device is subscribed and its row in Supabase is current.
  *
@@ -156,9 +152,21 @@ const persistSubscription = async (subscription: PushSubscription, locale: strin
  * action, both because a cold prompt converts badly and because a denied
  * permission is permanent until the user digs into browser settings.
  */
-export const syncPushSubscription = async (
-   options: { locale?: string; promptIfNeeded?: boolean } = {}
-): Promise<PushRegistrationOutcome> => {
+export const syncPushSubscription = (options: { locale?: string; promptIfNeeded?: boolean } = {}): Promise<PushRegistrationOutcome> => {
+   if (options.promptIfNeeded) {
+      return runPushSync(options);
+   }
+
+   if (!syncInFlight) {
+      syncInFlight = runPushSync(options).finally(() => {
+         syncInFlight = null;
+      });
+   }
+
+   return syncInFlight;
+};
+
+const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean }): Promise<PushRegistrationOutcome> => {
    const { locale = 'en', promptIfNeeded = false } = options;
 
    if (!isPushSupported()) {

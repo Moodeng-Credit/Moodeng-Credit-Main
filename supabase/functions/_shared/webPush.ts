@@ -338,8 +338,12 @@ export const sendWebPush = async (
 
       // 404/410 mean the browser threw the subscription away (uninstall, cleared
       // site data, permission revoked). The row should go with it.
-      const expired = response.status === 404 || response.status === 410;
       const error = await response.text().catch(() => '');
+      // A 403 VAPID mismatch means the subscription was made under an earlier key pair (keys were
+      // rotated on 2026-09-25). It can never receive anything again; the device resubscribes under
+      // the current key next time the app opens, so drop the dead row too.
+      const vapidMismatch = response.status === 403 && /do not correspond|vapid/i.test(error);
+      const expired = response.status === 404 || response.status === 410 || vapidMismatch;
 
       return { ok: false, status: response.status, expired, error: error.slice(0, 300) };
    } catch (error) {
