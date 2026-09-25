@@ -10,6 +10,14 @@ interface PageSeoOptions {
    jsonLd?: object[];
    /** Absolute or root-relative og:image. Defaults to the Moodeng brand logo. */
    image?: string;
+   /** Alt text for the social share image (og:image:alt / twitter:image:alt). */
+   imageAlt?: string;
+   /** Open Graph object type. 'article' for posts/guides, 'website' for listings/landing pages. */
+   type?: 'website' | 'article';
+   /** ISO date for article:published_time (article pages only). */
+   publishedTime?: string;
+   /** ISO date for article:modified_time (defaults to publishedTime). */
+   modifiedTime?: string;
 }
 
 /**
@@ -18,7 +26,17 @@ interface PageSeoOptions {
  * good enough for JS-rendering crawlers like Googlebot; pair with sitemap.xml and
  * a public route so the page is actually discoverable.
  */
-export function usePageSeo({ title, description, canonicalPath, jsonLd, image }: PageSeoOptions): void {
+export function usePageSeo({
+   title,
+   description,
+   canonicalPath,
+   jsonLd,
+   image,
+   imageAlt,
+   type = 'article',
+   publishedTime,
+   modifiedTime
+}: PageSeoOptions): void {
    const jsonLdKey = jsonLd ? JSON.stringify(jsonLd) : '';
 
    useEffect(() => {
@@ -48,10 +66,23 @@ export function usePageSeo({ title, description, canonicalPath, jsonLd, image }:
       setMeta('meta[name="description"]', 'name', 'description', description);
       setMeta('meta[property="og:title"]', 'property', 'og:title', title);
       setMeta('meta[property="og:description"]', 'property', 'og:description', description);
-      setMeta('meta[property="og:type"]', 'property', 'og:type', 'article');
+      setMeta('meta[property="og:type"]', 'property', 'og:type', type);
       setMeta('meta[property="og:url"]', 'property', 'og:url', canonicalUrl);
       setMeta('meta[property="og:image"]', 'property', 'og:image', imageUrl);
+      // Per-page Twitter Card fields — without these, every shared link falls back to the
+      // homepage title/description/image from index.html instead of this page's.
       setMeta('meta[name="twitter:card"]', 'name', 'twitter:card', 'summary_large_image');
+      setMeta('meta[name="twitter:title"]', 'name', 'twitter:title', title);
+      setMeta('meta[name="twitter:description"]', 'name', 'twitter:description', description);
+      setMeta('meta[name="twitter:image"]', 'name', 'twitter:image', imageUrl);
+      if (imageAlt) {
+         setMeta('meta[property="og:image:alt"]', 'property', 'og:image:alt', imageAlt);
+         setMeta('meta[name="twitter:image:alt"]', 'name', 'twitter:image:alt', imageAlt);
+      }
+      if (type === 'article' && publishedTime) {
+         setMeta('meta[property="article:published_time"]', 'property', 'article:published_time', publishedTime);
+         setMeta('meta[property="article:modified_time"]', 'property', 'article:modified_time', modifiedTime ?? publishedTime);
+      }
 
       let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
       const previousCanonical = canonical?.getAttribute('href') ?? null;
@@ -93,5 +124,5 @@ export function usePageSeo({ title, description, canonicalPath, jsonLd, image }:
          }
       };
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [title, description, canonicalPath, image, jsonLdKey]);
+   }, [title, description, canonicalPath, image, imageAlt, type, publishedTime, modifiedTime, jsonLdKey]);
 }

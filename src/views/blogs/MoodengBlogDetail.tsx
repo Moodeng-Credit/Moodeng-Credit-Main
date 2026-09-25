@@ -77,6 +77,10 @@ export default function MoodengBlogDetail(): JSX.Element {
       description,
       canonicalPath,
       image: post?.image,
+      imageAlt: post?.imageAlt,
+      type: 'article',
+      publishedTime: post ? isoDate : undefined,
+      modifiedTime: post ? isoDate : undefined,
       jsonLd: blogJsonLd
    });
 
