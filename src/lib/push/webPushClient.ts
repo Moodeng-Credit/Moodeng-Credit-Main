@@ -71,6 +71,28 @@ const arrayBufferToBase64Url = (buffer: ArrayBuffer | null): string => {
    return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 };
 
+// A subscription is bound to the VAPID public key it was created with; pushes signed with any other
+// key are rejected by the push service. Browsers that don't expose the key are assumed current.
+const isSubscribedWithCurrentKey = (subscription: PushSubscription): boolean => {
+   const subscribedKey = subscription.options?.applicationServerKey;
+   if (!subscribedKey) {
+      return true;
+   }
+
+   return arrayBufferToBase64Url(subscribedKey) === getVapidPublicKey().replace(/=+$/, '');
+};
+
+const removeStoredSubscription = async (endpoint: string) => {
+   if (!isSupabaseBrowserConfigured()) {
+      return;
+   }
+
+   const { error } = await getSupabaseBrowserClient().from('push_subscriptions').delete().eq('endpoint', endpoint);
+   if (error) {
+      console.warn('Failed to remove push subscription', error.message);
+   }
+};
+
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
@@ -170,11 +192,19 @@ export const syncPushSubscription = async (
    try {
       const existing = await registration.pushManager.getSubscription();
 
-      if (existing) {
+      if (existing && isSubscribedWithCurrentKey(existing)) {
          // Still re-persist: the endpoint survives across sessions but the row
          // may be missing (new account on this device) or hold a stale locale.
          const stored = await persistSubscription(existing, locale);
          return stored ? 'already-subscribed' : 'failed';
+      }
+
+      if (existing) {
+         // Subscribed under a previous VAPID key (the key pair was rotated): nothing we send can
+         // reach it any more, so drop it and resubscribe below. Permission is already granted, so
+         // this is silent.
+         await removeStoredSubscription(existing.endpoint);
+         await existing.unsubscribe().catch(() => undefined);
       }
 
       const subscription = await registration.pushManager.subscribe({
@@ -211,14 +241,7 @@ export const unsubscribeFromPush = async (): Promise<boolean> => {
       return true;
    }
 
-   if (isSupabaseBrowserConfigured()) {
-      const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', subscription.endpoint);
-
-      if (error) {
-         console.warn('Failed to remove push subscription', error.message);
-      }
-   }
+   await removeStoredSubscription(subscription.endpoint);
 
    return subscription.unsubscribe();
 };
