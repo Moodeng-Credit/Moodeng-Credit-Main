@@ -135,8 +135,12 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          {/* Moodeng + tier browsing */}
          <DesignImage
             src={getMoodengAsset(browsedTier.id, model.mood)}
-            alt={`${browsedTier.label} Moodeng`}
-            className="absolute left-1/2 h-[164px] w-[164px] -translate-x-1/2"
+            alt={`${browsedTier.label} Moodeng${browsedTierIndex > currentTierIndex ? ' (not reached yet)' : ''}`}
+            // Designer: a tier the borrower hasn't reached yet shows in gray while browsing with the arrows.
+            className={clsx(
+               'absolute left-1/2 h-[164px] w-[164px] -translate-x-1/2 transition-[filter,opacity] duration-300',
+               browsedTierIndex > currentTierIndex && 'opacity-70 grayscale'
+            )}
             style={{ top: CHARACTER_TOP[model.mood] }}
          />
          <button

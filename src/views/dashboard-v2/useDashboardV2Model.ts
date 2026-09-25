@@ -112,7 +112,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          mood: getMoodengMood({
             isVerified,
             hasUnpaidFundedLoan: loanArrays.activeLoans.length > 0,
-            hasRepaidLoan: loanArrays.repayments.length > 0
+            hasRepaidLoan: loanArrays.repayments.length > 0,
+            hasOverdueLoan: loanArrays.defaultedLoans.length > 0
          }),
          creditLevel: credit.level,
          creditLimit,
