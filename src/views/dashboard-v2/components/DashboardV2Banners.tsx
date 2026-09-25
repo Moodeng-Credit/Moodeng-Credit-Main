@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Wallet } from 'lucide-react';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -92,6 +92,65 @@ export function WithdrawBanner({ onWithdraw }: { onWithdraw: () => void }) {
             <span className="block text-[14px] leading-[18px] text-[#45556c]">Cash out your funded loan to local currency.</span>
          </span>
          <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6b55f7]" aria-hidden="true" />
+      </button>
+   );
+}
+
+const REMINDERS_COPY = {
+   en: {
+      title: 'Turn on repayment reminders',
+      body: 'Get a heads-up before your due date so you never pay late.',
+      blockedTitle: 'Reminders are blocked',
+      blockedBody: 'Allow notifications for moodeng.app in your browser settings.'
+   },
+   fil: {
+      title: 'I-on ang repayment reminders',
+      body: 'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
+      blockedTitle: 'Naka-block ang reminders',
+      blockedBody: 'I-allow ang notifications para sa moodeng.app sa browser settings mo.'
+   }
+} as const;
+
+/**
+ * Shown to borrowers with a loan to repay who haven't allowed push. If the browser has blocked
+ * notifications only the borrower can undo that in their settings, so it explains how instead.
+ */
+export function TurnOnRemindersBanner({
+   language,
+   isBlocked,
+   isBusy,
+   onEnable
+}: {
+   language: DashboardV2Language;
+   isBlocked: boolean;
+   isBusy: boolean;
+   onEnable: () => void;
+}) {
+   const copy = REMINDERS_COPY[language];
+   const Icon = isBlocked ? BellOff : Bell;
+   const content = (
+      <>
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
+            <Icon className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+         </span>
+         <span className="min-w-0 flex-1">
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{isBlocked ? copy.blockedTitle : copy.title}</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c]">{isBlocked ? copy.blockedBody : copy.body}</span>
+         </span>
+      </>
+   );
+   const cardClass = 'mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]';
+
+   if (isBlocked) {
+      return <div className={cardClass}>{content}</div>;
+   }
+
+   return (
+      <button type="button" onClick={onEnable} disabled={isBusy} className={clsx(cardClass, 'active:scale-[0.99] disabled:opacity-60')}>
+         {content}
+         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">
+            {language === 'fil' ? 'I-on' : 'Turn on'}
+         </span>
       </button>
    );
 }
