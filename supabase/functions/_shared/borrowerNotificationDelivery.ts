@@ -16,13 +16,17 @@ import {
    type PushLocale,
    type PushPayload
 } from './pushMessages.ts';
+import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 export type BorrowerNotificationDeliveryResult = {
    emailSent: boolean;
    telegramSent: boolean;
    pushSent: boolean;
+   messengerSent: boolean;
 };
+
+const REMINDER_TYPES: LoanNotificationType[] = ['urgent_reminder', 'final_reminder', 'due_today', 'overdue'];
 
 const toNumber = (value: number | string | null | undefined) => {
    const amount = Number(value ?? 0);
@@ -103,12 +107,13 @@ export const sendBorrowerLoanNotification = async (
 ): Promise<BorrowerNotificationDeliveryResult> => {
    // If the user has opted out of this notification category, skip silently
    if (options.notifEnabled === false) {
-      return { emailSent: false, telegramSent: false, pushSent: false };
+      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false };
    }
 
    let emailSent = false;
    let telegramSent = false;
    let pushSent = false;
+   let messengerSent = false;
    const recipientEmail = recipient.email?.trim();
    const telegramActionLabel =
       type === 'request_expired'
@@ -183,9 +188,27 @@ export const sendBorrowerLoanNotification = async (
       }
    }
 
-   if (firstError && !emailSent && !telegramSent && !pushSent) {
+   // Messenger, for borrowers who confirmed their Facebook with the Page. Messenger only allows
+   // free-form messages within 24h of the borrower's last message to the Page, so this lands only
+   // for someone who wrote to us recently (sendMessengerMessage checks and skips otherwise). Like
+   // push, it's additive and never fails the other channels.
+   if (recipient.messenger_psid && REMINDER_TYPES.includes(type)) {
+      const payload = buildPushPayloadForType(type, loan, aggregate, 'en');
+      if (payload) {
+         const result = await sendMessengerMessage(recipient.messenger_psid, {
+            text: `${payload.title}\n${payload.body}`,
+            card: { title: 'Repay on Moodeng Credit', button: { title: 'Repay now', url: payload.url } }
+         });
+         messengerSent = result.ok;
+         if (!result.ok && result.reason !== 'outside_24h_window') {
+            console.error('Borrower Messenger notification failed', { type, reason: result.reason });
+         }
+      }
+   }
+
+   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent) {
       throw firstError;
    }
 
-   return { emailSent, telegramSent, pushSent };
+   return { emailSent, telegramSent, pushSent, messengerSent };
 };

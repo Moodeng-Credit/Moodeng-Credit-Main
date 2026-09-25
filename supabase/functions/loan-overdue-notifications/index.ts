@@ -10,6 +10,7 @@ import {
    LoanNotificationLoan,
    LoanNotificationRecipient
 } from '../_shared/loanNotifications.ts';
+import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
 import {
    calculateTrustPointRewardDelta,
    markLoansRepaid
@@ -42,6 +43,38 @@ type TrustPointRewardContext = {
    milestoneDefinitions: TrustPointMilestoneDefinition[];
 };
 
+const getRequestSecret = (req: Request) => {
+   const authorization = req.headers.get('Authorization') ?? '';
+   const bearerToken = authorization.replace(/^Bearer\s+/i, '').trim();
+   return bearerToken || req.headers.get('x-notification-secret');
+};
+
+// Same internal-secret check as loan-due-notifications. The hourly cron sends x-notification-secret;
+// nothing else may call this, because `referenceDate` in the body would let a caller mark every
+// active loan as overdue and email all borrowers a false overdue notice.
+const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) => {
+   const requestSecret = getRequestSecret(req);
+   if (!requestSecret) {
+      return { authorized: false, status: 401, error: 'Unauthorized' };
+   }
+
+   const expectedSecret = Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('TELEGRAM_NOTIFICATION_SECRET');
+   if (expectedSecret && requestSecret === expectedSecret) {
+      return { authorized: true, status: 200, error: null };
+   }
+
+   const { data, error } = await supabase.rpc('verify_internal_notification_secret', { candidate: requestSecret });
+   if (error) {
+      return { authorized: false, status: 500, error: error.message };
+   }
+
+   if (data !== true) {
+      return { authorized: false, status: 401, error: 'Unauthorized' };
+   }
+
+   return { authorized: true, status: 200, error: null };
+};
+
 const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promise<Map<string, BorrowerRecord>> => {
    if (!userIds.length) {
       return new Map<string, BorrowerRecord>();
@@ -49,7 +82,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity, notif_push, messenger_psid')
       .in('id', userIds);
 
    if (error || !data) {
@@ -213,9 +246,17 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const authorization = await authorizeInternalRequest(supabase, req);
+   if (!authorization.authorized) {
+      return new Response(JSON.stringify({ error: authorization.error }), {
+         status: authorization.status,
+         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+   }
+
    const body = await req.json().catch(() => ({}));
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
-   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: loans, error } = await supabase
       .from('loans')
@@ -235,6 +276,7 @@ serve(async (req) => {
    const borrowers = await loadBorrowers(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
    const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
+   const pushableBorrowerIds = new Set((await loadPushSubscriptions(supabase, borrowerIds)).keys());
 
    const borrowerBuckets = new Map<string, Array<LoanNotificationLoan & { id: string }>>();
 
@@ -252,7 +294,7 @@ serve(async (req) => {
 
    for (const [borrowerId, borrowerLoans] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
-      if (!borrower?.email && !borrower?.chat_id) {
+      if (!borrower || (!borrower.email && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId))) {
          continue;
       }
 
@@ -294,10 +336,14 @@ serve(async (req) => {
             trust_points_reward_kind: 'potential'
          },
          aggregate,
-         { telegramEnabled, notifEnabled: borrower.notif_transaction_activity !== false }
+         {
+            telegramEnabled,
+            notifEnabled: borrower.notif_transaction_activity !== false,
+            push: { supabase, userId: borrower.id }
+         }
       );
 
-      if (!delivery.emailSent && !delivery.telegramSent) {
+      if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent) {
          continue;
       }
 

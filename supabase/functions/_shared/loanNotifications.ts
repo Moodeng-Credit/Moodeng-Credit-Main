@@ -34,6 +34,8 @@ export type LoanNotificationRecipient = {
    chat_id?: number | string | null;
    /** Push channel opt-out. Undefined is treated as opted in, matching the column default. */
    notif_push?: boolean | null;
+   /** SendPulse contact id from the "Confirm Facebook" flow; set only for Messenger-verified borrowers. */
+   messenger_psid?: string | null;
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';

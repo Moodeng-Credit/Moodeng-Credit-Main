@@ -65,6 +65,9 @@ verify_jwt = true
 [functions.loan-due-notifications]
 verify_jwt = false
 
+[functions.loan-overdue-notifications]
+verify_jwt = false
+
 [functions.loan-request-telegram-notification]
 verify_jwt = false
 

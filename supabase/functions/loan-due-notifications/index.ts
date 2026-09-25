@@ -68,7 +68,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity, notif_push')
+      .select('id, username, telegram_username, email, cs, is_world_id, chat_id, notif_transaction_activity, notif_push, messenger_psid')
       .in('id', userIds);
 
    if (error || !data) {
@@ -275,7 +275,7 @@ const notifyBorrower = async (
    // A push that landed counts as delivered on its own, so a borrower who has the
    // app on their phone but no email on file still gets the reminder recorded —
    // otherwise the hourly cron would re-send it every hour.
-   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent) {
+   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent) {
       return false;
    }
 
