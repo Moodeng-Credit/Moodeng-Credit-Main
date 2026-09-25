@@ -182,12 +182,18 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
          }
       >
          <div className="flex items-start justify-between gap-3 px-[9px] pb-6 pt-7">
-            <Link to="/repay" className="flex min-w-0 flex-1 flex-col gap-[7px]">
+            <Link
+               to="/repay"
+               className="group flex min-w-0 flex-1 flex-col gap-[7px] transition-transform duration-150 active:scale-[0.97]"
+            >
                <span className="mb-1 flex items-center gap-0.5">
                   <span className={clsx(STAT_NUMBER, 'text-[clamp(28px,8.6vw,38px)] text-[#5c44f1]')}>
                      {formatCurrency(summary.active)}
                   </span>
-                  <DesignImage src={DASHBOARD_V2_ASSETS.activeLoanChevron} className="h-4 w-4" />
+                  <DesignImage
+                     src={DASHBOARD_V2_ASSETS.activeLoanChevron}
+                     className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-1 group-active:translate-x-1.5"
+                  />
                </span>
                <span className="text-[14px] leading-[18px] text-[#45556c]">Active Loans($)</span>
             </Link>
@@ -260,10 +266,13 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
             </h2>
             <Link
                to={model.insightsHref}
-               className="flex shrink-0 items-center whitespace-nowrap text-[clamp(15px,4.5vw,18px)] leading-[18px] text-[#45556c]"
+               className="group flex shrink-0 items-center whitespace-nowrap text-[clamp(15px,4.5vw,18px)] leading-[18px] text-[#45556c] transition duration-150 hover:text-[#4f36ef] active:scale-[0.96]"
             >
                My insights
-               <DesignImage src={DASHBOARD_V2_ASSETS.insightsChevron} className="h-4 w-4" />
+               <DesignImage
+                  src={DASHBOARD_V2_ASSETS.insightsChevron}
+                  className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-1 group-active:translate-x-1.5"
+               />
             </Link>
          </div>
          <div className="mt-4">
