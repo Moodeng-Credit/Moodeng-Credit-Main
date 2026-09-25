@@ -87,6 +87,20 @@
          }
       </script>
 
+      <!-- WebSite entity, linked to the Organization above via publisher @id, so search
+           engines model moodeng.app as one site with a known publisher. -->
+      <script type="application/ld+json">
+         {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "@id": "https://moodeng.app/#website",
+            "url": "https://moodeng.app/",
+            "name": "Moodeng Credit",
+            "inLanguage": "en",
+            "publisher": { "@id": "https://moodeng.app/#organization" }
+         }
+      </script>
+
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />

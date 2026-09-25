@@ -18,6 +18,7 @@ export default function MoodengBlogs(): JSX.Element {
       title: 'Moodeng Blog — The human side of fair credit | Moodeng Credit',
       description: BLOG_INDEX_DESCRIPTION,
       canonicalPath: '/blogs',
+      type: 'website',
       jsonLd: [
          {
             '@context': 'https://schema.org',
