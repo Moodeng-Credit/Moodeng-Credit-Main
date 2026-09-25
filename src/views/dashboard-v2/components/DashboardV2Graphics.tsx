@@ -32,7 +32,7 @@ export function TabbedCard({
       <section className={clsx('relative mx-5', className)} aria-labelledby={titleId}>
          <div
             className={clsx(
-               'absolute right-0 flex h-10 items-start rounded-t-[12px] bg-gradient-to-b from-[#efeaff] to-white pl-2.5 pt-1.5',
+               'absolute right-0 flex h-10 items-start rounded-t-[12px] bg-gradient-to-b from-[#efeaff] to-[#f8f6ff] pl-2.5 pt-1.5',
                overlapTitle ? 'top-0' : '-top-0.5'
             )}
             style={{ width: tabWidth }}
@@ -51,6 +51,12 @@ export function TabbedCard({
                overlapTitle ? 'mt-2.5' : 'mt-4'
             )}
          >
+            {/* Concave corner where the tab meets the card, so tab + card read as one shape (Figma "Rectangle 3467568"). */}
+            <span
+               className="pointer-events-none absolute -top-3 h-3 w-3"
+               style={{ right: tabWidth, background: 'radial-gradient(circle at 0 0, transparent 11.5px, #f8f6ff 12px)' }}
+               aria-hidden="true"
+            />
             {children}
          </div>
       </section>
