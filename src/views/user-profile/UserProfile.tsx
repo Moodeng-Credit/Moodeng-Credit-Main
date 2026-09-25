@@ -349,8 +349,14 @@ const UserProfile = () => {
    const insightsTier = getMoodengTier(insightsPandesal);
    const insightsTierLabel = MOODENG_TIERS.find((tier) => tier.id === insightsTier)?.label ?? 'Rookie';
    const insightsNextGoal = getNextTierGoal(insightsPandesal);
-   const insightsMood: MoodengMood =
-      borrowedLoans.some((loan) => loan.repaymentStatus === 'Paid') && isVerifiedBorrower ? 'repaid' : 'waiting';
+   // Same rule as the dashboard's getMoodengMood: open funded loan → eating, repaid before → full, else waiting.
+   const insightsMood: MoodengMood = !isVerifiedBorrower
+      ? 'waiting'
+      : borrowedLoans.some((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid')
+        ? 'loan'
+        : borrowedLoans.some((loan) => loan.repaymentStatus === 'Paid')
+          ? 'repaid'
+          : 'waiting';
    const creditInUse = Math.min(getBorrowerUsedCreditAmount(borrowedLoans), creditMax);
    const creditAvailable = Math.max(creditMax - creditInUse, 0);
    const creditAvailablePercent = creditMax > 0 ? (creditAvailable / creditMax) * 100 : 0;

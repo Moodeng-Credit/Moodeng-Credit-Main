@@ -83,8 +83,9 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
    const model = useMemo<DashboardV2Model>(() => {
       const pandesal = isVerified ? pointsTotal : 0;
       const creditLimit = getEffectiveCreditLimit(user.cs, isVerified);
-      // Same expiry-aware helper and loan set as the old dashboard's credit card and the request board.
-      const creditInUse = Math.min(getBorrowerUsedCreditAmount([...loanArrays.activeLoans, ...loanArrays.defaultedLoans]), creditLimit);
+      // Same expiry-aware helper and loan set as the Request Board, which enforces the limit: unpaid funded
+      // loans plus open (unexpired) requests.
+      const creditInUse = Math.min(getBorrowerUsedCreditAmount(borrowerLoans), creditLimit);
       const credit = getCreditLevelProgress({
          creditLimit,
          isVerified,
