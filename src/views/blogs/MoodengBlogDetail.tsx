@@ -4,7 +4,7 @@ import { ArrowRight, CalendarDays, Clock3 } from 'lucide-react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
-import { blogPosts, findBlogPost } from '@/views/blogs/blogPosts';
+import { blogPosts, findBlogPost, getBlogPostIsoDate } from '@/views/blogs/blogPosts';
 import '@/views/blogs/MoodengBlogs.css';
 
 const SITE_ORIGIN = 'https://moodeng.app';
@@ -29,6 +29,9 @@ export default function MoodengBlogDetail(): JSX.Element {
       name: item.question,
       acceptedAnswer: { '@type': 'Answer', text: item.answer }
    }));
+   // Real, per-post dates: Google uses datePublished/dateModified for freshness and ranking, so
+   // every post must carry its own date rather than a shared hard-coded one.
+   const isoDate = post ? getBlogPostIsoDate(post.slug) : '2026-05-18';
    const blogJsonLd: object[] | undefined = post
       ? [
            {
@@ -38,13 +41,30 @@ export default function MoodengBlogDetail(): JSX.Element {
                     '@type': 'BlogPosting',
                     headline: post.title,
                     description,
-                    datePublished: '2026-05-18',
-                    dateModified: '2026-05-18',
+                    datePublished: isoDate,
+                    dateModified: isoDate,
                     image: `${SITE_ORIGIN}${post.image}`,
                     mainEntityOfPage: canonicalUrl,
-                    author: { '@type': 'Organization', name: 'Moodeng Credit' },
-                    publisher: { '@type': 'Organization', name: 'Moodeng Credit', url: SITE_ORIGIN },
+                    url: canonicalUrl,
+                    inLanguage: 'en',
+                    isAccessibleForFree: true,
+                    articleSection: post.category,
+                    author: { '@type': 'Organization', name: 'Moodeng Credit', url: SITE_ORIGIN },
+                    publisher: {
+                       '@type': 'Organization',
+                       name: 'Moodeng Credit',
+                       url: SITE_ORIGIN,
+                       logo: { '@type': 'ImageObject', url: `${SITE_ORIGIN}/brand/moodeng-logo.png` }
+                    },
                     keywords: post.keywords?.join(', ')
+                 },
+                 {
+                    '@type': 'BreadcrumbList',
+                    itemListElement: [
+                       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_ORIGIN },
+                       { '@type': 'ListItem', position: 2, name: 'Blog', item: `${SITE_ORIGIN}/blogs` },
+                       { '@type': 'ListItem', position: 3, name: post.title, item: canonicalUrl }
+                    ]
                  },
                  ...(faqEntities?.length ? [{ '@type': 'FAQPage', mainEntityOfPage: canonicalUrl, mainEntity: faqEntities }] : [])
               ]

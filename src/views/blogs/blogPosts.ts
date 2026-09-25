@@ -1117,3 +1117,24 @@ export const leadBlogPost = blogPosts[1];
 export function findBlogPost(slug: string | undefined): BlogPost | undefined {
    return blogPosts.find((post) => post.slug === slug);
 }
+
+// Machine-readable publish dates (ISO 8601) for BlogPosting JSON-LD `datePublished` and the
+// sitemap's <lastmod>. Kept alongside the human `publishedAt` string on each post; month-only
+// dates use the 1st. Search engines rely on real, per-post dates for freshness and ranking, so
+// these must stay in sync with each post's `publishedAt`.
+const BLOG_ISO_DATES: Record<string, string> = {
+   'first-credit-record-should-not-belong-to-a-loan-shark': '2026-05-01',
+   'app-store-costume-of-predatory-credit': '2026-05-31',
+   'contact-list-collateral-and-the-shame-tax': '2026-05-18',
+   'borrower-context-without-confession': '2026-05-18',
+   'small-loans-are-infrastructure': '2026-05-18',
+   'what-oil-pipelines-teach-us-about-credit': '2026-05-18',
+   'secret-societies-and-the-need-for-safe-trust': '2026-05-18',
+   'what-credit-risk-books-miss-about-loan-sharks': '2026-05-18',
+   'borrow-money-online-philippines-without-bank-account': '2026-07-01',
+   'what-is-a-peer-to-peer-loan-and-is-it-safe': '2026-07-01',
+   'how-to-build-credit-with-no-credit-history': '2026-07-01'
+};
+
+/** ISO 8601 publish date for a post slug, for structured data and the sitemap. */
+export const getBlogPostIsoDate = (slug: string): string => BLOG_ISO_DATES[slug] ?? '2026-05-18';
