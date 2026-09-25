@@ -16,7 +16,7 @@ import {
    type PushLocale,
    type PushPayload
 } from './pushMessages.ts';
-import { sendMessengerMessage } from './sendpulse.ts';
+import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 export type BorrowerNotificationDeliveryResult = {
@@ -27,6 +27,40 @@ export type BorrowerNotificationDeliveryResult = {
 };
 
 const REMINDER_TYPES: LoanNotificationType[] = ['urgent_reminder', 'final_reminder', 'due_today', 'overdue'];
+
+const formatUsdcAmount = (value: number | string | null | undefined) =>
+   toNumber(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+const formatDueDate = (value: string | null | undefined) =>
+   value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null;
+
+/** What goes to Messenger for this notification type, or null for the types we don't send there. */
+export const buildMessengerContent = (
+   type: LoanNotificationType,
+   loan: LoanNotificationLoan | null,
+   aggregate: LoanNotificationAggregate | undefined
+): { text: string; card?: MessengerCard } | null => {
+   if (type === 'funded' && loan) {
+      const dashboardUrl = buildPushPayloadForType('funded', loan, aggregate, 'en')?.url;
+      const due = formatDueDate(loan.due_date);
+      const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
+      return {
+         text:
+            `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+            `${repay}${due ? ` by ${due}` : ''} to grow your credit level and unlock bigger loans.`,
+         ...(dashboardUrl ? { card: { title: 'Your loan is funded', button: { title: 'Open Moodeng', url: dashboardUrl } } } : {})
+      };
+   }
+
+   if (REMINDER_TYPES.includes(type)) {
+      const payload = buildPushPayloadForType(type, loan, aggregate, 'en');
+      return payload
+         ? { text: `${payload.title}\n${payload.body}`, card: { title: 'Repay on Moodeng Credit', button: { title: 'Repay now', url: payload.url } } }
+         : null;
+   }
+
+   return null;
+};
 
 const toNumber = (value: number | string | null | undefined) => {
    const amount = Number(value ?? 0);
@@ -192,17 +226,12 @@ export const sendBorrowerLoanNotification = async (
    // free-form messages within 24h of the borrower's last message to the Page, so this lands only
    // for someone who wrote to us recently (sendMessengerMessage checks and skips otherwise). Like
    // push, it's additive and never fails the other channels.
-   if (recipient.messenger_psid && REMINDER_TYPES.includes(type)) {
-      const payload = buildPushPayloadForType(type, loan, aggregate, 'en');
-      if (payload) {
-         const result = await sendMessengerMessage(recipient.messenger_psid, {
-            text: `${payload.title}\n${payload.body}`,
-            card: { title: 'Repay on Moodeng Credit', button: { title: 'Repay now', url: payload.url } }
-         });
-         messengerSent = result.ok;
-         if (!result.ok && result.reason !== 'outside_24h_window') {
-            console.error('Borrower Messenger notification failed', { type, reason: result.reason });
-         }
+   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate) : null;
+   if (recipient.messenger_psid && messengerContent) {
+      const result = await sendMessengerMessage(recipient.messenger_psid, messengerContent);
+      messengerSent = result.ok;
+      if (!result.ok && result.reason !== 'outside_24h_window') {
+         console.error('Borrower Messenger notification failed', { type, reason: result.reason });
       }
    }
 
