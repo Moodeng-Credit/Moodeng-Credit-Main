@@ -38,6 +38,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Default tap / hover feedback for everything clickable, so no button feels dead.
+ * - Uses the standalone `scale` property (not `transform`), so it stacks on top of any Tailwind
+ *   translate/rotate an element already has instead of making it jump.
+ * - Elements with their own active:scale-* / hover:* styling keep theirs; add data-no-press to opt out.
+ * - Lives in the base layer, so any utility class on an element still wins.
+ */
+@layer base {
+   :where(button, a[href], [role='button'], summary) {
+      -webkit-tap-highlight-color: transparent;
+      transition-property: scale, filter, opacity, color, background-color, border-color, box-shadow, transform;
+      transition-duration: 150ms;
+      transition-timing-function: ease-out;
+   }
+
+   :where(button, a[href], [role='button'], summary):not(:disabled):not([aria-disabled='true']):not([class*='active:scale']):not(
+         [data-no-press]
+      ):active {
+      scale: 0.97;
+   }
+
+   @media (hover: hover) {
+      :where(button, a[href], [role='button']):not(:disabled):not([aria-disabled='true']):not([class*='hover:']):not(
+            [data-no-press]
+         ):hover {
+         filter: brightness(1.06);
+      }
+   }
+}
+
 * {
    -webkit-font-smoothing: antialiased;
    box-sizing: border-box;
