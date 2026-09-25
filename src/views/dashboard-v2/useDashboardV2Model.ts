@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import { calculateDaysBetween, calculateDaysRemaining, parseDateSafely } from '@/utils/dateFormatters';
@@ -70,9 +71,10 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       dispatch(fetchUserProfiles(missingLenderIds)).catch(() => undefined);
    }, [dispatch, missingLenderIds]);
 
+   const recordedMilestones = useRecordedMilestones(user.id, isSignedIn);
    const sharedMilestones = useMemo(
-      () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified }),
-      [borrowerLoans, creditLevels, isVerified]
+      () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified, recordedCompletionIds: recordedMilestones }),
+      [borrowerLoans, creditLevels, isVerified, recordedMilestones]
    );
    // Same as the live dashboard: unlocked milestones are recorded server-side (the RPC re-checks
    // each rule), which is what actually awards their Pandesal.

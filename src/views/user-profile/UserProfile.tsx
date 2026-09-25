@@ -31,6 +31,7 @@ import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
@@ -109,6 +110,7 @@ const UserProfile = () => {
    const { rewards: friendRewards, isLoading: friendRewardsLoading } = useFriendReferrals();
    // The signed-in borrower's own pandesal (RLS: read your own), shown only on their own insights.
    const { pointsTotal: ownPandesal } = useTrustPointTotal({ userId: user?.id ?? '', fallbackPoints: 0, enabled: Boolean(user?.id) });
+   const ownRecordedMilestones = useRecordedMilestones(user?.id);
    // A guest who follows the lender-tour bridge link from UserCard arrives with
    // ?demo=rich&lenderTourPreview=1&tourPreview=1 but has no real session — the DEV-only
    // `forceTourPreview` gate would hide the tour continuation for them in production.
@@ -356,7 +358,8 @@ const UserProfile = () => {
       ? buildReputationMilestones({
            creditLevels: buildCreditLevels({ user: resolvedUser, loans: borrowedLoans }),
            borrowerLoans: borrowedLoans,
-           isVerified: isVerifiedBorrower
+           isVerified: isVerifiedBorrower,
+           recordedCompletionIds: ownRecordedMilestones
         })
       : [];
    const milestonesHit = ownMilestones.filter((milestone) => milestone.status === 'unlocked').length;

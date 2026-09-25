@@ -2,20 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getEffectiveCreditLimit, isRepaidOnTime } from '@/lib/creditLeveling';
-import { isUserVerified } from '@/lib/isUserVerified';
-import { getNextCreditTier } from '@/config/creditTiers';
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity } from '@/utils/diversityScore';
 
+import { getNextCreditTier } from '@/config/creditTiers';
+import { CREDIT_TIERS, getEffectiveCreditLimit, isRepaidOnTime, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
+import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
-import type { CreditLevel, RoleType, StatsData } from '@/views/profile/components/tabs/types';
-
-import type { Loan } from '@/types/loanTypes';
 import type { User } from '@/types/authTypes';
+import type { Loan } from '@/types/loanTypes';
+import type { CreditLevel, RoleType, StatsData } from '@/views/profile/components/tabs/types';
 
 type CreditLevelInput = {
    user: User;
@@ -47,16 +46,16 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
       .sort((a, b) => parseDateSafely(a.updatedAt).getTime() - parseDateSafely(b.updatedAt).getTime())
       .forEach((loan) => {
          cumulativeRepaidAmount += toNumber(loan.loanAmount);
-            CREDIT_TIERS.forEach((tier, index) => {
-               if (tier === CREDIT_TIERS[0] || paidOnTimeByTier.has(tier)) {
-                  return;
-               }
+         CREDIT_TIERS.forEach((tier, index) => {
+            if (tier === CREDIT_TIERS[0] || paidOnTimeByTier.has(tier)) {
+               return;
+            }
 
-               const previousTier = CREDIT_TIERS[index - 1];
-               if (cumulativeRepaidAmount >= previousTier) {
-                  paidOnTimeByTier.set(tier, loan);
-               }
-            });
+            const previousTier = CREDIT_TIERS[index - 1];
+            if (cumulativeRepaidAmount >= previousTier) {
+               paidOnTimeByTier.set(tier, loan);
+            }
+         });
       });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
@@ -124,9 +123,7 @@ export const useDashboardData = (activeRole: RoleType) => {
 
    const hasCachedDashboardData = userLoansFetchedFor === userId || userLoans.length > 0;
    const hasFreshDashboardData =
-      userLoansFetchedFor === userId &&
-      userLoansFetchedAt !== null &&
-      Date.now() - userLoansFetchedAt < DASHBOARD_REFRESH_INTERVAL_MS;
+      userLoansFetchedFor === userId && userLoansFetchedAt !== null && Date.now() - userLoansFetchedAt < DASHBOARD_REFRESH_INTERVAL_MS;
    const [isReady, setIsReady] = useState(() => Boolean(userId && hasCachedDashboardData));
 
    useEffect(() => {
@@ -165,8 +162,9 @@ export const useDashboardData = (activeRole: RoleType) => {
    const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
       const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
+      // Only a funded loan can be overdue: a request nobody funded has nothing to repay.
       const defaultedLoans = userLoans.filter(
-         (loan) => loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
+         (loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
       );
       const pendingLoans = userLoans.filter((loan) => loan.loanStatus === 'Requested');
 

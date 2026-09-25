@@ -8,6 +8,7 @@ import GuidedTourPreview from '@/components/GuidedTourPreview';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
 import type { WalletLivenessData } from '@/utils/diversityScore';
@@ -190,6 +191,7 @@ export default function Dashboard() {
       enabled: isVerified
    });
    const displayTrustScore = isVerified ? trustPointsTotal : 0;
+   const recordedMilestones = useRecordedMilestones(user.id);
    const milestoneLoans = isMockRich ? previewLoans : borrowerLoans;
    const displayFundedLoans = useMemo(
       () => (isMockRich ? previewLoans.filter((loan) => loan.loanStatus === LoanStatus.LENT) : fundedLoans),
@@ -218,7 +220,12 @@ export default function Dashboard() {
       () => getBorrowerUsedCreditAmount([...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans]),
       [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
    );
-   const milestones = buildReputationMilestones({ creditLevels, borrowerLoans: milestoneLoans, isVerified });
+   const milestones = buildReputationMilestones({
+      creditLevels,
+      borrowerLoans: milestoneLoans,
+      isVerified,
+      recordedCompletionIds: isMockRich ? undefined : recordedMilestones
+   });
    const handleCreditLevelUnlockClick = useCallback(() => {
       if (!user.userRole) {
          navigate('/onboarding/role');
