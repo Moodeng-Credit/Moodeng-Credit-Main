@@ -38,6 +38,15 @@ function GuideArticleView({ guide, slug, locale }: { guide: GuideArticle; slug: 
             author: { '@type': 'Organization', name: 'Moodeng Credit' },
             publisher: { '@type': 'Organization', name: 'Moodeng Credit' },
             mainEntityOfPage: `${origin}/learn/${slug}`
+         },
+         {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+               { '@type': 'ListItem', position: 1, name: 'Academy', item: `${origin}/academy` },
+               { '@type': 'ListItem', position: 2, name: 'Guides', item: `${origin}/learn` },
+               { '@type': 'ListItem', position: 3, name: guide.title, item: `${origin}/learn/${slug}` }
+            ]
          }
       ]
    });
