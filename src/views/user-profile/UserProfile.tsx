@@ -67,15 +67,6 @@ import {
    DEMO_LENDER_PROFILES
 } from './demoBorrowerInsights';
 
-const DIVERSITY_STYLES: Record<string, { border: string; text: string; bg: string }> = {
-   Excellent: { border: 'border-md-green-600', text: 'text-md-green-600', bg: 'bg-[rgba(0,134,36,0.05)]' },
-   Good: { border: 'border-md-blue-500', text: 'text-md-blue-500', bg: 'bg-[rgba(0,118,235,0.1)]' },
-   Fair: { border: 'border-md-yellow-700', text: 'text-md-yellow-700', bg: 'bg-[rgba(211,170,0,0.05)]' },
-   Low: { border: 'border-orange-400', text: 'text-orange-500', bg: 'bg-orange-50' },
-   Poor: { border: 'border-md-red-500', text: 'text-md-red-500', bg: 'bg-red-50' }
-};
-
-const getDiversityBadgeStyle = (status: string) => DIVERSITY_STYLES[status] ?? DIVERSITY_STYLES.Poor;
 const LENDER_DIVERSITY_DOCS_URL =
    'https://app.gitbook.com/o/AMHwk2hHdkax8lFhGYOU/s/1QbbZpQ1L3YZPjatm5Lw/the-product/lender-diversity-score/~/gitsync/status';
 
@@ -343,7 +334,6 @@ const UserProfile = () => {
 
    const diversityScore = lenderDiversity.score;
    const diversityStatus = getDiversityStatus(diversityScore);
-   const badge = getDiversityBadgeStyle(diversityStatus);
    const creditBuildingCount = uniqueLoans.length;
    const trustBuildingCount = trustBuildingLoans.length;
    const hasLoanHistory = fundedLoans.length > 0;
@@ -517,29 +507,6 @@ const UserProfile = () => {
 
             .borrower-insights-dark .ring-\\[\\#f1edf8\\] {
                --tw-ring-color: #30384a !important;
-            }
-
-            .borrower-insights-dark .diversity-score-card {
-               background: radial-gradient(circle at 82% 22%, rgba(139, 92, 246, 0.22), transparent 34%),
-                  linear-gradient(135deg, #171a23 0%, #1d2230 100%) !important;
-               border-color: #3a2f58 !important;
-               box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 18px 42px rgba(0, 0, 0, 0.28) !important;
-            }
-
-            .borrower-insights-dark .diversity-score-card::before {
-               background: linear-gradient(135deg, rgba(139, 92, 246, 0.35), transparent) !important;
-               opacity: 0.75 !important;
-            }
-
-            .borrower-insights-dark .diversity-score-hero {
-               background: rgba(139, 92, 246, 0.12);
-               border-radius: 999px;
-               box-shadow: 0 18px 42px rgba(124, 58, 237, 0.18);
-            }
-
-            .borrower-insights-dark .diversity-score-value {
-               color: #a78bfa !important;
-               text-shadow: 0 0 24px rgba(139, 92, 246, 0.24);
             }
 
             .borrower-insights-dark .borrower-identity-card {
@@ -1224,19 +1191,26 @@ const UserProfile = () => {
                               </div>
                            </SummaryMetricCard>
 
+                           {/* Lender diversity — the referral page's purple card (Figma "Rectangle 3467583"). */}
                            <div
-                              className="diversity-score-card relative col-span-2 overflow-hidden dv2-card rounded-[8px] bg-white bg-gradient-to-b from-[#f8f6ff] to-white to-[48px] p-4 shadow-[0_1px_2px_rgba(28,5,61,0.06)]"
+                              className="relative col-span-2 overflow-hidden rounded-[22px] bg-[#745ff8] p-4 text-white shadow-[0_-10px_20.6px_#efecff]"
                               data-tour-target="borrower-diversity-score"
                            >
+                              <span
+                                 className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-[130%] -rotate-6 bg-gradient-to-r from-[#8f7dff] to-[#6a52f2]"
+                                 aria-hidden="true"
+                              />
                               <div className="relative z-10 flex items-start justify-between gap-3">
                                  <div className="min-w-0 flex-1">
                                     <div className="mb-3 flex items-center gap-1.5">
-                                       <p className="text-[13px] font-[590] leading-5 text-md-neutral-1200">Lender diversity</p>
+                                       <p className="text-[20px] font-black italic leading-6 text-white [text-shadow:0_1px_0_#4c239f]">
+                                          Lender Diversity
+                                       </p>
                                        <button
                                           type="button"
                                           onClick={() => setIsLenderDiversitySheetOpen(true)}
                                           aria-label="How Lender Diversity Score works"
-                                          className="flex h-6 w-6 items-center justify-center rounded-full text-[#8b5cf6] transition active:scale-95"
+                                          className="flex h-6 w-6 items-center justify-center rounded-full text-white/80 transition hover:text-white active:scale-95"
                                        >
                                           <HelpCircle className="h-4 w-4" strokeWidth={2.2} />
                                        </button>
@@ -1245,21 +1219,20 @@ const UserProfile = () => {
                                        <>
                                           <div className="mb-3 flex flex-wrap items-center gap-2">
                                              <div className="flex items-baseline gap-1.5">
-                                                <p className="diversity-score-value text-[30px] font-[590] leading-none tracking-[-0.6px] text-md-primary-1200">
+                                                <p className="text-[38px] font-black italic leading-none tracking-[-0.8px] text-white">
                                                    {diversityScore}
                                                 </p>
-                                                <p className="text-[13px] font-normal text-md-neutral-1200">points</p>
+                                                <p className="text-[13px] font-medium text-white/75">points</p>
                                              </div>
                                              <span
-                                                className={`inline-flex items-center justify-center rounded-full border px-2.5 py-1 ${badge.border} ${badge.bg}`}
+                                                className="inline-flex items-center rounded-full px-3 py-1 text-[12px] font-bold leading-none text-[#704518]"
+                                                style={{ backgroundImage: 'linear-gradient(90deg, #ffe27a 0%, #f6b73c 100%)' }}
                                              >
-                                                <span className={`text-[11px] font-semibold leading-none ${badge.text}`}>
-                                                   {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
-                                                </span>
+                                                {isEarlyLenderDiversityScore ? 'Early Score' : `${diversityStatus} Diversity`}
                                              </span>
                                           </div>
                                           {isEarlyLenderDiversityScore ? (
-                                             <p className="mb-3 max-w-[210px] text-[12px] leading-[18px] text-md-neutral-1200">
+                                             <p className="mb-3 max-w-[220px] text-[12px] leading-[18px] text-white/75">
                                                 Early estimate: needs 8 funded loans before the score is fully weighted.
                                              </p>
                                           ) : null}
@@ -1270,35 +1243,37 @@ const UserProfile = () => {
                                                    `/user/${encodeURIComponent(resolvedUser.username)}/lender-diversity${isDemoInsights ? '?demo=rich' : ''}`
                                                 )
                                              }
-                                             className="flex items-center gap-1.5 transition-opacity hover:opacity-80 active:scale-[0.98]"
+                                             className="flex items-center gap-1.5 rounded-full bg-white/15 py-1 pl-1 pr-3 transition hover:bg-white/25 active:scale-[0.97]"
                                           >
-                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#dbeafe]">
-                                                <Users className="h-3.5 w-3.5 text-[#3b82f6]" strokeWidth={2.5} />
+                                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
+                                                <Users className="h-3.5 w-3.5 text-[#745ff8]" strokeWidth={2.5} />
                                              </span>
-                                             <span className="text-[13px] font-semibold text-[#3b82f6]">
+                                             <span className="text-[13px] font-semibold text-white">
                                                 {lenderDiversity.uniqueLenders} Unique{' '}
-                                                {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'}
+                                                {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'} ›
                                              </span>
                                           </button>
                                        </>
                                     ) : (
-                                       <div className="max-w-[210px]">
-                                          <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#f5f3ff] px-3 py-2">
-                                             <Sparkles className="h-4 w-4 text-[#8b5cf6]" strokeWidth={2.5} />
-                                             <span className="text-[15px] font-bold leading-none text-[#8b5cf6]">Not enough history</span>
+                                       <div className="max-w-[230px]">
+                                          <span
+                                             className="mb-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[14px] font-bold leading-none text-[#704518]"
+                                             style={{ backgroundImage: 'linear-gradient(90deg, #ffe27a 0%, #f6b73c 100%)' }}
+                                          >
+                                             <Sparkles className="h-4 w-4" strokeWidth={2.5} />
+                                             Not enough history
                                           </span>
-                                          <p className="mb-2 text-[16px] font-semibold leading-[1.25] text-[#4b5563]">Not enough history</p>
-                                          <p className="text-[14px] leading-5 text-[#6b7280]">
-                                             This score appears after at least 2 funded loans.
+                                          <p className="text-[14px] leading-5 text-white/80">
+                                             Your score appears after at least 2 funded loans from different lenders.
                                           </p>
                                        </div>
                                     )}
                                  </div>
-                                 <span className="diversity-score-hero flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full bg-[#f8f4fc]">
+                                 <span className="flex h-[84px] w-[84px] shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
                                     <img
                                        src="/hippos/borrower-insights-trophy.png"
                                        alt="Moodeng with trophy"
-                                       className="h-[68px] w-[68px] object-contain"
+                                       className="h-[76px] w-[76px] object-contain"
                                     />
                                  </span>
                               </div>
