@@ -217,8 +217,13 @@ export default function Dashboard() {
    // Use the shared expiry-aware helper (same as the request board) so an unfunded
    // request that has passed REQUEST_EXPIRATION_DAYS stops consuming credit here too.
    const usedCreditAmount = useMemo(
-      () => getBorrowerUsedCreditAmount([...displayLoanArrays.activeLoans, ...displayLoanArrays.defaultedLoans]),
-      [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans]
+      () =>
+         getBorrowerUsedCreditAmount([
+            ...displayLoanArrays.activeLoans,
+            ...displayLoanArrays.defaultedLoans,
+            ...displayLoanArrays.pendingLoans
+         ]),
+      [displayLoanArrays.activeLoans, displayLoanArrays.defaultedLoans, displayLoanArrays.pendingLoans]
    );
    const milestones = buildReputationMilestones({
       creditLevels,

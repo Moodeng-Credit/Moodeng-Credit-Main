@@ -57,6 +57,18 @@ describe('borrower credit usage', () => {
       expect(getBorrowerActiveLoanCount([activeRequest, unpaidFunded, paidFunded], now)).toBe(2);
    });
 
+   it('counts a loan once even when it appears in two lists (an overdue loan is also active)', () => {
+      const overdueFunded = {
+         ...baseLoan,
+         id: 'overdue',
+         loanStatus: LoanStatus.LENT,
+         repaymentStatus: RepaymentStatus.UNPAID,
+         loanAmount: 12
+      };
+
+      expect(getBorrowerUsedCreditAmount([overdueFunded, overdueFunded], now)).toBe(12);
+   });
+
    it('keeps requested loans active until they are 7 days old', () => {
       const notQuiteExpired = { ...baseLoan, createdAt: '2026-05-13T12:01:00.000Z' };
 

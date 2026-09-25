@@ -24,8 +24,9 @@ export const isLoanUsingBorrowerCredit = (loan: CreditUsageLoan, now = new Date(
    return loan.loanStatus === LoanStatus.LENT && loan.repaymentStatus !== RepaymentStatus.PAID;
 };
 
+// Callers sometimes pass overlapping lists (an overdue loan is also an active loan), so count each loan once.
 export const getBorrowerUsedCreditAmount = (loans: CreditUsageLoan[], now = new Date()) =>
-   loans.filter((loan) => isLoanUsingBorrowerCredit(loan, now)).reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
+   [...new Set(loans)].filter((loan) => isLoanUsingBorrowerCredit(loan, now)).reduce((sum, loan) => sum + Number(loan.loanAmount || 0), 0);
 
 export const getBorrowerActiveLoanCount = (loans: CreditUsageLoan[], now = new Date()) =>
    loans.filter((loan) => isLoanUsingBorrowerCredit(loan, now)).length;
@@ -38,10 +39,7 @@ const DAY_MS = 24 * HOUR_MS;
 
 export type RequestBoardExpiry = { postedAt: Date; expiresAt: Date; daysRemaining: number; hoursRemaining: number };
 
-export const getRequestBoardExpiry = (
-   loan: Pick<Loan, 'createdAt' | 'loanStatus'>,
-   now = new Date()
-): RequestBoardExpiry | null => {
+export const getRequestBoardExpiry = (loan: Pick<Loan, 'createdAt' | 'loanStatus'>, now = new Date()): RequestBoardExpiry | null => {
    if (loan.loanStatus !== LoanStatus.REQUESTED || !loan.createdAt) return null;
 
    const createdAt = parseDateSafely(loan.createdAt);
