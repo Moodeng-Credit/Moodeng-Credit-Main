@@ -133,11 +133,14 @@ const applyMilestoneStatuses = (definitions: MilestoneDefinition[]): DashboardMi
 export const buildReputationMilestones = ({
    creditLevels,
    borrowerLoans,
-   isVerified
+   isVerified,
+   recordedCompletionIds
 }: {
    creditLevels: CreditLevel[];
    borrowerLoans: Loan[];
    isVerified: boolean;
+   /** Milestones the database already recorded as earned; they stay complete even if the loan behind them is gone. */
+   recordedCompletionIds?: ReadonlySet<string>;
 }): DashboardMilestone[] => {
    const fundedLoans = borrowerLoans.filter((loan) => loan.loanStatus === 'Lent');
    const paidLoans = borrowerLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
@@ -154,7 +157,7 @@ export const buildReputationMilestones = ({
    const hasDefaults = borrowerLoans.some(hasUnresolvedDefault);
    const nextActionTo = hasActiveLoanToRepay ? '/repay' : '/request-board';
 
-   return applyMilestoneStatuses([
+   const definitions: MilestoneDefinition[] = [
       {
          id: 'verify-identity',
          pointSourceId: trustPointMilestoneRuleById['verify-identity'].pointSourceId,
@@ -289,5 +292,14 @@ export const buildReputationMilestones = ({
          actionTo: nextActionTo,
          lockedEyebrow: 'Top milestone'
       }
-   ]);
+   ];
+
+   return applyMilestoneStatuses(
+      recordedCompletionIds
+         ? definitions.map((definition) => ({
+              ...definition,
+              isComplete: definition.isComplete || recordedCompletionIds.has(definition.id)
+           }))
+         : definitions
+   );
 };

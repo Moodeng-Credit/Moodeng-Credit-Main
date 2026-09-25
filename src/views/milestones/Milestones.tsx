@@ -5,6 +5,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
+import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
+
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import type { RootState } from '@/store/store';
@@ -368,9 +370,16 @@ export default function Milestones() {
    const isPreview = import.meta.env.DEV && searchParams.get('mockData') === 'rich';
    const isMilestoneDataReady = isPreview || isDashboardDataReady;
    const borrowerLoans = useMemo(() => (isPreview ? PREVIEW_REPAID_LOANS : getBorrowerLoans(loans, user.id)), [isPreview, loans, user.id]);
+   const recordedMilestones = useRecordedMilestones(user.id, !isPreview);
    const milestones = useMemo(
-      () => buildReputationMilestones({ creditLevels, borrowerLoans, isVerified: isUserVerified(user) || isPreview }),
-      [borrowerLoans, creditLevels, isPreview, user.isWorldId]
+      () =>
+         buildReputationMilestones({
+            creditLevels,
+            borrowerLoans,
+            isVerified: isUserVerified(user) || isPreview,
+            recordedCompletionIds: isPreview ? undefined : recordedMilestones
+         }),
+      [borrowerLoans, creditLevels, isPreview, recordedMilestones, user.isWorldId]
    );
    useMilestonePointAwards({
       userId: user.id,
