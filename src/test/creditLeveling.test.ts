@@ -1,6 +1,6 @@
-import { type ReactNode, createElement, createRef } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement, createRef, type ReactNode } from 'react';
 
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
@@ -8,6 +8,18 @@ import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
+
+// Push reminders need a real browser; in tests the device "can't do push", so the step doesn't require it.
+vi.mock('@/hooks/usePushNotifications', () => ({
+   usePushNotifications: () => ({
+      isSupported: false,
+      permission: 'unsupported',
+      isSubscribed: false,
+      isBusy: false,
+      enable: async () => 'unsupported',
+      disable: async () => undefined
+   })
+}));
 
 vi.mock('@/components/worldId/WorldIDVerification', () => ({
    default: ({ children }: { children: ({ open }: { open: () => void }) => ReactNode }) =>

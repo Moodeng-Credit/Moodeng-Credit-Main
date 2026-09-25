@@ -22,6 +22,23 @@ const supa = vi.hoisted(() => {
    };
 });
 
+// Push state the tests flip: unsupported by default (not required), or supported to test the requirement.
+const push = vi.hoisted(() => {
+   const state = { isSupported: false, permission: 'unsupported' as string, isSubscribed: false };
+   return {
+      state,
+      enable: vi.fn(async () => {
+         state.permission = 'granted';
+         state.isSubscribed = true;
+         return 'subscribed';
+      })
+   };
+});
+
+vi.mock('@/hooks/usePushNotifications', () => ({
+   usePushNotifications: () => ({ ...push.state, isBusy: false, enable: push.enable, disable: async () => undefined })
+}));
+
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
@@ -56,6 +73,10 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
       supa.rpc.mockClear();
+      push.state.isSupported = false;
+      push.state.permission = 'unsupported';
+      push.state.isSubscribed = false;
+      push.enable.mockClear();
       onContinue = vi.fn();
       openSpy = vi.fn();
       vi.stubGlobal('open', openSpy);
@@ -123,6 +144,32 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          continueButton(container).dispatchEvent(new MouseEvent('click', { bubbles: true }));
       });
       expect(onContinue).toHaveBeenCalledTimes(1);
+   });
+
+   it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      expect(continueButton(container).disabled).toBe(true);
+      expect(container.textContent).toContain('Turn on reminders to continue.');
+
+      const remindersCard = Array.from(container.querySelectorAll('button')).find((b) =>
+         (b.textContent ?? '').includes('Turn on reminders')
+      );
+      await act(async () => {
+         remindersCard?.click();
+      });
+      expect(push.enable).toHaveBeenCalledTimes(1);
+      await render();
+      expect(continueButton(container).disabled).toBe(false);
+   });
+
+   it('does not block a device that cannot do push, and shows how to get reminders instead', async () => {
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).toContain('Add to Home Screen');
    });
 
    it('hides WhatsApp by default (Facebook first) and offers only Messenger', async () => {
