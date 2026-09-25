@@ -102,9 +102,17 @@ export const messengerDisplayName = (contact: SendPulseContact | null) => {
 };
 
 export const isInsideMessagingWindow = (contact: SendPulseContact | null, now = Date.now()) => {
-   if (!contact?.last_activity_at || contact.unsubscribed_at || (contact.status !== undefined && contact.status !== 1)) return false;
+   if (!contact?.last_activity_at || (contact.status !== undefined && contact.status !== 1)) return false;
    const last = Date.parse(contact.last_activity_at);
-   return !Number.isNaN(last) && now - last < WINDOW_MS;
+   if (Number.isNaN(last)) return false;
+   // unsubscribed_at stays set after someone subscribes again. When SendPulse says the contact is
+   // active (status 1) and they've written to us since, the old unsubscribe no longer applies;
+   // without that confirmation, any unsubscribe still blocks.
+   if (contact.unsubscribed_at) {
+      const unsubscribed = Date.parse(contact.unsubscribed_at);
+      if (contact.status !== 1 || Number.isNaN(unsubscribed) || unsubscribed >= last) return false;
+   }
+   return now - last < WINDOW_MS;
 };
 
 export type MessengerCard = { title: string; subtitle?: string; button: { title: string; url: string } };

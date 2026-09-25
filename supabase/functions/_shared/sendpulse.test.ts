@@ -16,6 +16,13 @@ Deno.test('Messenger window: closed for unsubscribed/disabled contacts or no act
    assertEquals(isInsideMessagingWindow(null, NOW), false);
 });
 
+Deno.test('Messenger window: open again for someone who unsubscribed, then resubscribed and wrote to us', () => {
+   // Daecon on 2026-09-25: unsubscribed 14:22, active again and messaged the Page at 14:37.
+   const contact = { id: 'c', status: 1, unsubscribed_at: '2026-09-24T10:00:00Z', last_activity_at: '2026-09-24T10:15:00Z' };
+   assertEquals(isInsideMessagingWindow(contact, NOW), true);
+   assertEquals(isInsideMessagingWindow({ ...contact, unsubscribed_at: '2026-09-24T10:30:00Z' }, NOW), false);
+});
+
 Deno.test('card payload is a RESPONSE generic template with one link button, clipped to Messenger limits', () => {
    const payload = buildCardPayload('contact-1', {
       title: 'x'.repeat(100),
