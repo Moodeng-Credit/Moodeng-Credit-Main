@@ -244,8 +244,8 @@ export function MilestoneStreakPopup({
       >
          <div className="flex flex-col items-center px-5 pb-6 pt-5 text-center">
             <div className="relative flex items-center justify-center">
-               <span className="absolute h-28 w-28 rounded-full bg-[#ffe27a]/60 blur-2xl" aria-hidden="true" />
-               <DesignImage src={DASHBOARD_V2_ASSETS.pandesalLarge} className="relative h-[88px] w-[88px] object-contain" />
+               <span className="absolute h-28 w-28 rounded-full bg-[#b9aeff]/60 blur-2xl" aria-hidden="true" />
+               <DesignImage src="/icons/streak-3d.png" className="relative h-[92px] w-[92px] object-contain" />
             </div>
             <p id="dv2-streak-popup-title" className="-mt-2 flex flex-col items-center">
                <span

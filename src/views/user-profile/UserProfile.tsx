@@ -1059,7 +1059,7 @@ const UserProfile = () => {
                            </div>
 
                            <div className="flex items-center gap-2.5 rounded-[12px] bg-[#f6f3ff] px-3 py-2.5">
-                              <DesignImage src={DASHBOARD_V2_ASSETS.pandesal} className="h-8 w-8 shrink-0 object-contain" />
+                              <img src="/icons/streak-3d.png" alt="" className="h-8 w-8 shrink-0 object-contain" />
                               <span className="min-w-0 flex-1 text-[15px] font-medium leading-5 text-[#0f172b]">
                                  {onTimeStreak > 0
                                     ? `${onTimeStreak} ${onTimeStreak === 1 ? 'loan' : 'loans'} repaid on time in a row`
