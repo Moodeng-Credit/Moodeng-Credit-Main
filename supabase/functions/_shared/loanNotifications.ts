@@ -46,6 +46,8 @@ export type LoanNotificationAggregate = {
    totalAmount: number;
    dueLabel?: string;
    nextDueDate?: string | null;
+   /** Overdue only: a later check-in (day 3 / day 7) rather than the first overdue notice. */
+   followUp?: boolean;
 };
 
 type DetailTone = 'default' | 'good' | 'warn';
@@ -422,6 +424,33 @@ const buildLoanEmailHtml = (content: EmailContent, recipient: LoanNotificationRe
 </div>`;
 };
 
+// Repayment reminders go out as a plain, letter-style email: no mascot image, gradient header, points
+// promo or social buttons. Heavily designed mail is what Gmail files under Promotions (or Spam), and a
+// reminder that isn't seen is useless. The branded layout stays for the good-news emails.
+const REMINDER_TYPES: LoanNotificationType[] = ['urgent_reminder', 'final_reminder', 'due_today', 'overdue'];
+const DECORATIVE_DETAIL_LABELS = new Set(['Account status', 'Repayment benefit']);
+const CONTACTS_NOTE = 'To make sure our reminders reach your inbox, add support@moodeng.app to your contacts.';
+
+const buildPlainReminderHtml = (content: EmailContent, recipient: LoanNotificationRecipient) => {
+   const rows = [
+      `${escapeHtml(content.amountLabel)}: <strong>${escapeHtml(content.amountValue)}</strong>`,
+      ...content.details.filter((row) => !DECORATIVE_DETAIL_LABELS.has(row.label)).map((row) => `${escapeHtml(row.label)}: ${escapeHtml(row.value)}`)
+   ];
+   const paragraph = (html: string, extra = '') => `<p style="margin:0 0 16px;${extra}">${html}</p>`;
+
+   return `<div style="margin:0;padding:24px 16px;background:#ffffff;font-family:${emailFontFamily};font-size:15px;line-height:22px;color:#1f1d24;">
+  <div style="max-width:520px;margin:0 auto;">
+    ${paragraph(`Hi ${escapeHtml(getRecipientName(recipient))},`)}
+    ${paragraph(`${escapeHtml(content.title)}. ${escapeHtml(content.intro)}`)}
+    ${paragraph(rows.join('<br />'))}
+    ${paragraph(`<a href="${escapeHtml(content.ctaHref)}" style="color:#6010d2;font-weight:600;">${escapeHtml(content.ctaLabel)}</a>`)}
+    ${paragraph("Need more time or stuck on something? Just reply to this email and we'll help.")}
+    ${paragraph('Moodeng Credit<br />support@moodeng.app')}
+    ${paragraph(escapeHtml(CONTACTS_NOTE), 'margin:24px 0 0;font-size:12px;line-height:18px;color:#77738a;')}
+  </div>
+</div>`;
+};
+
 // Branded "Connect" check-in email — reuses the same shell as the loan emails (purple header,
 // hippo hero, Telegram/Facebook footer) but is deliberately NOT about the amount owed. It reads
 // like a short personal letter, with the Telegram / free-call buttons placed BELOW the note.
@@ -713,10 +742,14 @@ ${trustPointHighlight.textLine}
 Please repay now to bring the loan current: ${repayLink}
 For help, contact support@moodeng.app`);
 
+   const followUp = aggregate?.followUp === true;
+
    return {
-      subject: 'Your loan is overdue',
+      subject: followUp ? 'Checking in: your loan is still overdue' : 'Your loan is overdue',
       title: count === 1 ? 'Your loan is overdue' : 'Your loans are overdue',
-      intro: 'Please repay as soon as you can to bring this loan current.',
+      intro: followUp
+         ? "Just checking in. If something came up, reply to this email and we'll work it out together."
+         : 'Please repay as soon as you can to bring this loan current.',
       amountLabel: 'Overdue amount',
       amountValue: overdueAmount,
       details: [
@@ -898,6 +931,14 @@ export const buildLoanNotificationEmail = (
       content = buildRequestExpiredContent(loan, recipient);
    } else {
       content = buildWeeklyDigestContent(recipient, aggregate);
+   }
+
+   if (REMINDER_TYPES.includes(type)) {
+      return {
+         subject: content.subject,
+         text: `${content.text}\nNeed more time? Just reply to this email.\n${CONTACTS_NOTE}`,
+         html: buildPlainReminderHtml(content, recipient)
+      };
    }
 
    return {

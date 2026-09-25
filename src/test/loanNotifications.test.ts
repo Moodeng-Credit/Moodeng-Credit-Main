@@ -44,6 +44,15 @@ const recipientWithEarnedReward = {
    trust_points_reward_kind: 'earned' as const
 };
 
+// Repayment reminders use the plain letter layout (no promo blocks or social buttons) so they reach the inbox.
+const expectPlainReminder = (html: string) => {
+   expect(html).toContain('add support@moodeng.app to your contacts');
+   expect(html).toContain('reply to this email');
+   expect(html).not.toContain('hippo-purple-envelope-email.png');
+   expect(html).not.toContain('Pandesal points');
+   expect(html).not.toContain('https://t.me/jimmymoodengcredit');
+};
+
 const expectSupportChannels = (html: string) => {
    expect(html).toContain('https://t.me/jimmymoodengcredit?text=');
    expect(html).toContain('https://www.facebook.com/profile.php?id=61589106561061');
@@ -98,11 +107,7 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.html).toContain('Your loans are coming due');
       expect(result.html).toContain('Loans due');
       expect(result.html).toContain('Due date');
-      expect(result.html).toContain('Good Standing');
-      expect(result.html).toContain('Pandesal points to earn');
-      expect(result.html).toContain('+20 pts');
-      expect(result.html).not.toContain('123 pts');
-      expectSupportChannels(result.html);
+      expectPlainReminder(result.html);
       expect(result.html).toContain('$525.00');
       expect(result.html).toContain('USDC');
 
@@ -130,10 +135,7 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.html).toContain('Your loan is due soon');
       expect(result.html).toContain('Loans due');
       expect(result.html).toContain('Due date');
-      expect(result.html).toContain('Pandesal points to earn');
-      expect(result.html).toContain('+20 pts');
-      expect(result.html).not.toContain('123 pts');
-      expectSupportChannels(result.html);
+      expectPlainReminder(result.html);
 
       // Ensure no blank lines anywhere (Gmail collapse prevention)
       expect(result.text).not.toMatch(/\n\s*\n/);
@@ -183,10 +185,7 @@ describe('buildLoanNotificationEmail', () => {
       expect(result.html).toContain('Loan overdue');
       expect(result.html).toContain('Due date');
       expect(result.html).toContain('Overdue by');
-      expect(result.html).toContain('Pandesal points to earn');
-      expect(result.html).toContain('+20 pts');
-      expect(result.html).not.toContain('123 pts');
-      expectSupportChannels(result.html);
+      expectPlainReminder(result.html);
 
       // Ensure no blank lines anywhere (Gmail collapse prevention)
       expect(result.text).not.toMatch(/\n\s*\n/);

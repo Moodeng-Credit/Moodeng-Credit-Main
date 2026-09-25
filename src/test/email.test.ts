@@ -41,8 +41,9 @@ describe('sendEmail (Resend)', () => {
             Authorization: `Bearer ${MOCK_API_KEY}`
          },
          body: JSON.stringify({
-            from: MOCK_FROM,
+            from: `Moodeng Credit <${MOCK_FROM}>`,
             to: ['to@example.com'],
+            reply_to: 'support@moodeng.app',
             subject: 'Subject',
             text: 'Message'
          })
@@ -65,8 +66,9 @@ describe('sendEmail (Resend)', () => {
             Authorization: `Bearer ${MOCK_API_KEY}`
          },
          body: JSON.stringify({
-            from: MOCK_FROM,
+            from: `Moodeng Credit <${MOCK_FROM}>`,
             to: ['to@example.com'],
+            reply_to: 'support@moodeng.app',
             subject: 'Subject',
             text: 'Message',
             html: '<p>Message</p>'

@@ -12,6 +12,7 @@ import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isPreviewHost } from '@/lib/previewHost';
+import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
 import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import {
@@ -117,7 +118,16 @@ export default function DashboardV2() {
    const push = usePushNotifications(isReal ? userId : null);
    // Borrowers with something to repay who haven't allowed push. Only permission is checked (not the
    // subscription, which resolves asynchronously) so the card never flashes for someone who has it on.
-   const showRemindersBanner = isReal && push.isSupported && model.dues.length > 0 && push.permission !== 'granted';
+   const remindersVariant = push.isSupported
+      ? push.permission === 'denied'
+         ? 'blocked'
+         : push.permission === 'granted'
+           ? null
+           : 'enable'
+      : needsHomeScreenForPush()
+        ? 'home-screen'
+        : null;
+   const showRemindersBanner = isReal && model.dues.length > 0 && remindersVariant !== null;
    const [searchParams] = useSearchParams();
    const tourStepsParam = Number(searchParams.get('requestBoardTourSteps'));
    const requestBoardTourStepCount =
@@ -201,7 +211,7 @@ export default function DashboardV2() {
                   {showRemindersBanner ? (
                      <TurnOnRemindersBanner
                         language={language}
-                        isBlocked={push.permission === 'denied'}
+                        variant={remindersVariant ?? 'enable'}
                         isBusy={push.isBusy}
                         onEnable={() => void push.enable()}
                      />

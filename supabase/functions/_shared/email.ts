@@ -6,7 +6,9 @@ export const sendEmail = async (
    cc?: string | string[]
 ) => {
    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-   const resendFrom = Deno.env.get('RESEND_FROM') || 'support@moodeng.app';
+   const configuredFrom = Deno.env.get('RESEND_FROM')?.trim() || 'support@moodeng.app';
+   // A bare address shows up in the inbox as "support", which reads like a bot. Give it a sender name.
+   const resendFrom = configuredFrom.includes('<') ? configuredFrom : `Moodeng Credit <${configuredFrom}>`;
 
    if (!resendApiKey) {
       throw new Error('Missing RESEND_API_KEY environment variable');
@@ -23,6 +25,8 @@ export const sendEmail = async (
       body: JSON.stringify({
          from: resendFrom,
          to: [recipientEmail],
+         // Replies reach the team even if RESEND_FROM is ever a no-reply address.
+         reply_to: 'support@moodeng.app',
          subject: subject,
          text: message,
          ...(html ? { html } : {}),

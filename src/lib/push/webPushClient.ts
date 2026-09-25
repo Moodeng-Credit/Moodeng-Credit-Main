@@ -30,6 +30,22 @@ export const isPushSupported = (): boolean =>
 
 export const isPushConfigured = (): boolean => getVapidPublicKey().length > 0;
 
+/**
+ * iPhone and iPad only offer web push to a site opened from the Home Screen (iOS 16.4+), so in
+ * Safari itself push looks unsupported. True when that's the reason, so we can explain the fix.
+ */
+export const needsHomeScreenForPush = (): boolean => {
+   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      return false;
+   }
+
+   const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+   const isStandalone =
+      window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+   return isIos && !isStandalone;
+};
+
 export const getPushPermission = (): PushPermissionState =>
    isPushSupported() ? (Notification.permission as PushPermissionState) : 'unsupported';
 
