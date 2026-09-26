@@ -236,26 +236,26 @@ Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa wallet mo �
 const INDONESIAN_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
-      question: 'Apakah Moodeng menyentuh uang saya?',
-      answer: `Tidak. Moodeng tidak memegang, menyimpan, atau memindahkan dana pengguna untuk kamu.
+      question: 'Apakah Moodeng memegang uang saya?',
+      answer: `Tidak. Moodeng tidak memegang, menyimpan, atau memindahkan dana pengguna atas nama kamu.
 
-Pinjaman berjalan langsung dari wallet pemberi pinjaman ke wallet peminjam. Pembayaran berjalan langsung dari wallet peminjam kembali ke wallet pemberi pinjaman. Moodeng membantu dengan papan permintaan, verifikasi, status pembayaran, dan pencatatan agar kedua sisi bisa melihat dengan jelas apa yang terjadi.`
+Pinjaman dikirim langsung dari dompet pemberi pinjaman ke dompet peminjam. Pembayaran kembali dikirim langsung dari dompet peminjam ke dompet pemberi pinjaman. Moodeng membantu lewat Papan Permintaan, verifikasi, status pembayaran kembali, dan pencatatan, agar kedua pihak bisa melihat dengan jelas apa yang terjadi.`
    },
    {
       id: 'why-usdc',
       question: 'Mengapa Moodeng memakai USDC?',
-      answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS. Diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi, USDC menjaga nilai pinjaman tetap dapat diprediksi. Pinjaman $20 hari ini tetap $20 saat dibayar, bukan tiba-tiba $15 atau $30. Pemberi pinjaman dan peminjam tidak menanggung risiko mata uang hanya karena memakai platform.
+      answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS. Diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi, USDC menjaga nilai pinjaman tetap bisa diprediksi. Pinjaman $20 hari ini tetap bernilai $20 saat dibayar kembali, bukan $15 atau $30. Pemberi pinjaman dan peminjam tidak menanggung risiko nilai tukar hanya karena ikut serta.
 
-USDC juga cepat dikirim secara global dan, saat dipakai di Base dengan Instant Wallet kamu atau Base Account, sepenuhnya gasless. Artinya tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
+USDC juga cepat dikirim ke seluruh dunia dan, saat dipakai di Base dengan Instant Wallet atau Base Account kamu, sepenuhnya bebas biaya gas. Artinya, tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
 
-USDC juga didukung luas. Hampir semua bursa kripto besar mendukung deposit USDC, dan kamu bisa mengubahnya ke fiat seperti dolar AS, peso, naira, dan lainnya di banyak tempat. Saat menerima pinjaman atau pembayaran, kamu bisa memakai on-chain, menyimpan, atau cash out. Pilihannya ada di kamu.`
+USDC juga diterima secara luas: semua bursa kripto besar mendukung setoran USDC, dan kamu bisa menukarnya ke mata uang biasa (dolar AS, peso, naira, dan lainnya) hampir di mana saja. Jadi saat kamu menerima pinjaman atau pembayaran kembali, kamu bisa memakainya secara on-chain, menyimpannya, atau mencairkannya. Pilihannya ada di tangan kamu.`
    },
    {
       id: 'how-to-get-verified',
       question: 'Bagaimana cara saya diverifikasi?',
-      answer: `Verifikasi adalah pemeriksaan identitas satu kali yang cepat. Cara yang direkomendasikan adalah "Verify Your ID" — pemeriksaan singkat foto KTP/ID nasional + selfie yang memakan waktu sekitar 3 menit dan tersedia di negara yang didukung. Jika kamu sudah memakai World App, kamu bisa verifikasi dengan World ID.
+      answer: `Verifikasi adalah pemeriksaan identitas singkat yang cukup dilakukan sekali. Cara yang disarankan adalah "Verifikasi ID Kamu": pemeriksaan singkat foto KTP atau kartu identitas nasional + selfie yang memakan waktu sekitar 3 menit dan tersedia di negara yang didukung. Jika kamu sudah memakai World App, kamu bisa memverifikasi dengan World ID sebagai gantinya.
 
-Tap "Verify Yourself" di app untuk mulai. Sebagian besar pemeriksaan selesai dalam hitungan menit.`,
+Ketuk "Verifikasi Diri" di aplikasi untuk memulai. Sebagian besar pemeriksaan selesai dalam hitungan menit.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Baca panduan lengkap'
    }
@@ -264,83 +264,83 @@ Tap "Verify Yourself" di app untuk mulai. Sebagian besar pemeriksaan selesai dal
 const INDONESIAN_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
-      question: 'Bagaimana cara mengubah pinjaman saya ke rekening bank lokal?',
-      answer: `Kirim USDC kamu ke exchange atau layanan lokal — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), dan lainnya — jual di sana, lalu withdraw mata uang lokal langsung ke bank atau e-wallet kamu.
+      question: 'Bagaimana cara mencairkan pinjaman saya ke rekening bank lokal?',
+      answer: `Kirim USDC kamu ke exchange atau layanan yang mendukung USDC di jaringan Base, misalnya Binance P2P, jual di sana, lalu tarik mata uang lokal langsung ke rekening bank atau dompet digital kamu. Pastikan dulu layanan tersebut mendukung jaringan Base sebelum mengirim.
 
-Detail penting: selalu pilih Base sebagai network saat mengirim USDC. Panduan lengkap berisi video walkthrough dan langkah-langkah untuk setiap layanan.`,
+Yang paling penting: selalu pilih Base sebagai jaringan saat mengirim USDC. Panduan lengkap berisi video panduan dan petunjuk langkah demi langkah.`,
       readMorePath: '/academy/money/withdraw',
       readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'how-to-repay',
       question: 'Bagaimana cara membayar pinjaman saya?',
-      answer: `Buka layar Bayar — di sana terlihat jumlah pasti dan alamat pembayaran. Kirim USDC ke sana dari wallet, exchange, atau layanan lokal mana pun. Jika belum punya USDC, beli dulu (Binance P2P, Coins.ph, PDAX, GCrypto, dan lainnya) — selalu di network Base.
+      answer: `Buka layar Bayar. Di sana tertera jumlah persis yang harus dibayar dan alamat pembayarannya. Kirim USDC ke alamat itu dari dompet, exchange, atau layanan lokal mana pun. Jika kamu belum punya USDC, beli dulu (misalnya lewat Binance P2P, atau exchange atau aplikasi lain yang mendukung USDC di jaringan Base), dan selalu kirim di jaringan Base.
 
-Bayar sebelum tanggal jatuh tempo — pembayaran tepat waktu membangun poin Pandesal dan membuka level kredit lebih tinggi. Panduan lengkap menjelaskan setiap cara membayar.`,
+Bayar kembali sebelum jatuh tempo. Pembayaran kembali tepat waktu menambah poin Pandesal kamu, dan melunasi pinjaman sebesar limit penuh tepat waktu akan membuka Level Kredit berikutnya. Panduan lengkap menjelaskan setiap cara membayar kembali.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'borrow-below-limit',
-      question: 'Bisakah saya meminjam di bawah credit limit saya?',
-      answer: `Ya, dan kami justru merekomendasikannya, terutama saat kamu baru mulai. Meminjam di bawah limit disebut Trust-Building Loan.
+      question: 'Bisakah saya meminjam di bawah limit kredit saya?',
+      answer: `Bisa, dan kami justru menyarankannya, terutama saat kamu baru mulai. Meminjam di bawah limit disebut Trust-Building Loan.
 
-Pinjaman yang lebih kecil ini tidak dihitung untuk membuka level kredit berikutnya. Untuk itu, kamu perlu meminjam limit penuh dan membayar tepat waktu. Tetapi pinjaman kecil tetap membangun riwayat pembayaran dan memberi lebih banyak poin Pandesal daripada selalu meminjam maksimum.
+Pinjaman yang lebih kecil ini tidak dihitung untuk membuka Level Kredit berikutnya (untuk itu, kamu perlu meminjam sebesar limit penuh dan membayarnya kembali tepat waktu), tetapi pinjaman ini tetap membangun riwayat pembayaran kembali kamu dan memberi lebih banyak poin Pandesal daripada meminjam jumlah maksimum.
 
-Jadi jika kamu ingin cepat membangun reputasi, Trust-Building Loans adalah cara yang bagus.`
+Jadi, jika kamu ingin cepat membangun reputasi, Trust-Building Loan adalah cara yang tepat.`
    },
    {
       id: 'increase-credit-limit',
-      question: 'Bagaimana cara menaikkan credit limit?',
-      answer: `Credit limit kamu naik saat kamu meminjam limit penuh dan membayarnya tepat waktu. Ini disebut Credit-Building Loans.
+      question: 'Bagaimana cara menaikkan limit kredit saya?',
+      answer: `Limit kredit kamu naik saat kamu meminjam sebesar limit penuh dan membayarnya kembali tepat waktu. Pinjaman seperti ini disebut Credit-Building Loan.
 
-Jika limit kamu $20 dan kamu hanya meminjam $15, itu tidak dihitung untuk level berikutnya meskipun pembayaran sempurna. Sistem perlu melihat bahwa kamu bisa menangani limit penuh sebelum menaikkan ceiling.
+Jika limit kamu $20 dan kamu hanya meminjam $15, pinjaman itu tidak dihitung untuk naik ke level berikutnya, meskipun kamu melunasinya dengan sempurna. Sistem perlu melihat bahwa kamu sanggup menangani limit penuh sebelum menaikkan batasnya.
 
-Progression berjalan $15 -> $20 -> $40 -> $60, dan seterusnya. Satu langkah setiap kali: pinjam maksimum, bayar tepat waktu, ulangi.`
+Urutannya: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum. Naik satu langkah setiap kali: pinjam sebesar limit maksimum, bayar kembali tepat waktu, lalu ulangi.`
    }
 ];
 
 const INDONESIAN_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'Apa itu IOU Points?',
-      answer: `IOU Points adalah poin reputasi yang didapat pemberi pinjaman. Dalam model Tahun 1, setiap pinjaman yang didanai menghasilkan base IOU points berdasarkan jumlah yang didanai ditambah bonus tahap peminjam. Poin ini menunjukkan siapa yang aktif mendukung komunitas.
+      question: 'Apa itu poin IOU?',
+      answer: `Poin IOU adalah poin reputasi yang didapat pemberi pinjaman. Dalam model Tahun 1, setiap pinjaman yang didanai menghasilkan poin IOU dasar sesuai jumlah yang didanai, ditambah bonus tahap peminjam. Poin ini mencatat siapa saja yang aktif mendukung komunitas.
 
-Saat ini IOU masih berupa poin. Ke depannya, kami akan meluncurkan token yang juga bernama IOU, dan poin yang terkumpul akan dikonversi lewat airdrop. Memegang IOU akan membuka manfaat tambahan yang terhubung ke platform.
+Saat ini IOU hanya berupa poin. Ke depannya, kami akan meluncurkan token yang juga bernama IOU, dan poin yang kamu kumpulkan akan dikonversi lewat airdrop. Memegang IOU akan membuka manfaat tambahan yang terkait dengan platform.
 
-IOU hanya untuk pemberi pinjaman. Peminjam membangun poin Pandesal dan level kredit. Jadi jika kamu ingin mendapatkan IOU, danai permintaan pinjaman dari Papan Permintaan.`
+IOU hanya untuk pemberi pinjaman. Peminjam membangun poin Pandesal dan Level Kredit. Jadi, jika kamu ingin mendapatkan IOU, danai permintaan pinjaman dari Papan Permintaan.`
    },
    {
       id: 'how-borrowers-verify',
       question: 'Bagaimana peminjam diverifikasi?',
-      answer: `Setiap peminjam menyelesaikan verifikasi identitas satu kali — foto ID nasional + selfie dengan deteksi duplikat, atau World ID bagi pengguna World App. Keduanya memastikan setiap peminjam adalah orang sungguhan yang unik, sehingga mencegah akun palsu dan bot.
+      answer: `Setiap peminjam menyelesaikan verifikasi identitas satu kali: pemeriksaan foto kartu identitas nasional + selfie dengan deteksi duplikat, atau World ID bagi yang memakai World App. Dengan cara mana pun, verifikasi ini memastikan setiap peminjam adalah orang sungguhan yang unik, sehingga mencegah akun palsu dan bot.
 
-Setiap orang hanya bisa memverifikasi satu akun, sehingga profil peminjam dan riwayat pembayaran yang kamu lihat milik satu orang nyata — dan yang diblokir tidak bisa kembali dengan akun baru.`,
+Setiap orang hanya bisa memverifikasi satu akun, jadi profil peminjam dan riwayat pembayaran kembali yang kamu lihat benar-benar milik orang yang sama. Pengguna yang diblokir juga tidak bisa begitu saja kembali dengan akun baru.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
-      question: 'Bagaimana peminjam menaikkan credit limit mereka?',
-      answer: `Peminjam menaikkan credit limit dengan mengambil Credit-Building Loan dan meminjam limit penuh saat ini. Jika mereka membayar pinjaman full-limit itu tepat waktu, mereka naik level dan membuka credit limit yang lebih tinggi.
+      question: 'Bagaimana peminjam menaikkan limit kredit mereka?',
+      answer: `Peminjam menaikkan limit kredit dengan mengambil Credit-Building Loan, yaitu meminjam sebesar limit penuh mereka saat ini. Jika mereka melunasi pinjaman sebesar limit penuh itu tepat waktu, mereka naik level dan membuka limit kredit yang lebih tinggi.
 
-Jika mereka meminjam di bawah limit, itu adalah Trust-Building Loan. Itu tidak menaikkan level, tetapi membantu membangun catatan pembayaran yang lebih kuat dan statistik peminjam yang lebih baik di platform.`
+Jika mereka meminjam di bawah limit, pinjaman itu adalah Trust-Building Loan. Pinjaman ini tidak menaikkan level, tetapi membantu membangun riwayat pembayaran kembali yang lebih kuat dan statistik peminjam yang lebih baik di platform.`
    },
    {
       id: 'how-to-fund-loan',
       question: 'Bagaimana cara mendanai pinjaman?',
-      answer: `Buka Papan Permintaan dan lihat permintaan pinjaman yang terbuka. Setiap permintaan menunjukkan statistik peminjam, credit limit, jumlah yang diminta, dan tenor pembayaran.
+      answer: `Buka Papan Permintaan dan lihat permintaan pinjaman yang terbuka. Setiap permintaan menampilkan statistik peminjam, limit kredit, jumlah yang diminta, dan jangka waktu pembayaran kembali.
 
-Saat menemukan pinjaman yang ingin kamu danai, tap Danai dan konfirmasi. USDC langsung keluar dari wallet kamu (biasanya Base Account kamu, atau Instant Wallet kamu jika kamu memakainya) dan masuk langsung ke wallet peminjam. Tidak ada perantara dan tidak ada penundaan.
+Saat menemukan permintaan yang ingin kamu danai, ketuk Danai lalu konfirmasi. USDC langsung keluar dari dompet kamu (biasanya Base Account kamu, atau Instant Wallet jika kamu memakainya) dan masuk langsung ke dompet peminjam. Tanpa perantara, tanpa penundaan.
 
-Kamu bisa melacak semua pinjaman aktif dan status pembayaran dari Lender Dashboard.`
+Kamu bisa memantau semua pinjaman aktif dan status pembayaran kembali dari Dasbor pemberi pinjaman.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Kapan saya dibayar kembali?',
-      answer: `Tanggal jatuh tempo ditentukan oleh peminjam saat mereka membuat permintaan. Kamu akan melihatnya dengan jelas di kartu pinjaman sebelum mendanai, jadi timeline selalu jelas sejak awal.
+      answer: `Tanggal jatuh tempo ditentukan oleh peminjam saat membuat permintaan. Kamu bisa melihatnya dengan jelas di kartu pinjaman sebelum mendanai, jadi kamu selalu tahu jangka waktunya sejak awal.
 
-Saat pinjaman jatuh tempo, peminjam membayar langsung ke wallet kamu — biasanya Base Account kamu (atau Instant Wallet kamu, jika kamu memakainya). Kamu bisa melacak status semua pinjaman aktif di Lender Dashboard.`
+Saat pinjaman jatuh tempo, peminjam membayar kembali langsung ke dompet kamu, biasanya Base Account kamu (atau Instant Wallet, jika kamu memakainya). Kamu bisa memantau status semua pinjaman aktif di Dasbor pemberi pinjaman.`
    }
 ];
 

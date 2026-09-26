@@ -369,144 +369,186 @@ Mula sa Account screen, puwede mong i-update ang display name mo, i-manage ang e
 const INDONESIAN_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
       title: 'Cara mengajukan pinjaman pertama',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Ikuti langkah sederhana ini untuk memulai permintaan pinjaman pertama kamu di Moodeng Credit. Kamu juga bisa menonton video walkthrough di sini: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
+      lastUpdated: '9 Juni 2026',
+      body: `Ikuti langkah-langkah praktis ini untuk membuat permintaan pinjaman pertama kamu di Moodeng Credit. Kamu juga bisa menonton video panduan prosesnya di sini: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Langkah 1: Buat akun
-Daftar di platform Moodeng dengan username, email, dan password yang kamu pilih. Klik "Create Account" untuk melanjutkan.
+Daftar di platform Moodeng dengan memasukkan nama pengguna, email, dan kata sandi pilihan kamu. Klik "Buat akun" untuk melanjutkan.
 
-Langkah 2: Mulai aplikasi pinjaman
-Setelah login, tap tombol "Apply for a Loan" untuk memulai proses.
+Langkah 2: Mulai pengajuan pinjaman
+Setelah masuk, ketuk tombol "Ajukan pinjaman" untuk memulai prosesnya.
 
-Langkah 3: Siapkan wallet
-Transaksi aman di Moodeng membutuhkan wallet. Secara default, kamu memakai Instant Wallet Moodeng — dibuat dari login Moodeng kamu, tanpa aplikasi terpisah atau seed phrase. Jika lebih suka, kamu bisa memakai Base Account: kunjungi https://account.base.app dan ikuti instruksi pendaftaran.
+Langkah 3: Siapkan dompet
+Transaksi yang aman di Moodeng membutuhkan dompet. Secara default, kamu memakai Instant Wallet Moodeng. Dompet ini dibuat dari login Moodeng kamu, tanpa aplikasi terpisah dan tanpa seed phrase. Jika lebih suka, kamu bisa memakai Base Account: kunjungi https://account.base.app dan ikuti petunjuk pendaftarannya.
 
-
-Langkah 4: Hubungkan wallet
-Kembali ke platform Moodeng dan tap "Connect Wallet" untuk membuat Instant Wallet kamu — atau menautkan Base Account dengan aman jika kamu memilihnya — ke akun Moodeng.
+Langkah 4: Hubungkan dompet
+Kembali ke platform Moodeng dan ketuk "Hubungkan dompet" untuk membuat Instant Wallet kamu, atau untuk menautkan Base Account kamu dengan aman jika kamu memilihnya, agar terhubung ke akun Moodeng kamu.
 
 Langkah 5: Verifikasi identitas
-Agar komunitas tetap aman, download World App dan selesaikan verifikasi identitas manusia di lokasi World Orb fisik.
+Demi keamanan komunitas, ketuk "Verifikasi Diri" lalu selesaikan pemeriksaan singkat foto ID + selfie ("Verifikasi ID Kamu"). Prosesnya sekitar 3 menit. Sudah memakai World App? Kamu bisa memilih "Verifikasi dengan World ID" sebagai gantinya.
 
-Langkah 6: Tautkan World ID
-Setelah verifikasi di Orb, kembali ke Moodeng dan tap "Verify with World ID." Pindai kode QR untuk menyelesaikan tautan antara World ID dan akun Moodeng kamu.
-
-Langkah 7: Kirim permintaan
-Tap "Explore the Request Board" untuk mengatur syarat pinjaman. Kamu perlu menentukan:
-- Jumlah pinjaman yang diinginkan.
-- Jumlah pembayaran dan tanggal pembayaran.
-- Alasan pinjaman yang jelas agar membantu membangun kepercayaan dengan calon pemberi pinjaman.
-
-Catatan penting tentang credit limit
-- Limit awal: Setiap peminjam baru mulai dengan limit $15.
-- Credit-building loans: Ini adalah pinjaman full-limit yang memakai seluruh credit limit saat ini, misalnya meminta penuh $15. Membayar pinjaman jenis ini dengan sukses adalah satu-satunya cara menaikkan limit ke level berikutnya, misalnya $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140 dan seterusnya. Kamu hanya boleh memiliki satu permintaan credit-building loan aktif dalam satu waktu.
-- Trust-building loans: Ini adalah pinjaman lebih kecil di bawah credit limit saat ini. Pinjaman ini membangun poin Pandesal dengan pemberi pinjaman, tetapi tidak menaikkan credit limit keseluruhan. Kamu boleh memiliki beberapa trust-building loan aktif selama totalnya tetap di bawah limit saat ini.
-- Membuka level berikutnya: Untuk naik level, kamu harus meminjam dan membayar penuh seluruh limit. Misalnya, jika limit kamu $15 dan kamu hanya meminta trust-building loan $12 lalu membayar $15, limit kamu tidak naik. Kamu harus meminjam penuh $15 dan membayar total yang disepakati, termasuk bunga kecil atau tambahan pembayaran yang kamu tawarkan dan diterima pemberi pinjaman.`
+Langkah 6: Kirim permintaan
+Ketuk "Jelajahi Papan Permintaan" untuk menentukan syarat pinjaman kamu. Kamu perlu menentukan:
+- Jumlah pinjaman yang kamu inginkan.
+- Jumlah dan tanggal pembayaran kembali.
+- Alasan meminjam yang jelas, untuk membantu membangun kepercayaan dengan calon pemberi pinjaman.`
    },
    'understanding-your-trust-score': {
       title: 'Memahami poin Pandesal kamu',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Poin Pandesal menunjukkan seberapa andal kamu membayar pinjaman di Moodeng Credit.
+      lastUpdated: '9 Juni 2026',
+      body: `Poin Pandesal kamu menunjukkan seberapa andal kamu membayar kembali pinjaman di Moodeng Credit.
 
-Skor ini naik setiap kali kamu membayar tepat waktu dan turun saat kamu terlambat atau gagal bayar. Pemberi pinjaman memakai skor ini sebagai sinyal cepat untuk memutuskan apakah mereka ingin mendanai permintaan kamu.
+Poin ini naik setiap kali kamu membayar tepat waktu dan turun saat kamu terlambat atau gagal bayar. Pemberi pinjaman memakai poin ini sebagai sinyal cepat untuk memutuskan apakah akan mendanai permintaan kamu.
 
-Karena poin Pandesal tertaut ke wallet, poin ini ikut bersama kamu. Poin ini tidak terkunci di satu app saja.`
+Karena poin Pandesal tertaut ke dompet kamu, poin ini ikut ke mana pun kamu pergi. Poin ini tidak terkunci di satu aplikasi saja.`
    },
    'how-credit-levels-work': {
-      title: 'Cara kerja level kredit',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
+      title: 'Cara kerja Level Kredit',
+      lastUpdated: '9 Juni 2026',
+      body: `Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
-Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan membayar penuh, limit kamu bertambah: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, dan membuka level baru.
+Semua orang mulai di Level 1 dengan limit $15. Saat kamu meminjam dan melunasi pinjaman, limit kamu bertambah, $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, dan level baru pun terbuka.
 
-Kamu hanya naik level dengan menyelesaikan Credit Growth Loan: pinjaman sebesar limit penuh saat ini, dibayar penuh dan tepat waktu.`
+Kamu hanya bisa naik level dengan menyelesaikan Credit-Building Loan: pinjaman sebesar limit penuh kamu saat ini, yang dibayar kembali secara penuh dan tepat waktu.`
    },
    'trust-building-vs-credit-building-loans': {
-      title: 'Trust-building vs credit-building loans',
-      lastUpdated: 'Jun 9, 2026',
+      title: 'Trust-Building Loan vs Credit-Building Loan',
+      lastUpdated: '9 Juni 2026',
       body: `Moodeng Credit mendukung dua jenis pinjaman:
 
-Trust-building loans adalah pinjaman lebih kecil di bawah limit saat ini. Pinjaman ini membantu kamu menunjukkan pembayaran yang andal, tetapi tidak menaikkan limit.
+Trust-Building Loan adalah pinjaman yang lebih kecil, di bawah limit kamu saat ini. Pinjaman ini membantu kamu menunjukkan bahwa kamu membayar kembali dengan andal, tetapi tidak menaikkan limit kamu.
 
-Credit-building loans adalah pinjaman full-limit. Membayar satu pinjaman ini tepat waktu menaikkan limit dan membuka level kredit berikutnya.
+Credit-Building Loan adalah pinjaman sebesar limit penuh. Melunasinya tepat waktu akan menaikkan limit kamu dan membuka Level Kredit berikutnya.
 
-Sebagian besar peminjam memakai keduanya: trust loans untuk menjaga aktivitas sehat, dan credit loans untuk menaikkan limit dari waktu ke waktu.`
+Sebagian besar peminjam memakai keduanya: Trust-Building Loan untuk menjaga aktivitas tetap sehat, dan Credit-Building Loan untuk menaikkan limit dari waktu ke waktu.`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'Bagaimana pembayaran memengaruhi poin Pandesal',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Setiap pembayaran untuk Credit-building atau Trust-building loans langsung memengaruhi poin Pandesal, yaitu reputasi kamu di platform. Sistem kami dirancang untuk memberi reward pada perilaku yang konsisten, andal, dan jujur. Pinjaman kecil yang dibayar rapi lebih bernilai untuk reputasi daripada pinjaman besar yang dibayar berantakan.
+      title: 'Bagaimana pembayaran kembali memengaruhi poin Pandesal kamu',
+      lastUpdated: '9 Juni 2026',
+      body: `Setiap pembayaran kembali, baik untuk Credit-Building Loan maupun Trust-Building Loan, langsung memengaruhi poin Pandesal kamu, yang menjadi reputasi kamu di platform. Sistem kami dirancang untuk menghargai perilaku yang konsisten, andal, dan jujur. Pinjaman kecil yang dilunasi dengan rapi lebih berharga bagi reputasi kamu daripada pinjaman besar yang dibayar asal-asalan.
 
-Rincian skor
+Rincian poin
 
-- Pembayaran penuh tepat waktu: Menyelesaikan 100% pembayaran pada atau sebelum jatuh tempo memaksimalkan poin kamu (10 poin).
+- Pembayaran penuh tepat waktu: Melunasi 100% pada atau sebelum jatuh tempo memberi poin maksimum (10 poin).
 
-- Pembayaran sebagian: Jika jumlah penuh tidak dibayar, poin berkurang secara proporsional — 75% = 7 poin · 50% = 5 poin · 25% = 3 poin.
+- Pembayaran sebagian: Jika kamu tidak membayar jumlah penuh, poin kamu berkurang secara proporsional: 75% = 7 poin · 50% = 5 poin · 25% = 3 poin.
 
-- Pembayaran terlambat: Pembayaran apa pun yang diterima setelah deadline yang disepakati menghasilkan 0 poin untuk transaksi itu.
+- Pembayaran terlambat: Pembayaran apa pun yang diterima setelah batas waktu yang disepakati mendapat 0 poin untuk transaksi itu.
 
-- Gagal bayar: Pinjaman yang tidak dibayar meninggalkan tanda permanen di profil yang terlihat oleh semua pemberi pinjaman berikutnya.`
+- Gagal bayar: Pinjaman yang tidak dibayar meninggalkan tanda permanen di profil kamu, yang terlihat oleh semua pemberi pinjaman berikutnya.`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
-      title: 'Manfaat pembayaran tepat waktu',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Mengirim pembayaran pada atau sebelum deadline adalah cara paling efektif untuk memperkuat posisi kamu di ekosistem Moodeng Credit. Semua pembayaran dikonfirmasi on-chain; setelah transfer USDC selesai, status pinjaman otomatis diperbarui menjadi "Successfully Repaid."
+      title: 'Manfaat membayar kembali tepat waktu',
+      lastUpdated: '9 Juni 2026',
+      body: `Membayar kembali pada atau sebelum jatuh tempo adalah cara paling efektif untuk memperkuat posisi kamu di ekosistem Moodeng Credit. Semua pembayaran kembali dikonfirmasi secara on-chain. Setelah transfer USDC selesai, status pinjaman kamu otomatis berubah menjadi "Lunas".
 
-Saat kamu membayar tepat waktu, manfaat berikut diterapkan ke profil kamu:
+Saat kamu membayar kembali tepat waktu, manfaat berikut diterapkan ke profil kamu:
 
-- Poin Pandesal bertambah: Poin Pandesal kamu naik untuk Credit-building atau Trust-building loans, mencerminkan keandalan kamu kepada komunitas.
-- Progression credit limit: Untuk Credit-building loans, limit pinjaman saat ini naik dan membuka credit level berikutnya, misalnya dari $15 ke $20.
-- Riwayat pembayaran terverifikasi: Riwayat pembayaran sukses kamu terlihat oleh calon pemberi pinjaman, sehingga proses pendanaan permintaan berikutnya menjadi lebih mudah.
+- Poin Pandesal bertambah: Poin Pandesal kamu naik, baik untuk Credit-Building Loan maupun Trust-Building Loan, sebagai cerminan keandalan kamu di mata komunitas.
+- Kenaikan limit kredit: Untuk Credit-Building Loan, limit pinjaman kamu saat ini naik dan Level Kredit berikutnya terbuka (misalnya, naik dari $15 → $20).
+- Riwayat pinjaman terverifikasi: Riwayat pembayaran kembali kamu yang berhasil terlihat oleh calon pemberi pinjaman, sehingga permintaan kamu berikutnya jauh lebih mudah didanai.
 
-Rincian skor pembayaran
+Rincian poin pembayaran kembali
 
-Poin Pandesal mencerminkan keandalan kamu dan menentukan peluang pendanaan ke depan:
+Poin Pandesal mencerminkan keandalan kamu dan menentukan peluang kamu mendapat pendanaan di masa depan:
 
-- Pembayaran penuh tepat waktu: Mendapat maksimum 10 poin.
-- Pembayaran sebagian: Poin berkurang proporsional berdasarkan jumlah yang dibayar, misalnya 75% = 7 poin; 50% = 5 poin.
-- Pembayaran terlambat: Pembayaran setelah deadline menghasilkan 0 poin, berapa pun jumlahnya.
-- Gagal bayar: Pinjaman yang tidak dibayar menghasilkan tanda permanen di profil on-chain publik kamu.`
+- Pembayaran penuh tepat waktu: Mendapat poin maksimum, yaitu 10 poin.
+- Pembayaran sebagian: Poin kamu berkurang secara proporsional sesuai jumlah yang dibayar (misalnya, 75% = 7 poin; 50% = 5 poin).
+- Pembayaran terlambat: Pembayaran apa pun setelah batas waktu mendapat 0 poin, berapa pun jumlahnya.
+- Gagal bayar: Pinjaman yang tidak dibayar meninggalkan tanda permanen di profil on-chain publik kamu.`
+   },
+   'repaying-your-loan': {
+      title: 'Cara membayar kembali pinjaman kamu',
+      lastUpdated: '3 Juli 2026',
+      body: `Untuk membayar kembali, kirim jumlah USDC yang diminta ke alamat pembayaran yang ditampilkan di Moodeng (layar Bayar menampilkan jumlah persisnya dan memungkinkan kamu menyalin alamatnya). Kamu bisa mengirim dari dompet, exchange, platform P2P, atau layanan kripto lokal, mana pun yang tersedia di negaramu.
+
+Mengirim dari dompet
+Jika kamu sudah menyimpan USDC di dompet mana pun, kirim jumlah pembayaran ke alamat yang ditampilkan di Moodeng. Pastikan jaringannya Base.
+
+Mengirim dari exchange
+Tarik USDC dari akun exchange kamu langsung ke alamat pembayaran. Pilih USDC, lalu pilih Base sebagai jaringannya.
+
+Beli USDC dulu, lalu bayar kembali
+Jika kamu belum punya USDC, beli dulu dan kirim ke dompet kamu, lalu bayar kembali dari sana:
+- Binance P2P: beli USDC dengan mata uang lokal dari pengguna lain, lalu tarik di jaringan Base.
+- Exchange atau aplikasi lain yang mendukung USDC di jaringan Base: beli USDC dengan mata uang lokal, lalu tarik ke dompet kamu di jaringan Base. Pastikan dulu layanan tersebut mendukung jaringan Base sebelum mengirim.
+
+Yang paling penting: selalu pilih Base sebagai jaringan saat mengirim USDC. Jaringan yang salah bisa membuat dana kamu hilang.`
+   },
+   'adding-funds-to-your-wallet': {
+      title: 'Cara menambahkan USDC ke dompet kamu',
+      lastUpdated: '3 Juli 2026',
+      body: `Dompet Moodeng kamu bekerja dengan USDC di jaringan Base. Selain opsi di dalam aplikasi (beli dengan kartu dan bridge dari jaringan lain), berikut cara umum untuk memasukkan USDC ke dompet kamu:
+
+Beli di exchange
+Beli USDC di exchange yang sudah kamu pakai, lalu tarik ke alamat dompet kamu. Saat menarik, selalu pilih USDC dan jaringan Base.
+
+Binance P2P
+Beli USDC dengan mata uang lokal langsung dari pengguna lain, lalu tarik di jaringan Base.
+
+Layanan lokal
+Kamu juga bisa memakai exchange atau aplikasi lain yang mendukung USDC di jaringan Base: beli USDC dengan mata uang lokal, lalu tarik ke dompet kamu di jaringan Base. Pastikan dulu layanan tersebut mendukung jaringan Base sebelum mengirim.
+
+Kirim dari dompet lain
+Jika kamu menyimpan USDC di tempat lain, kirim ke alamat dompet Moodeng kamu, di jaringan Base.
+
+Yang paling penting: selalu pilih Base sebagai jaringan. Mengirim di jaringan yang salah bisa membuat dana kamu hilang.`
+   },
+   'withdrawing-to-your-bank': {
+      title: 'Cara menarik dana ke rekening bank',
+      lastUpdated: '3 Juli 2026',
+      body: `Kamu bisa menarik dana dengan mengirim USDC ke exchange atau layanan yang didukung, menjualnya di sana, lalu mentransfer mata uang lokal ke rekening bank kamu.
+
+Video panduan, cara mengirim USDC dari Base Account ke Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
+Pilihan yang umum:
+
+Binance P2P
+Kirim USDC ke akun Binance kamu (selalu pilih jaringan Base), lalu jual lewat Binance P2P dan terima mata uang lokal langsung ke rekening bank atau dompet digital kamu.
+
+Exchange atau aplikasi lokal
+Kamu juga bisa memakai exchange atau aplikasi yang mendukung USDC di jaringan Base: setor USDC, jual ke mata uang lokal, lalu tarik ke rekening bank kamu. Pastikan dulu layanan tersebut mendukung jaringan Base sebelum mengirim.
+
+Dompet atau exchange lain
+Kamu selalu bisa mengirim USDC ke dompet atau exchange mana pun yang sudah kamu pakai. Pastikan saja layanan itu mendukung USDC di jaringan Base sebelum mengirim.
+
+Yang paling penting: selalu pilih Base sebagai jaringan saat menyetor ke exchange. Jaringan yang salah bisa membuat dana kamu hilang.`
    },
    'using-usdc-on-moodeng-credit': {
       title: 'Menggunakan USDC di Moodeng Credit',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Semua pinjaman di Moodeng Credit memakai USDC, stablecoin teregulasi yang dipatok 1:1 ke dolar AS.
+      lastUpdated: '9 Juni 2026',
+      body: `Semua pinjaman di Moodeng Credit dinyatakan dalam USDC, stablecoin teregulasi yang dipatok 1:1 ke dolar AS.
 
-Dengan USDC, nilai pinjaman tetap konsisten. Pinjaman $20 hari ini tetap pinjaman $20 saat kamu membayarnya, terlepas dari pergerakan pasar kripto.
+Dengan USDC, nilai pinjaman tetap stabil. Pinjaman $20 hari ini tetap pinjaman $20 saat kamu membayarnya kembali, apa pun pergerakan pasar kripto.
 
-Instant Wallet kamu (atau Base Account, jika kamu memilihnya) berjalan di Base, tempat transfer USDC gasless sehingga kamu tidak membayar biaya jaringan.`
+Instant Wallet kamu (atau Base Account, jika kamu lebih suka) berjalan di Base, tempat transfer USDC bebas biaya gas, jadi kamu tidak membayar biaya jaringan.`
    },
    'verification-and-why-its-required': {
       title: 'Verifikasi dan keamanan',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Untuk menjaga lingkungan yang aman dan adil, Moodeng Credit mewajibkan semua peminjam memverifikasi identitas manusia unik mereka lewat World ID. Proses ini melindungi komunitas dari bot otomatis dan akun duplikat tanpa meminta kamu mengunggah dokumen pribadi sensitif.
+      lastUpdated: '9 Juni 2026',
+      body: `Agar Moodeng tetap aman dan adil, semua peminjam menyelesaikan verifikasi identitas singkat yang cukup dilakukan sekali. Verifikasi ini melindungi komunitas dari akun palsu dan akun ganda, dan inilah yang membuat pemberi pinjaman bisa memercayai permintaan yang mereka danai.
 
 Mengapa perlu verifikasi?
-- Keamanan: Memastikan setiap permintaan berasal dari orang sungguhan dan membantu mencegah penipuan.
+- Keamanan: memastikan setiap permintaan berasal dari orang sungguhan yang unik, sehingga mencegah penipuan.
+- Akses: setelah verifikasi selesai, kamu bisa mengajukan pinjaman dan mulai mengumpulkan poin Pandesal.
 
-- Reward: Pengguna baru bisa mengklaim sekitar $10 dalam reward Worldcoin setelah verifikasi berhasil.
+Cara yang disarankan: Verifikasi ID Kamu
+1. Ketuk "Verifikasi Diri" di aplikasi, lalu pilih "Verifikasi ID Kamu".
+2. Siapkan KTP atau kartu identitas nasional fisik kamu, dan cari tempat dengan pencahayaan yang terang dan merata.
+3. Selesaikan pemeriksaan singkat foto ID + selfie. Prosesnya sekitar 3 menit.
+4. Sebagian besar pemeriksaan selesai dalam hitungan menit. Jika punyamu perlu ditinjau oleh petugas, kami akan memberi tahu kamu begitu selesai (biasanya dalam beberapa jam, paling lama 1 hari kerja).
 
-- Akses: Verifikasi selesai memungkinkan kamu mengajukan pinjaman dan mulai membangun poin Pandesal.
+ID kamu diperiksa oleh mitra verifikasi kami yang aman dan tidak pernah disimpan oleh Moodeng.
 
-Panduan langkah demi langkah
-1. Download World App
-Install app resmi melalui Apple App Store atau Google Play Store.
-
-2. Temukan Orb
-Di World App, buka Settings, pilih "Find an Orb," dan aktifkan "Allow Location" untuk menemukan pusat verifikasi terdekat .
-
-3. Selesaikan verifikasi langsung
-Datang ke lokasi Orb yang kamu pilih dan ikuti instruksi di layar app untuk menyelesaikan proses verifikasi satu kali.
-
-4. Hubungkan ke Moodeng
-Setelah terverifikasi, kembali ke platform Moodeng. Buka "Verification," lalu pilih "Connect World ID" untuk menautkan akun dan menyelesaikan eligibility kamu .`
+Alternatif: Verifikasi dengan World ID
+Jika kamu sudah memakai World App (terverifikasi langsung di Orb atau dengan paspor biometrik), kamu bisa memilih "Verifikasi dengan World ID" sebagai gantinya dan mengonfirmasinya lewat World App.`
    },
    'managing-your-account-and-security-settings': {
       title: 'Mengelola akun dan pengaturan keamanan',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Akun kamu tertaut ke wallet, jadi keamanan wallet adalah keamanan akun.
+      lastUpdated: '9 Juni 2026',
+      body: `Akun kamu tertaut ke dompet kamu, jadi keamanan dompet adalah keamanan akun.
 
-Dari layar Akun, kamu bisa memperbarui nama tampilan, mengelola email, mengganti password, dan keluar.`
+Dari layar Akun, kamu bisa memperbarui nama tampilan, mengelola email, mengganti kata sandi, dan keluar.`
    }
 };
 

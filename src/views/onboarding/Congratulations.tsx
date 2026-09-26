@@ -70,10 +70,10 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'Sumali sa komunidad'
    },
    id: {
-      headerTitle: 'Kamu siap!',
+      headerTitle: 'Semua sudah siap!',
       title: 'Selamat! 🎉',
       body: 'Akun Moodeng kamu sudah siap dan kamu bisa mulai sekarang!',
-      nextTitle: 'Berikutnya apa?',
+      nextTitle: 'Apa selanjutnya?',
       rows: {
          guides: {
             title: 'Lihat panduan',
@@ -81,14 +81,14 @@ const CONGRATULATIONS_COPY = {
          },
          telegram: {
             title: 'Dapatkan bantuan lewat Telegram',
-            subtitle: 'Kirim pesan untuk bantuan wallet, deposit, atau pertanyaan'
+            subtitle: 'Kirim pesan untuk bantuan dompet, setoran, atau pertanyaan lain'
          },
          facebook: {
             title: 'Hubungi kami di Facebook',
             subtitle: 'Gabung komunitas dan ajukan pertanyaan'
          },
          creditLeveling: {
-            title: 'Pelajari sistem peningkatan level kredit',
+            title: 'Pelajari sistem naik Level Kredit',
             subtitle: 'Naikkan limit, bangun kepercayaan'
          }
       },

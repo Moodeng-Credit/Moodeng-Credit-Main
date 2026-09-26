@@ -10,7 +10,7 @@ export default function DashboardHeader() {
       locale === 'fil'
          ? { title: 'Buod', back: 'Bumalik', help: 'Buksan ang Tulong at Suporta Center' }
          : locale === 'id'
-           ? { title: 'Ringkasan', back: 'Kembali', help: 'Buka pusat bantuan dan dukungan' }
+           ? { title: 'Dasbor', back: 'Kembali', help: 'Buka pusat bantuan dan dukungan' }
            : { title: 'Dashboard', back: 'Back', help: 'Open help and support center' };
 
    return (
