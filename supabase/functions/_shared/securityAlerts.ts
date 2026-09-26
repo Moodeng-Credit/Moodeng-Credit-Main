@@ -3,13 +3,15 @@
 // real-time checks all hand a SecurityAlert to deliverSecurityAlert(), which owns:
 //   - destination resolution (env → fraud_alert_chat_id → kyc_alert_chat_id),
 //   - the severity emoji + [source] prefix (one consistent format everywhere),
-//   - the channel matrix (Telegram always; email for severity ≥ warning OR when
-//     Telegram failed, so nothing is ever silently lost — masterplan §2.1 fail-loud),
+//   - the channel matrix (Discord #security always; Telegram only for high/critical, since the
+//     team group is where loans arrive and routine alerts there read like a new loan; email for
+//     severity ≥ warning OR when no chat channel got it, so nothing is ever silently lost —
+//     masterplan §2.1 fail-loud),
 //   - recording every attempt in public.security_alert_deliveries.
 //
 // The formatting + matrix helpers are PURE (no Deno.* at module top) so vitest can
 // cover them; deliverSecurityAlert is the thin I/O wrapper (masterplan §2.8).
-
+import { type DiscordEmbed, postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -27,6 +29,7 @@ export type SecurityDeliveryRecord = {
    source: SecuritySource;
    severity: SecuritySeverity;
    title: string;
+   discord_ok: boolean;
    telegram_ok: boolean;
    email_ok: boolean;
    error: string | null;
@@ -69,11 +72,33 @@ export const formatTelegramMessage = (alert: SecurityAlert): string => {
 export const formatEmailSubject = (alert: SecurityAlert): string =>
    `${severityEmoji(alert.severity)} Moodeng [${alert.source}]: ${alert.title}`;
 
-// Channel matrix: Telegram is always attempted. Email is the redundant channel —
-// sent for anything at least a warning, OR whenever Telegram did not get through,
-// so a delivery failure can never be fully silent.
-export const shouldEmail = (severity: SecuritySeverity, telegramOk: boolean): boolean =>
-   SEVERITY_RANK[severity] >= SEVERITY_RANK.warning || !telegramOk;
+// Channel matrix. Discord #security gets everything. Telegram (the team group, where new loans
+// land) only gets what needs someone now: high and critical. Email is the redundant channel —
+// sent for anything at least a warning, OR whenever no chat channel got it through, so a delivery
+// failure can never be fully silent.
+export const shouldTelegram = (severity: SecuritySeverity): boolean => SEVERITY_RANK[severity] >= SEVERITY_RANK.high;
+
+export const shouldEmail = (severity: SecuritySeverity, chatDelivered: boolean): boolean =>
+   SEVERITY_RANK[severity] >= SEVERITY_RANK.warning || !chatDelivered;
+
+const SEVERITY_COLOR: Record<SecuritySeverity, number> = {
+   critical: 0xdc2626,
+   high: 0xea580c,
+   warning: 0xeab308,
+   info: 0x6b7280
+};
+
+// Discord embed: same «emoji» [source] title, body in the description (Discord caps it at 4096).
+export const formatDiscordEmbed = (alert: SecurityAlert): DiscordEmbed => {
+   const description =
+      alert.body.length > 4000 ? `${alert.body.slice(0, 3960)}\n… (truncated — full details in the alert email)` : alert.body;
+   return {
+      title: `${severityEmoji(alert.severity)} [${alert.source}] ${alert.title}`.slice(0, 256),
+      description,
+      color: SEVERITY_COLOR[alert.severity],
+      timestamp: new Date().toISOString()
+   };
+};
 
 // Destination resolution, shared by every caller: env override, then the
 // fraud_alert_chat_id setting (seeded from the KYC group), then kyc_alert_chat_id.
@@ -94,29 +119,33 @@ const alertEmailRecipient = (): string => Deno.env.get('FRAUD_ALERT_EMAIL')?.tri
 
 // The one delivery entrypoint. Never throws — a delivery/ledger failure must not
 // crash the job that raised the alert. Returns the recorded delivery outcome.
-export const deliverSecurityAlert = async (
-   supabase: SecuritySupabase,
-   alert: SecurityAlert
-): Promise<SecurityDeliveryRecord> => {
+export const deliverSecurityAlert = async (supabase: SecuritySupabase, alert: SecurityAlert): Promise<SecurityDeliveryRecord> => {
    const errors: string[] = [];
+   let discordOk = false;
    let telegramOk = false;
    let emailOk = false;
 
-   // --- Telegram (always attempted) ---
-   try {
-      const chatId = await resolveSecurityChatId(supabase);
-      if (chatId) {
-         await sendTelegramMessage(chatId, formatTelegramMessage(alert));
-         telegramOk = true;
-      } else {
-         errors.push('telegram: no fraud_alert_chat_id (or kyc_alert_chat_id) configured');
+   // --- Discord #security (always) ---
+   discordOk = await postDiscord({ embeds: [formatDiscordEmbed(alert)] }, { prefer: ['DISCORD_SECURITY_WEBHOOK_URL'] });
+   if (!discordOk) errors.push('discord: post failed or DISCORD_SECURITY_WEBHOOK_URL not set');
+
+   // --- Telegram (high / critical only) ---
+   if (shouldTelegram(alert.severity)) {
+      try {
+         const chatId = await resolveSecurityChatId(supabase);
+         if (chatId) {
+            await sendTelegramMessage(chatId, formatTelegramMessage(alert));
+            telegramOk = true;
+         } else {
+            errors.push('telegram: no fraud_alert_chat_id (or kyc_alert_chat_id) configured');
+         }
+      } catch (err) {
+         errors.push(`telegram: ${err instanceof Error ? err.message : String(err)}`);
       }
-   } catch (err) {
-      errors.push(`telegram: ${err instanceof Error ? err.message : String(err)}`);
    }
 
-   // --- Email (severity ≥ warning, or Telegram failed) ---
-   if (shouldEmail(alert.severity, telegramOk)) {
+   // --- Email (severity ≥ warning, or no chat channel got it) ---
+   if (shouldEmail(alert.severity, discordOk || telegramOk)) {
       try {
          await sendEmail(alertEmailRecipient(), formatEmailSubject(alert), alert.body);
          emailOk = true;
@@ -129,6 +158,7 @@ export const deliverSecurityAlert = async (
       source: alert.source,
       severity: alert.severity,
       title: alert.title,
+      discord_ok: discordOk,
       telegram_ok: telegramOk,
       email_ok: emailOk,
       error: errors.length ? errors.join(' | ') : null
