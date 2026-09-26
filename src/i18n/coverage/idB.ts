@@ -148,4 +148,157 @@ export const indonesianCoverageB: Record<string, string> = {
    'Only request the full limit when you are confident you can repay. Smaller loans are still useful for trust.':
       'Ajukan limit penuh hanya jika kamu yakin bisa membayarnya kembali. Pinjaman yang lebih kecil tetap berguna untuk membangun kepercayaan.',
    'Review live requests': 'Lihat permintaan aktif',
+
+   // src/views/dashboard-v2/DashboardV2.tsx
+   'Trust & Pandesal': 'Kepercayaan & Pandesal',
+   'Feed Moodeng Pandesal to grow your trust: verifying, repaying on time and milestones earn it, and Moodeng grows from Rookie to Apex.':
+      'Beri Moodeng Pandesal untuk menumbuhkan kepercayaan: kamu mendapatkannya dari verifikasi, pembayaran kembali tepat waktu, dan pencapaian, lalu Moodeng tumbuh dari Rookie hingga Apex.',
+   'Credit Level is your borrowing tier. Trust is what you build; Credit Level is what that trust unlocks.':
+      'Level Kredit adalah tingkat pinjamanmu. Kepercayaan adalah yang kamu bangun; Level Kredit adalah yang dibuka oleh kepercayaan itu.',
+   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.':
+      'Pencapaian adalah cara tambahan untuk mendapatkan Pandesal. Selesaikan untuk memperkuat profilmu dan membuat pemberi pinjaman lebih yakin dengan permintaanmu.',
+   'Post your first loan request': 'Posting permintaan pinjaman pertamamu',
+   'Get funded by a lender': 'Didanai oleh pemberi pinjaman',
+   'Loading your dashboard': 'Memuat dasbor kamu',
+
+   // src/views/dashboard-v2/DashboardV2Milestones.tsx
+   Get: 'Ambil',
+   'Reward:': 'Hadiah:',
+   'Top Reward': 'Hadiah utama',
+   'Back to dashboard': 'Kembali ke dasbor',
+   'All Milestones': 'Semua pencapaian',
+   'Loading milestones': 'Memuat pencapaian',
+   'No milestones yet': 'Belum ada pencapaian',
+   'Your first one unlocks when you post a request': 'Pencapaian pertamamu terbuka saat kamu memposting permintaan',
+   'Grow Trust with feeding': 'Beri makan, tumbuhkan kepercayaan',
+   'Grow Moodeng, eat on us': 'Besarkan Moodeng, kami traktir makan',
+   'Grow Moodeng to': 'Besarkan Moodeng ke',
+   'Reward: ₱': 'Hadiah: ₱',
+   'GrabFood voucher': 'voucher GrabFood',
+
+   // src/views/dashboard-v2/DashboardV2Preview.tsx
+   Preview: 'Pratinjau',
+   'Dashboard preview state': 'Status pratinjau dasbor',
+   'Sign in to see your real data': 'Masuk untuk melihat data aslimu',
+   'Switch language': 'Ganti bahasa',
+
+   // src/views/dashboard-v2/DashboardV2Rewards.tsx
+   'You repaid on time. Treat yourself!': 'Kamu bayar tepat waktu. Saatnya traktir diri sendiri!',
+   'Tell us where to send your GrabFood voucher code.': 'Beri tahu kami ke mana kode voucher GrabFood kamu harus dikirim.',
+   'Your friend repaid on time. Free meal!': 'Temanmu bayar tepat waktu. Makan gratis!',
+   'Thanks for inviting them. Where should we send your voucher code?':
+      'Terima kasih sudah mengajak temanmu. Ke mana kami harus mengirim kode vouchermu?',
+   'You repaid on time. Free meal!': 'Kamu bayar tepat waktu. Makan gratis!',
+   'Thanks for joining with a friend. Where should we send your voucher code?':
+      'Terima kasih sudah bergabung bersama teman. Ke mana kami harus mengirim kode vouchermu?',
+   'Moodeng grew to Rising. Treat yourself!': 'Moodeng tumbuh ke Rising. Saatnya traktir diri sendiri!',
+   'Moodeng grew to Prime. Treat yourself!': 'Moodeng tumbuh ke Prime. Saatnya traktir diri sendiri!',
+   'Moodeng reached Apex. Feast time!': 'Moodeng mencapai Apex. Saatnya pesta makan!',
+   'This voucher was already claimed.': 'Voucher ini sudah diklaim.',
+   "This voucher isn't unlocked yet.": 'Voucher ini belum terbuka.',
+   'Please check your name and mobile number.': 'Periksa lagi nama dan nomor ponselmu.',
+   'Voucher Unlocked!': 'Voucher terbuka!',
+   'Salamat! We got it.': 'Terima kasih! Sudah kami terima.',
+   "We'll send your ₱": 'Kami akan mengirim kode voucher ₱',
+   'GrabFood voucher code to your mobile within 2 business days.': 'GrabFood ke ponselmu dalam 2 hari kerja.',
+   'Preview sample — nothing was sent.': 'Contoh pratinjau — tidak ada yang dikirim.',
+   'Full name': 'Nama lengkap',
+   'Mobile number (GCash)': 'Nomor ponsel (GCash)',
+   'Mobile number': 'Nomor ponsel',
+   'Email (optional)': 'Email (opsional)',
+   'Sending…': 'Mengirim…',
+   'Send My Voucher': 'Kirim voucher saya',
+   Embed: 'Sematkan',
+   'Close share': 'Tutup berbagi',
+   'More share options': 'Opsi berbagi lainnya',
+   'Unavailable right now': 'Belum tersedia saat ini',
+   'Free meal for both of you: a ₱100 voucher for you and a ₱100 voucher for your friend.':
+      'Makan gratis untuk kalian berdua: voucher ₱100 untukmu dan voucher ₱100 untuk temanmu.',
+   Claim: 'Klaim',
+   Rejected: 'Ditolak',
+   Invite: 'Ajak',
+   'You both get a ₱100 voucher once your friend repays their first loan on time. Claim yours here or on your dashboard.':
+      'Kalian berdua dapat voucher ₱100 setelah temanmu membayar kembali pinjaman pertamanya tepat waktu. Klaim punyamu di sini atau di dasbor.',
+   'Friends joined:': 'Teman bergabung:',
+   '· Repaid on time:': '· Bayar tepat waktu:',
+   "You're invited by": 'Kamu diundang oleh',
+   'a friend': 'seorang teman',
+   'Borrow small, build your credit': 'Pinjam kecil, bangun kreditmu',
+   'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
+      'Pinjaman kecil antarpengguna dengan satu jumlah, satu tanggal, dan tanpa biaya Moodeng.',
+   '₱100 GrabFood voucher each': 'Masing-masing voucher GrabFood ₱100',
+   'When you repay your first loan on time, you and': 'Saat kamu membayar kembali pinjaman pertamamu tepat waktu, kamu dan',
+   'your friend': 'temanmu',
+   'both get one.': 'sama-sama dapat satu.',
+   'Join Moodeng': 'Gabung Moodeng',
+   'Already have an account?': 'Sudah punya akun?',
+
+   // src/views/dashboard-v2/components/DashboardV2Banners.tsx
+   'Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal.':
+      'Verifikasi identitasku: +10 Pandesal. Buka akses pinjaman dan beri Moodeng pandesal.',
+   'Connect Wallet: +10 Pandesal. Receive USDC loans.': 'Hubungkan dompet: +10 Pandesal. Terima pinjaman USDC.',
+   FREE: 'GRATIS',
+   'meal for both of you': 'makan untuk kalian berdua',
+   'Feast with friend': 'Makan bareng teman',
+   'Grab Now': 'Ambil sekarang',
+   'Turn on repayment reminders': 'Aktifkan pengingat pembayaran',
+   'Get a heads-up before your due date so you never pay late.':
+      'Dapatkan pemberitahuan sebelum jatuh tempo agar kamu tidak pernah telat bayar.',
+   'Reminders are blocked': 'Pengingat diblokir',
+   'Allow notifications for moodeng.app in your browser settings.': 'Izinkan notifikasi untuk moodeng.app di pengaturan browser kamu.',
+   'Get reminders on your iPhone': 'Dapatkan pengingat di iPhone kamu',
+   'Tap Share, then "Add to Home Screen". Open Moodeng from your Home Screen, log in and turn on reminders.':
+      'Ketuk Bagikan, lalu "Tambahkan ke Layar Utama". Buka Moodeng dari Layar Utama, masuk, lalu aktifkan pengingat.',
+   'Turn on': 'Aktifkan',
+
+   // src/views/dashboard-v2/components/DashboardV2Hero.tsx
+   'Your Moodeng': 'Moodeng kamu',
+   Unverified: 'Belum terverifikasi',
+   Hi: 'Hai',
+   'Live for': 'Aktif selama',
+   day: 'hari',
+   days: 'hari',
+   'Grow your Trust with on-time micro-loans.': 'Tumbuhkan kepercayaan dengan pinjaman mikro yang dibayar tepat waktu.',
+   'Dismiss tip': 'Tutup tips',
+   'Previous Moodeng tier': 'Tingkat Moodeng sebelumnya',
+   'Next Moodeng tier': 'Tingkat Moodeng berikutnya',
+   of: 'dari',
+   left: 'tersisa',
+   'Credit available to borrow': 'Kredit yang tersedia untuk dipinjam',
+   'Unlock higher limits by repaying on time.': 'Buka limit lebih tinggi dengan membayar kembali tepat waktu.',
+
+   // src/views/dashboard-v2/components/DashboardV2Popups.tsx
+   'Request Loan & Feed Moodeng': 'Ajukan pinjaman & beri makan Moodeng',
+   'View Requests & Feed Moodeng': 'Lihat permintaan & beri makan Moodeng',
+   'Repay On Time & Earn Voucher': 'Bayar tepat waktu & dapatkan voucher',
+   'Verify to Start Feeding': 'Verifikasi untuk mulai memberi makan',
+   'Repay on time, eat on us.': 'Bayar tepat waktu, kami traktir makan.',
+   'Feed Moodeng to level up.': 'Beri makan Moodeng supaya naik level.',
+   'A GrabFood voucher for your first on-time repayment!': 'Voucher GrabFood untuk pembayaran tepat waktu pertamamu!',
+   'Bigger Moodeng = Higher cash limits!': 'Moodeng makin besar = limit makin tinggi!',
+   'Verify My Identity': 'Verifikasi identitasku',
+   'Verify to unlock your account — a one-time check that takes about 3 minutes.':
+      'Verifikasi untuk membuka akunmu — pemeriksaan sekali saja, sekitar 3 menit.',
+   'Verify Now': 'Verifikasi sekarang',
+   'Most used': 'Paling banyak dipakai',
+   'Quick national ID & selfie check. Available in VN, TW, KR, PH, MY, JP, ID, TH':
+      'Cek cepat kartu identitas & selfie. Tersedia di VN, TW, KR, PH, MY, JP, ID, TH',
+   'Milestone Streak!': 'Rentetan pencapaian!',
+   'milestone this week': 'pencapaian minggu ini',
+   'milestones this week': 'pencapaian minggu ini',
+   'Pandesal fed to Moodeng': 'Pandesal diberikan ke Moodeng',
+   'Keep the streak going: your next milestone is waiting.': 'Pertahankan rentetanmu: pencapaian berikutnya sudah menunggu.',
+   'See My Next Milestone': 'Lihat pencapaian berikutnya',
+   'This week': 'Minggu ini',
+
+   // src/views/dashboard-v2/components/DashboardV2Sections.tsx
+   'Loading voucher': 'Memuat voucher',
+   'Active Loans($)': 'Pinjaman aktif($)',
+   'Pending Loans($)': 'Pinjaman menunggu($)',
+   'Defaulted($)': 'Gagal bayar($)',
+   'Due today': 'Jatuh tempo hari ini',
+   'Pay Now': 'Bayar sekarang',
+   'My insights': 'Wawasanku',
+   'Moodeng grew to': 'Moodeng tumbuh ke',
+   'Claim your ₱': 'Klaim ₱',
 };
