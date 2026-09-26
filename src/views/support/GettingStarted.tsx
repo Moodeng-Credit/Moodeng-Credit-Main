@@ -121,13 +121,13 @@ const GETTING_STARTED_COPY = {
       latestVideo: 'วิดีโอคู่มือล่าสุด',
       latestVideoTitle: 'วิดีโอคู่มือล่าสุด',
       lenderBenefitsTitle: 'ประโยชน์สำหรับผู้ให้กู้',
-      lenderBenefitsDescription: 'ดูว่าทำไมการให้กู้จึงสำคัญ',
+      lenderBenefitsDescription: 'ดูว่าทำไมการปล่อยกู้จึงสำคัญ',
       basics: [
          { title: 'ดูคู่มือ', description: 'เริ่มต้นอย่างรวดเร็วสำหรับผู้ใช้ใหม่' },
          { title: 'ดูประโยชน์', description: 'ดูว่าทำไมจึงคุ้มค่า' },
-         { title: 'ทำไม Moodeng ใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
-         { title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
-         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, กระเป๋าเงิน, Pandesal points และระดับเครดิต' },
+         { title: 'ทำไม Moodeng จึงใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
+         { title: 'เรียนรู้ระบบการเลื่อนระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
+         { title: 'เรียนรู้เพิ่มเติมที่อะคาเดมี', description: 'การยืม กระเป๋าเงิน แต้ม Pandesal และระดับเครดิต' },
          { title: 'อ่านบล็อก Moodeng', description: 'เรื่องราวเกี่ยวกับเครดิตที่เป็นธรรม เงินกู้นอกระบบ และความน่าเชื่อถือ' }
       ]
    },

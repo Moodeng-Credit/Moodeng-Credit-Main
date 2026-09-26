@@ -99,10 +99,10 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'Gabung komunitas'
    },
    th: {
-      headerTitle: 'พร้อมแล้ว!',
+      headerTitle: 'คุณพร้อมแล้ว',
       title: 'ยินดีด้วย! 🎉',
-      body: 'บัญชี Moodeng ของคุณตั้งค่าเสร็จแล้วและพร้อมเริ่มใช้งาน',
-      nextTitle: 'ต่อไปคืออะไร?',
+      body: 'บัญชี Moodeng ของคุณตั้งค่าเสร็จแล้ว และพร้อมให้คุณเริ่มใช้งานได้เลย!',
+      nextTitle: 'ขั้นตอนต่อไป',
       rows: {
          guides: {
             title: 'ดูคู่มือ',
@@ -110,21 +110,21 @@ const CONGRATULATIONS_COPY = {
          },
          telegram: {
             title: 'รับความช่วยเหลือผ่าน Telegram',
-            subtitle: 'ส่งข้อความหาเราสำหรับความช่วยเหลือเรื่องกระเป๋า การฝาก หรือคำถาม'
+            subtitle: 'ส่งข้อความหาเราเพื่อขอความช่วยเหลือเรื่องกระเป๋าเงิน การฝากเงิน หรือคำถามอื่น ๆ'
          },
          facebook: {
             title: 'ติดต่อเราบน Facebook',
             subtitle: 'เข้าร่วมชุมชนและถามคำถาม'
          },
          creditLeveling: {
-            title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต',
+            title: 'เรียนรู้ระบบการเลื่อนระดับเครดิต',
             subtitle: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ'
          }
       },
       exploreRequestBoard: 'สำรวจกระดานคำขอ',
-      exploreNote: 'คุณสามารถสำรวจ Moodeng Credit และเริ่มต้นได้อย่างมั่นใจแล้ว',
+      exploreNote: 'ตอนนี้คุณสำรวจ Moodeng Credit และเริ่มต้นเส้นทางของคุณได้อย่างมั่นใจแล้ว',
       communityTitle: 'เสียงต่อต้านเงินกู้ที่ไม่เป็นธรรม',
-      communityBody: 'เข้าร่วมชุมชน Facebook ของเรา เชื่อมต่อกับผู้ใช้ Moodeng Credit คนอื่น',
+      communityBody: 'เข้าร่วมชุมชน Facebook ของเรา และพูดคุยกับผู้ใช้ Moodeng Credit คนอื่น ๆ',
       joinCommunity: 'เข้าร่วมชุมชน'
    },
    vi: {
