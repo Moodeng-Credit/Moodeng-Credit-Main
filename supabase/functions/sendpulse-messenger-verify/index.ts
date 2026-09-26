@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName } from '../_shared/sendpulse.ts';
@@ -55,7 +56,10 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       if (!borrower) return;
       const text = buildFacebookConnectedAlert(borrower, messengerDisplayName(contact) ?? flowName, (loans ?? []) as LoanRecord[]);
       const chat = (chatRow as { value?: string } | null)?.value;
-      if (chat) await sendTelegramMessage(chat, text).catch((err: unknown) => console.error('sendpulse-messenger-verify: telegram ping failed', err));
+      if (chat)
+         await sendTelegramMessage(chat, text).catch((err: unknown) =>
+            console.error('sendpulse-messenger-verify: telegram ping failed', err)
+         );
       await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    } catch (err) {
       console.error('sendpulse-messenger-verify: announce failed', err instanceof Error ? err.message : err);
@@ -147,6 +151,21 @@ serve(async (req) => {
       }
 
       return json({ ok: true });
+   }
+
+   // Opening the confirm link twice sends the code twice. The first request uses it up, so the second
+   // used to find nothing and answer "that link didn't work or has expired" right after the success
+   // message. A code confirmed in the last few minutes is a repeat, not a failure.
+   const recentCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+   for (const cand of candidateCodes(raw)) {
+      const { data: repeat } = await svc
+         .from('contact_verification_codes')
+         .select('id')
+         .ilike('code', cand)
+         .eq('channel', 'messenger')
+         .gte('verified_at', recentCutoff)
+         .limit(1);
+      if (repeat?.length) return json({ ok: true, already: true });
    }
 
    // No pending code matched — tell the flow so it can ask the borrower to recheck the code.

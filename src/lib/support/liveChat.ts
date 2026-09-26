@@ -1,3 +1,5 @@
+import posthog from 'posthog-js';
+
 // Live chat — the human support channel behind every "I have a problem" path in
 // the app, and the replacement for the Mecha AI assistant on those paths.
 //
@@ -101,6 +103,15 @@ export function loadSupportChat(): void {
    injected = true;
    if (window.MoodengSupport) return; // already present (e.g. a static embed)
 
+   // The widget ships its own PostHog (same project key) and only skips it when window.posthog is an
+   // already-loaded instance. Our app's PostHog comes from npm and never sets window.posthog, so the
+   // widget used to start a second tracker, and every click and pageview was recorded twice. Hand it
+   // ours. Only once ours is loaded: pointing it at an uninitialised instance would let the widget
+   // initialise it with its own settings.
+   if ((posthog as unknown as { __loaded?: boolean }).__loaded) {
+      (window as unknown as { posthog?: unknown }).posthog = posthog;
+   }
+
    const script = document.createElement('script');
    script.src = WIDGET_SRC;
    script.async = true;
@@ -149,8 +160,8 @@ export function identifySupport({ email, nickname, data, segments }: SupportIden
       window.MoodengSupport?.identify({
          name: nickname ?? undefined,
          email: email ?? undefined,
-         context,
-      }),
+         context
+      })
    );
 }
 
