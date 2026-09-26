@@ -154,5 +154,161 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Small loans, real signal': 'Khoản vay nhỏ, tín hiệu thật',
    'Microloans create a practical path for borrowers to build proof over time.':
       'Khoản vay vi mô tạo ra con đường thiết thực để người vay tích lũy bằng chứng uy tín theo thời gian.',
-   'Moodeng Credit wallet illustration': 'Hình minh họa ví Moodeng Credit'
+   'Moodeng Credit wallet illustration': 'Hình minh họa ví Moodeng Credit',
+
+   // src/views/login/components/AuthCard.tsx
+   'Create your account to get started with moodeng.': 'Tạo tài khoản để bắt đầu với Moodeng.',
+   'Moodeng Mascot': 'Linh vật Moodeng',
+
+   // src/views/login/components/AuthForm.tsx
+   'Email already exists.': 'Email đã tồn tại.',
+   'Invalid credentials.': 'Thông tin đăng nhập không đúng.',
+   'Remember me': 'Ghi nhớ đăng nhập',
+   'Forgot password?': 'Quên mật khẩu?',
+   'Enter your Email': 'Nhập email của bạn',
+   'Confirm your Password': 'Xác nhận mật khẩu',
+   'Create Account': 'Tạo tài khoản',
+   'Create your Password': 'Tạo mật khẩu',
+   'Enter your Password': 'Nhập mật khẩu',
+   'Password is weak, Password must be at least 6 characters long and can only include letters, numbers, and the symbols !@#$%^&*()+=._-':
+      'Mật khẩu yếu. Mật khẩu phải có ít nhất 6 ký tự và chỉ gồm chữ cái, chữ số và các ký hiệu !@#$%^&*()+=._-',
+   'Sign Up Error. Please try again.': 'Đăng ký không thành công. Vui lòng thử lại.',
+
+   // src/views/login/sections/AuthFormSection.tsx
+   'OR CONTINUE WITH EMAIL': 'HOẶC TIẾP TỤC BẰNG EMAIL',
+   'An account already exists with this email. Please sign in or reset your password.':
+      'Email này đã có tài khoản. Vui lòng đăng nhập hoặc đặt lại mật khẩu.',
+   'Registration failed. Please check your information and try again.': 'Đăng ký thất bại. Vui lòng kiểm tra thông tin và thử lại.',
+
+   // src/views/milestones/Milestones.tsx
+   Rewards: 'Phần thưởng',
+   'How rewards unlock': 'Cách mở khóa phần thưởng',
+   'Complete milestones to earn Pandesal points. Profile rewards unlock automatically when you reach the required points.':
+      'Hoàn thành các cột mốc để nhận điểm Pandesal. Phần thưởng hồ sơ sẽ tự động mở khóa khi bạn đạt đủ số điểm yêu cầu.',
+   'Pandesal points unlock profile rewards. They do not guarantee funding.':
+      'Điểm Pandesal giúp mở khóa phần thưởng hồ sơ, nhưng không đảm bảo bạn sẽ được cấp vốn.',
+   'How rewards work': 'Cách phần thưởng hoạt động',
+   'Next reward': 'Phần thưởng tiếp theo',
+   Collectibles: 'Vật phẩm sưu tầm',
+   Upcoming: 'Sắp tới',
+   'Close rewards help': 'Đóng hướng dẫn phần thưởng',
+   '· You won this': '· Bạn đã giành được',
+   'all preview rewards': 'tất cả phần thưởng xem trước',
+   'Start setup': 'Bắt đầu thiết lập',
+   'Add a wallet': 'Thêm ví',
+   'Finish setup with identity verification and your wallet (an Instant Wallet, or a Base Account if you prefer) to unlock borrowing and start building your public trust record.':
+      'Hoàn tất thiết lập bằng cách xác minh danh tính và thêm ví (Instant Wallet, hoặc Base Account nếu bạn muốn) để mở khóa tính năng vay và bắt đầu xây dựng hồ sơ uy tín công khai.',
+   'Set up your Instant Wallet (or connect a Base Account) to unlock borrowing and start building your public trust record.':
+      'Thiết lập Instant Wallet (hoặc kết nối Base Account) để mở khóa tính năng vay và bắt đầu xây dựng hồ sơ uy tín công khai.',
+   'Verify your identity to unlock borrowing and start building your public trust record.':
+      'Xác minh danh tính để mở khóa tính năng vay và bắt đầu xây dựng hồ sơ uy tín công khai.',
+   'Your reputation milestones will appear here as you repay loans on time.':
+      'Các cột mốc uy tín của bạn sẽ xuất hiện tại đây khi bạn trả nợ đúng hạn.',
+
+   // src/views/onboarding/Congratulations.tsx
+   'Moodeng celebrating': 'Moodeng đang ăn mừng',
+   'Moodeng community hippo': 'Hà mã cộng đồng Moodeng',
+
+   // src/views/onboarding/ConnectWallet.tsx
+   'Create your Instant Wallet': 'Tạo Instant Wallet của bạn',
+   'Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.':
+      'Khoản vay sẽ được chuyển vào đây — ví được tạo từ tài khoản đăng nhập Moodeng, không cần cài ứng dụng. Bạn còn được nhận điểm Pandesal.',
+   'Setting up your wallet — this takes a few seconds. Keep this screen open.':
+      'Đang thiết lập ví — việc này mất vài giây. Vui lòng giữ màn hình này mở.',
+   'Connect Your Base Wallet': 'Kết nối ví Base của bạn',
+   'Connect Your Wallet': 'Kết nối ví của bạn',
+   'Think of this as your digital checking account.': 'Hãy xem đây như tài khoản thanh toán số của bạn.',
+   'No app needed': 'Không cần ứng dụng',
+   'Created from your Moodeng login in seconds. Fully yours — export the key anytime.':
+      'Được tạo từ tài khoản đăng nhập Moodeng chỉ trong vài giây. Hoàn toàn thuộc về bạn — xuất khóa bất cứ lúc nào.',
+   'All wallets support gasless transactions on Base network': 'Tất cả ví đều hỗ trợ giao dịch miễn phí gas trên mạng Base',
+   'Create Your Instant Wallet': 'Tạo Instant Wallet của bạn',
+   'Moodeng wallet': 'Ví Moodeng',
+   'Add Base Wallet': 'Thêm ví Base',
+   'Connecting your wallet lets Moodeng read your on-chain activity to award Pandesal points and send USDC loans directly to you. We never ask for your private keys or seed phrase.':
+      'Khi kết nối ví, Moodeng có thể đọc hoạt động on-chain của bạn để cộng điểm Pandesal và gửi khoản vay USDC trực tiếp cho bạn. Chúng tôi không bao giờ yêu cầu khóa riêng tư hay cụm từ khôi phục của bạn.',
+   "Your Instant Wallet holds your USDC loans and earns you Pandesal points. It's created instantly from your Moodeng login — no app and no seed phrase — and it's fully yours: you can export its key anytime. Prefer a Base Account? You can connect one instead. We never ask for your private keys or seed phrase.":
+      'Instant Wallet giữ các khoản vay USDC và giúp bạn nhận điểm Pandesal. Ví được tạo ngay từ tài khoản đăng nhập Moodeng — không cần ứng dụng, không cần cụm từ khôi phục — và hoàn toàn thuộc về bạn: bạn có thể xuất khóa bất cứ lúc nào. Muốn dùng Base Account? Bạn có thể kết nối Base Account thay thế. Chúng tôi không bao giờ yêu cầu khóa riêng tư hay cụm từ khôi phục của bạn.',
+   'Wallet unavailable': 'Ví không khả dụng',
+   'Connection failed': 'Kết nối thất bại',
+   'Could not connect wallet. Please try again.': 'Không thể kết nối ví. Vui lòng thử lại.',
+   'Prefer a Base Account? Connect it instead': 'Muốn dùng Base Account? Kết nối tại đây',
+   'Creating your wallet…': 'Đang tạo ví…',
+   'Create Instant Wallet': 'Tạo Instant Wallet',
+   'Connect Base Wallet': 'Kết nối ví Base',
+   'Connecting...': 'Đang kết nối...',
+   'Select a wallet above': 'Chọn một ví ở trên',
+   'or connect a Base Account or another wallet': 'hoặc kết nối Base Account hay ví khác',
+   'Trust, Rainbow, Argent & more supported wallets': 'Trust, Rainbow, Argent và nhiều ví được hỗ trợ khác',
+
+   // src/views/onboarding/WalletAlreadyLinked.tsx
+   'This wallet is already in use': 'Ví này đã được sử dụng',
+   'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
+      'Ví này đã được liên kết với một tài khoản Moodeng khác. Để đảm bảo cho vay công bằng và ngăn việc tự cho mình vay, mỗi ví chỉ được thuộc về một tài khoản.',
+   'What you can do': 'Bạn có thể làm gì',
+   'Connect a different wallet address to this lender account.': 'Kết nối một địa chỉ ví khác với tài khoản người cho vay này.',
+   'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
+      'Nếu bạn lỡ tạo tài khoản người vay, hãy gỡ ví này khỏi tài khoản đó trước — hoặc nhờ chúng tôi xóa tài khoản đó hay đổi vai trò của nó.',
+   "Not sure what happened? Message us and we'll help.": 'Không rõ chuyện gì đã xảy ra? Hãy nhắn cho chúng tôi để được hỗ trợ.',
+   'Wallet In Use': 'Ví đã được sử dụng',
+
+   // src/views/onboarding/WalletConnectHelp.tsx
+   'Trouble connecting?': 'Gặp sự cố khi kết nối?',
+   'Use the popup that opens when you tap Connect.': 'Hãy dùng cửa sổ bật lên xuất hiện khi bạn nhấn Kết nối.',
+   "You don't need to download a separate Base app from the app store — creating an account there won't connect here.":
+      'Bạn không cần tải ứng dụng Base riêng từ kho ứng dụng — tạo tài khoản ở đó sẽ không kết nối được tại đây.',
+   'Seeing a “connection is not private” warning?': 'Thấy cảnh báo “kết nối không riêng tư”?',
+   "Your phone's clock is probably off. In Settings, set date & time to automatic, then tap Connect again.":
+      'Có thể đồng hồ trên điện thoại của bạn bị lệch. Trong Cài đặt, hãy đặt ngày và giờ tự động, rồi nhấn Kết nối lại.',
+   'Still stuck?': 'Vẫn chưa được?',
+   'Switch between Wi‑Fi and mobile data, make sure your browser is up to date, and reconnect.':
+      'Hãy chuyển đổi giữa Wi‑Fi và dữ liệu di động, đảm bảo trình duyệt đã được cập nhật, rồi kết nối lại.',
+
+   // src/views/onboarding/WalletConnected.tsx
+   'Use Your Instant Wallet or a Base Account': 'Dùng Instant Wallet hoặc Base Account',
+   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
+      'Người vay dùng Instant Wallet của Moodeng, được tạo từ tài khoản đăng nhập của bạn — hoặc bạn có thể kết nối Base Account thay thế. Các loại ví khác không thể được khóa để vay trên Moodeng.',
+   'Confirm Saved Base Account': 'Xác nhận Base Account đã lưu',
+   'Confirm Your Base Account': 'Xác nhận Base Account của bạn',
+   "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
+      'Chúng tôi không phát hiện được ví nào. Hãy thiết lập Instant Wallet (hoặc kết nối Base Account nếu bạn muốn) để tiếp tục.',
+   'Your Instant Wallet Is Ready': 'Instant Wallet của bạn đã sẵn sàng',
+   'Wallet Connected': 'Đã kết nối ví',
+   'Loans you receive land right in the app — no other app needed. It also earns you Pandesal points.':
+      'Khoản vay bạn nhận được sẽ chuyển thẳng vào ứng dụng — không cần ứng dụng nào khác. Ví còn giúp bạn nhận điểm Pandesal.',
+   'Continue Application': 'Tiếp tục đăng ký',
+   Next: 'Tiếp theo',
+
+   // src/views/onboarding/WalletFaceCheck.tsx
+   'Try the scan again': 'Quét lại',
+   'Connect a wallet instead': 'Kết nối ví khác thay thế',
+   'Still checking': 'Vẫn đang kiểm tra',
+   'This is taking longer than usual. Your scan is safe — check again in a moment.':
+      'Quá trình này lâu hơn bình thường. Ảnh quét của bạn vẫn an toàn — hãy kiểm tra lại sau ít phút.',
+   'Start a new scan': 'Quét lại từ đầu',
+   'One quick face check': 'Một lần quét khuôn mặt nhanh',
+   'Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.':
+      'Mỗi người chỉ được một Instant Wallet, vì vậy chúng tôi cần bạn quét khuôn mặt 10 giây trước khi tạo ví. Bạn sẽ không phải quét lại lần nữa.',
+   'Connect a wallet I already own': 'Kết nối ví tôi đã có',
+   'Could not start the face check. Please try again.': 'Không thể bắt đầu quét khuôn mặt. Vui lòng thử lại.',
+   'Quick face check': 'Quét khuôn mặt nhanh',
+   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
+      'Một lần quét người thật ngắn giúp đảm bảo mỗi người chỉ có một Instant Wallet — nhờ vậy chúng tôi có thể chi trả phí mạng cho bạn. Chúng tôi không bao giờ lưu ảnh của bạn, và việc quét chỉ cần khi tạo ví — không cần khi đăng nhập, chuyển tiền hay trả nợ.',
+   "We couldn't finish creating your wallet. Please try again.": 'Chúng tôi chưa thể tạo xong ví của bạn. Vui lòng thử lại.',
+   'Creating your wallet': 'Đang tạo ví của bạn',
+   'Checking your scan': 'Đang kiểm tra ảnh quét',
+   'This takes a few seconds. Keep this screen open.': 'Việc này mất vài giây. Vui lòng giữ màn hình này mở.',
+   'This usually takes a few seconds. Keep this screen open.': 'Việc này thường mất vài giây. Vui lòng giữ màn hình này mở.',
+   'Starting…': 'Đang bắt đầu…',
+   'Start face check': 'Bắt đầu quét khuôn mặt',
+
+   // src/views/onboarding/walletPickerOptions.tsx
+   'Top Pick': 'Nổi bật nhất',
+   Popular: 'Phổ biến',
+   'Zero fees': 'Miễn phí',
+   'Best for beginners': 'Tốt nhất cho người mới',
+   'Sleek UI': 'Giao diện đẹp',
+   'Simple & secure': 'Đơn giản và an toàn',
+   Universal: 'Đa năng',
+   'Widely Used': 'Được dùng rộng rãi'
 };
