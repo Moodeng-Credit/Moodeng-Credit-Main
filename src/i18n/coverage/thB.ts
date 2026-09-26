@@ -858,4 +858,92 @@ export const thaiCoverageB: Record<string, string> = {
    'Choose repayment date': 'เลือกวันชำระคืน',
    'Previous month': 'เดือนก่อนหน้า',
    'Next month': 'เดือนถัดไป',
+
+   // src/views/dashboard/components/LoanSummarySection.tsx
+   'Loan Summary': 'สรุปเงินกู้',
+   Total: 'รวม',
+
+   // src/views/dashboard/components/LocationPrimingModal.tsx
+   'One last step': 'อีกขั้นตอนสุดท้าย',
+   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
+      'เราตรวจสอบตำแหน่งของคุณเพื่อให้การกู้ยืมปลอดภัยและป้องกันการฉ้อโกง ข้อมูลนี้ใช้เพื่อยืนยันคำขอของคุณเท่านั้น — ไม่มีการแชร์ให้ผู้ให้กู้',
+   'Share location': 'แชร์ตำแหน่ง',
+
+   // src/views/dashboard/components/MilestoneSheets.tsx
+   'View Milestone': 'ดูหมุดหมาย',
+   Locked: 'ล็อกอยู่',
+   'Pandesal points earned': 'แต้ม Pandesal ที่ได้รับ',
+   'Reward for completing this': 'รางวัลเมื่อทำสำเร็จ',
+   'Locked reward': 'รางวัลที่ยังล็อกอยู่',
+   'These points are added to your borrower reputation.': 'แต้มเหล่านี้ถูกเพิ่มในความน่าเชื่อถือของคุณในฐานะผู้ยืมแล้ว',
+   'Complete this milestone to add these points to your borrower reputation.': 'ทำหมุดหมายนี้ให้สำเร็จเพื่อเพิ่มแต้มเหล่านี้ในความน่าเชื่อถือของคุณในฐานะผู้ยืม',
+   'Why it matters': 'ทำไมจึงสำคัญ',
+   'What changes on your profile': 'สิ่งที่เปลี่ยนแปลงในโปรไฟล์ของคุณ',
+   'Complete earlier milestones first': 'ทำหมุดหมายก่อนหน้าให้สำเร็จก่อน',
+   'Reputation milestones': 'หมุดหมายความน่าเชื่อถือ',
+   'Build trust one step at a time': 'สร้างความน่าเชื่อถือทีละขั้น',
+   'Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Pandesal points to your borrower profile.':
+      'ทำสิ่งที่ชัดเจน เช่น ยืนยันตัวตนและชำระคืนตรงเวลา ทุกหมุดหมายที่ทำสำเร็จจะเพิ่มแต้ม Pandesal ในโปรไฟล์ผู้ยืมของคุณ',
+   'Next milestone': 'หมุดหมายถัดไป',
+   'The clearest action you can complete now.': 'สิ่งที่คุณทำได้ทันทีตอนนี้',
+   'Locked milestones': 'หมุดหมายที่ยังล็อกอยู่',
+   'These become available after earlier steps are complete.': 'หมุดหมายเหล่านี้จะเปิดให้ทำหลังจากทำขั้นตอนก่อนหน้าสำเร็จ',
+
+   // src/views/dashboard/components/ReputationMilestones.tsx
+   'Milestones show what to do next to build trust with lenders.': 'หมุดหมายบอกว่าคุณควรทำอะไรต่อไปเพื่อสร้างความน่าเชื่อถือกับผู้ให้กู้',
+   'How milestones work': 'หมุดหมายทำงานอย่างไร',
+
+   // src/views/dashboard/components/SuccessModal.tsx
+   'Loan request submitted': 'ส่งคำขอเงินกู้แล้ว',
+   'Your loan request is now live. Lenders can review it and fund your request.': 'คำขอเงินกู้ของคุณแสดงบนกระดานแล้ว ผู้ให้กู้สามารถตรวจดูและปล่อยกู้ให้คำขอของคุณได้',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
+      'เข้าร่วมกลุ่มผู้ยืมของ Moodeng บน Facebook หรือ Telegram เพื่อให้เราแนะนำคุณให้รู้จักกับผู้ให้กู้ดี ๆ',
+   'Join on Telegram': 'เข้าร่วมทาง Telegram',
+   'Join on Facebook': 'เข้าร่วมทาง Facebook',
+
+   // src/views/dashboard/components/TrustScoreSection.tsx
+   'About Pandesal points': 'เกี่ยวกับแต้ม Pandesal',
+   'Your Pandesal points are your track record on Moodeng, out of 500 — and counting. They already unlock perks, with bigger rewards on the way for top scorers. Keep building them!':
+      'แต้ม Pandesal คือประวัติผลงานของคุณบน Moodeng จากเต็ม 500 — และจะเพิ่มขึ้นอีก แต้มเหล่านี้ปลดล็อกสิทธิพิเศษได้แล้ว และจะมีรางวัลที่ใหญ่ขึ้นสำหรับผู้ที่ทำคะแนนได้สูงสุด สะสมต่อไปเลย!',
+   'Top tier reached': 'ถึงระดับสูงสุดแล้ว',
+   'Your Pandesal points grow with every on-time repayment and live with your wallet.': 'แต้ม Pandesal ของคุณเพิ่มขึ้นทุกครั้งที่ชำระคืนตรงเวลา และผูกอยู่กับกระเป๋าเงินของคุณ',
+
+   // src/views/dashboard/components/UpcomingLoanDues.tsx
+   'Upcoming Loan Dues': 'เงินกู้ที่ใกล้ครบกำหนด',
+   Unknown: 'ไม่ทราบ',
+   Default: 'ผิดนัดชำระ',
+   'Due in': 'ครบกำหนดใน',
+   today: 'วันนี้',
+   'View Insights': 'ดูข้อมูลเชิงลึก',
+   '1 day': '1 วัน',
+   '2 days': '2 วัน',
+   '3 days': '3 วัน',
+   '4 days': '4 วัน',
+   '5 days': '5 วัน',
+   '6 days': '6 วัน',
+   '7 days': '7 วัน',
+   '8 days': '8 วัน',
+   '9 days': '9 วัน',
+   '10 days': '10 วัน',
+   '11 days': '11 วัน',
+   '12 days': '12 วัน',
+   '13 days': '13 วัน',
+   '14 days': '14 วัน',
+   '15 days': '15 วัน',
+   '16 days': '16 วัน',
+   '17 days': '17 วัน',
+   '18 days': '18 วัน',
+   '19 days': '19 วัน',
+   '20 days': '20 วัน',
+   '21 days': '21 วัน',
+   '22 days': '22 วัน',
+   '23 days': '23 วัน',
+   '24 days': '24 วัน',
+   '25 days': '25 วัน',
+   '26 days': '26 วัน',
+   '27 days': '27 วัน',
+   '28 days': '28 วัน',
+   '29 days': '29 วัน',
+   '30 days': '30 วัน',
+   '31 days': '31 วัน',
 };
