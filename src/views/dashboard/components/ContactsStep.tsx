@@ -4,7 +4,12 @@ import { BellRing, Facebook, MessageCircle } from 'lucide-react';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
-import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, WHATSAPP_VERIFY_ENABLED } from '@/config/contactVerification';
+import {
+   buildMessengerVerifyLink,
+   buildWhatsAppVerifyLink,
+   MESSENGER_PAGE_ID,
+   WHATSAPP_VERIFY_ENABLED
+} from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -22,6 +27,9 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 // Both stamp the verified-at column plus an id we can message them on. This component polls those
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
+
+const SHOW_TYPED_CODE_AFTER_MS = 60_000;
+const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
 
 export default function ContactsStep({
    userId,
@@ -46,6 +54,14 @@ export default function ContactsStep({
    const [messengerLink, setMessengerLink] = useState<string | null>(null);
    const [verifyError, setVerifyError] = useState('');
    const pollRef = useRef<number | null>(null);
+   // Backup when the m.me link never reaches our bot (Facebook Lite, Messenger Lite, no Messenger app:
+   // Brian tapped "Open Messenger" ~30 times on 2026-09-26 and our Page never heard from him). After a
+   // minute, show the code itself: sending it to the Page from anywhere runs the SendPulse "Confirm
+   // Facebook (typed code)" flow (keyword trigger MDNG), which confirms the same Facebook account. The
+   // poll below picks it up exactly like the link path.
+   const [messengerCode, setMessengerCode] = useState<string | null>(null);
+   const [showTypedCode, setShowTypedCode] = useState(false);
+   const [codeCopied, setCodeCopied] = useState(false);
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
    // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
@@ -99,6 +115,23 @@ export default function ContactsStep({
    };
    useEffect(() => stopPolling, []);
 
+   useEffect(() => {
+      if (!messengerLink || messengerVerified) return;
+      const timer = window.setTimeout(() => setShowTypedCode(true), SHOW_TYPED_CODE_AFTER_MS);
+      return () => window.clearTimeout(timer);
+   }, [messengerLink, messengerVerified]);
+
+   const copyMessengerCode = async () => {
+      if (!messengerCode) return;
+      try {
+         await navigator.clipboard.writeText(messengerCode);
+         setCodeCopied(true);
+         window.setTimeout(() => setCodeCopied(false), 2000);
+      } catch {
+         // Clipboard blocked: the code is on screen to type by hand.
+      }
+   };
+
    const handleVerify = async (channel: Channel) => {
       setVerifyError('');
       setStartingChannel(channel);
@@ -112,7 +145,10 @@ export default function ContactsStep({
          if (error || !code) throw error ?? new Error('No code returned');
 
          const link = channel === 'whatsapp' ? buildWhatsAppVerifyLink(code) : buildMessengerVerifyLink(String(code));
-         if (channel === 'messenger') setMessengerLink(link);
+         if (channel === 'messenger') {
+            setMessengerLink(link);
+            setMessengerCode(String(code));
+         }
          window.open(link, '_blank', 'noopener,noreferrer');
 
          // Poll rather than wait for a page-visibility event — the borrower may switch apps for a
@@ -162,16 +198,46 @@ export default function ContactsStep({
          ) : null}
 
          {messengerLink && !messengerVerified ? (
-            <OptionCard
-               icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
-               onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
-               subtitle={
-                  <>
-                     Waiting… tap <b>Get Started</b> if Messenger asks
-                  </>
-               }
-               title="Open Messenger again"
-            />
+            <>
+               <OptionCard
+                  icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
+                  onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                  subtitle={
+                     <>
+                        Waiting… tap <b>Get Started</b> if Messenger asks
+                     </>
+                  }
+                  title="Open Messenger again"
+               />
+               {showTypedCode && messengerCode ? (
+                  <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
+                     <p className="font-semibold text-[#4c239f]">Messenger not opening?</p>
+                     <p className="mt-1">
+                        Send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you automatically.
+                     </p>
+                     <div className="mt-2 flex items-center gap-2">
+                        <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[16px] font-bold tracking-wide text-md-heading">
+                           {messengerCode}
+                        </code>
+                        <button
+                           type="button"
+                           onClick={() => void copyMessengerCode()}
+                           className="rounded-lg bg-[#6b55f7] px-3 py-2 text-[13px] font-bold text-white"
+                        >
+                           {codeCopied ? 'Copied' : 'Copy'}
+                        </button>
+                     </div>
+                     <a
+                        href={MOODENG_FACEBOOK_PAGE_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-block font-semibold text-md-primary-1200 underline underline-offset-4"
+                     >
+                        Open our Facebook page
+                     </a>
+                  </div>
+               ) : null}
+            </>
          ) : (
             <OptionCard
                badge="1 tap"

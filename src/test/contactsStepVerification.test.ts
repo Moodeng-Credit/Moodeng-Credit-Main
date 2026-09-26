@@ -131,6 +131,31 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).toContain('Verified');
    });
 
+   it('shows the code to send by hand after a minute, and still requires Facebook to confirm it', async () => {
+      await render();
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+
+      // Give the link a fair chance first.
+      expect(container.textContent).not.toContain('Messenger not opening?');
+
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(container.textContent).toContain('Messenger not opening?');
+      expect(container.textContent).toContain('MDNG-ABC123');
+      // No way around it: Continue waits for the Page to confirm the typed code.
+      expect(continueButton(container).disabled).toBe(true);
+
+      supa.state.usersRow.messenger_verified_at = '2026-09-26T00:00:00Z';
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(3100);
+      });
+      expect(continueButton(container).disabled).toBe(false);
+   });
+
    it('enables Continue immediately for a returning borrower whose WhatsApp is already verified', async () => {
       supa.state.usersRow.whatsapp_verified_at = '2026-09-01T00:00:00Z';
       await render();
