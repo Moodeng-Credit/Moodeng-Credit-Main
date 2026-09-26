@@ -112,7 +112,7 @@ serve(async (req) => {
 
    await recordJobRun(supabase, JOB_NAME, {
       startedAt,
-      ok: ok && (delivery.telegram_ok || delivery.email_ok),
+      ok: ok && (delivery.discord_ok || delivery.telegram_ok || delivery.email_ok),
       signalCount: input.missingCriticalEnv.length,
       detail: { heartbeat_ok: ok, delivery, facts: { ...input, now: undefined } }
    });

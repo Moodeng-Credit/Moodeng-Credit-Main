@@ -99,7 +99,7 @@ serve(async (req) => {
       body: detail
    });
 
-   const delivered = delivery.telegram_ok || delivery.email_ok;
+   const delivered = delivery.discord_ok || delivery.telegram_ok || delivery.email_ok;
    await recordJobRun(supabase, JOB_NAME, {
       startedAt,
       ok: delivered,

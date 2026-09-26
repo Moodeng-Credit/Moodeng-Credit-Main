@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import {
    formatEmailSubject,
    formatTelegramMessage,
+   type SecurityAlert,
+   type SecuritySeverity,
    severityEmoji,
    shouldEmail,
-   type SecurityAlert,
-   type SecuritySeverity
+   shouldTelegram
 } from '../../supabase/functions/_shared/securityAlerts';
 
 const alert = (over: Partial<SecurityAlert> = {}): SecurityAlert => ({
@@ -60,19 +61,30 @@ describe('formatEmailSubject', () => {
 
 describe('shouldEmail — the channel matrix', () => {
    const cases: Array<[SecuritySeverity, boolean, boolean, string]> = [
-      // severity, telegramOk, expected, why
+      // severity, chatDelivered (Discord or Telegram), expected, why
       ['critical', true, true, 'critical always emails (redundant channel)'],
       ['high', true, true, 'high always emails'],
       ['warning', true, true, 'warning always emails'],
-      ['info', true, false, 'info with Telegram delivered: no email (avoids heartbeat spam)'],
-      ['info', false, true, 'info but Telegram FAILED: email is the fail-loud backstop'],
-      ['warning', false, true, 'warning + Telegram failed: still emails'],
-      ['critical', false, true, 'critical + Telegram failed: still emails']
+      ['info', true, false, 'info delivered to chat: no email (avoids heartbeat spam)'],
+      ['info', false, true, 'info but no chat channel got it: email is the fail-loud backstop'],
+      ['warning', false, true, 'warning + chat failed: still emails'],
+      ['critical', false, true, 'critical + chat failed: still emails']
    ];
 
-   for (const [severity, telegramOk, expected, why] of cases) {
-      it(`${severity} / telegramOk=${telegramOk} → email=${expected} (${why})`, () => {
-         expect(shouldEmail(severity, telegramOk)).toBe(expected);
+   for (const [severity, chatDelivered, expected, why] of cases) {
+      it(`${severity} / chatDelivered=${chatDelivered} → email=${expected} (${why})`, () => {
+         expect(shouldEmail(severity, chatDelivered)).toBe(expected);
       });
    }
+});
+
+describe('shouldTelegram — only urgent alerts reach the team group', () => {
+   it('sends high and critical to Telegram', () => {
+      expect(shouldTelegram('critical')).toBe(true);
+      expect(shouldTelegram('high')).toBe(true);
+   });
+   it('keeps warnings and the all-OK heartbeat (info) out of Telegram', () => {
+      expect(shouldTelegram('warning')).toBe(false);
+      expect(shouldTelegram('info')).toBe(false);
+   });
 });
