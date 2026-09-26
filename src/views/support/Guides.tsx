@@ -47,9 +47,9 @@ const GUIDE_CATEGORY_LABELS = {
       All: 'Semua',
       [GUIDE_CATEGORIES.gettingStarted]: 'Mulai',
       [GUIDE_CATEGORIES.trustScore]: 'Poin Pandesal',
-      [GUIDE_CATEGORIES.creditLevel]: 'Level kredit',
-      [GUIDE_CATEGORIES.repayment]: 'Pembayaran',
-      [GUIDE_CATEGORIES.wallet]: 'Wallet',
+      [GUIDE_CATEGORIES.creditLevel]: 'Level Kredit',
+      [GUIDE_CATEGORIES.repayment]: 'Pembayaran kembali',
+      [GUIDE_CATEGORIES.wallet]: 'Dompet',
       [GUIDE_CATEGORIES.security]: 'Keamanan'
    },
    th: {

@@ -111,19 +111,19 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'Panduan',
-            description: 'Panduan langkah demi langkah untuk Pandesal points, level kredit, dan pembayaran.',
+            description: 'Panduan langkah demi langkah tentang poin Pandesal, Level Kredit, dan pembayaran kembali.',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
             label: 'FAQ',
-            description: 'Jawaban jelas tentang pinjaman, kepercayaan, verifikasi, dan pembayaran.',
+            description: 'Jawaban jelas tentang pinjaman, kepercayaan, verifikasi, dan pembayaran kembali.',
             icon: 'question_light.svg',
             path: '/help'
          },
          {
-            label: 'Update',
-            description: 'Update produk, perubahan, dan pengumuman penting.',
+            label: 'Pembaruan',
+            description: 'Pembaruan produk, perubahan, dan pengumuman penting.',
             icon: 'updates.png',
             path: '/support/updates',
             badge: 'BARU'

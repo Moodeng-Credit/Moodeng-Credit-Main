@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { type RootState } from '@/store/store';
 
@@ -45,7 +46,7 @@ const PUSH_COPY: Record<LocaleCode, PushCopy> = {
    id: {
       label: 'Notifikasi push di perangkat ini',
       description:
-         'Dapatkan notifikasi saat pembayaran jatuh tempo, atau saat peminjam yang sudah melunasi ke kamu mengajukan lagi. Hanya untuk perangkat ini.',
+         'Dapatkan notifikasi begitu pembayaran jatuh tempo, atau saat peminjam yang sudah melunasi pinjaman darimu mengajukan pinjaman lagi. Hanya berlaku untuk perangkat ini.',
       enable: 'Aktifkan',
       disable: 'Matikan',
       working: 'Memproses…',
@@ -178,12 +179,8 @@ export default function NotificationSettings() {
                   ) : null}
                </div>
 
-               {isBlocked ? (
-                  <p className="text-[8px] text-[#b4291f] font-normal leading-[10px]">{pushCopy.blocked}</p>
-               ) : null}
-               {push.isSupported ? null : (
-                  <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px]">{pushCopy.unsupported}</p>
-               )}
+               {isBlocked ? <p className="text-[8px] text-[#b4291f] font-normal leading-[10px]">{pushCopy.blocked}</p> : null}
+               {push.isSupported ? null : <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px]">{pushCopy.unsupported}</p>}
             </div>
          </div>
       </form>

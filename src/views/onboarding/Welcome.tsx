@@ -44,20 +44,20 @@ const WELCOME_COPY = {
       exploreMoodeng: 'I-explore ang Moodeng'
    },
    id: {
-      title: 'Mulai',
+      title: 'Persiapan akun',
       lenderHeadline: 'Beri pinjaman kepada orang sungguhan dan bantu mereka membangun kredit.',
       lenderSubtitle: 'Dapatkan imbal hasil onchain dengan Base.',
-      borrowerHeadline: 'Kamu sedang membangun reputasi yang bisa dibawa wallet kamu ke mana saja.',
+      borrowerHeadline: 'Kamu sedang membangun reputasi yang bisa dibawa dompetmu ke mana saja.',
       borrowerSubtitle: 'Pinjam dengan bertanggung jawab. Bangun kepercayaan. Buka limit lebih besar dari waktu ke waktu.',
       getStartedTitle: 'Mulai sekarang',
       recommended: 'Direkomendasikan',
       setupBody: 'Siapkan akun dan verifikasi identitas kamu untuk mengakses kredit',
-      startSetup: 'Mulai setup',
+      startSetup: 'Mulai persiapan',
       watchTutorial: 'Tonton tutorial',
       checkFirstTitle: 'Lihat dulu',
       noCommitment: 'Tanpa komitmen',
-      checkFirstBody: 'Jelajahi fitur, bandingkan rate, dan lihat cara kerjanya',
-      previewItems: ['Lihat fitur', 'Lihat rate', 'Pelajari cara kerjanya'],
+      checkFirstBody: 'Jelajahi fitur, bandingkan suku bunga, dan lihat cara kerjanya',
+      previewItems: ['Lihat fitur', 'Lihat suku bunga', 'Pelajari cara kerjanya'],
       exploreMoodeng: 'Jelajahi Moodeng'
    },
    th: {
@@ -248,7 +248,10 @@ export default function Welcome() {
                      <p className="text-md-b1 text-md-blue-800 dark:text-md-blue-200">{copy.checkFirstBody}</p>
                      <ul className="flex flex-col gap-md-0 pt-md-1">
                         {copy.previewItems.map((item) => (
-                           <li key={item} className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200">
+                           <li
+                              key={item}
+                              className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200"
+                           >
                               <span className="size-[6px] rounded-full bg-md-blue-700 shrink-0" />
                               {item}
                            </li>

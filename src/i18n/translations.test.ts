@@ -80,7 +80,7 @@ describe('localization translations', () => {
       expect(filipinoScreenTranslations['Learn the Moodeng Basics']).toBe('Alamin ang basics ng Moodeng');
       expect(filipinoScreenTranslations['Lent by']).toBe('Pinahiram ng');
       expect(screenTranslationsByLocale.id['Transaction History']).toBe('Riwayat transaksi');
-      expect(screenTranslationsByLocale.id['Need short-term support?']).toBe('Butuh dukungan jangka pendek?');
+      expect(screenTranslationsByLocale.id['Need short-term support?']).toBe('Butuh dana jangka pendek?');
       expect(screenTranslationsByLocale.th['Transaction History']).toBe('ประวัติธุรกรรม');
       expect(screenTranslationsByLocale.vi['Need short-term support?']).toBe('Cần hỗ trợ ngắn hạn?');
    });
@@ -89,8 +89,8 @@ describe('localization translations', () => {
       expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang mga antas ng kredito');
       expect(getGuideForLocale('how-credit-levels-work', 'fil')?.body).toContain('Tinutukoy ng mga antas ng kredito');
       expect(getGuideForLocale('verification-and-why-its-required', 'fil')?.body).toContain('Bakit kailangan mag-verify?');
-      expect(getGuidesForLocale('id').map((guide) => guide.title)).toContain('Cara kerja level kredit');
-      expect(getGuideForLocale('how-credit-levels-work', 'id')?.body).toContain('Level kredit menentukan');
+      expect(getGuidesForLocale('id').map((guide) => guide.title)).toContain('Cara kerja Level Kredit');
+      expect(getGuideForLocale('how-credit-levels-work', 'id')?.body).toContain('Level Kredit menentukan');
       expect(getGuideForLocale('verification-and-why-its-required', 'id')?.body).toContain('Mengapa perlu verifikasi?');
       expect(getGuidesForLocale('th').map((guide) => guide.title)).toContain('ระดับเครดิตทำงานอย่างไร');
       expect(getGuideForLocale('how-credit-levels-work', 'th')?.body).toContain('ระดับเครดิตกำหนด');

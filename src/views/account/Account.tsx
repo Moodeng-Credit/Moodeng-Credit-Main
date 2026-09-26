@@ -142,22 +142,22 @@ const ACCOUNT_COPY: Record<
       contactItems: {
          community: 'Bergabung dengan komunitas',
          help: 'Dapatkan bantuan',
-         contact: 'Hubungi kami'
+         contact: 'Kontak kami'
       },
       getInTouch: 'Hubungi kami',
       commonQuestions: 'Pertanyaan umum',
       viewMore: 'Lihat lainnya',
-      creditGuide: 'Tonton panduan peningkatan level kredit',
+      creditGuide: 'Tonton panduan naik Level Kredit',
       verified: 'Terverifikasi',
       notVerified: 'Belum terverifikasi',
-      connectWallet: 'Hubungkan wallet',
+      connectWallet: 'Hubungkan dompet',
       addBaseWallet: 'Siapkan dompet',
       signOut: 'Keluar',
       signOutTitle: 'Keluar?',
-      signOutBody: 'Kamu bisa masuk lagi kapan saja. Pandesal points tetap bersama wallet kamu.',
-      signingOut: 'Keluar...',
+      signOutBody: 'Kamu bisa masuk lagi kapan saja. Poin Pandesal kamu tetap terhubung dengan dompetmu.',
+      signingOut: 'Sedang keluar...',
       cancel: 'Batal',
-      settingsAria: 'Buka Pengaturan Akun',
+      settingsAria: 'Buka pengaturan akun',
       helpLabel: 'Bantuan'
    },
    th: {

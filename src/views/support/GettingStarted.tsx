@@ -108,10 +108,10 @@ const GETTING_STARTED_COPY = {
       lenderBenefitsDescription: 'Lihat mengapa memberi pinjaman penting',
       basics: [
          { title: 'Lihat panduan', description: 'Mulai cepat untuk pengguna baru' },
-         { title: 'Lihat manfaat', description: 'Lihat mengapa ini berguna' },
+         { title: 'Lihat manfaat', description: 'Lihat kenapa ini sepadan' },
          { title: 'Mengapa Moodeng memakai USDC', description: 'Pelajari cara kerja USDC' },
-         { title: 'Pelajari sistem peningkatan level kredit', description: 'Naikkan limit, bangun kepercayaan' },
-         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, wallet, Pandesal points, dan level kredit' },
+         { title: 'Pelajari sistem naik Level Kredit', description: 'Naikkan limit, bangun kepercayaan' },
+         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, dompet, poin Pandesal, dan Level Kredit' },
          { title: 'Baca Blog Moodeng', description: 'Cerita tentang kredit adil, rentenir, dan kepercayaan' }
       ]
    },

@@ -42,8 +42,8 @@ const ROLE_SELECTION_COPY = {
       copyright: '© 2026 Moodeng Credit. Nakareserba ang lahat ng karapatan'
    },
    id: {
-      errorTitle: 'Ada yang salah',
-      errorBody: 'Role kamu gagal disimpan. Coba lagi.',
+      errorTitle: 'Terjadi kesalahan',
+      errorBody: 'Peran kamu gagal disimpan. Coba lagi.',
       title: 'Bagaimana kamu ingin menggunakan Moodeng Credit?',
       subtitle: 'Ajukan pinjaman jangka pendek, bayar dengan jelas, dan bangun kepercayaan dari waktu ke waktu.',
       borrowerTitle: 'Saya peminjam',
@@ -53,7 +53,7 @@ const ROLE_SELECTION_COPY = {
       confirming: 'Mengonfirmasi...',
       confirm: 'Konfirmasi',
       footerLinks: ['Privasi', 'Ketentuan', 'Dokumen'],
-      copyright: '© 2026 Moodeng Credit. Semua hak dilindungi'
+      copyright: '© 2026 Moodeng Credit. Semua hak dilindungi.'
    },
    th: {
       errorTitle: 'มีบางอย่างผิดพลาด',
@@ -137,7 +137,9 @@ export default function RoleSelectionPage() {
                <img src="/hippos/role-selection.png" alt="Moodeng hippo" className="w-[228px] h-[200px] object-cover" />
 
                <div className="flex flex-col gap-1">
-                  <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading dark:text-white">{copy.title}</h1>
+                  <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading dark:text-white">
+                     {copy.title}
+                  </h1>
                   <p className="text-md-b1 text-md-neutral-700 dark:text-md-neutral-500 tracking-[-0.02em]">{copy.subtitle}</p>
                </div>
 
@@ -152,7 +154,9 @@ export default function RoleSelectionPage() {
                   ].join(' ')}
                >
                   <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading dark:text-white">{copy.borrowerTitle}</span>
-                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">{copy.borrowerBody}</span>
+                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">
+                     {copy.borrowerBody}
+                  </span>
                </button>
 
                <button
@@ -166,7 +170,9 @@ export default function RoleSelectionPage() {
                   ].join(' ')}
                >
                   <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading dark:text-white">{copy.lenderTitle}</span>
-                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">{copy.lenderBody}</span>
+                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">
+                     {copy.lenderBody}
+                  </span>
                </button>
 
                <button
@@ -186,7 +192,9 @@ export default function RoleSelectionPage() {
                      <span key={link}>{link}</span>
                   ))}
                </div>
-               <p className="text-[12px] text-md-neutral-1500 dark:text-md-neutral-800 tracking-[-0.02em] leading-[18px]">{copy.copyright}</p>
+               <p className="text-[12px] text-md-neutral-1500 dark:text-md-neutral-800 tracking-[-0.02em] leading-[18px]">
+                  {copy.copyright}
+               </p>
             </div>
          </div>
       </div>

@@ -85,7 +85,7 @@ export default function FAQ() {
                 [FAQ_CATEGORIES.borrowing]: 'Pinjaman',
                 [FAQ_CATEGORIES.trustScore]: 'Poin Pandesal',
                 [FAQ_CATEGORIES.creditLevel]: 'Level Kredit',
-                [FAQ_CATEGORIES.wallet]: 'Wallet'
+                [FAQ_CATEGORIES.wallet]: 'Dompet'
              }
            : {
                 title: 'Frequently Asked Questions',
