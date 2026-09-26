@@ -301,4 +301,174 @@ export const indonesianCoverageB: Record<string, string> = {
    'My insights': 'Wawasanku',
    'Moodeng grew to': 'Moodeng tumbuh ke',
    'Claim your ₱': 'Klaim ₱',
+
+   // src/views/dashboard/Dashboard.tsx
+   'Withdraw your USDC': 'Tarik USDC kamu',
+   'Cash out your funded loan to local currency.': 'Cairkan dana pinjamanmu ke mata uang lokal.',
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
+      'Poin Pandesal mencatat reputasimu di Moodeng. Verifikasi, pembayaran kembali yang lancar, dan aktivitas yang sehat membuat pemberi pinjaman lebih yakin padamu.',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
+      'Pencapaian adalah cara tambahan untuk mendapatkan poin Pandesal. Selesaikan untuk memperkuat profilmu dan membuat pemberi pinjaman lebih yakin dengan permintaanmu.',
+
+   // src/views/dashboard/RequestBoard.tsx
+   'Groceries and transport for the week': 'Belanja kebutuhan dan ongkos transportasi minggu ini',
+   'Medicine and school fees this week': 'Obat dan biaya sekolah minggu ini',
+   'Bills and transport while waiting on a client payment': 'Tagihan dan ongkos transportasi sambil menunggu pembayaran klien',
+   'Emergency groceries': 'Belanja kebutuhan darurat',
+   'Motorbike repair for delivery work': 'Servis motor untuk kerja antar-jemput pesanan',
+   'Restock for my sari-sari store': 'Isi ulang stok warung saya',
+   'New request paused': 'Permintaan baru dijeda',
+   OK: 'Oke',
+   'Request limit unavailable': 'Batas permintaan tidak dapat dicek',
+   'We could not check your request limit. Please try again.': 'Kami tidak bisa mengecek batas permintaanmu. Silakan coba lagi.',
+   'I want to borrow': 'Saya ingin meminjam',
+   'See how to request a short-term USDC loan and build trust through on-time repayment.':
+      'Lihat cara mengajukan pinjaman USDC jangka pendek dan membangun kepercayaan lewat pembayaran kembali tepat waktu.',
+   'I want to lend': 'Saya ingin memberi pinjaman',
+   'See how to fund loan requests, review borrower trust signals, and earn by supporting people you believe in.':
+      'Lihat cara mendanai permintaan pinjaman, menilai tanda kepercayaan peminjam, dan mendapat imbal hasil dengan mendukung orang yang kamu percaya.',
+   'Not sure yet — just show me around': 'Belum yakin — ajak saya berkeliling dulu',
+   'Get a quick overview of how Moodeng works before deciding which side to explore.':
+      'Lihat gambaran singkat cara kerja Moodeng sebelum memutuskan sisi mana yang ingin kamu jelajahi.',
+   'The request board': 'Papan Permintaan',
+   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
+      'Di sinilah peminjam memposting permintaan pinjaman USDC jangka pendek dan pemberi pinjaman melihat-lihatnya. Kedua sisi Moodeng bertemu di sini.',
+   'Borrowers apply here': 'Peminjam mengajukan di sini',
+   'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
+      'Peminjam menentukan jumlah pinjaman, tanggal pembayaran kembali, dan alasannya. Setelah terverifikasi, permintaannya tayang di papan ini.',
+   'Lenders browse & fund': 'Pemberi pinjaman memilih & mendanai',
+   "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
+      'Pemberi pinjaman menelusuri permintaan yang terbuka, mengecek riwayat pembayaran kembali dan tanda kepercayaan setiap peminjam, lalu mendanai yang mereka percaya.',
+   'Ready to get started?': 'Siap memulai?',
+   "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.":
+      'Buat akun gratis untuk meminjam atau memberi pinjaman. Pilih peranmu setelah mendaftar, dan kami akan memandumu untuk langkah selanjutnya.',
+   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
+      'Inilah pasarnya. Setelah permintaan tayang, pemberi pinjaman menilai jumlah, pembayaran kembali, dan peminjamnya sebelum mendanai.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
+      'Saat kamu siap meminjam, kartu ini membuka alur permintaan pinjaman. Punya kode dari teman? Masukkan untuk limit awal yang lebih tinggi.',
+   'Verify first': 'Verifikasi dulu',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
+      'Peminjam menjalani pemeriksaan identitas satu kali sebelum mengajukan pinjaman. Ini membantu pemberi pinjaman tahu bahwa mereka mendanai orang sungguhan.',
+   'Set your terms': 'Atur ketentuanmu',
+   'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
+      'Setelah verifikasi, di sinilah peminjam menentukan jumlah, pembayaran kembali, tanggal, dan alasan permintaannya.',
+   'Get funded, then repay': 'Didanai, lalu bayar kembali',
+   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
+      'Pemberi pinjaman mendanai permintaanmu dan USDC masuk ke dompetmu. Bayar kembali tepat waktu, maka poin Pandesal — dan limit berikutnya — akan bertambah. Jika kamu melewatkan pembayaran, itu akan terlihat di profil publikmu, karena pemberi pinjaman meminjamkan atas dasar kepercayaan.',
+   'Browse open requests': 'Lihat permintaan yang terbuka',
+   'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
+      'Lihat permintaan yang terbuka sebelum mendaftar — setiap kartu menampilkan jumlah, pembayaran kembali, peminjam, dan alasannya.',
+   'The hamburger opens Help and Support questions here. Scroll the list to browse more answers without leaving the board.':
+      'Tombol menu membuka pertanyaan Bantuan dan Dukungan di sini. Gulir daftarnya untuk melihat jawaban lain tanpa meninggalkan papan.',
+   'Ready to build credit?': 'Siap membangun kredit?',
+   'Create your account to request your first loan — or sign in if you already have one.':
+      'Buat akunmu untuk mengajukan pinjaman pertama — atau masuk jika kamu sudah punya akun.',
+   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
+      'Daftar ini adalah pasarnya. Setelah permintaan tayang, pemberi pinjaman bisa menilai jumlah, pembayaran kembali, dan profil peminjam sebelum mendanai.',
+   'When you are ready to borrow, this card opens the loan request form.':
+      'Saat kamu siap meminjam, kartu ini membuka formulir permintaan pinjaman.',
+   'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
+      'Sebelum peminjam yang belum terverifikasi bisa mengajukan pinjaman, Moodeng mengarahkan mereka ke layar verifikasi identitas singkat.',
+   'Loan terms preview': 'Pratinjau ketentuan pinjaman',
+   'Trust-building vs credit-building': 'Trust-Building Loan vs Credit-Building Loan',
+   'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
+      'Meminjam di bawah limit bisa membangun riwayat kepercayaan. Meminjam sebesar limit penuh dan membayar kembali tepat waktu yang menaikkan Level Kredit kamu.',
+   'Set a clear repayment': 'Tentukan pembayaran kembali yang jelas',
+   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
+      'Pembayaran kembalimu harus minimal $1 lebih besar dari jumlah yang kamu pinjam. Pemberi pinjaman memakai ini untuk menilai apakah permintaan itu layak didanai.',
+   'Explain the reason': 'Jelaskan alasannya',
+   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
+      'Alasan yang singkat dan spesifik membantu pemberi pinjaman memahami permintaanmu dan membangun kepercayaan sebelum mereka mendanainya.',
+   'Find open requests': 'Temukan permintaan yang terbuka',
+   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'Sebagai pemberi pinjaman, papan ini menampilkan orang-orang yang butuh dana USDC jangka pendek. Mulailah dengan membandingkan jumlah, pembayaran kembali, jatuh tempo, dan alasannya.',
+   'Review the request': 'Tinjau permintaannya',
+   'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
+      'Setiap kartu menunjukkan kebutuhan peminjam, jumlah yang akan mereka bayar kembali, dan apakah akun mereka dalam kondisi baik.',
+   'Fund with one tap': 'Danai dengan sekali ketuk',
+   'Tap Send Your Help. USDC goes straight from your wallet to the borrower once you approve.':
+      'Ketuk Kirim Bantuanmu. USDC langsung dikirim dari dompetmu ke peminjam setelah kamu menyetujuinya.',
+   'Get repaid, watch for the fee': 'Terima pembayaran, perhatikan biayanya',
+   'Repayment comes back to your wallet by the due date shown on each request. After your third funded loan, a small platform fee applies to help cover operating costs.':
+      'Pembayaran kembali masuk ke dompetmu paling lambat pada jatuh tempo yang tertera di setiap permintaan. Setelah pinjaman ketiga yang kamu danai, berlaku biaya platform kecil untuk membantu menutup biaya operasional.',
+   'Check Borrower Insights': 'Cek wawasan peminjam',
+   'Before funding, open Borrower Details to review repayment behavior, credit level, and trust signals. The tour continues there next.':
+      'Sebelum mendanai, buka Detail Peminjam untuk meninjau perilaku pembayaran kembali, Level Kredit, dan tanda kepercayaan. Tur berlanjut di sana.',
+   'Thanks — see you on the call!': 'Terima kasih — sampai jumpa di panggilan!',
+   "The team knows you're coming. The join link is in your email.": 'Tim sudah tahu kamu akan hadir. Tautan untuk bergabung ada di emailmu.',
+   'That link has expired': 'Tautan itu sudah kedaluwarsa',
+   'That call reminder is for an older booking. Check your latest message from Moodeng.':
+      'Pengingat panggilan itu untuk jadwal yang lama. Cek pesan terbaru dari Moodeng.',
+   'Repayment date required': 'Tanggal pembayaran kembali wajib diisi',
+   'Choose a repayment date before making your request.': 'Pilih tanggal pembayaran kembali sebelum membuat permintaan.',
+   'Reason required': 'Alasan wajib diisi',
+   'Add a short reason so lenders know what the loan is for.': 'Tambahkan alasan singkat agar pemberi pinjaman tahu untuk apa pinjamannya.',
+   'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.':
+      'Alasan ini terlihat asal-asalan. Permintaan yang tampak dibuat tanpa usaha bisa dihapus — kirim lagi jika tetap ingin memposting.',
+   'Check your reason': 'Cek alasanmu',
+   "We couldn't submit that": 'Kami tidak bisa mengirimnya',
+   "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.":
+      'Ada yang menghalangi permintaan ini. Muat ulang halaman dan coba lagi — kalau masih terjadi, ketuk Bantuan dan kami akan membereskannya.',
+   "Request wasn't saved": 'Permintaan tidak tersimpan',
+   "We couldn't save this loan request. Please try again.": 'Kami tidak bisa menyimpan permintaan pinjaman ini. Silakan coba lagi.',
+   'Try Again': 'Coba lagi',
+   "Request wasn't deleted": 'Permintaan tidak terhapus',
+   'Only the borrower who made a pending request can delete it.': 'Hanya peminjam yang membuat permintaan yang masih menunggu yang bisa menghapusnya.',
+   'Request deleted': 'Permintaan dihapus',
+   'Lenders will no longer see this request on the board.': 'Pemberi pinjaman tidak akan lagi melihat permintaan ini di papan.',
+   'It may already be funded or unavailable. Refreshing the board now.': 'Mungkin permintaan ini sudah didanai atau tidak tersedia. Memuat ulang papan sekarang.',
+   'Edit display name': 'Ubah nama tampilan',
+   'Hello,': 'Halo,',
+   'Role not selected': 'Peran belum dipilih',
+   'Verification in progress': 'Verifikasi sedang berlangsung',
+   'Verify Yourself >': 'Verifikasi Diri >',
+   'View IOU point history': 'Lihat riwayat poin IOU',
+   'Browse requests publicly.': 'Lihat permintaan secara publik.',
+   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
+      'Pilih peminjam atau pemberi pinjaman untuk membuka dasbor, pembayaran kembali, dan riwayatmu.',
+   "You're approved 🎉": 'Kamu disetujui 🎉',
+   'The team approved you — apply for your loan now.': 'Tim sudah menyetujuimu — ajukan pinjamanmu sekarang.',
+   'See you on the call': 'Sampai jumpa di panggilan',
+   'We’re reviewing you': 'Kami sedang meninjaumu',
+   'You can apply right after your video call.': 'Kamu bisa mengajukan pinjaman tepat setelah panggilan videomu.',
+   'Thanks for reaching out — we’ll message you on Messenger soon.': 'Terima kasih sudah menghubungi kami — kami akan segera mengirimimu pesan di Messenger.',
+   'Borrow USDC to build trust and': 'Pinjam USDC untuk membangun kepercayaan dan',
+   'unlock higher loan levels.': 'membuka level pinjaman lebih tinggi.',
+   'Opening...': 'Membuka...',
+   'Apply For A Loan': 'Ajukan pinjaman',
+   'Need USDC on Base?': 'Butuh USDC di Base?',
+   'Buy or bridge USDC to fund': 'Beli atau bridge USDC untuk mendanai',
+   'loans on the platform.': 'pinjaman di platform.',
+   'Buy or bridge USDC to fund loans.': 'Beli atau bridge USDC untuk mendanai pinjaman.',
+   'Fund Wallet': 'Isi dompet',
+   'New here? Take the 60-sec tour': 'Baru di sini? Ikuti tur 60 detik',
+   'See how requests, funding, repayment, and trust fit together.':
+      'Lihat bagaimana permintaan, pendanaan, pembayaran kembali, dan kepercayaan saling terhubung.',
+   'Start tour': 'Mulai tur',
+   'Clear filters': 'Hapus filter',
+   'Open filters': 'Buka filter',
+   'IMPORTANT NOTE': 'CATATAN PENTING',
+   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'Setelah pemberi pinjaman memberikan tiga pinjaman, biaya akan dikenakan ke akun mereka. Biaya ini membantu menutup biaya operasional platform dan memastikan dukungan berkelanjutan untuk semua pengguna.',
+   'No requests match your filters.': 'Tidak ada permintaan yang cocok dengan filtermu.',
+   'Try widening your search or clearing your filters.': 'Coba perluas pencarian atau hapus filtermu.',
+   'Sign Up': 'Daftar',
+   'the selected date': 'tanggal yang dipilih',
+   'Delete this request?': 'Hapus permintaan ini?',
+   'This cannot be undone.': 'Tindakan ini tidak bisa dibatalkan.',
+   'Close delete request confirmation': 'Tutup konfirmasi hapus permintaan',
+   'Loan request': 'Permintaan pinjaman',
+   'Borrowing $': 'Meminjam $',
+   'and repaying $': 'dan membayar kembali $',
+   by: 'paling lambat',
+   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'Pemberi pinjaman tidak akan lagi melihatnya. Kamu bisa membuat permintaan baru dari papan, tetapi menghapus berulang kali akan menjeda permintaan baru untuk sementara.',
+   'Deleting...': 'Menghapus...',
+   'Keep request': 'Simpan permintaan',
+   'Quick national ID & selfie check — available in select countries.': 'Cek cepat kartu identitas & selfie — tersedia di negara tertentu.',
+   'World App users can verify with World ID instead.': 'Pengguna World App bisa memverifikasi dengan World ID sebagai gantinya.',
+   'Quick answers before you sign up.': 'Jawaban cepat sebelum kamu mendaftar.',
+   'Show less': 'Tampilkan lebih sedikit',
+   'Take tour': 'Ikuti tur',
+   'See more': 'Lihat selengkapnya',
 };
