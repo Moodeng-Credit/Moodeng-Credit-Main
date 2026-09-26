@@ -62,7 +62,7 @@ Repay before the due date — on-time repayment builds your Pandesal points, and
       question: 'Can I borrow below my credit limit?',
       answer: `Yes — and we actually recommend it, especially when you're starting out. Borrowing below your limit is called a Trust-Building Loan.
 
-These smaller loans don't count toward unlocking the next Credit Level (for that, you need to borrow your full limit and repay on time), but they do build your repayment history and earn you more Pandesal points than borrowing your maximum would.
+These smaller loans don't count toward unlocking the next Credit Level (for that, you need to borrow your full limit and repay on time), but they do build your repayment history and earn Pandesal points each time you repay on time.
 
 So if you want to grow your reputation quickly, Trust-Building Loans are a great way to do it.`
    },
