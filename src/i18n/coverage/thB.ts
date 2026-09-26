@@ -336,4 +336,176 @@ export const thaiCoverageB: Record<string, string> = {
    'Loading voucher': 'กำลังโหลดบัตรกำนัล',
    'Moodeng grew to': 'Moodeng โตถึงระดับ',
    'Claim your ₱': 'รับ ₱',
+
+   // src/views/dashboard/Dashboard.tsx
+   'Withdraw your USDC': 'ถอน USDC ของคุณ',
+   'Cash out your funded loan to local currency.': 'ถอนเงินกู้ที่ได้รับเป็นเงินสกุลท้องถิ่น',
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
+      'แต้ม Pandesal บันทึกความน่าเชื่อถือของคุณบน Moodeng การยืนยันตัวตน การชำระคืนที่ครบถ้วนตรงเวลา และการใช้งานที่ดี ช่วยให้ผู้ให้กู้มั่นใจในตัวคุณมากขึ้น',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
+      'หมุดหมายเป็นอีกช่องทางในการรับแต้ม Pandesal ทำให้สำเร็จเพื่อเสริมโปรไฟล์ของคุณ และทำให้ผู้ให้กู้มั่นใจในคำขอของคุณมากขึ้น',
+
+   // src/views/dashboard/RequestBoard.tsx
+   'Hello,': 'สวัสดี',
+   'Edit display name': 'แก้ไขชื่อที่แสดง',
+   'Role not selected': 'ยังไม่ได้เลือกบทบาท',
+   'Verification in progress': 'กำลังยืนยันตัวตน',
+   'Verify Yourself >': 'ยืนยันตัวตน >',
+   'View status >': 'ดูสถานะ >',
+   'Continue verification >': 'ยืนยันตัวตนต่อ >',
+   'Try again >': 'ลองอีกครั้ง >',
+   'View details >': 'ดูรายละเอียด >',
+   'View IOU point history': 'ดูประวัติแต้ม IOU',
+   'Browse requests now. Choose a role when you are ready to borrow or lend.': 'ดูคำขอได้เลย แล้วเลือกบทบาทเมื่อคุณพร้อมจะยืมหรือให้กู้',
+   'Browse requests publicly.': 'ดูคำขอแบบสาธารณะ',
+   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
+      'เลือกเป็นผู้ยืมหรือผู้ให้กู้ เพื่อปลดล็อกแดชบอร์ด การชำระคืน และประวัติของคุณ',
+   "You're approved 🎉": 'คุณได้รับการอนุมัติแล้ว 🎉',
+   'The team approved you — apply for your loan now.': 'ทีมงานอนุมัติคุณแล้ว — ขอเงินกู้ได้เลย',
+   'See you on the call': 'แล้วพบกันในวิดีโอคอล',
+   'We’re reviewing you': 'เรากำลังตรวจสอบข้อมูลของคุณ',
+   'You can apply right after your video call.': 'คุณขอเงินกู้ได้ทันทีหลังวิดีโอคอล',
+   'Thanks for reaching out — we’ll message you on Messenger soon.': 'ขอบคุณที่ติดต่อมา — เราจะส่งข้อความหาคุณทาง Messenger เร็ว ๆ นี้',
+   'Borrow USDC to build trust and': 'ยืม USDC เพื่อสร้างความน่าเชื่อถือและ',
+   'unlock higher loan levels.': 'ปลดล็อกระดับเงินกู้ที่สูงขึ้น',
+   'Opening...': 'กำลังเปิด...',
+   'Apply For A Loan': 'ขอเงินกู้',
+   'Need USDC on Base?': 'ต้องการ USDC บน Base ใช่ไหม?',
+   'Buy or bridge USDC to fund': 'ซื้อหรือโอน USDC ข้ามเครือข่ายมาเพื่อปล่อยกู้',
+   'loans on the platform.': 'บนแพลตฟอร์ม',
+   'Buy or bridge USDC to fund loans.': 'ซื้อหรือโอน USDC ข้ามเครือข่ายมาเพื่อปล่อยกู้',
+   'Fund Wallet': 'เติมเงินเข้ากระเป๋า',
+   'New here? Take the 60-sec tour': 'มาใหม่ใช่ไหม? ดูทัวร์ 60 วินาที',
+   'See how requests, funding, repayment, and trust fit together.': 'ดูว่าคำขอ การปล่อยกู้ การชำระคืน และความน่าเชื่อถือเชื่อมโยงกันอย่างไร',
+   'Start tour': 'เริ่มทัวร์',
+   'Open filters': 'เปิดตัวกรอง',
+   'IMPORTANT NOTE': 'หมายเหตุสำคัญ',
+   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'เมื่อผู้ให้กู้ปล่อยกู้ครบสามครั้ง จะมีการเรียกเก็บค่าธรรมเนียมจากบัญชี ค่าธรรมเนียมนี้ช่วยครอบคลุมค่าใช้จ่ายในการดำเนินงานของแพลตฟอร์ม และช่วยให้เราดูแลผู้ใช้ทุกคนได้อย่างต่อเนื่อง',
+   'No requests match your filters.': 'ไม่มีคำขอที่ตรงกับตัวกรองของคุณ',
+   'Try widening your search or clearing your filters.': 'ลองขยายการค้นหาหรือล้างตัวกรอง',
+   'Clear filters': 'ล้างตัวกรอง',
+   'Sign Up': 'สมัครสมาชิก',
+   'Delete this request?': 'ลบคำขอนี้ใช่ไหม?',
+   'This cannot be undone.': 'การดำเนินการนี้ย้อนกลับไม่ได้',
+   'Close delete request confirmation': 'ปิดหน้ายืนยันการลบคำขอ',
+   'Loan request': 'คำขอเงินกู้',
+   'Borrowing $': 'ยืม $',
+   'and repaying $': 'และชำระคืน $',
+   'the selected date': 'วันที่เลือกไว้',
+   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'ผู้ให้กู้จะไม่เห็นคำขอนี้อีก คุณสร้างคำขอใหม่จากกระดานได้ แต่หากลบบ่อยครั้ง ระบบจะระงับการสร้างคำขอใหม่ชั่วคราว',
+   'Deleting...': 'กำลังลบ...',
+   'Keep request': 'เก็บคำขอไว้',
+   'Quick national ID & selfie check — available in select countries.': 'ตรวจสอบบัตรประชาชนและเซลฟีอย่างรวดเร็ว — ใช้ได้ในบางประเทศ',
+   'World App users can verify with World ID instead.': 'ผู้ใช้ World App สามารถยืนยันด้วย World ID แทนได้',
+   'Quick answers before you sign up.': 'คำตอบสั้น ๆ ก่อนคุณสมัครสมาชิก',
+   'Show less': 'แสดงน้อยลง',
+   'Take tour': 'ดูทัวร์',
+   'See more': 'ดูเพิ่มเติม',
+   'I want to borrow': 'ฉันต้องการยืม',
+   'See how to request a short-term USDC loan and build trust through on-time repayment.':
+      'ดูวิธีขอเงินกู้ USDC ระยะสั้น และสร้างความน่าเชื่อถือด้วยการชำระคืนตรงเวลา',
+   'I want to lend': 'ฉันต้องการให้กู้',
+   'See how to fund loan requests, review borrower trust signals, and earn by supporting people you believe in.':
+      'ดูวิธีปล่อยกู้ให้คำขอ ตรวจดูสัญญาณความน่าเชื่อถือของผู้ยืม และสร้างรายได้จากการสนับสนุนคนที่คุณเชื่อมั่น',
+   'Not sure yet — just show me around': 'ยังไม่แน่ใจ — ขอดูรอบ ๆ ก่อน',
+   'Get a quick overview of how Moodeng works before deciding which side to explore.':
+      'ดูภาพรวมสั้น ๆ ว่า Moodeng ทำงานอย่างไร ก่อนตัดสินใจว่าจะเริ่มจากฝั่งไหน',
+   'The request board': 'กระดานคำขอ',
+   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
+      'ที่นี่คือที่ที่ผู้ยืมโพสต์คำขอเงินกู้ USDC ระยะสั้น และผู้ให้กู้เข้ามาดูคำขอ ทั้งสองฝั่งของ Moodeng มาพบกันที่นี่',
+   'Borrowers apply here': 'ผู้ยืมส่งคำขอที่นี่',
+   'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
+      'ผู้ยืมกำหนดจำนวนเงินกู้ วันชำระคืน และเหตุผล เมื่อยืนยันตัวตนแล้ว คำขอจะแสดงบนกระดานนี้',
+   'Lenders browse & fund': 'ผู้ให้กู้ดูคำขอและปล่อยกู้',
+   "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
+      'ผู้ให้กู้เลื่อนดูคำขอที่เปิดอยู่ ตรวจสอบประวัติการชำระคืนและสัญญาณความน่าเชื่อถือของผู้ยืมแต่ละคน แล้วปล่อยกู้ให้คนที่ตนเชื่อมั่น',
+   'Ready to get started?': 'พร้อมเริ่มต้นหรือยัง?',
+   "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.":
+      'สร้างบัญชีฟรีเพื่อยืมหรือให้กู้ เลือกบทบาทหลังสมัครสมาชิก แล้วเราจะแนะนำขั้นตอนที่เหลือให้',
+   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
+      'ที่นี่คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว ผู้ให้กู้จะตรวจดูจำนวนเงิน ยอดชำระคืน และผู้ยืมก่อนปล่อยกู้',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
+      'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดขั้นตอนการขอเงินกู้ ได้รับโค้ดจากเพื่อนใช่ไหม? ใส่โค้ดเพื่อรับวงเงินเริ่มต้นที่สูงขึ้น',
+   'Verify first': 'ยืนยันตัวตนก่อน',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
+      'ผู้ยืมต้องยืนยันตัวตนครั้งเดียวก่อนขอเงินกู้ เพื่อให้ผู้ให้กู้มั่นใจว่ากำลังปล่อยกู้ให้คนจริง',
+   'Set your terms': 'กำหนดเงื่อนไขของคุณ',
+   'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
+      'หลังยืนยันตัวตน ผู้ยืมจะกำหนดจำนวนเงิน ยอดชำระคืน วันที่ และเหตุผลของคำขอได้ที่นี่',
+   'Get funded, then repay': 'รับเงินกู้ แล้วชำระคืน',
+   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
+      'ผู้ให้กู้ปล่อยกู้ให้คำขอของคุณ แล้ว USDC จะเข้ากระเป๋าเงินของคุณ ชำระคืนตรงเวลาแล้วแต้ม Pandesal และวงเงินถัดไปของคุณจะเพิ่มขึ้น หากพลาดการชำระคืน ข้อมูลจะแสดงในโปรไฟล์สาธารณะของคุณ ผู้ให้กู้จึงปล่อยกู้ได้อย่างไว้วางใจ',
+   'Browse open requests': 'ดูคำขอที่เปิดอยู่',
+   'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
+      'ดูคำขอที่เปิดอยู่ก่อนสมัครสมาชิก — การ์ดแต่ละใบแสดงจำนวนเงิน ยอดชำระคืน ผู้ยืม และเหตุผล',
+   'The hamburger opens Help and Support questions here. Scroll the list to browse more answers without leaving the board.':
+      'ปุ่มเมนูสามขีดจะเปิดคำถามช่วยเหลือที่นี่ เลื่อนรายการเพื่อดูคำตอบเพิ่มเติมได้โดยไม่ต้องออกจากกระดาน',
+   'Ready to build credit?': 'พร้อมสร้างเครดิตหรือยัง?',
+   'Create your account to request your first loan — or sign in if you already have one.':
+      'สร้างบัญชีเพื่อขอเงินกู้ครั้งแรก — หรือเข้าสู่ระบบหากคุณมีบัญชีอยู่แล้ว',
+   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
+      'รายการนี้คือตลาดกลาง เมื่อคำขอแสดงบนกระดานแล้ว ผู้ให้กู้สามารถตรวจดูจำนวนเงิน ยอดชำระคืน และโปรไฟล์ผู้ยืมก่อนปล่อยกู้',
+   'When you are ready to borrow, this card opens the loan request form.': 'เมื่อคุณพร้อมจะยืม การ์ดนี้จะเปิดแบบฟอร์มขอเงินกู้',
+   'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
+      'ก่อนที่ผู้ยืมที่ยังไม่ได้ยืนยันตัวตนจะขอเงินกู้ได้ Moodeng จะพาไปยังหน้ายืนยันตัวตนแบบรวดเร็ว',
+   'Loan terms preview': 'ตัวอย่างเงื่อนไขเงินกู้',
+   'Trust-building vs credit-building': 'Trust-Building Loan กับ Credit-Building Loan',
+   'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
+      'การยืมต่ำกว่าวงเงินช่วยสร้างประวัติความน่าเชื่อถือได้ ส่วนการยืมเต็มวงเงินและชำระคืนตรงเวลาคือสิ่งที่เพิ่มระดับเครดิตของคุณ',
+   'Set a clear repayment': 'กำหนดยอดชำระคืนให้ชัดเจน',
+   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
+      'ยอดชำระคืนต้องมากกว่าจำนวนที่ยืมอย่างน้อย $1 ผู้ให้กู้ใช้ข้อมูลนี้ตัดสินใจว่าคำขอนั้นน่าปล่อยกู้หรือไม่',
+   'Explain the reason': 'อธิบายเหตุผล',
+   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
+      'เหตุผลที่สั้นและเจาะจงช่วยให้ผู้ให้กู้เข้าใจคำขอ และสร้างความน่าเชื่อถือก่อนที่เขาจะปล่อยกู้',
+   'Find open requests': 'ค้นหาคำขอที่เปิดอยู่',
+   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'สำหรับผู้ให้กู้ กระดานนี้แสดงคนที่ต้องการความช่วยเหลือเป็น USDC ระยะสั้น เริ่มจากเปรียบเทียบจำนวนเงิน ยอดชำระคืน วันครบกำหนด และเหตุผล',
+   'Review the request': 'ตรวจดูคำขอ',
+   'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
+      'การ์ดแต่ละใบแสดงสิ่งที่ผู้ยืมต้องการ ยอดที่เขาวางแผนจะชำระคืน และสถานะบัญชีว่าดีหรือไม่',
+   'Fund with one tap': 'ปล่อยกู้ได้ในแตะเดียว',
+   'Tap Send Your Help. USDC goes straight from your wallet to the borrower once you approve.':
+      'แตะ ส่งความช่วยเหลือ แล้ว USDC จะโอนจากกระเป๋าเงินของคุณไปยังผู้ยืมโดยตรงเมื่อคุณอนุมัติ',
+   'Get repaid, watch for the fee': 'รับเงินคืน และอย่าลืมเรื่องค่าธรรมเนียม',
+   'Repayment comes back to your wallet by the due date shown on each request. After your third funded loan, a small platform fee applies to help cover operating costs.':
+      'เงินที่ชำระคืนจะกลับเข้ากระเป๋าเงินของคุณภายในวันครบกำหนดที่แสดงในแต่ละคำขอ หลังจากปล่อยกู้ครั้งที่สาม จะมีค่าธรรมเนียมแพลตฟอร์มเล็กน้อยเพื่อช่วยครอบคลุมค่าใช้จ่ายในการดำเนินงาน',
+   'Check Borrower Insights': 'ดูข้อมูลเชิงลึกของผู้ยืม',
+   'Before funding, open Borrower Details to review repayment behavior, credit level, and trust signals. The tour continues there next.':
+      'ก่อนปล่อยกู้ ให้เปิด รายละเอียดผู้ยืม เพื่อตรวจดูพฤติกรรมการชำระคืน ระดับเครดิต และสัญญาณความน่าเชื่อถือ ทัวร์จะไปต่อที่หน้านั้น',
+   'Groceries and transport for the week': 'ค่าของใช้และค่าเดินทางสำหรับสัปดาห์นี้',
+   'Medicine and school fees this week': 'ค่ายาและค่าเทอมสัปดาห์นี้',
+   'Bills and transport while waiting on a client payment': 'ค่าบิลและค่าเดินทางระหว่างรอลูกค้าจ่ายเงิน',
+   'Emergency groceries': 'ค่าของใช้จำเป็นฉุกเฉิน',
+   'Motorbike repair for delivery work': 'ค่าซ่อมมอเตอร์ไซค์สำหรับงานส่งของ',
+   'Restock for my sari-sari store': 'ซื้อสินค้าเข้าร้านโชห่วยของฉัน',
+   OK: 'ตกลง',
+   'New request paused': 'ระงับการสร้างคำขอใหม่ชั่วคราว',
+   'Request limit unavailable': 'ตรวจสอบขีดจำกัดคำขอไม่ได้',
+   'We could not check your request limit. Please try again.': 'เราตรวจสอบขีดจำกัดคำขอของคุณไม่ได้ โปรดลองอีกครั้ง',
+   'Thanks — see you on the call!': 'ขอบคุณ — แล้วพบกันในวิดีโอคอล!',
+   "The team knows you're coming. The join link is in your email.": 'ทีมงานทราบแล้วว่าคุณจะเข้าร่วม ลิงก์เข้าร่วมอยู่ในอีเมลของคุณ',
+   'That link has expired': 'ลิงก์นั้นหมดอายุแล้ว',
+   'That call reminder is for an older booking. Check your latest message from Moodeng.':
+      'การแจ้งเตือนนั้นเป็นของการนัดหมายเก่า โปรดดูข้อความล่าสุดจาก Moodeng',
+   'Repayment date required': 'ต้องระบุวันชำระคืน',
+   'Choose a repayment date before making your request.': 'เลือกวันชำระคืนก่อนส่งคำขอ',
+   'Reason required': 'ต้องระบุเหตุผล',
+   'Add a short reason so lenders know what the loan is for.': 'เพิ่มเหตุผลสั้น ๆ เพื่อให้ผู้ให้กู้รู้ว่าคุณจะนำเงินกู้ไปใช้ทำอะไร',
+   'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.':
+      'เหตุผลนี้ดูเขียนอย่างลวก ๆ คำขอที่ดูไม่ตั้งใจอาจถูกลบ — ส่งอีกครั้งหากต้องการโพสต์ต่อ',
+   'Check your reason': 'ตรวจสอบเหตุผลของคุณ',
+   "We couldn't submit that": 'เราส่งคำขอนั้นไม่ได้',
+   "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.":
+      'มีบางอย่างขัดขวางคำขอนี้ โปรดรีเฟรชแล้วลองอีกครั้ง — หากยังเกิดขึ้นอีก แตะ ช่วยเหลือ แล้วเราจะช่วยแก้ไขให้',
+   "Request wasn't saved": 'ยังไม่ได้บันทึกคำขอ',
+   "We couldn't save this loan request. Please try again.": 'เราบันทึกคำขอเงินกู้นี้ไม่ได้ โปรดลองอีกครั้ง',
+   'Try Again': 'ลองอีกครั้ง',
+   "Request wasn't deleted": 'ยังไม่ได้ลบคำขอ',
+   'Only the borrower who made a pending request can delete it.': 'เฉพาะผู้ยืมที่สร้างคำขอที่รอดำเนินการเท่านั้นที่ลบคำขอได้',
+   'Request deleted': 'ลบคำขอแล้ว',
+   'Lenders will no longer see this request on the board.': 'ผู้ให้กู้จะไม่เห็นคำขอนี้บนกระดานอีกต่อไป',
+   'It may already be funded or unavailable. Refreshing the board now.': 'คำขอนี้อาจได้รับการปล่อยกู้แล้วหรือไม่มีอยู่แล้ว กำลังรีเฟรชกระดาน',
 };
