@@ -65,7 +65,7 @@ Trust-Building Loans are smaller loans below your current limit. They help you d
 
 Credit-Building Loans are full-limit loans. Repaying one on time raises your limit and unlocks the next Credit Level.
 
-Most borrowers use both — trust loans to keep activity healthy, credit loans to grow their limit over time.`
+Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow their limit over time.`
    },
    {
       slug: 'how-repayments-affect-your-trust-score',
