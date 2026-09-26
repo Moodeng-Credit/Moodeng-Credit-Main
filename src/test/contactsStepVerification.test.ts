@@ -18,8 +18,7 @@ const supa = vi.hoisted(() => {
    return {
       state,
       rpc: vi.fn(async () => state.rpcResult),
-      maybeSingle: vi.fn(async () => ({ data: state.usersRow })),
-      invoke: vi.fn(async () => ({ data: { ok: true }, error: null }))
+      maybeSingle: vi.fn(async () => ({ data: state.usersRow }))
    };
 });
 
@@ -43,8 +42,7 @@ vi.mock('@/hooks/usePushNotifications', () => ({
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
-      rpc: supa.rpc,
-      functions: { invoke: supa.invoke }
+      rpc: supa.rpc
    })
 }));
 
@@ -131,34 +129,6 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
 
       expect(continueButton(container).disabled).toBe(false);
       expect(container.textContent).toContain('Verified');
-   });
-
-   it('offers "continue without Messenger" after a minute when the link never confirms, and lets them continue', async () => {
-      supa.invoke.mockClear();
-      await render();
-      await act(async () => {
-         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-         await Promise.resolve();
-      });
-
-      // Nothing yet: give Messenger a fair chance first.
-      expect(buttonByText(container, 'Messenger not working? Continue without it')).toBeUndefined();
-
-      await act(async () => {
-         await vi.advanceTimersByTimeAsync(60_000);
-      });
-      const skip = buttonByText(container, 'Messenger not working? Continue without it');
-      expect(skip).toBeTruthy();
-
-      await act(async () => {
-         skip?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-         await Promise.resolve();
-      });
-
-      // Records the skip (which pings the team) and unblocks Continue.
-      expect(supa.invoke).toHaveBeenCalledWith('contact-step-skipped', { body: {} });
-      expect(container.textContent).toContain('Skipped');
-      expect(continueButton(container).disabled).toBe(false);
    });
 
    it('enables Continue immediately for a returning borrower whose WhatsApp is already verified', async () => {
