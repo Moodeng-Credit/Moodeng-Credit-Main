@@ -1,72 +1,12 @@
 import { useEffect, useMemo } from 'react';
 
-import { screenTranslationsByLocale } from '@/i18n/screenTranslations';
-import { type LocaleCode, translations } from '@/i18n/translations';
+import { buildPhraseMap, getTranslation, translateKnownPhrases } from '@/i18n/phraseTranslation';
+import type { LocaleCode } from '@/i18n/translations';
 
 const textOriginals = new WeakMap<Text, string>();
 const attributeOriginals = new WeakMap<Element, Map<string, string>>();
 const translatedTextNodes = new WeakSet<Text>();
 const LOCALIZED_ATTRIBUTES = ['aria-label', 'title', 'alt', 'placeholder'] as const;
-
-function normalizePhrase(value: string) {
-   return value.replace(/\s+/g, ' ').trim();
-}
-
-function escapeRegExp(value: string) {
-   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function getPhrasePattern(phrase: string) {
-   const startsWithWord = /^[A-Za-z0-9]/.test(phrase);
-   const endsWithWord = /[A-Za-z0-9]$/.test(phrase);
-   const phrasePattern = escapeRegExp(phrase).replace(/\s+/g, '\\s+');
-   const leadingBoundary = startsWithWord ? '(^|[^\\p{L}\\p{N}])' : '()';
-   const trailingBoundary = endsWithWord ? '($|[^\\p{L}\\p{N}])' : '()';
-
-   return new RegExp(`${leadingBoundary}(${phrasePattern})${trailingBoundary}`, 'gu');
-}
-
-function buildPhraseMap(locale: LocaleCode) {
-   if (locale === 'en') return new Map<string, string>();
-
-   const phraseMap = new Map<string, string>();
-
-   Object.entries(translations.en).forEach(([key, englishValue]) => {
-      const translatedValue = translations[locale][key as keyof typeof translations.en];
-      if (englishValue && translatedValue && englishValue !== translatedValue) {
-         phraseMap.set(normalizePhrase(englishValue), translatedValue);
-      }
-   });
-
-   Object.entries(screenTranslationsByLocale[locale] ?? {}).forEach(([englishValue, translatedValue]) => {
-      phraseMap.set(normalizePhrase(englishValue), translatedValue);
-   });
-
-   return phraseMap;
-}
-
-function getTranslation(phraseMap: Map<string, string>, value: string) {
-   const normalized = normalizePhrase(value);
-   if (!normalized) return null;
-   return phraseMap.get(normalized) ?? null;
-}
-
-function translateKnownPhrases(phraseMap: Map<string, string>, value: string) {
-   if (normalizePhrase(value).length > 96) return null;
-
-   let translatedValue = value;
-
-   Array.from(phraseMap.entries())
-      .filter(([englishValue, translatedPhrase]) => englishValue.length >= 4 && englishValue !== translatedPhrase)
-      .sort(([left], [right]) => right.length - left.length)
-      .forEach(([englishValue, translatedPhrase]) => {
-         translatedValue = translatedValue.replace(getPhrasePattern(englishValue), (_match, leadingBoundary, _phrase, trailingBoundary) => {
-            return `${leadingBoundary}${translatedPhrase}${trailingBoundary}`;
-         });
-      });
-
-   return translatedValue === value ? null : translatedValue;
-}
 
 function localizeTextNode(node: Text, locale: LocaleCode, phraseMap: Map<string, string>) {
    const currentValue = node.nodeValue ?? '';
