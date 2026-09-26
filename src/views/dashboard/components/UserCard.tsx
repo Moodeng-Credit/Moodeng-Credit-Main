@@ -28,6 +28,7 @@ import {
 import { formatBoardExpiryLabel, getRequestBoardExpiry, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
+import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
 import { confirmLoanPayment, fetchLoans, type LoanSideEffectError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -189,6 +190,8 @@ export default function UserCard(loan: UserCardProps) {
    // overlay, so we can surface guidance + a reconnect action instead of a bare spinner
    // when a wallet isn't answering on this device.
    const [processingSlow, setProcessingSlow] = useState(false);
+   // Which payment is in flight, so the waiting overlay can point at the Coinbase window for Base Pay.
+   const [processingMethod, setProcessingMethod] = useState<PaymentMethod | null>(null);
    const [showDetails, setShowDetails] = useState(openByDefault);
 
    // Open the request fully when arriving via a shared link (the prop flips true once the board
@@ -198,6 +201,10 @@ export default function UserCard(loan: UserCardProps) {
    }, [openByDefault]);
    const { showToast, showToastByConfig } = useToast();
    const storeUserId = useSelector((state: RootState) => state.auth.user.id);
+   const savedWalletAddress = useSelector((state: RootState) => state.auth.user.walletAddress);
+   const savedWalletProvider = useSelector((state: RootState) => state.auth.user.walletProvider);
+   const savedWalletNeedsReconnect =
+      Boolean(savedWalletAddress) && !isBaseWalletProvider(savedWalletProvider) && !isOpenfortWalletProvider(savedWalletProvider);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
@@ -289,6 +296,7 @@ export default function UserCard(loan: UserCardProps) {
          const transferCoin = loanData.coin?.trim() || 'USDC';
          cancelledRef.current = false;
          setIsProcessing(true);
+         setProcessingMethod(method);
          setPendingTxHash(null);
 
          try {
@@ -433,8 +441,16 @@ export default function UserCard(loan: UserCardProps) {
    // specifically want a non-Base wallet use "Use a different wallet" below.
    // An Instant Wallet lender sends straight from it (gasless, no popup), like Instant Wallet repayments.
    const runDirectLend = useCallback(async () => {
+      // A lender whose saved wallet isn't connected right now should reconnect that wallet, not be
+      // sent through Coinbase: Base Pay would pay from a different wallet (their Base Account), and
+      // repayments would land there too. Base Pay stays the default for Base Account wallets and for
+      // lenders with no wallet saved yet.
+      if (activePaymentMethod !== 'openfort' && !isConnected && savedWalletNeedsReconnect) {
+         setShowWalletChecklist(true);
+         return;
+      }
       await executeLend(activePaymentMethod === 'openfort' ? 'openfort' : isConnected ? 'wallet' : 'base');
-   }, [activePaymentMethod, executeLend, isConnected]);
+   }, [activePaymentMethod, executeLend, isConnected, savedWalletNeedsReconnect]);
 
    const handleLend = async (e: MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -458,9 +474,6 @@ export default function UserCard(loan: UserCardProps) {
    const dueFormatted = format(due, 'MMM dd yyyy');
    const isOwnLoan = loanData.borrowerUser === userId;
    const isLent = loanData.loanStatus === 'Lent';
-   // Mirrors runDirectLend: no Instant Wallet and no connected wallet means Base Pay (Coinbase's popup).
-   const willUseBasePay =
-      isLenderCard && showDetails && !isFundingAdmin && !isProcessing && activePaymentMethod !== 'openfort' && !isConnected;
    const canDeleteOwnRequest = Boolean(isAuthenticated && isOwnLoan && loanData.loanStatus === 'Requested' && onDeleteOwnRequest);
    const borrowerContextProfileData = useMemo(
       () => borrowerContextProfile ?? normalizeBorrowerContextProfile(borrowerProfile),
@@ -557,7 +570,11 @@ export default function UserCard(loan: UserCardProps) {
                         {pendingTxHash ? 'Confirming on Base…' : 'Sending your help…'}
                      </p>
                      <p className="mt-1 text-md-b3 text-md-neutral-1200">
-                        {pendingTxHash ? 'Recording your funding — hang tight.' : 'Approve the transaction in your wallet.'}
+                        {pendingTxHash
+                           ? 'Recording your funding — hang tight.'
+                           : processingMethod === 'base'
+                             ? 'Approve in the Coinbase window. It may be behind this one.'
+                             : 'Approve the transaction in your wallet.'}
                      </p>
                   </div>
                   {explorerTxUrl ? (
@@ -576,7 +593,7 @@ export default function UserCard(loan: UserCardProps) {
                       and a way to reconnect, so a stuck lender is never left on a bare spinner. */}
                   {!pendingTxHash ? (
                      <div className="mt-1 flex flex-col items-center gap-2">
-                        {processingSlow ? (
+                        {processingSlow && processingMethod !== 'base' ? (
                            <>
                               <p className="text-md-b3 text-md-neutral-1200">
                                  Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.
@@ -754,27 +771,16 @@ export default function UserCard(loan: UserCardProps) {
                      <ChevronRight className="w-5 h-5" />
                   </button>
                ) : (
-                  <>
-                     {/* The one-tap path is Base Pay: Coinbase opens its own window (creating a Base Account
-                         for first-timers, who are then asked to set up a backup). Say so up front, or the
-                         Coinbase pop-ups look like they came from nowhere. */}
-                     {willUseBasePay ? (
-                        <p className="rounded-[12px] bg-[#eef3ff] px-3 py-2.5 text-md-b3 font-medium leading-5 text-[#1d3f8f]">
-                           A Coinbase window will open. That’s your wallet: approve the payment there. It may also ask you to set up a
-                           backup, which is worth doing so you never lose access.
-                        </p>
-                     ) : null}
-                     <button
-                        onClick={handleLend}
-                        disabled={isProcessing}
-                        type="button"
-                        data-tour-target="lender-send-help-button"
-                        className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
-                     >
-                        {isProcessing ? 'Processing...' : 'Send Your Help'}
-                        {!isProcessing && <Send className="w-5 h-5" />}
-                     </button>
-                  </>
+                  <button
+                     onClick={handleLend}
+                     disabled={isProcessing}
+                     type="button"
+                     data-tour-target="lender-send-help-button"
+                     className="w-full bg-md-primary-1200 text-md-neutral-100 text-md-b1 font-semibold py-md-3 rounded-md-lg flex items-center justify-center gap-2 transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
+                  >
+                     {isProcessing ? 'Processing...' : 'Send Your Help'}
+                     {!isProcessing && <Send className="w-5 h-5" />}
+                  </button>
                )}
 
                {/* Base Pay is the one-tap default; give non-Base lenders an explicit way in. */}

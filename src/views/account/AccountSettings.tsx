@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { AlertCircle, ArrowLeft, Camera, CheckCircle2, ChevronRight, Clock3, WalletCards } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Camera, CheckCircle2, ChevronRight, Clock3, ExternalLink, WalletCards } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
@@ -2005,6 +2005,18 @@ export default function AccountSettings() {
                                        <p className="truncate text-md-b2 font-medium text-md-neutral-1200">
                                           {truncateAddress(user?.walletAddress || '')}
                                        </p>
+                                       {/* A Base Account lives at Coinbase, not in an app the lender has installed. */}
+                                       {isBaseAccountWallet ? (
+                                          <a
+                                             href="https://keys.coinbase.com"
+                                             target="_blank"
+                                             rel="noopener noreferrer"
+                                             className="mt-0.5 inline-flex items-center gap-1 text-md-b2 font-semibold text-md-primary-1200 underline underline-offset-4"
+                                          >
+                                             Open wallet
+                                             <ExternalLink className="size-3.5" aria-hidden="true" />
+                                          </a>
+                                       ) : null}
                                     </div>
                                     <button
                                        type="button"
