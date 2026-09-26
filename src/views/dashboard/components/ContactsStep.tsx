@@ -23,6 +23,8 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
 
+const SKIP_MESSENGER_AFTER_MS = 60_000;
+
 export default function ContactsStep({
    userId,
    onBack,
@@ -46,6 +48,13 @@ export default function ContactsStep({
    const [messengerLink, setMessengerLink] = useState<string | null>(null);
    const [verifyError, setVerifyError] = useState('');
    const pollRef = useRef<number | null>(null);
+   // The m.me link only works when it reaches our bot; on Facebook Lite, Messenger Lite or a phone
+   // without Messenger it never does, and there was no way forward (Brian tapped "Open Messenger"
+   // ~30 times over 35 minutes, 2026-09-26). After a minute of waiting, offer to continue without it;
+   // contact-step-skipped records that and asks the team on Discord to reach them another way.
+   const [canSkipMessenger, setCanSkipMessenger] = useState(false);
+   const [messengerSkipped, setMessengerSkipped] = useState(false);
+   const [isSkipping, setIsSkipping] = useState(false);
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
    // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
@@ -54,7 +63,7 @@ export default function ContactsStep({
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
    const pushRequired = push.isSupported;
-   const contactVerified = whatsappVerified || messengerVerified;
+   const contactVerified = whatsappVerified || messengerVerified || messengerSkipped;
    const canContinue = contactVerified && (pushOn || !pushRequired);
 
    const handleEnablePush = async () => {
@@ -98,6 +107,25 @@ export default function ContactsStep({
       }
    };
    useEffect(() => stopPolling, []);
+
+   useEffect(() => {
+      if (!messengerLink || messengerVerified) return;
+      const timer = window.setTimeout(() => setCanSkipMessenger(true), SKIP_MESSENGER_AFTER_MS);
+      return () => window.clearTimeout(timer);
+   }, [messengerLink, messengerVerified]);
+
+   const handleSkipMessenger = async () => {
+      setIsSkipping(true);
+      try {
+         // Best-effort: the borrower continues either way; the call only records it and pings the team.
+         const { error } = await getSupabaseBrowserClient().functions.invoke('contact-step-skipped', { body: {} });
+         if (error) console.error('contact-step-skipped failed', error);
+      } finally {
+         stopPolling();
+         setMessengerSkipped(true);
+         setIsSkipping(false);
+      }
+   };
 
    const handleVerify = async (channel: Channel) => {
       setVerifyError('');
@@ -161,17 +189,36 @@ export default function ContactsStep({
             />
          ) : null}
 
-         {messengerLink && !messengerVerified ? (
+         {messengerSkipped ? (
             <OptionCard
+               done
+               doneLabel="Skipped — we'll reach you another way"
                icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
-               onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
-               subtitle={
-                  <>
-                     Waiting… tap <b>Get Started</b> if Messenger asks
-                  </>
-               }
-               title="Open Messenger again"
+               title="Messenger"
             />
+         ) : messengerLink && !messengerVerified ? (
+            <>
+               <OptionCard
+                  icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
+                  onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                  subtitle={
+                     <>
+                        Waiting… tap <b>Get Started</b> if Messenger asks
+                     </>
+                  }
+                  title="Open Messenger again"
+               />
+               {canSkipMessenger ? (
+                  <button
+                     type="button"
+                     disabled={isSkipping}
+                     onClick={() => void handleSkipMessenger()}
+                     className="self-center text-md-b3 font-semibold text-md-primary-1200 underline underline-offset-4 disabled:opacity-60"
+                  >
+                     {isSkipping ? 'One moment…' : 'Messenger not working? Continue without it'}
+                  </button>
+               ) : null}
+            </>
          ) : (
             <OptionCard
                badge="1 tap"

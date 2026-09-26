@@ -240,8 +240,43 @@ export default function AuthConfirmPage() {
       // signup link doesn't have to be a dead end — point the user at /auth/verify-code
       // when we know which signup is pending. Recovery links have their own CTA above.
       const pendingVerificationEmail =
-         typeof window !== 'undefined' ? sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY)?.trim() ?? '' : '';
+         typeof window !== 'undefined' ? (sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY)?.trim() ?? '') : '';
       const showCodeRecovery = !isRecoveryContext && !!pendingVerificationEmail;
+      // Supabase returns "User is banned" for a suspended account. Telling them their link "did not
+      // work" sent them round in circles retrying sign-in; say what it is and where to go instead.
+      const isBanned = /\bbanned\b/i.test(error);
+
+      if (isBanned) {
+         return (
+            <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] dark:bg-[#0D0B14] dark:text-[#F0EAFF] sm:px-6 sm:py-10">
+               <main className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col justify-center">
+                  <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 text-center shadow-[0_18px_50px_rgba(36,14,62,0.08)] dark:border-[#2D1F4A] dark:bg-[#160F28] sm:px-7">
+                     <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0] dark:text-[#C084FC]">
+                        Account access
+                     </p>
+                     <h1 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
+                        This account can’t sign in
+                     </h1>
+                     <p className="mx-auto mt-3 max-w-[350px] text-base font-medium leading-6 text-[#70617F] dark:text-[#A89BB8]">
+                        It has been suspended. If you think this is a mistake, email us and we’ll look into it.
+                     </p>
+                     <a
+                        href="mailto:support@moodeng.app?subject=My%20Moodeng%20account%20can%E2%80%99t%20sign%20in"
+                        className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-base font-semibold text-[#FDFCFD] transition hover:opacity-95"
+                     >
+                        Email support@moodeng.app
+                     </a>
+                     <Link
+                        to="/sign-in"
+                        className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
+                     >
+                        Back to sign in
+                     </Link>
+                  </section>
+               </main>
+            </div>
+         );
+      }
 
       return (
          <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] dark:bg-[#0D0B14] dark:text-[#F0EAFF] sm:px-6 sm:py-10">
@@ -267,7 +302,9 @@ export default function AuthConfirmPage() {
                               className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
                            />
                         </div>
-                        <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0] dark:text-[#C084FC]">Account access</p>
+                        <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0] dark:text-[#C084FC]">
+                           Account access
+                        </p>
                         <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
                            This link did not work
                         </h1>
