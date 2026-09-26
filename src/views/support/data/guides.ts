@@ -53,7 +53,7 @@ Because your Pandesal points are tied to your wallet, they travel with you — t
 
 Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, your limit grows — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — and unlocks new levels.
 
-You only advance by completing a Credit Growth Loan: a loan at your full current limit, repaid in full and on time.`
+You only advance by completing a Credit-Building Loan: a loan at your full current limit, repaid in full and on time.`
    },
    {
       slug: 'trust-building-vs-credit-building-loans',

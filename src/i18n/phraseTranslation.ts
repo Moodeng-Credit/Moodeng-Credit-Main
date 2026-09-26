@@ -50,21 +50,34 @@ export function getTranslation(phraseMap: Map<string, string>, value: string) {
 // like "Make Your Permintaan", "Lanjutkan to application" and "Set Repayment Tanggal", which
 // Indonesian-locale borrowers were shown in the loan request (seen in PostHog, 2026-09). A string
 // with no translation stays in readable English instead.
+// The qualifying phrases, longest first, with their patterns compiled once per phrase map rather
+// than on every text node the bridge visits.
+const phrasePatternCache = new WeakMap<Map<string, string>, Array<[RegExp, string]>>();
+
+function getPhrasePatterns(phraseMap: Map<string, string>) {
+   let patterns = phrasePatternCache.get(phraseMap);
+   if (!patterns) {
+      patterns = Array.from(phraseMap.entries())
+         .filter(
+            ([englishValue, translatedPhrase]) => englishValue.length >= 4 && englishValue !== translatedPhrase && /\s/.test(englishValue)
+         )
+         .sort(([left], [right]) => right.length - left.length)
+         .map(([englishValue, translatedPhrase]): [RegExp, string] => [getPhrasePattern(englishValue), translatedPhrase]);
+      phrasePatternCache.set(phraseMap, patterns);
+   }
+   return patterns;
+}
+
 export function translateKnownPhrases(phraseMap: Map<string, string>, value: string) {
    if (normalizePhrase(value).length > 96) return null;
 
    let translatedValue = value;
 
-   Array.from(phraseMap.entries())
-      .filter(
-         ([englishValue, translatedPhrase]) => englishValue.length >= 4 && englishValue !== translatedPhrase && /\s/.test(englishValue)
-      )
-      .sort(([left], [right]) => right.length - left.length)
-      .forEach(([englishValue, translatedPhrase]) => {
-         translatedValue = translatedValue.replace(getPhrasePattern(englishValue), (_match, leadingBoundary, _phrase, trailingBoundary) => {
-            return `${leadingBoundary}${translatedPhrase}${trailingBoundary}`;
-         });
+   getPhrasePatterns(phraseMap).forEach(([pattern, translatedPhrase]) => {
+      translatedValue = translatedValue.replace(pattern, (_match, leadingBoundary, _phrase, trailingBoundary) => {
+         return `${leadingBoundary}${translatedPhrase}${trailingBoundary}`;
       });
+   });
 
    return translatedValue === value ? null : translatedValue;
 }

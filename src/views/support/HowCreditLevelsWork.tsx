@@ -12,7 +12,7 @@ export type CreditLevelsVariant = 'support' | 'public';
 
 const PAGE_TITLE = 'How Credit Levels Work on Moodeng Credit';
 const PAGE_DESCRIPTION =
-   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit Growth Loan is, and how to unlock your next level.';
+   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit-Building Loan is, and how to unlock your next level.';
 // The public marketing route is the canonical home for this content so search
 // engines index one URL even though it also renders inside the in-app support area.
 const CANONICAL_PATH = '/learn/how-credit-levels-work';
@@ -106,15 +106,15 @@ const relatedGuides = [
 const faqs = [
    {
       q: 'What is a Credit Level on Moodeng?',
-      a: 'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit Growth Loans.'
+      a: 'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.'
    },
    {
       q: 'How do I move to the next level?',
-      a: 'Take a Credit Growth Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.'
+      a: 'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.'
    },
    {
       q: 'Does borrowing a small amount level me up?',
-      a: 'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit Growth Loan advances you.'
+      a: 'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.'
    },
    {
       q: 'Can I skip levels by repaying early or paying extra?',
@@ -156,10 +156,10 @@ const quizQuestions: QuizQuestion[] = [
    },
    {
       q: 'Which loan actually levels you up?',
-      options: ['Any small loan', 'A full-limit Credit Growth Loan', 'Paying a fee', 'Logging in daily'],
+      options: ['Any small loan', 'A full-limit Credit-Building Loan', 'Paying a fee', 'Logging in daily'],
       answer: 1,
-      correctLine: 'Exactly — only a full-limit Credit Growth Loan, repaid on time, bumps your cap.',
-      wrongLine: 'Nice try! Only a full-limit Credit Growth Loan raises your level.'
+      correctLine: 'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.',
+      wrongLine: 'Nice try! Only a full-limit Credit-Building Loan raises your level.'
    },
    {
       q: 'Your limit is $20. You borrow $10 and repay on time. What happens?',
@@ -598,7 +598,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                      </g>
                   ))}
                </svg>
-               <figcaption>Each Credit Growth Loan repaid on time steps your limit up to the next level.</figcaption>
+               <figcaption>Each Credit-Building Loan repaid on time steps your limit up to the next level.</figcaption>
             </figure>
          </section>
 
@@ -635,7 +635,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                <div className="credit-leveling-section__header">
                   <div className="credit-leveling-kicker">The ladder</div>
                   <h2>Your limit grows one level at a time</h2>
-                  <p>Everyone starts at Level 1. Each successful Credit Growth Loan unlocks the next borrowing limit.</p>
+                  <p>Everyone starts at Level 1. Each successful Credit-Building Loan unlocks the next borrowing limit.</p>
                </div>
                <img src="/hippos/sitting-down-pointing-hippo.png" alt="" className="hclw-section-mascot" loading="lazy" />
             </div>
