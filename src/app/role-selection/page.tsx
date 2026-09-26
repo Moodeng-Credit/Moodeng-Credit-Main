@@ -73,15 +73,15 @@ const ROLE_SELECTION_COPY = {
       errorTitle: 'Có lỗi xảy ra',
       errorBody: 'Không thể lưu vai trò của bạn. Vui lòng thử lại.',
       title: 'Bạn muốn dùng Moodeng Credit như thế nào?',
-      subtitle: 'Yêu cầu khoản vay ngắn hạn, trả rõ ràng và xây dựng niềm tin theo thời gian.',
+      subtitle: 'Yêu cầu khoản vay ngắn hạn, trả nợ minh bạch và xây dựng niềm tin theo thời gian.',
       borrowerTitle: 'Tôi là người vay',
-      borrowerBody: 'Yêu cầu khoản vay USDC và xây dựng niềm tin qua trả đúng hạn.',
+      borrowerBody: 'Yêu cầu khoản vay USDC và xây dựng niềm tin nhờ trả nợ đúng hạn.',
       lenderTitle: 'Tôi là người cho vay',
-      lenderBody: 'Cấp vốn cho yêu cầu vay và kiếm lợi suất bằng cách hỗ trợ người vay đáng tin cậy.',
+      lenderBody: 'Cấp vốn cho các yêu cầu vay và kiếm lợi nhuận bằng cách hỗ trợ những người vay đáng tin cậy.',
       confirming: 'Đang xác nhận...',
       confirm: 'Xác nhận',
       footerLinks: ['Quyền riêng tư', 'Điều khoản', 'Tài liệu'],
-      copyright: '© 2026 Moodeng Credit. Bảo lưu mọi quyền'
+      copyright: '© 2026 Moodeng Credit. Bảo lưu mọi quyền.'
    }
 } satisfies Record<
    LocaleCode,

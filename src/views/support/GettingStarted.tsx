@@ -133,17 +133,17 @@ const GETTING_STARTED_COPY = {
    },
    vi: {
       title: 'Bắt đầu',
-      heading: 'Tìm hiểu cơ bản về Moodeng',
+      heading: 'Tìm hiểu những điều cơ bản về Moodeng',
       latestVideo: 'Video hướng dẫn mới nhất',
       latestVideoTitle: 'Video hướng dẫn mới nhất',
       lenderBenefitsTitle: 'Lợi ích cho người cho vay',
-      lenderBenefitsDescription: 'Xem vì sao cho vay quan trọng',
+      lenderBenefitsDescription: 'Xem vì sao việc cho vay có ý nghĩa',
       basics: [
          { title: 'Xem hướng dẫn', description: 'Bắt đầu nhanh cho người dùng mới' },
-         { title: 'Xem lợi ích', description: 'Xem vì sao đáng dùng' },
+         { title: 'Xem lợi ích', description: 'Xem vì sao đáng để thử' },
          { title: 'Vì sao Moodeng dùng USDC', description: 'Tìm hiểu USDC hoạt động ra sao' },
          { title: 'Tìm hiểu hệ thống nâng hạng tín dụng', description: 'Tăng hạn mức, xây dựng niềm tin' },
-         { title: 'Học thêm tại Academy', description: 'Vay, ví, Pandesal points và hạng tín dụng' },
+         { title: 'Tìm hiểu thêm tại Học viện', description: 'Vay, ví, điểm Pandesal và Hạng tín dụng' },
          { title: 'Đọc Blog Moodeng', description: 'Câu chuyện về tín dụng công bằng, cho vay nặng lãi và niềm tin' }
       ]
    }

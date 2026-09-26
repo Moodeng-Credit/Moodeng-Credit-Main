@@ -360,78 +360,90 @@ const VIETNAMESE_FAQS: FAQItem[] = [
    {
       id: 'what-is-moodeng-credit',
       question: 'Moodeng Credit là gì?',
-      answer: `Moodeng Credit là nền tảng vay cho phép bạn yêu cầu các khoản vay ngắn hạn bằng USDC đồng thời tích lũy Pandesal points gắn với ví của bạn.
+      answer: `Moodeng Credit là nền tảng vay cho phép bạn yêu cầu các khoản vay ngắn hạn bằng USDC, đồng thời tích lũy điểm Pandesal gắn với ví của bạn.
 
-Thay vì tập trung vào điểm tín dụng truyền thống, Moodeng giúp bạn xây dựng niềm tin qua việc vay có trách nhiệm và trả đúng hạn. Theo thời gian, niềm tin này giúp bạn mở khóa hạng tín dụng cao hơn và yêu cầu khoản vay lớn hơn.
+Thay vì dựa vào điểm tín dụng truyền thống, Moodeng giúp bạn xây dựng niềm tin thông qua việc vay có trách nhiệm và trả nợ đúng hạn. Theo thời gian, niềm tin này giúp bạn mở khóa Hạng tín dụng cao hơn và yêu cầu những khoản vay lớn hơn.
 
-Pandesal points của bạn không bị khóa trong một ứng dụng. Điểm này phản ánh độ tin cậy và giúp bạn xây dựng uy tín có thể mang theo.`
+Điểm Pandesal của bạn không bị khóa trong một ứng dụng duy nhất. Điểm được thiết kế để phản ánh mức độ đáng tin cậy của bạn và giúp bạn xây dựng uy tín có thể mang theo về sau.`
    },
    {
       id: 'how-does-borrowing-work',
       question: 'Việc vay trên Moodeng hoạt động như thế nào?',
-      answer: `Bạn đăng một yêu cầu vay từ Bảng yêu cầu với số tiền mong muốn, trong hạn mức hiện tại, ngày trả, lãi suất và lý do vay.
+      answer: `Bạn đăng yêu cầu vay trên Bảng yêu cầu, kèm số tiền mong muốn (trong phạm vi hạn mức hiện tại), ngày trả, lãi suất và lý do vay.
 
-Người cho vay xem các yêu cầu đang mở và chọn khoản muốn cấp vốn. Khi được cấp vốn, USDC được chuyển thẳng vào ví của bạn. Bạn trả lại vào hoặc trước ngày đã thỏa thuận từ bất kỳ ví nào có USDC.`
+Người cho vay xem các yêu cầu đang mở và chọn yêu cầu muốn cấp vốn. Khi một người cho vay cấp vốn cho bạn, USDC sẽ được chuyển thẳng vào ví của bạn. Bạn trả lại cho họ vào hoặc trước ngày đã thỏa thuận, từ bất kỳ ví nào có USDC.`
    },
    {
       id: 'what-is-a-trust-score',
-      question: 'Pandesal points là gì và được tính như thế nào?',
-      answer: `Pandesal points là tín hiệu uy tín cho thấy bạn trả khoản vay đáng tin cậy đến mức nào.
+      question: 'Điểm Pandesal là gì và được tính như thế nào?',
+      answer: `Điểm Pandesal là tín hiệu uy tín, phản ánh mức độ đáng tin cậy trong việc trả nợ của bạn.
 
-Điểm tăng khi bạn trả đủ và đúng hạn, và giảm khi trả muộn hoặc vỡ nợ. Người cho vay dùng điểm này để đánh giá rủi ro trước khi cấp vốn cho yêu cầu của bạn.`
+Điểm tăng khi bạn trả đủ và đúng hạn, và giảm khi bạn trả trễ hoặc vỡ nợ. Người cho vay dùng điểm này để đánh giá rủi ro khi quyết định có cấp vốn cho yêu cầu của bạn hay không.`
    },
    {
       id: 'what-is-a-credit-level',
       question: 'Hạng tín dụng là gì?',
-      answer: `Hạng tín dụng kiểm soát số tiền bạn có thể vay trong một lần.
+      answer: `Hạng tín dụng quyết định số tiền tối đa bạn có thể vay mỗi lần.
 
-Bạn bắt đầu ở Level 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ tăng hạn mức và mở khóa cấp tiếp theo: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, và tiếp tục.`
+Bạn bắt đầu ở Hạng 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ nâng hạn mức và mở khóa hạng tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại.`
    },
    {
       id: 'what-is-a-base-wallet',
       question: 'Moodeng dùng ví nào?',
-      answer: `Người vay trên Moodeng dùng Instant Wallet theo mặc định. Đây là ví riêng của Moodeng, được tạo ngay từ thông tin đăng nhập Moodeng của bạn: không cần tải ứng dụng và không có seed phrase. Khoản vay của bạn sẽ vào ví này, và ví hoàn toàn thuộc về bạn — bạn có thể xuất key bất cứ lúc nào.
+      answer: `Người vay trên Moodeng mặc định dùng Instant Wallet. Đây là ví của chính Moodeng, được tạo ngay từ tài khoản đăng nhập Moodeng của bạn: không cần tải ứng dụng và không phải ghi lại cụm từ khôi phục (seed phrase). Khoản vay sẽ được chuyển vào ví này, và ví hoàn toàn thuộc về bạn — bạn có thể xuất khóa riêng (private key) bất cứ lúc nào.
 
-Instant Wallet chạy trên Base, mạng blockchain Layer 2 do Coinbase xây dựng cho giao dịch crypto nhanh, rẻ và an toàn. Giao dịch USDC bằng Instant Wallet hoặc Base Account trên Base không tốn gas. Khi bạn nhận khoản vay, toàn bộ số tiền vào ví của bạn. Khi bạn trả, người cho vay nhận đủ số tiền.
+Instant Wallet chạy trên Base, một mạng blockchain Layer 2 do Coinbase xây dựng, được thiết kế cho các giao dịch crypto nhanh, rẻ và an toàn. Moodeng dùng Base vì một lý do quan trọng: giao dịch USDC không mất phí gas. Gửi hoặc nhận USDC bằng Instant Wallet hoặc Base Account trên Base không tốn bất kỳ phí mạng nào. Khi bạn nhận khoản vay, toàn bộ số tiền sẽ vào ví của bạn. Khi bạn trả nợ, người cho vay nhận lại đủ từng xu.
 
-Thích dùng Base Account hơn? Bạn có thể kết nối nó thay thế. Base Account là ví thông minh của ứng dụng Base — cũng không cần mật khẩu và không có seed phrase. Với người cho vay, chúng tôi khuyến nghị dùng Base Account. Người cho vay cũng có thể dùng Instant Wallet hoặc kết nối ví khác (như MetaMask) — Instant Wallet và Base Account giúp giao dịch không tốn gas.`
+Bạn thích dùng Base Account hơn? Bạn có thể kết nối Base Account thay cho Instant Wallet. Base Account là ví thông minh của ứng dụng Base — cũng không cần mật khẩu và không có seed phrase, nên bạn đăng nhập bằng email hoặc khóa truy cập (passkey) và không có cụm từ khôi phục 12 từ nào có thể bị mất. Với người cho vay, chúng tôi khuyến nghị dùng Base Account. Người cho vay cũng có thể dùng Instant Wallet hoặc kết nối ví khác (như MetaMask) — Instant Wallet và Base Account giúp giao dịch không mất phí gas.`
    },
    {
       id: 'what-is-usdc',
-      question: 'USDC là gì và vì sao Moodeng dùng nó?',
-      answer: `USDC là stablecoin neo 1:1 với đô la Mỹ, do Circle phát hành. Một USDC luôn bằng một đô la, nên giá trị khoản vay trên Moodeng không biến động theo thị trường crypto.
+      question: 'USDC là gì và vì sao Moodeng sử dụng USDC?',
+      answer: `USDC là stablecoin neo giá 1:1 với đô la Mỹ, do Circle — một công ty tài chính được quản lý tại Mỹ — phát hành. Một USDC luôn bằng một đô la, nên số tiền vay trên Moodeng không biến động theo thị trường crypto — khoản vay $20 hôm nay vẫn có giá trị $20 khi trả.
 
-Moodeng dùng USDC vì nó chuyển toàn cầu nhanh, được các sàn lớn hỗ trợ, có thể đổi sang tiền địa phương và không tốn gas khi dùng trên Base. Bạn có thể nhận, giữ, dùng on-chain hoặc rút ra tiền pháp định theo lựa chọn của mình.`
+Moodeng dùng USDC vì nó giải quyết những vấn đề mà cả tiền tệ truyền thống lẫn các loại tiền mã hóa khác đều gặp phải. Chuyển khoản ngân hàng bằng USD mất nhiều ngày, đòi hỏi cả hai bên có hạ tầng ngân hàng phù hợp và thường tốn phí. Các loại tiền mã hóa biến động mạnh như Bitcoin hay ETH có thể dao động 10–20% trong suốt thời hạn khoản vay, khiến cả hai bên chịu thêm rủi ro tỷ giá bên cạnh rủi ro trả nợ. USDC không gặp vấn đề nào trong số đó.
+
+USDC còn có thể chuyển đến bất kỳ đâu trên thế giới chỉ trong vài giây, được mọi sàn giao dịch lớn chấp nhận (bạn có thể đổi sang tiền địa phương trên Coinbase, Binance, Kraken hoặc các dịch vụ nạp/rút tại địa phương) và không mất phí gas khi dùng trên Base. USDC hoạt động dù bạn ở Manila, Lagos hay Mumbai.`
    },
    {
       id: 'does-moodeng-charge-fees',
       question: 'Moodeng có tính phí không?',
-      answer: `Không. Moodeng Credit miễn phí sử dụng. Không có phí nền tảng khi vay, không có phí khi cho vay, không có gói tháng và không có phí thiết lập. 100% tiền người cho vay cấp đến người vay, và 100% tiền trả lại đến người cho vay.
+      answer: `Không. Moodeng Credit miễn phí sử dụng. Không có phí nền tảng khi vay, không có phí khi cho vay, không có phí thuê bao hàng tháng, không có phí thiết lập. 100% số tiền người cho vay cấp vốn được chuyển đến người vay, và 100% khoản trả nợ được chuyển đến người cho vay.
 
-Phí mạng hoặc gas cũng bằng 0 khi bạn dùng Instant Wallet hoặc Base Account trên Base. Chi phí duy nhất là lãi suất người vay tự đề xuất, và phần đó thuộc hoàn toàn về người cho vay.`
+Phí mạng (gas) cũng bằng 0 khi bạn dùng Instant Wallet hoặc Base Account trên Base. Vì vậy, chi phí duy nhất khi dùng Moodeng là lãi suất mà người vay đề xuất — và khoản đó thuộc hoàn toàn về người cho vay, không phải chúng tôi.
+
+Làm sao chúng tôi duy trì miễn phí? Chúng tôi không thu bất kỳ khoản phần trăm nào. Mô hình kinh doanh tương lai của chúng tôi là token IOU, sẽ được ra mắt qua hình thức airdrop cho những người cho vay tích cực. Cho đến lúc đó, Moodeng hoàn toàn miễn phí.`
    },
    {
       id: 'fight-loan-sharks',
       question: 'Moodeng giúp chống cho vay nặng lãi như thế nào?',
-      answer: `Cho vay nặng lãi là vấn đề toàn cầu: lãi tuần rất cao, đe dọa người vay và khiến người ta mắc kẹt trong vòng xoáy nợ. Nhiều người không có tài khoản ngân hàng hoặc thiếu dịch vụ tài chính không còn lựa chọn nào khác khi cần tiền khẩn cấp.
+      answer: `Cho vay nặng lãi — những người cho vay phi chính thức tính lãi 20–100% mỗi tuần, đe dọa người vay và đẩy họ vào vòng xoáy nợ nần — là vấn đề toàn cầu. Hàng trăm triệu người không có hoặc ít được tiếp cận dịch vụ ngân hàng không còn nơi nào khác để tìm tiền khẩn cấp, và rốt cuộc phải trả gấp nhiều lần số tiền đã vay, hết lần này đến lần khác.
 
-Moodeng Credit là một lựa chọn công bằng hơn. Lãi suất do người vay đặt và người cho vay chấp nhận trong một thị trường minh bạch. Không có phí ẩn, không có trò lãi chồng lãi, và các khoản vay nhỏ ban đầu phù hợp nhu cầu ngắn hạn trong khi hệ thống xây dựng tín dụng tăng hạn mức khi bạn chứng minh độ tin cậy.`
+Moodeng Credit được xây dựng như một lựa chọn công bằng hơn. Lãi suất do người vay đặt ra và được người cho vay chấp nhận (hoặc bỏ qua) trong một thị trường minh bạch — không phí ẩn, không chiêu trò lãi chồng lãi. Các khoản vay khởi đầu nhỏ ($15–$60 ở Hạng tín dụng 1–4) đúng với nhu cầu thực tế của người vay trong những tình huống khẩn cấp ngắn hạn, đi kèm hệ thống xây dựng tín dụng giúp tăng hạn mức khi bạn chứng minh được sự đáng tin cậy.
+
+Không cần tài sản thế chấp và không cần tài khoản ngân hàng — chỉ cần một bước xác minh danh tính nhanh (ảnh giấy tờ tùy thân và ảnh selfie, hoặc World ID) và một ví (Instant Wallet của Moodeng, được thiết lập từ tài khoản đăng nhập của bạn, hoặc Base Account nếu bạn muốn). Bất kỳ ai có điện thoại đều có thể vay. Và uy tín luôn đi cùng bạn (gắn với ví và danh tính đã xác minh của bạn), nên bạn xây dựng được lịch sử tín dụng thật sự mà người cho vay tin tưởng — thay vì mắc kẹt trong vòng luẩn quẩn.
+
+Chúng tôi không tuyên bố sẽ thay thế ngân hàng cho tất cả mọi người. Nhưng với những người hiện phải tìm đến vay nặng lãi vì không còn lựa chọn nào khác, Moodeng hướng đến một con đường an toàn hơn, công bằng hơn và đàng hoàng hơn.`
    },
    {
       id: 'what-is-credit-building-loan',
-      question: 'Credit-Building Loan là gì?',
-      answer: `Credit-Building Loan là khoản vay bạn dùng để tăng hạn mức tín dụng trên Moodeng. Để được tính là loại này, khoản vay phải bằng toàn bộ hạn mức hạng tín dụng hiện tại, không thấp hơn.
+      question: 'Khoản vay xây dựng tín dụng (Credit-Building Loan) là gì?',
+      answer: `Khoản vay xây dựng tín dụng là khoản vay bạn thực hiện nhằm mục đích tăng hạn mức tín dụng trên Moodeng. Để được tính là khoản vay này, số tiền vay phải bằng toàn bộ hạn mức hiện tại của bạn — không được thấp hơn.
 
-Bạn bắt đầu ở hạng tín dụng 1 với hạn mức $15. Vay đủ $15 và trả đúng hạn, hạn mức tăng lên $20. Lần sau vay đủ $20 và trả, bạn mở khóa $40, rồi $60.
+Cách hoạt động như sau. Bạn bắt đầu ở Hạng tín dụng 1 với hạn mức vay $15. Vay đủ $15 và trả đúng hạn, hạn mức của bạn sẽ tăng lên $20. Lần sau vay đủ $20 và trả nợ, bạn mở khóa $40. Rồi đến $60. Lộ trình tiếp tục như vậy ở các hạng cao hơn.
 
-Các khoản vay nhỏ hơn hạn mức được gọi là Trust-Building Loan. Chúng vẫn giúp xây dựng lịch sử trả và uy tín, nhưng không tăng hạng tín dụng.`
+Các khoản vay nhỏ hơn toàn bộ hạn mức được gọi là Trust-Building Loan (khoản vay xây dựng niềm tin). Những khoản vay này vẫn có ích — chúng giúp bạn xây dựng lịch sử trả nợ và uy tín với người cho vay — nhưng không nâng Hạng tín dụng của bạn. Vì vậy, nếu mục tiêu của bạn là xây dựng tín dụng và mở khóa các khoản vay lớn hơn, bạn nên vay và trả các Credit-Building Loan bằng toàn bộ hạn mức.
+
+Khác với thẻ tín dụng ngân hàng hay các sản phẩm xây dựng tín dụng truyền thống, tín dụng trên Moodeng không được báo cáo cho trung tâm thông tin tín dụng. Tín dụng được ghi nhận on-chain, gắn với ví và danh tính đã xác minh của bạn, và có thể mang theo sang bất kỳ nền tảng nào tích hợp với hệ thống.`
    },
    {
       id: 'small-loan',
       question: 'Tôi có thể vay khoản nhỏ với Moodeng không?',
-      answer: `Có. Khoản vay nhỏ chính là điều Moodeng được xây dựng để hỗ trợ. Người vay mới bắt đầu với hạn mức $15, và nền tảng được thiết kế cho vay ngắn hạn, số tiền nhỏ: tiền khẩn cấp, bắc cầu trước ngày lương, hoặc chi phí một lần.
+      answer: `Có — khoản vay nhỏ chính là thứ Moodeng được xây dựng để phục vụ. Người vay mới bắt đầu với hạn mức $15, và nền tảng được thiết kế cho các khoản vay ngắn hạn, số tiền nhỏ: tiền khẩn cấp, trang trải trước ngày nhận lương, các khoản chi một lần.
 
-Không có số tiền tối thiểu, không có phí tháng, không có phí thiết lập và không có phí nền tảng. Bạn yêu cầu số tiền cần vay trong hạn mức hiện tại, đặt ngày trả và lãi suất, rồi người cho vay quyết định có cấp vốn hay không.`
+Không có số tiền vay tối thiểu, không có phí thuê bao hàng tháng, không có phí thiết lập và không có bất kỳ khoản phí nào. Bạn yêu cầu số tiền mình cần (trong phạm vi hạn mức của Hạng tín dụng hiện tại), đặt ngày trả và lãi suất, rồi người cho vay sẽ quyết định có cấp vốn cho bạn hay không.
+
+Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ nâng hạn mức lên một bậc — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại. Vì vậy, bạn có thể bắt đầu nhỏ để thử nền tảng với rủi ro thấp, xây dựng uy tín, và chỉ chuyển sang các khoản vay lớn hơn khi bạn đã sẵn sàng.`
    }
 ];
 

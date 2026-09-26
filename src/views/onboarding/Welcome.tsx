@@ -80,17 +80,17 @@ const WELCOME_COPY = {
    vi: {
       title: 'Bắt đầu',
       lenderHeadline: 'Cho người thật vay và giúp họ xây dựng tín dụng.',
-      lenderSubtitle: 'Kiếm lợi suất onchain với Base.',
+      lenderSubtitle: 'Kiếm tiền onchain — vận hành trên Base.',
       borrowerHeadline: 'Bạn đang xây dựng uy tín mà ví của bạn có thể mang đi mọi nơi.',
       borrowerSubtitle: 'Vay có trách nhiệm. Xây dựng niềm tin. Mở khóa thêm theo thời gian.',
       getStartedTitle: 'Bắt đầu ngay',
-      recommended: 'Đề xuất',
-      setupBody: 'Thiết lập tài khoản và xác minh danh tính để truy cập tín dụng',
+      recommended: 'Khuyên dùng',
+      setupBody: 'Thiết lập tài khoản và xác minh danh tính để tiếp cận tín dụng',
       startSetup: 'Bắt đầu thiết lập',
       watchTutorial: 'Xem hướng dẫn',
       checkFirstTitle: 'Xem trước',
       noCommitment: 'Không cam kết',
-      checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem cách hoạt động',
+      checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem mọi thứ hoạt động ra sao',
       previewItems: ['Xem tính năng', 'Xem lãi suất', 'Tìm hiểu cách hoạt động'],
       exploreMoodeng: 'Khám phá Moodeng'
    }

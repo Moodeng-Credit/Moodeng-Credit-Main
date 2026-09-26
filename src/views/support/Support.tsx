@@ -167,24 +167,24 @@ const SUPPORT_COPY: Record<
    vi: {
       greeting: (name) => `Xin chào, ${name}`,
       title: 'Trung tâm trợ giúp & hỗ trợ',
-      subtitle: 'Cần trợ giúp để bắt đầu? Xem bài viết hỗ trợ hoặc liên hệ nếu bạn cần hỗ trợ.',
+      subtitle: 'Cần trợ giúp để bắt đầu? Xem các bài viết trợ giúp hoặc liên hệ với chúng tôi nếu bạn cần hỗ trợ.',
       communityTitle: 'Tham gia cộng đồng',
       communityDescription: 'Kết nối với người vay khác, chia sẻ góp ý và cập nhật tin tức Moodeng Credit.',
       cards: [
          {
             label: 'Bắt đầu',
-            description: 'Mới dùng Moodeng Credit? Tìm hiểu cơ bản và yêu cầu khoản vay đầu tiên.',
+            description: 'Mới dùng Moodeng Credit? Tìm hiểu những điều cơ bản và yêu cầu khoản vay đầu tiên.',
             icon: 'play-outline.svg',
             path: '/support/getting-started'
          },
          {
             label: 'Hướng dẫn',
-            description: 'Hướng dẫn từng bước về Pandesal points, hạng tín dụng và trả nợ.',
+            description: 'Hướng dẫn từng bước về điểm Pandesal, Hạng tín dụng và trả nợ.',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
-            label: 'FAQ',
+            label: 'Câu hỏi thường gặp',
             description: 'Câu trả lời rõ ràng về khoản vay, niềm tin, xác minh và trả nợ.',
             icon: 'question_light.svg',
             path: '/help'
