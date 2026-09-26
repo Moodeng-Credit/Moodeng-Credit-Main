@@ -66,7 +66,7 @@ const steps: AcademyStep[] = [
       id: 'choose',
       eyebrow: 'Step 4',
       title: 'Your amount sets the loan type',
-      body: 'If your request is below your credit limit, it is trust-building. If it is above your credit limit, it is credit-building.',
+      body: 'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.',
       action: 'Amount decides',
       screen: 'choose'
    },
@@ -835,7 +835,7 @@ export default function AcademyGuide(): JSX.Element {
                   <h2>Earn your Academy reward</h2>
                   <p>
                      Finish the quick check. Score {quizPassingScore} of {quizQuestions.length} or better to pass. This is a learning score
-                     today, not a live IOU or trust-points balance.
+                     today, not a live IOU or Pandesal points balance.
                   </p>
                   <div className="academy-role-toggle" aria-label="Choose reward type">
                      <button

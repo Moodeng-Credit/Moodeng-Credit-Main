@@ -20,10 +20,16 @@ function getPhrasePattern(phrase: string) {
    return new RegExp(`${leadingBoundary}(${phrasePattern})${trailingBoundary}`, 'gu');
 }
 
-export function buildPhraseMap(locale: LocaleCode) {
+// `coverage` is the lazily loaded map from src/i18n/coverage; the keyed and screen translations
+// are applied after it so they win when both define the same English text.
+export function buildPhraseMap(locale: LocaleCode, coverage?: Record<string, string>) {
    if (locale === 'en') return new Map<string, string>();
 
    const phraseMap = new Map<string, string>();
+
+   Object.entries(coverage ?? {}).forEach(([englishValue, translatedValue]) => {
+      phraseMap.set(normalizePhrase(englishValue), translatedValue);
+   });
 
    Object.entries(translations.en).forEach(([key, englishValue]) => {
       const translatedValue = translations[locale][key as keyof typeof translations.en];

@@ -53,7 +53,7 @@ The key detail: always choose Base as the network when sending USDC. The full gu
       question: 'How do I repay my loan?',
       answer: `Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph, PDAX, GCrypto, and more) — always on the Base network.
 
-Repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. The full guide walks through each way to repay.`,
+Repay before the due date — on-time repayment builds your Pandesal points, and repaying a loan at your full limit on time unlocks the next Credit Level. The full guide walks through each way to repay.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Read the full guide'
    },
@@ -73,7 +73,7 @@ So if you want to grow your reputation quickly, Trust-Building Loans are a great
 
 If your limit is $20 and you only borrow $15, that doesn't count toward the next level — even if you repay it perfectly. The system needs to see you can handle the full limit before it raises the ceiling.
 
-Progression goes $15 → $20 → $40 → $60 — and beyond. One step at a time: borrow your max, repay on time, repeat.`
+Progression goes $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. One step at a time: borrow your max, repay on time, repeat.`
    }
 ];
 

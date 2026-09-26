@@ -25,7 +25,7 @@ const ROLE_SELECTION_COPY = {
       confirming: 'Confirming...',
       confirm: 'Confirm',
       footerLinks: ['Privacy', 'Terms', 'Docs'],
-      copyright: '© 2026 Moodeng Credit All Rights Reserved'
+      copyright: '© 2026 Moodeng Credit. All rights reserved.'
    },
    fil: {
       errorTitle: 'May nangyaring mali',

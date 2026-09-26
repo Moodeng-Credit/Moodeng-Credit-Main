@@ -79,6 +79,9 @@ const GUIDE_CATEGORY_BY_SLUG: Record<string, GuideCategory> = {
    'trust-building-vs-credit-building-loans': GUIDE_CATEGORIES.creditLevel,
    'how-repayments-affect-your-trust-score': GUIDE_CATEGORIES.repayment,
    'what-happens-when-you-repay-a-loan-on-time': GUIDE_CATEGORIES.repayment,
+   'repaying-your-loan': GUIDE_CATEGORIES.repayment,
+   'adding-funds-to-your-wallet': GUIDE_CATEGORIES.wallet,
+   'withdrawing-to-your-bank': GUIDE_CATEGORIES.wallet,
    'using-usdc-on-moodeng-credit': GUIDE_CATEGORIES.wallet,
    'verification-and-why-its-required': GUIDE_CATEGORIES.gettingStarted,
    'managing-your-account-and-security-settings': GUIDE_CATEGORIES.security

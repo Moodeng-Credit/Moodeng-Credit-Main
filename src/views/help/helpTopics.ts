@@ -110,7 +110,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'Small USDC loans that build your credit', fil: 'Maliit na USDC loan na nagpapalaki ng kredito' },
       question: { en: 'What is Moodeng Credit and how does it work?', fil: 'Ano ang Moodeng Credit at paano ito gumagana?' },
       intro: {
-         en: 'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points and unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.',
+         en: 'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.',
          fil: 'Sa Moodeng Credit puwede kang humiram ng short-term loan sa USDC habang nag-iipon ng Pandesal points na nakakabit sa wallet mo. Mag-post ka ng request, i-fu-fund ito ng lender diretso sa wallet mo, at babayaran mo on or before ang petsang itinakda mo. Bawat on-time na bayad ay nagdadagdag ng Pandesal points at nagbubukas ng mas mataas na limit — kaya maliit ang simula at lumalaki habang pinapatunayan mong maaasahan ka. Nakakabit sa wallet mo ang reputasyon, kaya kasama mo ito kahit saan.'
       },
       guide: {
@@ -170,7 +170,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'Yes — this is built for small loans', fil: 'Oo — para dito ginawa ang Moodeng' },
       question: { en: 'Can I get a small loan with Moodeng?', fil: 'Puwede ba akong makakuha ng maliit na loan?' },
       intro: {
-         en: 'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each on-time repayment grows your limit step by step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.',
+         en: 'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.',
          fil: 'Oo — para sa maliliit na loan talaga ginawa ang Moodeng. Nagsisimula ang bagong borrower sa $15 limit, walang minimum, walang subscription, walang fee. Hihingi ka ng kailangan mo hanggang sa limit mo, itatakda ang petsa at interes, at magdedesisyon ang lenders kung i-fu-fund ka. Bawat on-time na bayad ay pinapalaki ang limit, mula $15 hanggang $140 na maximum, kaya puwedeng maliit ang simula at lumaki kapag handa ka na.'
       },
       keywords: ['minimum', 'smallest', 'first loan amount']
@@ -305,7 +305,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.',
             'Use a real browser — Chrome or Safari — not a browser inside another app.',
             'Try again at account.base.app.',
-            'If it still fails, your network may be blocking Base — see "Base won\'t load in the Philippines".'
+            'If it still fails, your network may be blocking Base — see "Base won\'t load (PLDT / Smart)".'
          ],
          fil: [
             'Lumipat mula Wi-Fi papuntang mobile data (o kabaligtaran). May mga Wi-Fi na hina-block ang sign-in — madalas itong nakaka-ayos.',
@@ -458,7 +458,7 @@ export const HELP_TOPICS: HelpTopic[] = [
          ]
       },
       watchOut: {
-         en: 'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points and unlocks higher credit levels.',
+         en: 'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level.',
          fil: 'Laging piliin ang Base bilang network — ang maling network ay puwedeng magpawala ng pera. Ang pagbayad bago ang due date ay nagdadagdag ng Pandesal points at nagbubukas ng mas mataas na level.'
       },
       guide: { path: '/learn/repaying-your-loan', label: { en: 'Ways to repay your loan', fil: 'Mga paraan ng pagbayad' } },
@@ -602,7 +602,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How do I increase my credit limit?', fil: 'Paano tumaas ang credit limit ko?' },
       steps: {
          en: [
-            'Repay on time. On-time repayment earns Pandesal points, which move you up the levels.',
+            'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.',
             'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.',
             'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
             'A referral code adds $5 to your starting limit — entered at the start of the loan application.'

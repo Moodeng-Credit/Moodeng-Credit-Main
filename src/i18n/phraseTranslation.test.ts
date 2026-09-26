@@ -21,3 +21,19 @@ describe('translateKnownPhrases', () => {
       expect(translateKnownPhrases(indonesian, 'Open the Request Board today')).toContain(translated);
    });
 });
+
+describe('buildPhraseMap with lazily loaded coverage', () => {
+   it('adds coverage phrases but lets screen translations win', () => {
+      const phraseMap = buildPhraseMap('id', { 'A coverage-only phrase': 'Frasa cakupan', 'Transaction History': 'Salah' });
+      expect(phraseMap.get('A coverage-only phrase')).toBe('Frasa cakupan');
+      expect(phraseMap.get('Transaction History')).toBe(buildPhraseMap('id').get('Transaction History'));
+   });
+
+   it.each(['fil', 'id', 'th', 'vi'] as const)('loads the %s coverage chunk', async (locale) => {
+      const { loadScreenCoverage } = await import('@/i18n/coverage');
+      const coverage = await loadScreenCoverage(locale);
+      Object.entries(coverage).forEach(([english, translated]) => {
+         expect(translated.trim(), english).not.toBe('');
+      });
+   });
+});

@@ -110,7 +110,8 @@ const englishTranslations = {
    'requestBoard.shortTermSupport': 'Need short-term support?',
    'requestBoard.takeTour': 'Take a quick tour',
    'requestBoard.title': 'Microloan Request Board',
-   'site.footerBlurb': 'Small USDC loans, World ID verification, and portable repayment history for borrowers building credit abroad.',
+   'site.footerBlurb':
+      'Small USDC loans, quick identity verification, and portable repayment history for borrowers building credit abroad.',
    'user.accountSettings': 'Account Settings',
    'user.app': 'App',
    'user.connectAccount': 'Connect Account',
