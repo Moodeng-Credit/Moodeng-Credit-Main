@@ -446,24 +446,26 @@ const THAI_LENDER_FAQS: AccountFAQItem[] = [
 const VIETNAMESE_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
-      question: 'Moodeng có chạm vào tiền của tôi không?',
-      answer: `Không. Moodeng không giữ, lưu ký hoặc di chuyển tiền của người dùng thay bạn.
+      question: 'Moodeng có nắm giữ tiền của tôi không?',
+      answer: `Không. Moodeng không giữ, lưu ký hoặc chuyển tiền thay bạn.
 
-Khoản vay đi trực tiếp từ ví người cho vay sang ví người vay. Khoản trả đi trực tiếp từ ví người vay về ví người cho vay. Moodeng chỉ hỗ trợ bảng yêu cầu, xác minh, trạng thái trả nợ và ghi nhận lịch sử để hai bên thấy rõ điều gì đã xảy ra.`
+Khoản vay được chuyển trực tiếp từ ví người cho vay sang ví người vay. Khoản trả nợ được chuyển trực tiếp từ ví người vay về ví người cho vay. Moodeng hỗ trợ Bảng yêu cầu, xác minh, trạng thái trả nợ và lưu trữ hồ sơ để cả hai bên đều thấy rõ những gì đã diễn ra.`
    },
    {
       id: 'why-usdc',
       question: 'Vì sao Moodeng dùng USDC?',
-      answer: `USDC là stablecoin neo 1:1 với đô la Mỹ, giúp giá trị khoản vay dễ dự đoán. Khoản vay $20 hôm nay vẫn là $20 khi trả, không thành $15 hay $30.
+      answer: `USDC là stablecoin neo giá 1:1 với đô la Mỹ. Được phát hành bởi Circle — một công ty tài chính được quản lý tại Mỹ — USDC giúp giá trị khoản vay luôn dễ dự đoán: khoản vay $20 hôm nay vẫn là $20 khi trả, không phải $15 hay $30. Người cho vay và người vay không phải chịu rủi ro tỷ giá chỉ vì tham gia.
 
-USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Instant Wallet của bạn hoặc Base Account thì hoàn toàn không tốn gas. Điều đó có nghĩa là không có phí mạng ăn vào khoản trả của bạn.`
+USDC còn chuyển nhanh trên toàn cầu, và khi dùng trên Base với Instant Wallet hoặc Base Account thì hoàn toàn không mất phí gas. Điều đó có nghĩa là không có phí mạng nào bị trừ vào khoản trả nợ của bạn — 100% số tiền bạn gửi đều đến tay người cho vay.
+
+USDC cũng được chấp nhận rộng rãi: mọi sàn giao dịch crypto lớn đều hỗ trợ nạp USDC, và bạn có thể đổi USDC sang tiền pháp định (đô la Mỹ, peso, naira, v.v.) ở hầu hết mọi nơi. Vì vậy, khi nhận khoản vay hoặc được trả nợ, bạn có thể dùng USDC on-chain, giữ lại hoặc rút ra tiền mặt — tùy bạn lựa chọn.`
    },
    {
       id: 'how-to-get-verified',
-      question: 'Tôi xác minh bằng cách nào?',
-      answer: `Xác minh là một lần kiểm tra danh tính nhanh chóng. Cách được khuyến nghị là "Verify Your ID" — chụp ảnh giấy tờ tùy thân + selfie, mất khoảng 3 phút và áp dụng ở các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể xác minh bằng World ID.
+      question: 'Tôi xác minh danh tính bằng cách nào?',
+      answer: `Xác minh là bước kiểm tra danh tính nhanh, chỉ thực hiện một lần. Cách được khuyến nghị là "Xác minh bằng giấy tờ tùy thân" — chụp nhanh ảnh thẻ căn cước + ảnh selfie, mất khoảng 3 phút và áp dụng tại các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể chọn xác minh bằng World ID.
 
-Bấm "Verify Yourself" trong app để bắt đầu. Hầu hết hoàn tất trong vài phút.`,
+Bấm "Xác minh danh tính" trong ứng dụng để bắt đầu. Hầu hết lượt xác minh hoàn tất trong vài phút.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    }
@@ -472,73 +474,83 @@ Bấm "Verify Yourself" trong app để bắt đầu. Hầu hết hoàn tất tr
 const VIETNAMESE_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
-      question: 'Làm sao chuyển khoản vay về tài khoản ngân hàng địa phương?',
-      answer: `Gửi USDC của bạn đến sàn giao dịch hoặc dịch vụ địa phương — Binance P2P, Coins.ph, PDAX, GCrypto (GCash) và nhiều nơi khác — bán ở đó, rồi rút nội tệ thẳng về ngân hàng hoặc ví điện tử của bạn.
+      question: 'Làm sao để chuyển tiền vay về tài khoản ngân hàng trong nước?',
+      answer: `Gửi USDC của bạn đến một sàn giao dịch hoặc dịch vụ — chẳng hạn Binance P2P, hoặc một sàn giao dịch hay ứng dụng khác hỗ trợ USDC trên mạng Base — bán USDC tại đó, rồi rút tiền địa phương thẳng về tài khoản ngân hàng hoặc ví điện tử của bạn. Hãy kiểm tra xem nền tảng đó có hỗ trợ mạng Base không trước khi gửi.
 
-Chi tiết quan trọng: luôn chọn Base làm mạng khi gửi USDC. Hướng dẫn đầy đủ có video minh họa và các bước cho từng dịch vụ.`,
+Điều quan trọng: luôn chọn mạng Base khi gửi USDC. Hướng dẫn đầy đủ có video minh họa và các bước chi tiết cho từng dịch vụ.`,
       readMorePath: '/academy/money/withdraw',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'how-to-repay',
       question: 'Tôi trả khoản vay bằng cách nào?',
-      answer: `Mở màn hình Trả nợ — ở đó hiển thị số tiền chính xác và địa chỉ trả nợ. Gửi USDC đến đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu chưa có USDC, hãy mua trước (Binance P2P, Coins.ph, PDAX, GCrypto và nhiều nơi khác) — luôn dùng mạng Base.
+      answer: `Mở màn hình "Trả nợ" — màn hình này hiển thị chính xác số tiền đến hạn và địa chỉ trả nợ. Gửi USDC đến địa chỉ đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu bạn chưa có USDC, hãy mua trước (qua Binance P2P, hoặc một sàn giao dịch hay ứng dụng khác hỗ trợ USDC trên mạng Base — hãy kiểm tra điều này trước khi gửi) — luôn dùng mạng Base.
 
-Trả trước ngày đến hạn — trả đúng hạn giúp tăng điểm Pandesal và mở khóa hạng tín dụng cao hơn. Hướng dẫn đầy đủ mô tả từng cách trả nợ.`,
+Hãy trả trước ngày đến hạn — trả nợ đúng hạn giúp tăng điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ mở khóa Hạng tín dụng tiếp theo. Hướng dẫn đầy đủ sẽ giải thích từng cách trả nợ.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'borrow-below-limit',
       question: 'Tôi có thể vay thấp hơn hạn mức tín dụng không?',
-      answer: `Có, và chúng tôi thật sự khuyến nghị điều đó, nhất là khi bạn mới bắt đầu. Vay thấp hơn hạn mức được gọi là Trust-Building Loan.
+      answer: `Có — và chúng tôi còn khuyến khích điều đó, nhất là khi bạn mới bắt đầu. Vay thấp hơn hạn mức được gọi là Trust-Building Loan (khoản vay xây dựng niềm tin).
 
-Các khoản nhỏ này không mở khóa hạng tín dụng tiếp theo, nhưng chúng xây dựng lịch sử trả nợ và giúp bạn kiếm nhiều điểm Pandesal hơn.`
+Những khoản vay nhỏ này không được tính vào việc mở khóa Hạng tín dụng tiếp theo (muốn lên hạng, bạn cần vay toàn bộ hạn mức và trả đúng hạn), nhưng chúng giúp xây dựng lịch sử trả nợ và mang lại cho bạn nhiều điểm Pandesal hơn so với việc vay tối đa hạn mức.
+
+Vì vậy, nếu bạn muốn nhanh chóng xây dựng uy tín, Trust-Building Loan là một cách rất tốt.`
    },
    {
       id: 'increase-credit-limit',
-      question: 'Làm sao tăng hạn mức tín dụng?',
-      answer: `Hạn mức tăng khi bạn vay toàn bộ hạn mức và trả đúng hạn. Đây gọi là Credit-Building Loan.
+      question: 'Làm sao để tăng hạn mức tín dụng?',
+      answer: `Hạn mức tín dụng của bạn tăng khi bạn vay toàn bộ hạn mức và trả đúng hạn. Những khoản vay này được gọi là Credit-Building Loan (khoản vay xây dựng tín dụng).
 
-Nếu hạn mức là $20 nhưng bạn chỉ vay $15, điều đó không được tính cho cấp tiếp theo, kể cả khi bạn trả hoàn hảo. Hệ thống cần thấy bạn xử lý được toàn bộ hạn mức trước khi nâng trần.`
+Nếu hạn mức của bạn là $20 mà bạn chỉ vay $15, khoản đó không được tính để lên hạng tiếp theo — kể cả khi bạn trả đầy đủ, đúng hạn. Hệ thống cần thấy bạn quản lý được toàn bộ hạn mức trước khi nâng hạn mức.
+
+Lộ trình là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại. Từng bước một: vay tối đa hạn mức, trả đúng hạn, rồi lặp lại.`
    }
 ];
 
 const VIETNAMESE_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'IOU Points là gì?',
-      answer: `IOU Points là điểm uy tín người cho vay kiếm được. Trong mô hình năm 1, mỗi khoản vay được cấp vốn tạo điểm IOU cơ bản theo số tiền cấp vốn cộng với bonus theo giai đoạn người vay.
+      question: 'Điểm IOU là gì?',
+      answer: `Điểm IOU là điểm uy tín dành cho người cho vay. Theo mô hình Năm thứ nhất, mỗi khoản vay được cấp vốn mang lại điểm IOU cơ bản tương ứng với số tiền cấp vốn, cộng thêm điểm thưởng theo giai đoạn của người vay. Điểm IOU ghi nhận những ai đang tích cực hỗ trợ cộng đồng.
 
-Hiện tại IOU chỉ là điểm. Về sau chúng tôi sẽ ra mắt token cũng tên IOU, và điểm tích lũy của bạn sẽ chuyển đổi qua airdrop.`
+Hiện tại, IOU mới chỉ là điểm. Trong tương lai, chúng tôi sẽ ra mắt một token cũng mang tên IOU, và số điểm bạn tích lũy sẽ được quy đổi qua airdrop. Việc nắm giữ IOU sẽ mở khóa thêm các quyền lợi gắn với nền tảng.
+
+IOU chỉ dành cho người cho vay — người vay thì xây dựng điểm Pandesal và Hạng tín dụng. Vì vậy, nếu bạn muốn kiếm IOU, hãy cấp vốn cho một yêu cầu vay trên Bảng yêu cầu.`
    },
    {
       id: 'how-borrowers-verify',
-      question: 'Người vay xác minh bằng cách nào?',
-      answer: `Mỗi người vay hoàn thành xác minh danh tính một lần — chụp ảnh giấy tờ tùy thân + selfie với hệ thống phát hiện trùng khuôn mặt, hoặc World ID cho người dùng World App. Cả hai cách đều xác nhận mỗi người vay là một người thật duy nhất, giúp ngăn tài khoản giả và bot.
+      question: 'Người vay xác minh danh tính bằng cách nào?',
+      answer: `Mỗi người vay đều hoàn tất xác minh danh tính một lần — chụp ảnh thẻ căn cước + selfie, kèm cơ chế phát hiện trùng lặp, hoặc dùng World ID đối với người dùng World App. Dù theo cách nào, bước này cũng xác nhận mỗi người vay là một người thật và duy nhất, giúp ngăn chặn tài khoản giả và bot.
 
-Mỗi người chỉ xác minh được một tài khoản, nên hồ sơ và lịch sử trả nợ bạn thấy thuộc về đúng một người thật.`,
+Mỗi người chỉ có thể xác minh một tài khoản, nên hồ sơ người vay và lịch sử trả nợ mà bạn thấy đều thuộc về cùng một người thật — và người dùng đã bị cấm không thể đơn giản quay lại bằng một tài khoản mới.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
       question: 'Người vay tăng hạn mức tín dụng bằng cách nào?',
-      answer: `Người vay tăng hạn mức bằng cách lấy Credit-Building Loan và vay toàn bộ hạn mức hiện tại. Nếu họ trả khoản full-limit đó đúng hạn, họ lên cấp và mở khóa hạn mức cao hơn.`
+      answer: `Người vay tăng hạn mức tín dụng bằng cách thực hiện một Credit-Building Loan (khoản vay xây dựng tín dụng), tức là vay toàn bộ hạn mức hiện tại. Nếu trả đúng hạn khoản vay bằng toàn bộ hạn mức đó, họ sẽ lên hạng và mở khóa hạn mức tín dụng cao hơn.
+
+Nếu vay thấp hơn hạn mức, đó là Trust-Building Loan (khoản vay xây dựng niềm tin). Khoản vay này không giúp họ lên hạng, nhưng giúp xây dựng lịch sử trả nợ vững chắc hơn và cải thiện các chỉ số người vay trên nền tảng.`
    },
    {
       id: 'how-to-fund-loan',
       question: 'Tôi cấp vốn cho khoản vay bằng cách nào?',
-      answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị thống kê người vay, hạn mức, số tiền yêu cầu và kỳ hạn trả.
+      answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị các chỉ số của người vay, hạn mức tín dụng, số tiền yêu cầu và thời hạn trả nợ.
 
-Khi thấy khoản muốn cấp vốn, bấm Fund và xác nhận. USDC rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đi thẳng đến ví của người vay.`
+Khi tìm được yêu cầu bạn muốn cấp vốn, bấm "Cấp vốn" và xác nhận. USDC sẽ rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đến thẳng ví của người vay — không qua trung gian, không chậm trễ.
+
+Bạn có thể theo dõi tất cả khoản vay đang hoạt động và trạng thái trả nợ trên trang Tổng quan người cho vay.`
    },
    {
       id: 'when-do-i-get-repaid',
-      question: 'Khi nào tôi được trả?',
-      answer: `Ngày đến hạn do người vay đặt khi đăng yêu cầu. Bạn sẽ thấy rõ trên thẻ khoản vay trước khi cấp vốn.
+      question: 'Khi nào tôi nhận được tiền trả nợ?',
+      answer: `Ngày đến hạn do người vay đặt khi đăng yêu cầu — bạn sẽ thấy rõ ngày này trên thẻ khoản vay trước khi cấp vốn, nên bạn luôn biết trước thời hạn.
 
-Khi khoản vay đến hạn, người vay trả trực tiếp về ví của bạn — thường là Base Account (hoặc Instant Wallet, nếu bạn dùng). Bạn có thể theo dõi trạng thái các khoản vay đang hoạt động trong Lender Dashboard.`
+Khi khoản vay đến hạn, người vay sẽ trả trực tiếp vào ví của bạn — thường là Base Account (hoặc Instant Wallet, nếu bạn dùng). Bạn có thể theo dõi trạng thái tất cả khoản vay đang hoạt động trên trang Tổng quan người cho vay.`
    }
 ];
 

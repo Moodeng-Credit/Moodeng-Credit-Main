@@ -80,17 +80,17 @@ const WELCOME_COPY = {
    vi: {
       title: 'Bắt đầu',
       lenderHeadline: 'Cho người thật vay và giúp họ xây dựng tín dụng.',
-      lenderSubtitle: 'Kiếm lợi suất onchain với Base.',
+      lenderSubtitle: 'Kiếm tiền onchain — vận hành trên Base.',
       borrowerHeadline: 'Bạn đang xây dựng uy tín mà ví của bạn có thể mang đi mọi nơi.',
       borrowerSubtitle: 'Vay có trách nhiệm. Xây dựng niềm tin. Mở khóa thêm theo thời gian.',
       getStartedTitle: 'Bắt đầu ngay',
-      recommended: 'Đề xuất',
-      setupBody: 'Thiết lập tài khoản và xác minh danh tính để truy cập tín dụng',
+      recommended: 'Khuyên dùng',
+      setupBody: 'Thiết lập tài khoản và xác minh danh tính để tiếp cận tín dụng',
       startSetup: 'Bắt đầu thiết lập',
       watchTutorial: 'Xem hướng dẫn',
       checkFirstTitle: 'Xem trước',
       noCommitment: 'Không cam kết',
-      checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem cách hoạt động',
+      checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem mọi thứ hoạt động ra sao',
       previewItems: ['Xem tính năng', 'Xem lãi suất', 'Tìm hiểu cách hoạt động'],
       exploreMoodeng: 'Khám phá Moodeng'
    }
@@ -248,7 +248,10 @@ export default function Welcome() {
                      <p className="text-md-b1 text-md-blue-800 dark:text-md-blue-200">{copy.checkFirstBody}</p>
                      <ul className="flex flex-col gap-md-0 pt-md-1">
                         {copy.previewItems.map((item) => (
-                           <li key={item} className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200">
+                           <li
+                              key={item}
+                              className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200"
+                           >
                               <span className="size-[6px] rounded-full bg-md-blue-700 shrink-0" />
                               {item}
                            </li>

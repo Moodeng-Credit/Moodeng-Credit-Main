@@ -151,9 +151,9 @@ const CONGRATULATIONS_COPY = {
          }
       },
       exploreRequestBoard: 'Khám phá Bảng yêu cầu',
-      exploreNote: 'Bạn có thể khám phá Moodeng Credit và bắt đầu hành trình với sự tự tin.',
+      exploreNote: 'Giờ đây bạn có thể khám phá Moodeng Credit và tự tin bắt đầu hành trình của mình.',
       communityTitle: 'Tiếng nói chống khoản vay không công bằng',
-      communityBody: 'Tham gia cộng đồng Facebook của chúng tôi. Kết nối với người dùng Moodeng Credit khác.',
+      communityBody: 'Tham gia cộng đồng Facebook của chúng tôi. Kết nối với những người dùng Moodeng Credit khác.',
       joinCommunity: 'Tham gia cộng đồng'
    }
 } satisfies Record<

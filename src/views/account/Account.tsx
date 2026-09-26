@@ -196,7 +196,7 @@ const ACCOUNT_COPY: Record<
       contactItems: {
          community: 'Tham gia cộng đồng',
          help: 'Nhận trợ giúp',
-         contact: 'Liên hệ chúng tôi'
+         contact: 'Liên hệ với chúng tôi'
       },
       getInTouch: 'Liên hệ',
       commonQuestions: 'Câu hỏi thường gặp',
@@ -208,7 +208,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'Thiết lập ví',
       signOut: 'Đăng xuất',
       signOutTitle: 'Đăng xuất?',
-      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Pandesal points vẫn đi cùng ví của bạn.',
+      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Điểm Pandesal vẫn đi cùng ví của bạn.',
       signingOut: 'Đang đăng xuất...',
       cancel: 'Hủy',
       settingsAria: 'Đi tới Cài đặt tài khoản',

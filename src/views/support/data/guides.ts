@@ -620,107 +620,186 @@ Instant Wallet ของคุณ (หรือ Base Account หากคุณ�
 const VIETNAMESE_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
       title: 'Cách yêu cầu khoản vay đầu tiên',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Làm theo các bước này để bắt đầu yêu cầu khoản vay đầu tiên trên Moodeng Credit.
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Làm theo các bước đơn giản sau để gửi yêu cầu vay đầu tiên trên Moodeng Credit. Bạn cũng có thể xem video hướng dẫn quy trình này tại đây: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Bước 1: Tạo tài khoản
-Đăng ký trên Moodeng bằng tên người dùng, email và mật khẩu bạn muốn.
+Đăng ký trên nền tảng Moodeng bằng cách nhập tên người dùng, email và mật khẩu bạn muốn. Bấm "Tạo tài khoản" để tiếp tục.
 
 Bước 2: Bắt đầu đăng ký vay
-Sau khi đăng nhập, bấm "Apply for a Loan" để bắt đầu.
+Sau khi đăng nhập, bấm nút "Đăng ký vay" để bắt đầu.
 
 Bước 3: Thiết lập ví
-Giao dịch an toàn trên Moodeng cần một ví. Mặc định, bạn dùng Instant Wallet của Moodeng — được tạo từ đăng nhập Moodeng của bạn, không cần ứng dụng riêng hay seed phrase. Nếu muốn, bạn có thể dùng Base Account: vào https://account.base.app và làm theo hướng dẫn.
+Để giao dịch an toàn trên Moodeng, bạn cần có ví. Mặc định, bạn dùng Moodeng Instant Wallet — ví được tạo từ tài khoản đăng nhập Moodeng của bạn, không cần ứng dụng riêng hay cụm từ khôi phục (seed phrase). Nếu muốn, bạn có thể dùng Base Account thay thế: truy cập https://account.base.app và làm theo hướng dẫn đăng ký.
 
 Bước 4: Kết nối ví
-Quay lại Moodeng và bấm "Connect Wallet" để tạo Instant Wallet — hoặc liên kết Base Account nếu bạn chọn dùng — với tài khoản Moodeng.
+Quay lại Moodeng và bấm "Kết nối ví" để tạo Instant Wallet — hoặc liên kết an toàn Base Account nếu bạn đã chọn dùng — để ví được gắn với tài khoản Moodeng của bạn.
 
 Bước 5: Xác minh danh tính
-Tải World App và hoàn tất xác minh người thật tại địa điểm World Orb.
+Để đảm bảo an toàn cho cộng đồng, bấm "Xác minh danh tính" và hoàn tất bước kiểm tra nhanh bằng giấy tờ tùy thân + ảnh selfie ("Xác minh bằng giấy tờ tùy thân") — chỉ mất khoảng 3 phút. Đã dùng World App? Bạn có thể chọn "Xác minh bằng World ID".
 
-Bước 6: Liên kết World ID
-Sau khi xác minh tại Orb, quay lại Moodeng, bấm "Verify with World ID" và quét QR code.
-
-Bước 7: Gửi yêu cầu
-Bấm "Explore the Request Board" để đặt số tiền vay, ngày trả, số tiền trả và lý do vay.
-
-Lưu ý về hạn mức tín dụng
-- Người vay mới bắt đầu với hạn mức $15.
-- Credit-Building Loan là khoản vay toàn bộ hạn mức hiện tại; trả thành công là cách tăng hạn mức.
-- Trust-Building Loan là khoản nhỏ hơn hạn mức; chúng xây dựng điểm Pandesal nhưng không tăng hạng tín dụng.`
+Bước 6: Gửi yêu cầu
+Bấm "Khám phá Bảng yêu cầu" để đặt các điều khoản cho khoản vay của bạn. Bạn cần xác định:
+- Số tiền muốn vay.
+- Số tiền trả và ngày trả.
+- Lý do vay rõ ràng, giúp bạn tạo dựng niềm tin với những người cho vay tiềm năng.`
    },
    'understanding-your-trust-score': {
-      title: 'Hiểu điểm Pandesal của bạn',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Điểm Pandesal phản ánh bạn trả các khoản vay trên Moodeng Credit đáng tin cậy đến mức nào.
+      title: 'Hiểu về điểm Pandesal của bạn',
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Điểm Pandesal phản ánh mức độ đáng tin cậy trong việc trả nợ của bạn trên Moodeng Credit.
 
-Điểm tăng với mỗi lần trả đúng hạn và giảm khi bạn trả muộn hoặc vỡ nợ. Người cho vay dùng nó như tín hiệu nhanh để quyết định có cấp vốn cho yêu cầu của bạn không.
+Điểm tăng sau mỗi lần bạn trả nợ đúng hạn và giảm khi bạn lỡ hạn trả hoặc vỡ nợ. Người cho vay dùng điểm này như một tín hiệu nhanh để quyết định có cấp vốn cho yêu cầu của bạn hay không.
 
-Vì điểm Pandesal gắn với ví của bạn, nó đi cùng bạn và không bị khóa trong một ứng dụng duy nhất.`
+Vì điểm Pandesal gắn với ví của bạn, điểm sẽ luôn đi cùng bạn — không bị khóa trong một ứng dụng duy nhất.`
    },
    'how-credit-levels-work': {
       title: 'Hạng tín dụng hoạt động như thế nào',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Hạng tín dụng xác định bạn có thể vay bao nhiêu trong một lần.
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Hạng tín dụng xác định số tiền tối đa bạn có thể vay mỗi lần.
 
-Mọi người bắt đầu ở Level 1 với hạn mức $15. Khi bạn vay và trả đầy đủ, hạn mức tăng: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 và mở khóa cấp mới.
+Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15. Khi bạn vay và trả đủ, hạn mức sẽ tăng dần — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — và mở khóa các hạng mới.
 
-Bạn chỉ lên cấp bằng cách hoàn thành Credit Growth Loan: khoản vay bằng toàn bộ hạn mức hiện tại, được trả đủ và đúng hạn.`
+Bạn chỉ lên hạng khi hoàn thành một Credit-Building Loan (khoản vay xây dựng tín dụng): khoản vay bằng toàn bộ hạn mức hiện tại, được trả đủ và đúng hạn.`
    },
    'trust-building-vs-credit-building-loans': {
       title: 'Trust-Building Loan và Credit-Building Loan',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Moodeng Credit hỗ trợ hai loại khoản vay.
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Moodeng Credit có hai loại khoản vay:
 
-Trust-Building Loan là khoản nhỏ hơn hạn mức hiện tại. Chúng giúp bạn chứng minh khả năng trả đáng tin cậy nhưng không tăng hạn mức.
+Trust-Building Loan (khoản vay xây dựng niềm tin) là các khoản vay nhỏ hơn hạn mức hiện tại của bạn. Chúng giúp bạn chứng minh mình trả nợ đáng tin cậy, nhưng không làm tăng hạn mức.
 
-Credit-Building Loan là khoản vay toàn bộ hạn mức. Trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tín dụng tiếp theo.
+Credit-Building Loan (khoản vay xây dựng tín dụng) là khoản vay bằng toàn bộ hạn mức. Trả đúng hạn một khoản vay như vậy sẽ nâng hạn mức và mở khóa Hạng tín dụng tiếp theo.
 
-Hầu hết người vay dùng cả hai: trust loans để giữ hoạt động lành mạnh, credit loans để tăng hạn mức theo thời gian.`
+Hầu hết người vay dùng cả hai: khoản vay xây dựng niềm tin để duy trì hoạt động đều đặn, và khoản vay xây dựng tín dụng để tăng hạn mức theo thời gian.`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'Khoản trả ảnh hưởng điểm Pandesal như thế nào',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Mỗi khoản trả cho Credit-Building hoặc Trust-Building Loan ảnh hưởng trực tiếp đến điểm Pandesal, tức uy tín của bạn trên nền tảng.
+      title: 'Việc trả nợ ảnh hưởng đến điểm Pandesal như thế nào',
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Mỗi lần trả nợ, dù là cho Credit-Building Loan hay Trust-Building Loan, đều ảnh hưởng trực tiếp đến điểm Pandesal — thước đo uy tín của bạn trên nền tảng. Hệ thống của chúng tôi được thiết kế để ghi nhận hành vi nhất quán, đáng tin cậy và trung thực; những khoản vay nhỏ được trả sòng phẳng có giá trị với uy tín của bạn hơn những khoản vay lớn được trả thiếu nghiêm túc.
 
-Trả đủ đúng hạn tối đa hóa điểm. Trả một phần làm giảm điểm theo tỷ lệ. Trả muộn nhận 0 điểm cho giao dịch đó. Vỡ nợ để lại dấu vĩnh viễn trên hồ sơ mà người cho vay tương lai có thể thấy.`
+Cách tính điểm
+
+- Trả đủ, đúng hạn: Trả 100% vào hoặc trước ngày đến hạn giúp bạn nhận số điểm tối đa (10 điểm).
+
+- Trả một phần: Nếu không trả đủ, số điểm sẽ giảm theo tỷ lệ — 75% = 7 điểm · 50% = 5 điểm · 25% = 3 điểm.
+
+- Trả trễ hạn: Mọi khoản trả nhận được sau thời hạn đã thỏa thuận đều được 0 điểm cho giao dịch đó.
+
+- Vỡ nợ: Khoản vay không được trả sẽ để lại dấu vết vĩnh viễn trên hồ sơ của bạn, hiển thị với mọi người cho vay trong tương lai.`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
-      title: 'Lợi ích của việc trả đúng hạn',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Trả vào hoặc trước hạn là cách hiệu quả nhất để củng cố vị thế của bạn trong hệ sinh thái Moodeng Credit.
+      title: 'Lợi ích của việc trả nợ đúng hạn',
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Trả nợ vào hoặc trước thời hạn là cách hiệu quả nhất để củng cố vị thế của bạn trong hệ sinh thái Moodeng Credit. Mọi khoản trả nợ đều được xác nhận on-chain; khi giao dịch USDC hoàn tất, trạng thái khoản vay sẽ tự động chuyển thành "Đã trả thành công".
 
-Khi bạn trả đúng hạn, điểm Pandesal tăng, lịch sử trả tốt hiển thị với người cho vay, và với Credit-Building Loan, hạn mức hiện tại tăng để mở khóa cấp tiếp theo.
+Khi bạn trả đúng hạn, hồ sơ của bạn nhận được các lợi ích sau:
 
-Mọi khoản trả được xác nhận on-chain; khi chuyển USDC settle, trạng thái khoản vay tự động cập nhật.`
+- Thêm điểm Pandesal: Điểm Pandesal của bạn tăng lên với cả Credit-Building Loan lẫn Trust-Building Loan, thể hiện sự đáng tin cậy của bạn với cộng đồng.
+- Tăng hạn mức tín dụng: Với Credit-Building Loan, hạn mức vay hiện tại của bạn sẽ tăng, mở khóa Hạng tín dụng tiếp theo (ví dụ: từ $15 → $20).
+- Lịch sử vay được xác thực: Lịch sử trả nợ thành công của bạn hiển thị với những người cho vay tiềm năng, giúp các yêu cầu vay sau này được cấp vốn nhanh chóng hơn nhiều.
+
+Cách tính điểm trả nợ
+
+Điểm Pandesal phản ánh mức độ đáng tin cậy của bạn và quyết định khả năng được cấp vốn trong tương lai:
+
+- Trả đủ, đúng hạn: Nhận tối đa 10 điểm.
+- Trả một phần: Điểm giảm theo tỷ lệ số tiền đã trả (ví dụ: 75% = 7 điểm; 50% = 5 điểm).
+- Trả trễ hạn: Mọi khoản trả sau thời hạn đều được 0 điểm, bất kể số tiền.
+- Vỡ nợ: Khoản vay không được trả sẽ để lại dấu vết vĩnh viễn trên hồ sơ on-chain công khai của bạn.`
+   },
+   'repaying-your-loan': {
+      title: 'Các cách trả khoản vay',
+      lastUpdated: '3 tháng 7, 2026',
+      body: `Để trả nợ, hãy gửi đúng số USDC cần trả đến địa chỉ trả nợ hiển thị trong Moodeng (màn hình "Trả nợ" hiển thị chính xác số tiền và cho phép bạn sao chép địa chỉ). Bạn có thể gửi từ ví, sàn giao dịch, nền tảng P2P hoặc dịch vụ crypto địa phương — bất kỳ lựa chọn nào có ở quốc gia của bạn.
+
+Gửi từ ví
+Nếu bạn đã có USDC trong một ví bất kỳ, hãy gửi số tiền cần trả đến địa chỉ hiển thị trong Moodeng. Hãy đảm bảo mạng được chọn là Base.
+
+Gửi từ sàn giao dịch
+Rút USDC từ tài khoản sàn giao dịch thẳng đến địa chỉ trả nợ. Chọn USDC và chọn mạng Base.
+
+Mua USDC trước, rồi trả nợ
+Nếu bạn chưa có USDC, hãy mua trước và gửi về ví của bạn, sau đó trả nợ từ ví đó:
+- Binance P2P: mua USDC bằng tiền địa phương từ người dùng khác, sau đó rút về qua mạng Base.
+- Sàn giao dịch hoặc ứng dụng khác: mua USDC trên một sàn giao dịch hoặc ứng dụng hỗ trợ USDC trên mạng Base, rồi rút về ví của bạn qua mạng Base. Hãy kiểm tra xem nền tảng đó có hỗ trợ mạng Base không trước khi gửi.
+
+Điều quan trọng: luôn chọn mạng Base khi gửi USDC. Chọn sai mạng có thể khiến bạn mất tiền.`
+   },
+   'adding-funds-to-your-wallet': {
+      title: 'Các cách nạp USDC vào ví',
+      lastUpdated: '3 tháng 7, 2026',
+      body: `Ví Moodeng của bạn dùng USDC trên mạng Base. Ngoài các tùy chọn ngay trong ứng dụng (mua bằng thẻ và chuyển USDC từ chuỗi khác qua cầu nối), dưới đây là những cách phổ biến để nạp USDC vào ví:
+
+Mua trên sàn giao dịch
+Mua USDC trên sàn giao dịch bạn đang dùng, sau đó rút về địa chỉ ví của bạn. Khi rút, luôn chọn USDC và mạng Base.
+
+Binance P2P
+Mua USDC bằng tiền địa phương trực tiếp từ người dùng khác, sau đó rút về qua mạng Base.
+
+Sàn giao dịch hoặc ứng dụng khác
+Bạn cũng có thể mua USDC trên một sàn giao dịch hoặc ứng dụng hỗ trợ USDC trên mạng Base, rồi rút về ví của bạn. Hãy kiểm tra xem nền tảng đó có hỗ trợ mạng Base không trước khi gửi.
+
+Gửi từ ví khác
+Nếu bạn có USDC ở nơi khác, hãy gửi đến địa chỉ ví Moodeng của bạn — qua mạng Base.
+
+Điều quan trọng: luôn chọn mạng Base. Gửi qua sai mạng có thể khiến bạn mất tiền.`
+   },
+   'withdrawing-to-your-bank': {
+      title: 'Rút tiền về tài khoản ngân hàng',
+      lastUpdated: '3 tháng 7, 2026',
+      body: `Bạn có thể rút tiền bằng cách gửi USDC đến một sàn giao dịch hoặc dịch vụ được hỗ trợ, bán USDC tại đó, rồi chuyển tiền địa phương về tài khoản ngân hàng của bạn.
+
+Video hướng dẫn — gửi USDC từ Base Account sang Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
+Các lựa chọn phổ biến:
+
+Binance P2P
+Gửi USDC vào tài khoản Binance của bạn (luôn chọn mạng Base), sau đó bán qua Binance P2P và nhận tiền địa phương thẳng vào tài khoản ngân hàng hoặc ví điện tử.
+
+Sàn giao dịch hoặc ứng dụng hỗ trợ USDC trên mạng Base
+Nạp USDC, bán lấy tiền địa phương rồi rút về tài khoản ngân hàng của bạn. Hãy kiểm tra xem nền tảng đó có hỗ trợ mạng Base không trước khi gửi.
+
+Ví hoặc sàn giao dịch khác
+Bạn luôn có thể gửi USDC đến bất kỳ ví hoặc sàn giao dịch nào bạn đang dùng — chỉ cần đảm bảo nơi đó hỗ trợ USDC trên mạng Base trước khi gửi.
+
+Điều quan trọng: luôn chọn mạng Base khi nạp tiền vào sàn giao dịch. Chọn sai mạng có thể khiến bạn mất tiền.`
    },
    'using-usdc-on-moodeng-credit': {
       title: 'Dùng USDC trên Moodeng Credit',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Tất cả khoản vay trên Moodeng Credit được tính bằng USDC, một stablecoin neo 1:1 với đô la Mỹ.
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Tất cả khoản vay trên Moodeng Credit đều được tính bằng USDC — một stablecoin được quản lý chặt chẽ, neo giá 1:1 với đô la Mỹ.
 
-Dùng USDC giúp giá trị khoản vay ổn định. Khoản vay $20 hôm nay vẫn là $20 khi bạn trả, bất kể thị trường crypto biến động.
+Dùng USDC giúp giá trị khoản vay luôn ổn định. Khoản vay $20 hôm nay vẫn là khoản vay $20 khi bạn trả, bất kể thị trường crypto biến động ra sao.
 
-Instant Wallet của bạn (hoặc Base Account nếu bạn chọn dùng) chạy trên Base, nơi chuyển USDC không tốn gas.`
+Instant Wallet của bạn (hoặc Base Account, nếu bạn muốn) chạy trên Base, nơi chuyển USDC không mất phí gas — bạn không phải trả phí mạng.`
    },
    'verification-and-why-its-required': {
       title: 'Xác minh và bảo mật',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Để giữ môi trường an toàn và công bằng, Moodeng Credit yêu cầu mọi người vay xác minh danh tính người thật duy nhất qua World ID.
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Để giữ Moodeng an toàn và công bằng, mọi người vay đều cần hoàn tất một bước xác minh danh tính ngắn, chỉ một lần. Việc này bảo vệ cộng đồng khỏi tài khoản giả và tài khoản trùng lặp, đồng thời giúp người cho vay tin tưởng các yêu cầu mà họ cấp vốn.
 
 Vì sao cần xác minh?
-- Bảo mật: đảm bảo mỗi yêu cầu đến từ người thật và ngăn gian lận.
-- Phần thưởng: người dùng mới có thể nhận phần thưởng Worldcoin sau khi xác minh thành công.
-- Quyền truy cập: xác minh xong cho phép bạn yêu cầu khoản vay và bắt đầu xây dựng điểm Pandesal.
+- Bảo mật: đảm bảo mỗi yêu cầu đến từ một người thật, duy nhất, giúp ngăn chặn gian lận.
+- Quyền truy cập: xác minh xong sẽ mở khóa tính năng yêu cầu vay và bắt đầu tích lũy điểm Pandesal của bạn.
 
-Tải World App, tìm Orb gần bạn, hoàn tất xác minh trực tiếp, rồi quay lại liên kết World ID với tài khoản Moodeng.`
+Cách được khuyến nghị: Xác minh bằng giấy tờ tùy thân
+1. Bấm "Xác minh danh tính" trong ứng dụng và chọn "Xác minh bằng giấy tờ tùy thân".
+2. Chuẩn bị sẵn thẻ căn cước bản gốc và tìm nơi có ánh sáng tốt, đều.
+3. Hoàn tất bước chụp ảnh giấy tờ + selfie nhanh — chỉ mất khoảng 3 phút.
+4. Hầu hết lượt xác minh hoàn tất trong vài phút. Nếu hồ sơ của bạn cần được xét duyệt thủ công, chúng tôi sẽ thông báo ngay khi xong (thường trong vài giờ, tối đa 1 ngày làm việc).
+
+Giấy tờ tùy thân của bạn được kiểm tra bởi đối tác xác minh bảo mật của chúng tôi và không bao giờ được Moodeng lưu trữ.
+
+Cách khác: Xác minh bằng World ID
+Nếu bạn đã dùng World App — đã được xác minh trực tiếp tại một Orb hoặc bằng hộ chiếu sinh trắc học — bạn có thể chọn "Xác minh bằng World ID" và xác nhận qua World App.`
    },
    'managing-your-account-and-security-settings': {
       title: 'Quản lý tài khoản và cài đặt bảo mật',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Tài khoản của bạn gắn với ví, nên bảo mật ví cũng là bảo mật tài khoản.
+      lastUpdated: '9 tháng 6, 2026',
+      body: `Tài khoản của bạn gắn với ví, nên bảo mật ví cũng chính là bảo mật tài khoản.
 
-Từ màn hình Tài khoản, bạn có thể cập nhật tên hiển thị, quản lý email, đổi mật khẩu và đăng xuất.`
+Từ màn hình "Tài khoản", bạn có thể cập nhật tên hiển thị, quản lý email, đổi mật khẩu và đăng xuất.`
    }
 };
 
