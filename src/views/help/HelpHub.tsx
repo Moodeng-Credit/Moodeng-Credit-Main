@@ -89,8 +89,9 @@ export default function HelpHub(): JSX.Element {
    }, [trimmed]);
 
    return (
-      <div className="min-h-screen bg-[#faf8ff] px-4 pb-16 pt-8 dark:bg-[#100d17]">
-         <div className="mx-auto w-full max-w-2xl">
+      // Same 440px column (and room for the floating bottom nav) as the dashboard it opens from.
+      <div className="min-h-screen bg-[#faf8ff] px-4 pb-28 pt-8 dark:bg-[#100d17]">
+         <div className="mx-auto w-full max-w-[440px]">
             {/* Header */}
             <div className="flex items-center gap-3">
                <span className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-[#f3effe] dark:bg-[#281b35]">

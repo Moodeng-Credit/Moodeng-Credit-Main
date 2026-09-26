@@ -1827,7 +1827,7 @@ export default function AccountSettings() {
                            isBaseAccountWallet ? (
                               <img src="/icons/base-account.svg" alt="" className="size-9 rounded-md-md" />
                            ) : (
-                              <WalletCards size={20} strokeWidth={1.8} />
+                              <img src="/icons/wallet-card-3d.png" alt="" className="size-7 object-contain" />
                            )
                         }
                         onClick={() => openSettingsSection('wallet')}
