@@ -1,6 +1,6 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BellRing, Facebook, MessageCircle } from 'lucide-react';
+import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -10,6 +10,8 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
+import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -36,7 +38,8 @@ export default function ContactsStep({
    onBack,
    onContinue,
    intro,
-   whatsappEnabled = WHATSAPP_VERIFY_ENABLED
+   whatsappEnabled = WHATSAPP_VERIFY_ENABLED,
+   isSubmitting = false
 }: {
    userId: string;
    onBack: () => void;
@@ -45,6 +48,10 @@ export default function ContactsStep({
    intro?: ReactNode;
    // Facebook first: WhatsApp is hidden until a real business number is connected.
    whatsappEnabled?: boolean;
+   // For existing borrowers this is the last step, so Continue fires the real loan submission. When
+   // it does, the parent passes isSubmitting so the button disables + reads "Submitting…" instead of
+   // sitting there inert during the network call (inviting a double-tap).
+   isSubmitting?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
@@ -70,6 +77,41 @@ export default function ContactsStep({
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
    const pushRequired = push.isSupported;
+
+   // When push can't run here we spell out the fix for THIS browser rather than one generic line.
+   // The old copy told everyone to "tap Share" — but Facebook's/Messenger's in-app browser has no
+   // Share button at all, and even iPhone Safari users couldn't find it, so it just confused people.
+   const pushHelp = useMemo(() => {
+      const info = detectInAppBrowser();
+      if (info.isInApp) {
+         const where = isFacebookInApp(info) ? 'the ••• menu (top right)' : "your browser's menu";
+         return {
+            title: 'Reminders need Safari or Chrome',
+            body: (
+               <>
+                  You&apos;re inside {info.appName ?? 'an app'}&apos;s built-in browser, which can&apos;t show reminders — and it has no
+                  Share button. Tap {where}, choose <b>Open in Safari</b> (or Chrome), then turn reminders on there.
+               </>
+            )
+         };
+      }
+      if (needsHomeScreenForPush()) {
+         return {
+            title: 'Add Moodeng to your Home Screen',
+            body: (
+               <>
+                  In <b>Safari</b>, tap the <b>Share</b> icon — the square with an ↑ arrow, in the bar at the bottom of the screen —
+                  then <b>Add to Home Screen</b>. Open Moodeng from the new icon and turn reminders on. No Share icon means you&apos;re
+                  not in Safari yet — open moodeng.app in Safari first.
+               </>
+            )
+         };
+      }
+      return {
+         title: 'Turn on reminders in your browser',
+         body: <>Allow notifications for moodeng.app in your browser settings, then reload this page.</>
+      };
+   }, []);
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
 
@@ -120,6 +162,30 @@ export default function ContactsStep({
       const timer = window.setTimeout(() => setShowTypedCode(true), SHOW_TYPED_CODE_AFTER_MS);
       return () => window.clearTimeout(timer);
    }, [messengerLink, messengerVerified]);
+
+   // Mobile browsers freeze the 3s poll above while the borrower is away in Messenger, so the
+   // checkmark can lag — or never appear if they come back to a still-frozen tab and then close it.
+   // Re-check the instant the app tab is shown or focused again: this is what actually makes the
+   // card flip to "Verified the moment they return", which the poll alone only promises.
+   useEffect(() => {
+      if (!messengerLink || messengerVerified) return;
+      const recheck = async () => {
+         if (document.visibilityState !== 'visible') return;
+         const { data } = await getSupabaseBrowserClient()
+            .from('users')
+            .select('whatsapp_verified_at, messenger_verified_at')
+            .eq('id', userId)
+            .maybeSingle();
+         if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (data?.messenger_verified_at) setMessengerVerified(true);
+      };
+      document.addEventListener('visibilitychange', recheck);
+      window.addEventListener('focus', recheck);
+      return () => {
+         document.removeEventListener('visibilitychange', recheck);
+         window.removeEventListener('focus', recheck);
+      };
+   }, [messengerLink, messengerVerified, userId]);
 
    const copyMessengerCode = async () => {
       if (!messengerCode) return;
@@ -199,16 +265,31 @@ export default function ContactsStep({
 
          {messengerLink && !messengerVerified ? (
             <>
-               <OptionCard
-                  icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
-                  onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
-                  subtitle={
-                     <>
-                        Waiting… tap <b>Get Started</b> if Messenger asks
-                     </>
-                  }
-                  title="Open Messenger again"
-               />
+               {/* A live "we're checking" state, like the wallet-creation step — a spinner + a "keep
+                   this open, it'll turn green on its own" reassurance so the wait doesn't look frozen.
+                   The poll (and the on-return re-check above) flip this whole card to the green
+                   Verified state the moment the bot confirms. */}
+               <div
+                  aria-live="polite"
+                  className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-3"
+               >
+                  <span className="grid size-11 shrink-0 place-items-center">
+                     <Loader2 aria-hidden="true" className="size-7 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-0.5 text-left">
+                     <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Confirming on Messenger…</span>
+                     <span className="text-[14px] leading-[18px] text-[#6b5b86]">
+                        Keep this screen open — it turns green on its own. Tap <b>Get Started</b> in Messenger if it asks.
+                     </span>
+                     <button
+                        type="button"
+                        onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                        className="mt-1 w-fit text-[14px] font-semibold text-md-primary-1200 underline underline-offset-4"
+                     >
+                        Open Messenger again
+                     </button>
+                  </div>
+               </div>
                {showTypedCode && messengerCode ? (
                   <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
                      <p className="font-semibold text-[#4c239f]">Messenger not opening?</p>
@@ -266,19 +347,16 @@ export default function ContactsStep({
             />
          ) : (
             <div className="rounded-[18px] border border-dashed border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-               <p className="font-semibold text-[#4c239f]">Get due-date reminders on your phone</p>
-               <p className="mt-1">
-                  On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>, open Moodeng from there and turn on notifications. In the
-                  Facebook app, open this page in Chrome or Safari instead.
-               </p>
+               <p className="font-semibold text-[#4c239f]">{pushHelp.title}</p>
+               <p className="mt-1">{pushHelp.body}</p>
             </div>
          )}
 
          {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
 
          <div className="mt-auto flex flex-col gap-1 pt-2">
-            <PrimaryButton disabled={!canContinue} onClick={handleContinue}>
-               Continue
+            <PrimaryButton disabled={!canContinue || isSubmitting} onClick={handleContinue}>
+               {isSubmitting ? 'Submitting…' : 'Continue'}
             </PrimaryButton>
             {contactVerified && pushRequired && !pushOn ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>

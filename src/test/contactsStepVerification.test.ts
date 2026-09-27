@@ -67,6 +67,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
    let root: Root;
    let onContinue: ReturnType<typeof vi.fn>;
    let openSpy: ReturnType<typeof vi.fn>;
+   const originalUserAgent = navigator.userAgent;
 
    beforeEach(() => {
       vi.useFakeTimers();
@@ -90,6 +91,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       container.remove();
       vi.unstubAllGlobals();
       vi.useRealTimers();
+      Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
    });
 
    const render = async (userId = 'user-1', whatsappEnabled?: boolean) => {
@@ -190,11 +192,25 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(continueButton(container).disabled).toBe(false);
    });
 
-   it('does not block a device that cannot do push, and shows how to get reminders instead', async () => {
+   it('does not block an iPhone-Safari borrower, and tells them where the Share button is', async () => {
+      const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+      Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
       expect(container.textContent).toContain('Add to Home Screen');
+      // The old copy just said "tap Share"; borrowers couldn't find it, so we now say where it is.
+      expect(container.textContent).toContain('bottom of the screen');
+   });
+
+   it("tells a Facebook in-app-browser borrower to open in Safari (there is no Share button there)", async () => {
+      const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 [FBAN/FBIOS;FBAV/450.0]';
+      Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).toContain('Open in Safari');
+      expect(container.textContent).not.toContain('Add to Home Screen');
    });
 
    it('hides WhatsApp by default (Facebook first) and offers only Messenger', async () => {
@@ -234,6 +250,30 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       });
       expect(container.textContent).toContain('$10 referral program');
       expect(container.textContent).not.toContain('like withdrawing, or extending a loan');
+   });
+
+   it('shows a live "Confirming on Messenger" state after the borrower taps Messenger', async () => {
+      await render();
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+      // The wait now reads as active work (with a reopen affordance), not a frozen "Waiting…".
+      expect(container.textContent).toContain('Confirming on Messenger');
+      expect(container.textContent).toContain('Open Messenger again');
+   });
+
+   it('disables Continue and shows "Submitting…" while the request is posting', async () => {
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await act(async () => {
+         root.render(createElement(ContactsStep, { userId: 'user-1', onBack: vi.fn(), onContinue, isSubmitting: true }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      const btn = buttonByText(container, 'Submitting…');
+      expect(btn).toBeTruthy();
+      expect((btn as HTMLButtonElement).disabled).toBe(true);
    });
 });
 
