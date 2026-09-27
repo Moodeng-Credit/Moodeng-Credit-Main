@@ -182,13 +182,6 @@ export default function AuthVerifyCodePage(): JSX.Element {
             <main className="flex flex-1 flex-col justify-center">
                <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 shadow-[0_18px_50px_rgba(36,14,62,0.08)] dark:border-[#2D1F4A] dark:bg-[#160F28] sm:px-7">
                   <div className="mb-7 flex flex-col items-center text-center">
-                     <div className="mb-5 flex h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-[28px] border border-[#DCC7FF] bg-white shadow-[0_12px_28px_rgba(36,14,62,0.06)] dark:border-[#2D1F4A] dark:bg-[#1E1530]">
-                        <img
-                           src="/hippos/hippo-purple-envelope-email.png"
-                           alt="Moodeng holding an envelope"
-                           className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
-                        />
-                     </div>
                      <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0] dark:text-[#C084FC]">
                         Welcome to Moodeng
                      </p>
