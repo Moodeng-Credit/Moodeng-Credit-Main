@@ -1439,6 +1439,15 @@ function RequestBoard$() {
                }
                pendingLoanDataRef.current = loanData;
                setShowBioStep(true);
+               // The modal owns the bio pages and doesn't read showBioStep, so on its own this was a
+               // silent no-op — borrowers rage-tapped "Make Your Request" with nothing happening.
+               showToast(
+                  TOAST_TYPES.ERROR,
+                  'Your info is missing',
+                  'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.',
+                  'OK',
+                  'acknowledge'
+               );
                return;
             }
 
