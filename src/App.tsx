@@ -200,10 +200,18 @@ export default function App() {
       }
 
       if (user?.id) {
-         posthog.identify(user.id, {
+         const personProperties = {
             email: user.email,
             username: user.username || username
-         });
+         };
+         posthog.identify(user.id, personProperties);
+         // identify() only sends these on the first call for an id, and that call usually happens
+         // before the profile has loaded, so most people ended up in PostHog with no username or email
+         // (101 of 763 had one; e.g. serdanmarie couldn't be found by name). Set them explicitly once
+         // they're known, so every user can be looked up by username or email.
+         if (personProperties.email || personProperties.username) {
+            posthog.setPersonProperties(personProperties);
+         }
          identifyClarity(user.id);
          return;
       }
