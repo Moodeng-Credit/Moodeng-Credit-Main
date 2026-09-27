@@ -65,17 +65,13 @@ export default function ContactsStep({
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
 
-   // Due-date reminders by push are offered, never required. Requiring them would be unfair by
-   // device: iPhone Safari can't do web push at all unless the borrower first "Add to Home Screen"s
-   // the app, so a hard requirement would quietly wave iPhone users through while blocking Android
-   // and desktop — same product, different rules by phone. Instead it's a one-tap recommendation for
-   // everyone, and no one is blocked: Messenger and email reach every borrower regardless.
+   // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
+   // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
+   // those borrowers see how to fix it but aren't blocked — Messenger and email still reach them.
    const push = usePushNotifications(userId);
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
-   // Whether this browser can turn push on right here (vs. iPhone Safari / an in-app browser, where
-   // we can only point the way). Drives which reminder card we show — not whether they can continue.
-   const canEnablePush = push.isSupported;
+   const pushRequired = push.isSupported;
 
    // When push can't run here we spell out the fix for THIS browser rather than one generic line.
    // The old copy told everyone to "tap Share" — but Facebook's/Messenger's in-app browser has no
@@ -112,8 +108,7 @@ export default function ContactsStep({
       };
    }, []);
    const contactVerified = whatsappVerified || messengerVerified;
-   // Only the verified contact line gates Continue. Reminders are encouraged, never required.
-   const canContinue = contactVerified;
+   const canContinue = contactVerified && (pushOn || !pushRequired);
 
    const handleEnablePush = async () => {
       setPushError('');
@@ -319,21 +314,21 @@ export default function ContactsStep({
 
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
-         {canEnablePush ? (
+         {pushRequired ? (
             <OptionCard
-               badge="Recommended"
+               badge="Required"
                disabled={push.isBusy}
                done={pushOn}
                doneLabel="On"
                icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
                onClick={() => void handleEnablePush()}
-               subtitle={push.isBusy ? 'Turning on…' : 'Optional — a phone reminder before your due date'}
+               subtitle={push.isBusy ? 'Turning on…' : 'We remind you before your due date'}
                title="Turn on reminders"
             />
          ) : (
             <div className="rounded-[18px] border border-dashed border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-               <p className="font-semibold text-[#4c239f]">Optional: {pushHelp.title.charAt(0).toLowerCase()}{pushHelp.title.slice(1)}</p>
-               <p className="mt-1">{pushHelp.body} We&apos;ll still remind you on Messenger and by email.</p>
+               <p className="font-semibold text-[#4c239f]">{pushHelp.title}</p>
+               <p className="mt-1">{pushHelp.body}</p>
             </div>
          )}
 
@@ -343,6 +338,9 @@ export default function ContactsStep({
             <PrimaryButton disabled={!canContinue} onClick={handleContinue}>
                Continue
             </PrimaryButton>
+            {contactVerified && pushRequired && !pushOn ? (
+               <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
+            ) : null}
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
       </div>

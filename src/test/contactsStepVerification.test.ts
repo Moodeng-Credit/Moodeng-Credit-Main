@@ -173,17 +173,14 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(onContinue).toHaveBeenCalledTimes(1);
    });
 
-   it('offers reminders on a push-capable device but never blocks Continue on them', async () => {
+   it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
       push.state.isSupported = true;
       push.state.permission = 'default';
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
       await render();
-      // Verified contact line is enough — reminders are only recommended, so Continue is live.
-      expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain('Recommended');
-      expect(container.textContent).not.toContain('to continue');
+      expect(continueButton(container).disabled).toBe(true);
+      expect(container.textContent).toContain('Turn on reminders to continue.');
 
-      // The one-tap enable is still there for anyone who wants it.
       const remindersCard = Array.from(container.querySelectorAll('button')).find((b) =>
          (b.textContent ?? '').includes('Turn on reminders')
       );
@@ -191,6 +188,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          remindersCard?.click();
       });
       expect(push.enable).toHaveBeenCalledTimes(1);
+      await render();
+      expect(continueButton(container).disabled).toBe(false);
    });
 
    it('does not block an iPhone-Safari borrower, and tells them where the Share button is', async () => {
