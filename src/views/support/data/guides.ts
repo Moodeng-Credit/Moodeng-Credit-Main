@@ -224,145 +224,204 @@ From the Account screen, you can update your display name, manage your email, ch
 
 const FILIPINO_GUIDES: Record<string, LocalizedGuideArticle> = {
    'how-to-request-your-first-loan': {
-      title: 'Paano mag-request ng unang loan',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Sundin ang mga simpleng step na ito para simulan ang unang loan request mo sa Moodeng Credit. Puwede mo ring panoorin ang video walkthrough dito: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
+      title: 'Paano mag-request ng unang loan mo',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Sundin ang mga simpleng hakbang na ito para masimulan ang unang loan request mo sa Moodeng Credit. Puwede mo ring panoorin ang video walkthrough ng prosesong ito dito: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Step 1: Gumawa ng account
-Mag-register sa Moodeng platform gamit ang preferred username, email, at password mo. I-click ang "Create Account" para magpatuloy.
+Mag-register sa Moodeng gamit ang gusto mong username, email, at password. I-tap ang "Gumawa ng Account" para magpatuloy.
 
 Step 2: Simulan ang loan application
-Kapag naka-log in ka na, i-tap ang "Apply for a Loan" button para simulan ang proseso.
+Kapag naka-log in ka na, i-tap ang button na "Mag-apply ng loan" para simulan ang proseso.
 
 Step 3: I-set up ang wallet mo
-Kailangan ng wallet para sa secure transactions sa Moodeng. Bilang default, Moodeng Instant Wallet ang gamit mo — ginagawa ito mula sa Moodeng login mo, walang hiwalay na app o seed phrase. Kung mas gusto mo, puwede kang gumamit ng Base Account: pumunta sa https://account.base.app at sundin ang registration instructions.
+Kailangan ng wallet para sa mga secure na transaksyon sa Moodeng. Bilang default, Moodeng Instant Wallet ang gagamitin mo — ginagawa ito mula sa Moodeng login mo, walang hiwalay na app o seed phrase. Kung mas gusto mo, puwede kang gumamit ng Base Account sa halip: pumunta sa https://account.base.app at sundin ang instructions sa pag-register.
 
-
-Step 4: Ikonek ang wallet mo
-Bumalik sa Moodeng platform at i-tap ang "Connect Wallet" para gumawa ng Instant Wallet mo — o secure na i-link ang Base Account mo kung iyon ang pinili mo — sa Moodeng account mo.
+Step 4: Ikonekta ang wallet mo
+Bumalik sa Moodeng at i-tap ang "Ikonekta ang wallet" para magawa ang Instant Wallet mo — o para ligtas na ma-link ang Base Account mo kung iyon ang pinili mo — para nakatali ito sa Moodeng account mo.
 
 Step 5: I-verify ang identity mo
-Para mapanatiling safe ang community, i-download ang World App at kumpletuhin ang human identity verification sa physical World Orb location.
+Para mapanatiling ligtas ang community, i-tap ang "Verify Yourself" at kumpletuhin ang mabilis na ID + selfie check ("Verify Your ID") — mga 3 minuto lang ito. Gumagamit ka na ng World App? Puwede mong piliin ang "Verify with World ID" sa halip.
 
-Step 6: I-link ang World ID
-Pagkatapos mag-verify sa Orb, bumalik sa Moodeng at i-tap ang "Verify with World ID." I-scan ang QR code para ma-finalize ang link ng World ID mo at Moodeng account mo.
-
-Step 7: I-submit ang request mo
-I-tap ang "Explore the Request Board" para i-set ang specific loan terms mo. Kailangan mong ilagay:
-- Desired loan amount.
-- Repayment amount at date.
-- Malinaw na reason kung bakit ka nanghihiram para makatulong bumuo ng tiwala sa potential lenders.
-
-Important notes tungkol sa credit limit mo
-- Starting limit: Bawat bagong borrower ay nagsisimula sa initial borrowing limit na $15.
-- Credit-building loans: Full-limit loan ito na gumagamit ng buong current credit limit mo, halimbawa full $15 request. Ang successful repayment ng ganitong loan lang ang paraan para tumaas ang limit mo sa next level, halimbawa $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 at pataas. Isang credit-building loan request lang ang puwedeng active at a time.
-- Trust-building loans: Mas maliit na loans ito na below sa current credit limit mo. Nakakatulong ito bumuo ng Pandesal points mo sa lenders, pero hindi nito tinataas ang overall credit limit mo. Puwede kang magkaroon ng multiple trust-building loan requests at the same time basta ang total ay nasa ilalim ng current limit mo.
-- Pag-unlock ng next level: Para umakyat, kailangan mong hiramin at fully repay ang buong limit mo. Halimbawa, kung $15 ang limit mo at $12 trust-building loan lang ang ni-request mo at nagbayad ka ng $15, hindi tataas ang limit mo. Kailangan mong hiramin ang buong $15 at bayaran ang total agreed amount, kasama ang anumang maliit na interest o additional repayment amount na inoffer mo at tinanggap ng lender, para ma-unlock ang next level.`
+Step 6: I-submit ang request mo
+I-tap ang "I-explore ang Request Board" para itakda ang loan terms mo. Kailangan mong ilagay ang:
+- Halaga ng loan na gusto mo.
+- Halagang babayaran at petsa ng pagbabayad.
+- Malinaw na dahilan ng paghiram mo, para makatulong na bumuo ng tiwala sa mga posibleng lender.`
    },
    'understanding-your-trust-score': {
       title: 'Pag-unawa sa Pandesal points mo',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Ipinapakita ng Pandesal points mo kung gaano ka reliable magbayad ng loans sa Moodeng Credit.
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Ipinapakita ng Pandesal points mo kung gaano ka maaasahan sa pagbabayad ng mga loan sa Moodeng Credit.
 
-Tumataas ito sa bawat on-time repayment at bumababa kapag late ka o nag-default. Ginagamit ito ng lenders bilang mabilis na signal para mag-decide kung i-fund nila ang request mo.
+Tumataas ito sa bawat on-time na bayad at bumababa kapag may hindi ka nabayaran o nag-default ka. Ginagamit ito ng mga lender bilang mabilis na senyales para magpasya kung popondohan nila ang request mo.
 
-Dahil naka-tie ang Pandesal points mo sa wallet mo, dala mo ito kahit saan. Hindi ito nakakulong sa isang app lang.`
+Dahil nakatali sa wallet mo ang Pandesal points mo, dala mo ito kahit saan — hindi ito nakakulong sa iisang app.`
    },
    'how-credit-levels-work': {
-      title: 'Paano gumagana ang mga antas ng kredito',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Tinutukoy ng mga antas ng kredito kung magkano ang puwede mong hiramin at a time.
+      title: 'Paano gumagana ang Credit Levels',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Tinutukoy ng Credit Level mo kung magkano ang puwede mong hiramin sa isang pagkakataon.
 
-Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at fully nagbabayad, lumalaki ang limit mo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — at nag-a-unlock ng bagong levels.
+Lahat nagsisimula sa Level 1 na may $15 limit. Habang humihiram ka at nagbabayad nang buo, lumalaki ang limit mo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 — at nag-a-unlock ka ng mga bagong level.
 
-Umakyat ka lang kapag nakumpleto mo ang Credit Growth Loan: loan sa buong current limit mo, fully repaid at on time.`
+Aakyat ka lang ng level kapag nakumpleto mo ang isang Credit-Building Loan: loan na katumbas ng buong current limit mo, na binayaran nang buo at on time.`
    },
    'trust-building-vs-credit-building-loans': {
-      title: 'Trust-building vs credit-building loans',
-      lastUpdated: 'Jun 9, 2026',
-      body: `May dalawang uri ng loans ang Moodeng Credit:
+      title: 'Trust-Building vs Credit-Building loans',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `May dalawang uri ng loan sa Moodeng Credit:
 
-Ang Trust-building loans ay mas maliit na loans below sa current limit mo. Tinutulungan ka nitong ipakita na reliable kang magbayad, pero hindi nito tinataas ang limit mo.
+Ang Trust-Building Loans ay mas maliliit na loan na mas mababa sa current limit mo. Tinutulungan ka nitong ipakita na maaasahan ka sa pagbabayad, pero hindi nito tinataas ang limit mo.
 
-Ang Credit-building loans ay full-limit loans. Kapag nabayaran mo ito on time, tataas ang limit mo at maa-unlock ang susunod na antas ng kredito.
+Ang Credit-Building Loans ay mga loan na katumbas ng buong limit mo. Kapag nabayaran mo ang isa nang on time, tataas ang limit mo at maa-unlock ang susunod na Credit Level.
 
-Karamihan ng borrowers ay gumagamit ng pareho: trust loans para manatiling healthy ang activity, at credit loans para palakihin ang limit over time.`
+Karamihan ng mga borrower ay gumagamit ng dalawa — Trust-Building Loans para manatiling healthy ang activity nila, at Credit-Building Loans para unti-unting palakihin ang limit nila.`
    },
    'how-repayments-affect-your-trust-score': {
-      title: 'Paano naaapektuhan ng repayments ang Pandesal points mo',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Bawat repayment para sa Credit-building o Trust-building loans ay direktang nakakaapekto sa Pandesal points mo, na nagsisilbing reputation mo sa platform. Dinisenyo ang system namin para i-reward ang consistent, reliable, at honest behavior; mas mahalaga sa reputation mo ang maliit na loans na malinis ang repayment kaysa malaking loans na magulo ang repayment.
+      title: 'Paano naaapektuhan ng pagbabayad ang Pandesal points mo',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Bawat bayad para sa Credit-Building o Trust-Building loan ay direktang nakakaapekto sa Pandesal points mo, na nagsisilbing reputasyon mo sa platform. Ginawa ang system namin para i-reward ang tuloy-tuloy, maaasahan, at tapat na pag-uugali; mas mahalaga para sa reputasyon mo ang maliliit na loan na malinis ang pagbabayad kaysa sa malalaking loan na palpak ang pagbabayad.
 
 Scoring breakdown
 
-- On-time, full repayments: Kapag nakumpleto ang 100% repayment on or before the due date, maximized ang points mo (10 points).
+- On-time at buong bayad: Kapag nabayaran mo nang 100% sa o bago ang due date, makukuha mo ang maximum (10 points).
 
-- Partial repayments: Kapag hindi nabayaran ang buong amount, nababawasan ang points mo proportionally — 75% = 7 points · 50% = 5 points · 25% = 3 points.
+- Partial na bayad: Kapag hindi mo nabayaran ang buong halaga, nababawasan ang points mo ayon sa proporsyon — 75% = 7 points · 50% = 5 points · 25% = 3 points.
 
-- Late repayments: Anumang payment na natanggap pagkatapos ng agreed deadline ay nagreresulta sa 0 points para sa transaction na iyon.
+- Late na bayad: Anumang bayad na natanggap pagkatapos ng napagkasunduang deadline ay 0 points para sa transaksyong iyon.
 
-- Defaults: Ang unpaid loans ay nag-iiwan ng permanent mark sa profile mo na makikita ng lahat ng future lenders.`
+- Default: Nag-iiwan ang hindi nabayarang loan ng permanenteng marka sa profile mo na makikita ng lahat ng susunod na lender.`
    },
    'what-happens-when-you-repay-a-loan-on-time': {
-      title: 'Mga benepisyo ng on-time repayments',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Ang pag-submit ng repayment on or before the scheduled deadline ang pinaka-effective na paraan para palakasin ang standing mo sa Moodeng Credit ecosystem. Lahat ng repayments ay confirmed on-chain; kapag settled na ang USDC transfer, automatic na maa-update ang loan status mo sa "Successfully Repaid."
+      title: 'Mga benepisyo ng on-time na pagbabayad',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Ang pagbabayad sa o bago ang nakatakdang deadline ang pinakaepektibong paraan para palakasin ang standing mo sa Moodeng Credit. Kinukumpirma on-chain ang lahat ng bayad; kapag na-settle na ang USDC transfer, awtomatikong maa-update ang status ng loan mo sa "Successfully Repaid."
 
-Kapag nagbayad ka on time, maa-apply sa profile mo ang mga benepisyong ito:
+Kapag nagbayad ka on time, ito ang mga benepisyong makukuha ng profile mo:
 
-- Mas maraming Pandesal points: Tumataas ang Pandesal points mo para sa Credit-building o Trust-building loans, na nagpapakita ng reliability mo sa community.
-- Credit limit progression: Para sa Credit-building loans, tataas ang current borrowing limit mo at maa-unlock ang next credit level, halimbawa mula $15 papuntang $20.
-- Verified lending history: Makikita ng potential lenders ang successful repayment history mo, kaya mas madali nilang ma-review ang future requests mo.
+- Mas maraming Pandesal points: Tumataas ang Pandesal points mo para sa Credit-Building o Trust-Building loan, na nagpapakita sa community na maaasahan ka.
+- Pagtaas ng credit limit: Para sa Credit-Building loans, tataas ang current borrowing limit mo at maa-unlock ang susunod na Credit Level (halimbawa, mula $15 → $20).
+- Verified na lending history: Makikita ng mga posibleng lender ang matagumpay mong repayment history, kaya mas mabilis mapondohan ang mga susunod mong request.
 
 Repayment scoring breakdown
 
-Ipinapakita ng Pandesal points mo ang reliability mo at tumutulong sa future funding success mo:
+Ipinapakita ng Pandesal points mo kung gaano ka maaasahan, at ito ang nagtatakda kung gaano kadaling mapondohan ang mga susunod mong request:
 
-- On-time, full repayment: Nagbibigay ng maximum 10 points.
-- Partial repayment: Nababawasan ang points mo proportionally base sa amount na nabayaran, halimbawa 75% = 7 points; 50% = 5 points.
-- Late repayment: Anumang payment pagkatapos ng deadline ay nagreresulta sa 0 points, kahit magkano ang amount.
-- Default: Ang unpaid loans ay nagreresulta sa permanent mark sa public on-chain profile mo.`
+- On-time at buong bayad: Makukuha mo ang maximum na 10 points.
+- Partial na bayad: Nababawasan ang points mo ayon sa proporsyon ng halagang nabayaran (halimbawa, 75% = 7 points; 50% = 5 points).
+- Late na bayad: Anumang bayad pagkatapos ng deadline ay 0 points, kahit magkano pa ang halaga.
+- Default: Mag-iiwan ang hindi nabayarang loan ng permanenteng marka sa public on-chain profile mo.`
+   },
+   'repaying-your-loan': {
+      title: 'Mga paraan ng pagbabayad ng loan mo',
+      lastUpdated: 'Hulyo 3, 2026',
+      body: `Para magbayad, ipadala ang kailangang halaga ng USDC sa repayment address na makikita sa Moodeng (ipinapakita ng Magbayad screen ang eksaktong halaga, at doon mo rin makokopya ang address). Puwede kang magpadala mula sa wallet, exchange, P2P platform, o local crypto service — kung ano ang available sa bansa mo.
+
+Pagpapadala mula sa wallet
+Kung may USDC ka na sa kahit anong wallet, ipadala ang halaga ng bayad sa address na nakalagay sa Moodeng. Siguraduhing Base ang network.
+
+Pagpapadala mula sa exchange
+I-withdraw ang USDC mula sa exchange account mo diretso sa repayment address. Piliin ang USDC at piliin ang Base bilang network.
+
+Bumili muna ng USDC, saka magbayad
+Kung wala ka pang USDC, bumili muna at ipadala ito sa wallet mo, saka magbayad mula roon:
+- Binance P2P: bumili ng USDC gamit ang local currency mula sa ibang user, tapos i-withdraw sa Base network.
+- Coins.ph: bumili ng USDC gamit ang PHP, tapos gamitin ang Send Crypto → External Wallet → Base network.
+- GCrypto (GCash): kung naka-enable ang crypto sa GCash app mo, bumili ng USDC at i-withdraw gamit ang USDCBASE.
+- PDAX: bumili ng USDC gamit ang PHP at i-withdraw sa wallet mo sa Base.
+- Moneybees (external na opsyon): over-the-counter service na ginagamit ng ilang user para bumili ng crypto sa sariling proseso ng Moneybees. Sundin nang direkta ang instructions nila sa https://www.moneybees.ph/.
+
+Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagpapadala ng USDC. Kapag mali ang network, puwedeng mawala ang pera mo.`
+   },
+   'adding-funds-to-your-wallet': {
+      title: 'Mga paraan para magdagdag ng USDC sa wallet mo',
+      lastUpdated: 'Hulyo 3, 2026',
+      body: `Gumagana ang Moodeng wallet mo gamit ang USDC sa Base network. Bukod sa mga opsyon sa loob ng app (pagbili gamit ang card at pag-bridge mula sa ibang chain), ito ang mga karaniwang paraan para makapaglagay ng USDC sa wallet mo:
+
+Bumili sa exchange
+Bumili ng USDC sa exchange na ginagamit mo na, tapos i-withdraw ito sa wallet address mo. Laging piliin ang USDC at ang Base network kapag nagwi-withdraw.
+
+Binance P2P
+Bumili ng USDC gamit ang local currency diretso mula sa ibang user, tapos i-withdraw sa Base network.
+
+Mga serbisyo sa Pilipinas
+- Coins.ph: bumili ng USDC gamit ang PHP, tapos Send Crypto → External Wallet → Base network.
+- PDAX: bumili ng USDC gamit ang PHP at i-withdraw sa wallet mo sa Base.
+- GCrypto (GCash): kung naka-enable ang crypto sa GCash app mo, bumili at i-withdraw gamit ang USDCBASE.
+
+Moneybees (external na opsyon)
+Ang Moneybees ay external na over-the-counter service na ginagamit ng ilang user para bumili ng crypto sa sariling proseso ng Moneybees. Kailangan mong sundin nang direkta ang instructions ng Moneybees sa https://www.moneybees.ph/.
+
+Magpadala mula sa ibang wallet
+Kung may USDC ka sa ibang wallet, ipadala ito sa Moodeng wallet address mo — sa Base network.
+
+Ang pinakamahalaga: laging piliin ang Base bilang network. Kapag mali ang network na ginamit sa pagpapadala, puwedeng mawala ang pera mo.`
+   },
+   'withdrawing-to-your-bank': {
+      title: 'Pag-withdraw ng pera mo papunta sa bank account',
+      lastUpdated: 'Hulyo 3, 2026',
+      body: `Puwede kang mag-withdraw sa pamamagitan ng pagpapadala ng USDC mo sa isang supported na exchange o serbisyo, pagbebenta nito roon, at paglilipat ng local currency sa bank account mo.
+
+Video walkthrough — pagpapadala ng USDC mula sa Base Account mo papunta sa Binance: https://www.youtube.com/watch?v=Bqc2u3utbwc
+
+Mga karaniwang opsyon:
+
+Binance P2P
+Ipadala ang USDC sa Binance account mo (laging piliin ang Base network), tapos ibenta ito sa Binance P2P at matanggap ang local currency diretso sa bank o e-wallet mo.
+
+PDAX
+Isang Philippine exchange na regulated ng BSP. Mag-deposit ng USDC, ibenta ito para sa PHP, at i-withdraw sa bank account mo.
+
+Coins.ph
+Mag-deposit ng USDC, i-convert sa PHP, at i-cash out sa bank o GCash mo.
+
+GCrypto (GCash)
+Kung naka-enable ang crypto sa GCash app mo, puwede kang tumanggap ng supported na crypto at i-convert ito sa loob ng GCash.
+
+Moneybees (external na opsyon)
+Ang Moneybees ay external na over-the-counter service na ginagamit ng ilang user para bumili o magbenta ng crypto sa sariling proseso ng Moneybees. Kailangan mong sundin nang direkta ang instructions ng Moneybees sa https://www.moneybees.ph/.
+
+Ibang wallet o exchange
+Puwede ka ring magpadala ng USDC sa kahit anong wallet o exchange na ginagamit mo na — siguraduhin lang na sinusuportahan nito ang USDC sa Base network bago ka magpadala.
+
+Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagde-deposit sa exchange. Kapag mali ang network, puwedeng mawala ang pera mo.`
    },
    'using-usdc-on-moodeng-credit': {
       title: 'Paggamit ng USDC sa Moodeng Credit',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Lahat ng loans sa Moodeng Credit ay denominated sa USDC — regulated stablecoin na naka-peg 1:1 sa US dollar.
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Lahat ng loan sa Moodeng Credit ay nasa USDC — isang regulated stablecoin na naka-peg 1:1 sa US dollar.
 
-Kapag USDC ang gamit, consistent ang loan values. Ang $20 loan ngayon ay $20 pa rin kapag binayaran mo ito, kahit gumalaw ang crypto market.
+Dahil USDC ang gamit, hindi nagbabago ang halaga ng loan. Ang $20 loan ngayon ay $20 loan pa rin kapag binayaran mo ito, kahit gumalaw pa ang crypto market.
 
-Tumatakbo sa Base ang Instant Wallet mo (o Base Account, kung iyon ang gusto mo), kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
+Tumatakbo sa Base ang Instant Wallet mo (o ang Base Account mo, kung iyon ang gusto mo), kung saan gasless ang USDC transfers — wala kang babayarang network fees.`
    },
    'verification-and-why-its-required': {
-      title: 'Verification at security',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Para mapanatiling secure at fair ang environment, kailangan ng Moodeng Credit na i-verify ng lahat ng borrowers ang unique human identity nila gamit ang World ID. Pinoprotektahan ng process na ito ang community mula sa automated bots at duplicate accounts nang hindi ka pinapa-upload ng sensitive personal documents.
+      title: 'Verification at seguridad',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Para mapanatiling ligtas at patas ang Moodeng, lahat ng borrower ay dumadaan sa maikli at one-time na identity verification. Pinoprotektahan nito ang community laban sa mga peke at duplicate na account, at ito ang dahilan kung bakit napagkakatiwalaan ng mga lender ang mga request na pinopondohan nila.
 
 Bakit kailangan mag-verify?
-- Security: Tinitiyak na galing sa totoong tao ang bawat request at nakakatulong maiwasan ang fraud.
+- Seguridad: sinisiguro na galing sa totoo at iisang tao ang bawat request, para maiwasan ang fraud.
+- Access: kapag tapos na ang verification, puwede ka nang mag-request ng loan at magsisimula na ang Pandesal points mo.
 
-- Rewards: Puwedeng mag-claim ang new users ng humigit-kumulang $10 sa Worldcoin rewards pagkatapos ng successful verification.
+Ang inirerekomendang paraan: Verify Your ID
+1. I-tap ang "Verify Yourself" sa app at piliin ang "Verify Your ID".
+2. Ihanda ang physical na national ID mo at pumuwesto sa lugar na maliwanag at pantay ang ilaw.
+3. Kumpletuhin ang mabilis na ID photo + selfie check — mga 3 minuto lang ito.
+4. Karamihan ng checks ay natatapos sa loob ng ilang minuto. Kung kailangan ng review ng tao, aabisuhan ka namin agad kapag tapos na ito (kadalasan sa loob ng ilang oras, pinakamatagal na ang 1 business day).
 
-- Access: Kapag complete ang verification, puwede ka nang mag-request ng loans at magsimulang bumuo ng Pandesal points.
+Sinusuri ang ID mo ng secure na verification partner namin, at hindi ito kailanman iniimbak ng Moodeng.
 
-Step-by-step guide
-1. I-download ang World App
-I-install ang official app gamit ang Apple App Store o Google Play Store.
-
-2. Humanap ng Orb
-Sa loob ng World App, pumunta sa Settings, piliin ang "Find an Orb," at i-enable ang "Allow Location" para mahanap ang pinakamalapit na verification center sa iyo .
-
-3. Kumpletuhin ang in-person verification
-Pumunta sa napili mong Orb location at sundin ang on-screen instructions sa app para makumpleto ang one-time verification process.
-
-4. Kumonek sa Moodeng
-Kapag verified ka na, bumalik sa Moodeng platform. Pumunta sa "Verification," at piliin ang "Connect World ID" para i-link ang account mo at i-finalize ang eligibility mo .`
+Alternatibo: Verify with World ID
+Kung gumagamit ka na ng World App — na-verify nang personal sa isang Orb o gamit ang biometric passport — puwede mong piliin ang "Verify with World ID" sa halip at kumpirmahin ito sa World App.`
    },
    'managing-your-account-and-security-settings': {
-      title: 'Pag-manage ng account at security settings mo',
-      lastUpdated: 'Jun 9, 2026',
-      body: `Naka-tie ang account mo sa wallet mo, kaya wallet security ang account security.
+      title: 'Pag-manage ng account at mga security setting mo',
+      lastUpdated: 'Hunyo 9, 2026',
+      body: `Nakatali ang account mo sa wallet mo, kaya ang seguridad ng wallet mo ay seguridad din ng account mo.
 
-Mula sa Account screen, puwede mong i-update ang display name mo, i-manage ang email mo, palitan ang password mo, at mag-sign out.`
+Sa Account screen, puwede mong i-update ang display name mo, i-manage ang email mo, palitan ang password mo, at mag-sign out.`
    }
 };
 

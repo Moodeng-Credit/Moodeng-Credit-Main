@@ -70,13 +70,13 @@ describe('localization translations', () => {
 
    it('keeps canonical screen titles in the correct language records', () => {
       expect(translations.en['requestBoard.title']).toBe('Microloan Request Board');
-      expect(translations.fil['requestBoard.title']).toBe('Board ng Microloan Requests');
+      expect(translations.fil['requestBoard.title']).toBe('Microloan Request Board');
    });
 
    it('covers visible mobile app shell and support phrases in Filipino', () => {
-      expect(translations.fil['bottomNav.history']).toBe('Kasaysayan');
-      expect(translations.fil['bottomNav.account']).toBe('Ako');
-      expect(filipinoScreenTranslations['Transaction History']).toBe('Kasaysayan ng mga transaksyon');
+      expect(translations.fil['bottomNav.history']).toBe('History');
+      expect(translations.fil['bottomNav.account']).toBe('Account');
+      expect(filipinoScreenTranslations['Transaction History']).toBe('Transaction history');
       expect(filipinoScreenTranslations['Learn the Moodeng Basics']).toBe('Alamin ang basics ng Moodeng');
       expect(filipinoScreenTranslations['Lent by']).toBe('Pinahiram ng');
       expect(screenTranslationsByLocale.id['Transaction History']).toBe('Riwayat transaksi');
@@ -86,8 +86,8 @@ describe('localization translations', () => {
    });
 
    it('localizes support guide cards and detail body copy', () => {
-      expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang mga antas ng kredito');
-      expect(getGuideForLocale('how-credit-levels-work', 'fil')?.body).toContain('Tinutukoy ng mga antas ng kredito');
+      expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang Credit Levels');
+      expect(getGuideForLocale('how-credit-levels-work', 'fil')?.body).toContain('Tinutukoy ng Credit Level mo');
       expect(getGuideForLocale('verification-and-why-its-required', 'fil')?.body).toContain('Bakit kailangan mag-verify?');
       expect(getGuidesForLocale('id').map((guide) => guide.title)).toContain('Cara kerja level kredit');
       expect(getGuideForLocale('how-credit-levels-work', 'id')?.body).toContain('Level kredit menentukan');

@@ -81,14 +81,14 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       addMoneyStep2: 'Ipadala ito sa wallet address mo sa ibaba — piliin ang Base network.',
       addMoneyStep3: 'Lalabas ito sa balance mo sa loob ng mga isang minuto.',
       addMoneySafety: 'Ikaw lang ang makakagalaw ng perang ito.',
-      done: 'Tapos',
+      done: 'Tapos na',
       details: 'Mga detalye ng wallet',
       instantWallet: 'Instant Wallet',
       walletType: 'Uri ng wallet',
       address: 'Address ng wallet',
       copyAddress: 'Kopyahin',
       copied: 'Nakopya ang address',
-      copyFailed: 'Hindi na-copy'
+      copyFailed: 'Hindi nakopya'
    },
    id: {
       availableBalance: 'Saldo tersedia',

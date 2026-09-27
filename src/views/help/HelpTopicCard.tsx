@@ -36,7 +36,7 @@ export default function HelpTopicCard({ topic, locale }: HelpTopicCardProps): JS
    const question = pickText(topic.question, locale);
    const intro = topic.intro ? pickText(topic.intro, locale) : null;
    // steps is optional: explainer topics carry only an intro paragraph.
-   const steps = topic.steps ? (locale === 'fil' ? topic.steps.fil : topic.steps.en) ?? topic.steps.en : [];
+   const steps = topic.steps ? ((locale === 'fil' ? topic.steps.fil : topic.steps.en) ?? topic.steps.en) : [];
    const panelId = `help-topic-${topic.id}`;
 
    const askUs = () => {
@@ -85,9 +85,7 @@ export default function HelpTopicCard({ topic, locale }: HelpTopicCardProps): JS
 
          {isOpen ? (
             <div id={panelId} className="border-t border-[#f3effe] px-4 pb-4 pt-3 dark:border-[#2a2235]">
-               {intro ? (
-                  <p className="text-[13.5px] leading-relaxed text-[#3d3450] dark:text-[#D5CEDD]">{intro}</p>
-               ) : null}
+               {intro ? <p className="text-[13.5px] leading-relaxed text-[#3d3450] dark:text-[#D5CEDD]">{intro}</p> : null}
 
                {steps.length > 0 ? (
                   <ol
@@ -123,7 +121,7 @@ export default function HelpTopicCard({ topic, locale }: HelpTopicCardProps): JS
                   </p>
                   <p className="mt-0.5 text-[12.5px] leading-snug text-[#5b5470] dark:text-[#B5ACBE]">
                      {locale === 'fil'
-                        ? 'Dalhin ang tanong na ito sa isang tao — sasagutin ka namin.'
+                        ? 'Itanong ito sa totoong tao sa team namin — babalikan ka namin.'
                         : "Take this question to a person — we'll get back to you."}
                   </p>
                   <div className="mt-2.5 flex flex-wrap gap-2">

@@ -31,15 +31,15 @@ const ROLE_SELECTION_COPY = {
       errorTitle: 'May nangyaring mali',
       errorBody: 'Hindi na-save ang role mo. Subukan ulit.',
       title: 'Paano mo gustong gamitin ang Moodeng Credit?',
-      subtitle: 'Humiling ng panandaliang pautang, magbayad nang malinaw, at bumuo ng tiwala habang tumatagal.',
-      borrowerTitle: 'Humihiram ako',
-      borrowerBody: 'Humiling ng USDC loan at bumuo ng tiwala sa pamamagitan ng pagbabayad sa tamang oras.',
-      lenderTitle: 'Nagpapahiram ako',
-      lenderBody: 'Pondohan ang mga loan request at kumita habang sumusuporta sa mapagkakatiwalaang humihiram.',
+      subtitle: 'Mag-request ng short-term loan, magbayad nang transparent, at bumuo ng tiwala habang tumatagal.',
+      borrowerTitle: 'Borrower ako',
+      borrowerBody: 'Mag-request ng USDC loan at bumuo ng tiwala sa pamamagitan ng on-time na pagbabayad.',
+      lenderTitle: 'Lender ako',
+      lenderBody: 'Pondohan ang mga loan request at kumita habang sinusuportahan ang mga mapagkakatiwalaang borrower.',
       confirming: 'Kinukumpirma...',
-      confirm: 'Kumpirmahin',
-      footerLinks: ['Pribasiya', 'Mga Tuntunin', 'Dokumento'],
-      copyright: '© 2026 Moodeng Credit. Nakareserba ang lahat ng karapatan'
+      confirm: 'I-confirm',
+      footerLinks: ['Privacy', 'Terms', 'Docs'],
+      copyright: '© 2026 Moodeng Credit. Nakareserba ang lahat ng karapatan.'
    },
    id: {
       errorTitle: 'Ada yang salah',

@@ -67,23 +67,23 @@ const SUPPORT_COPY: Record<
       title: 'Sentro ng Tulong at Suporta',
       subtitle: 'Kailangan ng tulong sa pagsisimula? Mag-browse ng mga artikulo ng tulong o makipag-ugnayan kung kailangan mo ng suporta.',
       communityTitle: 'Sumali sa komunidad',
-      communityDescription: 'Makipag-ugnayan sa ibang humihiram, magbigay ng feedback, at manatiling updated sa Moodeng Credit.',
+      communityDescription: 'Makipag-connect sa ibang borrower, magbigay ng feedback, at manatiling updated sa Moodeng Credit.',
       cards: [
          {
-            label: 'Magsimula',
-            description: 'Bago ka pa lang ba sa Moodeng Credit? Alamin ang mga pangunahing bagay at humiling ng una mong loan.',
+            label: 'Pagsisimula',
+            description: 'Bago ka pa lang ba sa Moodeng Credit? Alamin ang basics at mag-request ng una mong loan.',
             icon: 'play-outline.svg',
             path: '/support/getting-started'
          },
          {
             label: 'Mga gabay',
-            description: 'Mga gabay na step-by-step tungkol sa Pandesal points, antas ng kredito, at pagbabayad.',
+            description: 'Mga gabay na step-by-step tungkol sa Pandesal points, Credit Level, at pagbabayad.',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
             label: 'FAQs',
-            description: 'Malinaw na sagot tungkol sa pautang, tiwala, verification, at pagbabayad.',
+            description: 'Malinaw na sagot tungkol sa mga loan, tiwala, verification, at pagbabayad.',
             icon: 'question_light.svg',
             path: '/help'
          },

@@ -84,19 +84,19 @@ const GETTING_STARTED_COPY = {
       ]
    },
    fil: {
-      title: 'Magsimula',
+      title: 'Pagsisimula',
       heading: 'Alamin ang basics ng Moodeng',
       latestVideo: 'Pinakabagong video guide',
       latestVideoTitle: 'Pinakabagong video guide',
-      lenderBenefitsTitle: 'Benepisyo para sa nagpapahiram',
+      lenderBenefitsTitle: 'Benepisyo ng lender',
       lenderBenefitsDescription: 'Alamin kung bakit mahalaga ang pagpapahiram',
       basics: [
-         { title: 'Tingnan ang mga gabay', description: 'Quick start para sa bagong users' },
-         { title: 'Tingnan ang benefits', description: 'Alamin kung bakit sulit ito' },
+         { title: 'Tingnan ang mga gabay', description: 'Quick start para sa mga bagong user' },
+         { title: 'Tingnan ang mga benepisyo', description: 'Alamin kung bakit sulit ito' },
          { title: 'Bakit USDC ang gamit ng Moodeng', description: 'Alamin kung paano gumagana ang USDC' },
-         { title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito', description: 'Palakihin ang limits, bumuo ng trust' },
-         { title: 'Matuto pa sa Academy', description: 'Paghiram, wallet, Pandesal points, at antas ng kredito' },
-         { title: 'Basahin ang Moodeng Blogs', description: 'Mga kwento tungkol sa patas na credit, loan sharks, at trust' }
+         { title: 'Alamin ang Credit Leveling System', description: 'Palakihin ang limits, bumuo ng tiwala' },
+         { title: 'Matuto pa sa Academy', description: 'Paghiram, wallet, Pandesal points, at Credit Level' },
+         { title: 'Basahin ang mga blog ng Moodeng', description: 'Mga kuwento tungkol sa patas na credit, loan sharks, at tiwala' }
       ]
    },
    id: {

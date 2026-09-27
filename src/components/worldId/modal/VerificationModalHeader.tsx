@@ -21,7 +21,7 @@ const VERIFICATION_MODAL_HEADER_COPY = {
       goBack: 'Bumalik',
       viewInformation: 'Tingnan ang impormasyon',
       title: 'I-verify ang World ID',
-      mainTitle: 'I-verify na tao ka',
+      mainTitle: 'Patunayang totoong tao ka',
       description: 'Patunayan na totoong tao ka gamit ang World ID'
    },
    id: {

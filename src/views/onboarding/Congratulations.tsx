@@ -48,25 +48,25 @@ const CONGRATULATIONS_COPY = {
       rows: {
          guides: {
             title: 'Tingnan ang mga gabay',
-            subtitle: 'Mabilisang simula para sa bagong gumagamit'
+            subtitle: 'Quick start para sa mga bagong user'
          },
          telegram: {
             title: 'Humingi ng tulong sa Telegram',
             subtitle: 'Mag-message para sa tulong sa wallet, deposito, o mga tanong'
          },
          facebook: {
-            title: 'Kontakin kami sa Facebook',
+            title: 'Makipag-ugnayan sa amin sa Facebook',
             subtitle: 'Sumali sa komunidad at magtanong'
          },
          creditLeveling: {
-            title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito',
+            title: 'Alamin ang Credit Leveling System',
             subtitle: 'Palakihin ang limit, bumuo ng tiwala'
          }
       },
       exploreRequestBoard: 'I-explore ang Request Board',
       exploreNote: 'Puwede mo nang i-explore ang Moodeng Credit at simulan ang journey mo nang may kumpiyansa.',
       communityTitle: 'Boses laban sa hindi patas na pautang',
-      communityBody: 'Sumali sa aming komunidad sa Facebook. Makipag-ugnayan sa ibang gumagamit ng Moodeng Credit.',
+      communityBody: 'Sumali sa Facebook Community namin. Makipag-connect sa ibang Moodeng Credit user.',
       joinCommunity: 'Sumali sa komunidad'
    },
    id: {

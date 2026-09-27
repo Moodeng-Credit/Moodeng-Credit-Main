@@ -24,11 +24,11 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
       locale === 'fil'
          ? {
               unknown: 'Hindi kilala',
-              lenderAlt: 'Nagpahiram',
-              default: 'Hindi nabayaran',
-              dueIn: 'Kailangang bayaran sa loob ng',
+              lenderAlt: 'Lender',
+              default: 'Nag-default',
+              dueIn: 'Due',
               today: 'ngayong araw',
-              dayLabel: (days: number) => `${days} araw`,
+              dayLabel: (days: number) => `sa loob ng ${days} araw`,
               lentBy: 'Pinahiram ni'
            }
          : locale === 'id'
@@ -81,7 +81,7 @@ export default function UpcomingLoanDues({ activeLoans, defaultedLoans, username
    const { locale } = useLocalization();
    const copy =
       locale === 'fil'
-         ? { title: 'Mga paparating na bayarin', insights: 'Tingnan ang detalye', none: 'Walang aktibong pautang' }
+         ? { title: 'Mga paparating na bayarin', insights: 'Tingnan ang detalye', none: 'Walang aktibong loan' }
          : locale === 'id'
            ? { title: 'Pinjaman yang akan jatuh tempo', insights: 'Lihat detail', none: 'Tidak ada pinjaman aktif' }
            : { title: 'Upcoming Loan Dues', insights: 'View Insights', none: 'No Active Loans' };

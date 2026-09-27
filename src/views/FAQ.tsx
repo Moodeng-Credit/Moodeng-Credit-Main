@@ -11,7 +11,7 @@ export default function FAQsComponent() {
       locale === 'fil'
          ? {
               title: 'Mga FAQ',
-              subtitle: 'Mga sagot tungkol sa credit growth, secure loans, at transparent financial management'
+              subtitle: 'Kumpletong gabay sa mga FAQ tungkol sa pagpapalago ng credit, secure na loan, at malinaw na pamamahala ng pera'
            }
          : locale === 'id'
            ? {
