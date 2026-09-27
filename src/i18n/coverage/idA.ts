@@ -86,6 +86,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Resend code': 'Kirim ulang kode',
 
    // src/app/data-deletion/page.tsx
+   Overview: 'Ringkasan',
    'Moodeng Credit ("Moodeng", "we", "our", or "us") lets you request deletion of the personal information associated with your account, including data obtained when you sign in with a third-party provider such as Facebook, Google, LINE, or Telegram.':
       'Moodeng Credit ("Moodeng" atau "kami") memungkinkan kamu meminta penghapusan informasi pribadi yang terkait dengan akunmu, termasuk data yang diperoleh saat kamu masuk lewat penyedia pihak ketiga seperti Facebook, Google, LINE, atau Telegram.',
    'This page explains how to submit a deletion request and what to expect after you do.':
@@ -155,4 +156,219 @@ export const indonesianCoverageA: Record<string, string> = {
    'Enter the 6-digit code from your authenticator app': 'Masukkan kode 6 digit dari aplikasi autentikator',
    'Two-factor authentication': 'Autentikasi dua faktor',
    'Not you? Sign out': 'Bukan kamu? Keluar',
+
+   // src/app/reset-password/page.tsx
+   'The reset link is invalid or expired. Request a new one and use the latest email from Moodeng.':
+      'Link reset tidak valid atau sudah kedaluwarsa. Minta link baru dan gunakan email terbaru dari Moodeng.',
+   'Open the reset link from your email, or request a new password reset link.':
+      'Buka link reset dari email kamu, atau minta link reset kata sandi yang baru.',
+   'Could not open this reset link. Request a new one.': 'Link reset ini tidak bisa dibuka. Minta link baru.',
+   'Passwords do not match.': 'Kata sandi tidak cocok.',
+   'Use at least 8 characters for your new password.': 'Gunakan minimal 8 karakter untuk kata sandi barumu.',
+   'Open the reset link from your email before setting a new password.':
+      'Buka link reset dari email kamu sebelum membuat kata sandi baru.',
+   'Could not update your password. Try again in a moment.': 'Kata sandi gagal diperbarui. Coba lagi sebentar lagi.',
+   'Password updated': 'Kata sandi diperbarui',
+   'Your account is secure now.': 'Akunmu sekarang sudah aman.',
+   'Password updated. Taking you to your dashboard now.': 'Kata sandi diperbarui. Mengarahkanmu ke dasbor sekarang.',
+   'Hide passwords': 'Sembunyikan kata sandi',
+   'Show passwords': 'Tampilkan kata sandi',
+   'New password': 'Kata sandi baru',
+   'Secure your account': 'Amankan akunmu',
+   'Choose a new password for your Moodeng account.': 'Buat kata sandi baru untuk akun Moodeng kamu.',
+   'Reset links can only be used once and expire quickly. Tap below to send yourself a fresh link, then open the newest Moodeng email.':
+      'Link reset hanya bisa dipakai sekali dan cepat kedaluwarsa. Ketuk di bawah untuk mengirim link baru, lalu buka email terbaru dari Moodeng.',
+   'Request a new link': 'Minta link baru',
+   'This reset link is ready. Enter matching passwords to continue.':
+      'Link reset ini siap dipakai. Masukkan kata sandi yang sama dua kali untuk melanjutkan.',
+   'Enter new password': 'Masukkan kata sandi baru',
+   'Use at least 8 characters.': 'Gunakan minimal 8 karakter.',
+   'Confirm password': 'Konfirmasi kata sandi',
+   'Re-enter new password': 'Masukkan ulang kata sandi baru',
+   'Updating…': 'Memperbarui…',
+   'Update password': 'Perbarui kata sandi',
+
+   // src/app/role-selection/page.tsx
+   'Moodeng hippo': 'Kuda nil Moodeng',
+
+   // src/app/simple/page.tsx
+   'Simple Page - CSS and Navigation working!': 'Halaman Sederhana - CSS dan navigasi berfungsi!',
+
+   // src/app/team/page.tsx
+   'Project Co-Lead': 'Co-Lead Proyek',
+   'Repeat founder and product builder working to help people build credit through practical systems that are clear, fair, and useful in real life.':
+      'Pendiri berpengalaman dan pembangun produk yang membantu orang membangun kredit lewat sistem praktis yang jelas, adil, dan berguna di kehidupan nyata.',
+   'Ex-UNHCR Data Team Lead': 'Mantan Ketua Tim Data UNHCR',
+   'Former Portfolio Manager': 'Mantan Manajer Portofolio',
+   '1 Exit': '1 Exit',
+   '2 Prior Startups': '2 Startup Sebelumnya',
+   'Leads growth and community storytelling for Moodeng Credit, turning borrower education, social content, and campaign feedback into clearer trust-building moments.':
+      'Memimpin pertumbuhan dan storytelling komunitas untuk Moodeng Credit, mengubah edukasi peminjam, konten media sosial, dan masukan kampanye menjadi momen membangun kepercayaan yang lebih jelas.',
+   'Growth Marketing': 'Growth Marketing',
+   'Borrower Education': 'Edukasi Peminjam',
+   'Community Campaigns': 'Kampanye Komunitas',
+   'Member of Technical Team': 'Anggota Tim Teknis',
+   'Backend engineer building scalable APIs, cloud systems, and product flows for Moodeng Credit.':
+      'Backend engineer yang membangun API yang skalabel, sistem cloud, dan alur produk untuk Moodeng Credit.',
+   'Backend Engineer': 'Backend Engineer',
+   'App Flows': 'Alur Aplikasi',
+   'Working on Partnerships': 'Mengurus Kemitraan',
+   'Supports Moodeng Credit with partnerships, lender outreach, and growth channels, while also working at':
+      'Mendukung Moodeng Credit dalam kemitraan, penjangkauan pemberi pinjaman, dan kanal pertumbuhan, sambil juga bekerja di',
+   'helping teams connect with blockchain data infrastructure.':
+      'yang membantu tim terhubung dengan infrastruktur data blockchain.',
+   'Head of Growth': 'Kepala Pertumbuhan',
+   'Growth Hacking': 'Growth Hacking',
+   'Blockchain Analysis': 'Analisis Blockchain',
+   'Digital Marketing': 'Pemasaran Digital',
+   'Marketing Automation': 'Otomasi Pemasaran',
+   'Working on Building Community': 'Mengurus Pembangunan Komunitas',
+   'Builds stories and visual direction for Moodeng Credit, helping turn community ideas into growth narratives people can understand, share, and rally around.':
+      'Membangun cerita dan arahan visual untuk Moodeng Credit, membantu mengubah ide komunitas menjadi narasi pertumbuhan yang mudah dipahami, dibagikan, dan didukung banyak orang.',
+   Storytelling: 'Storytelling',
+   'Visual Direction': 'Arahan Visual',
+   'Narrative Setting': 'Penyusunan Narasi',
+   Advisor: 'Penasihat',
+   'US Army Officer, Mercury Labs founder, and sports/Web3 operator advising Moodeng Credit on investor strategy, brand positioning, and disciplined growth.':
+      'Perwira Angkatan Darat AS, pendiri Mercury Labs, dan operator di bidang olahraga/Web3 yang menjadi penasihat Moodeng Credit untuk strategi investor, positioning merek, dan pertumbuhan yang disiplin.',
+   'US Army Officer': 'Perwira Angkatan Darat AS',
+   Sports: 'Olahraga',
+   Writer: 'Penulis',
+   Management: 'Manajemen',
+   Marketing: 'Pemasaran',
+   'LinkedIn Profile': 'Profil LinkedIn',
+   'Our Team | Moodeng Credit': 'Tim Kami | Moodeng Credit',
+   'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
+      'Kenali orang-orang di balik Moodeng Credit — co-founder George dan Emma, tim pendiri, serta para penasihat yang mengupayakan kredit yang adil dan portabel.',
+   'Co-Founders': 'Co-Founder',
+   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
+      'Membangun lapisan kepercayaan portabel untuk peminjam yang layak mendapat kredit adil dan pemberi pinjaman yang menginginkan dampak yang transparan.',
+   'Additional team members': 'Anggota tim lainnya',
+   Website: 'Situs web',
+   Advisors: 'Penasihat',
+
+   // src/app/verify-world-id/page.tsx
+   'Verify Your Identity': 'Verifikasi Identitas Kamu',
+   'To keep Moodeng safe and prevent fake or duplicate accounts, borrowers complete a short one-time identity check.':
+      'Agar Moodeng tetap aman dan bebas dari akun palsu atau ganda, peminjam menyelesaikan pengecekan identitas singkat satu kali.',
+   'Verify Your ID': 'Verifikasi ID Kamu',
+   Recommended: 'Disarankan',
+   'Quick national ID & selfie check — available in select countries.':
+      'Cek cepat kartu identitas & selfie — tersedia di negara tertentu.',
+   'Supported countries': 'Negara yang didukung',
+   'Not in a supported country?': 'Negaramu tidak didukung?',
+   'Verify with World ID': 'Verifikasi dengan World ID',
+   'For World App users — verified at an Orb or with a passport.':
+      'Untuk pengguna World App — terverifikasi di Orb atau dengan paspor.',
+
+   // src/app/verify/page.tsx
+   'Retake in bright, even light — no glare or shadows on the ID':
+      'Foto ulang di cahaya terang dan merata — tanpa silau atau bayangan di ID',
+   'Lay the ID flat and fill the frame; make sure all text is sharp':
+      'Letakkan ID secara datar hingga memenuhi bingkai; pastikan semua tulisan terbaca jelas',
+   'Use a currently valid (not expired) ID document': 'Gunakan dokumen ID yang masih berlaku (belum kedaluwarsa)',
+   'Remove hats, glasses and masks for the selfie': 'Lepas topi, kacamata, dan masker saat selfie',
+   'Face the camera straight on, with your whole face visible': 'Hadap lurus ke kamera, dengan seluruh wajah terlihat',
+   'Capture the entire ID — all four corners must be visible': 'Foto seluruh ID — keempat sudutnya harus terlihat',
+   'Use a government-issued national ID or passport': 'Gunakan kartu identitas resmi dari pemerintah atau paspor',
+   'Retake photos in bright, even light': 'Foto ulang di cahaya terang dan merata',
+   'Lay the ID flat with all four corners visible': 'Letakkan ID secara datar dengan keempat sudut terlihat',
+   'Remove hats and glasses for the selfie': 'Lepas topi dan kacamata saat selfie',
+   'Could not start the face scan. Please try again.': 'Pemindaian wajah gagal dimulai. Silakan coba lagi.',
+   'Something went wrong. Please try again.': 'Terjadi kesalahan. Silakan coba lagi.',
+   'Could not start verification. Please try again.': 'Verifikasi gagal dimulai. Silakan coba lagi.',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll submit your national ID.":
+      'Ketuk tombol untuk memulai pemindaian wajah — kamu akan otomatis kembali ke sini setelah selesai. Setelah itu, kamu akan mengirim kartu identitasmu.',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll verify with World ID.":
+      'Ketuk tombol untuk memulai pemindaian wajah — kamu akan otomatis kembali ke sini setelah selesai. Setelah itu, kamu akan verifikasi dengan World ID.',
+   "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll submit your national ID.":
+      'Ketuk tombol untuk membuka pemindaian wajah di tab baru. Biarkan halaman ini tetap terbuka — halaman akan diperbarui otomatis setelah selesai. Setelah itu, kamu akan mengirim kartu identitasmu.',
+   "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll verify with World ID.":
+      'Ketuk tombol untuk membuka pemindaian wajah di tab baru. Biarkan halaman ini tetap terbuka — halaman akan diperbarui otomatis setelah selesai. Setelah itu, kamu akan verifikasi dengan World ID.',
+   'Step 1 of 2': 'Langkah 1 dari 2',
+   'Ready for face scan': 'Siap untuk pemindaian wajah',
+   'Open face scan': 'Buka pemindaian wajah',
+   'Setting up…': 'Menyiapkan…',
+   'Starting your verification. Keep this screen open.': 'Memulai verifikasimu. Biarkan layar ini tetap terbuka.',
+   'Before you start': 'Sebelum mulai',
+   "A quick ID + selfie check — about 3 minutes. You'll be brought back here automatically when it's done. Your ID is checked by our secure verification partner and is never stored by Moodeng.":
+      'Cek ID + selfie yang cepat — sekitar 3 menit. Kamu akan otomatis kembali ke sini setelah selesai. ID kamu dicek oleh mitra verifikasi kami yang aman dan tidak pernah disimpan oleh Moodeng.',
+   'A quick ID + selfie check — about 3 minutes. It opens in a new tab; keep this page open and it will update automatically. Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'Cek ID + selfie yang cepat — sekitar 3 menit. Verifikasi akan terbuka di tab baru; biarkan halaman ini tetap terbuka dan halaman akan diperbarui otomatis. ID kamu dicek oleh mitra verifikasi kami yang aman dan tidak pernah disimpan oleh Moodeng.',
+   'Have your physical national ID with you': 'Siapkan kartu identitas fisik kamu',
+   'Find good, even lighting for the selfie': 'Cari pencahayaan yang baik dan merata untuk selfie',
+   'Allow camera access when asked': 'Izinkan akses kamera saat diminta',
+   'Open verification': 'Buka verifikasi',
+   'Go back': 'Kembali',
+   'Almost there — hang tight while we finish the check.': 'Sebentar lagi — tunggu ya, kami sedang menyelesaikan pengecekan.',
+   'Still checking — face scans usually take a minute or two.':
+      'Masih mengecek — pemindaian wajah biasanya butuh satu atau dua menit.',
+   'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.':
+      'Pemindaian wajah sedang berlangsung. Selesaikan di tab yang baru terbuka — halaman ini akan diperbarui otomatis setelah selesai.',
+   'Waiting for face scan…': 'Menunggu pemindaian wajah…',
+   'More options': 'Opsi lainnya',
+   'Almost there — we’re finishing the review.': 'Sebentar lagi — kami sedang menyelesaikan peninjauan.',
+   'Still confirming — verification usually takes a minute or two.':
+      'Masih mengonfirmasi — verifikasi biasanya butuh satu atau dua menit.',
+   'Finish the steps in the verification tab — this page updates automatically when you’re done.':
+      'Selesaikan langkah-langkahnya di tab verifikasi — halaman ini akan diperbarui otomatis setelah kamu selesai.',
+   'Confirming your verification…': 'Mengonfirmasi verifikasimu…',
+   'Almost there': 'Sebentar lagi',
+   'Your face scan is still finishing up. This usually takes a moment. Left before finishing the scan? Start over below for a fresh one.':
+      'Pemindaian wajahmu masih dalam proses akhir. Biasanya ini hanya sebentar. Keluar sebelum pemindaian selesai? Mulai ulang di bawah untuk pemindaian baru.',
+   'Check again': 'Cek lagi',
+   'Start over': 'Mulai ulang',
+   'Face scan not finished': 'Pemindaian wajah belum selesai',
+   'It looks like the face scan was closed before it was completed. No problem — start a new scan below. It only takes about 30 seconds.':
+      'Sepertinya pemindaian wajah ditutup sebelum selesai. Tidak masalah — mulai pemindaian baru di bawah. Hanya butuh sekitar 30 detik.',
+   'Start new face scan': 'Mulai pemindaian baru',
+   'Reviewing your verification…': 'Meninjau verifikasimu…',
+   "Your details are being reviewed. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below.":
+      'Datamu sedang ditinjau. Sebagian besar pengecekan selesai dalam beberapa menit — kami akan memperbarui layar ini otomatis setelah selesai. Keluar sebelum semua langkah selesai? Mulai ulang di bawah.',
+   'Check status': 'Cek status',
+   'Go to dashboard': 'Ke dasbor',
+   'Manual review in progress': 'Peninjauan manual sedang berlangsung',
+   "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review.":
+      'Verifikasimu perlu ditinjau singkat oleh tim kami — biasanya butuh beberapa jam, paling lama 1 hari kerja. Kami akan memperbarui statusmu secara otomatis. Ingin lebih cepat? Kirim pesan ke kami di bawah dan kami akan mempercepat peninjauanmu.',
+   "Verification didn't pass": 'Verifikasi tidak lolos',
+   "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. A few things that usually fix it:":
+      'Kami tidak bisa memverifikasi identitasmu. Ini bisa terjadi jika foto dokumen tidak jelas, dokumen sudah kedaluwarsa, atau tidak cocok dengan wajahmu. Beberapa hal yang biasanya membantu:',
+   'Try again': 'Coba lagi',
+   "Verification wasn't finished": 'Verifikasi belum selesai',
+   'It looks like you left before completing all the steps. Pick up right where you left off, or start over with a fresh session.':
+      'Sepertinya kamu keluar sebelum menyelesaikan semua langkah. Lanjutkan dari bagian terakhir, atau mulai ulang dengan sesi baru.',
+   "It looks like the verification was closed before all the steps were completed, so we couldn't finish checking your identity. No problem — you can start over any time.":
+      'Sepertinya verifikasi ditutup sebelum semua langkah selesai, jadi kami belum bisa menyelesaikan pengecekan identitasmu. Tidak masalah — kamu bisa mulai ulang kapan saja.',
+   'Continue verification': 'Lanjutkan verifikasi',
+   'Opening…': 'Membuka…',
+   'Verified!': 'Terverifikasi!',
+   'Your identity has been confirmed. Taking you to the next step.':
+      'Identitasmu sudah dikonfirmasi. Mengarahkanmu ke langkah berikutnya.',
+   'This identity is already registered': 'Identitas ini sudah terdaftar',
+   'Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support.':
+      'Pengecekan kami menemukan akun yang sudah terverifikasi dengan wajah ini. Setiap orang hanya bisa verifikasi satu kali. Jika menurutmu ini keliru, silakan hubungi dukungan.',
+   'Continue to app': 'Lanjut ke aplikasi',
+   "Face scan didn't pass": 'Pemindaian wajah tidak lolos',
+   "The scan didn't finish successfully — either it was closed early or we couldn't confirm a live person. Tap Try again for a fresh scan. A few things that help:":
+      'Pemindaian tidak selesai dengan baik — mungkin ditutup terlalu cepat atau kami tidak bisa memastikan bahwa ini orang sungguhan. Ketuk Coba lagi untuk memindai ulang. Beberapa hal yang membantu:',
+   'Good, even lighting — avoid bright backlighting': 'Pencahayaan baik dan merata — hindari cahaya terang dari belakang',
+   'Hold your phone steady and face the camera directly': 'Pegang ponsel dengan stabil dan hadap langsung ke kamera',
+   'Remove sunglasses or hats': 'Lepas kacamata hitam atau topi',
+   'Make sure your whole face is visible in the frame': 'Pastikan seluruh wajahmu terlihat di dalam bingkai',
+   'Something went wrong': 'Terjadi kesalahan',
+   'Please try again.': 'Silakan coba lagi.',
+   'Continue to World ID': 'Lanjut ke World ID',
+   'Requires a passport added to your World App.': 'Butuh paspor yang sudah ditambahkan di World App kamu.',
+   'Requires a World ID verified at an Orb.': 'Butuh World ID yang sudah diverifikasi di Orb.',
+   'Loading…': 'Memuat…',
+   'Preparing verification.': 'Menyiapkan verifikasi.',
+   'Step 1 of 2 done': 'Langkah 1 dari 2 selesai',
+   'You’re a real person!': 'Kamu orang sungguhan!',
+   'You’re not done yet — one last step. Verify with World ID below to finish and unlock your account.':
+      'Belum selesai — tinggal satu langkah lagi. Verifikasi dengan World ID di bawah untuk menyelesaikan dan membuka akunmu.',
+   'No World ID? Verify with your ID instead': 'Tidak punya World ID? Verifikasi dengan ID kamu saja',
+   'Checking…': 'Mengecek…',
+   'Need help from our team?': 'Butuh bantuan dari tim kami?',
+   'Message us on Telegram': 'Kirim pesan lewat Telegram',
+   'Message us on Facebook': 'Kirim pesan lewat Facebook',
 };
