@@ -808,5 +808,124 @@ export const indonesianCoverageB: Record<string, string> = {
    'Make Your Request': 'Kirim permintaanmu',
    'Choose repayment date': 'Pilih tanggal pembayaran kembali',
    'Previous month': 'Bulan sebelumnya',
-   'Next month': 'Bulan berikutnya'
+   'Next month': 'Bulan berikutnya',
+
+   // src/views/dashboard/components/MilestoneSheets.tsx
+   'View Milestone': 'Lihat pencapaian',
+   Locked: 'Terkunci',
+   'Close milestone detail': 'Tutup detail pencapaian',
+   'Close milestone help': 'Tutup bantuan pencapaian',
+   'Pandesal points earned': 'Poin Pandesal didapat',
+   'Reward for completing this': 'Hadiah jika diselesaikan',
+   'Locked reward': 'Hadiah terkunci',
+   'These points are added to your borrower reputation.': 'Poin ini ditambahkan ke reputasimu sebagai peminjam.',
+   'Complete this milestone to add these points to your borrower reputation.':
+      'Selesaikan pencapaian ini untuk menambahkan poin ini ke reputasimu sebagai peminjam.',
+   'Why it matters': 'Kenapa ini penting',
+   'What changes on your profile': 'Apa yang berubah di profilmu',
+   'Complete earlier milestones first': 'Selesaikan pencapaian sebelumnya dulu',
+   'Reputation milestones': 'Pencapaian reputasi',
+   'Build trust one step at a time': 'Bangun kepercayaan selangkah demi selangkah',
+   'Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Pandesal points to your borrower profile.':
+      'Selesaikan tindakan yang jelas, seperti memverifikasi identitas dan membayar kembali tepat waktu. Setiap pencapaian yang selesai menambah poin Pandesal di profil peminjammu.',
+   'Next milestone': 'Pencapaian berikutnya',
+   'The clearest action you can complete now.': 'Tindakan paling jelas yang bisa kamu selesaikan sekarang.',
+   'Locked milestones': 'Pencapaian terkunci',
+   'These become available after earlier steps are complete.': 'Ini akan tersedia setelah langkah-langkah sebelumnya selesai.',
+
+   // src/views/dashboard/components/ReputationMilestones.tsx
+   'How milestones work': 'Cara kerja pencapaian',
+   'Milestones show what to do next to build trust with lenders.':
+      'Pencapaian menunjukkan langkah berikutnya untuk membangun kepercayaan dengan pemberi pinjaman.',
+   'View all ›': 'Lihat semua ›',
+
+   // src/views/dashboard/components/SuccessModal.tsx
+   'Loan request submitted': 'Permintaan pinjaman terkirim',
+   'Your loan request is now live. Lenders can review it and fund your request.':
+      'Permintaan pinjamanmu sudah tayang. Pemberi pinjaman bisa meninjau dan mendanai permintaanmu.',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
+      'Gabung ke grup peminjam Moodeng di Facebook atau Telegram agar kami bisa mengenalkanmu ke pemberi pinjaman yang tepat.',
+   'Join on Telegram': 'Gabung di Telegram',
+   'Join on Facebook': 'Gabung di Facebook',
+
+   // src/views/dashboard/components/TrustScoreSection.tsx
+   'Top tier reached': 'Tingkat tertinggi tercapai',
+   'About Pandesal points': 'Tentang poin Pandesal',
+   'Your Pandesal points are your track record on Moodeng, out of 500 — and counting. They already unlock perks, with bigger rewards on the way for top scorers. Keep building them!':
+      'Poin Pandesal adalah rekam jejakmu di Moodeng, dari skala 500 — dan terus bertambah. Poin ini sudah membuka berbagai keuntungan, dan hadiah yang lebih besar akan hadir untuk skor tertinggi. Terus kumpulkan!',
+   'Your Pandesal points grow with every on-time repayment and live with your wallet.':
+      'Poin Pandesal bertambah setiap kali kamu membayar kembali tepat waktu dan tersimpan bersama dompetmu.',
+
+   // src/views/dashboard/components/UpcomingLoanDues.tsx
+   'Upcoming Loan Dues': 'Pinjaman yang akan jatuh tempo',
+
+   // src/views/dashboard/components/UserCard.tsx
+   '1st-time borrower bonus': 'bonus peminjam pertama kali',
+   '2nd-loan borrower bonus': 'bonus pinjaman ke-2 peminjam',
+   '3rd-loan borrower bonus': 'bonus pinjaman ke-3 peminjam',
+   '4th+ loan borrower bonus': 'bonus pinjaman ke-4+ peminjam',
+   'Timing and borrower context': 'Waktu dan konteks peminjam',
+   'Lender reward': 'Hadiah pemberi pinjaman',
+   'IOU Points': 'poin IOU',
+   'for funding, plus': 'untuk mendanai, ditambah',
+   'for the': 'untuk',
+   'Unknown user': 'Pengguna tidak dikenal',
+   'Thank You!': 'Terima kasih!',
+   'Still confirming': 'Masih dikonfirmasi',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'Pembayaranmu sudah terkirim dan sedang dikonfirmasi. Status ini akan diperbarui otomatis.',
+   'Payment Sent, Still Recording': 'Pembayaran terkirim, masih dicatat',
+   'Unknown Reason': 'Alasan tidak diketahui',
+   'Moodeng loan request': 'Permintaan pinjaman Moodeng',
+   'Link copied': 'Tautan disalin',
+   'Send it to a lender so they can fund this request.': 'Kirim ke pemberi pinjaman agar mereka bisa mendanai permintaan ini.',
+   'Could not copy link': 'Gagal menyalin tautan',
+   'Confirming on Base…': 'Mengonfirmasi di Base…',
+   'Sending your help…': 'Mengirim bantuanmu…',
+   'Recording your funding — hang tight.': 'Mencatat pendanaanmu — tunggu sebentar.',
+   'Approve in the Coinbase window. It may be behind this one.':
+      'Setujui di jendela Coinbase. Jendelanya mungkin ada di belakang jendela ini.',
+   'Approve the transaction in your wallet.': 'Setujui transaksinya di dompetmu.',
+   'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
+      'Tidak muncul permintaan? Pastikan aplikasi dompetmu terbuka di perangkat ini — atau hubungkan ulang di sini.',
+   'Reconnect wallet': 'Hubungkan ulang dompet',
+   'Share this request': 'Bagikan permintaan ini',
+   'Delete your loan request': 'Hapus permintaan pinjamanmu',
+   'Delete request': 'Hapus permintaan',
+   'Good Standing': 'Reputasi baik',
+   'Due On': 'Jatuh tempo',
+   'Borrowing USDC': 'Dipinjam (USDC)',
+   'Get back USDC': 'Diterima kembali (USDC)',
+   'View Request': 'Lihat permintaan',
+   'Your Loan Request': 'Permintaan pinjamanmu',
+   'Help Received': 'Bantuan diterima',
+   'View Details': 'Lihat detail',
+   'Processing...': 'Memproses...',
+   'Use a different wallet': 'Pakai dompet lain',
+   'View Borrower Details': 'Lihat detail peminjam',
+   'You funded $': 'Kamu mendanai $',
+   to: 'kepada',
+
+   // src/views/dashboard/components/VideoCallStep.tsx
+   'No referral code — book a call.': 'Tidak punya kode referal — jadwalkan panggilan.',
+   'That time was just taken — pick another, please.': 'Waktu itu baru saja diambil orang lain — pilih waktu lain, ya.',
+   "Couldn't book that time. Try again, or contact support.": 'Gagal memesan waktu itu. Coba lagi, atau hubungi dukungan.',
+   'Moodeng video call': 'Panggilan video Moodeng',
+   'Your short video hello with the Moodeng team — see how Moodeng works and ask anything.':
+      'Sapa singkat lewat video dengan tim Moodeng — lihat cara kerja Moodeng dan tanyakan apa saja.',
+   "You're booked with": 'Jadwalmu sudah terpesan dengan',
+   'the Moodeng team': 'tim Moodeng',
+   'Zoom link by email · reminder on Messenger': 'Tautan Zoom lewat email · pengingat di Messenger',
+   'Google Calendar': 'Google Kalender',
+   'Finding open times…': 'Mencari waktu yang tersedia…',
+   "You've missed two calls, so booking is paused for a week.":
+      'Kamu sudah melewatkan dua panggilan, jadi pemesanan dijeda selama seminggu.',
+   'You can pick a new time from': 'Kamu bisa memilih waktu baru mulai',
+   "Couldn't load available times.": 'Gagal memuat waktu yang tersedia.',
+   "No times are open in the next two weeks. Message us on Messenger and we'll find one.":
+      'Tidak ada waktu yang tersedia dalam dua minggu ke depan. Kirim pesan ke kami di Messenger, dan kami akan mencarikannya.',
+   'Your time zone ·': 'Zona waktumu ·',
+   'Booking…': 'Memesan…',
+   'Booking paused': 'Pemesanan dijeda',
+   'Pick a time above': 'Pilih waktu di atas'
 };
