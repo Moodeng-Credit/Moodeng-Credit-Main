@@ -357,4 +357,173 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Need help from our team?': 'Cần đội ngũ của chúng tôi hỗ trợ?',
    'Message us on Telegram': 'Nhắn tin cho chúng tôi qua Telegram',
    'Message us on Facebook': 'Nhắn tin cho chúng tôi qua Facebook',
+   // src/components/Footer.tsx
+   'Moodeng Credit logo': 'Logo Moodeng Credit',
+   'Social Link': 'Liên kết mạng xã hội',
+   // src/components/GuidedTourPreview.tsx
+   'Want a quick tour?': 'Xem hướng dẫn nhanh nhé?',
+   "Pick a side and we'll walk you through it — no account needed.": 'Chọn vai trò và chúng tôi sẽ hướng dẫn bạn — không cần tài khoản.',
+   'See how Moodeng works in under a minute. You can skip this and use everything normally.':
+      'Xem Moodeng hoạt động thế nào trong chưa đầy một phút. Bạn có thể bỏ qua và vẫn dùng mọi tính năng bình thường.',
+   'Skip for now': 'Để sau',
+   'Start the tour': 'Bắt đầu hướng dẫn',
+   'Take the tour': 'Xem hướng dẫn',
+   Skip: 'Bỏ qua',
+   Back: 'Quay lại',
+   Finished: 'Hoàn tất',
+   Next: 'Tiếp',
+   // src/components/Header/MobileNav.tsx
+   'Mobile navigation': 'Điều hướng trên di động',
+   // src/components/InAppBrowserNotice.tsx
+   'Open Moodeng in your browser': 'Mở Moodeng trong trình duyệt',
+   "Sign-in and wallet payments don't work inside": 'Đăng nhập và thanh toán bằng ví không hoạt động trong',
+   '. Tap below to continue in Chrome.': '. Bấm bên dưới để tiếp tục trong Chrome.',
+   '. Tap': '. Bấm',
+   'at the top, choose': 'ở phía trên, chọn',
+   'Open in Browser': 'Mở trong trình duyệt',
+   ', or copy the link below.': ', hoặc sao chép liên kết bên dưới.',
+   'Open in Chrome': 'Mở trong Chrome',
+   'Link copied ✓': 'Đã sao chép liên kết ✓',
+   'Copy link': 'Sao chép liên kết',
+   'Not now': 'Để sau',
+   "Why isn't this working?": 'Vì sao không hoạt động?',
+   'Open in your browser': 'Mở trong trình duyệt của bạn',
+   Dismiss: 'Đóng',
+   // src/components/IouPointHistoryModal.tsx
+   'IOU Point History': 'Lịch sử điểm IOU',
+   'No IOU points yet. Fund loan requests to start earning.': 'Chưa có điểm IOU nào. Hãy cấp vốn cho các yêu cầu vay để bắt đầu tích điểm.',
+   // src/components/Loading.tsx
+   'Loading Moodeng': 'Đang tải Moodeng',
+   // src/components/PowerLenderBadge.tsx
+   'Power Lender': 'Nhà cho vay tích cực',
+   // src/components/RepayInAppBrowserGate.tsx
+   'Open Moodeng in your browser to repay': 'Mở Moodeng trong trình duyệt để trả nợ',
+   'Finish repaying in your browser': 'Hoàn tất trả nợ trong trình duyệt',
+   "'s in-app browser can't open your wallet, so a repayment gets stuck here. Open this page in Chrome or Safari to pay — it only takes a few seconds.":
+      ': trình duyệt trong ứng dụng này không mở được ví của bạn, nên khoản trả nợ sẽ bị kẹt ở đây. Hãy mở trang này trong Chrome hoặc Safari để thanh toán — chỉ mất vài giây.',
+   'Your repay link': 'Liên kết trả nợ của bạn',
+   'Copied ✓': 'Đã sao chép ✓',
+   Copy: 'Sao chép',
+   'Open in Safari': 'Mở trong Safari',
+   "If a button doesn't open your browser, tap": 'Nếu nút không mở được trình duyệt, hãy bấm',
+   'at the top of': 'ở phía trên của',
+   'and choose': 'rồi chọn',
+   ', then paste the link.': ', sau đó dán liên kết.',
+   'Still stuck? Message support': 'Vẫn bị kẹt? Nhắn tin cho bộ phận hỗ trợ',
+   // src/components/SocialContactRequiredNotifier.tsx
+   'A message from the Moodeng team': 'Tin nhắn từ đội ngũ Moodeng',
+   "To request a loan, you'll first need to add a verified social media contact — like Facebook or WhatsApp — so we can reach you. Please contact us and we'll help you get set up.":
+      'Để yêu cầu khoản vay, trước tiên bạn cần thêm một liên hệ mạng xã hội đã xác minh — như Facebook hoặc WhatsApp — để chúng tôi có thể liên lạc với bạn. Hãy liên hệ với chúng tôi và chúng tôi sẽ giúp bạn thiết lập.',
+   'Contact us': 'Liên hệ với chúng tôi',
+   // src/components/ToastSystem/ToastDemo.tsx
+   'Simple Toast Demo': 'Bản demo thông báo đơn giản',
+   Controls: 'Điều khiển',
+   'Clear All': 'Xóa tất cả',
+   Success: 'Thành công',
+   Info: 'Thông tin',
+   Warning: 'Cảnh báo',
+   Error: 'Lỗi',
+   'Example error message': 'Ví dụ thông báo lỗi',
+   'Basic Types': 'Loại cơ bản',
+   Errors: 'Lỗi',
+   // src/components/UserAvatar.tsx
+   Profile: 'Hồ sơ',
+   'Edit profile photo': 'Sửa ảnh hồ sơ',
+   // src/components/UserNetwork.tsx
+   VERIFY: 'XÁC MINH',
+   'SIGN IN': 'ĐĂNG NHẬP',
+   'SIGN OUT': 'ĐĂNG XUẤT',
+   Verified: 'Đã xác minh',
+   'View IOU point history': 'Xem lịch sử điểm IOU',
+   // src/components/UserPay.tsx
+   'Still confirming': 'Vẫn đang xác nhận',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'Khoản thanh toán đã được gửi và cần thêm chút thời gian để xác nhận. Trạng thái sẽ tự động cập nhật.',
+   'Payment Sent, Still Recording': 'Đã gửi thanh toán, đang ghi nhận',
+   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
+      'Khoản thanh toán đã thành công nhưng chúng tôi chưa ghi nhận được. Hệ thống sẽ tiếp tục tự động thử lại — hãy liên hệ bộ phận hỗ trợ nếu trạng thái không cập nhật.',
+   'Unknown error': 'Lỗi không xác định',
+   'Loan Repayment': 'Trả nợ khoản vay',
+   'Total Due': 'Tổng số tiền phải trả',
+   'Amount Paid': 'Số tiền đã trả',
+   'Repayment Information': 'Thông tin trả nợ',
+   'Repayment Amount': 'Số tiền trả nợ',
+   'Enter custom amount': 'Nhập số tiền tùy chọn',
+   'Processing...': 'Đang xử lý...',
+   'You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit score.':
+      'Bạn có thể trả bất kỳ số tiền nào, vào bất cứ lúc nào trước ngày đến hạn. Hãy trả đủ trước ngày đến hạn để giữ điểm tín dụng của bạn.',
+   // src/components/WalletNetworkBlockNotice.tsx
+   'Network is blocking wallet sign-in': 'Mạng đang chặn đăng nhập ví',
+   'Trouble connecting? Your network may be blocking it': 'Không kết nối được? Có thể mạng của bạn đang chặn',
+   "Some networks (PLDT / Smart) block the Base sign-in page, so the wallet screen won't load. The free":
+      'Một số nhà mạng (PLDT / Smart) chặn trang đăng nhập Base, nên màn hình ví không tải được. Ứng dụng miễn phí',
+   'app fixes it — install it, switch it on, then reconnect. It works on WiFi and mobile data.':
+      'sẽ khắc phục — hãy cài đặt, bật lên rồi kết nối lại. Ứng dụng hoạt động với cả WiFi và dữ liệu di động.',
+   'Get the free 1.1.1.1 app': 'Tải ứng dụng 1.1.1.1 miễn phí',
+   "I've turned it on — Retry": 'Tôi đã bật — Thử lại',
+   'Still stuck? Message the team': 'Vẫn bị kẹt? Nhắn tin cho đội ngũ',
+   // src/components/auth/AuthErrorAlert.tsx
+   "We couldn't sign you in with": 'Chúng tôi chưa thể đăng nhập cho bạn bằng',
+   'that provider': 'nhà cung cấp đó',
+   '. This is usually temporary — please try again.': '. Lỗi này thường chỉ tạm thời — vui lòng thử lại.',
+   "That password didn't work. If you're not sure it's right, resetting it only takes a minute.":
+      'Mật khẩu này không đúng. Nếu bạn không chắc mật khẩu đúng, việc đặt lại chỉ mất một phút.',
+   'Reset password': 'Đặt lại mật khẩu',
+   'No account found with this email address.': 'Không tìm thấy tài khoản nào với địa chỉ email này.',
+   'Try a different email': 'Thử email khác',
+   or: 'hoặc',
+   'Looks like you are new to Moodeng.': 'Có vẻ bạn là người mới trên Moodeng.',
+   'Create an account first, then verify the email code Moodeng sends you.': 'Hãy tạo tài khoản trước, rồi xác minh mã mà Moodeng gửi vào email của bạn.',
+   'Create account': 'Tạo tài khoản',
+   'Use a different email': 'Dùng email khác',
+   'The email or password you entered is incorrect.': 'Email hoặc mật khẩu bạn nhập không đúng.',
+   'reset your password': 'đặt lại mật khẩu',
+   "if you've forgotten it.": 'nếu bạn đã quên.',
+   // src/components/auth/LastUsedBadge.tsx
+   'Last used': 'Dùng gần đây',
+   // src/components/auth/SignUpFormErrorAlert.tsx
+   'Password must be longer than 8 characters. Choose a stronger password to continue.':
+      'Mật khẩu phải dài hơn 8 ký tự. Hãy chọn mật khẩu mạnh hơn để tiếp tục.',
+   'Passwords do not match. Please re-enter your password.': 'Mật khẩu không khớp. Vui lòng nhập lại mật khẩu.',
+   'This email address has been permanently locked. Please try a different email or contact support if you believe this is a mistake.':
+      'Địa chỉ email này đã bị khóa vĩnh viễn. Vui lòng thử email khác hoặc liên hệ bộ phận hỗ trợ nếu bạn cho rằng đây là nhầm lẫn.',
+   'Why am I seeing this?': 'Vì sao tôi thấy thông báo này?',
+   'This email is already linked to a Google account. Use a different email address or':
+      'Email này đã được liên kết với một tài khoản Google. Hãy dùng địa chỉ email khác hoặc',
+   'instead.': 'bằng tài khoản đó.',
+   "You're already signed up with this email. Enter your password above to log straight in, or pick an option below.":
+      'Bạn đã đăng ký bằng email này rồi. Hãy nhập mật khẩu ở trên để đăng nhập ngay, hoặc chọn một tùy chọn bên dưới.',
+   'Log In': 'Đăng nhập',
+   'Reset Password': 'Đặt lại mật khẩu',
+   // src/components/auth/SocialAuthButtons.tsx
+   'Sign Up with Google': 'Đăng ký bằng Google',
+   'Sign In with Google': 'Đăng nhập bằng Google',
+   'Facebook sign-in coming soon': 'Sắp có đăng nhập bằng Facebook',
+   'Google sign-up is not configured in this local app. Ask for the .env.keys file, then restart the dev server.':
+      'Đăng ký bằng Google chưa được cấu hình trong ứng dụng cục bộ này. Hãy xin tệp .env.keys, rồi khởi động lại máy chủ dev.',
+   'Google sign-up could not start. Please try again.': 'Không thể bắt đầu đăng ký bằng Google. Vui lòng thử lại.',
+   'Redirecting...': 'Đang chuyển hướng...',
+   Soon: 'Sắp có',
+   // src/components/auth/TelegramLoginTile.tsx
+   'Sign in with Telegram': 'Đăng nhập bằng Telegram',
+   // src/components/filters/DatePicker.tsx
+   'Pick a date...': 'Chọn ngày...',
+   Clear: 'Xóa',
+   Today: 'Hôm nay',
+   // src/components/filters/FilterSidebar.tsx
+   'Credit Limit': 'Hạn mức tín dụng',
+   'Payback %': '% hoàn trả',
+   Type: 'Loại',
+   'Close filters': 'Đóng bộ lọc',
+   'Swipe right to close filters': 'Vuốt sang phải để đóng bộ lọc',
+   Filters: 'Bộ lọc',
+   'Payback is the total amount the borrower agrees to return. This filters the extra payback above the loan principal. Example: a $10 loan with a $13 payback is 30%.':
+      'Số tiền hoàn trả là tổng số tiền người vay đồng ý trả lại. Bộ lọc này lọc theo phần hoàn trả thêm so với tiền gốc. Ví dụ: khoản vay $10 hoàn trả $13 là 30%.',
+   'Repayment Date': 'Ngày trả nợ',
+   'Borrow Type': 'Loại khoản vay',
+   // src/components/filters/SortButtons.tsx
+   Lowest: 'Thấp nhất',
+   Highest: 'Cao nhất',
+   Oldest: 'Cũ nhất',
+   Newest: 'Mới nhất',
 };
