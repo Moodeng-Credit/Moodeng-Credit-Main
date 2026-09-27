@@ -92,8 +92,8 @@ export default function MuleRiskSection({ initialRows }: { initialRows?: MuleRis
       <section className="space-y-6">
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-               <h2 className="break-words text-4xl font-black sm:text-5xl">Mule risk</h2>
-               <p className="mt-3 max-w-3xl text-2xl text-[#a89bb8]">
+               <h2 className="break-words text-2xl font-black sm:text-3xl">Mule risk</h2>
+               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                   Per-borrower risk from the on-chain money graph — how close each borrower sits to known-bad accounts and shared payout
                   destinations. Higher = more mule-like.
                </p>

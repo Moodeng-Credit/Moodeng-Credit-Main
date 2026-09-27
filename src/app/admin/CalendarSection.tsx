@@ -251,8 +251,8 @@ export default function CalendarSection() {
    return (
       <section className="space-y-6">
          <div>
-            <h2 className="break-words text-4xl font-black sm:text-5xl">Calendar</h2>
-            <p className="mt-3 max-w-3xl text-2xl text-[#a89bb8]">
+            <h2 className="break-words text-2xl font-black sm:text-3xl">Calendar</h2>
+            <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                Your Cal.com hours and booked calls. Changes save straight to Cal.com and are what borrowers can book.
             </p>
          </div>

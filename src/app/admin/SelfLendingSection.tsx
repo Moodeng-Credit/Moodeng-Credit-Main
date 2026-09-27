@@ -242,8 +242,8 @@ export default function SelfLendingSection() {
       <section className="space-y-6">
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-               <h2 className="break-words text-4xl font-black sm:text-5xl">Self-lending?</h2>
-               <p className="mt-3 text-2xl text-[#a89bb8]">
+               <h2 className="break-words text-2xl font-black sm:text-3xl">Self-lending?</h2>
+               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                   Is anyone lending to themselves? Realized self-deals first (a loan whose two sides are
                   linked accounts), then groups of accounts that share a wallet, IP, network block, or
                   email — split into who&apos;s borrowing vs lending.
