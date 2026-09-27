@@ -8,6 +8,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
+import AdminSearch from '@/app/admin/AdminSearch';
+import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
@@ -505,6 +507,25 @@ export default function AdminPanel() {
       setCountryFilter('all');
       setStatusFilter('all');
    };
+   // Global search bar: pages, users and loan requests, jumping straight to the match.
+   const searchPages = useMemo(
+      () => visibleNavGroups.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.label }))),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [isFundingAdmin]
+   );
+   function handleSearchSelect(result: AdminSearchResult) {
+      if (result.kind === 'page') {
+         setActiveTab(result.id as AdminTab);
+      } else if (result.kind === 'user') {
+         clearDirectoryFilters();
+         setSelectedUserId(result.id);
+         setActiveTab('users');
+         window.setTimeout(() => document.getElementById(`admin-user-${result.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      } else {
+         setSelectedRequestId(result.id);
+         setActiveTab('requests');
+      }
+   }
    const filteredDirectory = users.filter((user) => {
       if (roleFilter !== 'all' && user.user_role !== roleFilter) return false;
       if (joinedFilter !== 'any') {
@@ -865,6 +886,9 @@ export default function AdminPanel() {
             </aside>
 
             <section className="min-w-0 p-5 sm:p-8 lg:p-10">
+               <div className="sticky top-0 z-30 -mx-5 -mt-5 mb-6 bg-[#120429]/95 px-5 py-4 backdrop-blur sm:-mx-8 sm:-mt-8 sm:px-8 lg:-mx-10 lg:-mt-10 lg:px-10">
+                  <AdminSearch pages={searchPages} users={users} requests={loanRequests} onSelect={handleSearchSelect} />
+               </div>
                {error ? (
                   <div className="mb-5 rounded-3xl border border-red-900 bg-red-950/60 p-5 text-lg font-bold text-red-300">{error}</div>
                ) : null}
@@ -975,7 +999,7 @@ export default function AdminPanel() {
                         {!adminDataLoaded ? <EmptyPanel message="Loading user directory from Supabase..." /> : null}
                         {adminDataLoaded
                            ? filteredDirectory.map((user) => (
-                                <article key={user.id} className="border-b border-[#2a1453] last:border-b-0">
+                                <article key={user.id} id={`admin-user-${user.id}`} className="scroll-mt-24 border-b border-[#2a1453] last:border-b-0">
                                    <div className="grid gap-5 p-6">
                                       <div className="flex flex-wrap items-start justify-between gap-4">
                                          <div className="flex min-w-0 gap-4">
