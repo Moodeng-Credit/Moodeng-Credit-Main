@@ -3,7 +3,8 @@
 export const vietnameseCoverageC: Record<string, string> = {
    // src/views/lender/loanNote/LoanNotePurchase.tsx
    'Loan not found': 'Không tìm thấy khoản vay',
-   'This support link is invalid or the loan is no longer available.': 'Liên kết hỗ trợ này không hợp lệ hoặc khoản vay không còn khả dụng.',
+   'This support link is invalid or the loan is no longer available.':
+      'Liên kết hỗ trợ này không hợp lệ hoặc khoản vay không còn khả dụng.',
    'Amount funded': 'Số tiền cấp vốn',
    'Will repay': 'Sẽ trả',
    'You already own this Loan Note.': 'Bạn đã sở hữu giấy nợ này.',
@@ -43,7 +44,8 @@ export const vietnameseCoverageC: Record<string, string> = {
 
    // src/views/lender/supported/SupportedLoans.tsx
    'My Funded Loans': 'Khoản vay tôi đã cấp vốn',
-   'Repayments are automatically sent to your wallet when the borrower repays.': 'Tiền trả nợ được tự động gửi vào ví của bạn khi người vay trả nợ.',
+   'Repayments are automatically sent to your wallet when the borrower repays.':
+      'Tiền trả nợ được tự động gửi vào ví của bạn khi người vay trả nợ.',
    'You haven’t funded any loans yet. Funding links are shared directly with you.':
       'Bạn chưa cấp vốn cho khoản vay nào. Liên kết cấp vốn sẽ được gửi trực tiếp cho bạn.',
    'Amount paid': 'Số tiền đã trả',
@@ -310,5 +312,551 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Sleek UI': 'Giao diện đẹp',
    'Simple & secure': 'Đơn giản và an toàn',
    Universal: 'Đa năng',
-   'Widely Used': 'Được dùng rộng rãi'
+   'Widely Used': 'Được dùng rộng rãi',
+
+   // src/views/profile/components/Calendar.tsx
+   'Loan Insights': 'Thông tin khoản vay',
+
+   // src/views/profile/components/Card.tsx
+   'You Funded': 'Bạn đã cấp vốn',
+   'Due on': 'Đến hạn vào',
+   'Fully Repaid': 'Đã trả hết',
+   'Repayment Progress': 'Tiến độ trả nợ',
+   'Remaining for Complete Payback': 'còn lại để trả hết',
+   'Borrow Insight': 'Thông tin người vay',
+   'posted on': 'đăng ngày',
+   'Waiting for Funding': 'Đang chờ cấp vốn',
+   Asking: 'Yêu cầu',
+   Payback: 'Số tiền hoàn trả',
+   Loan: 'Khoản vay',
+   'Delete Loan Request?': 'Xóa yêu cầu vay?',
+   'Are you sure you want to delete this loan request? This action cannot be undone.':
+      'Bạn có chắc muốn xóa yêu cầu vay này không? Thao tác này không thể hoàn tác.',
+   'Delete Request': 'Xóa yêu cầu',
+
+   // src/views/profile/components/navigation/MobileNav.tsx
+   'Toggle menu': 'Mở/đóng menu',
+
+   // src/views/profile/components/navigation/Sidebar.tsx
+   'View more': 'Xem thêm',
+
+   // src/views/profile/components/settings/NotificationSettings.tsx
+   'Push notifications on this device': 'Thông báo đẩy trên thiết bị này',
+   'Get a notification the moment a repayment is due, or when a borrower who already repaid you asks again. Applies to this device only.':
+      'Nhận thông báo ngay khi đến hạn trả nợ, hoặc khi một người vay từng trả nợ cho bạn gửi yêu cầu vay mới. Chỉ áp dụng cho thiết bị này.',
+   'Turn on': 'Bật',
+   'Turn off': 'Tắt',
+   'Working…': 'Đang xử lý…',
+   'Notifications are blocked in your browser settings. Allow them there, then come back.':
+      'Thông báo đang bị chặn trong cài đặt trình duyệt. Hãy cho phép thông báo ở đó rồi quay lại đây.',
+   'This browser cannot show push notifications. Try Chrome, or add Moodeng to your home screen.':
+      'Trình duyệt này không hiển thị được thông báo đẩy. Hãy thử Chrome, hoặc thêm Moodeng vào màn hình chính.',
+   Notification: 'Thông báo',
+   'Get notified of activity going on with your account. Notifications will be sent to the email that you have provided.':
+      'Nhận thông báo về hoạt động trên tài khoản của bạn. Thông báo sẽ được gửi đến email bạn đã cung cấp.',
+   "Get important notifications about you or activity you've missed": 'Nhận thông báo quan trọng về bạn hoặc về các hoạt động bạn đã bỏ lỡ',
+   'Transaction Activity': 'Hoạt động giao dịch',
+   'Get important notifications about your transactions': 'Nhận thông báo quan trọng về các giao dịch của bạn',
+   'Get updated with our latest news, updates and blogs': 'Cập nhật tin tức, thông tin mới và bài blog mới nhất của chúng tôi',
+
+   // src/views/profile/components/settings/ProfileSettings.tsx
+   'Having an up-to-date email address attached to your account is a great step towards improving account security.':
+      'Liên kết một địa chỉ email luôn được cập nhật với tài khoản là một bước quan trọng giúp tăng cường bảo mật tài khoản.',
+   'You can also opt to receive notifications via Telegram or WhatsApp to stay informed of any account changes.':
+      'Bạn cũng có thể chọn nhận thông báo qua Telegram hoặc WhatsApp để luôn nắm được mọi thay đổi trên tài khoản.',
+   'Test Email': 'Email thử',
+   'Send a test email to verify your email configuration': 'Gửi email thử để kiểm tra cấu hình email',
+   'Sending...': 'Đang gửi...',
+   'Send Test Email': 'Gửi email thử',
+   'Connect your telegram to get the latest updates': 'Kết nối Telegram để nhận thông tin cập nhật mới nhất',
+   Update: 'Cập nhật',
+   Connect: 'Kết nối',
+   'Connect your WhatsApp to get the latest updates': 'Kết nối WhatsApp để nhận thông tin cập nhật mới nhất',
+   Username: 'Tên người dùng',
+   'Change Username': 'Đổi tên người dùng',
+   'Change Email': 'Đổi email',
+
+   // src/views/profile/components/settings/SecuritySettings.tsx
+   'This information will be shown publicly so be careful what information you provide':
+      'Thông tin này sẽ được hiển thị công khai, vì vậy hãy cân nhắc kỹ những gì bạn cung cấp',
+   Password: 'Mật khẩu',
+   'New Password': 'Mật khẩu mới',
+   'Change Password': 'Đổi mật khẩu',
+   'Wrong network': 'Sai mạng',
+   Disconnect: 'Ngắt kết nối',
+
+   // src/views/profile/components/shared/LoadMoreButton.tsx
+   'Load More...': 'Tải thêm...',
+
+   // src/views/profile/components/shared/TelegramModal.tsx
+   'Connect Telegram.': 'Kết nối Telegram.',
+
+   // src/views/profile/components/tabs/CreditLevelCard.tsx
+   'Progression Paused (Late Repayment)': 'Tạm dừng thăng hạng (trả nợ trễ)',
+   'Max Credit Unlocked!': 'Đã mở khóa hạn mức tối đa!',
+   'Max Credit': 'Hạn mức tối đa',
+   'Unlocked!': 'Đã mở khóa!',
+   'Request Loan': 'Yêu cầu vay',
+   'Credit Unlocked': 'Đã mở khóa hạn mức',
+   LOCKED: 'Đã khóa',
+
+   // src/views/profile/components/tabs/DashboardTab.tsx
+   'Loan Summary': 'Tổng quan khoản vay',
+   'Lender Diversity Score': 'Điểm đa dạng người cho vay',
+   Points: 'điểm',
+   'PAY LOANS NOW': 'Trả nợ ngay',
+   Info: 'Thông tin',
+
+   // src/views/profile/components/tabs/SettingsTab.tsx
+   'Revert Changes': 'Hoàn tác thay đổi',
+   'Save Changes': 'Lưu thay đổi',
+
+   // src/views/profile/components/tabs/SupportTab.tsx
+   'Support content coming soon...': 'Nội dung hỗ trợ sắp ra mắt...',
+
+   // src/views/dashboard/components/ConnectStep.tsx
+   'Set up cash-out to your local currency': 'Thiết lập rút tiền ra nội tệ',
+   'Meet the team, ask anything': 'Gặp đội ngũ, hỏi bất cứ điều gì',
+   'Apply right after the call': 'Yêu cầu vay ngay sau cuộc gọi',
+   'What do you need a loan for?': 'Bạn cần vay để làm gì?',
+   'Your time is in your email': 'Thời gian hẹn có trong email của bạn',
+   'Join the meeting': 'Tham gia cuộc họp',
+   'Have ready': 'Chuẩn bị sẵn',
+   'Your original ID or passport': 'Giấy tờ tùy thân bản gốc hoặc hộ chiếu',
+   'Camera on, good light, phone nearby': 'Bật camera, đủ ánh sáng, để điện thoại gần bên',
+   'Say hi to Emma on Facebook ›': 'Chào Emma trên Facebook ›',
+   'Your goal': 'Mục đích vay',
+   '15 minutes · on Zoom · you pick the time': '15 phút · qua Zoom · bạn chọn thời gian',
+   'A quick note so the team knows how to help.': 'Ghi chú ngắn để đội ngũ biết cách hỗ trợ bạn.',
+   'Quick picks': 'Chọn nhanh',
+   Rent: 'Tiền nhà',
+   Bills: 'Hóa đơn',
+   'School fees': 'Học phí',
+   Medical: 'Y tế',
+   Family: 'Gia đình',
+   'Business stock': 'Nhập hàng kinh doanh',
+   Transport: 'Đi lại',
+   'Please confirm Messenger first, then send.': 'Vui lòng xác nhận Messenger trước, rồi gửi.',
+   'Tell us a little about what you need.': 'Hãy cho chúng tôi biết một chút về nhu cầu của bạn.',
+   'Only borrower accounts can apply for loans.': 'Chỉ tài khoản người vay mới có thể yêu cầu vay.',
+   'Please book your call first.': 'Vui lòng đặt lịch gọi trước.',
+   "Your account can't apply right now. Message us on Messenger for help.":
+      'Tài khoản của bạn hiện chưa thể yêu cầu vay. Hãy nhắn tin cho chúng tôi qua Messenger để được hỗ trợ.',
+   'Book call': 'Đặt lịch gọi',
+   "Couldn't send right now — please try again in a moment.": 'Chưa gửi được — vui lòng thử lại sau giây lát.',
+   "Want us to take another look? Reach out again and tell us what's changed.":
+      'Bạn muốn chúng tôi xem xét lại? Hãy liên hệ lại và cho chúng tôi biết điều gì đã thay đổi.',
+   'No worries — life happens. Pick a new time for your 15-min call.':
+      'Đừng lo — chuyện gì cũng có thể xảy ra. Hãy chọn thời gian mới cho cuộc gọi 15 phút.',
+   'No worries — life happens. Pick a new time for your 15-min call with Emma.':
+      'Đừng lo — chuyện gì cũng có thể xảy ra. Hãy chọn thời gian mới cho cuộc gọi 15 phút với Emma.',
+   'A quick 15-min call with Emma sets you up to cash out and repay easily.':
+      'Một cuộc gọi nhanh 15 phút với Emma sẽ giúp bạn thiết lập để rút tiền và trả nợ dễ dàng.',
+   'We meet every borrower on a quick 15-min video call before their first loan.':
+      'Chúng tôi gặp mọi người vay qua một cuộc gọi video nhanh 15 phút trước khoản vay đầu tiên.',
+   'Before your first loan, we like to meet every borrower — we approve within a day.':
+      'Trước khoản vay đầu tiên, chúng tôi muốn gặp từng người vay — chúng tôi sẽ duyệt trong vòng một ngày.',
+   'Welcome back': 'Chào mừng bạn quay lại',
+   'We missed you!': 'Chúng tôi đã lỡ hẹn với bạn!',
+   "Glad you're here!": 'Rất vui được gặp bạn!',
+   'Send to the team': 'Gửi cho đội ngũ',
+   'Book your call with Emma': 'Đặt lịch gọi với Emma',
+   'Book your 15-min call': 'Đặt lịch gọi 15 phút',
+   'Quick ID check — have it ready': 'Kiểm tra giấy tờ nhanh — hãy chuẩn bị sẵn',
+   '$10 cash': '$10 tiền mặt',
+   'for every friend you refer': 'cho mỗi người bạn giới thiệu',
+   "What's the loan for?": 'Bạn vay để làm gì?',
+   'e.g. Rent is due before payday on the 15th': 'VD: Tiền nhà đến hạn trước ngày nhận lương 15',
+   '✓ Looks good': '✓ Ổn rồi',
+   '1 more characters': 'Còn thiếu 1 ký tự',
+   '2 more characters': 'Còn thiếu 2 ký tự',
+   '3 more characters': 'Còn thiếu 3 ký tự',
+   '4 more characters': 'Còn thiếu 4 ký tự',
+   '5 more characters': 'Còn thiếu 5 ký tự',
+   '6 more characters': 'Còn thiếu 6 ký tự',
+   '7 more characters': 'Còn thiếu 7 ký tự',
+   '8 more characters': 'Còn thiếu 8 ký tự',
+   '9 more characters': 'Còn thiếu 9 ký tự',
+   '10 more characters': 'Còn thiếu 10 ký tự',
+   Referral: 'Mã giới thiệu',
+   applied: 'đã được áp dụng',
+   'Next: book your call': 'Tiếp theo: đặt lịch gọi',
+   'The team is unlocking your loan request — we’ll message you the moment it’s ready.':
+      'Đội ngũ đang mở khóa yêu cầu vay của bạn — chúng tôi sẽ nhắn tin ngay khi sẵn sàng.',
+   'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.':
+      'Bạn đã đặt lịch! Nhấn “Tôi sẽ tham gia” để giữ chỗ — bạn có thể yêu cầu vay ngay sau cuộc gọi.',
+   'Thank you for confirming! You can apply right after the call.': 'Cảm ơn bạn đã xác nhận! Bạn có thể yêu cầu vay ngay sau cuộc gọi.',
+   'Thanks for reaching out! We usually reply within a day on Messenger.':
+      'Cảm ơn bạn đã liên hệ! Chúng tôi thường trả lời qua Messenger trong vòng một ngày.',
+   'Thanks for joining!': 'Cảm ơn bạn đã tham gia!',
+   'See you on the call with Emma': 'Hẹn gặp bạn trong cuộc gọi với Emma',
+   'We’re reviewing your request': 'Chúng tôi đang xem xét yêu cầu của bạn',
+   'With Emma Moodeng · Zoom': 'Với Emma Moodeng · Zoom',
+   'Moodeng team · Zoom': 'Đội ngũ Moodeng · Zoom',
+   '· your local time': '· giờ địa phương của bạn',
+   "✅ I'll be there": '✅ Tôi sẽ tham gia',
+   '✅ You confirmed — see you there!': '✅ Bạn đã xác nhận — hẹn gặp bạn!',
+
+   // src/views/dashboard/components/ContactsStep.tsx
+   'Get Started': 'Bắt đầu',
+   'Get due-date reminders on your phone': 'Nhận nhắc nhở ngày đến hạn trên điện thoại',
+   'On iPhone: tap': 'Trên iPhone: nhấn',
+   'Add to Home Screen': 'Thêm vào MH chính',
+   ', open Moodeng from there and turn on notifications. In the Facebook app, open this page in Chrome or Safari instead.':
+      ', mở Moodeng từ đó và bật thông báo. Nếu đang ở trong ứng dụng Facebook, hãy mở trang này bằng Chrome hoặc Safari.',
+   'Turn on reminders to continue.': 'Bật nhắc nhở để tiếp tục.',
+   'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy thông tin này — người cho vay không bao giờ thấy.',
+   'How can we reach you?': 'Chúng tôi có thể liên hệ bạn qua đâu?',
+   'Open Messenger again': 'Mở lại Messenger',
+   Required: 'Bắt buộc',
+   'Turn on reminders': 'Bật nhắc nhở',
+   '1 tap': '1 chạm',
+   'Opening WhatsApp…': 'Đang mở WhatsApp…',
+   'Just hit send — nothing to type': 'Chỉ cần nhấn gửi — không cần gõ gì',
+   "Skipped — we'll reach you another way": 'Đã bỏ qua — chúng tôi sẽ liên hệ bạn bằng cách khác',
+   'Waiting… tap': 'Đang chờ… nhấn',
+   'if Messenger asks': 'nếu Messenger yêu cầu',
+   'One moment…': 'Chờ một chút…',
+   'Messenger not working? Continue without it': 'Messenger không hoạt động? Tiếp tục mà không cần Messenger',
+   'Opening Messenger…': 'Đang mở Messenger…',
+   'Confirms you automatically — nothing to type': 'Tự động xác nhận bạn — không cần gõ gì',
+   On: 'Đã bật',
+   'Turning on…': 'Đang bật…',
+   'We remind you before your due date': 'Chúng tôi nhắc bạn trước ngày đến hạn',
+   'Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.':
+      'Thông báo đang bị chặn. Hãy cho phép thông báo từ moodeng.app trong cài đặt trình duyệt, rồi nhấn lại.',
+   'Tap Allow when your phone asks, so we can remind you before your due date.':
+      'Nhấn Cho phép khi điện thoại hỏi, để chúng tôi có thể nhắc bạn trước ngày đến hạn.',
+   "Couldn't turn on reminders — try again in a moment.": 'Chưa bật được nhắc nhở — hãy thử lại sau giây lát.',
+   "Couldn't start verification — try again in a moment.": 'Chưa bắt đầu xác minh được — hãy thử lại sau giây lát.',
+
+   // src/views/dashboard/components/CreditLevelSection.tsx
+   'Your credit level grows as you borrow and repay on time. Higher levels unlock larger loan amounts.':
+      'Hạng tín dụng của bạn tăng khi bạn vay và trả nợ đúng hạn. Hạng càng cao, số tiền vay càng lớn.',
+   'Watch our credit levelling guide': 'Xem hướng dẫn nâng hạng tín dụng',
+   'Verify to unlock': 'Xác minh để mở khóa',
+   LVL: 'Hạng',
+   "You're at the top credit level — nicely done.": 'Bạn đã đạt Hạng tín dụng cao nhất — làm tốt lắm.',
+
+   // src/views/dashboard/components/LendChecklistModal.tsx
+   'Unlocks once you connect': 'Mở khóa sau khi bạn kết nối',
+   'Base Account does both steps in one tap.': 'Base Account thực hiện cả hai bước chỉ với một chạm.',
+   'Send your help': 'Gửi hỗ trợ',
+   'Confirm the payment': 'Xác nhận thanh toán',
+   to: 'cho',
+   '· two quick steps': '· hai bước nhanh',
+   connected: 'đã kết nối',
+   'MetaMask, Trust, or another': 'MetaMask, Trust hoặc ví khác',
+   Approve: 'Chấp thuận',
+   'in your wallet': 'trong ví của bạn',
+   'Tip:': 'Mẹo:',
+
+   // src/views/dashboard/components/LenderDiversitySection.tsx
+   'Lender Diversity Score': 'Điểm đa dạng người cho vay',
+   'Early estimate: needs 8 funded loans before the score is fully weighted.':
+      'Ước tính sơ bộ: cần 8 khoản vay đã được cấp vốn để điểm được tính đầy đủ.',
+   'Not enough history': 'Chưa đủ lịch sử',
+   'This score appears after at least 2 funded loans.': 'Điểm này sẽ hiển thị sau ít nhất 2 khoản vay đã được cấp vốn.',
+   'Pay Loans': 'Trả nợ',
+   points: 'điểm',
+   'Early Score': 'Điểm sơ bộ',
+
+   // src/views/dashboard/components/ConnectStep.tsx
+   'Set up cash-out to your local currency': 'Thiết lập rút tiền ra nội tệ',
+   'Meet the team, ask anything': 'Gặp đội ngũ, hỏi bất cứ điều gì',
+   'Apply right after the call': 'Yêu cầu vay ngay sau cuộc gọi',
+   'What do you need a loan for?': 'Bạn cần vay để làm gì?',
+   'Your time is in your email': 'Thời gian hẹn có trong email của bạn',
+   'Join the meeting': 'Tham gia cuộc họp',
+   'Have ready': 'Chuẩn bị sẵn',
+   'Your original ID or passport': 'Giấy tờ tùy thân bản gốc hoặc hộ chiếu',
+   'Camera on, good light, phone nearby': 'Bật camera, đủ ánh sáng, để điện thoại gần bên',
+   'Say hi to Emma on Facebook ›': 'Chào Emma trên Facebook ›',
+   'Your goal': 'Mục đích vay',
+   '15 minutes · on Zoom · you pick the time': '15 phút · qua Zoom · bạn chọn thời gian',
+   'A quick note so the team knows how to help.': 'Ghi chú ngắn để đội ngũ biết cách hỗ trợ bạn.',
+   'Quick picks': 'Chọn nhanh',
+   Rent: 'Tiền nhà',
+   Bills: 'Hóa đơn',
+   'School fees': 'Học phí',
+   Medical: 'Y tế',
+   Family: 'Gia đình',
+   'Business stock': 'Nhập hàng kinh doanh',
+   Transport: 'Đi lại',
+   'Please confirm Messenger first, then send.': 'Vui lòng xác nhận Messenger trước, rồi gửi.',
+   'Tell us a little about what you need.': 'Hãy cho chúng tôi biết một chút về nhu cầu của bạn.',
+   'Only borrower accounts can apply for loans.': 'Chỉ tài khoản người vay mới có thể yêu cầu vay.',
+   'Please book your call first.': 'Vui lòng đặt lịch gọi trước.',
+   "Your account can't apply right now. Message us on Messenger for help.":
+      'Tài khoản của bạn hiện chưa thể yêu cầu vay. Hãy nhắn tin cho chúng tôi qua Messenger để được hỗ trợ.',
+   'Book call': 'Đặt lịch gọi',
+   "Couldn't send right now — please try again in a moment.": 'Chưa gửi được — vui lòng thử lại sau giây lát.',
+   "Want us to take another look? Reach out again and tell us what's changed.":
+      'Bạn muốn chúng tôi xem xét lại? Hãy liên hệ lại và cho chúng tôi biết điều gì đã thay đổi.',
+   'No worries — life happens. Pick a new time for your 15-min call.':
+      'Đừng lo — chuyện gì cũng có thể xảy ra. Hãy chọn thời gian mới cho cuộc gọi 15 phút.',
+   'No worries — life happens. Pick a new time for your 15-min call with Emma.':
+      'Đừng lo — chuyện gì cũng có thể xảy ra. Hãy chọn thời gian mới cho cuộc gọi 15 phút với Emma.',
+   'A quick 15-min call with Emma sets you up to cash out and repay easily.':
+      'Một cuộc gọi nhanh 15 phút với Emma sẽ giúp bạn thiết lập để rút tiền và trả nợ dễ dàng.',
+   'We meet every borrower on a quick 15-min video call before their first loan.':
+      'Chúng tôi gặp mọi người vay qua một cuộc gọi video nhanh 15 phút trước khoản vay đầu tiên.',
+   'Before your first loan, we like to meet every borrower — we approve within a day.':
+      'Trước khoản vay đầu tiên, chúng tôi muốn gặp từng người vay — chúng tôi sẽ duyệt trong vòng một ngày.',
+   'Welcome back': 'Chào mừng bạn quay lại',
+   'We missed you!': 'Chúng tôi đã lỡ hẹn với bạn!',
+   "Glad you're here!": 'Rất vui được gặp bạn!',
+   'Send to the team': 'Gửi cho đội ngũ',
+   'Book your call with Emma': 'Đặt lịch gọi với Emma',
+   'Book your 15-min call': 'Đặt lịch gọi 15 phút',
+   'Quick ID check — have it ready': 'Kiểm tra giấy tờ nhanh — hãy chuẩn bị sẵn',
+   '$10 cash': '$10 tiền mặt',
+   'for every friend you refer': 'cho mỗi người bạn giới thiệu',
+   "What's the loan for?": 'Bạn vay để làm gì?',
+   'e.g. Rent is due before payday on the 15th': 'VD: Tiền nhà đến hạn trước ngày nhận lương 15',
+   '✓ Looks good': '✓ Ổn rồi',
+   '1 more characters': 'Còn thiếu 1 ký tự',
+   '2 more characters': 'Còn thiếu 2 ký tự',
+   '3 more characters': 'Còn thiếu 3 ký tự',
+   '4 more characters': 'Còn thiếu 4 ký tự',
+   '5 more characters': 'Còn thiếu 5 ký tự',
+   '6 more characters': 'Còn thiếu 6 ký tự',
+   '7 more characters': 'Còn thiếu 7 ký tự',
+   '8 more characters': 'Còn thiếu 8 ký tự',
+   '9 more characters': 'Còn thiếu 9 ký tự',
+   '10 more characters': 'Còn thiếu 10 ký tự',
+   Referral: 'Mã giới thiệu',
+   applied: 'đã được áp dụng',
+   'Next: book your call': 'Tiếp theo: đặt lịch gọi',
+   'The team is unlocking your loan request — we’ll message you the moment it’s ready.':
+      'Đội ngũ đang mở khóa yêu cầu vay của bạn — chúng tôi sẽ nhắn tin ngay khi sẵn sàng.',
+   'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.':
+      'Bạn đã đặt lịch! Nhấn “Tôi sẽ tham gia” để giữ chỗ — bạn có thể yêu cầu vay ngay sau cuộc gọi.',
+   'Thank you for confirming! You can apply right after the call.': 'Cảm ơn bạn đã xác nhận! Bạn có thể yêu cầu vay ngay sau cuộc gọi.',
+   'Thanks for reaching out! We usually reply within a day on Messenger.':
+      'Cảm ơn bạn đã liên hệ! Chúng tôi thường trả lời qua Messenger trong vòng một ngày.',
+   'Thanks for joining!': 'Cảm ơn bạn đã tham gia!',
+   'See you on the call with Emma': 'Hẹn gặp bạn trong cuộc gọi với Emma',
+   'We’re reviewing your request': 'Chúng tôi đang xem xét yêu cầu của bạn',
+   'With Emma Moodeng · Zoom': 'Với Emma Moodeng · Zoom',
+   'Moodeng team · Zoom': 'Đội ngũ Moodeng · Zoom',
+   '· your local time': '· giờ địa phương của bạn',
+   "✅ I'll be there": '✅ Tôi sẽ tham gia',
+   '✅ You confirmed — see you there!': '✅ Bạn đã xác nhận — hẹn gặp bạn!',
+
+   // src/views/dashboard/components/ContactsStep.tsx
+   'Get Started': 'Bắt đầu',
+   'Get due-date reminders on your phone': 'Nhận nhắc nhở ngày đến hạn trên điện thoại',
+   'On iPhone: tap': 'Trên iPhone: nhấn',
+   'Add to Home Screen': 'Thêm vào MH chính',
+   ', open Moodeng from there and turn on notifications. In the Facebook app, open this page in Chrome or Safari instead.':
+      ', mở Moodeng từ đó và bật thông báo. Nếu đang ở trong ứng dụng Facebook, hãy mở trang này bằng Chrome hoặc Safari.',
+   'Turn on reminders to continue.': 'Bật nhắc nhở để tiếp tục.',
+   'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy thông tin này — người cho vay không bao giờ thấy.',
+   'How can we reach you?': 'Chúng tôi có thể liên hệ bạn qua đâu?',
+   'Open Messenger again': 'Mở lại Messenger',
+   Required: 'Bắt buộc',
+   'Turn on reminders': 'Bật nhắc nhở',
+   '1 tap': '1 chạm',
+   'Opening WhatsApp…': 'Đang mở WhatsApp…',
+   'Just hit send — nothing to type': 'Chỉ cần nhấn gửi — không cần gõ gì',
+   "Skipped — we'll reach you another way": 'Đã bỏ qua — chúng tôi sẽ liên hệ bạn bằng cách khác',
+   'Waiting… tap': 'Đang chờ… nhấn',
+   'if Messenger asks': 'nếu Messenger yêu cầu',
+   'One moment…': 'Chờ một chút…',
+   'Messenger not working? Continue without it': 'Messenger không hoạt động? Tiếp tục mà không cần Messenger',
+   'Opening Messenger…': 'Đang mở Messenger…',
+   'Confirms you automatically — nothing to type': 'Tự động xác nhận bạn — không cần gõ gì',
+   On: 'Đã bật',
+   'Turning on…': 'Đang bật…',
+   'We remind you before your due date': 'Chúng tôi nhắc bạn trước ngày đến hạn',
+   'Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.':
+      'Thông báo đang bị chặn. Hãy cho phép thông báo từ moodeng.app trong cài đặt trình duyệt, rồi nhấn lại.',
+   'Tap Allow when your phone asks, so we can remind you before your due date.':
+      'Nhấn Cho phép khi điện thoại hỏi, để chúng tôi có thể nhắc bạn trước ngày đến hạn.',
+   "Couldn't turn on reminders — try again in a moment.": 'Chưa bật được nhắc nhở — hãy thử lại sau giây lát.',
+   "Couldn't start verification — try again in a moment.": 'Chưa bắt đầu xác minh được — hãy thử lại sau giây lát.',
+
+   // src/views/dashboard/components/CreditLevelSection.tsx
+   'Your credit level grows as you borrow and repay on time. Higher levels unlock larger loan amounts.':
+      'Hạng tín dụng của bạn tăng khi bạn vay và trả nợ đúng hạn. Hạng càng cao, số tiền vay càng lớn.',
+   'Watch our credit levelling guide': 'Xem hướng dẫn nâng hạng tín dụng',
+   'Verify to unlock': 'Xác minh để mở khóa',
+   LVL: 'Hạng',
+   "You're at the top credit level — nicely done.": 'Bạn đã đạt Hạng tín dụng cao nhất — làm tốt lắm.',
+
+   // src/views/dashboard/components/LendChecklistModal.tsx
+   'Unlocks once you connect': 'Mở khóa sau khi bạn kết nối',
+   'Base Account does both steps in one tap.': 'Base Account thực hiện cả hai bước chỉ với một chạm.',
+   'Send your help': 'Gửi hỗ trợ',
+   'Confirm the payment': 'Xác nhận thanh toán',
+   to: 'cho',
+   '· two quick steps': '· hai bước nhanh',
+   connected: 'đã kết nối',
+   'MetaMask, Trust, or another': 'MetaMask, Trust hoặc ví khác',
+   Approve: 'Chấp thuận',
+   'in your wallet': 'trong ví của bạn',
+   'Tip:': 'Mẹo:',
+
+   // src/views/dashboard/components/LenderDiversitySection.tsx
+   'Lender Diversity Score': 'Điểm đa dạng người cho vay',
+   'Early estimate: needs 8 funded loans before the score is fully weighted.':
+      'Ước tính sơ bộ: cần 8 khoản vay đã được cấp vốn để điểm được tính đầy đủ.',
+   'Not enough history': 'Chưa đủ lịch sử',
+   'This score appears after at least 2 funded loans.': 'Điểm này sẽ hiển thị sau ít nhất 2 khoản vay đã được cấp vốn.',
+   'Pay Loans': 'Trả nợ',
+   points: 'điểm',
+   'Early Score': 'Điểm sơ bộ',
+
+   // src/views/repay/Repay.tsx
+   'Open Coins.ph': 'Mở Coins.ph',
+   'Visit Moneybees': 'Truy cập Moneybees',
+   'Open GCrypto': 'Mở GCrypto',
+   'Open PDAX': 'Mở PDAX',
+   'Open Binance': 'Mở Binance',
+   'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash':
+      'Đề xuất · phí thấp nhất · mua USDC bằng PHP, rút về ngân hàng hoặc GCash',
+   "External option · you follow Moneybees' own process": 'Lựa chọn bên ngoài · bạn làm theo quy trình riêng của Moneybees',
+   'Visit moneybees.ph → follow their own process → share your wallet address → pay only after they confirm':
+      'Truy cập moneybees.ph → làm theo quy trình của họ → chia sẻ địa chỉ ví → chỉ thanh toán sau khi họ xác nhận',
+   'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm':
+      'Transfer → Send Crypto → USDC → External Wallet → dán địa chỉ → mạng Base → xác nhận',
+   'GCash app → GCrypto → USDCBASE → Withdraw': 'Ứng dụng GCash → GCrypto → USDCBASE → Withdraw',
+   'Wallet → USDCBASE → Withdraw → Paste wallet address': 'Wallet → USDCBASE → Withdraw → dán địa chỉ ví',
+   'Wallet → Withdraw → USDC → Network: Base → Paste wallet address': 'Wallet → Withdraw → USDC → Network: Base → dán địa chỉ ví',
+   'overdue now': 'đã quá hạn',
+   'Received $': 'Đã nhận $',
+   'Taking you to pay now…': 'Đang chuyển bạn đến bước trả nợ…',
+   Free: 'Miễn phí',
+   'Small fee': 'Phí nhỏ',
+   'Enter an amount greater than 0.': 'Nhập số tiền lớn hơn 0.',
+   'Pay Now': 'Trả ngay',
+   'Start Setup': 'Bắt đầu thiết lập',
+   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
+      'Hãy xác minh danh tính và thiết lập ví (Instant Wallet, hoặc Base Account nếu bạn muốn) trước khi yêu cầu vay. Các khoản trả nợ sẽ hiển thị tại đây sau khi người cho vay cấp vốn cho khoản vay đầu tiên của bạn.',
+   'Finish setup to start borrowing': 'Hoàn tất thiết lập để bắt đầu vay',
+   'Verify Yourself': 'Xác minh danh tính',
+   'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
+      'Ví của bạn đã được thêm. Hãy hoàn tất xác minh trước khi yêu cầu vay. Các khoản trả nợ sẽ hiển thị tại đây sau khi khoản vay được cấp vốn.',
+   'Verify yourself to borrow': 'Xác minh danh tính để vay',
+   'Add Wallet': 'Thêm ví',
+   'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
+      'Bạn đã được xác minh. Hãy thiết lập Instant Wallet (hoặc kết nối Base Account) để các khoản vay và khoản trả nợ luôn gắn với tài khoản Moodeng của bạn.',
+   'Add a wallet to borrow': 'Thêm ví để vay',
+   'Request a loan': 'Yêu cầu vay',
+   'Your repayment activity will appear here once a lender funds your first loan.':
+      'Hoạt động trả nợ của bạn sẽ hiển thị tại đây khi người cho vay cấp vốn cho khoản vay đầu tiên của bạn.',
+   'No repayments yet': 'Chưa có khoản trả nợ nào',
+   'Copy failed': 'Sao chép thất bại',
+   'Could not copy your wallet address. Copy it manually.': 'Không thể sao chép địa chỉ ví. Vui lòng sao chép thủ công.',
+   'Still confirming': 'Vẫn đang xác nhận',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'Khoản thanh toán của bạn đã được gửi và cần thêm chút thời gian để xác nhận. Trang này sẽ tự động cập nhật.',
+   'Payment Sent, Still Recording': 'Đã gửi thanh toán, đang ghi nhận',
+   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
+      'Khoản thanh toán của bạn đã thành công nhưng chúng tôi chưa ghi nhận được. Hệ thống sẽ tự động thử lại — hãy liên hệ bộ phận hỗ trợ nếu trạng thái không cập nhật.',
+   Connecting: 'Đang kết nối',
+   'Loan repaid': 'Đã trả xong khoản vay',
+   'Paid in full': 'Đã trả toàn bộ',
+   'Pandesal points +': 'Điểm Pandesal +',
+   'New borrowing limit': 'Hạn mức vay mới',
+   unlocked: 'đã được mở khóa',
+   limit: 'hạn mức',
+   'Hide repayment details': 'Ẩn chi tiết trả nợ',
+   'Show repayment details': 'Xem chi tiết trả nợ',
+   'Repay next loan': 'Trả khoản vay tiếp theo',
+   'View repayment history': 'Xem lịch sử trả nợ',
+   'Go back': 'Quay lại',
+   'Choose a loan and enter an amount.': 'Chọn một khoản vay và nhập số tiền.',
+   'Watch how to repay': 'Xem cách trả nợ',
+   'Pick a loan': 'Chọn khoản vay',
+   'Active loan': 'Khoản vay đang hoạt động',
+   Remaining: 'Còn lại',
+   '% paid': '% đã trả',
+   'Not yet paid': 'Chưa trả',
+   'Add funds to repay': 'Nạp tiền để trả nợ',
+   'You have': 'Bạn có',
+   '— still need': '— vẫn cần thêm',
+   more: 'nữa',
+   'You need': 'Bạn cần thêm',
+   'more USDC': 'USDC',
+   'to repay.': 'để trả nợ.',
+   'Choose your source': 'Chọn nguồn tiền',
+   'Loading your options…': 'Đang tải các lựa chọn…',
+   "Pick where you'll buy or withdraw USDC.": 'Chọn nơi bạn sẽ mua hoặc rút USDC.',
+   'works well for most people': 'phù hợp với hầu hết mọi người',
+   "— and works the same whether you're in the Philippines or traveling.":
+      '— và dùng được như nhau dù bạn đang ở Philippines hay đi nước ngoài.',
+   'is also available under "Other options".': 'cũng có trong mục “Lựa chọn khác”.',
+   'Fewer options': 'Ít lựa chọn hơn',
+   'Other options': 'Lựa chọn khác',
+   'You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is available in your country.':
+      'Bạn có thể trả nợ từ ví, sàn giao dịch, nền tảng P2P hoặc dịch vụ tiền mã hóa địa phương — bất kỳ lựa chọn nào có ở quốc gia của bạn.',
+   'Learn more': 'Tìm hiểu thêm',
+   'Copy your wallet address': 'Sao chép địa chỉ ví',
+   "This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they send your USDC here.":
+      'Đây chính là ví đã nhận khoản vay của bạn. Hãy sao chép địa chỉ — bạn sẽ gửi địa chỉ này cho Moneybees để họ chuyển USDC của bạn vào đây.',
+   "This is the same wallet your loan was sent to. Copy it — you'll paste it into":
+      'Đây chính là ví đã nhận khoản vay của bạn. Hãy sao chép địa chỉ — bạn sẽ dán địa chỉ này vào',
+   'as the destination.': 'làm địa chỉ nhận.',
+   'Copied!': 'Đã sao chép!',
+   'Tap to copy your wallet address': 'Nhấn để sao chép địa chỉ ví',
+   'Now open Moneybees below →': 'Giờ hãy mở Moneybees bên dưới →',
+   'Now paste it into the app below →': 'Giờ hãy dán vào ứng dụng bên dưới →',
+   '⚠️ Send on the BASE network only': '⚠️ Chỉ gửi trên mạng BASE',
+   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
+      'USDC gửi qua Ethereum, Polygon hay bất kỳ mạng nào khác sẽ đến địa chỉ này trên sai chuỗi và bị mất vĩnh viễn — không thể khôi phục. Khi',
+   'asks which network, choose': 'hỏi chọn mạng nào, hãy chọn',
+   'How it works': 'Cách thức hoạt động',
+   'Visit moneybees.ph and follow their own process': 'Truy cập moneybees.ph và làm theo quy trình riêng của họ',
+   'They handle ID checks and the rate directly with you': 'Họ trực tiếp kiểm tra giấy tờ tùy thân và thỏa thuận tỷ giá với bạn',
+   'Share your address —': 'Chia sẻ địa chỉ của bạn —',
+   'copy it here': 'sao chép tại đây',
+   '· pay only after they confirm': '· chỉ thanh toán sau khi họ xác nhận',
+   'Moneybees is an external service — you transact with them directly; Moodeng isn’t part of the transaction.':
+      'Moneybees là dịch vụ bên ngoài — bạn giao dịch trực tiếp với họ; Moodeng không tham gia vào giao dịch này.',
+   In: 'Trên',
+   Select: 'Chọn',
+   'network — not Ethereum or Polygon': 'làm mạng — không phải Ethereum hay Polygon',
+   'Look for': 'Tìm',
+   '— not USDC or other tokens': '— không phải USDC hay token khác',
+   'How to withdraw USDC from PDAX to your wallet': 'Cách rút USDC từ PDAX về ví của bạn',
+   "'s fee": ' thu phí',
+   'Moodeng fee': 'Phí Moodeng',
+   'Free ✓': 'Miễn phí ✓',
+   'Send a little extra to cover': 'Hãy gửi dư một chút để trả phí của',
+   "'s fee — Moodeng never charges to repay.": ' — Moodeng không bao giờ thu phí khi bạn trả nợ.',
+   'Checking your balance…': 'Đang kiểm tra số dư…',
+   'Funds ready': 'Đã đủ tiền',
+   'USDC received': 'USDC đã nhận',
+   needed: 'cần có',
+   Tap: 'Nhấn',
+   'Pay $': 'Trả $',
+   'below to pay now, or keep waiting for the rest to arrive.': 'bên dưới để trả ngay, hoặc tiếp tục chờ phần còn lại được chuyển đến.',
+   'Watching for your transfer': 'Đang theo dõi giao dịch chuyển tiền của bạn',
+   'Detects automatically — usually under a minute': 'Tự động phát hiện — thường dưới một phút',
+   'Get help': 'Nhận trợ giúp',
+   'Confirming on Base…': 'Đang xác nhận trên Base…',
+   'Sending payment…': 'Đang gửi thanh toán…',
+   'Recording your repayment — hang tight.': 'Đang ghi nhận khoản trả nợ — vui lòng đợi một chút.',
+   'Sending from your Instant Wallet — no confirmation needed.': 'Đang gửi từ Instant Wallet — không cần xác nhận.',
+   'Approve the transaction in your wallet.': 'Hãy phê duyệt giao dịch trong ví của bạn.',
+   'View transaction': 'Xem giao dịch',
+   'Paid $': 'Đã trả $',
+   'to go.': 'còn lại.',
+   'Paying less than the full $': 'Trả ít hơn toàn bộ $',
+   'reduces what you owe, but your account stays restricted until this loan is fully repaid.':
+      'sẽ giảm số tiền bạn nợ, nhưng tài khoản của bạn vẫn bị hạn chế cho đến khi khoản vay này được trả hết.',
+   "You're paying": 'Bạn đang trả',
+   'Repay amount': 'Số tiền trả nợ',
+   'of $': 'trong số $',
+   remaining: 'chưa trả',
+   'Clears this loan ✓': 'Trả hết khoản vay này ✓',
+   leaves: 'sẽ còn',
+   'Adjust repay amount': 'Điều chỉnh số tiền trả nợ',
+   'Past due': 'Quá hạn',
+   Due: 'Đến hạn',
+   'How to repay': 'Cách trả nợ',
+   'Close video': 'Đóng video',
+   'How to repay a Moodeng loan': 'Cách trả một khoản vay Moodeng'
 };
