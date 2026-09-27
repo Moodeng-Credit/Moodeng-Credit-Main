@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
-import { type VerifyMethod } from '@/lib/verifyFlow';
+import { clearVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
 
 type VerifyYourselfModalProps = {
    isOpen: boolean;
@@ -71,6 +71,10 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
          setStep('choose');
          setShowCountries(false);
          onClose();
+         // Start clean: drop any earlier saved flow so a fresh tap of e.g. "Verify Your ID"
+         // can never be resumed into a stale World-ID/liveness attempt (which points at the
+         // biometric workflow and fails for a first-timer).
+         clearVerifyFlow();
          navigate('/verify', { state: { method, returnTo } });
       },
       [navigate, onClose, returnTo]
