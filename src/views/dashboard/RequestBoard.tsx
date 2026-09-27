@@ -57,6 +57,12 @@ import { checkLoanReason } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { captureApplicationSignals, type CapturedSignals, sendApplicationSignals } from '@/lib/recordApplicationSignals';
+import {
+   clearLoanRequestDraft,
+   draftIsResumable,
+   loadLoanRequestDraft,
+   saveLoanRequestDraft
+} from '@/lib/loanRequestDraft';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA, VERIFICATION_STATE_LABEL } from '@/lib/verificationUiState';
 import { clearVerifyFlow, readVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
@@ -69,7 +75,11 @@ import type { User } from '@/types/authTypes';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import { type CreateLoanData, type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
-import LoanRequestModal, { type AppliedReferralCode, mapBorrowerContextForSave } from '@/views/dashboard/components/LoanRequestModal';
+import LoanRequestModal, {
+   type AppliedReferralCode,
+   type LoanRequestResume,
+   mapBorrowerContextForSave
+} from '@/views/dashboard/components/LoanRequestModal';
 import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
@@ -585,6 +595,16 @@ function RequestBoard$() {
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
    const [customAmount, setCustomAmount] = useState('');
+   // Resumable request draft (see @/lib/loanRequestDraft): `loanRequestResume` is the snapshot we
+   // reopen the modal into after a reload; `loanRequestFlowState` is the modal's latest step/bio,
+   // which we combine with the terms above to persist. This is what stops the Facebook/Messenger
+   // hop from dropping the borrower back at step 1.
+   const [loanRequestResume, setLoanRequestResume] = useState<LoanRequestResume | null>(null);
+   const [loanRequestFlowState, setLoanRequestFlowState] = useState<LoanRequestResume | null>(null);
+   const didAttemptLoanRequestResumeRef = useRef(false);
+   const handleLoanRequestFlowStateChange = useCallback((state: LoanRequestResume) => {
+      setLoanRequestFlowState(state);
+   }, []);
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
    const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser)) : 0;
@@ -662,6 +682,47 @@ function RequestBoard$() {
       setDays('');
       setAppliedReferral(null);
    };
+
+   // Resume a request that was mid-flow when the app reloaded (typically the Messenger hop on a
+   // phone). Runs once, after auth + the user are known: restore the terms and reopen the modal into
+   // the saved step. Verification is still re-read server-side by ContactsStep, so a stale snapshot
+   // can only put the borrower back on the right screen — never falsely mark them verified.
+   useEffect(() => {
+      if (didAttemptLoanRequestResumeRef.current) return;
+      if (!isAuthenticated || !isBorrower || !effectiveUser?.id) return;
+      didAttemptLoanRequestResumeRef.current = true;
+
+      const draft = loadLoanRequestDraft(effectiveUser.id);
+      if (!draft || !draftIsResumable(draft)) return;
+
+      setLoanAmount(draft.terms.loanAmount);
+      setTotalRepaymentAmount(draft.terms.totalRepaymentAmount);
+      setReason(draft.terms.reason);
+      setDays(draft.terms.days);
+      setAppliedReferral(draft.referral);
+      setLoanRequestResume({
+         flow: draft.flow,
+         referral: draft.referral,
+         borrowerContext: draft.borrowerContext,
+         profileName: draft.profileName
+      });
+      setShowModal(true);
+   }, [isAuthenticated, isBorrower, effectiveUser?.id]);
+
+   // Snapshot the in-progress request whenever the terms or the modal's step change, so a reload
+   // mid-flow can resume. Only while the modal is open and only once the borrower is past the first
+   // screen (draftIsResumable) — there's nothing worth reopening the whole modal for otherwise.
+   useEffect(() => {
+      if (!showModal || !effectiveUser?.id || !loanRequestFlowState) return;
+      const draft = {
+         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         referral: loanRequestFlowState.referral,
+         flow: loanRequestFlowState.flow,
+         borrowerContext: loanRequestFlowState.borrowerContext,
+         profileName: loanRequestFlowState.profileName
+      };
+      if (draftIsResumable(draft)) saveLoanRequestDraft(effectiveUser.id, draft);
+   }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days]);
 
    const goToBorrowerOnboardingStart = useCallback(
       (returnTo?: string) => {
@@ -783,6 +844,10 @@ function RequestBoard$() {
       setShowModal(false);
       setShowBioStep(false);
       pendingLoanDataRef.current = null;
+      // Closing is a deliberate abandon — drop the resumable snapshot so it can't reopen later.
+      clearLoanRequestDraft();
+      setLoanRequestResume(null);
+      setLoanRequestFlowState(null);
    }, []);
    const handleVerifyHeaderClick = useCallback(() => {
       if (!hasBorrowerBaseWallet) {
@@ -1512,6 +1577,10 @@ function RequestBoard$() {
          // vet co-location / shared-device before the request is ever funded.
          if (captured) void sendApplicationSignals(createdLoan.id, captured);
          clear();
+         // The request posted — the resumable snapshot is done its job, so drop it.
+         clearLoanRequestDraft();
+         setLoanRequestResume(null);
+         setLoanRequestFlowState(null);
          setSearchLoan('');
          setCustomAmount('');
          setFilters(getDefaultRequestFilters());
@@ -2323,6 +2392,8 @@ function RequestBoard$() {
                   startOnReferralStep={!shouldShowBorrowerTour && canUseReferralBoost}
                   showBioStep={showBioStep}
                   onBioSave={handleBioSave}
+                  resume={loanRequestResume}
+                  onFlowStateChange={handleLoanRequestFlowStateChange}
                   clickOutsideRef={loanRequestModalRef}
                />
                {/* No tap-outside dismiss: a stray tap where the borrower just tapped "Make Your

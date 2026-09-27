@@ -45,6 +45,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
+import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -91,6 +92,27 @@ interface LoanRequestModalProps {
    startOnReferralStep?: boolean;
    /** Which borrower flow is live (useLoanFlow in RequestBoard). Defaults to 'open' — no gate. */
    loanFlow?: LoanFlow;
+   /**
+    * A snapshot to resume into after a full page reload (see loanRequestDraft) — used when the
+    * borrower comes back from the Facebook/Messenger hop and our app reloaded, so we drop them
+    * back on the step they were on instead of at step 1. Null/undefined = a normal fresh open.
+    */
+   resume?: LoanRequestResume | null;
+   /**
+    * Reports the modal's live step + bio + referral state so the parent (RequestBoard) can persist a
+    * resumable draft. Should be a stable callback so it doesn't re-fire on every parent render.
+    */
+   onFlowStateChange?: (state: LoanRequestResume) => void;
+}
+
+// Everything the modal owns that a resume needs: which screen the borrower is on, the referral they
+// applied, and the bio answers they'd typed. The loan terms live in RequestBoard and are persisted
+// there, so they aren't repeated here.
+export interface LoanRequestResume {
+   flow: LoanRequestFlowState;
+   referral: AppliedReferralCode | null;
+   borrowerContext: BorrowerContextState;
+   profileName: string;
 }
 
 export type AppliedReferralCode = {
@@ -964,7 +986,9 @@ export default function LoanRequestModal({
    requireBorrowerContextStep = true,
    startOnBorrowerContextStep = false,
    startOnReferralStep = true,
-   loanFlow = 'open'
+   loanFlow = 'open',
+   resume = null,
+   onFlowStateChange
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -1164,6 +1188,9 @@ export default function LoanRequestModal({
    // the bio answers while the contacts step stayed on screen — its Continue then bounced the
    // borrower back to an empty bio page 1.
    const wasOpenRef = useRef(false);
+   // A resume snapshot is applied at most once per mount: after that, a normal reopen in the same
+   // session resets cleanly like it always did.
+   const resumeConsumedRef = useRef(false);
    useEffect(() => {
       if (!isOpen) {
          wasOpenRef.current = false;
@@ -1171,6 +1198,32 @@ export default function LoanRequestModal({
       }
       if (wasOpenRef.current) return;
       wasOpenRef.current = true;
+
+      // Resuming after a reload (typically back from the Messenger hop, which reloaded our app in
+      // the same tab): drop the borrower exactly where they were instead of resetting to step 1.
+      // Verification itself isn't trusted from the snapshot — ContactsStep re-reads it from the DB.
+      if (resume && !resumeConsumedRef.current) {
+         resumeConsumedRef.current = true;
+         setShowReferralStep(resume.flow.showReferralStep);
+         setShowBorrowerContextStep(resume.flow.showBorrowerContextStep);
+         setBioPage(resume.flow.bioPage);
+         setShowContactsStep(resume.flow.showContactsStep);
+         setShowVideoCallStep(resume.flow.showVideoCallStep);
+         setContactsStepDone(resume.flow.contactsStepDone);
+         setVideoCallStepDone(resume.flow.videoCallStepDone);
+         setBorrowerContextPromptSeen(resume.flow.borrowerContextPromptSeen);
+         setBorrowerContext(resume.borrowerContext);
+         setBorrowerProfileName(resume.profileName || user.displayName || user.username || '');
+         setTermErrors({});
+         setBorrowerProfileError('');
+         setShowBorrowerAvatarModal(false);
+         setReferralCode('');
+         setAppliedReferral(resume.referral);
+         onReferralApplied?.(resume.referral);
+         setReferralCodeError('');
+         setIsApplyingReferralCode(false);
+         return;
+      }
 
       // A borrower already waiting on the team (gated flows) goes straight to their "reviewing"
       // card — not back through the referral card first.
@@ -1194,12 +1247,48 @@ export default function LoanRequestModal({
       isOpen,
       isVerified,
       onReferralApplied,
+      resume,
       startOnBorrowerContextStep,
       startOnReferralStep,
       user.displayName,
       user.username,
       loanFlow,
       user.loanAccessStatus
+   ]);
+
+   // Report the live step + bio + referral up so RequestBoard can snapshot a resumable draft. Runs
+   // only while open; the parent decides whether the snapshot is far enough along to keep.
+   useEffect(() => {
+      if (!isOpen || !onFlowStateChange) return;
+      onFlowStateChange({
+         flow: {
+            showReferralStep,
+            showBorrowerContextStep,
+            bioPage,
+            showContactsStep,
+            showVideoCallStep,
+            contactsStepDone,
+            videoCallStepDone,
+            borrowerContextPromptSeen
+         },
+         referral: appliedReferral,
+         borrowerContext,
+         profileName: borrowerProfileName
+      });
+   }, [
+      isOpen,
+      onFlowStateChange,
+      showReferralStep,
+      showBorrowerContextStep,
+      bioPage,
+      showContactsStep,
+      showVideoCallStep,
+      contactsStepDone,
+      videoCallStepDone,
+      borrowerContextPromptSeen,
+      appliedReferral,
+      borrowerContext,
+      borrowerProfileName
    ]);
 
    useEffect(() => {
