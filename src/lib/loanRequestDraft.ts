@@ -11,11 +11,15 @@
 // actually verified is always re-read from the users table by ContactsStep. The snapshot only puts
 // the borrower back on the right screen with the terms they'd already typed, so one tap finishes.
 //
-// Storage notes: sessionStorage (not localStorage) so a snapshot lives only as long as the browsing
-// context and never lingers on a shared device. Every access is wrapped — Safari private mode throws
-// on write, and reads can come back empty — so a storage failure just means "no resume", never a
-// crash. The record is scoped to a userId and stamped with a time, so it can't resurrect on the
-// wrong account or days later.
+// Storage notes: localStorage, not sessionStorage. The whole point is to survive the trip out to
+// Facebook and back, and on iPhone that trip often lands the borrower in a *different* browsing
+// context — the Facebook/Messenger in-app browser opens m.me in a fresh webview, and a Home-Screen
+// PWA can be killed and relaunched — which resets sessionStorage. localStorage carries across those,
+// so the resume actually fires where it's needed most. It's kept safe by three guards, not by the
+// storage lifetime: the record is scoped to a userId (never resurfaces on the wrong account on a
+// shared device), stamped with a time (dropped after the TTL, so stale terms can't reopen), and
+// explicitly cleared on submit and on a deliberate close. Every access is wrapped — Safari private
+// mode throws on write, reads can come back empty — so a storage failure just means "no resume".
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { AppliedReferralCode } from '@/views/dashboard/components/LoanRequestModal';
@@ -62,7 +66,7 @@ interface StoredDraft extends LoanRequestDraft {
 
 const getStore = (): Storage | null => {
    try {
-      return typeof window !== 'undefined' ? window.sessionStorage : null;
+      return typeof window !== 'undefined' ? window.localStorage : null;
    } catch {
       return null;
    }

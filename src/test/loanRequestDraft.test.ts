@@ -31,7 +31,7 @@ const makeDraft = (overrides: Partial<LoanRequestDraft> = {}): LoanRequestDraft 
 
 describe('loanRequestDraft store', () => {
    beforeEach(() => {
-      window.sessionStorage.clear();
+      window.localStorage.clear();
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-09-27T10:00:00Z'));
    });
@@ -39,7 +39,7 @@ describe('loanRequestDraft store', () => {
    afterEach(() => {
       vi.useRealTimers();
       vi.restoreAllMocks();
-      window.sessionStorage.clear();
+      window.localStorage.clear();
    });
 
    it('round-trips a draft for the same user', () => {
@@ -61,7 +61,7 @@ describe('loanRequestDraft store', () => {
       vi.advanceTimersByTime(LOAN_REQUEST_DRAFT_TTL_MS + 1);
       expect(loadLoanRequestDraft('user-1')).toBeNull();
       // And it was cleared, not just hidden.
-      expect(window.sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
    });
 
    it('keeps a draft that is still within the TTL', () => {
@@ -72,15 +72,15 @@ describe('loanRequestDraft store', () => {
 
    it('ignores and clears a record from an older schema version', () => {
       const stale = { v: 0, userId: 'user-1', savedAt: Date.now(), ...makeDraft() };
-      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(stale));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stale));
       expect(loadLoanRequestDraft('user-1')).toBeNull();
-      expect(window.sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
    });
 
    it('ignores and clears a corrupt record', () => {
-      window.sessionStorage.setItem(STORAGE_KEY, '{not json');
+      window.localStorage.setItem(STORAGE_KEY, '{not json');
       expect(loadLoanRequestDraft('user-1')).toBeNull();
-      expect(window.sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
    });
 
    it('clearLoanRequestDraft removes the record', () => {
@@ -91,7 +91,7 @@ describe('loanRequestDraft store', () => {
 
    it('does nothing and never throws when a userId is missing', () => {
       expect(() => saveLoanRequestDraft('', makeDraft())).not.toThrow();
-      expect(window.sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+      expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
       expect(loadLoanRequestDraft('')).toBeNull();
    });
 
