@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BellRing, Facebook, MessageCircle } from 'lucide-react';
 
@@ -10,6 +10,8 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
+import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -70,6 +72,41 @@ export default function ContactsStep({
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
    const pushRequired = push.isSupported;
+
+   // When push can't run here we spell out the fix for THIS browser rather than one generic line.
+   // The old copy told everyone to "tap Share" — but Facebook's/Messenger's in-app browser has no
+   // Share button at all, and even iPhone Safari users couldn't find it, so it just confused people.
+   const pushHelp = useMemo(() => {
+      const info = detectInAppBrowser();
+      if (info.isInApp) {
+         const where = isFacebookInApp(info) ? 'the ••• menu (top right)' : "your browser's menu";
+         return {
+            title: 'Reminders need Safari or Chrome',
+            body: (
+               <>
+                  You&apos;re inside {info.appName ?? 'an app'}&apos;s built-in browser, which can&apos;t show reminders — and it has no
+                  Share button. Tap {where}, choose <b>Open in Safari</b> (or Chrome), then turn reminders on there.
+               </>
+            )
+         };
+      }
+      if (needsHomeScreenForPush()) {
+         return {
+            title: 'Add Moodeng to your Home Screen',
+            body: (
+               <>
+                  In <b>Safari</b>, tap the <b>Share</b> icon — the square with an ↑ arrow, in the bar at the bottom of the screen —
+                  then <b>Add to Home Screen</b>. Open Moodeng from the new icon and turn reminders on. No Share icon means you&apos;re
+                  not in Safari yet — open moodeng.app in Safari first.
+               </>
+            )
+         };
+      }
+      return {
+         title: 'Turn on reminders in your browser',
+         body: <>Allow notifications for moodeng.app in your browser settings, then reload this page.</>
+      };
+   }, []);
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
 
@@ -120,6 +157,30 @@ export default function ContactsStep({
       const timer = window.setTimeout(() => setShowTypedCode(true), SHOW_TYPED_CODE_AFTER_MS);
       return () => window.clearTimeout(timer);
    }, [messengerLink, messengerVerified]);
+
+   // Mobile browsers freeze the 3s poll above while the borrower is away in Messenger, so the
+   // checkmark can lag — or never appear if they come back to a still-frozen tab and then close it.
+   // Re-check the instant the app tab is shown or focused again: this is what actually makes the
+   // card flip to "Verified the moment they return", which the poll alone only promises.
+   useEffect(() => {
+      if (!messengerLink || messengerVerified) return;
+      const recheck = async () => {
+         if (document.visibilityState !== 'visible') return;
+         const { data } = await getSupabaseBrowserClient()
+            .from('users')
+            .select('whatsapp_verified_at, messenger_verified_at')
+            .eq('id', userId)
+            .maybeSingle();
+         if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (data?.messenger_verified_at) setMessengerVerified(true);
+      };
+      document.addEventListener('visibilitychange', recheck);
+      window.addEventListener('focus', recheck);
+      return () => {
+         document.removeEventListener('visibilitychange', recheck);
+         window.removeEventListener('focus', recheck);
+      };
+   }, [messengerLink, messengerVerified, userId]);
 
    const copyMessengerCode = async () => {
       if (!messengerCode) return;
@@ -266,11 +327,8 @@ export default function ContactsStep({
             />
          ) : (
             <div className="rounded-[18px] border border-dashed border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-               <p className="font-semibold text-[#4c239f]">Get due-date reminders on your phone</p>
-               <p className="mt-1">
-                  On iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>, open Moodeng from there and turn on notifications. In the
-                  Facebook app, open this page in Chrome or Safari instead.
-               </p>
+               <p className="font-semibold text-[#4c239f]">{pushHelp.title}</p>
+               <p className="mt-1">{pushHelp.body}</p>
             </div>
          )}
 
