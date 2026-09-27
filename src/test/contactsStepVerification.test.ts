@@ -251,6 +251,30 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).toContain('$10 referral program');
       expect(container.textContent).not.toContain('like withdrawing, or extending a loan');
    });
+
+   it('shows a live "Confirming on Messenger" state after the borrower taps Messenger', async () => {
+      await render();
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+      // The wait now reads as active work (with a reopen affordance), not a frozen "Waiting…".
+      expect(container.textContent).toContain('Confirming on Messenger');
+      expect(container.textContent).toContain('Open Messenger again');
+   });
+
+   it('disables Continue and shows "Submitting…" while the request is posting', async () => {
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await act(async () => {
+         root.render(createElement(ContactsStep, { userId: 'user-1', onBack: vi.fn(), onContinue, isSubmitting: true }));
+      });
+      await act(async () => {
+         await Promise.resolve();
+      });
+      const btn = buttonByText(container, 'Submitting…');
+      expect(btn).toBeTruthy();
+      expect((btn as HTMLButtonElement).disabled).toBe(true);
+   });
 });
 
 describe('contact verification link builders', () => {

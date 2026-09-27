@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BellRing, Facebook, MessageCircle } from 'lucide-react';
+import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -38,7 +38,8 @@ export default function ContactsStep({
    onBack,
    onContinue,
    intro,
-   whatsappEnabled = WHATSAPP_VERIFY_ENABLED
+   whatsappEnabled = WHATSAPP_VERIFY_ENABLED,
+   isSubmitting = false
 }: {
    userId: string;
    onBack: () => void;
@@ -47,6 +48,10 @@ export default function ContactsStep({
    intro?: ReactNode;
    // Facebook first: WhatsApp is hidden until a real business number is connected.
    whatsappEnabled?: boolean;
+   // For existing borrowers this is the last step, so Continue fires the real loan submission. When
+   // it does, the parent passes isSubmitting so the button disables + reads "Submitting…" instead of
+   // sitting there inert during the network call (inviting a double-tap).
+   isSubmitting?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
@@ -260,16 +265,31 @@ export default function ContactsStep({
 
          {messengerLink && !messengerVerified ? (
             <>
-               <OptionCard
-                  icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
-                  onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
-                  subtitle={
-                     <>
-                        Waiting… tap <b>Get Started</b> if Messenger asks
-                     </>
-                  }
-                  title="Open Messenger again"
-               />
+               {/* A live "we're checking" state, like the wallet-creation step — a spinner + a "keep
+                   this open, it'll turn green on its own" reassurance so the wait doesn't look frozen.
+                   The poll (and the on-return re-check above) flip this whole card to the green
+                   Verified state the moment the bot confirms. */}
+               <div
+                  aria-live="polite"
+                  className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-3"
+               >
+                  <span className="grid size-11 shrink-0 place-items-center">
+                     <Loader2 aria-hidden="true" className="size-7 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-0.5 text-left">
+                     <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Confirming on Messenger…</span>
+                     <span className="text-[14px] leading-[18px] text-[#6b5b86]">
+                        Keep this screen open — it turns green on its own. Tap <b>Get Started</b> in Messenger if it asks.
+                     </span>
+                     <button
+                        type="button"
+                        onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                        className="mt-1 w-fit text-[14px] font-semibold text-md-primary-1200 underline underline-offset-4"
+                     >
+                        Open Messenger again
+                     </button>
+                  </div>
+               </div>
                {showTypedCode && messengerCode ? (
                   <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
                      <p className="font-semibold text-[#4c239f]">Messenger not opening?</p>
@@ -335,8 +355,8 @@ export default function ContactsStep({
          {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
 
          <div className="mt-auto flex flex-col gap-1 pt-2">
-            <PrimaryButton disabled={!canContinue} onClick={handleContinue}>
-               Continue
+            <PrimaryButton disabled={!canContinue || isSubmitting} onClick={handleContinue}>
+               {isSubmitting ? 'Submitting…' : 'Continue'}
             </PrimaryButton>
             {contactVerified && pushRequired && !pushOn ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>

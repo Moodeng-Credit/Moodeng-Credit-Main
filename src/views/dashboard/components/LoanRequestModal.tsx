@@ -2288,6 +2288,7 @@ export default function LoanRequestModal({
                   userId={user.id}
                   onBack={handleContactsStepBack}
                   onContinue={handleContactsStepContinue}
+                  isSubmitting={isSubmitting}
                   intro={
                      isExistingBorrower ? (
                         <ConnectHero
@@ -2308,6 +2309,7 @@ export default function LoanRequestModal({
                   userId={user.id}
                   onBack={handleVideoCallStepBack}
                   onContinue={handleVideoCallStepContinue}
+                  isSubmitting={isSubmitting}
                />
             ) : (
                <form

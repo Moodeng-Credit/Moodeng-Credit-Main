@@ -26,13 +26,18 @@ export default function VideoCallStep({
    continueLabel = 'Continue',
    requireUpcoming = false,
    host,
-   onBooked
+   onBooked,
+   isSubmitting = false
 }: {
    userId: string;
    onBack: () => void;
    onContinue: () => void;
    intro?: ReactNode;
    continueLabel?: string;
+   // In the loan-request flow, Continue fires the real submission — pass this so the button disables
+   // and reads "Submitting…" during the network call instead of looking inert. (In the Connect flow,
+   // continueLabel already carries "Sending…", so this can stay false there.)
+   isSubmitting?: boolean;
    // Call flow (ConnectStep): only a call that's still ahead counts — after a no-show the old,
    // past booking must not show as "booked", or the borrower could never pick a new time.
    requireUpcoming?: boolean;
@@ -266,8 +271,8 @@ export default function VideoCallStep({
          )}
 
          <div className="mt-auto flex flex-col gap-1 pt-1">
-            <PrimaryButton disabled={!isScheduled} onClick={() => isScheduled && onContinue()}>
-               {isScheduled ? continueLabel : phase === 'cooldown' ? 'Booking paused' : 'Pick a time above'}
+            <PrimaryButton disabled={!isScheduled || isSubmitting} onClick={() => isScheduled && !isSubmitting && onContinue()}>
+               {isSubmitting ? 'Submitting…' : isScheduled ? continueLabel : phase === 'cooldown' ? 'Booking paused' : 'Pick a time above'}
             </PrimaryButton>
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
