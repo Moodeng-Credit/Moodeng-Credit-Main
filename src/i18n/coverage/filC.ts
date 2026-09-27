@@ -99,4 +99,207 @@ export const filipinoCoverageC: Record<string, string> = {
    'Simple & secure': 'Simple at secure',
    Universal: 'Gumagana kahit saan',
    'Widely Used': 'Gamit ng marami',
+
+   // src/views/profile/components/Calendar.tsx
+   'Loan Insights': 'Loan insights',
+
+   // src/views/profile/components/Card.tsx
+   'You Funded': 'Nagpahiram ka ng',
+   'Due on': 'Due sa',
+   'Fully Repaid': 'Bayad na nang buo',
+   'Repayment Progress': 'Progreso ng bayad',
+   'Remaining for Complete Payback': 'pa ang natitira para mabayaran nang buo',
+   'Borrow Insight': 'Insight sa borrower',
+   'posted on': 'na-post noong',
+   'Waiting for Funding': 'Naghihintay ng pondo',
+   Asking: 'Hinihingi',
+   Payback: 'Babayaran',
+   'Delete Loan Request?': 'I-delete ang loan request?',
+   'Are you sure you want to delete this loan request? This action cannot be undone.':
+      'Sigurado ka bang gusto mong i-delete ang loan request na ito? Hindi na ito maibabalik.',
+   'Delete Request': 'I-delete ang request',
+
+   // src/views/profile/components/navigation/MobileNav.tsx
+   'Toggle menu': 'Buksan o isara ang menu',
+
+   // src/views/profile/components/navigation/Sidebar.tsx
+   'View more': 'Tingnan pa',
+
+   // src/views/profile/components/settings/ProfileSettings.tsx
+   'Having an up-to-date email address attached to your account is a great step towards improving account security.':
+      'Malaking tulong sa seguridad ng account mo ang pagkakaroon ng updated na email address na naka-link dito.',
+   'You can also opt to receive notifications via Telegram or WhatsApp to stay informed of any account changes.':
+      'Puwede ka ring pumiling makatanggap ng mga notification sa Telegram o WhatsApp para lagi kang updated sa anumang pagbabago sa account mo.',
+   'Test Email': 'Test email',
+   'Send a test email to verify your email configuration': 'Magpadala ng test email para ma-check ang email configuration mo',
+   'Send Test Email': 'Magpadala ng test email',
+   'Connect your telegram to get the latest updates': 'Ikonek ang Telegram mo para makuha ang pinakabagong updates',
+   'Connect your WhatsApp to get the latest updates': 'Ikonek ang WhatsApp mo para makuha ang pinakabagong updates',
+   'Change Username': 'Palitan ang username',
+   'Change Email': 'Palitan ang email',
+   Update: 'I-update',
+   Connect: 'Ikonek',
+
+   // src/views/profile/components/settings/SecuritySettings.tsx
+   'This information will be shown publicly so be careful what information you provide':
+      'Makikita ng publiko ang impormasyong ito, kaya mag-ingat sa impormasyong ibibigay mo',
+   'Wrong network': 'Maling network',
+   Disconnect: 'I-disconnect',
+   'New Password': 'Bagong password',
+
+   // src/views/profile/components/shared/LoadMoreButton.tsx
+   'Load More...': 'Mag-load pa...',
+
+   // src/views/profile/components/shared/TelegramModal.tsx
+   'Connect Telegram.': 'Ikonek ang Telegram.',
+
+   // src/views/profile/components/tabs/CreditLevelCard.tsx
+   'Progression Paused (Late Repayment)': 'Naka-pause ang progress (late na bayad)',
+   'Max Credit Unlocked!': 'Na-unlock ang max credit!',
+   'Max Credit': 'Max credit',
+   'Unlocked!': 'Na-unlock na!',
+   'Request Loan': 'Mag-request ng loan',
+   'Credit Unlocked': 'Na-unlock ang credit',
+   LOCKED: 'NAKA-LOCK',
+
+   // src/views/profile/components/tabs/DashboardTab.tsx
+   'Loan Summary': 'Summary ng loans',
+   'PAY LOANS NOW': 'MAGBAYAD NG LOANS NGAYON',
+   Info: 'Impormasyon',
+
+   // src/views/profile/components/tabs/SettingsTab.tsx
+   'Revert Changes': 'Ibalik ang dati',
+   'Save Changes': 'I-save ang changes',
+
+   // src/views/profile/components/tabs/SupportTab.tsx
+   'Support content coming soon...': 'Malapit na ang support content...',
+
+   // src/views/repay/Repay.tsx
+   'Received $': 'Natanggap ang $',
+   'Taking you to pay now…': 'Dadalhin ka na sa pagbabayad…',
+   Free: 'Libre',
+   'Small fee': 'Maliit na fee',
+   'Loan repaid': 'Bayad na ang loan',
+   'Paid in full': 'Bayad nang buo',
+   'New borrowing limit': 'Bagong borrowing limit',
+   unlocked: 'na-unlock na',
+   'View repayment history': 'Tingnan ang history ng bayad',
+   'Choose a loan and enter an amount.': 'Pumili ng loan at ilagay ang halaga.',
+   'Watch how to repay': 'Panoorin kung paano magbayad',
+   'Not yet paid': 'Hindi pa bayad',
+   'Add funds to repay': 'Magdagdag ng pondo para makabayad',
+   'You have': 'Mayroon kang',
+   '— still need': '— kailangan mo ng',
+   more: 'pa',
+   'You need': 'Kailangan mo pa ng',
+   'more USDC': 'USDC',
+   'to repay.': 'para makabayad.',
+   'Choose your source': 'Pumili ng source',
+   'Loading your options…': 'Nilo-load ang options mo…',
+   "Pick where you'll buy or withdraw USDC.": 'Piliin kung saan ka bibili o magwi-withdraw ng USDC.',
+   'works well for most people': 'ang swak sa karamihan',
+   "— and works the same whether you're in the Philippines or traveling.":
+      '— at pareho lang ang gamit nito nasa Pilipinas ka man o nagbibiyahe.',
+   'is also available under "Other options".': 'ay available din sa "Iba pang options".',
+   'Other options': 'Iba pang options',
+   'Fewer options': 'Mas kaunting options',
+   'You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is available in your country.':
+      'Puwede kang magbayad mula sa wallet, exchange, P2P platform, o local crypto service — kung ano ang available sa bansa mo.',
+   'Copy your wallet address': 'I-copy ang wallet address mo',
+   "This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they send your USDC here.":
+      'Ito rin ang wallet kung saan ipinadala ang loan mo. I-copy ito — ibibigay mo ito sa Moneybees para dito nila ipadala ang USDC mo.',
+   "This is the same wallet your loan was sent to. Copy it — you'll paste it into":
+      'Ito rin ang wallet kung saan ipinadala ang loan mo. I-copy ito — ipe-paste mo ito sa',
+   'as the destination.': 'bilang destination.',
+   'Copied!': 'Na-copy na!',
+   'Tap to copy your wallet address': 'I-tap para i-copy ang wallet address mo',
+   'Now open Moneybees below →': 'Buksan na ang Moneybees sa ibaba →',
+   'Now paste it into the app below →': 'I-paste na ito sa app sa ibaba →',
+   '⚠️ Send on the BASE network only': '⚠️ Sa BASE network ka lang magpadala',
+   'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
+      'Ang USDC na ipinadala sa Ethereum, Polygon, o anumang ibang network ay mapupunta sa address na ito sa maling chain at tuluyang mawawala — hindi na ito mababawi. Kapag tinanong ng',
+   'asks which network, choose': 'kung aling network, piliin ang',
+   'Visit moneybees.ph and follow their own process': 'Pumunta sa moneybees.ph at sundin ang sarili nilang proseso',
+   'They handle ID checks and the rate directly with you': 'Sila mismo ang bahala sa ID checks at sa rate kasama mo',
+   'Share your address —': 'Ibigay ang address mo —',
+   'copy it here': 'i-copy dito',
+   '· pay only after they confirm': '· magbayad lang kapag nag-confirm na sila',
+   'Moneybees is an external service — you transact with them directly; Moodeng isn’t part of the transaction.':
+      'External service ang Moneybees — direkta kang makikipag-transaksyon sa kanila; hindi kasali ang Moodeng sa transaksyon.',
+   In: 'Sa',
+   Select: 'Piliin',
+   'network — not Ethereum or Polygon': 'network — hindi Ethereum o Polygon',
+   'Look for': 'Hanapin ang',
+   '— not USDC or other tokens': '— hindi USDC o ibang tokens',
+   'How to withdraw USDC from PDAX to your wallet': 'Paano mag-withdraw ng USDC mula sa PDAX papunta sa wallet mo',
+   "'s fee": ' fee',
+   'Moodeng fee': 'Fee ng Moodeng',
+   'Free ✓': 'Libre ✓',
+   'Send a little extra to cover': 'Magpadala ng kaunting sobra para masagot ang fee ng',
+   "'s fee — Moodeng never charges to repay.": ' — hindi kailanman naniningil ang Moodeng sa pagbabayad.',
+   'Checking your balance…': 'Tine-check ang balance mo…',
+   'Funds ready': 'Handa na ang pondo',
+   'USDC received': 'USDC ang natanggap',
+   needed: 'ang kailangan',
+   Tap: 'I-tap ang',
+   'below to pay now, or keep waiting for the rest to arrive.': 'sa ibaba para magbayad ngayon, o hintayin pa ang natitira.',
+   'Watching for your transfer': 'Hinihintay ang transfer mo',
+   'Detects automatically — usually under a minute': 'Awtomatiko itong made-detect — karaniwang wala pang isang minuto',
+   'Confirming on Base…': 'Kinukumpirma sa Base…',
+   'Sending payment…': 'Ipinapadala ang bayad…',
+   'Recording your repayment — hang tight.': 'Nire-record ang bayad mo — sandali lang.',
+   'Sending from your Instant Wallet — no confirmation needed.': 'Ipinapadala mula sa Instant Wallet mo — hindi na kailangang mag-confirm.',
+   'Approve the transaction in your wallet.': 'I-approve ang transaction sa wallet mo.',
+   'View transaction': 'Tingnan ang transaction',
+   'Paid $': 'Nabayaran ang $',
+   'to go.': 'pa ang natitira.',
+   'Paying less than the full $': 'Ang pagbabayad nang mas mababa sa buong $',
+   'reduces what you owe, but your account stays restricted until this loan is fully repaid.':
+      'ay nagpapababa ng utang mo, pero mananatiling restricted ang account mo hangga’t hindi pa buong bayad ang loan na ito.',
+   'of $': 'mula sa $',
+   remaining: 'na natitira',
+   leaves: 'may',
+   'Clears this loan ✓': 'Buong mababayaran ang loan na ito ✓',
+   'Adjust repay amount': 'I-adjust ang halagang babayaran',
+   'How to repay': 'Paano magbayad',
+   'Close video': 'Isara ang video',
+   'How to repay a Moodeng loan': 'Paano magbayad ng Moodeng loan',
+   'Active loan': 'Aktibong loan',
+   '% paid': '% bayad na',
+   'Hide repayment details': 'Itago ang detalye ng bayad',
+   'Show repayment details': 'Ipakita ang detalye ng bayad',
+   'Repay next loan': 'Bayaran ang susunod na loan',
+   'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash':
+      'Recommended · pinakamababang fees · bumili ng USDC gamit ang PHP, mag-cash out sa bank o GCash',
+   'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm':
+      'Transfer → Send Crypto → USDC → External Wallet → i-paste ang address → Base network → i-confirm',
+   'Wallet → USDCBASE → Withdraw → Paste wallet address': 'Wallet → USDCBASE → Withdraw → I-paste ang wallet address',
+   'Wallet → Withdraw → USDC → Network: Base → Paste wallet address': 'Wallet → Withdraw → USDC → Network: Base → I-paste ang wallet address',
+   'Open Coins.ph': 'Buksan ang Coins.ph',
+   'Visit Moneybees': 'Pumunta sa Moneybees',
+   'Open GCrypto': 'Buksan ang GCrypto',
+   'Open PDAX': 'Buksan ang PDAX',
+   'Open Binance': 'Buksan ang Binance',
+   'Enter an amount greater than 0.': 'Maglagay ng halagang higit sa 0.',
+   'Finish setup to start borrowing': 'Tapusin ang setup para makapagsimulang humiram',
+   'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
+      'Mag-verify at i-set up ang wallet mo (Instant Wallet, o Base Account kung mas gusto mo) bago mag-request ng loans. Lalabas dito ang mga bayad mo kapag napondohan na ng lender ang una mong loan.',
+   'Verify yourself to borrow': 'Mag-verify para makahiram',
+   'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
+      'Naidagdag na ang wallet mo. Tapusin ang verification bago mag-request ng loans. Lalabas dito ang mga bayad mo kapag napondohan na.',
+   'Add a wallet to borrow': 'Magdagdag ng wallet para makahiram',
+   'Add Wallet': 'Magdagdag ng wallet',
+   'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
+      'Verified ka na. I-set up ang Instant Wallet mo (o ikonek ang Base Account) para manatiling naka-link sa Moodeng account mo ang loans at mga bayad.',
+   'Your repayment activity will appear here once a lender funds your first loan.':
+      'Lalabas dito ang activity ng pagbabayad mo kapag napondohan na ng lender ang una mong loan.',
+   'No repayments yet': 'Wala pang bayad',
+   'Copy failed': 'Hindi na-copy',
+   'Could not copy your wallet address. Copy it manually.': 'Hindi ma-copy ang wallet address mo. I-copy ito nang mano-mano.',
+   'Still confirming': 'Kinukumpirma pa',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'Naipadala na ang bayad mo at sandali pa bago ito ma-confirm. Kusa itong mag-a-update.',
+   'Payment Sent, Still Recording': 'Naipadala ang bayad, nire-record pa',
+   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
+      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.',
 };
