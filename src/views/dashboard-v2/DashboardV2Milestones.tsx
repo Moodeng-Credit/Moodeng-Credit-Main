@@ -4,11 +4,13 @@ import clsx from 'clsx';
 import { ChevronLeft } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
+import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
+
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { isPreviewHost } from '@/lib/previewHost';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { VerifyIdentityBanner } from '@/views/dashboard-v2/components/DashboardV2Banners';
-import { MilestonePopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
+import { MilestonePopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import { VoucherStatusPill } from '@/views/dashboard-v2/components/DashboardV2Sections';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import { getVoucherState, OWN_VOUCHER, TIER_VOUCHERS, type VoucherState } from '@/views/dashboard-v2/dashboardV2Model';
@@ -250,7 +252,8 @@ export default function DashboardV2Milestones() {
          {claimingVoucher ? (
             <VoucherClaimPopup voucher={claimingVoucher} isPreview={!isReal} onClose={() => setClaimingVoucher(null)} />
          ) : null}
-         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard/milestones${previewSearch}`} /> : null}
+         {/* Same "Verify Yourself" chooser as onboarding, Milestones, the loan form and Repay. */}
+         <VerifyYourselfModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard/milestones${previewSearch}`} />
       </div>
    );
 }
