@@ -1159,8 +1159,18 @@ export default function LoanRequestModal({
       setCalendarMonth(selectedCalendarDate ?? todayDate);
    }, [selectedDate, today]);
 
+   // Reset the form only when the modal opens. It used to re-run whenever these props changed
+   // too, so saving the bio's display name (user.displayName) or a profile refetch mid-flow wiped
+   // the bio answers while the contacts step stayed on screen — its Continue then bounced the
+   // borrower back to an empty bio page 1.
+   const wasOpenRef = useRef(false);
    useEffect(() => {
-      if (!isOpen) return;
+      if (!isOpen) {
+         wasOpenRef.current = false;
+         return;
+      }
+      if (wasOpenRef.current) return;
+      wasOpenRef.current = true;
 
       // A borrower already waiting on the team (gated flows) goes straight to their "reviewing"
       // card — not back through the referral card first.
@@ -1690,7 +1700,9 @@ export default function LoanRequestModal({
          return;
       }
 
-      handleSubmit(event, showBorrowerContextStep ? borrowerContext : undefined);
+      // The bio answers ride along whenever the bio was completed in this flow — the contacts and
+      // video-call steps come after it, so by submit time the bio step is no longer on screen.
+      handleSubmit(event, showBorrowerContextStep || borrowerContextPromptSeen ? borrowerContext : undefined);
    };
 
    // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
