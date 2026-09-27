@@ -617,7 +617,6 @@ function RequestBoard$() {
       new URLSearchParams(location.search).get('applyLoan') === '1';
 
    const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
-   const successModalRef = useClickOutside<HTMLDivElement>(() => setShowPurple(false), showPurple) as RefObject<HTMLDivElement>;
    const publicQuestionsRef = useClickOutside<HTMLDivElement>(
       () => setShowPublicQuestions(false),
       showPublicQuestions
@@ -2326,7 +2325,10 @@ function RequestBoard$() {
                   onBioSave={handleBioSave}
                   clickOutsideRef={loanRequestModalRef}
                />
-               <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={successModalRef} />
+               {/* No tap-outside dismiss: a stray tap where the borrower just tapped "Make Your
+                   Request" was closing this before they registered the request went through. They
+                   dismiss it deliberately via "Go to dashboard" or a swipe down. */}
+               <SuccessModal isOpen={showPurple} onClose={handleSuccessModalClose} clickOutsideRef={undefined} />
                <LocationPrimingModal
                   open={showLocationPriming}
                   onShare={() => resolveLocationConsent('share')}

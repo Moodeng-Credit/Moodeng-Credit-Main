@@ -59,7 +59,7 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/20 px-[21px]">
+      <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/20 px-[21px]">
          <section
             ref={clickOutsideRef}
             className="mx-auto w-full max-w-[398px] touch-none rounded-md-lg border border-md-neutral-400 bg-md-neutral-100 shadow-md-card transition-transform duration-150 ease-out"
