@@ -1376,6 +1376,13 @@ export default function LoanRequestModal({
       if (showBorrowerContextStep && !bouncedForReasonWarningRef.current) {
          bouncedForReasonWarningRef.current = true;
          setShowBorrowerContextStep(false);
+         // We just swapped from the bio step back to the terms step, where the warning renders
+         // under the reason field. Bring it on screen once that step has mounted — otherwise the
+         // borrower lands on step 1 with no visible reason they were sent back, which feels like
+         // the submit silently failed. rAF waits for the terms fields to render first.
+         window.requestAnimationFrame(() => {
+            document.getElementById('reason')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         });
       }
    }, [reasonWarning, showBorrowerContextStep]);
 
