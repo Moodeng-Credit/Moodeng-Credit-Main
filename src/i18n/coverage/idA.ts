@@ -371,4 +371,217 @@ export const indonesianCoverageA: Record<string, string> = {
    'Need help from our team?': 'Butuh bantuan dari tim kami?',
    'Message us on Telegram': 'Kirim pesan lewat Telegram',
    'Message us on Facebook': 'Kirim pesan lewat Facebook',
+
+   // src/components/Footer.tsx
+   'Moodeng Credit logo': 'Logo Moodeng Credit',
+   'Social Link': 'Tautan media sosial',
+
+   // src/components/GuidedTourPreview.tsx
+   'Want a quick tour?': 'Mau tur singkat?',
+   "Pick a side and we'll walk you through it — no account needed.":
+      'Pilih peranmu dan kami akan memandumu — tanpa perlu akun.',
+   'See how Moodeng works in under a minute. You can skip this and use everything normally.':
+      'Lihat cara kerja Moodeng dalam kurang dari satu menit. Kamu bisa melewatinya dan tetap memakai semua fitur seperti biasa.',
+   'Skip for now': 'Lewati dulu',
+   'Start the tour': 'Mulai tur',
+   'Take the tour': 'Ikuti tur',
+   Skip: 'Lewati',
+   Back: 'Kembali',
+   Finished: 'Selesai',
+   Next: 'Lanjut',
+
+   // src/components/Header/MobileNav.tsx
+   'Mobile navigation': 'Navigasi seluler',
+
+   // src/components/InAppBrowserNotice.tsx
+   'this app': 'aplikasi ini',
+   'Open in Chrome': 'Buka di Chrome',
+   'Link copied ✓': 'Link disalin ✓',
+   'Copy link': 'Salin link',
+   'Open in your browser': 'Buka di browser kamu',
+   'Open Moodeng in your browser': 'Buka Moodeng di browser kamu',
+   "Sign-in and wallet payments don't work inside": 'Login dan pembayaran lewat dompet tidak berfungsi di dalam',
+   '. Tap below to continue in Chrome.': '. Ketuk di bawah untuk lanjut di Chrome.',
+   '. Tap': '. Ketuk',
+   'at the top, choose': 'di bagian atas, pilih',
+   'Open in Browser': 'Buka di Browser',
+   ', or copy the link below.': ', atau salin link di bawah.',
+   'Not now': 'Nanti saja',
+   "Why isn't this working?": 'Kenapa ini tidak berfungsi?',
+   'In-app browser notice': 'Pemberitahuan browser dalam aplikasi',
+   Dismiss: 'Tutup',
+
+   // src/components/IouPointHistoryModal.tsx
+   'IOU Point History': 'Riwayat Poin IOU',
+   'No IOU points yet. Fund loan requests to start earning.':
+      'Belum ada poin IOU. Danai permintaan pinjaman untuk mulai mengumpulkan poin.',
+   From: 'Dari',
+
+   // src/components/Loading.tsx
+   'Loading Moodeng': 'Memuat Moodeng',
+
+   // src/components/PlaceholderPage.tsx
+   'Coming soon': 'Segera hadir',
+
+   // src/components/PowerLenderBadge.tsx
+   'Power Lender': 'Power Lender',
+
+   // src/components/RepayInAppBrowserGate.tsx
+   'Open Moodeng in your browser to repay': 'Buka Moodeng di browser kamu untuk membayar',
+   'Finish repaying in your browser': 'Selesaikan pembayaran di browser kamu',
+   "'s in-app browser can't open your wallet, so a repayment gets stuck here. Open this page in Chrome or Safari to pay — it only takes a few seconds.":
+      'punya browser bawaan yang tidak bisa membuka dompetmu, jadi pembayaran kembali tertahan di sini. Buka halaman ini di Chrome atau Safari untuk membayar — hanya butuh beberapa detik.',
+   'Your repay link': 'Link pembayaranmu',
+   'Copied ✓': 'Disalin ✓',
+   Copy: 'Salin',
+   'Open in Safari': 'Buka di Safari',
+   "If a button doesn't open your browser, tap": 'Jika tombol tidak membuka browsermu, ketuk',
+   'at the top of': 'di bagian atas',
+   'and choose': 'lalu pilih',
+   ', then paste the link.': ', kemudian tempel link-nya.',
+   'Still stuck? Message support': 'Masih bermasalah? Hubungi dukungan',
+
+   // src/components/SocialContactRequiredNotifier.tsx
+   'A message from the Moodeng team': 'Pesan dari tim Moodeng',
+   "To request a loan, you'll first need to add a verified social media contact — like Facebook or WhatsApp — so we can reach you. Please contact us and we'll help you get set up.":
+      'Untuk mengajukan pinjaman, kamu perlu menambahkan kontak media sosial yang terverifikasi dulu — seperti Facebook atau WhatsApp — agar kami bisa menghubungimu. Silakan hubungi kami dan kami akan membantumu menyiapkannya.',
+   'Contact us': 'Hubungi kami',
+
+   // src/components/ToastSystem/ToastDemo.tsx
+   Success: 'Berhasil',
+   'Success!': 'Berhasil!',
+   'Operation completed successfully!': 'Operasi berhasil diselesaikan!',
+   Info: 'Info',
+   'Here is some information.': 'Ini sedikit informasi.',
+   'Error!': 'Error!',
+   'Something went wrong.': 'Terjadi kesalahan.',
+   Warning: 'Peringatan',
+   'Please check this.': 'Silakan periksa ini.',
+   'Example error message': 'Contoh pesan error',
+   'Simple Toast Demo': 'Demo Toast Sederhana',
+   'Basic Types': 'Jenis Dasar',
+   Errors: 'Error',
+   Controls: 'Kontrol',
+   'Clear All': 'Hapus Semua',
+   'Usage:': 'Cara pakai:',
+
+   // src/components/UserAvatar.tsx
+   'Edit profile photo': 'Ubah foto profil',
+
+   // src/components/UserNetwork.tsx
+   'Guest User': 'Pengguna Tamu',
+   VERIFY: 'VERIFIKASI',
+   'SIGN IN': 'MASUK',
+   'View IOU point history': 'Lihat riwayat poin IOU',
+   Verified: 'Terverifikasi',
+   'SIGN OUT': 'KELUAR',
+
+   // src/components/UserPay.tsx
+   'Still confirming': 'Masih dikonfirmasi',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'Pembayaranmu sudah dikirim dan sedang menunggu konfirmasi sebentar. Status akan diperbarui otomatis.',
+   'Unknown error': 'Error tidak diketahui',
+   'Payment Sent, Still Recording': 'Pembayaran terkirim, masih dicatat',
+   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
+      'Pembayaranmu berhasil, tetapi kami belum bisa mencatatnya. Kami akan terus mencoba otomatis — hubungi dukungan jika statusnya tidak diperbarui.',
+   'Loan Repayment': 'Pembayaran Kembali Pinjaman',
+   'Total Due': 'Total Tagihan',
+   'Amount Paid': 'Jumlah Dibayar',
+   'Repayment Information': 'Informasi Pembayaran Kembali',
+   Stablecoin: 'Stablecoin',
+   'Repayment Amount': 'Jumlah Pembayaran',
+   'Enter custom amount': 'Masukkan jumlah lain',
+   'Processing...': 'Memproses...',
+   'You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit score.':
+      'Kamu bisa membayar berapa pun kapan saja sebelum jatuh tempo. Pastikan pinjaman lunas sebelum jatuh tempo agar reputasi kreditmu tetap terjaga.',
+
+   // src/components/WalletNetworkBlockNotice.tsx
+   'Network is blocking wallet sign-in': 'Jaringan memblokir login dompet',
+   'Trouble connecting? Your network may be blocking it': 'Gagal terhubung? Mungkin jaringanmu memblokirnya',
+   "Some networks (PLDT / Smart) block the Base sign-in page, so the wallet screen won't load. The free":
+      'Beberapa jaringan (PLDT / Smart) memblokir halaman login Base, sehingga layar dompet tidak bisa dimuat. Aplikasi gratis',
+   'app fixes it — install it, switch it on, then reconnect. It works on WiFi and mobile data.':
+      'bisa mengatasinya — pasang, aktifkan, lalu hubungkan ulang. Aplikasi ini berfungsi di WiFi maupun data seluler.',
+   'Get the free 1.1.1.1 app': 'Unduh aplikasi gratis 1.1.1.1',
+   "I've turned it on — Retry": 'Sudah aktif — Coba lagi',
+   'Still stuck? Message the team': 'Masih bermasalah? Kirim pesan ke tim',
+   'Wallet network block notice': 'Pemberitahuan pemblokiran jaringan dompet',
+
+   // src/components/auth/AuthErrorAlert.tsx
+   "We couldn't sign you in with": 'Gagal masuk dengan',
+   'that provider': 'penyedia tersebut',
+   '. This is usually temporary — please try again.': '. Biasanya ini hanya sementara — silakan coba lagi.',
+   "That password didn't work. If you're not sure it's right, resetting it only takes a minute.":
+      'Kata sandi itu tidak berhasil. Jika kamu tidak yakin kata sandinya benar, reset hanya butuh semenit.',
+   'Reset password': 'Reset kata sandi',
+   'No account found with this email address.': 'Tidak ada akun dengan alamat email ini.',
+   'Try a different email': 'Coba email lain',
+   or: 'atau',
+   'Looks like you are new to Moodeng.': 'Sepertinya kamu baru di Moodeng.',
+   'Create an account first, then verify the email code Moodeng sends you.':
+      'Buat akun dulu, lalu verifikasi kode yang dikirim Moodeng ke email kamu.',
+   'Create account': 'Buat akun',
+   'Use a different email': 'Gunakan email lain',
+   'The email or password you entered is incorrect.': 'Email atau kata sandi yang kamu masukkan salah.',
+   'reset your password': 'reset kata sandimu',
+   "if you've forgotten it.": 'jika kamu lupa.',
+
+   // src/components/auth/LastUsedBadge.tsx
+   'Last used': 'Terakhir dipakai',
+
+   // src/components/auth/SignUpFormErrorAlert.tsx
+   'Password must be longer than 8 characters. Choose a stronger password to continue.':
+      'Kata sandi harus lebih dari 8 karakter. Pilih kata sandi yang lebih kuat untuk melanjutkan.',
+   'Passwords do not match. Please re-enter your password.': 'Kata sandi tidak cocok. Silakan masukkan ulang kata sandimu.',
+   'This email address has been permanently locked. Please try a different email or contact support if you believe this is a mistake.':
+      'Alamat email ini sudah dikunci permanen. Silakan coba email lain atau hubungi dukungan jika menurutmu ini keliru.',
+   'Why am I seeing this?': 'Kenapa aku melihat ini?',
+   'This email is already linked to a Google account. Use a different email address or':
+      'Email ini sudah terhubung ke akun Google. Gunakan alamat email lain atau',
+   'instead.': 'saja.',
+   "You're already signed up with this email. Enter your password above to log straight in, or pick an option below.":
+      'Kamu sudah terdaftar dengan email ini. Masukkan kata sandimu di atas untuk langsung masuk, atau pilih opsi di bawah.',
+   'Log In': 'Masuk',
+   'Reset Password': 'Reset Kata Sandi',
+
+   // src/components/auth/SocialAuthButtons.tsx
+   'Sign Up with Google': 'Daftar dengan Google',
+   'Sign In with Google': 'Masuk dengan Google',
+   'Facebook sign-in coming soon': 'Login Facebook segera hadir',
+   'Google sign-up could not start. Please try again.': 'Pendaftaran dengan Google gagal dimulai. Silakan coba lagi.',
+   'Redirecting...': 'Mengalihkan...',
+   Soon: 'Segera',
+
+   // src/components/auth/TelegramLoginTile.tsx
+   'Sign in with Telegram': 'Masuk dengan Telegram',
+
+   // src/components/filters/DatePicker.tsx
+   'Pick a date...': 'Pilih tanggal...',
+   Su: 'Min',
+   Mo: 'Sen',
+   Tu: 'Sel',
+   We: 'Rab',
+   Th: 'Kam',
+   Fr: 'Jum',
+   Sa: 'Sab',
+   Clear: 'Hapus',
+   Today: 'Hari ini',
+
+   // src/components/filters/FilterSidebar.tsx
+   'Credit Limit': 'Limit Kredit',
+   'Payback %': 'Pengembalian %',
+   Type: 'Jenis',
+   'Close filters': 'Tutup filter',
+   'Swipe right to close filters': 'Geser ke kanan untuk menutup filter',
+   Filters: 'Filter',
+   'Payback is the total amount the borrower agrees to return. This filters the extra payback above the loan principal. Example: a $10 loan with a $13 payback is 30%.':
+      'Pengembalian adalah total jumlah yang disepakati peminjam untuk dikembalikan. Filter ini menyaring kelebihan pengembalian di atas pokok pinjaman. Contoh: pinjaman $10 dengan pengembalian $13 berarti 30%.',
+   'Repayment Date': 'Tanggal Pembayaran',
+   'Borrow Type': 'Jenis Pinjaman',
+
+   // src/components/filters/SortButtons.tsx
+   Lowest: 'Terendah',
+   Highest: 'Tertinggi',
+   Oldest: 'Terlama',
+   Newest: 'Terbaru',
 };
