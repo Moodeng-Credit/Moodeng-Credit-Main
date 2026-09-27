@@ -66,6 +66,11 @@ export interface AdminDirectoryUser {
    account_status: AccountStatus;
    is_world_id: 'ACTIVE' | 'INACTIVE' | null;
    is_didit: 'ACTIVE' | 'INACTIVE' | null;
+   // Facebook Messenger contact confirmation (the required contact step). messenger_verified_at is set
+   // when they confirm; messenger_psid is the SendPulse contact id we can message them on.
+   messenger_verified_at: string | null;
+   messenger_psid: string | null;
+   whatsapp_verified_at: string | null;
    cs: number | null;
    mal: number | null;
    nal: number | null;
@@ -355,7 +360,7 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
       getSupabaseBrowserClient()
          .from('users')
          .select(
-            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,cs,mal,nal,created_at,updated_at'
          )
          .in('id', uniqueIds)
    );
@@ -436,6 +441,9 @@ async function buildDirectoryRows(
          account_status: normalizeAccountStatus(row.account_status),
          is_world_id: row.is_world_id ?? null,
          is_didit: row.is_didit ?? null,
+         messenger_verified_at: row.messenger_verified_at ?? null,
+         messenger_psid: row.messenger_psid ?? null,
+         whatsapp_verified_at: row.whatsapp_verified_at ?? null,
          cs: row.cs ?? null,
          mal: row.mal ?? null,
          nal: row.nal ?? null,
@@ -576,7 +584,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    let query = supabase
       .from('users')
       .select(
-         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,cs,mal,nal,created_at,updated_at'
       )
       .order('created_at', { ascending: false })
       .limit(2000);
