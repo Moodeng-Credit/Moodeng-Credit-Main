@@ -1079,4 +1079,28 @@ export const thaiCoverageB: Record<string, string> = {
    'Back to funding options': 'กลับไปที่ตัวเลือกการเติมเงิน',
    'Payment confirmed': 'ยืนยันการชำระเงินแล้ว',
    'Your USDC is on its way to your wallet on Base. It usually lands within a minute.': 'USDC ของคุณกำลังส่งไปยังกระเป๋าเงินบน Base โดยปกติจะเข้าภายในหนึ่งนาที',
+
+   // src/views/help/HelpHub.tsx
+   'How can we help?': 'ให้เราช่วยอะไรคุณได้บ้าง?',
+   'Search below, or browse the topics. A real person is one tap away on every answer.':
+      'ค้นหาด้านล่าง หรือเลือกดูตามหัวข้อ ทุกคำตอบมีทีมงานตัวจริงพร้อมช่วยเหลือเพียงแตะเดียว',
+   'Search help — wallet, cash out, verify…': 'ค้นหาความช่วยเหลือ — กระเป๋าเงิน ถอนเป็นเงินสด ยืนยันตัวตน…',
+   'Message the Moodeng team': 'ส่งข้อความหาทีม Moodeng',
+   'Payouts, verification, wallets, repayments — anything. We answer here and by email, so you will not miss the reply.':
+      'การรับเงิน การยืนยันตัวตน กระเป๋าเงิน การชำระคืน — ถามได้ทุกเรื่อง เราตอบทั้งที่นี่และทางอีเมล คุณจึงไม่พลาดคำตอบ',
+   'Start a conversation': 'เริ่มการสนทนา',
+   'We usually reply within a few hours.': 'เรามักตอบกลับภายในไม่กี่ชั่วโมง',
+   Results: 'ผลการค้นหา',
+   'No answers matched — try different words, or reach us below.': 'ไม่พบคำตอบที่ตรงกัน — ลองใช้คำอื่น หรือติดต่อเราด้านล่าง',
+   'Clear search': 'ล้างการค้นหา',
+   'Still need help?': 'ยังต้องการความช่วยเหลือใช่ไหม?',
+   'Reach the Moodeng team directly — pick whichever is easiest.': 'ติดต่อทีม Moodeng โดยตรง — เลือกช่องทางที่สะดวกที่สุด',
+   'New to Moodeng? Getting started →': 'มาใหม่ที่ Moodeng ใช่ไหม? เริ่มต้นใช้งาน →',
+   'Browse all guides & updates →': 'ดูคู่มือและข่าวสารทั้งหมด →',
+
+   // src/views/help/HelpTopicCard.tsx
+   'Still not clear?': 'ยังไม่ชัดเจนใช่ไหม?',
+   "Take this question to a person — we'll get back to you.": 'ส่งคำถามนี้ให้ทีมงานตัวจริง — เราจะติดต่อกลับหาคุณ',
+   'Ask us': 'ถามเรา',
+   'Question copied — just paste it.': 'คัดลอกคำถามแล้ว — วางได้เลย',
 };
