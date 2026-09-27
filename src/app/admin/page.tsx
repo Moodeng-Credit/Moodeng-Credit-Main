@@ -997,6 +997,9 @@ export default function AdminPanel() {
                                                   <Badge tone={isUserVerified(user) ? 'ACTIVE' : 'INACTIVE'}>
                                                      {isUserVerified(user) ? 'verified' : 'not verified'}
                                                   </Badge>
+                                                  <Badge tone={user.messenger_verified_at ? 'ACTIVE' : 'INACTIVE'}>
+                                                     {user.messenger_verified_at ? 'facebook linked' : 'no facebook'}
+                                                  </Badge>
                                                   {user.restriction ? (
                                                      <Badge tone={user.restriction.status}>admin {user.restriction.status}</Badge>
                                                   ) : null}
