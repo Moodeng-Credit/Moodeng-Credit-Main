@@ -23,7 +23,8 @@ export type PushNotificationType =
    | 'repayment_received'
    | 'request_expired'
    | 'video_call_reminder'
-   | 'loan_access_decision';
+   | 'loan_access_decision'
+   | 'verification_decision';
 
 export type PushLocale = 'en' | 'fil' | 'id';
 
@@ -349,7 +350,101 @@ const buildRequestExpiredPush = (locale: PushLocale): PushPayload => {
    };
 };
 
+/**
+ * "Your KYC finished — here's what happened." The push twin of the email/Telegram
+ * copy in diditNotifications.ts, so a manual review that clears (or any other
+ * terminal outcome) reaches the user on their lock screen, not only in an inbox
+ * they may not check. The four outcomes mirror UserNotifyOutcome exactly.
+ *
+ * The verdict leads the title because that is the one thing the user is waiting
+ * to hear; the body says what to do next. A single collapse tag means a later
+ * outcome (review -> approved) replaces the earlier "in review" notification
+ * rather than stacking a stale one beneath it. Gender-neutral throughout — the
+ * app stores no such field.
+ */
+export type VerificationPushOutcome = 'approved' | 'review' | 'declined' | 'abandoned';
+
+const buildVerificationDecisionPush = (
+   outcome: VerificationPushOutcome,
+   locale: PushLocale,
+   reason?: string | null
+): PushPayload => {
+   // Decline reason is Didit free text; keep it short so the body doesn't overflow.
+   const declineReason = quotedReason(reason, 40);
+   const withReason = (base: string) => (declineReason ? `${base} (${declineReason})` : base);
+
+   const copy: Record<PushLocale, Record<VerificationPushOutcome, { title: string; body: string }>> = {
+      en: {
+         approved: {
+            title: 'You’re verified! 🎉',
+            body: 'Your identity check is complete and your Moodeng account is fully unlocked. Tap to request a loan.'
+         },
+         review: {
+            title: 'Verification in review',
+            body: 'Your documents need a quick human review — usually a few hours, at most 1 business day. No action needed.'
+         },
+         declined: {
+            title: 'Verification didn’t pass',
+            body: withReason('We couldn’t verify your identity this time. Tap to try again or reach our team.')
+         },
+         abandoned: {
+            title: 'Finish your verification',
+            body: 'You were almost done — your session closed before all steps finished. It takes about 3 minutes. Tap to continue.'
+         }
+      },
+      fil: {
+         approved: {
+            title: 'Verified ka na! 🎉',
+            body: 'Kumpleto na ang ID check mo at bukas na ang buong Moodeng account mo. Mag-tap para humiram.'
+         },
+         review: {
+            title: 'Nasa review ang verification',
+            body: 'Kailangan ng mabilis na review ng tao — ilang oras lang, hanggang 1 business day. Walang kailangang gawin.'
+         },
+         declined: {
+            title: 'Hindi pumasa ang verification',
+            body: withReason('Hindi ma-verify ang identity mo ngayon. Mag-tap para subukan ulit o kausapin ang team.')
+         },
+         abandoned: {
+            title: 'Tapusin ang verification',
+            body: 'Muntik na — nasara ang session bago matapos lahat. Mga 3 minuto lang. Mag-tap para ituloy.'
+         }
+      },
+      id: {
+         approved: {
+            title: 'Kamu terverifikasi! 🎉',
+            body: 'Verifikasi identitasmu selesai dan akun Moodeng kamu aktif penuh. Ketuk untuk ajukan pinjaman.'
+         },
+         review: {
+            title: 'Verifikasi sedang ditinjau',
+            body: 'Dokumenmu perlu ditinjau manual — biasanya beberapa jam, maksimal 1 hari kerja. Tidak perlu tindakan.'
+         },
+         declined: {
+            title: 'Verifikasi tidak lolos',
+            body: withReason('Kami belum dapat memverifikasi identitasmu. Ketuk untuk coba lagi atau hubungi tim kami.')
+         },
+         abandoned: {
+            title: 'Selesaikan verifikasimu',
+            body: 'Hampir selesai — sesimu tertutup sebelum semua langkah selesai. Sekitar 3 menit. Ketuk untuk lanjut.'
+         }
+      }
+   };
+
+   return {
+      type: 'verification_decision',
+      title: copy[locale][outcome].title,
+      body: copy[locale][outcome].body,
+      url: buildAppUrl('/verify'),
+      // One collapse key so the latest outcome replaces the previous notification.
+      tag: 'verification-status',
+      // Keep the actionable verdicts on the lock screen; the "in review" reassurance
+      // can quietly scroll away.
+      requireInteraction: outcome === 'approved' || outcome === 'declined'
+   };
+};
+
 export const buildRepeatBorrowerPushPayload = buildRepeatBorrowerPush;
+export const buildVerificationDecisionPushPayload = buildVerificationDecisionPush;
 export const buildDuePushPayload = buildDuePush;
 export const buildFundedPushPayload = buildFundedPush;
 export const buildRepaymentReceivedPushPayload = buildRepaymentReceivedPush;

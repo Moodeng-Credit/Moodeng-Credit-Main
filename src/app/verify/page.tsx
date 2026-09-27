@@ -18,6 +18,8 @@ import {
 } from '@/lib/verifyFlow';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
+import ContactsStep from '@/views/dashboard/components/ContactsStep';
 
 const STATUS_REFRESH_RETRIES = 40;
 const STATUS_REFRESH_DELAY_MS = 3000;
@@ -97,6 +99,10 @@ type Step =
    | 'id-pending'
    | 'id-waiting'
    | 'id-review'
+   // Reachable only from 'id-review' via "Continue": reuses the loan-flow contacts
+   // card so a borrower waiting on a manual review can add Facebook + push, the two
+   // channels we notify them on the moment the review clears.
+   | 'id-review-contacts'
    | 'id-declined'
    | 'id-abandoned'
    | 'duplicate'
@@ -107,7 +113,7 @@ type Step =
 // Steps a poll must never overwrite back to a "pending" screen. Guarding the
 // initial setStep against these prevents the confirm/success screen from
 // flickering back to a button-less waiting screen when a poll (re)starts.
-const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-declined', 'id-abandoned', 'liveness-unfinished']);
+const TERMINAL_STEPS = new Set<Step>(['confirm', 'duplicate', 'declined', 'success', 'id-review', 'id-review-contacts', 'id-declined', 'id-abandoned', 'liveness-unfinished']);
 
 // Flow persistence lives in a shared module so the request board can read the
 // same "started verifying but never finished" signal to show its support modal.
@@ -809,11 +815,34 @@ export default function VerifyFlow() {
          <StatusScreen
             visual="orbit"
             title="Manual review in progress"
-            body="Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review."
-            action={{ label: 'Check status', onClick: () => void checkStatusOnce(), loading: isChecking }}
-            secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            body="Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. Add your Facebook and turn on notifications so we can tell you the moment it's done."
+            action={{ label: 'Continue', onClick: () => setStep('id-review-contacts') }}
+            secondaryAction={{ label: 'Check status', onClick: () => void checkStatusOnce() }}
+            tertiaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />
+      );
+   }
+
+   if (step === 'id-review-contacts' && user) {
+      // Repurposes the loan-flow "how we reach you" card (Facebook Messenger + push).
+      // ContactsStep gates its own Continue on a confirmed channel; Back always returns
+      // to the review screen so a borrower who can't finish is never trapped here.
+      return (
+         <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-modal mx-auto w-full">
+            <ContactsStep
+               userId={user.id}
+               onBack={() => setStep('id-review')}
+               onContinue={() => setStep('id-review')}
+               intro={
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.hello}
+                     subtitle="Add your Facebook and turn on notifications so we can reach you the moment your review is done."
+                     title="Stay in the loop 💜"
+                  />
+               }
+            />
+         </div>
       );
    }
 

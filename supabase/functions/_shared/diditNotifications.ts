@@ -1,5 +1,8 @@
 import { postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
+import { sendPushToUser } from './pushDelivery.ts';
+import { buildVerificationDecisionPushPayload, type PushLocale } from './pushMessages.ts';
+import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 // Didit outcome notifications, shared by didit-webhook (push) and check-didit-status
@@ -119,10 +122,13 @@ export const notifyAdmins = async (
    }
 };
 
-// User-facing outcome notification (email + Telegram when connected), respecting the
-// account-activity notification preference. This closes the "silent webhook" gap: a
-// manual review finishing (or an abandoned session) otherwise produces no signal the
-// user ever sees unless they happen to reopen the app. Never throws.
+// User-facing outcome notification (email + Telegram + Web Push + Facebook Messenger
+// when connected), respecting the account-activity notification preference. This closes
+// the "silent webhook" gap: a manual review finishing (or an abandoned session) otherwise
+// produces no signal the user ever sees unless they happen to reopen the app. Push and
+// Messenger are the two channels the manual-review card asks the borrower to connect, so
+// the approval reaches them the moment it clears — the whole point of "tell her it was
+// approved". Never throws.
 export type UserNotifyOutcome = 'approved' | 'review' | 'declined' | 'abandoned';
 
 export const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body: (reason?: string) => string; cta: string }> = {
@@ -161,10 +167,16 @@ export const notifyUser = async (
    try {
       const { data } = await adminSupabase
          .from('users')
-         .select('email, chat_id, notif_account_activity')
+         .select('email, chat_id, messenger_psid, notif_account_activity, notif_push')
          .eq('id', userId)
          .maybeSingle();
-      const user = data as { email?: string | null; chat_id?: string | number | null; notif_account_activity?: boolean | null } | null;
+      const user = data as {
+         email?: string | null;
+         chat_id?: string | number | null;
+         messenger_psid?: string | null;
+         notif_account_activity?: boolean | null;
+         notif_push?: boolean | null;
+      } | null;
       if (!user || user.notif_account_activity === false) return;
 
       const copy = USER_NOTIFY_COPY[outcome];
@@ -183,6 +195,33 @@ export const notifyUser = async (
             inlineKeyboard: [[{ text: copy.cta, url: verifyUrl }]]
          }).catch((err: unknown) => {
             console.error('[diditNotifications] User Telegram notification failed:', err instanceof Error ? err.message : err);
+         });
+      }
+
+      // Web Push, per registered device in its own locale. Additive and best-effort:
+      // sendPushToUser no-ops when VAPID is unset or the user has no device, and never
+      // throws. Gated by the notif_push toggle on top of the account-activity check above.
+      if (user.notif_push !== false) {
+         await sendPushToUser(
+            adminSupabase,
+            userId,
+            (locale: PushLocale) => buildVerificationDecisionPushPayload(outcome, locale, reason),
+            { urgency: 'high' }
+         ).catch((err: unknown) => {
+            console.error('[diditNotifications] User push notification failed:', err instanceof Error ? err.message : err);
+         });
+      }
+
+      // Facebook Messenger, for a borrower who connected it on the manual-review card.
+      // SendPulse only delivers inside Messenger's 24h window, so this lands when the
+      // review clears soon after they set it up (the common case) and silently no-ops
+      // otherwise — email/push still carry it. Never throws.
+      if (user.messenger_psid) {
+         await sendMessengerMessage(user.messenger_psid, {
+            text: `${copy.subject}\n\n${copy.body(reason)}`,
+            card: { title: copy.subject, button: { title: copy.cta, url: verifyUrl } }
+         }).catch((err: unknown) => {
+            console.error('[diditNotifications] User Messenger notification failed:', err instanceof Error ? err.message : err);
          });
       }
    } catch (err) {
