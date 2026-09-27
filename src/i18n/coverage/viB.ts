@@ -144,7 +144,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'What counts': 'Điều được ghi nhận',
    'The clean version': 'Tóm tắt ngắn gọn',
    'Borrowing below your limit builds trust, not your next level.': 'Vay dưới hạn mức giúp xây dựng niềm tin, không giúp bạn lên hạng.',
-   'Borrowing your full current limit is what can unlock the next level.': 'Vay toàn bộ hạn mức hiện tại mới là cách mở khóa hạng tiếp theo.',
+   'Borrowing your full current limit is what can unlock the next level.':
+      'Vay toàn bộ hạn mức hiện tại mới là cách mở khóa hạng tiếp theo.',
    'You still need to repay the accepted terms clearly and on time.': 'Bạn vẫn cần trả nợ đầy đủ và đúng hạn theo điều khoản đã chấp nhận.',
    'Paying extra does not skip levels. Moodeng moves one level at a time.':
       'Trả thêm không giúp bạn nhảy hạng. Moodeng nâng lần lượt từng hạng một.',
@@ -248,7 +249,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Moodeng grew to Prime. Treat yourself!': 'Moodeng đã lên Prime. Tự thưởng cho mình nhé!',
    'Moodeng reached Apex. Feast time!': 'Moodeng đã đạt Apex. Ăn mừng thôi!',
    'Tell us where to send your GrabFood voucher code.': 'Cho chúng tôi biết nơi gửi mã phiếu quà tặng GrabFood của bạn.',
-   'Thanks for inviting them. Where should we send your voucher code?': 'Cảm ơn bạn đã mời bạn bè. Chúng tôi nên gửi mã phiếu quà tặng đến đâu?',
+   'Thanks for inviting them. Where should we send your voucher code?':
+      'Cảm ơn bạn đã mời bạn bè. Chúng tôi nên gửi mã phiếu quà tặng đến đâu?',
    'Thanks for joining with a friend. Where should we send your voucher code?':
       'Cảm ơn bạn đã tham gia cùng bạn bè. Chúng tôi nên gửi mã phiếu quà tặng đến đâu?',
    'This voucher was already claimed.': 'Phiếu quà tặng này đã được nhận.',
@@ -380,4 +382,174 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Rising tier voucher': 'Phiếu quà tặng hạng Rising',
    'Prime tier voucher': 'Phiếu quà tặng hạng Prime',
    'Apex tier voucher': 'Phiếu quà tặng hạng Apex',
+
+   // src/views/dashboard/Dashboard.tsx
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
+      'Điểm Pandesal thể hiện uy tín của bạn trên Moodeng. Xác minh danh tính, trả nợ đầy đủ và hoạt động lành mạnh giúp người cho vay tin tưởng bạn hơn.',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
+      'Cột mốc là cách để bạn kiếm thêm điểm Pandesal. Hoàn thành chúng để hồ sơ của bạn vững hơn và người cho vay tin tưởng hơn vào các yêu cầu của bạn.',
+
+   // src/views/dashboard/RequestBoard.tsx
+   'Role not selected': 'Chưa chọn vai trò',
+   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
+      'Chọn người vay hoặc người cho vay để mở khóa trang Tổng quan, trả nợ và lịch sử.',
+   'The team approved you — apply for your loan now.': 'Đội ngũ đã duyệt bạn — hãy yêu cầu khoản vay ngay.',
+   'Borrow USDC to build trust and': 'Vay USDC để xây dựng niềm tin và',
+   'unlock higher loan levels.': 'mở khóa cấp vay cao hơn.',
+   'Apply For A Loan': 'Yêu cầu khoản vay',
+   'Need USDC on Base?': 'Cần USDC trên Base?',
+   'Buy or bridge USDC to fund': 'Mua hoặc chuyển USDC sang Base để cấp vốn',
+   'loans on the platform.': 'cho các khoản vay trên nền tảng.',
+   'Buy or bridge USDC to fund loans.': 'Mua hoặc chuyển USDC sang Base để cấp vốn cho khoản vay.',
+   'Fund Wallet': 'Nạp tiền vào ví',
+   'New here? Take the 60-sec tour': 'Mới đến? Xem hướng dẫn nhanh 60 giây',
+   'See how requests, funding, repayment, and trust fit together.': 'Xem cách yêu cầu vay, cấp vốn, trả nợ và niềm tin kết nối với nhau.',
+   'Start tour': 'Bắt đầu',
+   'IMPORTANT NOTE': 'LƯU Ý QUAN TRỌNG',
+   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'Sau khi người cho vay đã cấp ba khoản vay, một khoản phí sẽ được tính vào tài khoản của họ. Khoản phí này giúp duy trì chi phí vận hành nền tảng và đảm bảo hỗ trợ liên tục cho mọi người dùng.',
+   'No requests match your filters.': 'Không có yêu cầu nào khớp với bộ lọc của bạn.',
+   'Try widening your search or clearing your filters.': 'Hãy thử mở rộng tìm kiếm hoặc xóa bộ lọc.',
+   'Clear filters': 'Xóa bộ lọc',
+   'Open filters': 'Mở bộ lọc',
+   'Sign Up': 'Đăng ký',
+   'Delete this request?': 'Xóa yêu cầu này?',
+   'This cannot be undone.': 'Không thể hoàn tác thao tác này.',
+   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'Người cho vay sẽ không còn thấy yêu cầu này. Bạn có thể tạo yêu cầu mới từ bảng, nhưng nếu xóa nhiều lần, việc tạo yêu cầu mới sẽ bị tạm dừng trong thời gian ngắn.',
+   'Keep request': 'Giữ yêu cầu',
+   'Delete request': 'Xóa yêu cầu',
+   'Deleting...': 'Đang xóa...',
+   'Loan request': 'Yêu cầu vay',
+   'Borrowing $': 'Vay $',
+   'and repaying $': 'và trả $',
+   by: 'trước ngày',
+   'World App users can verify with World ID instead.': 'Người dùng World App có thể xác minh bằng World ID.',
+   'Quick national ID & selfie check — available in select countries.': 'Kiểm tra nhanh CCCD & ảnh selfie — hỗ trợ tại một số quốc gia.',
+   'Quick answers before you sign up.': 'Giải đáp nhanh trước khi bạn đăng ký.',
+   'Take tour': 'Xem hướng dẫn',
+   'See more': 'Xem thêm',
+   'Show less': 'Thu gọn',
+   'Hello,': 'Xin chào,',
+   'Verify Yourself >': 'Xác minh danh tính >',
+   'Edit display name': 'Sửa tên hiển thị',
+   'Verification in progress': 'Đang xác minh',
+   'View IOU point history': 'Xem lịch sử điểm IOU',
+   'Close delete request confirmation': 'Đóng hộp xác nhận xóa yêu cầu',
+   'Browse requests publicly.': 'Xem các yêu cầu công khai.',
+   "You're approved 🎉": 'Bạn đã được duyệt 🎉',
+   'See you on the call': 'Hẹn gặp bạn trong cuộc gọi',
+   'We’re reviewing you': 'Chúng tôi đang xem xét hồ sơ của bạn',
+   'You can apply right after your video call.': 'Bạn có thể yêu cầu vay ngay sau cuộc gọi video.',
+   'Thanks for reaching out — we’ll message you on Messenger soon.':
+      'Cảm ơn bạn đã liên hệ — chúng tôi sẽ sớm nhắn tin cho bạn qua Messenger.',
+   'Opening...': 'Đang mở...',
+   'Groceries and transport for the week': 'Mua đồ ăn và đi lại trong tuần',
+   'Medicine and school fees this week': 'Tiền thuốc và học phí tuần này',
+   'Bills and transport while waiting on a client payment': 'Tiền hóa đơn và đi lại trong lúc chờ khách hàng thanh toán',
+   'Emergency groceries': 'Mua đồ ăn khẩn cấp',
+   'Motorbike repair for delivery work': 'Sửa xe máy để đi giao hàng',
+   'Restock for my sari-sari store': 'Nhập hàng cho tiệm tạp hóa của tôi',
+   'New request paused': 'Tạm dừng tạo yêu cầu mới',
+   'Request limit unavailable': 'Không kiểm tra được giới hạn yêu cầu',
+   'We could not check your request limit. Please try again.': 'Chúng tôi không thể kiểm tra giới hạn yêu cầu của bạn. Vui lòng thử lại.',
+   'Thanks — see you on the call!': 'Cảm ơn bạn — hẹn gặp trong cuộc gọi!',
+   "The team knows you're coming. The join link is in your email.":
+      'Đội ngũ đã biết bạn sẽ tham gia. Đường link tham gia có trong email của bạn.',
+   'That link has expired': 'Đường link đã hết hạn',
+   'That call reminder is for an older booking. Check your latest message from Moodeng.':
+      'Lời nhắc cuộc gọi này dành cho lịch hẹn cũ. Hãy xem tin nhắn mới nhất từ Moodeng.',
+   'Repayment date required': 'Cần chọn ngày trả nợ',
+   'Choose a repayment date before making your request.': 'Hãy chọn ngày trả nợ trước khi gửi yêu cầu.',
+   'Reason required': 'Cần nhập lý do',
+   'Add a short reason so lenders know what the loan is for.': 'Thêm lý do ngắn gọn để người cho vay biết khoản vay dùng vào việc gì.',
+   'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.':
+      'Lý do này có vẻ quá sơ sài. Các yêu cầu viết qua loa có thể bị xóa — gửi lại lần nữa nếu bạn vẫn muốn đăng.',
+   'Check your reason': 'Kiểm tra lại lý do',
+   "We couldn't submit that": 'Chúng tôi không thể gửi yêu cầu này',
+   "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.":
+      'Có lỗi đã chặn yêu cầu này. Vui lòng tải lại trang và thử lại — nếu vẫn tiếp tục xảy ra, hãy nhấn Trợ giúp để chúng tôi xử lý.',
+   "Request wasn't saved": 'Chưa lưu được yêu cầu',
+   "We couldn't save this loan request. Please try again.": 'Chúng tôi không thể lưu yêu cầu vay này. Vui lòng thử lại.',
+   'Try Again': 'Thử lại',
+   "Request wasn't deleted": 'Chưa xóa được yêu cầu',
+   'Only the borrower who made a pending request can delete it.': 'Chỉ người vay đã tạo yêu cầu đang chờ mới có thể xóa yêu cầu đó.',
+   'Request deleted': 'Đã xóa yêu cầu',
+   'Lenders will no longer see this request on the board.': 'Người cho vay sẽ không còn thấy yêu cầu này trên bảng.',
+   'It may already be funded or unavailable. Refreshing the board now.':
+      'Yêu cầu có thể đã được cấp vốn hoặc không còn khả dụng. Đang tải lại bảng.',
+
+   // RequestBoard.tsx: guided tour
+   'I want to borrow': 'Tôi muốn vay',
+   'See how to request a short-term USDC loan and build trust through on-time repayment.':
+      'Xem cách yêu cầu khoản vay USDC ngắn hạn và xây dựng niềm tin bằng việc trả nợ đúng hạn.',
+   'I want to lend': 'Tôi muốn cho vay',
+   'See how to fund loan requests, review borrower trust signals, and earn by supporting people you believe in.':
+      'Xem cách cấp vốn cho yêu cầu vay, xem xét mức độ tin cậy của người vay và kiếm lời khi hỗ trợ những người bạn tin tưởng.',
+   'Not sure yet — just show me around': 'Chưa chắc — cho tôi xem qua trước',
+   'Get a quick overview of how Moodeng works before deciding which side to explore.':
+      'Xem nhanh cách Moodeng hoạt động trước khi quyết định tìm hiểu vai trò nào.',
+   'The request board': 'Bảng yêu cầu',
+   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
+      'Đây là nơi người vay đăng yêu cầu vay USDC ngắn hạn và người cho vay xem các yêu cầu đó. Hai bên của Moodeng gặp nhau tại đây.',
+   'Borrowers apply here': 'Người vay gửi yêu cầu tại đây',
+   'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
+      'Người vay đặt số tiền vay, ngày trả nợ và lý do. Sau khi xác minh, yêu cầu sẽ được đăng lên bảng này.',
+   'Lenders browse & fund': 'Người cho vay xem & cấp vốn',
+   "Lenders scroll through open requests, check each borrower's repayment history and trust signals, then fund the ones they believe in.":
+      'Người cho vay xem qua các yêu cầu đang mở, kiểm tra lịch sử trả nợ và mức độ tin cậy của từng người vay, rồi cấp vốn cho người họ tin tưởng.',
+   'Ready to get started?': 'Sẵn sàng bắt đầu?',
+   "Create a free account to borrow or lend. Pick your role after signing up and we'll walk you through the rest.":
+      'Tạo tài khoản miễn phí để vay hoặc cho vay. Chọn vai trò sau khi đăng ký, chúng tôi sẽ hướng dẫn bạn các bước còn lại.',
+   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
+      'Đây là nơi giao dịch. Khi yêu cầu được đăng, người cho vay sẽ xem số tiền, khoản trả nợ và người vay trước khi cấp vốn.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
+      'Khi bạn sẵn sàng vay, thẻ này sẽ mở quy trình yêu cầu vay. Có mã giới thiệu từ bạn bè? Nhập mã để có hạn mức khởi đầu cao hơn.',
+   'Verify first': 'Xác minh trước',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
+      'Người vay cần xác minh danh tính một lần trước khi yêu cầu vay. Điều này giúp người cho vay biết họ đang cấp vốn cho người thật.',
+   'Set your terms': 'Đặt điều khoản',
+   'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
+      'Sau khi xác minh, đây là nơi người vay đặt số tiền, khoản trả nợ, ngày trả và lý do cho yêu cầu.',
+   'Get funded, then repay': 'Nhận vốn, rồi trả nợ',
+   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
+      'Người cho vay cấp vốn cho yêu cầu của bạn và USDC sẽ về ví của bạn. Trả đúng hạn thì điểm Pandesal — và hạn mức tiếp theo — của bạn sẽ tăng. Nếu trễ hạn trả nợ, điều đó sẽ hiện trên hồ sơ công khai của bạn, vì người cho vay cho vay dựa trên niềm tin.',
+   'Browse open requests': 'Xem các yêu cầu đang mở',
+   'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
+      'Xem các yêu cầu đang mở trước khi đăng ký — mỗi thẻ hiển thị số tiền, khoản trả nợ, người vay và lý do.',
+   'The hamburger opens Help and Support questions here. Scroll the list to browse more answers without leaving the board.':
+      'Nút menu ba gạch mở các câu hỏi Trợ giúp và Hỗ trợ tại đây. Cuộn danh sách để xem thêm câu trả lời mà không cần rời khỏi bảng.',
+   'Ready to build credit?': 'Sẵn sàng xây dựng tín dụng?',
+   'Create your account to request your first loan — or sign in if you already have one.':
+      'Tạo tài khoản để yêu cầu khoản vay đầu tiên — hoặc đăng nhập nếu bạn đã có tài khoản.',
+   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
+      'Danh sách này là nơi giao dịch. Khi yêu cầu được đăng, người cho vay có thể xem số tiền, khoản trả nợ và hồ sơ người vay trước khi cấp vốn.',
+   'When you are ready to borrow, this card opens the loan request form.': 'Khi bạn sẵn sàng vay, thẻ này sẽ mở biểu mẫu yêu cầu vay.',
+   'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
+      'Trước khi người vay chưa xác minh có thể yêu cầu vay, Moodeng sẽ đưa họ qua màn hình xác minh danh tính nhanh.',
+   'Loan terms preview': 'Xem trước điều khoản vay',
+   'Trust-building vs credit-building': 'Trust-Building Loan và Credit-Building Loan',
+   'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
+      'Vay thấp hơn hạn mức giúp xây dựng lịch sử tin cậy. Chỉ khi vay toàn bộ hạn mức và trả đúng hạn, Hạng tín dụng của bạn mới tăng.',
+   'Set a clear repayment': 'Đặt khoản trả nợ rõ ràng',
+   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
+      'Khoản trả nợ phải cao hơn số tiền vay ít nhất $1. Người cho vay dựa vào đây để quyết định có nên cấp vốn cho yêu cầu hay không.',
+   'Explain the reason': 'Giải thích lý do',
+   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
+      'Lý do ngắn gọn, cụ thể giúp người cho vay hiểu yêu cầu và tạo niềm tin trước khi họ cấp vốn.',
+   'Find open requests': 'Tìm các yêu cầu đang mở',
+   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'Với người cho vay, bảng này hiển thị những người đang cần hỗ trợ USDC ngắn hạn. Hãy bắt đầu bằng việc so sánh số tiền, khoản trả nợ, ngày đến hạn và lý do.',
+   'Review the request': 'Xem xét yêu cầu',
+   'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
+      'Mỗi thẻ cho biết người vay cần bao nhiêu, dự định trả bao nhiêu và tài khoản của họ có đang ở trạng thái tốt hay không.',
+   'Fund with one tap': 'Cấp vốn chỉ với một chạm',
+   'Tap Send Your Help. USDC goes straight from your wallet to the borrower once you approve.':
+      'Nhấn Gửi hỗ trợ. USDC sẽ chuyển thẳng từ ví của bạn đến người vay ngay khi bạn chấp thuận.',
+   'Get repaid, watch for the fee': 'Nhận tiền trả nợ, lưu ý phí',
+   'Repayment comes back to your wallet by the due date shown on each request. After your third funded loan, a small platform fee applies to help cover operating costs.':
+      'Tiền trả nợ sẽ về ví của bạn trước ngày đến hạn ghi trên mỗi yêu cầu. Từ sau khoản vay thứ ba bạn cấp vốn, một khoản phí nền tảng nhỏ sẽ được áp dụng để bù chi phí vận hành.',
+   'Check Borrower Insights': 'Xem thông tin người vay',
+   'Before funding, open Borrower Details to review repayment behavior, credit level, and trust signals. The tour continues there next.':
+      'Trước khi cấp vốn, hãy mở Chi tiết người vay để xem thói quen trả nợ, Hạng tín dụng và mức độ tin cậy. Phần hướng dẫn sẽ tiếp tục ở đó.'
 };
