@@ -364,4 +364,127 @@ export const thaiCoverageA: Record<string, string> = {
    'Requires a World ID verified at an Orb.': 'ต้องมี World ID ที่ยืนยันที่ Orb แล้ว',
    'Loading…': 'กำลังโหลด…',
    'Preparing verification.': 'กำลังเตรียมการยืนยันตัวตน',
+
+   // src/components/BorrowerVerificationBadge.tsx
+   'In review': 'กำลังตรวจสอบ',
+   Unfinished: 'ยังไม่เสร็จ',
+
+   // src/components/Footer.tsx
+   'Moodeng Credit logo': 'โลโก้ Moodeng Credit',
+   'Social Link': 'ลิงก์โซเชียล',
+
+   // src/components/GuidedTourPreview.tsx
+   'Want a quick tour?': 'อยากดูทัวร์สั้น ๆ ไหม?',
+   "Pick a side and we'll walk you through it — no account needed.": 'เลือกบทบาท แล้วเราจะพาคุณดูทีละขั้น ไม่ต้องมีบัญชี',
+   'See how Moodeng works in under a minute. You can skip this and use everything normally.':
+      'ดูว่า Moodeng ทำงานอย่างไรในเวลาไม่ถึงหนึ่งนาที คุณจะข้ามไปก็ได้ และยังใช้งานทุกอย่างได้ตามปกติ',
+   'Skip for now': 'ข้ามไปก่อน',
+   'Start the tour': 'เริ่มทัวร์',
+   'Take the tour': 'ดูทัวร์',
+   Skip: 'ข้าม',
+   Back: 'ย้อนกลับ',
+   Finished: 'เสร็จสิ้น',
+   Next: 'ถัดไป',
+
+   // src/components/Header/MobileNav.tsx
+   'Mobile navigation': 'เมนูนำทางบนมือถือ',
+
+   // src/components/InAppBrowserNotice.tsx
+   'Open in your browser': 'เปิดในเบราว์เซอร์ของคุณ',
+   'Open Moodeng in your browser': 'เปิด Moodeng ในเบราว์เซอร์ของคุณ',
+   "Sign-in and wallet payments don't work inside": 'การเข้าสู่ระบบและการชำระเงินด้วยกระเป๋าเงินใช้งานไม่ได้ใน',
+   'this app': 'แอปนี้',
+   '. Tap below to continue in Chrome.': ' แตะด้านล่างเพื่อไปต่อใน Chrome',
+   '. Tap': ' ให้แตะ',
+   'at the top, choose': 'ที่ด้านบน แล้วเลือก',
+   'Open in Browser': 'เปิดในเบราว์เซอร์',
+   ', or copy the link below.': ' หรือคัดลอกลิงก์ด้านล่าง',
+   'Open in Chrome': 'เปิดใน Chrome',
+   'Link copied ✓': 'คัดลอกลิงก์แล้ว ✓',
+   'Copy link': 'คัดลอกลิงก์',
+   'Not now': 'ไว้ทีหลัง',
+   "Why isn't this working?": 'ทำไมถึงใช้งานไม่ได้?',
+   Dismiss: 'ปิด',
+
+   // src/components/IouPointHistoryModal.tsx
+   'IOU Point History': 'ประวัติแต้ม IOU',
+   'No IOU points yet. Fund loan requests to start earning.': 'ยังไม่มีแต้ม IOU ปล่อยกู้ให้คำขอเงินกู้เพื่อเริ่มสะสมแต้ม',
+   From: 'จาก',
+
+   // src/components/Loading.tsx
+   'Loading Moodeng': 'กำลังโหลด Moodeng',
+
+   // src/components/PlaceholderPage.tsx
+   'Coming soon': 'เร็ว ๆ นี้',
+
+   // src/components/PowerLenderBadge.tsx
+   'Power Lender': 'ผู้ให้กู้ชั้นนำ',
+
+   // src/components/RepayInAppBrowserGate.tsx
+   'Open Moodeng in your browser to repay': 'เปิด Moodeng ในเบราว์เซอร์ของคุณเพื่อชำระคืน',
+   'Finish repaying in your browser': 'ชำระคืนให้เสร็จในเบราว์เซอร์ของคุณ',
+   "'s in-app browser can't open your wallet, so a repayment gets stuck here. Open this page in Chrome or Safari to pay — it only takes a few seconds.":
+      ' ไม่สามารถเปิดกระเป๋าเงินของคุณผ่านเบราว์เซอร์ในแอปได้ การชำระคืนจึงค้างอยู่ที่หน้านี้ โปรดเปิดหน้านี้ใน Chrome หรือ Safari เพื่อชำระ ใช้เวลาเพียงไม่กี่วินาที',
+   'Your repay link': 'ลิงก์ชำระคืนของคุณ',
+   'Copied ✓': 'คัดลอกแล้ว ✓',
+   Copy: 'คัดลอก',
+   'Open in Safari': 'เปิดใน Safari',
+   "If a button doesn't open your browser, tap": 'หากกดปุ่มแล้วเบราว์เซอร์ไม่เปิด ให้แตะ',
+   'at the top of': 'ที่ด้านบนของ',
+   'and choose': 'แล้วเลือก',
+   ', then paste the link.': ' จากนั้นวางลิงก์',
+   'Still stuck? Message support': 'ยังติดอยู่ใช่ไหม? ส่งข้อความถึงฝ่ายช่วยเหลือ',
+
+   // src/components/SocialContactRequiredNotifier.tsx
+   'A message from the Moodeng team': 'ข้อความจากทีม Moodeng',
+   "To request a loan, you'll first need to add a verified social media contact — like Facebook or WhatsApp — so we can reach you. Please contact us and we'll help you get set up.":
+      'ก่อนขอเงินกู้ คุณต้องเพิ่มช่องทางติดต่อโซเชียลมีเดียที่ยืนยันแล้ว เช่น Facebook หรือ WhatsApp เพื่อให้เราติดต่อคุณได้ โปรดติดต่อเรา แล้วเราจะช่วยตั้งค่าให้',
+   'Contact us': 'ติดต่อเรา',
+
+   // src/components/ToastSystem/ToastDemo.tsx
+   'Simple Toast Demo': 'ตัวอย่างการแจ้งเตือนแบบง่าย',
+   'Basic Types': 'ประเภทพื้นฐาน',
+   Success: 'สำเร็จ',
+   'Success!': 'สำเร็จ!',
+   'Operation completed successfully!': 'ดำเนินการเสร็จเรียบร้อยแล้ว!',
+   Info: 'ข้อมูล',
+   'Here is some information.': 'นี่คือข้อมูลบางส่วน',
+   'Error!': 'ข้อผิดพลาด!',
+   'Something went wrong.': 'เกิดข้อผิดพลาด',
+   Warning: 'คำเตือน',
+   'Please check this.': 'โปรดตรวจสอบ',
+   'Example error message': 'ตัวอย่างข้อความแสดงข้อผิดพลาด',
+   Errors: 'ข้อผิดพลาด',
+   Controls: 'การควบคุม',
+   'Clear All': 'ล้างทั้งหมด',
+   'Usage:': 'วิธีใช้:',
+
+   // src/components/UserAvatar.tsx
+   'Edit profile photo': 'แก้ไขรูปโปรไฟล์',
+
+   // src/components/UserNetwork.tsx
+   VERIFY: 'ยืนยันตัวตน',
+   'SIGN IN': 'เข้าสู่ระบบ',
+   'SIGN OUT': 'ออกจากระบบ',
+   'View IOU point history': 'ดูประวัติแต้ม IOU',
+   Verified: 'ยืนยันแล้ว',
+
+   // src/components/UserPay.tsx
+   'Loan Repayment': 'การชำระคืนเงินกู้',
+   'Total Due': 'ยอดที่ต้องชำระทั้งหมด',
+   'Amount Paid': 'ยอดที่ชำระแล้ว',
+   'Repayment Information': 'ข้อมูลการชำระคืน',
+   Stablecoin: 'สเตเบิลคอยน์',
+   'Repayment Amount': 'จำนวนเงินที่ชำระคืน',
+   'Enter custom amount': 'กรอกจำนวนเงินที่ต้องการ',
+   'Processing...': 'กำลังดำเนินการ...',
+   'You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit score.':
+      'คุณชำระคืนเท่าไรก็ได้ เมื่อไรก็ได้ก่อนวันครบกำหนด โปรดชำระให้ครบภายในวันครบกำหนดเพื่อรักษาคะแนนเครดิตของคุณ',
+   'Still confirming': 'ยังยืนยันอยู่',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'ส่งการชำระเงินของคุณแล้ว และกำลังรอการยืนยันสักครู่ ข้อมูลจะอัปเดตโดยอัตโนมัติ',
+   'Unknown error': 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ',
+   'Payment Sent, Still Recording': 'ส่งการชำระเงินแล้ว กำลังบันทึก',
+   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
+      'การชำระเงินของคุณสำเร็จแล้ว แต่เรายังบันทึกไม่ได้ เราจะลองใหม่โดยอัตโนมัติ หากข้อมูลไม่อัปเดต โปรดติดต่อฝ่ายช่วยเหลือ',
 };
