@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 
+import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
 import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import {
    areWalletAddressesEqual,
@@ -43,6 +44,10 @@ export default function WalletConnected() {
    // locked to one wallet — they can use any connector, and fraud is handled by the detection
    // layer rather than by restricting the wallet here.
    const isBorrower = user?.userRole === 'borrower';
+   // Wallet comes before KYC: an unverified borrower goes on to identity verification next, which
+   // then returns them to wherever they were headed (e.g. their loan application). Anyone whose
+   // ID is already in review skips this; the loan form shows them a "verification in progress" card.
+   const needsVerification = !isPreview && isBorrower && !isUserVerified(user) && !isVerificationPending(user);
    const hasActiveRequest = gloans.some(
       (loan) => loan.borrowerUser === user?.id && (loan.loanStatus === LoanStatus.REQUESTED || loan.loanStatus === LoanStatus.LENT)
    );
@@ -80,6 +85,10 @@ export default function WalletConnected() {
          navigate('/account/settings', { replace: true });
          return;
       }
+      if (needsVerification) {
+         navigate('/verify-world-id', { replace: true, state: { returnTo } });
+         return;
+      }
       if (returnTo === 'loan-request') {
          navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
          return;
@@ -106,7 +115,7 @@ export default function WalletConnected() {
       }
       const destination = user?.userRole === 'borrower' && hasActiveRequest ? '/dashboard' : '/request-board';
       navigate(destination, { replace: true });
-   }, [isPreview, returnTo, user, hasActiveRequest, navigate]);
+   }, [isPreview, returnTo, needsVerification, user, hasActiveRequest, navigate]);
 
    // Auto-return once the success view has settled (loans finished loading), so the borrower
    // doesn't have to tap "Next". The manual button still works; goNext's ref guards double-nav.
@@ -184,7 +193,7 @@ export default function WalletConnected() {
                disabled={loansLoading}
                className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
             >
-               {loansLoading ? 'Loading…' : returnTo === 'loan-request' ? 'Continue Application' : 'Next'}
+               {loansLoading ? 'Loading…' : needsVerification ? 'Continue' : returnTo === 'loan-request' ? 'Continue Application' : 'Next'}
                {loansLoading ? null : (
                   <span
                      className="block size-6 bg-md-neutral-100"
