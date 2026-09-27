@@ -264,4 +264,48 @@ export const filipinoCoverageB: Record<string, string> = {
    day: 'araw',
    days: 'araw',
    'About credit level': 'Tungkol sa Credit Level',
+
+   // src/views/dashboard-v2/components/DashboardV2Popups.tsx
+   'Verify My Identity': 'I-verify ang identity ko',
+   'Verify to unlock your account — a one-time check that takes about 3 minutes.':
+      'Mag-verify para ma-unlock ang account mo — isang beses lang na check na mga 3 minuto lang.',
+   'Verify Now': 'Mag-verify na',
+   'Most used': 'Pinakaginagamit',
+   'Milestone Streak!': 'Milestone Streak!',
+   'See My Next Milestone': 'Tingnan ang susunod kong milestone',
+   'This week': 'Ngayong linggo',
+   'Request Loan & Feed Moodeng': 'Mag-request ng loan at pakainin si Moodeng',
+   'View Requests & Feed Moodeng': 'Tingnan ang requests at pakainin si Moodeng',
+   'Repay On Time & Earn Voucher': 'Magbayad on time at makakuha ng voucher',
+   'Verify to Start Feeding': 'Mag-verify para makapagpakain',
+   'Repay on time, eat on us.': 'Magbayad on time, libre namin ang kain.',
+   'Feed Moodeng to level up.': 'Pakainin si Moodeng para mag-level up.',
+   'A GrabFood voucher for your first on-time repayment!': 'GrabFood voucher para sa una mong on-time na bayad!',
+   'Bigger Moodeng = Higher cash limits!': 'Mas malaking Moodeng = mas mataas na cash limit!',
+   'Quick national ID & selfie check. Available in VN, TW, KR, PH, MY, JP, ID, TH':
+      'Mabilis na check ng national ID at selfie. Available sa VN, TW, KR, PH, MY, JP, ID, TH',
+   'milestone this week': 'milestone ngayong linggo',
+   'milestones this week': 'milestone ngayong linggo',
+   'Pandesal fed to Moodeng': 'Pandesal na naipakain kay Moodeng',
+   'Keep the streak going: your next milestone is waiting.': 'Ituloy mo lang: naghihintay na ang susunod mong milestone.',
+
+   // src/views/dashboard-v2/components/DashboardV2Sections.tsx
+   'View All Milestones': 'Tingnan ang lahat ng milestones',
+   'Active Loans($)': 'Mga aktibong loan ($)',
+   'Pending Loans($)': 'Mga pending na loan ($)',
+   'My insights': 'Insights ko',
+   'Loading voucher': 'Nilo-load ang voucher',
+   'Defaulted($)': 'Nag-default ($)',
+   'Due today': 'Due ngayong araw',
+   'Moodeng grew to': 'Lumaki si Moodeng hanggang',
+   'Claim your ₱': 'I-claim ang ₱',
+
+   // src/views/dashboard/Dashboard.tsx
+   'Withdraw your USDC': 'I-withdraw ang USDC mo',
+   'Cash out your funded loan to local currency.': 'I-cash out ang napondohan mong loan sa local currency.',
+   'Pandesal points': 'Pandesal points',
+   'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
+      'Sinusukat ng Pandesal points ang reputasyon mo sa Moodeng. Sa verification, malinis na pagbabayad, at maayos na activity, mas nagtitiwala sa iyo ang mga lender.',
+   'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
+      'Ang milestones ay mga dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.',
 };
