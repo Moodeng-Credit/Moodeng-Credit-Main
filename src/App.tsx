@@ -19,7 +19,6 @@ import MarketingPageShell from '@/components/marketing/MarketingPageShell';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RoleGuard } from '@/components/RoleGuard';
 import { VerificationUnsuccessfulModal } from '@/components/verification/VerificationUnsuccessfulModal';
-import WalletNetworkBlockNotice from '@/components/WalletNetworkBlockNotice';
 
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { usePendingInviteRedemption } from '@/hooks/useFriendReferrals';
@@ -230,7 +229,6 @@ export default function App() {
    return (
       <BottomNavActionProvider key={location.pathname}>
          <InAppBrowserNotice />
-         <WalletNetworkBlockNotice />
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
          <SocialContactRequiredNotifier />
