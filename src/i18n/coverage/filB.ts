@@ -31,6 +31,8 @@ export const filipinoCoverageB: Record<string, string> = {
    '2 of 3 preferences enabled': '2 sa 3 preference ang naka-on',
    'Account activity (on)': 'Activity ng account (naka-on)',
    'Moodeng blogs (off)': 'Moodeng blogs (naka-off)',
+   'Get important notifications about you or activity you’ve missed':
+      'Makatanggap ng mahahalagang notification tungkol sa iyo o sa activity na hindi mo napansin',
    'Used for account recovery and important alerts.': 'Ginagamit para sa account recovery at mahahalagang alert.',
    'Security & verification': 'Security at verification',
    'Helps people recognize you': 'Para makilala ka ng ibang tao',
@@ -126,4 +128,140 @@ export const filipinoCoverageB: Record<string, string> = {
    // src/views/account/WalletBalanceCard.tsx
    'Money you receive lands here.': 'Dito napupunta ang perang natatanggap mo.',
    'Wallet details': 'Mga detalye ng wallet',
+
+   // src/views/borrowerBenefits/BorrowerBenefits.tsx
+   'Borrower Benefits | Moodeng Credit': 'Mga benepisyo para sa borrower | Moodeng Credit',
+   'Why borrowers choose Moodeng Credit: fast global access to small USDC loans, our mission and roadmap, and building verifiable credit as you repay.':
+      'Bakit Moodeng Credit ang pinipili ng mga borrower: mabilis na access sa maliliit na USDC loan saan ka man sa mundo, ang misyon at roadmap namin, at pagbuo ng verifiable na credit habang nagbabayad ka.',
+
+   // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
+   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'Kapag pinondohan ng lender ang request mo, dumadaan ang USDC sa digital wallet mo kaya mas madaling i-track ang pera at ang record ng pagbabayad.',
+   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
+      'Ikaw ang pipili ng halaga ng request, halaga ng babayaran, due date, at dahilan bago magdesisyon ang lender kung popondohan niya ito.',
+
+   // src/views/borrowerBenefits/sections/WhatPeopleSaySection.tsx
+   'Borrower testimonial': 'Testimonial ng borrower',
+
+   // src/views/creditLevelingGuide/CreditLevelingGuide.tsx
+   'Next level': 'Susunod na level',
+   'Current maximum': 'Kasalukuyang maximum',
+   'Credit Leveling Guide | Moodeng Credit': 'Gabay sa Credit Leveling | Moodeng Credit',
+   'How Moodeng credit levels work: repay a full-limit loan on time to unlock the next level, from $15 up to $140, plus trust-building vs credit-building loans.':
+      'Paano gumagana ang credit levels sa Moodeng: bayaran on time ang loan na buong limit mo para ma-unlock ang susunod na level, mula $15 hanggang $140, at ang pagkakaiba ng trust-building at credit-building loans.',
+   'Main credit leveling rule': 'Pangunahing rule ng credit leveling',
+   'How credit leveling works': 'Paano gumagana ang credit leveling',
+   'Credit level progression': 'Pag-akyat ng Credit Level',
+   'Borrow $60 and repay funded terms on time': 'Humiram ng $60 at bayaran ang funded terms on time',
+   'Borrow $80 and repay funded terms on time': 'Humiram ng $80 at bayaran ang funded terms on time',
+   'Borrow $100 and repay funded terms on time': 'Humiram ng $100 at bayaran ang funded terms on time',
+   'Borrow $120 and repay funded terms on time': 'Humiram ng $120 at bayaran ang funded terms on time',
+
+   // src/views/dashboard-v2/DashboardV2.tsx
+   'Feed Moodeng Pandesal to grow your trust: verifying, repaying on time and milestones earn it, and Moodeng grows from Rookie to Apex.':
+      'Pakainin si Moodeng ng Pandesal para lumago ang tiwala sa iyo: makakakuha ka nito sa pag-verify, sa pagbabayad on time, at sa milestones, at lalaki si Moodeng mula Rookie hanggang Apex.',
+   'Milestones are extra ways to earn Pandesal. Complete them to strengthen your profile and make lenders more confident in your requests.':
+      'Ang milestones ay mga dagdag na paraan para makakuha ng Pandesal. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.',
+   'Post your first loan request': 'I-post ang una mong loan request',
+   'Get funded by a lender': 'Mapondohan ng lender',
+   'Loading your dashboard': 'Nilo-load ang dashboard mo',
+   'Trust & Pandesal': 'Tiwala at Pandesal',
+   'Credit Level is your borrowing tier. Trust is what you build; Credit Level is what that trust unlocks.':
+      'Ang Credit Level ang tier mo sa paghiram. Ang tiwala ang binubuo mo; ang Credit Level ang nabubuksan ng tiwalang iyon.',
+
+   // src/views/dashboard-v2/DashboardV2Milestones.tsx
+   Get: 'Kunin',
+   'Top Reward': 'Top reward',
+   'All Milestones': 'Lahat ng milestones',
+   'No milestones yet': 'Wala pang milestones',
+   'Your first one unlocks when you post a request': 'Mabubuksan ang una mo kapag nag-post ka ng request',
+   'Grow Trust with feeding': 'Pakainin para lumago ang tiwala',
+   'Grow Moodeng, eat on us': 'Palakihin si Moodeng, libre namin ang kain',
+   'Back to dashboard': 'Bumalik sa Dashboard',
+   'Loading milestones': 'Nilo-load ang milestones',
+   'Reputation milestones': 'Mga milestone ng reputasyon',
+   'Grow Moodeng to': 'Palakihin si Moodeng hanggang',
+
+   // src/views/dashboard-v2/DashboardV2Preview.tsx
+   Preview: 'Preview',
+   'Dashboard preview state': 'Preview state ng Dashboard',
+   'Switch language': 'Palitan ang wika',
+   'Sign in to see your real data': 'Mag-sign in para makita ang totoong data mo',
+
+   // src/views/dashboard-v2/DashboardV2Rewards.tsx
+   'Voucher Unlocked!': 'Na-unlock ang voucher!',
+   Claim: 'I-claim',
+   Invite: 'Mag-invite',
+   'You both get a ₱100 voucher once your friend repays their first loan on time. Claim yours here or on your dashboard.':
+      'Pareho kayong makakakuha ng ₱100 voucher kapag nabayaran ng kaibigan mo on time ang una niyang loan. I-claim ang sa iyo rito o sa Dashboard mo.',
+   'Borrow small, build your credit': 'Humiram nang maliit, buuin ang credit mo',
+   'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
+      'Maliliit na loan mula tao sa tao: isang halaga, isang petsa, at walang fees ang Moodeng.',
+   'Join Moodeng': 'Sumali sa Moodeng',
+   'Tell us where to send your GrabFood voucher code.': 'Sabihin sa amin kung saan ipapadala ang GrabFood voucher code mo.',
+   'Thanks for inviting them. Where should we send your voucher code?':
+      'Salamat sa pag-invite sa kanila. Saan namin ipapadala ang voucher code mo?',
+   'Thanks for joining with a friend. Where should we send your voucher code?':
+      'Salamat sa pagsali kasama ang kaibigan mo. Saan namin ipapadala ang voucher code mo?',
+   'Full name': 'Buong pangalan',
+   'Mobile number': 'Mobile number',
+   Embed: 'I-embed',
+   'Close share': 'Isara ang share',
+   'More share options': 'Iba pang paraan ng pag-share',
+   'Free meal for both of you: a ₱100 voucher for you and a ₱100 voucher for your friend.':
+      'Libreng kain para sa inyong dalawa: ₱100 voucher para sa iyo at ₱100 voucher para sa kaibigan mo.',
+   'You repaid on time. Treat yourself!': 'Nakapagbayad ka on time. I-treat mo ang sarili mo!',
+   'Your friend repaid on time. Free meal!': 'Nakapagbayad on time ang kaibigan mo. Libreng kain!',
+   'You repaid on time. Free meal!': 'Nakapagbayad ka on time. Libreng kain!',
+   'Moodeng grew to Rising. Treat yourself!': 'Lumaki si Moodeng hanggang Rising. I-treat mo ang sarili mo!',
+   'Moodeng grew to Prime. Treat yourself!': 'Lumaki si Moodeng hanggang Prime. I-treat mo ang sarili mo!',
+   'Moodeng reached Apex. Feast time!': 'Naabot ni Moodeng ang Apex. Handaan na!',
+   'This voucher was already claimed.': 'Na-claim na ang voucher na ito.',
+   "This voucher isn't unlocked yet.": 'Hindi pa naka-unlock ang voucher na ito.',
+   'Please check your name and mobile number.': 'Pakitingnan ulit ang pangalan at mobile number mo.',
+   'Salamat! We got it.': 'Salamat! Natanggap na namin.',
+   "We'll send your ₱": 'Ipapadala namin ang ₱',
+   'GrabFood voucher code to your mobile within 2 business days.':
+      'GrabFood voucher code mo sa mobile mo sa loob ng 2 business days.',
+   'Preview sample — nothing was sent.': 'Preview sample lang — walang naipadala.',
+   'Mobile number (GCash)': 'Mobile number (GCash)',
+   'Email (optional)': 'Email (optional)',
+   'Send My Voucher': 'Ipadala ang voucher ko',
+   'Free meal for both of us — Moodeng Credit': 'Libreng kain para sa ating dalawa — Moodeng Credit',
+   Rejected: 'Tinanggihan',
+   'Unavailable right now': 'Hindi available ngayon',
+   'Friends joined:': 'Mga kaibigang sumali:',
+   '· Repaid on time:': '· Nagbayad on time:',
+   "You're invited by": 'Nag-imbita sa iyo:',
+   'a friend': 'isang kaibigan',
+   '₱100 GrabFood voucher each': 'Tig-₱100 GrabFood voucher',
+   'When you repay your first loan on time, you and': 'Kapag nabayaran mo on time ang una mong loan, ikaw at',
+   'your friend': 'ang kaibigan mo',
+   'both get one.': 'ay parehong makakakuha nito.',
+   'Already have an account?': 'May account ka na?',
+
+   // src/views/dashboard-v2/components/DashboardV2Banners.tsx
+   'Feast with friend': 'Kumain kasama ang kaibigan',
+   'Grab Now': 'Kunin na',
+   'Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal.':
+      'I-verify ang identity ko: +10 Pandesal. I-unlock ang paghiram at ang pagpapakain ng pandesal kay Moodeng.',
+   'Connect Wallet: +10 Pandesal. Receive USDC loans.': 'Ikonek ang wallet: +10 Pandesal. Tumanggap ng USDC loans.',
+   'Turn on repayment reminders': 'I-on ang repayment reminders',
+   'Get a heads-up before your due date so you never pay late.':
+      'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
+   'Turn on': 'I-on',
+
+   // src/views/dashboard-v2/components/DashboardV2Hero.tsx
+   'Grow your Trust with on-time micro-loans.': 'Palaguin ang tiwala sa iyo sa on-time na micro-loans.',
+   'Unlock higher limits by repaying on time.': 'Mag-unlock ng mas mataas na limit sa pagbabayad on time.',
+   'Your Moodeng': 'Ang Moodeng mo',
+   'Dismiss tip': 'Isara ang tip',
+   'Previous Moodeng tier': 'Nakaraang Moodeng tier',
+   'Next Moodeng tier': 'Susunod na Moodeng tier',
+   'Credit available to borrow': 'Credit na puwedeng hiramin',
+   Unverified: 'Hindi pa verified',
+   'Live for': 'Live nang',
+   day: 'araw',
+   days: 'araw',
+   'About credit level': 'Tungkol sa Credit Level',
 };
