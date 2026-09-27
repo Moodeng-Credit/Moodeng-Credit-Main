@@ -154,4 +154,214 @@ export const thaiCoverageA: Record<string, string> = {
    'Enter the 6-digit code from your authenticator app': 'กรอกรหัส 6 หลักจากแอป Authenticator ของคุณ',
    'Two-factor authentication': 'การยืนยันตัวตนแบบสองขั้นตอน',
    'Not you? Sign out': 'ไม่ใช่คุณ? ออกจากระบบ',
+
+   // src/app/reset-password/page.tsx
+   'New password': 'รหัสผ่านใหม่',
+   'Secure your account': 'รักษาความปลอดภัยให้บัญชีของคุณ',
+   'Choose a new password for your Moodeng account.': 'ตั้งรหัสผ่านใหม่สำหรับบัญชี Moodeng ของคุณ',
+   'Reset links can only be used once and expire quickly. Tap below to send yourself a fresh link, then open the newest Moodeng email.':
+      'ลิงก์รีเซ็ตใช้ได้เพียงครั้งเดียวและหมดอายุเร็ว แตะด้านล่างเพื่อส่งลิงก์ใหม่ให้ตัวเอง แล้วเปิดอีเมลล่าสุดจาก Moodeng',
+   'Request a new link': 'ขอลิงก์ใหม่',
+   'This reset link is ready. Enter matching passwords to continue.': 'ลิงก์รีเซ็ตนี้พร้อมใช้งานแล้ว กรอกรหัสผ่านให้ตรงกันทั้งสองช่องเพื่อดำเนินการต่อ',
+   'Use at least 8 characters.': 'ใช้อย่างน้อย 8 ตัวอักษร',
+   'Confirm password': 'ยืนยันรหัสผ่าน',
+   'Passwords do not match.': 'รหัสผ่านไม่ตรงกัน',
+   'Updating…': 'กำลังอัปเดต…',
+   'The reset link is invalid or expired. Request a new one and use the latest email from Moodeng.':
+      'ลิงก์รีเซ็ตไม่ถูกต้องหรือหมดอายุแล้ว โปรดขอลิงก์ใหม่และใช้อีเมลล่าสุดจาก Moodeng',
+   'Open the reset link from your email, or request a new password reset link.':
+      'เปิดลิงก์รีเซ็ตจากอีเมลของคุณ หรือขอลิงก์รีเซ็ตรหัสผ่านใหม่',
+   'Password reset is not configured in this local app.': 'แอปเวอร์ชันโลคัลนี้ยังไม่ได้ตั้งค่าการรีเซ็ตรหัสผ่าน',
+   'Could not open this reset link. Request a new one.': 'เปิดลิงก์รีเซ็ตนี้ไม่ได้ โปรดขอลิงก์ใหม่',
+   'Use at least 8 characters for your new password.': 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร',
+   'Open the reset link from your email before setting a new password.': 'โปรดเปิดลิงก์รีเซ็ตจากอีเมลของคุณก่อนตั้งรหัสผ่านใหม่',
+   'Could not update your password. Try again in a moment.': 'อัปเดตรหัสผ่านไม่สำเร็จ โปรดลองอีกครั้งในอีกสักครู่',
+   'Password updated': 'อัปเดตรหัสผ่านแล้ว',
+   'Your account is secure now.': 'ตอนนี้บัญชีของคุณปลอดภัยแล้ว',
+   'Password updated. Taking you to your dashboard now.': 'อัปเดตรหัสผ่านแล้ว กำลังพาคุณไปที่แดชบอร์ด',
+   'Hide passwords': 'ซ่อนรหัสผ่าน',
+   'Show passwords': 'แสดงรหัสผ่าน',
+   'Enter new password': 'กรอกรหัสผ่านใหม่',
+   'Re-enter new password': 'กรอกรหัสผ่านใหม่อีกครั้ง',
+   'Update password': 'อัปเดตรหัสผ่าน',
+
+   // src/app/role-selection/page.tsx
+   'How would you like to use Moodeng Credit?': 'คุณต้องการใช้ Moodeng Credit อย่างไร?',
+   'Request short-term loans, repay clearly, and build trust over time.':
+      'ขอเงินกู้ระยะสั้น ชำระคืนอย่างชัดเจน และสร้างความน่าเชื่อถือไปทีละขั้น',
+   'Moodeng hippo': 'ฮิปโป Moodeng',
+
+   // src/app/simple/page.tsx
+   'Simple Page - CSS and Navigation working!': 'หน้าทดสอบ - CSS และการนำทางใช้งานได้!',
+
+   // src/app/team/page.tsx
+   'Co-Founders': 'ผู้ร่วมก่อตั้ง',
+   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
+      'เรากำลังสร้างเลเยอร์ความน่าเชื่อถือที่พกพาได้ สำหรับผู้ยืมที่ควรได้รับเครดิตอย่างเป็นธรรม และผู้ให้กู้ที่ต้องการเห็นผลลัพธ์อย่างโปร่งใส',
+   'LinkedIn Profile': 'โปรไฟล์ LinkedIn',
+   Website: 'เว็บไซต์',
+   Advisors: 'ที่ปรึกษา',
+   Advisor: 'ที่ปรึกษา',
+   'Additional team members': 'สมาชิกทีมเพิ่มเติม',
+   'Our Team | Moodeng Credit': 'ทีมของเรา | Moodeng Credit',
+   'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
+      'พบกับทีมผู้สร้าง Moodeng Credit ทั้งผู้ร่วมก่อตั้ง George และ Emma ทีมผู้ก่อตั้ง และที่ปรึกษาที่ร่วมกันสร้างเครดิตที่เป็นธรรมและพกพาได้',
+   'Project Co-Lead': 'ผู้ร่วมนำโครงการ',
+   'Repeat founder and product builder working to help people build credit through practical systems that are clear, fair, and useful in real life.':
+      'ผู้ก่อตั้งและนักสร้างผลิตภัณฑ์ที่มีประสบการณ์หลายครั้ง มุ่งช่วยให้ผู้คนสร้างเครดิตผ่านระบบที่ใช้งานได้จริง ชัดเจน เป็นธรรม และมีประโยชน์ในชีวิตจริง',
+   'Ex-UNHCR Data Team Lead': 'อดีตหัวหน้าทีมข้อมูล UNHCR',
+   'Former Portfolio Manager': 'อดีตผู้จัดการพอร์ตการลงทุน',
+   '1 Exit': 'ขายกิจการสำเร็จ 1 ครั้ง',
+   '2 Prior Startups': 'เคยก่อตั้งสตาร์ทอัป 2 แห่ง',
+   'Leads growth and community storytelling for Moodeng Credit, turning borrower education, social content, and campaign feedback into clearer trust-building moments.':
+      'ดูแลการเติบโตและการเล่าเรื่องในชุมชนของ Moodeng Credit เปลี่ยนความรู้สำหรับผู้ยืม คอนเทนต์โซเชียล และฟีดแบ็กจากแคมเปญให้เป็นช่วงเวลาที่สร้างความน่าเชื่อถือได้ชัดเจนขึ้น',
+   'Growth Marketing': 'การตลาดเพื่อการเติบโต',
+   'Borrower Education': 'ให้ความรู้ผู้ยืม',
+   'Community Campaigns': 'แคมเปญชุมชน',
+   'Member of Technical Team': 'สมาชิกทีมเทคนิค',
+   'Backend engineer building scalable APIs, cloud systems, and product flows for Moodeng Credit.':
+      'วิศวกรแบ็กเอนด์ผู้สร้าง API ที่ขยายได้ ระบบคลาวด์ และโฟลว์ของผลิตภัณฑ์ให้ Moodeng Credit',
+   'Backend Engineer': 'วิศวกรแบ็กเอนด์',
+   'App Flows': 'โฟลว์ของแอป',
+   'Working on Partnerships': 'ดูแลด้านพาร์ทเนอร์',
+   'Supports Moodeng Credit with partnerships, lender outreach, and growth channels, while also working at':
+      'สนับสนุน Moodeng Credit ด้านพาร์ทเนอร์ การติดต่อผู้ให้กู้ และช่องทางการเติบโต ควบคู่กับการทำงานที่',
+   'helping teams connect with blockchain data infrastructure.': 'ซึ่งช่วยให้ทีมต่าง ๆ เชื่อมต่อกับโครงสร้างพื้นฐานข้อมูลบล็อกเชน',
+   'Head of Growth': 'หัวหน้าฝ่ายการเติบโต',
+   'University of Edinburgh': 'มหาวิทยาลัยเอดินบะระ',
+   'Blockchain Analysis': 'การวิเคราะห์บล็อกเชน',
+   'Digital Marketing': 'การตลาดดิจิทัล',
+   'Marketing Automation': 'ระบบการตลาดอัตโนมัติ',
+   'Working on Building Community': 'ดูแลการสร้างชุมชน',
+   'Builds stories and visual direction for Moodeng Credit, helping turn community ideas into growth narratives people can understand, share, and rally around.':
+      'สร้างเรื่องราวและทิศทางด้านภาพให้ Moodeng Credit ช่วยเปลี่ยนไอเดียจากชุมชนให้เป็นเรื่องเล่าที่ผู้คนเข้าใจ แชร์ต่อ และร่วมสนับสนุนได้',
+   Storytelling: 'การเล่าเรื่อง',
+   'Visual Direction': 'ทิศทางด้านภาพ',
+   'Narrative Setting': 'การวางโครงเรื่อง',
+   'US Army Officer, Mercury Labs founder, and sports/Web3 operator advising Moodeng Credit on investor strategy, brand positioning, and disciplined growth.':
+      'นายทหารกองทัพสหรัฐฯ ผู้ก่อตั้ง Mercury Labs และผู้บริหารในวงการกีฬาและ Web3 ที่ให้คำปรึกษา Moodeng Credit ด้านกลยุทธ์นักลงทุน การวางตำแหน่งแบรนด์ และการเติบโตอย่างมีวินัย',
+   'US Army Officer': 'นายทหารกองทัพสหรัฐฯ',
+   Sports: 'กีฬา',
+   Writer: 'นักเขียน',
+   Management: 'การบริหาร',
+   Marketing: 'การตลาด',
+
+   // src/app/verify-world-id/page.tsx
+   'Verify Your Identity': 'ยืนยันตัวตนของคุณ',
+   'To keep Moodeng safe and prevent fake or duplicate accounts, borrowers complete a short one-time identity check.':
+      'เพื่อให้ Moodeng ปลอดภัยและป้องกันบัญชีปลอมหรือบัญชีซ้ำ ผู้ยืมทุกคนต้องยืนยันตัวตนสั้น ๆ เพียงครั้งเดียว',
+   'Verify Your ID': 'ยืนยันด้วยบัตรประชาชน',
+   Recommended: 'แนะนำ',
+   'Quick national ID & selfie check — available in select countries.':
+      'ตรวจบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้ได้ในบางประเทศ',
+   'Supported countries': 'ประเทศที่รองรับ',
+   'Not in a supported country?': 'ไม่ได้อยู่ในประเทศที่รองรับใช่ไหม?',
+   'Verify with World ID': 'ยืนยันด้วย World ID',
+   'For World App users — verified at an Orb or with a passport.': 'สำหรับผู้ใช้ World App ที่ยืนยันที่ Orb หรือด้วยหนังสือเดินทางแล้ว',
+
+   // src/app/verify/page.tsx
+   'Continue to World ID': 'ไปต่อที่ World ID',
+   'Step 1 of 2 done': 'เสร็จขั้นตอนที่ 1 จาก 2 แล้ว',
+   'You’re a real person!': 'คุณเป็นบุคคลจริง!',
+   'You’re not done yet — one last step. Verify with World ID below to finish and unlock your account.':
+      'ยังไม่เสร็จนะ เหลืออีกขั้นตอนเดียว ยืนยันด้วย World ID ด้านล่างเพื่อทำให้เสร็จและปลดล็อกบัญชีของคุณ',
+   'No World ID? Verify with your ID instead': 'ไม่มี World ID? ยืนยันด้วยบัตรประชาชนแทน',
+   'Need help from our team?': 'ต้องการความช่วยเหลือจากทีมของเราไหม?',
+   'Message us on Telegram': 'ส่งข้อความถึงเราทาง Telegram',
+   'Message us on Facebook': 'ส่งข้อความถึงเราทาง Facebook',
+   'Retake in bright, even light — no glare or shadows on the ID': 'ถ่ายใหม่ในที่ที่มีแสงสว่างสม่ำเสมอ ไม่ให้มีแสงสะท้อนหรือเงาบนบัตร',
+   'Lay the ID flat and fill the frame; make sure all text is sharp': 'วางบัตรให้ราบและให้เต็มกรอบ ตรวจดูว่าตัวอักษรทั้งหมดคมชัด',
+   'Use a currently valid (not expired) ID document': 'ใช้บัตรหรือเอกสารแสดงตัวตนที่ยังไม่หมดอายุ',
+   'Remove hats, glasses and masks for the selfie': 'ถอดหมวก แว่นตา และหน้ากากออกก่อนถ่ายเซลฟี',
+   'Face the camera straight on, with your whole face visible': 'หันหน้าตรงเข้าหากล้อง ให้เห็นใบหน้าทั้งหมด',
+   'Capture the entire ID — all four corners must be visible': 'ถ่ายให้เห็นบัตรทั้งใบ ต้องเห็นมุมครบทั้งสี่มุม',
+   'Use a government-issued national ID or passport': 'ใช้บัตรประชาชนหรือหนังสือเดินทางที่ออกโดยหน่วยงานรัฐ',
+   'Retake photos in bright, even light': 'ถ่ายรูปใหม่ในที่ที่มีแสงสว่างสม่ำเสมอ',
+   'Lay the ID flat with all four corners visible': 'วางบัตรให้ราบและให้เห็นมุมครบทั้งสี่มุม',
+   'Remove hats and glasses for the selfie': 'ถอดหมวกและแว่นตาออกก่อนถ่ายเซลฟี',
+   'Could not start the face scan. Please try again.': 'เริ่มการสแกนใบหน้าไม่สำเร็จ โปรดลองอีกครั้ง',
+   'Something went wrong. Please try again.': 'เกิดข้อผิดพลาด โปรดลองอีกครั้ง',
+   'Could not start verification. Please try again.': 'เริ่มการยืนยันตัวตนไม่สำเร็จ โปรดลองอีกครั้ง',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll submit your national ID.":
+      'แตะปุ่มเพื่อเริ่มสแกนใบหน้า เมื่อเสร็จแล้วระบบจะพาคุณกลับมาที่นี่โดยอัตโนมัติ จากนั้นคุณจะส่งบัตรประชาชน',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll verify with World ID.":
+      'แตะปุ่มเพื่อเริ่มสแกนใบหน้า เมื่อเสร็จแล้วระบบจะพาคุณกลับมาที่นี่โดยอัตโนมัติ จากนั้นคุณจะยืนยันด้วย World ID',
+   "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll submit your national ID.":
+      'แตะปุ่มเพื่อเปิดการสแกนใบหน้าในแท็บใหม่ โปรดเปิดหน้านี้ค้างไว้ หน้านี้จะอัปเดตเองเมื่อเสร็จ จากนั้นคุณจะส่งบัตรประชาชน',
+   "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll verify with World ID.":
+      'แตะปุ่มเพื่อเปิดการสแกนใบหน้าในแท็บใหม่ โปรดเปิดหน้านี้ค้างไว้ หน้านี้จะอัปเดตเองเมื่อเสร็จ จากนั้นคุณจะยืนยันด้วย World ID',
+   'Step 1 of 2': 'ขั้นตอนที่ 1 จาก 2',
+   'Ready for face scan': 'พร้อมสแกนใบหน้าแล้ว',
+   'Open face scan': 'เปิดการสแกนใบหน้า',
+   'Setting up…': 'กำลังตั้งค่า…',
+   'Starting your verification. Keep this screen open.': 'กำลังเริ่มการยืนยันตัวตน โปรดเปิดหน้าจอนี้ค้างไว้',
+   'Before you start': 'ก่อนเริ่ม',
+   "A quick ID + selfie check — about 3 minutes. You'll be brought back here automatically when it's done. Your ID is checked by our secure verification partner and is never stored by Moodeng.":
+      'ตรวจบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้เวลาประมาณ 3 นาที เมื่อเสร็จแล้วระบบจะพาคุณกลับมาที่นี่โดยอัตโนมัติ บัตรของคุณจะได้รับการตรวจสอบโดยพาร์ทเนอร์ด้านการยืนยันตัวตนที่ปลอดภัยของเรา และ Moodeng จะไม่จัดเก็บบัตรของคุณ',
+   'A quick ID + selfie check — about 3 minutes. It opens in a new tab; keep this page open and it will update automatically. Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'ตรวจบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้เวลาประมาณ 3 นาที ระบบจะเปิดในแท็บใหม่ โปรดเปิดหน้านี้ค้างไว้ แล้วหน้านี้จะอัปเดตเอง บัตรของคุณจะได้รับการตรวจสอบโดยพาร์ทเนอร์ด้านการยืนยันตัวตนที่ปลอดภัยของเรา และ Moodeng จะไม่จัดเก็บบัตรของคุณ',
+   'Have your physical national ID with you': 'เตรียมบัตรประชาชนตัวจริงไว้ให้พร้อม',
+   'Find good, even lighting for the selfie': 'หาที่ที่มีแสงดีและสม่ำเสมอสำหรับถ่ายเซลฟี',
+   'Allow camera access when asked': 'อนุญาตให้เข้าถึงกล้องเมื่อระบบถาม',
+   'Open verification': 'เปิดหน้ายืนยันตัวตน',
+   'Go back': 'ย้อนกลับ',
+   'Almost there — hang tight while we finish the check.': 'ใกล้เสร็จแล้ว โปรดรอสักครู่ขณะที่เราตรวจสอบให้เสร็จ',
+   'Still checking — face scans usually take a minute or two.': 'ยังตรวจสอบอยู่ การสแกนใบหน้ามักใช้เวลาหนึ่งถึงสองนาที',
+   'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.':
+      'กำลังสแกนใบหน้า โปรดทำให้เสร็จในแท็บที่เพิ่งเปิดขึ้น หน้านี้จะอัปเดตเองเมื่อเสร็จ',
+   'Waiting for face scan…': 'กำลังรอการสแกนใบหน้า…',
+   'More options': 'ตัวเลือกเพิ่มเติม',
+   'Almost there — we’re finishing the review.': 'ใกล้เสร็จแล้ว เรากำลังตรวจสอบให้เสร็จ',
+   'Still confirming — verification usually takes a minute or two.': 'ยังยืนยันอยู่ การยืนยันตัวตนมักใช้เวลาหนึ่งถึงสองนาที',
+   'Finish the steps in the verification tab — this page updates automatically when you’re done.':
+      'ทำขั้นตอนในแท็บยืนยันตัวตนให้เสร็จ หน้านี้จะอัปเดตเองเมื่อคุณทำเสร็จ',
+   'Confirming your verification…': 'กำลังยืนยันผลการยืนยันตัวตน…',
+   'Almost there': 'ใกล้เสร็จแล้ว',
+   'Your face scan is still finishing up. This usually takes a moment. Left before finishing the scan? Start over below for a fresh one.':
+      'การสแกนใบหน้าของคุณกำลังจะเสร็จ ปกติใช้เวลาไม่นาน หากคุณออกก่อนสแกนเสร็จ ให้กดเริ่มใหม่ด้านล่างเพื่อสแกนอีกครั้ง',
+   'Check again': 'ตรวจสอบอีกครั้ง',
+   'Start over': 'เริ่มใหม่',
+   'Face scan not finished': 'การสแกนใบหน้ายังไม่เสร็จ',
+   'It looks like the face scan was closed before it was completed. No problem — start a new scan below. It only takes about 30 seconds.':
+      'ดูเหมือนว่าการสแกนใบหน้าถูกปิดก่อนจะเสร็จ ไม่เป็นไร เริ่มสแกนใหม่ได้ด้านล่าง ใช้เวลาเพียงประมาณ 30 วินาที',
+   'Start new face scan': 'เริ่มสแกนใบหน้าใหม่',
+   'Reviewing your verification…': 'กำลังตรวจสอบการยืนยันตัวตนของคุณ…',
+   "Your details are being reviewed. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below.":
+      'เรากำลังตรวจสอบข้อมูลของคุณ ส่วนใหญ่จะเสร็จภายในไม่กี่นาที และหน้าจอนี้จะอัปเดตเองเมื่อเสร็จ หากคุณออกก่อนทำครบทุกขั้นตอน ให้กดเริ่มใหม่ด้านล่าง',
+   'Check status': 'ตรวจสอบสถานะ',
+   'Go to dashboard': 'ไปที่แดชบอร์ด',
+   'Manual review in progress': 'กำลังตรวจสอบโดยเจ้าหน้าที่',
+   "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review.":
+      'การยืนยันตัวตนของคุณต้องให้เจ้าหน้าที่ตรวจสอบสั้น ๆ โดยปกติใช้เวลาไม่กี่ชั่วโมง แต่อาจนานสุด 1 วันทำการ เราจะอัปเดตสถานะให้โดยอัตโนมัติ หากต้องการให้เร็วขึ้น ส่งข้อความถึงเราด้านล่าง แล้วเราจะเร่งตรวจสอบให้',
+   "Verification didn't pass": 'การยืนยันตัวตนไม่ผ่าน',
+   "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. A few things that usually fix it:":
+      'เราไม่สามารถยืนยันตัวตนของคุณได้ ซึ่งอาจเกิดจากรูปเอกสารไม่ชัด เอกสารหมดอายุ หรือไม่ตรงกับใบหน้าของคุณ วิธีที่มักช่วยแก้ปัญหาได้มีดังนี้:',
+   'Try again': 'ลองอีกครั้ง',
+   "Verification wasn't finished": 'การยืนยันตัวตนยังไม่เสร็จ',
+   'It looks like you left before completing all the steps. Pick up right where you left off, or start over with a fresh session.':
+      'ดูเหมือนว่าคุณออกไปก่อนทำครบทุกขั้นตอน คุณสามารถทำต่อจากจุดเดิม หรือเริ่มใหม่ด้วยเซสชันใหม่ได้',
+   "It looks like the verification was closed before all the steps were completed, so we couldn't finish checking your identity. No problem — you can start over any time.":
+      'ดูเหมือนว่าหน้ายืนยันตัวตนถูกปิดก่อนทำครบทุกขั้นตอน เราจึงตรวจสอบตัวตนของคุณไม่เสร็จ ไม่เป็นไร คุณเริ่มใหม่ได้ทุกเมื่อ',
+   'Continue verification': 'ยืนยันตัวตนต่อ',
+   'Opening…': 'กำลังเปิด…',
+   'Checking…': 'กำลังตรวจสอบ…',
+   'Verified!': 'ยืนยันแล้ว!',
+   'Your identity has been confirmed. Taking you to the next step.': 'ยืนยันตัวตนของคุณเรียบร้อยแล้ว กำลังพาคุณไปยังขั้นตอนถัดไป',
+   'This identity is already registered': 'ตัวตนนี้ลงทะเบียนไว้แล้ว',
+   'Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support.':
+      'เราพบบัญชีที่ยืนยันด้วยใบหน้านี้แล้ว แต่ละคนยืนยันตัวตนได้เพียงครั้งเดียว หากคุณคิดว่านี่เป็นความผิดพลาด โปรดติดต่อฝ่ายช่วยเหลือ',
+   'Continue to app': 'ไปที่แอป',
+   "Face scan didn't pass": 'การสแกนใบหน้าไม่ผ่าน',
+   "The scan didn't finish successfully — either it was closed early or we couldn't confirm a live person. Tap Try again for a fresh scan. A few things that help:":
+      'การสแกนไม่สำเร็จ อาจเพราะถูกปิดก่อนเสร็จ หรือเราไม่สามารถยืนยันได้ว่าเป็นบุคคลจริง แตะ "ลองอีกครั้ง" เพื่อสแกนใหม่ สิ่งที่ช่วยได้มีดังนี้:',
+   'Good, even lighting — avoid bright backlighting': 'แสงดีและสม่ำเสมอ หลีกเลี่ยงแสงจ้าจากด้านหลัง',
+   'Hold your phone steady and face the camera directly': 'ถือโทรศัพท์ให้นิ่งและหันหน้าตรงเข้าหากล้อง',
+   'Remove sunglasses or hats': 'ถอดแว่นกันแดดหรือหมวกออก',
+   'Make sure your whole face is visible in the frame': 'ตรวจดูว่าเห็นใบหน้าทั้งหมดอยู่ในกรอบ',
+   'Something went wrong': 'เกิดข้อผิดพลาด',
+   'Please try again.': 'โปรดลองอีกครั้ง',
+   'Requires a passport added to your World App.': 'ต้องมีหนังสือเดินทางที่เพิ่มไว้ใน World App ของคุณ',
+   'Requires a World ID verified at an Orb.': 'ต้องมี World ID ที่ยืนยันที่ Orb แล้ว',
+   'Loading…': 'กำลังโหลด…',
+   'Preparing verification.': 'กำลังเตรียมการยืนยันตัวตน',
 };
