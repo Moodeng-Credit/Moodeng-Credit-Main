@@ -36,6 +36,7 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import BorrowerContactsSection from './BorrowerContactsSection';
+import CalendarSection from './CalendarSection';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
 import DemoB2CSection from './DemoB2CSection';
@@ -55,6 +56,7 @@ import UxHealthSection from './UxHealthSection';
 
 type AdminTab =
    | 'users'
+   | 'calendar'
    | 'analytics'
    | 'ux-health'
    | 'on-chain'
@@ -99,6 +101,7 @@ const navGroups: NavGroup[] = [
       label: 'Overview',
       items: [
          { id: 'users', label: 'User directory' },
+         { id: 'calendar', label: 'Calendar' },
          { id: 'borrower-contacts', label: 'Borrower contacts' },
          { id: 'analytics', label: 'Growth & analytics' },
          { id: 'ux-health', label: 'UX health' },
@@ -389,6 +392,7 @@ function hasPositivePoints(points: number | string) {
 
 const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'users',
+   'calendar',
    'analytics',
    'ux-health',
    'on-chain',
@@ -1848,6 +1852,8 @@ export default function AdminPanel() {
                      <BorrowerContactsSection />
                   </section>
                ) : null}
+
+               {activeTab === 'calendar' ? <CalendarSection /> : null}
 
                {activeTab === 'chat' ? <SupportChatSection /> : null}
 
