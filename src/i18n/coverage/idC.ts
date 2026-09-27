@@ -267,5 +267,143 @@ export const indonesianCoverageC: Record<string, string> = {
    'Small loans, real signal': 'Pinjaman kecil, sinyal nyata',
    'Microloans create a practical path for borrowers to build proof over time.':
       'Pinjaman mikro menjadi jalan praktis bagi peminjam untuk membangun bukti dari waktu ke waktu.',
-   'Moodeng Credit wallet illustration': 'Ilustrasi dompet Moodeng Credit'
+   'Moodeng Credit wallet illustration': 'Ilustrasi dompet Moodeng Credit',
+
+// src/views/login/components/AuthCard.tsx
+   'Create your account to get started with moodeng.': 'Buat akun kamu untuk mulai menggunakan Moodeng.',
+   'Moodeng Mascot': 'Maskot Moodeng',
+
+   // src/views/login/components/AuthForm.tsx
+   'Email already exists.': 'Email sudah terdaftar.',
+   'Invalid credentials.': 'Email atau kata sandi salah.',
+   'Remember me': 'Ingat saya',
+   'Forgot password?': 'Lupa kata sandi?',
+   'Enter your Email': 'Masukkan email kamu',
+   'Confirm your Password': 'Konfirmasi kata sandi kamu',
+   'Create Account': 'Buat akun',
+   'Create your Password': 'Buat kata sandi kamu',
+   'Enter your Password': 'Masukkan kata sandi kamu',
+   'Sign Up Error. Please try again.': 'Pendaftaran gagal. Coba lagi.',
+   'Password is weak, Password must be at least 6 characters long and can only include letters, numbers, and the symbols !@#$%^&*()+=._-':
+      'Kata sandi lemah. Kata sandi minimal 6 karakter dan hanya boleh berisi huruf, angka, dan simbol !@#$%^&*()+=._-',
+
+   // src/views/login/sections/AuthFormSection.tsx
+   'OR CONTINUE WITH EMAIL': 'ATAU LANJUTKAN DENGAN EMAIL',
+   'An account already exists with this email. Please sign in or reset your password.':
+      'Sudah ada akun dengan email ini. Silakan masuk atau atur ulang kata sandi kamu.',
+   'Registration failed. Please check your information and try again.': 'Pendaftaran gagal. Periksa data kamu, lalu coba lagi.',
+
+   // src/views/milestones/Milestones.tsx
+   Rewards: 'Hadiah',
+   'How rewards unlock': 'Cara membuka hadiah',
+   'Complete milestones to earn Pandesal points. Profile rewards unlock automatically when you reach the required points.':
+      'Selesaikan pencapaian untuk mendapatkan poin Pandesal. Hadiah profil terbuka otomatis saat poinmu mencapai jumlah yang dibutuhkan.',
+   'Pandesal points unlock profile rewards. They do not guarantee funding.':
+      'Poin Pandesal membuka hadiah profil, tetapi tidak menjamin pinjamanmu didanai.',
+   'How rewards work': 'Cara kerja hadiah',
+   'Next reward': 'Hadiah berikutnya',
+   Collectibles: 'Koleksi',
+   Upcoming: 'Mendatang',
+   'Close rewards help': 'Tutup bantuan hadiah',
+   '· You won this': '· Kamu memenangkan ini',
+   'Start setup': 'Mulai pengaturan',
+   'Add a wallet': 'Tambahkan dompet',
+   'Finish setup with identity verification and your wallet (an Instant Wallet, or a Base Account if you prefer) to unlock borrowing and start building your public trust record.':
+      'Selesaikan pengaturan dengan verifikasi identitas dan dompet kamu (Instant Wallet, atau Base Account jika kamu mau) untuk membuka fitur pinjam dan mulai membangun catatan kepercayaan publik kamu.',
+   'Set up your Instant Wallet (or connect a Base Account) to unlock borrowing and start building your public trust record.':
+      'Siapkan Instant Wallet kamu (atau hubungkan Base Account) untuk membuka fitur pinjam dan mulai membangun catatan kepercayaan publik kamu.',
+   'Verify your identity to unlock borrowing and start building your public trust record.':
+      'Verifikasi identitas kamu untuk membuka fitur pinjam dan mulai membangun catatan kepercayaan publik kamu.',
+   'Your reputation milestones will appear here as you repay loans on time.':
+      'Pencapaian reputasi kamu akan muncul di sini saat kamu membayar kembali pinjaman tepat waktu.',
+
+   // src/views/onboarding/Congratulations.tsx (the id copy block renders for id; these English keys are a fallback)
+   'Quick Start for New Users': 'Mulai cepat untuk pengguna baru',
+   'Get Help via Telegram': 'Dapatkan bantuan lewat Telegram',
+   'Message us for wallet help, deposits, or questions': 'Kirim pesan untuk bantuan dompet, deposit, atau pertanyaan lain',
+   'Contact Us on Facebook': 'Hubungi kami di Facebook',
+   'Join our community and ask questions': 'Gabung komunitas kami dan ajukan pertanyaan',
+   'Learn Credit Leveling System': 'Pelajari sistem Level Kredit',
+   'Moodeng celebrating': 'Moodeng sedang merayakan',
+   'Moodeng community hippo': 'Kuda nil komunitas Moodeng',
+   'Congratulations! 🎉': 'Selamat! 🎉',
+   "Your Moodeng account is fully set up and you're ready to go!": 'Akun Moodeng kamu sudah siap dan kamu bisa mulai sekarang!',
+   "What's Next?": 'Selanjutnya apa?',
+   'Grow Limits, Build Trust': 'Naikkan limit, bangun kepercayaan',
+   'Explore the Request Board': 'Jelajahi Papan Permintaan',
+   'You can now explore Moodeng Credit and begin your journey with confidence.':
+      'Sekarang kamu bisa menjelajahi Moodeng Credit dan memulai perjalananmu dengan percaya diri.',
+   'Voices Against Unfair Loans': 'Suara melawan pinjaman yang tidak adil',
+   'Join Our Facebook Community. Connect with other Moodeng Credit users':
+      'Gabung komunitas Facebook kami. Terhubung dengan pengguna Moodeng Credit lainnya',
+   'Join Our Community': 'Gabung komunitas kami',
+
+   // src/views/onboarding/ConnectWallet.tsx
+   'Create your Instant Wallet': 'Buat Instant Wallet kamu',
+   'Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.':
+      'Pinjamanmu masuk ke sini — dibuat dari login Moodeng kamu, tanpa perlu aplikasi. Kamu juga dapat poin Pandesal.',
+   'Setting up your wallet — this takes a few seconds. Keep this screen open.':
+      'Sedang menyiapkan dompet kamu — hanya butuh beberapa detik. Jangan tutup layar ini.',
+   'Connect Your Base Wallet': 'Hubungkan dompet Base kamu',
+   'Connect Your Wallet': 'Hubungkan dompet kamu',
+   'Think of this as your digital checking account.': 'Anggap saja ini rekening digital kamu.',
+   'No app needed': 'Tanpa aplikasi',
+   'Created from your Moodeng login in seconds. Fully yours — export the key anytime.':
+      'Dibuat dari login Moodeng kamu dalam hitungan detik. Sepenuhnya milikmu — kunci bisa diekspor kapan saja.',
+   'All wallets support gasless transactions on Base network': 'Semua dompet mendukung transaksi tanpa biaya gas di jaringan Base',
+   'Create Your Instant Wallet': 'Buat Instant Wallet kamu',
+   'Moodeng wallet': 'Dompet Moodeng',
+   'Add Base Wallet': 'Tambah dompet Base',
+   'Connecting your wallet lets Moodeng read your on-chain activity to award Pandesal points and send USDC loans directly to you. We never ask for your private keys or seed phrase.':
+      'Dengan menghubungkan dompet, Moodeng bisa membaca aktivitas on-chain kamu untuk memberi poin Pandesal dan mengirim pinjaman USDC langsung ke kamu. Kami tidak pernah meminta private key atau seed phrase kamu.',
+   'or connect a Base Account or another wallet': 'atau hubungkan Base Account atau dompet lain',
+   'Wallet unavailable': 'Dompet tidak tersedia',
+   'Connection failed': 'Koneksi gagal',
+   'Could not connect wallet. Please try again.': 'Gagal menghubungkan dompet. Coba lagi.',
+   "Your Instant Wallet holds your USDC loans and earns you Pandesal points. It's created instantly from your Moodeng login — no app and no seed phrase — and it's fully yours: you can export its key anytime. Prefer a Base Account? You can connect one instead. We never ask for your private keys or seed phrase.":
+      'Instant Wallet menyimpan pinjaman USDC kamu dan memberimu poin Pandesal. Dompet ini langsung dibuat dari login Moodeng kamu — tanpa aplikasi dan tanpa seed phrase — dan sepenuhnya milikmu: kuncinya bisa kamu ekspor kapan saja. Lebih suka Base Account? Kamu bisa menghubungkannya sebagai gantinya. Kami tidak pernah meminta private key atau seed phrase kamu.',
+   'Prefer a Base Account? Connect it instead': 'Lebih suka Base Account? Hubungkan saja',
+   'Creating your wallet…': 'Membuat dompet kamu…',
+   'Create Instant Wallet': 'Buat Instant Wallet',
+   'Connecting...': 'Menghubungkan...',
+   'Connect Base Wallet': 'Hubungkan dompet Base',
+   'Select a wallet above': 'Pilih dompet di atas',
+
+   // src/views/onboarding/WalletAlreadyLinked.tsx
+   'This wallet is already in use': 'Dompet ini sudah digunakan',
+   'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
+      'Dompet ini sudah terhubung ke akun Moodeng lain. Agar pinjaman tetap adil dan tidak ada yang meminjami dirinya sendiri, setiap dompet hanya boleh dimiliki satu akun.',
+   'What you can do': 'Yang bisa kamu lakukan',
+   'Connect a different wallet address to this lender account.': 'Hubungkan alamat dompet lain ke akun pemberi pinjaman ini.',
+   'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
+      'Jika kamu tidak sengaja membuat akun peminjam, hapus dulu dompet ini dari akun tersebut — atau minta kami menghapus akun itu atau mengganti perannya.',
+   "Not sure what happened? Message us and we'll help.": 'Bingung apa yang terjadi? Kirim pesan ke kami, kami akan bantu.',
+   'Wallet In Use': 'Dompet sudah dipakai',
+
+   // src/views/onboarding/WalletConnectHelp.tsx
+   'Trouble connecting?': 'Kesulitan menghubungkan?',
+   'Use the popup that opens when you tap Connect.': 'Gunakan popup yang muncul saat kamu tap Hubungkan.',
+   'Still stuck?': 'Masih belum bisa?',
+   'Switch between Wi‑Fi and mobile data, make sure your browser is up to date, and reconnect.':
+      'Coba ganti antara Wi‑Fi dan data seluler, pastikan browser kamu versi terbaru, lalu hubungkan lagi.',
+   "You don't need to download a separate Base app from the app store — creating an account there won't connect here.":
+      'Kamu tidak perlu mengunduh aplikasi Base terpisah dari app store — membuat akun di sana tidak akan terhubung ke sini.',
+   'Seeing a “connection is not private” warning?': 'Muncul peringatan “koneksi tidak privat”?',
+   "Your phone's clock is probably off. In Settings, set date & time to automatic, then tap Connect again.":
+      'Kemungkinan jam di ponselmu tidak tepat. Di Pengaturan, atur tanggal & waktu ke otomatis, lalu tap Hubungkan lagi.',
+
+   // src/views/onboarding/WalletConnected.tsx
+   'Use Your Instant Wallet or a Base Account': 'Gunakan Instant Wallet atau Base Account kamu',
+   'Borrowers use the Moodeng Instant Wallet, created from your login — or you can connect a Base Account instead. Other wallet connectors cannot be locked for Moodeng borrowing.':
+      'Peminjam memakai Instant Wallet Moodeng yang dibuat dari login kamu — atau kamu bisa menghubungkan Base Account sebagai gantinya. Konektor dompet lain tidak bisa dikunci untuk meminjam di Moodeng.',
+   'Confirm Saved Base Account': 'Konfirmasi Base Account tersimpan',
+   'Confirm Your Base Account': 'Konfirmasi Base Account kamu',
+   "We couldn't detect a wallet. Set up your Instant Wallet (or connect a Base Account if you prefer) to continue.":
+      'Kami tidak menemukan dompet. Siapkan Instant Wallet kamu (atau hubungkan Base Account jika kamu mau) untuk melanjutkan.',
+   'Your Instant Wallet Is Ready': 'Instant Wallet kamu sudah siap',
+   'Wallet Connected': 'Dompet terhubung',
+   'Loans you receive land right in the app — no other app needed. It also earns you Pandesal points.':
+      'Pinjaman yang kamu terima langsung masuk ke aplikasi — tanpa perlu aplikasi lain. Kamu juga dapat poin Pandesal.',
+   'Continue Application': 'Lanjutkan pengajuan',
+   Next: 'Berikutnya'
 };
