@@ -405,5 +405,122 @@ export const indonesianCoverageC: Record<string, string> = {
    'Loans you receive land right in the app — no other app needed. It also earns you Pandesal points.':
       'Pinjaman yang kamu terima langsung masuk ke aplikasi — tanpa perlu aplikasi lain. Kamu juga dapat poin Pandesal.',
    'Continue Application': 'Lanjutkan pengajuan',
-   Next: 'Berikutnya'
+   Next: 'Berikutnya',
+
+   // src/views/onboarding/WalletFaceCheck.tsx
+   "We couldn't finish creating your wallet. Please try again.": 'Kami belum berhasil membuat dompet kamu. Silakan coba lagi.',
+   'Could not start the face check. Please try again.': 'Tidak bisa memulai cek wajah. Silakan coba lagi.',
+   'Quick face check': 'Cek wajah singkat',
+   'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
+      'Pemindaian liveness singkat memastikan setiap orang hanya punya satu Instant Wallet, dan karena itulah kami bisa menanggung biaya jaringan. Kami tidak pernah menyimpan fotomu, dan pemindaian ini hanya diperlukan untuk membuat dompet — bukan untuk masuk, mengirim, atau membayar kembali.',
+   'Try the scan again': 'Coba pindai lagi',
+   'Connect a wallet instead': 'Hubungkan dompet lain saja',
+   'Creating your wallet': 'Membuat dompet kamu',
+   'This takes a few seconds. Keep this screen open.': 'Ini butuh beberapa detik. Jangan tutup layar ini.',
+   'Still checking': 'Masih memeriksa',
+   'This is taking longer than usual. Your scan is safe — check again in a moment.':
+      'Prosesnya lebih lama dari biasanya. Hasil pindaianmu aman — cek lagi sebentar lagi.',
+   'Start a new scan': 'Mulai pindai baru',
+   'One quick face check': 'Satu cek wajah singkat',
+   'Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.':
+      'Setiap orang hanya bisa punya satu Instant Wallet, jadi kami minta pemindaian sepuluh detik sebelum membuat dompetmu. Kamu tidak perlu melakukannya lagi.',
+   'Starting…': 'Memulai…',
+   'Start face check': 'Mulai cek wajah',
+   'Connect a wallet I already own': 'Hubungkan dompet yang sudah saya punya',
+
+   // src/views/onboarding/Welcome.tsx (the id copy block renders for id; this English title is a fallback)
+   Onboarding: 'Mulai',
+
+   // src/views/onboarding/walletPickerOptions.tsx
+   'Top Pick': 'Pilihan utama',
+   'Zero fees': 'Tanpa biaya',
+   'Best for beginners': 'Terbaik untuk pemula',
+   'Sleek UI': 'Tampilan rapi',
+   'Simple & secure': 'Simpel & aman',
+   Popular: 'Populer',
+   Universal: 'Universal',
+   'Widely Used': 'Banyak dipakai',
+
+   // src/views/profile/components/Calendar.tsx
+   'Loan Insights': 'Wawasan pinjaman',
+
+   // src/views/profile/components/Card.tsx
+   'You Funded': 'Kamu mendanai',
+   'Due on': 'Jatuh tempo',
+   'Fully Repaid': 'Lunas',
+   'Repayment Progress': 'Progres pembayaran kembali',
+   'Remaining for Complete Payback': 'lagi hingga lunas',
+   'Borrow Insight': 'Detail peminjam',
+   'posted on': 'diposting pada',
+   'Waiting for Funding': 'Menunggu pendanaan',
+   Asking: 'Diminta',
+   'Delete Loan Request?': 'Hapus permintaan pinjaman?',
+   'Are you sure you want to delete this loan request? This action cannot be undone.':
+      'Yakin mau menghapus permintaan pinjaman ini? Tindakan ini tidak bisa dibatalkan.',
+   'Delete Request': 'Hapus permintaan',
+
+   // src/views/profile/components/navigation/MobileNav.tsx
+   'Toggle menu': 'Buka/tutup menu',
+
+   // src/views/profile/components/navigation/Sidebar.tsx
+   'View more': 'Lihat selengkapnya',
+   Menu: 'Menu',
+
+   // src/views/profile/components/settings/NotificationSettings.tsx (the id copy block renders for id; these English keys are a fallback)
+   'Push notifications on this device': 'Notifikasi push di perangkat ini',
+   'Get a notification the moment a repayment is due, or when a borrower who already repaid you asks again. Applies to this device only.':
+      'Dapatkan notifikasi saat pembayaran jatuh tempo, atau saat peminjam yang sudah melunasi ke kamu mengajukan lagi. Hanya untuk perangkat ini.',
+   Notification: 'Notifikasi',
+   'Transaction Activity': 'Aktivitas transaksi',
+   'Get important notifications about your transactions': 'Dapatkan notifikasi penting tentang transaksimu.',
+
+   // src/views/profile/components/settings/ProfileSettings.tsx
+   'Having an up-to-date email address attached to your account is a great step towards improving account security.':
+      'Menautkan alamat email yang masih aktif ke akunmu adalah langkah bagus untuk meningkatkan keamanan akun.',
+   'You can also opt to receive notifications via Telegram or WhatsApp to stay informed of any account changes.':
+      'Kamu juga bisa memilih menerima notifikasi lewat Telegram atau WhatsApp agar selalu tahu setiap perubahan di akunmu.',
+   Username: 'Nama pengguna',
+   'Change Username': 'Ubah nama pengguna',
+   'Change Email': 'Ubah email',
+   'Test Email': 'Email uji coba',
+   'Send a test email to verify your email configuration': 'Kirim email uji coba untuk memeriksa pengaturan email kamu',
+   'Development mode only: Send a test email to': 'Khusus mode pengembangan: kirim email uji coba ke',
+   'Sending...': 'Mengirim...',
+   'Send Test Email': 'Kirim email uji coba',
+   'Connect your telegram to get the latest updates': 'Hubungkan Telegram kamu untuk mendapat kabar terbaru',
+   Whatsapp: 'WhatsApp',
+   'Connect your WhatsApp to get the latest updates': 'Hubungkan WhatsApp kamu untuk mendapat kabar terbaru',
+
+   // src/views/profile/components/settings/SecuritySettings.tsx
+   'This information will be shown publicly so be careful what information you provide':
+      'Informasi ini akan ditampilkan secara publik, jadi berhati-hatilah dengan informasi yang kamu berikan',
+   'New Password': 'Kata sandi baru',
+   'Wrong network': 'Jaringan salah',
+   Disconnect: 'Putuskan',
+
+   // src/views/profile/components/shared/LoadMoreButton.tsx
+   'Load More...': 'Muat lebih banyak...',
+
+   // src/views/profile/components/shared/TelegramModal.tsx
+   'Connect Telegram.': 'Hubungkan Telegram.',
+
+   // src/views/profile/components/tabs/CreditLevelCard.tsx
+   'Progression Paused (Late Repayment)': 'Kenaikan level dijeda (pembayaran terlambat)',
+   'Max Credit Unlocked!': 'Kredit maksimum terbuka!',
+   'Max Credit': 'Kredit maksimum',
+   'Unlocked!': 'Terbuka!',
+   'Request Loan': 'Ajukan pinjaman',
+   'Credit Unlocked': 'Kredit terbuka',
+   LOCKED: 'TERKUNCI',
+
+   // src/views/profile/components/tabs/DashboardTab.tsx
+   Points: 'Poin',
+   'PAY LOANS NOW': 'BAYAR PINJAMAN SEKARANG',
+
+   // src/views/profile/components/tabs/SettingsTab.tsx
+   'Revert Changes': 'Batalkan perubahan',
+   'Save Changes': 'Simpan perubahan',
+
+   // src/views/profile/components/tabs/SupportTab.tsx
+   'Support content coming soon...': 'Konten dukungan segera hadir...'
 };
