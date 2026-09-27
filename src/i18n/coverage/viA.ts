@@ -176,4 +176,185 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Update password': 'Cập nhật mật khẩu',
    // src/app/role-selection/page.tsx
    'Moodeng hippo': 'Hà mã Moodeng',
+   'How would you like to use Moodeng Credit?': 'Bạn muốn dùng Moodeng Credit như thế nào?',
+   'Request short-term loans, repay clearly, and build trust over time.':
+      'Yêu cầu khoản vay ngắn hạn, trả nợ rõ ràng và xây dựng niềm tin theo thời gian.',
+   'Failed to save your role. Please try again.': 'Không thể lưu vai trò của bạn. Vui lòng thử lại.',
+   'I am a Borrower': 'Tôi là người vay',
+   'Request USDC loans and build trust through on-time repayment.': 'Yêu cầu khoản vay USDC và xây dựng niềm tin qua việc trả nợ đúng hạn.',
+   'I am a Lender': 'Tôi là người cho vay',
+   'Fund loan requests and earn returns by supporting trusted borrowers.':
+      'Cấp vốn cho các yêu cầu vay và nhận lợi nhuận khi hỗ trợ những người vay đáng tin cậy.',
+   'Confirming...': 'Đang xác nhận...',
+   '© 2026 Moodeng Credit. All rights reserved.': '© 2026 Moodeng Credit. Bảo lưu mọi quyền.',
+   // src/app/simple/page.tsx
+   'Simple Page - CSS and Navigation working!': 'Trang đơn giản - CSS và điều hướng đang hoạt động!',
+   // src/app/team/page.tsx
+   'Co-Founders': 'Đồng sáng lập',
+   'Building a portable trust layer for borrowers who deserve fair credit and lenders who want transparent impact.':
+      'Xây dựng một lớp uy tín có thể mang theo, dành cho người vay xứng đáng được tiếp cận tín dụng công bằng và người cho vay muốn tạo tác động minh bạch.',
+   'Project Co-Lead': 'Đồng trưởng dự án',
+   'Repeat founder and product builder working to help people build credit through practical systems that are clear, fair, and useful in real life.':
+      'Nhà sáng lập nhiều lần và người xây dựng sản phẩm, đang giúp mọi người xây dựng tín dụng bằng những hệ thống thiết thực, rõ ràng, công bằng và hữu ích trong đời sống.',
+   'University of Edinburgh': 'Đại học Edinburgh',
+   'Ex-UNHCR Data Team Lead': 'Cựu trưởng nhóm dữ liệu UNHCR',
+   'Former Portfolio Manager': 'Cựu quản lý danh mục đầu tư',
+   '1 Exit': '1 lần exit',
+   '2 Prior Startups': '2 startup trước đây',
+   'Leads growth and community storytelling for Moodeng Credit, turning borrower education, social content, and campaign feedback into clearer trust-building moments.':
+      'Phụ trách tăng trưởng và kể chuyện cộng đồng cho Moodeng Credit, biến giáo dục người vay, nội dung mạng xã hội và phản hồi từ chiến dịch thành những khoảnh khắc xây dựng niềm tin rõ ràng hơn.',
+   'Growth Marketing': 'Marketing tăng trưởng',
+   'Borrower Education': 'Giáo dục người vay',
+   'Community Campaigns': 'Chiến dịch cộng đồng',
+   'Member of Technical Team': 'Thành viên đội kỹ thuật',
+   'Backend engineer building scalable APIs, cloud systems, and product flows for Moodeng Credit.':
+      'Kỹ sư backend xây dựng API có khả năng mở rộng, hệ thống đám mây và các luồng sản phẩm cho Moodeng Credit.',
+   'Backend Engineer': 'Kỹ sư backend',
+   'App Flows': 'Luồng ứng dụng',
+   'Working on Partnerships': 'Phụ trách đối tác',
+   'Supports Moodeng Credit with partnerships, lender outreach, and growth channels, while also working at':
+      'Hỗ trợ Moodeng Credit về quan hệ đối tác, tiếp cận người cho vay và các kênh tăng trưởng, đồng thời làm việc tại',
+   'helping teams connect with blockchain data infrastructure.': ', giúp các đội ngũ kết nối với hạ tầng dữ liệu blockchain.',
+   'Head of Growth': 'Trưởng bộ phận tăng trưởng',
+   'Growth Hacking': 'Growth hacking',
+   'Blockchain Analysis': 'Phân tích blockchain',
+   'Digital Marketing': 'Marketing số',
+   'Marketing Automation': 'Tự động hóa marketing',
+   'Working on Building Community': 'Phụ trách xây dựng cộng đồng',
+   'Builds stories and visual direction for Moodeng Credit, helping turn community ideas into growth narratives people can understand, share, and rally around.':
+      'Xây dựng câu chuyện và định hướng hình ảnh cho Moodeng Credit, giúp biến ý tưởng của cộng đồng thành những câu chuyện tăng trưởng mà mọi người có thể hiểu, chia sẻ và cùng hưởng ứng.',
+   Storytelling: 'Kể chuyện',
+   'Visual Direction': 'Định hướng hình ảnh',
+   'Narrative Setting': 'Xây dựng câu chuyện',
+   Advisor: 'Cố vấn',
+   'US Army Officer, Mercury Labs founder, and sports/Web3 operator advising Moodeng Credit on investor strategy, brand positioning, and disciplined growth.':
+      'Sĩ quan Quân đội Hoa Kỳ, nhà sáng lập Mercury Labs và người vận hành trong lĩnh vực thể thao/Web3, cố vấn cho Moodeng Credit về chiến lược nhà đầu tư, định vị thương hiệu và tăng trưởng có kỷ luật.',
+   'US Army Officer': 'Sĩ quan Quân đội Hoa Kỳ',
+   Sports: 'Thể thao',
+   Writer: 'Tác giả',
+   Management: 'Quản lý',
+   'LinkedIn Profile': 'Hồ sơ LinkedIn',
+   Website: 'Trang web',
+   Advisors: 'Cố vấn',
+   'Additional team members': 'Các thành viên khác trong nhóm',
+   'Our Team | Moodeng Credit': 'Đội ngũ | Moodeng Credit',
+   'Meet the people building Moodeng Credit — co-founders George and Emma, the founding team, and advisors working on fair, portable credit.':
+      'Gặp gỡ những người xây dựng Moodeng Credit — hai nhà đồng sáng lập George và Emma, đội ngũ sáng lập và các cố vấn đang hướng tới tín dụng công bằng, có thể mang theo.',
+   // src/app/verify-world-id/page.tsx
+   'Verify Your Identity': 'Xác minh danh tính',
+   'To keep Moodeng safe and prevent fake or duplicate accounts, borrowers complete a short one-time identity check.':
+      'Để giữ Moodeng an toàn và ngăn tài khoản giả hoặc trùng lặp, người vay cần hoàn thành một bước xác minh danh tính ngắn, chỉ một lần.',
+   'Verify Your ID': 'Xác minh bằng giấy tờ tùy thân',
+   Recommended: 'Khuyên dùng',
+   'Quick national ID & selfie check — available in select countries.':
+      'Kiểm tra nhanh thẻ căn cước và ảnh selfie — áp dụng tại một số quốc gia.',
+   'Supported countries': 'Quốc gia được hỗ trợ',
+   'Not in a supported country?': 'Không ở quốc gia được hỗ trợ?',
+   'Verify with World ID': 'Xác minh bằng World ID',
+   'For World App users — verified at an Orb or with a passport.': 'Dành cho người dùng World App — đã xác minh tại Orb hoặc bằng hộ chiếu.',
+   // src/app/verify/page.tsx
+   'Retake in bright, even light — no glare or shadows on the ID': 'Chụp lại nơi đủ sáng, ánh sáng đều — không lóa hay bóng đổ trên giấy tờ',
+   'Lay the ID flat and fill the frame; make sure all text is sharp': 'Đặt giấy tờ nằm phẳng và lấp đầy khung hình; đảm bảo mọi chữ đều rõ nét',
+   'Use a currently valid (not expired) ID document': 'Dùng giấy tờ tùy thân còn hiệu lực (chưa hết hạn)',
+   'Remove hats, glasses and masks for the selfie': 'Bỏ mũ, kính và khẩu trang khi chụp selfie',
+   'Face the camera straight on, with your whole face visible': 'Nhìn thẳng vào camera, để lộ toàn bộ khuôn mặt',
+   'Capture the entire ID — all four corners must be visible': 'Chụp trọn giấy tờ — phải thấy đủ cả bốn góc',
+   'Use a government-issued national ID or passport': 'Dùng thẻ căn cước hoặc hộ chiếu do nhà nước cấp',
+   'Retake photos in bright, even light': 'Chụp lại ảnh nơi đủ sáng, ánh sáng đều',
+   'Lay the ID flat with all four corners visible': 'Đặt giấy tờ nằm phẳng, thấy đủ cả bốn góc',
+   'Remove hats and glasses for the selfie': 'Bỏ mũ và kính khi chụp selfie',
+   'Could not start the face scan. Please try again.': 'Không thể bắt đầu quét khuôn mặt. Vui lòng thử lại.',
+   'Could not start verification. Please try again.': 'Không thể bắt đầu xác minh. Vui lòng thử lại.',
+   'Something went wrong. Please try again.': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll submit your national ID.":
+      'Bấm nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll verify with World ID.":
+      'Bấm nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ xác minh bằng World ID.',
+   "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll submit your national ID.":
+      'Bấm nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự động cập nhật khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
+   "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll verify with World ID.":
+      'Bấm nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự động cập nhật khi xong. Sau đó, bạn sẽ xác minh bằng World ID.',
+   'Step 1 of 2': 'Bước 1/2',
+   'Ready for face scan': 'Sẵn sàng quét khuôn mặt',
+   'Open face scan': 'Mở quét khuôn mặt',
+   'Setting up…': 'Đang thiết lập…',
+   'Starting your verification. Keep this screen open.': 'Đang bắt đầu xác minh. Hãy giữ màn hình này mở.',
+   'Before you start': 'Trước khi bắt đầu',
+   "A quick ID + selfie check — about 3 minutes. You'll be brought back here automatically when it's done. Your ID is checked by our secure verification partner and is never stored by Moodeng.":
+      'Kiểm tra nhanh giấy tờ tùy thân + ảnh selfie — khoảng 3 phút. Bạn sẽ được tự động đưa trở lại đây khi xong. Giấy tờ của bạn được kiểm tra bởi đối tác xác minh bảo mật của chúng tôi và không bao giờ được Moodeng lưu trữ.',
+   'A quick ID + selfie check — about 3 minutes. It opens in a new tab; keep this page open and it will update automatically. Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'Kiểm tra nhanh giấy tờ tùy thân + ảnh selfie — khoảng 3 phút. Bước này mở trong thẻ mới; hãy giữ trang này mở và trang sẽ tự động cập nhật. Giấy tờ của bạn được kiểm tra bởi đối tác xác minh bảo mật của chúng tôi và không bao giờ được Moodeng lưu trữ.',
+   'Have your physical national ID with you': 'Chuẩn bị sẵn thẻ căn cước bản gốc',
+   'Find good, even lighting for the selfie': 'Tìm nơi có ánh sáng tốt, đều để chụp selfie',
+   'Allow camera access when asked': 'Cho phép truy cập camera khi được hỏi',
+   'Open verification': 'Mở trang xác minh',
+   'Go back': 'Quay lại',
+   'Almost there — hang tight while we finish the check.': 'Sắp xong rồi — vui lòng chờ trong khi chúng tôi hoàn tất kiểm tra.',
+   'Still checking — face scans usually take a minute or two.': 'Vẫn đang kiểm tra — quét khuôn mặt thường mất một hai phút.',
+   'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.':
+      'Đang quét khuôn mặt. Hãy hoàn tất trong thẻ vừa mở — trang này sẽ tự động cập nhật khi xong.',
+   'Waiting for face scan…': 'Đang chờ quét khuôn mặt…',
+   'More options': 'Tùy chọn khác',
+   'Almost there — we’re finishing the review.': 'Sắp xong rồi — chúng tôi đang hoàn tất việc xét duyệt.',
+   'Still confirming — verification usually takes a minute or two.': 'Vẫn đang xác nhận — việc xác minh thường mất một hai phút.',
+   'Finish the steps in the verification tab — this page updates automatically when you’re done.':
+      'Hoàn tất các bước trong thẻ xác minh — trang này sẽ tự động cập nhật khi bạn xong.',
+   'Confirming your verification…': 'Đang xác nhận kết quả xác minh…',
+   'Almost there': 'Sắp xong rồi',
+   'Your face scan is still finishing up. This usually takes a moment. Left before finishing the scan? Start over below for a fresh one.':
+      'Bước quét khuôn mặt vẫn đang hoàn tất. Việc này thường chỉ mất một lát. Bạn đã rời đi trước khi quét xong? Hãy bắt đầu lại bên dưới để quét mới.',
+   'Check again': 'Kiểm tra lại',
+   'Start over': 'Bắt đầu lại',
+   'Face scan not finished': 'Chưa quét xong khuôn mặt',
+   'It looks like the face scan was closed before it was completed. No problem — start a new scan below. It only takes about 30 seconds.':
+      'Có vẻ bước quét khuôn mặt đã bị đóng trước khi hoàn tất. Không sao — hãy bắt đầu lượt quét mới bên dưới. Chỉ mất khoảng 30 giây.',
+   'Start new face scan': 'Quét khuôn mặt lại',
+   'Reviewing your verification…': 'Đang xét duyệt xác minh của bạn…',
+   "Your details are being reviewed. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below.":
+      'Thông tin của bạn đang được xét duyệt. Phần lớn các lượt kiểm tra hoàn tất trong vài phút — chúng tôi sẽ tự động cập nhật màn hình này khi xong. Bạn đã rời đi trước khi hoàn tất mọi bước? Hãy bắt đầu lại bên dưới.',
+   'Check status': 'Kiểm tra trạng thái',
+   'Go to dashboard': 'Đến trang Tổng quan',
+   'Manual review in progress': 'Đang xét duyệt thủ công',
+   "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review.":
+      'Hồ sơ xác minh của bạn cần nhân viên xem xét nhanh — thường mất vài giờ nhưng có thể lên đến 1 ngày làm việc. Chúng tôi sẽ tự động cập nhật trạng thái cho bạn. Muốn nhanh hơn? Hãy nhắn tin cho chúng tôi bên dưới để được ưu tiên xét duyệt.',
+   "Verification didn't pass": 'Xác minh không thành công',
+   "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. A few things that usually fix it:":
+      'Chúng tôi chưa thể xác minh danh tính của bạn. Điều này có thể xảy ra khi ảnh giấy tờ không rõ, giấy tờ đã hết hạn hoặc không khớp với khuôn mặt của bạn. Một vài cách thường giúp khắc phục:',
+   'Try again': 'Thử lại',
+   "Verification wasn't finished": 'Chưa hoàn tất xác minh',
+   'It looks like you left before completing all the steps. Pick up right where you left off, or start over with a fresh session.':
+      'Có vẻ bạn đã rời đi trước khi hoàn tất mọi bước. Hãy tiếp tục từ chỗ đã dừng, hoặc bắt đầu lại với một phiên mới.',
+   "It looks like the verification was closed before all the steps were completed, so we couldn't finish checking your identity. No problem — you can start over any time.":
+      'Có vẻ trang xác minh đã bị đóng trước khi hoàn tất mọi bước, nên chúng tôi chưa thể kiểm tra xong danh tính của bạn. Không sao — bạn có thể bắt đầu lại bất cứ lúc nào.',
+   'Continue verification': 'Tiếp tục xác minh',
+   'Opening…': 'Đang mở…',
+   'Verified!': 'Đã xác minh!',
+   'Your identity has been confirmed. Taking you to the next step.': 'Danh tính của bạn đã được xác nhận. Đang chuyển bạn sang bước tiếp theo.',
+   'This identity is already registered': 'Danh tính này đã được đăng ký',
+   'Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support.':
+      'Hệ thống phát hiện đã có một tài khoản được xác minh bằng khuôn mặt này. Mỗi người chỉ được xác minh một lần. Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ bộ phận hỗ trợ.',
+   'Continue to app': 'Tiếp tục vào ứng dụng',
+   "Face scan didn't pass": 'Quét khuôn mặt không thành công',
+   "The scan didn't finish successfully — either it was closed early or we couldn't confirm a live person. Tap Try again for a fresh scan. A few things that help:":
+      'Lượt quét chưa hoàn tất thành công — có thể đã bị đóng sớm hoặc chúng tôi chưa xác nhận được đó là người thật. Bấm Thử lại để quét mới. Một vài mẹo hữu ích:',
+   'Good, even lighting — avoid bright backlighting': 'Ánh sáng tốt và đều — tránh ngược sáng mạnh',
+   'Hold your phone steady and face the camera directly': 'Cầm điện thoại chắc tay và nhìn thẳng vào camera',
+   'Remove sunglasses or hats': 'Bỏ kính râm hoặc mũ',
+   'Make sure your whole face is visible in the frame': 'Đảm bảo toàn bộ khuôn mặt nằm trong khung hình',
+   'Something went wrong': 'Đã có lỗi xảy ra',
+   'Please try again.': 'Vui lòng thử lại.',
+   'Continue to World ID': 'Tiếp tục với World ID',
+   'Requires a passport added to your World App.': 'Cần có hộ chiếu đã thêm vào World App của bạn.',
+   'Requires a World ID verified at an Orb.': 'Cần có World ID đã xác minh tại Orb.',
+   'Loading…': 'Đang tải…',
+   'Preparing verification.': 'Đang chuẩn bị xác minh.',
+   'Step 1 of 2 done': 'Đã xong bước 1/2',
+   'You’re a real person!': 'Bạn là người thật!',
+   'You’re not done yet — one last step. Verify with World ID below to finish and unlock your account.':
+      'Bạn chưa xong đâu — còn một bước cuối. Hãy xác minh bằng World ID bên dưới để hoàn tất và mở khóa tài khoản.',
+   'No World ID? Verify with your ID instead': 'Không có World ID? Xác minh bằng giấy tờ tùy thân',
+   'Checking…': 'Đang kiểm tra…',
+   'Need help from our team?': 'Cần đội ngũ của chúng tôi hỗ trợ?',
+   'Message us on Telegram': 'Nhắn tin cho chúng tôi qua Telegram',
+   'Message us on Facebook': 'Nhắn tin cho chúng tôi qua Facebook',
 };
