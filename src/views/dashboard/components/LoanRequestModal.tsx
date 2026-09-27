@@ -225,6 +225,15 @@ const tooltipCopy: Record<TooltipId, string> = {
    usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
 
+// Plain-language names for the term fields, used in the "what's still missing" summary
+// shown at the submit button so borrowers know exactly what to fill in.
+const TERM_FIELD_LABEL: Record<'amount' | 'repayment' | 'date' | 'reason', string> = {
+   amount: 'how much you want to borrow',
+   repayment: 'the amount you will repay',
+   date: 'your repayment date',
+   reason: 'a reason for the loan'
+};
+
 const isIgnorableMilestoneError = (error: { code?: string; message?: string }) =>
    error.code === 'PGRST202' ||
    error.code === 'P0002' ||
@@ -2613,10 +2622,40 @@ export default function LoanRequestModal({
                               </button>
                            </div>
                         ) : null}
+                        {/* Consolidated "what's still missing" summary, shown right at the button after a
+                            failed submit so borrowers who scrolled to the bottom don't miss the inline
+                            errors up the form. Mirrors the "Still needed:" pattern on the About-you step.
+                            Shrinks as each field is fixed, since termErrors clear on change. */}
+                        {(() => {
+                           const missing = (['amount', 'repayment', 'date', 'reason'] as const).filter(
+                              (field) => termErrors[field]
+                           );
+                           if (missing.length === 0) return null;
+
+                           return (
+                              <div
+                                 className="flex items-start gap-1.5 rounded-md-lg border border-md-red-500 bg-md-red-100 px-md-3 py-md-2 text-md-b3 font-medium leading-[18px] text-md-red-500"
+                                 id="loan-term-missing"
+                                 role="alert"
+                              >
+                                 <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                 <span>
+                                    Please fill in {missing.map((field) => TERM_FIELD_LABEL[field]).join(', ')} before
+                                    you can send your request.
+                                 </span>
+                              </div>
+                           );
+                        })()}
                         {/* Deliberately not aria-disabled: the button *does* act — it explains why it
                             can't submit yet. Point screen readers at that explanation instead. */}
                         <button
-                           aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
+                           aria-describedby={
+                              isVerified
+                                 ? Object.values(termErrors).some(Boolean)
+                                    ? 'loan-term-missing'
+                                    : undefined
+                                 : 'loan-verify-blocker'
+                           }
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
                               isVerified && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
