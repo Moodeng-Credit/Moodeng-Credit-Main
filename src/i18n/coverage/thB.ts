@@ -149,14 +149,18 @@ export const thaiCoverageB: Record<string, string> = {
    'Can pause progress': 'อาจทำให้ความคืบหน้าหยุดชะงัก',
    'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.':
       'ระดับของคุณจะไม่ใช่สิ่งที่ผู้ให้กู้ดูเป็นหลักอีกต่อไป ผู้ให้กู้จะให้ความสำคัญกับการชำระคืนที่พลาดไปก่อน',
-   'Borrowing below your limit builds trust, not your next level.': 'การยืมต่ำกว่าวงเงินช่วยสร้างความน่าเชื่อถือ แต่ไม่ได้พาคุณไปสู่ระดับถัดไป',
+   'Borrowing below your limit builds trust, not your next level.':
+      'การยืมต่ำกว่าวงเงินช่วยสร้างความน่าเชื่อถือ แต่ไม่ได้พาคุณไปสู่ระดับถัดไป',
    'Borrowing your full current limit is what can unlock the next level.': 'การยืมเต็มวงเงินปัจจุบันคือสิ่งที่ปลดล็อกระดับถัดไปได้',
    'You still need to repay the accepted terms clearly and on time.': 'คุณยังต้องชำระคืนตามเงื่อนไขที่ตกลงไว้อย่างครบถ้วนและตรงเวลา',
-   'Paying extra does not skip levels. Moodeng moves one level at a time.': 'การชำระเกินไม่ได้ช่วยให้ข้ามระดับ Moodeng เลื่อนระดับให้ทีละขั้น',
+   'Paying extra does not skip levels. Moodeng moves one level at a time.':
+      'การชำระเกินไม่ได้ช่วยให้ข้ามระดับ Moodeng เลื่อนระดับให้ทีละขั้น',
    'Use the full current limit': 'ใช้วงเงินปัจจุบันให้เต็ม',
-   'If your current level allows $15, the credit-building request is $15.': 'หากระดับปัจจุบันของคุณให้วงเงิน $15 คำขอ Credit-Building Loan ก็คือ $15',
+   'If your current level allows $15, the credit-building request is $15.':
+      'หากระดับปัจจุบันของคุณให้วงเงิน $15 คำขอ Credit-Building Loan ก็คือ $15',
    'Repay the accepted terms on time': 'ชำระคืนตามเงื่อนไขที่ตกลงไว้ให้ตรงเวลา',
-   'The repayment has to match the funded loan and land before the due date.': 'ยอดชำระคืนต้องตรงกับเงินกู้ที่ได้รับ และต้องชำระให้เสร็จก่อนวันครบกำหนด',
+   'The repayment has to match the funded loan and land before the due date.':
+      'ยอดชำระคืนต้องตรงกับเงินกู้ที่ได้รับ และต้องชำระให้เสร็จก่อนวันครบกำหนด',
    'Unlock the next level': 'ปลดล็อกระดับถัดไป',
    'A clean repayment can move you to the next borrowing limit. Smaller loans still build trust.':
       'การชำระคืนครบถ้วนตรงเวลาจะพาคุณไปสู่วงเงินกู้ถัดไป ส่วนเงินกู้ที่น้อยกว่านั้นก็ยังช่วยสร้างความน่าเชื่อถือ',
@@ -261,7 +265,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Already have an account?': 'มีบัญชีอยู่แล้วใช่ไหม?',
    'Tell us where to send your GrabFood voucher code.': 'บอกเราว่าจะให้ส่งโค้ดบัตรกำนัล GrabFood ไปที่ใด',
    'Thanks for inviting them. Where should we send your voucher code?': 'ขอบคุณที่ชวนเพื่อนมา จะให้เราส่งโค้ดบัตรกำนัลของคุณไปที่ใด?',
-   'Thanks for joining with a friend. Where should we send your voucher code?': 'ขอบคุณที่เข้าร่วมพร้อมเพื่อน จะให้เราส่งโค้ดบัตรกำนัลของคุณไปที่ใด?',
+   'Thanks for joining with a friend. Where should we send your voucher code?':
+      'ขอบคุณที่เข้าร่วมพร้อมเพื่อน จะให้เราส่งโค้ดบัตรกำนัลของคุณไปที่ใด?',
    Embed: 'ฝัง',
    'Close share': 'ปิดการแชร์',
    'More share options': 'ตัวเลือกการแชร์เพิ่มเติม',
@@ -373,7 +378,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Buy or bridge USDC to fund loans.': 'ซื้อหรือโอน USDC ข้ามเครือข่ายมาเพื่อปล่อยกู้',
    'Fund Wallet': 'เติมเงินเข้ากระเป๋า',
    'New here? Take the 60-sec tour': 'มาใหม่ใช่ไหม? ดูทัวร์ 60 วินาที',
-   'See how requests, funding, repayment, and trust fit together.': 'ดูว่าคำขอ การปล่อยกู้ การชำระคืน และความน่าเชื่อถือเชื่อมโยงกันอย่างไร',
+   'See how requests, funding, repayment, and trust fit together.':
+      'ดูว่าคำขอ การปล่อยกู้ การชำระคืน และความน่าเชื่อถือเชื่อมโยงกันอย่างไร',
    'Start tour': 'เริ่มทัวร์',
    'Open filters': 'เปิดตัวกรอง',
    'IMPORTANT NOTE': 'หมายเหตุสำคัญ',
@@ -504,7 +510,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Only the borrower who made a pending request can delete it.': 'เฉพาะผู้ยืมที่สร้างคำขอที่รอดำเนินการเท่านั้นที่ลบคำขอได้',
    'Request deleted': 'ลบคำขอแล้ว',
    'Lenders will no longer see this request on the board.': 'ผู้ให้กู้จะไม่เห็นคำขอนี้บนกระดานอีกต่อไป',
-   'It may already be funded or unavailable. Refreshing the board now.': 'คำขอนี้อาจได้รับการปล่อยกู้แล้วหรือไม่มีอยู่แล้ว กำลังรีเฟรชกระดาน',
+   'It may already be funded or unavailable. Refreshing the board now.':
+      'คำขอนี้อาจได้รับการปล่อยกู้แล้วหรือไม่มีอยู่แล้ว กำลังรีเฟรชกระดาน',
 
    // src/views/dashboard/components/ConnectStep.tsx
    Rent: 'ค่าเช่า',
@@ -518,16 +525,23 @@ export const thaiCoverageB: Record<string, string> = {
    'Tell us a little about what you need.': 'บอกเราสักนิดว่าคุณต้องการอะไร',
    'Only borrower accounts can apply for loans.': 'เฉพาะบัญชีผู้ยืมเท่านั้นที่ขอเงินกู้ได้',
    'Please book your call first.': 'โปรดนัดวิดีโอคอลก่อน',
-   "Your account can't apply right now. Message us on Messenger for help.": 'บัญชีของคุณยังขอเงินกู้ไม่ได้ในขณะนี้ ส่งข้อความหาเราทาง Messenger เพื่อขอความช่วยเหลือ',
+   "Your account can't apply right now. Message us on Messenger for help.":
+      'บัญชีของคุณยังขอเงินกู้ไม่ได้ในขณะนี้ ส่งข้อความหาเราทาง Messenger เพื่อขอความช่วยเหลือ',
    "Couldn't send right now — please try again in a moment.": 'ยังส่งไม่ได้ในขณะนี้ — โปรดลองอีกครั้งในอีกสักครู่',
    'Your goal': 'เป้าหมายของคุณ',
    'Book call': 'นัดวิดีโอคอล',
-   "Want us to take another look? Reach out again and tell us what's changed.": 'อยากให้เราพิจารณาอีกครั้งใช่ไหม? ติดต่อเรามาอีกครั้งและบอกเราว่ามีอะไรเปลี่ยนไป',
-   'No worries — life happens. Pick a new time for your 15-min call.': 'ไม่เป็นไร — เรื่องแบบนี้เกิดขึ้นได้ เลือกเวลาใหม่สำหรับวิดีโอคอล 15 นาทีของคุณ',
-   'No worries — life happens. Pick a new time for your 15-min call with Emma.': 'ไม่เป็นไร — เรื่องแบบนี้เกิดขึ้นได้ เลือกเวลาใหม่สำหรับวิดีโอคอล 15 นาทีกับ Emma',
-   'A quick 15-min call with Emma sets you up to cash out and repay easily.': 'วิดีโอคอลสั้น ๆ 15 นาทีกับ Emma จะช่วยตั้งค่าให้คุณถอนเงินและชำระคืนได้อย่างง่ายดาย',
-   'We meet every borrower on a quick 15-min video call before their first loan.': 'เราพบผู้ยืมทุกคนผ่านวิดีโอคอลสั้น ๆ 15 นาทีก่อนเงินกู้ครั้งแรก',
-   'Before your first loan, we like to meet every borrower — we approve within a day.': 'ก่อนเงินกู้ครั้งแรก เราอยากทำความรู้จักผู้ยืมทุกคน — เราอนุมัติภายในหนึ่งวัน',
+   "Want us to take another look? Reach out again and tell us what's changed.":
+      'อยากให้เราพิจารณาอีกครั้งใช่ไหม? ติดต่อเรามาอีกครั้งและบอกเราว่ามีอะไรเปลี่ยนไป',
+   'No worries — life happens. Pick a new time for your 15-min call.':
+      'ไม่เป็นไร — เรื่องแบบนี้เกิดขึ้นได้ เลือกเวลาใหม่สำหรับวิดีโอคอล 15 นาทีของคุณ',
+   'No worries — life happens. Pick a new time for your 15-min call with Emma.':
+      'ไม่เป็นไร — เรื่องแบบนี้เกิดขึ้นได้ เลือกเวลาใหม่สำหรับวิดีโอคอล 15 นาทีกับ Emma',
+   'A quick 15-min call with Emma sets you up to cash out and repay easily.':
+      'วิดีโอคอลสั้น ๆ 15 นาทีกับ Emma จะช่วยตั้งค่าให้คุณถอนเงินและชำระคืนได้อย่างง่ายดาย',
+   'We meet every borrower on a quick 15-min video call before their first loan.':
+      'เราพบผู้ยืมทุกคนผ่านวิดีโอคอลสั้น ๆ 15 นาทีก่อนเงินกู้ครั้งแรก',
+   'Before your first loan, we like to meet every borrower — we approve within a day.':
+      'ก่อนเงินกู้ครั้งแรก เราอยากทำความรู้จักผู้ยืมทุกคน — เราอนุมัติภายในหนึ่งวัน',
    'Welcome back': 'ยินดีต้อนรับกลับมา',
    'We missed you!': 'เราคิดถึงคุณ!',
    "Glad you're here!": 'ยินดีที่คุณมาที่นี่!',
@@ -560,7 +574,8 @@ export const thaiCoverageB: Record<string, string> = {
    Referral: 'ใช้โค้ดแนะนำ',
    applied: 'แล้ว',
    'Next: book your call': 'ถัดไป: นัดวิดีโอคอล',
-   'The team is unlocking your loan request — we’ll message you the moment it’s ready.': 'ทีมงานกำลังปลดล็อกคำขอเงินกู้ของคุณ — เราจะส่งข้อความหาคุณทันทีที่พร้อม',
+   'The team is unlocking your loan request — we’ll message you the moment it’s ready.':
+      'ทีมงานกำลังปลดล็อกคำขอเงินกู้ของคุณ — เราจะส่งข้อความหาคุณทันทีที่พร้อม',
    'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.':
       'นัดหมายเรียบร้อย! แตะ “ฉันจะเข้าร่วม” เพื่อให้เราเก็บคิวไว้ให้ — คุณขอเงินกู้ได้ทันทีหลังวิดีโอคอล',
    'Thank you for confirming! You can apply right after the call.': 'ขอบคุณที่ยืนยัน! คุณขอเงินกู้ได้ทันทีหลังวิดีโอคอล',
@@ -583,7 +598,8 @@ export const thaiCoverageB: Record<string, string> = {
    // src/views/dashboard/components/ContactsStep.tsx
    'Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.':
       'การแจ้งเตือนถูกบล็อก อนุญาตการแจ้งเตือนสำหรับ moodeng.app ในการตั้งค่าเบราว์เซอร์ แล้วแตะอีกครั้ง',
-   'Tap Allow when your phone asks, so we can remind you before your due date.': 'แตะ อนุญาต เมื่อโทรศัพท์ถาม เพื่อให้เราแจ้งเตือนคุณก่อนวันครบกำหนดได้',
+   'Tap Allow when your phone asks, so we can remind you before your due date.':
+      'แตะ อนุญาต เมื่อโทรศัพท์ถาม เพื่อให้เราแจ้งเตือนคุณก่อนวันครบกำหนดได้',
    "Couldn't turn on reminders — try again in a moment.": 'เปิดการแจ้งเตือนไม่ได้ — โปรดลองอีกครั้งในอีกสักครู่',
    "Couldn't start verification — try again in a moment.": 'เริ่มการยืนยันไม่ได้ — โปรดลองอีกครั้งในอีกสักครู่',
    'Only Moodeng sees this — never lenders.': 'มีเพียง Moodeng ที่เห็นข้อมูลนี้ — ผู้ให้กู้จะไม่เห็น',
@@ -662,7 +678,8 @@ export const thaiCoverageB: Record<string, string> = {
    // src/views/dashboard/components/LenderDiversitySection.tsx
    'Lender Diversity Score': 'คะแนนความหลากหลายของผู้ให้กู้',
    'Early Score': 'คะแนนเบื้องต้น',
-   'Early estimate: needs 8 funded loans before the score is fully weighted.': 'ค่าประมาณเบื้องต้น: ต้องได้รับการปล่อยกู้ 8 ครั้งก่อนคะแนนจะคำนวณได้เต็มที่',
+   'Early estimate: needs 8 funded loans before the score is fully weighted.':
+      'ค่าประมาณเบื้องต้น: ต้องได้รับการปล่อยกู้ 8 ครั้งก่อนคะแนนจะคำนวณได้เต็มที่',
    'Not enough history': 'ประวัติยังไม่เพียงพอ',
    'This score appears after at least 2 funded loans.': 'คะแนนนี้จะแสดงหลังได้รับการปล่อยกู้อย่างน้อย 2 ครั้ง',
    '0 Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน 0 ราย',
@@ -757,9 +774,12 @@ export const thaiCoverageB: Record<string, string> = {
    "Verification didn't pass": 'ยืนยันตัวตนไม่ผ่าน',
    'A human reviewer is double-checking your documents — this can take up to 1 business day.':
       'เจ้าหน้าที่กำลังตรวจสอบเอกสารของคุณอีกครั้ง — อาจใช้เวลาไม่เกิน 1 วันทำการ',
-   'You left before finishing all the steps. Tap below to continue or start over.': 'คุณออกไปก่อนทำครบทุกขั้นตอน แตะด้านล่างเพื่อทำต่อหรือเริ่มใหม่',
-   "We couldn't verify your identity. Tap below to try again or contact us.": 'เรายืนยันตัวตนของคุณไม่ได้ แตะด้านล่างเพื่อลองอีกครั้งหรือติดต่อเรา',
-   "Your documents are being reviewed. We'll notify you once confirmed.": 'เอกสารของคุณกำลังได้รับการตรวจสอบ เราจะแจ้งให้คุณทราบเมื่อยืนยันแล้ว',
+   'You left before finishing all the steps. Tap below to continue or start over.':
+      'คุณออกไปก่อนทำครบทุกขั้นตอน แตะด้านล่างเพื่อทำต่อหรือเริ่มใหม่',
+   "We couldn't verify your identity. Tap below to try again or contact us.":
+      'เรายืนยันตัวตนของคุณไม่ได้ แตะด้านล่างเพื่อลองอีกครั้งหรือติดต่อเรา',
+   "Your documents are being reviewed. We'll notify you once confirmed.":
+      'เอกสารของคุณกำลังได้รับการตรวจสอบ เราจะแจ้งให้คุณทราบเมื่อยืนยันแล้ว',
    'View status →': 'ดูสถานะ →',
    'Continue verification →': 'ยืนยันตัวตนต่อ →',
    'Try again →': 'ลองอีกครั้ง →',
@@ -822,7 +842,8 @@ export const thaiCoverageB: Record<string, string> = {
    "we'd love to tell you about!": 'ที่อยากเล่าให้คุณฟังด้วย!',
    'So we can help you more 💜': 'เพื่อให้เราช่วยคุณได้มากขึ้น 💜',
    'One quick step to request a loan': 'อีกหนึ่งขั้นตอนสั้น ๆ ก่อนขอเงินกู้',
-   'Complete a one-time verification to start building trust with lenders.': 'ยืนยันตัวตนครั้งเดียวเพื่อเริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้',
+   'Complete a one-time verification to start building trust with lenders.':
+      'ยืนยันตัวตนครั้งเดียวเพื่อเริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้',
    'Borrow Amount': 'จำนวนเงินที่ยืม',
    'Current Limit: $': 'วงเงินปัจจุบัน: $',
    'Explain current borrow limit': 'คำอธิบายวงเงินยืมปัจจุบัน',
@@ -850,8 +871,10 @@ export const thaiCoverageB: Record<string, string> = {
       'อย่างน้อย 40 ตัวอักษรเป็นภาษาอังกฤษ — สั้นและเจาะจงช่วยให้ผู้ให้กู้เชื่อถือได้มากขึ้น',
    'Ask Mecha to help me word this': 'ให้ Mecha ช่วยเรียบเรียงข้อความนี้',
    'Ask Mecha to write this in English': 'ให้ Mecha ช่วยเขียนเป็นภาษาอังกฤษ',
-   'Your verification is still being checked — you can send this request once it clears.': 'การยืนยันตัวตนของคุณยังอยู่ระหว่างตรวจสอบ — คุณส่งคำขอนี้ได้เมื่อผ่านการตรวจสอบแล้ว',
-   "You're not verified yet. Verification is the last step before you can send this request.": 'คุณยังไม่ได้ยืนยันตัวตน การยืนยันตัวตนคือขั้นตอนสุดท้ายก่อนที่คุณจะส่งคำขอนี้ได้',
+   'Your verification is still being checked — you can send this request once it clears.':
+      'การยืนยันตัวตนของคุณยังอยู่ระหว่างตรวจสอบ — คุณส่งคำขอนี้ได้เมื่อผ่านการตรวจสอบแล้ว',
+   "You're not verified yet. Verification is the last step before you can send this request.":
+      'คุณยังไม่ได้ยืนยันตัวตน การยืนยันตัวตนคือขั้นตอนสุดท้ายก่อนที่คุณจะส่งคำขอนี้ได้',
    'Make Your Request': 'ส่งคำขอของคุณ',
    'Choose repayment date': 'เลือกวันชำระคืน',
    'Previous month': 'เดือนก่อนหน้า',
@@ -874,7 +897,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Reward for completing this': 'รางวัลเมื่อทำสำเร็จ',
    'Locked reward': 'รางวัลที่ยังล็อกอยู่',
    'These points are added to your borrower reputation.': 'แต้มเหล่านี้ถูกเพิ่มในความน่าเชื่อถือของคุณในฐานะผู้ยืมแล้ว',
-   'Complete this milestone to add these points to your borrower reputation.': 'ทำหมุดหมายนี้ให้สำเร็จเพื่อเพิ่มแต้มเหล่านี้ในความน่าเชื่อถือของคุณในฐานะผู้ยืม',
+   'Complete this milestone to add these points to your borrower reputation.':
+      'ทำหมุดหมายนี้ให้สำเร็จเพื่อเพิ่มแต้มเหล่านี้ในความน่าเชื่อถือของคุณในฐานะผู้ยืม',
    'Why it matters': 'ทำไมจึงสำคัญ',
    'What changes on your profile': 'สิ่งที่เปลี่ยนแปลงในโปรไฟล์ของคุณ',
    'Complete earlier milestones first': 'ทำหมุดหมายก่อนหน้าให้สำเร็จก่อน',
@@ -893,7 +917,8 @@ export const thaiCoverageB: Record<string, string> = {
 
    // src/views/dashboard/components/SuccessModal.tsx
    'Loan request submitted': 'ส่งคำขอเงินกู้แล้ว',
-   'Your loan request is now live. Lenders can review it and fund your request.': 'คำขอเงินกู้ของคุณแสดงบนกระดานแล้ว ผู้ให้กู้สามารถตรวจดูและปล่อยกู้ให้คำขอของคุณได้',
+   'Your loan request is now live. Lenders can review it and fund your request.':
+      'คำขอเงินกู้ของคุณแสดงบนกระดานแล้ว ผู้ให้กู้สามารถตรวจดูและปล่อยกู้ให้คำขอของคุณได้',
    'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
       'เข้าร่วมกลุ่มผู้ยืมของ Moodeng บน Facebook หรือ Telegram เพื่อให้เราแนะนำคุณให้รู้จักกับผู้ให้กู้ดี ๆ',
    'Join on Telegram': 'เข้าร่วมทาง Telegram',
@@ -904,7 +929,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Your Pandesal points are your track record on Moodeng, out of 500 — and counting. They already unlock perks, with bigger rewards on the way for top scorers. Keep building them!':
       'แต้ม Pandesal คือประวัติผลงานของคุณบน Moodeng จากเต็ม 500 — และจะเพิ่มขึ้นอีก แต้มเหล่านี้ปลดล็อกสิทธิพิเศษได้แล้ว และจะมีรางวัลที่ใหญ่ขึ้นสำหรับผู้ที่ทำคะแนนได้สูงสุด สะสมต่อไปเลย!',
    'Top tier reached': 'ถึงระดับสูงสุดแล้ว',
-   'Your Pandesal points grow with every on-time repayment and live with your wallet.': 'แต้ม Pandesal ของคุณเพิ่มขึ้นทุกครั้งที่ชำระคืนตรงเวลา และผูกอยู่กับกระเป๋าเงินของคุณ',
+   'Your Pandesal points grow with every on-time repayment and live with your wallet.':
+      'แต้ม Pandesal ของคุณเพิ่มขึ้นทุกครั้งที่ชำระคืนตรงเวลา และผูกอยู่กับกระเป๋าเงินของคุณ',
 
    // src/views/dashboard/components/UpcomingLoanDues.tsx
    'Upcoming Loan Dues': 'เงินกู้ที่ใกล้ครบกำหนด',
@@ -1047,7 +1073,8 @@ export const thaiCoverageB: Record<string, string> = {
    'to this address:': 'ไปยังที่อยู่นี้:',
    Copied: 'คัดลอกแล้ว',
    Copy: 'คัดลอก',
-   'Only send USDC on Base. Other tokens or networks may be lost.': 'ส่งเฉพาะ USDC บน Base เท่านั้น โทเคนหรือเครือข่ายอื่นอาจทำให้เงินสูญหาย',
+   'Only send USDC on Base. Other tokens or networks may be lost.':
+      'ส่งเฉพาะ USDC บน Base เท่านั้น โทเคนหรือเครือข่ายอื่นอาจทำให้เงินสูญหาย',
    'Buy USDC with card': 'ซื้อ USDC ด้วยบัตร',
    'Powered by Stripe': 'ให้บริการโดย Stripe',
    'Stays in the app': 'ทำรายการในแอปได้เลย',
@@ -1078,7 +1105,8 @@ export const thaiCoverageB: Record<string, string> = {
    'Opening secure checkout…': 'กำลังเปิดหน้าชำระเงินที่ปลอดภัย…',
    'Back to funding options': 'กลับไปที่ตัวเลือกการเติมเงิน',
    'Payment confirmed': 'ยืนยันการชำระเงินแล้ว',
-   'Your USDC is on its way to your wallet on Base. It usually lands within a minute.': 'USDC ของคุณกำลังส่งไปยังกระเป๋าเงินบน Base โดยปกติจะเข้าภายในหนึ่งนาที',
+   'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
+      'USDC ของคุณกำลังส่งไปยังกระเป๋าเงินบน Base โดยปกติจะเข้าภายในหนึ่งนาที',
 
    // src/views/help/HelpHub.tsx
    'How can we help?': 'ให้เราช่วยอะไรคุณได้บ้าง?',
@@ -1103,4 +1131,150 @@ export const thaiCoverageB: Record<string, string> = {
    "Take this question to a person — we'll get back to you.": 'ส่งคำถามนี้ให้ทีมงานตัวจริง — เราจะติดต่อกลับหาคุณ',
    'Ask us': 'ถามเรา',
    'Question copied — just paste it.': 'คัดลอกคำถามแล้ว — วางได้เลย',
+
+   // src/views/help/helpTopics.ts
+   'What Moodeng is and how your first loan works': 'Moodeng คืออะไร และเงินกู้ครั้งแรกของคุณทำงานอย่างไร',
+   'Verify your ID': 'ยืนยันด้วยบัตรประชาชน',
+   'The quick check that unlocks borrowing': 'การตรวจสอบสั้น ๆ ที่ปลดล็อกการยืม',
+   'Wallet: Instant or Base': 'กระเป๋าเงิน: Instant หรือ Base',
+   'Set up, connect, and fix wallet problems': 'ตั้งค่า เชื่อมต่อ และแก้ปัญหากระเป๋าเงิน',
+   'Adding & repaying USDC': 'การเติมและชำระคืน USDC',
+   'Fund your wallet and repay your loan': 'เติมเงินเข้ากระเป๋าและชำระคืนเงินกู้',
+   'Cashing out': 'การถอนเป็นเงินสด',
+   'Turn USDC into pesos in your bank': 'เปลี่ยน USDC เป็นเงินสดเข้าบัญชีธนาคารของคุณ',
+   'Credit & Pandesal points': 'เครดิตและแต้ม Pandesal',
+   'Grow your limit and your reputation': 'เพิ่มวงเงินและความน่าเชื่อถือของคุณ',
+   'Writing a loan request': 'การเขียนคำขอเงินกู้',
+   'Get your request approved and funded': 'ทำให้คำขอของคุณผ่านและได้รับการปล่อยกู้',
+   'Safety & your account': 'ความปลอดภัยและบัญชีของคุณ',
+   'Staying safe, and what happens if a loan is unpaid': 'การใช้งานอย่างปลอดภัย และสิ่งที่เกิดขึ้นหากไม่ชำระเงินกู้',
+   'What is Moodeng Credit?': 'Moodeng Credit คืออะไร?',
+   'Small USDC loans that build your credit': 'เงินกู้ USDC จำนวนน้อยที่ช่วยสร้างเครดิตของคุณ',
+   'What is Moodeng Credit and how does it work?': 'Moodeng Credit คืออะไร และทำงานอย่างไร?',
+   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
+      'Moodeng Credit ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสะสมแต้ม Pandesal ที่ผูกกับกระเป๋าเงินของคุณ คุณโพสต์คำขอ ผู้ให้กู้ปล่อยกู้เข้ากระเป๋าเงินของคุณโดยตรง แล้วคุณชำระคืนภายในวันที่คุณกำหนดหรือก่อนหน้านั้น การชำระคืนตรงเวลาทุกครั้งจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะปลดล็อกวงเงินที่สูงขึ้น คุณจึงเริ่มจากจำนวนน้อยแล้วค่อย ๆ เติบโตเมื่อพิสูจน์ได้ว่าเชื่อถือได้ ความน่าเชื่อถือของคุณผูกกับกระเป๋าเงิน จึงติดตัวคุณไปทุกที่ ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
+   'How to request your first loan': 'วิธีขอเงินกู้ครั้งแรก',
+   'Request your first loan': 'ขอเงินกู้ครั้งแรกของคุณ',
+   'Account → wallet → verify → request': 'บัญชี → กระเป๋าเงิน → ยืนยันตัวตน → ส่งคำขอ',
+   'How do I request my first loan?': 'ฉันจะขอเงินกู้ครั้งแรกได้อย่างไร?',
+   'Create your account with a username, email, and password.': 'สร้างบัญชีด้วยชื่อผู้ใช้ อีเมล และรหัสผ่าน',
+   'Tap "Apply for a Loan" to start.': 'แตะ "ขอเงินกู้" เพื่อเริ่มต้น',
+   'Tap "Create Instant Wallet" — your wallet is created straight from your Moodeng login, no app needed. (Prefer a Base Account? Set one up at account.base.app and connect it instead.)':
+      'แตะ "สร้าง Instant Wallet" — ระบบจะสร้างกระเป๋าเงินให้คุณจากการเข้าสู่ระบบ Moodeng โดยตรง ไม่ต้องใช้แอป (อยากใช้ Base Account มากกว่าใช่ไหม? สร้างได้ที่ account.base.app แล้วเชื่อมต่อแทน)',
+   'Tap "Verify Yourself" and complete "Verify Your ID" — about 3 minutes.':
+      'แตะ "ยืนยันตัวตน" แล้วทำ "ยืนยันด้วยบัตรประชาชน" ให้เสร็จ — ใช้เวลาประมาณ 3 นาที',
+   'Open the Request Board and set your amount (up to your limit), repayment date, and a clear reason.':
+      'เปิดกระดานคำขอ แล้วกำหนดจำนวนเงิน (ไม่เกินวงเงินของคุณ) วันชำระคืน และเหตุผลที่ชัดเจน',
+   'Signing up and verifying are two separate steps. You cannot post a request until "Verify Your ID" is done.':
+      'การสมัครสมาชิกและการยืนยันตัวตนเป็นคนละขั้นตอนกัน คุณจะโพสต์คำขอไม่ได้จนกว่าจะทำ "ยืนยันด้วยบัตรประชาชน" เสร็จ',
+   'Full walkthrough': 'คู่มือฉบับเต็ม',
+   'Does Moodeng charge fees?': 'Moodeng เก็บค่าธรรมเนียมไหม?',
+   'No platform fees, no gas on Base': 'ไม่มีค่าธรรมเนียมแพลตฟอร์ม ไม่มีค่า gas บน Base',
+   'Does Moodeng charge any fees?': 'Moodeng เก็บค่าธรรมเนียมใด ๆ หรือไม่?',
+   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.':
+      'ไม่เก็บ Moodeng ใช้งานได้ฟรี — ไม่มีค่าธรรมเนียมแพลตฟอร์มทั้งการยืมและการให้กู้ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียมแรกเข้า เงินที่ผู้ให้กู้ปล่อยกู้ถึงมือคุณครบ 100% และเงินที่คุณชำระคืนก็ถึงผู้ให้กู้ครบ 100% ค่าธรรมเนียมเครือข่าย (ค่า gas) ก็เป็นศูนย์เช่นกันเมื่อคุณใช้ Instant Wallet หรือ Base Account บน Base ค่าใช้จ่ายเดียวคืออัตราดอกเบี้ยที่ผู้ยืมเสนอ ซึ่งตกเป็นของผู้ให้กู้ทั้งหมด ไม่ใช่ของเรา',
+   'Can I get a small loan?': 'ขอเงินกู้จำนวนน้อยได้ไหม?',
+   'Yes — this is built for small loans': 'ได้ — เราสร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ',
+   'Can I get a small loan with Moodeng?': 'ฉันขอเงินกู้จำนวนน้อยกับ Moodeng ได้ไหม?',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
+      'ได้ — Moodeng สร้างมาเพื่อเงินกู้จำนวนน้อยโดยเฉพาะ ผู้ยืมใหม่เริ่มต้นที่วงเงิน $15 โดยไม่มีจำนวนขั้นต่ำ ไม่มีค่าสมาชิก และไม่มีค่าธรรมเนียม คุณขอเท่าที่ต้องการได้ไม่เกินวงเงินปัจจุบัน กำหนดวันชำระและดอกเบี้ยเอง แล้วผู้ให้กู้จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่ เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนตรงเวลาจะเพิ่มวงเงินของคุณหนึ่งขั้น จาก $15 จนถึงสูงสุด $140 คุณจึงเริ่มจากจำนวนน้อย แล้วค่อยขยับไปสู่เงินกู้ที่มากขึ้นเมื่อพร้อมเท่านั้น',
+   'The quick 3-minute check': 'การตรวจสอบสั้น ๆ 3 นาที',
+   'How do I verify my ID?': 'ฉันจะยืนยันตัวตนด้วยบัตรประชาชนได้อย่างไร?',
+   'In the app, tap "Verify Yourself".': 'ในแอป แตะ "ยืนยันตัวตน"',
+   'Choose "Verify Your ID" — a photo of your national ID plus a selfie. Have good, even lighting.':
+      'เลือก "ยืนยันด้วยบัตรประชาชน" — ถ่ายรูปบัตรประชาชนพร้อมเซลฟี่ ควรอยู่ในที่ที่มีแสงสว่างดีและสม่ำเสมอ',
+   'Already use World App? You can choose "Verify with World ID" instead.':
+      'ใช้ World App อยู่แล้วใช่ไหม? คุณเลือก "ยืนยันด้วย World ID" แทนได้',
+   'Most checks finish within minutes. If yours needs a human review, we notify you as soon as it is done — usually within a few hours, at most 1 business day.':
+      'การตรวจสอบส่วนใหญ่เสร็จภายในไม่กี่นาที หากของคุณต้องให้เจ้าหน้าที่ตรวจสอบ เราจะแจ้งคุณทันทีที่เสร็จ — ปกติภายในไม่กี่ชั่วโมง และไม่เกิน 1 วันทำการ',
+   'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.':
+      'บัตรประชาชนของคุณได้รับการตรวจสอบโดยพาร์ทเนอร์ยืนยันตัวตนที่ปลอดภัยของเรา และ Moodeng ไม่เก็บบัตรไว้เลย หากค้าง ให้ลองใหม่ใน Chrome หรือ Safari — ไม่ใช่เบราว์เซอร์ภายใน Facebook หรือ Messenger — โดยใช้รูปที่ชัดและมีแสงสว่างเพียงพอ',
+   'Verification & Security': 'การยืนยันตัวตนและความปลอดภัย',
+   "I signed up but I'm not verified": 'สมัครแล้วแต่ยังไม่ได้ยืนยันตัวตน',
+   'Sign-up and verify are separate': 'การสมัครกับการยืนยันตัวตนเป็นคนละขั้นตอน',
+   "I signed up but I'm still not verified — what do I do?": 'ฉันสมัครแล้วแต่ยังไม่ได้ยืนยันตัวตน — ต้องทำอย่างไร?',
+   'Choose "Verify Your ID" — the quick national ID photo + selfie check, about 3 minutes.':
+      'เลือก "ยืนยันด้วยบัตรประชาชน" — ตรวจสอบรูปบัตรประชาชนและเซลฟี่อย่างรวดเร็ว ใช้เวลาประมาณ 3 นาที',
+   'Already a World App user? Choose "Verify with World ID" instead.':
+      'เป็นผู้ใช้ World App อยู่แล้วใช่ไหม? เลือก "ยืนยันด้วย World ID" แทน',
+   'If it is stuck, retry in a real browser (Chrome or Safari) and make sure the photo is clear and well lit.':
+      'หากค้าง ให้ลองใหม่ในเบราว์เซอร์จริง (Chrome หรือ Safari) และตรวจสอบให้แน่ใจว่ารูปชัดและมีแสงสว่างเพียงพอ',
+   'Signing up alone is not enough — verifying is the last step before you can send a request.':
+      'การสมัครอย่างเดียวยังไม่พอ — การยืนยันตัวตนคือขั้นตอนสุดท้ายก่อนที่คุณจะส่งคำขอได้',
+   'The Instant Wallet': 'Instant Wallet',
+   'Your default wallet — no app, no seed phrase': 'กระเป๋าเงินเริ่มต้นของคุณ — ไม่ต้องใช้แอป ไม่มี seed phrase',
+   'What is the Instant Wallet and is it safe?': 'Instant Wallet คืออะไร และปลอดภัยไหม?',
+   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
+      'Instant Wallet คือกระเป๋าเงินเริ่มต้นของ Moodeng สำหรับผู้ยืม: กระเป๋าเงินแบบดูแลสินทรัพย์ด้วยตัวเอง (self-custodial) ของจริง ที่ตั้งค่าให้คุณจากการเข้าสู่ระบบ Moodeng โดยตรง — ไม่ต้องดาวน์โหลดแอป และไม่ต้องจด seed phrase ผู้ยืมรับเงินกู้ USDC เข้ากระเป๋านี้ (สำหรับผู้ให้กู้: เราแนะนำ Base Account แต่คุณก็ใช้ Instant Wallet ได้เช่นกัน) กระเป๋านี้ได้รับแต้ม Pandesal เหมือนกระเป๋าเงินอื่นทุกประการ ใช้งานได้แม้การเข้าสู่ระบบ Base Account ถูกบล็อก (เช่น กรณีที่ PLDT / Smart บล็อก) และไม่มีค่า gas — Moodeng ออกค่าธรรมเนียมเครือข่ายให้ คุณจึงไม่ต้องมี ETH เพื่อชำระคืนหรือถอนเป็นเงินสด อยากใช้ Base Account มากกว่าใช่ไหม? คุณเชื่อมต่อแทนได้',
+   'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.':
+      'คุณเป็นเจ้าของกระเป๋านี้อย่างสมบูรณ์ คุณส่งออกคีย์ส่วนตัว (private key) ได้ทุกเมื่อจาก บัญชี → การตั้งค่าบัญชี → กระเป๋าเงิน → "ส่งออกคีย์กระเป๋าเงิน" แล้วนำเข้าไปใน MetaMask หรือ Trust หรือกระเป๋าเงินอื่นใดก็ได้ — จากนั้นคุณจะเลิกใช้ Moodeng ไปเลยก็ได้',
+   'Coinbase app vs Base Account': 'แอป Coinbase กับ Base Account',
+   'No Coinbase app needed — Base Account is optional': 'ไม่ต้องใช้แอป Coinbase — Base Account เป็นทางเลือก',
+   'Do I need the Coinbase app or a Base Account?': 'ฉันต้องใช้แอป Coinbase หรือ Base Account ไหม?',
+   "You don't need either to get started — Moodeng sets up your Instant Wallet from your login. If you'd rather use a Base Account, create it at account.base.app.":
+      'คุณเริ่มต้นใช้งานได้โดยไม่ต้องมีทั้งสองอย่าง — Moodeng ตั้งค่า Instant Wallet ให้คุณจากการเข้าสู่ระบบ หากอยากใช้ Base Account ให้สร้างที่ account.base.app',
+   'You do not need the Coinbase app. Base is a network built by Coinbase, but the app is a different thing.':
+      'คุณไม่จำเป็นต้องใช้แอป Coinbase แม้ Base จะเป็นเครือข่ายที่ Coinbase สร้างขึ้น แต่แอปนั้นเป็นคนละอย่างกัน',
+   'A Base Account is passwordless and seedless — you sign in with email or a passkey.':
+      'Base Account ไม่ต้องใช้รหัสผ่านและไม่มี seed phrase — คุณเข้าสู่ระบบด้วยอีเมลหรือพาสคีย์',
+   'Because it is seedless, there is no 12-word recovery phrase to lose — and Moodeng will never ask you for a seed or recovery phrase. Nobody legitimate ever will.':
+      'เพราะไม่มี seed phrase จึงไม่มีวลีกู้คืน 12 คำให้ทำหาย — และ Moodeng จะไม่ขอ seed phrase หรือวลีกู้คืนจากคุณเด็ดขาด ผู้ที่ทำงานอย่างถูกต้องจริงจะไม่มีวันขอสิ่งนี้',
+   'Using USDC on Moodeng': 'การใช้ USDC บน Moodeng',
+   "Can't create a Base Account": 'สร้าง Base Account ไม่ได้',
+   "The page won't load fix": 'แก้ปัญหาหน้าเว็บไม่โหลด',
+   "The Base Account page won't load — how do I create one?": 'หน้า Base Account ไม่โหลด — จะสร้างบัญชีได้อย่างไร?',
+   'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.':
+      'สลับจาก Wi-Fi เป็นอินเทอร์เน็ตมือถือ (หรือกลับกัน) เครือข่าย Wi-Fi บางแห่งบล็อกการเข้าสู่ระบบ — วิธีนี้ได้ผลบ่อยกว่าที่คิด',
+   'Use a real browser — Chrome or Safari — not a browser inside another app.':
+      'ใช้เบราว์เซอร์จริง — Chrome หรือ Safari — ไม่ใช่เบราว์เซอร์ภายในแอปอื่น',
+   'Try again at account.base.app.': 'ลองอีกครั้งที่ account.base.app',
+   'If it still fails, your network may be blocking Base — see "Base won\'t load (PLDT / Smart)".':
+      'หากยังไม่ได้ เครือข่ายของคุณอาจบล็อก Base อยู่ — ดู "Base ไม่โหลด (PLDT / Smart)"',
+   "Base won't load (PLDT / Smart)": 'Base ไม่โหลด (PLDT / Smart)',
+   'Network blocking — three fixes': 'เครือข่ายบล็อก — 3 วิธีแก้',
+   "Base won't load on my network and my wallet won't connect — what do I do?":
+      'Base ไม่โหลดบนเครือข่ายของฉัน และกระเป๋าเงินเชื่อมต่อไม่ได้ — ต้องทำอย่างไร?',
+   'Some Philippine networks (notably PLDT and Smart) block the sign-in service Base uses. When that happens, account.base.app won\'t load or connecting your wallet dead-ends — sometimes with a "your connection is not private" or security warning — even though the rest of the internet works. This is the network, not your phone or account.':
+      'เครือข่ายบางรายในฟิลิปปินส์ (โดยเฉพาะ PLDT และ Smart) บล็อกบริการเข้าสู่ระบบที่ Base ใช้ เมื่อเกิดขึ้น account.base.app จะไม่โหลด หรือการเชื่อมต่อกระเป๋าเงินจะไปต่อไม่ได้ — บางครั้งมีข้อความ "การเชื่อมต่อของคุณไม่เป็นส่วนตัว" หรือคำเตือนด้านความปลอดภัย — ทั้งที่อินเทอร์เน็ตส่วนอื่นใช้งานได้ปกติ ปัญหาอยู่ที่เครือข่าย ไม่ใช่โทรศัพท์หรือบัญชีของคุณ',
+   'Easiest — use your Instant Wallet instead. Tap "Create Instant Wallet" on the wallet screen. No app, no seed phrase, and network fees are covered for you.':
+      'ง่ายที่สุด — ใช้ Instant Wallet แทน แตะ "สร้าง Instant Wallet" ที่หน้ากระเป๋าเงิน ไม่ต้องใช้แอป ไม่มี seed phrase และเราออกค่าธรรมเนียมเครือข่ายให้คุณ',
+   'Switch Wi-Fi ↔ mobile data. If one network blocks it, the other often works.':
+      'สลับ Wi-Fi ↔ อินเทอร์เน็ตมือถือ หากเครือข่ายหนึ่งบล็อก อีกเครือข่ายมักใช้ได้',
+   'Install the free "1.1.1.1" app by Cloudflare, turn it On, then reopen account.base.app.':
+      'ติดตั้งแอป "1.1.1.1" ของ Cloudflare ซึ่งใช้ได้ฟรี เปิดใช้งาน แล้วเปิด account.base.app อีกครั้ง',
+   'Or use a reputable free VPN like Proton VPN — turn it on before opening the sign-in page, connect to a nearby location, then reopen Moodeng.':
+      'หรือใช้ VPN ฟรีที่น่าเชื่อถืออย่าง Proton VPN — เปิดก่อนเข้าหน้าเข้าสู่ระบบ เชื่อมต่อกับตำแหน่งที่อยู่ใกล้ แล้วเปิด Moodeng อีกครั้ง',
+   'A VPN only changes how your connection is routed — it never touches your funds. Use only a well-known VPN or the official 1.1.1.1 app, and remember Moodeng will never ask for your seed or recovery phrase.':
+      'VPN แค่เปลี่ยนเส้นทางการเชื่อมต่อของคุณ — ไม่แตะต้องเงินของคุณเลย ใช้เฉพาะ VPN ที่เป็นที่รู้จักหรือแอป 1.1.1.1 อย่างเป็นทางการ และจำไว้ว่า Moodeng จะไม่ขอ seed phrase หรือวลีกู้คืนของคุณเด็ดขาด',
+   'Open in a real browser': 'เปิดในเบราว์เซอร์จริง',
+   'Fix sign-in inside Facebook / Messenger': 'แก้ปัญหาการเข้าสู่ระบบใน Facebook / Messenger',
+   "Sign-in / my wallet won't work when I opened Moodeng from Facebook — what do I do?":
+      'เข้าสู่ระบบไม่ได้ / กระเป๋าเงินใช้ไม่ได้เมื่อเปิด Moodeng จาก Facebook — ต้องทำอย่างไร?',
+   "If you opened Moodeng by tapping a link inside Facebook, Messenger, Instagram, or LINE, you're in that app's built-in mini-browser. Sign-in and wallet pop-ups often fail silently there — nothing happens, or you see a 403 error.":
+      'หากคุณเปิด Moodeng โดยแตะลิงก์ภายใน Facebook / Messenger / Instagram หรือ LINE แสดงว่าคุณอยู่ในเบราว์เซอร์ขนาดเล็กที่ติดมากับแอปนั้น ป๊อปอัปการเข้าสู่ระบบและกระเป๋าเงินมักล้มเหลวโดยไม่มีการแจ้งเตือนในเบราว์เซอร์นี้ — ไม่มีอะไรเกิดขึ้น หรือคุณเห็นข้อผิดพลาด 403',
+   'Tap the three dots (⋯) in the corner and choose "Open in Chrome" / "Open in Safari" / "Open in external browser".':
+      'แตะจุดสามจุด (⋯) ที่มุมจอ แล้วเลือก "เปิดใน Chrome" / "เปิดใน Safari" / "เปิดในเบราว์เซอร์ภายนอก"',
+   'Or copy the link and paste it into Chrome or Safari directly.': 'หรือคัดลอกลิงก์ไปวางใน Chrome หรือ Safari โดยตรง',
+   'Then sign in and connect your wallet again from there.': 'จากนั้นเข้าสู่ระบบและเชื่อมต่อกระเป๋าเงินอีกครั้งจากที่นั่น',
+   "Wallet won't connect": 'กระเป๋าเงินเชื่อมต่อไม่ได้',
+   'The reset that works': 'วิธีรีเซ็ตที่ได้ผล',
+   "My wallet won't connect to Moodeng — what do I do?": 'กระเป๋าเงินของฉันเชื่อมต่อกับ Moodeng ไม่ได้ — ต้องทำอย่างไร?',
+   'Close every tab where Moodeng is open.': 'ปิดทุกแท็บที่เปิด Moodeng อยู่',
+   'Open your wallet app and disconnect Moodeng if it shows as connected.':
+      'เปิดแอปกระเป๋าเงินของคุณ แล้วยกเลิกการเชื่อมต่อ Moodeng หากแสดงว่าเชื่อมต่ออยู่',
+   'Close the browser completely, then reopen it.': 'ปิดเบราว์เซอร์ให้สนิท แล้วเปิดใหม่',
+   'Open Moodeng again in Chrome or Safari — not a browser inside another app.':
+      'เปิด Moodeng อีกครั้งใน Chrome หรือ Safari — ไม่ใช่เบราว์เซอร์ภายในแอปอื่น',
+   'Tap Connect Wallet again and approve the request when it appears.': 'แตะ "เชื่อมต่อกระเป๋า" อีกครั้ง แล้วอนุมัติคำขอเมื่อปรากฏขึ้น',
+   'On PLDT and Smart the sign-in is sometimes blocked by the network itself. If the page won\'t load or shows a security warning, use your Instant Wallet or see "Base won\'t load (PLDT / Smart)".':
+      'บน PLDT และ Smart บางครั้งตัวเครือข่ายเองเป็นผู้บล็อกการเข้าสู่ระบบ หากหน้าเว็บไม่โหลดหรือแสดงคำเตือนด้านความปลอดภัย ให้ใช้ Instant Wallet หรือดู "Base ไม่โหลด (PLDT / Smart)"',
+   '"Try again" keeps popping up': '"ลองอีกครั้ง" เด้งขึ้นมาเรื่อย ๆ',
+   'When you have to tap twice': 'เมื่อต้องแตะสองครั้ง',
+   '"Try again" keeps popping up / I have to tap twice — how do I fix it?':
+      '"ลองอีกครั้ง" เด้งขึ้นมาเรื่อย ๆ / ต้องแตะสองครั้ง — แก้ได้อย่างไร?',
+   "Tap the connect / approve button directly — don't wait for it to happen automatically.":
+      'แตะปุ่มเชื่อมต่อ / อนุมัติโดยตรง — อย่ารอให้ระบบทำเองโดยอัตโนมัติ',
+   'Approve the pop-up when it appears.': 'อนุมัติป๊อปอัปเมื่อปรากฏขึ้น',
+   'If nothing appears, redo the "Wallet won\'t connect" reset.':
+      'หากไม่มีอะไรปรากฏ ให้ทำขั้นตอนรีเซ็ตใน "กระเป๋าเงินเชื่อมต่อไม่ได้" อีกครั้ง'
 };
