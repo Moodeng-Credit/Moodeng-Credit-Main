@@ -2,6 +2,16 @@
 // keyed by the exact English text. Loaded on demand by LocalizationDomBridge (see ./index.ts).
 export const thaiCoverageD: Record<string, string> = {
    // src/views/withdraw/Withdraw.tsx
+   'Sell for pesos, withdraw to bank or GCash': 'ขายเพื่อรับเปโซ ถอนไปยังธนาคารหรือ GCash',
+   'Lowest fees · bank or GCash · ~30 min': 'ค่าธรรมเนียมต่ำสุด · ธนาคารหรือ GCash · ~30 นาที',
+   'Cash out straight to your GCash': 'ถอนตรงเข้า GCash ของคุณ',
+   'GCash balance · ~5 min': 'ยอดเงิน GCash · ~5 นาที',
+   'Sell for pesos, withdraw to bank or e-wallet': 'ขายเพื่อรับเปโซ ถอนไปยังธนาคารหรือ e-wallet',
+   'Bank, GCash or Maya · ~30 min': 'ธนาคาร, GCash หรือ Maya · ~30 นาที',
+   'Sell for local currency via P2P marketplace': 'ขายเพื่อรับสกุลเงินท้องถิ่นผ่านตลาด P2P',
+   'GCash, Maya or Bank · 30 min–hours': 'GCash, Maya หรือธนาคาร · 30 นาที–หลายชั่วโมง',
+   'External option · buy and sell via their own process': 'ตัวเลือกภายนอก · คุณซื้อขายเองตามขั้นตอนของพวกเขา',
+   "You follow Moneybees' instructions directly": 'ทำตามขั้นตอนของ Moneybees โดยตรง',
    'After it arrives': 'หลังจากเงินมาถึง',
    'In GCrypto, open': 'ใน GCrypto ให้เปิด',
    Sell: 'ขาย',

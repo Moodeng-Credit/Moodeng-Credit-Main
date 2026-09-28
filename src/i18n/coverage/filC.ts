@@ -554,6 +554,17 @@ export const filipinoCoverageC: Record<string, string> = {
    // src/views/withdraw/Withdraw.tsx
    "You're sending": 'Ipinapadala mo',
    "You'll receive": 'Matatanggap mo',
+   'Sell for pesos, withdraw to bank or GCash': 'Ibenta para sa pesos, mag-withdraw sa bangko o GCash',
+   'Lowest fees · bank or GCash · ~30 min': 'Pinakamababang fees · bangko o GCash · ~30 min',
+   'Cash out straight to your GCash': 'Direktang i-cash out sa GCash mo',
+   'GCash balance · ~5 min': 'GCash balance · ~5 min',
+   'Sell for pesos, withdraw to bank or e-wallet': 'Ibenta para sa pesos, mag-withdraw sa bangko o e-wallet',
+   'Bank, GCash or Maya · ~30 min': 'Bangko, GCash o Maya · ~30 min',
+   'Sell for local currency via P2P marketplace': 'Ibenta para sa local currency gamit ang P2P marketplace',
+   'GCash, Maya or Bank · 30 min–hours': 'GCash, Maya o Bangko · 30 min–oras',
+   'External option · buy and sell via their own process':
+      'External option · ikaw mismo ang bibili at magbebenta gamit ang sarili nilang proseso',
+   "You follow Moneybees' instructions directly": 'Sundin mo nang direkta ang mga instructions ng Moneybees',
    'How this works': 'Paano ito gumagana',
    'Show me how': 'Ipakita kung paano',
    'Video guide coming soon': 'Malapit nang dumating ang video guide',
