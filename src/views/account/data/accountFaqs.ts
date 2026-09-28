@@ -475,9 +475,9 @@ USDC cũng được chấp nhận rộng rãi: mọi sàn giao dịch crypto l�
    {
       id: 'how-to-get-verified',
       question: 'Tôi xác minh danh tính bằng cách nào?',
-      answer: `Xác minh là bước kiểm tra danh tính nhanh, chỉ thực hiện một lần. Cách được khuyến nghị là "Xác minh bằng giấy tờ tùy thân" — chụp nhanh ảnh thẻ căn cước + ảnh selfie, mất khoảng 3 phút và áp dụng tại các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể chọn xác minh bằng World ID.
+      answer: `Xác minh là bước kiểm tra danh tính nhanh, chỉ thực hiện một lần. Cách được khuyên dùng là "Xác minh bằng giấy tờ tùy thân" — chụp nhanh ảnh thẻ căn cước + ảnh selfie, mất khoảng 3 phút và áp dụng tại các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể chọn xác minh bằng World ID.
 
-Bấm "Xác minh danh tính" trong ứng dụng để bắt đầu. Hầu hết lượt xác minh hoàn tất trong vài phút.`,
+Nhấn "Xác minh danh tính" trong ứng dụng để bắt đầu. Hầu hết lượt xác minh hoàn tất trong vài phút.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    }
@@ -507,7 +507,7 @@ Hãy trả trước ngày đến hạn — trả nợ đúng hạn giúp tăng �
       question: 'Tôi có thể vay thấp hơn hạn mức tín dụng không?',
       answer: `Có — và chúng tôi còn khuyến khích điều đó, nhất là khi bạn mới bắt đầu. Vay thấp hơn hạn mức được gọi là Trust-Building Loan (khoản vay xây dựng niềm tin).
 
-Những khoản vay nhỏ này không được tính vào việc mở khóa Hạng tín dụng tiếp theo (muốn lên hạng, bạn cần vay toàn bộ hạn mức và trả đúng hạn), nhưng chúng giúp xây dựng lịch sử trả nợ và mang lại cho bạn nhiều điểm Pandesal hơn so với việc vay tối đa hạn mức.
+Những khoản vay nhỏ này không được tính vào việc mở khóa Hạng tín dụng tiếp theo (muốn lên hạng, bạn cần vay toàn bộ hạn mức và trả đúng hạn), nhưng chúng giúp xây dựng lịch sử trả nợ và mang lại điểm Pandesal mỗi lần bạn trả đúng hạn.
 
 Vì vậy, nếu bạn muốn nhanh chóng xây dựng uy tín, Trust-Building Loan là một cách rất tốt.`
    },
@@ -553,7 +553,7 @@ Nếu vay thấp hơn hạn mức, đó là Trust-Building Loan (khoản vay xâ
       question: 'Tôi cấp vốn cho khoản vay bằng cách nào?',
       answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị các chỉ số của người vay, hạn mức tín dụng, số tiền yêu cầu và thời hạn trả nợ.
 
-Khi tìm được yêu cầu bạn muốn cấp vốn, bấm "Cấp vốn" và xác nhận. USDC sẽ rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đến thẳng ví của người vay — không qua trung gian, không chậm trễ.
+Khi tìm được yêu cầu bạn muốn cấp vốn, nhấn "Cấp vốn" và xác nhận. USDC sẽ rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đến thẳng ví của người vay — không qua trung gian, không chậm trễ.
 
 Bạn có thể theo dõi tất cả khoản vay đang hoạt động và trạng thái trả nợ trên trang Tổng quan người cho vay.`
    },
