@@ -9,14 +9,14 @@ export default function HowWeVerifySection(): JSX.Element {
             <div>
                <div className="inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-zinc-700">
                   <ShieldCheck className="size-4" />
-                  World ID verification
+                  Identity verification
                </div>
                <h2 className="mt-5 max-w-[760px] text-5xl font-semibold leading-[0.98] tracking-normal max-md:text-4xl">
                   Verified humans, clearer lending signals.
                </h2>
                <p className="mt-5 max-w-[760px] text-2xl leading-snug text-zinc-800 max-md:text-xl">
-                  Borrowers verify with World ID before they can request loans. That gives lenders a real-person signal without asking
-                  borrowers to hand over private documents to Moodeng.
+                  Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a
+                  real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.
                </p>
 
                <div className="mt-7 grid gap-3 sm:grid-cols-3">
@@ -41,7 +41,7 @@ export default function HowWeVerifySection(): JSX.Element {
                   <div className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-500">Verified with</div>
                   <div className="text-4xl font-semibold leading-none">World ID</div>
                   <div className="mt-3 text-base leading-6 text-zinc-600">
-                     Borrowers prove uniqueness through World App and Orb availability in the markets we support first.
+                     Borrowers who already use World App can verify with World ID instead of the ID + selfie check.
                   </div>
                </div>
             </div>
