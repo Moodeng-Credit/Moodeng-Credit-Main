@@ -36,7 +36,7 @@ import { DayPicker } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import AskMechaButton from '@/components/mecha/AskMechaButton';
+import AskSupportButton from '@/components/support/AskSupportButton';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
@@ -1445,7 +1445,7 @@ export default function LoanRequestModal({
    // The low-effort reason check (DeepSeek) runs at final submit — which happens from the bio
    // step — but its warning renders under the reason field on the terms step. If we're on the
    // bio step when it fires, bounce back to terms once so the borrower actually sees it (and the
-   // "Ask Mecha to word this" link), instead of a silent no-op. Once-only, so tapping submit a
+   // "Message us for help wording this" link), instead of a silent no-op. Once-only, so tapping submit a
    // second time to post anyway still works; resets when the reason is edited (warning clears).
    const bouncedForReasonWarningRef = useRef(false);
    useEffect(() => {
@@ -2640,37 +2640,36 @@ export default function LoanRequestModal({
                                        <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                                        <span>{reasonWarning}</span>
                                     </div>
-                                    {/* Hand the borrower straight to Mecha to fix it — the effort check
-                                        (check-loan-input) and Mecha share the same DeepSeek brain. */}
+                                    {/* Hand the borrower straight to the team on live chat, with the flagged
+                                        reason attached so the agent sees it before they type. */}
                                     <div className="mt-1.5 pl-[22px]">
-                                       <AskMechaButton
+                                       <AskSupportButton
                                           variant="link"
-                                          label="Ask Mecha to help me word this"
-                                          context={{ page: 'Loan request', step: 'loan-request' }}
-                                          seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                          label="Message us for help wording this"
+                                          context={{ page: 'Loan request', step: 'loan-reason' }}
+                                          topic={`Loan reason flagged as too vague: "${reason}"`}
                                        />
                                     </div>
                                  </div>
                               ) : reasonQuality.code === 'not-english' ? (
-                                 // Mecha speaks both — hand them a translation rather than leaving
-                                 // "write it in English" as homework.
+                                 // Offer the team's help rather than leaving "write it in English" as homework.
                                  <div className="mt-md-1 pl-[22px]">
-                                    <AskMechaButton
+                                    <AskSupportButton
                                        variant="link"
-                                       label="Ask Mecha to write this in English"
-                                       context={{ page: 'Loan request', step: 'loan-request' }}
-                                       seedUserMessage={`Please help me write my loan reason in English. Here is what I wrote: "${reason}"`}
+                                       label="Message us to help write this in English"
+                                       context={{ page: 'Loan request', step: 'loan-reason' }}
+                                       topic={`Needs help writing loan reason in English: "${reason}"`}
                                     />
                                  </div>
                               ) : liveReasonCheck.status === 'weak' ? (
                                  // Same offer as the submit-time warning, just earlier: the hint is
                                  // already in the counter row above, so only the way out is needed.
                                  <div className="mt-md-1 pl-[22px]">
-                                    <AskMechaButton
+                                    <AskSupportButton
                                        variant="link"
-                                       label="Ask Mecha to help me word this"
-                                       context={{ page: 'Loan request', step: 'loan-request' }}
-                                       seedUserMessage={`I'm writing a loan request and my reason ("${reason}") was flagged as too vague. How do I write a clear reason that lenders will trust?`}
+                                       label="Message us for help wording this"
+                                       context={{ page: 'Loan request', step: 'loan-reason' }}
+                                       topic={`Loan reason flagged as too vague: "${reason}"`}
                                     />
                                  </div>
                               ) : null}
