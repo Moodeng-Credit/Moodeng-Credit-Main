@@ -23,9 +23,9 @@ const ACTION_BUTTONS_COPY = {
    },
    fil: {
       labels: {
-         'connect-world-id': 'Mag-verify gamit ang World ID',
+         'connect-world-id': 'Verify with World ID',
          'find-location': 'Maghanap ng verification location',
-         'check-status': 'Tingnan ang connection status'
+         'check-status': 'Tingnan ang status ng koneksyon'
       }
    },
    id: {

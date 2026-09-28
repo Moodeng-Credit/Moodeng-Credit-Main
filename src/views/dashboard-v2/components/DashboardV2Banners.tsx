@@ -107,10 +107,10 @@ const REMINDERS_COPY = {
    },
    fil: {
       title: 'I-on ang repayment reminders',
-      body: 'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
+      body: 'Makatanggap ng paalala bago ang due date para hindi ka ma-late.',
       blockedTitle: 'Naka-block ang reminders',
       blockedBody: 'I-allow ang notifications para sa moodeng.app sa browser settings mo.',
-      homeScreenTitle: 'Makakuha ng reminders sa iPhone mo',
+      homeScreenTitle: 'Makatanggap ng reminders sa iPhone mo',
       homeScreenBody:
          'I-tap ang Share, tapos "Add to Home Screen". Buksan ang Moodeng mula sa Home Screen, mag-log in at i-on ang reminders.'
    }

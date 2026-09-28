@@ -39,17 +39,20 @@ const COPY = {
    chatCta: { en: 'Start a conversation', fil: 'Magsimula ng usapan' },
    replyTime: { en: 'We usually reply within a few hours.', fil: 'Karaniwan kaming sumasagot sa loob ng ilang oras.' },
    resultsLabel: { en: 'Results', fil: 'Mga resulta' },
-   noResults: { en: 'No answers matched — try different words, or reach us below.', fil: 'Walang tumugmang sagot — subukan ang ibang salita, o kontakin kami sa ibaba.' },
+   noResults: {
+      en: 'No answers matched — try different words, or reach us below.',
+      fil: 'Walang tumugmang sagot — subukan ang ibang salita, o makipag-ugnayan sa amin sa ibaba.'
+   },
    clearSearch: { en: 'Clear search', fil: 'I-clear ang search' },
    stillLabel: { en: 'Still need help?', fil: 'Kailangan mo pa ng tulong?' },
    stillBody: {
       en: 'Reach the Moodeng team directly — pick whichever is easiest.',
-      fil: 'Kontakin nang diretso ang Moodeng team — piliin ang pinakamadali.'
+      fil: 'Makipag-ugnayan nang diretso sa Moodeng team — piliin kung alin ang pinakamadali para sa iyo.'
    },
    telegram: { en: 'Telegram', fil: 'Telegram' },
    facebook: { en: 'Facebook', fil: 'Facebook' },
    email: { en: 'Email', fil: 'Email' },
-   gettingStarted: { en: 'New to Moodeng? Getting started →', fil: 'Bago sa Moodeng? Magsimula →' },
+   gettingStarted: { en: 'New to Moodeng? Getting started →', fil: 'Bago sa Moodeng? Pagsisimula →' },
    browseAll: { en: 'Browse all guides & updates →', fil: 'Tingnan lahat ng gabay at updates →' }
 } satisfies Record<string, LocalizedText>;
 
@@ -104,7 +107,10 @@ export default function HelpHub(): JSX.Element {
 
             {/* Search */}
             <div className="relative mt-5">
-               <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#8b8299]" aria-hidden="true" />
+               <Search
+                  className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#8b8299]"
+                  aria-hidden="true"
+               />
                <input
                   type="search"
                   value={query}

@@ -198,7 +198,7 @@ const STREAK_COPY = {
       unit: () => 'milestone ngayong linggo',
       fed: 'Pandesal na naipakain kay Moodeng',
       nudge: 'Ituloy mo lang: naghihintay na ang susunod mong milestone.',
-      cta: 'Tingnan ang Susunod'
+      cta: 'Tingnan ang Susunod Kong Milestone'
    }
 } as const;
 

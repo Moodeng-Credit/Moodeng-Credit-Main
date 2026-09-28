@@ -36,7 +36,7 @@ const PUSH_COPY: Record<LocaleCode, PushCopy> = {
    fil: {
       label: 'Push notifications sa device na ito',
       description:
-         'Makakatanggap ka ng abiso kapag malapit nang mag-due ang bayad mo, o kapag humiram ulit ang borrower na nakabayad na sa iyo. Sa device na ito lang.',
+         'Makakatanggap ka ng abiso sa mismong oras na due na ang isang bayad, o kapag nag-request ulit ang borrower na nakabayad na sa iyo. Sa device na ito lang.',
       enable: 'I-on',
       disable: 'I-off',
       working: 'Sandali lang…',
@@ -79,7 +79,7 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
    },
    fil: {
       title: 'Mga notification',
-      body: 'Makakatanggap ka ng abiso tungkol sa activity sa account mo. Ipapadala ang notifications sa email na ibinigay mo.',
+      body: 'Makakatanggap ka ng abiso tungkol sa activity sa account mo. Ipapadala ang mga notification sa email na ibinigay mo.',
       options: [
          {
             id: 'account-activity',
@@ -88,13 +88,13 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
          },
          {
             id: 'transaction-activity',
-            label: 'Aktibidad ng transaksyon',
-            description: 'Makakatanggap ka ng mahahalagang notification tungkol sa transactions mo.'
+            label: 'Activity ng transaksyon',
+            description: 'Makakatanggap ka ng mahahalagang notification tungkol sa mga transaksyon mo.'
          },
          {
             id: 'moodeng-blogs',
             label: 'Mga blog ng Moodeng',
-            description: 'Makatanggap ng updates tungkol sa pinakabagong balita, updates, at blogs namin.'
+            description: 'Makakatanggap ka ng updates tungkol sa pinakabagong balita, anunsyo, at blog namin.'
          }
       ]
    },

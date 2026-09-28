@@ -72,7 +72,7 @@ export default function FAQ() {
               [FAQ_CATEGORIES.general]: 'Pangkalahatan',
               [FAQ_CATEGORIES.borrowing]: 'Paghiram',
               [FAQ_CATEGORIES.trustScore]: 'Pandesal points',
-              [FAQ_CATEGORIES.creditLevel]: 'Antas ng kredito',
+              [FAQ_CATEGORIES.creditLevel]: 'Credit Level',
               [FAQ_CATEGORIES.wallet]: 'Wallet'
            }
          : locale === 'id'

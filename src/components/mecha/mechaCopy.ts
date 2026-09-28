@@ -43,7 +43,7 @@ const en: MechaCopy = {
    humanBody: 'Want a real person? I can pass this chat to the Moodeng team.',
    humanCta: 'Connect me with the team',
    humanSending: 'Sending…',
-   humanSent: "Sent! The team has your question and will follow up. You can keep chatting with me too.",
+   humanSent: 'Sent! The team has your question and will follow up. You can keep chatting with me too.',
    contactPlaceholder: 'How can the team reach you? (optional)',
    errorLine: 'Something went wrong on my end. Please try again, or I can connect you with the team.',
    openLabel: 'Chat with Mecha',
@@ -66,15 +66,15 @@ const fil: MechaCopy = {
    tagline: 'Support Officer ng Moodeng',
    inputPlaceholder: 'Magtanong tungkol sa Moodeng…',
    send: 'Ipadala',
-   greeting: "Hi, ako si Mecha 🤖 — magtanong ka lang tungkol sa Moodeng: verify, wallet, panghihiram, o pag-cash out.",
+   greeting: 'Hi, ako si Mecha 🤖 — magtanong ka lang tungkol sa Moodeng: pag-verify, wallet, paghiram, o pag-cash out.',
    suggestionsLabel: 'Subukan mong itanong',
    humanTitle: 'Kausapin ang team',
-   humanBody: 'Gusto mo ng tunay na tao? Maipapasa ko ang chat na ito sa Moodeng team.',
+   humanBody: 'Gusto mong makausap ang totoong tao? Maipapasa ko ang chat na ito sa Moodeng team.',
    humanCta: 'Ikonekta ako sa team',
    humanSending: 'Ipinapadala…',
    humanSent: 'Naipadala na! Nasa team na ang tanong mo at magfa-follow up sila. Puwede ka pa ring magtanong sa akin.',
    contactPlaceholder: 'Paano ka makokontak ng team? (opsyonal)',
-   errorLine: 'May nangyaring mali sa akin. Pakisubukan ulit, o ikokonekta kita sa team.',
+   errorLine: 'Nagka-problema sa side ko. Subukan ulit, o ikokonekta kita sa team.',
    openLabel: 'Mag-chat kay Mecha',
    closeLabel: 'Isara ang chat',
    restart: 'Magsimula ulit',
@@ -102,5 +102,5 @@ export function getMechaCopy(locale: string | undefined): MechaCopy {
 export type MechaLang = { code: string; flag: string; short: string; label: string };
 export const MECHA_LANGS: MechaLang[] = [
    { code: 'en', flag: '🇬🇧', short: 'EN', label: 'English' },
-   { code: 'fil', flag: '🇵🇭', short: 'TL', label: 'Tagalog' }
+   { code: 'fil', flag: '🇵🇭', short: 'FIL', label: 'Filipino' }
 ];

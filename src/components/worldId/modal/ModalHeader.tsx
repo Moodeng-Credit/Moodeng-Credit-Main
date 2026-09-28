@@ -23,7 +23,7 @@ const MODAL_HEADER_COPY = {
    fil: {
       goBack: 'Bumalik',
       verifyWorldId: 'I-verify ang World ID',
-      defaultTitle: 'I-verify na tao ka'
+      defaultTitle: 'Patunayang totoong tao ka'
    },
    id: {
       goBack: 'Kembali',

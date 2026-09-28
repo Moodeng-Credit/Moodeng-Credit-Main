@@ -110,27 +110,27 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Impormasyon ng account',
       accountItems: {
          settings: 'Mga setting ng account',
-         loanHistory: 'Tingnan ang kasaysayan ng loan transactions'
+         loanHistory: 'Tingnan ang loan transaction history'
       },
       contactItems: {
          community: 'Sumali sa community',
          help: 'Humingi ng tulong',
-         contact: 'Kontakin kami'
+         contact: 'Makipag-ugnayan sa amin'
       },
       getInTouch: 'Makipag-ugnayan',
       commonQuestions: 'Mga karaniwang tanong',
       viewMore: 'Tingnan pa',
-      creditGuide: 'Panoorin ang gabay sa pagpapataas ng antas ng kredito',
-      verified: 'Beripikado',
-      notVerified: 'Hindi beripikado',
-      connectWallet: 'Ikonek ang wallet',
+      creditGuide: 'Panoorin ang Credit Levelling Guide namin',
+      verified: 'Verified',
+      notVerified: 'Hindi pa verified',
+      connectWallet: 'Ikonekta ang wallet',
       addBaseWallet: 'I-set up ang wallet',
       signOut: 'Mag-sign out',
       signOutTitle: 'Mag-sign out?',
       signOutBody: 'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Pandesal points mo.',
-      signingOut: 'Nag-sign out...',
-      cancel: 'Kanselahin',
-      settingsAria: 'Pumunta sa Account Settings',
+      signingOut: 'Nagsa-sign out...',
+      cancel: 'Huwag na',
+      settingsAria: 'Pumunta sa mga setting ng account',
       helpLabel: 'Tulong'
    },
    id: {

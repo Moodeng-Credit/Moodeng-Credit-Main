@@ -126,25 +126,25 @@ const FILIPINO_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
       question: 'Hinahawakan ba ng Moodeng ang pera ko?',
-      answer: `Hindi. Hindi hinahawakan, iniimbak, o ginagalaw ng Moodeng ang funds mo.
+      answer: `Hindi. Hindi hinahawakan, iniingatan, o inililipat ng Moodeng ang pera ng mga user para sa kanila.
 
-Direkta ang loan mula sa wallet ng nagpapahiram papunta sa wallet ng borrower. Direkta rin ang repayments mula sa wallet ng borrower pabalik sa wallet ng nagpapahiram. Tinutulungan lang ng Moodeng ang request board, verification, repayment status, at record keeping para malinaw sa magkabilang side kung ano ang nangyari.`
+Diretso ang loan mula sa wallet ng lender papunta sa wallet ng borrower. Diretso rin ang bayad mula sa wallet ng borrower pabalik sa wallet ng lender. Ang ibinibigay lang ng Moodeng ay ang request board, verification, repayment status, at record keeping, para malinaw sa magkabilang panig kung ano ang nangyari.`
    },
    {
       id: 'why-usdc',
       question: 'Bakit USDC ang ginagamit ng Moodeng?',
-      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated US financial company, kaya predictable ang halaga ng loan. Ang $20 na loan ngayon ay $20 pa rin kapag binayaran, hindi biglang $15 o $30. Hindi nagkakaroon ng currency risk ang lenders at borrowers dahil lang sumali sila.
+      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated na financial company sa US, kaya predictable ang halaga ng loan — ang $20 loan ngayon ay $20 pa rin pagdating ng bayaran, hindi biglang $15 o $30. Hindi nagkakaroon ng currency risk ang mga lender at borrower dahil lang sumali sila.
 
-Mabilis ding ipadala ang USDC globally at, kapag ginamit sa Base gamit ang Instant Wallet mo o Base Account, gasless ito. Ibig sabihin, walang network fees na kakain sa repayment mo - 100% ng ipinadala mo ang makakarating sa lender.
+Mabilis ding maipadala ang USDC kahit saan sa mundo, at kapag ginamit sa Base gamit ang Instant Wallet mo o Base Account, ganap itong gasless. Ibig sabihin, walang network fees na babawas sa bayad mo — 100% ng ipinadala mo ang makakarating sa lender mo.
 
-Malawak din itong tinatanggap: supported ang USDC deposits sa major crypto exchanges, at puwede mo itong i-convert sa fiat gaya ng US dollars, pesos, naira, at iba pa. Kapag nakatanggap ka ng loan o repayment, puwede mo itong gamitin on-chain, i-hold, o i-cash out - ikaw ang pipili.`
+Malawak din itong tinatanggap: lahat ng malalaking crypto exchange ay tumatanggap ng USDC deposit, at puwede mo itong i-convert sa fiat (US dollars, piso, naira, at iba pa) halos kahit saan. Kaya kapag nakatanggap ka ng loan o nabayaran ka, puwede mo itong gastusin on-chain, itabi, o i-cash out — ikaw ang bahala.`
    },
    {
       id: 'how-to-get-verified',
-      question: 'Paano ako ma-ve-verify?',
-      answer: `Ang verification ay mabilis at one-time lang na identity check. Ang inirerekomendang paraan ay "Verify Your ID" — maikling national ID photo + selfie check na mga 3 minuto lang at available sa supported countries. Kung gumagamit ka na ng World App, puwede ka ring mag-verify gamit ang World ID.
+      question: 'Paano ako magpa-verify?',
+      answer: `Ang verification ay mabilis at one-time na identity check. Ang inirerekomendang paraan ay ang "Verify Your ID" — maikling national ID photo + selfie check na mga 3 minuto lang at gumagana sa mga supported na bansa. Kung gumagamit ka na ng World App, puwede kang mag-verify gamit ang World ID sa halip.
 
-I-tap ang "Verify Yourself" sa app para magsimula. Karamihan ng checks ay tapos sa loob ng ilang minuto.`,
+I-tap ang "Verify Yourself" sa app para magsimula. Karamihan ng checks ay natatapos sa loob ng ilang minuto.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Basahin ang buong guide'
    }
@@ -154,82 +154,82 @@ const FILIPINO_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Paano ko ililipat ang loan ko sa local bank account ko?',
-      answer: `Ipadala ang USDC mo sa exchange o local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), at iba pa — ibenta ito doon, at i-withdraw ang local currency direkta sa bank o e-wallet mo.
+      answer: `Ipadala ang USDC mo sa isang exchange o local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), at iba pa — ibenta ito roon, at i-withdraw ang local currency diretso sa bank o e-wallet mo.
 
-Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagpapadala ng USDC. May video walkthrough at step-by-step na instructions para sa bawat service sa buong guide.`,
+Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagpapadala ng USDC. May video walkthrough at step-by-step na instructions para sa bawat serbisyo sa buong guide.`,
       readMorePath: '/academy/money/withdraw',
       readMoreLabel: 'Basahin ang buong guide'
    },
    {
       id: 'how-to-repay',
       question: 'Paano ko babayaran ang loan ko?',
-      answer: `Buksan ang Magbayad screen — makikita mo doon ang eksaktong halaga at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph, PDAX, GCrypto, at iba pa) — palaging sa Base network.
+      answer: `Buksan ang Magbayad screen — makikita mo roon ang eksaktong halagang dapat bayaran at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph, PDAX, GCrypto, at iba pa) — laging sa Base network.
 
-Magbayad bago ang due date — ang on-time repayment ay nagpapataas ng Pandesal points mo at nag-u-unlock ng mas mataas na antas ng kredito. Nasa buong guide ang bawat paraan ng pagbabayad.`,
+Magbayad bago ang due date — nagdadagdag ng Pandesal points ang on-time na bayad, at kapag nabayaran mo nang on time ang loan na katumbas ng buong limit mo, maa-unlock ang susunod na Credit Level. Nasa buong guide ang bawat paraan ng pagbabayad.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Basahin ang buong guide'
    },
    {
       id: 'borrow-below-limit',
       question: 'Puwede ba akong humiram nang mas mababa sa credit limit ko?',
-      answer: `Oo, at inirerekomenda pa nga namin ito lalo na kung nagsisimula ka pa lang. Ang paghiram nang mas mababa sa limit mo ay tinatawag na Trust-Building Loan.
+      answer: `Oo — at inirerekomenda pa nga namin ito, lalo na kung nagsisimula ka pa lang. Ang paghiram nang mas mababa sa limit mo ay tinatawag na Trust-Building Loan.
 
-Hindi binibilang ang mas maliliit na loans na ito para ma-unlock ang susunod na antas ng kredito. Para doon, kailangan mong hiramin ang buong limit mo at magbayad on time. Pero nakakatulong ang mga ito na bumuo ng repayment history mo at makakuha ng mas maraming Pandesal points kaysa kung lagi mong hihiramin ang maximum.
+Hindi binibilang ang mas maliliit na loan na ito para ma-unlock ang susunod na Credit Level (para roon, kailangan mong hiramin ang buong limit mo at magbayad on time), pero bumubuo ang mga ito ng repayment history mo at nagbibigay sa iyo ng mas maraming Pandesal points kaysa kung maximum ang hihiramin mo.
 
-Kaya kung gusto mong mabilis na mapalakas ang reputation mo, magandang paraan ang Trust-Building Loans.`
+Kaya kung gusto mong mabilis na mapalago ang reputasyon mo, magandang paraan ang Trust-Building Loans.`
    },
    {
       id: 'increase-credit-limit',
-      question: 'Paano ko tataasan ang credit limit ko?',
+      question: 'Paano ko mapapataas ang credit limit ko?',
       answer: `Tumataas ang credit limit mo kapag hiniram mo ang buong limit mo at binayaran ito on time. Tinatawag itong Credit-Building Loans.
 
-Kung $20 ang limit mo at $15 lang ang hiniram mo, hindi iyon bibilang sa next level kahit perfect ang repayment mo. Kailangan makita ng system na kaya mong hawakan ang buong limit bago nito itaas ang ceiling.
+Kung $20 ang limit mo at $15 lang ang hiniram mo, hindi iyon bibilang para sa susunod na level — kahit perpekto pa ang pagbabayad mo. Kailangang makita ng system na kaya mo ang buong limit bago nito itaas ang ceiling.
 
-Ang progression ay $15 -> $20 -> $40 -> $60, at pataas pa. Isang step lang bawat beses: hiramin ang max, magbayad on time, ulitin.`
+Ang pag-akyat ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Isang hakbang sa bawat pagkakataon: hiramin ang max mo, magbayad on time, at ulitin.`
    }
 ];
 
 const FILIPINO_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'Ano ang IOU Points?',
-      answer: `Ang IOU Points ay reputation points na kinikita ng lenders. Sa Year 1 model, bawat funded loan ay kumikita ng base IOU points batay sa amount na pinondohan, kasama ang borrower-stage bonus. Tinutulungan nitong makita kung sino ang aktibong sumusuporta sa community.
+      question: 'Ano ang IOU points?',
+      answer: `Ang IOU points ay reputation points na kinikita ng mga lender. Sa Year 1 model, bawat napondohang loan ay may base IOU points batay sa halagang pinondohan, dagdag pa ang borrower-stage bonus. Ipinapakita nito kung sino ang aktibong sumusuporta sa community.
 
-Sa ngayon, points pa lang ang IOU. Sa susunod, maglulunsad kami ng token na IOU rin ang pangalan, at ang naipon mong points ay iko-convert sa pamamagitan ng airdrop. Ang pag-hold ng IOU ay mag-u-unlock ng karagdagang benefits na konektado sa platform.
+Sa ngayon, points pa lang ang IOU. Sa hinaharap, maglulunsad kami ng token na IOU rin ang pangalan, at iko-convert ang naipon mong points sa pamamagitan ng airdrop. Ang paghawak ng IOU ay mag-a-unlock ng karagdagang benepisyo na konektado sa platform.
 
-Para sa lenders lang ang IOU. Ang borrowers naman ay bumubuo ng Pandesal points at antas ng kredito. Kaya kung gusto mong kumita ng IOU, mag-fund ng loan request mula sa Request Board.`
+Para sa mga lender lang ang IOU — ang mga borrower naman ay bumubuo ng Pandesal points at Credit Level nila. Kaya kung gusto mong kumita ng IOU, magpondo ng loan request mula sa Request Board.`
    },
    {
       id: 'how-borrowers-verify',
-      question: 'Paano nave-verify ang borrowers?',
-      answer: `Bawat borrower ay dumadaan sa one-time identity verification — national ID photo + selfie check na may duplicate detection, o World ID para sa mga gumagamit ng World App. Kinukumpirma nito na unique at totoong tao ang bawat borrower, kaya napipigilan ang fake accounts at bots.
+      question: 'Paano nagpapa-verify ang mga borrower?',
+      answer: `Bawat borrower ay dumadaan sa one-time na identity verification — national ID photo + selfie check na may duplicate detection, o World ID para sa mga gumagamit ng World App. Alinman dito, kinukumpirma nito na unique at totoong tao ang bawat borrower, kaya napipigilan ang mga pekeng account at bot.
 
-Isang verified account lang ang magagawa ng bawat tao, kaya ang borrower profile at repayment history na nakikita mo ay pag-aari ng iisang totoong individual — at hindi basta makakabalik ang na-ban gamit ang bagong account.`,
+Isang account lang ang puwedeng i-verify ng bawat tao, kaya ang borrower profile at repayment history na nakikita mo ay pag-aari ng iisang totoong tao — at hindi basta makakabalik ang mga na-ban gamit ang bagong account.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Basahin ang buong guide'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
-      question: 'Paano tinataasan ng borrowers ang credit limit nila?',
-      answer: `Tinataasan ng borrowers ang credit limit nila sa pamamagitan ng Credit-Building Loan, kung saan hinihiram nila ang buong current limit nila. Kapag binayaran nila ang full-limit loan na iyon on time, nagle-level up sila at nag-u-unlock ng mas mataas na credit limit.
+      question: 'Paano napapataas ng mga borrower ang credit limit nila?',
+      answer: `Napapataas ng mga borrower ang credit limit nila sa pamamagitan ng Credit-Building Loan, kung saan hinihiram nila ang buong current limit nila. Kapag nabayaran nila nang on time ang full-limit loan na iyon, aakyat sila ng level at maa-unlock ang mas mataas na credit limit.
 
-Kung mas mababa sa limit ang hiniram nila, Trust-Building Loan iyon. Hindi iyon magle-level up sa kanila, pero nakakatulong itong bumuo ng mas malakas na repayment record at mas magandang borrower stats sa platform.`
+Kung mas mababa sa limit nila ang hiniram nila, Trust-Building Loan iyon. Hindi sila aakyat ng level dahil doon, pero nakakatulong ito na bumuo ng mas matibay na repayment record at mas magandang borrower stats sa platform.`
    },
    {
       id: 'how-to-fund-loan',
-      question: 'Paano ako magfa-fund ng loan?',
-      answer: `Pumunta sa Request Board at tingnan ang open loan requests. Ipinapakita ng bawat request ang stats ng borrower, credit limit, requested amount, at repayment term.
+      question: 'Paano ako magpopondo ng loan?',
+      answer: `Pumunta sa Request Board at tingnan ang mga bukas na loan request. Ipinapakita ng bawat request ang stats ng borrower, credit limit, halagang hinihiram, at repayment term.
 
-Kapag may nakita kang gusto mong pondohan, i-tap ang Fund at i-confirm. Aalis agad ang USDC mula sa wallet mo (kadalasan ang Base Account mo, o ang Instant Wallet mo kung iyon ang gamit mo) at diretsong pupunta sa wallet ng borrower. Walang middleman at walang delay.
+Kapag may nakita kang gusto mong pondohan, i-tap ang "Fund" at i-confirm. Agad na aalis ang USDC sa wallet mo (kadalasan ang Base Account mo, o ang Instant Wallet mo kung iyon ang gamit mo) at diretsong mapupunta sa wallet ng borrower — walang middleman, walang delay.
 
-Makikita mo ang lahat ng active loans at repayment statuses mo sa Lender Dashboard.`
+Masusubaybayan mo ang lahat ng aktibong loan mo at ang status ng mga bayad sa Lender Dashboard mo.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Kailan ako mababayaran?',
-      answer: `Ang due date ay sine-set ng borrower kapag nag-post sila ng request. Makikita mo ito nang malinaw sa loan card bago ka mag-fund, kaya alam mo agad ang timeline.
+      answer: `Ang borrower ang nagtatakda ng due date kapag nag-post siya ng request — makikita mo ito nang malinaw sa loan card bago ka magpondo, kaya alam mo agad ang timeline.
 
-Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Makikita mo ang status ng lahat ng active loans mo sa Lender Dashboard.`
+Pagdating ng due date, diretsong magbabayad ang borrower sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Masusubaybayan mo ang status ng lahat ng aktibong loan mo sa Lender Dashboard mo.`
    }
 ];
 

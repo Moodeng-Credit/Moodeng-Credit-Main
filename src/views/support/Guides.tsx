@@ -36,12 +36,12 @@ const GUIDE_CATEGORY_LABELS = {
    },
    fil: {
       All: 'Lahat',
-      [GUIDE_CATEGORIES.gettingStarted]: 'Magsimula',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Pagsisimula',
       [GUIDE_CATEGORIES.trustScore]: 'Pandesal points',
-      [GUIDE_CATEGORIES.creditLevel]: 'Antas ng kredito',
-      [GUIDE_CATEGORIES.repayment]: 'Repayment',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'Pagbabayad',
       [GUIDE_CATEGORIES.wallet]: 'Wallet',
-      [GUIDE_CATEGORIES.security]: 'Security'
+      [GUIDE_CATEGORIES.security]: 'Seguridad'
    },
    id: {
       All: 'Semua',
