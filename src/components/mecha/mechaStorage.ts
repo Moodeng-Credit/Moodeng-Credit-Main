@@ -5,6 +5,7 @@
 //   the right lifetime for a transient support thread).
 // - The chosen language lives in localStorage (a real preference worth keeping
 //   across visits).
+
 import type { FeedbackVote, MechaMessage } from '@/components/mecha/useMechaChat';
 
 const THREAD_PREFIX = 'mecha_thread_';
