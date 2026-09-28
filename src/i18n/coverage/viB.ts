@@ -761,5 +761,202 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Still not clear?': 'Vẫn chưa rõ?',
    "Take this question to a person — we'll get back to you.": 'Chuyển câu hỏi này đến một người thật — chúng tôi sẽ phản hồi bạn.',
    'Ask us': 'Hỏi chúng tôi',
-   'Question copied — just paste it.': 'Đã sao chép câu hỏi — chỉ cần dán vào.'
+   'Question copied — just paste it.': 'Đã sao chép câu hỏi — chỉ cần dán vào.',
+   // src/views/help/helpTopics.ts
+   'What Moodeng is and how your first loan works': 'Moodeng là gì và khoản vay đầu tiên của bạn hoạt động ra sao',
+   'Verify your ID': 'Xác minh giấy tờ tùy thân của bạn',
+   'The quick check that unlocks borrowing': 'Bước kiểm tra nhanh giúp mở khóa tính năng vay',
+   'Wallet: Instant or Base': 'Ví: Instant hoặc Base',
+   'Set up, connect, and fix wallet problems': 'Thiết lập, kết nối và khắc phục sự cố ví',
+   'Adding & repaying USDC': 'Nạp và trả nợ USDC',
+   'Fund your wallet and repay your loan': 'Nạp tiền vào ví và trả khoản vay của bạn',
+   'Cashing out': 'Rút tiền',
+   'Turn USDC into pesos in your bank': 'Chuyển USDC thành peso trong ngân hàng của bạn',
+   'Credit & Pandesal points': 'Tín dụng & điểm Pandesal',
+   'Grow your limit and your reputation': 'Tăng hạn mức và uy tín của bạn',
+   'Writing a loan request': 'Viết yêu cầu vay',
+   'Get your request approved and funded': 'Được duyệt và cấp vốn cho yêu cầu của bạn',
+   'Safety & your account': 'An toàn & tài khoản của bạn',
+   'Staying safe, and what happens if a loan is unpaid': 'Cách giữ an toàn, và điều gì xảy ra nếu khoản vay không được trả',
+   'What is Moodeng Credit?': 'Moodeng Credit là gì?',
+   'Small USDC loans that build your credit': 'Các khoản vay USDC nhỏ giúp xây dựng tín dụng của bạn',
+   'What is Moodeng Credit and how does it work?': 'Moodeng Credit là gì và hoạt động như thế nào?',
+   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
+      'Moodeng Credit cho phép bạn yêu cầu các khoản vay ngắn hạn bằng USDC trong khi tích lũy điểm Pandesal gắn liền với ví của bạn. Bạn đăng một yêu cầu, một người cho vay sẽ cấp vốn trực tiếp vào ví của bạn, và bạn trả nợ vào hoặc trước ngày bạn đã đặt. Mỗi lần trả nợ đúng hạn đều mang lại điểm Pandesal, và việc trả đúng hạn một khoản vay bằng toàn bộ hạn mức của bạn sẽ mở khóa hạn mức tín dụng cao hơn — vì vậy bạn bắt đầu từ số tiền nhỏ và phát triển dần khi chứng minh được sự đáng tin cậy. Uy tín của bạn gắn liền với ví, nên nó đi theo bạn thay vì bị khóa chặt trong một ứng dụng duy nhất.',
+   'Request your first loan': 'Yêu cầu khoản vay đầu tiên của bạn',
+   'Account → wallet → verify → request': 'Tài khoản → ví → xác minh → yêu cầu',
+   'How do I request my first loan?': 'Làm thế nào để yêu cầu khoản vay đầu tiên của tôi?',
+   'Create your account with a username, email, and password.': 'Tạo tài khoản của bạn bằng tên người dùng, email và mật khẩu.',
+   'Signing up and verifying are two separate steps. You cannot post a request until "Verify Your ID" is done.':
+      'Đăng ký và xác minh là hai bước riêng biệt. Bạn không thể đăng yêu cầu cho đến khi hoàn tất "Xác minh bằng giấy tờ tùy thân".',
+   'Full walkthrough': 'Hướng dẫn đầy đủ',
+   'Does Moodeng charge fees?': 'Moodeng có tính phí không?',
+   'No platform fees, no gas on Base': 'Không phí nền tảng, không phí gas trên Base',
+   'Does Moodeng charge any fees?': 'Moodeng có tính bất kỳ khoản phí nào không?',
+   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.':
+      'Không. Moodeng miễn phí sử dụng — không phí nền tảng khi vay hay cho vay, không phí đăng ký, không phí thiết lập. 100% số tiền người cho vay cấp vốn sẽ đến tay bạn, và 100% khoản bạn trả nợ sẽ đến tay người cho vay. Phí mạng (gas) cũng bằng 0 khi bạn dùng Instant Wallet hoặc Base Account trên Base. Chi phí duy nhất là lãi suất mà người vay đưa ra, và khoản đó thuộc trọn về người cho vay, không phải cho chúng tôi.',
+   'Can I get a small loan?': 'Tôi có thể vay một khoản nhỏ không?',
+   'Yes — this is built for small loans': 'Có — đây chính là nơi dành cho các khoản vay nhỏ',
+   'Can I get a small loan with Moodeng?': 'Tôi có thể vay một khoản nhỏ với Moodeng không?',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
+      'Có — các khoản vay nhỏ chính là mục đích của Moodeng. Người vay mới bắt đầu với hạn mức $15, không có số tiền tối thiểu, không phí đăng ký và không phí nào khác. Bạn yêu cầu số tiền cần thiết trong hạn mức hiện tại, đặt ngày trả nợ và lãi suất, rồi người cho vay sẽ quyết định có cấp vốn cho bạn hay không. Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ nâng hạn mức của bạn thêm một bậc, từ $15 lên đến mức tối đa $140, để bạn có thể bắt đầu từ số tiền nhỏ và phát triển lên các khoản vay lớn hơn chỉ khi bạn đã sẵn sàng.',
+   'The quick 3-minute check': 'Bước kiểm tra nhanh trong 3 phút',
+   'In the app, tap "Verify Yourself".': 'Trong ứng dụng, hãy nhấn "Xác minh danh tính".',
+   'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.':
+      'Giấy tờ tùy thân của bạn được đối tác xác minh bảo mật của chúng tôi kiểm tra và không bao giờ được Moodeng lưu trữ. Nếu bị kẹt, hãy thử lại bằng Chrome hoặc Safari — không phải trình duyệt bên trong Facebook hay Messenger — với một bức ảnh rõ nét, đủ sáng.',
+   'Verification & Security': 'Xác minh & bảo mật',
+   "I signed up but I'm not verified": 'Tôi đã đăng ký nhưng chưa được xác minh',
+   'Sign-up and verify are separate': 'Đăng ký và xác minh là hai bước riêng biệt',
+   "I signed up but I'm still not verified — what do I do?": 'Tôi đã đăng ký nhưng vẫn chưa được xác minh — tôi phải làm gì?',
+   'Signing up alone is not enough — verifying is the last step before you can send a request.':
+      'Chỉ đăng ký thôi là chưa đủ — xác minh là bước cuối cùng trước khi bạn có thể gửi yêu cầu.',
+   'The Instant Wallet': 'Instant Wallet',
+   'Your default wallet — no app, no seed phrase': 'Ví mặc định của bạn — không cần ứng dụng, không cần cụm từ khôi phục',
+   'What is the Instant Wallet and is it safe?': 'Instant Wallet là gì và có an toàn không?',
+   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
+      'Instant Wallet là ví mặc định của Moodeng dành cho người vay: một ví tự quản lý (self-custodial) thực sự được thiết lập sẵn cho bạn ngay từ tài khoản đăng nhập Moodeng — không cần tải ứng dụng và không cần ghi lại cụm từ khôi phục. Người vay nhận khoản vay USDC vào ví này. (Người cho vay: chúng tôi khuyến nghị dùng Base Account, nhưng bạn cũng có thể dùng Instant Wallet.) Ví này vẫn tích điểm Pandesal như bất kỳ ví nào khác, vẫn hoạt động ngay cả khi việc đăng nhập Base Account bị chặn (như trường hợp bị chặn bởi PLDT / Smart), và không tốn phí gas — Moodeng chi trả phí mạng thay bạn, nên bạn không cần ETH để trả nợ hay rút tiền. Muốn dùng Base Account hơn? Bạn có thể kết nối một ví Base Account thay thế.',
+   'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.':
+      'Bạn sở hữu hoàn toàn ví này. Bạn có thể xuất khóa riêng tư của ví bất cứ lúc nào từ Tài khoản → Cài đặt tài khoản → Ví → "Xuất khóa ví" và nhập vào MetaMask, Trust, hoặc bất kỳ ví nào khác — sau đó bạn hoàn toàn tự do rời khỏi Moodeng.',
+   'Coinbase app vs Base Account': 'Ứng dụng Coinbase so với Base Account',
+   'No Coinbase app needed — Base Account is optional': 'Không cần ứng dụng Coinbase — Base Account là tùy chọn',
+   'Do I need the Coinbase app or a Base Account?': 'Tôi có cần ứng dụng Coinbase hay Base Account không?',
+   "You don't need either to get started — Moodeng sets up your Instant Wallet from your login. If you'd rather use a Base Account, create it at account.base.app.":
+      'Bạn không cần cái nào để bắt đầu — Moodeng sẽ thiết lập Instant Wallet của bạn ngay từ tài khoản đăng nhập. Nếu bạn muốn dùng Base Account hơn, hãy tạo tại account.base.app.',
+   'Because it is seedless, there is no 12-word recovery phrase to lose — and Moodeng will never ask you for a seed or recovery phrase. Nobody legitimate ever will.':
+      'Vì ví này không cần seed (seedless), nên không có cụm từ khôi phục 12 từ nào để mất — và Moodeng sẽ không bao giờ hỏi bạn cụm từ khôi phục hay seed phrase. Không có bên nào chính đáng từng làm vậy.',
+   'Using USDC on Moodeng': 'Sử dụng USDC trên Moodeng',
+   "Can't create a Base Account": 'Không thể tạo Base Account',
+   "The page won't load fix": 'Cách khắc phục khi trang không tải được',
+   "The Base Account page won't load — how do I create one?": 'Trang Base Account không tải được — làm sao để tôi tạo một tài khoản?',
+   'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.':
+      'Chuyển từ Wi-Fi sang dữ liệu di động (hoặc ngược lại). Một số mạng Wi-Fi chặn việc đăng nhập — cách này thường khắc phục được vấn đề một cách bất ngờ.',
+   "Base won't load (PLDT / Smart)": 'Base không tải được (PLDT / Smart)',
+   'Network blocking — three fixes': 'Mạng bị chặn — ba cách khắc phục',
+   "Base won't load on my network and my wallet won't connect — what do I do?":
+      'Base không tải được trên mạng của tôi và ví của tôi không kết nối được — tôi phải làm gì?',
+   'Some Philippine networks (notably PLDT and Smart) block the sign-in service Base uses. When that happens, account.base.app won\'t load or connecting your wallet dead-ends — sometimes with a "your connection is not private" or security warning — even though the rest of the internet works. This is the network, not your phone or account.':
+      'Một số mạng ở Philippines (đặc biệt là PLDT và Smart) chặn dịch vụ đăng nhập mà Base sử dụng. Khi điều đó xảy ra, account.base.app sẽ không tải được hoặc việc kết nối ví sẽ bị treo — đôi khi kèm theo cảnh báo "kết nối của bạn không ở chế độ riêng tư" hoặc cảnh báo bảo mật — dù phần còn lại của internet vẫn hoạt động bình thường. Đây là do mạng, không phải do điện thoại hay tài khoản của bạn.',
+   'Easiest — use your Instant Wallet instead. Tap "Create Instant Wallet" on the wallet screen. No app, no seed phrase, and network fees are covered for you.':
+      'Cách dễ nhất — hãy dùng Instant Wallet thay thế. Nhấn "Tạo Instant Wallet" trên màn hình ví. Không cần ứng dụng, không cần seed phrase, và phí mạng đã được lo sẵn cho bạn.',
+   'A VPN only changes how your connection is routed — it never touches your funds. Use only a well-known VPN or the official 1.1.1.1 app, and remember Moodeng will never ask for your seed or recovery phrase.':
+      'VPN chỉ thay đổi cách kết nối của bạn được định tuyến — nó không bao giờ chạm vào tiền của bạn. Chỉ nên dùng VPN uy tín hoặc ứng dụng 1.1.1.1 chính thức, và hãy nhớ Moodeng sẽ không bao giờ hỏi bạn seed phrase hay cụm từ khôi phục.',
+   'Open in a real browser': 'Mở bằng trình duyệt thật',
+   'Fix sign-in inside Facebook / Messenger': 'Khắc phục lỗi đăng nhập trong Facebook / Messenger',
+   "Sign-in / my wallet won't work when I opened Moodeng from Facebook — what do I do?":
+      'Đăng nhập / ví của tôi không hoạt động khi tôi mở Moodeng từ Facebook — tôi phải làm gì?',
+   "If you opened Moodeng by tapping a link inside Facebook, Messenger, Instagram, or LINE, you're in that app's built-in mini-browser. Sign-in and wallet pop-ups often fail silently there — nothing happens, or you see a 403 error.":
+      'Nếu bạn mở Moodeng bằng cách nhấn vào một liên kết trong Facebook, Messenger, Instagram, hoặc LINE, bạn đang ở trong trình duyệt thu nhỏ tích hợp sẵn của ứng dụng đó. Việc đăng nhập và cửa sổ bật lên của ví thường thất bại âm thầm ở đó — không có gì xảy ra, hoặc bạn thấy lỗi 403.',
+   'Tap the three dots (⋯) in the corner and choose "Open in Chrome" / "Open in Safari" / "Open in external browser".':
+      'Nhấn vào biểu tượng ba chấm (⋯) ở góc và chọn "Mở trong Chrome" / "Mở trong Safari" / "Mở bằng trình duyệt khác".',
+   "Wallet won't connect": 'Ví không kết nối được',
+   'The reset that works': 'Cách đặt lại hiệu quả',
+   "My wallet won't connect to Moodeng — what do I do?": 'Ví của tôi không kết nối được với Moodeng — tôi phải làm gì?',
+   'Close every tab where Moodeng is open.': 'Đóng tất cả các tab đang mở Moodeng.',
+   'On PLDT and Smart the sign-in is sometimes blocked by the network itself. If the page won\'t load or shows a security warning, use your Instant Wallet or see "Base won\'t load (PLDT / Smart)".':
+      'Trên PLDT và Smart, việc đăng nhập đôi khi bị chính mạng chặn. Nếu trang không tải được hoặc hiện cảnh báo bảo mật, hãy dùng Instant Wallet hoặc xem mục "Base không tải được (PLDT / Smart)".',
+   '"Try again" keeps popping up': '"Thử lại" cứ hiện lên liên tục',
+   'When you have to tap twice': 'Khi bạn phải nhấn hai lần',
+   '"Try again" keeps popping up / I have to tap twice — how do I fix it?':
+      '"Thử lại" cứ hiện lên liên tục / tôi phải nhấn hai lần — làm sao để khắc phục?',
+   "Tap the connect / approve button directly — don't wait for it to happen automatically.":
+      'Hãy nhấn trực tiếp vào nút kết nối / chấp thuận — đừng chờ nó tự động xảy ra.',
+   'How to repay your loan': 'Cách trả khoản vay của bạn',
+   'Send USDC on Base to the Repay address': 'Gửi USDC trên Base đến địa chỉ trả nợ',
+   'How do I repay my loan?': 'Làm sao để trả khoản vay của tôi?',
+   'Open the Repay screen — it shows the exact amount and lets you copy the repayment address.':
+      'Mở màn hình Trả nợ — nó hiển thị đúng số tiền cần trả và cho phép bạn sao chép địa chỉ trả nợ.',
+   'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level.':
+      'Luôn chọn Base làm mạng lưới — chọn sai mạng có thể làm mất tiền. Trả nợ trước ngày đến hạn sẽ được cộng điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ mở khóa Hạng tín dụng tiếp theo.',
+   'Ways to repay your loan': 'Các cách trả khoản vay của bạn',
+   'Add USDC to your wallet': 'Nạp USDC vào ví của bạn',
+   'Buy on an exchange, send on Base': 'Mua trên một sàn giao dịch, gửi qua Base',
+   'How do I add USDC to my wallet?': 'Làm sao để nạp USDC vào ví của tôi?',
+   'Buy USDC on an exchange you use — Binance P2P, Coins.ph, PDAX, or GCrypto (GCash).':
+      'Mua USDC trên một sàn giao dịch hoặc ứng dụng có hỗ trợ USDC trên mạng Base (ví dụ như Binance P2P) — hãy kiểm tra sàn đó có hỗ trợ Base trước khi gửi.',
+   'Sending on the wrong network can result in lost funds — always choose Base.':
+      'Gửi sai mạng có thể khiến bạn mất tiền — hãy luôn chọn Base.',
+   'Ways to add USDC': 'Các cách nạp USDC',
+   'Paying in parts': 'Trả từng phần',
+   'Some now, some later': 'Trả một phần bây giờ, phần còn lại sau',
+   'Can I pay my loan in parts?': 'Tôi có thể trả khoản vay theo từng phần không?',
+   'Yes. The Repay screen has 25% / 50% / 75% / Full buttons or a custom amount, and the loan stays active until it is fully paid. Partial on-time payments still earn Pandesal points — about 7 points for 75% paid, 5 for 50%, 3 for 25% — while a full on-time payment earns the most (10). If part of the payment lands after the due date, that late part earns 0 points, but the amount you owe never grows: no late fees, no rollover. Paying as much as you can before the due date is always better than nothing.':
+      'Có. Màn hình Trả nợ có các nút 25% / 50% / 75% / Toàn bộ hoặc số tiền tùy chỉnh, và khoản vay vẫn ở trạng thái hoạt động cho đến khi được trả hết. Các khoản trả một phần đúng hạn vẫn được cộng điểm Pandesal — khoảng 7 điểm cho 75%, 5 điểm cho 50%, 3 điểm cho 25% — trong khi trả đủ và đúng hạn được cộng nhiều điểm nhất (10 điểm). Nếu một phần khoản trả đến sau ngày đến hạn, phần trả muộn đó sẽ được 0 điểm, nhưng số tiền bạn còn nợ sẽ không bao giờ tăng lên: không phí trễ hạn, không dồn nợ. Trả càng nhiều càng tốt trước ngày đến hạn luôn tốt hơn là không trả gì.',
+   'More than one loan at a time': 'Nhiều hơn một khoản vay cùng lúc',
+   'Yes, within your available limit': 'Có, trong phạm vi hạn mức khả dụng của bạn',
+   'Can I have more than one loan at a time?': 'Tôi có thể có nhiều hơn một khoản vay cùng lúc không?',
+   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
+      'Có — bạn có thể có nhiều hơn một khoản vay đang hoạt động cùng lúc, miễn là số tiền mới nằm trong hạn mức tín dụng khả dụng của bạn. Hạn mức khả dụng của bạn là hạn mức của cấp độ hiện tại (từ $15 đến $140) trừ đi số tiền bạn đang nợ trên các khoản vay đang hoạt động. Nếu các khoản vay hiện tại của bạn đã dùng hết hạn mức, hãy trả một phần hoặc toàn bộ trước khi yêu cầu thêm. Một số tài khoản cũng có thể có giới hạn về số lượng khoản vay được hoạt động cùng lúc — nếu ứng dụng báo bạn đã đạt mức tối đa, hãy trả một khoản trước.',
+   'Cash out to GCash or a bank': 'Rút tiền về sàn giao dịch hoặc ngân hàng',
+   'USDC → pesos, step by step': 'USDC → tiền mặt, từng bước',
+   'How do I cash out to GCash or my bank?': 'Làm sao để rút tiền về sàn giao dịch hoặc ngân hàng của tôi?',
+   'Send your USDC to an exchange or service — GCrypto (GCash), Coins.ph, PDAX, or Binance P2P.':
+      'Gửi USDC của bạn đến một sàn giao dịch hoặc ứng dụng có hỗ trợ USDC trên mạng Base (ví dụ như Binance P2P) — hãy kiểm tra sàn đó có hỗ trợ Base trước khi gửi.',
+   "Choosing the wrong network can lose the funds — this is the single most important detail. Moodeng charges $0 to cash out; the only cost is the exchange's own fee.":
+      'Chọn sai mạng có thể làm mất tiền — đây là chi tiết quan trọng nhất. Moodeng không tính phí khi rút tiền; chi phí duy nhất là phí của sàn giao dịch đó.',
+   'Withdrawing to a bank account': 'Rút tiền về tài khoản ngân hàng',
+   'How much does cashing out cost?': 'Rút tiền tốn bao nhiêu chi phí?',
+   'Moodeng charges $0; exchanges have a small fee': 'Moodeng không tính phí; các sàn giao dịch có thể tính một khoản phí nhỏ',
+   'How much does it cost to cash out?': 'Rút tiền tốn bao nhiêu chi phí?',
+   'Your repayment reputation': 'Uy tín trả nợ của bạn',
+   'What are Pandesal points and how are they calculated?': 'Điểm Pandesal là gì và được tính như thế nào?',
+   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
+      'Điểm Pandesal của bạn phản ánh mức độ đáng tin cậy khi trả nợ. Điểm sẽ tăng khi bạn trả nợ đúng hạn và đầy đủ, và giảm khi trả trễ hoặc vỡ nợ. Người cho vay dùng điểm này để đánh giá rủi ro khi quyết định có cấp vốn cho yêu cầu của bạn hay không. Vì điểm gắn liền với ví của bạn, nó sẽ đi theo bạn — không bị khóa chặt trong một ứng dụng duy nhất.',
+   'What is a Credit Level?': 'Hạng tín dụng là gì?',
+   '$15 up to $140, step by step': 'Từ $15 đến $140, từng bước một',
+   'What is a Credit Level and how do I move up?': 'Hạng tín dụng là gì và làm sao để tôi lên hạng?',
+   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.':
+      'Hạng tín dụng quyết định số tiền bạn có thể vay mỗi lần. Ai cũng bắt đầu ở Hạng 1 với hạn mức $15. Bạn lên hạng bằng cách hoàn thành một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại của bạn, được trả đủ và đúng hạn. Mỗi lần như vậy sẽ nâng hạn mức của bạn thêm một bậc trên thang: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại.',
+   'Grow my credit limit': 'Tăng hạn mức tín dụng của tôi',
+   'From $15 upward': 'Từ $15 trở lên',
+   'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.':
+      'Trả nợ đúng hạn. Trả nợ đúng hạn sẽ được cộng điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ giúp bạn lên hạng.',
+   'Credit-Building vs Trust-Building loans': 'Credit-Building Loan so với Trust-Building Loan',
+   'Which one raises your limit': 'Loại nào giúp tăng hạn mức của bạn',
+   "What's the difference between Credit-Building and Trust-Building loans?":
+      'Sự khác biệt giữa Credit-Building Loan và Trust-Building Loan là gì?',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
+      'Có hai loại khoản vay. Credit-Building Loan là khoản vay bằng toàn bộ hạn mức hiện tại của bạn — trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tiếp theo. Trust-Building Loan là bất kỳ khoản vay nhỏ hơn nào dưới hạn mức của bạn; nó vẫn giúp xây dựng lịch sử trả nợ và uy tín với người cho vay, nhưng không nâng Hạng tín dụng của bạn. Hầu hết người vay dùng cả hai — trust loan để duy trì hoạt động lành mạnh, credit loan để tăng hạn mức.',
+   'How repayments affect your points': 'Trả nợ ảnh hưởng đến điểm của bạn như thế nào',
+   'On-time full = the most points': 'Trả đủ và đúng hạn = điểm cao nhất',
+   'How do repayments affect my Pandesal points?': 'Việc trả nợ ảnh hưởng đến điểm Pandesal của tôi như thế nào?',
+   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.':
+      'Mỗi lần trả nợ đều ảnh hưởng đến điểm Pandesal của bạn, và các khoản vay nhỏ được trả sạch sẽ có giá trị hơn các khoản vay lớn được trả cẩu thả. Trả đủ và đúng hạn được cộng điểm tối đa là 10. Trả một phần được cộng điểm theo tỷ lệ — 75% = 7, 50% = 5, 25% = 3. Bất kỳ khoản trả nào sau ngày đến hạn đều được 0 điểm cho giao dịch đó. Một lần vỡ nợ sẽ để lại dấu vết vĩnh viễn trên hồ sơ công khai của bạn, mà tất cả người cho vay trong tương lai đều có thể thấy.',
+   'Where do I put a referral code?': 'Tôi đặt mã giới thiệu ở đâu?',
+   '+$5 to your starting limit': '+$5 vào hạn mức khởi điểm của bạn',
+   'Where do I enter a referral code?': 'Tôi nhập mã giới thiệu ở đâu?',
+   'From the Request Board, tap to apply for a loan.': 'Từ Bảng yêu cầu, hãy nhấn để đăng ký vay.',
+   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
+      'Một mã giới thiệu hợp lệ sẽ cộng thêm $5 vào hạn mức tín dụng khởi điểm của bạn — vì vậy một người vay mới thường bắt đầu ở mức $15 sẽ bắt đầu ở mức $20.',
+   'It says "write it in English"': 'Nó báo "hãy viết bằng tiếng Anh"',
+   'Why, and how to fix it': 'Vì sao, và cách khắc phục',
+   'My loan reason says to write it in English — what should I do?': 'Lý do vay của tôi báo phải viết bằng tiếng Anh — tôi nên làm gì?',
+   'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
+      'Người cho vay trên Moodeng ở Mỹ và châu Âu, vì vậy lý do vay phải được viết bằng tiếng Anh — một yêu cầu mà họ không đọc được sẽ không được cấp vốn. Tiếng Tagalog, Taglish và Bisaya thường là nguyên nhân; biểu mẫu sẽ dừng lại cho đến khi được viết lại. Một từ mượn trong câu tiếng Anh vẫn được chấp nhận ("buying gamot for my mother") — chỉ những câu hoàn chỉnh bằng ngôn ngữ khác mới khiến biểu mẫu dừng lại. Điều này cũng áp dụng cho mục "Mô tả tình huống của bạn" ở bước tiểu sử, dù bản thân tên nghề nghiệp vẫn có thể giữ nguyên theo ngôn ngữ địa phương ("sari-sari store owner", "jeepney driver").',
+   'My reason is "too vague"': 'Lý do của tôi bị coi là "quá mơ hồ"',
+   "It's a nudge, not a block": 'Đây là một lời nhắc, không phải rào cản',
+   "My reason is in English but it still says it's too vague — what do I do?":
+      'Lý do của tôi đã viết bằng tiếng Anh nhưng vẫn báo là quá mơ hồ — tôi phải làm gì?',
+   'That\'s a different check — the reason names nothing specific ("for personal use", "for my needs"). It\'s a nudge, not a block: the field tells you what to add, and tapping "Make Your Request" a second time posts it anyway. Better to say what the money is actually for and when you get paid — specific reasons get funded more.':
+      'Đó là một kiểm tra khác — lý do không nêu cụ thể điều gì ("for personal use", "for my needs"). Đây là một lời nhắc, không phải rào cản: trường nhập liệu sẽ cho bạn biết cần thêm gì, và nhấn "Gửi Yêu Cầu Của Bạn" lần thứ hai vẫn sẽ đăng yêu cầu bình thường. Tốt hơn hết là nói rõ số tiền thực sự dùng để làm gì và khi nào bạn nhận lương — lý do càng cụ thể càng dễ được cấp vốn.',
+   '"Make Your Request" does nothing': '"Gửi Yêu Cầu Của Bạn" không phản hồi gì',
+   "You're not verified yet": 'Bạn chưa được xác minh',
+   '"Make Your Request" does nothing when I tap it — why?': 'Tôi nhấn "Gửi Yêu Cầu Của Bạn" nhưng không có gì xảy ra — vì sao?',
+   "You aren't verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.":
+      'Bạn vẫn chưa được xác minh. Khi nhấn vào nút màu xám, nút sẽ rung nhẹ và một ghi chú phía trên sẽ sáng lên kèm theo nút Xác minh danh tính. Xác minh là bước cuối cùng trước khi có thể gửi yêu cầu — hoàn tất Xác minh bằng giấy tờ tùy thân và nút sẽ được kích hoạt.',
+   'What happens if a loan is unpaid?': 'Điều gì xảy ra nếu khoản vay không được trả?',
+   'Default: a permanent public mark': 'Vỡ nợ: một dấu vết công khai vĩnh viễn',
+   'What happens if I default on a loan?': 'Điều gì xảy ra nếu tôi vỡ nợ một khoản vay?',
+   "If a loan isn't repaid it can go into default. A default is a permanent public mark on your record, and your account is frozen from new borrowing until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a Repay Now option at sign-in. The amount owed still never grows (no late fees, no rollover), and Moodeng never contacts family, friends, or coworkers. If your account is frozen and you think it's a mistake, message the team.":
+      'Nếu một khoản vay không được trả, nó có thể chuyển sang trạng thái vỡ nợ. Vỡ nợ là một dấu vết công khai vĩnh viễn trên hồ sơ của bạn, và tài khoản của bạn sẽ bị đóng băng, không thể vay thêm cho đến khi vấn đề được giải quyết — người vay bị vỡ nợ hoặc quá hạn sẽ được chuyển đến màn hình hỗ trợ tài khoản với tùy chọn Trả ngay khi đăng nhập. Số tiền còn nợ sẽ không bao giờ tăng thêm (không phí trễ hạn, không dồn nợ), và Moodeng không bao giờ liên hệ với gia đình, bạn bè hay đồng nghiệp của bạn. Nếu tài khoản của bạn bị đóng băng và bạn cho rằng đây là nhầm lẫn, hãy nhắn tin cho đội ngũ hỗ trợ.',
+   'Staying safe on Moodeng': 'Giữ an toàn trên Moodeng',
+   'The rules that are always true': 'Những nguyên tắc luôn đúng',
+   'How do I stay safe and avoid scams?': 'Làm sao để tôi giữ an toàn và tránh lừa đảo?',
+   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
+      'Có vài điều luôn đúng. Moodeng không bao giờ giữ hay di chuyển tiền của bạn — các khoản vay được chuyển trực tiếp từ ví đến ví giữa người cho vay và người vay. Luôn gửi USDC trên mạng Base; chọn sai mạng đồng nghĩa với mất tiền. Cả Instant Wallet và Base Account đều không cần seed (seedless), nên Moodeng sẽ không bao giờ hỏi bạn "seed phrase" hay "cụm từ khôi phục" — và không có bên hỗ trợ chính đáng nào từng làm vậy. Khi không chắc chắn, luôn an toàn hơn nếu bạn dừng lại và hỏi thay vì đoán mò, đặc biệt là trước khi gửi tiền.',
+   'Manage your account': 'Quản lý tài khoản của bạn',
+   'Name, email, password, sign out': 'Tên, email, mật khẩu, đăng xuất',
+   'How do I manage my account and security settings?': 'Làm sao để quản lý tài khoản và cài đặt bảo mật của tôi?',
+   "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).":
+      'Tài khoản của bạn gắn liền với ví, vì vậy bảo mật ví chính là bảo mật tài khoản. Từ màn hình Tài khoản, bạn có thể cập nhật tên hiển thị, quản lý email, đổi mật khẩu và đăng xuất. Nếu bạn dùng Instant Wallet, đó cũng là nơi bạn xuất khóa ví (Tài khoản → Cài đặt tài khoản → Ví).',
+   'Managing your account': 'Quản lý tài khoản của bạn'
 };
