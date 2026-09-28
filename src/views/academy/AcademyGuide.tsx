@@ -241,11 +241,11 @@ const LoanChoiceScreen = (): JSX.Element => (
             </ul>
          </div>
          <div className="academy-choice-card academy-choice-card--credit">
-            <div className="academy-choice-card__amount">$20 request</div>
+            <div className="academy-choice-card__amount">$15 request</div>
             <h3>Credit-Building Loan</h3>
-            <p>Any request above your $15 credit limit becomes a credit-building loan.</p>
+            <p>A request for your full $15 credit limit is a credit-building loan.</p>
             <ul>
-               <li>$20 is above your $15 limit</li>
+               <li>$15 is your full limit</li>
                <li>Can increase your next limit</li>
                <li>Best when repayment is clear</li>
             </ul>

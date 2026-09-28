@@ -628,7 +628,7 @@ export const HELP_TOPICS: HelpTopic[] = [
          fil: 'Ano ang pagkakaiba ng Credit-Building at Trust-Building loans?'
       },
       intro: {
-         en: 'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.',
+         en: 'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.',
          fil: 'May dalawang uri ng loan. Ang Credit-Building Loan ay nasa buong kasalukuyang limit mo — kapag binayaran on time, tumataas ang limit at nabubuksan ang susunod na level. Ang Trust-Building Loan ay kahit anong loan na mas mababa sa limit mo; pinapalago pa rin nito ang repayment record at reputasyon mo sa mga lender, pero hindi nito itinataas ang Credit Level mo. Karamihan ng borrower ay gumagamit ng dalawa — Trust-Building Loans para manatiling healthy ang activity nila, at Credit-Building Loans para lumaki ang limit.'
       },
       guide: {

@@ -176,7 +176,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                            Does borrowing or repaying more unlock the next level??
                         </div>
                         <div className="mt-4 text-sm leading-5 text-zinc-500">
-                           The only thing relevant to unlocking the next level is the amount you borrowed. Not the amount you repaid.
+                           Only a loan for your full limit, repaid in full and on time, unlocks the next level.
                         </div>
                      </div>
                      <div className="flex overflow-hidden flex-col grow shrink items-start self-stretch px-5 pt-7 pb-12 my-auto bg-white rounded-2xl min-w-[240px] w-[230px] max-md:px-5">

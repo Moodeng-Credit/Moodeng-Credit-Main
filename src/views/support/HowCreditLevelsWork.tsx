@@ -703,7 +703,7 @@ export default function HowCreditLevelsWork({ variant = 'support' }: HowCreditLe
                   </article>
                ))}
             </div>
-            <p className="hclw-loan-footnote">Most borrowers use both — trust loans to stay active, credit loans to climb.</p>
+            <p className="hclw-loan-footnote">Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.</p>
 
             <figure className="hclw-scene">
                <p className="hclw-scene__lead">Trust is the currency before the credit.</p>

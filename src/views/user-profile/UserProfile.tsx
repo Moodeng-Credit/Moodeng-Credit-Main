@@ -2172,8 +2172,8 @@ const LoanMixBottomSheet = ({
             </div>
             <div className="overflow-y-auto px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-5">
                <div className="grid grid-cols-2 gap-3">
-                  <LoanMixStat label="Trust loans" value={trustBuildingCount} className="border-[#dbeafe] bg-[#eff6ff] text-[#2563eb]" />
-                  <LoanMixStat label="Credit loans" value={creditBuildingCount} className="border-[#dcfce7] bg-[#f0fdf4] text-[#059669]" />
+                  <LoanMixStat label="Trust-building loans" value={trustBuildingCount} className="border-[#dbeafe] bg-[#eff6ff] text-[#2563eb]" />
+                  <LoanMixStat label="Credit-building loans" value={creditBuildingCount} className="border-[#dcfce7] bg-[#f0fdf4] text-[#059669]" />
                </div>
 
                <div className="mt-5 rounded-[18px] bg-[#f9fafb] p-4">
