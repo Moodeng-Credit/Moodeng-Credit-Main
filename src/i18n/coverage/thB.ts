@@ -1086,7 +1086,6 @@ export const thaiCoverageB: Record<string, string> = {
    'Bridge from another chain': 'โอนข้ามจากเครือข่ายอื่น',
    'Already have stablecoins? Move them to Base': 'มีสเตเบิลคอยน์อยู่แล้วใช่ไหม? ย้ายมายัง Base',
    '< 0.5% fee': 'ค่าธรรมเนียม < 0.5%',
-   '~30 sec': '~30 วินาที',
    'Bridge from Solana': 'โอนข้ามจาก Solana',
    'SOL and USDC to Base · opens Superbridge': 'SOL และ USDC ไปยัง Base · เปิด Superbridge',
    'Gas only': 'เฉพาะค่า gas',
@@ -1151,7 +1150,6 @@ export const thaiCoverageB: Record<string, string> = {
    'What is Moodeng Credit and how does it work?': 'Moodeng Credit คืออะไร และทำงานอย่างไร?',
    'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
       'Moodeng Credit ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสะสมแต้ม Pandesal ที่ผูกกับกระเป๋าเงินของคุณ คุณโพสต์คำขอ ผู้ให้กู้ปล่อยกู้เข้ากระเป๋าเงินของคุณโดยตรง แล้วคุณชำระคืนภายในวันที่คุณกำหนดหรือก่อนหน้านั้น การชำระคืนตรงเวลาทุกครั้งจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะปลดล็อกวงเงินที่สูงขึ้น คุณจึงเริ่มจากจำนวนน้อยแล้วค่อย ๆ เติบโตเมื่อพิสูจน์ได้ว่าเชื่อถือได้ ความน่าเชื่อถือของคุณผูกกับกระเป๋าเงิน จึงติดตัวคุณไปทุกที่ ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
-   'How to request your first loan': 'วิธีขอเงินกู้ครั้งแรก',
    'Request your first loan': 'ขอเงินกู้ครั้งแรกของคุณ',
    'Account → wallet → verify → request': 'บัญชี → กระเป๋าเงิน → ยืนยันตัวตน → ส่งคำขอ',
    'How do I request my first loan?': 'ฉันจะขอเงินกู้ครั้งแรกได้อย่างไร?',
@@ -1322,8 +1320,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Failed to remove': 'ลบไม่สำเร็จ',
    'Failed to add passkey': 'เพิ่มพาสคีย์ไม่สำเร็จ',
    'Optional. Add an extra step when you sign in.': 'ไม่บังคับ เพิ่มขั้นตอนพิเศษเมื่อคุณเข้าสู่ระบบ',
-   'Optional. Use Face ID, Touch ID, or a security key on this device.':
-      'ไม่บังคับ ใช้ Face ID, Touch ID หรือกุญแจความปลอดภัยบนอุปกรณ์นี้',
+   'Optional. Use Face ID, Touch ID, or a security key on this device.': 'ไม่บังคับ ใช้ Face ID, Touch ID หรือกุญแจความปลอดภัยบนอุปกรณ์นี้',
 
    // src/views/account/WalletAccountInsights.tsx
    'USDC on Base': 'USDC บน Base',
@@ -1439,8 +1436,7 @@ export const thaiCoverageB: Record<string, string> = {
       'ชำระคืนตรงเวลา การชำระคืนตรงเวลาจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะเลื่อนระดับของคุณขึ้นหนึ่งขั้น',
    'Credit-Building vs Trust-Building loans': 'Credit-Building Loan กับ Trust-Building Loan',
    'Which one raises your limit': 'แบบไหนที่เพิ่มวงเงินของคุณ',
-   "What's the difference between Credit-Building and Trust-Building loans?":
-      'Credit-Building Loan กับ Trust-Building Loan ต่างกันอย่างไร',
+   "What's the difference between Credit-Building and Trust-Building loans?": 'Credit-Building Loan กับ Trust-Building Loan ต่างกันอย่างไร',
    'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
       'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้กิจกรรมของบัญชียังคงดีอยู่ และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
    'How repayments affect your points': 'การชำระคืนส่งผลต่อแต้มของคุณอย่างไร',
@@ -1456,8 +1452,7 @@ export const thaiCoverageB: Record<string, string> = {
       'โค้ดแนะนำเพื่อนที่ใช้ได้จะเพิ่ม $5 ให้วงเงินเครดิตเริ่มต้นของคุณ — ดังนั้นผู้ยืมใหม่ที่ปกติเริ่มที่ $15 จะเริ่มที่ $20 แทน',
    'It says "write it in English"': '"write it in English" ขึ้นเตือน',
    'Why, and how to fix it': 'ทำไม และแก้ไขอย่างไร',
-   'My loan reason says to write it in English — what should I do?':
-      'เหตุผลการขอกู้ของฉันบอกให้เขียนเป็นภาษาอังกฤษ — ฉันควรทำอย่างไร',
+   'My loan reason says to write it in English — what should I do?': 'เหตุผลการขอกู้ของฉันบอกให้เขียนเป็นภาษาอังกฤษ — ฉันควรทำอย่างไร',
    'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
       'ผู้ให้กู้บน Moodeng อยู่ในสหรัฐฯ และยุโรป ดังนั้นเหตุผลการขอกู้ต้องเป็นภาษาอังกฤษ — คำขอที่พวกเขาอ่านไม่ออกจะไม่ได้รับการปล่อยกู้ ภาษาตากาล็อก ทากลิช และบิซายา มักเป็นสาเหตุ ทำให้ฟอร์มค้างอยู่จนกว่าจะเขียนใหม่ คำยืมจากภาษาอื่นที่แทรกอยู่ในประโยคภาษาอังกฤษไม่มีปัญหา (เช่น "buying gamot for my mother") — สิ่งที่ทำให้ฟอร์มค้างคือทั้งประโยคที่เป็นภาษาอื่น กฎเดียวกันนี้ใช้กับ "Describe your situation" ในขั้นตอนข้อมูลส่วนตัว แม้ว่าชื่อตำแหน่งงานเองจะยังเป็นภาษาท้องถิ่นได้ (เช่น "sari-sari store owner", "jeepney driver")',
    'My reason is "too vague"': 'เหตุผลของฉัน "คลุมเครือเกินไป"',
