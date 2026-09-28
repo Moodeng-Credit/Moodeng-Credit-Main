@@ -788,20 +788,24 @@ export const indonesianCoverageC: Record<string, string> = {
    'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
       'Progresmu terikat pada dompet dan riwayat pembayaranmu, jadi selalu ikut denganmu. Pembayaran yang terlewat tidak menghapus levelmu, tetapi mengurangi poin Pandesal dan bisa memperlambat kenaikan berikutnya.',
    'What borrowing limit does everyone start with?': 'Semua orang mulai dengan limit pinjaman berapa?',
-   'Yep — everyone starts at $15. Small, but the climb begins here.': 'Yup — semua orang mulai dari $15. Kecil, tapi dari sinilah perjalanannya dimulai.',
-   'Close, but no. Level 1 starts everyone at a $15 limit.': 'Hampir benar, tapi belum tepat. Level 1 membuat semua orang mulai dengan limit $15.',
+   'Yep — everyone starts at $15. Small, but the climb begins here.':
+      'Yup — semua orang mulai dari $15. Kecil, tapi dari sinilah perjalanannya dimulai.',
+   'Close, but no. Level 1 starts everyone at a $15 limit.':
+      'Hampir benar, tapi belum tepat. Level 1 membuat semua orang mulai dengan limit $15.',
    'Which loan actually levels you up?': 'Pinjaman mana yang benar-benar menaikkan levelmu?',
    'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.':
       'Betul — hanya Credit-Building Loan senilai limit penuh yang dibayar tepat waktu yang menaikkan batas atasmu.',
    'Nice try! Only a full-limit Credit-Building Loan raises your level.':
       'Hampir! Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',
-   'Your limit is $20. You borrow $10 and repay on time. What happens?': 'Limitmu $20. Kamu meminjam $10 dan membayar tepat waktu. Apa yang terjadi?',
+   'Your limit is $20. You borrow $10 and repay on time. What happens?':
+      'Limitmu $20. Kamu meminjam $10 dan membayar tepat waktu. Apa yang terjadi?',
    'Right! Small loans build trust — they just don’t raise your limit.':
       'Betul! Pinjaman kecil membangun kepercayaan — tapi tidak menaikkan limitmu.',
    'Not quite — a sub-limit loan builds trust but keeps your limit at $20.':
       'Belum tepat — pinjaman di bawah limit membangun kepercayaan, tapi limitmu tetap $20.',
    'Can you skip from $15 straight to $60?': 'Bisakah kamu langsung melompat dari $15 ke $60?',
-   'Correct — Moodeng climbs one level at a time. No shortcuts.': 'Benar — Moodeng naik satu level dalam satu waktu. Tidak ada jalan pintas.',
+   'Correct — Moodeng climbs one level at a time. No shortcuts.':
+      'Benar — Moodeng naik satu level dalam satu waktu. Tidak ada jalan pintas.',
    'Nope — there are no shortcuts. It’s one level at a time.': 'Belum tepat — tidak ada jalan pintas. Levelnya naik satu per satu.',
    'What slows your climb the most?': 'Apa yang paling memperlambat kenaikan levelmu?',
    'You got it — a missed repayment pauses progress and dents your Pandesal points.':
@@ -980,8 +984,7 @@ export const indonesianCoverageC: Record<string, string> = {
       'Skormu akan muncul setelah minimal 2 pinjaman didanai oleh pemberi pinjaman yang berbeda.',
    'Borrower patterns': 'Pola peminjam',
    'Recent Loans': 'Pinjaman Terbaru',
-   'View who has funded this borrower and the status of each loan.':
-      'Lihat siapa yang mendanai peminjam ini dan status setiap pinjaman.',
+   'View who has funded this borrower and the status of each loan.': 'Lihat siapa yang mendanai peminjam ini dan status setiap pinjaman.',
    'Loan / lender': 'Pinjaman / pemberi pinjaman',
    'No funded loans yet': 'Belum ada pinjaman yang didanai',
    'Not enough loan history yet': 'Riwayat pinjaman belum cukup',
@@ -1083,5 +1086,104 @@ export const indonesianCoverageC: Record<string, string> = {
       'Pinjaman kecil di bawah limit saat ini. Ini membantu menunjukkan bahwa peminjam bisa membayar kembali, tetapi tidak menaikkan Level Kredit.',
    'Credit-level signal': 'Sinyal Level Kredit',
    'A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level.':
-      'Pinjaman senilai limit penuh. Jika berhasil dibayar kembali, ini bisa membuka Level Kredit berikutnya untuk peminjam.'
+      'Pinjaman senilai limit penuh. Jika berhasil dibayar kembali, ini bisa membuka Level Kredit berikutnya untuk peminjam.',
+
+   // src/views/withdraw/CashoutFaceCheck.tsx
+   'Back to withdraw': 'Kembali ke tarik dana',
+   'Checking your scan': 'Memeriksa hasil pindaimu',
+   'This usually takes a few seconds. Keep this screen open.': 'Biasanya ini hanya perlu beberapa detik. Tetap buka layar ini.',
+   "Since this is your first cash-out, we ask for a ten-second scan to confirm it's really you before sending any money out.":
+      'Karena ini pencairan pertamamu, kami minta pemindaian sepuluh detik untuk memastikan ini benar-benar kamu sebelum mengirim uang.',
+
+   // src/views/withdraw/Withdraw.tsx
+   "You're sending": 'Kamu mengirim',
+   "You'll receive": 'Kamu akan menerima',
+   'How this works': 'Cara kerjanya',
+   'Show me how': 'Tunjukkan caranya',
+   'Video guide coming soon': 'Video panduan segera hadir',
+   'Send only': 'Kirim saja',
+   'Verify Base first': 'Verifikasi Base dulu',
+   'How would you like to cash out?': 'Bagaimana kamu ingin mencairkan dana?',
+   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
+      'Dana pinjamanmu ada di dompetmu. Tarik atau ubah dananya lewat exchange, platform P2P, atau layanan kripto lokal yang didukung.',
+   'Learn more about withdrawal options': 'Pelajari lebih lanjut tentang opsi penarikan',
+   "I'll do this later": 'Nanti saja',
+   'Contact support': 'Hubungi dukungan',
+   'Sent!': 'Terkirim!',
+   'Cashing out…': 'Mencairkan dana…',
+   'This can take a couple of minutes the first time. Keep this screen open.':
+      'Ini bisa memakan waktu beberapa menit untuk pertama kalinya. Tetap buka layar ini.',
+   'Payout to': 'Dikirim ke',
+   "Doesn't look like a valid wallet address.": 'Sepertinya ini bukan alamat dompet yang valid.',
+   Max: 'Maks',
+   "That's more than your available balance.": 'Itu lebih besar dari saldo yang tersedia.',
+   'After it arrives': 'Setelah dana tiba',
+   'In GCrypto, open': 'Di GCrypto, buka',
+   Sell: 'Jual',
+   'Go to your': 'Buka',
+   Withdraw: 'Tarik dana',
+   'In PDAX, go to': 'Di PDAX, buka',
+   'Wallet → Withdraw PHP': 'Dompet → Tarik PHP',
+   'Portfolio → Withdraw / Cash Out': 'Portofolio → Tarik / Cairkan Dana',
+   'How to transfer to Binance': 'Cara transfer ke Binance',
+   'Your Binance transfer address': 'Alamat transfer Binance kamu',
+   Open: 'Buka',
+   Choose: 'Pilih',
+   'Choose your': 'Pilih',
+   'Prefer a': 'Pilih yang punya',
+   Never: 'Jangan pernah',
+   'Rate set by Moneybees': 'Kurs ditentukan oleh Moneybees',
+   Bank: 'Bank',
+   'Moneybees is a BSP/AMLC-registered cash-out provider. They handle KYC, exchange rate, transaction details, and PHP payout directly with you.':
+      'Moneybees adalah penyedia layanan pencairan dana yang terdaftar di BSP/AMLC. Mereka menangani KYC, nilai tukar, detail transaksi, dan pembayaran PHP langsung denganmu.',
+   'Your cash-out steps': 'Langkah-langkah pencairan danamu',
+   "You're all set": 'Kamu sudah siap',
+   "Finish verifying on the Moneybees page that opened, then tap below. Once Moneybees confirms your identity, they'll reach out by chat.":
+      'Selesaikan verifikasi di halaman Moneybees yang terbuka, lalu tap tombol di bawah. Setelah Moneybees mengonfirmasi identitasmu, mereka akan menghubungimu lewat chat.',
+   'Reopen Moneybees verification': 'Buka lagi verifikasi Moneybees',
+   'Continue to Moneybees KYC': 'Lanjutkan ke KYC Moneybees',
+   Sent: 'Terkirim',
+   'Open GCrypto in GCash': 'Buka GCrypto di GCash',
+   'How to open GCrypto in GCash': 'Cara membuka GCrypto di GCash',
+   'Copy your GCash address': 'Salin alamat GCash kamu',
+   'How to copy your GCrypto address': 'Cara menyalin alamat GCrypto kamu',
+   'Paste it below': 'Tempel di bawah ini',
+   'Enter the amount in USDC or pesos and confirm. The pesos land in your GCrypto trading wallet.':
+      'Masukkan jumlahnya dalam USDC atau peso lalu konfirmasi. Peso akan masuk ke dompet trading GCrypto kamu.',
+   'Move the pesos to your main GCash balance — it usually arrives within a few minutes.':
+      'Pindahkan peso ke saldo utama GCash kamu — biasanya tiba dalam beberapa menit.',
+   'Open PDAX → Portfolio → USDC → Receive': 'Buka PDAX → Portofolio → USDC → Terima',
+   'How to find your PDAX receiving address': 'Cara menemukan alamat penerimaan PDAX kamu',
+   'Copy your PDAX address': 'Salin alamat PDAX kamu',
+   'How to copy your PDAX address': 'Cara menyalin alamat PDAX kamu',
+   'Tap the Trade tab at the bottom, then select Sell.': 'Tap tab Perdagangan di bagian bawah, lalu pilih Jual.',
+   'Search for USDC and choose PHP as the currency you want to receive.':
+      'Cari USDC dan pilih PHP sebagai mata uang yang ingin kamu terima.',
+   'Enter the amount and confirm the sale': 'Masukkan jumlahnya dan konfirmasi penjualannya',
+   'Open Coins.ph → Portfolio → USDC → Receive': 'Buka Coins.ph → Portofolio → USDC → Terima',
+   'How to find your Coins.ph receiving address': 'Cara menemukan alamat penerimaan Coins.ph kamu',
+   'Copy your Coins.ph address': 'Salin alamat Coins.ph kamu',
+   'Enter the amount and tap Sell Now. Your PHP balance updates instantly.':
+      'Masukkan jumlahnya dan tap Jual Sekarang. Saldo PHP kamu akan langsung diperbarui.',
+   'Tap the Withdraw or Cash Out button from your portfolio screen.': 'Tap tombol Tarik atau Cairkan Dana dari layar portofoliomu.',
+   'Choose your destination: bank account or e-wallet': 'Pilih tujuanmu: rekening bank atau e-wallet',
+   'You can send to your Union Bank, BDO, BPI, or any PH bank — or to GCash or Maya.':
+      'Kamu bisa mengirim ke Union Bank, BDO, BPI, atau bank PH mana pun — atau ke GCash atau Maya.',
+   'InstaPay is faster (minutes, ₱50,000 limit per transaction). PESONet clears by end of day for larger amounts.':
+      'InstaPay lebih cepat (hitungan menit, limit ₱50.000 per transaksi). PESONet selesai di akhir hari untuk jumlah yang lebih besar.',
+   'Enter your bank details, then confirm with the OTP': 'Masukkan detail bankmu, lalu konfirmasi dengan OTP',
+   'Coins.ph sends a one-time code to your registered phone number to authorize the transfer.':
+      'Coins.ph mengirim kode sekali pakai ke nomor teleponmu yang terdaftar untuk mengonfirmasi transfernya.',
+   'Open Binance → Wallet → Receive': 'Buka Binance → Dompet → Terima',
+   'How to find your Binance receiving address': 'Cara menemukan alamat penerimaan Binance kamu',
+   'Copy your Binance address': 'Salin alamat Binance kamu',
+   'How to copy your Binance address': 'Cara menyalin alamat Binance kamu',
+   'Paste your Binance address': 'Tempel alamat Binance kamu',
+   'Pick a trustworthy buyer': 'Pilih pembeli yang tepercaya',
+   'Enter the amount and place the order': 'Masukkan jumlahnya dan buat pesanan',
+   'Arrange your cash-out with them': 'Atur pencairan danamu dengan mereka',
+   'Send only after their instructions': 'Kirim hanya setelah ada instruksi dari mereka',
+   'Get assisted by chat': 'Dapatkan bantuan lewat chat',
+   'Confirm your payout': 'Konfirmasi pembayaranmu',
+   'Send only after instructions': 'Kirim hanya setelah ada instruksi'
 };
