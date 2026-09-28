@@ -542,5 +542,73 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Send to PDAX': 'Gửi đến PDAX',
    'Withdrawal sent': 'Đã gửi lệnh rút tiền',
    'Your funds are on their way to your exchange.': 'Tiền của bạn đang được chuyển đến sàn giao dịch.',
-   'Could not verify this cash-out. Please try again.': 'Không xác minh được giao dịch rút tiền này. Vui lòng thử lại.'
+   'Could not verify this cash-out. Please try again.': 'Không xác minh được giao dịch rút tiền này. Vui lòng thử lại.',
+
+   // src/components/InAppBrowserNotice.tsx
+   'this app': 'ứng dụng này',
+
+   // src/components/IouPointHistoryModal.tsx
+   From: 'Từ',
+
+   // src/components/UserNetwork.tsx
+   'Guest User': 'Khách',
+
+   // src/components/marketing/MarketingPageShell.tsx
+   App: 'Ứng dụng',
+
+   // src/lib/web3/openfort/OpenfortContext.tsx
+   "Couldn't create your wallet": 'Không tạo được ví của bạn',
+   'The Instant Wallet is not available right now.': 'Instant Wallet hiện không khả dụng.',
+
+   // src/views/dashboard/RequestBoard.tsx
+   'Browse requests now. Choose a role when you are ready to borrow or lend.':
+      'Xem các yêu cầu ngay bây giờ. Hãy chọn vai trò khi bạn sẵn sàng vay hoặc cho vay.',
+   'the selected date': 'ngày đã chọn',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'this borrower': 'người vay này',
+
+   // src/views/lender/performance/LenderPerformance.tsx
+   higher: 'cao hơn',
+   lower: 'thấp hơn',
+   there: 'bạn',
+
+   // src/views/onboarding/ConnectWallet.tsx
+   'is not available right now.': 'hiện không khả dụng.',
+
+   // src/views/profile/components/Card.tsx
+   Lent: 'Đã cho vay',
+   'Partially Repaid': 'Đã trả một phần',
+
+   // src/views/profile/components/tabs/CreditLevelCard.tsx
+   'Unlocked on': 'Đã mở khóa vào',
+   'Credit Unlocked on': 'Đã mở khóa tín dụng vào',
+
+   // src/views/signin/SignInPage.tsx
+   'This account has been closed. If you think this is a mistake, contact support on Telegram.':
+      'Tài khoản này đã bị đóng. Nếu bạn cho rằng đây là nhầm lẫn, hãy liên hệ bộ phận hỗ trợ qua Telegram.',
+   'Too many attempts detected': 'Phát hiện quá nhiều lần thử',
+   'New account needed': 'Cần tạo tài khoản mới',
+   'Email not found': 'Không tìm thấy email',
+   'Incorrect credentials': 'Thông tin đăng nhập không đúng',
+   OR: 'HOẶC',
+
+   // src/views/signup/SignUpPage.tsx
+   'Account already exists': 'Tài khoản đã tồn tại',
+   'Logging you in…': 'Đang đăng nhập cho bạn…',
+   'Could not reach the server. Check your connection and try again.': 'Không kết nối được với máy chủ. Hãy kiểm tra kết nối rồi thử lại.',
+   'Already linked': 'Đã được liên kết',
+   'Already registered': 'Đã đăng ký',
+   'Email address taken': 'Địa chỉ email đã được sử dụng',
+   'Password too weak': 'Mật khẩu quá yếu',
+
+   // src/views/support/FAQ.tsx
+   'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, the Instant Wallet (and Base Accounts), fees, and staying safe from loan sharks.':
+      'Giải đáp về cách Moodeng Credit hoạt động — vay bằng USDC, điểm Pandesal, Hạng tín dụng, Instant Wallet (và Base Account), phí, và cách tránh xa cho vay nặng lãi.',
+   'Search FAQs': 'Tìm trong câu hỏi thường gặp',
+   'No questions match your search.': 'Không có câu hỏi nào khớp với tìm kiếm của bạn.',
+   All: 'Tất cả',
+   General: 'Chung',
+   Borrowing: 'Vay',
+   'FAQ categories': 'Danh mục câu hỏi thường gặp'
 };
