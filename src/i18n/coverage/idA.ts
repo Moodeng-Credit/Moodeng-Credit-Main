@@ -249,7 +249,6 @@ export const indonesianCoverageA: Record<string, string> = {
       'Agar Moodeng tetap aman dan bebas dari akun palsu atau ganda, peminjam menyelesaikan pengecekan identitas singkat satu kali.',
    'Verify Your ID': 'Verifikasi ID Kamu',
    Recommended: 'Disarankan',
-   'Quick national ID & selfie check — available in select countries.': 'Cek cepat kartu identitas & selfie — tersedia di negara tertentu.',
    'Supported countries': 'Negara yang didukung',
    'Not in a supported country?': 'Negaramu tidak didukung?',
    'Verify with World ID': 'Verifikasi dengan World ID',
@@ -322,7 +321,6 @@ export const indonesianCoverageA: Record<string, string> = {
    'Manual review in progress': 'Peninjauan manual sedang berlangsung',
    "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review.":
       'Verifikasimu perlu ditinjau singkat oleh tim kami — biasanya butuh beberapa jam, paling lama 1 hari kerja. Kami akan memperbarui statusmu secara otomatis. Ingin lebih cepat? Kirim pesan ke kami di bawah dan kami akan mempercepat peninjauanmu.',
-   "Verification didn't pass": 'Verifikasi tidak lolos',
    "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. A few things that usually fix it:":
       'Kami tidak bisa memverifikasi identitasmu. Ini bisa terjadi jika foto dokumen tidak jelas, dokumen sudah kedaluwarsa, atau tidak cocok dengan wajahmu. Beberapa hal yang biasanya membantu:',
    'Try again': 'Coba lagi',
@@ -358,7 +356,6 @@ export const indonesianCoverageA: Record<string, string> = {
    'You’re not done yet — one last step. Verify with World ID below to finish and unlock your account.':
       'Belum selesai — tinggal satu langkah lagi. Verifikasi dengan World ID di bawah untuk menyelesaikan dan membuka akunmu.',
    'No World ID? Verify with your ID instead': 'Tidak punya World ID? Verifikasi dengan ID kamu saja',
-   'Checking…': 'Mengecek…',
    'Need help from our team?': 'Butuh bantuan dari tim kami?',
    'Message us on Telegram': 'Kirim pesan lewat Telegram',
    'Message us on Facebook': 'Kirim pesan lewat Facebook',
@@ -462,18 +459,11 @@ export const indonesianCoverageA: Record<string, string> = {
    'Guest User': 'Pengguna Tamu',
    VERIFY: 'VERIFIKASI',
    'SIGN IN': 'MASUK',
-   'View IOU point history': 'Lihat riwayat poin IOU',
    Verified: 'Terverifikasi',
    'SIGN OUT': 'KELUAR',
 
    // src/components/UserPay.tsx
-   'Still confirming': 'Masih dikonfirmasi',
-   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
-      'Pembayaranmu sudah dikirim dan sedang menunggu konfirmasi sebentar. Status akan diperbarui otomatis.',
    'Unknown error': 'Error tidak diketahui',
-   'Payment Sent, Still Recording': 'Pembayaran terkirim, masih dicatat',
-   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'Pembayaranmu berhasil, tetapi kami belum bisa mencatatnya. Kami akan terus mencoba otomatis — hubungi dukungan jika statusnya tidak diperbarui.',
    'Loan Repayment': 'Pembayaran Kembali Pinjaman',
    'Total Due': 'Total Tagihan',
    'Amount Paid': 'Jumlah Dibayar',
@@ -481,7 +471,6 @@ export const indonesianCoverageA: Record<string, string> = {
    Stablecoin: 'Stablecoin',
    'Repayment Amount': 'Jumlah Pembayaran',
    'Enter custom amount': 'Masukkan jumlah lain',
-   'Processing...': 'Memproses...',
    'You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit score.':
       'Kamu bisa membayar berapa pun kapan saja sebelum jatuh tempo. Pastikan pinjaman lunas sebelum jatuh tempo agar reputasi kreditmu tetap terjaga.',
 
@@ -633,7 +622,6 @@ export const indonesianCoverageA: Record<string, string> = {
    // src/components/verification/CountryFlags.tsx
    Vietnam: 'Vietnam',
    Taiwan: 'Taiwan',
-   'South Korea': 'Korea Selatan',
    Philippines: 'Filipina',
    Malaysia: 'Malaysia',
    Japan: 'Jepang',

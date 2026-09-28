@@ -95,7 +95,6 @@ export const indonesianCoverageB: Record<string, string> = {
    'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.':
       'Inilah pinjaman untuk naik level. Kamu meminjam sebesar limit penuhmu saat ini dan membayar kembali sesuai ketentuan tepat waktu.',
    'Late or missed repayment': 'Pembayaran terlambat atau terlewat',
-   'Past due': 'Lewat jatuh tempo',
    'Can pause progress': 'Bisa menunda kemajuan',
    'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.':
       'Level kamu tidak lagi jadi pertimbangan utama. Pemberi pinjaman akan lebih dulu memperhatikan pembayaran yang terlewat.',
@@ -206,7 +205,6 @@ export const indonesianCoverageB: Record<string, string> = {
    'Mobile number (GCash)': 'Nomor ponsel (GCash)',
    'Mobile number': 'Nomor ponsel',
    'Email (optional)': 'Email (opsional)',
-   'Sending…': 'Mengirim…',
    'Send My Voucher': 'Kirim voucher saya',
    Embed: 'Sematkan',
    'Close share': 'Tutup berbagi',
@@ -421,11 +419,9 @@ export const indonesianCoverageB: Record<string, string> = {
    'It may already be funded or unavailable. Refreshing the board now.':
       'Mungkin permintaan ini sudah didanai atau tidak tersedia. Memuat ulang papan sekarang.',
    'Edit display name': 'Ubah nama tampilan',
-   'Hello,': 'Halo,',
    'Role not selected': 'Peran belum dipilih',
    'Verification in progress': 'Verifikasi sedang berlangsung',
    'Verify Yourself >': 'Verifikasi Diri >',
-   'View IOU point history': 'Lihat riwayat poin IOU',
    'Browse requests publicly.': 'Lihat permintaan secara publik.',
    'Pick borrower or lender to unlock your dashboard, repayment, and history.':
       'Pilih peminjam atau pemberi pinjaman untuk membuka dasbor, pembayaran kembali, dan riwayatmu.',
@@ -871,21 +867,15 @@ export const indonesianCoverageB: Record<string, string> = {
    'for the': 'untuk',
    'Unknown user': 'Pengguna tidak dikenal',
    'Thank You!': 'Terima kasih!',
-   'Still confirming': 'Masih dikonfirmasi',
-   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
-      'Pembayaranmu sudah terkirim dan sedang dikonfirmasi. Status ini akan diperbarui otomatis.',
-   'Payment Sent, Still Recording': 'Pembayaran terkirim, masih dicatat',
    'Unknown Reason': 'Alasan tidak diketahui',
    'Moodeng loan request': 'Permintaan pinjaman Moodeng',
    'Link copied': 'Tautan disalin',
    'Send it to a lender so they can fund this request.': 'Kirim ke pemberi pinjaman agar mereka bisa mendanai permintaan ini.',
    'Could not copy link': 'Gagal menyalin tautan',
-   'Confirming on Base…': 'Mengonfirmasi di Base…',
    'Sending your help…': 'Mengirim bantuanmu…',
    'Recording your funding — hang tight.': 'Mencatat pendanaanmu — tunggu sebentar.',
    'Approve in the Coinbase window. It may be behind this one.':
       'Setujui di jendela Coinbase. Jendelanya mungkin ada di belakang jendela ini.',
-   'Approve the transaction in your wallet.': 'Setujui transaksinya di dompetmu.',
    'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
       'Tidak muncul permintaan? Pastikan aplikasi dompetmu terbuka di perangkat ini — atau hubungkan ulang di sini.',
    'Reconnect wallet': 'Hubungkan ulang dompet',
