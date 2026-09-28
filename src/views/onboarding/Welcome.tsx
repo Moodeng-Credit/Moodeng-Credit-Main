@@ -80,7 +80,7 @@ const WELCOME_COPY = {
    vi: {
       title: 'Bắt đầu',
       lenderHeadline: 'Cho người thật vay và giúp họ xây dựng tín dụng.',
-      lenderSubtitle: 'Kiếm tiền onchain — vận hành trên Base.',
+      lenderSubtitle: 'Kiếm tiền onchain — hoạt động trên Base.',
       borrowerHeadline: 'Bạn đang xây dựng uy tín mà ví của bạn có thể mang đi mọi nơi.',
       borrowerSubtitle: 'Vay có trách nhiệm. Xây dựng niềm tin. Mở khóa thêm theo thời gian.',
       getStartedTitle: 'Bắt đầu ngay',
