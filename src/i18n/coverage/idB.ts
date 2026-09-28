@@ -927,5 +927,102 @@ export const indonesianCoverageB: Record<string, string> = {
    'Your time zone ·': 'Zona waktumu ·',
    'Booking…': 'Memesan…',
    'Booking paused': 'Pemesanan dijeda',
-   'Pick a time above': 'Pilih waktu di atas'
+   'Pick a time above': 'Pilih waktu di atas',
+
+   // src/views/borrowerBenefits/BorrowerBenefits.tsx
+   'Borrower Benefits | Moodeng Credit': 'Manfaat untuk Peminjam | Moodeng Credit',
+   'Why borrowers choose Moodeng Credit: fast global access to small USDC loans, our mission and roadmap, and building verifiable credit as you repay.':
+      'Kenapa peminjam memilih Moodeng Credit: akses global yang cepat ke pinjaman USDC kecil, misi dan roadmap kami, serta membangun riwayat kredit yang bisa diverifikasi seiring kamu membayar kembali.',
+
+   // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
+   'Why borrowing feels different': 'Kenapa meminjam di sini terasa berbeda',
+   'Direct lender-to-borrower': 'Langsung dari pemberi pinjaman ke peminjam',
+   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'Pemberi pinjaman mendanai permintaanmu secara langsung. Moodeng membantu menampilkan ketentuan dan mencatat riwayat pembayaran kembali tanpa menyembunyikan prosesnya di balik perantara.',
+   'Funded in your wallet': 'Didanai langsung ke dompetmu',
+   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'Saat pemberi pinjaman mendanai permintaanmu, USDC bergerak melalui dompet digitalmu sehingga uang dan riwayat pembayaran kembali lebih mudah dilacak.',
+   'Terms shown upfront': 'Ketentuan ditampilkan sejak awal',
+   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
+      'Kamu memilih jumlah permintaan, jumlah pembayaran kembali, tanggal jatuh tempo, dan alasannya sebelum pemberi pinjaman memutuskan untuk mendanainya.',
+
+   // src/views/borrowerBenefits/sections/HeroSection.tsx
+   'Microloans with USDC to build your credit': 'Pinjaman mikro dengan USDC untuk membangun kreditmu',
+
+   // src/views/borrowerBenefits/sections/OurMissionSection.tsx
+   'Our Mission': 'Misi Kami',
+   "Dr. Muhammad Yunus won a Nobel Prize for creating opportunities through small loans. We're bringing his vision to life with cutting-edge technology.":
+      'Dr. Muhammad Yunus meraih Hadiah Nobel karena menciptakan peluang lewat pinjaman kecil. Kami menghidupkan visinya dengan teknologi mutakhir.',
+   'By using': 'Dengan memakai',
+   'Get started': 'Mulai sekarang',
+
+   // src/views/borrowerBenefits/sections/OurRoadmapSection.tsx
+   'Our roadmap': 'Roadmap kami',
+   'From Moodeng credit to a portable credit passport': 'Dari kredit Moodeng menuju paspor kredit yang portabel',
+   'The goal is not to promise instant bank approval. It is to help borrowers turn reliable repayment behavior into a record that can become more useful over time.':
+      'Tujuannya bukan menjanjikan persetujuan bank instan. Tujuannya adalah membantu peminjam mengubah kebiasaan membayar kembali yang bisa diandalkan menjadi riwayat yang makin berguna seiring waktu.',
+   'This is a product direction, not a guarantee. Real-world lenders decide their own approvals, but Moodeng can make borrower history clearer, more portable, and easier to evaluate.':
+      'Ini adalah arah produk, bukan jaminan. Pemberi pinjaman di dunia nyata tetap memutuskan persetujuannya sendiri, tetapi Moodeng bisa membuat riwayat peminjam lebih jelas, lebih portabel, dan lebih mudah dinilai.',
+   'Start with verified repayment records': 'Mulai dengan riwayat pembayaran kembali yang terverifikasi',
+   'Make small loan requests and repayments easier to review, so borrowers can build a visible history inside Moodeng.':
+      'Membuat permintaan pinjaman kecil dan pembayaran kembali lebih mudah ditinjau, sehingga peminjam bisa membangun riwayat yang terlihat di dalam Moodeng.',
+   'Shape a portable credit profile': 'Membentuk profil kredit yang portabel',
+   'Turn repayment behavior, wallet history, and borrower context into a clearer profile borrowers can understand and share.':
+      'Mengubah kebiasaan membayar kembali, riwayat dompet, dan konteks peminjam menjadi profil yang lebih jelas yang bisa dipahami dan dibagikan peminjam.',
+   'Build toward a credit passport': 'Menuju paspor kredit',
+   'Create borrower-controlled summaries that could help explain reliability outside Moodeng, without exposing unnecessary data.':
+      'Membuat ringkasan yang dikendalikan peminjam sendiri, yang bisa membantu menjelaskan keandalan mereka di luar Moodeng, tanpa membuka data yang tidak perlu.',
+   'Open doors to real-world credit': 'Membuka pintu ke kredit di dunia nyata',
+   'Work toward partner and lender pathways where strong Moodeng history can support better loan conversations in the future.':
+      'Membangun jalur bersama mitra dan pemberi pinjaman, di mana riwayat Moodeng yang kuat bisa mendukung percakapan pinjaman yang lebih baik di masa depan.',
+
+   // src/views/fund/FundBridge.tsx
+   'Bridge to Base': 'Bridge ke Base',
+   'From chain': 'Dari jaringan',
+   'Select a chain': 'Pilih jaringan',
+   'Amount (USDC)': 'Jumlah (USDC)',
+   'To chain': 'Ke jaringan',
+   'Fetching best rate…': 'Mengambil kurs terbaik…',
+   'Quote Details': 'Detail kurs',
+   'You send': 'Kamu kirim',
+   'You receive on Base': 'Kamu terima di Base',
+   'Estimated time': 'Perkiraan waktu',
+   'Pay from': 'Bayar dari',
+   'Could not fetch a quote. Please try again.': 'Tidak bisa mengambil kurs. Silakan coba lagi.',
+
+   // src/views/fund/FundWalletSheet.tsx
+   'Opening Coinbase…': 'Membuka Coinbase…',
+   'Coinbase checks if you’re already signed in.': 'Coinbase mengecek apakah kamu sudah masuk.',
+   'If not, you’ll sign in (or create an account).': 'Jika belum, kamu akan masuk (atau membuat akun).',
+   'Pay with your card — USDC lands in your wallet.': 'Bayar dengan kartumu — USDC masuk ke dompetmu.',
+   'Fund your wallet': 'Isi dompetmu',
+   'Your USDC balance': 'Saldo USDC kamu',
+   'Deposit USDC': 'Setor USDC',
+   'Already have USDC? Send it to your wallet on Base': 'Sudah punya USDC? Kirim ke dompetmu di Base',
+   'No fee': 'Tanpa biaya',
+   'Base network only': 'Hanya jaringan Base',
+   'Send USDC on the': 'Kirim USDC di jaringan',
+   'Copied': 'Tersalin',
+   'Only send USDC on Base. Other tokens or networks may be lost.': 'Kirim USDC hanya di Base. Token atau jaringan lain bisa membuat dananya hilang.',
+   'Buy USDC with card': 'Beli USDC dengan kartu',
+   'Powered by Stripe': 'Didukung oleh Stripe',
+   'Stays in the app': 'Tetap di dalam aplikasi',
+   'Supported in': 'Tersedia di',
+   'Buy USDC with debit card': 'Beli USDC dengan kartu debit',
+   'Coinbase account needed': 'Perlu akun Coinbase',
+   'Coinbase checks if you’re signed in — if not, you’ll sign in first, then pay by card.':
+      'Coinbase mengecek apakah kamu sudah masuk — jika belum, kamu akan masuk dulu, lalu membayar dengan kartu.',
+   'Bridge from another chain': 'Bridge dari jaringan lain',
+   'Already have stablecoins? Move them to Base': 'Sudah punya stablecoin? Pindahkan ke Base',
+   'Bridge from Solana': 'Bridge dari Solana',
+   'Gas only': 'Hanya biaya gas',
+   'Learn more': 'Pelajari lebih lanjut',
+   'Loading balance': 'Memuat saldo',
+
+   // src/views/fund/StripeOnrampModal.tsx
+   'Opening secure checkout…': 'Membuka checkout aman…',
+   'Back to funding options': 'Kembali ke pilihan pendanaan',
+   'Payment confirmed': 'Pembayaran dikonfirmasi',
+   'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
+      'USDC-mu sedang dalam perjalanan ke dompetmu di Base. Biasanya sampai dalam waktu sekitar satu menit.'
 };
