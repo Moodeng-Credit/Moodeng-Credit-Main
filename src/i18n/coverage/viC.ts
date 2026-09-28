@@ -564,5 +564,554 @@ export const vietnameseCoverageC: Record<string, string> = {
    Due: 'Đến hạn',
    'How to repay': 'Cách trả nợ',
    'Close video': 'Đóng video',
-   'How to repay a Moodeng loan': 'Cách trả một khoản vay Moodeng'
+   'How to repay a Moodeng loan': 'Cách trả một khoản vay Moodeng',
+
+   // src/views/profile/components/navigation/Sidebar.tsx
+   Menu: 'Menu',
+
+   // src/views/signin/SignInPage.tsx
+   'Welcome back to Moodeng': 'Chào mừng bạn trở lại Moodeng',
+   'Sign in to access your account.': 'Đăng nhập để truy cập tài khoản của bạn.',
+   'Remember Me': 'Ghi nhớ đăng nhập',
+   'Sign In to Moodeng': 'Đăng nhập vào Moodeng',
+   'Take a tour first': 'Xem qua trước khi bắt đầu',
+   'Authentication failed': 'Xác thực không thành công',
+   'Email Address': 'Địa chỉ email',
+   'Enter your email address': 'Nhập địa chỉ email của bạn',
+   'Enter your password': 'Nhập mật khẩu của bạn',
+
+   // src/views/signup/SignUpPage.tsx
+   'Welcome to Moodeng Credit': 'Chào mừng bạn đến với Moodeng Credit',
+   'It takes just a few minutes to get started.': 'Chỉ mất vài phút để bắt đầu.',
+   'Sign Up with Email': 'Đăng ký bằng email',
+   'Choose a username': 'Chọn tên người dùng',
+
+   // src/views/support/FAQ.tsx
+   'Frequently Asked Questions | Moodeng Credit': 'Câu hỏi thường gặp | Moodeng Credit',
+   'Frequently Asked Questions': 'Câu hỏi thường gặp',
+
+   // src/views/support/GettingStarted.tsx
+   'See how Moodeng works': 'Xem cách Moodeng hoạt động',
+   'Take the interactive tour': 'Xem hướng dẫn tương tác',
+   'A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.':
+      'Hướng dẫn 2 phút: chọn vai trò, xác minh, yêu cầu hoặc cấp vốn cho khoản vay, trả nợ và xây dựng tín dụng.',
+   'Getting Started | Moodeng Credit': 'Bắt đầu | Moodeng Credit',
+   'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
+      'Tìm hiểu những điều cơ bản về Moodeng: xem hướng dẫn và lợi ích, tìm hiểu USDC hoạt động ra sao, hiểu về hệ thống nâng hạng tín dụng và khám phá Học viện cùng blog.',
+
+   // src/views/support/Guides.tsx
+   'Guide categories': 'Danh mục hướng dẫn',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Play again': 'Chơi lại',
+   'Your credit': 'Tín dụng của bạn',
+   'Apply for loan': 'Yêu cầu khoản vay',
+   'Repayment complete': 'Đã trả xong nợ',
+   'Level 2 unlocked': 'Đã mở khóa Hạng 2',
+   'How Credit Levels work': 'Hạng tín dụng hoạt động như thế nào',
+   'Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay a full-limit loan on time.':
+      'Hạng tín dụng chính là hạn mức vay của bạn. Mọi người đều bắt đầu ở $15 — và hạn mức này tăng lên mỗi khi bạn trả đúng hạn một khoản vay bằng toàn bộ hạn mức.',
+   'Deep dive': 'Tìm hiểu chi tiết',
+   'Credit limit climbing across four levels': 'Hạn mức tín dụng tăng dần qua bốn hạng',
+   'Each Credit-Building Loan repaid on time steps your limit up to the next level.':
+      'Mỗi khoản Credit-Building Loan được trả đúng hạn sẽ đưa hạn mức của bạn lên hạng tiếp theo.',
+   'The basics': 'Kiến thức cơ bản',
+   'Three things to know': 'Ba điều cần biết',
+   'Credit Levels reward one clear pattern: borrow your full limit, repay it on time, unlock the next limit.':
+      'Hạng tín dụng thưởng cho một quy luật rõ ràng: vay toàn bộ hạn mức, trả đúng hạn, mở khóa hạn mức tiếp theo.',
+   'The ladder': 'Nấc thang hạng',
+   'Everyone starts at Level 1. Each successful Credit-Building Loan unlocks the next borrowing limit.':
+      'Mọi người đều bắt đầu ở Hạng 1. Mỗi Credit-Building Loan thành công sẽ mở khóa hạn mức vay tiếp theo.',
+   'Repay on time, and the next level unlocks itself.': 'Trả nợ đúng hạn, hạng tiếp theo sẽ tự động mở khóa.',
+   'Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing power compounds with every clean repayment.':
+      'Yêu cầu khoản vay, trả nợ trước ngày đến hạn, hạn mức của bạn sẽ tự động tăng lên — khả năng vay của bạn tích lũy qua từng lần trả nợ sạch sẽ.',
+   'Two kinds of loan': 'Hai loại khoản vay',
+   'Trust-Building vs Credit-Building': 'Trust-Building và Credit-Building',
+   'Moodeng has two loan types. Both earn you Pandesal points — but only a full-limit Credit-Building Loan raises your borrowing limit.':
+      'Moodeng có hai loại khoản vay. Cả hai đều giúp bạn kiếm điểm Pandesal — nhưng chỉ Credit-Building Loan bằng toàn bộ hạn mức mới nâng hạn mức vay của bạn.',
+   'Your limit': 'Hạn mức của bạn',
+   'Use it when:': 'Dùng khi:',
+   'Most borrowers use both — trust loans to stay active, credit loans to climb.':
+      'Hầu hết người vay dùng cả hai — trust loan để duy trì hoạt động, credit loan để nâng hạng.',
+   'Trust is the currency before the credit.': 'Niềm tin là đồng tiền đi trước tín dụng.',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
+      'Mỗi khoản vay bạn trả sạch sẽ — kể cả một Trust-Building Loan nhỏ — đều tích lũy uy tín mà người cho vay có thể thấy được. Chính niềm tin đó giúp yêu cầu tiếp theo của bạn được cấp vốn nhanh hơn.',
+   'Level up faster': 'Nâng hạng nhanh hơn',
+   'Do this, not that': 'Nên làm điều này, đừng làm điều kia',
+   'A few habits keep your climb steady and protect the Pandesal points you are earning.':
+      'Vài thói quen nhỏ giúp bạn nâng hạng đều đặn và bảo vệ số điểm Pandesal bạn đang tích lũy.',
+   'Credit Levels, answered': 'Giải đáp về Hạng tín dụng',
+   'Quick answers to the questions borrowers ask most about levelling up.':
+      'Câu trả lời nhanh cho những câu hỏi người vay hay thắc mắc về việc nâng hạng.',
+   'Keep learning': 'Tiếp tục tìm hiểu',
+   'Related guides': 'Hướng dẫn liên quan',
+   'Credit Levels work hand in hand with your Pandesal points and repayment history.':
+      'Hạng tín dụng gắn liền với điểm Pandesal và lịch sử trả nợ của bạn.',
+   'Pop quiz': 'Trắc nghiệm nhanh',
+   'Are you a Credit Level pro?': 'Bạn có phải là cao thủ Hạng tín dụng?',
+   'Five quick questions. No pressure — your hippo believes in you.':
+      'Năm câu hỏi nhanh. Đừng lo lắng — chú hà mã của bạn tin tưởng bạn mà.',
+   'Ready to grow your limit?': 'Sẵn sàng tăng hạn mức của bạn chưa?',
+   'Only request your full limit when you are confident you can repay on time. Smaller loans still build trust.':
+      'Chỉ yêu cầu toàn bộ hạn mức khi bạn chắc chắn có thể trả đúng hạn. Khoản vay nhỏ hơn vẫn giúp xây dựng niềm tin.',
+   'What it is': 'Đây là gì',
+   'A level is a limit': 'Một hạng chính là một hạn mức',
+   'Your level sets the most you can borrow at once.': 'Hạng của bạn quyết định số tiền tối đa bạn có thể vay một lần.',
+   'Level 1 unlocks $15 — small on purpose, since you have no history yet.':
+      'Hạng 1 mở khóa $15 — cố tình nhỏ, vì bạn chưa có lịch sử vay.',
+   'How you grow': 'Cách bạn nâng hạng',
+   'Repay your full limit': 'Trả hết toàn bộ hạn mức',
+   'A full-limit loan repaid on time raises your cap.': 'Một khoản vay bằng toàn bộ hạn mức, trả đúng hạn, sẽ nâng mức trần của bạn.',
+   'That single clean repayment is what moves you up — nothing else does.':
+      'Chính lần trả nợ sạch sẽ đó đưa bạn lên hạng — không gì khác làm được điều này.',
+   'The pace': 'Nhịp độ',
+   'One level at a time': 'Mỗi lần chỉ lên một hạng',
+   'No skipping or buying ahead — each level is earned from the one before.':
+      'Không thể bỏ qua hay mua trước — mỗi hạng đều phải kiếm được từ hạng trước đó.',
+   'Below your current limit': 'Thấp hơn hạn mức hiện tại của bạn',
+   'A loan for less than your current limit.': 'Khoản vay thấp hơn hạn mức hiện tại của bạn.',
+   'Stays the same': 'Giữ nguyên',
+   'Goes up': 'Tăng lên',
+   'Your full current limit': 'Toàn bộ hạn mức hiện tại của bạn',
+   'A loan for your full current limit. The level-up loan.': 'Khoản vay bằng toàn bộ hạn mức hiện tại của bạn. Khoản vay để nâng hạng.',
+   'Unlocks the next level': 'Mở khóa hạng tiếp theo',
+   'Request your full current limit only when you are confident you can repay it.':
+      'Chỉ yêu cầu toàn bộ hạn mức hiện tại khi bạn chắc chắn có thể trả được.',
+   'Pick a repayment date you can comfortably hit. Repaying early is always fine.':
+      'Chọn ngày trả nợ mà bạn có thể thoải mái đáp ứng. Trả sớm luôn luôn ổn.',
+   'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.':
+      'Đừng vay toàn bộ hạn mức nếu bạn không chắc chắn — một lần trễ hạn sẽ làm tạm dừng quá trình nâng hạng của bạn.',
+   'Do not expect extra or early payments to skip a level. Growth is always one step at a time.':
+      'Đừng mong đợi việc trả thêm hay trả sớm sẽ giúp bỏ qua một hạng. Việc nâng hạng luôn diễn ra từng bước một.',
+   'Understanding your Pandesal points': 'Hiểu về điểm Pandesal của bạn',
+   'Trust-Building vs Credit-Building loans': 'Khoản vay Trust-Building và Credit-Building',
+   'How repayments affect your Pandesal points': 'Việc trả nợ ảnh hưởng đến điểm Pandesal của bạn như thế nào',
+   'What is a Credit Level on Moodeng?': 'Hạng tín dụng trên Moodeng là gì?',
+   'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
+      'Hạng tín dụng chính là hạn mức vay của bạn. Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15, và hạn mức này tăng lên khi bạn hoàn thành các Credit-Building Loan.',
+   'How do I move to the next level?': 'Làm sao để lên hạng tiếp theo?',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Một lần trả nợ sạch sẽ mở khóa hạn mức tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Does borrowing a small amount level me up?': 'Vay một khoản nhỏ có giúp tôi lên hạng không?',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'Không. Vay thấp hơn hạn mức của bạn là một Trust-Building Loan. Nó giúp cải thiện uy tín của bạn với người cho vay nhưng không nâng Hạng tín dụng của bạn. Chỉ một Credit-Building Loan bằng toàn bộ hạn mức mới giúp bạn tiến lên.',
+   'Can I skip levels by repaying early or paying extra?': 'Tôi có thể bỏ qua các hạng bằng cách trả sớm hoặc trả thêm không?',
+   'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
+      'Không. Moodeng chỉ cho lên từng hạng một. Trả thêm hay trả sớm không giúp bỏ qua bước nào — mỗi hạn mức mới đều phải kiếm được bằng cách trả xong hạng trước đó.',
+   'Why does the limit start at only $15?': 'Vì sao hạn mức chỉ bắt đầu ở $15?',
+   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
+      'Hạn mức khởi điểm nhỏ giúp giảm rủi ro cho người cho vay khi cấp vốn cho ai đó chưa có lịch sử vay. Khi bạn chứng minh được khả năng trả nợ đáng tin cậy, hạn mức của bạn và niềm tin của người cho vay sẽ cùng tăng lên.',
+   'How long does it take to reach the $60 level?': 'Mất bao lâu để đạt đến hạng $60?',
+   'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
+      'Không có mốc thời gian cố định. Mỗi hạng cần một khoản vay bằng toàn bộ hạn mức được trả đúng hạn, nên tốc độ phụ thuộc vào việc bạn vay và trả nhanh thế nào. Người vay trả nợ sạch sẽ có thể lên hạng chỉ sau vài chu kỳ vay.',
+   'What happens if I miss a repayment?': 'Điều gì xảy ra nếu tôi trễ hạn trả nợ?',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'Một lần trả trễ hoặc bỏ lỡ sẽ làm giảm điểm Pandesal của bạn và có thể làm tạm dừng tiến trình nâng hạng. Người cho vay rất coi trọng việc trễ hạn, vì vậy trả đúng hạn quan trọng hơn số tiền vay.',
+   'Does my Credit Level ever reset?': 'Hạng tín dụng của tôi có bị đặt lại không?',
+   'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
+      'Tiến trình của bạn gắn liền với ví và lịch sử trả nợ, nên nó luôn theo bạn. Việc trễ hạn không xóa bỏ hạng của bạn, nhưng sẽ làm giảm điểm Pandesal và có thể làm chậm việc nâng hạng sau này.',
+   'What borrowing limit does everyone start with?': 'Mọi người bắt đầu với hạn mức vay là bao nhiêu?',
+   'Yep — everyone starts at $15. Small, but the climb begins here.':
+      'Đúng vậy — mọi người đều bắt đầu ở $15. Nhỏ thôi, nhưng hành trình nâng hạng bắt đầu từ đây.',
+   'Close, but no. Level 1 starts everyone at a $15 limit.':
+      'Gần đúng rồi, nhưng chưa chính xác. Hạng 1 bắt đầu với hạn mức $15 cho tất cả mọi người.',
+   'Which loan actually levels you up?': 'Khoản vay nào thực sự giúp bạn lên hạng?',
+   'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.':
+      'Chính xác — chỉ một Credit-Building Loan bằng toàn bộ hạn mức, trả đúng hạn, mới nâng mức trần của bạn.',
+   'Nice try! Only a full-limit Credit-Building Loan raises your level.':
+      'Gần đúng rồi! Chỉ Credit-Building Loan bằng toàn bộ hạn mức mới nâng hạng của bạn.',
+   'Your limit is $20. You borrow $10 and repay on time. What happens?':
+      'Hạn mức của bạn là $20. Bạn vay $10 và trả đúng hạn. Điều gì sẽ xảy ra?',
+   'Right! Small loans build trust — they just don’t raise your limit.':
+      'Đúng rồi! Khoản vay nhỏ giúp xây dựng niềm tin — chỉ là chúng không nâng hạn mức của bạn.',
+   'Not quite — a sub-limit loan builds trust but keeps your limit at $20.':
+      'Chưa đúng lắm — khoản vay dưới hạn mức giúp xây dựng niềm tin nhưng hạn mức của bạn vẫn giữ ở $20.',
+   'Can you skip from $15 straight to $60?': 'Bạn có thể nhảy thẳng từ $15 lên $60 không?',
+   'Correct — Moodeng climbs one level at a time. No shortcuts.': 'Chính xác — Moodeng chỉ lên từng hạng một. Không có đường tắt.',
+   'Nope — there are no shortcuts. It’s one level at a time.': 'Không đâu — không có đường tắt nào cả. Chỉ lên từng hạng một.',
+   'What slows your climb the most?': 'Điều gì làm chậm việc nâng hạng của bạn nhiều nhất?',
+   'You got it — a missed repayment pauses progress and dents your Pandesal points.':
+      'Đúng rồi — trễ hạn sẽ làm tạm dừng tiến trình và giảm điểm Pandesal của bạn.',
+   'Actually it’s a late or missed repayment — that’s what pauses your climb.':
+      'Thực ra là do trả trễ hoặc bỏ lỡ hạn — đó chính là điều làm chậm việc nâng hạng của bạn.',
+   'Credit Level Legend': 'Huyền thoại Hạng tín dụng',
+   'Rising Star': 'Ngôi sao đang lên',
+   'Just getting started': 'Vừa mới bắt đầu',
+   'Answer choices': 'Các lựa chọn trả lời',
+   'See your credit limit on the request board': 'Xem hạn mức tín dụng của bạn trên bảng yêu cầu',
+   'Apply for a loan on the request board': 'Yêu cầu khoản vay trên bảng yêu cầu',
+   'See live requests on the request board': 'Xem các yêu cầu trực tiếp trên bảng yêu cầu',
+   'Credit limit growing from fifteen to sixty dollars': 'Hạn mức tín dụng tăng dần từ mười lăm lên sáu mươi đô la',
+   'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
+      'Một chú hà mã người vay tại quầy Moodeng đang thực hiện quy trình xây dựng tín dụng: yêu cầu, trả nợ đúng hạn, rồi lên hạng',
+   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
+      'Một chú hà mã người vay và một chú sóc đang xây dựng niềm tin với người cho vay tại quầy cho vay Moodeng',
+
+   // src/views/support/PublicGuide.tsx
+   'More guides': 'Thêm hướng dẫn',
+
+   // src/views/support/PublicGuidesIndex.tsx
+   'Everything you need to borrow with confidence — how Credit Levels grow, what your Pandesal points mean, and how USDC loans work.':
+      'Mọi thứ bạn cần để vay tiền một cách tự tin — Hạng tín dụng tăng ra sao, điểm Pandesal có ý nghĩa gì, và khoản vay USDC hoạt động như thế nào.',
+
+   // src/views/support/UpdateDetail.tsx
+   "What's New": 'Có gì mới',
+   'Published on': 'Đăng vào',
+
+   // src/views/support/Updates.tsx
+   Latest: 'Mới nhất',
+   'Previous Updates': 'Cập nhật trước đây',
+
+   // src/views/support/WhyUsdc.tsx
+   'Why we use USDC': 'Vì sao chúng tôi dùng USDC',
+   'Every loan on Moodeng is sent and repaid in USDC — a regulated digital dollar pegged 1:1 to the US dollar. Here is what that means, and why it makes small loans faster, cheaper, and safer.':
+      'Mọi khoản vay trên Moodeng đều được gửi và trả bằng USDC — một đồng đô la kỹ thuật số được quản lý, neo giá 1:1 với đô la Mỹ. Đây là ý nghĩa của điều đó, và vì sao nó giúp các khoản vay nhỏ nhanh hơn, rẻ hơn và an toàn hơn.',
+   'See the definitions': 'Xem các định nghĩa',
+   'What is USDC?': 'USDC là gì?',
+   'USDC (USD Coin) is a': 'USDC (USD Coin) là một',
+   'The reasons': 'Những lý do',
+   'Free transfers, solid technology, real security, and a value that never drifts.':
+      'Chuyển tiền miễn phí, công nghệ vững chắc, bảo mật thực sự, và giá trị không bao giờ trôi dạt.',
+   'Where it is used': 'Nơi nó được sử dụng',
+   'USDC works in two worlds. Here is which is which — and where Moodeng fits.':
+      'USDC hoạt động trong hai thế giới. Đây là sự khác biệt giữa chúng — và Moodeng nằm ở đâu.',
+   'On Moodeng:': 'Trên Moodeng:',
+   Definitions: 'Định nghĩa',
+   'The words, in plain English': 'Các từ ngữ, giải thích dễ hiểu',
+   'Staking and yield get mixed up a lot — so do payments and DeFi. Here is what each one really means.':
+      'Staking và yield thường bị nhầm lẫn với nhau — thanh toán và DeFi cũng vậy. Đây là ý nghĩa thực sự của từng khái niệm.',
+   'Staking secures a blockchain and pays rewards for doing so — you cannot stake USDC that way. Yield is simply the return for lending or supplying USDC in DeFi. Moodeng does neither: it uses USDC to fund and repay community loans.':
+      'Staking giúp bảo mật một blockchain và được trả thưởng vì điều đó — bạn không thể staking USDC theo cách đó. Yield đơn giản là lợi nhuận khi cho vay hoặc cung cấp USDC trong DeFi. Moodeng không làm cả hai việc này: Moodeng dùng USDC để cấp vốn và trả nợ cho các khoản vay cộng đồng.',
+   'Quick answers to what borrowers ask most about the dollar behind their loans.':
+      'Câu trả lời nhanh cho những điều người vay hay thắc mắc về đồng đô la đứng sau khoản vay của họ.',
+   'USDC is the money layer under everything you do on Moodeng.': 'USDC là lớp tiền tệ nền tảng cho mọi việc bạn làm trên Moodeng.',
+   'Ready to borrow in stable dollars?': 'Sẵn sàng vay bằng đô la ổn định chưa?',
+   'Your loan arrives as USDC and you repay in USDC — gasless on Base, and always worth what it says.':
+      'Khoản vay của bạn đến dưới dạng USDC và bạn trả nợ cũng bằng USDC — không tốn phí gas trên Base, và luôn có giá trị đúng như con số ghi trên đó.',
+   'Wallet to wallet': 'Từ ví đến ví',
+   'Free transfers, no middleman': 'Chuyển tiền miễn phí, không qua trung gian',
+   'USDC moves directly between two wallets — no bank in between.': 'USDC di chuyển trực tiếp giữa hai ví — không cần ngân hàng ở giữa.',
+   'On Base, sending USDC is gasless, so a $20 loan arrives as $20. No wire fees, no cut taken along the way.':
+      'Trên Base, gửi USDC không tốn phí gas, nên khoản vay $20 sẽ đến đúng $20. Không phí chuyển khoản, không bị trừ bớt trên đường đi.',
+   Technology: 'Công nghệ',
+   'Programmable, always-on money': 'Tiền có thể lập trình, hoạt động 24/7',
+   'USDC is a digital dollar that settles on a blockchain in seconds, 24/7.':
+      'USDC là đồng đô la kỹ thuật số được xử lý trên blockchain chỉ trong vài giây, suốt 24/7.',
+   'It runs on open networks (Moodeng uses Base) and can move across chains — so value travels as easily as a message.':
+      'Nó chạy trên các mạng lưới mở (Moodeng dùng Base) và có thể di chuyển qua nhiều chain khác nhau — nên giá trị di chuyển dễ dàng như một tin nhắn.',
+   'Regulated and fully backed': 'Được quản lý và đảm bảo đầy đủ',
+   'Every USDC is backed 1:1 by cash and short-term US Treasuries.':
+      'Mỗi USDC đều được đảm bảo 1:1 bằng tiền mặt và trái phiếu Kho bạc Mỹ ngắn hạn.',
+   'Circle, its issuer, publishes independent monthly reserve attestations. Balances are also verifiable on-chain by anyone.':
+      'Circle, đơn vị phát hành, công bố báo cáo xác nhận dự trữ độc lập hằng tháng. Bất kỳ ai cũng có thể kiểm tra số dư on-chain.',
+   Usability: 'Tính tiện dụng',
+   'A dollar that holds its value': 'Một đồng đô la giữ nguyên giá trị',
+   'One USDC is always worth one dollar, so loan amounts never drift.':
+      'Một USDC luôn có giá trị bằng một đô la, nên số tiền vay không bao giờ trôi dạt.',
+   'You can hold, send, and receive it from almost anywhere without relying on a traditional bank account.':
+      'Bạn có thể giữ, gửi và nhận nó từ hầu như bất cứ đâu mà không cần dựa vào tài khoản ngân hàng truyền thống.',
+   'The everyday economy': 'Nền kinh tế hằng ngày',
+   'Using USDC the way you use cash or a bank transfer — paying people, sending money across borders, or cashing out to your local currency.':
+      'Dùng USDC giống như cách bạn dùng tiền mặt hay chuyển khoản ngân hàng — trả tiền cho người khác, gửi tiền xuyên biên giới, hoặc quy đổi ra đồng nội tệ của bạn.',
+   'On-chain finance': 'Tài chính on-chain',
+   'Decentralized finance': 'Tài chính phi tập trung',
+   'USDC is a regulated stablecoin — a digital dollar issued by Circle and pegged 1:1 to the US dollar. Each USDC is backed by cash and short-term US Treasuries, with independent monthly reserve attestations.':
+      'USDC là một stablecoin được quản lý — một đồng đô la kỹ thuật số do Circle phát hành và neo giá 1:1 với đô la Mỹ. Mỗi USDC được đảm bảo bằng tiền mặt và trái phiếu Kho bạc Mỹ ngắn hạn, với báo cáo xác nhận dự trữ độc lập hằng tháng.',
+   'Why does Moodeng use USDC instead of regular money?': 'Vì sao Moodeng dùng USDC thay vì tiền thông thường?',
+   'USDC keeps loan values stable, moves wallet-to-wallet in seconds, and is gasless on Base — so a $20 loan is still exactly $20 when you repay it, with no bank fees eating into it.':
+      'USDC giữ giá trị khoản vay ổn định, di chuyển từ ví đến ví chỉ trong vài giây, và không tốn phí gas trên Base — nên khoản vay $20 vẫn đúng là $20 khi bạn trả nợ, không bị phí ngân hàng ăn bớt.',
+   'Is USDC safe?': 'USDC có an toàn không?',
+   'USDC is issued by the most licensed stablecoin company in the world and is backed 1:1 by highly liquid reserves. Those reserves are attested monthly by independent accounting firms, and every balance is verifiable on-chain.':
+      'USDC được phát hành bởi công ty stablecoin có nhiều giấy phép nhất thế giới và được đảm bảo 1:1 bằng các khoản dự trữ có tính thanh khoản cao. Các khoản dự trữ này được các công ty kiểm toán độc lập xác nhận hằng tháng, và mọi số dư đều có thể kiểm tra được on-chain.',
+   'What is the difference between staking and yield?': 'Sự khác biệt giữa staking và yield là gì?',
+   'Staking means locking a token to help secure a proof-of-stake blockchain in exchange for rewards. Yield is the return you earn by lending or supplying USDC in DeFi. USDC is not a staking token, but it can earn yield.':
+      'Staking nghĩa là khóa một token để giúp bảo mật một blockchain proof-of-stake, đổi lại nhận phần thưởng. Yield là lợi nhuận bạn kiếm được khi cho vay hoặc cung cấp USDC trong DeFi. USDC không phải là token staking, nhưng vẫn có thể tạo ra yield.',
+   'What is the difference between real-world use and DeFi use?': 'Sự khác biệt giữa sử dụng trong đời thực và sử dụng trong DeFi là gì?',
+   'Real-world use is spending or sending USDC like cash — payments, remittances, cashing out. DeFi use is putting USDC into smart-contract apps to lend, borrow, or swap without a bank. Moodeng loans are real-world use.':
+      'Sử dụng trong đời thực là tiêu hoặc gửi USDC giống như tiền mặt — thanh toán, chuyển tiền, rút tiền mặt. Sử dụng trong DeFi là đưa USDC vào các ứng dụng hợp đồng thông minh để cho vay, vay, hoặc hoán đổi mà không cần ngân hàng. Các khoản vay của Moodeng thuộc dạng sử dụng trong đời thực.',
+   'Do I pay fees to send USDC on Moodeng?': 'Tôi có phải trả phí khi gửi USDC trên Moodeng không?',
+   'No. Moodeng uses your Instant Wallet (or a Base Account, if you prefer) on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.':
+      'Không. Moodeng dùng Instant Wallet của bạn (hoặc Base Account, nếu bạn muốn) trên Base, nơi các giao dịch USDC không tốn phí gas. Bạn không phải trả phí mạng để nhận khoản vay hay trả nợ.',
+   'No. Moodeng is community lending — USDC is used to fund and repay loans. Staking and yield live in the wider crypto ecosystem, not inside Moodeng.':
+      'Không. Moodeng là nền tảng cho vay cộng đồng — USDC được dùng để cấp vốn và trả nợ cho các khoản vay. Staking và yield thuộc về hệ sinh thái crypto rộng lớn hơn, không nằm trong Moodeng.',
+   'Using USDC on Moodeng Credit': 'Sử dụng USDC trên Moodeng Credit',
+
+   // src/views/support/components/NeedMoreHelp.tsx
+   'Message the team and a real person will reply — here and by email.':
+      'Nhắn tin cho đội ngũ và một người thật sẽ trả lời bạn — tại đây và qua email.',
+   'Get In Touch': 'Liên hệ ngay',
+   'Meet the Moodeng Credit Team': 'Gặp gỡ đội ngũ Moodeng Credit',
+   'See the people building borrower trust.': 'Xem những người đang xây dựng niềm tin cho người vay.',
+
+   // src/views/transactions/TransactionDetail.tsx
+   'Optional Gift': 'Quà tặng tùy chọn',
+   'Would you like to return the interest as a gift?': 'Bạn có muốn trả lại phần lãi như một món quà không?',
+   'Interest to return': 'Phần lãi cần trả lại',
+   'Return interest?': 'Trả lại phần lãi?',
+   "This is a voluntary gift — once sent, it can't be reversed.": 'Đây là một món quà tự nguyện — một khi đã gửi, không thể hoàn lại.',
+   'Hide — this keeps going on its own': 'Ẩn đi — giao dịch vẫn tiếp tục tự động',
+   'Sent successfully!': 'Đã gửi thành công!',
+   'Waiting for lender acceptance': 'Đang chờ người cho vay chấp nhận',
+   'This loan is not funded yet. Repayment starts only after a lender accepts.':
+      'Khoản vay này chưa được cấp vốn. Việc trả nợ chỉ bắt đầu sau khi có người cho vay chấp nhận.',
+   'View on explorer': 'Xem trên trình khám phá blockchain',
+
+   // src/views/transactions/TransactionHistory.tsx
+   'Your loan activity will appear here once you start borrowing.': 'Hoạt động vay của bạn sẽ hiện ở đây khi bạn bắt đầu vay.',
+   'Interest can be returned': 'Có thể trả lại phần lãi',
+   'All Transactions': 'Tất cả giao dịch',
+   Completed: 'Đã hoàn tất',
+   'Search transaction history': 'Tìm kiếm lịch sử giao dịch',
+
+   // src/views/user-profile/LenderDiversityHistory.tsx
+   'Lender Diversity': 'Đa dạng người cho vay',
+   'Need at least 2 funded loans': 'Cần ít nhất 2 khoản vay đã được cấp vốn',
+   'A lender diversity score appears once there is enough borrower history to compare.':
+      'Điểm đa dạng người cho vay sẽ xuất hiện khi có đủ lịch sử vay để so sánh.',
+   'Lender Distribution': 'Phân bổ người cho vay',
+   'No lender history yet': 'Chưa có lịch sử người cho vay',
+   'Once this borrower receives funded loans, the lender distribution will appear here.':
+      'Khi người vay này nhận được các khoản vay đã cấp vốn, phần phân bổ người cho vay sẽ hiện ở đây.',
+
+   // src/views/user-profile/ProgressHistory.tsx
+   'Progress History': 'Lịch sử tiến trình',
+   'Borrower Timeline': 'Dòng thời gian của người vay',
+   'Complete history of milestones and loan activity': 'Lịch sử đầy đủ các cột mốc và hoạt động vay',
+   'Started at Level 0': 'Bắt đầu ở Hạng 0',
+   'Borrower account created and credit journey started.': 'Tài khoản người vay đã được tạo và hành trình tín dụng đã bắt đầu.',
+   'Identity verification completed.': 'Đã hoàn tất xác minh danh tính.',
+   'No loan activity yet': 'Chưa có hoạt động vay nào',
+   'No funded loans have been recorded for this borrower yet.': 'Chưa có khoản vay nào được cấp vốn cho người vay này.',
+   'Repeat Lender Relationship': 'Mối quan hệ với người cho vay lặp lại',
+   'Borrowed again from an existing lender.': 'Vay lại từ một người cho vay đã từng cấp vốn.',
+   'Partial Repayment Made': 'Đã trả một phần nợ',
+   'Credit Limit Unlocked': 'Đã mở khóa hạn mức tín dụng',
+   'Defaulted Loan': 'Khoản vay vỡ nợ',
+   'Loan remains unpaid past the due date.': 'Khoản vay vẫn chưa được trả sau ngày đến hạn.',
+   'More Trust-Building Loans': 'Nhiều khoản Trust-Building Loan hơn',
+   'This borrower has more smaller trust-building loans than full-limit credit-building loans. These help show repayment history, but they do not raise credit level.':
+      'Người vay này có nhiều khoản trust-building loan nhỏ hơn là các khoản credit-building loan bằng toàn bộ hạn mức. Những khoản vay này giúp thể hiện lịch sử trả nợ, nhưng không nâng hạng tín dụng.',
+
+   // src/views/user-profile/UserProfile.tsx
+   'Borrower context': 'Bối cảnh người vay',
+   'This account is a lender': 'Tài khoản này là người cho vay',
+   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Người cho vay cấp vốn cho khoản vay chứ không đi vay, nên không có lịch sử vay để hiển thị ở đây.',
+   'Lending Summary': 'Tổng quan cho vay',
+   'No Defaults': 'Không có khoản vỡ nợ',
+   'Borrowers Backed': 'Người vay đã hỗ trợ',
+   'No loans funded yet': 'Chưa cấp vốn cho khoản vay nào',
+   'This lender has not funded a loan yet, so there is nothing to summarise.':
+      'Người cho vay này chưa cấp vốn cho khoản vay nào, nên chưa có gì để tổng hợp.',
+   'Lending Patterns': 'Mô hình cho vay',
+   'Loans Funded': 'Khoản vay đã cấp vốn',
+   'Who this lender has backed and the status of each loan.': 'Người mà người cho vay này đã hỗ trợ và trạng thái của từng khoản vay.',
+   'Loan / borrower': 'Khoản vay / người vay',
+   'Verify to unlock LV.1': 'Xác minh để mở khóa Hạng 1',
+   'Only you can see this': 'Chỉ mình bạn thấy được điều này',
+   'Good standing': 'Uy tín tốt',
+   'View loan mix': 'Xem cơ cấu khoản vay',
+   'Your score appears after at least 2 funded loans from different lenders.':
+      'Điểm số của bạn sẽ xuất hiện sau khi có ít nhất 2 khoản vay được cấp vốn từ những người cho vay khác nhau.',
+   'Borrower patterns': 'Mô hình người vay',
+   'Recent Loans': 'Khoản vay gần đây',
+   'View who has funded this borrower and the status of each loan.':
+      'Xem ai đã cấp vốn cho người vay này và trạng thái của từng khoản vay.',
+   'Loan / lender': 'Khoản vay / người cho vay',
+   'No funded loans yet': 'Chưa có khoản vay nào được cấp vốn',
+   'Not enough loan history yet': 'Chưa đủ lịch sử vay',
+   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns here.":
+      'Khi người vay này hoàn tất thêm nhiều khoản vay, bạn sẽ thấy thời gian trả nợ, quy mô vay thông thường, những người cho vay lặp lại và mô hình vay ở đây.',
+   'Default History': 'Lịch sử vỡ nợ',
+   'Missed repayments on this borrower’s past loans.': 'Những lần trễ hạn trả nợ trên các khoản vay trước đây của người vay này.',
+   'A default happens when a repayment deadline passes without full repayment.': 'Vỡ nợ xảy ra khi hạn trả nợ đã qua mà chưa trả đầy đủ.',
+   'Loan defaulted': 'Khoản vay bị vỡ nợ',
+   Unresolved: 'Chưa giải quyết',
+   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
+      'Vỡ nợ có thể là dấu hiệu rủi ro trả nợ. Người cho vay nên xem toàn bộ lịch sử của người vay, không chỉ dựa vào hạng tín dụng.',
+   'Repayment History': 'Lịch sử trả nợ',
+   'Money this borrower has already paid back across funded loans.': 'Số tiền người vay này đã trả trên các khoản vay đã được cấp vốn.',
+   'Fully repaid': 'Đã trả hết',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
+      'Các khoản trả nợ đã hoàn tất cho thấy người vay này từng hoàn trả tiền trước đây. Các khoản trả một phần vẫn có thể là thông tin hữu ích, nhưng người cho vay nên đối chiếu với ngày đến hạn và số dư còn lại.',
+   'How Credit Level Works': 'Hạng tín dụng hoạt động như thế nào',
+   'Credit Level shows the borrower’s current borrowing tier.': 'Hạng tín dụng thể hiện bậc vay hiện tại của người vay.',
+   'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
+      'Người vay lên hạng bằng cách vay một khoản Credit-Building bằng hạn mức hiện tại và trả nợ thành công.',
+   'Credit Levels': 'Hạng tín dụng',
+   'Credit limit': 'Hạn mức tín dụng',
+   'How Lender Diversity Works': 'Đa dạng người cho vay hoạt động như thế nào',
+   'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
+      'Điểm số này thuộc về người vay. Nó đo lường chất lượng của những người đã cho họ vay.',
+   'What a high score means': 'Điểm số cao nghĩa là gì',
+   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
+      'Những người cho vay có vẻ độc lập, đã hoạt động lâu và tự nhiên. Họ không phải toàn bộ là tài khoản mới, không cấp vốn cùng một lúc, và không tập trung quá nhiều vào một người cho vay.',
+   'What it is trying to catch': 'Điều nó đang cố phát hiện',
+   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
+      'Một người vay có thể trông đáng tin bằng cách dùng các tài khoản cho vay giả để cấp vốn cho khoản vay nhỏ, rồi sau đó xin một khoản vay thật lớn hơn. Điểm số này tìm kiếm kiểu lịch sử người cho vay có phối hợp như vậy.',
+   'Score bands': 'Các mức điểm',
+   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
+      'Điểm này không đánh giá trực tiếp người vay. Nó cho người cho vay biết liệu mạng lưới người cho vay của người vay này có tự nhiên hay đáng ngờ.',
+   'Read the full docs': 'Đọc tài liệu đầy đủ',
+   'Lender Diversity Score documentation': 'Tài liệu về Điểm đa dạng người cho vay',
+   'Why lenders care': 'Vì sao người cho vay quan tâm',
+   'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
+      'Cơ cấu khoản vay cho thấy người vay này chủ yếu xây dựng lịch sử trả nợ bằng các khoản vay nhỏ, hay đang nâng hạng tín dụng bằng cách trả các khoản vay bằng toàn bộ hạn mức.',
+   'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
+      'Một người vay lành mạnh có thể có cả hai: khoản vay nhỏ để xây dựng lịch sử trả nợ và khoản vay bằng toàn bộ hạn mức để nâng hạn mức trong tương lai.',
+   'Start with who they are': 'Bắt đầu bằng việc tìm hiểu họ là ai',
+   'Read the borrower context first — whether they are a verified human, how long they have been a member, and how they earn and repay. It frames every number below and tells you whether their reason to borrow fits their situation.':
+      'Hãy xem bối cảnh người vay trước — họ có phải là người đã xác minh không, họ là thành viên bao lâu rồi, và họ kiếm tiền, trả nợ ra sao. Điều này đặt nền tảng cho mọi con số bên dưới và cho bạn biết lý do vay của họ có phù hợp với hoàn cảnh hay không.',
+   'Check Credit Level': 'Kiểm tra Hạng tín dụng',
+   'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.':
+      'Hạng tín dụng là bậc của người vay. Nó giúp bạn hiểu họ đã tích lũy được bao nhiêu niềm tin qua hành vi trước đây.',
+   'Read the loan summary': 'Xem tổng quan khoản vay',
+   'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
+      'Xem tổng số tiền đã vay, tổng số khoản vay, số lần trả nợ, số lần vỡ nợ, và tình trạng uy tín. Uy tín tốt nghĩa là không có khoản vỡ nợ nào chưa giải quyết.',
+   'Look at lender diversity': 'Xem mức độ đa dạng người cho vay',
+   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
+      'Điều này cho thấy người vay đã tạo được niềm tin từ nhiều người cho vay khác nhau, không chỉ từ một mối quan hệ lặp đi lặp lại.',
+   'Use behavior patterns': 'Dùng các mô hình hành vi',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
+      'Những mô hình này giúp bạn đánh giá rủi ro: họ vay thường xuyên như thế nào, họ thường trả nợ nhanh ra sao, quy mô khoản vay thông thường, kỳ hạn vay, và những người cho vay lặp lại.',
+   'Review recent loans': 'Xem lại các khoản vay gần đây',
+   'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
+      'Dùng bảng khoản vay gần đây để xác nhận người vay có lịch sử trả nợ phù hợp với yêu cầu mà bạn đang cân nhắc cấp vốn.',
+   'Change reading mode': 'Đổi chế độ hiển thị',
+   'Optional: switch to dark mode if it makes this profile easier to read. It changes nothing about the borrower data or your lending decision.':
+      'Tùy chọn: chuyển sang chế độ tối nếu điều đó giúp hồ sơ này dễ đọc hơn. Việc này không thay đổi gì về dữ liệu người vay hay quyết định cho vay của bạn.',
+   'Moodeng with trophy': 'Moodeng cùng chiếc cúp',
+   'Usual amount funded': 'Số tiền cấp vốn thông thường',
+   'Typical time to be repaid': 'Thời gian trả nợ thông thường',
+   'Repeat borrowers': 'Người vay lặp lại',
+   'Overdue against them': 'Số lần quá hạn với họ',
+   'Total Borrowed': 'Tổng số tiền đã vay',
+   'Total Loans': 'Tổng số khoản vay',
+   'Avg days between loans': 'Số ngày trung bình giữa các khoản vay',
+   'Typical loan term': 'Kỳ hạn vay thông thường',
+   'Repeat lenders': 'Người cho vay lặp lại',
+   'Close default history': 'Đóng lịch sử vỡ nợ',
+   'Close repayment history': 'Đóng lịch sử trả nợ',
+   'Close credit level explanation': 'Đóng phần giải thích Hạng tín dụng',
+   'Close lender diversity explanation': 'Đóng phần giải thích Đa dạng người cho vay',
+   'Amount concentration': 'Mức độ tập trung số tiền',
+   'Lender newness': 'Độ mới của người cho vay',
+   'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
+      'Ví mới hoặc không hoạt động được xem là rủi ro hơn so với ví đã hoạt động lâu và có hoạt động on-chain thực sự.',
+   'Timing patterns': 'Mô hình thời điểm',
+   'Looks for loans arriving in suspicious clusters instead of normal lending intervals.':
+      'Tìm kiếm các khoản vay xuất hiện thành từng cụm đáng ngờ thay vì theo khoảng cách cho vay bình thường.',
+   'Recent suspicious patterns matter more. Older clean history fades over time.':
+      'Các mô hình đáng ngờ gần đây có ảnh hưởng nhiều hơn. Lịch sử sạch cũ hơn sẽ mờ dần theo thời gian.',
+   'Group coordination': 'Sự phối hợp theo nhóm',
+   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
+      'Kiểm tra xem có nhiều người cho vay xuất hiện cùng một thời điểm hay không, điều này có thể gợi ý một nhóm được huy động.',
+   Excellent: 'Xuất sắc',
+   Good: 'Tốt',
+   Fair: 'Khá',
+   Low: 'Thấp',
+   'Very Low': 'Rất thấp',
+   'Close loan mix explanation': 'Đóng phần giải thích cơ cấu khoản vay',
+   'Trust loans': 'Khoản vay Trust',
+   'Credit loans': 'Khoản vay Credit',
+   'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
+      'Khoản vay nhỏ hơn hạn mức hiện tại. Chúng giúp cho thấy người vay có khả năng trả nợ, nhưng không nâng hạng tín dụng.',
+   'Credit-level signal': 'Tín hiệu hạng tín dụng',
+   'A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level.':
+      'Một khoản vay bằng toàn bộ hạn mức. Nếu được trả thành công, nó có thể mở khóa hạng tín dụng tiếp theo của người vay.',
+
+   // src/views/withdraw/CashoutFaceCheck.tsx
+   'Back to withdraw': 'Quay lại rút tiền',
+   "Since this is your first cash-out, we ask for a ten-second scan to confirm it's really you before sending any money out.":
+      'Vì đây là lần rút tiền mặt đầu tiên của bạn, chúng tôi cần bạn quét khuôn mặt trong mười giây để xác nhận đúng là bạn trước khi gửi bất kỳ khoản tiền nào.',
+
+   // src/views/withdraw/Withdraw.tsx
+   "You're sending": 'Bạn đang gửi',
+   "You'll receive": 'Bạn sẽ nhận',
+   'How this works': 'Cách thức hoạt động',
+   'Show me how': 'Chỉ cho tôi cách làm',
+   'Video guide coming soon': 'Video hướng dẫn sắp ra mắt',
+   'Send only': 'Chỉ gửi',
+   'Verify Base first': 'Xác minh Base trước',
+   'How would you like to cash out?': 'Bạn muốn rút tiền mặt bằng cách nào?',
+   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
+      'Tiền vay của bạn đang ở trong ví. Hãy rút hoặc quy đổi bằng một sàn giao dịch, nền tảng P2P, hoặc dịch vụ crypto địa phương được hỗ trợ.',
+   'Learn more about withdrawal options': 'Tìm hiểu thêm về các cách rút tiền',
+   "I'll do this later": 'Tôi sẽ làm việc này sau',
+   'Contact support': 'Liên hệ hỗ trợ',
+   'Sent!': 'Đã gửi!',
+   'Cashing out…': 'Đang rút tiền mặt…',
+   'This can take a couple of minutes the first time. Keep this screen open.': 'Lần đầu có thể mất vài phút. Hãy giữ màn hình này mở.',
+   'Payout to': 'Chuyển đến',
+   "Doesn't look like a valid wallet address.": 'Địa chỉ ví này có vẻ không hợp lệ.',
+   Max: 'Tối đa',
+   "That's more than your available balance.": 'Số tiền này vượt quá số dư khả dụng của bạn.',
+   'After it arrives': 'Sau khi tiền đến nơi',
+   'In GCrypto, open': 'Trong GCrypto, mở',
+   Sell: 'Bán',
+   'Go to your': 'Vào',
+   Withdraw: 'Rút tiền',
+   'In PDAX, go to': 'Trong PDAX, vào',
+   'Wallet → Withdraw PHP': 'Ví → Rút PHP',
+   'Portfolio → Withdraw / Cash Out': 'Danh mục → Rút tiền / Rút tiền mặt',
+   'How to transfer to Binance': 'Cách chuyển sang Binance',
+   'Your Binance transfer address': 'Địa chỉ nhận chuyển khoản Binance của bạn',
+   Open: 'Mở',
+   Choose: 'Chọn',
+   'Choose your': 'Chọn',
+   'Prefer a': 'Nên chọn',
+   Never: 'Không bao giờ',
+   'Rate set by Moneybees': 'Tỷ giá do Moneybees quy định',
+   Bank: 'Ngân hàng',
+   Maya: 'Maya',
+   'Moneybees is a BSP/AMLC-registered cash-out provider. They handle KYC, exchange rate, transaction details, and PHP payout directly with you.':
+      'Moneybees là nhà cung cấp dịch vụ rút tiền mặt được đăng ký với BSP/AMLC. Họ trực tiếp xử lý KYC, tỷ giá, chi tiết giao dịch và chi trả PHP với bạn.',
+   'Your cash-out steps': 'Các bước rút tiền mặt của bạn',
+   "You're all set": 'Bạn đã sẵn sàng',
+   "Finish verifying on the Moneybees page that opened, then tap below. Once Moneybees confirms your identity, they'll reach out by chat.":
+      'Hoàn tất xác minh trên trang Moneybees vừa mở ra, sau đó nhấn vào nút bên dưới. Khi Moneybees xác nhận danh tính của bạn, họ sẽ liên hệ qua chat.',
+   'Reopen Moneybees verification': 'Mở lại trang xác minh Moneybees',
+   'Continue to Moneybees KYC': 'Tiếp tục đến KYC của Moneybees',
+   'Open GCrypto in GCash': 'Mở GCrypto trong GCash',
+   'How to open GCrypto in GCash': 'Cách mở GCrypto trong GCash',
+   'Copy your GCash address': 'Sao chép địa chỉ GCash của bạn',
+   'How to copy your GCrypto address': 'Cách sao chép địa chỉ GCrypto của bạn',
+   'Paste it below': 'Dán vào bên dưới',
+   'Enter the amount in USDC or pesos and confirm. The pesos land in your GCrypto trading wallet.':
+      'Nhập số tiền bằng USDC hoặc peso rồi xác nhận. Số peso sẽ vào ví giao dịch GCrypto của bạn.',
+   'Move the pesos to your main GCash balance — it usually arrives within a few minutes.':
+      'Chuyển số peso sang số dư GCash chính của bạn — thường sẽ đến trong vài phút.',
+   'Open PDAX → Portfolio → USDC → Receive': 'Mở PDAX → Danh mục → USDC → Nhận',
+   'How to find your PDAX receiving address': 'Cách tìm địa chỉ nhận của bạn trên PDAX',
+   'Copy your PDAX address': 'Sao chép địa chỉ PDAX của bạn',
+   'How to copy your PDAX address': 'Cách sao chép địa chỉ PDAX của bạn',
+   'Tap the Trade tab at the bottom, then select Sell.': 'Nhấn vào tab Giao dịch ở phía dưới, rồi chọn Bán.',
+   'Search for USDC and choose PHP as the currency you want to receive.': 'Tìm USDC và chọn PHP làm loại tiền bạn muốn nhận.',
+   'Enter the amount and confirm the sale': 'Nhập số tiền và xác nhận giao dịch bán',
+   'Open Coins.ph → Portfolio → USDC → Receive': 'Mở Coins.ph → Danh mục → USDC → Nhận',
+   'How to find your Coins.ph receiving address': 'Cách tìm địa chỉ nhận của bạn trên Coins.ph',
+   'Copy your Coins.ph address': 'Sao chép địa chỉ Coins.ph của bạn',
+   'Enter the amount and tap Sell Now. Your PHP balance updates instantly.':
+      'Nhập số tiền và nhấn Bán ngay. Số dư PHP của bạn sẽ cập nhật ngay lập tức.',
+   'Tap the Withdraw or Cash Out button from your portfolio screen.': 'Nhấn nút Rút tiền hoặc Rút tiền mặt từ màn hình danh mục của bạn.',
+   'Choose your destination: bank account or e-wallet': 'Chọn nơi nhận: tài khoản ngân hàng hoặc ví điện tử',
+   'You can send to your Union Bank, BDO, BPI, or any PH bank — or to GCash or Maya.':
+      'Bạn có thể gửi đến Union Bank, BDO, BPI, hay bất kỳ ngân hàng nào ở Philippines — hoặc đến GCash hay Maya.',
+   'InstaPay is faster (minutes, ₱50,000 limit per transaction). PESONet clears by end of day for larger amounts.':
+      'InstaPay nhanh hơn (vài phút, giới hạn ₱50.000 mỗi giao dịch). PESONet xử lý xong trong ngày cho các khoản lớn hơn.',
+   'Enter your bank details, then confirm with the OTP': 'Nhập thông tin ngân hàng của bạn, sau đó xác nhận bằng mã OTP',
+   'Coins.ph sends a one-time code to your registered phone number to authorize the transfer.':
+      'Coins.ph gửi một mã dùng một lần đến số điện thoại đã đăng ký của bạn để xác thực giao dịch.',
+   'Open Binance → Wallet → Receive': 'Mở Binance → Ví → Nhận',
+   'How to find your Binance receiving address': 'Cách tìm địa chỉ nhận của bạn trên Binance',
+   'Copy your Binance address': 'Sao chép địa chỉ Binance của bạn',
+   'How to copy your Binance address': 'Cách sao chép địa chỉ Binance của bạn',
+   'Paste your Binance address': 'Dán địa chỉ Binance của bạn',
+   'Pick a trustworthy buyer': 'Chọn người mua đáng tin cậy',
+   'Enter the amount and place the order': 'Nhập số tiền và đặt lệnh',
+   'Arrange your cash-out with them': 'Thỏa thuận việc rút tiền mặt với người đó',
+   'Send only after their instructions': 'Chỉ gửi sau khi có hướng dẫn từ họ',
+   'Get assisted by chat': 'Được hỗ trợ qua chat',
+   'Confirm your payout': 'Xác nhận khoản chi trả của bạn',
+   'Send only after instructions': 'Chỉ gửi sau khi có hướng dẫn'
 };
