@@ -903,5 +903,101 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Close tutorial video': 'Đóng video hướng dẫn',
    'Moodeng Academy tutorial video': 'Video hướng dẫn Moodeng Academy',
    'Moodeng Credit steps': 'Các bước của Moodeng Credit',
-   'Choose reward type': 'Chọn loại phần thưởng'
+   'Choose reward type': 'Chọn loại phần thưởng',
+   // src/views/academy/MoneyGuide.tsx
+   'Getting verified, funding your wallet, cashing out, and repaying — in one friendly place.':
+      'Xác minh danh tính, nạp tiền vào ví, rút tiền mặt và trả nợ — tất cả trong một nơi thân thiện.',
+   'Read more': 'Xem thêm',
+   'How to verify, add USDC to your wallet, withdraw to your bank, and repay your loan on Moodeng.':
+      'Cách xác minh danh tính, nạp USDC vào ví, rút tiền về ngân hàng và trả nợ khoản vay trên Moodeng.',
+   'Verify your identity': 'Xác minh danh tính',
+   'A quick national ID photo and selfie check confirms you’re a real, unique person. Most checks finish within minutes.':
+      'Một lượt kiểm tra nhanh bằng ảnh giấy tờ tùy thân quốc gia và ảnh selfie xác nhận bạn là một người thật, duy nhất. Hầu hết các lượt kiểm tra hoàn tất trong vài phút.',
+   Selfie: 'Ảnh selfie',
+   'Add funds to your wallet': 'Nạp tiền vào ví',
+   'USDC on the Base network': 'USDC trên mạng Base',
+   'Buy USDC on an exchange or with a card, then send it to your wallet — always on Base. Or bridge it from another chain.':
+      'Mua USDC trên một sàn giao dịch hoặc bằng thẻ, rồi gửi vào ví của bạn — luôn trên mạng Base. Hoặc bắc cầu (bridge) từ một chuỗi khác.',
+   'Withdraw to your bank': 'Rút tiền về ngân hàng',
+   'Cash out to bank or e-wallet': 'Rút tiền mặt về ngân hàng hoặc ví điện tử',
+   'Send USDC to an exchange or local service, sell it, and withdraw your local currency to your bank or GCash. The full guide has a video walkthrough.':
+      'Gửi USDC đến một sàn giao dịch hoặc dịch vụ tại địa phương, bán nó, rồi rút tiền địa phương về ngân hàng hoặc GCash của bạn. Hướng dẫn đầy đủ có video minh họa.',
+   'Repay your loan': 'Trả nợ khoản vay',
+   'On-time repayment builds trust': 'Trả nợ đúng hạn xây dựng uy tín',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Pandesal points and credit limit.':
+      'Gửi USDC đến địa chỉ trả nợ hiển thị trên màn hình Trả nợ — từ một ví, sàn giao dịch, hoặc dịch vụ tại địa phương. Trả nợ đúng hạn giúp tăng điểm Pandesal và hạn mức tín dụng của bạn.',
+   'From a wallet': 'Từ một ví',
+   'From an exchange': 'Từ một sàn giao dịch',
+   'Base network': 'Mạng Base',
+   // src/views/academy/VerifyGuide.tsx
+   Money: 'Tiền',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
+      'Để giữ Moodeng an toàn và công bằng, mỗi người vay hoàn thành một lượt kiểm tra danh tính ngắn. Điều này giúp loại bỏ tài khoản giả và trùng lặp khỏi cộng đồng, và đó là điều giúp người cho vay tin tưởng vào các yêu cầu mà họ cấp vốn.',
+   'The recommended route: Verify Your ID.': 'Lộ trình được khuyến nghị: Xác minh bằng giấy tờ tùy thân.',
+   'National ID verification is available for these countries.': 'Xác minh bằng giấy tờ tùy thân quốc gia hiện có sẵn cho các quốc gia sau.',
+   'Pass on the first try': 'Vượt qua ngay lần đầu',
+   'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
+      'Nếu bạn đã được xác minh trong World App — trực tiếp tại một Orb, hoặc bằng hộ chiếu sinh trắc học — bạn có thể chọn',
+   'Your ID is never stored by Moodeng': 'Giấy tờ tùy thân của bạn không bao giờ được Moodeng lưu trữ',
+   'The check is run by our secure verification partner. Moodeng receives the result — whether you passed — not a copy of your document.':
+      'Việc kiểm tra được thực hiện bởi đối tác xác minh bảo mật của chúng tôi. Moodeng chỉ nhận kết quả — bạn có đạt hay không — chứ không nhận bản sao giấy tờ của bạn.',
+   'Ready to verify?': 'Sẵn sàng xác minh chưa?',
+   Read: 'Đọc',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
+      'Việc xác minh đảm bảo mọi yêu cầu đều đến từ một người thật, duy nhất. Đó là điều giữ cho tài khoản giả và trùng lặp tránh xa người cho vay.',
+   Access: 'Truy cập',
+   'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
+      'Hoàn tất xác minh là điều mở khóa các yêu cầu vay, và đó cũng là lúc bạn bắt đầu tích điểm Pandesal.',
+   Trust: 'Niềm tin',
+   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Người cho vay đang cấp vốn cho người thật, không phải tài khoản ẩn danh. Sự tin tưởng đó là điều giúp các yêu cầu trên bảng được cấp vốn.',
+   'Your physical national ID': 'Giấy tờ tùy thân quốc gia bản gốc của bạn',
+   'The real card in hand, not a photocopy or a picture on another screen.':
+      'Thẻ thật cầm trên tay, không phải bản photocopy hay ảnh chụp từ màn hình khác.',
+   'Avoid glare and hard shadows across the card or your face.': 'Tránh chói sáng và bóng đổ mạnh trên thẻ hoặc trên khuôn mặt bạn.',
+   'Not the browser inside Facebook or Messenger — those can stall the check.':
+      'Không phải trình duyệt bên trong Facebook hay Messenger — những trình duyệt đó có thể làm treo quá trình kiểm tra.',
+   'How long does verification take?': 'Xác minh mất bao lâu?',
+   'The check itself takes about 3 minutes. Most results come back within minutes. If yours needs a human review, we notify you as soon as it is done — usually within a few hours, and at most 1 business day.':
+      'Bản thân việc kiểm tra mất khoảng 3 phút. Hầu hết kết quả trả về trong vài phút. Nếu trường hợp của bạn cần con người xem xét, chúng tôi sẽ thông báo cho bạn ngay khi có kết quả — thường trong vài giờ, và tối đa 1 ngày làm việc.',
+   'Does Moodeng store a copy of my ID?': 'Moodeng có lưu bản sao giấy tờ tùy thân của tôi không?',
+   'No. Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'Không. Giấy tờ tùy thân của bạn được kiểm tra bởi đối tác xác minh bảo mật của chúng tôi và không bao giờ được Moodeng lưu trữ.',
+   'Do I have to verify again for every loan?': 'Tôi có phải xác minh lại cho mỗi khoản vay không?',
+   'No. Verification is a one-time step. Once it is complete you can keep requesting loans without repeating it.':
+      'Không. Xác minh là bước chỉ thực hiện một lần. Sau khi hoàn tất, bạn có thể tiếp tục yêu cầu vay mà không cần lặp lại.',
+   'Which countries are supported?': 'Những quốc gia nào được hỗ trợ?',
+   'I already use World App — can I use that instead?': 'Tôi đã dùng World App — tôi có thể dùng nó thay thế không?',
+   Breadcrumb: 'Đường dẫn điều hướng',
+   'Why verification matters': 'Vì sao xác minh quan trọng',
+   'Already use World App?': 'Đã dùng World App?',
+   'Common questions': 'Câu hỏi thường gặp',
+   'Keep going': 'Tiếp tục',
+   // src/views/academy/moneyGuideTopics.tsx
+   'Your Moodeng wallet works with USDC on the Base network. Besides the in-app options — card purchase and bridging from another chain — here are common ways to get USDC into your wallet.':
+      'Ví Moodeng của bạn hoạt động với USDC trên mạng Base. Bên cạnh các lựa chọn ngay trong ứng dụng — mua bằng thẻ và bắc cầu (bridge) từ một chuỗi khác — đây là những cách phổ biến để đưa USDC vào ví của bạn.',
+   'Ways to buy and send USDC': 'Các cách mua và gửi USDC',
+   'Buy USDC with local currency directly from other users, then withdraw on the Base network.':
+      'Mua USDC bằng tiền địa phương trực tiếp từ người dùng khác, rồi rút trên mạng Base.',
+   'Another exchange or wallet': 'Sàn giao dịch hoặc ví khác',
+   'Buy USDC on an exchange you already use, or send USDC you hold elsewhere to your wallet address — always USDC on Base.':
+      'Mua USDC trên một sàn giao dịch bạn đã dùng, hoặc gửi USDC bạn đang giữ ở nơi khác đến địa chỉ ví của bạn — luôn là USDC trên Base.',
+   'Send USDC to an exchange or local service, sell it, and withdraw your local currency to your bank or GCash.':
+      'Gửi USDC đến một sàn giao dịch hoặc dịch vụ tại địa phương, bán nó, rồi rút tiền địa phương về ngân hàng hoặc GCash của bạn.',
+   'You can cash out by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account or e-wallet.':
+      'Bạn có thể rút tiền mặt bằng cách gửi USDC đến một sàn giao dịch hoặc dịch vụ được hỗ trợ, bán nó ở đó, rồi chuyển tiền địa phương về tài khoản ngân hàng hoặc ví điện tử của bạn.',
+   'Watch: sending USDC from your Base account to Binance': 'Xem: gửi USDC từ Base account của bạn đến Binance',
+   'Common ways to cash out': 'Các cách rút tiền mặt phổ biến',
+   'Send USDC to your Binance account (choose the Base network), sell it through P2P, and receive local currency straight to your bank or e-wallet.':
+      'Gửi USDC đến tài khoản Binance của bạn (chọn mạng Base), bán qua P2P, và nhận tiền địa phương thẳng về ngân hàng hoặc ví điện tử của bạn.',
+   'Another wallet or exchange': 'Ví hoặc sàn giao dịch khác',
+   'Any wallet or exchange you already use works — just make sure it supports USDC on the Base network before sending.':
+      'Bất kỳ ví hoặc sàn giao dịch nào bạn đã dùng đều được — chỉ cần đảm bảo nó hỗ trợ USDC trên mạng Base trước khi gửi.',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service.':
+      'Gửi USDC đến địa chỉ trả nợ hiển thị trên màn hình Trả nợ — từ một ví, sàn giao dịch, hoặc dịch vụ tại địa phương.',
+   'To repay, send the required USDC amount to the repayment address shown in Moodeng — the Repay screen shows the exact amount and lets you copy the address.':
+      'Để trả nợ, hãy gửi đúng số USDC yêu cầu đến địa chỉ trả nợ hiển thị trong Moodeng — màn hình Trả nợ hiển thị số tiền chính xác và cho phép bạn sao chép địa chỉ.',
+   'Where to buy USDC first': 'Nên mua USDC ở đâu trước',
+   'Buy USDC with local currency from other users, then withdraw on the Base network.':
+      'Mua USDC bằng tiền địa phương từ người dùng khác, rồi rút trên mạng Base.'
 };
