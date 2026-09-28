@@ -302,5 +302,183 @@ export const filipinoCoverageC: Record<string, string> = {
       'Naipadala na ang bayad mo at sandali pa bago ito ma-confirm. Kusa itong mag-a-update.',
    'Payment Sent, Still Recording': 'Naipadala ang bayad, nire-record pa',
    'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.'
+      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.',
+
+   // src/views/profile/components/navigation/Sidebar.tsx
+   Menu: 'Menu',
+
+   // src/views/profile/components/settings/ProfileSettings.tsx
+   Whatsapp: 'Whatsapp',
+   Username: 'Username',
+
+   // src/views/repay/Repay.tsx
+   Loan: 'Loan',
+
+   // src/views/signin/SignInPage.tsx
+   'Authentication failed': 'Nabigo ang authentication',
+
+   // src/views/signup/SignUpPage.tsx
+   'It takes just a few minutes to get started.': 'Ilang minuto lang ito para makapagsimula.',
+   'Choose a username': 'Pumili ng username',
+
+   // src/views/support/FAQ.tsx
+   'Frequently Asked Questions | Moodeng Credit': 'Mga Madalas Itanong | Moodeng Credit',
+
+   // src/views/support/GettingStarted.tsx
+   'See how Moodeng works': 'Tingnan kung paano gumagana ang Moodeng',
+   'Take the interactive tour': 'Simulan ang interactive tour',
+   'A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.':
+      '2-minutong walkthrough: pumili ng role, mag-verify, mag-request o mag-fund ng loan, magbayad, at bumuo ng credit.',
+   'Getting Started | Moodeng Credit': 'Pagsisimula | Moodeng Credit',
+   'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
+      'Alamin ang mga basics ng Moodeng: tingnan ang mga gabay at benepisyo, alamin kung paano gumagana ang USDC, unawain ang credit leveling, at tuklasin ang Academy at blog.',
+
+   // src/views/support/Guides.tsx
+   'Guide categories': 'Mga kategorya ng gabay',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Play again': 'Maglaro ulit',
+   'Your credit': 'Ang credit mo',
+   'Apply for loan': 'Mag-apply ng loan',
+   'Repayment complete': 'Kumpleto na ang bayad',
+   'Level 2 unlocked': 'Na-unlock ang Level 2',
+   'How Credit Levels work': 'Paano gumagana ang Credit Levels',
+   'Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay a full-limit loan on time.':
+      'Ang Credit Level mo ang borrowing limit mo. Lahat ay nagsisimula sa $15 — at lumalaki ito tuwing binabayaran mo nang on-time ang full-limit loan.',
+   'Deep dive': 'Buong detalye',
+   'Credit limit climbing across four levels': 'Umaakyat na credit limit sa apat na level',
+   'Each Credit-Building Loan repaid on time steps your limit up to the next level.':
+      'Bawat Credit-Building Loan na babayaran nang on-time ay nagpapataas ng limit mo papunta sa susunod na level.',
+   'The basics': 'Ang basics',
+   'Three things to know': 'Tatlong dapat malaman',
+   'Credit Levels reward one clear pattern: borrow your full limit, repay it on time, unlock the next limit.':
+      'Isang malinaw na pattern lang ang ginagantimpalaan ng Credit Levels: hiramin ang buong limit mo, bayaran on-time, ma-unlock ang susunod na limit.',
+   'The ladder': 'Ang hagdanan',
+   'Everyone starts at Level 1. Each successful Credit-Building Loan unlocks the next borrowing limit.':
+      'Lahat ay nagsisimula sa Level 1. Bawat matagumpay na Credit-Building Loan ay nag-a-unlock ng susunod na borrowing limit.',
+   'Repay on time, and the next level unlocks itself.': 'Magbayad nang on-time, at awtomatikong ma-a-unlock ang susunod na level.',
+   'Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing power compounds with every clean repayment.':
+      'Mag-request ng loan, bayaran ito bago ang due date, at awtomatikong tataas ang limit mo — lumalaki ang borrowing power mo sa bawat malinis na bayad.',
+   'Two kinds of loan': 'Dalawang uri ng loan',
+   'Trust-Building vs Credit-Building': 'Trust-Building vs Credit-Building',
+   'Moodeng has two loan types. Both earn you Pandesal points — but only a full-limit Credit-Building Loan raises your borrowing limit.':
+      'May dalawang uri ng loan ang Moodeng. Parehong kumikita ka ng Pandesal points — pero isang full-limit Credit-Building Loan lang ang nagpapataas ng borrowing limit mo.',
+   'Your limit': 'Ang limit mo',
+   'Use it when:': 'Gamitin ito kapag:',
+   'Most borrowers use both — trust loans to stay active, credit loans to climb.':
+      'Karamihan ng borrower ay gumagamit ng pareho — trust loans para manatiling active, credit loans para umakyat.',
+   'Trust is the currency before the credit.': 'Ang tiwala ang currency bago ang credit.',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
+      'Bawat loan na malinis mong babayaran — kahit maliit na Trust-Building Loan — ay nagdadagdag ng reputasyon na makikita ng mga lender. Ang tiwalang iyon ang nagpapabilis ng pag-fund ng susunod mong request.',
+   'Level up faster': 'Mas mabilis na umakyat ng level',
+   'Do this, not that': 'Gawin ito, huwag iyon',
+   'A few habits keep your climb steady and protect the Pandesal points you are earning.':
+      'Ilang habits lang ang kailangan para panatilihing steady ang pag-akyat mo at protektahan ang Pandesal points na kinikita mo.',
+   'Credit Levels, answered': 'Credit Levels, sinagot',
+   'Quick answers to the questions borrowers ask most about levelling up.':
+      'Mabilisang sagot sa mga madalas itanong ng mga borrower tungkol sa pag-level up.',
+   'Keep learning': 'Magpatuloy sa pag-aaral',
+   'Related guides': 'Kaugnay na mga gabay',
+   'Credit Levels work hand in hand with your Pandesal points and repayment history.':
+      'Magkatuwang ang Credit Levels at ang Pandesal points at repayment history mo.',
+   'Pop quiz': 'Pop quiz',
+   'Are you a Credit Level pro?': 'Isa ka bang Credit Level pro?',
+   'Five quick questions. No pressure — your hippo believes in you.':
+      'Limang mabilisang tanong. Walang pressure — naniniwala sa iyo ang hippo mo.',
+   'Ready to grow your limit?': 'Handa nang palakihin ang limit mo?',
+   'Only request your full limit when you are confident you can repay on time. Smaller loans still build trust.':
+      'Mag-request lang ng buong limit kapag sigurado kang babayaran ito on-time. Nagtatayo pa rin ng tiwala ang mas maliliit na loan.',
+   'What it is': 'Ano ito',
+   'A level is a limit': 'Ang level ay isang limit',
+   'Your level sets the most you can borrow at once.': 'Itinatakda ng level mo ang pinakamalaking puwede mong hiramin nang sabay.',
+   'Level 1 unlocks $15 — small on purpose, since you have no history yet.':
+      'Nag-a-unlock ang Level 1 ng $15 — sadyang maliit, dahil wala ka pang history.',
+   'How you grow': 'Paano ka lumalaki',
+   'Repay your full limit': 'Bayaran ang buong limit mo',
+   'A full-limit loan repaid on time raises your cap.': 'Ang full-limit loan na babayaran nang on-time ang nagpapataas ng cap mo.',
+   'That single clean repayment is what moves you up — nothing else does.':
+      'Ang isang malinis na bayad na iyon ang nagpapaakyat sa iyo — wala nang iba.',
+   'The pace': 'Ang bilis',
+   'One level at a time': 'Isang level lang sa isang pagkakataon',
+   'No skipping or buying ahead — each level is earned from the one before.':
+      'Walang laktawan o pag-una — kinikita ang bawat level mula sa naunang level.',
+   'Below your current limit': 'Mas mababa sa kasalukuyang limit mo',
+   'A loan for less than your current limit.': 'Loan na mas mababa sa kasalukuyang limit mo.',
+   'Stays the same': 'Nananatiling pareho',
+   'Goes up': 'Tumataas',
+   'Your full current limit': 'Ang buo mong kasalukuyang limit',
+   'A loan for your full current limit. The level-up loan.': 'Loan para sa buo mong kasalukuyang limit. Ang level-up na loan.',
+   'Unlocks the next level': 'Nag-a-unlock ng susunod na level',
+   'Request your full current limit only when you are confident you can repay it.':
+      'Mag-request ng buo mong kasalukuyang limit lang kapag sigurado kang babayaran mo ito.',
+   'Pick a repayment date you can comfortably hit. Repaying early is always fine.':
+      'Pumili ng repayment date na kaya mong tapatan nang komportable. Okay lang lagi ang maagang pagbabayad.',
+   'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.':
+      'Huwag kumuha ng full-limit loan kung hindi ka sigurado — ang isang missed na bayad ay nagpapahinto sa progress mo.',
+   'Do not expect extra or early payments to skip a level. Growth is always one step at a time.':
+      'Huwag umasang ang extra o maagang bayad ay makakalaktaw ng level. Isang hakbang lang palagi ang paglaki.',
+   'Understanding your Pandesal points': 'Pag-unawa sa Pandesal points mo',
+   'Trust-Building vs Credit-Building loans': 'Trust-Building vs Credit-Building loans',
+   'How repayments affect your Pandesal points': 'Paano naaapektuhan ng pagbabayad ang Pandesal points mo',
+   'What is a Credit Level on Moodeng?': 'Ano ang Credit Level sa Moodeng?',
+   'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
+      'Ang Credit Level ay ang borrowing limit mo. Lahat ay nagsisimula sa Level 1 na may $15 limit, at lumalaki ang limit habang natatapos mo ang mga Credit-Building Loan.',
+   'How do I move to the next level?': 'Paano ako makakapunta sa susunod na level?',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on-time. Ang malinis na bayad ang nag-a-unlock ng susunod na limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Does borrowing a small amount level me up?': 'Puwede ba akong mag-level up sa paghiram ng maliit na halaga?',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'Hindi. Ang paghiram na mas mababa sa limit mo ay Trust-Building Loan. Pinapaganda nito ang reputasyon mo sa mga lender pero hindi nito tinataas ang Credit Level mo. Isang full-limit Credit-Building Loan lang ang nagpapasulong sa iyo.',
+   'Can I skip levels by repaying early or paying extra?':
+      'Puwede ba akong lumaktaw ng level sa pamamagitan ng maagang bayad o extra na bayad?',
+   'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
+      'Hindi. Isang level lang sa isang pagkakataon ang inilalabas ng Moodeng. Hindi nakakalaktaw ng hakbang ang extra o maagang bayad — kinikita ang bawat bagong limit sa pagbabayad ng level bago rito.',
+   'Why does the limit start at only $15?': 'Bakit $15 lang ang panimulang limit?',
+   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
+      'Mababang risk ang resulta ng maliit na panimulang limit para sa mga lender na nagpo-fund sa taong wala pang track record. Habang pinapatunayan mo ang maaasahang pagbabayad, sabay na lumalaki ang limit mo at ang tiwala ng lender.',
+   'How long does it take to reach the $60 level?': 'Gaano katagal bago maabot ang $60 na level?',
+   'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
+      'Walang fixed na timeline. Isang full-limit loan na babayaran nang on-time ang kailangan sa bawat level, kaya nakadepende ang bilis sa kung gaano ka kabilis humiram at magbayad. Puwedeng umakyat ang mga borrower na malinis magbayad sa loob lang ng ilang loan cycle.',
+   'What happens if I miss a repayment?': 'Ano ang mangyayari kung ma-miss ko ang isang bayad?',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'Ang huli o naka-miss na bayad ay nagbabawas ng Pandesal points mo at puwedeng maghinto ng progress mo. Malaki ang timbang ng missed repayment sa mga lender, kaya mas mahalaga ang pagbabayad on-time kaysa sa laki ng hinihiram.',
+   'Does my Credit Level ever reset?': 'Nare-reset ba ang Credit Level ko?',
+   'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
+      'Nakatali ang progress mo sa wallet at repayment history mo, kaya sumasama ito sa iyo. Hindi binubura ng mga missed na bayad ang level mo, pero binabawasan nila ang Pandesal points mo at puwedeng magpabagal ng karagdagang paglaki.',
+   'What borrowing limit does everyone start with?': 'Anong borrowing limit ang panimula ng lahat?',
+   'Yep — everyone starts at $15. Small, but the climb begins here.':
+      'Oo — lahat ay nagsisimula sa $15. Maliit, pero dito nagsisimula ang pag-akyat.',
+   'Close, but no. Level 1 starts everyone at a $15 limit.': 'Malapit na, pero hindi. Sinisimulan ng Level 1 ang lahat sa $15 na limit.',
+   'Which loan actually levels you up?': 'Aling loan talaga ang nagpapa-level up sa iyo?',
+   'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.':
+      'Tama — isang full-limit Credit-Building Loan lang, na babayaran on-time, ang nagpapataas ng cap mo.',
+   'Nice try! Only a full-limit Credit-Building Loan raises your level.':
+      'Malapit na! Isang full-limit Credit-Building Loan lang ang nagtataas ng level mo.',
+   'Your limit is $20. You borrow $10 and repay on time. What happens?':
+      '$20 ang limit mo. Humiram ka ng $10 at binayaran on-time. Ano ang mangyayari?',
+   'Right! Small loans build trust — they just don’t raise your limit.':
+      'Tama! Nagtatayo ng tiwala ang maliliit na loan — pero hindi nila tinataas ang limit mo.',
+   'Not quite — a sub-limit loan builds trust but keeps your limit at $20.':
+      'Hindi masyado — nagtatayo ng tiwala ang sub-limit na loan pero nananatili ang limit mo sa $20.',
+   'Can you skip from $15 straight to $60?': 'Puwede bang lumaktaw mula $15 diretso sa $60?',
+   'Correct — Moodeng climbs one level at a time. No shortcuts.':
+      'Tama — umaakyat ang Moodeng nang isang level sa isang pagkakataon. Walang shortcut.',
+   'Nope — there are no shortcuts. It’s one level at a time.': 'Hindi — walang shortcut. Isang level lang sa isang pagkakataon.',
+   'What slows your climb the most?': 'Ano ang pinaka-nagpapabagal sa pag-akyat mo?',
+   'You got it — a missed repayment pauses progress and dents your Pandesal points.':
+      'Tama ka — ang missed na bayad ay nagpapahinto ng progress at nagbabawas ng Pandesal points mo.',
+   'Actually it’s a late or missed repayment — that’s what pauses your climb.':
+      'Sa totoo lang, ang huli o missed na bayad — iyon ang nagpapahinto sa pag-akyat mo.',
+   'Credit Level Legend': 'Alamat ng Credit Level',
+   'Rising Star': 'Bituing Sumisikat',
+   'Just getting started': 'Bagong nagsisimula pa lang',
+   'Answer choices': 'Mga pagpipilian sa sagot',
+   'See your credit limit on the request board': 'Tingnan ang credit limit mo sa request board',
+   'Apply for a loan on the request board': 'Mag-apply ng loan sa request board',
+   'See live requests on the request board': 'Tingnan ang live na mga request sa request board',
+   'Credit limit growing from fifteen to sixty dollars': 'Lumalaking credit limit mula labinlimang dolyar hanggang animnapung dolyar',
+   'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
+      'Isang borrower hippo sa Moodeng kiosk na sumusunod sa credit-building flow: mag-request, magbayad on-time, tapos mag-level up',
+   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
+      'Isang borrower hippo at isang squirrel na nagtatayo ng tiwala kasama ang isang lender sa Moodeng lending desk'
 };
