@@ -958,5 +958,36 @@ export const vietnameseCoverageB: Record<string, string> = {
    'How do I manage my account and security settings?': 'Làm sao để quản lý tài khoản và cài đặt bảo mật của tôi?',
    "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).":
       'Tài khoản của bạn gắn liền với ví, vì vậy bảo mật ví chính là bảo mật tài khoản. Từ màn hình Tài khoản, bạn có thể cập nhật tên hiển thị, quản lý email, đổi mật khẩu và đăng xuất. Nếu bạn dùng Instant Wallet, đó cũng là nơi bạn xuất khóa ví (Tài khoản → Cài đặt tài khoản → Ví).',
-   'Managing your account': 'Quản lý tài khoản của bạn'
+   'Managing your account': 'Quản lý tài khoản của bạn',
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'Sort By': 'Sắp xếp theo',
+   Status: 'Trạng thái',
+   'Apply Filter': 'Áp dụng bộ lọc',
+   'Performance Summary': 'Tổng quan hiệu suất',
+   'Funding Transactions': 'Giao dịch cấp vốn',
+   'View All Transactions': 'Xem tất cả giao dịch',
+   'No transactions found': 'Không tìm thấy giao dịch nào',
+   'Low to High': 'Thấp đến cao',
+   'High to Low': 'Cao đến thấp',
+   'New to Old': 'Mới đến cũ',
+   'Old to New': 'Cũ đến mới',
+   Default: 'Vỡ nợ',
+   'Total Earnings': 'Tổng thu nhập',
+   'Total Loans Lent out': 'Tổng số tiền đã cho vay',
+   'Total Loss': 'Tổng thiệt hại',
+   'Total Loans Funded': 'Tổng số khoản vay đã cấp vốn',
+   'Search Fundings': 'Tìm kiếm khoản cấp vốn',
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   'This loan is no longer available.': 'Khoản vay này không còn khả dụng.',
+   'Thank you for funding': 'Cảm ơn bạn đã cấp vốn',
+   'View transaction on Basescan ↗': 'Xem giao dịch trên Basescan ↗',
+   'View My Funded Loans': 'Xem các khoản vay tôi đã cấp vốn',
+   'You pay': 'Bạn trả',
+   'You receive': 'Bạn nhận',
+   'IOU points': 'Điểm IOU',
+   'Loan Note ID': 'Mã Loan Note',
+   'You paid': 'Bạn đã trả',
+   'Expected repayment': 'Khoản trả nợ dự kiến',
+   'IOU points earned': 'Điểm IOU đã nhận',
+   'Fund this loan': 'Cấp vốn cho khoản vay này'
 };
