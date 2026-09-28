@@ -485,5 +485,513 @@ export const thaiCoverageA: Record<string, string> = {
    'Unknown error': 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ',
    'Payment Sent, Still Recording': 'ส่งการชำระเงินแล้ว กำลังบันทึก',
    'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'การชำระเงินของคุณสำเร็จแล้ว แต่เรายังบันทึกไม่ได้ เราจะลองใหม่โดยอัตโนมัติ หากข้อมูลไม่อัปเดต โปรดติดต่อฝ่ายช่วยเหลือ'
+      'การชำระเงินของคุณสำเร็จแล้ว แต่เรายังบันทึกไม่ได้ เราจะลองใหม่โดยอัตโนมัติ หากข้อมูลไม่อัปเดต โปรดติดต่อฝ่ายช่วยเหลือ',
+   // src/components/BorrowerVerificationBadge.tsx
+   'Verified Borrower': 'ผู้ยืมที่ยืนยันแล้ว',
+   // src/components/WalletNetworkBlockNotice.tsx
+   'Trouble connecting? Your network may be blocking it': 'เชื่อมต่อไม่ได้ใช่ไหม เครือข่ายของคุณอาจกำลังปิดกั้นอยู่',
+   'Get the free 1.1.1.1 app': 'ดาวน์โหลดแอป 1.1.1.1 ฟรี',
+   'Network is blocking wallet sign-in': 'เครือข่ายกำลังปิดกั้นการเข้าสู่ระบบกระเป๋าเงิน',
+   'Still stuck? Message the team': 'ยังติดปัญหาอยู่ใช่ไหม ส่งข้อความถึงทีมงาน',
+   // src/components/auth/AuthErrorAlert.tsx
+   'Reset password': 'รีเซ็ตรหัสผ่าน',
+   'No account found with this email address.': 'ไม่พบบัญชีที่ใช้อีเมลนี้',
+   'Try a different email': 'ลองอีเมลอื่น',
+   'Looks like you are new to Moodeng.': 'ดูเหมือนคุณเป็นผู้ใช้ใหม่ของ Moodeng',
+   'Create an account first, then verify the email code Moodeng sends you.':
+      'สร้างบัญชีก่อน จากนั้นยืนยันรหัสยืนยันทางอีเมลที่ Moodeng ส่งให้คุณ',
+   'Create account': 'สร้างบัญชี',
+   'Use a different email': 'ใช้อีเมลอื่น',
+   'The email or password you entered is incorrect.': 'อีเมลหรือรหัสผ่านที่คุณกรอกไม่ถูกต้อง',
+   // src/components/auth/LastUsedBadge.tsx
+   'Last used': 'ใช้ล่าสุด',
+   // src/components/auth/SignUpFormErrorAlert.tsx
+   'Password must be longer than 8 characters. Choose a stronger password to continue.':
+      'รหัสผ่านต้องยาวกว่า 8 ตัวอักษร โปรดเลือกรหัสผ่านที่รัดกุมมากขึ้นเพื่อดำเนินการต่อ',
+   'Passwords do not match. Please re-enter your password.': 'รหัสผ่านไม่ตรงกัน โปรดกรอกรหัสผ่านใหม่อีกครั้ง',
+   'This email address has been permanently locked. Please try a different email or contact support if you believe this is a mistake.':
+      'ที่อยู่อีเมลนี้ถูกล็อกถาวรแล้ว โปรดลองใช้อีเมลอื่น หรือติดต่อฝ่ายช่วยเหลือหากคุณคิดว่านี่เป็นความผิดพลาด',
+   'Why am I seeing this?': 'ทำไมฉันถึงเห็นข้อความนี้',
+   'Log In': 'เข้าสู่ระบบ',
+   'Reset Password': 'รีเซ็ตรหัสผ่าน',
+   // src/components/auth/SocialAuthButtons.tsx
+   Soon: 'เร็วๆ นี้',
+   'Google sign-up could not start. Please try again.': 'ไม่สามารถเริ่มการสมัครด้วย Google ได้ โปรดลองอีกครั้ง',
+   // src/components/auth/TelegramLoginTile.tsx
+   'Sign in with Telegram': 'เข้าสู่ระบบด้วย Telegram',
+   // src/components/filters/DatePicker.tsx
+   Clear: 'ล้าง',
+   Today: 'วันนี้',
+   'Pick a date...': 'เลือกวันที่...',
+   // src/components/filters/FilterSidebar.tsx
+   Filters: 'ตัวกรอง',
+   'Credit Limit': 'วงเงินกู้',
+   Type: 'ประเภท',
+   'Close filters': 'ปิดตัวกรอง',
+   'Swipe right to close filters': 'ปัดไปทางขวาเพื่อปิดตัวกรอง',
+   'Payback is the total amount the borrower agrees to return. This filters the extra payback above the loan principal. Example: a $10 loan with a $13 payback is 30%.':
+      'ยอดชำระคืนคือจำนวนเงินทั้งหมดที่ผู้ยืมตกลงจะคืน ตัวกรองนี้จะกรองตามส่วนที่ชำระคืนเพิ่มจากเงินต้น ตัวอย่างเช่น เงินกู้ $10 ที่มียอดชำระคืน $13 คือ 30%',
+   'Repayment Date': 'วันที่ชำระคืน',
+   'Borrow Type': 'ประเภทการยืม',
+   // src/components/filters/SortButtons.tsx
+   Lowest: 'ต่ำสุด',
+   Highest: 'สูงสุด',
+   Oldest: 'เก่าสุด',
+   Newest: 'ใหม่สุด',
+   // src/components/marketing/MarketingPageShell.tsx
+   'Open App': 'เปิดแอป',
+   'Read docs': 'อ่านเอกสาร',
+   'Benefits navigation': 'เมนูสิทธิประโยชน์',
+   'Toggle benefits menu': 'สลับเมนูสิทธิประโยชน์',
+   'Mobile benefits navigation': 'เมนูสิทธิประโยชน์สำหรับมือถือ',
+   // src/components/mecha/stepContext.ts
+   'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.':
+      'กำลังตั้งค่ากระเป๋าเงินอยู่ใช่ไหม Instant Wallet ของคุณถูกสร้างจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องดาวน์โหลดแอปเพิ่ม ฉันช่วยแนะนำคุณได้',
+   'What is the Instant Wallet?': 'Instant Wallet คืออะไร',
+   'Stuck on verifying? I can walk you through it.': 'ติดขัดเรื่องการยืนยันตัวตนใช่ไหม ฉันช่วยแนะนำคุณได้',
+   'How do I repay?': 'ฉันจะชำระคืนได้อย่างไร',
+   'How do I cash out to GCash?': 'ฉันจะถอนเป็นเงินสดผ่าน GCash ได้อย่างไร',
+   'How do I request a loan?': 'ฉันจะขอเงินกู้ได้อย่างไร',
+   'How do I increase my credit limit?': 'ฉันจะเพิ่มวงเงินกู้ได้อย่างไร',
+   'How do I get started?': 'ฉันจะเริ่มต้นได้อย่างไร',
+   'How do I get verified?': 'ฉันจะยืนยันตัวตนได้อย่างไร',
+   // src/components/support/SupportContactsModal.tsx
+   'Contact us via': 'ติดต่อเราผ่าน',
+   'Live chat': 'แชทสด',
+   'Fastest — we reply here and by email': 'เร็วที่สุด เราจะตอบกลับที่นี่และทางอีเมล',
+   'Support contacts': 'ช่องทางติดต่อฝ่ายช่วยเหลือ',
+   'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
+      'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือ เลือกช่องทางแล้วเราจะช่วยดูแลบัญชี Moodeng ของคุณ',
+   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
+      'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือสำหรับคำขอเงินกู้ที่หมดอายุของคุณ เราสามารถช่วยให้คุณติดต่อกับผู้ให้กู้หรือช่วยตัดสินใจว่าจะโพสต์คำขอใหม่หรือไม่',
+   'Here are support contacts for World ID verification if your status did not update after completing World ID.':
+      'นี่คือช่องทางติดต่อฝ่ายช่วยเหลือสำหรับการยืนยันตัวตนด้วย World ID หากสถานะของคุณไม่อัปเดตหลังจากทำ World ID เสร็จแล้ว',
+   'Close support contacts': 'ปิดช่องทางติดต่อฝ่ายช่วยเหลือ',
+   // src/components/ui/Modal.tsx
+   'Close modal': 'ปิดหน้าต่าง',
+   // src/components/ui/YouTubeVideoLightbox.tsx
+   'Credit Levelling Guide': 'คู่มือการเลื่อนระดับเครดิต',
+   // src/components/verification/CountryFlags.tsx
+   Vietnam: 'เวียดนาม',
+   Taiwan: 'ไต้หวัน',
+   'South Korea': 'เกาหลีใต้',
+   Philippines: 'ฟิลิปปินส์',
+   Malaysia: 'มาเลเซีย',
+   Japan: 'ญี่ปุ่น',
+   Indonesia: 'อินโดนีเซีย',
+   Thailand: 'ไทย',
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   Verification: 'การยืนยันตัวตน',
+   // src/components/verification/VerifiedCelebrationNotifier.tsx
+   'Request a loan': 'ขอเงินกู้',
+   // src/components/verification/VerifyYourselfModal.tsx
+   'Verify by scanning your passport with your phone in the World App — no Orb visit needed. You need an':
+      'ยืนยันตัวตนด้วยการสแกนหนังสือเดินทางผ่านโทรศัพท์ในแอป World App โดยไม่ต้องไปที่ Orb คุณต้องมี',
+   'Get the World App': 'ดาวน์โหลด World App',
+   'Need help with this step?': 'ต้องการความช่วยเหลือในขั้นตอนนี้ไหม',
+   'World ID is verified in person at an Orb — a physical device available only in certain countries — or with a passport scan in the World App. Pick the option that matches you.':
+      'World ID ยืนยันตัวตนได้ด้วยการไปที่ Orb ซึ่งเป็นอุปกรณ์จริงที่มีให้บริการเฉพาะบางประเทศ หรือด้วยการสแกนหนังสือเดินทางในแอป World App เลือกตัวเลือกที่เหมาะกับคุณ',
+   'New to World ID?': 'เพิ่งเริ่มใช้ World ID ใช่ไหม',
+   '1. Download the World App': '1. ดาวน์โหลด World App',
+   '2. Find an Orb near you': '2. ค้นหา Orb ใกล้คุณ',
+   'Countries with Orb locations': 'ประเทศที่มีจุดให้บริการ Orb',
+   'Back to verification options': 'กลับไปยังตัวเลือกการยืนยันตัวตน',
+   'Verify Yourself': 'ยืนยันตัวตน',
+   'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
+      'ยืนยันตัวตนของคุณเพื่อปลดล็อกบัญชี เป็นการตรวจสอบเพียงครั้งเดียวที่ใช้เวลาประมาณ 3 นาที',
+   // src/components/worldId/WorldIDVerificationStatus.tsx
+   "To confirm your identity and show it's really you, we use World ID. This helps keep our community safe, avoids bots, and builds trust for borrowers.":
+      'เพื่อยืนยันตัวตนของคุณและแสดงว่าเป็นคุณจริง เราใช้ World ID วิธีนี้ช่วยให้ชุมชนของเราปลอดภัย ป้องกันบอท และสร้างความน่าเชื่อถือให้กับผู้ยืม',
+   'Human Verified with World ID': 'ยืนยันตัวตนมนุษย์ด้วย World ID',
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'This may take a few seconds.': 'อาจใช้เวลาสักครู่',
+   'Keep waiting': 'รอต่อไป',
+   'Verification status': 'สถานะการยืนยันตัวตน',
+   'Having trouble?': 'มีปัญหาใช่ไหม',
+   'Still stuck? Contact support': 'ยังติดปัญหาอยู่ใช่ไหม ติดต่อฝ่ายช่วยเหลือ',
+   'Close verification help': 'ปิดความช่วยเหลือการยืนยันตัวตน',
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'Got it': 'เข้าใจแล้ว',
+   // src/components/worldId/modal/HowItWorksSection.tsx
+   'Opens the verification modal': 'เปิดหน้าต่างยืนยันตัวตน',
+   'Scan QR with World App': 'สแกน QR ด้วย World App',
+   'Uses your phone camera': 'ใช้กล้องโทรศัพท์ของคุณ',
+   'Verified instantly': 'ยืนยันตัวตนได้ทันที',
+   'How to Verify?': 'ยืนยันตัวตนอย่างไร',
+   // src/components/worldId/modal/ModalNote.tsx
+   'Privacy-First proof of personhood. Verify without revealing your identity.':
+      'การพิสูจน์ความเป็นมนุษย์ที่คำนึงถึงความเป็นส่วนตัวเป็นอันดับแรก ยืนยันตัวตนได้โดยไม่ต้องเปิดเผยตัวตนของคุณ',
+   // src/components/worldId/modal/VerificationModalHeader.tsx
+   'Verify World ID': 'ยืนยัน World ID',
+   // src/views/FAQ.tsx
+   'The Comprehensive FAQ Guide to Credit Growth, Secure Loans, and Transparent Financial Management':
+      'คู่มือคำถามที่พบบ่อยฉบับสมบูรณ์เกี่ยวกับการเติบโตของเครดิต เงินกู้ที่ปลอดภัย และการบริหารการเงินอย่างโปร่งใส',
+   FAQs: 'คำถามที่พบบ่อย',
+   // src/views/about/sections/CreditGrowthSystemSection.tsx
+   'CREDIT GROWTH SYSTEM': 'ระบบการเติบโตของเครดิต',
+   'Grow Your Credit Limit Through Step Borrowing': 'เพิ่มวงเงินกู้ของคุณผ่านการยืมทีละขั้น',
+   'Your Credit Limit Grows with Every $20 You Borrow and Repay!':
+      'วงเงินกู้ของคุณเพิ่มขึ้นทุกๆ $20 ที่คุณยืมและชำระคืน!',
+   'The more you borrow and repay, the more you can borrow in the future.':
+      'ยิ่งคุณยืมและชำระคืนมากเท่าไร คุณก็ยิ่งยืมได้มากขึ้นในอนาคต',
+   Connect: 'เชื่อมต่อ',
+   'Borrow + Repay Original $20 to unlock $40': 'ยืม + ชำระคืนเงิน $20 เดิมเพื่อปลดล็อก $40',
+   Grow: 'เติบโต',
+   Build: 'สร้าง',
+   Expand: 'ขยาย',
+   Unlock: 'ปลดล็อก',
+   'Ongoing Growth': 'เติบโตต่อเนื่อง',
+   'Keep going forever and grow!': 'ทำต่อไปเรื่อยๆ แล้วเติบโต!',
+   'Build Your Credit, Step by Step': 'สร้างเครดิตของคุณทีละขั้น',
+   "Unlock Your Financial Potential with Moodeng's Unique Borrowing System":
+      'ปลดล็อกศักยภาพทางการเงินของคุณด้วยระบบการยืมที่เป็นเอกลักษณ์ของ Moodeng',
+   'If I borrow $35 instead of $40 can I unlock $60?': 'ถ้าฉันยืม $35 แทนที่จะเป็น $40 ฉันจะปลดล็อก $60 ได้ไหม',
+   "Borrowing under $40 won't unlock $60 - it shows you are not ready. But, you can borrow smaller amounts to prove yourself.":
+      'การยืมต่ำกว่า $40 จะไม่ปลดล็อก $60 เพราะแสดงว่าคุณยังไม่พร้อม แต่คุณสามารถยืมจำนวนน้อยกว่าเพื่อพิสูจน์ตัวเองได้',
+   'Does borrowing or repaying more unlock the next level??': 'การยืมหรือชำระคืนมากขึ้นจะปลดล็อกระดับถัดไปหรือไม่??',
+   'The only thing relevant to unlocking the next level is the amount you borrowed. Not the amount you repaid.':
+      'สิ่งเดียวที่เกี่ยวข้องกับการปลดล็อกระดับถัดไปคือจำนวนเงินที่คุณยืม ไม่ใช่จำนวนเงินที่คุณชำระคืน',
+   'Can I skip a level by borrowing more than required?': 'ฉันสามารถข้ามระดับได้ไหมด้วยการยืมมากกว่าที่กำหนด',
+   'No, each level must be unlocked step-by-step with consistent borrowing.':
+      'ไม่ได้ แต่ละระดับต้องปลดล็อกทีละขั้นด้วยการยืมอย่างสม่ำเสมอ',
+   'Why Our Cumulative System Benefits You': 'ทำไมระบบสะสมของเราถึงเป็นประโยชน์กับคุณ',
+   'Flexibility to take multiple smaller loans': 'ความยืดหยุ่นในการยืมเงินก้อนเล็กหลายครั้ง',
+   'Build credit at your own pace': 'สร้างเครดิตตามจังหวะของคุณเอง',
+   'Reward for consistent borrowing and repayment': 'รางวัลสำหรับการยืมและชำระคืนอย่างสม่ำเสมอ',
+   'Clear path to accessing larger loan amounts': 'เส้นทางที่ชัดเจนสู่วงเงินกู้ที่สูงขึ้น',
+   // src/views/about/sections/DirectLendBorrowSection.tsx
+   'How Direct Lend & Borrow Works': 'Direct Lend & Borrow ทำงานอย่างไร',
+   'Funds in USDT/USDC': 'รับเงินทุนเป็น USDT/USDC',
+   'Credit Score Improves': 'คะแนนเครดิตดีขึ้น',
+   // src/views/about/sections/MoodengCreditSection.tsx
+   'Want to learn more about Moodeng Credit?': 'อยากรู้เพิ่มเติมเกี่ยวกับ Moodeng Credit ไหม',
+   'Contact us today to learn more about joining our community and unlocking the benefits awaiting you.':
+      'ติดต่อเราวันนี้เพื่อเรียนรู้เพิ่มเติมเกี่ยวกับการเข้าร่วมชุมชนของเราและปลดล็อกสิทธิประโยชน์ที่รอคุณอยู่',
+   'Contact Us via Email': 'ติดต่อเราทางอีเมล',
+   // src/views/about/sections/RulesOfRepayingSection.tsx
+   'RULES OF REPAYING': 'กฎการชำระคืน',
+   'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
+      'Moodeng มอบสินเชื่อรายย่อยบนบล็อกเชนที่ยืดหยุ่น ชำระคืนอย่างมีความรับผิดชอบเพื่อสร้างคะแนนเครดิตของคุณ',
+   'You must pay the lender directly by hitting the repay button.':
+      'คุณต้องชำระเงินให้ผู้ให้กู้โดยตรงด้วยการกดปุ่มชำระคืน',
+   'UP-TO-YOU': 'ขึ้นอยู่กับคุณ',
+   'Flexible repayments: Any amount up to deadline': 'ชำระคืนได้ยืดหยุ่น จำนวนเท่าไรก็ได้ก่อนถึงกำหนด',
+   'Build credit score with each on-time payment': 'สร้างคะแนนเครดิตด้วยการชำระตรงเวลาทุกครั้ง',
+   'Blockchain records all loan transactions': 'บล็อกเชนบันทึกธุรกรรมเงินกู้ทั้งหมด',
+   'Sign up for notifications about your loans': 'สมัครรับการแจ้งเตือนเกี่ยวกับเงินกู้ของคุณ',
+   // src/views/about/sections/WelcomeHeroSection.tsx
+   'To get funded, you need to write why you need it, so someone will fund you.':
+      'หากต้องการรับเงินทุน คุณต้องเขียนเหตุผลว่าทำไมคุณถึงต้องการ เพื่อให้มีคนปล่อยกู้ให้คุณ',
+   'Welcome to Moodeng Academy': 'ยินดีต้อนรับสู่ Moodeng Academy',
+   'And make sure to submit a request within your credit limit.':
+      'และตรวจสอบให้แน่ใจว่าคำขอของคุณอยู่ในวงเงินกู้ของคุณ',
+   'Ask For Help': 'ขอความช่วยเหลือ',
+   'Offer Help': 'เสนอความช่วยเหลือ',
+   'How much do you need today? i.e. $15': 'วันนี้คุณต้องการเงินเท่าไร เช่น $15',
+   'Enter how much you will payback? i.e. $17': 'กรอกจำนวนเงินที่คุณจะชำระคืน เช่น $17',
+   'Type your reason? i.e. an emergency, etc.': 'พิมพ์เหตุผลของคุณ เช่น เหตุฉุกเฉิน เป็นต้น',
+   Other: 'อื่นๆ',
+   'Repayment timeline': 'กำหนดเวลาชำระคืน',
+   'Submit Request': 'ส่งคำขอ',
+   'Your available credit limit: $15': 'วงเงินกู้ที่ใช้ได้ของคุณ: $15',
+   'Set Your Own Terms': 'กำหนดเงื่อนไขของคุณเอง',
+   'Enter amount, i.e. $15': 'กรอกจำนวนเงิน เช่น $15',
+   'Enter amount to repay, i.e. $18': 'กรอกจำนวนเงินที่ต้องชำระคืน เช่น $18',
+   'Enter reason i.e. an emergency, etc.': 'กรอกเหตุผล เช่น เหตุฉุกเฉิน เป็นต้น',
+   'How It Works': 'วิธีการทำงาน',
+   '1. Enter your loan amount': '1. กรอกจำนวนเงินกู้ของคุณ',
+   '3. Specify payback amount': '3. ระบุจำนวนเงินที่จะชำระคืน',
+   '4. Explain your reason for the loan': '4. อธิบายเหตุผลในการขอกู้',
+   '5. Submit your request': '5. ส่งคำขอของคุณ',
+   // src/views/academy/AcademyGuide.tsx
+   'Create your Moodeng Account': 'สร้างบัญชี Moodeng ของคุณ',
+   'Enter the same email you will use for your borrower account.':
+      'กรอกอีเมลเดียวกับที่คุณจะใช้สำหรับบัญชีผู้ยืมของคุณ',
+   'Create your password': 'สร้างรหัสผ่านของคุณ',
+   'Create An Account': 'สร้างบัญชี',
+   'Set Up Your Instant Wallet': 'ตั้งค่า Instant Wallet ของคุณ',
+   'Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one instead. Moodeng keeps the flow inside the app.':
+      'Instant Wallet ของคุณถูกสร้างจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องใช้แอปและไม่ต้องมี seed phrase ต้องการใช้ Base Account แทนไหม คุณสามารถเชื่อมต่อได้ Moodeng ทำทุกขั้นตอนอยู่ในแอปเดียว',
+   'Set Up Your Wallet': 'ตั้งค่ากระเป๋าเงินของคุณ',
+   'Gasless transactions are supported on Base.': 'รองรับธุรกรรมแบบไม่มีค่า gas บน Base',
+   'Prove you are a real person. This is a one-time step before larger borrowing limits.':
+      'พิสูจน์ว่าคุณเป็นบุคคลจริง เป็นขั้นตอนที่ทำเพียงครั้งเดียวก่อนได้รับวงเงินกู้ที่สูงขึ้น',
+   'Available credit limit': 'วงเงินกู้ที่ใช้ได้',
+   '$10 request': 'คำขอ $10',
+   'Any request below your $15 credit limit becomes a trust-building loan.':
+      'คำขอใดๆ ที่ต่ำกว่าวงเงินกู้ $15 ของคุณจะกลายเป็น Trust-Building Loan',
+   '$10 is below your $15 limit': '$10 ต่ำกว่าวงเงิน $15 ของคุณ',
+   'Builds repayment history': 'สร้างประวัติการชำระคืน',
+   'Does not raise Credit Level': 'ไม่เพิ่มระดับเครดิต',
+   '$20 request': 'คำขอ $20',
+   'Any request above your $15 credit limit becomes a credit-building loan.':
+      'คำขอใดๆ ที่สูงกว่าวงเงินกู้ $15 ของคุณจะกลายเป็น Credit-Building Loan',
+   '$20 is above your $15 limit': '$20 สูงกว่าวงเงิน $15 ของคุณ',
+   'Can increase your next limit': 'สามารถเพิ่มวงเงินถัดไปของคุณได้',
+   'Best when repayment is clear': 'ดีที่สุดเมื่อชำระคืนชัดเจน',
+   'Borrow amount': 'จำนวนเงินที่ยืม',
+   'Payback amount': 'จำนวนเงินที่ต้องชำระคืน',
+   Reason: 'เหตุผล',
+   'Needs money before Friday': 'ต้องการเงินก่อนวันศุกร์',
+   'Short term': 'ระยะสั้น',
+   'Repayment amount': 'จำนวนเงินที่ชำระคืน',
+   'Borrower Insights': 'ข้อมูลเชิงลึกของผู้ยืม',
+   'Usual loan size': 'ขนาดเงินกู้ปกติ',
+   'Typical payment time': 'ระยะเวลาชำระเงินโดยทั่วไป',
+   'Level 2': 'ระดับ 2',
+   'See How Growth Works': 'ดูวิธีการเติบโต',
+   'Mecha says': 'Mecha พูดว่า',
+   'How to use Moodeng Credit': 'วิธีใช้ Moodeng Credit',
+   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
+      'คำแนะนำทีละขั้นตอนสำหรับผู้ยืม เริ่มที่นี่หากคุณต้องการรู้ว่าต้องกดอะไร ผู้ให้กู้เห็นอะไรบ้าง และการชำระคืนช่วยเพิ่มวงเงินของคุณอย่างไร',
+   'Tutorial Video': 'วิดีโอสอนการใช้งาน',
+   'Watch the quick Moodeng walkthrough.': 'ดูวิดีโอแนะนำ Moodeng แบบย่อ',
+   'I am Mecha. I will walk you through Moodeng step by step.':
+      'ฉันคือ Mecha ฉันจะแนะนำคุณเกี่ยวกับ Moodeng ทีละขั้นตอน',
+   'Video guide': 'วิดีโอแนะนำ',
+   'Want to learn more? Open the step-by-step credit guide.': 'อยากรู้เพิ่มเติมไหม เปิดคู่มือเครดิตแบบทีละขั้นตอน',
+   'Final quiz': 'แบบทดสอบสุดท้าย',
+   'Earn your Academy reward': 'รับรางวัล Academy ของคุณ',
+   'Moodeng Academy Quiz': 'แบบทดสอบ Moodeng Academy',
+   'Ready for the check?': 'พร้อมสำหรับการทดสอบหรือยัง',
+   'Start quiz': 'เริ่มทำแบบทดสอบ',
+   'Retake quiz': 'ทำแบบทดสอบใหม่',
+   'Create your account': 'สร้างบัญชีของคุณ',
+   'Sign up with email so Moodeng can save your borrower profile, loans, repayments, and credit progress.':
+      'สมัครด้วยอีเมลเพื่อให้ Moodeng บันทึกโปรไฟล์ผู้ยืม เงินกู้ การชำระคืน และความคืบหน้าด้านเครดิตของคุณ',
+   'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
+      'ยืนยันตัวตนเพียงครั้งเดียวเพื่อพิสูจน์ว่าคุณไม่ซ้ำใคร หลังจากนั้นผู้ให้กู้จะมั่นใจได้ว่าคำขอของคุณผูกกับผู้ยืมจริงเพียงคนเดียว',
+   'Add your wallet': 'เพิ่มกระเป๋าเงินของคุณ',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
+      'ตั้งค่า Instant Wallet จากการเข้าสู่ระบบ Moodeng ของคุณ (หรือเชื่อมต่อ Base Account หากต้องการ) เพื่อให้ผู้ให้กู้ปล่อยกู้เข้าตรงนั้นได้ และ Moodeng สามารถติดตามประวัติการชำระคืนได้',
+   'Your amount sets the loan type': 'จำนวนเงินของคุณเป็นตัวกำหนดประเภทเงินกู้',
+   'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.':
+      'หากคำขอของคุณต่ำกว่าวงเงินกู้ ถือเป็นการสร้างความน่าเชื่อถือ หากเป็นวงเงินกู้เต็มจำนวน ถือเป็นการสร้างเครดิต',
+   'Submit a loan request': 'ส่งคำขอเงินกู้',
+   'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
+      'เลือกจำนวนเงิน กำหนดวันที่จะชำระคืน และอธิบายเหตุผลที่คุณต้องการความช่วยเหลือ ก่อนโพสต์ให้ผู้ให้กู้เห็น',
+   'Get matched on the request board': 'จับคู่กับผู้ให้กู้บนกระดานคำขอ',
+   'Your request appears on the board where lenders can review the terms and decide whether to fund it.':
+      'คำขอของคุณจะปรากฏบนกระดานคำขอ ที่ผู้ให้กู้สามารถตรวจสอบเงื่อนไขและตัดสินใจว่าจะปล่อยกู้หรือไม่',
+   'Repay clearly': 'ชำระคืนอย่างชัดเจน',
+   'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.':
+      'ชำระเงินตามจำนวนที่ตกลงไว้ตรงเวลา Moodeng จะติดตามความคืบหน้าการชำระคืนอย่างชัดเจนในบัญชีของคุณ',
+   'Grow your next limit': 'เพิ่มวงเงินถัดไปของคุณ',
+   'Full-limit loans repaid on time can unlock the next level, helping you build a visible credit record.':
+      'เงินกู้เต็มวงเงินที่ชำระคืนตรงเวลาสามารถปลดล็อกระดับถัดไป ช่วยให้คุณสร้างประวัติเครดิตที่มองเห็นได้ชัดเจน',
+   'Level up': 'เลื่อนระดับ',
+   Quiz: 'แบบทดสอบ',
+   'Why do borrowers verify with World ID?': 'ทำไมผู้ยืมต้องยืนยันตัวตนด้วย World ID',
+   'To prove they are unique': 'เพื่อพิสูจน์ว่าไม่ซ้ำใคร',
+   'Why do borrowers set up a wallet (Instant Wallet or Base Account)?':
+      'ทำไมผู้ยืมต้องตั้งค่ากระเป๋าเงิน (Instant Wallet หรือ Base Account)',
+   'To receive USDC loans and build onchain reputation': 'เพื่อรับเงินกู้เป็น USDC และสร้างความน่าเชื่อถือแบบออนเชน',
+   'Your credit limit is $15. What is a $10 request?': 'วงเงินกู้ของคุณคือ $15 คำขอ $10 คืออะไร',
+   'Your credit limit is $15. What is a $20 request?': 'วงเงินกู้ของคุณคือ $15 คำขอ $20 คืออะไร',
+   'Credit-building': 'การสร้างเครดิต',
+   'What helps a borrower build a stronger record?': 'อะไรช่วยให้ผู้ยืมสร้างประวัติที่แข็งแกร่งขึ้น',
+   'Repaying clearly and on time': 'ชำระคืนอย่างชัดเจนและตรงเวลา',
+   'Nice practice request.': 'ฝึกส่งคำขอได้ดี',
+   'Strong repayment move.': 'การชำระคืนที่ยอดเยี่ยม',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
+      'เยี่ยม! การชำระคืนสำคัญมากบน Moodeng การชำระตรงเวลาช่วยเสริมประวัติความน่าเชื่อถือของคุณ ทำให้ผู้ให้กู้มั่นใจ และสามารถปลดล็อกวงเงินกู้ที่ดีขึ้นเมื่อเวลาผ่านไป',
+   'This is how you grow.': 'นี่คือวิธีที่คุณจะเติบโต',
+   'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
+      'Mecha บอกว่า: เงินกู้เต็มวงเงินที่ชำระคืนตรงเวลาคือวิธีที่ผู้ยืมสร้างประวัติเครดิตที่แข็งแกร่งขึ้น รักษาการชำระคืนให้สะอาด แล้ววงเงินถัดไปของคุณจะเพิ่มขึ้นได้',
+   'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.':
+      'คำแนะนำทีละขั้นตอนสำหรับผู้ยืมของ Moodeng ตั้งแต่สมัครสมาชิก ยืนยันตัวตน ตั้งค่า Instant Wallet (หรือเชื่อมต่อ Base Account) ขอเงินกู้ ชำระคืน และเพิ่มวงเงินกู้ของคุณ',
+   'Close message': 'ปิดข้อความ',
+   'Academy path': 'เส้นทาง Academy',
+   'Close tutorial video': 'ปิดวิดีโอสอนการใช้งาน',
+   'Moodeng Academy tutorial video': 'วิดีโอสอนการใช้งาน Moodeng Academy',
+   'Moodeng Credit steps': 'ขั้นตอนของ Moodeng Credit',
+   'Choose reward type': 'เลือกประเภทรางวัล',
+   // src/views/academy/MoneyGuide.tsx
+   'Getting verified, funding your wallet, cashing out, and repaying — in one friendly place.':
+      'ยืนยันตัวตน เติมเงินเข้ากระเป๋า ถอนเงิน และชำระคืน ทำได้ง่ายๆ ในที่เดียว',
+   'Read more': 'อ่านเพิ่มเติม',
+   'How to verify, add USDC to your wallet, withdraw to your bank, and repay your loan on Moodeng.':
+      'วิธียืนยันตัวตน เติม USDC เข้ากระเป๋าเงิน ถอนเงินเข้าธนาคาร และชำระคืนเงินกู้บน Moodeng',
+   'Verify your identity': 'ยืนยันตัวตนของคุณ',
+   'A quick national ID photo and selfie check confirms you’re a real, unique person. Most checks finish within minutes.':
+      'การตรวจสอบด้วยรูปถ่ายบัตรประชาชนและเซลฟี่อย่างรวดเร็วช่วยยืนยันว่าคุณเป็นบุคคลจริงที่ไม่ซ้ำใคร การตรวจสอบส่วนใหญ่เสร็จภายในไม่กี่นาที',
+   Selfie: 'เซลฟี่',
+   'Add funds to your wallet': 'เติมเงินเข้ากระเป๋าเงิน',
+   'USDC on the Base network': 'USDC บนเครือข่าย Base',
+   'Buy USDC on an exchange or with a card, then send it to your wallet — always on Base. Or bridge it from another chain.':
+      'ซื้อ USDC จากแพลตฟอร์มแลกเปลี่ยนหรือด้วยบัตร แล้วส่งเข้ากระเป๋าเงินของคุณ โดยใช้เครือข่าย Base เสมอ หรือบริดจ์มาจากเชนอื่น',
+   'Withdraw to your bank': 'ถอนเงินเข้าธนาคาร',
+   'Cash out to bank or e-wallet': 'ถอนเป็นเงินสดเข้าธนาคารหรือกระเป๋าเงินอิเล็กทรอนิกส์',
+   'Repay your loan': 'ชำระคืนเงินกู้ของคุณ',
+   'On-time repayment builds trust': 'การชำระคืนตรงเวลาช่วยสร้างความน่าเชื่อถือ',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Pandesal points and credit limit.':
+      'ส่ง USDC ไปยังที่อยู่สำหรับชำระคืนที่แสดงในหน้าจอชำระคืน จากกระเป๋าเงิน แพลตฟอร์มแลกเปลี่ยน หรือบริการในพื้นที่ การชำระคืนตรงเวลาจะช่วยเพิ่มแต้ม Pandesal และวงเงินกู้ของคุณ',
+   'From a wallet': 'จากกระเป๋าเงิน',
+   'From an exchange': 'จากแพลตฟอร์มแลกเปลี่ยน',
+   // src/views/academy/MoneyGuideTopic.tsx
+   'How it works': 'วิธีการทำงาน',
+   // src/views/academy/VerifyGuide.tsx
+   Money: 'เงิน',
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
+      'เพื่อให้ Moodeng ปลอดภัยและเป็นธรรม ผู้ยืมทุกคนต้องผ่านการตรวจสอบตัวตนสั้นๆ หนึ่งครั้ง วิธีนี้ช่วยป้องกันบัญชีปลอมและบัญชีซ้ำออกจากชุมชน และทำให้ผู้ให้กู้มั่นใจในคำขอที่พวกเขาสนับสนุน',
+   'The recommended route: Verify Your ID.': 'เส้นทางที่แนะนำ: ยืนยันด้วยบัตรประชาชน',
+   'National ID verification is available for these countries.':
+      'การยืนยันด้วยบัตรประชาชนพร้อมให้บริการในประเทศเหล่านี้',
+   'Pass on the first try': 'ผ่านตั้งแต่ครั้งแรก',
+   'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
+      'หากคุณยืนยันตัวตนใน World App แล้ว ไม่ว่าจะที่ Orb หรือด้วยหนังสือเดินทางแบบไบโอเมตริก คุณสามารถเลือก',
+   'Your ID is never stored by Moodeng': 'บัตรประชาชนของคุณจะไม่ถูกเก็บไว้โดย Moodeng',
+   'The check is run by our secure verification partner. Moodeng receives the result — whether you passed — not a copy of your document.':
+      'การตรวจสอบดำเนินการโดยพันธมิตรด้านการยืนยันตัวตนที่ปลอดภัยของเรา Moodeng ได้รับเพียงผลลัพธ์ว่าคุณผ่านหรือไม่ ไม่ใช่สำเนาเอกสารของคุณ',
+   'Ready to verify?': 'พร้อมยืนยันตัวตนหรือยัง',
+   Read: 'อ่าน',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
+      'การยืนยันตัวตนช่วยให้มั่นใจว่าทุกคำขอมาจากบุคคลจริงที่ไม่ซ้ำใคร นี่คือสิ่งที่ป้องกันบัญชีปลอมและบัญชีซ้ำจากผู้ให้กู้',
+   Access: 'สิทธิ์การเข้าถึง',
+   'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
+      'การยืนยันตัวตนให้เสร็จสิ้นคือสิ่งที่ปลดล็อกการขอเงินกู้ และเป็นจุดที่คุณเริ่มได้รับแต้ม Pandesal',
+   Trust: 'ความน่าเชื่อถือ',
+   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'ผู้ให้กู้กำลังปล่อยกู้ให้บุคคลจริง ไม่ใช่บัญชีนิรนาม ความมั่นใจนี้เองที่ทำให้คำขอบนกระดานได้รับการปล่อยกู้',
+   'Your physical national ID': 'บัตรประชาชนตัวจริงของคุณ',
+   'The real card in hand, not a photocopy or a picture on another screen.':
+      'บัตรตัวจริงในมือ ไม่ใช่สำเนาถ่ายเอกสารหรือรูปถ่ายจากหน้าจออื่น',
+   'Avoid glare and hard shadows across the card or your face.':
+      'หลีกเลี่ยงแสงสะท้อนและเงาที่ทับบนบัตรหรือใบหน้าของคุณ',
+   'Not the browser inside Facebook or Messenger — those can stall the check.':
+      'ไม่ใช่เบราว์เซอร์ในแอป Facebook หรือ Messenger เพราะอาจทำให้การตรวจสอบค้าง',
+   'How long does verification take?': 'การยืนยันตัวตนใช้เวลานานแค่ไหน',
+   'The check itself takes about 3 minutes. Most results come back within minutes. If yours needs a human review, we notify you as soon as it is done — usually within a few hours, and at most 1 business day.':
+      'การตรวจสอบใช้เวลาประมาณ 3 นาที ผลส่วนใหญ่จะออกภายในไม่กี่นาที หากของคุณต้องมีการตรวจสอบโดยเจ้าหน้าที่ เราจะแจ้งให้ทราบทันทีที่เสร็จสิ้น โดยปกติภายในไม่กี่ชั่วโมง และไม่เกิน 1 วันทำการ',
+   'Does Moodeng store a copy of my ID?': 'Moodeng เก็บสำเนาบัตรประชาชนของฉันไว้หรือไม่',
+   'No. Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'ไม่เก็บ บัตรประชาชนของคุณจะถูกตรวจสอบโดยพันธมิตรด้านการยืนยันตัวตนที่ปลอดภัยของเรา และจะไม่ถูกเก็บไว้โดย Moodeng',
+   'Do I have to verify again for every loan?': 'ฉันต้องยืนยันตัวตนใหม่ทุกครั้งที่ขอกู้หรือไม่',
+   'No. Verification is a one-time step. Once it is complete you can keep requesting loans without repeating it.':
+      'ไม่ต้อง การยืนยันตัวตนทำเพียงครั้งเดียว เมื่อเสร็จสิ้นแล้วคุณสามารถขอเงินกู้ต่อไปได้โดยไม่ต้องทำซ้ำ',
+   'Which countries are supported?': 'รองรับประเทศใดบ้าง',
+   'I already use World App — can I use that instead?': 'ฉันใช้ World App อยู่แล้ว ใช้แทนได้ไหม',
+   'How to verify your identity on Moodeng Credit': 'วิธียืนยันตัวตนบน Moodeng Credit',
+   Breadcrumb: 'เส้นทางนำทาง',
+   'Why verification matters': 'ทำไมการยืนยันตัวตนจึงสำคัญ',
+   'Already use World App?': 'ใช้ World App อยู่แล้วใช่ไหม',
+   'Common questions': 'คำถามที่พบบ่อย',
+   'Keep going': 'ไปต่อ',
+   // src/views/academy/moneyGuideTopics.tsx
+   'Your Moodeng wallet works with USDC on the Base network. Besides the in-app options — card purchase and bridging from another chain — here are common ways to get USDC into your wallet.':
+      'กระเป๋าเงิน Moodeng ของคุณใช้งานร่วมกับ USDC บนเครือข่าย Base ได้ นอกจากตัวเลือกในแอป เช่น การซื้อด้วยบัตรและการบริดจ์จากเชนอื่นแล้ว นี่คือวิธีทั่วไปในการนำ USDC เข้ากระเป๋าเงินของคุณ',
+   'Ways to buy and send USDC': 'วิธีซื้อและส่ง USDC',
+   'Buy USDC with local currency directly from other users, then withdraw on the Base network.':
+      'ซื้อ USDC ด้วยสกุลเงินท้องถิ่นโดยตรงจากผู้ใช้รายอื่น แล้วถอนบนเครือข่าย Base',
+   'Another exchange or wallet': 'แพลตฟอร์มแลกเปลี่ยนหรือกระเป๋าเงินอื่น',
+   'Buy USDC on an exchange you already use, or send USDC you hold elsewhere to your wallet address — always USDC on Base.':
+      'ซื้อ USDC จากแพลตฟอร์มแลกเปลี่ยนที่คุณใช้อยู่แล้ว หรือส่ง USDC ที่คุณมีอยู่ที่อื่นมายังที่อยู่กระเป๋าเงินของคุณ โดยใช้ USDC บนเครือข่าย Base เสมอ',
+   'You can cash out by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account or e-wallet.':
+      'คุณสามารถถอนเป็นเงินสดได้โดยส่ง USDC ไปยังแพลตฟอร์มแลกเปลี่ยนหรือบริการที่รองรับ ขายที่นั่น แล้วโอนสกุลเงินท้องถิ่นเข้าบัญชีธนาคารหรือกระเป๋าเงินอิเล็กทรอนิกส์ของคุณ',
+   'Watch: sending USDC from your Base account to Binance': 'ดู: การส่ง USDC จากบัญชี Base ของคุณไปยัง Binance',
+   'Common ways to cash out': 'วิธีถอนเงินทั่วไป',
+   'Send USDC to your Binance account (choose the Base network), sell it through P2P, and receive local currency straight to your bank or e-wallet.':
+      'ส่ง USDC ไปยังบัญชี Binance ของคุณ (เลือกเครือข่าย Base) ขายผ่าน P2P แล้วรับสกุลเงินท้องถิ่นเข้าธนาคารหรือกระเป๋าเงินอิเล็กทรอนิกส์ของคุณโดยตรง',
+   'Another wallet or exchange': 'กระเป๋าเงินหรือแพลตฟอร์มแลกเปลี่ยนอื่น',
+   'Any wallet or exchange you already use works — just make sure it supports USDC on the Base network before sending.':
+      'กระเป๋าเงินหรือแพลตฟอร์มแลกเปลี่ยนใดก็ได้ที่คุณใช้อยู่แล้วสามารถใช้ได้ เพียงตรวจสอบให้แน่ใจว่ารองรับ USDC บนเครือข่าย Base ก่อนส่ง',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service.':
+      'ส่ง USDC ไปยังที่อยู่สำหรับชำระคืนที่แสดงในหน้าจอชำระคืน จากกระเป๋าเงิน แพลตฟอร์มแลกเปลี่ยน หรือบริการในพื้นที่',
+   'To repay, send the required USDC amount to the repayment address shown in Moodeng — the Repay screen shows the exact amount and lets you copy the address.':
+      'หากต้องการชำระคืน ให้ส่ง USDC ตามจำนวนที่กำหนดไปยังที่อยู่สำหรับชำระคืนที่แสดงใน Moodeng หน้าจอชำระคืนจะแสดงจำนวนที่แน่นอนและให้คุณคัดลอกที่อยู่ได้',
+   'Where to buy USDC first': 'จะซื้อ USDC ได้จากที่ไหนก่อน',
+   'Buy USDC with local currency from other users, then withdraw on the Base network.':
+      'ซื้อ USDC ด้วยสกุลเงินท้องถิ่นจากผู้ใช้รายอื่น แล้วถอนบนเครือข่าย Base',
+   // src/views/account/AccountSettings.tsx
+   'Change Password': 'เปลี่ยนรหัสผ่าน',
+   'Enter your current password and choose a new one.': 'กรอกรหัสผ่านปัจจุบันของคุณและตั้งรหัสผ่านใหม่',
+   'Change Email Address': 'เปลี่ยนที่อยู่อีเมล',
+   "We'll send a verification code to your new email address to confirm the change.":
+      'เราจะส่งรหัสยืนยันไปยังที่อยู่อีเมลใหม่ของคุณเพื่อยืนยันการเปลี่ยนแปลง',
+   'New Email': 'อีเมลใหม่',
+   'Enter Verification Code': 'กรอกรหัสยืนยัน',
+   'We sent a 6-digit code to': 'เราส่งรหัส 6 หลักไปที่',
+   'Verification Code': 'รหัสยืนยัน',
+   'Change Display Name': 'เปลี่ยนชื่อที่แสดง',
+   'This is the name other users will see on your profile and loan requests.':
+      'นี่คือชื่อที่ผู้ใช้คนอื่นจะเห็นในโปรไฟล์และคำขอเงินกู้ของคุณ',
+   'Display Name': 'ชื่อที่แสดง',
+   'Telegram Alerts': 'การแจ้งเตือนทาง Telegram',
+   'Connect private loan alerts to your Telegram account.':
+      'เชื่อมต่อการแจ้งเตือนเงินกู้ส่วนตัวเข้ากับบัญชี Telegram ของคุณ',
+   'Open Telegram Bot': 'เปิดบอท Telegram',
+   'Check Connection': 'ตรวจสอบการเชื่อมต่อ',
+   'Change Wallet': 'เปลี่ยนกระเป๋าเงิน',
+   'Other Wallets': 'กระเป๋าเงินอื่น',
+   'Connecting…': 'กำลังเชื่อมต่อ...',
+   'Approve the connection in your wallet app.': 'อนุมัติการเชื่อมต่อในแอปกระเป๋าเงินของคุณ',
+   'Dark mode': 'โหมดมืด',
+   Password: 'รหัสผ่าน',
+   Change: 'เปลี่ยน',
+   'Open wallet': 'เปิดกระเป๋าเงิน',
+   'Connect a wallet to continue': 'เชื่อมต่อกระเป๋าเงินเพื่อดำเนินการต่อ',
+   'No wallet app? Create one': 'ไม่มีแอปกระเป๋าเงินใช่ไหม สร้างได้เลย',
+   'An Instant Wallet is made from your Moodeng login — no app, no seed phrase — and the key is yours to export anytime.':
+      'Instant Wallet ถูกสร้างจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องใช้แอป ไม่ต้องมี seed phrase และคุณสามารถส่งออกกุญแจได้ทุกเมื่อ',
+   'Includes a ten-second face check, so Instant Wallets stay one per person.':
+      'รวมการตรวจสอบใบหน้า 10 วินาที เพื่อให้ Instant Wallet มีได้เพียงหนึ่งกระเป๋าต่อคน',
+   'Change wallet': 'เปลี่ยนกระเป๋าเงิน',
+   'Wallet locked while you have an active loan': 'กระเป๋าเงินถูกล็อกขณะที่คุณมีเงินกู้ที่กำลังดำเนินอยู่',
+   'Disconnect wallet?': 'ยกเลิกการเชื่อมต่อกระเป๋าเงินหรือไม่',
+   'Confirm your wallet': 'ยืนยันกระเป๋าเงินของคุณ',
+   'Confirm wallet': 'ยืนยันกระเป๋าเงิน',
+   'You have active loans': 'คุณมีเงินกู้ที่กำลังดำเนินอยู่',
+   'Change anyway': 'เปลี่ยนต่อไป',
+   'Disconnect wallet': 'ยกเลิกการเชื่อมต่อกระเป๋าเงิน',
+   'Add an email in Personal details to receive email alerts.':
+      'เพิ่มอีเมลในข้อมูลส่วนตัวเพื่อรับการแจ้งเตือนทางอีเมล',
+   'Account activity': 'กิจกรรมบัญชี',
+   'Security and account updates': 'ความปลอดภัยและการอัปเดตบัญชี',
+   'Loan activity': 'กิจกรรมเงินกู้',
+   'Funding, repayments, and due dates': 'การปล่อยกู้ การชำระคืน และกำหนดชำระ',
+   'Moodeng news': 'ข่าวสาร Moodeng',
+   'Occasional product updates': 'อัปเดตผลิตภัณฑ์เป็นครั้งคราว',
+   'Your identity check is complete.': 'การตรวจสอบตัวตนของคุณเสร็จสมบูรณ์แล้ว',
+   'Verification in review': 'กำลังตรวจสอบการยืนยันตัวตน',
+   'Your identity check is being reviewed.': 'การตรวจสอบตัวตนของคุณกำลังอยู่ระหว่างการตรวจสอบ',
+   'Verification pending': 'รอดำเนินการยืนยันตัวตน',
+   'Your submitted identity check is processing.': 'การตรวจสอบตัวตนที่คุณส่งกำลังดำเนินการ',
+   'Verification unfinished': 'ยืนยันตัวตนยังไม่เสร็จสมบูรณ์',
+   'Continue where you left off.': 'ทำต่อจากจุดที่คุณค้างไว้',
+   'Verification declined': 'การยืนยันตัวตนถูกปฏิเสธ',
+   'Review the result and try again.': 'ตรวจสอบผลลัพธ์และลองอีกครั้ง',
+   'Verification blocked': 'การยืนยันตัวตนถูกระงับ',
+   'Open verification to review the issue.': 'เปิดหน้ายืนยันตัวตนเพื่อตรวจสอบปัญหา',
+   'Identity not verified': 'ยังไม่ได้ยืนยันตัวตน',
+   'Complete an identity check to build account trust.':
+      'ทำการตรวจสอบตัวตนให้เสร็จสิ้นเพื่อสร้างความน่าเชื่อถือให้บัญชี',
+   'Enter your old password': 'กรอกรหัสผ่านเดิมของคุณ',
+   'Enter your new password': 'กรอกรหัสผ่านใหม่ของคุณ',
+   'Confirm your new password': 'ยืนยันรหัสผ่านใหม่ของคุณ',
+   'Failed to send verification code': 'ส่งรหัสยืนยันไม่สำเร็จ',
+   'Failed to resend verification code': 'ส่งรหัสยืนยันอีกครั้งไม่สำเร็จ',
+   'Failed to connect Telegram alerts': 'เชื่อมต่อการแจ้งเตือน Telegram ไม่สำเร็จ',
+   'Failed to create Telegram connection link': 'สร้างลิงก์เชื่อมต่อ Telegram ไม่สำเร็จ',
+   'Failed to refresh Telegram alerts': 'รีเฟรชการแจ้งเตือน Telegram ไม่สำเร็จ',
+   'Failed to change wallet': 'เปลี่ยนกระเป๋าเงินไม่สำเร็จ',
+   'Failed to update wallet.': 'อัปเดตกระเป๋าเงินไม่สำเร็จ',
+   'Personal details': 'ข้อมูลส่วนตัว',
+   Preferences: 'การตั้งค่าที่ต้องการ',
+   'Profile photo': 'รูปโปรไฟล์',
+   'Display name': 'ชื่อที่แสดง',
+   'About you': 'เกี่ยวกับคุณ',
+   Bio: 'ประวัติโดยย่อ',
+   Appearance: 'รูปลักษณ์',
+   'Use dark mode': 'ใช้โหมดมืด',
+   'Sign-in': 'การเข้าสู่ระบบ',
+   'Identity verification': 'การยืนยันตัวตน',
+   'Connected wallet': 'กระเป๋าเงินที่เชื่อมต่อ',
+   'Copy wallet address': 'คัดลอกที่อยู่กระเป๋าเงิน',
+   'Wallet access': 'สิทธิ์การเข้าถึงกระเป๋าเงิน',
+   Channels: 'ช่องทาง',
+   Connected: 'เชื่อมต่อแล้ว',
+   'Alert types': 'ประเภทการแจ้งเตือน',
+   'Account activity notifications': 'การแจ้งเตือนกิจกรรมบัญชี',
+   'Loan activity notifications': 'การแจ้งเตือนกิจกรรมเงินกู้',
+   'Moodeng news notifications': 'การแจ้งเตือนข่าวสาร Moodeng'
 };
