@@ -137,7 +137,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Lender Request Board': 'Bảng yêu cầu cho người cho vay',
    'Coming soon': 'Sắp ra mắt',
    // src/app/mfa-challenge/page.tsx
-   "Verify it's you": 'Xác minh đó là bạn',
+   "Verify it's you": 'Xác nhận đây là bạn',
    'Two-factor authentication': 'Xác thực hai yếu tố',
    'Enter the code from your authenticator app to finish signing in.': 'Nhập mã từ ứng dụng xác thực để hoàn tất đăng nhập.',
    'Lost access to your authenticator app? Contact support': 'Mất quyền truy cập ứng dụng xác thực? Liên hệ hỗ trợ',
@@ -149,7 +149,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Secure your account': 'Bảo vệ tài khoản của bạn',
    'Choose a new password for your Moodeng account.': 'Chọn mật khẩu mới cho tài khoản Moodeng của bạn.',
    'Reset links can only be used once and expire quickly. Tap below to send yourself a fresh link, then open the newest Moodeng email.':
-      'Liên kết đặt lại chỉ dùng được một lần và nhanh hết hạn. Bấm bên dưới để gửi cho bạn một liên kết mới, rồi mở email mới nhất từ Moodeng.',
+      'Liên kết đặt lại chỉ dùng được một lần và nhanh hết hạn. Nhấn bên dưới để gửi cho bạn một liên kết mới, rồi mở email mới nhất từ Moodeng.',
    'Request a new link': 'Yêu cầu liên kết mới',
    'This reset link is ready. Enter matching passwords to continue.':
       'Liên kết đặt lại đã sẵn sàng. Nhập hai mật khẩu trùng khớp để tiếp tục.',
@@ -265,13 +265,13 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Could not start the face scan. Please try again.': 'Không thể bắt đầu quét khuôn mặt. Vui lòng thử lại.',
    'Could not start verification. Please try again.': 'Không thể bắt đầu xác minh. Vui lòng thử lại.',
    "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll submit your national ID.":
-      'Bấm nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
+      'Nhấn nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
    "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll verify with World ID.":
-      'Bấm nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ xác minh bằng World ID.',
+      'Nhấn nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ xác minh bằng World ID.',
    "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll submit your national ID.":
-      'Bấm nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự động cập nhật khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
+      'Nhấn nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự động cập nhật khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
    "Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done. Then you'll verify with World ID.":
-      'Bấm nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự động cập nhật khi xong. Sau đó, bạn sẽ xác minh bằng World ID.',
+      'Nhấn nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự động cập nhật khi xong. Sau đó, bạn sẽ xác minh bằng World ID.',
    'Step 1 of 2': 'Bước 1/2',
    'Ready for face scan': 'Sẵn sàng quét khuôn mặt',
    'Open face scan': 'Mở quét khuôn mặt',
@@ -305,7 +305,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Face scan not finished': 'Chưa quét xong khuôn mặt',
    'It looks like the face scan was closed before it was completed. No problem — start a new scan below. It only takes about 30 seconds.':
       'Có vẻ bước quét khuôn mặt đã bị đóng trước khi hoàn tất. Không sao — hãy bắt đầu lượt quét mới bên dưới. Chỉ mất khoảng 30 giây.',
-   'Start new face scan': 'Quét khuôn mặt lại',
+   'Start new face scan': 'Quét lại khuôn mặt',
    'Reviewing your verification…': 'Đang xét duyệt xác minh của bạn…',
    "Your details are being reviewed. Most checks finish in a few minutes — we'll update this screen automatically when done. Left before finishing all the steps? Start over below.":
       'Thông tin của bạn đang được xét duyệt. Phần lớn các lượt kiểm tra hoàn tất trong vài phút — chúng tôi sẽ tự động cập nhật màn hình này khi xong. Bạn đã rời đi trước khi hoàn tất mọi bước? Hãy bắt đầu lại bên dưới.',
@@ -334,7 +334,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Continue to app': 'Tiếp tục vào ứng dụng',
    "Face scan didn't pass": 'Quét khuôn mặt không thành công',
    "The scan didn't finish successfully — either it was closed early or we couldn't confirm a live person. Tap Try again for a fresh scan. A few things that help:":
-      'Lượt quét chưa hoàn tất thành công — có thể đã bị đóng sớm hoặc chúng tôi chưa xác nhận được đó là người thật. Bấm Thử lại để quét mới. Một vài mẹo hữu ích:',
+      'Lượt quét chưa hoàn tất thành công — có thể đã bị đóng sớm hoặc chúng tôi chưa xác nhận được đó là người thật. Nhấn Thử lại để quét mới. Một vài mẹo hữu ích:',
    'Good, even lighting — avoid bright backlighting': 'Ánh sáng tốt và đều — tránh ngược sáng mạnh',
    'Hold your phone steady and face the camera directly': 'Cầm điện thoại chắc tay và nhìn thẳng vào camera',
    'Remove sunglasses or hats': 'Bỏ kính râm hoặc mũ',
@@ -373,8 +373,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/components/InAppBrowserNotice.tsx
    'Open Moodeng in your browser': 'Mở Moodeng trong trình duyệt',
    "Sign-in and wallet payments don't work inside": 'Đăng nhập và thanh toán bằng ví không hoạt động trong',
-   '. Tap below to continue in Chrome.': '. Bấm bên dưới để tiếp tục trong Chrome.',
-   '. Tap': '. Bấm',
+   '. Tap below to continue in Chrome.': '. Nhấn bên dưới để tiếp tục trong Chrome.',
+   '. Tap': '. Nhấn',
    'at the top, choose': 'ở phía trên, chọn',
    'Open in Browser': 'Mở trong trình duyệt',
    ', or copy the link below.': ', hoặc sao chép liên kết bên dưới.',
@@ -391,17 +391,17 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/components/Loading.tsx
    'Loading Moodeng': 'Đang tải Moodeng',
    // src/components/PowerLenderBadge.tsx
-   'Power Lender': 'Nhà cho vay tích cực',
+   'Power Lender': 'Người cho vay tích cực',
    // src/components/RepayInAppBrowserGate.tsx
    'Open Moodeng in your browser to repay': 'Mở Moodeng trong trình duyệt để trả nợ',
    'Finish repaying in your browser': 'Hoàn tất trả nợ trong trình duyệt',
    "'s in-app browser can't open your wallet, so a repayment gets stuck here. Open this page in Chrome or Safari to pay — it only takes a few seconds.":
-      ': trình duyệt trong ứng dụng này không mở được ví của bạn, nên khoản trả nợ sẽ bị kẹt ở đây. Hãy mở trang này trong Chrome hoặc Safari để thanh toán — chỉ mất vài giây.',
+      ' có trình duyệt tích hợp không mở được ví của bạn, nên khoản trả nợ sẽ bị kẹt ở đây. Hãy mở trang này trong Chrome hoặc Safari để thanh toán — chỉ mất vài giây.',
    'Your repay link': 'Liên kết trả nợ của bạn',
    'Copied ✓': 'Đã sao chép ✓',
    Copy: 'Sao chép',
    'Open in Safari': 'Mở trong Safari',
-   "If a button doesn't open your browser, tap": 'Nếu nút không mở được trình duyệt, hãy bấm',
+   "If a button doesn't open your browser, tap": 'Nếu nút không mở được trình duyệt, hãy nhấn',
    'at the top of': 'ở phía trên của',
    'and choose': 'rồi chọn',
    ', then paste the link.': ', sau đó dán liên kết.',
@@ -470,7 +470,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'reset your password': 'đặt lại mật khẩu',
    "if you've forgotten it.": 'nếu bạn đã quên.',
    // src/components/auth/LastUsedBadge.tsx
-   'Last used': 'Dùng gần đây',
+   'Last used': 'Dùng lần trước',
    // src/components/auth/SignUpFormErrorAlert.tsx
    'Password must be longer than 8 characters. Choose a stronger password to continue.':
       'Mật khẩu phải dài hơn 8 ký tự. Hãy chọn mật khẩu mạnh hơn để tiếp tục.',
@@ -564,7 +564,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/components/ui/Modal.tsx
    'Close modal': 'Đóng cửa sổ',
    // src/components/ui/YouTubeVideoLightbox.tsx
-   'Credit Levelling Guide': 'Hướng dẫn lên hạng tín dụng',
+   'Credit Levelling Guide': 'Hướng dẫn nâng hạng tín dụng',
    // src/components/verification/CountryFlags.tsx
    Vietnam: 'Việt Nam',
    Taiwan: 'Đài Loan',
@@ -579,7 +579,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Verification didn’t go through': 'Xác minh chưa thành công',
    'We weren’t able to verify you with': 'Lần này chúng tôi chưa thể xác minh bạn bằng',
    'your ID': 'giấy tờ tùy thân',
-   'this time. No worries — you can try again whenever you’re ready.': '. Đừng lo — bạn có thể thử lại bất cứ khi nào sẵn sàng.',
+   'this time. No worries — you can try again whenever you’re ready.': '— đừng lo, bạn có thể thử lại bất cứ khi nào sẵn sàng.',
    'or get help from our team': 'hoặc nhờ đội ngũ của chúng tôi hỗ trợ',
    // src/components/verification/VerifiedCelebrationNotifier.tsx
    'Manual review complete — you’re verified!': 'Đã xét duyệt thủ công xong — bạn đã được xác minh!',
@@ -643,13 +643,13 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Opening World ID...': 'Đang mở World ID...',
    'One moment — setting up your secure verification.': 'Chờ một chút — đang thiết lập bước xác minh bảo mật cho bạn.',
    'Everything is ready. Tap "Open World App" to verify you. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
-      'Mọi thứ đã sẵn sàng. Bấm "Mở World App" để xác minh bạn. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
+      'Mọi thứ đã sẵn sàng. Nhấn "Mở World App" để xác minh danh tính của bạn. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
    'Everything is ready. Tap "Open World App" to verify your passport or ID. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
-      'Mọi thứ đã sẵn sàng. Bấm "Mở World App" để xác minh hộ chiếu hoặc giấy tờ tùy thân. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
+      'Mọi thứ đã sẵn sàng. Nhấn "Mở World App" để xác minh hộ chiếu hoặc giấy tờ tùy thân. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
    'Tap "Open World ID" to launch World App. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
-      'Bấm "Mở World ID" để khởi chạy World App. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
+      'Nhấn "Mở World ID" để khởi chạy World App. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
    "World App will open to verify you. Keep this screen open — you'll come back here to finish.":
-      'World App sẽ mở để xác minh bạn. Hãy giữ màn hình này mở — bạn sẽ quay lại đây để hoàn tất.',
+      'World App sẽ mở để xác minh danh tính của bạn. Hãy giữ màn hình này mở — bạn sẽ quay lại đây để hoàn tất.',
    "World App will open to verify your passport or ID. Keep this screen open — you'll come back here to finish.":
       'World App sẽ mở để xác minh hộ chiếu hoặc giấy tờ tùy thân của bạn. Hãy giữ màn hình này mở — bạn sẽ quay lại đây để hoàn tất.',
    'Open World App': 'Mở World App',
@@ -667,7 +667,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Verification complete': 'Đã hoàn tất xác minh',
    'Verification interrupted': 'Xác minh bị gián đoạn',
    'Finalizing verification': 'Đang hoàn tất xác minh',
-   'Confirming verification': 'Đang xác nhận xác minh',
+   'Confirming verification': 'Đang xác nhận kết quả xác minh',
    'Your status has been updated securely.': 'Trạng thái của bạn đã được cập nhật an toàn.',
    'The verification did not finish. Try again when you are ready.': 'Quá trình xác minh chưa hoàn tất. Hãy thử lại khi bạn sẵn sàng.',
    'Your verification is being processed securely.': 'Hồ sơ xác minh của bạn đang được xử lý an toàn.',
@@ -689,7 +689,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Got it': 'Đã hiểu',
    // src/components/worldId/modal/HowItWorksSection.tsx
    'How to Verify?': 'Cách xác minh',
-   'Click "Verify with World ID"': 'Bấm "Xác minh bằng World ID"',
+   'Click "Verify with World ID"': 'Nhấn "Xác minh bằng World ID"',
    'Opens the verification modal': 'Mở cửa sổ xác minh',
    'Scan QR with World App': 'Quét mã QR bằng World App',
    'Uses your phone camera': 'Dùng camera điện thoại của bạn',
@@ -711,14 +711,14 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/views/FAQ.tsx
    FAQs: 'Câu hỏi thường gặp',
    'The Comprehensive FAQ Guide to Credit Growth, Secure Loans, and Transparent Financial Management':
-      'Hướng dẫn đầy đủ về câu hỏi thường gặp: tăng hạn mức tín dụng, khoản vay an toàn và quản lý tài chính minh bạch',
+      'Giải đáp đầy đủ về tăng trưởng tín dụng, khoản vay an toàn và quản lý tài chính minh bạch',
    // src/views/about/sections/CreditGrowthSystemSection.tsx
    'CREDIT GROWTH SYSTEM': 'HỆ THỐNG TĂNG TRƯỞNG TÍN DỤNG',
    'Grow Your Credit Limit Through Step Borrowing': 'Tăng hạn mức tín dụng của bạn qua từng bước vay',
-   'Your Credit Limit Grows with Every $20 You Borrow and Repay!': 'Hạn mức tín dụng của bạn tăng lên sau mỗi 20 đô la bạn vay và trả nợ!',
+   'Your Credit Limit Grows with Every $20 You Borrow and Repay!': 'Hạn mức tín dụng của bạn tăng lên sau mỗi $20 bạn vay và trả nợ!',
    'The more you borrow and repay, the more you can borrow in the future.':
       'Bạn vay và trả nợ càng nhiều, bạn càng có thể vay nhiều hơn trong tương lai.',
-   'Borrow + Repay Original $20 to unlock $40': 'Vay + trả nợ 20 đô la ban đầu để mở khóa 40 đô la',
+   'Borrow + Repay Original $20 to unlock $40': 'Vay + trả nợ $20 ban đầu để mở khóa $40',
    Grow: 'Tăng trưởng',
    Build: 'Xây dựng',
    Expand: 'Mở rộng',
@@ -728,9 +728,9 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Build Your Credit, Step by Step': 'Xây dựng tín dụng của bạn, từng bước một',
    "Unlock Your Financial Potential with Moodeng's Unique Borrowing System":
       'Mở khóa tiềm năng tài chính của bạn với hệ thống vay độc đáo của Moodeng',
-   'If I borrow $35 instead of $40 can I unlock $60?': 'Nếu tôi vay 35 đô la thay vì 40 đô la, tôi có thể mở khóa 60 đô la không?',
+   'If I borrow $35 instead of $40 can I unlock $60?': 'Nếu tôi vay $35 thay vì $40, tôi có mở khóa được $60 không?',
    "Borrowing under $40 won't unlock $60 - it shows you are not ready. But, you can borrow smaller amounts to prove yourself.":
-      'Vay dưới 40 đô la sẽ không mở khóa 60 đô la - điều đó cho thấy bạn chưa sẵn sàng. Nhưng bạn có thể vay số tiền nhỏ hơn để chứng minh bản thân.',
+      'Vay dưới $40 sẽ không mở khóa $60 - điều đó cho thấy bạn chưa sẵn sàng. Nhưng bạn có thể vay số tiền nhỏ hơn để chứng minh bản thân.',
    'Does borrowing or repaying more unlock the next level??': 'Vay hoặc trả nợ nhiều hơn có mở khóa hạng tiếp theo không??',
    'The only thing relevant to unlocking the next level is the amount you borrowed. Not the amount you repaid.':
       'Điều duy nhất liên quan đến việc mở khóa hạng tiếp theo là số tiền bạn đã vay. Không phải số tiền bạn đã trả.',
@@ -743,21 +743,21 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Reward for consistent borrowing and repayment': 'Phần thưởng cho việc vay và trả nợ đều đặn',
    'Clear path to accessing larger loan amounts': 'Lộ trình rõ ràng để tiếp cận các khoản vay lớn hơn',
    // src/views/about/sections/DirectLendBorrowSection.tsx
-   'How Direct Lend & Borrow Works': 'Cách hoạt động của Cho vay & Vay trực tiếp',
+   'How Direct Lend & Borrow Works': 'Cách vay và cho vay trực tiếp hoạt động',
    'Funds in USDT/USDC': 'Cấp vốn bằng USDT/USDC',
    'Credit Score Improves': 'Điểm tín dụng được cải thiện',
    // src/views/about/sections/MoodengCreditSection.tsx
    'Want to learn more about Moodeng Credit?': 'Bạn muốn tìm hiểu thêm về Moodeng Credit?',
    'Contact us today to learn more about joining our community and unlocking the benefits awaiting you.':
       'Liên hệ với chúng tôi ngay hôm nay để tìm hiểu thêm về việc tham gia cộng đồng và mở khóa những lợi ích đang chờ đón bạn.',
-   'Contact Us via Email': 'Liên hệ qua Email',
+   'Contact Us via Email': 'Liên hệ qua email',
    // src/views/about/sections/RulesOfRepayingSection.tsx
    'RULES OF REPAYING': 'QUY TẮC TRẢ NỢ',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Moodeng cung cấp các khoản vay nhỏ linh hoạt dựa trên blockchain. Hãy trả nợ có trách nhiệm để xây dựng điểm tín dụng của bạn.',
-   'You must pay the lender directly by hitting the repay button.': 'Bạn phải trả trực tiếp cho người cho vay bằng cách bấm nút trả nợ.',
+   'You must pay the lender directly by hitting the repay button.': 'Bạn phải trả trực tiếp cho người cho vay bằng cách nhấn nút trả nợ.',
    'UP-TO-YOU': 'TÙY BẠN',
-   'Flexible repayments: Any amount up to deadline': 'Trả nợ linh hoạt: Bất kỳ số tiền nào trước hạn chót',
+   'Flexible repayments: Any amount up to deadline': 'Trả nợ linh hoạt: bất kỳ số tiền nào, trước hạn chót',
    'Build credit score with each on-time payment': 'Xây dựng điểm tín dụng với mỗi lần thanh toán đúng hạn',
    'Blockchain records all loan transactions': 'Blockchain ghi lại mọi giao dịch vay',
    'Sign up for notifications about your loans': 'Đăng ký nhận thông báo về khoản vay của bạn',
@@ -769,8 +769,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Ask For Help': 'Yêu cầu giúp đỡ',
    'Offer Help': 'Đề nghị giúp đỡ',
    'How much do you need today? i.e. $15': 'Hôm nay bạn cần bao nhiêu? Ví dụ: $15',
-   'Enter how much you will payback? i.e. $17': 'Nhập số tiền bạn sẽ trả lại? Ví dụ: $17',
-   'Type your reason? i.e. an emergency, etc.': 'Nhập lý do của bạn? Ví dụ: trường hợp khẩn cấp, v.v.',
+   'Enter how much you will payback? i.e. $17': 'Bạn sẽ trả lại bao nhiêu? Ví dụ: $17',
+   'Type your reason? i.e. an emergency, etc.': 'Lý do của bạn là gì? Ví dụ: trường hợp khẩn cấp, v.v.',
    Other: 'Khác',
    'Repayment timeline': 'Thời gian trả nợ',
    'Submit Request': 'Gửi yêu cầu',
@@ -781,7 +781,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Enter reason i.e. an emergency, etc.': 'Nhập lý do, ví dụ: trường hợp khẩn cấp, v.v.',
    'How It Works': 'Cách hoạt động',
    '1. Enter your loan amount': '1. Nhập số tiền vay của bạn',
-   '3. Specify payback amount': '3. Chỉ định số tiền trả lại',
+   '3. Specify payback amount': '3. Nhập số tiền trả lại',
    '4. Explain your reason for the loan': '4. Giải thích lý do vay của bạn',
    '5. Submit your request': '5. Gửi yêu cầu của bạn',
    // src/views/academy/AcademyGuide.tsx
@@ -791,7 +791,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Create An Account': 'Tạo tài khoản',
    'Set Up Your Instant Wallet': 'Thiết lập Instant Wallet của bạn',
    'Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one instead. Moodeng keeps the flow inside the app.':
-      'Instant Wallet của bạn được tạo từ tài khoản đăng nhập Moodeng — không cần ứng dụng, không cần cụm từ khôi phục. Muốn dùng Base Account hơn? Bạn có thể kết nối một ví khác thay thế. Moodeng giữ toàn bộ quy trình trong ứng dụng.',
+      'Instant Wallet của bạn được tạo từ tài khoản đăng nhập Moodeng — không cần ứng dụng, không cần cụm từ khôi phục. Muốn dùng Base Account hơn? Bạn có thể kết nối Base Account thay thế. Moodeng giữ toàn bộ quy trình trong ứng dụng.',
    'Set Up Your Wallet': 'Thiết lập ví của bạn',
    'Gasless transactions are supported on Base.': 'Giao dịch không mất phí gas được hỗ trợ trên Base.',
    'Prove you are a real person. This is a one-time step before larger borrowing limits.':
@@ -817,20 +817,20 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Short term': 'Ngắn hạn',
    'Repayment amount': 'Số tiền trả nợ',
    'Borrower Insights': 'Thông tin người vay',
-   'Usual loan size': 'Quy mô khoản vay thường gặp',
+   'Usual loan size': 'Mức vay thường gặp',
    'Typical payment time': 'Thời gian trả nợ thường gặp',
-   'See How Growth Works': 'Xem cách tăng trưởng hoạt động',
+   'See How Growth Works': 'Xem hạn mức tăng như thế nào',
    'Mecha says': 'Mecha nói',
    'How to use Moodeng Credit': 'Cách sử dụng Moodeng Credit',
    'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
-      'Hướng dẫn đơn giản về quy trình dành cho người vay. Bắt đầu từ đây nếu bạn muốn biết cần bấm gì, người cho vay thấy gì, và việc trả nợ giúp tăng hạn mức của bạn như thế nào.',
+      'Hướng dẫn đơn giản về quy trình dành cho người vay. Bắt đầu từ đây nếu bạn muốn biết cần nhấn gì, người cho vay thấy gì, và việc trả nợ giúp tăng hạn mức của bạn như thế nào.',
    'Tutorial Video': 'Video hướng dẫn',
    'Watch the quick Moodeng walkthrough.': 'Xem video hướng dẫn nhanh của Moodeng.',
-   'I am Mecha. I will walk you through Moodeng step by step.': 'Tôi là Mecha. Tôi sẽ hướng dẫn bạn dùng Moodeng từng bước một.',
+   'I am Mecha. I will walk you through Moodeng step by step.': 'Mình là Mecha. Mình sẽ hướng dẫn bạn dùng Moodeng từng bước một.',
    'Video guide': 'Video hướng dẫn',
    'Want to learn more? Open the step-by-step credit guide.': 'Muốn tìm hiểu thêm? Mở hướng dẫn tín dụng từng bước.',
    'Final quiz': 'Bài kiểm tra cuối',
-   'Earn your Academy reward': 'Nhận phần thưởng Academy của bạn',
+   'Earn your Academy reward': 'Nhận phần thưởng Học viện của bạn',
    'Moodeng Academy Quiz': 'Bài kiểm tra Moodeng Academy',
    'Ready for the check?': 'Sẵn sàng kiểm tra chưa?',
    'Start quiz': 'Bắt đầu bài kiểm tra',
@@ -876,12 +876,12 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Tuyệt! Trả nợ là điều cực kỳ quan trọng trên Moodeng. Trả nợ đúng hạn giúp xây dựng uy tín của bạn, giữ cho người cho vay yên tâm, và có thể mở khóa hạn mức vay tốt hơn theo thời gian.',
    'This is how you grow.': 'Đây là cách bạn phát triển.',
    'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
-      'Mecha nói: các khoản vay bằng toàn bộ hạn mức được trả đúng hạn chính là cách người vay xây dựng lịch sử tín dụng vững chắc hơn. Hãy giữ việc trả nợ luôn gọn gàng, và hạn mức tiếp theo của bạn có thể tăng.',
+      'Mecha nói: các khoản vay bằng toàn bộ hạn mức được trả đúng hạn chính là cách người vay xây dựng lịch sử tín dụng vững chắc hơn. Hãy luôn trả nợ đầy đủ và đúng hạn, và hạn mức tiếp theo của bạn có thể tăng.',
    'Moodeng Academy | Moodeng Credit': 'Moodeng Academy | Moodeng Credit',
    'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.':
       'Hướng dẫn từng bước về quy trình dành cho người vay của Moodeng — đăng ký, xác minh, thiết lập Instant Wallet (hoặc kết nối Base Account), yêu cầu khoản vay, trả nợ và tăng hạn mức tín dụng của bạn.',
    'Close message': 'Đóng thông báo',
-   'Academy path': 'Lộ trình Academy',
+   'Academy path': 'Lộ trình Học viện',
    'Close tutorial video': 'Đóng video hướng dẫn',
    'Moodeng Academy tutorial video': 'Video hướng dẫn Moodeng Academy',
    'Moodeng Credit steps': 'Các bước của Moodeng Credit',
@@ -894,7 +894,7 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Cách xác minh danh tính, nạp USDC vào ví, rút tiền về ngân hàng và trả nợ khoản vay trên Moodeng.',
    'Verify your identity': 'Xác minh danh tính',
    'A quick national ID photo and selfie check confirms you’re a real, unique person. Most checks finish within minutes.':
-      'Một lượt kiểm tra nhanh bằng ảnh giấy tờ tùy thân quốc gia và ảnh selfie xác nhận bạn là một người thật, duy nhất. Hầu hết các lượt kiểm tra hoàn tất trong vài phút.',
+      'Một lượt kiểm tra nhanh bằng ảnh thẻ căn cước và ảnh selfie xác nhận bạn là một người thật, duy nhất. Hầu hết các lượt kiểm tra hoàn tất trong vài phút.',
    Selfie: 'Ảnh selfie',
    'Add funds to your wallet': 'Nạp tiền vào ví',
    'USDC on the Base network': 'USDC trên mạng Base',
@@ -915,9 +915,9 @@ export const vietnameseCoverageA: Record<string, string> = {
    Money: 'Tiền',
    'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
       'Để giữ Moodeng an toàn và công bằng, mỗi người vay hoàn thành một lượt kiểm tra danh tính ngắn. Điều này giúp loại bỏ tài khoản giả và trùng lặp khỏi cộng đồng, và đó là điều giúp người cho vay tin tưởng vào các yêu cầu mà họ cấp vốn.',
-   'The recommended route: Verify Your ID.': 'Lộ trình được khuyến nghị: Xác minh bằng giấy tờ tùy thân.',
+   'The recommended route: Verify Your ID.': 'Cách được khuyên dùng: Xác minh bằng giấy tờ tùy thân.',
    'National ID verification is available for these countries.':
-      'Xác minh bằng giấy tờ tùy thân quốc gia hiện có sẵn cho các quốc gia sau.',
+      'Xác minh bằng thẻ căn cước hiện có tại các quốc gia sau.',
    'Pass on the first try': 'Vượt qua ngay lần đầu',
    'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
       'Nếu bạn đã được xác minh trong World App — trực tiếp tại một Orb, hoặc bằng hộ chiếu sinh trắc học — bạn có thể chọn',
@@ -928,13 +928,13 @@ export const vietnameseCoverageA: Record<string, string> = {
    Read: 'Đọc',
    'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
       'Việc xác minh đảm bảo mọi yêu cầu đều đến từ một người thật, duy nhất. Đó là điều giữ cho tài khoản giả và trùng lặp tránh xa người cho vay.',
-   Access: 'Truy cập',
+   Access: 'Quyền truy cập',
    'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
       'Hoàn tất xác minh là điều mở khóa các yêu cầu vay, và đó cũng là lúc bạn bắt đầu tích điểm Pandesal.',
    Trust: 'Niềm tin',
    'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
       'Người cho vay đang cấp vốn cho người thật, không phải tài khoản ẩn danh. Sự tin tưởng đó là điều giúp các yêu cầu trên bảng được cấp vốn.',
-   'Your physical national ID': 'Giấy tờ tùy thân quốc gia bản gốc của bạn',
+   'Your physical national ID': 'Thẻ căn cước bản gốc của bạn',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'Thẻ thật cầm trên tay, không phải bản photocopy hay ảnh chụp từ màn hình khác.',
    'Avoid glare and hard shadows across the card or your face.': 'Tránh chói sáng và bóng đổ mạnh trên thẻ hoặc trên khuôn mặt bạn.',
@@ -969,7 +969,7 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Gửi USDC đến một sàn giao dịch hoặc dịch vụ tại địa phương, bán nó, rồi rút tiền địa phương về ngân hàng hoặc GCash của bạn.',
    'You can cash out by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account or e-wallet.':
       'Bạn có thể rút tiền mặt bằng cách gửi USDC đến một sàn giao dịch hoặc dịch vụ được hỗ trợ, bán nó ở đó, rồi chuyển tiền địa phương về tài khoản ngân hàng hoặc ví điện tử của bạn.',
-   'Watch: sending USDC from your Base account to Binance': 'Xem: gửi USDC từ Base account của bạn đến Binance',
+   'Watch: sending USDC from your Base account to Binance': 'Xem: gửi USDC từ Base Account của bạn đến Binance',
    'Common ways to cash out': 'Các cách rút tiền mặt phổ biến',
    'Send USDC to your Binance account (choose the Base network), sell it through P2P, and receive local currency straight to your bank or e-wallet.':
       'Gửi USDC đến tài khoản Binance của bạn (chọn mạng Base), bán qua P2P, và nhận tiền địa phương thẳng về ngân hàng hoặc ví điện tử của bạn.',
@@ -996,9 +996,9 @@ export const vietnameseCoverageA: Record<string, string> = {
    'This is the name other users will see on your profile and loan requests.':
       'Đây là tên mà người dùng khác sẽ thấy trên hồ sơ và yêu cầu vay của bạn.',
    'Display Name': 'Tên hiển thị',
-   'Telegram Alerts': 'Cảnh báo qua Telegram',
-   'Connect private loan alerts to your Telegram account.': 'Kết nối cảnh báo khoản vay riêng tư với tài khoản Telegram của bạn.',
-   'Open Telegram Bot': 'Mở Telegram Bot',
+   'Telegram Alerts': 'Thông báo qua Telegram',
+   'Connect private loan alerts to your Telegram account.': 'Nhận thông báo riêng về khoản vay qua tài khoản Telegram của bạn.',
+   'Open Telegram Bot': 'Mở bot Telegram',
    'Check Connection': 'Kiểm tra kết nối',
    'Change Wallet': 'Đổi ví',
    'Other Wallets': 'Ví khác',
@@ -1022,16 +1022,16 @@ export const vietnameseCoverageA: Record<string, string> = {
    'You have active loans': 'Bạn có khoản vay đang hoạt động',
    'Change anyway': 'Vẫn đổi',
    'Disconnect wallet': 'Ngắt kết nối ví',
-   'Add an email in Personal details to receive email alerts.': 'Thêm email trong mục Thông tin cá nhân để nhận cảnh báo qua email.',
+   'Add an email in Personal details to receive email alerts.': 'Thêm email trong mục Thông tin cá nhân để nhận thông báo qua email.',
    'Account activity': 'Hoạt động tài khoản',
    'Security and account updates': 'Cập nhật bảo mật và tài khoản',
    'Loan activity': 'Hoạt động khoản vay',
    'Funding, repayments, and due dates': 'Cấp vốn, trả nợ và ngày đến hạn',
    'Moodeng news': 'Tin tức Moodeng',
-   'Occasional product updates': 'Cập nhật sản phẩm định kỳ',
+   'Occasional product updates': 'Thỉnh thoảng cập nhật về sản phẩm',
    'Your identity check is complete.': 'Việc kiểm tra danh tính của bạn đã hoàn tất.',
-   'Verification in review': 'Đang xem xét xác minh',
-   'Your identity check is being reviewed.': 'Việc kiểm tra danh tính của bạn đang được xem xét.',
+   'Verification in review': 'Đang xét duyệt xác minh',
+   'Your identity check is being reviewed.': 'Việc kiểm tra danh tính của bạn đang được xét duyệt.',
    'Verification pending': 'Đang chờ xác minh',
    'Your submitted identity check is processing.': 'Việc kiểm tra danh tính bạn đã gửi đang được xử lý.',
    'Verification unfinished': 'Chưa hoàn tất xác minh',
@@ -1047,9 +1047,9 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Confirm your new password': 'Xác nhận mật khẩu mới của bạn',
    'Failed to send verification code': 'Gửi mã xác minh không thành công',
    'Failed to resend verification code': 'Gửi lại mã xác minh không thành công',
-   'Failed to connect Telegram alerts': 'Kết nối cảnh báo Telegram không thành công',
+   'Failed to connect Telegram alerts': 'Kết nối thông báo Telegram không thành công',
    'Failed to create Telegram connection link': 'Tạo liên kết kết nối Telegram không thành công',
-   'Failed to refresh Telegram alerts': 'Làm mới cảnh báo Telegram không thành công',
+   'Failed to refresh Telegram alerts': 'Làm mới thông báo Telegram không thành công',
    'Failed to change wallet': 'Đổi ví không thành công',
    'Failed to update wallet.': 'Cập nhật ví không thành công.',
    'Personal details': 'Thông tin cá nhân',
@@ -1067,13 +1067,13 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Wallet access': 'Quyền truy cập ví',
    Channels: 'Kênh',
    Connected: 'Đã kết nối',
-   'Alert types': 'Loại cảnh báo',
+   'Alert types': 'Loại thông báo',
    'Account activity notifications': 'Thông báo hoạt động tài khoản',
    'Loan activity notifications': 'Thông báo hoạt động khoản vay',
    'Moodeng news notifications': 'Thông báo tin tức Moodeng',
    // src/views/account/AvatarUploadModal.tsx
    'Change background only': 'Chỉ đổi màu nền',
-   'Click to upload': 'Bấm để tải lên',
+   'Click to upload': 'Nhấn để tải lên',
    'PNG, JPG, WEBP · up to 5 MB': 'PNG, JPG, WEBP · tối đa 5 MB',
    'Drag to reposition · use the slider to zoom': 'Kéo để đổi vị trí · dùng thanh trượt để phóng to',
    'Avatar background': 'Màu nền ảnh đại diện',
@@ -1081,11 +1081,11 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Failed to save avatar background.': 'Lưu màu nền ảnh đại diện không thành công.',
    'Current profile photo': 'Ảnh đại diện hiện tại',
    // src/views/account/BaseNetworkSheet.tsx
-   'Moodeng runs on Base': 'Moodeng vận hành trên Base',
+   'Moodeng runs on Base': 'Moodeng hoạt động trên Base',
    'Base is the blockchain network Moodeng is built on. Your wallet, your USDC, every loan you fund and every repayment you make all live here.':
-      'Base là mạng blockchain mà Moodeng được xây dựng trên đó. Ví của bạn, USDC của bạn, mọi khoản vay bạn cấp vốn và mọi lần trả nợ bạn thực hiện đều nằm ở đây.',
+      'Base là mạng blockchain nền tảng của Moodeng. Ví của bạn, USDC của bạn, mọi khoản vay bạn cấp vốn và mọi lần trả nợ bạn thực hiện đều nằm ở đây.',
    'Learn more about Base': 'Tìm hiểu thêm về Base',
-   'Fast and cheap by design': 'Nhanh và rẻ ngay từ thiết kế',
+   'Fast and cheap by design': 'Được thiết kế để nhanh và rẻ',
    'Secured by Ethereum': 'Được bảo mật bởi Ethereum',
    'Base inherits Ethereum’s security while staying low-cost. Your USDC balance and loan history are recorded on-chain, where they can’t be quietly changed.':
       'Base kế thừa tính bảo mật của Ethereum trong khi vẫn giữ chi phí thấp. Số dư USDC và lịch sử khoản vay của bạn được ghi lại on-chain, nơi chúng không thể bị âm thầm thay đổi.',
@@ -1101,19 +1101,19 @@ export const vietnameseCoverageA: Record<string, string> = {
    'When do you usually get paid?': 'Bạn thường được trả lương khi nào?',
    'What is your approximate monthly income?': 'Thu nhập hàng tháng ước tính của bạn là bao nhiêu?',
    'What do your recurring expenses cost per month?': 'Chi phí định kỳ hàng tháng của bạn là bao nhiêu?',
-   'Helps lenders understand your financial commitments.': 'Giúp người cho vay hiểu các khoản chi tiêu tài chính của bạn.',
+   'Helps lenders understand your financial commitments.': 'Giúp người cho vay hiểu các nghĩa vụ tài chính của bạn.',
    'Pick all that apply.': 'Chọn tất cả các mục phù hợp.',
    'What do you usually need short-term help with?': 'Bạn thường cần hỗ trợ ngắn hạn cho việc gì?',
    // src/views/account/ExportInstantWalletKey.tsx
    'Export wallet key': 'Xuất khóa ví',
    'Your private key': 'Khóa riêng tư của bạn',
    'Anyone with this key controls your funds. Never share it or type it into any website. Moodeng will never ask for it.':
-      'Bất kỳ ai có khóa này đều kiểm soát được tiền của bạn. Không bao giờ chia sẻ hoặc nhập nó vào bất kỳ trang web nào. Moodeng sẽ không bao giờ hỏi bạn khóa này.',
+      'Bất kỳ ai có khóa này đều kiểm soát được tiền của bạn. Đừng bao giờ chia sẻ khóa này hoặc nhập nó vào bất kỳ trang web nào. Moodeng sẽ không bao giờ yêu cầu bạn cung cấp khóa này.',
    'Copy key': 'Sao chép khóa',
    'Export your wallet key': 'Xuất khóa ví của bạn',
    'Please try again in a moment.': 'Vui lòng thử lại sau ít phút.',
    // src/views/account/SettingsStylePreview.tsx
-   'Used for account recovery and important alerts.': 'Dùng để khôi phục tài khoản và nhận cảnh báo quan trọng.',
+   'Used for account recovery and important alerts.': 'Dùng để khôi phục tài khoản và nhận thông báo quan trọng.',
    // src/views/account/TwoFactorSettings.tsx
    'Set up authenticator app': 'Thiết lập ứng dụng xác thực',
    'Scan this QR code with Google Authenticator, Authy, or 1Password, then enter the 6-digit code it shows.':
@@ -1130,10 +1130,10 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Không bắt buộc. Dùng Face ID, Touch ID hoặc khóa bảo mật trên thiết bị này.',
    // src/views/account/WalletAccountInsights.tsx
    'USDC on Base': 'USDC trên Base',
-   'Balance unavailable': 'Không có số dư',
+   'Balance unavailable': 'Không tải được số dư',
    'Some repayments go to another wallet': 'Một số khoản trả nợ chuyển đến ví khác',
    'View loan history': 'Xem lịch sử khoản vay',
-   'Activity unavailable': 'Không có hoạt động',
+   'Activity unavailable': 'Không tải được hoạt động',
    'Your wallet is still connected. Try again to load recent activity.':
       'Ví của bạn vẫn đang được kết nối. Hãy thử lại để tải hoạt động gần đây.',
    'No activity yet': 'Chưa có hoạt động',
@@ -1142,7 +1142,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'On-chain transfers could not load. Confirmed loan events are shown.':
       'Không thể tải giao dịch chuyển tiền on-chain. Các sự kiện khoản vay đã xác nhận được hiển thị.',
    'View all loan activity': 'Xem tất cả hoạt động khoản vay',
-   'Wallet history unavailable': 'Không có lịch sử ví',
+   'Wallet history unavailable': 'Không tải được lịch sử ví',
    'We could not load wallets previously used with this account.': 'Chúng tôi chưa thể tải các ví đã từng dùng với tài khoản này.',
    Balance: 'Số dư',
    'Loading USDC balance': 'Đang tải số dư USDC',
@@ -1150,18 +1150,18 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Loading recent wallet activity': 'Đang tải hoạt động ví gần đây',
    'Wallet history': 'Lịch sử ví',
    // src/views/borrowerBenefits/BorrowerBenefits.tsx
-   'Borrower Benefits | Moodeng Credit': 'Ưu đãi dành cho người vay | Moodeng Credit',
+   'Borrower Benefits | Moodeng Credit': 'Lợi ích cho người vay | Moodeng Credit',
    'Why borrowers choose Moodeng Credit: fast global access to small USDC loans, our mission and roadmap, and building verifiable credit as you repay.':
       'Vì sao người vay chọn Moodeng Credit: truy cập nhanh trên toàn cầu vào các khoản vay USDC nhỏ, sứ mệnh và lộ trình của chúng tôi, cùng việc xây dựng tín dụng có thể kiểm chứng khi bạn trả nợ.',
    // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
-   'Why borrowing feels different': 'Vì sao việc vay lại khác biệt',
+   'Why borrowing feels different': 'Vì sao vay ở đây lại khác biệt',
    'Direct lender-to-borrower': 'Trực tiếp từ người cho vay đến người vay',
    'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
       'Người cho vay cấp vốn trực tiếp cho yêu cầu của bạn. Moodeng giúp hiển thị các điều khoản và ghi lại lịch sử trả nợ mà không che giấu quy trình sau một bên trung gian.',
-   'Funded in your wallet': 'Được cấp vốn vào ví của bạn',
+   'Funded in your wallet': 'Tiền về thẳng ví của bạn',
    'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
       'Khi người cho vay cấp vốn cho yêu cầu của bạn, USDC di chuyển qua ví kỹ thuật số của bạn để tiền và lịch sử trả nợ dễ theo dõi hơn.',
-   'Terms shown upfront': 'Điều khoản được hiển thị ngay từ đầu',
+   'Terms shown upfront': 'Điều khoản rõ ràng ngay từ đầu',
    'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
       'Bạn chọn số tiền yêu cầu, số tiền trả nợ, ngày đến hạn và lý do trước khi người cho vay quyết định có cấp vốn hay không.',
    // src/views/borrowerBenefits/sections/HeroSection.tsx
@@ -1170,14 +1170,14 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Our Mission': 'Sứ mệnh của chúng tôi',
    "Dr. Muhammad Yunus won a Nobel Prize for creating opportunities through small loans. We're bringing his vision to life with cutting-edge technology.":
       'Tiến sĩ Muhammad Yunus đã đoạt Giải Nobel nhờ tạo ra cơ hội thông qua các khoản vay nhỏ. Chúng tôi đang hiện thực hóa tầm nhìn của ông bằng công nghệ tiên tiến.',
-   'By using': 'Bằng cách dùng',
+   'By using': 'Khi dùng',
    'Get started': 'Bắt đầu',
    // src/views/dashboard/components/ConnectStep.tsx
    'Set up cash-out to your local currency': 'Thiết lập rút tiền về đơn vị tiền tệ địa phương của bạn',
    'Meet the team, ask anything': 'Gặp gỡ đội ngũ, hỏi bất cứ điều gì',
    'Apply right after the call': 'Đăng ký ngay sau cuộc gọi',
    'What do you need a loan for?': 'Bạn cần khoản vay để làm gì?',
-   'Your time is in your email': 'Thời gian của bạn đã có trong email',
+   'Your time is in your email': 'Lịch hẹn đã được gửi vào email của bạn',
    'Join the meeting': 'Tham gia cuộc họp',
    'Have ready': 'Chuẩn bị sẵn',
    'Your original ID or passport': 'Giấy tờ tùy thân bản gốc hoặc hộ chiếu của bạn',
@@ -1189,10 +1189,10 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Quick picks': 'Lựa chọn nhanh',
    // src/views/dashboard/components/ContactsStep.tsx
    'Get due-date reminders on your phone': 'Nhận nhắc nhở ngày đến hạn trên điện thoại của bạn',
-   'On iPhone: tap': 'Trên iPhone: bấm',
+   'On iPhone: tap': 'Trên iPhone: nhấn',
    'Add to Home Screen': 'Thêm vào Màn hình chính',
    'Turn on reminders to continue.': 'Bật nhắc nhở để tiếp tục.',
-   'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy điều này — không bao giờ người cho vay thấy.',
+   'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy thông tin này — người cho vay thì không.',
    'How can we reach you?': 'Chúng tôi có thể liên hệ với bạn qua đâu?',
    'Open Messenger again': 'Mở lại Messenger',
    Required: 'Bắt buộc',
