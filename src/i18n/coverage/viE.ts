@@ -128,12 +128,83 @@ export const vietnameseCoverageE: Record<string, string> = {
    // src/views/support/HowCreditLevelsWork.tsx
    'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
       'Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động, Credit-Building Loan để lên hạng.',
+   'How Credit Levels Work on Moodeng Credit': 'Hạng tín dụng hoạt động như thế nào trên Moodeng Credit',
+   'Credit Levels set how much you can borrow on Moodeng Credit. Learn how limits grow $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, what a Credit-Building Loan is, and how to unlock your next level.':
+      'Hạng tín dụng quyết định số tiền bạn có thể vay trên Moodeng Credit. Tìm hiểu cách hạn mức tăng $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
+   'Verify, then make your first request': 'Xác minh, rồi gửi yêu cầu đầu tiên',
+   'Repay your $15 loan on time': 'Trả khoản vay $15 đúng hạn',
+   'Repay your $20 loan on time': 'Trả khoản vay $20 đúng hạn',
+   'Repay your $40 loan on time': 'Trả khoản vay $40 đúng hạn',
+   'Repay your $60 loan on time': 'Trả khoản vay $60 đúng hạn',
+   'Repay your $80 loan on time': 'Trả khoản vay $80 đúng hạn',
+   'Repay your $100 loan on time': 'Trả khoản vay $100 đúng hạn',
+   'Repay your $120 loan on time': 'Trả khoản vay $120 đúng hạn',
+   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.': 'Hạn mức tăng dần $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'How reliable repayment becomes a portable reputation lenders trust.':
+      'Việc trả nợ đáng tin cậy trở thành uy tín mang theo được mà người cho vay tin tưởng như thế nào.',
+   'The difference between the two loan types and when to use each.': 'Sự khác nhau giữa hai loại khoản vay và khi nào nên dùng từng loại.',
+   'Exactly how on-time, partial, and late repayments are scored.':
+      'Cách chính xác tính điểm cho các lần trả nợ đúng hạn, trả một phần và trả muộn.',
+   'Any small loan': 'Bất kỳ khoản vay nhỏ nào',
+   'A full-limit Credit-Building Loan': 'Một Credit-Building Loan bằng toàn bộ hạn mức',
+   'Paying a fee': 'Trả một khoản phí',
+   'Logging in daily': 'Đăng nhập mỗi ngày',
+   'You jump to $40': 'Bạn nhảy lên $40',
+   'Limit stays $20, trust grows': 'Hạn mức vẫn là $20, uy tín tăng lên',
+   'You drop to $15': 'Bạn tụt xuống $15',
+   'Nothing, ever': 'Không có gì cả',
+   'Yes, pay 4× up front': 'Có, trả trước gấp 4 lần',
+   'No — one level at a time': 'Không — lên từng hạng một',
+   'Only on weekends': 'Chỉ vào cuối tuần',
+   'Yes, with a coupon': 'Có, với mã giảm giá',
+   'Repaying early': 'Trả nợ sớm',
+   'A late or missed repayment': 'Trả nợ muộn hoặc bỏ lỡ kỳ trả nợ',
+   'Borrowing your full limit': 'Vay toàn bộ hạn mức',
+   'Asking questions': 'Đặt câu hỏi',
+   'Flawless run. You could teach the hippos.': 'Hoàn hảo! Bạn có thể dạy lại cho mấy chú hà mã đấy.',
+   'Solid! You’ve basically got this down.': 'Rất tốt! Bạn gần như đã nắm vững rồi.',
+   'No worries — scroll back up and you’ll ace the rematch.': 'Đừng lo — cuộn lên xem lại, lần sau bạn sẽ làm thật tốt.',
+   'See my score': 'Xem điểm của tôi',
+   'Credit Levels guide progress': 'Tiến độ đọc hướng dẫn Hạng tín dụng',
+   'Updated Jun 2026 · 5 min read': 'Cập nhật tháng 6/2026 · đọc trong 5 phút',
 
    // src/views/user-profile/UserProfile.tsx
    'How Credit Level works': 'Hạng tín dụng hoạt động như thế nào',
    'How Lender Diversity Score works': 'Điểm đa dạng người cho vay hoạt động như thế nào',
    'Trust-building loans': 'Trust-Building Loan',
    'Credit-building loans': 'Credit-Building Loan',
+   'No loan mix yet': 'Chưa có cơ cấu khoản vay',
+   'More Credit-Building Loans': 'Nhiều khoản Credit-Building Loan hơn',
+   'Balanced Loan Mix': 'Cơ cấu khoản vay cân bằng',
+   'Lender Insights': 'Thông tin người cho vay',
+   'Lender Account': 'Tài khoản người cho vay',
+   'Switch borrower insights to light mode': 'Chuyển thông tin người vay sang chế độ sáng',
+   'Switch borrower insights to dark mode': 'Chuyển thông tin người vay sang chế độ tối',
+   'Verified borrower': 'Người vay đã xác minh',
+   'Not verified': 'Chưa xác minh',
+   'Repaid Back': 'đã trả lại',
+   'Progress history ›': 'Lịch sử tiến trình ›',
+   'View all ›': 'Xem tất cả ›',
+   'Repay a loan on time to start a streak': 'Trả một khoản vay đúng hạn để bắt đầu chuỗi',
+   'Earned from your first on-time repayment': 'Nhận được từ lần trả nợ đúng hạn đầu tiên của bạn',
+   'Claimed: we’re sending your code': 'Đã nhận: chúng tôi đang gửi mã cho bạn',
+   'Sent to your mobile': 'Đã gửi đến điện thoại của bạn',
+   'Repay your first loan on time to unlock it': 'Trả khoản vay đầu tiên đúng hạn để mở khóa',
+   '0 Defaults': '0 lần vỡ nợ',
+   'Trust Building': 'Trust-Building',
+   'Credit Building': 'Credit-Building',
+   'Early Score': 'Điểm sơ bộ',
+   'Borrowed: $': 'Đã vay: $',
+   'Repaid: $': 'Đã trả: $',
+   'Partial repayment': 'Trả một phần',
+   'Partial repayments': 'Các lần trả một phần',
+   'Loan fully repaid': 'Đã trả hết khoản vay',
+   'Partial repayment made': 'Đã trả một phần',
+   'This borrower does not have enough loan history for a loan mix yet.':
+      'Người vay này chưa có đủ lịch sử vay để hiển thị cơ cấu khoản vay.',
+   'Repayment-history signal': 'Tín hiệu lịch sử trả nợ',
+   'Example: $8 or $10 when the borrower can already request $20.': 'Ví dụ: vay $8 hoặc $10 khi người vay đã có thể yêu cầu $20.',
+   'Example: borrowing the full $20 limit to unlock the $40 level.': 'Ví dụ: vay toàn bộ hạn mức $20 để mở khóa hạng $40.',
 
    // src/views/dashboard/components/ContactsStep.tsx
    '1 tap': '1 lần nhấn',
@@ -990,5 +1061,80 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Browse all FAQs & guides →': 'Xem tất cả câu hỏi thường gặp & hướng dẫn →',
    'Mecha is typing': 'Mecha đang nhập',
    'Not helpful': 'Không hữu ích',
-   'Thanks for the feedback!': 'Cảm ơn bạn đã góp ý!'
+   'Thanks for the feedback!': 'Cảm ơn bạn đã góp ý!',
+
+   // src/views/user-profile/ProgressHistory.tsx
+   'New borrower': 'Người vay mới',
+   'Credit Building Loan Funded': 'Credit-Building Loan đã được cấp vốn',
+   'Trust Building Loan Funded': 'Trust-Building Loan đã được cấp vốn',
+   'Loan Repaid Early': 'Đã trả nợ sớm',
+   'Loan Repaid Late': 'Đã trả nợ muộn',
+   'Loan Repaid': 'Đã trả khoản vay',
+   'Remaining balance repaid on time.': 'Số tiền còn lại đã được trả đúng hạn.',
+   'Early Repayment': 'Trả nợ sớm',
+   'Unlocked Level': 'Đã mở khóa hạng',
+   'Level Up': 'Lên hạng',
+   'Switch progress history to light mode': 'Chuyển lịch sử tiến trình sang chế độ sáng',
+   'Switch progress history to dark mode': 'Chuyển lịch sử tiến trình sang chế độ tối',
+   'Defaults Present': 'Có khoản vỡ nợ',
+
+   // src/views/user-profile/LenderDiversityHistory.tsx
+   'Unknown lender': 'Người cho vay không xác định',
+   'Switch lender diversity to light mode': 'Chuyển mức đa dạng người cho vay sang chế độ sáng',
+   'Switch lender diversity to dark mode': 'Chuyển mức đa dạng người cho vay sang chế độ tối',
+   'Shows how': 'Cho thấy lịch sử vay được cấp vốn của',
+   "'s funded loan history is spread across lenders.": 'được phân bổ thế nào giữa các người cho vay.',
+
+   // src/views/support/WhyUsdc.tsx
+   'Why Moodeng Uses USDC': 'Vì sao Moodeng dùng USDC',
+   'Real-world use': 'Sử dụng thực tế',
+   'Payments & money movement': 'Thanh toán & chuyển tiền',
+   'Send money to family abroad in seconds': 'Gửi tiền cho gia đình ở nước ngoài chỉ trong vài giây',
+   'Pay a merchant that accepts stablecoins': 'Thanh toán cho cửa hàng chấp nhận stablecoin',
+   'Cash out to a bank or exchange': 'Rút về ngân hàng hoặc sàn giao dịch',
+   'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.':
+      'Trên Moodeng, khoản vay hoạt động như vậy: người cho vay gửi USDC cho bạn, và bạn trả nợ bằng USDC.',
+   'DeFi use': 'Sử dụng trong DeFi',
+   'DeFi means "decentralized finance" — financial apps that run on smart contracts instead of a bank. You can lend, borrow, or swap USDC directly from your wallet.':
+      'DeFi là "tài chính phi tập trung" — các ứng dụng tài chính chạy trên hợp đồng thông minh thay vì ngân hàng. Bạn có thể cho vay, vay hoặc hoán đổi USDC ngay từ ví của mình.',
+   'Lend USDC to earn yield': 'Cho vay USDC để nhận lợi suất',
+   'Provide liquidity to a trading pool': 'Cung cấp thanh khoản cho một pool giao dịch',
+   'Borrow against crypto you already hold': 'Vay bằng cách thế chấp crypto bạn đang có',
+   'Moodeng is community lending, not a DeFi yield product — but USDC lets it plug into this wider ecosystem.':
+      'Moodeng là hình thức cho vay cộng đồng, không phải sản phẩm lợi suất DeFi — nhưng USDC giúp Moodeng kết nối với hệ sinh thái rộng lớn này.',
+   'A cryptocurrency designed to hold a steady value. USDC is pegged 1:1 to the US dollar, so it does not swing like Bitcoin.':
+      'Một loại tiền mã hóa được thiết kế để giữ giá trị ổn định. USDC được neo 1:1 với đô la Mỹ, nên không biến động như Bitcoin.',
+   'Wallet-to-wallet transfer': 'Chuyển tiền từ ví sang ví',
+   'Sending funds straight from one crypto wallet to another, with no bank or payment processor sitting in the middle.':
+      'Gửi tiền thẳng từ ví crypto này sang ví crypto khác, không qua ngân hàng hay đơn vị xử lý thanh toán trung gian nào.',
+   'Gas (and “gasless”)': 'Gas (và “không tốn gas”)',
+   'Gas is the small network fee to move crypto. On Base, USDC transfers are sponsored, so they feel gasless — you pay nothing.':
+      'Gas là khoản phí mạng nhỏ để chuyển crypto. Trên Base, giao dịch chuyển USDC được tài trợ phí, nên bạn gần như không tốn gas — bạn không phải trả gì.',
+   'Spending or sending USDC like ordinary money: payments, remittances, and cashing out to local currency.':
+      'Tiêu hoặc gửi USDC như tiền thông thường: thanh toán, chuyển tiền về nước và rút ra tiền địa phương.',
+   'Decentralized finance — lending, borrowing, and trading run by smart contracts on a blockchain instead of a bank.':
+      'Tài chính phi tập trung — cho vay, vay và giao dịch được vận hành bởi hợp đồng thông minh trên blockchain thay vì ngân hàng.',
+   'Locking up a crypto token to help secure a proof-of-stake blockchain, earning rewards in return. USDC is not a staking token.':
+      'Khóa một token crypto để giúp bảo mật blockchain proof-of-stake và nhận phần thưởng. USDC không phải là token staking.',
+   Yield: 'Lợi suất',
+   'The return you earn by putting USDC to work — for example, lending it out in DeFi. Yield is a payout, not network security.':
+      'Khoản lợi nhuận bạn nhận được khi đưa USDC vào sử dụng — ví dụ cho vay trong DeFi. Lợi suất là khoản chi trả, không phải cơ chế bảo mật mạng.',
+   'Does Moodeng offer USDC staking or yield?': 'Moodeng có cung cấp staking hoặc lợi suất USDC không?',
+   'A quick guide to how USDC is used for loans and repayments in the app.':
+      'Hướng dẫn nhanh về cách USDC được dùng cho khoản vay và trả nợ trong ứng dụng.',
+   'Your Instant Wallet is set up from your login (or connect a Base Account) — then send your first request.':
+      'Instant Wallet của bạn được thiết lập từ tài khoản đăng nhập (hoặc kết nối Base Account) — rồi gửi yêu cầu đầu tiên.',
+   'How your borrowing limit grows $15 → $20 → $40 → $60 as you repay.':
+      'Hạn mức vay của bạn tăng $15 → $20 → $40 → $60 như thế nào khi bạn trả nợ.',
+   'Why USDC guide progress': 'Tiến độ đọc hướng dẫn về USDC',
+   'Updated Jul 2026 · 6 min read': 'Cập nhật tháng 7/2026 · đọc trong 6 phút',
+   'One USDC always equals one US dollar': 'Một USDC luôn bằng một đô la Mỹ',
+   'Backed 1:1 by cash & short-term US Treasuries': 'Được bảo chứng 1:1 bằng tiền mặt & trái phiếu kho bạc Mỹ ngắn hạn',
+   'Four reasons we chose USDC': 'Bốn lý do chúng tôi chọn USDC',
+   'Real-world use vs DeFi use': 'Sử dụng thực tế và sử dụng trong DeFi',
+   'Staking vs yield, side by side:': 'So sánh staking và lợi suất:',
+   'USDC, answered': 'Giải đáp về USDC',
+   'Read guide →': 'Đọc hướng dẫn →',
+   'USDC is a regulated digital dollar pegged 1:1 to the US dollar. Learn why Moodeng Credit uses it — gasless wallet-to-wallet transfers, stable loan values, bank-grade security, and how USDC works in the real world and in DeFi.':
+      'USDC là đô la kỹ thuật số được quản lý, neo 1:1 với đô la Mỹ. Tìm hiểu vì sao Moodeng Credit dùng USDC — chuyển tiền từ ví sang ví không tốn gas, giá trị khoản vay ổn định, bảo mật chuẩn ngân hàng, và cách USDC hoạt động trong thực tế lẫn trong DeFi.'
 };
