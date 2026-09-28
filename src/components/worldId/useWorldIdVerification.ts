@@ -519,7 +519,7 @@ export function useWorldIdVerification({
             if (pollRunRef.current === runId) {
                setVerificationLaunchState('idle');
                console.error(`[${logTag}] beginPollingWorldIdRequest error:`, error);
-               showToastByConfig('server_error');
+               showToastByConfig('worldid_connection_error', { supportTopic: "World ID verification isn't working" });
             }
          });
       },

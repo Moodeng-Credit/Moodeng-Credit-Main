@@ -26,6 +26,7 @@ export type ToastErrorType =
    | 'user_update_error'
    | 'verification_failed'
    | 'server_error'
+   | 'worldid_connection_error'
    | 'loan_error'
    | 'loan_edit_error'
    | 'loan_update_error'
