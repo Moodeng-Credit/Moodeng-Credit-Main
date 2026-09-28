@@ -1412,7 +1412,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Your repayment reputation': 'ความน่าเชื่อถือด้านการชำระคืนของคุณ',
    'What are Pandesal points and how are they calculated?': 'แต้ม Pandesal คืออะไร และคำนวณอย่างไร',
    'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
-      'แต้ม Pandesal ของคุณสะท้อนว่าคุณชำระคืนเงินกู้ได้น่าเชื่อถือแค่ไหน แต้มจะเพิ่มขึ้นเมื่อชำระคืนตรงเวลาและครบเต็มจำนวน และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ ผู้ให้กู้ใช้แต้มนี้เพื่อประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่ เนื่องจากแต้มนี้ผูกกับกระเป๋าเงินของคุณ มันจึงติดตัวคุณไปทุกที่ — ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
+      'แต้ม Pandesal ของคุณสะท้อนว่าคุณชำระคืนเงินกู้ได้น่าเชื่อถือแค่ไหน แต้มจะเพิ่มขึ้นเมื่อชำระคืนตรงเวลาและครบเต็มจำนวน และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ ผู้ให้กู้ใช้แต้มนี้เพื่อประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่ เนื่องจากแต้มนี้ผูกกับกระเป๋าเงินของคุณ จึงติดตัวคุณไปทุกที่ — ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
    'What is a Credit Level?': 'ระดับเครดิตคืออะไร',
    '$15 up to $140, step by step': '$15 ถึง $140 ทีละขั้น',
    'What is a Credit Level and how do I move up?': 'ระดับเครดิตคืออะไร และจะเลื่อนระดับได้อย่างไร',

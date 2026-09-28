@@ -778,7 +778,7 @@ export const thaiCoverageC: Record<string, string> = {
    'USDC is a digital dollar that settles on a blockchain in seconds, 24/7.':
       'USDC คือดอลลาร์ดิจิทัลที่ยืนยันธุรกรรมบนบล็อกเชนภายในไม่กี่วินาที ตลอด 24 ชั่วโมงทุกวัน',
    'It runs on open networks (Moodeng uses Base) and can move across chains — so value travels as easily as a message.':
-      'มันทำงานบนเครือข่ายแบบเปิด (Moodeng ใช้ Base) และสามารถเคลื่อนย้ายข้ามเชนได้ ทำให้มูลค่าเดินทางได้ง่ายพอ ๆ กับการส่งข้อความ',
+      'USDC ทำงานบนเครือข่ายแบบเปิด (Moodeng ใช้ Base) และสามารถเคลื่อนย้ายข้ามเชนได้ ทำให้มูลค่าเดินทางได้ง่ายพอ ๆ กับการส่งข้อความ',
    'Regulated and fully backed': 'อยู่ภายใต้การกำกับดูแลและมีหลักประกันเต็มจำนวน',
    'Every USDC is backed 1:1 by cash and short-term US Treasuries.':
       'USDC ทุกหน่วยมีหลักประกันในอัตรา 1:1 ด้วยเงินสดและพันธบัตรรัฐบาลสหรัฐระยะสั้น',
