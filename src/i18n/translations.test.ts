@@ -86,7 +86,7 @@ describe('localization translations', () => {
    });
 
    it('localizes support guide cards and detail body copy', () => {
-      expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang Credit Levels');
+      expect(getGuidesForLocale('fil').map((guide) => guide.title)).toContain('Paano gumagana ang Credit Level');
       expect(getGuideForLocale('how-credit-levels-work', 'fil')?.body).toContain('Tinutukoy ng Credit Level mo');
       expect(getGuideForLocale('verification-and-why-its-required', 'fil')?.body).toContain('Bakit kailangan mag-verify?');
       expect(getGuidesForLocale('id').map((guide) => guide.title)).toContain('Cara kerja Level Kredit');
