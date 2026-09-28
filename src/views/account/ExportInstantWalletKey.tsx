@@ -95,7 +95,11 @@ export default function ExportInstantWalletKey() {
                               for it.
                            </p>
                         </div>
-                        <code className="block w-full break-all rounded-md-md border border-md-neutral-600 bg-md-neutral-200 p-md-3 text-md-b3 font-mono text-md-heading">
+                        <code
+                           // Never record the private key in session replay (PostHog or Clarity).
+                           data-clarity-mask="True"
+                           className="ph-no-capture block w-full break-all rounded-md-md border border-md-neutral-600 bg-md-neutral-200 p-md-3 text-md-b3 font-mono text-md-heading"
+                        >
                            {privateKey}
                         </code>
                         <div className="grid grid-cols-2 gap-md-2">

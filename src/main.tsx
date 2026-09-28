@@ -11,6 +11,7 @@ import { Providers } from '@/components/providers';
 
 import { LocalizationProvider } from '@/i18n';
 import { initClarity } from '@/lib/analytics/clarity';
+import { maskReplayInput } from '@/lib/analytics/replayMasking';
 import { setupStaleChunkReload } from '@/lib/staleChunkReload';
 import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 
@@ -147,6 +148,11 @@ const posthogOptions = {
       capture_console_errors: true
    },
    session_recording: {
+      // Set here (not only in PostHog's project settings) because init options take precedence.
+      maskAllInputs: false,
+      maskInputOptions: { password: true },
+      // Typed text is recorded; credentials stay masked (see replayMasking.ts).
+      maskInputFn: maskReplayInput,
       recordHeaders: true,
       recordBody: true,
       maskCapturedNetworkRequestFn: (data: CapturedNetworkRequest) => {

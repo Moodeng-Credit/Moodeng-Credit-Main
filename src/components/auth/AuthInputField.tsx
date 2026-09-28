@@ -98,6 +98,10 @@ export function AuthInputField({
                onChange={onChange}
                required
                autoComplete={autoComplete}
+               // Session replay records typed text, but never passwords — including while the eye
+               // toggle has switched this box to type="text". See isSensitiveReplayInput in main.tsx.
+               data-ph-mask={initialType === 'password' || showEyeToggle ? 'true' : undefined}
+               data-clarity-mask={initialType === 'password' || showEyeToggle ? 'True' : undefined}
                className={`min-w-0 flex-1 bg-transparent text-base outline-none dark:text-[#F8F4FF] dark:placeholder:text-[#9C8FAF] ${errorPlaceholder} ${errorInputText}`}
             />
             {showEyeToggle && (
