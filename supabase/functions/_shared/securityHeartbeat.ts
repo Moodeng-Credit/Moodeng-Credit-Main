@@ -22,6 +22,10 @@ export type HeartbeatInput = {
    ipLogins24h: number;
    // Rows written to risk_scores in the last 26h (canary that the CRS engine is alive).
    riskScores26h: number;
+   // ISO timestamp of the most recent SUCCESSFUL risk-score-recompute batch, or null if none.
+   // The batch only scores new, active accounts, so a quiet day can legitimately write zero
+   // scores — a recent OK batch run proves the engine is alive on its own.
+   riskBatchLastOkAt: string | null;
    // Critical env vars that are unset (IP_HASH_SALT, RESEND_API_KEY, Telegram token).
    missingCriticalEnv: string[];
    // Degraded env vars that are unset (MaxMind) — reduces coverage but not fatal.
@@ -88,8 +92,17 @@ export const buildHeartbeat = (input: HeartbeatInput): HeartbeatResult => {
    }
 
    // 3. CRS engine alive.
+   const riskBatchFresh =
+      !!input.riskBatchLastOkAt && now.getTime() - new Date(input.riskBatchLastOkAt).getTime() <= RISK_MAX_AGE_MS;
    if (input.riskScores26h >= 1) {
       checks.push({ name: 'Risk scoring', ok: true, detail: `${input.riskScores26h} score(s) computed in 26h`, isFailure: true });
+   } else if (riskBatchFresh) {
+      checks.push({
+         name: 'Risk scoring',
+         ok: true,
+         detail: `last OK batch ${hoursAgo(input.riskBatchLastOkAt!, now).toFixed(1)}h ago (no new active accounts to score)`,
+         isFailure: true
+      });
    } else {
       checks.push({
          name: 'Risk scoring',
