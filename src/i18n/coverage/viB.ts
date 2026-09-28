@@ -95,7 +95,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    // src/views/creditLevelingGuide/CreditLevelingGuide.tsx
    'How to unlock your next Credit Level': 'Cách mở khóa Hạng tín dụng tiếp theo',
    'Credit Leveling is not a list of buttons to press. It is one simple rule: use your full current limit, repay the funded terms on time, then unlock the next limit.':
-      'Nâng hạng tín dụng không phải là bấm một loạt nút. Chỉ có một quy tắc đơn giản: vay toàn bộ hạn mức hiện tại, trả nợ đúng hạn theo điều khoản đã được cấp vốn, rồi mở khóa hạn mức tiếp theo.',
+      'Nâng hạng tín dụng không phải là nhấn một loạt nút. Chỉ có một quy tắc đơn giản: vay toàn bộ hạn mức hiện tại, trả nợ đúng hạn theo điều khoản đã được cấp vốn, rồi mở khóa hạn mức tiếp theo.',
    'See Request Board': 'Xem Bảng yêu cầu',
    'Back to Academy': 'Quay lại Học viện',
    'The rule': 'Quy tắc',
@@ -189,7 +189,7 @@ export const vietnameseCoverageB: Record<string, string> = {
       'Cột mốc là những cách khác để nhận thêm Pandesal. Hoàn thành chúng để hồ sơ của bạn vững hơn và người cho vay yên tâm hơn với yêu cầu của bạn.',
    'Post your first loan request': 'Đăng yêu cầu vay đầu tiên',
    'Get funded by a lender': 'Được người cho vay cấp vốn',
-   'Loading your dashboard': 'Đang tải trang tổng quan',
+   'Loading your dashboard': 'Đang tải trang Tổng quan',
 
    // src/views/dashboard-v2/dashboardV2Model.ts (rendered by the dashboard-v2 screens)
    'Repay a loan on time': 'Trả một khoản vay đúng hạn',
@@ -222,16 +222,16 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Your first one unlocks when you post a request': 'Cột mốc đầu tiên sẽ mở khóa khi bạn đăng yêu cầu',
    'Reputation milestones': 'Cột mốc uy tín',
    'Grow Trust with feeding': 'Cho ăn để tăng niềm tin',
-   'Grow Moodeng, eat on us': 'Nuôi Moodeng lớn, bữa ăn do chúng tôi đãi',
+   'Grow Moodeng, eat on us': 'Nuôi Moodeng lớn, chúng tôi mời bạn ăn',
    'Grow Moodeng to': 'Nuôi Moodeng lên',
    'Reward: ₱': 'Phần thưởng: phiếu quà tặng trị giá ₱',
    'GrabFood voucher': 'dùng trên GrabFood',
-   'Back to dashboard': 'Quay lại trang tổng quan',
+   'Back to dashboard': 'Quay lại trang Tổng quan',
    'Loading milestones': 'Đang tải cột mốc',
 
    // src/views/dashboard-v2/DashboardV2Preview.tsx
    Preview: 'Xem trước',
-   'Dashboard preview state': 'Trạng thái xem trước trang tổng quan',
+   'Dashboard preview state': 'Trạng thái xem trước trang Tổng quan',
    'Sign in to see your real data': 'Đăng nhập để xem dữ liệu thật của bạn',
    'Switch language': 'Đổi ngôn ngữ',
 
@@ -278,10 +278,10 @@ export const vietnameseCoverageB: Record<string, string> = {
    Rejected: 'Bị từ chối',
    Invite: 'Mời',
    'You both get a ₱100 voucher once your friend repays their first loan on time. Claim yours here or on your dashboard.':
-      'Cả hai bạn đều nhận phiếu quà tặng ₱100 khi bạn bè của bạn trả khoản vay đầu tiên đúng hạn. Nhận phiếu của bạn tại đây hoặc trên trang tổng quan.',
+      'Cả hai bạn đều nhận phiếu quà tặng ₱100 khi bạn bè của bạn trả khoản vay đầu tiên đúng hạn. Nhận phiếu của bạn tại đây hoặc trên trang Tổng quan.',
    'Friends joined:': 'Bạn bè đã tham gia:',
    '· Repaid on time:': '· Đã trả đúng hạn:',
-   "You're invited by": 'Bạn được mời bởi',
+   "You're invited by": 'Lời mời từ',
    'a friend': 'một người bạn',
    'Borrow small, build your credit': 'Vay nhỏ, xây dựng tín dụng',
    'Small person-to-person loans with one amount, one date, and no Moodeng fees.':
@@ -341,7 +341,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'View Requests & Feed Moodeng': 'Xem yêu cầu & cho Moodeng ăn',
    'Repay On Time & Earn Voucher': 'Trả đúng hạn & nhận phiếu quà tặng',
    'Verify to Start Feeding': 'Xác minh để bắt đầu cho ăn',
-   'Repay on time, eat on us.': 'Trả đúng hạn, bữa ăn do chúng tôi đãi.',
+   'Repay on time, eat on us.': 'Trả đúng hạn, chúng tôi mời bạn ăn.',
    'Feed Moodeng to level up.': 'Cho Moodeng ăn để lên cấp.',
    'A GrabFood voucher for your first on-time repayment!': 'Một phiếu quà tặng GrabFood cho lần trả nợ đúng hạn đầu tiên!',
    'Bigger Moodeng = Higher cash limits!': 'Moodeng càng lớn = hạn mức càng cao!',
@@ -351,7 +351,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Verify Now': 'Xác minh ngay',
    'Most used': 'Phổ biến nhất',
    'Quick national ID & selfie check. Available in VN, TW, KR, PH, MY, JP, ID, TH':
-      'Kiểm tra nhanh CCCD & ảnh selfie. Hỗ trợ tại VN, TW, KR, PH, MY, JP, ID, TH',
+      'Kiểm tra nhanh thẻ căn cước & ảnh selfie. Hỗ trợ tại VN, TW, KR, PH, MY, JP, ID, TH',
    'Verify with World ID': 'Xác minh bằng World ID',
    'Milestone Streak!': 'Chuỗi cột mốc!',
    'milestone this week': 'cột mốc trong tuần này',
@@ -371,9 +371,9 @@ export const vietnameseCoverageB: Record<string, string> = {
    'My insights': 'Phân tích của tôi',
    'Moodeng grew to': 'Moodeng đã lên',
    'Claim your ₱': 'Nhận phiếu quà tặng trị giá ₱',
-   'Rising tier voucher': 'Phiếu quà tặng hạng Rising',
-   'Prime tier voucher': 'Phiếu quà tặng hạng Prime',
-   'Apex tier voucher': 'Phiếu quà tặng hạng Apex',
+   'Rising tier voucher': 'Phiếu quà tặng cấp Rising',
+   'Prime tier voucher': 'Phiếu quà tặng cấp Prime',
+   'Apex tier voucher': 'Phiếu quà tặng cấp Apex',
 
    // src/views/dashboard/Dashboard.tsx
    'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
@@ -387,7 +387,7 @@ export const vietnameseCoverageB: Record<string, string> = {
       'Chọn người vay hoặc người cho vay để mở khóa trang Tổng quan, trả nợ và lịch sử.',
    'The team approved you — apply for your loan now.': 'Đội ngũ đã duyệt bạn — hãy yêu cầu khoản vay ngay.',
    'Borrow USDC to build trust and': 'Vay USDC để xây dựng niềm tin và',
-   'unlock higher loan levels.': 'mở khóa cấp vay cao hơn.',
+   'unlock higher loan levels.': 'mở khóa hạng tín dụng cao hơn.',
    'Apply For A Loan': 'Yêu cầu khoản vay',
    'Need USDC on Base?': 'Cần USDC trên Base?',
    'Buy or bridge USDC to fund': 'Mua hoặc chuyển USDC sang Base để cấp vốn',
@@ -417,7 +417,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'and repaying $': 'và trả $',
    by: 'trước ngày',
    'World App users can verify with World ID instead.': 'Người dùng World App có thể xác minh bằng World ID.',
-   'Quick national ID & selfie check — available in select countries.': 'Kiểm tra nhanh CCCD & ảnh selfie — hỗ trợ tại một số quốc gia.',
+   'Quick national ID & selfie check — available in select countries.': 'Kiểm tra nhanh thẻ căn cước & ảnh selfie — hỗ trợ tại một số quốc gia.',
    'Quick answers before you sign up.': 'Giải đáp nhanh trước khi bạn đăng ký.',
    'Take tour': 'Xem hướng dẫn',
    'See more': 'Xem thêm',
@@ -458,7 +458,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Check your reason': 'Kiểm tra lại lý do',
    "We couldn't submit that": 'Chúng tôi không thể gửi yêu cầu này',
    "Something blocked this request. Please refresh and try again — if it keeps happening, tap Help and we'll sort it out.":
-      'Có lỗi đã chặn yêu cầu này. Vui lòng tải lại trang và thử lại — nếu vẫn tiếp tục xảy ra, hãy nhấn Trợ giúp để chúng tôi xử lý.',
+      'Đã có sự cố chặn yêu cầu này. Vui lòng tải lại trang và thử lại — nếu vẫn tiếp tục xảy ra, hãy nhấn Trợ giúp để chúng tôi xử lý.',
    "Request wasn't saved": 'Chưa lưu được yêu cầu',
    "We couldn't save this loan request. Please try again.": 'Chúng tôi không thể lưu yêu cầu vay này. Vui lòng thử lại.',
    'Try Again': 'Thử lại',
@@ -481,7 +481,7 @@ export const vietnameseCoverageB: Record<string, string> = {
       'Xem nhanh cách Moodeng hoạt động trước khi quyết định tìm hiểu vai trò nào.',
    'The request board': 'Bảng yêu cầu',
    'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
-      'Đây là nơi người vay đăng yêu cầu vay USDC ngắn hạn và người cho vay xem các yêu cầu đó. Hai bên của Moodeng gặp nhau tại đây.',
+      'Đây là nơi người vay đăng yêu cầu vay USDC ngắn hạn và người cho vay xem các yêu cầu đó. Người vay và người cho vay gặp nhau tại đây.',
    'Borrowers apply here': 'Người vay gửi yêu cầu tại đây',
    'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
       'Người vay đặt số tiền vay, ngày trả nợ và lý do. Sau khi xác minh, yêu cầu sẽ được đăng lên bảng này.',
@@ -498,12 +498,12 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Verify first': 'Xác minh trước',
    'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
       'Người vay cần xác minh danh tính một lần trước khi yêu cầu vay. Điều này giúp người cho vay biết họ đang cấp vốn cho người thật.',
-   'Set your terms': 'Đặt điều khoản',
+   'Set your terms': 'Đặt điều khoản vay',
    'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
       'Sau khi xác minh, đây là nơi người vay đặt số tiền, khoản trả nợ, ngày trả và lý do cho yêu cầu.',
    'Get funded, then repay': 'Nhận vốn, rồi trả nợ',
    'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
-      'Người cho vay cấp vốn cho yêu cầu của bạn và USDC sẽ về ví của bạn. Trả đúng hạn thì điểm Pandesal — và hạn mức tiếp theo — của bạn sẽ tăng. Nếu trễ hạn trả nợ, điều đó sẽ hiện trên hồ sơ công khai của bạn, vì người cho vay cho vay dựa trên niềm tin.',
+      'Người cho vay cấp vốn cho yêu cầu của bạn và USDC sẽ về ví của bạn. Trả đúng hạn thì điểm Pandesal — và hạn mức tiếp theo — của bạn sẽ tăng. Nếu trễ hạn trả nợ, điều đó sẽ hiện trên hồ sơ công khai của bạn, bởi người cho vay quyết định dựa trên niềm tin.',
    'Browse open requests': 'Xem các yêu cầu đang mở',
    'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
       'Xem các yêu cầu đang mở trước khi đăng ký — mỗi thẻ hiển thị số tiền, khoản trả nợ, người vay và lý do.',
@@ -550,7 +550,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    // src/views/dashboard/components/LendChecklistModal.tsx
    'Unlocks once you connect': 'Sẽ mở khóa khi bạn kết nối',
    'Base Account does both steps in one tap.': 'Base Account thực hiện cả hai bước chỉ trong một chạm.',
-   'Send your help': 'Gửi hỗ trợ của bạn',
+   'Send your help': 'Gửi hỗ trợ',
    'Confirm the payment': 'Xác nhận thanh toán',
    // src/views/dashboard/components/LenderDiversitySection.tsx
    'Early estimate: needs 8 funded loans before the score is fully weighted.':
@@ -572,34 +572,38 @@ export const vietnameseCoverageB: Record<string, string> = {
    'For example tutoring, delivery, or market trading.': 'Ví dụ: dạy kèm, giao hàng, hoặc buôn bán ở chợ.',
    'Referral Boost': 'Ưu đãi giới thiệu',
    'Schedule a video call': 'Đặt lịch gọi video',
-   'How lenders see you': 'Cách người cho vay nhìn thấy bạn',
-   'Set your loan terms': 'Thiết lập điều khoản khoản vay',
+   'How lenders see you': 'Người cho vay sẽ thấy bạn thế nào',
+   'Set your loan terms': 'Đặt điều khoản vay',
    Optional: 'Không bắt buộc',
    'Have a referral code?': 'Bạn có mã giới thiệu không?',
    'Add it now for a higher starting limit.': 'Thêm mã ngay để có hạn mức khởi điểm cao hơn.',
    'Referral code': 'Mã giới thiệu',
    'No code needed. You can continue normally.': 'Không cần mã. Bạn có thể tiếp tục bình thường.',
+   '$10 referral program': 'chương trình giới thiệu $10',
+   "we'd love to tell you about!": 'mà bạn sẽ thích đấy!',
+   'Make Your Request': 'Gửi yêu cầu',
+   'Submitting...': 'Đang gửi...',
    'Please add your Facebook so we can reach out to you. We also have a':
       'Vui lòng thêm Facebook của bạn để chúng tôi có thể liên hệ. Chúng tôi cũng có',
    'Borrow Amount': 'Số tiền vay',
    'All loans are issued and repaid in USDC.': 'Tất cả khoản vay đều được giải ngân và trả nợ bằng USDC.',
-   'Set Repayment Amount': 'Thiết lập số tiền trả nợ',
+   'Set Repayment Amount': 'Đặt số tiền trả nợ',
    'You’ll repay': 'Bạn sẽ trả',
-   'Set Repayment Date': 'Thiết lập ngày trả nợ',
+   'Set Repayment Date': 'Đặt ngày trả nợ',
    'Reason for Borrowing': 'Lý do vay',
    'Short and specific helps lenders trust it.': 'Ngắn gọn và cụ thể sẽ giúp người cho vay tin tưởng hơn.',
    'Checking your reason…': 'Đang kiểm tra lý do của bạn…',
-   'Looks good': 'Trông ổn',
+   'Looks good': 'Ổn rồi',
    'At least 40 characters, in English — short and specific helps lenders trust it.':
       'Ít nhất 40 ký tự, bằng tiếng Anh — ngắn gọn và cụ thể sẽ giúp người cho vay tin tưởng hơn.',
    'I have a regular job': 'Tôi có công việc ổn định',
-   'Full-time or part-time with a fixed employer': 'Toàn thời gian hoặc bán thời gian với người sử dụng lao động cố định',
+   'Full-time or part-time with a fixed employer': 'Toàn thời gian hoặc bán thời gian tại một nơi làm việc cố định',
    'I work for myself': 'Tôi tự làm chủ',
    'My income varies': 'Thu nhập của tôi không cố định',
    'Something else': 'Khác',
    'Describe your situation in your own words': 'Mô tả tình huống của bạn theo cách của riêng bạn',
    'It varies': 'Không cố định',
-   'Gap before payday': 'Thiếu hụt trước ngày lương',
+   'Gap before payday': 'Thiếu tiền trước ngày lương',
    'Bills before payday': 'Hóa đơn trước ngày lương',
    'Family needs': 'Nhu cầu gia đình',
    'Transport costs': 'Chi phí đi lại',
@@ -608,7 +612,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Work supplies': 'Dụng cụ làm việc',
    'Failed to save profile name.': 'Lưu tên hồ sơ không thành công.',
    'Swipe right to close loan form': 'Vuốt sang phải để đóng biểu mẫu vay',
-   'Explain setting loan terms': 'Giải thích cách thiết lập điều khoản khoản vay',
+   'Explain setting loan terms': 'Giải thích cách đặt điều khoản vay',
    'Close loan form': 'Đóng biểu mẫu vay',
    'Enter code': 'Nhập mã',
    'So we can help you more 💜': 'Để chúng tôi hỗ trợ bạn tốt hơn 💜',
@@ -632,8 +636,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    // src/views/dashboard/components/MilestoneSheets.tsx
    'Why it matters': 'Tại sao điều này quan trọng',
    'What changes on your profile': 'Điều gì thay đổi trên hồ sơ của bạn',
-   'Complete earlier milestones first': 'Hoàn thành các cột mốc trước đó trước',
-   'Build trust one step at a time': 'Xây dựng lòng tin từng bước một',
+   'Complete earlier milestones first': 'Hãy hoàn thành các cột mốc trước đó',
+   'Build trust one step at a time': 'Xây dựng niềm tin từng bước một',
    'Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Pandesal points to your borrower profile.':
       'Hoàn thành các hành động rõ ràng, chẳng hạn như xác minh danh tính và trả nợ đúng hạn. Mỗi cột mốc hoàn thành sẽ cộng thêm điểm Pandesal vào hồ sơ người vay của bạn.',
    'Next milestone': 'Cột mốc tiếp theo',
@@ -643,12 +647,12 @@ export const vietnameseCoverageB: Record<string, string> = {
    'View Milestone': 'Xem cột mốc',
    // src/views/dashboard/components/ReputationMilestones.tsx
    'Milestones show what to do next to build trust with lenders.':
-      'Các cột mốc cho biết bạn cần làm gì tiếp theo để tạo lòng tin với người cho vay.',
-   'How milestones work': 'Cách hoạt động của các cột mốc',
+      'Các cột mốc cho biết bạn cần làm gì tiếp theo để tạo niềm tin với người cho vay.',
+   'How milestones work': 'Cột mốc hoạt động thế nào',
    // src/views/dashboard/components/SuccessModal.tsx
    'Loan request submitted': 'Đã gửi yêu cầu vay',
    'Your loan request is now live. Lenders can review it and fund your request.':
-      'Yêu cầu vay của bạn hiện đã hiển thị công khai. Người cho vay có thể xem và cấp vốn cho yêu cầu của bạn.',
+      'Yêu cầu vay của bạn đã được đăng. Người cho vay có thể xem và cấp vốn cho yêu cầu của bạn.',
    'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
       'Tham gia nhóm người vay Moodeng trên Facebook hoặc Telegram để chúng tôi giới thiệu bạn với những người cho vay tốt.',
    'Join on Telegram': 'Tham gia trên Telegram',
@@ -662,7 +666,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    // src/views/dashboard/components/UpcomingLoanDues.tsx
    Unknown: 'Không xác định',
    // src/views/dashboard/components/UserCard.tsx
-   'Timing and borrower context': 'Thời điểm và bối cảnh người vay',
+   'Timing and borrower context': 'Thời điểm và hoàn cảnh người vay',
    'Lender reward': 'Phần thưởng cho người cho vay',
    'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
       'Không thấy thông báo bật lên? Hãy đảm bảo ứng dụng ví của bạn đang mở trên thiết bị này — hoặc kết nối lại tại đây.',
@@ -679,6 +683,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Moodeng loan request': 'Yêu cầu vay Moodeng',
    'Share this request': 'Chia sẻ yêu cầu này',
    'Delete your loan request': 'Xóa yêu cầu vay của bạn',
+   'Send Your Help': 'Gửi hỗ trợ',
    // src/views/dashboard/components/VideoCallStep.tsx
    'Zoom link by email · reminder on Messenger': 'Liên kết Zoom qua email · nhắc nhở trên Messenger',
    'Finding open times…': 'Đang tìm thời gian trống…',
@@ -710,10 +715,10 @@ export const vietnameseCoverageB: Record<string, string> = {
    'No fee': 'Miễn phí',
    'Base network only': 'Chỉ mạng Base',
    'Send USDC on the': 'Gửi USDC trên',
-   'Only send USDC on Base. Other tokens or networks may be lost.': 'Chỉ gửi USDC trên Base. Token hoặc mạng khác có thể bị mất.',
+   'Only send USDC on Base. Other tokens or networks may be lost.': 'Chỉ gửi USDC trên Base. Gửi token khác hoặc qua mạng khác có thể khiến bạn mất tiền.',
    'Buy USDC with card': 'Mua USDC bằng thẻ',
-   'Powered by Stripe': 'Được hỗ trợ bởi Stripe',
-   'Stays in the app': 'Ở lại trong ứng dụng',
+   'Powered by Stripe': 'Cung cấp bởi Stripe',
+   'Stays in the app': 'Không rời ứng dụng',
    'Supported in': 'Hỗ trợ tại',
    'Buy USDC with debit card': 'Mua USDC bằng thẻ ghi nợ',
    'Coinbase account needed': 'Cần có tài khoản Coinbase',
@@ -737,7 +742,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Search help — wallet, cash out, verify…': 'Tìm kiếm trợ giúp — ví, rút tiền, xác minh…',
    'Message the Moodeng team': 'Nhắn tin cho đội ngũ Moodeng',
    'Payouts, verification, wallets, repayments — anything. We answer here and by email, so you will not miss the reply.':
-      'Thanh toán, xác minh, ví, trả nợ — bất cứ điều gì. Chúng tôi trả lời tại đây và qua email, để bạn không bỏ lỡ phản hồi.',
+      'Rút tiền, xác minh, ví, trả nợ — bất cứ điều gì. Chúng tôi trả lời tại đây và qua email, để bạn không bỏ lỡ phản hồi.',
    'Start a conversation': 'Bắt đầu cuộc trò chuyện',
    'We usually reply within a few hours.': 'Chúng tôi thường phản hồi trong vòng vài giờ.',
    Results: 'Kết quả',
@@ -756,14 +761,14 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Question copied — just paste it.': 'Đã sao chép câu hỏi — chỉ cần dán vào.',
    // src/views/help/helpTopics.ts
    'What Moodeng is and how your first loan works': 'Moodeng là gì và khoản vay đầu tiên của bạn hoạt động ra sao',
-   'Verify your ID': 'Xác minh giấy tờ tùy thân của bạn',
+   'Verify your ID': 'Xác minh bằng giấy tờ tùy thân',
    'The quick check that unlocks borrowing': 'Bước kiểm tra nhanh giúp mở khóa tính năng vay',
    'Wallet: Instant or Base': 'Ví: Instant hoặc Base',
    'Set up, connect, and fix wallet problems': 'Thiết lập, kết nối và khắc phục sự cố ví',
-   'Adding & repaying USDC': 'Nạp và trả nợ USDC',
+   'Adding & repaying USDC': 'Nạp USDC & trả nợ',
    'Fund your wallet and repay your loan': 'Nạp tiền vào ví và trả khoản vay của bạn',
-   'Cashing out': 'Rút tiền',
-   'Turn USDC into pesos in your bank': 'Chuyển USDC thành peso trong ngân hàng của bạn',
+   'Cashing out': 'Rút tiền mặt',
+   'Turn USDC into pesos in your bank': 'Đổi USDC thành tiền địa phương về ngân hàng của bạn',
    'Credit & Pandesal points': 'Tín dụng & điểm Pandesal',
    'Grow your limit and your reputation': 'Tăng hạn mức và uy tín của bạn',
    'Writing a loan request': 'Viết yêu cầu vay',
@@ -806,30 +811,30 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Your default wallet — no app, no seed phrase': 'Ví mặc định của bạn — không cần ứng dụng, không cần cụm từ khôi phục',
    'What is the Instant Wallet and is it safe?': 'Instant Wallet là gì và có an toàn không?',
    "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
-      'Instant Wallet là ví mặc định của Moodeng dành cho người vay: một ví tự quản lý (self-custodial) thực sự được thiết lập sẵn cho bạn ngay từ tài khoản đăng nhập Moodeng — không cần tải ứng dụng và không cần ghi lại cụm từ khôi phục. Người vay nhận khoản vay USDC vào ví này. (Người cho vay: chúng tôi khuyến nghị dùng Base Account, nhưng bạn cũng có thể dùng Instant Wallet.) Ví này vẫn tích điểm Pandesal như bất kỳ ví nào khác, vẫn hoạt động ngay cả khi việc đăng nhập Base Account bị chặn (như trường hợp bị chặn bởi PLDT / Smart), và không tốn phí gas — Moodeng chi trả phí mạng thay bạn, nên bạn không cần ETH để trả nợ hay rút tiền. Muốn dùng Base Account hơn? Bạn có thể kết nối một ví Base Account thay thế.',
+      'Instant Wallet là ví mặc định của Moodeng dành cho người vay: một ví tự quản lý (self-custodial) thực sự được thiết lập sẵn cho bạn ngay từ tài khoản đăng nhập Moodeng — không cần tải ứng dụng và không cần ghi lại cụm từ khôi phục. Người vay nhận khoản vay USDC vào ví này. (Người cho vay: chúng tôi khuyến nghị dùng Base Account, nhưng bạn cũng có thể dùng Instant Wallet.) Ví này vẫn tích điểm Pandesal như bất kỳ ví nào khác, vẫn hoạt động ngay cả khi việc đăng nhập Base Account bị chặn (như trường hợp bị chặn bởi PLDT / Smart), và không tốn phí gas — Moodeng chi trả phí mạng thay bạn, nên bạn không cần ETH để trả nợ hay rút tiền. Muốn dùng Base Account hơn? Bạn có thể kết nối Base Account thay thế.',
    'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.':
       'Bạn sở hữu hoàn toàn ví này. Bạn có thể xuất khóa riêng tư của ví bất cứ lúc nào từ Tài khoản → Cài đặt tài khoản → Ví → "Xuất khóa ví" và nhập vào MetaMask, Trust, hoặc bất kỳ ví nào khác — sau đó bạn hoàn toàn tự do rời khỏi Moodeng.',
    'Coinbase app vs Base Account': 'Ứng dụng Coinbase so với Base Account',
    'No Coinbase app needed — Base Account is optional': 'Không cần ứng dụng Coinbase — Base Account là tùy chọn',
    'Do I need the Coinbase app or a Base Account?': 'Tôi có cần ứng dụng Coinbase hay Base Account không?',
    "You don't need either to get started — Moodeng sets up your Instant Wallet from your login. If you'd rather use a Base Account, create it at account.base.app.":
-      'Bạn không cần cái nào để bắt đầu — Moodeng sẽ thiết lập Instant Wallet của bạn ngay từ tài khoản đăng nhập. Nếu bạn muốn dùng Base Account hơn, hãy tạo tại account.base.app.',
+      'Bạn không cần ứng dụng Coinbase hay Base Account để bắt đầu — Moodeng sẽ thiết lập Instant Wallet của bạn ngay từ tài khoản đăng nhập. Nếu bạn muốn dùng Base Account hơn, hãy tạo tại account.base.app.',
    'Because it is seedless, there is no 12-word recovery phrase to lose — and Moodeng will never ask you for a seed or recovery phrase. Nobody legitimate ever will.':
-      'Vì ví này không cần seed (seedless), nên không có cụm từ khôi phục 12 từ nào để mất — và Moodeng sẽ không bao giờ hỏi bạn cụm từ khôi phục hay seed phrase. Không có bên nào chính đáng từng làm vậy.',
+      'Vì ví này không cần seed (seedless), nên không có cụm từ khôi phục 12 từ nào để mất — và Moodeng sẽ không bao giờ hỏi bạn cụm từ khôi phục hay seed phrase. Không bên chính đáng nào lại làm vậy.',
    'Using USDC on Moodeng': 'Sử dụng USDC trên Moodeng',
    "Can't create a Base Account": 'Không thể tạo Base Account',
    "The page won't load fix": 'Cách khắc phục khi trang không tải được',
    "The Base Account page won't load — how do I create one?": 'Trang Base Account không tải được — làm sao để tôi tạo một tài khoản?',
    'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.':
-      'Chuyển từ Wi-Fi sang dữ liệu di động (hoặc ngược lại). Một số mạng Wi-Fi chặn việc đăng nhập — cách này thường khắc phục được vấn đề một cách bất ngờ.',
+      'Chuyển từ Wi-Fi sang dữ liệu di động (hoặc ngược lại). Một số mạng Wi-Fi chặn việc đăng nhập — cách này hiệu quả thường xuyên đến bất ngờ.',
    "Base won't load (PLDT / Smart)": 'Base không tải được (PLDT / Smart)',
    'Network blocking — three fixes': 'Mạng bị chặn — ba cách khắc phục',
    "Base won't load on my network and my wallet won't connect — what do I do?":
       'Base không tải được trên mạng của tôi và ví của tôi không kết nối được — tôi phải làm gì?',
    'Some Philippine networks (notably PLDT and Smart) block the sign-in service Base uses. When that happens, account.base.app won\'t load or connecting your wallet dead-ends — sometimes with a "your connection is not private" or security warning — even though the rest of the internet works. This is the network, not your phone or account.':
-      'Một số mạng ở Philippines (đặc biệt là PLDT và Smart) chặn dịch vụ đăng nhập mà Base sử dụng. Khi điều đó xảy ra, account.base.app sẽ không tải được hoặc việc kết nối ví sẽ bị treo — đôi khi kèm theo cảnh báo "kết nối của bạn không ở chế độ riêng tư" hoặc cảnh báo bảo mật — dù phần còn lại của internet vẫn hoạt động bình thường. Đây là do mạng, không phải do điện thoại hay tài khoản của bạn.',
+      'Một số mạng ở Philippines (đặc biệt là PLDT và Smart) chặn dịch vụ đăng nhập mà Base sử dụng. Khi điều đó xảy ra, account.base.app sẽ không tải được hoặc việc kết nối ví sẽ bị treo — đôi khi kèm theo cảnh báo "kết nối của bạn không phải là kết nối riêng tư" hoặc cảnh báo bảo mật — dù phần còn lại của internet vẫn hoạt động bình thường. Đây là do mạng, không phải do điện thoại hay tài khoản của bạn.',
    'Easiest — use your Instant Wallet instead. Tap "Create Instant Wallet" on the wallet screen. No app, no seed phrase, and network fees are covered for you.':
-      'Cách dễ nhất — hãy dùng Instant Wallet thay thế. Nhấn "Tạo Instant Wallet" trên màn hình ví. Không cần ứng dụng, không cần seed phrase, và phí mạng đã được lo sẵn cho bạn.',
+      'Cách dễ nhất — hãy dùng Instant Wallet thay thế. Nhấn "Tạo Instant Wallet" trên màn hình ví. Không cần ứng dụng, không cần cụm từ khôi phục, và phí mạng đã được lo sẵn cho bạn.',
    'A VPN only changes how your connection is routed — it never touches your funds. Use only a well-known VPN or the official 1.1.1.1 app, and remember Moodeng will never ask for your seed or recovery phrase.':
       'VPN chỉ thay đổi cách kết nối của bạn được định tuyến — nó không bao giờ có quyền truy cập vào tiền của bạn. Chỉ nên dùng VPN uy tín hoặc ứng dụng 1.1.1.1 chính thức, và hãy nhớ Moodeng sẽ không bao giờ hỏi bạn seed phrase hay cụm từ khôi phục.',
    'Open in a real browser': 'Mở bằng trình duyệt thật',
@@ -856,9 +861,9 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Send USDC on Base to the Repay address': 'Gửi USDC trên Base đến địa chỉ trả nợ',
    'How do I repay my loan?': 'Làm sao để trả khoản vay của tôi?',
    'Open the Repay screen — it shows the exact amount and lets you copy the repayment address.':
-      'Mở màn hình Trả nợ — nó hiển thị đúng số tiền cần trả và cho phép bạn sao chép địa chỉ trả nợ.',
+      'Mở màn hình Trả nợ — màn hình này hiển thị đúng số tiền cần trả và cho phép bạn sao chép địa chỉ trả nợ.',
    'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level.':
-      'Luôn chọn Base làm mạng lưới — chọn sai mạng có thể làm mất tiền. Trả nợ trước ngày đến hạn sẽ được cộng điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ mở khóa Hạng tín dụng tiếp theo.',
+      'Luôn chọn mạng Base — chọn sai mạng có thể làm mất tiền. Trả nợ trước ngày đến hạn sẽ được cộng điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ mở khóa Hạng tín dụng tiếp theo.',
    'Ways to repay your loan': 'Các cách trả khoản vay của bạn',
    'Add USDC to your wallet': 'Nạp USDC vào ví của bạn',
    'Buy on an exchange, send on Base': 'Mua trên một sàn giao dịch, gửi qua Base',
@@ -877,10 +882,10 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Yes, within your available limit': 'Có, trong phạm vi hạn mức khả dụng của bạn',
    'Can I have more than one loan at a time?': 'Tôi có thể có nhiều hơn một khoản vay cùng lúc không?',
    "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
-      'Có — bạn có thể có nhiều hơn một khoản vay đang hoạt động cùng lúc, miễn là số tiền mới nằm trong hạn mức tín dụng khả dụng của bạn. Hạn mức khả dụng của bạn là hạn mức của cấp độ hiện tại (từ $15 đến $140) trừ đi số tiền bạn đang nợ trên các khoản vay đang hoạt động. Nếu các khoản vay hiện tại của bạn đã dùng hết hạn mức, hãy trả một phần hoặc toàn bộ trước khi yêu cầu thêm. Một số tài khoản cũng có thể có giới hạn về số lượng khoản vay được hoạt động cùng lúc — nếu ứng dụng báo bạn đã đạt mức tối đa, hãy trả một khoản trước.',
-   'Cash out to GCash or a bank': 'Rút tiền về sàn giao dịch hoặc ngân hàng',
+      'Có — bạn có thể có nhiều hơn một khoản vay đang hoạt động cùng lúc, miễn là số tiền mới nằm trong hạn mức tín dụng khả dụng của bạn. Hạn mức khả dụng của bạn là hạn mức của hạng hiện tại (từ $15 đến $140) trừ đi số tiền bạn đang nợ trên các khoản vay đang hoạt động. Nếu các khoản vay hiện tại của bạn đã dùng hết hạn mức, hãy trả một phần hoặc toàn bộ trước khi yêu cầu thêm. Một số tài khoản cũng có thể có giới hạn về số lượng khoản vay được hoạt động cùng lúc — nếu ứng dụng báo bạn đã đạt mức tối đa, hãy trả một khoản trước.',
+   'Cash out to GCash or a bank': 'Rút tiền về ví điện tử hoặc ngân hàng',
    'USDC → pesos, step by step': 'USDC → tiền mặt, từng bước',
-   'How do I cash out to GCash or my bank?': 'Làm sao để rút tiền về sàn giao dịch hoặc ngân hàng của tôi?',
+   'How do I cash out to GCash or my bank?': 'Làm sao để rút tiền về ví điện tử hoặc ngân hàng của tôi?',
    'Send your USDC to an exchange or service — GCrypto (GCash), Coins.ph, PDAX, or Binance P2P.':
       'Gửi USDC của bạn đến một sàn giao dịch hoặc ứng dụng có hỗ trợ USDC trên mạng Base (ví dụ như Binance P2P) — hãy kiểm tra sàn đó có hỗ trợ Base trước khi gửi.',
    "Choosing the wrong network can lose the funds — this is the single most important detail. Moodeng charges $0 to cash out; the only cost is the exchange's own fee.":
@@ -907,19 +912,19 @@ export const vietnameseCoverageB: Record<string, string> = {
    "What's the difference between Credit-Building and Trust-Building loans?":
       'Sự khác biệt giữa Credit-Building Loan và Trust-Building Loan là gì?',
    'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
-      'Có hai loại khoản vay. Credit-Building Loan là khoản vay bằng toàn bộ hạn mức hiện tại của bạn — trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tiếp theo. Trust-Building Loan là bất kỳ khoản vay nhỏ hơn nào dưới hạn mức của bạn; nó vẫn giúp xây dựng lịch sử trả nợ và uy tín với người cho vay, nhưng không nâng Hạng tín dụng của bạn. Hầu hết người vay dùng cả hai — trust loan để duy trì hoạt động lành mạnh, credit loan để tăng hạn mức.',
+      'Có hai loại khoản vay. Credit-Building Loan là khoản vay bằng toàn bộ hạn mức hiện tại của bạn — trả đúng hạn sẽ nâng hạn mức và mở khóa hạng tiếp theo. Trust-Building Loan là bất kỳ khoản vay nhỏ hơn nào dưới hạn mức của bạn; nó vẫn giúp xây dựng lịch sử trả nợ và uy tín với người cho vay, nhưng không nâng Hạng tín dụng của bạn. Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động lành mạnh, Credit-Building Loan để tăng hạn mức.',
    'How repayments affect your points': 'Trả nợ ảnh hưởng đến điểm của bạn như thế nào',
    'On-time full = the most points': 'Trả đủ và đúng hạn = điểm cao nhất',
    'How do repayments affect my Pandesal points?': 'Việc trả nợ ảnh hưởng đến điểm Pandesal của tôi như thế nào?',
    'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.':
-      'Mỗi lần trả nợ đều ảnh hưởng đến điểm Pandesal của bạn, và các khoản vay nhỏ được trả sạch sẽ có giá trị hơn các khoản vay lớn được trả cẩu thả. Trả đủ và đúng hạn được cộng điểm tối đa là 10. Trả một phần được cộng điểm theo tỷ lệ — 75% = 7, 50% = 5, 25% = 3. Bất kỳ khoản trả nào sau ngày đến hạn đều được 0 điểm cho giao dịch đó. Một lần vỡ nợ sẽ để lại dấu vết vĩnh viễn trên hồ sơ công khai của bạn, mà tất cả người cho vay trong tương lai đều có thể thấy.',
-   'Where do I put a referral code?': 'Tôi đặt mã giới thiệu ở đâu?',
+      'Mỗi lần trả nợ đều ảnh hưởng đến điểm Pandesal của bạn, và các khoản vay nhỏ được trả đầy đủ, đúng hạn có giá trị hơn các khoản vay lớn trả chậm hoặc trả thiếu. Trả đủ và đúng hạn được cộng điểm tối đa là 10. Trả một phần được cộng điểm theo tỷ lệ — 75% = 7, 50% = 5, 25% = 3. Bất kỳ khoản trả nào sau ngày đến hạn đều được 0 điểm cho giao dịch đó. Một lần vỡ nợ sẽ để lại dấu vết vĩnh viễn trên hồ sơ công khai của bạn, mà tất cả người cho vay trong tương lai đều có thể thấy.',
+   'Where do I put a referral code?': 'Tôi nhập mã giới thiệu ở đâu?',
    '+$5 to your starting limit': '+$5 vào hạn mức khởi điểm của bạn',
    'Where do I enter a referral code?': 'Tôi nhập mã giới thiệu ở đâu?',
    'From the Request Board, tap to apply for a loan.': 'Từ Bảng yêu cầu, hãy nhấn để đăng ký vay.',
    'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
       'Một mã giới thiệu hợp lệ sẽ cộng thêm $5 vào hạn mức tín dụng khởi điểm của bạn — vì vậy một người vay mới thường bắt đầu ở mức $15 sẽ bắt đầu ở mức $20.',
-   'It says "write it in English"': 'Nó báo "hãy viết bằng tiếng Anh"',
+   'It says "write it in English"': 'Ứng dụng báo "hãy viết bằng tiếng Anh"',
    'Why, and how to fix it': 'Vì sao, và cách khắc phục',
    'My loan reason says to write it in English — what should I do?': 'Lý do vay của tôi báo phải viết bằng tiếng Anh — tôi nên làm gì?',
    'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
@@ -929,10 +934,10 @@ export const vietnameseCoverageB: Record<string, string> = {
    "My reason is in English but it still says it's too vague — what do I do?":
       'Lý do của tôi đã viết bằng tiếng Anh nhưng vẫn báo là quá mơ hồ — tôi phải làm gì?',
    'That\'s a different check — the reason names nothing specific ("for personal use", "for my needs"). It\'s a nudge, not a block: the field tells you what to add, and tapping "Make Your Request" a second time posts it anyway. Better to say what the money is actually for and when you get paid — specific reasons get funded more.':
-      'Đó là một kiểm tra khác — lý do không nêu cụ thể điều gì ("for personal use", "for my needs"). Đây là một lời nhắc, không phải rào cản: trường nhập liệu sẽ cho bạn biết cần thêm gì, và nhấn "Gửi Yêu Cầu Của Bạn" lần thứ hai vẫn sẽ đăng yêu cầu bình thường. Tốt hơn hết là nói rõ số tiền thực sự dùng để làm gì và khi nào bạn nhận lương — lý do càng cụ thể càng dễ được cấp vốn.',
-   '"Make Your Request" does nothing': '"Gửi Yêu Cầu Của Bạn" không phản hồi gì',
+      'Đó là một bước kiểm tra khác — lý do không nêu cụ thể điều gì ("for personal use", "for my needs"). Đây là một lời nhắc, không phải rào cản: trường nhập liệu sẽ cho bạn biết cần thêm gì, và nhấn "Gửi yêu cầu" lần thứ hai vẫn sẽ đăng yêu cầu bình thường. Tốt hơn hết là nói rõ số tiền thực sự dùng để làm gì và khi nào bạn nhận lương — lý do càng cụ thể càng dễ được cấp vốn.',
+   '"Make Your Request" does nothing': 'Nhấn "Gửi yêu cầu" không có phản hồi',
    "You're not verified yet": 'Bạn chưa được xác minh',
-   '"Make Your Request" does nothing when I tap it — why?': 'Tôi nhấn "Gửi Yêu Cầu Của Bạn" nhưng không có gì xảy ra — vì sao?',
+   '"Make Your Request" does nothing when I tap it — why?': 'Tôi nhấn "Gửi yêu cầu" nhưng không có gì xảy ra — vì sao?',
    "You aren't verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.":
       'Bạn vẫn chưa được xác minh. Khi nhấn vào nút màu xám, nút sẽ rung nhẹ và một ghi chú phía trên sẽ sáng lên kèm theo nút Xác minh danh tính. Xác minh là bước cuối cùng trước khi có thể gửi yêu cầu — hoàn tất Xác minh bằng giấy tờ tùy thân và nút sẽ được kích hoạt.',
    'What happens if a loan is unpaid?': 'Điều gì xảy ra nếu khoản vay không được trả?',
@@ -944,7 +949,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'The rules that are always true': 'Những nguyên tắc luôn đúng',
    'How do I stay safe and avoid scams?': 'Làm sao để tôi giữ an toàn và tránh lừa đảo?',
    'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
-      'Có vài điều luôn đúng. Moodeng không bao giờ giữ hay di chuyển tiền của bạn — các khoản vay được chuyển trực tiếp từ ví đến ví giữa người cho vay và người vay. Luôn gửi USDC trên mạng Base; chọn sai mạng đồng nghĩa với mất tiền. Cả Instant Wallet và Base Account đều không cần seed (seedless), nên Moodeng sẽ không bao giờ hỏi bạn "seed phrase" hay "cụm từ khôi phục" — và không có bên hỗ trợ chính đáng nào từng làm vậy. Khi không chắc chắn, luôn an toàn hơn nếu bạn dừng lại và hỏi thay vì đoán mò, đặc biệt là trước khi gửi tiền.',
+      'Có vài điều luôn đúng. Moodeng không bao giờ giữ hay di chuyển tiền của bạn — các khoản vay được chuyển trực tiếp từ ví đến ví giữa người cho vay và người vay. Luôn gửi USDC trên mạng Base; chọn sai mạng đồng nghĩa với mất tiền. Cả Instant Wallet và Base Account đều không cần seed (seedless), nên Moodeng sẽ không bao giờ hỏi bạn "seed phrase" hay "cụm từ khôi phục" — và không người hỗ trợ chính đáng nào lại làm vậy. Khi không chắc chắn, luôn an toàn hơn nếu bạn dừng lại và hỏi thay vì đoán mò, đặc biệt là trước khi gửi tiền.',
    'Manage your account': 'Quản lý tài khoản của bạn',
    'Name, email, password, sign out': 'Tên, email, mật khẩu, đăng xuất',
    'How do I manage my account and security settings?': 'Làm sao để quản lý tài khoản và cài đặt bảo mật của tôi?',
