@@ -198,5 +198,87 @@ export const vietnameseCoverageF: Record<string, string> = {
    '28-day gap': 'lệch 28 ngày',
    '29-day gap': 'lệch 29 ngày',
    '30-day gap': 'lệch 30 ngày',
-   '31-day gap': 'lệch 31 ngày'
+   '31-day gap': 'lệch 31 ngày',
+
+   // src/lib/loanRequestRepostStatus.ts
+   'You can make another loan request in about 1 minute.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 1 phút.',
+   'You can make another loan request in about 2 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 2 phút.',
+   'You can make another loan request in about 3 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 3 phút.',
+   'You can make another loan request in about 4 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 4 phút.',
+   'You can make another loan request in about 5 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 5 phút.',
+   'You can make another loan request in about 6 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 6 phút.',
+   'You can make another loan request in about 7 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 7 phút.',
+   'You can make another loan request in about 8 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 8 phút.',
+   'You can make another loan request in about 9 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 9 phút.',
+   'You can make another loan request in about 10 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 10 phút.',
+   'You can make another loan request in about 11 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 11 phút.',
+   'You can make another loan request in about 12 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 12 phút.',
+   'You can make another loan request in about 13 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 13 phút.',
+   'You can make another loan request in about 14 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 14 phút.',
+   'You can make another loan request in about 15 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 15 phút.',
+   'You can make another loan request in about 16 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 16 phút.',
+   'You can make another loan request in about 17 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 17 phút.',
+   'You can make another loan request in about 18 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 18 phút.',
+   'You can make another loan request in about 19 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 19 phút.',
+   'You can make another loan request in about 20 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 20 phút.',
+   'You can make another loan request in about 21 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 21 phút.',
+   'You can make another loan request in about 22 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 22 phút.',
+   'You can make another loan request in about 23 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 23 phút.',
+   'You can make another loan request in about 24 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 24 phút.',
+   'You can make another loan request in about 25 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 25 phút.',
+   'You can make another loan request in about 26 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 26 phút.',
+   'You can make another loan request in about 27 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 27 phút.',
+   'You can make another loan request in about 28 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 28 phút.',
+   'You can make another loan request in about 29 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 29 phút.',
+   'You can make another loan request in about 30 minutes.': 'Bạn có thể tạo yêu cầu vay mới sau khoảng 30 phút.',
+
+   // src/views/account/AccountSettings.tsx
+   'We sent a new verification code to': 'Chúng tôi đã gửi mã xác minh mới đến',
+   '. Enter it below to confirm the change.': '. Hãy nhập mã bên dưới để xác nhận thay đổi.',
+   'or, no wallet app?': 'hoặc chưa có ứng dụng ví?',
+   Add: 'Thêm',
+   View: 'Xem',
+   'Light mode': 'Chế độ sáng',
+   '0 of 3 preferences enabled': 'Đã bật 0/3 tùy chọn',
+   '1 of 3 preferences enabled': 'Đã bật 1/3 tùy chọn',
+   '2 of 3 preferences enabled': 'Đã bật 2/3 tùy chọn',
+   '3 of 3 preferences enabled': 'Đã bật 3/3 tùy chọn',
+   "You have 1 active loan still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'Bạn còn 1 khoản vay đang hoạt động chưa trả xong. Bạn không thể đổi ví cho đến khi trả hết — đây là ví gắn với khoản vay và các khoản trả nợ của bạn.',
+   "You have 1 active loan still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'Bạn còn 1 khoản vay đang hoạt động chưa trả xong. Bạn không thể ngắt kết nối ví cho đến khi trả hết — đây là ví gắn với khoản vay và các khoản trả nợ của bạn.',
+   "You have 2 active loans still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'Bạn còn 2 khoản vay đang hoạt động chưa trả xong. Bạn không thể đổi ví cho đến khi trả hết — đây là ví gắn với khoản vay và các khoản trả nợ của bạn.',
+   "You have 2 active loans still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'Bạn còn 2 khoản vay đang hoạt động chưa trả xong. Bạn không thể ngắt kết nối ví cho đến khi trả hết — đây là ví gắn với khoản vay và các khoản trả nợ của bạn.',
+   "You have 3 active loans still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'Bạn còn 3 khoản vay đang hoạt động chưa trả xong. Bạn không thể đổi ví cho đến khi trả hết — đây là ví gắn với khoản vay và các khoản trả nợ của bạn.',
+   "You have 3 active loans still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'Bạn còn 3 khoản vay đang hoạt động chưa trả xong. Bạn không thể ngắt kết nối ví cho đến khi trả hết — đây là ví gắn với khoản vay và các khoản trả nợ của bạn.',
+   'You have 1 active loan being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Changing your wallet here is safe. It only affects loans you fund from now on.':
+      'Bạn có 1 khoản vay đang được trả nợ. Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây. Đổi ví tại đây vẫn an toàn, và chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.',
+   'You have 1 active loan being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Disconnecting your wallet here is safe. It only affects loans you fund from now on.':
+      'Bạn có 1 khoản vay đang được trả nợ. Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây. Ngắt kết nối ví tại đây vẫn an toàn, và chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.',
+   'You have 2 active loans being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Changing your wallet here is safe. It only affects loans you fund from now on.':
+      'Bạn có 2 khoản vay đang được trả nợ. Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây. Đổi ví tại đây vẫn an toàn, và chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.',
+   'You have 2 active loans being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Disconnecting your wallet here is safe. It only affects loans you fund from now on.':
+      'Bạn có 2 khoản vay đang được trả nợ. Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây. Ngắt kết nối ví tại đây vẫn an toàn, và chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.',
+   'You have 3 active loans being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Changing your wallet here is safe. It only affects loans you fund from now on.':
+      'Bạn có 3 khoản vay đang được trả nợ. Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây. Đổi ví tại đây vẫn an toàn, và chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.',
+   'You have 3 active loans being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Disconnecting your wallet here is safe. It only affects loans you fund from now on.':
+      'Bạn có 3 khoản vay đang được trả nợ. Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây. Ngắt kết nối ví tại đây vẫn an toàn, và chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.',
+   'Your account is using Argent. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng Argent. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.',
+   'Your account is using MetaMask. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng MetaMask. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.',
+   'Your account is using Phantom. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng Phantom. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.',
+   'Your account is using Rainbow. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng Rainbow. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.',
+   'Your account is using Trust Wallet. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng Trust Wallet. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.',
+   'Your account is using WalletConnect. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng WalletConnect. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.',
+   'Your account is using Wallet. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'Tài khoản của bạn đang dùng một ví khác. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và khoản trả nợ dùng đúng ví.'
 };
