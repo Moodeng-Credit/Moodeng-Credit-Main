@@ -652,7 +652,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'These become available after earlier steps are complete.': 'Những cột mốc này sẽ mở khi các bước trước đó hoàn tất.',
    'View Milestone': 'Xem cột mốc',
    // src/views/dashboard/components/ReputationMilestones.tsx
-   'Milestones show what to do next to build trust with lenders.': 'Các cột mốc cho biết bạn cần làm gì tiếp theo để tạo lòng tin với người cho vay.',
+   'Milestones show what to do next to build trust with lenders.':
+      'Các cột mốc cho biết bạn cần làm gì tiếp theo để tạo lòng tin với người cho vay.',
    'How milestones work': 'Cách hoạt động của các cột mốc',
    // src/views/dashboard/components/SuccessModal.tsx
    'Loan request submitted': 'Đã gửi yêu cầu vay',
@@ -754,7 +755,8 @@ export const vietnameseCoverageB: Record<string, string> = {
       'Không tìm thấy câu trả lời phù hợp — hãy thử từ khóa khác, hoặc liên hệ với chúng tôi bên dưới.',
    'Clear search': 'Xóa tìm kiếm',
    'Still need help?': 'Vẫn cần trợ giúp?',
-   'Reach the Moodeng team directly — pick whichever is easiest.': 'Liên hệ trực tiếp với đội ngũ Moodeng — chọn cách nào tiện nhất cho bạn.',
+   'Reach the Moodeng team directly — pick whichever is easiest.':
+      'Liên hệ trực tiếp với đội ngũ Moodeng — chọn cách nào tiện nhất cho bạn.',
    'New to Moodeng? Getting started →': 'Mới dùng Moodeng? Bắt đầu tại đây →',
    'Browse all guides & updates →': 'Xem tất cả hướng dẫn & cập nhật →',
    // src/views/help/HelpTopicCard.tsx
