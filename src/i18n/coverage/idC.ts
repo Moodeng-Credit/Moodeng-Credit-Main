@@ -915,5 +915,173 @@ export const indonesianCoverageC: Record<string, string> = {
       'Kirim pesan ke tim, dan orang sungguhan akan membalas — di sini dan lewat email.',
    'Get In Touch': 'Hubungi Kami',
    'Meet the Moodeng Credit Team': 'Kenalan dengan Tim Moodeng Credit',
-   'See the people building borrower trust.': 'Lihat orang-orang di balik kepercayaan peminjam.'
+   'See the people building borrower trust.': 'Lihat orang-orang di balik kepercayaan peminjam.',
+
+   // src/views/transactions/TransactionDetail.tsx
+   Due: 'Jatuh tempo',
+   'Optional Gift': 'Hadiah Opsional',
+   'Would you like to return the interest as a gift?': 'Ingin mengembalikan bunganya sebagai hadiah?',
+   'Interest to return': 'Bunga yang dikembalikan',
+   'Return interest?': 'Kembalikan bunga?',
+   "This is a voluntary gift — once sent, it can't be reversed.": 'Ini hadiah sukarela — begitu dikirim, tidak bisa dibatalkan.',
+   'Hide — this keeps going on its own': 'Sembunyikan — proses ini tetap berjalan sendiri',
+   'Sent successfully!': 'Berhasil dikirim!',
+   'Waiting for lender acceptance': 'Menunggu persetujuan pemberi pinjaman',
+   'This loan is not funded yet. Repayment starts only after a lender accepts.':
+      'Pinjaman ini belum didanai. Pembayaran kembali dimulai setelah pemberi pinjaman menyetujui.',
+   'View on explorer': 'Lihat di explorer',
+
+   // src/views/transactions/TransactionHistory.tsx
+   'Your loan activity will appear here once you start borrowing.': 'Aktivitas pinjamanmu akan muncul di sini setelah kamu mulai meminjam.',
+   'Interest can be returned': 'Bunga bisa dikembalikan',
+   'All Transactions': 'Semua Transaksi',
+   Completed: 'Selesai',
+   'Search transaction history': 'Cari riwayat transaksi',
+
+   // src/views/user-profile/LenderDiversityHistory.tsx
+   'Lender Diversity': 'Keragaman Pemberi Pinjaman',
+   'Need at least 2 funded loans': 'Butuh minimal 2 pinjaman yang didanai',
+   'A lender diversity score appears once there is enough borrower history to compare.':
+      'Skor keragaman pemberi pinjaman akan muncul setelah ada cukup riwayat peminjam untuk dibandingkan.',
+   'Lender Distribution': 'Distribusi Pemberi Pinjaman',
+   'No lender history yet': 'Belum ada riwayat pemberi pinjaman',
+   'Once this borrower receives funded loans, the lender distribution will appear here.':
+      'Setelah peminjam ini menerima pinjaman yang didanai, distribusi pemberi pinjaman akan muncul di sini.',
+
+   // src/views/user-profile/ProgressHistory.tsx
+   'Progress History': 'Riwayat Progres',
+   'Borrower Timeline': 'Linimasa Peminjam',
+   'Complete history of milestones and loan activity': 'Riwayat lengkap pencapaian dan aktivitas pinjaman',
+   'Started at Level 0': 'Mulai di Level 0',
+   'Borrower account created and credit journey started.': 'Akun peminjam dibuat dan perjalanan kreditnya dimulai.',
+   'Identity verification completed.': 'Verifikasi identitas selesai.',
+   'No loan activity yet': 'Belum ada aktivitas pinjaman',
+   'No funded loans have been recorded for this borrower yet.': 'Belum ada pinjaman yang didanai tercatat untuk peminjam ini.',
+   'Repeat Lender Relationship': 'Hubungan Pemberi Pinjaman Berulang',
+   'Borrowed again from an existing lender.': 'Meminjam lagi dari pemberi pinjaman yang sama.',
+   'Partial Repayment Made': 'Pembayaran Sebagian Dilakukan',
+   'Credit Limit Unlocked': 'Limit Kredit Terbuka',
+   'Defaulted Loan': 'Pinjaman Gagal Bayar',
+   'Loan remains unpaid past the due date.': 'Pinjaman masih belum dibayar setelah lewat jatuh tempo.',
+   'More Trust-Building Loans': 'Lebih Banyak Trust-Building Loan',
+   'This borrower has more smaller trust-building loans than full-limit credit-building loans. These help show repayment history, but they do not raise credit level.':
+      'Peminjam ini punya lebih banyak Trust-Building Loan kecil dibanding Credit-Building Loan senilai limit penuh. Ini membantu menunjukkan riwayat pembayaran, tetapi tidak menaikkan Level Kredit.',
+
+   // src/views/user-profile/UserProfile.tsx
+   'Borrower context': 'Konteks peminjam',
+   'This account is a lender': 'Akun ini adalah pemberi pinjaman',
+   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Pemberi pinjaman mendanai pinjaman, bukan meminjam, jadi tidak ada riwayat peminjaman untuk ditampilkan di sini.',
+   'Verify to unlock LV.1': 'Verifikasi untuk membuka LV.1',
+   'Only you can see this': 'Hanya kamu yang bisa melihat ini',
+   'Good standing': 'Status baik',
+   'View loan mix': 'Lihat komposisi pinjaman',
+   'Your score appears after at least 2 funded loans from different lenders.':
+      'Skormu akan muncul setelah minimal 2 pinjaman didanai oleh pemberi pinjaman yang berbeda.',
+   'Borrower patterns': 'Pola peminjam',
+   'Recent Loans': 'Pinjaman Terbaru',
+   'View who has funded this borrower and the status of each loan.':
+      'Lihat siapa yang mendanai peminjam ini dan status setiap pinjaman.',
+   'Loan / lender': 'Pinjaman / pemberi pinjaman',
+   'No funded loans yet': 'Belum ada pinjaman yang didanai',
+   'Not enough loan history yet': 'Riwayat pinjaman belum cukup',
+   "Once this borrower completes more loans, you'll see repayment timing, usual loan size, repeat lenders, and borrowing patterns here.":
+      'Setelah peminjam ini menyelesaikan lebih banyak pinjaman, kamu akan melihat waktu pembayaran, ukuran pinjaman yang umum, pemberi pinjaman berulang, dan pola peminjaman di sini.',
+   'Default History': 'Riwayat Gagal Bayar',
+   'Missed repayments on this borrower’s past loans.': 'Pembayaran yang terlewat pada pinjaman-pinjaman peminjam ini sebelumnya.',
+   'A default happens when a repayment deadline passes without full repayment.':
+      'Gagal bayar terjadi ketika batas waktu pembayaran lewat tanpa pelunasan penuh.',
+   'Loan defaulted': 'Pinjaman gagal bayar',
+   Unresolved: 'Belum terselesaikan',
+   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
+      'Gagal bayar bisa menandakan risiko pembayaran. Pemberi pinjaman sebaiknya meninjau seluruh riwayat peminjam, bukan hanya Level Kredit-nya.',
+   'Repayment History': 'Riwayat Pembayaran',
+   'Money this borrower has already paid back across funded loans.':
+      'Uang yang sudah dibayar kembali oleh peminjam ini dari pinjaman-pinjaman yang didanai.',
+   'Fully repaid': 'Lunas',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
+      'Pembayaran yang selesai menunjukkan peminjam ini pernah mengembalikan dana sebelumnya. Pembayaran sebagian tetap bisa jadi konteks yang berguna, tapi pemberi pinjaman sebaiknya membandingkannya dengan tanggal jatuh tempo dan sisa saldo.',
+   'How Credit Level Works': 'Cara Kerja Level Kredit',
+   'Credit Level shows the borrower’s current borrowing tier.': 'Level Kredit menunjukkan tingkat pinjaman peminjam saat ini.',
+   'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
+      'Peminjam naik level dengan mengambil Credit-Building Loan sesuai limit mereka saat ini dan membayarnya kembali dengan berhasil.',
+   'Credit Levels': 'Level Kredit',
+   'Credit limit': 'Limit kredit',
+   'How Lender Diversity Works': 'Cara Kerja Keragaman Pemberi Pinjaman',
+   'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
+      'Skor ini milik peminjam. Skor ini mengukur kualitas orang-orang yang telah meminjamkan uang kepada mereka.',
+   'What a high score means': 'Arti skor yang tinggi',
+   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
+      'Pemberi pinjaman terlihat independen, mapan, dan alami. Mereka tidak semuanya akun baru, tidak semuanya mendanai sekaligus, dan tidak terlalu terpusat pada satu pemberi pinjaman.',
+   'What it is trying to catch': 'Apa yang coba dideteksi',
+   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
+      'Seorang peminjam bisa terlihat tepercaya dengan memakai akun pemberi pinjaman palsu untuk mendanai pinjaman kecil, lalu meminta pinjaman asli yang lebih besar. Skor ini mendeteksi pola riwayat pemberi pinjaman yang terkoordinasi seperti itu.',
+   'Score bands': 'Rentang skor',
+   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
+      'Ini tidak menilai peminjam secara langsung. Ini memberi tahu pemberi pinjaman apakah jaringan pemberi pinjaman milik peminjam terlihat alami atau mencurigakan.',
+   'Read the full docs': 'Baca dokumentasi lengkap',
+   'Lender Diversity Score documentation': 'Dokumentasi Skor Keragaman Pemberi Pinjaman',
+   'Why lenders care': 'Kenapa ini penting bagi pemberi pinjaman',
+   'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
+      'Komposisi pinjaman menunjukkan apakah peminjam ini lebih banyak membangun riwayat pembayaran dengan pinjaman kecil, atau menaikkan Level Kredit dengan pembayaran senilai limit penuh.',
+   'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
+      'Peminjam yang sehat bisa punya keduanya: pinjaman kecil untuk riwayat pembayaran dan pinjaman senilai limit penuh untuk limit yang lebih tinggi di masa depan.',
+   'Start with who they are': 'Mulai dari siapa mereka',
+   'Read the borrower context first — whether they are a verified human, how long they have been a member, and how they earn and repay. It frames every number below and tells you whether their reason to borrow fits their situation.':
+      'Baca dulu konteks peminjam — apakah mereka manusia yang terverifikasi, sudah berapa lama jadi anggota, dan bagaimana mereka mendapatkan penghasilan serta membayar kembali. Ini membingkai setiap angka di bawah dan memberi tahu apakah alasan mereka meminjam sesuai dengan situasi mereka.',
+   'Check Credit Level': 'Cek Level Kredit',
+   'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.':
+      'Level Kredit adalah tingkatan peminjam. Ini membantu kamu memahami seberapa banyak kepercayaan yang sudah mereka buka lewat perilaku sebelumnya.',
+   'Read the loan summary': 'Baca ringkasan pinjaman',
+   'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
+      'Lihat total yang dipinjam, total pinjaman, pembayaran, gagal bayar, dan status. Status Baik berarti tidak ada gagal bayar yang belum terselesaikan.',
+   'Look at lender diversity': 'Lihat keragaman pemberi pinjaman',
+   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
+      'Ini menunjukkan apakah peminjam sudah mendapatkan kepercayaan dari beberapa pemberi pinjaman, bukan hanya satu hubungan yang berulang.',
+   'Use behavior patterns': 'Gunakan pola perilaku',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
+      'Pola ini membantu kamu menilai risiko: seberapa sering mereka meminjam, seberapa cepat mereka biasanya membayar kembali, ukuran pinjaman yang umum, jangka waktu pinjaman, dan pemberi pinjaman berulang.',
+   'Review recent loans': 'Tinjau pinjaman terbaru',
+   'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
+      'Gunakan tabel pinjaman terbaru untuk memastikan peminjam punya riwayat pembayaran yang cocok dengan permintaan yang sedang kamu pertimbangkan untuk didanai.',
+   'Change reading mode': 'Ubah mode tampilan',
+   'Optional: switch to dark mode if it makes this profile easier to read. It changes nothing about the borrower data or your lending decision.':
+      'Opsional: beralih ke mode gelap kalau itu membuat profil ini lebih mudah dibaca. Ini tidak mengubah data peminjam atau keputusan pendanaanmu.',
+   'Moodeng with trophy': 'Moodeng dengan trofi',
+   'How Credit Level works': 'Cara kerja Level Kredit',
+   'Total Borrowed': 'Total Dipinjam',
+   'Total Loans': 'Total Pinjaman',
+   'How Lender Diversity Score works': 'Cara kerja Skor Keragaman Pemberi Pinjaman',
+   'Avg days between loans': 'Rata-rata hari antar-pinjaman',
+   'Typical loan term': 'Jangka waktu pinjaman yang umum',
+   'Repeat lenders': 'Pemberi pinjaman berulang',
+   'Close default history': 'Tutup riwayat gagal bayar',
+   'Close repayment history': 'Tutup riwayat pembayaran',
+   'Close credit level explanation': 'Tutup penjelasan Level Kredit',
+   'Close lender diversity explanation': 'Tutup penjelasan keragaman pemberi pinjaman',
+   'Amount concentration': 'Konsentrasi jumlah',
+   'Lender newness': 'Kebaruan pemberi pinjaman',
+   'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
+      'Dompet yang baru atau tidak aktif dianggap lebih berisiko dibanding dompet mapan dengan aktivitas on-chain yang nyata.',
+   'Timing patterns': 'Pola waktu',
+   'Looks for loans arriving in suspicious clusters instead of normal lending intervals.':
+      'Mendeteksi pinjaman yang muncul dalam kelompok mencurigakan, bukan dalam interval pendanaan yang normal.',
+   'Recent suspicious patterns matter more. Older clean history fades over time.':
+      'Pola mencurigakan yang baru terjadi lebih berpengaruh. Riwayat bersih yang lama akan memudar seiring waktu.',
+   'Group coordination': 'Koordinasi kelompok',
+   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
+      'Memeriksa apakah banyak pemberi pinjaman muncul dalam waktu yang berdekatan, yang bisa menandakan kelompok yang direkrut.',
+   Excellent: 'Sangat baik',
+   Good: 'Baik',
+   Fair: 'Cukup',
+   Low: 'Rendah',
+   'Very Low': 'Sangat Rendah',
+   'Close loan mix explanation': 'Tutup penjelasan komposisi pinjaman',
+   'Trust loans': 'Trust-Building Loan',
+   'Credit loans': 'Credit-Building Loan',
+   'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
+      'Pinjaman kecil di bawah limit saat ini. Ini membantu menunjukkan bahwa peminjam bisa membayar kembali, tetapi tidak menaikkan Level Kredit.',
+   'Credit-level signal': 'Sinyal Level Kredit',
+   'A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level.':
+      'Pinjaman senilai limit penuh. Jika berhasil dibayar kembali, ini bisa membuka Level Kredit berikutnya untuk peminjam.'
 };
