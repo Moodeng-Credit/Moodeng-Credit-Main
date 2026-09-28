@@ -218,8 +218,11 @@ export default function UserCard(loan: UserCardProps) {
    const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
    const borrowerIsVerified = borrowerProfile ? isUserVerified(borrowerProfile) : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
+   // A sample (tour/preview) card has no real account behind it, so its "View Details" must open
+   // the demo profile. Linking to /user/<sample handle> looked up a user that doesn't exist and
+   // showed "User profile not found" to borrowers exploring the board.
    const borrowerDetailsHref =
-      tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink)
+      tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink || !borrowerProfile)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
    const borrowerDisplayName = getSafeProfileText(borrowerProfile?.displayName) || borrowerUsername || 'Unknown user';
