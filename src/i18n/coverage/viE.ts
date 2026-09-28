@@ -41,6 +41,12 @@ export const vietnameseCoverageE: Record<string, string> = {
    'See score': 'Xem điểm',
    'Academy passed': 'Đã hoàn thành Học viện',
    Register: 'Đăng ký',
+   'Below $15 = Trust-Building': 'Dưới $15 = Trust-Building',
+   'Above $15 = Credit-Building': 'Trên $15 = Credit-Building',
+   'Academy score': 'điểm Học viện',
+   'Nice. You earned': 'Tuyệt. Bạn đã nhận được',
+   'Almost. Retake for': 'Gần đạt rồi. Làm lại để nhận',
+   'Money & getting started': 'Tiền bạc & bắt đầu',
 
    // src/views/academy/MoneyGuide.tsx
    'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time earns Pandesal points, and repaying a full-limit loan on time raises your credit limit.':
@@ -274,6 +280,31 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Dùng trình duyệt thật — Chrome hoặc Safari — không dùng trình duyệt bên trong ứng dụng khác.',
    'You do not need the Coinbase app. Base is a network built by Coinbase, but the app is a different thing.':
       'Bạn không cần ứng dụng Coinbase. Base là mạng do Coinbase xây dựng, nhưng ứng dụng Coinbase là một thứ khác.',
+   'Getting started': 'Bắt đầu',
+   'If it still fails, your network may be blocking Base — see "Base won\'t load (PLDT / Smart)".':
+      'Nếu vẫn không được, có thể mạng của bạn đang chặn Base — xem "Base không tải được (PLDT / Smart)".',
+   'If nothing appears, redo the "Wallet won\'t connect" reset.':
+      'Nếu không thấy gì xuất hiện, hãy làm lại các bước khắc phục "Ví không kết nối được".',
+   "If you don't hold USDC yet, buy some on Binance P2P, Coins.ph, PDAX, or GCrypto (GCash).":
+      'Nếu bạn chưa có USDC, hãy mua trên Binance P2P, Coins.ph, PDAX hoặc GCrypto (GCash).',
+   'Send the USDC to the repayment address, and choose Base as the network.': 'Gửi USDC đến địa chỉ trả nợ và chọn mạng Base.',
+   'You can pay in parts — the Repay screen has 25% / 50% / 75% / Full buttons, or a custom amount.':
+      'Bạn có thể trả từng phần — màn hình Trả nợ có các nút 25% / 50% / 75% / Toàn bộ, hoặc bạn tự nhập số tiền.',
+   'Withdraw / send it to your Moodeng wallet address.': 'Rút / gửi USDC đến địa chỉ ví Moodeng của bạn.',
+   'Always select USDC and the Base network when sending.': 'Luôn chọn USDC và mạng Base khi gửi.',
+   'When sending, always choose Base as the network.': 'Khi gửi, luôn chọn mạng Base.',
+   'Sell the USDC there, then withdraw pesos to your bank or e-wallet.':
+      'Bán USDC ở đó, rồi rút peso về ngân hàng hoặc ví điện tử của bạn.',
+   'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.':
+      'Để lên hạng, hãy vay một Credit-Building Loan — khoản vay bằng toàn bộ hạn mức hiện tại — và trả đầy đủ, đúng hạn.',
+   'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'Các Hạng tín dụng lần lượt là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'A referral code adds $5 to your starting limit — entered at the start of the loan application.':
+      'Mã giới thiệu cộng thêm $5 vào hạn mức khởi điểm của bạn — nhập ở bước đầu của đơn vay.',
+   'The first step of the application asks for a referral code — type it and tap "Apply code". (This step only appears for verified borrowers.)':
+      'Bước đầu tiên của đơn vay sẽ hỏi mã giới thiệu — nhập mã và nhấn "Áp dụng mã". (Bước này chỉ hiện với người vay đã xác minh.)',
+   'No code? Just tap "Continue to application" — the code is optional and there is no penalty for skipping it.':
+      'Không có mã? Chỉ cần nhấn "Tiếp tục đến đơn vay" — mã không bắt buộc và bỏ qua cũng không bị ảnh hưởng gì.',
 
    // src/views/dashboard/components/ConnectStep.tsx
    "Glad you're here!": 'Rất vui được gặp bạn!',
@@ -614,6 +645,17 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Withdrawal sent': 'Đã gửi lệnh rút tiền',
    'Your funds are on their way to your exchange.': 'Tiền của bạn đang được chuyển đến sàn giao dịch.',
    'Could not verify this cash-out. Please try again.': 'Không xác minh được giao dịch rút tiền này. Vui lòng thử lại.',
+   'USDC available': 'USDC khả dụng',
+   '· Repay': '· Trả',
+   'Continue with': 'Tiếp tục với',
+   Send: 'Gửi',
+   'USDC to': 'USDC đến',
+   'USDC is on its way — arriving in a few minutes.': 'USDC đang trên đường chuyển — sẽ đến trong vài phút.',
+   'USDC is on its way to': 'USDC đang được chuyển đến',
+   'How to transfer to': 'Cách chuyển sang',
+   'Moneybees will message you on your chosen chat app to confirm the rate and complete your':
+      'Moneybees sẽ nhắn tin cho bạn qua ứng dụng chat bạn đã chọn để xác nhận tỷ giá và hoàn tất giao dịch rút',
+   'USDC cash-out.': 'USDC ra tiền mặt.',
 
    // src/components/InAppBrowserNotice.tsx
    'this app': 'ứng dụng này',
@@ -1136,5 +1178,93 @@ export const vietnameseCoverageE: Record<string, string> = {
    'USDC, answered': 'Giải đáp về USDC',
    'Read guide →': 'Đọc hướng dẫn →',
    'USDC is a regulated digital dollar pegged 1:1 to the US dollar. Learn why Moodeng Credit uses it — gasless wallet-to-wallet transfers, stable loan values, bank-grade security, and how USDC works in the real world and in DeFi.':
-      'USDC là đô la kỹ thuật số được quản lý, neo 1:1 với đô la Mỹ. Tìm hiểu vì sao Moodeng Credit dùng USDC — chuyển tiền từ ví sang ví không tốn gas, giá trị khoản vay ổn định, bảo mật chuẩn ngân hàng, và cách USDC hoạt động trong thực tế lẫn trong DeFi.'
+      'USDC là đô la kỹ thuật số được quản lý, neo 1:1 với đô la Mỹ. Tìm hiểu vì sao Moodeng Credit dùng USDC — chuyển tiền từ ví sang ví không tốn gas, giá trị khoản vay ổn định, bảo mật chuẩn ngân hàng, và cách USDC hoạt động trong thực tế lẫn trong DeFi.',
+
+   // src/views/transactions/TransactionDetail.tsx
+   'Not funded yet': 'Chưa được cấp vốn',
+   'If applicable': 'Nếu có',
+   'Available after funding': 'Có sau khi được cấp vốn',
+   'Waiting for lender': 'Đang chờ người cho vay',
+   'Repayment schedule': 'Lịch trả nợ',
+   'Interest returned': 'Đã hoàn lại tiền lãi',
+   'Returning to': 'Đang gửi lại cho',
+   'Recording your gift — hang tight.': 'Đang ghi nhận món quà của bạn — chờ chút nhé.',
+   'You returned': 'Bạn đã gửi lại',
+   '. That was kind of you.': '. Bạn thật tốt bụng.',
+   'Gift from your lender': 'Quà từ người cho vay của bạn',
+   'You returned the interest': 'Bạn đã hoàn lại tiền lãi',
+   'Interest returned!': 'Đã hoàn lại tiền lãi!',
+   'Cannot return interest': 'Không thể hoàn lại tiền lãi',
+   'Borrower wallet address is unavailable.': 'Không có địa chỉ ví của người vay.',
+   'Borrowed by': 'Người vay:',
+   'Lender has not accepted yet': 'Người cho vay chưa chấp nhận',
+   'Not active': 'Chưa hoạt động',
+   'Requested on': 'Yêu cầu vào ngày',
+   'This repayment was sent to the wallet you funded this loan from:':
+      'Khoản trả nợ này đã được gửi đến ví bạn dùng để cấp vốn cho khoản vay:',
+   'When repaid, funds return to the wallet you funded this loan from:':
+      'Khi được trả, tiền sẽ về ví bạn dùng để cấp vốn cho khoản vay này:',
+   'This differs from the wallet you have connected now (': 'Ví này khác với ví bạn đang kết nối (',
+   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
+      '). Điều này là bình thường — khoản trả nợ sẽ về ví đã dùng để cấp vốn cho từng khoản vay, không phải ví hiện tại của bạn. Mở',
+   'to find these funds.': 'để tìm các khoản tiền này.',
+
+   // src/views/lender/loanNote/useBuyLoanNote.ts
+   'You cancelled the transaction in your wallet.': 'Bạn đã hủy giao dịch trong ví.',
+   'Not enough ETH for gas': 'Không đủ ETH để trả phí gas',
+   'You need a little ETH on Base for the network fee.': 'Bạn cần một ít ETH trên Base để trả phí mạng.',
+   'No longer available': 'Không còn khả dụng',
+   'This loan was just funded by someone else.': 'Khoản vay này vừa được người khác cấp vốn.',
+   'Switch your wallet to Base, then try again.': 'Hãy chuyển ví sang mạng Base, rồi thử lại.',
+   'Purchase failed': 'Mua không thành công',
+   'Something went wrong before the payment. Nothing was charged — please try again.':
+      'Đã có lỗi xảy ra trước khi thanh toán. Bạn chưa bị trừ tiền — vui lòng thử lại.',
+   'This loan does not have a sellable Loan Note.': 'Khoản vay này không có Loan Note để bán.',
+   'Not enough USDC': 'Không đủ USDC',
+
+   // src/store/slices/loanSlice.ts
+   'Payment is not confirmed on-chain yet': 'Thanh toán chưa được xác nhận on-chain',
+   'Failed to create loan': 'Không tạo được khoản vay',
+   'Failed to fetch loans': 'Không tải được các khoản vay',
+   'Failed to fetch user loans': 'Không tải được khoản vay của người dùng',
+   'Failed to update loan': 'Không cập nhật được khoản vay',
+   'Failed to confirm loan payment': 'Không xác nhận được thanh toán khoản vay',
+   'Failed to delete loan': 'Không xóa được khoản vay',
+   'Could not load loan before updating it': 'Không tải được khoản vay trước khi cập nhật',
+   'This loan request has expired. Ask the borrower to post a new request.':
+      'Yêu cầu vay này đã hết hạn. Hãy đề nghị người vay đăng yêu cầu mới.',
+   'Loan request was not deleted': 'Yêu cầu vay chưa được xóa',
+
+   // src/store/slices/authSlice.ts
+   'An account with this email already exists. Sign in instead, or reset your password if you need to regain access.':
+      'Đã có tài khoản dùng email này. Hãy đăng nhập, hoặc đặt lại mật khẩu nếu bạn cần lấy lại quyền truy cập.',
+   'User profile not found': 'Không tìm thấy hồ sơ người dùng',
+   'Please verify your email before signing in. Check your inbox or request a new verification email.':
+      'Vui lòng xác minh email trước khi đăng nhập. Hãy kiểm tra hộp thư hoặc yêu cầu gửi lại email xác minh.',
+   'Please verify your email before signing in. A verification email has been sent to your inbox.':
+      'Vui lòng xác minh email trước khi đăng nhập. Email xác minh đã được gửi đến hộp thư của bạn.',
+   'Not authenticated': 'Chưa đăng nhập',
+   'Failed to save borrower context': 'Không lưu được thông tin người vay',
+   'Failed to update user role': 'Không cập nhật được vai trò người dùng',
+
+   // src/lib/schemas/fields.ts
+   'Username is required': 'Vui lòng nhập tên người dùng',
+   'Username must be between 3 and 20 characters': 'Tên người dùng phải có từ 3 đến 20 ký tự',
+   'Username can only contain letters, numbers, underscores, and hyphens':
+      'Tên người dùng chỉ được chứa chữ cái, số, dấu gạch dưới và dấu gạch ngang',
+   'Invalid email format': 'Định dạng email không hợp lệ',
+   'Email is too long': 'Email quá dài',
+   'Password is required': 'Vui lòng nhập mật khẩu',
+   'Invalid password': 'Mật khẩu không hợp lệ',
+   'Password is too long': 'Mật khẩu quá dài',
+   'Password can only contain letters, numbers, and special characters: !@#$%^&*()+=._-':
+      'Mật khẩu chỉ được chứa chữ cái, số và các ký tự đặc biệt: !@#$%^&*()+=._-',
+   'Wallet address is required': 'Vui lòng nhập địa chỉ ví',
+   'Invalid Ethereum wallet address format': 'Định dạng địa chỉ ví Ethereum không hợp lệ',
+   'Loan amount must be positive and not exceed 1 billion': 'Số tiền vay phải lớn hơn 0 và không vượt quá 1 tỷ',
+   'Loan period must be between 1 and 3650 days (10 years)': 'Thời hạn vay phải từ 1 đến 3650 ngày (10 năm)',
+   'Telegram username is required': 'Vui lòng nhập tên người dùng Telegram',
+   'Telegram username must be between 5 and 32 characters': 'Tên người dùng Telegram phải có từ 5 đến 32 ký tự',
+   'Telegram username can only contain letters, numbers, and underscores':
+      'Tên người dùng Telegram chỉ được chứa chữ cái, số và dấu gạch dưới'
 };
