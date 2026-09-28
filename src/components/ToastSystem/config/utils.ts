@@ -7,7 +7,7 @@ import { openSupportChat } from '@/lib/support/liveChat';
 
 export const handleToastAction = (action: string, customData: ToastData, navigate: AppRouterInstance) => {
    if (action === 'open_support_chat') {
-      openSupportChat();
+      openSupportChat(typeof customData.supportTopic === 'string' ? customData.supportTopic : undefined);
       return;
    }
 
