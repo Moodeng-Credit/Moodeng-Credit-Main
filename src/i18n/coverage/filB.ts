@@ -584,5 +584,56 @@ export const filipinoCoverageB: Record<string, string> = {
    'You receive on Base': 'Matatanggap mo sa Base',
    'Estimated time': 'Tinatayang oras',
    'Pay from': 'Bayad mula sa',
-   'Could not fetch a quote. Please try again.': 'Hindi nakuha ang quote. Subukan ulit.'
+   'Could not fetch a quote. Please try again.': 'Hindi nakuha ang quote. Subukan ulit.',
+
+   // src/views/dashboard/components/UserCard.tsx
+   'Timing and borrower context': 'Timing at konteksto ng borrower',
+   'Lender reward': 'Reward ng lender',
+   'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
+      'Walang lumalabas na prompt? Siguraduhing bukas ang wallet app mo sa device na ito — o mag-reconnect dito.',
+   'Reconnect wallet': 'I-reconnect ang wallet',
+   'Due On': 'Due Sa',
+   'Get back USDC': 'Makukuha Muli na USDC',
+   'View Request': 'Tingnan ang Request',
+   'Your Loan Request': 'Ang Loan Request Mo',
+   'Help Received': 'Natanggap ang Tulong',
+   'View Details': 'Tingnan ang Detalye',
+   'View Borrower Details': 'Tingnan ang Detalye ng Borrower',
+   Funded: 'Napondohan',
+   'Moodeng loan request': 'Loan request sa Moodeng',
+   'Share this request': 'Ibahagi ang request na ito',
+   'Delete your loan request': 'Burahin ang loan request mo',
+   'Delete request': 'Burahin ang request',
+
+   // src/views/fund/FundWalletSheet.tsx
+   'Fund your wallet': 'Pondohan ang wallet mo',
+   'Your USDC balance': 'Balanse mo sa USDC',
+   'Deposit USDC': 'Mag-deposito ng USDC',
+   'Already have USDC? Send it to your wallet on Base': 'May USDC ka na ba? Ipadala ito sa wallet mo sa Base',
+   'No fee': 'Walang fee',
+   'Base network only': 'Base network lang',
+   'Send USDC on the': 'Ipadala ang USDC sa',
+   Copied: 'Nakopya',
+   'Only send USDC on Base. Other tokens or networks may be lost.':
+      'Sa Base network lang magpadala ng USDC. Puwedeng mawala ang ibang token o network.',
+   'Buy USDC with card': 'Bumili ng USDC gamit ang card',
+   'Powered by Stripe': 'Pinapagana ng Stripe',
+   'Stays in the app': 'Nananatili sa app',
+   'Supported in': 'Sinusuportahan sa',
+   'Buy USDC with debit card': 'Bumili ng USDC gamit ang debit card',
+   'Coinbase account needed': 'Kailangan ng Coinbase account',
+   'Coinbase checks if you’re signed in — if not, you’ll sign in first, then pay by card.':
+      'Susuriin ng Coinbase kung naka-sign in ka na — kung hindi, mag-sign in ka muna, tapos magbayad gamit ang card.',
+   'Bridge from another chain': 'Mag-bridge mula sa ibang chain',
+   'Already have stablecoins? Move them to Base': 'May stablecoins ka na ba? Ilipat ito sa Base',
+   'Bridge from Solana': 'Mag-bridge mula sa Solana',
+   'Gas only': 'Gas lang',
+   'Loading balance': 'Nilo-load ang balanse',
+
+   // src/views/fund/StripeOnrampModal.tsx
+   'Opening secure checkout…': 'Binubuksan ang secure checkout…',
+   'Back to funding options': 'Bumalik sa mga opsyon sa pagpondo',
+   'Payment confirmed': 'Nakumpirma ang bayad',
+   'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
+      'Papunta na ang USDC mo sa wallet mo sa Base. Karaniwang dumarating ito sa loob ng isang minuto.'
 };
