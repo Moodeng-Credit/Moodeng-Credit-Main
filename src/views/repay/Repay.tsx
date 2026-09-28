@@ -68,7 +68,9 @@ const quickRepaymentFractions = [
 // which accounts they actually hold, so it must never be the thing that hides their own
 // rails. Binance stays excluded specifically for users detected IN the Philippines, where
 // Binance doesn't operate. Order matters: index 0 renders as the hero card, index 1 as the
-// pill below it.
+// pill below it. Indodax (last) is the one exception that location ADDS: for users detected in
+// Indonesia it takes the hero slot and every other source moves under "Other options" (still
+// available, never hidden). Elsewhere it isn't shown — it needs an Indonesian KTP.
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -80,7 +82,8 @@ const fundSources = [
       action: 'Open Binance',
       href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC',
       deepLink: 'bnc://app.binance.com/'
-   }
+   },
+   { id: 'indodax', label: 'Indodax', action: 'Open Indodax', href: 'https://indodax.com', deepLink: null }
 ] as const;
 
 type FundSourceId = (typeof fundSources)[number]['id'];
@@ -93,16 +96,18 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
    coinsph: null,
    gcrypto: 0.08,
    pdax: 0.08,
-   binance: 0.2
+   binance: 0.2,
+   indodax: null
 };
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
-// coinsph is the only entry that's ever actually rendered (renderHeroSource is only ever
-// called with fundSources[0], i.e. coinsph) — the other entries are unused, kept from before
-// Binance was removed from the hero slot.
+// Only coinsph and indodax are ever rendered (renderHeroSource is called with fundSources[0],
+// i.e. coinsph, or with Indodax for users in Indonesia) — moneybees is unused, kept from
+// before Binance was removed from the hero slot.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
    coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
-   moneybees: "External option · you follow Moneybees' own process"
+   moneybees: "External option · you follow Moneybees' own process",
+   indodax: 'Recommended in Indonesia · buy USDC with rupiah, send on Base'
 };
 
 // Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
@@ -113,7 +118,8 @@ const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
    coinsph: 'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm',
    gcrypto: 'GCash app → GCrypto → USDCBASE → Withdraw',
    pdax: 'Wallet → USDCBASE → Withdraw → Paste wallet address',
-   binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address'
+   binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address',
+   indodax: 'Deposit rupiah → USDC/IDR market → Buy USDC → Wallet → USDC → Withdraw → Network: Base → paste address → confirm'
 };
 
 const renderSourceLogo = (id: FundSourceId, isSelected = false) => {
@@ -161,6 +167,17 @@ const renderSourceLogo = (id: FundSourceId, isSelected = false) => {
             <circle cx="10" cy="10" r="10" fill="#E9A200" />
             <circle cx="10" cy="10" r="8" fill="#3B60C4" />
             <path d="M13.2 6.2 A5 5 0 1 0 13.2 13.8" stroke="white" strokeWidth="2.8" strokeLinecap="round" />
+         </svg>
+      );
+   }
+   if (id === 'indodax') {
+      // Neutral navy disc with "Rp" — a plain signifier, not the Indodax logo
+      return (
+         <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="10" fill="#0B3D91" />
+            <text x="10" y="13.4" textAnchor="middle" fontSize="9" fontWeight="800" fill="white" fontFamily="system-ui, sans-serif">
+               Rp
+            </text>
          </svg>
       );
    }
@@ -359,7 +376,10 @@ export default function Repay() {
       isBaseWallet: isBaseWalletProvider(user?.walletProvider),
       isPreview: usePreviewLoans
    });
-   const { allowed: geoAllowed, loading: geoLoading } = useGeoCheck(usePreviewLoans);
+   const { allowed: geoAllowed, loading: geoLoading, countryCode } = useGeoCheck(usePreviewLoans);
+   // Previews can force the country with ?country=ID.
+   const previewCountry = usePreviewLoans ? new URLSearchParams(location.search).get('country') : null;
+   const inIndonesia = (previewCountry ?? countryCode)?.toUpperCase() === 'ID';
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -416,6 +436,7 @@ export default function Repay() {
    const [justFunded, setJustFunded] = useState<number | null>(null);
    const effectiveJustFunded = previewArriving ? 121 : justFunded;
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
+   const indodaxSource = fundSources.find((source) => source.id === 'indodax') ?? fundSources[0];
 
    // Compact source button used for Coins.ph and the "Other options" exchanges.
    // Fee tag sits next to the label; selection is conveyed by border + fill alone (no checkmark).
@@ -453,7 +474,7 @@ export default function Repay() {
       );
    };
 
-   // Prominent, full-width primary source — always Coins.ph (fundSources[0]), for everyone.
+   // Prominent, full-width primary source — Coins.ph (fundSources[0]), or Indodax in Indonesia.
    // Fee badge sits inline with the name; selection is conveyed by border + fill alone (no checkmark).
    const renderHeroSource = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
@@ -714,6 +735,12 @@ export default function Repay() {
          setFundSource((current) => (current === 'binance' ? 'coinsph' : current));
       }
    }, [geoAllowed, geoLoading]);
+
+   // In Indonesia, Indodax leads — move the untouched Coins.ph default to it once (never a
+   // user's own pick). Previews resolve immediately, so no loading guard is needed there.
+   useEffect(() => {
+      if (inIndonesia) setFundSource((current) => (current === 'coinsph' ? 'indodax' : current));
+   }, [inIndonesia]);
 
    // When we learn the borrower doesn't hold enough USDC to repay, surface the add-funds
    // helper automatically so the next step is visible without hunting for it. Runs only
@@ -1378,8 +1405,17 @@ export default function Repay() {
                                     <>
                                        <p className="mb-3 text-xs text-[#6b6090]">
                                           Pick where you'll buy or withdraw USDC.{' '}
-                                          <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people
-                                          {!inPhilippines ? (
+                                          {inIndonesia ? (
+                                             <>
+                                                <span className="font-semibold text-[#6c3fe0]">Indodax</span> is the simplest option in
+                                                Indonesia — buy USDC with rupiah and send it on Base. Other options are below.
+                                             </>
+                                          ) : (
+                                             <>
+                                                <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people
+                                             </>
+                                          )}
+                                          {inIndonesia ? null : !inPhilippines ? (
                                              <>
                                                 {' '}
                                                 — and works the same whether you're in the Philippines or traveling.{' '}
@@ -1391,16 +1427,18 @@ export default function Repay() {
                                           )}
                                        </p>
 
-                                       {renderHeroSource(fundSources[0])}
+                                       {renderHeroSource(inIndonesia ? indodaxSource : fundSources[0])}
 
-                                       <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>
+                                       {inIndonesia ? null : <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>}
 
                                        {(() => {
                                           // Local rails always show. Binance is added here ONLY for users detected
                                           // outside the Philippines (see the fundSources comment above for why) — it's
-                                          // an added option abroad, never a replacement for the local rails.
+                                          // an added option abroad, never a replacement for the local rails. In
+                                          // Indonesia, Indodax takes the hero slot and Coins.ph/Moneybees join these.
                                           const otherSources = fundSources.filter(
                                              (source) =>
+                                                (inIndonesia && (source.id === 'coinsph' || source.id === 'moneybees')) ||
                                                 source.id === 'gcrypto' ||
                                                 source.id === 'pdax' ||
                                                 (source.id === 'binance' && !inPhilippines)
@@ -1512,9 +1550,9 @@ export default function Repay() {
                                           ⚠️ Send on the BASE network only
                                        </p>
                                        <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-                                          USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong
-                                          chain and is lost forever — it cannot be recovered. When {activeSource.label} asks which
-                                          network, choose <span className="font-extrabold underline">Base</span>.
+                                          USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and
+                                          is lost forever — it cannot be recovered. When {activeSource.label} asks which network, choose{' '}
+                                          <span className="font-extrabold underline">Base</span>.
                                        </p>
                                     </div>
                                  </div>
@@ -1592,7 +1630,9 @@ export default function Repay() {
                                           </p>
                                           <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
                                              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                                             {activeSource.id === 'binance' || activeSource.id === 'coinsph' ? (
+                                             {activeSource.id === 'binance' ||
+                                             activeSource.id === 'coinsph' ||
+                                             activeSource.id === 'indodax' ? (
                                                 <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
                                                    Select <strong>Base</strong> network — not Ethereum or Polygon
                                                 </span>
@@ -1602,6 +1642,13 @@ export default function Repay() {
                                                 </span>
                                              )}
                                           </div>
+                                          {activeSource.id === 'indodax' ? (
+                                             <p className="mt-2.5 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                Needs a verified Indodax account (KTP + selfie). Rupiah deposits start at Rp10,000. Indodax
+                                                asks for your Google Authenticator or email code to withdraw, and shows the network fee
+                                                before you confirm. USDC can take up to an hour to arrive.
+                                             </p>
+                                          ) : null}
                                           {activeSource.id === 'pdax' ? (
                                              <div className="mt-3 overflow-hidden rounded-lg">
                                                 <iframe

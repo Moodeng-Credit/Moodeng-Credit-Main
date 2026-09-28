@@ -28,8 +28,6 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
-
-import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
 import { openSupportContacts } from '@/components/support/supportContacts';
@@ -45,6 +43,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
+import { type UsdcRateCurrency, useUsdcRate } from '@/lib/useUsdcRate';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { CashoutGateError, startCashoutFaceCheck } from '@/lib/withdraw/cashoutFaceGate';
 import type { RootState } from '@/store/store';
@@ -60,7 +59,7 @@ function track(event: string, props?: Record<string, unknown>) {
 }
 
 type Screen = 'celebrate' | 'withdraw';
-type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax';
+type Provider = 'moneybees' | 'binance' | 'coinsph' | 'gcash' | 'pdax' | 'indodax';
 
 // Real data + actions provided by the page root and consumed by the ported
 // prototype components. `available` replaces the prototype's hardcoded
@@ -163,10 +162,13 @@ function SecondaryBtn({ children, onClick }: { children: React.ReactNode; onClic
 
 /* Live USDC → fiat rate — shared hook (also powers the balance card's peso line). */
 
+const RECEIVE_SYMBOLS: Record<UsdcRateCurrency, string> = { php: '₱', idr: 'Rp', usd: '$' };
+
 function ReceiveEstimate({ currency, usdcAmount }: { currency: string; usdcAmount: number }) {
-   const cur = currency.toLowerCase() === 'php' ? 'php' : 'usd';
-   const symbol = cur === 'php' ? '₱' : '$';
-   const { value, live } = useUsdcRate(cur as 'php' | 'usd');
+   const lower = currency.toLowerCase();
+   const cur: UsdcRateCurrency = lower === 'php' || lower === 'idr' ? lower : 'usd';
+   const symbol = RECEIVE_SYMBOLS[cur];
+   const { value, live } = useUsdcRate(cur);
    const val = usdcAmount * value;
    return (
       <>
@@ -311,6 +313,13 @@ function PdaxAppIcon({ className = '' }: { className?: string }) {
    return (
       <div className={`rounded-[16px] bg-[#0B1426] flex items-center justify-center overflow-hidden ${className}`}>
          <PdaxMark className="w-[80%] h-[80%]" />
+      </div>
+   );
+}
+function IndodaxAppIcon({ className = '' }: { className?: string }) {
+   return (
+      <div className={`rounded-[16px] bg-[#0B3D91] flex items-center justify-center ${className}`}>
+         <span className="text-[13px] font-extrabold tracking-[-0.3px] text-white">Rp</span>
       </div>
    );
 }
@@ -584,22 +593,31 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
 }
 
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
-   const { spendable, walletConnected, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
+   const { spendable, walletConnected, isPreview, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
    const navigate = useNavigate();
-   // No region/IP check here (deliberately removed): `useRegion()` is an IP-based guess, not
-   // the user's actual location or nationality — a Filipino traveling or living abroad still
-   // has working Coins.ph/GCash/PDAX accounts, and a client-side IP lookup routinely misreads
-   // a PH mobile carrier as another country anyway. So every provider is always shown below,
-   // Coins.ph stays the recommended default for everyone, and a user genuinely abroad can still
-   // pick Binance themselves — location must never hide a rail or auto-switch the default.
+   const location = useLocation();
+   // Location never HIDES a rail: the IP is a guess, not the user's nationality — a Filipino
+   // traveling or living abroad still has working Coins.ph/GCash/PDAX accounts. So every
+   // Philippine provider is always shown below. The one thing location does is ADD Indodax
+   // for users detected in Indonesia (it needs an Indonesian KTP, so it's noise elsewhere),
+   // where it leads and is preselected — Coins.ph stays one tap away for Filipinos there.
+   // Previews can force the country with ?country=ID.
+   const { countryCode } = useGeoCheck(isPreview);
+   const previewCountry = isPreview ? new URLSearchParams(location.search).get('country') : null;
+   const inIndonesia = (previewCountry ?? countryCode)?.toUpperCase() === 'ID';
    const [selected, setSelected] = useState<Provider>('coinsph');
+   // Geo resolves after first render; switch the untouched default once, never a user's pick.
+   useEffect(() => {
+      if (inIndonesia) setSelected((current) => (current === 'coinsph' ? 'indodax' : current));
+   }, [inIndonesia]);
 
    const NAMES: Record<Provider, string> = {
       moneybees: 'Moneybees',
       binance: 'Binance',
       coinsph: 'Coins.ph',
       gcash: 'GCrypto',
-      pdax: 'PDAX'
+      pdax: 'PDAX',
+      indodax: 'Indodax'
    };
 
    return (
@@ -631,7 +649,11 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                   Withdraw your USDC
                </h1>
                <p className="text-[13px] text-[var(--text-muted)] leading-[18px] mt-[6px]">
-                  {!walletConnected ? 'Connect your wallet to see your balance' : spendable == null ? 'Checking your balance…' : `${spendable} USDC available`}
+                  {!walletConnected
+                     ? 'Connect your wallet to see your balance'
+                     : spendable == null
+                       ? 'Checking your balance…'
+                       : `${spendable} USDC available`}
                   {REPAY_USDC != null && DUE_DATE ? (
                      <>
                         {' '}
@@ -648,16 +670,26 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto
                service.
             </p>
-            {/* Every provider is shown to everyone — see the note on `region` above for why
-                location must never hide or reorder these based on an IP guess. Coins.ph stays
-                the recommended default for everyone; a user genuinely abroad can still pick
-                Binance themselves. */}
+            {/* Every Philippine provider is shown to everyone — see the note above for why
+                location must never hide these. Indodax is added on top for Indonesia only. */}
             <div className="space-y-[10px]">
+               {inIndonesia && (
+                  <PickerRow
+                     selected={selected}
+                     onSelect={setSelected}
+                     id="indodax"
+                     recommended
+                     icon={<IndodaxAppIcon className="w-[46px] h-[46px]" />}
+                     name="Indodax"
+                     line1="Sell for rupiah, withdraw to your bank"
+                     line2="Needs a verified Indodax account · bank within 24h"
+                  />
+               )}
                <PickerRow
                   selected={selected}
                   onSelect={setSelected}
                   id="coinsph"
-                  recommended
+                  recommended={!inIndonesia}
                   icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
                   name="Coins.ph"
                   line1="Sell for pesos, withdraw to bank or GCash"
@@ -917,7 +949,8 @@ const PROVIDER_NAMES: Record<Provider, string> = {
    binance: 'Binance',
    coinsph: 'Coins.ph',
    gcash: 'GCrypto',
-   pdax: 'PDAX'
+   pdax: 'PDAX',
+   indodax: 'Indodax'
 };
 
 function SuccessBanner({ exchange, amount }: { exchange: string; amount: number }) {
@@ -1117,11 +1150,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
          // can't hang on the spinner, and give the user an explicit failure signal.
          track('withdraw_send_failed', { exchange: cfg.name, amount: amtNum });
          setSendPhase(null);
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Withdrawal didn't go through",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1226,7 +1255,11 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected
+                           ? 'Wallet not connected'
+                           : spendable == null
+                             ? 'Checking your balance…'
+                             : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -1454,6 +1487,90 @@ const PDAX_FLOW: AppFlowConfig = {
    ]
 };
 
+// Indonesia rail. Indodax is OJK-licensed, lists a USDC/IDR market, and accepts USDC deposits
+// on Base (added May 2024). Only offered to users detected in Indonesia — see CelebrateScreen.
+const INDODAX_DEPOSIT_HELP = 'https://help.indodax.com/hc/en-us/articles/4416502512409-How-to-Deposit-Digital-Assets';
+const INDODAX_VERIFY_HELP = 'https://help.indodax.com/hc/en-us/articles/5187982164377-How-to-Verify-my-Indodax-Account';
+const INDODAX_FLOW: AppFlowConfig = {
+   name: 'Indodax',
+   short: 'Indodax',
+   receiveCurrency: 'IDR',
+   payout: 'Your Indonesian bank account',
+   howItWorks:
+      'Send USDC from your Moodeng wallet to your Indodax account. Once it arrives, sell it for rupiah and withdraw to your bank account.',
+   topWarning: (
+      <div className="rounded-[16px] bg-[var(--surface-2)] border border-[var(--border-1)] p-[16px] flex items-start gap-[12px]">
+         <Info className="w-[20px] h-[20px] text-[var(--accent)] shrink-0 mt-[1px]" />
+         <p className="text-[13px] leading-[21px] text-[var(--text-2)]">
+            You need a <span className="font-semibold text-[var(--ink)]">verified Indodax account</span> first. Verification uses your KTP
+            and a selfie in the Indodax app, so finish it before you send.{' '}
+            <a
+               href={INDODAX_VERIFY_HELP}
+               target="_blank"
+               rel="noopener noreferrer"
+               className="font-semibold text-[var(--accent)] underline"
+            >
+               How to verify
+            </a>
+         </p>
+      </div>
+   ),
+   steps: [
+      {
+         icon: <Download className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Open Indodax → Wallet → USDC → Deposit',
+         desc: 'Find USDC in your wallet, tap Deposit, then choose Base as the network.',
+         guide: {
+            title: 'How to find your Indodax deposit address',
+            link: { label: 'Official Indodax guide', url: INDODAX_DEPOSIT_HELP },
+            steps: [
+               'Open the Indodax app and log in.',
+               'Go to Wallet, search for USDC and tap "Deposit".',
+               'Choose "Base" as the network.',
+               'Confirm it says Base before continuing.'
+            ]
+         }
+      },
+      {
+         icon: <Copy className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Copy your Indodax address',
+         desc: 'Tap to copy the USDC (Base) deposit address shown on screen.'
+      },
+      {
+         icon: <ClipboardCheck className="w-[19px] h-[19px] text-[var(--accent)]" strokeWidth={2.2} />,
+         title: 'Paste it below',
+         desc: 'Paste the address in the field below, then confirm and send.'
+      }
+   ],
+   cashOutTitle: 'Cash out to rupiah with Indodax',
+   cashOutIntro:
+      'Once your USDC arrives in Indodax (after the Base network confirms it), sell it for rupiah and withdraw to your Indonesian bank account.',
+   cashOutSteps: [
+      {
+         title: (
+            <>
+               Open the <span className="font-bold">USDC/IDR</span> market and tap <span className="font-bold">Sell</span>
+            </>
+         ),
+         helper: "Enter the USDC amount and confirm. Indodax shows the rupiah you'll get at the current price."
+      },
+      {
+         title: (
+            <>
+               Go to <span className="font-bold">Wallet → IDR → Withdraw</span>
+            </>
+         ),
+         helper: 'Choose your bank and enter your account number. The minimum withdrawal is Rp100,000.',
+         danger: 'The bank account must be in the same name as your Indodax account, or the withdrawal is rejected.'
+      },
+      {
+         title: 'Confirm with your security code',
+         helper:
+            'Enter the Google Authenticator or email code. Indodax shows its bank fee before you confirm. Rupiah usually arrives within 24 hours on working days.'
+      }
+   ]
+};
+
 const COINSPH_DEPOSIT_HELP =
    'https://support.coins.ph/hc/en-us/articles/41270627740953-Starting-your-Coins-Journey-How-to-Deposit-Cryptocurrency-and-Cash-in-PHP-on-Coins-ph';
 const COINSPH_FLOW: AppFlowConfig = {
@@ -1588,11 +1705,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
          // the user always gets an explicit failure signal.
          track('withdraw_send_failed', { exchange: 'Binance', amount: amtNum });
          setSendPhase(null);
-         showToast(
-            TOAST_TYPES.ERROR,
-            "Withdrawal didn't go through",
-            err instanceof Error ? err.message : 'Please try again in a moment.'
-         );
+         showToast(TOAST_TYPES.ERROR, "Withdrawal didn't go through", err instanceof Error ? err.message : 'Please try again in a moment.');
       } finally {
          setSending(false);
          setConfirming(false);
@@ -1730,7 +1843,11 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
                         <span className="pr-[16px] text-[14px] font-semibold text-[var(--text-muted)] shrink-0">USDC</span>
                      </div>
                      <p className="text-[12px] text-[var(--text-muted)] leading-[18px]">
-                        {!walletConnected ? 'Wallet not connected' : spendable == null ? 'Checking your balance…' : `Available: ${spendable} USDC`}
+                        {!walletConnected
+                           ? 'Wallet not connected'
+                           : spendable == null
+                             ? 'Checking your balance…'
+                             : `Available: ${spendable} USDC`}
                      </p>
                      {amount !== '' && spendable != null && amtNum > spendable && (
                         <p className="text-[12px] text-[var(--danger)] leading-[18px] flex items-center gap-1">
@@ -2055,7 +2172,8 @@ const PROVIDER_TITLES: Record<Provider, string> = {
    binance: 'Send to Binance',
    coinsph: 'Send to Coins.ph',
    gcash: 'Send to GCrypto',
-   pdax: 'Send to PDAX'
+   pdax: 'Send to PDAX',
+   indodax: 'Send to Indodax'
 };
 
 function WithdrawScreen({
@@ -2096,6 +2214,8 @@ function WithdrawScreen({
                   <AppFlow cfg={GCASH_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
                ) : provider === 'pdax' ? (
                   <AppFlow cfg={PDAX_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
+               ) : provider === 'indodax' ? (
+                  <AppFlow cfg={INDODAX_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
                ) : (
                   <AppFlow cfg={COINSPH_FLOW} onConfirmed={onConfirmed} onDone={onDone} />
                )}
@@ -2330,7 +2450,19 @@ export default function Withdraw() {
             return { hash: outcome.hash, confirmed: method === 'base' };
          }
       }),
-      [available, spendable, walletConnected, isPreview, primaryLoan, walletAddress, payUsdc, activePaymentMethod, user.id, navigate, refetchUsdcBalance]
+      [
+         available,
+         spendable,
+         walletConnected,
+         isPreview,
+         primaryLoan,
+         walletAddress,
+         payUsdc,
+         activePaymentMethod,
+         user.id,
+         navigate,
+         refetchUsdcBalance
+      ]
    );
 
    return (
