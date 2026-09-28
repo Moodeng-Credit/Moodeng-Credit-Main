@@ -650,5 +650,123 @@ export const filipinoCoverageA: Record<string, string> = {
    'Close tutorial video': 'Isara ang tutorial video',
    'Moodeng Academy tutorial video': 'Tutorial video ng Moodeng Academy',
    'Moodeng Credit steps': 'Mga hakbang ng Moodeng Credit',
-   'Choose reward type': 'Pumili ng uri ng reward'
+   'Choose reward type': 'Pumili ng uri ng reward',
+
+   // src/views/academy/MoneyGuide.tsx
+   'Getting verified, funding your wallet, cashing out, and repaying — in one friendly place.':
+      'Pag-verify, pagpondo sa wallet mo, pag-cash out, at pagbabayad — sa isang friendly na lugar.',
+   'Read more': 'Magbasa pa',
+   'How to verify, add USDC to your wallet, withdraw to your bank, and repay your loan on Moodeng.':
+      'Paano mag-verify, magdagdag ng USDC sa wallet mo, mag-withdraw sa bank mo, at magbayad ng loan mo sa Moodeng.',
+   'Verify your identity': 'I-verify ang identity mo',
+   'A quick national ID photo and selfie check confirms you’re a real, unique person. Most checks finish within minutes.':
+      'Kinukumpirma ng mabilisang national ID photo at selfie check na ikaw ay totoo at natatanging tao. Karamihan sa mga check ay natatapos sa loob ng ilang minuto.',
+   Selfie: 'Selfie',
+   'Add funds to your wallet': 'Magdagdag ng pondo sa wallet mo',
+   'USDC on the Base network': 'USDC sa Base network',
+   'Buy USDC on an exchange or with a card, then send it to your wallet — always on Base. Or bridge it from another chain.':
+      'Bumili ng USDC sa isang exchange o gamit ang card, tapos ipadala ito sa wallet mo — laging sa Base. O i-bridge ito mula sa ibang chain.',
+   'Withdraw to your bank': 'Mag-withdraw sa bank mo',
+   'Cash out to bank or e-wallet': 'Mag-cash out sa bank o e-wallet',
+   'Send USDC to an exchange or local service, sell it, and withdraw your local currency to your bank or GCash. The full guide has a video walkthrough.':
+      'Ipadala ang USDC sa isang exchange o local na serbisyo, ibenta ito, at i-withdraw ang local currency mo sa bank mo o GCash. May video walkthrough ang buong gabay.',
+   'Repay your loan': 'Bayaran ang loan mo',
+   'On-time repayment builds trust': 'Ang on-time na pagbabayad ay bumubuo ng tiwala',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Pandesal points and credit limit.':
+      'Ipadala ang USDC sa repayment address na nakalagay sa Repay screen — mula sa wallet, exchange, o local na serbisyo. Ang pagbabayad on time ay nagpapataas ng Pandesal points at credit limit mo.',
+   'From a wallet': 'Mula sa wallet',
+   'From an exchange': 'Mula sa exchange',
+   'Base network': 'Base network',
+
+   // src/views/academy/VerifyGuide.tsx
+   Money: 'Pera',
+   "To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.":
+      'Para mapanatiling ligtas at patas ang Moodeng, kumpletuhin ng bawat borrower ang isang maikling identity check. Pinapanatili nito na wala sa community ang mga peke at duplicate na account, at ito ang nagpapahintulot sa mga lender na magtiwala sa mga request na pinopondohan nila.',
+   'The recommended route: Verify Your ID.': 'Ang inirerekomendang paraan: Verify Your ID.',
+   'National ID verification is available for these countries.': 'Available ang National ID verification para sa mga bansang ito.',
+   'Pass on the first try': 'Pumasa sa Unang Subok',
+   'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
+      'Kung verified ka na sa World App — personal sa isang Orb, o gamit ang biometric passport — puwede kang pumili ng',
+   'Your ID is never stored by Moodeng': 'Hindi Kailanman Iniimbak ng Moodeng ang ID Mo',
+   'The check is run by our secure verification partner. Moodeng receives the result — whether you passed — not a copy of your document.':
+      'Isinasagawa ang check ng aming secure na verification partner. Tumatanggap ang Moodeng ng resulta — kung pumasa ka man o hindi — hindi kopya ng dokumento mo.',
+   'Ready to verify?': 'Ready ka na bang mag-verify?',
+   Read: 'Basahin',
+   'Verification makes sure every request comes from a real, unique person. That is what keeps fake and duplicate accounts away from lenders.':
+      'Sinisiguro ng verification na ang bawat request ay galing sa totoo at natatanging tao. Ito ang nagpapanatili ng mga peke at duplicate na account palayo sa mga lender.',
+   Access: 'Access',
+   'Finishing verification is what unlocks loan requests, and it is the point where you start earning Pandesal points.':
+      'Ang pagtapos ng verification ang nag-a-unlock ng mga loan request, at dito ka rin magsisimulang kumita ng Pandesal points.',
+   Trust: 'Tiwala',
+   'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
+      'Nagpopondo ang mga lender sa totoong tao, hindi sa anonymous na account. Ang kumpiyansang iyon ang nagpapapondo sa mga request sa board.',
+   'Your physical national ID': 'Ang Physical na National ID Mo',
+   'The real card in hand, not a photocopy or a picture on another screen.':
+      'Ang totoong card sa kamay, hindi photocopy o larawan sa ibang screen.',
+   'Avoid glare and hard shadows across the card or your face.': 'Iwasan ang glare at matitigas na anino sa card o mukha mo.',
+   'Chrome or Safari': 'Chrome or Safari',
+   'Not the browser inside Facebook or Messenger — those can stall the check.':
+      'Hindi ang browser sa loob ng Facebook o Messenger — puwede nitong ma-stall ang check.',
+   'How long does verification take?': 'Gaano katagal ang verification?',
+   'The check itself takes about 3 minutes. Most results come back within minutes. If yours needs a human review, we notify you as soon as it is done — usually within a few hours, and at most 1 business day.':
+      "Ang check mismo ay tumatagal ng mga 3 minuto. Karamihan sa mga resulta ay bumabalik sa loob ng ilang minuto. Kung kailangan ng human review ang sa'yo, aabisuhan ka namin sa sandaling matapos ito — karaniwang sa loob ng ilang oras, at pinakamatagal ay 1 business day.",
+   'Does Moodeng store a copy of my ID?': 'Nag-iimbak ba ang Moodeng ng kopya ng ID ko?',
+   'No. Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'Hindi. Ang ID mo ay sine-check ng aming secure na verification partner at hindi kailanman iniimbak ng Moodeng.',
+   'Do I have to verify again for every loan?': 'Kailangan ko bang mag-verify ulit sa bawat loan?',
+   'No. Verification is a one-time step. Once it is complete you can keep requesting loans without repeating it.':
+      'Hindi. Isang beses lang ang verification. Kapag tapos na ito, puwede kang magpatuloy na mag-request ng loan nang hindi na ito uulitin.',
+   'Which countries are supported?': 'Aling mga bansa ang supported?',
+   'I already use World App — can I use that instead?': 'Gumagamit na ako ng World App — puwede ko ba itong gamitin sa halip?',
+   'How to verify your identity on Moodeng Credit': 'Paano I-verify ang Identity Mo sa Moodeng Credit',
+   Breadcrumb: 'Breadcrumb',
+   'Why verification matters': 'Bakit Mahalaga ang Verification',
+   'Already use World App?': 'Gumagamit na ba ng World App?',
+   'Keep going': 'Magpatuloy',
+
+   // src/views/academy/moneyGuideTopics.tsx
+   'Your Moodeng wallet works with USDC on the Base network. Besides the in-app options — card purchase and bridging from another chain — here are common ways to get USDC into your wallet.':
+      'Gumagana ang wallet mo sa Moodeng gamit ang USDC sa Base network. Bukod sa mga in-app na option — pagbili gamit ang card at pag-bridge mula sa ibang chain — narito ang mga karaniwang paraan para makakuha ng USDC papunta sa wallet mo.',
+   'Ways to buy and send USDC': 'Mga Paraan para Bumili at Magpadala ng USDC',
+   'Buy USDC with local currency directly from other users, then withdraw on the Base network.':
+      'Bumili ng USDC gamit ang local currency direkta mula sa ibang users, tapos mag-withdraw sa Base network.',
+   'Buy USDC with PHP, then Send Crypto → External Wallet → Base network.':
+      'Bumili ng USDC gamit ang PHP, tapos Send Crypto → External Wallet → Base network.',
+   'Buy USDC with PHP and withdraw to your wallet on Base.': 'Bumili ng USDC gamit ang PHP at mag-withdraw papunta sa wallet mo sa Base.',
+   'If crypto is enabled in your GCash app, buy USDC and withdraw via USDCBASE.':
+      'Kung naka-enable ang crypto sa GCash app mo, bumili ng USDC at mag-withdraw gamit ang USDCBASE.',
+   'An over-the-counter service some users may use to buy crypto. Follow Moneybees’ instructions directly on their site.':
+      'Isang over-the-counter na serbisyo na maaaring gamitin ng ibang users para bumili ng crypto. Sundin ang mga instructions ng Moneybees direkta sa site nila.',
+   'Another exchange or wallet': 'Ibang Exchange o Wallet',
+   'Buy USDC on an exchange you already use, or send USDC you hold elsewhere to your wallet address — always USDC on Base.':
+      'Bumili ng USDC sa exchange na ginagamit mo na, o ipadala ang USDC na hawak mo sa ibang lugar papunta sa wallet address mo — laging USDC sa Base.',
+   'Send USDC to an exchange or local service, sell it, and withdraw your local currency to your bank or GCash.':
+      'Ipadala ang USDC sa isang exchange o local na serbisyo, ibenta ito, at i-withdraw ang local currency mo sa bank mo o GCash.',
+   'You can cash out by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account or e-wallet.':
+      'Puwede kang mag-cash out sa pamamagitan ng pagpadala ng USDC mo sa isang supported na exchange o serbisyo, pagbebenta nito roon, at paglilipat ng local currency papunta sa bank account o e-wallet mo.',
+   'Watch: sending USDC from your Base account to Binance':
+      'Panoorin: pagpapadala ng USDC mula sa Base account mo papunta sa Binance',
+   'Common ways to cash out': 'Mga Karaniwang Paraan para Mag-cash Out',
+   'Send USDC to your Binance account (choose the Base network), sell it through P2P, and receive local currency straight to your bank or e-wallet.':
+      'Ipadala ang USDC sa Binance account mo (piliin ang Base network), ibenta ito sa pamamagitan ng P2P, at tumanggap ng local currency direkta sa bank o e-wallet mo.',
+   'A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.':
+      'Isang BSP-regulated na Philippine exchange. Mag-deposit ng USDC, ibenta para sa PHP, at mag-withdraw papunta sa bank account mo.',
+   'Deposit USDC, convert to PHP, and cash out to your bank or GCash.':
+      'Mag-deposit ng USDC, i-convert sa PHP, at mag-cash out papunta sa bank o GCash mo.',
+   'If crypto is enabled in your GCash app, you can receive supported crypto and convert inside GCash.':
+      'Kung naka-enable ang crypto sa GCash app mo, puwede kang tumanggap ng supported na crypto at i-convert ito sa loob ng GCash.',
+   'An over-the-counter service some users may use to sell crypto. Follow Moneybees’ instructions directly on their site.':
+      'Isang over-the-counter na serbisyo na maaaring gamitin ng ibang users para magbenta ng crypto. Sundin ang mga instructions ng Moneybees direkta sa site nila.',
+   'Another wallet or exchange': 'Ibang Wallet o Exchange',
+   'Any wallet or exchange you already use works — just make sure it supports USDC on the Base network before sending.':
+      'Gagana ang kahit anong wallet o exchange na ginagamit mo na — siguraduhin lang na sinusuportahan nito ang USDC sa Base network bago magpadala.',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service.':
+      'Ipadala ang USDC sa repayment address na nakalagay sa Repay screen — mula sa wallet, exchange, o local na serbisyo.',
+   'To repay, send the required USDC amount to the repayment address shown in Moodeng — the Repay screen shows the exact amount and lets you copy the address.':
+      "Para magbayad, ipadala ang kinakailangang halaga ng USDC sa repayment address na nakalagay sa Moodeng — ipinapakita ng Repay screen ang eksaktong halaga at nagpapahintulot sa'yong kopyahin ang address.",
+   'Where to buy USDC first': 'Saan Bibili ng USDC Muna',
+   'Buy USDC with local currency from other users, then withdraw on the Base network.':
+      'Bumili ng USDC gamit ang local currency mula sa ibang users, tapos mag-withdraw sa Base network.',
+   'Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.':
+      'Bumili ng USDC gamit ang PHP, tapos gamitin ang Send Crypto → External Wallet → Base network.'
 };
