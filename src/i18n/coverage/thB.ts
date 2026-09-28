@@ -1273,5 +1273,78 @@ export const thaiCoverageB: Record<string, string> = {
       'แตะปุ่มเชื่อมต่อ / อนุมัติโดยตรง — อย่ารอให้ระบบทำเองโดยอัตโนมัติ',
    'Approve the pop-up when it appears.': 'อนุมัติป๊อปอัปเมื่อปรากฏขึ้น',
    'If nothing appears, redo the "Wallet won\'t connect" reset.':
-      'หากไม่มีอะไรปรากฏ ให้ทำขั้นตอนรีเซ็ตใน "กระเป๋าเงินเชื่อมต่อไม่ได้" อีกครั้ง'
+      'หากไม่มีอะไรปรากฏ ให้ทำขั้นตอนรีเซ็ตใน "กระเป๋าเงินเชื่อมต่อไม่ได้" อีกครั้ง',
+
+   // src/views/account/AvatarUploadModal.tsx
+   'Change background only': 'เปลี่ยนเฉพาะพื้นหลัง',
+   'Click to upload': 'แตะเพื่ออัปโหลด',
+   'PNG, JPG, WEBP · up to 5 MB': 'PNG, JPG, WEBP · ขนาดไม่เกิน 5 MB',
+   'Drag to reposition · use the slider to zoom': 'ลากเพื่อจัดตำแหน่ง · ใช้แถบเลื่อนเพื่อซูม',
+   'Avatar background': 'พื้นหลังอวาตาร์',
+   'Failed to save avatar.': 'บันทึกอวาตาร์ไม่สำเร็จ',
+   'Failed to save avatar background.': 'บันทึกพื้นหลังอวาตาร์ไม่สำเร็จ',
+   'Current profile photo': 'รูปโปรไฟล์ปัจจุบัน',
+
+   // src/views/account/BaseNetworkSheet.tsx
+   'Moodeng runs on Base': 'Moodeng ทำงานบน Base',
+   'Base is the blockchain network Moodeng is built on. Your wallet, your USDC, every loan you fund and every repayment you make all live here.':
+      'Base คือเครือข่ายบล็อกเชนที่ Moodeng สร้างขึ้น กระเป๋าเงิน USDC เงินกู้ที่คุณปล่อยกู้ และการชำระคืนทุกครั้งของคุณอยู่บนเครือข่ายนี้ทั้งหมด',
+   'Learn more about Base': 'เรียนรู้เพิ่มเติมเกี่ยวกับ Base',
+   'Fast and cheap by design': 'ออกแบบมาให้เร็วและถูก',
+   'Secured by Ethereum': 'ปลอดภัยด้วย Ethereum',
+   'Base inherits Ethereum’s security while staying low-cost. Your USDC balance and loan history are recorded on-chain, where they can’t be quietly changed.':
+      'Base สืบทอดความปลอดภัยของ Ethereum ในขณะที่ยังคงมีต้นทุนต่ำ ยอดคงเหลือ USDC และประวัติเงินกู้ของคุณถูกบันทึกไว้บนเชน ซึ่งไม่สามารถแก้ไขเงียบ ๆ ได้',
+   'Close overlay': 'ปิดหน้าต่างซ้อนทับ',
+
+   // src/views/account/EditBioInfoModal.tsx
+   'Change Bio Info': 'แก้ไขข้อมูลส่วนตัว',
+   'Update the details lenders see about your work, income, and what you typically need help with.':
+      'อัปเดตรายละเอียดที่ผู้ให้กู้เห็นเกี่ยวกับงาน รายได้ และสิ่งที่คุณมักต้องการความช่วยเหลือ',
+
+   // src/views/account/ExportInstantWalletKey.tsx
+   'Export wallet key': 'ส่งออกคีย์กระเป๋าเงิน',
+   'Your private key': 'คีย์ส่วนตัวของคุณ',
+   'Anyone with this key controls your funds. Never share it or type it into any website. Moodeng will never ask for it.':
+      'ใครก็ตามที่มีคีย์นี้จะควบคุมเงินของคุณได้ อย่าแชร์หรือพิมพ์ลงในเว็บไซต์ใด ๆ เด็ดขาด Moodeng จะไม่มีวันขอคีย์นี้จากคุณ',
+   'Copy key': 'คัดลอกคีย์',
+   'Export your wallet key': 'ส่งออกคีย์กระเป๋าเงินของคุณ',
+   'Please try again in a moment.': 'โปรดลองอีกครั้งในอีกสักครู่',
+
+   // src/views/account/TwoFactorSettings.tsx
+   'Set up authenticator app': 'ตั้งค่าแอปยืนยันตัวตน',
+   'Scan this QR code with Google Authenticator, Authy, or 1Password, then enter the 6-digit code it shows.':
+      'สแกนคิวอาร์โค้ดนี้ด้วย Google Authenticator, Authy หรือ 1Password แล้วป้อนรหัส 6 หลักที่แสดงขึ้น',
+   "Can't scan? Enter this code manually:": 'สแกนไม่ได้ใช่ไหม กรอกรหัสนี้ด้วยตนเอง:',
+   'Authenticator app': 'แอปยืนยันตัวตน',
+   Passkey: 'พาสคีย์',
+   'Failed to start setup': 'เริ่มต้นตั้งค่าไม่สำเร็จ',
+   'Scan with your authenticator app': 'สแกนด้วยแอปยืนยันตัวตนของคุณ',
+   'Failed to remove': 'ลบไม่สำเร็จ',
+   'Failed to add passkey': 'เพิ่มพาสคีย์ไม่สำเร็จ',
+   'Optional. Add an extra step when you sign in.': 'ไม่บังคับ เพิ่มขั้นตอนพิเศษเมื่อคุณเข้าสู่ระบบ',
+   'Optional. Use Face ID, Touch ID, or a security key on this device.':
+      'ไม่บังคับ ใช้ Face ID, Touch ID หรือกุญแจความปลอดภัยบนอุปกรณ์นี้',
+
+   // src/views/account/WalletAccountInsights.tsx
+   'USDC on Base': 'USDC บน Base',
+   'Balance unavailable': 'ยอดคงเหลือไม่พร้อมใช้งาน',
+   Current: 'ปัจจุบัน',
+   'Some repayments go to another wallet': 'การชำระคืนบางส่วนไปที่กระเป๋าเงินอื่น',
+   'View loan history': 'ดูประวัติเงินกู้',
+   'Activity unavailable': 'กิจกรรมไม่พร้อมใช้งาน',
+   'Your wallet is still connected. Try again to load recent activity.':
+      'กระเป๋าเงินของคุณยังคงเชื่อมต่ออยู่ ลองอีกครั้งเพื่อโหลดกิจกรรมล่าสุด',
+   'No activity yet': 'ยังไม่มีกิจกรรม',
+   'Loans and repayments will appear here.': 'เงินกู้และการชำระคืนจะแสดงที่นี่',
+   'Check for on-chain transfers': 'ตรวจสอบการโอนเงินบนเชน',
+   'On-chain transfers could not load. Confirmed loan events are shown.':
+      'โหลดการโอนเงินบนเชนไม่สำเร็จ แสดงเฉพาะรายการเงินกู้ที่ยืนยันแล้ว',
+   'View all loan activity': 'ดูกิจกรรมเงินกู้ทั้งหมด',
+   'Wallet history unavailable': 'ประวัติกระเป๋าเงินไม่พร้อมใช้งาน',
+   'We could not load wallets previously used with this account.': 'เราไม่สามารถโหลดกระเป๋าเงินที่เคยใช้กับบัญชีนี้ได้',
+   Balance: 'ยอดคงเหลือ',
+   'Loading USDC balance': 'กำลังโหลดยอดคงเหลือ USDC',
+   'Recent activity': 'กิจกรรมล่าสุด',
+   'Loading recent wallet activity': 'กำลังโหลดกิจกรรมล่าสุดของกระเป๋าเงิน',
+   'Wallet history': 'ประวัติกระเป๋าเงิน'
 };
