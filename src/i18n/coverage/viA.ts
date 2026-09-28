@@ -25,7 +25,6 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Your wallet is used to earn Pandesal points and receive USDC loans.': 'Ví của bạn dùng để tích điểm Pandesal và nhận khoản vay USDC.',
    'Open the latest Moodeng email.': 'Mở email mới nhất từ Moodeng.',
    'Sent to': 'Đã gửi đến',
-   Tap: 'Bấm',
    'Confirm Email': 'Xác nhận email',
    'inside that email to finish setup.': 'trong email đó để hoàn tất thiết lập.',
    'Check your email': 'Kiểm tra email của bạn',
@@ -369,7 +368,6 @@ export const vietnameseCoverageA: Record<string, string> = {
    Skip: 'Bỏ qua',
    Back: 'Quay lại',
    Finished: 'Hoàn tất',
-   Next: 'Tiếp',
    // src/components/Header/MobileNav.tsx
    'Mobile navigation': 'Điều hướng trên di động',
    // src/components/InAppBrowserNotice.tsx

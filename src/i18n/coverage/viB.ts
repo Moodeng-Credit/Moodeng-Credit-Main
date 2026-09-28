@@ -9,7 +9,6 @@ export const vietnameseCoverageB: Record<string, string> = {
    'This is a product direction, not a guarantee. Real-world lenders decide their own approvals, but Moodeng can make borrower history clearer, more portable, and easier to evaluate.':
       'Đây là định hướng sản phẩm, không phải cam kết. Các bên cho vay ngoài đời thực tự quyết định việc duyệt vay, nhưng Moodeng có thể giúp lịch sử của người vay rõ ràng hơn, dễ mang theo hơn và dễ đánh giá hơn.',
    Now: 'Hiện tại',
-   Next: 'Tiếp theo',
    Later: 'Sau đó',
    Goal: 'Mục tiêu',
    'Start with verified repayment records': 'Bắt đầu với hồ sơ trả nợ đã xác minh',
