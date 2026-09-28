@@ -733,8 +733,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/views/about/sections/CreditGrowthSystemSection.tsx
    'CREDIT GROWTH SYSTEM': 'HỆ THỐNG TĂNG TRƯỞNG TÍN DỤNG',
    'Grow Your Credit Limit Through Step Borrowing': 'Tăng hạn mức tín dụng của bạn qua từng bước vay',
-   'Your Credit Limit Grows with Every $20 You Borrow and Repay!':
-      'Hạn mức tín dụng của bạn tăng lên sau mỗi 20 đô la bạn vay và trả nợ!',
+   'Your Credit Limit Grows with Every $20 You Borrow and Repay!': 'Hạn mức tín dụng của bạn tăng lên sau mỗi 20 đô la bạn vay và trả nợ!',
    'The more you borrow and repay, the more you can borrow in the future.':
       'Bạn vay và trả nợ càng nhiều, bạn càng có thể vay nhiều hơn trong tương lai.',
    'Borrow + Repay Original $20 to unlock $40': 'Vay + trả nợ 20 đô la ban đầu để mở khóa 40 đô la',
@@ -881,7 +880,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    Quiz: 'Bài kiểm tra',
    'Why do borrowers verify with World ID?': 'Vì sao người vay xác minh bằng World ID?',
    'To prove they are unique': 'Để chứng minh họ là duy nhất',
-   'Why do borrowers set up a wallet (Instant Wallet or Base Account)?': 'Vì sao người vay thiết lập ví (Instant Wallet hoặc Base Account)?',
+   'Why do borrowers set up a wallet (Instant Wallet or Base Account)?':
+      'Vì sao người vay thiết lập ví (Instant Wallet hoặc Base Account)?',
    'To receive USDC loans and build onchain reputation': 'Để nhận khoản vay USDC và xây dựng uy tín on-chain',
    'Your credit limit is $15. What is a $10 request?': 'Hạn mức tín dụng của bạn là $15. Yêu cầu $10 là gì?',
    'Your credit limit is $15. What is a $20 request?': 'Hạn mức tín dụng của bạn là $15. Yêu cầu $20 là gì?',
@@ -934,7 +934,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
       'Để giữ Moodeng an toàn và công bằng, mỗi người vay hoàn thành một lượt kiểm tra danh tính ngắn. Điều này giúp loại bỏ tài khoản giả và trùng lặp khỏi cộng đồng, và đó là điều giúp người cho vay tin tưởng vào các yêu cầu mà họ cấp vốn.',
    'The recommended route: Verify Your ID.': 'Lộ trình được khuyến nghị: Xác minh bằng giấy tờ tùy thân.',
-   'National ID verification is available for these countries.': 'Xác minh bằng giấy tờ tùy thân quốc gia hiện có sẵn cho các quốc gia sau.',
+   'National ID verification is available for these countries.':
+      'Xác minh bằng giấy tờ tùy thân quốc gia hiện có sẵn cho các quốc gia sau.',
    'Pass on the first try': 'Vượt qua ngay lần đầu',
    'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
       'Nếu bạn đã được xác minh trong World App — trực tiếp tại một Orb, hoặc bằng hộ chiếu sinh trắc học — bạn có thể chọn',
@@ -1165,5 +1166,53 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Loading USDC balance': 'Đang tải số dư USDC',
    'Recent activity': 'Hoạt động gần đây',
    'Loading recent wallet activity': 'Đang tải hoạt động ví gần đây',
-   'Wallet history': 'Lịch sử ví'
+   'Wallet history': 'Lịch sử ví',
+   // src/views/borrowerBenefits/BorrowerBenefits.tsx
+   'Borrower Benefits | Moodeng Credit': 'Ưu đãi dành cho người vay | Moodeng Credit',
+   'Why borrowers choose Moodeng Credit: fast global access to small USDC loans, our mission and roadmap, and building verifiable credit as you repay.':
+      'Vì sao người vay chọn Moodeng Credit: truy cập nhanh trên toàn cầu vào các khoản vay USDC nhỏ, sứ mệnh và lộ trình của chúng tôi, cùng việc xây dựng tín dụng có thể kiểm chứng khi bạn trả nợ.',
+   // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
+   'Why borrowing feels different': 'Vì sao việc vay lại khác biệt',
+   'Direct lender-to-borrower': 'Trực tiếp từ người cho vay đến người vay',
+   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'Người cho vay cấp vốn trực tiếp cho yêu cầu của bạn. Moodeng giúp hiển thị các điều khoản và ghi lại lịch sử trả nợ mà không che giấu quy trình sau một bên trung gian.',
+   'Funded in your wallet': 'Được cấp vốn vào ví của bạn',
+   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'Khi người cho vay cấp vốn cho yêu cầu của bạn, USDC di chuyển qua ví kỹ thuật số của bạn để tiền và lịch sử trả nợ dễ theo dõi hơn.',
+   'Terms shown upfront': 'Điều khoản được hiển thị ngay từ đầu',
+   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
+      'Bạn chọn số tiền yêu cầu, số tiền trả nợ, ngày đến hạn và lý do trước khi người cho vay quyết định có cấp vốn hay không.',
+   // src/views/borrowerBenefits/sections/HeroSection.tsx
+   'Microloans with USDC to build your credit': 'Vay nhỏ bằng USDC để xây dựng tín dụng của bạn',
+   // src/views/borrowerBenefits/sections/OurMissionSection.tsx
+   'Our Mission': 'Sứ mệnh của chúng tôi',
+   "Dr. Muhammad Yunus won a Nobel Prize for creating opportunities through small loans. We're bringing his vision to life with cutting-edge technology.":
+      'Tiến sĩ Muhammad Yunus đã đoạt Giải Nobel nhờ tạo ra cơ hội thông qua các khoản vay nhỏ. Chúng tôi đang hiện thực hóa tầm nhìn của ông bằng công nghệ tiên tiến.',
+   'By using': 'Bằng cách dùng',
+   'Get started': 'Bắt đầu',
+   // src/views/dashboard/components/ConnectStep.tsx
+   'Set up cash-out to your local currency': 'Thiết lập rút tiền về đơn vị tiền tệ địa phương của bạn',
+   'Meet the team, ask anything': 'Gặp gỡ đội ngũ, hỏi bất cứ điều gì',
+   'Apply right after the call': 'Đăng ký ngay sau cuộc gọi',
+   'What do you need a loan for?': 'Bạn cần khoản vay để làm gì?',
+   'Your time is in your email': 'Thời gian của bạn đã có trong email',
+   'Join the meeting': 'Tham gia cuộc họp',
+   'Have ready': 'Chuẩn bị sẵn',
+   'Your original ID or passport': 'Giấy tờ tùy thân bản gốc hoặc hộ chiếu của bạn',
+   'Camera on, good light, phone nearby': 'Bật camera, đủ ánh sáng, để điện thoại gần bên',
+   'Say hi to Emma on Facebook ›': 'Chào Emma trên Facebook ›',
+   'Your goal': 'Mục tiêu của bạn',
+   '15 minutes · on Zoom · you pick the time': '15 phút · qua Zoom · bạn chọn thời gian',
+   'A quick note so the team knows how to help.': 'Một ghi chú ngắn để đội ngũ biết cách hỗ trợ bạn.',
+   'Quick picks': 'Lựa chọn nhanh',
+   // src/views/dashboard/components/ContactsStep.tsx
+   'Get due-date reminders on your phone': 'Nhận nhắc nhở ngày đến hạn trên điện thoại của bạn',
+   'On iPhone: tap': 'Trên iPhone: bấm',
+   'Add to Home Screen': 'Add to Home Screen',
+   'Turn on reminders to continue.': 'Bật nhắc nhở để tiếp tục.',
+   'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy điều này — không bao giờ người cho vay thấy.',
+   'How can we reach you?': 'Chúng tôi có thể liên hệ với bạn qua đâu?',
+   'Open Messenger again': 'Mở lại Messenger',
+   Required: 'Bắt buộc',
+   'Turn on reminders': 'Bật nhắc nhở'
 };
