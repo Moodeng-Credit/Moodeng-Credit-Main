@@ -77,7 +77,6 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Mã này không đúng. Hãy kiểm tra email mới nhất từ Moodeng và thử lại.',
    'Enter your email first, then resend the code.': 'Hãy nhập email trước, rồi gửi lại mã.',
    'New code sent. Use the latest email from Moodeng.': 'Đã gửi mã mới. Hãy dùng email mới nhất từ Moodeng.',
-   'Sending...': 'Đang gửi...',
    'Resend code': 'Gửi lại mã',
    // src/app/data-deletion/page.tsx
    'Moodeng Credit ("Moodeng", "we", "our", or "us") lets you request deletion of the personal information associated with your account, including data obtained when you sign in with a third-party provider such as Facebook, Google, LINE, or Telegram.':
@@ -247,11 +246,8 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Để giữ Moodeng an toàn và ngăn tài khoản giả hoặc trùng lặp, người vay cần hoàn thành một bước xác minh danh tính ngắn, chỉ một lần.',
    'Verify Your ID': 'Xác minh bằng giấy tờ tùy thân',
    Recommended: 'Khuyên dùng',
-   'Quick national ID & selfie check — available in select countries.':
-      'Kiểm tra nhanh thẻ căn cước và ảnh selfie — áp dụng tại một số quốc gia.',
    'Supported countries': 'Quốc gia được hỗ trợ',
    'Not in a supported country?': 'Không ở quốc gia được hỗ trợ?',
-   'Verify with World ID': 'Xác minh bằng World ID',
    'For World App users — verified at an Orb or with a passport.':
       'Dành cho người dùng World App — đã xác minh tại Orb hoặc bằng hộ chiếu.',
    // src/app/verify/page.tsx
@@ -269,7 +265,6 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Remove hats and glasses for the selfie': 'Bỏ mũ và kính khi chụp selfie',
    'Could not start the face scan. Please try again.': 'Không thể bắt đầu quét khuôn mặt. Vui lòng thử lại.',
    'Could not start verification. Please try again.': 'Không thể bắt đầu xác minh. Vui lòng thử lại.',
-   'Something went wrong. Please try again.': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
    "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll submit your national ID.":
       'Bấm nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong. Sau đó, bạn sẽ gửi thẻ căn cước.',
    "Tap the button to start the face scan — you'll be brought back here automatically when it's done. Then you'll verify with World ID.":
@@ -292,7 +287,6 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Find good, even lighting for the selfie': 'Tìm nơi có ánh sáng tốt, đều để chụp selfie',
    'Allow camera access when asked': 'Cho phép truy cập camera khi được hỏi',
    'Open verification': 'Mở trang xác minh',
-   'Go back': 'Quay lại',
    'Almost there — hang tight while we finish the check.': 'Sắp xong rồi — vui lòng chờ trong khi chúng tôi hoàn tất kiểm tra.',
    'Still checking — face scans usually take a minute or two.': 'Vẫn đang kiểm tra — quét khuôn mặt thường mất một hai phút.',
    'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.':
@@ -351,7 +345,6 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Continue to World ID': 'Tiếp tục với World ID',
    'Requires a passport added to your World App.': 'Cần có hộ chiếu đã thêm vào World App của bạn.',
    'Requires a World ID verified at an Orb.': 'Cần có World ID đã xác minh tại Orb.',
-   'Loading…': 'Đang tải…',
    'Preparing verification.': 'Đang chuẩn bị xác minh.',
    'Step 1 of 2 done': 'Đã xong bước 1/2',
    'You’re a real person!': 'Bạn là người thật!',
@@ -439,14 +432,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'SIGN IN': 'ĐĂNG NHẬP',
    'SIGN OUT': 'ĐĂNG XUẤT',
    Verified: 'Đã xác minh',
-   'View IOU point history': 'Xem lịch sử điểm IOU',
    // src/components/UserPay.tsx
-   'Still confirming': 'Vẫn đang xác nhận',
-   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
-      'Khoản thanh toán đã được gửi và cần thêm chút thời gian để xác nhận. Trạng thái sẽ tự động cập nhật.',
-   'Payment Sent, Still Recording': 'Đã gửi thanh toán, đang ghi nhận',
-   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'Khoản thanh toán đã thành công nhưng chúng tôi chưa ghi nhận được. Hệ thống sẽ tiếp tục tự động thử lại — hãy liên hệ bộ phận hỗ trợ nếu trạng thái không cập nhật.',
    'Unknown error': 'Lỗi không xác định',
    'Loan Repayment': 'Trả nợ khoản vay',
    'Total Due': 'Tổng số tiền phải trả',
@@ -604,7 +590,6 @@ export const vietnameseCoverageA: Record<string, string> = {
       'Tuyệt vời! Đội ngũ xét duyệt đã xác nhận giấy tờ của bạn. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với người cho vay.',
    'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
       'Tuyệt vời! Danh tính của bạn đã được xác nhận. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với người cho vay.',
-   'Request a loan': 'Yêu cầu khoản vay',
    // src/components/verification/VerifyYourselfModal.tsx
    '🇺🇸 United States': '🇺🇸 Hoa Kỳ',
    '🇬🇧 United Kingdom': '🇬🇧 Vương quốc Anh',
@@ -647,7 +632,6 @@ export const vietnameseCoverageA: Record<string, string> = {
    'check the live map': 'xem bản đồ trực tuyến',
    'for exact locations.': 'để biết vị trí chính xác.',
    'Back to verification options': 'Quay lại các cách xác minh',
-   'Verify Yourself': 'Xác minh danh tính',
    'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
       'Xác nhận danh tính để mở khóa tài khoản — chỉ kiểm tra một lần, mất khoảng 3 phút.',
    // src/components/worldId/WorldIDVerificationStatus.tsx

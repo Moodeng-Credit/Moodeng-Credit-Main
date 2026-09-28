@@ -92,7 +92,6 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Small loans': 'Khoản vay nhỏ',
    'Gradual growth': 'Tăng dần',
    'No bank file': 'Không cần hồ sơ ngân hàng',
-   'Get help': 'Nhận trợ giúp',
 
    // src/views/creditLevelingGuide/CreditLevelingGuide.tsx
    'How to unlock your next Credit Level': 'Cách mở khóa Hạng tín dụng tiếp theo',
@@ -106,7 +105,6 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Next level': 'Hạng tiếp theo',
    'If your limit is $15, a $15 credit-building loan can unlock $20. A smaller loan builds trust, but it does not level you up.':
       'Nếu hạn mức của bạn là $15, một Credit-Building Loan $15 có thể mở khóa $20. Khoản vay nhỏ hơn giúp xây dựng niềm tin, nhưng không giúp bạn lên hạng.',
-   'How it works': 'Cách hoạt động',
    'The level-up path is simple': 'Con đường lên hạng rất đơn giản',
    'Credit Leveling rewards one specific pattern: a full-limit request followed by a clean repayment.':
       'Nâng hạng tín dụng chỉ ghi nhận một cách làm: yêu cầu vay toàn bộ hạn mức, sau đó trả nợ đầy đủ và đúng hạn.',
@@ -137,7 +135,6 @@ export const vietnameseCoverageB: Record<string, string> = {
    'The amount you request changes what kind of loan it is.': 'Số tiền bạn yêu cầu sẽ quyết định đó là loại khoản vay nào.',
    '$10 of $15': '$10 trên $15',
    '$15 of $15': '$15 trên $15',
-   'Past due': 'Quá hạn',
    'Builds repayment history': 'Xây dựng lịch sử trả nợ',
    'Can unlock $20': 'Có thể mở khóa $20',
    'Can pause progress': 'Có thể làm gián đoạn tiến trình',
@@ -224,7 +221,6 @@ export const vietnameseCoverageB: Record<string, string> = {
    'All Milestones': 'Tất cả cột mốc',
    'No milestones yet': 'Chưa có cột mốc nào',
    'Your first one unlocks when you post a request': 'Cột mốc đầu tiên sẽ mở khóa khi bạn đăng yêu cầu',
-   'Request a loan': 'Yêu cầu khoản vay',
    'Reputation milestones': 'Cột mốc uy tín',
    'Grow Trust with feeding': 'Cho ăn để tăng niềm tin',
    'Grow Moodeng, eat on us': 'Nuôi Moodeng lớn, bữa ăn do chúng tôi đãi',
@@ -315,7 +311,6 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Get reminders on your iPhone': 'Nhận nhắc nhở trên iPhone',
    'Tap Share, then "Add to Home Screen". Open Moodeng from your Home Screen, log in and turn on reminders.':
       'Nhấn Chia sẻ, rồi chọn "Thêm vào MH chính". Mở Moodeng từ Màn hình chính, đăng nhập và bật nhắc nhở.',
-   'Turn on': 'Bật',
 
    // src/views/dashboard-v2/components/DashboardV2Hero.tsx
    'Your Moodeng': 'Moodeng của bạn',
@@ -369,12 +364,10 @@ export const vietnameseCoverageB: Record<string, string> = {
 
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'Loading voucher': 'Đang tải phiếu quà tặng',
-   'Loan Summary': 'Tóm tắt khoản vay',
    'Active Loans($)': 'Đang vay ($)',
    'Pending Loans($)': 'Đang chờ ($)',
    'Defaulted($)': 'Vỡ nợ ($)',
    'Due today': 'Đến hạn hôm nay',
-   'Pay Now': 'Trả ngay',
    'Upcoming Loan Dues': 'Khoản vay sắp đến hạn',
    'My insights': 'Phân tích của tôi',
    'Moodeng grew to': 'Moodeng đã lên',
@@ -430,11 +423,9 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Take tour': 'Xem hướng dẫn',
    'See more': 'Xem thêm',
    'Show less': 'Thu gọn',
-   'Hello,': 'Xin chào,',
    'Verify Yourself >': 'Xác minh danh tính >',
    'Edit display name': 'Sửa tên hiển thị',
    'Verification in progress': 'Đang xác minh',
-   'View IOU point history': 'Xem lịch sử điểm IOU',
    'Close delete request confirmation': 'Đóng hộp xác nhận xóa yêu cầu',
    'Browse requests publicly.': 'Xem các yêu cầu công khai.',
    "You're approved 🎉": 'Bạn đã được duyệt 🎉',
