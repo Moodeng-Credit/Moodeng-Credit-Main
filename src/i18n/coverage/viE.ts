@@ -710,5 +710,187 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Cannot Lend to Yourself': 'Không thể tự cho mình vay',
    'You cannot lend to your own loan request. Please lend to other users.':
       'Bạn không thể cho vay chính yêu cầu vay của mình. Hãy cho người dùng khác vay.',
-   'View Other Loans': 'Xem các khoản vay khác'
+   'View Other Loans': 'Xem các khoản vay khác',
+
+   // src/components/BasePaymentReconciler.tsx
+   'Loan Funded': 'Khoản vay đã được cấp vốn',
+   'Repayment Confirmed': 'Đã xác nhận trả nợ',
+   'Your repayment just confirmed on-chain.': 'Khoản trả nợ của bạn vừa được xác nhận on-chain.',
+   'Interest Returned': 'Đã hoàn lại tiền lãi',
+   'Your interest payment just confirmed on-chain.': 'Khoản thanh toán tiền lãi của bạn vừa được xác nhận on-chain.',
+
+   // src/hooks/useWalletSync.ts
+   'Use your Instant Wallet or a Base Account': 'Hãy dùng Instant Wallet hoặc Base Account',
+   'Borrowers use their Instant Wallet (or a Base Account, if they prefer) so loans and repayments stay tied to one public record.':
+      'Người vay dùng Instant Wallet (hoặc Base Account nếu muốn) để khoản vay và khoản trả nợ luôn gắn với một hồ sơ công khai duy nhất.',
+   'Saved wallet mismatch': 'Ví đã lưu không khớp',
+   'We could not save the new wallet. Your previous wallet is still saved. Please try again.':
+      'Chúng tôi không lưu được ví mới. Ví trước đó của bạn vẫn được giữ nguyên. Vui lòng thử lại.',
+   'Wallet Already Attached': 'Ví đã được liên kết',
+   'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.':
+      'Ví này đã được kết nối với một tài khoản khác. Vui lòng dùng ví khác, hoặc ngắt kết nối ví khỏi tài khoản kia trước.',
+   'Sign in again': 'Đăng nhập lại',
+   'Your login session expired before Moodeng could lock this wallet. Please sign in again, then connect your wallet.':
+      'Phiên đăng nhập của bạn đã hết hạn trước khi Moodeng kịp khóa ví này. Vui lòng đăng nhập lại, rồi kết nối ví.',
+   'Failed to Connect Wallet': 'Kết nối ví không thành công',
+
+   // src/views/account/AvatarUploadModal.tsx
+   'Please select an image file (PNG, JPG, or WEBP).': 'Vui lòng chọn tệp ảnh (PNG, JPG hoặc WEBP).',
+   'Image must be under 5 MB.': 'Ảnh phải nhỏ hơn 5 MB.',
+   'Could not load the image. Please try a different file.': 'Không tải được ảnh. Vui lòng thử tệp khác.',
+   'Canvas not supported in this browser.': 'Trình duyệt này không hỗ trợ Canvas.',
+   'Failed to process the image. Please try again.': 'Không xử lý được ảnh. Vui lòng thử lại.',
+   'Background updated': 'Đã cập nhật ảnh nền',
+   'Your profile background has been changed.': 'Ảnh nền hồ sơ của bạn đã được thay đổi.',
+   'Change Profile Photo': 'Đổi ảnh đại diện',
+   'Crop Photo': 'Cắt ảnh',
+   'Saving…': 'Đang lưu…',
+   'Save Background': 'Lưu ảnh nền',
+   'Save Photo': 'Lưu ảnh',
+
+   // src/views/account/WalletAccountInsights.tsx
+   'Loan received': 'Đã nhận khoản vay',
+   'Loan funded': 'Đã cấp vốn khoản vay',
+   'Repayment sent': 'Đã gửi khoản trả nợ',
+   'Repayment received': 'Đã nhận khoản trả nợ',
+   'USDC sent': 'Đã gửi USDC',
+   'Show wallet history': 'Xem lịch sử ví',
+   'Hide wallet history': 'Ẩn lịch sử ví',
+   'Wallet activity request failed': 'Không tải được hoạt động của ví',
+   'Wallet activity response was incomplete': 'Dữ liệu hoạt động của ví không đầy đủ',
+   'We could not load this wallet’s USDC balance.': 'Chúng tôi không tải được số dư USDC của ví này.',
+   'No USDC in this wallet on Base.': 'Ví này chưa có USDC trên Base.',
+   'Only this wallet’s USDC balance on Base is shown.': 'Chỉ hiển thị số dư USDC của ví này trên Base.',
+   'Wallet changed': 'Đã đổi ví',
+   'Wallet disconnected': 'Đã ngắt kết nối ví',
+   'Wallet connected': 'Đã kết nối ví',
+   'Current wallet recorded': 'Đã ghi nhận ví hiện tại',
+   'Previously used': 'Đã dùng trước đây',
+
+   // src/views/account/AccountSettings.tsx
+   'Appearance & language': 'Giao diện & ngôn ngữ',
+   'Security & verification': 'Bảo mật & xác minh',
+   'Keep your profile and contact details up to date.': 'Luôn cập nhật hồ sơ và thông tin liên hệ của bạn.',
+   'These choices apply throughout Moodeng.': 'Các lựa chọn này áp dụng trên toàn bộ Moodeng.',
+   'Manage sign-in security and identity checks.': 'Quản lý bảo mật đăng nhập và xác minh danh tính.',
+   'Manage the wallet used for loans and repayments.': 'Quản lý ví dùng cho khoản vay và trả nợ.',
+   'Choose which account and loan alerts you receive.': 'Chọn các thông báo về tài khoản và khoản vay mà bạn muốn nhận.',
+   'All fields are required': 'Vui lòng điền tất cả các trường',
+   'New password and confirm password do not match': 'Mật khẩu mới và mật khẩu xác nhận không khớp',
+   'Password must be at least 6 characters': 'Mật khẩu phải có ít nhất 6 ký tự',
+   'Unable to verify current account': 'Không thể xác minh tài khoản hiện tại',
+   'Current password is incorrect': 'Mật khẩu hiện tại không đúng',
+   'Your password has been changed.': 'Mật khẩu của bạn đã được thay đổi.',
+   'Failed to update password': 'Không cập nhật được mật khẩu',
+   'Emails do not match': 'Email không khớp',
+   'Code resent': 'Đã gửi lại mã',
+   'Enter the verification code we sent to your new email': 'Nhập mã xác minh chúng tôi đã gửi đến email mới của bạn',
+   'Email updated': 'Đã cập nhật email',
+   'Your email address has been changed.': 'Địa chỉ email của bạn đã được thay đổi.',
+   'Invalid or expired code. Please try again.': 'Mã không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.',
+   'Sending code...': 'Đang gửi mã...',
+   'Send verification code': 'Gửi mã xác minh',
+   "Didn't get a code? Resend": 'Chưa nhận được mã? Gửi lại',
+   'Confirm email change': 'Xác nhận đổi email',
+   'Display name is required': 'Vui lòng nhập tên hiển thị',
+   'Display name updated': 'Đã cập nhật tên hiển thị',
+   'Your display name has been changed.': 'Tên hiển thị của bạn đã được thay đổi.',
+   'Failed to update display name': 'Không cập nhật được tên hiển thị',
+   'Save changes': 'Lưu thay đổi',
+   'Telegram alerts not connected': 'Chưa kết nối thông báo Telegram',
+   'Open Telegram, tap Start in the bot, then check again.': 'Mở Telegram, nhấn Start trong bot, rồi kiểm tra lại.',
+   'We could not save the new wallet. Your previous wallet is still saved.':
+      'Chúng tôi không lưu được ví mới. Ví trước đó của bạn vẫn được giữ nguyên.',
+   'Your new wallet has been connected.': 'Ví mới của bạn đã được kết nối.',
+   'Wallet unchanged': 'Ví không thay đổi',
+   'You reconnected the same wallet.': 'Bạn đã kết nối lại cùng một ví.',
+   'Connection was cancelled or failed. Your previous wallet is still saved.':
+      'Kết nối đã bị hủy hoặc không thành công. Ví trước đó của bạn vẫn được giữ nguyên.',
+   'Connection took too long. Your previous wallet is still saved.':
+      'Kết nối mất quá nhiều thời gian. Ví trước đó của bạn vẫn được giữ nguyên.',
+   'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.':
+      'Tạo Instant Wallet, hoặc chọn một Base Account mới nếu bạn muốn. Ví hiện tại vẫn được giữ cho đến khi ví mới được xác nhận.',
+   'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.':
+      'Chọn một Base Account mới. Ví hiện tại vẫn được giữ cho đến khi ví mới được xác nhận.',
+   'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.':
+      'Chọn một ví mới. Ví hiện tại vẫn được giữ cho đến khi ví mới được xác nhận.',
+   'Create Instant Wallet — no app needed': 'Tạo Instant Wallet — không cần ứng dụng',
+   'Connect a Base Account instead': 'Kết nối Base Account thay thế',
+   'Create an Instant Wallet instead': 'Tạo Instant Wallet thay thế',
+   'No email added': 'Chưa thêm email',
+   'Add an email for account recovery and important alerts.': 'Thêm email để khôi phục tài khoản và nhận các thông báo quan trọng.',
+   'Not Connected': 'Chưa kết nối',
+   'Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here.':
+      'Khoản trả nợ vẫn sẽ về ví mà bạn đã dùng để cấp vốn cho từng khoản vay, không phải ví bạn kết nối tại đây.',
+   "You can't change your wallet while you have an active loan.": 'Bạn không thể đổi ví khi đang có khoản vay hoạt động.',
+   "You can't disconnect your wallet while you have an active loan.": 'Bạn không thể ngắt kết nối ví khi đang có khoản vay hoạt động.',
+   'Your wallet has been removed from this account.': 'Ví của bạn đã được gỡ khỏi tài khoản này.',
+   'Photo updated': 'Đã cập nhật ảnh',
+   'Your profile photo has been changed.': 'Ảnh đại diện của bạn đã được thay đổi.',
+   'Failed to update profile photo': 'Không cập nhật được ảnh đại diện',
+   'Telegram connection link was not created': 'Chưa tạo được liên kết kết nối Telegram',
+   'Add an email for recovery': 'Thêm email để khôi phục',
+   'Password & sign-in': 'Mật khẩu & đăng nhập',
+   'Back to settings': 'Quay lại cài đặt',
+   'Back to account': 'Quay lại tài khoản',
+   'Account settings': 'Cài đặt tài khoản',
+   'This wallet receives your loans and records your repayments.': 'Ví này nhận các khoản vay và ghi nhận khoản trả nợ của bạn.',
+   'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.':
+      'Ví này dùng để cấp vốn cho khoản vay mới. Các khoản trả nợ hiện có vẫn về ví đã dùng cho từng khoản vay.',
+   'Manage how you sign in to Moodeng.': 'Quản lý cách bạn đăng nhập vào Moodeng.',
+   'Helps people recognize you': 'Giúp mọi người nhận ra bạn',
+   'Not set': 'Chưa đặt',
+   'Work, income, and what you need help with': 'Công việc, thu nhập và việc bạn cần hỗ trợ',
+   'Use darker surfaces throughout Moodeng': 'Dùng giao diện tối trên toàn bộ Moodeng',
+   'Ready to receive loans and record repayments.': 'Sẵn sàng nhận khoản vay và ghi nhận khoản trả nợ.',
+   'Ready for your Moodeng loans and repayment history.': 'Sẵn sàng cho các khoản vay và lịch sử trả nợ của bạn trên Moodeng.',
+   'This removes your saved wallet. You will need to connect or create one again before borrowing or repaying.':
+      'Thao tác này sẽ gỡ ví đã lưu của bạn. Bạn sẽ cần kết nối hoặc tạo lại ví trước khi vay hoặc trả nợ.',
+   'This removes the wallet from your account. You can reconnect it anytime.':
+      'Thao tác này sẽ gỡ ví khỏi tài khoản của bạn. Bạn có thể kết nối lại bất cứ lúc nào.',
+   'Reconnect and confirm this is a Base Account before you borrow or repay.':
+      'Hãy kết nối lại và xác nhận đây là Base Account trước khi vay hoặc trả nợ.',
+   'Remove this saved wallet from your account': 'Gỡ ví đã lưu này khỏi tài khoản của bạn',
+   'Stop using this wallet for new loans': 'Ngừng dùng ví này cho khoản vay mới',
+
+   // src/views/account/ExportInstantWalletKey.tsx
+   'Your face check just cleared. Tap to reveal your key.': 'Bước kiểm tra khuôn mặt vừa hoàn tất. Nhấn để hiện khóa của bạn.',
+   "Couldn't export key": 'Không xuất được khóa',
+   'Private key copied. Store it somewhere safe and never share it.':
+      'Đã sao chép khóa riêng tư. Hãy cất ở nơi an toàn và tuyệt đối không chia sẻ.',
+   'Select the key and copy it manually.': 'Hãy chọn khóa và sao chép thủ công.',
+   "I've saved it": 'Tôi đã lưu lại',
+   'This reveals the private key to your Instant Wallet so you can import it into another wallet app like MetaMask or Trust. Make sure no one is looking at your screen.':
+      'Thao tác này sẽ hiện khóa riêng tư của Instant Wallet để bạn nhập vào một ứng dụng ví khác như MetaMask hoặc Trust. Hãy đảm bảo không có ai nhìn vào màn hình của bạn.',
+   'Revealing…': 'Đang hiện…',
+   'Reveal key': 'Hiện khóa',
+
+   // src/views/account/EditBioInfoModal.tsx
+   'Bio info saved': 'Đã lưu thông tin cá nhân',
+   'Your income and budget details have been updated.': 'Thông tin thu nhập và chi tiêu của bạn đã được cập nhật.',
+   'Failed to save bio info. Please try again.': 'Không lưu được thông tin cá nhân. Vui lòng thử lại.',
+   'Save bio info': 'Lưu thông tin cá nhân',
+
+   // src/views/account/TwoFactorSettings.tsx
+   'Authenticator app enabled': 'Đã bật ứng dụng xác thực',
+   "You'll need a code from it to sign in from now on.": 'Từ giờ bạn sẽ cần mã từ ứng dụng này để đăng nhập.',
+   'Setting up authenticator app...': 'Đang thiết lập ứng dụng xác thực...',
+   '6-digit code': 'Mã 6 chữ số',
+   'Confirm and enable': 'Xác nhận và bật',
+   "You won't be asked for this the next time you sign in. You can set it up again anytime.":
+      'Lần đăng nhập tới bạn sẽ không bị hỏi mã này nữa. Bạn có thể thiết lập lại bất cứ lúc nào.',
+   'This removes the passkey from your account. Your password still works, and you can set one up again anytime.':
+      'Thao tác này sẽ gỡ passkey khỏi tài khoản của bạn. Mật khẩu của bạn vẫn dùng được, và bạn có thể thiết lập lại passkey bất cứ lúc nào.',
+   'Passkey added': 'Đã thêm passkey',
+   'You can now sign in with it instead of your password.': 'Giờ bạn có thể đăng nhập bằng passkey thay cho mật khẩu.',
+   'It will no longer be asked for at sign-in.': 'Bạn sẽ không bị hỏi mã này khi đăng nhập nữa.',
+   'Passkey removed': 'Đã gỡ passkey',
+   'You can set one up again anytime.': 'Bạn có thể thiết lập lại bất cứ lúc nào.',
+   'Not set up': 'Chưa thiết lập',
+   'Disable authenticator app': 'Tắt ứng dụng xác thực',
+   'Enable authenticator app': 'Bật ứng dụng xác thực',
+   'Waiting for your device...': 'Đang chờ thiết bị của bạn...',
+   'Face ID, Touch ID, or a security key': 'Face ID, Touch ID hoặc khóa bảo mật',
+   'Disable passkey': 'Tắt passkey',
+   'Enable passkey': 'Bật passkey'
 };
