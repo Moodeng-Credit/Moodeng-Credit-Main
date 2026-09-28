@@ -108,9 +108,22 @@ export const vietnameseCoverageE: Record<string, string> = {
 
    // src/views/fund/FundWalletSheet.tsx
    'Your USDC balance': 'Số dư USDC của bạn',
+   'to this address:': 'tới địa chỉ này:',
+   only: '(chỉ các khu vực này)',
+   '~1.5% fee': 'Phí ~1.5%',
+   'Connect a wallet first so we know where to send your USDC.': 'Hãy kết nối ví trước để chúng tôi biết gửi USDC của bạn đến đâu.',
+   'Could not start Coinbase.': 'Không khởi động được Coinbase.',
+   'Card purchases aren’t available just yet — try a bridge below.': 'Hiện chưa thể mua bằng thẻ — hãy thử bắc cầu bên dưới.',
+   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
+      'Muốn dùng cách khác? Bạn cũng có thể mua USDC trên sàn giao dịch (Binance P2P, Coins.ph, PDAX, GCrypto), qua dịch vụ bên ngoài như Moneybees, hoặc gửi từ bất kỳ ví nào — luôn trên mạng Base.',
 
    // src/views/fund/StripeOnrampModal.tsx
    'Something went wrong.': 'Đã có lỗi xảy ra.',
+   'Couldn’t load Stripe. Check your connection and try again.': 'Không tải được Stripe. Hãy kiểm tra kết nối rồi thử lại.',
+   'Couldn’t start the card purchase. Try the Coinbase option below.':
+      'Không bắt đầu được giao dịch mua bằng thẻ. Hãy thử tùy chọn Coinbase bên dưới.',
+   'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':
+      'Tính năng mua bằng thẻ qua Stripe chưa có ở quốc gia của bạn. Hãy thử tùy chọn Coinbase bên dưới — tùy chọn này hỗ trợ nhiều khu vực hơn.',
 
    // src/views/support/HowCreditLevelsWork.tsx
    'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
@@ -330,5 +343,73 @@ export const vietnameseCoverageE: Record<string, string> = {
    'to your lender.': 'cho người cho vay của bạn.',
    '4 weeks': '4 tuần',
    '1 month': '1 tháng',
-   '2 months': '2 tháng'
+   '2 months': '2 tháng',
+
+   // src/views/dashboard/components/MilestoneSheets.tsx
+   'Pandesal points earned': 'Điểm Pandesal đã nhận',
+   'Reward for completing this': 'Phần thưởng khi hoàn thành',
+   'Locked reward': 'Phần thưởng đang khóa',
+   'These points are added to your borrower reputation.': 'Số điểm này được cộng vào uy tín người vay của bạn.',
+   'Complete this milestone to add these points to your borrower reputation.':
+      'Hoàn thành cột mốc này để cộng số điểm này vào uy tín người vay của bạn.',
+
+   // src/views/dashboard/components/UserCard.tsx
+   '1st-time borrower bonus': 'thưởng người vay lần đầu',
+   '2nd-loan borrower bonus': 'thưởng khoản vay thứ 2 của người vay',
+   '3rd-loan borrower bonus': 'thưởng khoản vay thứ 3 của người vay',
+   '4th+ loan borrower bonus': 'thưởng khoản vay thứ 4+ của người vay',
+   'IOU Points': 'điểm IOU',
+   'for funding, plus': 'điểm cho việc cấp vốn, cộng thêm',
+   'for the': 'cho',
+   'Unknown user': 'Người dùng không xác định',
+   'Unknown Reason': 'Không rõ lý do',
+   'Link copied': 'Đã sao chép liên kết',
+   'Send it to a lender so they can fund this request.': 'Gửi cho người cho vay để họ có thể cấp vốn cho yêu cầu này.',
+   'Could not copy link': 'Không sao chép được liên kết',
+   'Approve in the Coinbase window. It may be behind this one.':
+      'Hãy chấp thuận trong cửa sổ Coinbase. Cửa sổ đó có thể đang nằm phía sau cửa sổ này.',
+   'Sending your help…': 'Đang gửi khoản hỗ trợ của bạn…',
+   'Recording your funding — hang tight.': 'Đang ghi nhận khoản cấp vốn của bạn — chờ chút nhé.',
+   'Thank You!': 'Cảm ơn bạn!',
+   'Borrowing USDC': 'Số USDC vay',
+   'You funded $': 'Bạn đã cấp vốn $',
+   to: 'cho',
+
+   // src/views/dashboard/components/LendChecklistModal.tsx
+   '· two quick steps': '· hai bước nhanh',
+   connected: 'đã kết nối',
+   'MetaMask, Trust, or another': 'MetaMask, Trust hoặc ví khác',
+   Approve: 'Chấp thuận',
+   'in your wallet': 'trong ví của bạn',
+   'Tip:': 'Mẹo:',
+
+   // src/views/dashboard/components/VideoCallStep.tsx
+   'That time was just taken — pick another, please.': 'Khung giờ đó vừa có người đặt — vui lòng chọn giờ khác.',
+   "Couldn't book that time. Try again, or contact support.": 'Không đặt được khung giờ đó. Hãy thử lại hoặc liên hệ bộ phận hỗ trợ.',
+   "You're booked with": 'Bạn đã đặt lịch với',
+   'the Moodeng team': 'đội ngũ Moodeng',
+   'Google Calendar': 'Google Lịch',
+   "You've missed two calls, so booking is paused for a week.": 'Bạn đã lỡ hai cuộc gọi, nên việc đặt lịch tạm dừng trong một tuần.',
+   'You can pick a new time from': 'Bạn có thể chọn giờ mới từ',
+   "Couldn't load available times.": 'Không tải được các khung giờ trống.',
+   "No times are open in the next two weeks. Message us on Messenger and we'll find one.":
+      'Không còn khung giờ trống trong hai tuần tới. Hãy nhắn tin cho chúng tôi qua Messenger, chúng tôi sẽ tìm giờ cho bạn.',
+   'Your time zone ·': 'Múi giờ của bạn ·',
+   'Booking…': 'Đang đặt…',
+   'Booking paused': 'Tạm dừng đặt lịch',
+   'Pick a time above': 'Chọn giờ ở trên',
+
+   // src/views/fund/FundBridge.tsx
+   '~1 min': '~1 phút',
+   'Approve USDC in wallet…': 'Chấp thuận USDC trong ví…',
+   'Confirm bridge in wallet…': 'Xác nhận bắc cầu trong ví…',
+   'Bridging to Base…': 'Đang bắc cầu sang Base…',
+   'Sent to Base ✓': 'Đã gửi sang Base ✓',
+   'Preparing…': 'Đang chuẩn bị…',
+   'Network + bridge cost': 'Phí mạng + phí bắc cầu',
+   'Submitted — funds arrive on Base in': 'Đã gửi — tiền sẽ đến Base trong',
+   'Transaction cancelled.': 'Đã hủy giao dịch.',
+   'Bridge failed. Please try again.': 'Bắc cầu không thành công. Vui lòng thử lại.',
+   'No route available for this amount.': 'Không có tuyến chuyển nào cho số tiền này.',
+   'Unsupported source chain.': 'Chuỗi nguồn không được hỗ trợ.'
 };
