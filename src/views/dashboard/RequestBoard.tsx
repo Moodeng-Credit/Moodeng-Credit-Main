@@ -577,7 +577,7 @@ function RequestBoard$() {
    const pendingLoanDataRef = useRef<CreateLoanData | null>(null);
    // Tracks the exact reason text we've already shown a low-effort warning for, so a
    // second submit of the same reason goes through (the AI gate is a nudge, not a wall).
-   const reasonWarnedForRef = useRef<string>('');
+
    const rawFloanRequests = useSelector((state: RootState) => state.loans?.loans?.floans);
    const floanRequests = useMemo(() => rawFloanRequests || [], [rawFloanRequests]);
    const [hasLoadedRequestBoardLoans, setHasLoadedRequestBoardLoans] = useState(false);
@@ -1427,39 +1427,32 @@ function RequestBoard$() {
             return;
          }
 
-         // Low-effort reason gate. First time we see a weak reason we warn and stop; if the
-         // borrower submits the same text again we let it through (nudge, not a hard block).
-         // Only runs when the borrower hasn't already been warned for this exact reason.
-         if (reasonWarnedForRef.current !== trimmedReason) {
-            setIsCheckingReason(true);
-            // Same door the reason field knocked on while they were typing, so the verdict is
-            // already cached in the normal case: no second DeepSeek call, and no chance of the
-            // field ticking a reason that submit then rejects. Fails open on its own.
-            const { ok: reasonOk, hint: reasonHint } = await checkLoanReason(trimmedReason);
-            setIsCheckingReason(false);
+         // Reason gate. A reason that doesn't say what the money is for (or is junk, not in
+         // English, or a purpose we never fund) stops the request — with a hint and, where it can,
+         // a ready rewrite the borrower can use in one tap. Generic-but-real reasons pass with a tip
+         // (see supabase/functions/check-loan-input/loan-reason-guide.md). Same door the reason
+         // field knocked on while they were typing, so the verdict is usually cached. Fails open
+         // only when the check itself can't run.
+         setIsCheckingReason(true);
+         const { ok: reasonOk, hint: reasonHint, category: reasonCategory } = await checkLoanReason(trimmedReason);
+         setIsCheckingReason(false);
 
-            if (!reasonOk) {
-               reasonWarnedForRef.current = trimmedReason;
-               const warningText =
-                  reasonHint ||
-                  'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway.';
-               // Inline warning under the reason field stays put so the borrower can act on it.
-               setReasonWarning(warningText);
-               // But the submit button sits at the bottom of a scrollable form, so the inline
-               // warning can land off-screen after a tap — leaving the request feeling like it
-               // silently did nothing. Pair it with a toast so there's always visible feedback,
-               // and spell out that submitting again will post it anyway (soft nudge, not a block).
-               showToast(
-                  TOAST_TYPES.WARNING,
-                  'Check your reason',
-                  `${warningText} Tap “Make Your Request” again to post it anyway.`,
-                  'OK',
-                  'acknowledge'
-               );
-               return;
-            }
-            setReasonWarning('');
+         if (!reasonOk) {
+            const warningText = reasonHint || 'Tell lenders what the money will be used for.';
+            // Inline warning under the reason field stays put so the borrower can act on it.
+            setReasonWarning(warningText);
+            // The submit button sits at the bottom of a scrollable form, so the inline warning
+            // can land off-screen after a tap. Pair it with a toast so there's always feedback.
+            showToast(
+               TOAST_TYPES.WARNING,
+               reasonCategory === 'not_english' ? 'Please write it in English' : 'Improve your reason',
+               `${warningText} Update your reason, then tap “Make Your Request” again.`,
+               'OK',
+               'acknowledge'
+            );
+            return;
          }
+         setReasonWarning('');
 
          const loanData = {
             borrowerUserId: borrowerUserId || '',

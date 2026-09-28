@@ -20,7 +20,7 @@ describe('loan reason check', () => {
       const second = await checkLoanReason('for personal use and other things I need');
 
       expect(invoke).toHaveBeenCalledTimes(1);
-      expect(first).toEqual({ ok: false, hint: 'Too vague.', checked: true });
+      expect(first).toEqual({ ok: false, hint: 'Too vague.', category: '', suggestion: '', checked: true });
       expect(second).toEqual(first);
    });
 
@@ -34,11 +34,12 @@ describe('loan reason check', () => {
    });
 
    it('shares one in-flight request between the field and the submit gate', async () => {
-      invoke.mockImplementation(
-         () => new Promise((resolve) => setTimeout(() => resolve({ data: { ok: true }, error: null }), 10))
-      );
+      invoke.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: { ok: true }, error: null }), 10)));
 
-      const [a, b] = await Promise.all([checkLoanReason('Buying medicine for my mother'), checkLoanReason('Buying medicine for my mother')]);
+      const [a, b] = await Promise.all([
+         checkLoanReason('Buying medicine for my mother'),
+         checkLoanReason('Buying medicine for my mother')
+      ]);
 
       expect(invoke).toHaveBeenCalledTimes(1);
       expect(a).toEqual(b);
@@ -49,7 +50,7 @@ describe('loan reason check', () => {
 
       const verdict = await checkLoanReason('Rent balance due Friday, I am $30 short');
 
-      expect(verdict).toEqual({ ok: true, hint: '', checked: false });
+      expect(verdict).toEqual({ ok: true, hint: '', category: '', suggestion: '', checked: false });
    });
 
    it('fails open when the function throws', async () => {
@@ -78,6 +79,23 @@ describe('loan reason check', () => {
 
       const verdict = await checkLoanReason('Fixing my motorbike so I can get to work');
 
-      expect(verdict).toEqual({ ok: true, hint: '', checked: false });
+      expect(verdict).toEqual({ ok: true, hint: '', category: '', suggestion: '', checked: false });
+   });
+
+   it('passes through the category and the suggested rewrite', async () => {
+      invoke.mockResolvedValue({
+         data: {
+            ok: false,
+            category: 'not_english',
+            hint: 'Please write this in English so lenders can read it.',
+            suggestion: "Paying the electricity bill and my mother's medicine before payday."
+         },
+         error: null
+      });
+
+      const verdict = await checkLoanReason('Pambayad sa kuryente at gamot ng nanay ko bago ang sahod');
+
+      expect(verdict.category).toBe('not_english');
+      expect(verdict.suggestion).toBe("Paying the electricity bill and my mother's medicine before payday.");
    });
 });
