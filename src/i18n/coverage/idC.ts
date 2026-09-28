@@ -664,5 +664,256 @@ export const indonesianCoverageC: Record<string, string> = {
    'Past due': 'Lewat jatuh tempo',
    'How to repay': 'Cara membayar kembali',
    'Close video': 'Tutup video',
-   'How to repay a Moodeng loan': 'Cara membayar kembali pinjaman Moodeng'
+   'How to repay a Moodeng loan': 'Cara membayar kembali pinjaman Moodeng',
+
+   // src/views/support/GettingStarted.tsx
+   'See how Moodeng works': 'Lihat cara kerja Moodeng',
+   'Take the interactive tour': 'Ikuti tur interaktifnya',
+   'A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.':
+      'Panduan singkat 2 menit: pilih peran, verifikasi, ajukan atau danai pinjaman, bayar kembali, dan bangun kredit.',
+   'Getting Started | Moodeng Credit': 'Mulai | Moodeng Credit',
+   'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
+      'Pelajari dasar-dasar Moodeng: jelajahi panduan dan manfaat, lihat cara kerja USDC, pahami sistem naik level kredit, serta jelajahi Academy dan blog.',
+
+   // src/views/support/Guides.tsx
+   'Guide categories': 'Kategori panduan',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Play again': 'Main lagi',
+   'Your credit': 'Kreditmu',
+   'Level 1': 'Level 1',
+   'Apply for loan': 'Ajukan pinjaman',
+   'Repayment complete': 'Pembayaran kembali selesai',
+   'Level 2 unlocked': 'Level 2 terbuka',
+   'How Credit Levels work': 'Cara kerja Level Kredit',
+   'Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay a full-limit loan on time.':
+      'Level Kredit kamu adalah limit pinjamanmu. Semua orang mulai dari $15 — dan limitnya naik setiap kali kamu membayar kembali pinjaman senilai limit penuh tepat waktu.',
+   'Deep dive': 'Bahas lebih dalam',
+   'Credit limit climbing across four levels': 'Limit kredit naik melewati empat level',
+   'Each Credit-Building Loan repaid on time steps your limit up to the next level.':
+      'Setiap Credit-Building Loan yang dibayar tepat waktu menaikkan limitmu ke level berikutnya.',
+   'The basics': 'Dasar-dasarnya',
+   'Three things to know': 'Tiga hal yang perlu kamu tahu',
+   'Credit Levels reward one clear pattern: borrow your full limit, repay it on time, unlock the next limit.':
+      'Level Kredit menghargai satu pola yang jelas: pinjam sesuai limit penuhmu, bayar kembali tepat waktu, buka limit berikutnya.',
+   'The ladder': 'Tangganya',
+   'Everyone starts at Level 1. Each successful Credit-Building Loan unlocks the next borrowing limit.':
+      'Semua orang mulai dari Level 1. Setiap Credit-Building Loan yang berhasil membuka limit pinjaman berikutnya.',
+   'Repay on time, and the next level unlocks itself.': 'Bayar kembali tepat waktu, dan level berikutnya otomatis terbuka.',
+   'Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing power compounds with every clean repayment.':
+      'Ajukan pinjaman, bayar kembali sebelum jatuh tempo, dan limitmu naik otomatis — daya pinjammu terus bertambah dengan setiap pembayaran yang lancar.',
+   'Two kinds of loan': 'Dua jenis pinjaman',
+   'Trust-Building vs Credit-Building': 'Trust-Building vs Credit-Building',
+   'Moodeng has two loan types. Both earn you Pandesal points — but only a full-limit Credit-Building Loan raises your borrowing limit.':
+      'Moodeng punya dua jenis pinjaman. Keduanya menghasilkan poin Pandesal — tapi hanya Credit-Building Loan senilai limit penuh yang menaikkan limit pinjamanmu.',
+   'Your limit': 'Limitmu',
+   'Use it when:': 'Gunakan saat:',
+   'Most borrowers use both — trust loans to stay active, credit loans to climb.':
+      'Sebagian besar peminjam menggunakan keduanya — Trust-Building Loan untuk tetap aktif, Credit-Building Loan untuk naik level.',
+   'Trust is the currency before the credit.': 'Kepercayaan adalah mata uang sebelum kredit.',
+   'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
+      'Setiap pinjaman yang kamu bayar kembali dengan lancar — bahkan Trust-Building Loan yang kecil — menambah reputasi yang bisa dilihat pemberi pinjaman. Kepercayaan itulah yang membuat permintaanmu berikutnya lebih cepat didanai.',
+   'Level up faster': 'Naik level lebih cepat',
+   'Do this, not that': 'Lakukan ini, bukan itu',
+   'A few habits keep your climb steady and protect the Pandesal points you are earning.':
+      'Beberapa kebiasaan ini menjaga langkahmu tetap stabil dan melindungi poin Pandesal yang sedang kamu kumpulkan.',
+   'Credit Levels, answered': 'Level Kredit, dijawab',
+   'Quick answers to the questions borrowers ask most about levelling up.':
+      'Jawaban singkat untuk pertanyaan yang paling sering ditanyakan peminjam soal naik level.',
+   'Keep learning': 'Terus belajar',
+   'Related guides': 'Panduan terkait',
+   'Credit Levels work hand in hand with your Pandesal points and repayment history.':
+      'Level Kredit berjalan beriringan dengan poin Pandesal dan riwayat pembayaranmu.',
+   'Pop quiz': 'Kuis singkat',
+   'Are you a Credit Level pro?': 'Apakah kamu jagoan Level Kredit?',
+   'Five quick questions. No pressure — your hippo believes in you.':
+      'Lima pertanyaan singkat. Santai saja — hipopotamusmu percaya kamu bisa.',
+   'Ready to grow your limit?': 'Siap menaikkan limitmu?',
+   'Only request your full limit when you are confident you can repay on time. Smaller loans still build trust.':
+      'Ajukan limit penuhmu hanya kalau kamu yakin bisa membayar kembali tepat waktu. Pinjaman yang lebih kecil tetap membangun kepercayaan.',
+   'What it is': 'Apa itu',
+   'A level is a limit': 'Level adalah limit',
+   'Your level sets the most you can borrow at once.': 'Levelmu menentukan jumlah maksimal yang bisa kamu pinjam sekaligus.',
+   'Level 1 unlocks $15 — small on purpose, since you have no history yet.':
+      'Level 1 membuka $15 — sengaja dibuat kecil, karena kamu belum punya riwayat.',
+   'How you grow': 'Cara naik level',
+   'Repay your full limit': 'Bayar kembali limit penuhmu',
+   'A full-limit loan repaid on time raises your cap.': 'Pinjaman senilai limit penuh yang dibayar tepat waktu menaikkan batas atasmu.',
+   'That single clean repayment is what moves you up — nothing else does.':
+      'Satu pembayaran lancar itulah yang menaikkan levelmu — tidak ada cara lain.',
+   'The pace': 'Ritmenya',
+   'One level at a time': 'Satu level setiap kali',
+   'No skipping or buying ahead — each level is earned from the one before.':
+      'Tidak bisa dilompati atau dibeli lebih awal — setiap level didapat dari level sebelumnya.',
+   'Below your current limit': 'Di bawah limitmu saat ini',
+   'A loan for less than your current limit.': 'Pinjaman kurang dari limitmu saat ini.',
+   'Stays the same': 'Tetap sama',
+   'Goes up': 'Naik',
+   'Your full current limit': 'Limit penuhmu saat ini',
+   'A loan for your full current limit. The level-up loan.': 'Pinjaman senilai limit penuhmu saat ini. Pinjaman untuk naik level.',
+   'Unlocks the next level': 'Membuka level berikutnya',
+   'Request your full current limit only when you are confident you can repay it.':
+      'Ajukan limit penuhmu saat ini hanya kalau kamu yakin bisa membayarnya kembali.',
+   'Pick a repayment date you can comfortably hit. Repaying early is always fine.':
+      'Pilih tanggal pembayaran yang nyaman buat kamu. Membayar lebih awal selalu boleh.',
+   'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.':
+      'Jangan ambil pinjaman senilai limit penuh kalau kamu belum yakin — satu kali telat bayar bisa menghentikan progresmu.',
+   'Do not expect extra or early payments to skip a level. Growth is always one step at a time.':
+      'Jangan berharap pembayaran ekstra atau lebih awal bisa melompati level. Kenaikannya selalu satu langkah dalam satu waktu.',
+   'Understanding your Pandesal points': 'Memahami poin Pandesal kamu',
+   'Trust-Building vs Credit-Building loans': 'Trust-Building Loan vs Credit-Building Loan',
+   'How repayments affect your Pandesal points': 'Bagaimana pembayaran kembali memengaruhi poin Pandesal kamu',
+   'What is a Credit Level on Moodeng?': 'Apa itu Level Kredit di Moodeng?',
+   'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
+      'Level Kredit adalah limit pinjamanmu. Semua orang mulai dari Level 1 dengan limit $15, dan limitnya naik seiring kamu menyelesaikan Credit-Building Loan.',
+   'How do I move to the next level?': 'Bagaimana cara naik ke level berikutnya?',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'Ambil Credit-Building Loan senilai limit penuhmu saat ini dan bayar kembali secara penuh dan tepat waktu. Pembayaran yang lancar akan membuka limit berikutnya — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'Does borrowing a small amount level me up?': 'Apakah meminjam jumlah kecil bisa menaikkan levelku?',
+   'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
+      'Tidak. Meminjam di bawah limitmu disebut Trust-Building Loan. Ini meningkatkan reputasimu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit-mu. Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',
+   'Can I skip levels by repaying early or paying extra?': 'Bisakah aku melompati level dengan membayar lebih awal atau membayar ekstra?',
+   'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
+      'Tidak. Moodeng menaikkan level satu per satu. Membayar ekstra atau lebih awal tidak melompati satu langkah pun — setiap limit baru didapat dengan melunasi level sebelumnya.',
+   'Why does the limit start at only $15?': 'Kenapa limitnya cuma mulai dari $15?',
+   'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
+      'Limit awal yang kecil menjaga risiko tetap rendah bagi pemberi pinjaman yang mendanai seseorang tanpa riwayat sebelumnya. Seiring kamu membuktikan pembayaran yang bisa diandalkan, limitmu dan kepercayaan pemberi pinjaman tumbuh bersama.',
+   'How long does it take to reach the $60 level?': 'Berapa lama waktu yang dibutuhkan untuk mencapai level $60?',
+   'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
+      'Tidak ada jangka waktu yang pasti. Setiap level membutuhkan satu pinjaman senilai limit penuh yang dibayar tepat waktu, jadi kecepatannya tergantung seberapa cepat kamu meminjam dan membayar kembali. Peminjam yang membayar dengan lancar bisa naik level hanya dalam beberapa siklus pinjaman.',
+   'What happens if I miss a repayment?': 'Apa yang terjadi kalau aku telat membayar?',
+   'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
+      'Pembayaran yang telat atau terlewat mengurangi poin Pandesal kamu dan bisa menghentikan progresmu. Pemberi pinjaman sangat mempertimbangkan keterlambatan pembayaran, jadi membayar tepat waktu lebih penting daripada besarnya pinjaman.',
+   'Does my Credit Level ever reset?': 'Apakah Level Kredit-ku bisa direset?',
+   'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
+      'Progresmu terikat pada dompet dan riwayat pembayaranmu, jadi selalu ikut denganmu. Pembayaran yang terlewat tidak menghapus levelmu, tetapi mengurangi poin Pandesal dan bisa memperlambat kenaikan berikutnya.',
+   'What borrowing limit does everyone start with?': 'Semua orang mulai dengan limit pinjaman berapa?',
+   'Yep — everyone starts at $15. Small, but the climb begins here.': 'Yup — semua orang mulai dari $15. Kecil, tapi dari sinilah perjalanannya dimulai.',
+   'Close, but no. Level 1 starts everyone at a $15 limit.': 'Hampir benar, tapi belum tepat. Level 1 membuat semua orang mulai dengan limit $15.',
+   'Which loan actually levels you up?': 'Pinjaman mana yang benar-benar menaikkan levelmu?',
+   'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.':
+      'Betul — hanya Credit-Building Loan senilai limit penuh yang dibayar tepat waktu yang menaikkan batas atasmu.',
+   'Nice try! Only a full-limit Credit-Building Loan raises your level.':
+      'Hampir! Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',
+   'Your limit is $20. You borrow $10 and repay on time. What happens?': 'Limitmu $20. Kamu meminjam $10 dan membayar tepat waktu. Apa yang terjadi?',
+   'Right! Small loans build trust — they just don’t raise your limit.':
+      'Betul! Pinjaman kecil membangun kepercayaan — tapi tidak menaikkan limitmu.',
+   'Not quite — a sub-limit loan builds trust but keeps your limit at $20.':
+      'Belum tepat — pinjaman di bawah limit membangun kepercayaan, tapi limitmu tetap $20.',
+   'Can you skip from $15 straight to $60?': 'Bisakah kamu langsung melompat dari $15 ke $60?',
+   'Correct — Moodeng climbs one level at a time. No shortcuts.': 'Benar — Moodeng naik satu level dalam satu waktu. Tidak ada jalan pintas.',
+   'Nope — there are no shortcuts. It’s one level at a time.': 'Belum tepat — tidak ada jalan pintas. Levelnya naik satu per satu.',
+   'What slows your climb the most?': 'Apa yang paling memperlambat kenaikan levelmu?',
+   'You got it — a missed repayment pauses progress and dents your Pandesal points.':
+      'Betul — telat bayar menghentikan progres dan mengurangi poin Pandesal kamu.',
+   'Actually it’s a late or missed repayment — that’s what pauses your climb.':
+      'Sebenarnya jawabannya telat atau tidak membayar — itulah yang menghentikan kenaikan levelmu.',
+   'Credit Level Legend': 'Legenda Level Kredit',
+   'Rising Star': 'Bintang yang Menanjak',
+   'Just getting started': 'Baru mulai',
+   'Answer choices': 'Pilihan jawaban',
+   'See your credit limit on the request board': 'Lihat limit kreditmu di papan permintaan',
+   'Apply for a loan on the request board': 'Ajukan pinjaman di papan permintaan',
+   'See live requests on the request board': 'Lihat permintaan langsung di papan permintaan',
+   'Credit limit growing from fifteen to sixty dollars': 'Limit kredit naik dari lima belas menjadi enam puluh dolar',
+   'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
+      'Seekor hipopotamus peminjam di kios Moodeng mengikuti alur credit-building: mengajukan, membayar tepat waktu, lalu naik level',
+   'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
+      'Seekor hipopotamus peminjam dan tupai membangun kepercayaan dengan pemberi pinjaman di meja pinjaman Moodeng',
+
+   // src/views/support/PublicGuide.tsx
+   'More guides': 'Panduan lainnya',
+
+   // src/views/support/PublicGuidesIndex.tsx
+   'Everything you need to borrow with confidence — how Credit Levels grow, what your Pandesal points mean, and how USDC loans work.':
+      'Semua yang perlu kamu tahu untuk meminjam dengan percaya diri — cara Level Kredit naik, arti poin Pandesal, dan cara kerja pinjaman USDC.',
+
+   // src/views/support/UpdateDetail.tsx
+   "What's New": 'Apa yang Baru',
+   'Published on': 'Diterbitkan pada',
+
+   // src/views/support/Updates.tsx
+   Latest: 'Terbaru',
+   'Previous Updates': 'Pembaruan Sebelumnya',
+
+   // src/views/support/WhyUsdc.tsx
+   'Why we use USDC': 'Kenapa kami memakai USDC',
+   'Every loan on Moodeng is sent and repaid in USDC — a regulated digital dollar pegged 1:1 to the US dollar. Here is what that means, and why it makes small loans faster, cheaper, and safer.':
+      'Setiap pinjaman di Moodeng dikirim dan dibayar kembali dalam USDC — dolar digital teregulasi yang dipatok 1:1 ke dolar AS. Berikut artinya, dan kenapa ini membuat pinjaman kecil jadi lebih cepat, lebih murah, dan lebih aman.',
+   'See the definitions': 'Lihat definisinya',
+   'What is USDC?': 'Apa itu USDC?',
+   'USDC (USD Coin) is a': 'USDC (USD Coin) adalah',
+   'The reasons': 'Alasannya',
+   'Free transfers, solid technology, real security, and a value that never drifts.':
+      'Transfer gratis, teknologi yang solid, keamanan nyata, dan nilai yang tidak pernah berubah.',
+   'Where it is used': 'Di mana USDC dipakai',
+   'USDC works in two worlds. Here is which is which — and where Moodeng fits.':
+      'USDC bekerja di dua dunia. Berikut perbedaannya — dan di mana posisi Moodeng.',
+   'On Moodeng:': 'Di Moodeng:',
+   Definitions: 'Definisi',
+   'The words, in plain English': 'Istilah-istilahnya, dijelaskan dengan sederhana',
+   'Staking and yield get mixed up a lot — so do payments and DeFi. Here is what each one really means.':
+      'Staking dan yield sering tertukar — begitu juga pembayaran dan DeFi. Berikut arti sebenarnya dari masing-masing istilah.',
+   'Staking secures a blockchain and pays rewards for doing so — you cannot stake USDC that way. Yield is simply the return for lending or supplying USDC in DeFi. Moodeng does neither: it uses USDC to fund and repay community loans.':
+      'Staking mengamankan blockchain dan memberi imbalan untuk itu — USDC tidak bisa di-stake dengan cara ini. Yield hanyalah imbal hasil dari meminjamkan atau menyediakan USDC di DeFi. Moodeng tidak melakukan keduanya: Moodeng memakai USDC untuk mendanai dan membayar kembali pinjaman komunitas.',
+   'Quick answers to what borrowers ask most about the dollar behind their loans.':
+      'Jawaban singkat untuk pertanyaan yang paling sering ditanyakan peminjam tentang dolar di balik pinjaman mereka.',
+   'USDC is the money layer under everything you do on Moodeng.': 'USDC adalah lapisan uang di balik semua yang kamu lakukan di Moodeng.',
+   'Ready to borrow in stable dollars?': 'Siap meminjam dalam dolar yang stabil?',
+   'Your loan arrives as USDC and you repay in USDC — gasless on Base, and always worth what it says.':
+      'Pinjamanmu datang dalam bentuk USDC dan kamu membayar kembali dalam USDC — tanpa gas fee di Base, dan nilainya selalu sesuai yang tertulis.',
+   'Wallet to wallet': 'Dompet ke dompet',
+   'Free transfers, no middleman': 'Transfer gratis, tanpa perantara',
+   'USDC moves directly between two wallets — no bank in between.': 'USDC berpindah langsung antara dua dompet — tanpa bank di tengahnya.',
+   'On Base, sending USDC is gasless, so a $20 loan arrives as $20. No wire fees, no cut taken along the way.':
+      'Di Base, mengirim USDC tidak butuh gas fee, jadi pinjaman $20 tetap sampai sebagai $20. Tidak ada biaya transfer, tidak ada potongan di tengah jalan.',
+   Technology: 'Teknologi',
+   'Programmable, always-on money': 'Uang yang bisa diprogram dan selalu aktif',
+   'USDC is a digital dollar that settles on a blockchain in seconds, 24/7.':
+      'USDC adalah dolar digital yang selesai diproses di blockchain hanya dalam hitungan detik, 24/7.',
+   'It runs on open networks (Moodeng uses Base) and can move across chains — so value travels as easily as a message.':
+      'USDC berjalan di jaringan terbuka (Moodeng memakai Base) dan bisa berpindah antar-chain — jadi nilainya bisa berpindah semudah mengirim pesan.',
+   'Regulated and fully backed': 'Teregulasi dan didukung penuh',
+   'Every USDC is backed 1:1 by cash and short-term US Treasuries.':
+      'Setiap USDC didukung 1:1 oleh kas dan surat utang jangka pendek pemerintah AS.',
+   'Circle, its issuer, publishes independent monthly reserve attestations. Balances are also verifiable on-chain by anyone.':
+      'Circle, penerbitnya, mempublikasikan laporan cadangan independen setiap bulan. Saldo juga bisa diverifikasi on-chain oleh siapa saja.',
+   Usability: 'Kemudahan pakai',
+   'A dollar that holds its value': 'Dolar yang nilainya tetap terjaga',
+   'One USDC is always worth one dollar, so loan amounts never drift.':
+      'Satu USDC selalu bernilai satu dolar, jadi jumlah pinjaman tidak pernah berubah.',
+   'You can hold, send, and receive it from almost anywhere without relying on a traditional bank account.':
+      'Kamu bisa menyimpan, mengirim, dan menerimanya dari hampir di mana saja tanpa perlu rekening bank tradisional.',
+   'The everyday economy': 'Ekonomi sehari-hari',
+   'Using USDC the way you use cash or a bank transfer — paying people, sending money across borders, or cashing out to your local currency.':
+      'Memakai USDC seperti kamu memakai uang tunai atau transfer bank — membayar orang, mengirim uang lintas negara, atau mencairkannya ke mata uang lokalmu.',
+   'On-chain finance': 'Keuangan on-chain',
+   'Decentralized finance': 'Keuangan terdesentralisasi',
+   'USDC is a regulated stablecoin — a digital dollar issued by Circle and pegged 1:1 to the US dollar. Each USDC is backed by cash and short-term US Treasuries, with independent monthly reserve attestations.':
+      'USDC adalah stablecoin teregulasi — dolar digital yang diterbitkan oleh Circle dan dipatok 1:1 ke dolar AS. Setiap USDC didukung oleh kas dan surat utang jangka pendek pemerintah AS, dengan laporan cadangan independen setiap bulan.',
+   'Why does Moodeng use USDC instead of regular money?': 'Kenapa Moodeng memakai USDC, bukan uang biasa?',
+   'USDC keeps loan values stable, moves wallet-to-wallet in seconds, and is gasless on Base — so a $20 loan is still exactly $20 when you repay it, with no bank fees eating into it.':
+      'USDC menjaga nilai pinjaman tetap stabil, berpindah dari dompet ke dompet hanya dalam hitungan detik, dan tanpa gas fee di Base — jadi pinjaman $20 tetap $20 saat kamu membayarnya kembali, tanpa biaya bank yang memotongnya.',
+   'Is USDC safe?': 'Apakah USDC aman?',
+   'USDC is issued by the most licensed stablecoin company in the world and is backed 1:1 by highly liquid reserves. Those reserves are attested monthly by independent accounting firms, and every balance is verifiable on-chain.':
+      'USDC diterbitkan oleh perusahaan stablecoin dengan lisensi terbanyak di dunia dan didukung 1:1 oleh cadangan yang sangat likuid. Cadangan ini diverifikasi setiap bulan oleh firma akuntansi independen, dan setiap saldo bisa diverifikasi on-chain.',
+   'What is the difference between staking and yield?': 'Apa bedanya staking dan yield?',
+   'Staking means locking a token to help secure a proof-of-stake blockchain in exchange for rewards. Yield is the return you earn by lending or supplying USDC in DeFi. USDC is not a staking token, but it can earn yield.':
+      'Staking berarti mengunci token untuk membantu mengamankan blockchain proof-of-stake, dengan imbalan tertentu. Yield adalah imbal hasil yang kamu dapat dari meminjamkan atau menyediakan USDC di DeFi. USDC bukan token staking, tapi tetap bisa menghasilkan yield.',
+   'What is the difference between real-world use and DeFi use?': 'Apa bedanya penggunaan di dunia nyata dan penggunaan DeFi?',
+   'Real-world use is spending or sending USDC like cash — payments, remittances, cashing out. DeFi use is putting USDC into smart-contract apps to lend, borrow, or swap without a bank. Moodeng loans are real-world use.':
+      'Penggunaan di dunia nyata artinya membelanjakan atau mengirim USDC seperti uang tunai — pembayaran, kiriman uang, atau pencairan. Penggunaan DeFi artinya memasukkan USDC ke aplikasi smart-contract untuk meminjamkan, meminjam, atau menukarnya tanpa bank. Pinjaman di Moodeng termasuk penggunaan dunia nyata.',
+   'Do I pay fees to send USDC on Moodeng?': 'Apakah aku dikenai biaya untuk mengirim USDC di Moodeng?',
+   'No. Moodeng uses your Instant Wallet (or a Base Account, if you prefer) on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.':
+      'Tidak. Moodeng memakai Instant Wallet kamu (atau Base Account, kalau kamu lebih suka) di Base, tempat transfer USDC tanpa gas fee. Kamu tidak membayar biaya jaringan untuk menerima pinjaman atau membayar kembali.',
+   'No. Moodeng is community lending — USDC is used to fund and repay loans. Staking and yield live in the wider crypto ecosystem, not inside Moodeng.':
+      'Tidak. Moodeng adalah pinjaman komunitas — USDC dipakai untuk mendanai dan membayar kembali pinjaman. Staking dan yield ada di ekosistem kripto yang lebih luas, bukan di dalam Moodeng.',
+   'Using USDC on Moodeng Credit': 'Menggunakan USDC di Moodeng Credit',
+
+   // src/views/support/components/NeedMoreHelp.tsx
+   'Message the team and a real person will reply — here and by email.':
+      'Kirim pesan ke tim, dan orang sungguhan akan membalas — di sini dan lewat email.',
+   'Get In Touch': 'Hubungi Kami',
+   'Meet the Moodeng Credit Team': 'Kenalan dengan Tim Moodeng Credit',
+   'See the people building borrower trust.': 'Lihat orang-orang di balik kepercayaan peminjam.'
 };
