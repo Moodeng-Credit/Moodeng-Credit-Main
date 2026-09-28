@@ -309,5 +309,194 @@ export const filipinoCoverageF: Record<string, string> = {
    'Night avatar background': 'Background ng avatar: Gabi',
 
    // src/config/stripeOnrampConfig.ts
-   'US (excl. Hawaii) and EU only': 'US (maliban sa Hawaii) at EU lang'
+   'US (excl. Hawaii) and EU only': 'US (maliban sa Hawaii) at EU lang',
+
+   // src/constants/errorMessages.ts
+   'Go to Dashboard': 'Pumunta sa Dashboard',
+
+   // src/hooks/useDefaultedBorrowerSupport.ts
+   'Unable to check overdue loans.': 'Hindi ma-check ang mga overdue na loan.',
+
+   // src/hooks/useLoanData.ts
+   'Failed to fetch loans': 'Hindi ma-load ang mga loan',
+
+   // src/hooks/useWalletSync.ts
+   'Successfully connected to': 'Matagumpay na nakakonekta sa',
+   'Borrowers use their Instant Wallet (or a Base Account, if they prefer) so loans and repayments stay tied to one public record.':
+      'Ginagamit ng mga borrower ang Instant Wallet nila (o Base Account, kung iyon ang gusto nila) para nakatali sa iisang public record ang mga loan at bayad.',
+   'Saved wallet mismatch': 'Hindi tugma ang naka-save na wallet',
+   'This account is saved to your locked wallet. Switch back to that wallet, or update the saved wallet from Account Settings.':
+      'Naka-save ang account na ito sa naka-lock mong wallet. Bumalik sa wallet na iyon, o i-update ang naka-save na wallet sa Mga setting ng account.',
+   'We could not save the new wallet. Your previous wallet is still saved. Please try again.':
+      'Hindi namin ma-save ang bagong wallet. Naka-save pa rin ang dati mong wallet. Subukan ulit.',
+   'Wallet Already Attached': 'May naka-link na sa wallet na ito',
+   'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.':
+      'Nakakonekta na ang wallet na ito sa ibang account. Gumamit ng ibang wallet, o i-disconnect muna ito sa kabilang account.',
+   'Sign in again': 'Mag-sign in ulit',
+   'Your login session expired before Moodeng could lock this wallet. Please sign in again, then connect your wallet.':
+      'Nag-expire ang login session mo bago na-lock ng Moodeng ang wallet na ito. Mag-sign in ulit, tapos ikonekta ang wallet mo.',
+   'Failed to Connect Wallet': 'Hindi naikonekta ang wallet',
+   'Could not save wallet connection. This might occur if the wallet is already in use. Error:':
+      'Hindi ma-save ang wallet connection. Puwede itong mangyari kung ginagamit na ang wallet. Error:',
+   'Could not save wallet connection. This might occur if the wallet is already in use. Error: Unknown error':
+      'Hindi ma-save ang wallet connection. Puwede itong mangyari kung ginagamit na ang wallet. Error: hindi alam na error',
+
+   // src/lib/basePay.ts
+   'Payment failed': 'Hindi nagtagumpay ang bayad',
+   'Payment status unavailable': 'Hindi makuha ang status ng bayad',
+   'Payment failed on-chain': 'Hindi nagtagumpay ang bayad on-chain',
+   'Payment was not confirmed in time': 'Hindi nakumpirma sa oras ang bayad',
+
+   // src/lib/borrowerContextFit.ts (lender-facing borrower card: trust line and timing chips)
+   'First time trusting this community': 'Unang beses humiram sa komunidad na ito',
+   'Already repaid 1 loan — they follow through': 'Nakabayad na ng 1 loan — tumutupad sila',
+   'Repaid 2 loans and always came back': 'Nakabayad na ng 2 loan at laging bumabalik',
+   'Repaid 3 loans and always came back': 'Nakabayad na ng 3 loan at laging bumabalik',
+   'Repaid 4 loans and always came back': 'Nakabayad na ng 4 loan at laging bumabalik',
+   "loans repaid — one of the community's reliable borrowers": 'loan na nabayaran — isa sa mga maaasahang borrower ng komunidad',
+   '· Identity verified': '· Verified ang identity',
+   '· due today': '· due ngayong araw',
+   '· due tomorrow': '· due bukas',
+   'no income shared': 'walang ibinahaging income',
+   'unclear date': 'hindi malinaw na petsa',
+   'full-time, mid-month pay': 'full-time, sahod tuwing kinsenas',
+   'full-time, end-of-month pay': 'full-time, sahod tuwing katapusan',
+   'full-time, weekly pay': 'full-time, lingguhang sahod',
+   'full-time, irregular pay': 'full-time, hindi regular ang sahod',
+   'part-time, mid-month pay': 'part-time, sahod tuwing kinsenas',
+   'part-time, end-of-month pay': 'part-time, sahod tuwing katapusan',
+   'part-time, weekly pay': 'part-time, lingguhang sahod',
+   'part-time, irregular pay': 'part-time, hindi regular ang sahod',
+   'freelance, mid-month pay': 'freelance, sahod tuwing kinsenas',
+   'freelance, end-of-month pay': 'freelance, sahod tuwing katapusan',
+   'freelance, weekly pay': 'freelance, lingguhang sahod',
+   'freelance, irregular pay': 'freelance, hindi regular ang sahod',
+
+   // src/lib/borrowerCreditUsage.ts
+   'Less than a day left on the board': 'Wala nang isang araw na natitira sa board',
+   '1 day left on the board': '1 araw na lang sa board',
+   'days left on the board': 'araw na lang sa board',
+
+   // src/lib/loanNotes/api.ts and src/lib/loanNotes/types.ts
+   'A Moodeng borrower': 'Isang Moodeng borrower',
+   Listed: 'Naka-list',
+   Sold: 'Nabenta',
+   Requested: 'Naka-request',
+
+   // src/lib/loanRequestRepostStatus.ts
+   'You can make another loan request in about 1 minute.': 'Puwede kang gumawa ulit ng loan request sa loob ng mga 1 minuto.',
+   'You can make another loan request in about': 'Puwede kang gumawa ulit ng loan request sa loob ng mga',
+
+   // src/lib/reasonQuality.ts
+   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
+      'Isulat ang dahilan mo sa English — hindi nakakaintindi ng Tagalog ang mga lender na nagbabasa nito.',
+   'Write it as a sentence — what the money is for and when you get paid.':
+      'Isulat ito bilang pangungusap — kung para saan ang pera at kailan ka sumasahod.',
+   "This doesn't look like real words yet — tell lenders what the loan is for.":
+      'Mukhang hindi pa ito totoong mga salita — sabihin sa mga lender kung para saan ang loan.',
+   'Try saying it once, clearly — repeating words does not help lenders.':
+      'Sabihin ito nang isang beses at malinaw — hindi nakakatulong sa mga lender ang paulit-ulit na salita.',
+
+   // src/lib/schemas/fields.ts
+   'Username is required': 'Kailangan ang username',
+   'Username must be between 3 and 20 characters': 'Dapat 3 hanggang 20 characters ang username',
+   'Username can only contain letters, numbers, underscores, and hyphens':
+      'Letra, numero, underscore, at hyphen lang ang puwede sa username',
+   'Invalid email format': 'Invalid ang format ng email',
+   'Email is too long': 'Masyadong mahaba ang email',
+   'Password is required': 'Kailangan ang password',
+   'Invalid password': 'Invalid ang password',
+   'Password must be at least 6 characters': 'Dapat hindi bababa sa 6 characters ang password',
+   'Password is too long': 'Masyadong mahaba ang password',
+   'Wallet address is required': 'Kailangan ang wallet address',
+   'Invalid Ethereum wallet address format': 'Invalid ang format ng Ethereum wallet address',
+   'ID is required': 'Kailangan ang ID',
+   'Invalid ID format': 'Invalid ang format ng ID',
+   'must be a positive number': 'ay dapat positibong numero',
+   'Loan amount must be positive and not exceed 1 billion': 'Dapat positibo ang halaga ng loan at hindi lalampas sa 1 bilyon',
+   'Repaid amount must be non-negative and not exceed 1 billion':
+      'Hindi puwedeng negatibo ang nabayarang halaga at hindi ito lalampas sa 1 bilyon',
+   'Loan period must be between 1 and 3650 days (10 years)': 'Dapat 1 hanggang 3650 araw (10 taon) ang tagal ng loan',
+   'cannot be empty': 'ay hindi puwedeng blangko',
+   'exceeds maximum length of': 'ay lampas sa maximum na haba na',
+   'Telegram username is required': 'Kailangan ang Telegram username',
+   'Telegram username must be between 5 and 32 characters': 'Dapat 5 hanggang 32 characters ang Telegram username',
+   'Telegram username can only contain letters, numbers, and underscores':
+      'Letra, numero, at underscore lang ang puwede sa Telegram username',
+   'Google ID is required': 'Kailangan ang Google ID',
+   'Google ID is too long': 'Masyadong mahaba ang Google ID',
+   'Telegram ID must be a positive integer': 'Dapat positibong buong numero ang Telegram ID',
+
+   // src/lib/supabase/avatarStorage.ts
+   'You must be signed in to upload an avatar.': 'Kailangan mong mag-sign in para makapag-upload ng avatar.',
+   'Upload failed:': 'Hindi na-upload:',
+
+   // src/lib/verificationUiState.ts
+   'In review': 'Nire-review',
+   Unfinished: 'Hindi pa tapos',
+   Declined: 'Na-decline',
+   Blocked: 'Naka-block',
+   'View status': 'Tingnan ang status',
+   'View details': 'Tingnan ang detalye',
+
+   // src/lib/web3/openfort/OpenfortContext.tsx
+   'The Instant Wallet is not available right now.': 'Hindi available ang Instant Wallet sa ngayon.',
+   "Couldn't create your wallet": 'Hindi nagawa ang wallet mo',
+
+   // src/lib/web3/openfort/errors.ts
+   'Instant Wallet isn’t available right now. Please try again in a little while.':
+      'Hindi available ang Instant Wallet sa ngayon. Subukan ulit maya-maya.',
+   "We couldn't reach the wallet service. Check your internet and try again.":
+      'Hindi namin ma-reach ang wallet service. I-check ang internet mo at subukan ulit.',
+   'Please sign in again, then try creating your wallet.': 'Mag-sign in ulit, tapos subukang gawin ulit ang wallet mo.',
+
+   // src/lib/web3/openfort/shieldSession.ts
+   'You need to be signed in to create your Instant Wallet.': 'Kailangan mong mag-sign in para makagawa ng Instant Wallet mo.',
+   'A quick face check is needed before we can create your Instant Wallet.':
+      'Kailangan muna ng mabilis na face check bago namin magawa ang Instant Wallet mo.',
+
+   // src/lib/web3/openfort/walletFaceGate.ts
+   'This face already has a wallet': 'May wallet na ang mukhang ito',
+   'Each person can have one Moodeng Instant Wallet. If you already have a Moodeng account, sign in to that one — or connect a Base Account instead.':
+      'Isang Moodeng Instant Wallet lang bawat tao. Kung may Moodeng account ka na, doon ka mag-sign in — o magkonekta na lang ng Base Account.',
+   "That doesn't match your verified ID": 'Hindi iyan tugma sa verified mong ID',
+   'This account was verified with a different face. For your security we can only create the wallet for the verified account holder. Please scan again as the account holder, or contact support.':
+      'Ibang mukha ang ginamit sa pag-verify ng account na ito. Para sa seguridad mo, para lang sa verified na may-ari ng account namin magagawa ang wallet. Mag-scan ulit bilang may-ari ng account, o makipag-ugnayan sa support.',
+   "We couldn't complete the scan": 'Hindi namin natapos ang scan',
+   'Find good, even lighting, remove hats or sunglasses, and hold your phone at eye level. Then try again.':
+      'Humanap ng maayos at pantay na ilaw, tanggalin ang sumbrero o sunglasses, at hawakan ang phone kapantay ng mata mo. Tapos subukan ulit.',
+   'This usually takes a few seconds.': 'Karaniwang ilang segundo lang ito.',
+   'A quick face check': 'Mabilis na face check',
+   "It takes about ten seconds and keeps wallets to one per person. We don't store your photo.":
+      'Mga sampung segundo lang ito, at sinisiguro nitong isa lang ang wallet bawat tao. Hindi namin iniimbak ang photo mo.',
+   'Already have a wallet.': 'May wallet ka na.',
+
+   // src/lib/withTimeout.ts
+   'Wallet did not respond in time': 'Hindi sumagot sa oras ang wallet',
+
+   // src/lib/withdraw/cashoutFaceGate.ts
+   "This doesn't match the account holder": 'Hindi ito tugma sa may-ari ng account',
+   'For your protection we could not confirm this is the person who verified this account. This cash-out has been held and our team has been notified. Please contact support.':
+      'Para sa proteksyon mo, hindi namin makumpirma na ikaw ang taong nag-verify ng account na ito. Naka-hold ang cash-out na ito at naabisuhan na ang team namin. Makipag-ugnayan sa support.',
+   'We need to verify you manually': 'Kailangan ka naming i-verify nang manual',
+   "We couldn't find a reference photo on file to check against. Please contact support to complete this cash-out.":
+      'Wala kaming nakitang reference photo na naka-file para ikumpara. Makipag-ugnayan sa support para matapos ang cash-out na ito.',
+   'Quick check before you cash out': 'Mabilis na check bago ka mag-cash out',
+   "Since this is your first cash-out, we need a quick face check to confirm it's really you. It takes about ten seconds.":
+      'Dahil ito ang una mong cash-out, kailangan namin ng mabilis na face check para makumpirmang ikaw talaga ito. Mga sampung segundo lang ito.',
+
+   // src/shared/points.ts (milestone titles)
+   'Repay a loan on time': 'Magbayad ng loan on time',
+   'Build a 2-loan on-time streak': 'Magbayad on time ng 2 loan nang sunod-sunod',
+   'Repay a full-limit credit-builder': 'Bayaran ang isang full-limit na credit-building loan',
+   'Borrow from 2 different lenders': 'Humiram sa 2 magkaibang lender',
+   'Repay $100 total': 'Magbayad ng $100 sa kabuuan',
+   'Reach Credit Level 3': 'Umabot sa Credit Level 3',
+   'Become a trusted borrower candidate': 'Maging kandidatong pinagkakatiwalaang borrower',
+
+   // src/store/slices/authSlice.ts
+   'Please verify your email before signing in. Check your inbox or request a new verification email.':
+      'I-verify muna ang email mo bago mag-sign in. Tingnan ang inbox mo o humingi ng bagong verification email.',
+   'Please verify your email before signing in. A verification email has been sent to your inbox.':
+      'I-verify muna ang email mo bago mag-sign in. May verification email nang naipadala sa inbox mo.'
 };
