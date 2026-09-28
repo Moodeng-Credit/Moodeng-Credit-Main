@@ -491,7 +491,7 @@ const vietnameseTranslations: Record<TranslationKey, string> = {
    'points.total': 'IOU {points}',
    'requestBoard.applyForLoan': 'Đăng ký vay',
    'requestBoard.authenticatedSubtitle': 'Xem các yêu cầu đăng trên Moodeng, hoặc xác minh ngay để bắt đầu vay bằng USDC.',
-   'requestBoard.borrowerCardBody': 'Vay USDC để xây dựng niềm tin và mở khóa hạng vay cao hơn.',
+   'requestBoard.borrowerCardBody': 'Vay USDC để xây dựng niềm tin và mở khóa hạng tín dụng cao hơn.',
    'requestBoard.borrowerCardBodyShort': 'Vay USDC để xây dựng niềm tin. Mở khóa hạng cao hơn.',
    'requestBoard.browseLatest': 'Xem yêu cầu mới nhất',
    'requestBoard.empty': 'Không tìm thấy yêu cầu vay nào.',
