@@ -137,5 +137,31 @@ export const vietnameseCoverageLanding: Record<string, string> = {
       'Khác với ứng dụng tài chính truyền thống, nơi tài khoản có thể bị cho mượn, chia sẻ hoặc bán lại cho người thân và bạn bè, ở đây người vay được xác minh liên tục.',
    'Data Protected': 'Dữ liệu được bảo vệ',
    'Web3 wallet-based lending ensures privacy: Your identity stays secure. No cookies, data selling, or spam. Just anonymous transactions.':
-      'Cho vay qua ví Web3 đảm bảo quyền riêng tư: danh tính của bạn luôn an toàn. Không cookie, không bán dữ liệu, không spam. Chỉ có giao dịch ẩn danh.'
+      'Cho vay qua ví Web3 đảm bảo quyền riêng tư: danh tính của bạn luôn an toàn. Không cookie, không bán dữ liệu, không spam. Chỉ có giao dịch ẩn danh.',
+   // src/views/lenderBenefits (verification copy corrected to ID + selfie / World ID)
+   'Identity verified': 'Đã xác minh danh tính',
+   'Borrowers pass a quick ID + selfie check, or verify with World ID, before they can request funding.':
+      'Người vay hoàn tất bước kiểm tra giấy tờ tùy thân + ảnh selfie nhanh, hoặc xác minh bằng World ID, trước khi có thể yêu cầu cấp vốn.',
+   'Worker hubs first': 'Ưu tiên các trung tâm lao động',
+   'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
+      'Chúng tôi bắt đầu từ các trung tâm lao động ở nước ngoài, gồm Hàn Quốc, Đài Loan, Nhật Bản, Singapore và các thành phố lân cận.',
+   'Worker corridors': 'Hành lang lao động',
+   'Verified borrowers first': 'Ưu tiên người vay đã xác minh',
+   'Every borrower completes a one-time identity check before requesting a loan.':
+      'Mỗi người vay đều hoàn tất bước xác minh danh tính một lần trước khi yêu cầu vay.',
+   'Identity checks help us start with users who can prove they are unique, real borrowers.':
+      'Bước xác minh danh tính giúp chúng tôi bắt đầu với những người dùng chứng minh được họ là người vay thật và duy nhất.',
+   'Identity verification helps confirm one real person behind each borrower account.':
+      'Xác minh danh tính giúp đảm bảo mỗi tài khoản người vay thuộc về đúng một người thật.',
+   'Verification is a trust signal, not a loan guarantee.': 'Xác minh là tín hiệu tin cậy, không phải bảo đảm khoản vay.',
+   'Verified first': 'Xác minh trước',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'Người vay hoàn tất bước kiểm tra giấy tờ tùy thân + ảnh selfie nhanh, hoặc xác minh bằng World ID, trước khi có thể yêu cầu vay. Nhờ đó người cho vay biết đây là người thật, còn giấy tờ được đối tác xác minh của chúng tôi kiểm tra và Moodeng không bao giờ lưu trữ.',
+   'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
+      'Người vay đã dùng World App có thể xác minh bằng World ID thay cho bước kiểm tra giấy tờ tùy thân + ảnh selfie.',
+   'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':
+      'Chúng tôi bắt đầu với người Philippines và người Đông Nam Á đang làm việc ở nước ngoài. Khoản vay nhỏ có thể giúp những lúc cần tiền gấp và giúp người vay tự xây dựng tín dụng.',
+   'We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.':
+      'Chúng tôi bắt đầu với người lao động và người di cư tại các trung tâm như Hàn Quốc, Đài Loan, Nhật Bản, Singapore và các thành phố lân cận khác.',
+   'ID verified': 'Đã xác minh giấy tờ'
 };

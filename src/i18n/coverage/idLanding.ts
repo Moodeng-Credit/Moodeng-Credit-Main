@@ -201,5 +201,31 @@ export const indonesianCoverageLanding: Record<string, string> = {
    'Small Loans': 'Pinjaman Kecil',
    'Gradual Growth': 'Tumbuh Bertahap',
    Enable: 'Aktifkan',
-   'Trust Building': 'Membangun Kepercayaan'
+   'Trust Building': 'Membangun Kepercayaan',
+   // src/views/lenderBenefits (verification copy corrected to ID + selfie / World ID)
+   'Identity verified': 'Identitas terverifikasi',
+   'Borrowers pass a quick ID + selfie check, or verify with World ID, before they can request funding.':
+      'Peminjam menyelesaikan cek ID + selfie singkat, atau verifikasi dengan World ID, sebelum bisa mengajukan pendanaan.',
+   'Worker hubs first': 'Mulai dari pusat pekerja',
+   'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
+      'Kami mulai dari pusat-pusat pekerja migran, termasuk Korea Selatan, Taiwan, Jepang, Singapura, dan kota-kota di sekitarnya.',
+   'Worker corridors': 'Koridor pekerja',
+   'Verified borrowers first': 'Peminjam terverifikasi lebih dulu',
+   'Every borrower completes a one-time identity check before requesting a loan.':
+      'Setiap peminjam menyelesaikan cek identitas satu kali sebelum mengajukan pinjaman.',
+   'Identity checks help us start with users who can prove they are unique, real borrowers.':
+      'Cek identitas membantu kami memulai dengan pengguna yang bisa membuktikan bahwa mereka peminjam nyata dan unik.',
+   'Identity verification helps confirm one real person behind each borrower account.':
+      'Verifikasi identitas membantu memastikan ada satu orang nyata di balik setiap akun peminjam.',
+   'Verification is a trust signal, not a loan guarantee.': 'Verifikasi adalah sinyal kepercayaan, bukan jaminan pinjaman.',
+   'Verified first': 'Terverifikasi dulu',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'Peminjam menyelesaikan cek ID + selfie singkat, atau verifikasi dengan World ID, sebelum bisa mengajukan pinjaman. Pemberi pinjaman jadi tahu bahwa peminjamnya orang sungguhan, dan ID diperiksa oleh mitra verifikasi kami, tidak pernah disimpan oleh Moodeng.',
+   'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
+      'Peminjam yang sudah memakai World App bisa verifikasi dengan World ID sebagai pengganti cek ID + selfie.',
+   'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':
+      'Kami mulai dengan orang Filipina dan Asia Tenggara yang bekerja di luar negeri. Pinjaman kecil bisa menutup kebutuhan mendesak dan membantu peminjam membangun kredit secara mandiri.',
+   'We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.':
+      'Kami mulai dengan pekerja dan migran di pusat-pusat seperti Korea Selatan, Taiwan, Jepang, Singapura, dan kota-kota lain di sekitarnya.',
+   'ID verified': 'ID terverifikasi'
 };

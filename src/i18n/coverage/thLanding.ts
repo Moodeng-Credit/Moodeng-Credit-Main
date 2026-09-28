@@ -129,5 +129,30 @@ export const thaiCoverageLanding: Record<string, string> = {
       'ต่างจากแอปการเงินแบบดั้งเดิมที่บัญชีอาจถูกยืม แชร์ หรือขายต่อให้ครอบครัวและเพื่อน ที่นี่มีการยืนยันตัวตนผู้ยืมอย่างต่อเนื่อง',
    'Data Protected': 'ปกป้องข้อมูล',
    'Web3 wallet-based lending ensures privacy: Your identity stays secure. No cookies, data selling, or spam. Just anonymous transactions.':
-      'การปล่อยกู้ผ่านกระเป๋าเงิน Web3 ช่วยรักษาความเป็นส่วนตัว ตัวตนของคุณปลอดภัย ไม่มีคุกกี้ ไม่มีการขายข้อมูล และไม่มีสแปม มีแค่ธุรกรรมแบบไม่เปิดเผยตัวตน'
+      'การปล่อยกู้ผ่านกระเป๋าเงิน Web3 ช่วยรักษาความเป็นส่วนตัว ตัวตนของคุณปลอดภัย ไม่มีคุกกี้ ไม่มีการขายข้อมูล และไม่มีสแปม มีแค่ธุรกรรมแบบไม่เปิดเผยตัวตน',
+   // src/views/lenderBenefits (verification copy corrected to ID + selfie / World ID)
+   'Identity verified': 'ยืนยันตัวตนแล้ว',
+   'Borrowers pass a quick ID + selfie check, or verify with World ID, before they can request funding.':
+      'ผู้ยืมต้องผ่านการตรวจบัตรประชาชนและเซลฟี่อย่างรวดเร็ว หรือยืนยันด้วย World ID ก่อนจึงจะขอรับเงินกู้ได้',
+   'Worker hubs first': 'เริ่มจากศูนย์กลางแรงงาน',
+   'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
+      'เราเริ่มจากศูนย์กลางแรงงานในต่างแดน เช่น เกาหลีใต้ ไต้หวัน ญี่ปุ่น สิงคโปร์ และเมืองใกล้เคียง',
+   'Worker corridors': 'เส้นทางแรงงาน',
+   'Verified borrowers first': 'ผู้ยืมที่ยืนยันตัวตนแล้วมาก่อน',
+   'Every borrower completes a one-time identity check before requesting a loan.': 'ผู้ยืมทุกคนต้องยืนยันตัวตนหนึ่งครั้งก่อนขอเงินกู้',
+   'Identity checks help us start with users who can prove they are unique, real borrowers.':
+      'การยืนยันตัวตนช่วยให้เราเริ่มต้นกับผู้ใช้ที่พิสูจน์ได้ว่าเป็นผู้ยืมตัวจริงและไม่ซ้ำกัน',
+   'Identity verification helps confirm one real person behind each borrower account.':
+      'การยืนยันตัวตนช่วยยืนยันว่ามีคนจริงเพียงหนึ่งคนอยู่เบื้องหลังบัญชีผู้ยืมแต่ละบัญชี',
+   'Verification is a trust signal, not a loan guarantee.': 'การยืนยันตัวตนคือสัญญาณความน่าเชื่อถือ ไม่ใช่การรับประกันเงินกู้',
+   'Verified first': 'ยืนยันตัวตนก่อน',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'ผู้ยืมต้องผ่านการตรวจบัตรประชาชนและเซลฟี่อย่างรวดเร็ว หรือยืนยันด้วย World ID ก่อนจึงจะขอเงินกู้ได้ ผู้ให้กู้จึงมั่นใจได้ว่าเป็นคนจริง โดยบัตรจะได้รับการตรวจสอบจากพาร์ทเนอร์ด้านการยืนยันตัวตนของเรา และ Moodeng จะไม่จัดเก็บไว้',
+   'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
+      'ผู้ยืมที่ใช้ World App อยู่แล้วสามารถยืนยันด้วย World ID แทนการตรวจบัตรประชาชนและเซลฟี่ได้',
+   'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':
+      'เราเริ่มต้นกับชาวฟิลิปปินส์และชาวเอเชียตะวันออกเฉียงใต้ที่ทำงานในต่างประเทศ เงินกู้ขนาดเล็กช่วยอุดช่องว่างเมื่อจำเป็นเร่งด่วน และช่วยให้ผู้ยืมสร้างเครดิตได้ด้วยตัวเอง',
+   'We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.':
+      'เราเริ่มต้นกับแรงงานและผู้ย้ายถิ่นในศูนย์กลางอย่างเกาหลีใต้ ไต้หวัน ญี่ปุ่น สิงคโปร์ และเมืองใกล้เคียงอื่น ๆ',
+   'ID verified': 'ยืนยันบัตรแล้ว'
 };
