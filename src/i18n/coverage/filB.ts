@@ -635,5 +635,43 @@ export const filipinoCoverageB: Record<string, string> = {
    'Back to funding options': 'Bumalik sa mga opsyon sa pagpondo',
    'Payment confirmed': 'Nakumpirma ang bayad',
    'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
-      'Papunta na ang USDC mo sa wallet mo sa Base. Karaniwang dumarating ito sa loob ng isang minuto.'
+      'Papunta na ang USDC mo sa wallet mo sa Base. Karaniwang dumarating ito sa loob ng isang minuto.',
+
+   // src/views/lenderBenefits/sections/CommunityHeroSection.tsx
+   'Community information': 'Impormasyon ng komunidad',
+
+   // src/views/lenderBenefits/sections/MeetYourFutureBorrowersSection.tsx
+   'Borrower community illustration': 'Ilustrasyon ng komunidad ng borrower',
+
+   // src/views/lenderBenefits/sections/ProblemSection.tsx
+   'A group of people held together in a circular illustration': 'Isang grupo ng mga tao na magkakasama sa isang bilog na ilustrasyon',
+
+   // src/views/lenderBenefits/sections/Web3WalletSection.tsx
+   'Moodeng Credit wallet illustration': 'Ilustrasyon ng wallet ng Moodeng Credit',
+
+   // src/views/login/components/AuthCard.tsx
+   'Moodeng Mascot': 'Mascot ng Moodeng',
+
+   // src/views/login/components/AuthForm.tsx
+   'Email already exists.': 'May account na gamit ang email na ito.',
+   'Invalid credentials.': 'Maling credentials.',
+   'Remember me': 'Tandaan ako',
+   'Enter your Email': 'Ilagay ang Email mo',
+   'Confirm your Password': 'Kumpirmahin ang Password mo',
+
+   // src/views/login/sections/AuthFormSection.tsx
+   'OR CONTINUE WITH EMAIL': 'O MAGPATULOY GAMIT ANG EMAIL',
+
+   // src/views/milestones/Milestones.tsx
+   Rewards: 'Mga Reward',
+   'How rewards unlock': 'Paano nag-a-unlock ang mga reward',
+   'Complete milestones to earn Pandesal points. Profile rewards unlock automatically when you reach the required points.':
+      'Tapusin ang mga milestone para makakuha ng Pandesal points. Awtomatikong nag-a-unlock ang mga profile reward kapag naabot mo na ang kinakailangang points.',
+   'Pandesal points unlock profile rewards. They do not guarantee funding.':
+      'Ang Pandesal points ay nag-a-unlock ng mga profile reward. Hindi ito garantiya ng funding.',
+   'How rewards work': 'Kung paano gumagana ang mga reward',
+   'Next reward': 'Susunod na reward',
+   Collectibles: 'Mga Collectible',
+   Upcoming: 'Paparating',
+   'Close rewards help': 'Isara ang tulong sa rewards'
 };
