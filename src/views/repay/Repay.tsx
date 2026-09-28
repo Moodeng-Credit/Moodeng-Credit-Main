@@ -22,13 +22,14 @@ import { erc20Abi } from 'viem';
 import { useAccount, useConnect, useReadContract, useSwitchChain, useWatchContractEvent } from 'wagmi';
 
 import { useBottomNavPrimaryAction } from '@/components/BottomNavActionContext';
+import CountrySwitch from '@/components/CountrySwitch';
 import RepayInAppBrowserGate from '@/components/RepayInAppBrowserGate';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
-import { useGeoCheck } from '@/hooks/useGeoCheck';
+import { type CashoutCountry, useCashoutCountry } from '@/hooks/useCashoutCountry';
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
@@ -57,20 +58,10 @@ const quickRepaymentFractions = [
 
 // Places a borrower can buy USDC and send it to their Base Account. The repay flow is the
 // same for all (send USDC on Base to the address below); only the "open" link differs.
-// The local rails (Coins.ph, Moneybees, GCrypto, PDAX) are shown to EVERYONE, regardless of
-// detected location — Coins.ph leads as the featured exchange, Moneybees is offered as an
-// EXTERNAL user-directed option (no Moodeng partnership; they drive their own process),
-// GCrypto/PDAX sit under "Other options". Location (`inPhilippines`, see below) only ever
-// ADDS Binance under "Other options" for users detected outside the Philippines — it never
-// hides the local rails. Most of Moodeng's users are Filipino, including many living or
-// traveling abroad, and their Coins.ph/GCash/PDAX accounts work fine from anywhere; a
-// location-based lookup only knows where the phone's IP is, not the user's nationality or
-// which accounts they actually hold, so it must never be the thing that hides their own
-// rails. Binance stays excluded specifically for users detected IN the Philippines, where
-// Binance doesn't operate. Order matters: index 0 renders as the hero card, index 1 as the
-// pill below it. Indodax (last) is the one exception that location ADDS: for users detected in
-// Indonesia it takes the hero slot and every other source moves under "Other options" (still
-// available, never hidden). Elsewhere it isn't shown — it needs an Indonesian KTP.
+// Which of these a borrower sees depends on the country picked in the country switch (see
+// COUNTRY_SOURCES below and useCashoutCountry) — the IP lookup only picks its starting value,
+// so a Filipino abroad can switch back to the Philippines in one tap. Moneybees is an
+// EXTERNAL user-directed option (no Moodeng partnership; they drive their own process).
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -88,6 +79,48 @@ const fundSources = [
 
 type FundSourceId = (typeof fundSources)[number]['id'];
 
+// Per-country source layout: `hero` renders as the full-width recommended card, `pill` as the
+// compact button below it, `others` behind "Other options". Philippine apps need a Philippine
+// account and Indodax needs an Indonesian KTP, so each country only lists its own. Binance is
+// the fallback for everywhere else (it doesn't operate in the Philippines).
+const COUNTRY_SOURCES: Record<
+   CashoutCountry,
+   { hero: FundSourceId; pill: FundSourceId | null; others: readonly FundSourceId[]; intro: React.ReactNode }
+> = {
+   PH: {
+      hero: 'coinsph',
+      pill: 'moneybees',
+      others: ['gcrypto', 'pdax'],
+      intro: (
+         <>
+            Pick where you'll buy or withdraw USDC. <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most
+            people.
+         </>
+      )
+   },
+   ID: {
+      hero: 'indodax',
+      pill: null,
+      others: [],
+      intro: (
+         <>
+            Buy USDC with rupiah on <span className="font-semibold text-[#6c3fe0]">Indodax</span> and send it to your wallet on Base.
+         </>
+      )
+   },
+   OTHER: {
+      hero: 'binance',
+      pill: null,
+      others: [],
+      intro: (
+         <>
+            Buy USDC with your local currency on <span className="font-semibold text-[#6c3fe0]">Binance</span> P2P and send it to your
+            wallet on Base.
+         </>
+      )
+   }
+};
+
 // Only the free/not-free distinction is shown to users now (0 = free, anything else = a small
 // fee). The exact cents are no longer displayed — they vary and the exchange shows the real
 // figure at withdrawal — but the values are kept here as the free-vs-small-fee signal.
@@ -101,13 +134,11 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
 };
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
-// Only coinsph and indodax are ever rendered (renderHeroSource is called with fundSources[0],
-// i.e. coinsph, or with Indodax for users in Indonesia) — moneybees is unused, kept from
-// before Binance was removed from the hero slot.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
    coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
    moneybees: "External option · you follow Moneybees' own process",
-   indodax: 'Recommended in Indonesia · buy USDC with rupiah, send on Base'
+   indodax: 'Recommended in Indonesia · buy USDC with rupiah, send on Base',
+   binance: 'Buy USDC with your local currency via P2P, send on Base'
 };
 
 // Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
@@ -376,10 +407,16 @@ export default function Repay() {
       isBaseWallet: isBaseWalletProvider(user?.walletProvider),
       isPreview: usePreviewLoans
    });
-   const { allowed: geoAllowed, loading: geoLoading, countryCode } = useGeoCheck(usePreviewLoans);
-   // Previews can force the country with ?country=ID.
-   const previewCountry = usePreviewLoans ? new URLSearchParams(location.search).get('country') : null;
-   const inIndonesia = (previewCountry ?? countryCode)?.toUpperCase() === 'ID';
+   // Which country's sources to show — a visible switch; the IP lookup only picks the starting
+   // value (see useCashoutCountry). Previews can force it with ?country=ID (or PH / OTHER).
+   const {
+      country,
+      setCountry,
+      loading: geoLoading
+   } = useCashoutCountry({
+      isPreview: usePreviewLoans,
+      override: usePreviewLoans ? new URLSearchParams(location.search).get('country') : null
+   });
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -436,7 +473,6 @@ export default function Repay() {
    const [justFunded, setJustFunded] = useState<number | null>(null);
    const effectiveJustFunded = previewArriving ? 121 : justFunded;
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
-   const indodaxSource = fundSources.find((source) => source.id === 'indodax') ?? fundSources[0];
 
    // Compact source button used for Coins.ph and the "Other options" exchanges.
    // Fee tag sits next to the label; selection is conveyed by border + fill alone (no checkmark).
@@ -474,7 +510,7 @@ export default function Repay() {
       );
    };
 
-   // Prominent, full-width primary source — Coins.ph (fundSources[0]), or Indodax in Indonesia.
+   // Prominent, full-width primary source — the selected country's `hero` (see COUNTRY_SOURCES).
    // Fee badge sits inline with the name; selection is conveyed by border + fill alone (no checkmark).
    const renderHeroSource = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
@@ -723,24 +759,10 @@ export default function Repay() {
       }
    });
 
-   // Keep the selected source valid once geo resolves: Binance is excluded specifically for
-   // users detected IN the Philippines (Binance doesn't operate there), so fall back to the
-   // recommended local rail if it was selected. Abroad, we do NOT force a switch to Binance —
-   // Coins.ph and the other local rails work fine for a Filipino traveling or living outside
-   // the Philippines, so the user's own default choice is left alone. Skipped during loading
-   // so we don't flip away from the default before geo resolves.
+   // Each country opens on its own recommended source; switching country resets the pick.
    useEffect(() => {
-      if (geoLoading) return;
-      if (geoAllowed) {
-         setFundSource((current) => (current === 'binance' ? 'coinsph' : current));
-      }
-   }, [geoAllowed, geoLoading]);
-
-   // In Indonesia, Indodax leads — move the untouched Coins.ph default to it once (never a
-   // user's own pick). Previews resolve immediately, so no loading guard is needed there.
-   useEffect(() => {
-      if (inIndonesia) setFundSource((current) => (current === 'coinsph' ? 'indodax' : current));
-   }, [inIndonesia]);
+      setFundSource(COUNTRY_SOURCES[country].hero);
+   }, [country]);
 
    // When we learn the borrower doesn't hold enough USDC to repay, surface the add-funds
    // helper automatically so the next step is visible without hunting for it. Runs only
@@ -1060,14 +1082,6 @@ export default function Repay() {
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
-
-   // Geo no longer gates the page — anyone (including Filipinos abroad) can repay. The local
-   // rails (Coins.ph, Moneybees, GCrypto, PDAX) are always shown; `inPhilippines` only decides
-   // whether Binance is ALSO offered (it's excluded specifically for users detected IN the
-   // Philippines, where Binance doesn't operate — see the fundSources comment above). We don't
-   // assume a location while the check is still resolving — the source list shows a loader
-   // until `geoLoading` clears.
-   const inPhilippines = geoAllowed;
 
    const shouldShowLoanCheckLoading =
       !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
@@ -1396,6 +1410,7 @@ export default function Repay() {
                                     </span>
                                     <p className="text-sm font-semibold text-[#1a1240] dark:text-white">Choose your source</p>
                                  </div>
+                                 <CountrySwitch value={country} onChange={setCountry} className="mb-3" />
                                  {geoLoading ? (
                                     <div className="flex items-center justify-center gap-2 py-6 text-sm text-[#6b6090] dark:text-[#a095c8]">
                                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -1403,51 +1418,23 @@ export default function Repay() {
                                     </div>
                                  ) : (
                                     <>
-                                       <p className="mb-3 text-xs text-[#6b6090]">
-                                          Pick where you'll buy or withdraw USDC.{' '}
-                                          {inIndonesia ? (
-                                             <>
-                                                <span className="font-semibold text-[#6c3fe0]">Indodax</span> is the simplest option in
-                                                Indonesia — buy USDC with rupiah and send it on Base. Other options are below.
-                                             </>
-                                          ) : (
-                                             <>
-                                                <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people
-                                             </>
-                                          )}
-                                          {inIndonesia ? null : !inPhilippines ? (
-                                             <>
-                                                {' '}
-                                                — and works the same whether you're in the Philippines or traveling.{' '}
-                                                <span className="font-semibold text-[#6c3fe0]">Binance</span> is also available under "Other
-                                                options".
-                                             </>
-                                          ) : (
-                                             '.'
-                                          )}
-                                       </p>
+                                       <p className="mb-3 text-xs text-[#6b6090]">{COUNTRY_SOURCES[country].intro}</p>
 
-                                       {renderHeroSource(inIndonesia ? indodaxSource : fundSources[0])}
-
-                                       {inIndonesia ? null : <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>}
+                                       {renderHeroSource(fundSources.find((source) => source.id === COUNTRY_SOURCES[country].hero)!)}
 
                                        {(() => {
-                                          // Local rails always show. Binance is added here ONLY for users detected
-                                          // outside the Philippines (see the fundSources comment above for why) — it's
-                                          // an added option abroad, never a replacement for the local rails. In
-                                          // Indonesia, Indodax takes the hero slot and Coins.ph/Moneybees join these.
-                                          const otherSources = fundSources.filter(
-                                             (source) =>
-                                                (inIndonesia && (source.id === 'coinsph' || source.id === 'moneybees')) ||
-                                                source.id === 'gcrypto' ||
-                                                source.id === 'pdax' ||
-                                                (source.id === 'binance' && !inPhilippines)
+                                          const { pill, others } = COUNTRY_SOURCES[country];
+                                          const otherSources = fundSources.filter((source) =>
+                                             (others as readonly FundSourceId[]).includes(source.id)
                                           );
+                                          const pillSource = pill ? fundSources.find((source) => source.id === pill) : undefined;
+                                          if (!pillSource && otherSources.length === 0) return null;
                                           const otherSelected = otherSources.some((source) => source.id === fundSource);
                                           const expanded = showMoreSources || otherSelected;
 
                                           return (
                                              <>
+                                                {pillSource ? <div className="mt-1.5">{renderSourcePill(pillSource)}</div> : null}
                                                 <button
                                                    type="button"
                                                    onClick={() => setShowMoreSources((value) => !value)}

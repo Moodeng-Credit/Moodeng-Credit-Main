@@ -30,10 +30,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
+import CountrySwitch from '@/components/CountrySwitch';
 import { openSupportContacts } from '@/components/support/supportContacts';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { type CashoutCountry, useCashoutCountry } from '@/hooks/useCashoutCountry';
 import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
 import useWallet, { type PaymentMethod, useActivePaymentMethod } from '@/hooks/useWallet';
@@ -592,24 +594,29 @@ function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommend
    );
 }
 
+// The recommended rail each country's list opens on.
+const DEFAULT_PROVIDER: Record<CashoutCountry, Provider> = { PH: 'coinsph', ID: 'indodax', OTHER: 'binance' };
+
 function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) => void; onLater: () => void }) {
    const { spendable, walletConnected, isPreview, repayUsdc: REPAY_USDC, dueDate: DUE_DATE } = useWithdrawData();
    const navigate = useNavigate();
    const location = useLocation();
-   // Location never HIDES a rail: the IP is a guess, not the user's nationality — a Filipino
-   // traveling or living abroad still has working Coins.ph/GCash/PDAX accounts. So every
-   // Philippine provider is always shown below. The one thing location does is ADD Indodax
-   // for users detected in Indonesia (it needs an Indonesian KTP, so it's noise elsewhere),
-   // where it leads and is preselected — Coins.ph stays one tap away for Filipinos there.
-   // Previews can force the country with ?country=ID.
-   const { countryCode } = useGeoCheck(isPreview);
-   const previewCountry = isPreview ? new URLSearchParams(location.search).get('country') : null;
-   const inIndonesia = (previewCountry ?? countryCode)?.toUpperCase() === 'ID';
-   const [selected, setSelected] = useState<Provider>('coinsph');
-   // Geo resolves after first render; switch the untouched default once, never a user's pick.
+   // Each country shows only its own rails, behind a visible country switch (see
+   // useCashoutCountry): the IP lookup only picks the starting country — a Filipino abroad
+   // can switch back to the Philippines in one tap and it's remembered. Previews can force
+   // the starting country with ?country=ID (or PH / OTHER).
+   const {
+      country,
+      setCountry,
+      loading: countryLoading
+   } = useCashoutCountry({
+      isPreview,
+      override: isPreview ? new URLSearchParams(location.search).get('country') : null
+   });
+   const [selected, setSelected] = useState<Provider>(DEFAULT_PROVIDER[country]);
    useEffect(() => {
-      if (inIndonesia) setSelected((current) => (current === 'coinsph' ? 'indodax' : current));
-   }, [inIndonesia]);
+      setSelected(DEFAULT_PROVIDER[country]);
+   }, [country]);
 
    const NAMES: Record<Provider, string> = {
       moneybees: 'Moneybees',
@@ -670,10 +677,14 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto
                service.
             </p>
-            {/* Every Philippine provider is shown to everyone — see the note above for why
-                location must never hide these. Indodax is added on top for Indonesia only. */}
-            <div className="space-y-[10px]">
-               {inIndonesia && (
+            <CountrySwitch value={country} onChange={setCountry} label="Where will you cash out?" className="mb-[14px]" />
+            {countryLoading ? (
+               <div className="flex items-center justify-center gap-2 py-[24px] text-[13px] text-[var(--text-muted)]">
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                  Loading your options…
+               </div>
+            ) : country === 'ID' ? (
+               <div className="space-y-[10px]">
                   <PickerRow
                      selected={selected}
                      onSelect={setSelected}
@@ -684,54 +695,61 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                      line1="Sell for rupiah, withdraw to your bank"
                      line2="Needs a verified Indodax account · bank within 24h"
                   />
-               )}
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
-                  id="coinsph"
-                  recommended={!inIndonesia}
-                  icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
-                  name="Coins.ph"
-                  line1="Sell for pesos, withdraw to bank or GCash"
-                  line2="Lowest fees · bank or GCash · ~30 min"
-               />
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
-                  id="gcash"
-                  icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
-                  name="GCrypto"
-                  line1="Cash out straight to your GCash"
-                  line2="GCash balance · ~5 min"
-               />
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
-                  id="pdax"
-                  icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
-                  name="PDAX"
-                  line1="Sell for pesos, withdraw to bank or e-wallet"
-                  line2="Bank, GCash or Maya · ~30 min"
-               />
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
-                  id="binance"
-                  icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
-                  name="Binance"
-                  line1="Sell for local currency via P2P marketplace"
-                  line2="GCash, Maya or Bank · 30 min–hours"
-               />
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
-                  id="moneybees"
-                  icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
-                  name="Moneybees"
-                  line1="External option · buy and sell via their own process"
-                  line2="You follow Moneybees' instructions directly"
-               />
-            </div>
+               </div>
+            ) : country === 'OTHER' ? (
+               <div className="space-y-[10px]">
+                  <PickerRow
+                     selected={selected}
+                     onSelect={setSelected}
+                     id="binance"
+                     recommended
+                     icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
+                     name="Binance"
+                     line1="Sell for local currency via P2P marketplace"
+                     line2="Your local bank or e-wallet · 30 min–hours"
+                  />
+               </div>
+            ) : (
+               <div className="space-y-[10px]">
+                  <PickerRow
+                     selected={selected}
+                     onSelect={setSelected}
+                     id="coinsph"
+                     recommended
+                     icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
+                     name="Coins.ph"
+                     line1="Sell for pesos, withdraw to bank or GCash"
+                     line2="Lowest fees · bank or GCash · ~30 min"
+                  />
+                  <PickerRow
+                     selected={selected}
+                     onSelect={setSelected}
+                     id="gcash"
+                     icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
+                     name="GCrypto"
+                     line1="Cash out straight to your GCash"
+                     line2="GCash balance · ~5 min"
+                  />
+                  <PickerRow
+                     selected={selected}
+                     onSelect={setSelected}
+                     id="pdax"
+                     icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
+                     name="PDAX"
+                     line1="Sell for pesos, withdraw to bank or e-wallet"
+                     line2="Bank, GCash or Maya · ~30 min"
+                  />
+                  <PickerRow
+                     selected={selected}
+                     onSelect={setSelected}
+                     id="moneybees"
+                     icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
+                     name="Moneybees"
+                     line1="External option · buy and sell via their own process"
+                     line2="You follow Moneybees' instructions directly"
+                  />
+               </div>
+            )}
 
             {selected !== 'moneybees' && <BaseOnlyNotice className="mt-[12px]" />}
             <button
