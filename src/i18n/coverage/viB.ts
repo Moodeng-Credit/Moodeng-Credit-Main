@@ -650,5 +650,49 @@ export const vietnameseCoverageB: Record<string, string> = {
    'The clearest action you can complete now.': 'Hành động rõ ràng nhất bạn có thể hoàn thành ngay bây giờ.',
    'Locked milestones': 'Cột mốc đã khóa',
    'These become available after earlier steps are complete.': 'Những cột mốc này sẽ mở khi các bước trước đó hoàn tất.',
-   'View Milestone': 'Xem cột mốc'
+   'View Milestone': 'Xem cột mốc',
+   // src/views/dashboard/components/ReputationMilestones.tsx
+   'Milestones show what to do next to build trust with lenders.': 'Các cột mốc cho biết bạn cần làm gì tiếp theo để tạo lòng tin với người cho vay.',
+   'How milestones work': 'Cách hoạt động của các cột mốc',
+   // src/views/dashboard/components/SuccessModal.tsx
+   'Loan request submitted': 'Đã gửi yêu cầu vay',
+   'Your loan request is now live. Lenders can review it and fund your request.':
+      'Yêu cầu vay của bạn hiện đã hiển thị công khai. Người cho vay có thể xem và cấp vốn cho yêu cầu của bạn.',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
+      'Tham gia nhóm người vay Moodeng trên Facebook hoặc Telegram để chúng tôi giới thiệu bạn với những người cho vay tốt.',
+   'Join on Telegram': 'Tham gia trên Telegram',
+   'Join on Facebook': 'Tham gia trên Facebook',
+   // src/views/dashboard/components/TrustScoreSection.tsx
+   'Your Pandesal points are your track record on Moodeng, out of 500 — and counting. They already unlock perks, with bigger rewards on the way for top scorers. Keep building them!':
+      'Điểm Pandesal là thành tích của bạn trên Moodeng, trên tổng số 500 điểm — và vẫn đang tăng. Chúng đã mở khóa nhiều đặc quyền, với những phần thưởng lớn hơn đang chờ những người đạt điểm cao nhất. Hãy tiếp tục tích lũy!',
+   'Your Pandesal points grow with every on-time repayment and live with your wallet.':
+      'Điểm Pandesal của bạn tăng theo mỗi lần trả nợ đúng hạn và gắn liền với ví của bạn.',
+   'About Pandesal points': 'Giới thiệu về điểm Pandesal',
+   // src/views/dashboard/components/UpcomingLoanDues.tsx
+   Unknown: 'Không xác định',
+   // src/views/dashboard/components/UserCard.tsx
+   'Timing and borrower context': 'Thời điểm và bối cảnh người vay',
+   'Lender reward': 'Phần thưởng cho người cho vay',
+   'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
+      'Không thấy thông báo bật lên? Hãy đảm bảo ứng dụng ví của bạn đang mở trên thiết bị này — hoặc kết nối lại tại đây.',
+   'Reconnect wallet': 'Kết nối lại ví',
+   'Good Standing': 'Uy tín tốt',
+   'Due On': 'Đến hạn vào',
+   'Get back USDC': 'USDC nhận lại',
+   'View Request': 'Xem yêu cầu',
+   'Your Loan Request': 'Yêu cầu vay của bạn',
+   'Help Received': 'Đã nhận hỗ trợ',
+   'View Details': 'Xem chi tiết',
+   'Use a different wallet': 'Dùng ví khác',
+   'View Borrower Details': 'Xem chi tiết người vay',
+   'Moodeng loan request': 'Yêu cầu vay Moodeng',
+   'Share this request': 'Chia sẻ yêu cầu này',
+   'Delete your loan request': 'Xóa yêu cầu vay của bạn',
+   // src/views/dashboard/components/VideoCallStep.tsx
+   'Zoom link by email · reminder on Messenger': 'Liên kết Zoom qua email · nhắc nhở trên Messenger',
+   'Finding open times…': 'Đang tìm thời gian trống…',
+   'No referral code — book a call.': 'Không có mã giới thiệu — hãy đặt lịch gọi.',
+   'Moodeng video call': 'Cuộc gọi video Moodeng',
+   'Your short video hello with the Moodeng team — see how Moodeng works and ask anything.':
+      'Buổi trò chuyện video ngắn cùng đội ngũ Moodeng — xem cách Moodeng hoạt động và hỏi bất cứ điều gì.'
 };
