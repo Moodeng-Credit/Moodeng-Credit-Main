@@ -555,5 +555,34 @@ export const filipinoCoverageB: Record<string, string> = {
    'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
       'Sumali sa Moodeng borrower group sa Facebook o Telegram para maipakilala ka namin sa mahuhusay na lender.',
    'Join on Telegram': 'Sumali sa Telegram',
-   'Join on Facebook': 'Sumali sa Facebook'
+   'Join on Facebook': 'Sumali sa Facebook',
+
+   // src/views/dashboard/components/TrustScoreSection.tsx
+   'Your Pandesal points are your track record on Moodeng, out of 500 — and counting. They already unlock perks, with bigger rewards on the way for top scorers. Keep building them!':
+      'Ang Pandesal points mo ang track record mo sa Moodeng, hanggang 500 — at patuloy na tumataas. Nag-a-unlock na ito ng mga perks, na may mas malalaking reward pa para sa mga top scorer. Ituloy mo lang!',
+   'Your Pandesal points grow with every on-time repayment and live with your wallet.':
+      'Tumataas ang Pandesal points mo sa bawat on-time na pagbabayad at nakatali ito sa wallet mo.',
+   'About Pandesal points': 'Tungkol sa Pandesal points',
+
+   // src/views/dashboard/components/VideoCallStep.tsx
+   'Zoom link by email · reminder on Messenger': 'Zoom link sa email · paalala sa Messenger',
+   'Finding open times…': 'Hinahanap ang mga bukas na oras…',
+   'No referral code — book a call.': 'Walang referral code — mag-book ng call.',
+   'Moodeng video call': 'Video call ng Moodeng',
+   'Your short video hello with the Moodeng team — see how Moodeng works and ask anything.':
+      'Ang maikli mong video hello kasama ang Moodeng team — tingnan kung paano gumagana ang Moodeng at magtanong ng kahit ano.',
+
+   // src/views/fund/FundBridge.tsx
+   'Bridge to Base': 'I-bridge papunta sa Base',
+   'From chain': 'Mula sa chain',
+   'Select a chain': 'Pumili ng chain',
+   'Amount (USDC)': 'Halaga (USDC)',
+   'To chain': 'Papunta sa chain',
+   'Fetching best rate…': 'Kinukuha ang pinakamahusay na rate…',
+   'Quote Details': 'Detalye ng Quote',
+   'You send': 'Ipapadala mo',
+   'You receive on Base': 'Matatanggap mo sa Base',
+   'Estimated time': 'Tinatayang oras',
+   'Pay from': 'Bayad mula sa',
+   'Could not fetch a quote. Please try again.': 'Hindi nakuha ang quote. Subukan ulit.'
 };
