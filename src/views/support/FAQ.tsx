@@ -65,8 +65,8 @@ export default function FAQ() {
    const copy =
       locale === 'fil'
          ? {
-              title: 'Mga Madalas Itanong',
-              placeholder: 'Maghanap sa FAQs',
+              title: 'Mga madalas itanong',
+              placeholder: 'Maghanap sa mga FAQ',
               empty: 'Walang tanong na tugma sa search mo.',
               all: 'Lahat',
               [FAQ_CATEGORIES.general]: 'Pangkalahatan',

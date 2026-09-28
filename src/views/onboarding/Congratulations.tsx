@@ -52,7 +52,7 @@ const CONGRATULATIONS_COPY = {
          },
          telegram: {
             title: 'Humingi ng tulong sa Telegram',
-            subtitle: 'Mag-message para sa tulong sa wallet, deposito, o mga tanong'
+            subtitle: 'Mag-message sa amin para sa tulong sa wallet, deposit, o anumang tanong'
          },
          facebook: {
             title: 'Makipag-ugnayan sa amin sa Facebook',
@@ -66,8 +66,8 @@ const CONGRATULATIONS_COPY = {
       exploreRequestBoard: 'I-explore ang Request Board',
       exploreNote: 'Puwede mo nang i-explore ang Moodeng Credit at simulan ang journey mo nang may kumpiyansa.',
       communityTitle: 'Boses laban sa hindi patas na pautang',
-      communityBody: 'Sumali sa Facebook Community namin. Makipag-connect sa ibang Moodeng Credit user.',
-      joinCommunity: 'Sumali sa komunidad'
+      communityBody: 'Sumali sa Facebook community namin. Makipag-connect sa ibang Moodeng Credit user.',
+      joinCommunity: 'Sumali sa komunidad namin'
    },
    id: {
       headerTitle: 'Semua sudah siap!',

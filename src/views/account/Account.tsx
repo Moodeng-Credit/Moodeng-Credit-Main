@@ -110,17 +110,17 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Impormasyon ng account',
       accountItems: {
          settings: 'Mga setting ng account',
-         loanHistory: 'Tingnan ang loan transaction history'
+         loanHistory: 'Tingnan ang history ng mga loan transaction'
       },
       contactItems: {
-         community: 'Sumali sa community',
+         community: 'Sumali sa komunidad namin',
          help: 'Humingi ng tulong',
          contact: 'Makipag-ugnayan sa amin'
       },
       getInTouch: 'Makipag-ugnayan',
       commonQuestions: 'Mga karaniwang tanong',
       viewMore: 'Tingnan pa',
-      creditGuide: 'Panoorin ang Credit Levelling Guide namin',
+      creditGuide: 'Panoorin ang gabay namin sa Credit Leveling',
       verified: 'Verified',
       notVerified: 'Hindi pa verified',
       connectWallet: 'Ikonekta ang wallet',

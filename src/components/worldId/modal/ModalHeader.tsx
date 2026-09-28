@@ -22,7 +22,7 @@ const MODAL_HEADER_COPY = {
    },
    fil: {
       goBack: 'Bumalik',
-      verifyWorldId: 'I-verify ang World ID',
+      verifyWorldId: 'Mag-verify gamit ang World ID',
       defaultTitle: 'Patunayang totoong tao ka'
    },
    id: {

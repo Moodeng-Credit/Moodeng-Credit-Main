@@ -36,12 +36,13 @@ const PUSH_COPY: Record<LocaleCode, PushCopy> = {
    fil: {
       label: 'Push notifications sa device na ito',
       description:
-         'Makakatanggap ka ng abiso sa mismong oras na due na ang isang bayad, o kapag nag-request ulit ang borrower na nakabayad na sa iyo. Sa device na ito lang.',
+         'Makakatanggap ka ng notification sa mismong oras na due na ang isang bayad, o kapag nag-request ulit ang borrower na nakabayad na sa iyo. Para sa device na ito lang.',
       enable: 'I-on',
       disable: 'I-off',
       working: 'Sandali lang…',
-      blocked: 'Naka-block ang notifications sa browser settings mo. I-allow mo muna doon, tapos balik ka rito.',
-      unsupported: 'Hindi kayang mag-push notification ng browser na ito. Subukan ang Chrome, o i-add ang Moodeng sa home screen.'
+      blocked: 'Naka-block ang mga notification sa browser settings mo. I-allow mo muna roon, tapos bumalik ka rito.',
+      unsupported:
+         'Hindi kayang magpakita ng push notification ng browser na ito. Subukan ang Chrome, o i-add ang Moodeng sa home screen mo.'
    },
    id: {
       label: 'Notifikasi push di perangkat ini',
@@ -79,7 +80,7 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
    },
    fil: {
       title: 'Mga notification',
-      body: 'Makakatanggap ka ng abiso tungkol sa activity sa account mo. Ipapadala ang mga notification sa email na ibinigay mo.',
+      body: 'Makakatanggap ka ng notification tungkol sa activity sa account mo. Ipapadala ang mga notification sa email na ibinigay mo.',
       options: [
          {
             id: 'account-activity',
@@ -94,7 +95,7 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
          {
             id: 'moodeng-blogs',
             label: 'Mga blog ng Moodeng',
-            description: 'Makakatanggap ka ng updates tungkol sa pinakabagong balita, anunsyo, at blog namin.'
+            description: 'Makakatanggap ka ng pinakabagong balita, update, at blog namin.'
          }
       ]
    },

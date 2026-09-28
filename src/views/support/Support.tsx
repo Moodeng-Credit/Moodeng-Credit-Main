@@ -65,7 +65,7 @@ const SUPPORT_COPY: Record<
    fil: {
       greeting: (name) => `Kumusta, ${name}`,
       title: 'Sentro ng Tulong at Suporta',
-      subtitle: 'Kailangan ng tulong sa pagsisimula? Mag-browse ng mga artikulo ng tulong o makipag-ugnayan kung kailangan mo ng suporta.',
+      subtitle: 'Kailangan ng tulong sa pagsisimula? Mag-browse ng mga help article o makipag-ugnayan kung kailangan mo ng suporta.',
       communityTitle: 'Sumali sa komunidad',
       communityDescription: 'Makipag-connect sa ibang borrower, magbigay ng feedback, at manatiling updated sa Moodeng Credit.',
       cards: [

@@ -34,7 +34,7 @@ const WELCOME_COPY = {
       borrowerSubtitle: 'Humiram nang responsable. Bumuo ng tiwala. Mag-unlock ng mas mataas na limit habang tumatagal.',
       getStartedTitle: 'Magsimula ngayon',
       recommended: 'Inirerekomenda',
-      setupBody: 'I-set up ang account mo at i-verify ang identity mo para ma-access ang credit',
+      setupBody: 'I-set up ang account mo at i-verify ang identity mo para makahiram',
       startSetup: 'Simulan ang setup',
       watchTutorial: 'Panoorin ang tutorial',
       checkFirstTitle: 'Tingnan muna',

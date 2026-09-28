@@ -31,7 +31,7 @@ const ROLE_SELECTION_COPY = {
       errorTitle: 'May nangyaring mali',
       errorBody: 'Hindi na-save ang role mo. Subukan ulit.',
       title: 'Paano mo gustong gamitin ang Moodeng Credit?',
-      subtitle: 'Mag-request ng short-term loan, magbayad nang transparent, at bumuo ng tiwala habang tumatagal.',
+      subtitle: 'Mag-request ng short-term loan, magbayad nang malinaw, at unti-unting bumuo ng tiwala.',
       borrowerTitle: 'Borrower ako',
       borrowerBody: 'Mag-request ng USDC loan at bumuo ng tiwala sa pamamagitan ng on-time na pagbabayad.',
       lenderTitle: 'Lender ako',

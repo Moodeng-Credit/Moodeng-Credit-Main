@@ -28,13 +28,13 @@ const COPY = {
    title: { en: 'How can we help?', fil: 'Paano ka namin matutulungan?' },
    subtitle: {
       en: 'Search below, or browse the topics. A real person is one tap away on every answer.',
-      fil: 'Maghanap sa ibaba, o mag-browse ng mga paksa. May totoong tao na isang tap lang sa bawat sagot.'
+      fil: 'Maghanap sa ibaba, o mag-browse ng mga paksa. Isang tap lang sa bawat sagot, may totoong tao nang tutulong sa iyo.'
    },
    searchPlaceholder: { en: 'Search help — wallet, cash out, verify…', fil: 'Maghanap — wallet, cash out, verify…' },
    chatTitle: { en: 'Message the Moodeng team', fil: 'Mag-message sa Moodeng team' },
    chatBody: {
       en: 'Payouts, verification, wallets, repayments — anything. We answer here and by email, so you will not miss the reply.',
-      fil: 'Payout, verification, wallet, bayad — kahit ano. Sasagot kami dito at sa email, kaya hindi mo mami-miss ang sagot.'
+      fil: 'Payout, verification, wallet, bayad — kahit ano. Sasagot kami rito at sa email, kaya hindi mo mami-miss ang sagot.'
    },
    chatCta: { en: 'Start a conversation', fil: 'Magsimula ng usapan' },
    replyTime: { en: 'We usually reply within a few hours.', fil: 'Karaniwan kaming sumasagot sa loob ng ilang oras.' },
@@ -53,7 +53,7 @@ const COPY = {
    facebook: { en: 'Facebook', fil: 'Facebook' },
    email: { en: 'Email', fil: 'Email' },
    gettingStarted: { en: 'New to Moodeng? Getting started →', fil: 'Bago sa Moodeng? Pagsisimula →' },
-   browseAll: { en: 'Browse all guides & updates →', fil: 'Tingnan lahat ng gabay at updates →' }
+   browseAll: { en: 'Browse all guides & updates →', fil: 'Tingnan ang lahat ng gabay at update →' }
 } satisfies Record<string, LocalizedText>;
 
 /** Flatten a topic into one lowercase haystack for search. */

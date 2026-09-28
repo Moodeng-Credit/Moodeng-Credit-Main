@@ -24,7 +24,7 @@ const ACTION_BUTTONS_COPY = {
    fil: {
       labels: {
          'connect-world-id': 'Verify with World ID',
-         'find-location': 'Maghanap ng verification location',
+         'find-location': 'Maghanap ng lugar para mag-verify',
          'check-status': 'Tingnan ang status ng koneksyon'
       }
    },
