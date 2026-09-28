@@ -1486,5 +1486,48 @@ export const thaiCoverageB: Record<string, string> = {
    'How do I manage my account and security settings?': 'ฉันจะจัดการบัญชีและการตั้งค่าความปลอดภัยของฉันได้อย่างไร',
    "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).":
       'บัญชีของคุณผูกกับกระเป๋าเงินของคุณ ดังนั้นความปลอดภัยของกระเป๋าเงินก็คือความปลอดภัยของบัญชี จากหน้าจอบัญชี คุณสามารถอัปเดตชื่อที่แสดง จัดการอีเมล เปลี่ยนรหัสผ่าน และออกจากระบบได้ หากคุณใช้ Instant Wallet หน้านี้ก็เป็นที่ที่คุณส่งออกคีย์กระเป๋าเงินได้เช่นกัน (Account → Account Settings → Wallet)',
-   'Managing your account': 'การจัดการบัญชีของคุณ'
+   'Managing your account': 'การจัดการบัญชีของคุณ',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'Sort By': 'เรียงตาม',
+   Status: 'สถานะ',
+   'Apply Filter': 'ใช้ตัวกรอง',
+   'Performance Summary': 'สรุปผลการดำเนินงาน',
+   'Funding Transactions': 'รายการปล่อยกู้',
+   'View All Transactions': 'ดูรายการทั้งหมด',
+   'No transactions found': 'ไม่พบรายการ',
+   'Low to High': 'น้อยไปมาก',
+   'High to Low': 'มากไปน้อย',
+   'New to Old': 'ใหม่ไปเก่า',
+   'Old to New': 'เก่าไปใหม่',
+   'Total Earnings': 'รายได้รวม',
+   'Total Loans Lent out': 'ยอดเงินกู้ที่ปล่อยไปทั้งหมด',
+   'Total Loss': 'ยอดขาดทุนรวม',
+   'Total Loans Funded': 'จำนวนเงินกู้ที่ปล่อยแล้ว',
+   'Search Fundings': 'ค้นหารายการปล่อยกู้',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   'This loan is no longer available.': 'เงินกู้นี้ไม่พร้อมใช้งานแล้ว',
+   'Thank you for funding': 'ขอบคุณที่ปล่อยกู้',
+   'View transaction on Basescan ↗': 'ดูรายการธุรกรรมบน Basescan ↗',
+   'View My Funded Loans': 'ดูเงินกู้ที่ฉันปล่อยไปแล้ว',
+   'You pay': 'คุณจ่าย',
+   'You receive': 'คุณได้รับ',
+   'IOU points': 'แต้ม IOU',
+   'Loan Note ID': 'รหัสสัญญาเงินกู้',
+   'You paid': 'คุณจ่ายไปแล้ว',
+   'Expected repayment': 'ยอดชำระคืนที่คาดไว้',
+   'IOU points earned': 'แต้ม IOU ที่ได้รับ',
+   'Fund this loan': 'ปล่อยกู้เงินก้อนนี้',
+
+   // src/views/milestones/Milestones.tsx
+   Rewards: 'รางวัล',
+   'How rewards unlock': 'วิธีปลดล็อกรางวัล',
+   'Complete milestones to earn Pandesal points. Profile rewards unlock automatically when you reach the required points.':
+      'ทำหมุดหมายให้สำเร็จเพื่อรับแต้ม Pandesal รางวัลโปรไฟล์จะปลดล็อกอัตโนมัติเมื่อคุณถึงแต้มที่กำหนด',
+   'Pandesal points unlock profile rewards. They do not guarantee funding.':
+      'แต้ม Pandesal ใช้ปลดล็อกรางวัลโปรไฟล์ แต่ไม่ได้รับประกันว่าจะได้รับการปล่อยกู้',
+   'How rewards work': 'รางวัลทำงานอย่างไร',
+   'Next reward': 'รางวัลถัดไป',
+   Collectibles: 'ของสะสม'
 };
