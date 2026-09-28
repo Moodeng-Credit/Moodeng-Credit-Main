@@ -738,5 +738,28 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Back to funding options': 'Quay lại các cách nạp tiền',
    'Payment confirmed': 'Đã xác nhận thanh toán',
    'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
-      'USDC của bạn đang được chuyển đến ví trên Base. Thường sẽ về trong vòng một phút.'
+      'USDC của bạn đang được chuyển đến ví trên Base. Thường sẽ về trong vòng một phút.',
+   // src/views/help/HelpHub.tsx
+   'How can we help?': 'Chúng tôi có thể giúp gì cho bạn?',
+   'Search below, or browse the topics. A real person is one tap away on every answer.':
+      'Tìm kiếm bên dưới, hoặc duyệt qua các chủ đề. Một người thật luôn sẵn sàng chỉ với một chạm cho mọi câu trả lời.',
+   'Search help — wallet, cash out, verify…': 'Tìm kiếm trợ giúp — ví, rút tiền, xác minh…',
+   'Message the Moodeng team': 'Nhắn tin cho đội ngũ Moodeng',
+   'Payouts, verification, wallets, repayments — anything. We answer here and by email, so you will not miss the reply.':
+      'Thanh toán, xác minh, ví, trả nợ — bất cứ điều gì. Chúng tôi trả lời tại đây và qua email, để bạn không bỏ lỡ phản hồi.',
+   'Start a conversation': 'Bắt đầu cuộc trò chuyện',
+   'We usually reply within a few hours.': 'Chúng tôi thường phản hồi trong vòng vài giờ.',
+   Results: 'Kết quả',
+   'No answers matched — try different words, or reach us below.':
+      'Không tìm thấy câu trả lời phù hợp — hãy thử từ khóa khác, hoặc liên hệ với chúng tôi bên dưới.',
+   'Clear search': 'Xóa tìm kiếm',
+   'Still need help?': 'Vẫn cần trợ giúp?',
+   'Reach the Moodeng team directly — pick whichever is easiest.': 'Liên hệ trực tiếp với đội ngũ Moodeng — chọn cách nào tiện nhất cho bạn.',
+   'New to Moodeng? Getting started →': 'Mới dùng Moodeng? Bắt đầu tại đây →',
+   'Browse all guides & updates →': 'Xem tất cả hướng dẫn & cập nhật →',
+   // src/views/help/HelpTopicCard.tsx
+   'Still not clear?': 'Vẫn chưa rõ?',
+   "Take this question to a person — we'll get back to you.": 'Chuyển câu hỏi này đến một người thật — chúng tôi sẽ phản hồi bạn.',
+   'Ask us': 'Hỏi chúng tôi',
+   'Question copied — just paste it.': 'Đã sao chép câu hỏi — chỉ cần dán vào.'
 };
