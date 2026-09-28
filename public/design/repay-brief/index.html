@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>[hidden]{display:none!important} img{max-width:100%}</style>
+<title>Moodeng Repay Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,500&family=JetBrains+Mono:wght@500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root {
+  --bg: #f4f2fb;
+  --surface: #ffffff;
+  --surface-2: #faf9fe;
+  --ink: #15122b;
+  --muted: #5b5772;
+  --line: #e3dff2;
+  --accent: #6b55f7;
+  --accent-ink: #4f36ef;
+  --accent-soft: #ece8ff;
+  --grad: linear-gradient(80deg, #9584ff 0%, #6b55f7 100%);
+  --pin: #ff5a36;
+  --pin-ring: #ffffff;
+  --bad: #c8182a;
+  --bad-soft: #fdeaec;
+  --good: #137a44;
+  --good-soft: #e2f5ea;
+  --keep: #8a5a00;
+  --keep-soft: #fff4d6;
+  --shadow: 0 10px 30px rgba(60, 40, 160, 0.10);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #110f20; --surface: #1b1830; --surface-2: #211d3a; --ink: #f0eefa; --muted: #aaa5c4;
+    --line: #302b4d; --accent: #9d8cff; --accent-ink: #b7aaff; --accent-soft: #2a2450;
+    --pin-ring: #1b1830; --bad: #ff8391; --bad-soft: #3a1820; --good: #6ddc9c; --good-soft: #13301f;
+    --keep: #ffcf66; --keep-soft: #332710; --shadow: 0 10px 30px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #110f20; --surface: #1b1830; --surface-2: #211d3a; --ink: #f0eefa; --muted: #aaa5c4;
+  --line: #302b4d; --accent: #9d8cff; --accent-ink: #b7aaff; --accent-soft: #2a2450;
+  --pin-ring: #1b1830; --bad: #ff8391; --bad-soft: #3a1820; --good: #6ddc9c; --good-soft: #13301f;
+  --keep: #ffcf66; --keep-soft: #332710; --shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 80px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+h1 { font-size: clamp(34px, 6vw, 58px); font-weight: 800; line-height: 1.02; }
+h2 { font-size: clamp(26px, 4vw, 36px); font-weight: 800; line-height: 1.1; }
+h3 { font-size: 22px; font-weight: 700; line-height: 1.2; }
+p { margin: 0; }
+.eyebrow { font: 700 12px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-ink); }
+.muted { color: var(--muted); }
+a { color: var(--accent-ink); }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--pin); outline-offset: 2px; }
+
+/* Header */
+.top { display: grid; gap: 22px; padding-block: 18px 34px; }
+.top .lede { font-size: 19px; max-width: 64ch; }
+.top .note { font-size: 15px; max-width: 70ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; border-radius: 999px; padding: 12px 20px; font-weight: 700; font-size: 15px; text-decoration: none; }
+.btn-primary { background: var(--grad); color: #fff; box-shadow: 0 6px 18px rgba(107, 85, 247, 0.35); }
+.btn-primary:disabled { opacity: 0.7; cursor: progress; }
+.btn-ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn svg { width: 18px; height: 18px; }
+.dl-status { font-size: 14px; color: var(--muted); }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; }
+.toc a { font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
+
+section.block { padding-block: 44px; border-top: 1px solid var(--line); display: grid; gap: 22px; }
+.block-head { display: grid; gap: 10px; max-width: 72ch; }
+
+/* The ask */
+.ask { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.ask > div { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 8px; align-content: start; }
+.ask ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* Phones */
+.phone { position: relative; display: block; width: 100%; max-width: 300px; border-radius: 26px; overflow: hidden; background: #fff; border: 1px solid var(--line); box-shadow: var(--shadow); cursor: zoom-in; padding: 0; }
+.phone.crop { border-radius: 16px; }
+.phone img { display: block; width: 100%; height: auto; }
+.pin { position: absolute; transform: translate(-50%, -50%); width: 24px; height: 24px; border-radius: 50%; background: var(--pin); color: #fff; font: 700 12px/24px var(--mono); text-align: center; box-shadow: 0 0 0 3px var(--pin-ring), 0 4px 10px rgba(0,0,0,0.25); pointer-events: none; transition: transform .15s ease; }
+.pin::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 2px solid var(--pin); opacity: 0; }
+.pin::before { content: ""; position: absolute; width: 0; height: 0; border: 7px solid transparent; }
+.pin[data-dir="l"]::before { right: 100%; top: 50%; margin-top: -7px; margin-right: -1px; border-right: 10px solid var(--pin); }
+.pin[data-dir="r"]::before { left: 100%; top: 50%; margin-top: -7px; margin-left: -1px; border-left: 10px solid var(--pin); }
+.pin[data-dir="d"]::before { top: 100%; left: 50%; margin-left: -7px; margin-top: -1px; border-top: 10px solid var(--pin); }
+.pin[data-dir="u"]::before { bottom: 100%; left: 50%; margin-left: -7px; margin-bottom: -1px; border-bottom: 10px solid var(--pin); }
+.pin.hot { transform: translate(-50%, -50%) scale(1.25); }
+.pin.hot::after { opacity: .7; }
+.cap { font-size: 13px; color: var(--muted); max-width: 300px; margin-top: 8px; }
+.shot { display: grid; justify-items: start; align-content: start; }
+
+/* Compare */
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; align-items: start; }
+.compare .col { display: grid; gap: 14px; justify-items: start; }
+.tag { display: inline-block; font: 700 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 7px 10px; border-radius: 8px; }
+.tag.good { background: var(--good-soft); color: var(--good); }
+.tag.bad { background: var(--bad-soft); color: var(--bad); }
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font: 700 12px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+td:first-child { font-weight: 700; white-space: nowrap; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.sw { display: grid; grid-template-columns: 34px auto; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 8px 8px; font-size: 13px; }
+.sw i { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(0,0,0,.08); }
+.sw b { display: block; font-family: var(--mono); font-size: 12px; }
+
+/* Flow map */
+.map { overflow-x: auto; padding-bottom: 10px; }
+.map-row { display: flex; align-items: center; gap: 0; width: max-content; padding: 6px 2px; }
+.node { display: grid; gap: 8px; justify-items: center; width: 118px; text-decoration: none; color: var(--ink); }
+.node .thumb { width: 104px; height: 190px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow); }
+.node .thumb img { width: 100%; display: block; }
+.node span { font-size: 12.5px; font-weight: 600; text-align: center; line-height: 1.25; }
+.node small { font: 700 11px/1 var(--mono); color: var(--accent-ink); }
+.arrow { flex: 0 0 auto; width: 46px; color: var(--accent); display: grid; place-items: center; margin-top: -40px; }
+.arrow svg { width: 42px; height: 20px; }
+.or { font: 700 12px/1 var(--mono); font-style: normal; color: var(--muted); width: 40px; text-align: center; margin-top: -40px; text-transform: uppercase; }
+
+/* Steps */
+.step { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 26px; scroll-margin-top: 16px; }
+.step.edge { background: var(--surface-2); border-style: dashed; }
+.step .shots { display: grid; gap: 18px; align-content: start; }
+.step .copy { display: grid; gap: 16px; align-content: start; }
+.step-num { display: flex; align-items: center; gap: 12px; }
+.step-num b { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; background: var(--grad); color: #fff; font: 800 20px/1 var(--display); flex: 0 0 auto; }
+.step .does { font-size: 17px; }
+.notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.notes li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; font-size: 15px; border-radius: 10px; padding: 4px; margin: -4px; cursor: default; }
+.notes li:hover { background: var(--accent-soft); }
+.notes li i { font: 700 13px/28px var(--mono); font-style: normal; width: 28px; height: 28px; border-radius: 50%; background: var(--pin); color: #fff; text-align: center; }
+.callout { border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; font-size: 15px; }
+.callout .eyebrow { font-size: 11px; }
+.callout.bad { background: var(--bad-soft); }
+.callout.bad .eyebrow { color: var(--bad); }
+.callout.keep { background: var(--keep-soft); }
+.callout.keep .eyebrow { color: var(--keep); }
+.callout ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.dl-one { justify-self: start; background: none; border: 0; color: var(--accent-ink); font-size: 13px; font-weight: 700; cursor: pointer; padding: 4px 0; display: inline-flex; gap: 6px; align-items: center; }
+.dl-one svg { width: 15px; height: 15px; }
+.connector { display: grid; justify-items: center; gap: 4px; color: var(--accent); padding-block: 6px; }
+.connector svg { width: 26px; height: 46px; }
+.connector span { font: 700 12px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.steps { display: grid; gap: 0; }
+.twin { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.step.has-twin { grid-template-columns: minmax(0, 600px) minmax(0, 1fr); }
+
+/* Lists */
+.probs { counter-reset: p; list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.probs li { counter-increment: p; display: grid; grid-template-columns: 44px 1fr; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.probs li::before { content: counter(p, decimal-leading-zero); font: 700 15px/1.4 var(--mono); color: var(--bad); }
+.probs b { display: block; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+.card ul { margin: 0; padding-left: 20px; display: grid; gap: 7px; }
+.checks { list-style: none; padding: 0 !important; }
+.checks li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.checks li::before { content: ""; width: 16px; height: 16px; margin-top: 4px; border-radius: 5px; border: 2px solid var(--accent); }
+
+/* Lightbox */
+.lb { position: fixed; inset: 0; z-index: 50; background: rgba(12, 8, 30, 0.82); overflow-y: auto; padding: 60px 16px 40px; }
+.lb-inner { max-width: 440px; margin: 0 auto; display: grid; gap: 12px; }
+.lb-bar { position: fixed; top: env(safe-area-inset-top, 0px); left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; background: rgba(12, 8, 30, 0.9); color: #fff; z-index: 51; }
+.lb-bar b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-bar .row { display: flex; gap: 8px; flex: 0 0 auto; }
+.lb-bar button { background: rgba(255,255,255,.14); color: #fff; border: 0; border-radius: 999px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 14px; }
+.lb img { width: 100%; border-radius: 18px; display: block; }
+
+.dl-only { display: none !important; }
+body.can-dl .dl-only { display: inline-flex !important; }
+body.can-dl .no-dl { display: none; }
+
+@media (max-width: 760px) {
+  .step, .step.has-twin { grid-template-columns: 1fr; padding: 18px; gap: 22px; }
+  .step .shots { justify-items: center; }
+  .twin { grid-template-columns: 1fr; justify-items: center; }
+  .shot { justify-items: center; }
+  .cap { text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) { .pin { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Design brief · Repayment flow · For Anna</p>
+    <h1>Moodeng Repay Redesign</h1>
+    <p class="lede">Hi Anna. This page walks through how a borrower repays a loan in Moodeng today, one screen at a time. Every screenshot is from the live app. Orange numbered pins point at the parts we talk about next to each screen.</p>
+    <p class="note muted">The problem in one line: our repayment screens were designed by AI alone and they are confusing. Our new dashboard looks much better. We want repayment to feel like the dashboard: simpler, cuter and friendlier. Tap any screen to see it full size.</p>
+    <div class="actions">
+      <button class="btn btn-primary dl-only" id="dl-all" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        Download all screens (.zip)
+      </button>
+      <span class="dl-status" id="dl-status" role="status"></span>
+      
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#ask">The ask</a><a href="#compare">Dashboard vs Repay</a><a href="#map">Flow map</a><a href="#flow">Step by step</a><a href="#problems">What's confusing</a><a href="#keep">Must keep</a><a href="#deliver">What we need back</a>
+    </nav>
+  </header>
+
+  <section class="block" id="ask">
+    <div class="block-head">
+      <p class="eyebrow">01 · The ask</p>
+      <h2>Make repaying feel like the new dashboard</h2>
+    </div>
+    <div class="ask">
+      <div>
+        <h3>Who repays</h3>
+        <p>Borrowers in the Philippines on their phones, often inside the Facebook or Messenger browser. Many are new to crypto. They borrowed a small amount in USDC (a digital dollar) and have to send it back before the due date.</p>
+      </div>
+      <div>
+        <h3>What goes wrong</h3>
+        <ul>
+          <li>Too much on one long screen.</li>
+          <li>The Pay button is hidden in the bottom bar.</li>
+          <li>It looks nothing like the rest of the app.</li>
+          <li>People don't know which step they are on.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What we want</h3>
+        <ul>
+          <li>Same look and feel as the dashboard.</li>
+          <li>One clear thing to do on each screen.</li>
+          <li>Cute and warm: Moodeng the hippo, rewards, a real celebration at the end.</li>
+          <li>Less text, bigger buttons.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="compare">
+    <div class="block-head">
+      <p class="eyebrow">02 · UI compare</p>
+      <h2>Dashboard (the style we like) vs Repay (today)</h2>
+      <p class="muted">Both are the same app, same phone, same user. The dashboard feels like Moodeng. The repay screen feels like a generic bank form.</p>
+    </div>
+    <div class="compare">
+      <div class="col">
+        <span class="tag good">Target style · Dashboard</span>
+        <div class="shot" data-shot="dash-top"></div>
+      </div>
+      <div class="col">
+        <span class="tag bad">Needs redesign · Repay</span>
+        <div class="shot" data-shot="repay-top"></div>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th scope="col"></th><th scope="col">Dashboard</th><th scope="col">Repay today</th></tr></thead>
+        <tbody>
+          <tr><td>Personality</td><td>Moodeng the 3D hippo, a tier map (Rookie → Rising → Prime → Apex), food rewards and GrabFood vouchers.</td><td>No mascot. Only the small avatar in the corner.</td></tr>
+          <tr><td>Headings</td><td>Big bold italic section titles ("Reputation Milestones", "Loan Summary").</td><td>Plain headings, tiny uppercase labels, and 15+ font sizes from 9px to 36px.</td></tr>
+          <tr><td>Color</td><td>Soft lavender cards, one purple gradient for buttons (#9584ff → #6b55f7), coral red only for overdue.</td><td>About 50 different hard-coded colors, 10+ purples, plus loud red and green blocks.</td></tr>
+          <tr><td>Buttons</td><td>Small gradient pills ("Pay Now", "Get", "Grab Now") right next to what they act on.</td><td>A full-width rectangle for the external app, and the real Pay button is a circle in the bottom bar.</td></tr>
+          <tr><td>Density</td><td>One idea per card. Big numbers, short labels.</td><td>One card holds 3 numbered steps, 2 warnings, a fee table and a progress bar.</td></tr>
+          <tr><td>Tone</td><td>"Hi Jimmy!", rewards, progress, fun.</td><td>Instructions and warnings.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="block-head">
+      <h3>Dashboard colors to reuse</h3>
+      <p class="muted">Taken from the dashboard code. Please use these instead of the repay screen's purples.</p>
+    </div>
+    <div class="swatches">
+      <div class="sw"><i style="background: linear-gradient(80deg,#9584ff,#6b55f7)"></i><span><b>#9584ff → #6b55f7</b>Button gradient</span></div>
+      <div class="sw"><i style="background:#5c44f1"></i><span><b>#5c44f1</b>Big numbers</span></div>
+      <div class="sw"><i style="background:#0f172b"></i><span><b>#0f172b</b>Headings</span></div>
+      <div class="sw"><i style="background:#45556c"></i><span><b>#45556c</b>Secondary text</span></div>
+      <div class="sw"><i style="background:#e0dbff"></i><span><b>#e0dbff / #5640e0</b>Due-date chip</span></div>
+      <div class="sw"><i style="background: linear-gradient(90deg,#ff5b6b,#ffe3e6)"></i><span><b>#ff5b6b → #ffe3e6</b>Overdue row</span></div>
+      <div class="sw"><i style="background:#d51728"></i><span><b>#d51728</b>Overdue / defaulted</span></div>
+    </div>
+  </section>
+
+  <section class="block" id="map">
+    <div class="block-head">
+      <p class="eyebrow">03 · Flow map</p>
+      <h2>The whole repayment journey</h2>
+      <p class="muted">Scroll sideways. Tap a step to jump to its details. Steps 2 to 5 only happen when the borrower's wallet doesn't have enough USDC, which is most of the time.</p>
+    </div>
+    <div class="map" id="map-row"></div>
+  </section>
+
+  <section class="block" id="flow">
+    <div class="block-head">
+      <p class="eyebrow">04 · Step by step</p>
+      <h2>What the borrower sees and does</h2>
+      <p class="muted">Pins on the screen match the numbered notes. Hover a note to highlight its pin.</p>
+    </div>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section class="block" id="problems">
+    <div class="block-head">
+      <p class="eyebrow">05 · What's confusing</p>
+      <h2>The main problems, most important first</h2>
+    </div>
+    <ol class="probs">
+      <li><div><b>The Pay button is in the wrong place.</b> The amount is in the middle of the page but the button that pays it is a circle inside the bottom menu. When it appears, the "Repay" tab disappears and labels get cut off ("Dashbo", "listory").</div></li>
+      <li><div><b>The first thing people see is homework, not their loan.</b> A big "Add funds" card with 3 steps opens by itself. How much they owe, and when, is pushed down about three phone screens.</div></li>
+      <li><div><b>Everything is on one long page.</b> Choose a source, copy an address, read a warning, open another app, check fees, watch a progress bar, pick an amount, pay. No sense of "you are on step 2 of 4".</div></li>
+      <li><div><b>The amount changes by itself.</b> It fills in with whatever USDC is in the wallet ($18.40 here), not what they owe. People think they are paying the full loan.</div></li>
+      <li><div><b>It feels scary.</b> A red "lost forever" warning and lots of crypto words (USDC, Base, network, wallet address) come before any friendly reassurance.</div></li>
+      <li><div><b>The ending is flat.</b> Paying off a loan is the best moment in the app (points, a higher limit), but the success screen is a plain white card.</div></li>
+      <li><div><b>It doesn't look like Moodeng.</b> No hippo, different purples, different buttons, many tiny text sizes.</div></li>
+    </ol>
+  </section>
+
+  <section class="block" id="keep">
+    <div class="block-head">
+      <p class="eyebrow">06 · Rules</p>
+      <h2>Things the new design must keep</h2>
+      <p class="muted">You can change how these look and where they go. They can't be removed.</p>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Money safety</h3>
+        <ul>
+          <li>The <b>Base network</b> warning must be impossible to miss at the moment people copy their wallet address. Sending on the wrong network loses the money forever.</li>
+          <li>Wallet address shown short (0x1234…ABcd), one tap to copy, clear "Copied" feedback.</li>
+          <li>Once a payment is sent it can't be cancelled. Cancel is only possible before that.</li>
+          <li>People can never pay more than they owe.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Loan rules</h3>
+        <ul>
+          <li>Partial payments are allowed (25%, 50%, 75%, any amount).</li>
+          <li>Overdue loans: paying part of it lowers the debt but the account stays restricted until the loan is fully paid. This message must stay.</li>
+          <li>Show the due date and time left. Red when under 24 hours or overdue.</li>
+          <li>Show the Pandesal points they'll earn for paying on time.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Money sources</h3>
+        <ul>
+          <li>Coins.ph is the recommended option. Moneybees, GCrypto and PDAX are also offered. Binance only for people outside the Philippines.</li>
+          <li>Moodeng charges no fee. The other app charges a small fee, so people should send a little extra.</li>
+          <li>Moneybees is an outside service. We must say Moodeng isn't part of that deal.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>App basics</h3>
+        <ul>
+          <li>Mobile first, 390px wide. Works in the Facebook in-app browser.</li>
+          <li>English and Filipino. Filipino text runs about 30% longer, so leave room.</li>
+          <li>The bottom menu (Request Board, Repay, Dashboard, History, Account) stays across the app.</li>
+          <li>Keep the "Watch how to repay" video and a "Get help" link.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="deliver">
+    <div class="block-head">
+      <p class="eyebrow">07 · Deliverables</p>
+      <h2>What we'd love back in Figma</h2>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Screens</h3>
+        <ul class="checks">
+          <li>Repay start: which loan, how much, when it's due</li>
+          <li>Top-up guide (when the wallet is short): source, copy address, send, waiting</li>
+          <li>Money arrived</li>
+          <li>Choose amount and pay (button next to the amount)</li>
+          <li>Paying / confirming</li>
+          <li>Paid part of the loan</li>
+          <li>Loan fully repaid, with points and level up</li>
+          <li>Overdue loan version</li>
+          <li>Empty states: no loans yet, finish setup, verify, add wallet</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>How</h3>
+        <ul>
+          <li>Reuse the dashboard's components and colors where possible.</li>
+          <li>A clickable prototype of the main path (short on funds → top up → pay in full → celebrate).</li>
+          <li>Ideas for the hippo's moods during repayment are very welcome. The dashboard already has "waiting", "loan" and "repaid" moods.</li>
+          <li>Screens we didn't capture are listed at the end of the step-by-step section.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted">Screenshots captured Sept 28, 2026 from the live code with sample loans ($121 for "Medical appointment", $80 left on "Vaccination bills"). Questions: message Jimmy.</p>
+  </section>
+</div>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-labelledby="lb-title">
+  <div class="lb-bar">
+    <b id="lb-title"></b>
+    <div class="row">
+      <button type="button" class="dl-only" id="lb-dl">Download</button>
+      <button type="button" id="lb-close">Close</button>
+    </div>
+  </div>
+  <div class="lb-inner"><img id="lb-img" alt=""></div>
+</div>
+
+<script>
+// Screens: file, title, the full-size source to open, pins [x%, y%].
+const SHOTS = {
+  "dash-top": { file: "00b-dashboard-top.png", title: "New dashboard, top", pins: [[45, 18], [30, 62], [70, 70]] },
+  "repay-top": { file: "02-repay-first-view.png", title: "Repay, first view", pins: [[55, 41], [50, 89.5]] },
+  "dash-full": { file: "00-dashboard-new-ui.png", title: "New dashboard, whole page", pins: [[27, 71.6, 'l'], [60, 83.4, 'l'], [34.1, 93.5, 'd']] },
+  "dash-overdue": { file: "01-dashboard-overdue.png", title: "Dashboard with an overdue loan", pins: [[66, 36.8, 'r'], [34.1, 93.3, 'd']] },
+  "r-first": { file: "02-repay-first-view.png", title: "Repay opens", pins: [[62, 12, 'l'], [50, 17, 'd'], [70, 39.5, 'l'], [50, 83.5, 'd'], [22, 86.5, 'd']] },
+  "c-source": { file: "c1-choose-source.png", full: "03-repay-add-funds-full.png", title: "Add funds: choose source", crop: true, pins: [[88, 11, 'l'], [95, 43, 'l'], [95, 76, 'l']] },
+  "c-copy": { file: "c2-copy-address.png", full: "04-repay-address-copied-full.png", title: "Add funds: copy address", crop: true, pins: [[95, 45, 'l'], [95, 78, 'l']] },
+  "c-open": { file: "c3-open-app.png", full: "04-repay-address-copied-full.png", title: "Add funds: open the app", crop: true, pins: [[95, 27, 'l'], [95, 58, 'l'], [95, 81, 'l']] },
+  "c-watch": { file: "c4-watching.png", full: "04-repay-address-copied-full.png", title: "Add funds: waiting", crop: true, pins: [[95, 31, 'l'], [95, 55, 'l']] },
+  "r-arrived": { file: "05-funds-arrived.png", title: "Money arrived", pins: [[95, 42.7, 'l'], [95, 55, 'l']] },
+  "r-ready": { file: "06-ready-to-pay.png", title: "Ready to pay", pins: [[86, 44, 'l'], [76, 53, 'l'], [95, 58, 'l'], [95, 64, 'l'], [36, 72.5, 'l'], [50, 83.5, 'd']] },
+  "r-partial": { file: "07-partial-amount.png", title: "Paying part", pins: [[78, 48.5, 'l'], [39, 60.5, 'd'], [50, 83.5, 'd']] },
+  "r-paying": { file: "08-paying.png", title: "Paying", pins: [[80, 57, 'l'], [50, 83.5, 'd']] },
+  "r-partpaid": { file: "09-partial-paid.png", title: "Part paid", pins: [[95, 40, 'l'], [86, 51, 'l']] },
+  "r-repaid": { file: "10-loan-repaid.png", title: "Loan repaid", pins: [[72, 16, 'l'], [74, 31, 'l'], [95, 40, 'l'], [95, 50, 'l'], [95, 59, 'l']] },
+  "r-overdue": { file: "11-overdue-loan.png", title: "Overdue loan", pins: [[95, 22.7, 'l'], [38, 55, 'l']] }
+};
+
+const STEPS = [
+  {
+    id: "s0", num: "0", title: "Where repayment starts", map: "dash-full", mapLabel: "Dashboard",
+    shots: [["dash-full", "The new dashboard. This is the style we want everywhere."], ["dash-overdue", "Same dashboard when a loan is overdue."]],
+    does: "There are three ways into repayment: the Repay tab in the bottom menu (from any screen), the Active Loans number on the dashboard, and the Pay Now pill on an overdue loan.",
+    notes: [
+      [1, "dash-full", "Tapping the purple Active Loans number opens Repay. Most people don't know it's tappable."],
+      [2, "dash-full", "Upcoming Loan Dues shows each loan's amount and days left, but there's no Pay button until a loan is overdue."],
+      [3, "dash-full", "The Repay tab in the bottom menu. One tap opens Repay from anywhere in the app."],
+      [1, "dash-overdue", "Overdue loans get a red row with a Pay Now pill. This is the look we like for a call to action."],
+      [2, "dash-overdue", "The Repay tab works here too."]
+    ],
+    bad: ["The Repay tab icon is a plain back-arrow and looks like an \"undo\" button.", "Once on Repay, this tab is replaced by the Pay button (see step 1), so the menu changes shape under the borrower's thumb."]
+  },
+  {
+    id: "s1", num: "1", title: "Repay opens", map: "r-first", mapLabel: "Repay opens",
+    shots: [["r-first", "What the borrower sees first on their phone."]],
+    does: "They land on Repay. If they have more than one loan they pick one. If their wallet doesn't have enough USDC, the \"Add funds\" helper opens by itself.",
+    notes: [
+      [1, "r-first", "\"Watch how to repay\" plays a short video."],
+      [2, "r-first", "Loan picker: amount remaining and a progress bar for each loan."],
+      [3, "r-first", "\"Add funds to repay\" opens automatically: \"You have $18.40, still need $102.60 more.\""],
+      [4, "r-first", "The Pay button is already here in the bottom menu and already says \"Pay $18.40\", before the borrower chose anything."],
+      [5, "r-first", "The Repay tab is gone and menu labels are cut off (\"Dashbo\", \"listory\")."]
+    ],
+    bad: ["How much they owe and the due date are about three screens further down.", "The page subtitle says \"Choose a loan and enter an amount\", but the first job is actually adding money."]
+  },
+  {
+    id: "s2", num: "2", title: "Choose where the money comes from", map: "c-source", mapLabel: "Pick a source",
+    shots: [["c-source", "Part of the Add funds card, with \"Other options\" opened."]],
+    does: "They pick the app they'll buy or withdraw USDC from.",
+    notes: [
+      [1, "c-source", "The amount still missing."],
+      [2, "c-source", "Coins.ph is the recommended option (lowest fees, pay with pesos, GCash)."],
+      [3, "c-source", "\"Other options\" opens GCrypto and PDAX. Binance only appears outside the Philippines."]
+    ],
+    bad: ["Every option has a \"Small fee\" tag, so the tags don't help anyone choose.", "A long paragraph about wallets, exchanges and P2P platforms sits under the choices."]
+  },
+  {
+    id: "s3", num: "3", title: "Copy their wallet address", map: "c-copy", mapLabel: "Copy address",
+    shots: [["c-copy", "After tapping the address card, it turns green."]],
+    does: "They copy their own Moodeng wallet address so they can paste it into the other app as the destination.",
+    notes: [
+      [1, "c-copy", "Tap to copy. The card turns green and says \"Now paste it into the app below\"."],
+      [2, "c-copy", "Red warning: send on the Base network only, or the money is lost forever."]
+    ],
+    keep: ["The Base warning is required. It can be friendlier, but it must stay just as visible."],
+    bad: ["The warning uses an emoji and a different red from the rest of the app. It looks like an error."]
+  },
+  {
+    id: "s4", num: "4", title: "Leave Moodeng and send the money", map: "c-open", mapLabel: "Send in Coins.ph",
+    shots: [["c-open", "Instructions for Coins.ph."]],
+    does: "They open Coins.ph (or another app), follow the click path and send USDC to the address they copied. This part happens outside Moodeng.",
+    notes: [
+      [1, "c-open", "Click path written as one line of arrows: Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm."],
+      [2, "c-open", "\"Open Coins.ph\" opens the app, or its website if the app isn't installed."],
+      [3, "c-open", "Fees: the other app charges a small fee, Moodeng is free."]
+    ],
+    bad: ["Seven steps on one line are hard to follow while switching between two apps.", "This purple rectangle button looks like the main button on the page, but it isn't the Pay button."]
+  },
+  {
+    id: "s5", num: "5", title: "Wait for the money to arrive", map: "r-arrived", mapLabel: "Money arrives",
+    shots: [["c-watch", "Bottom of the Add funds card while waiting."], ["r-arrived", "When enough USDC arrives, a green card shows for 2 seconds."]],
+    does: "Moodeng watches their wallet and notices the money within about a minute. When it arrives, the amount fills in by itself.",
+    notes: [
+      [1, "c-watch", "Progress: \"$18.40 USDC received · $121.00 needed\"."],
+      [2, "c-watch", "It says \"Tap Pay $18.40 below\", but the Pay button isn't below. It's in the bottom menu."],
+      [1, "r-arrived", "\"Received $121.00 USDC. Taking you to pay now…\""],
+      [2, "r-arrived", "The amount fills in. (In this preview it didn't update to $121; in the real app it does.)"]
+    ],
+    extra: "Other states in this spot: \"Checking your balance…\", \"Watching for your transfer\" (nothing received yet) and \"Funds ready\"."
+  },
+  {
+    id: "s6", num: "6", title: "Choose how much to pay", map: "r-ready", mapLabel: "Choose amount",
+    shots: [["r-ready", "Enough money in the wallet: the full amount is filled in."], ["r-partial", "After tapping 50%."]],
+    does: "They check the amount, change it if they want to pay only part, then tap Pay in the bottom menu.",
+    notes: [
+      [1, "r-ready", "Big amount. It's editable, but only a dashed underline says so."],
+      [2, "r-ready", "Pandesal points they'll earn."],
+      [3, "r-ready", "Slider."],
+      [4, "r-ready", "Quick chips: 25%, 50%, 75%, Full."],
+      [5, "r-ready", "Time left and due date (shown in UTC, not local time)."],
+      [6, "r-ready", "The Pay button, inside the bottom menu."],
+      [1, "r-partial", "\"leaves $60.50 remaining\""],
+      [2, "r-partial", "Chosen chip."]
+    ],
+    bad: ["Three ways to set the amount (typing, slider, chips) on one small card.", "The Pay button is far from the amount and looks like a menu icon."]
+  },
+  {
+    id: "s7", num: "7", title: "Tap Pay and approve", map: "r-paying", mapLabel: "Paying",
+    shots: [["r-paying", "Right after tapping Pay."]],
+    does: "A Base Pay window (or their wallet app) asks them to approve the payment. Instant Wallet users skip this. Then the app records the payment.",
+    notes: [
+      [1, "r-paying", "Overlay: \"Sending payment… Approve the transaction in your wallet\" with Cancel, then \"Confirming on Base… Recording your repayment\"."],
+      [2, "r-paying", "The menu button changes to \"Paying\"."]
+    ],
+    extra: "Not captured: the Base Pay approval window. It belongs to Coinbase and we can't change it, but the screens before and after should prepare people for it."
+  },
+  {
+    id: "s8", num: "8", title: "Done: part paid or fully repaid", map: "r-repaid", mapLabel: "Paid!",
+    shots: [["r-partpaid", "Paid part of the loan."], ["r-repaid", "Paid the whole loan."]],
+    does: "A partial payment shows a small green note and they stay on the same screen. A full payment shows the \"Loan repaid\" screen.",
+    notes: [
+      [1, "r-partpaid", "\"Paid $60.50 USDC, $60.50 to go.\""],
+      [2, "r-partpaid", "The amount card resets. (In this preview the loan total didn't update.)"],
+      [1, "r-repaid", "Check mark and \"Loan repaid\"."],
+      [2, "r-repaid", "Pandesal points earned."],
+      [3, "r-repaid", "New borrowing limit when they level up."],
+      [4, "r-repaid", "Repayment details (hidden by default)."],
+      [5, "r-repaid", "\"Repay next loan\" or \"Done\", plus \"View repayment history\"."]
+    ],
+    bad: ["This is the happiest moment in the app and it's a plain white card. It should feel like the dashboard: Moodeng celebrating, the tier map moving forward, confetti."]
+  },
+  {
+    id: "s9", num: "!", title: "Special case: overdue loan", map: "r-overdue", mapLabel: "Overdue", edge: true,
+    shots: [["r-overdue", "An overdue loan."]],
+    does: "Borrowers with an overdue loan are locked out of the rest of the app. They can only reach Repay until they pay.",
+    notes: [
+      [1, "r-overdue", "Red warning: paying less than the full amount lowers the debt, but the account stays restricted."],
+      [2, "r-overdue", "Due footer turns red and says \"Past due\"."]
+    ],
+    extra: "Also not captured: empty states (\"Finish setup to start borrowing\", \"Verify yourself to borrow\", \"Add a wallet to borrow\", \"No repayments yet\"), the wallet-setup detour for people without a wallet, the Facebook-browser screen that asks them to open a real browser, the Moneybees instructions and the how-to video pop-up."
+  }
+];
+
+const DL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>';
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function phoneHTML(key, caption, owner) {
+  const s = SHOTS[key];
+  const pins = s.pins.map((p, i) => `<span class="pin" data-pin="${owner}-${key}-${i + 1}" data-dir="${p[2] || ""}" style="left:${p[0]}%;top:${p[1]}%">${i + 1}</span>`).join("");
+  return `<div class="shot">
+    <button type="button" class="phone${s.crop ? " crop" : ""}" data-open="${key}" aria-label="Open full size: ${esc(s.title)}">
+      <img src="/design/repay-brief/screens/${s.file}" alt="${esc(s.title)}" loading="lazy">${pins}
+    </button>
+    ${caption ? `<p class="cap">${esc(caption)}</p>` : ""}
+    <button type="button" class="dl-one dl-only" data-dl="${s.full || s.file}">${DL_ICON} Download PNG</button>
+  </div>`;
+}
+
+// Compare section: pins without notes would be noise, so drop them there.
+document.querySelectorAll("[data-shot]").forEach((el) => {
+  const key = el.dataset.shot;
+  el.outerHTML = phoneHTML(key, key === "dash-top" ? "One clear hero, the hippo, soft cards, gradient pills." : "Funding instructions first, the amount far below, Pay inside the menu.", "cmp").replace(/<span class="pin"[^>]*>\d+<\/span>/g, "");
+});
+
+// Flow map
+const arrowSVG = '<div class="arrow" aria-hidden="true"><svg viewBox="0 0 42 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10h36"/><path d="m31 3 7 7-7 7"/></svg></div>';
+const node = (st, key, label, num) => `<a class="node" href="#${st}"><div class="thumb"><img src="/design/repay-brief/screens/${SHOTS[key].file}" alt="" loading="lazy"></div><small>${num}</small><span>${esc(label)}</span></a>`;
+const mainSteps = STEPS.filter((s) => !s.edge && s.id !== "s8");
+let mapHTML = mainSteps.map((s) => node(s.id, s.map, s.mapLabel, "STEP " + s.num)).join(arrowSVG);
+mapHTML += arrowSVG + node("s8", "r-partpaid", "Paid part", "STEP 8a") + `<em class="or">or</em>` + node("s8", "r-repaid", "Loan repaid", "STEP 8b");
+document.getElementById("map-row").innerHTML = `<div class="map-row">${mapHTML}</div>`;
+
+// Steps
+const connectorLabels = { s1: "tap the Repay tab, Active Loans or Pay Now", s2: "wallet short on USDC", s3: "then", s4: "then", s5: "sent from the other app", s6: "money arrived", s7: "tap Pay", s8: "approved", s9: "also" };
+document.getElementById("steps").innerHTML = STEPS.map((st) => {
+  const owner = st.id;
+  const twin = st.shots.length > 1;
+  const shots = st.shots.map(([k, cap]) => phoneHTML(k, cap, owner)).join("");
+  const notes = st.notes.map(([n, key, text]) => {
+    const multi = st.shots.length > 1;
+    const which = multi ? `<span class="muted">${esc(SHOTS[key].title)}: </span>` : "";
+    return `<li data-hl="${owner}-${key}-${n}"><i>${n}</i><span>${which}${esc(text)}</span></li>`;
+  }).join("");
+  const bad = st.bad ? `<div class="callout bad"><p class="eyebrow">Why it's confusing</p><ul>${st.bad.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>` : "";
+  const keep = st.keep ? `<div class="callout keep"><p class="eyebrow">Must keep</p><ul>${st.keep.map((b) => `<li>${esc(b)}</li>`).join("")}</ul></div>` : "";
+  const extra = st.extra ? `<p class="muted">${esc(st.extra)}</p>` : "";
+  const conn = st.id === "s0" ? "" : `<div class="connector" aria-hidden="true"><svg viewBox="0 0 26 46" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2v38"/><path d="m5 33 8 9 8-9"/></svg><span>${esc(connectorLabels[st.id] || "then")}</span></div>`;
+  return `${conn}<article class="step${st.edge ? " edge" : ""}${twin ? " has-twin" : ""}" id="${st.id}">
+    <div class="shots${twin ? " twin" : ""}">${shots}</div>
+    <div class="copy">
+      <div class="step-num"><b>${esc(st.num)}</b><h3>${esc(st.title)}</h3></div>
+      <p class="does">${esc(st.does)}</p>
+      <ol class="notes">${notes}</ol>
+      ${bad}${keep}${extra}
+    </div>
+  </article>`;
+}).join("");
+
+// Highlight a pin when its note is hovered or focused.
+document.querySelectorAll(".notes li").forEach((li) => {
+  const pin = document.querySelector(`[data-pin="${li.dataset.hl}"]`);
+  if (!pin) return;
+  li.tabIndex = 0;
+  const on = () => pin.classList.add("hot"), off = () => pin.classList.remove("hot");
+  li.addEventListener("mouseenter", on); li.addEventListener("mouseleave", off);
+  li.addEventListener("focus", on); li.addEventListener("blur", off);
+});
+
+// Lightbox
+const lb = document.getElementById("lb"), lbImg = document.getElementById("lb-img"), lbTitle = document.getElementById("lb-title"), lbDl = document.getElementById("lb-dl");
+let lastFocus = null;
+document.addEventListener("click", (e) => {
+  const opener = e.target.closest("[data-open]");
+  if (!opener) return;
+  const s = SHOTS[opener.dataset.open];
+  const file = s.full || s.file;
+  lastFocus = opener;
+  lbImg.src = "/design/repay-brief/screens/" + file; lbImg.alt = s.title;
+  lbTitle.textContent = s.full ? s.title + " (whole screen)" : s.title;
+  lbDl.dataset.dl = file;
+  lb.hidden = false; lb.scrollTop = 0;
+  document.getElementById("lb-close").focus();
+});
+const closeLb = () => { lb.hidden = true; if (lastFocus) lastFocus.focus(); };
+document.getElementById("lb-close").addEventListener("click", closeLb);
+lb.addEventListener("click", (e) => { if (e.target === lb || e.target.classList.contains("lb-inner")) closeLb(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !lb.hidden) closeLb(); });
+
+// Downloads (only where the viewer supports saving files)
+let downloads = null;
+const status = document.getElementById("dl-status");
+const say = (t) => { status.textContent = t; };
+const saveErr = (err) => {
+  const code = err && err.code;
+  if (code === "declined") return "Download cancelled.";
+  if (code === "rate_limited") return "A download prompt is already open.";
+  return "Download isn't available here.";
+};
+if (window.claude && typeof window.claude.use === "function") {
+  window.claude.use("downloads").then((d) => { downloads = d; if (d) document.body.classList.add("can-dl"); }).catch(() => {});
+} else {
+  // Opened as a normal web page: plain browser downloads.
+  downloads = {
+    save: async ({ filename, data }) => {
+      const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data]));
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      return { status: "saved" };
+    }
+  };
+  document.body.classList.add("can-dl");
+}
+
+async function saveOne(file) {
+  if (!downloads) return;
+  try {
+    const blob = await (await fetch("/design/repay-brief/screens/" + file)).blob();
+    await downloads.save({ filename: "moodeng-repay-" + file, data: blob });
+  } catch (err) { say(saveErr(err)); }
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-dl]");
+  if (b) saveOne(b.dataset.dl);
+});
+
+function readme() {
+  const lines = ["# Moodeng Repay Redesign", "", "How a borrower repays a loan in Moodeng today, step by step. Screens are in this folder; pins in the web page match the numbered notes below.", ""];
+  STEPS.forEach((st) => {
+    lines.push(`## Step ${st.num}: ${st.title}`, "", st.does, "");
+    st.shots.forEach(([k, cap]) => lines.push(`- Screen: ${SHOTS[k].full || SHOTS[k].file} (${cap})`));
+    lines.push("");
+    st.notes.forEach(([n, k, t]) => lines.push(`${n}. ${st.shots.length > 1 ? SHOTS[k].title + ": " : ""}${t}`));
+    if (st.bad) { lines.push("", "Why it's confusing:"); st.bad.forEach((b) => lines.push("- " + b)); }
+    if (st.keep) { lines.push("", "Must keep:"); st.keep.forEach((b) => lines.push("- " + b)); }
+    if (st.extra) lines.push("", st.extra);
+    lines.push("");
+  });
+  lines.push("## Main problems");
+  document.querySelectorAll(".probs li").forEach((li, i) => lines.push(`${i + 1}. ${li.textContent.trim()}`));
+  lines.push("", "## Must keep");
+  document.querySelectorAll("#keep .card").forEach((c) => { lines.push("", "### " + c.querySelector("h3").textContent); c.querySelectorAll("li").forEach((li) => lines.push("- " + li.textContent.trim())); });
+  return lines.join("\n");
+}
+
+document.getElementById("dl-all").addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  if (!downloads || typeof JSZip === "undefined") { say("Download isn't available here."); return; }
+  btn.disabled = true; say("Preparing the zip…");
+  try {
+    const zip = new JSZip();
+    const files = [...new Set(Object.values(SHOTS).flatMap((s) => [s.file, s.full].filter(Boolean)))].sort();
+    await Promise.all(files.map(async (f) => zip.file("screens/" + f, await (await fetch("/design/repay-brief/screens/" + f)).blob())));
+    zip.file("README.md", readme());
+    const blob = await zip.generateAsync({ type: "blob" });
+    say("");
+    const res = await downloads.save({ filename: "moodeng-repay-redesign.zip", data: blob });
+    if (res && res.status === "saved") say("Saved.");
+  } catch (err) { say(saveErr(err)); }
+  finally { btn.disabled = false; }
+});
+</script>
+
+</body>
+</html>
