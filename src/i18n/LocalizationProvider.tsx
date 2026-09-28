@@ -1,6 +1,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { LocalizationDomBridge } from '@/i18n/LocalizationDomBridge';
+import { readBrowserRegion, type RegionCode, suggestLocaleForRegion } from '@/i18n/region';
 import {
    LOCALE_STORAGE_KEY,
    type LocaleCode,
@@ -14,6 +15,14 @@ interface LocalizationContextValue {
    locale: LocaleCode;
    locales: typeof SUPPORTED_LOCALES;
    setLocale: (locale: LocaleCode) => void;
+   /** Sets the locale because the person picked it, so we stop suggesting another one. */
+   chooseLocale: (locale: LocaleCode) => void;
+   /** True once the person has picked a language themselves (any device session on this browser). */
+   hasChosenLocale: boolean;
+   /** Best-effort market guess from browser language region and time zone. */
+   region: RegionCode | null;
+   /** The language of that market, used to highlight a suggestion in language pickers. */
+   suggestedLocale: LocaleCode | null;
    t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
@@ -22,6 +31,18 @@ const LocalizationContext = createContext<LocalizationContextValue | null>(null)
 function getBrowserLocales() {
    if (typeof navigator === 'undefined') return [];
    return [...(navigator.languages ?? []), navigator.language].filter(Boolean);
+}
+
+// Set when the person picks a language in a picker (not when we fall back to the browser language).
+const LOCALE_CHOSEN_STORAGE_KEY = 'md_locale_chosen';
+
+function readLocaleChosen() {
+   if (typeof window === 'undefined') return false;
+   try {
+      return window.localStorage?.getItem(LOCALE_CHOSEN_STORAGE_KEY) === '1';
+   } catch {
+      return false;
+   }
 }
 
 function getStoredLocale() {
@@ -42,8 +63,21 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
       })
    );
 
+   const [hasChosenLocale, setHasChosenLocale] = useState(readLocaleChosen);
+   const region = useMemo(() => readBrowserRegion(), []);
+
    const setLocale = useCallback((nextLocale: LocaleCode) => {
       setLocaleState(nextLocale);
+   }, []);
+
+   const chooseLocale = useCallback((nextLocale: LocaleCode) => {
+      setLocaleState(nextLocale);
+      setHasChosenLocale(true);
+      try {
+         window.localStorage?.setItem(LOCALE_CHOSEN_STORAGE_KEY, '1');
+      } catch {
+         // Still switches for this visit where localStorage is unavailable.
+      }
    }, []);
 
    useEffect(() => {
@@ -65,9 +99,13 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
          locale,
          locales: SUPPORTED_LOCALES,
          setLocale,
+         chooseLocale,
+         hasChosenLocale,
+         region,
+         suggestedLocale: suggestLocaleForRegion(region),
          t: (key, params) => translate(locale, key, params)
       }),
-      [locale, setLocale]
+      [locale, setLocale, chooseLocale, hasChosenLocale, region]
    );
 
    return (
