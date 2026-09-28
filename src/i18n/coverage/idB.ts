@@ -1163,6 +1163,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Ways to repay your loan': 'Cara-cara membayar kembali pinjamanmu',
    'Add USDC to your wallet': 'Tambah USDC ke dompetmu',
    'Buy on an exchange, send on Base': 'Beli di exchange, kirim di Base',
+   'How do I add USDC to my wallet?': 'Bagaimana cara menambah USDC ke dompetku?',
    'Sending on the wrong network can result in lost funds — always choose Base.':
       'Mengirim di jaringan yang salah bisa membuat dananya hilang — selalu pilih Base.',
    'Ways to add USDC': 'Cara menambah USDC',
