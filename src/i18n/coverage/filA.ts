@@ -73,11 +73,9 @@ export const filipinoCoverageA: Record<string, string> = {
    'This page explains how to submit a deletion request and what to expect after you do.':
       'Ipinapaliwanag ng page na ito kung paano mag-submit ng deletion request at kung ano ang aasahan pagkatapos.',
    'How to request deletion': 'Paano mag-request ng deletion',
-   'from the email address on your account, with the subject line':
-      'mula sa email address ng account mo, gamit ang subject line na',
+   'from the email address on your account, with the subject line': 'mula sa email address ng account mo, gamit ang subject line na',
    '. To help us locate your records, please include:': '. Para mas madali naming mahanap ang records mo, isama ang:',
-   'The email address or wallet address associated with your account':
-      'Ang email address o wallet address na naka-link sa account mo',
+   'The email address or wallet address associated with your account': 'Ang email address o wallet address na naka-link sa account mo',
    'The login method you used (Facebook, Google, LINE, Telegram, or email)':
       'Ang login method na ginamit mo (Facebook, Google, LINE, Telegram, o email)',
    'Confirmation that you want your personal data deleted': 'Kumpirmasyon na gusto mong burahin ang personal data mo',
@@ -170,7 +168,8 @@ export const filipinoCoverageA: Record<string, string> = {
       'Backend engineer na bumubuo ng scalable APIs, cloud systems, at product flows para sa Moodeng Credit.',
    'Supports Moodeng Credit with partnerships, lender outreach, and growth channels, while also working at':
       'Tumutulong sa Moodeng Credit sa partnerships, lender outreach, at growth channels, habang nagtatrabaho rin sa',
-   'helping teams connect with blockchain data infrastructure.': 'kung saan tinutulungan niya ang mga team na kumonek sa blockchain data infrastructure.',
+   'helping teams connect with blockchain data infrastructure.':
+      'kung saan tinutulungan niya ang mga team na kumonek sa blockchain data infrastructure.',
    'Builds stories and visual direction for Moodeng Credit, helping turn community ideas into growth narratives people can understand, share, and rally around.':
       'Bumubuo ng mga kuwento at visual direction para sa Moodeng Credit, at tumutulong gawing growth narratives ang mga ideya ng community — mga kuwentong madaling maintindihan, maibahagi, at suportahan ng mga tao.',
    'US Army Officer, Mercury Labs founder, and sports/Web3 operator advising Moodeng Credit on investor strategy, brand positioning, and disciplined growth.':
@@ -193,6 +192,169 @@ export const filipinoCoverageA: Record<string, string> = {
       'Mabilis na national ID at selfie check — available sa ilang bansa.',
    'Supported countries': 'Mga supported na bansa',
    'Not in a supported country?': 'Wala ka sa supported na bansa?',
-   'For World App users — verified at an Orb or with a passport.':
-      'Para sa World App users — na-verify sa isang Orb o gamit ang passport.',
+   'For World App users — verified at an Orb or with a passport.': 'Para sa World App users — na-verify sa isang Orb o gamit ang passport.',
+
+   // src/components/Footer.tsx
+   'Moodeng Credit logo': 'Logo ng Moodeng Credit',
+   'Social Link': 'Social link',
+
+   // src/components/GuidedTourPreview.tsx
+   'Want a quick tour?': 'Gusto mo ng quick tour?',
+   "Pick a side and we'll walk you through it — no account needed.": 'Pumili ng side at gagabayan ka namin — hindi kailangan ng account.',
+   'See how Moodeng works in under a minute. You can skip this and use everything normally.':
+      'Tingnan kung paano gumagana ang Moodeng sa loob ng wala pang isang minuto. Puwede mo itong i-skip at gamitin ang lahat gaya ng dati.',
+   'Skip for now': 'I-skip muna',
+   'Start the tour': 'Simulan ang tour',
+   'Take the tour': 'Mag-tour',
+   Skip: 'I-skip',
+   Back: 'Bumalik',
+   Finished: 'Tapos na',
+
+   // src/components/Header/MobileNav.tsx
+
+   // src/components/InAppBrowserNotice.tsx
+   'this app': 'app na ito',
+   'Open in Chrome': 'Buksan sa Chrome',
+   'Link copied ✓': 'Nakopya ang link ✓',
+   'Copy link': 'Kopyahin ang link',
+   'Open in your browser': 'Buksan sa browser mo',
+   'Open Moodeng in your browser': 'Buksan ang Moodeng sa browser mo',
+   "Sign-in and wallet payments don't work inside": 'Hindi gumagana ang sign-in at wallet payments sa loob ng',
+   '. Tap below to continue in Chrome.': '. I-tap sa ibaba para magpatuloy sa Chrome.',
+   '. Tap': '. I-tap ang',
+   'at the top, choose': 'sa itaas, piliin ang',
+   ', or copy the link below.': ', o kopyahin ang link sa ibaba.',
+   'Not now': 'Hindi muna',
+   "Why isn't this working?": 'Bakit hindi ito gumagana?',
+   Dismiss: 'Isara',
+
+   // src/components/IouPointHistoryModal.tsx
+   'IOU Point History': 'History ng IOU Points',
+   'No IOU points yet. Fund loan requests to start earning.':
+      'Wala ka pang IOU points. Pondohan ang mga loan request para magsimulang kumita.',
+   From: 'Mula kay',
+
+   // src/components/Loading.tsx
+   'Loading Moodeng': 'Naglo-load ang Moodeng',
+
+   // src/components/RepayInAppBrowserGate.tsx
+   'Open Moodeng in your browser to repay': 'Buksan ang Moodeng sa browser mo para magbayad',
+   'Finish repaying in your browser': 'Tapusin ang pagbabayad sa browser mo',
+   "'s in-app browser can't open your wallet, so a repayment gets stuck here. Open this page in Chrome or Safari to pay — it only takes a few seconds.":
+      ': hindi kayang buksan ng in-app browser nito ang wallet mo, kaya naiipit dito ang bayad. Buksan ang page na ito sa Chrome o Safari para magbayad — ilang segundo lang ito.',
+   'Your repay link': 'Ang repay link mo',
+   'Copied ✓': 'Nakopya ✓',
+   Copy: 'Kopyahin',
+   'Open in Safari': 'Buksan sa Safari',
+   "If a button doesn't open your browser, tap": 'Kung hindi mabuksan ng button ang browser mo, i-tap ang',
+   'at the top of': 'sa itaas ng',
+   'and choose': 'at piliin ang',
+   ', then paste the link.': ', tapos i-paste ang link.',
+   'Still stuck? Message support': 'Naiipit pa rin? I-message ang support',
+
+   // src/components/SocialContactRequiredNotifier.tsx
+   'A message from the Moodeng team': 'Mensahe mula sa Moodeng team',
+   "To request a loan, you'll first need to add a verified social media contact — like Facebook or WhatsApp — so we can reach you. Please contact us and we'll help you get set up.":
+      'Para makapag-request ng loan, kailangan mo munang magdagdag ng verified na social media contact — gaya ng Facebook o WhatsApp — para ma-contact ka namin. Kontakin kami at tutulungan ka naming i-set up ito.',
+   'Contact us': 'Kontakin kami',
+
+   // src/components/ToastSystem/ToastDemo.tsx
+   'Operation completed successfully!': 'Matagumpay na natapos!',
+   Info: 'Info',
+   'Here is some information.': 'Heto ang ilang impormasyon.',
+   'Error!': 'Error!',
+   'Something went wrong.': 'May nangyaring mali.',
+   'Please check this.': 'Pakitingnan ito.',
+   'Example error message': 'Halimbawang error message',
+   'Basic Types': 'Mga basic type',
+   Errors: 'Mga error',
+   Controls: 'Mga control',
+   'Clear All': 'I-clear lahat',
+
+   // src/components/UserAvatar.tsx
+   'Edit profile photo': 'I-edit ang profile photo',
+
+   // src/components/UserNetwork.tsx
+   'Guest User': 'Bisita',
+   'View IOU point history': 'Tingnan ang history ng IOU points',
+
+   // src/components/UserPay.tsx
+   'Still confirming': 'Kinukumpirma pa',
+   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
+      'Naipadala na ang bayad mo at sandali pa bago ito ma-confirm. Awtomatiko itong mag-a-update.',
+   'Unknown error': 'Hindi kilalang error',
+   'Payment Sent, Still Recording': 'Naipadala ang bayad, nire-record pa',
+   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
+      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.',
+   'Loan Repayment': 'Pagbabayad ng loan',
+   'Total Due': 'Kabuuang babayaran',
+   'Amount Paid': 'Nabayaran na',
+   'Due Date': 'Due date',
+   'Repayment Information': 'Detalye ng pagbabayad',
+   'Repayment Amount': 'Halagang babayaran',
+   'Enter custom amount': 'Maglagay ng sariling halaga',
+   'Processing...': 'Pinoproseso...',
+   'You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit score.':
+      'Puwede kang magbayad ng kahit anong halaga anumang oras bago ang due date. Siguraduhing buo mo nang nabayaran pagdating ng due date para manatiling maayos ang credit standing mo.',
+
+   // src/components/WalletNetworkBlockNotice.tsx
+   'Network is blocking wallet sign-in': 'Bina-block ng network ang wallet sign-in',
+   'Trouble connecting? Your network may be blocking it': 'Hirap kumonek? Baka bina-block ito ng network mo',
+   "Some networks (PLDT / Smart) block the Base sign-in page, so the wallet screen won't load. The free":
+      'May ilang network (PLDT / Smart) na bina-block ang Base sign-in page, kaya hindi naglo-load ang wallet screen. Naaayos ito ng libreng',
+   'app fixes it — install it, switch it on, then reconnect. It works on WiFi and mobile data.':
+      'app — i-install ito, i-on, tapos kumonek ulit. Gumagana ito sa WiFi at mobile data.',
+   'Get the free 1.1.1.1 app': 'Kunin ang libreng 1.1.1.1 app',
+   'Checking…': 'Chine-check…',
+   "I've turned it on — Retry": 'Naka-on na — Subukan ulit',
+   'Still stuck? Message the team': 'Naiipit pa rin? I-message ang team',
+
+   // src/components/auth/AuthErrorAlert.tsx
+   "We couldn't sign you in with": 'Hindi ka namin ma-sign in gamit ang',
+   'that provider': 'provider na iyon',
+   '. This is usually temporary — please try again.': '. Kadalasan ay pansamantala lang ito — subukan ulit.',
+   'Try again': 'Subukan ulit',
+   "That password didn't work. If you're not sure it's right, resetting it only takes a minute.":
+      'Hindi gumana ang password na iyan. Kung hindi ka sigurado kung tama ito, isang minuto lang ang pag-reset.',
+   'Reset password': 'I-reset ang password',
+   'No account found with this email address.': 'Walang account na nakita para sa email address na ito.',
+   'Try a different email': 'Sumubok ng ibang email',
+   or: 'o',
+   'Looks like you are new to Moodeng.': 'Mukhang bago ka sa Moodeng.',
+   'Create an account first, then verify the email code Moodeng sends you.':
+      'Gumawa muna ng account, tapos i-verify ang email code na ipapadala ng Moodeng.',
+   'Create account': 'Gumawa ng account',
+   'Use a different email': 'Gumamit ng ibang email',
+   'The email or password you entered is incorrect.': 'Mali ang email o password na inilagay mo.',
+   'reset your password': 'i-reset ang password mo',
+   "if you've forgotten it.": 'kung nakalimutan mo ito.',
+
+   // src/components/auth/LastUsedBadge.tsx
+   'Last used': 'Huling ginamit',
+
+   // src/components/auth/SignUpFormErrorAlert.tsx
+   'Password must be longer than 8 characters. Choose a stronger password to continue.':
+      'Dapat mas mahaba sa 8 characters ang password. Pumili ng mas matibay na password para magpatuloy.',
+   'Passwords do not match. Please re-enter your password.': 'Hindi magkapareho ang passwords. Ilagay ulit ang password mo.',
+   'This email address has been permanently locked. Please try a different email or contact support if you believe this is a mistake.':
+      'Permanenteng naka-lock ang email address na ito. Sumubok ng ibang email o kontakin ang support kung sa tingin mo ay mali ito.',
+   'Why am I seeing this?': 'Bakit ko ito nakikita?',
+   'This email is already linked to a Google account. Use a different email address or':
+      'Naka-link na ang email na ito sa isang Google account. Gumamit ng ibang email address o',
+   'instead.': 'na lang.',
+   "You're already signed up with this email. Enter your password above to log straight in, or pick an option below.":
+      'Naka-sign up ka na gamit ang email na ito. Ilagay ang password mo sa itaas para diretsong makapag-log in, o pumili ng option sa ibaba.',
+   'Log In': 'Mag-log in',
+   'Reset Password': 'I-reset ang password',
+
+   // src/components/auth/SocialAuthButtons.tsx
+   'Facebook sign-in coming soon': 'Malapit na ang Facebook sign-in',
+   'Google sign-up is not configured in this local app. Ask for the .env.keys file, then restart the dev server.':
+      'Hindi naka-configure ang Google sign-up sa local app na ito. Hingin ang .env.keys file, tapos i-restart ang dev server.',
+   'Google sign-up could not start. Please try again.': 'Hindi masimulan ang Google sign-up. Subukan ulit.',
+   'Redirecting...': 'Nire-redirect...',
+   Soon: 'Malapit na',
+
+   // src/components/auth/TelegramLoginTile.tsx
+   'Sign in with Telegram': 'Mag-sign in gamit ang Telegram',
 };
