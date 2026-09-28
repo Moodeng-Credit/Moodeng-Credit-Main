@@ -163,11 +163,11 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletFaceCheck.tsx
    'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
-      'Pemindaian liveness singkat memastikan setiap orang hanya punya satu Instant Wallet, dan karena itulah kami bisa menanggung biaya jaringan. Kami tidak pernah menyimpan fotomu, dan pemindaian ini hanya diperlukan untuk membuat dompet — bukan untuk masuk, mengirim, atau membayar kembali.',
+      'การสแกนใบหน้าสั้นๆ ช่วยให้แต่ละคนมี Instant Wallet ได้เพียงหนึ่งกระเป๋า ซึ่งทำให้เราช่วยจ่ายค่าธรรมเนียมเครือข่ายให้ได้ เราไม่เก็บรูปของคุณ และต้องสแกนเฉพาะตอนสร้างกระเป๋าเท่านั้น — ไม่ต้องใช้ตอนเข้าสู่ระบบ ส่งเงิน หรือชำระคืน',
    'This is taking longer than usual. Your scan is safe — check again in a moment.':
-      'Prosesnya lebih lama dari biasanya. Hasil pindaianmu aman — cek lagi sebentar lagi.',
+      'ใช้เวลานานกว่าปกติ ผลการสแกนของคุณปลอดภัย — ลองตรวจสอบอีกครั้งในอีกสักครู่',
    'Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.':
-      'Setiap orang hanya bisa punya satu Instant Wallet, jadi kami minta pemindaian sepuluh detik sebelum membuat dompetmu. Kamu tidak perlu melakukannya lagi.',
+      'แต่ละคนมี Instant Wallet ได้เพียงหนึ่งกระเป๋า เราจึงขอให้สแกนใบหน้า 10 วินาทีก่อนสร้างกระเป๋าของคุณ คุณจะไม่ต้องสแกนอีก',
 
    // src/views/onboarding/Welcome.tsx (the id copy block renders for id; this English title is a fallback)
 
@@ -178,7 +178,7 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/profile/components/Card.tsx
    'Are you sure you want to delete this loan request? This action cannot be undone.':
-      'Yakin mau menghapus permintaan pinjaman ini? Tindakan ini tidak bisa dibatalkan.',
+      'คุณแน่ใจหรือไม่ว่าต้องการลบคำขอสินเชื่อนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
 
    // src/views/profile/components/navigation/MobileNav.tsx
 
