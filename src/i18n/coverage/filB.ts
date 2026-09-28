@@ -305,5 +305,218 @@ export const filipinoCoverageB: Record<string, string> = {
    'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
       'Sinusukat ng Pandesal points ang reputasyon mo sa Moodeng. Sa verification, malinis na pagbabayad, at maayos na activity, mas nagtitiwala sa iyo ang mga lender.',
    'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'Ang milestones ay mga dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.'
+      'Ang milestones ay mga dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.',
+
+   // src/views/dashboard/RequestBoard.tsx
+   'Role not selected': 'Wala pang napiling role',
+   'Pick borrower or lender to unlock your dashboard, repayment, and history.':
+      'Pumili kung borrower o lender ka para ma-unlock ang dashboard, repayment, at history mo.',
+   'The team approved you — apply for your loan now.': 'Na-approve ka na ng team — mag-apply na ng loan mo ngayon.',
+   'Borrow USDC to build trust and': 'Humiram ng USDC para bumuo ng tiwala at',
+   'Apply For A Loan': 'Mag-apply Para sa Loan',
+   'Need USDC on Base?': 'Kailangan ng USDC sa Base?',
+   'Buy or bridge USDC to fund': 'Bumili o mag-bridge ng USDC para pondohan',
+   'Buy or bridge USDC to fund loans.': 'Bumili o mag-bridge ng USDC para pondohan ang mga loan.',
+   'Fund Wallet': 'Pondohan ang Wallet',
+   'New here? Take the 60-sec tour': 'Bago ka dito? Mag-tour ng 60 segundo',
+   'See how requests, funding, repayment, and trust fit together.':
+      'Tingnan kung paano magkakaugnay ang requests, funding, repayment, at tiwala.',
+   'Start tour': 'Simulan ang tour',
+   "Once lenders have issued three loans, a fee will be charged to their accounts. This fee helps maintain the platform's operational costs and ensures continued support for all users.":
+      'Kapag nakapagbigay na ang lender ng tatlong loan, may sisingiling fee sa account nila. Tumutulong ang fee na ito na mapanatili ang operational costs ng platform at masiguro ang patuloy na suporta para sa lahat ng user.',
+   'No requests match your filters.': 'Walang request na tumutugma sa mga filter mo.',
+   'Try widening your search or clearing your filters.': 'Subukang palawakin ang search mo o i-clear ang mga filter.',
+   'Delete this request?': 'I-delete ang request na ito?',
+   'This cannot be undone.': 'Hindi na ito puwedeng i-undo.',
+   'Lenders will no longer see it. You can make a new request from the board, but repeated deletes pause new requests for a short time.':
+      'Hindi na ito makikita ng mga lender. Puwede kang gumawa ng bagong request mula sa board, pero kapag paulit-ulit kang nag-delete, may pause muna sa bagong request sa loob ng maikling panahon.',
+   'Keep request': 'Panatilihin ang request',
+   'World App users can verify with World ID instead.': 'Puwedeng mag-verify ang mga user ng World App gamit ang World ID.',
+   'Quick answers before you sign up.': 'Mabibilis na sagot bago ka mag-sign up.',
+   'Take tour': 'Mag-tour',
+   'See more': 'Tingnan pa',
+   'I want to borrow': 'Gusto kong humiram',
+   'See how to request a short-term USDC loan and build trust through on-time repayment.':
+      'Tingnan kung paano mag-request ng short-term USDC loan at bumuo ng tiwala sa pamamagitan ng on-time na pagbabayad.',
+   'I want to lend': 'Gusto kong magpahiram',
+   'See how to fund loan requests, review borrower trust signals, and earn by supporting people you believe in.':
+      'Tingnan kung paano pondohan ang mga loan request, suriin ang trust signals ng borrower, at kumita habang sinusuportahan ang mga taong pinagkakatiwalaan mo.',
+   'Not sure yet — just show me around': 'Hindi pa sure — ipakita mo lang sa akin ang paligid',
+   'Get a quick overview of how Moodeng works before deciding which side to explore.':
+      'Kunin ang mabilis na overview kung paano gumagana ang Moodeng bago magdesisyon kung aling side ang eksplorahin.',
+   'The request board': 'Ang request board',
+   'This is where borrowers post short-term USDC loan requests and lenders browse them. Both sides of Moodeng meet here.':
+      'Dito nagpo-post ang mga borrower ng short-term USDC loan request at dito rin ito bini-browse ng mga lender. Dito nagtatagpo ang dalawang panig ng Moodeng.',
+   'Borrowers apply here': 'Dito nag-a-apply ang mga borrower',
+   'A borrower sets their loan amount, repayment date, and reason. Once verified, their request goes live on this board.':
+      'Itinatakda dito ng borrower ang loan amount, repayment date, at reason. Kapag na-verify na, mapo-post na ang request nila sa board.',
+   'Ready to get started?': 'Handa ka nang magsimula?',
+   'This is the marketplace. Once a request is live, lenders review the amount, repayment, and borrower before funding.':
+      'Ito ang marketplace. Kapag naka-post na ang request, sinusuri ng lender ang amount, repayment, at borrower bago pondohan.',
+   'When you are ready to borrow, this card opens the loan request flow. Got a code from a friend? Add it for a higher starting limit.':
+      'Kapag handa ka nang humiram, bubuksan ng card na ito ang loan request flow. May code ka ba mula sa kaibigan? Idagdag ito para sa mas mataas na starting limit.',
+   'Verify first': 'Mag-verify muna',
+   'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.':
+      'Kumukumpleto ang mga borrower ng one-time identity check bago mag-request ng loan. Nakakatulong ito para malaman ng lender na totoong tao ang pinopondohan nila.',
+   'Set your terms': 'Itakda ang mga terms mo',
+   'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.':
+      'Pagkatapos ng verification, dito itinatakda ng borrower ang amount, repayment, date, at reason ng request.',
+   'Get funded, then repay': 'Mapondohan, tapos magbayad',
+   'A lender funds your request and USDC lands in your wallet. Repay on time and your Pandesal points — and your next limit — grow. Miss a repayment and it shows on your public profile, so lenders lend on trust.':
+      'Pinopondohan ng lender ang request mo at pumapasok ang USDC sa wallet mo. Magbayad on time para tumaas ang Pandesal points mo — at ang susunod mong limit. Kapag na-miss ang bayad, makikita ito sa public profile mo, kaya nagpapahiram ang mga lender batay sa tiwala.',
+   'Browse open requests': 'Mag-browse ng mga bukas na request',
+   'Look through open requests before signing up — each card shows the amount, repayment, borrower, and reason.':
+      'Tingnan ang mga bukas na request bago mag-sign up — makikita sa bawat card ang amount, repayment, borrower, at reason.',
+   'The hamburger opens Help and Support questions here. Scroll the list to browse more answers without leaving the board.':
+      'Binubuksan ng hamburger icon ang Help and Support questions dito. I-scroll ang listahan para makita pa ang mga sagot nang hindi umaalis sa board.',
+   'Ready to build credit?': 'Handa nang bumuo ng credit?',
+   'Create your account to request your first loan — or sign in if you already have one.':
+      'Gumawa ng account mo para mag-request ng first loan mo — o mag-sign in kung mayroon ka na.',
+   'This list is the marketplace. Once a request is live, lenders can review the amount, repayment, and borrower profile before funding.':
+      'Ito ang listahan ng marketplace. Kapag naka-post na ang request, puwedeng suriin ng lender ang amount, repayment, at borrower profile bago pondohan.',
+   'When you are ready to borrow, this card opens the loan request form.':
+      'Kapag handa ka nang humiram, bubuksan ng card na ito ang loan request form.',
+   'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.':
+      'Bago makapag-request ng loan ang hindi pa verified na borrower, dadalhin sila ng Moodeng sa mabilis na identity verification screen.',
+   'Loan terms preview': 'Preview ng loan terms',
+   'Trust-building vs credit-building': 'Trust-building kumpara sa credit-building',
+   'Borrowing below your limit can build trust history. Borrowing your full limit and repaying on time is what raises your Credit Level.':
+      'Ang paghiram na hindi umaabot sa limit mo ay nakakabuo ng trust history. Ang paghiram ng buong limit mo at pagbabayad on time ang siyang nagpapataas ng Credit Level mo.',
+   'Set a clear repayment': 'Itakda ang malinaw na repayment',
+   'Your repayment must be at least $1 more than what you borrow. Lenders use this to decide if the request is worth funding.':
+      'Dapat hindi bababa sa $1 na mas mataas ang repayment mo kaysa sa hiniram mo. Ginagamit ito ng mga lender para desisyunan kung sulit pondohan ang request.',
+   'Explain the reason': 'Ipaliwanag ang reason',
+   'A short, specific reason helps lenders understand the request and builds trust before they fund it.':
+      'Nakakatulong ang maikli at specific na reason para maintindihan ng lender ang request at bumuo ng tiwala bago nila ito pondohan.',
+   'Find open requests': 'Maghanap ng mga bukas na request',
+   'As a lender, this board shows people asking for short-term USDC support. Start by comparing the amount, repayment, due date, and reason.':
+      'Bilang lender, ipinapakita sa board na ito ang mga taong humihingi ng short-term USDC support. Magsimula sa paghahambing ng amount, repayment, due date, at reason.',
+   'Review the request': 'Suriin ang request',
+   'Each card shows what the borrower needs, what they plan to repay, and whether their account is in good standing.':
+      'Makikita sa bawat card kung ano ang kailangan ng borrower, kung magkano ang babayaran nila, at kung maayos ang account nila.',
+   'Fund with one tap': 'Pondohan sa isang tap',
+   'Tap Send Your Help. USDC goes straight from your wallet to the borrower once you approve.':
+      'I-tap ang Send Your Help. Direktang pupunta ang USDC mula sa wallet mo papunta sa borrower kapag inaprubahan mo na.',
+   'Get repaid, watch for the fee': 'Mababayaran ka, bantayan ang fee',
+   'Repayment comes back to your wallet by the due date shown on each request. After your third funded loan, a small platform fee applies to help cover operating costs.':
+      'Babalik ang repayment sa wallet mo sa due date na nakalagay sa bawat request. Pagkatapos ng ikatlo mong napondohang loan, may maliit na platform fee na para makatulong sa operating costs.',
+   'Check Borrower Insights': 'Tingnan ang Borrower Insights',
+   'Before funding, open Borrower Details to review repayment behavior, credit level, and trust signals. The tour continues there next.':
+      'Bago pondohan, buksan ang Borrower Details para suriin ang repayment behavior, credit level, at trust signals. Ituloy ang tour doon.',
+   'Edit display name': 'I-edit ang display name',
+   'Verification in progress': 'Ongoing ang verification',
+   'Close delete request confirmation': 'Isara ang delete request confirmation',
+
+   // src/views/dashboard/components/ConnectStep.tsx
+   'Set up cash-out to your local currency': 'I-set up ang cash-out papunta sa local currency mo',
+   'Meet the team, ask anything': 'Kilalanin ang team, magtanong ng kahit ano',
+   'Apply right after the call': 'Mag-apply kaagad pagkatapos ng call',
+   'What do you need a loan for?': 'Para saan mo kailangan ang loan?',
+   'Your time is in your email': 'Nasa email mo ang oras',
+   'Join the meeting': 'Sumali sa meeting',
+   'Have ready': 'Ihanda ang mga sumusunod',
+   'Your original ID or passport': 'Ang orihinal mong ID o pasaporte',
+   'Camera on, good light, phone nearby': 'Naka-on ang camera, maayos na ilaw, malapit ang phone',
+   'Say hi to Emma on Facebook ›': 'Bumati kay Emma sa Facebook ›',
+   'Your goal': 'Ang goal mo',
+   '15 minutes · on Zoom · you pick the time': '15 minuto · sa Zoom · ikaw ang pipili ng oras',
+   'A quick note so the team knows how to help.': 'Isang maikling paalala para malaman ng team kung paano makakatulong.',
+   'Quick picks': 'Mabilis na pagpili',
+
+   // src/views/dashboard/components/ContactsStep.tsx
+   'Get Started': 'Magsimula',
+   'Get due-date reminders on your phone': 'Makatanggap ng due-date reminders sa phone mo',
+   'On iPhone: tap': 'Sa iPhone: i-tap ang',
+   Share: 'I-share',
+   'Add to Home Screen': 'Idagdag sa Home Screen',
+   'Turn on reminders to continue.': 'I-on ang mga reminder para magpatuloy.',
+   'Only Moodeng sees this — never lenders.': 'Moodeng lang ang nakakakita nito — hinding-hindi ang mga lender.',
+   'How can we reach you?': 'Paano ka namin maaabot?',
+   'Open Messenger again': 'Buksan ulit ang Messenger',
+   Required: 'Kailangan',
+   'Turn on reminders': 'I-on ang mga reminder',
+
+   // src/views/dashboard/components/CreditLevelSection.tsx
+   'Your credit level grows as you borrow and repay on time. Higher levels unlock larger loan amounts.':
+      'Tumataas ang credit level mo kapag humihiram ka at nagbabayad on time. Ang mas mataas na level ang nag-a-unlock ng mas malaking loan amount.',
+   'Watch our credit levelling guide': 'Panoorin ang gabay namin sa pag-level ng credit',
+   'Verify to unlock': 'Mag-verify para ma-unlock',
+
+   // src/views/dashboard/components/LendChecklistModal.tsx
+   'Unlocks once you connect': 'Ma-a-unlock kapag nag-connect ka na',
+   'Base Account does both steps in one tap.': 'Ginagawa ng Base Account ang dalawang step sa isang tap lang.',
+   'Send your help': 'Ipadala ang tulong mo',
+   'Confirm the payment': 'Kumpirmahin ang bayad',
+
+   // src/views/dashboard/components/LenderDiversitySection.tsx
+   'Early estimate: needs 8 funded loans before the score is fully weighted.':
+      'Unang estimate: kailangan ng 8 napondohang loan bago ganap na ma-weight ang score.',
+   'This score appears after at least 2 funded loans.': 'Lumalabas ang score na ito pagkatapos ng hindi bababa sa 2 napondohang loan.',
+   'Pay Loans': 'Magbayad ng Loan',
+
+   // src/views/dashboard/components/LoanRequestModal.tsx
+   'Public borrower profile': 'Pampublikong profile ng borrower',
+   'This is the identity lenders see beside your request.': 'Ito ang pagkakakilanlan na nakikita ng mga lender sa tabi ng request mo.',
+   'Profile image': 'Larawan sa profile',
+   'Tap to choose a photo or avatar.': 'I-tap para pumili ng larawan o avatar.',
+   'Name shown to lenders': 'Pangalang ipinapakita sa mga lender',
+   'Use a first name or friendly nickname.': 'Gumamit ng first name o friendly na palayaw.',
+   'Describe your situation': 'Ilarawan ang sitwasyon mo',
+   'Tell lenders how you earn, in your own words.': 'Sabihin sa mga lender kung paano ka kumikita, sa sarili mong salita.',
+   'Be specific, for example teacher or market vendor.': 'Maging specific, halimbawa teacher o market vendor.',
+   'Still needed: how you describe your work.': 'Kailangan pa: kung paano mo ilalarawan ang trabaho mo.',
+   'For example tutoring, delivery, or market trading.': 'Halimbawa tutoring, delivery, o pagtitinda sa market.',
+   'Referral Boost': 'Referral Boost',
+   'Schedule a video call': 'Mag-iskedyul ng video call',
+   'How lenders see you': 'Kung paano ka nakikita ng mga lender',
+   'Set your loan terms': 'Itakda ang mga terms ng loan mo',
+   Optional: 'Optional',
+   'Have a referral code?': 'May referral code ka ba?',
+   'Add it now for a higher starting limit.': 'Idagdag ito ngayon para sa mas mataas na starting limit.',
+   'Referral code': 'Referral code',
+   'No code needed. You can continue normally.': 'Hindi kailangan ng code. Puwede kang magpatuloy nang normal.',
+   'Please add your Facebook so we can reach out to you. We also have a':
+      'Idagdag ang Facebook mo para maabot ka namin. Mayroon din kaming',
+   'Borrow Amount': 'Halagang Hihiramin',
+   'All loans are issued and repaid in USDC.': 'Lahat ng loan ay ibinibigay at binabayaran sa USDC.',
+   'Set Repayment Amount': 'Itakda ang Repayment Amount',
+   'You’ll repay': 'Babayaran mo ang',
+   'Set Repayment Date': 'Itakda ang Repayment Date',
+   'Reason for Borrowing': 'Dahilan ng Paghiram',
+   'Short and specific helps lenders trust it.': 'Ang maikli at specific na sagot ay nakakatulong para magtiwala ang mga lender.',
+   'Checking your reason…': 'Sinusuri ang reason mo…',
+   'Looks good': 'Maayos na',
+   'At least 40 characters, in English — short and specific helps lenders trust it.':
+      'Hindi bababa sa 40 characters, sa English — ang maikli at specific na sagot ay nakakatulong para magtiwala ang mga lender.',
+   'I have a regular job': 'May regular akong trabaho',
+   'Full-time or part-time with a fixed employer': 'Full-time o part-time na may fixed na employer',
+   'I work for myself': 'Nagtatrabaho ako para sa sarili ko',
+   'My income varies': 'Nag-iiba-iba ang kita ko',
+   'Something else': 'Iba pa',
+   'Describe your situation in your own words': 'Ilarawan ang sitwasyon mo sa sarili mong salita',
+   'It varies': 'Nag-iiba-iba',
+   'Gap before payday': 'Kulang bago sumahod',
+   'Bills before payday': 'Mga bayarin bago sumahod',
+   'Family needs': 'Pangangailangan ng pamilya',
+   'Transport costs': 'Gastos sa transportasyon',
+   'Medical expenses': 'Gastos sa medikal',
+   'Emergency costs': 'Gastos sa emergency',
+   'Work supplies': 'Kagamitan sa trabaho',
+   'Failed to save profile name.': 'Hindi na-save ang profile name.',
+   'Swipe right to close loan form': 'I-swipe pakanan para isara ang loan form',
+   'Explain setting loan terms': 'Ipaliwanag ang pagtakda ng loan terms',
+   'Close loan form': 'Isara ang loan form',
+   'So we can help you more 💜': 'Para mas matulungan ka namin 💜',
+   'Explain current borrow limit': 'Ipaliwanag ang kasalukuyang borrow limit',
+   'Set your desired amount': 'Itakda ang gustong halaga',
+   'Explain USDC loans': 'Ipaliwanag ang mga USDC loan',
+   'Must be more than the borrowed amount': 'Dapat mas mataas sa hiniram na halaga',
+   'Selected repayment date': 'Napiling repayment date',
+   'Open repayment date calendar': 'Buksan ang calendar ng repayment date',
+   'Why do you need this loan? Write in English.': 'Bakit mo kailangan ang loan na ito? Isulat sa English.',
+   'Ask Mecha to help me word this': 'Hilingin kay Mecha na tulungan akong isulat ito',
+   'Ask Mecha to write this in English': 'Hilingin kay Mecha na isulat ito sa English',
+   'Choose repayment date': 'Piliin ang repayment date',
+   'Previous month': 'Nakaraang buwan',
+   'Next month': 'Susunod na buwan'
 };
