@@ -314,7 +314,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Verify Now': 'ยืนยันเลย',
    'Most used': 'ใช้มากที่สุด',
    'Quick national ID & selfie check. Available in VN, TW, KR, PH, MY, JP, ID, TH':
-      'ตรวจสอบบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้ได้ใน VN, TW, KR, PH, MY, JP, ID, TH',
+      'ตรวจสอบบัตรประชาชนและเซลฟี่อย่างรวดเร็ว ใช้ได้ใน VN, TW, KR, PH, MY, JP, ID, TH',
    'Milestone Streak!': 'ทำหมุดหมายต่อเนื่อง!',
    'milestone this week': 'หมุดหมายในสัปดาห์นี้',
    'milestones this week': 'หมุดหมายในสัปดาห์นี้',
@@ -393,7 +393,7 @@ export const thaiCoverageB: Record<string, string> = {
       'ผู้ให้กู้จะไม่เห็นคำขอนี้อีก คุณสร้างคำขอใหม่จากกระดานได้ แต่หากลบบ่อยครั้ง ระบบจะระงับการสร้างคำขอใหม่ชั่วคราว',
    'Deleting...': 'กำลังลบ...',
    'Keep request': 'เก็บคำขอไว้',
-   'Quick national ID & selfie check — available in select countries.': 'ตรวจสอบบัตรประชาชนและเซลฟีอย่างรวดเร็ว — ใช้ได้ในบางประเทศ',
+   'Quick national ID & selfie check — available in select countries.': 'ตรวจสอบบัตรประชาชนและเซลฟี่อย่างรวดเร็ว — ใช้ได้ในบางประเทศ',
    'World App users can verify with World ID instead.': 'ผู้ใช้ World App สามารถยืนยันด้วย World ID แทนได้',
    'Quick answers before you sign up.': 'คำตอบสั้น ๆ ก่อนคุณสมัครสมาชิก',
    'Show less': 'แสดงน้อยลง',
