@@ -388,7 +388,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'The team approved you — apply for your loan now.': 'Đội ngũ đã duyệt bạn — hãy yêu cầu khoản vay ngay.',
    'Borrow USDC to build trust and': 'Vay USDC để xây dựng niềm tin và',
    'unlock higher loan levels.': 'mở khóa hạng tín dụng cao hơn.',
-   'Apply For A Loan': 'Yêu cầu khoản vay',
+   'Apply For A Loan': 'Đăng ký vay',
    'Need USDC on Base?': 'Cần USDC trên Base?',
    'Buy or bridge USDC to fund': 'Mua hoặc chuyển USDC sang Base để cấp vốn',
    'loans on the platform.': 'cho các khoản vay trên nền tảng.',
@@ -545,7 +545,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    // src/views/dashboard/components/CreditLevelSection.tsx
    'Your credit level grows as you borrow and repay on time. Higher levels unlock larger loan amounts.':
       'Hạng tín dụng của bạn tăng lên khi bạn vay và trả nợ đúng hạn. Hạng cao hơn sẽ mở khóa số tiền vay lớn hơn.',
-   'Watch our credit levelling guide': 'Xem hướng dẫn nâng hạng tín dụng của chúng tôi',
+   'Watch our credit levelling guide': 'Xem hướng dẫn nâng hạng tín dụng',
    'Verify to unlock': 'Xác minh để mở khóa',
    // src/views/dashboard/components/LendChecklistModal.tsx
    'Unlocks once you connect': 'Sẽ mở khóa khi bạn kết nối',
@@ -982,7 +982,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'You pay': 'Bạn trả',
    'You receive': 'Bạn nhận',
    'IOU points': 'Điểm IOU',
-   'Loan Note ID': 'Mã Loan Note',
+   'Loan Note ID': 'Mã giấy nợ',
    'You paid': 'Bạn đã trả',
    'Expected repayment': 'Khoản trả nợ dự kiến',
    'IOU points earned': 'Điểm IOU đã nhận',

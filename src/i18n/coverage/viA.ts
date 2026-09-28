@@ -781,7 +781,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Enter reason i.e. an emergency, etc.': 'Nhập lý do, ví dụ: trường hợp khẩn cấp, v.v.',
    'How It Works': 'Cách hoạt động',
    '1. Enter your loan amount': '1. Nhập số tiền vay của bạn',
-   '3. Specify payback amount': '3. Nhập số tiền trả lại',
+   '3. Specify payback amount': '3. Nhập số tiền hoàn trả',
    '4. Explain your reason for the loan': '4. Giải thích lý do vay của bạn',
    '5. Submit your request': '5. Gửi yêu cầu của bạn',
    // src/views/academy/AcademyGuide.tsx
@@ -811,7 +811,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Can increase your next limit': 'Có thể tăng hạn mức tiếp theo của bạn',
    'Best when repayment is clear': 'Tốt nhất khi kế hoạch trả nợ rõ ràng',
    'Borrow amount': 'Số tiền vay',
-   'Payback amount': 'Số tiền trả lại',
+   'Payback amount': 'Số tiền hoàn trả',
    Reason: 'Lý do',
    'Needs money before Friday': 'Cần tiền trước thứ Sáu',
    'Short term': 'Ngắn hạn',

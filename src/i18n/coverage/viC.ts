@@ -513,7 +513,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and is lost forever — it cannot be recovered. When':
       'USDC gửi qua Ethereum, Polygon hay bất kỳ mạng nào khác sẽ đến địa chỉ này trên sai chuỗi và bị mất vĩnh viễn — không thể khôi phục. Khi',
    'asks which network, choose': 'hỏi chọn mạng nào, hãy chọn',
-   'How it works': 'Cách thức hoạt động',
+   'How it works': 'Cách hoạt động',
    'Visit moneybees.ph and follow their own process': 'Truy cập moneybees.ph và làm theo quy trình riêng của họ',
    'They handle ID checks and the rate directly with you': 'Họ trực tiếp kiểm tra giấy tờ tùy thân và thỏa thuận tỷ giá với bạn',
    'Share your address —': 'Chia sẻ địa chỉ của bạn —',
@@ -605,7 +605,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    // src/views/support/HowCreditLevelsWork.tsx
    'Play again': 'Chơi lại',
    'Your credit': 'Tín dụng của bạn',
-   'Apply for loan': 'Yêu cầu khoản vay',
+   'Apply for loan': 'Đăng ký vay',
    'Repayment complete': 'Đã trả xong nợ',
    'Level 2 unlocked': 'Đã mở khóa Hạng 2',
    'How Credit Levels work': 'Hạng tín dụng hoạt động như thế nào',
@@ -738,9 +738,9 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Rising Star': 'Ngôi sao đang lên',
    'Just getting started': 'Vừa mới bắt đầu',
    'Answer choices': 'Các lựa chọn trả lời',
-   'See your credit limit on the request board': 'Xem hạn mức tín dụng của bạn trên bảng yêu cầu',
-   'Apply for a loan on the request board': 'Yêu cầu khoản vay trên bảng yêu cầu',
-   'See live requests on the request board': 'Xem các yêu cầu trực tiếp trên bảng yêu cầu',
+   'See your credit limit on the request board': 'Xem hạn mức tín dụng của bạn trên Bảng yêu cầu',
+   'Apply for a loan on the request board': 'Đăng ký vay trên Bảng yêu cầu',
+   'See live requests on the request board': 'Xem các yêu cầu đang mở trên Bảng yêu cầu',
    'Credit limit growing from fifteen to sixty dollars': 'Hạn mức tín dụng tăng dần từ mười lăm lên sáu mươi đô la',
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
       'Một chú hà mã người vay tại quầy Moodeng đang thực hiện quy trình xây dựng tín dụng: yêu cầu, trả nợ đúng hạn, rồi lên hạng',
@@ -1013,7 +1013,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Very Low': 'Rất thấp',
    'Close loan mix explanation': 'Đóng phần giải thích cơ cấu khoản vay',
    'Trust loans': 'Khoản vay xây dựng niềm tin',
-   'Credit loans': 'Khoản vay nâng hạng',
+   'Credit loans': 'Khoản vay xây dựng tín dụng',
    'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
       'Khoản vay nhỏ hơn hạn mức hiện tại. Chúng giúp cho thấy người vay có khả năng trả nợ, nhưng không nâng hạng tín dụng.',
    'Credit-level signal': 'Tín hiệu hạng tín dụng',
@@ -1038,7 +1038,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'GCash, Maya or Bank · 30 min–hours': 'GCash, Maya hoặc ngân hàng · 30 phút–vài giờ',
    'External option · buy and sell via their own process': 'Lựa chọn bên ngoài · bạn tự mua bán theo quy trình riêng của họ',
    "You follow Moneybees' instructions directly": 'Bạn làm theo trực tiếp hướng dẫn của Moneybees',
-   'How this works': 'Cách thức hoạt động',
+   'How this works': 'Cách hoạt động',
    'Show me how': 'Chỉ cho tôi cách làm',
    'Video guide coming soon': 'Video hướng dẫn sắp ra mắt',
    'Send only': 'Chỉ gửi',
