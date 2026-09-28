@@ -434,5 +434,68 @@ export const filipinoCoverageA: Record<string, string> = {
    Academy: 'Academy',
    'Benefits navigation': 'Menu ng mga benepisyo',
    'Toggle benefits menu': 'I-toggle ang menu ng mga benepisyo',
-   'Mobile benefits navigation': 'Mobile na menu ng mga benepisyo'
+   'Mobile benefits navigation': 'Mobile na menu ng mga benepisyo',
+
+   // src/components/support/SupportContactsModal.tsx
+   'Contact us via': 'Makipag-ugnayan sa amin sa pamamagitan ng',
+   'Live chat': 'Live chat',
+   'Fastest — we reply here and by email': 'Pinakamabilis — sasagot kami dito at sa email',
+   'Support contacts': 'Mga contact ng support',
+   'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
+      'Narito ang mga contact ng support. Pumili ng channel at tutulungan ka namin sa Moodeng account mo.',
+   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
+      'Narito ang mga contact ng support para sa expired mong loan request. Matutulungan ka naming kumonekta sa isang lender o magdesisyon kung mag-post ulit.',
+   'Here are support contacts for World ID verification if your status did not update after completing World ID.':
+      'Narito ang mga contact ng support para sa World ID verification kung hindi na-update ang status mo pagkatapos tapusin ang World ID.',
+   'Close support contacts': 'Isara ang mga contact ng support',
+
+   // src/components/ui/Modal.tsx
+   'Close modal': 'Isara ang modal',
+
+   // src/components/ui/YouTubeVideoLightbox.tsx
+   'Credit Levelling Guide': 'Gabay sa Credit Level',
+
+   // src/components/verification/CountryFlags.tsx
+   Vietnam: 'Vietnam',
+   Taiwan: 'Taiwan',
+   'South Korea': 'Timog Korea',
+   Philippines: 'Pilipinas',
+   Malaysia: 'Malaysia',
+   Japan: 'Japan',
+   Indonesia: 'Indonesia',
+   Thailand: 'Thailand',
+
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   Verification: 'Verification',
+
+   // src/components/verification/VerifyYourselfModal.tsx
+   'Verify by scanning your passport with your phone in the World App — no Orb visit needed. You need an':
+      'I-verify sa pamamagitan ng pag-scan ng passport mo gamit ang phone mo sa World App — hindi na kailangang bumisita sa Orb. Kailangan mo ng',
+   'Get the World App': 'Kunin ang World App',
+   'Need help with this step?': 'Kailangan ng tulong sa step na ito?',
+   'World ID is verified in person at an Orb — a physical device available only in certain countries — or with a passport scan in the World App. Pick the option that matches you.':
+      'Ang World ID ay verified nang personal sa isang Orb — isang physical device na available lang sa ilang bansa — o sa pamamagitan ng pag-scan ng passport sa World App. Piliin ang option na akma sa\'yo.',
+   'New to World ID?': 'Bago sa World ID?',
+   '1. Download the World App': '1. I-download ang World App',
+   '2. Find an Orb near you': '2. Maghanap ng Orb malapit sa\'yo',
+   'Countries with Orb locations': 'Mga bansang may Orb location',
+   'Back to verification options': 'Bumalik sa mga option ng verification',
+   'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
+      'Kumpirmahin ang identity mo para ma-unlock ang account mo — isang beses lang na check na tumatagal ng mga 3 minuto.',
+
+   // src/components/worldId/WorldIDVerificationStatus.tsx
+   "To confirm your identity and show it's really you, we use World ID. This helps keep our community safe, avoids bots, and builds trust for borrowers.":
+      'Para kumpirmahin ang identity mo at ipakita na ikaw talaga, gumagamit kami ng World ID. Nakakatulong ito na maging ligtas ang aming community, maiwasan ang mga bot, at bumuo ng tiwala para sa mga borrower.',
+   'Human Verified with World ID': 'Human Verified gamit ang World ID',
+
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'This may take a few seconds.': 'Baka tumagal ng ilang segundo ito.',
+   'Keep waiting': 'Magpatuloy sa paghihintay',
+   'Verification status': 'Status ng verification',
+   'Having trouble?': 'May problema ka ba?',
+   'Still stuck? Contact support': 'Naka-stuck ka pa rin? Kontakin ang support',
+   'Close verification help': 'Isara ang tulong sa verification',
+
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'Got it': 'Nakuha ko'
 };
