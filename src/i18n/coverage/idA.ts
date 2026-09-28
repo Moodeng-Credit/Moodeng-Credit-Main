@@ -584,4 +584,126 @@ export const indonesianCoverageA: Record<string, string> = {
    Highest: 'Tertinggi',
    Oldest: 'Terlama',
    Newest: 'Terbaru',
+
+   // src/components/marketing/MarketingPageShell.tsx
+   'Open App': 'Buka Aplikasi',
+   App: 'Aplikasi',
+   'Benefits navigation': 'Navigasi manfaat',
+   'Toggle benefits menu': 'Buka/tutup menu manfaat',
+   'Mobile benefits navigation': 'Navigasi manfaat seluler',
+   'Small USDC loans, World ID verification, and portable repayment history for borrowers building credit abroad.':
+      'Pinjaman USDC kecil, verifikasi World ID, dan riwayat pembayaran kembali yang portabel untuk peminjam yang membangun kredit di luar negeri.',
+   'Read docs': 'Baca dokumentasi',
+
+   // src/components/mecha/stepContext.ts
+   'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.':
+      'Sedang menyiapkan dompet? Instant Wallet kamu dibuat dari login Moodeng — tanpa perlu mengunduh aplikasi. Aku bisa memandumu.',
+   'What is the Instant Wallet?': 'Apa itu Instant Wallet?',
+   'Can I use a Base Account instead?': 'Bisakah aku pakai Base Account saja?',
+   'My wallet won’t connect': 'Dompetku tidak bisa terhubung',
+   'Stuck on verifying? I can walk you through it.': 'Kesulitan verifikasi? Aku bisa memandumu.',
+   'How do I verify my ID?': 'Bagaimana cara verifikasi ID-ku?',
+   'My verification is stuck': 'Verifikasiku macet',
+   'What is World ID?': 'Apa itu World ID?',
+   'How do I repay?': 'Bagaimana cara bayar kembali?',
+   'Where do I buy USDC?': 'Di mana aku bisa beli USDC?',
+   'What network do I use?': 'Jaringan apa yang harus kupakai?',
+   'How do I cash out to GCash?': 'Bagaimana cara mencairkan dana ke GCash?',
+   'How do I withdraw to my bank?': 'Bagaimana cara tarik dana ke rekening bankku?',
+   'Which network do I pick?': 'Jaringan mana yang harus kupilih?',
+   'How do I request a loan?': 'Bagaimana cara mengajukan pinjaman?',
+   'How does funding work?': 'Bagaimana cara kerja pendanaan?',
+   'What are Pandesal points?': 'Apa itu poin Pandesal?',
+   'How do I increase my credit limit?': 'Bagaimana cara menaikkan limit kreditku?',
+   'How do I get verified?': 'Bagaimana cara verifikasi?',
+   'How do I cash out?': 'Bagaimana cara mencairkan dana?',
+   'How do I get started?': 'Bagaimana cara memulai?',
+   'What do I need to borrow?': 'Apa saja yang kubutuhkan untuk meminjam?',
+   'Is Moodeng legit?': 'Apakah Moodeng terpercaya?',
+
+   // src/components/support/SupportContactsModal.tsx
+   'Support contacts': 'Kontak dukungan',
+   'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
+      'Berikut kontak dukungan kami. Pilih salurannya dan kami akan membantumu dengan akun Moodeng kamu.',
+   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
+      'Berikut kontak dukungan untuk permintaan pinjamanmu yang sudah kedaluwarsa. Kami bisa membantumu terhubung dengan pemberi pinjaman atau memutuskan apakah perlu memasang permintaan lagi.',
+   'Here are support contacts for World ID verification if your status did not update after completing World ID.':
+      'Berikut kontak dukungan untuk verifikasi World ID jika statusmu tidak berubah setelah menyelesaikan World ID.',
+   'Close support contacts': 'Tutup kontak dukungan',
+   'Contact us via': 'Hubungi kami lewat',
+   'Live chat': 'Live chat',
+   'Fastest — we reply here and by email': 'Paling cepat — kami membalas di sini dan lewat email',
+
+   // src/components/ui/Modal.tsx
+   'Close modal': 'Tutup',
+
+   // src/components/ui/YouTubeVideoLightbox.tsx
+   'Credit Levelling Guide': 'Panduan Naik Level Kredit',
+
+   // src/components/verification/CountryFlags.tsx
+   Vietnam: 'Vietnam',
+   'South Korea': 'Korea Selatan',
+   Philippines: 'Filipina',
+   Japan: 'Jepang',
+   Thailand: 'Thailand',
+
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   'your ID': 'ID kamu',
+   Verification: 'Verifikasi',
+   'Verification didn’t go through': 'Verifikasi tidak berhasil',
+   'We weren’t able to verify you with': 'Kami belum bisa memverifikasimu dengan',
+   'this time. No worries — you can try again whenever you’re ready.':
+      'kali ini. Tenang saja — kamu bisa mencoba lagi kapan pun kamu siap.',
+   'or get help from our team': 'atau minta bantuan tim kami',
+
+   // src/components/verification/VerifiedCelebrationNotifier.tsx
+   'Manual review complete — you’re verified!': 'Peninjauan manual selesai — kamu sudah terverifikasi!',
+   'Your ID is verified!': 'ID kamu sudah terverifikasi!',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
+      'Mantap! Tim peninjau kami sudah mengonfirmasi dokumenmu. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan pemberi pinjaman.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
+      'Mantap! Identitasmu sudah dikonfirmasi. Sekarang kamu punya akses penuh — mulai bangun kepercayaan dengan pemberi pinjaman.',
+   'Request a loan': 'Ajukan pinjaman',
+
+   // src/components/verification/VerifyYourselfModal.tsx
+   '🇺🇸 United States': '🇺🇸 Amerika Serikat',
+   '🇬🇧 United Kingdom': '🇬🇧 Inggris',
+   '🇯🇵 Japan': '🇯🇵 Jepang',
+   '🇰🇷 South Korea': '🇰🇷 Korea Selatan',
+   '🇲🇽 Mexico': '🇲🇽 Meksiko',
+   '🇨🇴 Colombia': '🇨🇴 Kolombia',
+   '🇨🇱 Chile': '🇨🇱 Cile',
+   '🇸🇬 Singapore': '🇸🇬 Singapura',
+   '🇵🇭 Philippines': '🇵🇭 Filipina',
+   '🇩🇪 Germany': '🇩🇪 Jerman',
+   '🇦🇹 Austria': '🇦🇹 Austria',
+   '🇵🇱 Poland': '🇵🇱 Polandia',
+   '🇪🇨 Ecuador': '🇪🇨 Ekuador',
+   '🇧🇷 Brazil': '🇧🇷 Brasil',
+   'World ID Passport': 'Paspor World ID',
+   'Verify by scanning your passport with your phone in the World App — no Orb visit needed. You need an':
+      'Verifikasi dengan memindai paspor lewat ponselmu di World App — tanpa perlu datang ke Orb. Kamu butuh',
+   'NFC-enabled (biometric) passport': 'paspor ber-NFC (biometrik)',
+   'from one of these countries, and you must currently be in one of them:':
+      'dari salah satu negara berikut, dan saat ini kamu harus berada di salah satu negara tersebut:',
+   'Look for the chip symbol on your passport cover. You’ll also need a phone with NFC (most modern phones) and the World App installed.':
+      'Cari simbol chip di sampul paspormu. Kamu juga butuh ponsel dengan NFC (kebanyakan ponsel modern punya) dan World App yang sudah terpasang.',
+   'I’m eligible — Continue': 'Aku memenuhi syarat — Lanjutkan',
+   'Get the World App': 'Unduh World App',
+   'Need help with this step?': 'Butuh bantuan di langkah ini?',
+   'World ID is verified in person at an Orb — a physical device available only in certain countries — or with a passport scan in the World App. Pick the option that matches you.':
+      'World ID diverifikasi langsung di Orb — perangkat fisik yang hanya tersedia di negara tertentu — atau dengan memindai paspor di World App. Pilih opsi yang sesuai denganmu.',
+   'I’ve been verified at an Orb': 'Aku sudah diverifikasi di Orb',
+   'I’ll verify with my passport': 'Aku akan verifikasi dengan paspor',
+   'New to World ID?': 'Baru mengenal World ID?',
+   '1. Download the World App': '1. Unduh World App',
+   '2. Find an Orb near you': '2. Cari Orb di dekatmu',
+   'Countries with Orb locations': 'Negara dengan lokasi Orb',
+   'Availability changes —': 'Ketersediaan bisa berubah —',
+   'check the live map': 'cek peta terkini',
+   'for exact locations.': 'untuk lokasi pastinya.',
+   'Back to verification options': 'Kembali ke pilihan verifikasi',
+   'Verify Yourself': 'Verifikasi Diri',
+   'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
+      'Konfirmasi identitasmu untuk membuka akunmu — pengecekan satu kali yang butuh sekitar 3 menit.',
 };
