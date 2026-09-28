@@ -258,5 +258,33 @@ export const thaiCoverageE: Record<string, string> = {
 
    // src/views/help/helpTopics.ts
    'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
-      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้ประวัติการชำระคืนมีความต่อเนื่อง และ Credit-Building Loan เพื่อเพิ่มวงเงิน'
+      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้ประวัติการชำระคืนมีความต่อเนื่อง และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
+   // src/components/verification/VerifiedCelebrationNotifier.tsx
+   'Manual review complete — you’re verified!': 'ตรวจสอบโดยเจ้าหน้าที่เสร็จแล้ว คุณยืนยันตัวตนเรียบร้อย!',
+   'Your ID is verified!': 'ยืนยันบัตรประชาชนของคุณแล้ว!',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
+      'เยี่ยมมาก! เจ้าหน้าที่ของเรายืนยันเอกสารของคุณแล้ว ตอนนี้คุณใช้งานได้เต็มรูปแบบ เริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้ได้เลย',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
+      'เยี่ยมมาก! ยืนยันตัวตนของคุณแล้ว ตอนนี้คุณใช้งานได้เต็มรูปแบบ เริ่มสร้างความน่าเชื่อถือกับผู้ให้กู้ได้เลย',
+
+   // src/lib/web3/openfort/OpenfortContext.tsx
+   'The Instant Wallet is not available right now.': 'Instant Wallet ยังไม่พร้อมใช้งานในขณะนี้',
+   "Couldn't create your wallet": 'สร้างกระเป๋าเงินของคุณไม่สำเร็จ',
+
+   // src/views/repay/Repay.tsx
+   'GCash app → GCrypto → USDCBASE → Withdraw': 'แอป GCash → GCrypto → USDCBASE → Withdraw',
+
+   // src/views/profile/components/settings/NotificationSettings.tsx
+   'Get notified of activity going on with your account. Notifications will be sent to the email that you have provided.':
+      'รับการแจ้งเตือนเกี่ยวกับกิจกรรมในบัญชีของคุณ การแจ้งเตือนจะส่งไปยังอีเมลที่คุณให้ไว้',
+   'Get updated with our latest news, updates and blogs': 'รับข่าวสาร อัปเดต และบล็อกล่าสุดจากเรา',
+
+   // src/components/worldId/modal/HowItWorksSection.tsx
+   'Click "Verify with World ID"': 'กด "ยืนยันด้วย World ID"',
+   'Confirm & Complete': 'ยืนยันและเสร็จสิ้น',
+
+   // src/components/worldId/modal/VerificationModalHeader.tsx
+   'View information': 'ดูข้อมูล',
+   "Verify You're Human": 'ยืนยันว่าคุณเป็นมนุษย์',
+   "Prove you're a real person with World ID": 'พิสูจน์ว่าคุณเป็นบุคคลจริงด้วย World ID'
 };
