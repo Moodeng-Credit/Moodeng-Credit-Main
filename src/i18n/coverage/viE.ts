@@ -536,7 +536,6 @@ export const vietnameseCoverageE: Record<string, string> = {
    // src/views/withdraw/Withdraw.tsx
    '(est.)': '(ước tính)',
    'Connect your wallet to see your balance': 'Kết nối ví để xem số dư của bạn',
-   'Send only': 'Chỉ gửi',
    on: 'trên mạng',
    ". A different coin or network can't be recovered.": '. Gửi sai loại tiền hoặc sai mạng sẽ không thể khôi phục.',
    "Transfer didn't go through": 'Chuyển tiền không thành công',
@@ -584,7 +583,6 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Once your USDC arrives in PDAX (usually under 1 minute), sell it for pesos and withdraw to your bank, GCash, or Maya.':
       'Khi USDC đến PDAX (thường chưa tới 1 phút), hãy bán lấy peso và rút về ngân hàng, GCash hoặc Maya của bạn.',
    'Trade → Sell': 'Giao dịch → Bán',
-   Select: 'Chọn',
    'as the pair': 'làm cặp giao dịch',
    "PDAX shows you the PHP amount you'll receive at the current rate. Tap Sell to confirm.":
       'PDAX sẽ hiển thị số PHP bạn nhận được theo tỷ giá hiện tại. Nhấn Bán (Sell) để xác nhận.',
@@ -674,6 +672,9 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Moneybees will message you on your chosen chat app to confirm the rate and complete your':
       'Moneybees sẽ nhắn tin cho bạn qua ứng dụng chat bạn đã chọn để xác nhận tỷ giá và hoàn tất giao dịch rút',
    'USDC cash-out.': 'USDC ra tiền mặt.',
+   Ref: 'Mã tham chiếu',
+   'USDC is on its way to your exchange.': 'USDC đang được chuyển đến sàn giao dịch của bạn.',
+   'USDC to Binance': 'USDC đến Binance',
 
    // src/components/InAppBrowserNotice.tsx
    'this app': 'ứng dụng này',
@@ -843,6 +844,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'You cannot lend to your own loan request. Please lend to other users.':
       'Bạn không thể cho vay chính yêu cầu vay của mình. Hãy cho người dùng khác vay.',
    'View Other Loans': 'Xem các khoản vay khác',
+   Unauthorised: 'Không có quyền truy cập',
 
    // src/components/BasePaymentReconciler.tsx
    'Loan Funded': 'Khoản vay đã được cấp vốn',
@@ -1025,6 +1027,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Face ID, Touch ID, or a security key': 'Face ID, Touch ID hoặc khóa bảo mật',
    'Disable passkey': 'Tắt passkey',
    'Enable passkey': 'Bật passkey',
+   Remove: 'Gỡ',
 
    // src/shared/points.ts
    'Build a 2-loan on-time streak': 'Trả đúng hạn 2 khoản vay liên tiếp',
@@ -1198,6 +1201,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Read guide →': 'Đọc hướng dẫn →',
    'USDC is a regulated digital dollar pegged 1:1 to the US dollar. Learn why Moodeng Credit uses it — gasless wallet-to-wallet transfers, stable loan values, bank-grade security, and how USDC works in the real world and in DeFi.':
       'USDC là đô la kỹ thuật số được quản lý, neo 1:1 với đô la Mỹ. Tìm hiểu vì sao Moodeng Credit dùng USDC — chuyển tiền từ ví sang ví không tốn gas, giá trị khoản vay ổn định, bảo mật chuẩn ngân hàng, và cách USDC hoạt động trong thực tế lẫn trong DeFi.',
+   'Why Moodeng uses USDC': 'Vì sao Moodeng dùng USDC',
 
    // src/views/transactions/TransactionDetail.tsx
    'Not funded yet': 'Chưa được cấp vốn',
@@ -1227,6 +1231,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
       '). Điều này là bình thường — khoản trả nợ sẽ về ví đã dùng để cấp vốn cho từng khoản vay, không phải ví hiện tại của bạn. Mở',
    'to find these funds.': 'để tìm các khoản tiền này.',
+   Return: 'Hoàn lại',
 
    // src/views/lender/loanNote/useBuyLoanNote.ts
    'You cancelled the transaction in your wallet.': 'Bạn đã hủy giao dịch trong ví.',
@@ -1240,6 +1245,7 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Đã có lỗi xảy ra trước khi thanh toán. Bạn chưa bị trừ tiền — vui lòng thử lại.',
    'This loan does not have a sellable Loan Note.': 'Khoản vay này không có Loan Note để bán.',
    'Not enough USDC': 'Không đủ USDC',
+   Cancelled: 'Đã hủy',
 
    // src/store/slices/loanSlice.ts
    'Payment is not confirmed on-chain yet': 'Thanh toán chưa được xác nhận on-chain',
@@ -1331,6 +1337,7 @@ export const vietnameseCoverageE: Record<string, string> = {
 
    // src/views/transactions/TransactionHistory.tsx
    'Awaiting lender': 'Đang chờ người cho vay',
+   Returned: 'Đã hoàn lại',
 
    // src/views/profile/components/tabs/useDashboardData.ts
    'Verify World ID to start borrowing': 'Xác minh World ID để bắt đầu vay',
@@ -1353,11 +1360,13 @@ export const vietnameseCoverageE: Record<string, string> = {
    // src/views/repay/Repay.tsx
    'Pay now': 'Trả ngay',
    'Connect and pay': 'Kết nối và trả',
+   'Maximum repayment is $': 'Số tiền trả tối đa là $',
 
    // src/views/support/PublicGuidesIndex.tsx
    'Moodeng Academy — Guides': 'Moodeng Academy — Hướng dẫn',
    'Plain-language guides to borrowing on Moodeng Credit: Credit Levels, Pandesal points, USDC loans, repayments, verification, and account security.':
       'Hướng dẫn dễ hiểu về việc vay trên Moodeng Credit: Hạng tín dụng, điểm Pandesal, khoản vay USDC, trả nợ, xác minh và bảo mật tài khoản.',
+   Guides: 'Hướng dẫn',
 
    // src/views/support/PublicGuide.tsx
    'By the Moodeng Team · Updated': 'Bởi đội ngũ Moodeng · Cập nhật',
@@ -1377,15 +1386,9 @@ export const vietnameseCoverageE: Record<string, string> = {
    // src/views/help/HelpTopicCard.tsx
    'Help hub': 'Trung tâm trợ giúp',
 
-   // src/views/onboarding/WalletConnectHelp.tsx
-   'Seeing a “connection is not private” warning?': 'Thấy cảnh báo “kết nối không riêng tư”?',
-
    // src/views/dashboard/components/LocationPrimingModal.tsx
    "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
       'Chúng tôi kiểm tra vị trí của bạn để giữ an toàn cho việc cho vay và phát hiện gian lận. Thông tin này chỉ dùng để xác minh yêu cầu của bạn — không bao giờ được chia sẻ với người cho vay.',
-
-   // src/views/dashboard/components/UserGreeting.tsx
-   'Verify Yourself >': 'Xác minh danh tính >',
 
    // src/components/BorrowerVerificationBadge.tsx
    'In review': 'Đang xem xét',
@@ -1461,5 +1464,18 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Chúng tôi không tìm thấy ảnh đối chiếu trong hồ sơ. Vui lòng liên hệ bộ phận hỗ trợ để hoàn tất giao dịch rút tiền này.',
    'Quick check before you cash out': 'Kiểm tra nhanh trước khi rút tiền',
    "Since this is your first cash-out, we need a quick face check to confirm it's really you. It takes about ten seconds.":
-      'Vì đây là lần rút tiền đầu tiên của bạn, chúng tôi cần kiểm tra khuôn mặt nhanh để xác nhận đúng là bạn. Chỉ mất khoảng mười giây.'
+      'Vì đây là lần rút tiền đầu tiên của bạn, chúng tôi cần kiểm tra khuôn mặt nhanh để xác nhận đúng là bạn. Chỉ mất khoảng mười giây.',
+
+   // src/config/avatarBackgrounds.ts
+   Purple: 'Tím',
+   Mint: 'Xanh bạc hà',
+   Sky: 'Xanh da trời',
+   Peach: 'Hồng đào',
+   Rose: 'Hồng',
+   Lemon: 'Vàng chanh',
+   Stone: 'Xám đá',
+   Night: 'Đêm',
+
+   // src/views/support/Updates.tsx
+   Updates: 'Cập nhật'
 };
