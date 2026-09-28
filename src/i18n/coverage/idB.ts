@@ -1024,5 +1024,230 @@ export const indonesianCoverageB: Record<string, string> = {
    'Back to funding options': 'Kembali ke pilihan pendanaan',
    'Payment confirmed': 'Pembayaran dikonfirmasi',
    'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
-      'USDC-mu sedang dalam perjalanan ke dompetmu di Base. Biasanya sampai dalam waktu sekitar satu menit.'
+      'USDC-mu sedang dalam perjalanan ke dompetmu di Base. Biasanya sampai dalam waktu sekitar satu menit.',
+
+   // src/views/help/HelpHub.tsx
+   'How can we help?': 'Ada yang bisa kami bantu?',
+   'Search below, or browse the topics. A real person is one tap away on every answer.':
+      'Cari di bawah, atau telusuri topiknya. Orang sungguhan hanya satu ketukan jauhnya dari setiap jawaban.',
+   'Search help — wallet, cash out, verify…': 'Cari bantuan — dompet, cairkan dana, verifikasi…',
+   'Message the Moodeng team': 'Kirim pesan ke tim Moodeng',
+   'Payouts, verification, wallets, repayments — anything. We answer here and by email, so you will not miss the reply.':
+      'Pencairan, verifikasi, dompet, pembayaran kembali — apa saja. Kami menjawab di sini dan lewat email, jadi kamu tidak akan melewatkan balasannya.',
+   'Start a conversation': 'Mulai percakapan',
+   'We usually reply within a few hours.': 'Kami biasanya membalas dalam beberapa jam.',
+   Results: 'Hasil',
+   'No answers matched — try different words, or reach us below.':
+      'Tidak ada jawaban yang cocok — coba kata lain, atau hubungi kami di bawah.',
+   'Clear search': 'Hapus pencarian',
+   'Still need help?': 'Masih butuh bantuan?',
+   'Reach the Moodeng team directly — pick whichever is easiest.':
+      'Hubungi tim Moodeng langsung — pilih cara yang paling mudah untukmu.',
+   Email: 'Email',
+   'New to Moodeng? Getting started →': 'Baru di Moodeng? Panduan memulai →',
+   'Browse all guides & updates →': 'Lihat semua panduan & update →',
+
+   // src/views/help/HelpTopicCard.tsx
+   'Still not clear?': 'Masih belum jelas?',
+   "Take this question to a person — we'll get back to you.":
+      'Sampaikan pertanyaan ini ke orang sungguhan — kami akan menghubungimu kembali.',
+   'Ask us': 'Tanya kami',
+   'Question copied — just paste it.': 'Pertanyaan sudah tersalin — tinggal tempel saja.',
+
+   // src/views/help/helpTopics.ts
+   'What Moodeng is and how your first loan works': 'Apa itu Moodeng dan cara kerja pinjaman pertamamu',
+   'Verify your ID': 'Verifikasi ID kamu',
+   'The quick check that unlocks borrowing': 'Pengecekan cepat yang membuka akses pinjaman',
+   'Wallet: Instant or Base': 'Dompet: Instant atau Base',
+   'Set up, connect, and fix wallet problems': 'Atur, hubungkan, dan atasi masalah dompet',
+   'Adding & repaying USDC': 'Menambah & membayar kembali USDC',
+   'Fund your wallet and repay your loan': 'Isi dompetmu dan bayar kembali pinjamanmu',
+   'Cashing out': 'Mencairkan dana',
+   'Turn USDC into pesos in your bank': 'Ubah USDC menjadi peso di rekening bankmu',
+   'Credit & Pandesal points': 'Kredit & poin Pandesal',
+   'Grow your limit and your reputation': 'Naikkan limit dan reputasimu',
+   'Writing a loan request': 'Menulis permintaan pinjaman',
+   'Get your request approved and funded': 'Buat permintaanmu disetujui dan didanai',
+   'Safety & your account': 'Keamanan & akunmu',
+   'Staying safe, and what happens if a loan is unpaid': 'Tetap aman, dan apa yang terjadi jika pinjaman tidak dibayar',
+   'What is Moodeng Credit?': 'Apa itu Moodeng Credit?',
+   'Small USDC loans that build your credit': 'Pinjaman USDC kecil yang membangun kreditmu',
+   'What is Moodeng Credit and how does it work?': 'Apa itu Moodeng Credit dan bagaimana cara kerjanya?',
+   'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.':
+      'Dengan Moodeng Credit, kamu bisa mengajukan pinjaman jangka pendek dalam USDC sambil mengumpulkan poin Pandesal yang terhubung ke dompetmu. Kamu memposting permintaan, seorang pemberi pinjaman mendanainya langsung ke dompetmu, dan kamu membayar kembali pada atau sebelum tanggal yang kamu tentukan. Setiap pembayaran kembali tepat waktu menghasilkan poin Pandesal, dan membayar kembali pinjaman sebesar limit penuhmu tepat waktu membuka limit kredit yang lebih tinggi — jadi kamu mulai dari kecil dan tumbuh seiring kamu membuktikan bisa diandalkan. Reputasimu terhubung ke dompetmu, sehingga ia ikut ke mana pun kamu pergi, bukan terkunci di dalam satu aplikasi saja.',
+   'Request your first loan': 'Ajukan pinjaman pertamamu',
+   'Account → wallet → verify → request': 'Akun → dompet → verifikasi → permintaan',
+   'How do I request my first loan?': 'Bagaimana cara mengajukan pinjaman pertamaku?',
+   'Create your account with a username, email, and password.': 'Buat akunmu dengan username, email, dan kata sandi.',
+   'Signing up and verifying are two separate steps. You cannot post a request until "Verify Your ID" is done.':
+      'Mendaftar dan verifikasi adalah dua langkah yang terpisah. Kamu tidak bisa memposting permintaan sampai "Verifikasi ID Kamu" selesai.',
+   'Full walkthrough': 'Panduan lengkap',
+   'Does Moodeng charge fees?': 'Apakah Moodeng mengenakan biaya?',
+   'No platform fees, no gas on Base': 'Tanpa biaya platform, tanpa biaya gas di Base',
+   'Does Moodeng charge any fees?': 'Apakah Moodeng mengenakan biaya apa pun?',
+   'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.':
+      'Tidak. Moodeng gratis digunakan — tanpa biaya platform untuk meminjam atau memberi pinjaman, tanpa biaya langganan, tanpa biaya pengaturan. 100% dana yang didanai pemberi pinjaman sampai ke kamu, dan 100% pembayaran kembalimu sampai ke pemberi pinjaman. Biaya jaringan (gas) juga nol saat kamu memakai Instant Wallet atau Base Account di Base. Satu-satunya biaya adalah suku bunga yang ditawarkan peminjam, dan itu sepenuhnya menjadi milik pemberi pinjaman, bukan kami.',
+   'Can I get a small loan?': 'Bisakah aku mendapatkan pinjaman kecil?',
+   'Yes — this is built for small loans': 'Bisa — ini memang dibuat untuk pinjaman kecil',
+   'Can I get a small loan with Moodeng?': 'Bisakah aku mendapatkan pinjaman kecil dengan Moodeng?',
+   'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.':
+      'Bisa — pinjaman kecil justru inti dari Moodeng. Peminjam baru mulai dengan limit $15, tanpa jumlah minimum, tanpa langganan, dan tanpa biaya. Kamu mengajukan sesuai kebutuhanmu hingga limit saat ini, menentukan tanggal dan suku bunga, dan pemberi pinjaman memutuskan apakah akan mendanaimu. Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menaikkan limitmu satu tingkat, dari $15 hingga maksimum $140, jadi kamu bisa mulai dari kecil dan tumbuh ke pinjaman yang lebih besar hanya saat kamu sudah siap.',
+   'The quick 3-minute check': 'Pengecekan cepat 3 menit',
+   'In the app, tap "Verify Yourself".': 'Di dalam aplikasi, ketuk "Verifikasi Diri".',
+   'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.':
+      'ID kamu diperiksa oleh mitra verifikasi kami yang aman dan tidak pernah disimpan oleh Moodeng. Jika macet, coba lagi di Chrome atau Safari — bukan browser di dalam Facebook atau Messenger — dengan foto yang jelas dan pencahayaan yang cukup.',
+   'Verification & Security': 'Verifikasi & Keamanan',
+   "I signed up but I'm not verified": 'Aku sudah mendaftar tapi belum terverifikasi',
+   'Sign-up and verify are separate': 'Mendaftar dan verifikasi itu terpisah',
+   "I signed up but I'm still not verified — what do I do?":
+      'Aku sudah mendaftar tapi masih belum terverifikasi — apa yang harus kulakukan?',
+   'Signing up alone is not enough — verifying is the last step before you can send a request.':
+      'Mendaftar saja belum cukup — verifikasi adalah langkah terakhir sebelum kamu bisa mengirim permintaan.',
+   'The Instant Wallet': 'Instant Wallet',
+   'Your default wallet — no app, no seed phrase': 'Dompet bawaanmu — tanpa aplikasi, tanpa seed phrase',
+   'What is the Instant Wallet and is it safe?': 'Apa itu Instant Wallet dan apakah aman?',
+   "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":
+      'Instant Wallet adalah dompet bawaan Moodeng untuk peminjam: dompet self-custodial sungguhan yang disiapkan untukmu langsung dari login Moodeng-mu — tanpa aplikasi yang perlu diunduh dan tanpa seed phrase yang perlu dicatat. Peminjam menerima pinjaman USDC di dalamnya. (Pemberi pinjaman: kami menyarankan Base Account, tapi kamu juga bisa memakai Instant Wallet.) Dompet ini menghasilkan poin Pandesal sama seperti dompet lain, tetap berfungsi bahkan saat sign-in Base Account terblokir (seperti blokir PLDT / Smart), dan bebas biaya gas — Moodeng menanggung biaya jaringannya, jadi kamu tidak perlu ETH untuk membayar kembali atau mencairkan dana. Lebih suka Base Account? Kamu bisa menghubungkannya sebagai gantinya.',
+   'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.':
+      'Dompet ini sepenuhnya milikmu. Kamu bisa mengekspor private key-nya kapan saja dari Akun → Pengaturan Akun → Dompet → "Ekspor kunci dompet" dan mengimpornya ke MetaMask, Trust, atau dompet apa pun — setelah itu kamu bebas meninggalkan Moodeng sepenuhnya.',
+   'Coinbase app vs Base Account': 'Aplikasi Coinbase vs Base Account',
+   'No Coinbase app needed — Base Account is optional': 'Tidak perlu aplikasi Coinbase — Base Account bersifat opsional',
+   'Do I need the Coinbase app or a Base Account?': 'Apakah aku perlu aplikasi Coinbase atau Base Account?',
+   "You don't need either to get started — Moodeng sets up your Instant Wallet from your login. If you'd rather use a Base Account, create it at account.base.app.":
+      'Kamu tidak perlu keduanya untuk memulai — Moodeng menyiapkan Instant Wallet-mu langsung dari login-mu. Jika kamu lebih suka memakai Base Account, buat di account.base.app.',
+   'Because it is seedless, there is no 12-word recovery phrase to lose — and Moodeng will never ask you for a seed or recovery phrase. Nobody legitimate ever will.':
+      'Karena tanpa seed (seedless), tidak ada recovery phrase 12 kata yang bisa hilang — dan Moodeng tidak akan pernah meminta seed phrase atau recovery phrase-mu. Tidak ada pihak resmi yang akan pernah memintanya.',
+   'Using USDC on Moodeng': 'Memakai USDC di Moodeng',
+   "Can't create a Base Account": 'Tidak bisa membuat Base Account',
+   "The page won't load fix": 'Cara mengatasi halaman yang tidak mau memuat',
+   "The Base Account page won't load — how do I create one?":
+      'Halaman Base Account tidak mau memuat — bagaimana cara membuatnya?',
+   'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.':
+      'Ganti dari Wi-Fi ke data seluler (atau sebaliknya). Beberapa jaringan Wi-Fi memblokir proses sign-in — cara ini ternyata cukup sering berhasil.',
+   "Base won't load (PLDT / Smart)": 'Base tidak mau memuat (PLDT / Smart)',
+   'Network blocking — three fixes': 'Jaringan yang memblokir — tiga cara mengatasinya',
+   "Base won't load on my network and my wallet won't connect — what do I do?":
+      'Base tidak mau memuat di jaringanku dan dompetku tidak mau terhubung — apa yang harus kulakukan?',
+   'Some Philippine networks (notably PLDT and Smart) block the sign-in service Base uses. When that happens, account.base.app won\'t load or connecting your wallet dead-ends — sometimes with a "your connection is not private" or security warning — even though the rest of the internet works. This is the network, not your phone or account.':
+      'Beberapa jaringan di Filipina (terutama PLDT dan Smart) memblokir layanan sign-in yang dipakai Base. Saat itu terjadi, account.base.app tidak mau memuat atau proses menghubungkan dompetmu terhenti — kadang disertai peringatan "koneksi Anda tidak pribadi" atau peringatan keamanan lainnya — meski bagian internet lainnya berjalan normal. Ini masalah jaringan, bukan ponsel atau akunmu.',
+   'Easiest — use your Instant Wallet instead. Tap "Create Instant Wallet" on the wallet screen. No app, no seed phrase, and network fees are covered for you.':
+      'Cara termudah — pakai Instant Wallet saja. Ketuk "Buat Instant Wallet" di layar dompet. Tanpa aplikasi, tanpa seed phrase, dan biaya jaringan sudah ditanggung untukmu.',
+   'A VPN only changes how your connection is routed — it never touches your funds. Use only a well-known VPN or the official 1.1.1.1 app, and remember Moodeng will never ask for your seed or recovery phrase.':
+      'VPN hanya mengubah cara koneksimu dialihkan — VPN tidak pernah menyentuh dananya. Pakai hanya VPN yang sudah dikenal luas atau aplikasi resmi 1.1.1.1, dan ingat Moodeng tidak akan pernah meminta seed phrase atau recovery phrase-mu.',
+   'Open in a real browser': 'Buka di browser sungguhan',
+   'Fix sign-in inside Facebook / Messenger': 'Mengatasi sign-in di dalam Facebook / Messenger',
+   "Sign-in / my wallet won't work when I opened Moodeng from Facebook — what do I do?":
+      'Sign-in / dompetku tidak berfungsi saat aku membuka Moodeng dari Facebook — apa yang harus kulakukan?',
+   "If you opened Moodeng by tapping a link inside Facebook, Messenger, Instagram, or LINE, you're in that app's built-in mini-browser. Sign-in and wallet pop-ups often fail silently there — nothing happens, or you see a 403 error.":
+      'Jika kamu membuka Moodeng dengan mengetuk tautan di dalam Facebook, Messenger, Instagram, atau LINE, kamu sedang berada di mini-browser bawaan aplikasi tersebut. Sign-in dan pop-up dompet sering gagal secara diam-diam di sana — tidak terjadi apa-apa, atau muncul error 403.',
+   'Tap the three dots (⋯) in the corner and choose "Open in Chrome" / "Open in Safari" / "Open in external browser".':
+      'Ketuk tiga titik (⋯) di pojok dan pilih "Buka di Chrome" / "Buka di Safari" / "Buka di browser eksternal".',
+   "Wallet won't connect": 'Dompet tidak mau terhubung',
+   'The reset that works': 'Reset yang benar-benar berhasil',
+   "My wallet won't connect to Moodeng — what do I do?": 'Dompetku tidak mau terhubung ke Moodeng — apa yang harus kulakukan?',
+   'Close every tab where Moodeng is open.': 'Tutup semua tab yang membuka Moodeng.',
+   'On PLDT and Smart the sign-in is sometimes blocked by the network itself. If the page won\'t load or shows a security warning, use your Instant Wallet or see "Base won\'t load (PLDT / Smart)".':
+      'Di PLDT dan Smart, sign-in kadang diblokir oleh jaringannya sendiri. Jika halamannya tidak mau memuat atau muncul peringatan keamanan, pakai Instant Wallet kamu atau lihat "Base tidak mau memuat (PLDT / Smart)".',
+   '"Try again" keeps popping up': '"Coba lagi" terus muncul',
+   'When you have to tap twice': 'Saat kamu harus mengetuk dua kali',
+   '"Try again" keeps popping up / I have to tap twice — how do I fix it?':
+      '"Coba lagi" terus muncul / aku harus mengetuk dua kali — bagaimana cara mengatasinya?',
+   "Tap the connect / approve button directly — don't wait for it to happen automatically.":
+      'Ketuk langsung tombol hubungkan / setujui — jangan menunggu prosesnya terjadi otomatis.',
+   'How to repay your loan': 'Cara membayar kembali pinjamanmu',
+   'Send USDC on Base to the Repay address': 'Kirim USDC di Base ke alamat pembayaran',
+   'How do I repay my loan?': 'Bagaimana cara membayar kembali pinjamanku?',
+   'Open the Repay screen — it shows the exact amount and lets you copy the repayment address.':
+      'Buka layar Bayar — di sana ditampilkan jumlah persisnya dan kamu bisa menyalin alamat pembayarannya.',
+   'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level.':
+      'Selalu pilih Base sebagai jaringannya — jaringan yang salah bisa membuat dananya hilang. Membayar kembali sebelum jatuh tempo menghasilkan poin Pandesal, dan membayar kembali pinjaman sebesar limit penuh tepat waktu membuka Level Kredit berikutnya.',
+   'Ways to repay your loan': 'Cara-cara membayar kembali pinjamanmu',
+   'Add USDC to your wallet': 'Tambah USDC ke dompetmu',
+   'Buy on an exchange, send on Base': 'Beli di exchange, kirim di Base',
+   'Sending on the wrong network can result in lost funds — always choose Base.':
+      'Mengirim di jaringan yang salah bisa membuat dananya hilang — selalu pilih Base.',
+   'Ways to add USDC': 'Cara menambah USDC',
+   'Paying in parts': 'Membayar sebagian',
+   'Some now, some later': 'Sebagian sekarang, sebagian nanti',
+   'Can I pay my loan in parts?': 'Bisakah aku membayar pinjamanku secara bertahap?',
+   'Yes. The Repay screen has 25% / 50% / 75% / Full buttons or a custom amount, and the loan stays active until it is fully paid. Partial on-time payments still earn Pandesal points — about 7 points for 75% paid, 5 for 50%, 3 for 25% — while a full on-time payment earns the most (10). If part of the payment lands after the due date, that late part earns 0 points, but the amount you owe never grows: no late fees, no rollover. Paying as much as you can before the due date is always better than nothing.':
+      'Bisa. Layar Bayar punya tombol 25% / 50% / 75% / Lunas atau jumlah khusus, dan pinjamannya tetap aktif sampai dibayar lunas. Pembayaran sebagian yang tepat waktu tetap menghasilkan poin Pandesal — sekitar 7 poin untuk 75% terbayar, 5 untuk 50%, 3 untuk 25% — sementara pembayaran lunas tepat waktu menghasilkan yang paling banyak (10). Jika sebagian pembayaran masuk setelah jatuh tempo, bagian yang terlambat itu menghasilkan 0 poin, tetapi jumlah yang kamu utang tidak akan pernah bertambah: tanpa biaya keterlambatan, tanpa rollover. Membayar semampunya sebelum jatuh tempo selalu lebih baik daripada tidak membayar sama sekali.',
+   'More than one loan at a time': 'Lebih dari satu pinjaman sekaligus',
+   'Yes, within your available limit': 'Bisa, selama masih dalam limit yang tersedia',
+   'Can I have more than one loan at a time?': 'Bisakah aku punya lebih dari satu pinjaman sekaligus?',
+   'Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level\'s limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you\'ve reached your maximum, repay one first.':
+      'Bisa — kamu bisa punya lebih dari satu pinjaman aktif sekaligus, selama jumlah barunya masih muat dalam limit kredit yang tersedia. Limit yang tersedia adalah limit level kamu saat ini (mulai dari $15 hingga $140) dikurangi apa yang sudah kamu utang di pinjaman aktif. Jika pinjaman aktifmu sudah memakai seluruh limitmu, bayar kembali sebagian atau semuanya sebelum mengajukan lagi. Beberapa akun juga mungkin punya batas berapa banyak pinjaman yang bisa aktif sekaligus — jika aplikasi bilang kamu sudah mencapai batas maksimum, bayar kembali salah satunya dulu.',
+   'Cash out to GCash or a bank': 'Cairkan dana ke GCash atau rekening bank',
+   'USDC → pesos, step by step': 'USDC → peso, langkah demi langkah',
+   'How do I cash out to GCash or my bank?': 'Bagaimana cara mencairkan dana ke GCash atau rekening bankku?',
+   "Choosing the wrong network can lose the funds — this is the single most important detail. Moodeng charges $0 to cash out; the only cost is the exchange's own fee.":
+      'Memilih jaringan yang salah bisa membuat dananya hilang — ini detail paling penting. Moodeng tidak mengenakan biaya untuk mencairkan dana; satu-satunya biaya adalah biaya dari exchange itu sendiri.',
+   'Withdrawing to a bank account': 'Menarik dana ke rekening bank',
+   'How much does cashing out cost?': 'Berapa biaya untuk mencairkan dana?',
+   'Moodeng charges $0; exchanges have a small fee': 'Moodeng tidak mengenakan biaya; exchange mengenakan biaya kecil',
+   'How much does it cost to cash out?': 'Berapa biaya untuk mencairkan dana?',
+   'Your repayment reputation': 'Reputasi pembayaran kembalimu',
+   'What are Pandesal points and how are they calculated?': 'Apa itu poin Pandesal dan bagaimana cara menghitungnya?',
+   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
+      'Poin Pandesal-mu mencerminkan seberapa bisa diandalkan kamu dalam membayar kembali pinjaman. Poin ini naik saat kamu membayar kembali tepat waktu dan lunas, dan turun saat pembayaran terlambat atau gagal bayar. Pemberi pinjaman memakainya untuk menilai risiko saat memutuskan apakah akan mendanai permintaanmu. Karena terhubung ke dompetmu, poin ini ikut ke mana pun kamu pergi — tidak terkunci di dalam satu aplikasi saja.',
+   'What is a Credit Level?': 'Apa itu Level Kredit?',
+   '$15 up to $140, step by step': '$15 hingga $140, langkah demi langkah',
+   'What is a Credit Level and how do I move up?': 'Apa itu Level Kredit dan bagaimana cara naik level?',
+   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.':
+      'Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu. Semua orang mulai di Level 1 dengan limit $15. Kamu naik level dengan menyelesaikan Credit-Building Loan — pinjaman sebesar limit penuhmu saat ini, dibayar lunas dan tepat waktu. Setiap pinjaman seperti ini menaikkan limitmu di tangga berikut: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang merupakan maksimum saat ini.',
+   'Grow my credit limit': 'Naikkan limit kreditku',
+   'From $15 upward': 'Mulai dari $15 ke atas',
+   'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.':
+      'Bayar kembali tepat waktu. Pembayaran kembali tepat waktu menghasilkan poin Pandesal, dan membayar kembali pinjaman sebesar limit penuh tepat waktu menaikkanmu satu level.',
+   'Credit-Building vs Trust-Building loans': 'Credit-Building Loan vs Trust-Building Loan',
+   'Which one raises your limit': 'Mana yang menaikkan limitmu',
+   "What's the difference between Credit-Building and Trust-Building loans?":
+      'Apa bedanya Credit-Building Loan dan Trust-Building Loan?',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
+      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman sebesar limit penuhmu saat ini — membayar kembali tepat waktu menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman lebih kecil di bawah limitmu; pinjaman ini tetap membangun riwayat pembayaran dan reputasimu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit-mu. Kebanyakan peminjam memakai keduanya — Trust-Building Loan untuk menjaga aktivitas tetap sehat, Credit-Building Loan untuk menaikkan limit.',
+   'How repayments affect your points': 'Bagaimana pembayaran kembali memengaruhi poinmu',
+   'On-time full = the most points': 'Lunas tepat waktu = poin paling banyak',
+   'How do repayments affect my Pandesal points?': 'Bagaimana pembayaran kembali memengaruhi poin Pandesal-ku?',
+   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.':
+      'Setiap pembayaran kembali memengaruhi poin Pandesal-mu, dan pinjaman kecil yang dibayar dengan rapi lebih berharga daripada pinjaman besar yang dibayar sembarangan. Pembayaran lunas tepat waktu menghasilkan poin maksimum, 10. Pembayaran sebagian menghasilkan poin secara proporsional — 75% = 7, 50% = 5, 25% = 3. Pembayaran apa pun setelah tenggat menghasilkan 0 poin untuk transaksi itu. Gagal bayar meninggalkan tanda permanen di profil publikmu, yang terlihat oleh semua calon pemberi pinjaman di masa depan.',
+   'Where do I put a referral code?': 'Di mana aku memasukkan kode referal?',
+   '+$5 to your starting limit': '+$5 untuk limit awalmu',
+   'Where do I enter a referral code?': 'Di mana aku memasukkan kode referal?',
+   'From the Request Board, tap to apply for a loan.': 'Dari Papan Permintaan, ketuk untuk mengajukan pinjaman.',
+   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
+      'Kode referal yang valid menambah $5 ke limit kredit awalmu — jadi peminjam baru yang biasanya mulai di $15 akan mulai di $20.',
+   'It says "write it in English"': 'Ada tulisan "tulis dalam bahasa Inggris"',
+   'Why, and how to fix it': 'Kenapa, dan cara memperbaikinya',
+   'My loan reason says to write it in English — what should I do?':
+      'Alasan pinjamanku diminta ditulis dalam bahasa Inggris — apa yang harus kulakukan?',
+   'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
+      'Pemberi pinjaman di Moodeng berada di AS dan Eropa, jadi alasan pinjaman harus ditulis dalam bahasa Inggris — permintaan yang tidak bisa mereka baca tidak akan didanai. Tagalog, Taglish, dan Bisaya biasanya jadi penyebabnya; formulir akan berhenti di sana sampai ditulis ulang. Kata pinjaman di dalam kalimat bahasa Inggris tidak masalah ("buying gamot for my mother") — yang menghentikan formulir adalah kalimat penuh dalam bahasa lain. Hal yang sama berlaku untuk "Describe your situation" di langkah bio, meskipun nama pekerjaan itu sendiri boleh tetap lokal ("sari-sari store owner", "jeepney driver").',
+   'My reason is "too vague"': 'Alasanku dibilang "terlalu tidak jelas"',
+   "It's a nudge, not a block": 'Ini cuma pengingat, bukan penghalang',
+   "My reason is in English but it still says it's too vague — what do I do?":
+      'Alasanku sudah dalam bahasa Inggris tapi masih dibilang terlalu tidak jelas — apa yang harus kulakukan?',
+   'That\'s a different check — the reason names nothing specific ("for personal use", "for my needs"). It\'s a nudge, not a block: the field tells you what to add, and tapping "Make Your Request" a second time posts it anyway. Better to say what the money is actually for and when you get paid — specific reasons get funded more.':
+      'Itu pengecekan yang berbeda — alasannya tidak menyebutkan hal spesifik ("untuk keperluan pribadi", "untuk kebutuhanku"). Ini cuma pengingat, bukan penghalang: kolomnya memberitahumu apa yang perlu ditambahkan, dan mengetuk "Kirim permintaanmu" untuk kedua kalinya tetap akan memposting permintaanmu. Lebih baik sebutkan untuk apa sebenarnya uang itu dan kapan kamu dapat penghasilan — alasan yang spesifik lebih mudah didanai.',
+   '"Make Your Request" does nothing': '"Kirim permintaanmu" tidak melakukan apa-apa',
+   "You're not verified yet": 'Kamu belum terverifikasi',
+   '"Make Your Request" does nothing when I tap it — why?':
+      '"Kirim permintaanmu" tidak melakukan apa-apa saat aku mengetuknya — kenapa?',
+   'You aren\'t verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.':
+      'Kamu belum terverifikasi. Mengetuk tombol yang berwarna abu-abu akan membuatnya bergetar dan menyorot catatan di atasnya yang disertai tombol Verifikasi Diri. Verifikasi adalah langkah terakhir sebelum permintaan bisa dikirim — selesaikan Verifikasi ID Kamu dan tombolnya akan aktif.',
+   'What happens if a loan is unpaid?': 'Apa yang terjadi jika pinjaman tidak dibayar?',
+   'Default: a permanent public mark': 'Gagal bayar: tanda publik yang permanen',
+   'What happens if I default on a loan?': 'Apa yang terjadi jika aku gagal bayar pinjaman?',
+   'If a loan isn\'t repaid it can go into default. A default is a permanent public mark on your record, and your account is frozen from new borrowing until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a Repay Now option at sign-in. The amount owed still never grows (no late fees, no rollover), and Moodeng never contacts family, friends, or coworkers. If your account is frozen and you think it\'s a mistake, message the team.':
+      'Jika pinjaman tidak dibayar, itu bisa berujung gagal bayar. Gagal bayar adalah tanda permanen di catatanmu, dan akunmu dibekukan dari pinjaman baru sampai masalahnya selesai — peminjam yang gagal bayar atau terlambat akan diarahkan ke layar dukungan akun dengan opsi Bayar Sekarang saat sign-in. Jumlah yang kamu utang tidak akan pernah bertambah (tanpa biaya keterlambatan, tanpa rollover), dan Moodeng tidak pernah menghubungi keluarga, teman, atau rekan kerjamu. Jika akunmu dibekukan dan kamu merasa itu kesalahan, kirim pesan ke tim kami.',
+   'Staying safe on Moodeng': 'Tetap aman di Moodeng',
+   'The rules that are always true': 'Aturan yang selalu berlaku',
+   'How do I stay safe and avoid scams?': 'Bagaimana cara tetap aman dan menghindari penipuan?',
+   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
+      'Beberapa hal ini selalu berlaku. Moodeng tidak pernah memegang atau memindahkan uangmu — pinjaman berpindah langsung dari dompet ke dompet antara pemberi pinjaman dan peminjam. Selalu kirim USDC di jaringan Base; jaringan yang salah berarti dananya hilang. Instant Wallet dan Base Account sama-sama tanpa seed, jadi Moodeng tidak akan pernah meminta "seed phrase" atau "recovery phrase" — dan tidak ada pihak resmi yang akan pernah memintanya. Kalau kamu ragu, selalu aman untuk menunggu dan bertanya dulu daripada menebak-nebak, apalagi sebelum mengirim dana.',
+   'Manage your account': 'Kelola akunmu',
+   'Name, email, password, sign out': 'Nama, email, kata sandi, keluar akun',
+   'How do I manage my account and security settings?': 'Bagaimana cara mengelola akun dan pengaturan keamananku?',
+   'Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that\'s also where you export your wallet key (Account → Account Settings → Wallet).':
+      'Akunmu terhubung ke dompetmu, jadi keamanan dompet adalah keamanan akun. Dari layar Akun kamu bisa memperbarui nama tampilan, mengelola email, mengganti kata sandi, dan keluar akun. Jika kamu memakai Instant Wallet, di sanalah juga tempat kamu mengekspor kunci dompetmu (Akun → Pengaturan Akun → Dompet).',
+   'Managing your account': 'Mengelola akunmu'
 };
