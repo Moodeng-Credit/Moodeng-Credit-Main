@@ -1192,7 +1192,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/views/dashboard/components/ContactsStep.tsx
    'Get due-date reminders on your phone': 'Nhận nhắc nhở ngày đến hạn trên điện thoại của bạn',
    'On iPhone: tap': 'Trên iPhone: bấm',
-   'Add to Home Screen': 'Add to Home Screen',
+   'Add to Home Screen': 'Thêm vào Màn hình chính',
    'Turn on reminders to continue.': 'Bật nhắc nhở để tiếp tục.',
    'Only Moodeng sees this — never lenders.': 'Chỉ Moodeng thấy điều này — không bao giờ người cho vay thấy.',
    'How can we reach you?': 'Chúng tôi có thể liên hệ với bạn qua đâu?',

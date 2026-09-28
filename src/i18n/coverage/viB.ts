@@ -832,7 +832,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Easiest — use your Instant Wallet instead. Tap "Create Instant Wallet" on the wallet screen. No app, no seed phrase, and network fees are covered for you.':
       'Cách dễ nhất — hãy dùng Instant Wallet thay thế. Nhấn "Tạo Instant Wallet" trên màn hình ví. Không cần ứng dụng, không cần seed phrase, và phí mạng đã được lo sẵn cho bạn.',
    'A VPN only changes how your connection is routed — it never touches your funds. Use only a well-known VPN or the official 1.1.1.1 app, and remember Moodeng will never ask for your seed or recovery phrase.':
-      'VPN chỉ thay đổi cách kết nối của bạn được định tuyến — nó không bao giờ chạm vào tiền của bạn. Chỉ nên dùng VPN uy tín hoặc ứng dụng 1.1.1.1 chính thức, và hãy nhớ Moodeng sẽ không bao giờ hỏi bạn seed phrase hay cụm từ khôi phục.',
+      'VPN chỉ thay đổi cách kết nối của bạn được định tuyến — nó không bao giờ có quyền truy cập vào tiền của bạn. Chỉ nên dùng VPN uy tín hoặc ứng dụng 1.1.1.1 chính thức, và hãy nhớ Moodeng sẽ không bao giờ hỏi bạn seed phrase hay cụm từ khôi phục.',
    'Open in a real browser': 'Mở bằng trình duyệt thật',
    'Fix sign-in inside Facebook / Messenger': 'Khắc phục lỗi đăng nhập trong Facebook / Messenger',
    "Sign-in / my wallet won't work when I opened Moodeng from Facebook — what do I do?":
