@@ -81,6 +81,11 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Buy USDC and send it to your wallet on Base.': 'Mua USDC và gửi vào ví của bạn trên mạng Base.',
    'Cash out USDC to your bank or e-wallet.': 'Rút USDC về ngân hàng hoặc ví điện tử của bạn.',
    'Repay on time to earn Pandesal points.': 'Trả nợ đúng hạn để nhận điểm Pandesal.',
+   'Why Moodeng asks borrowers to verify their identity once, what the ID and selfie check involves, which countries are supported, and how long it takes.':
+      'Vì sao Moodeng yêu cầu người vay xác minh danh tính một lần, bước kiểm tra giấy tờ và selfie gồm những gì, những quốc gia nào được hỗ trợ và mất bao lâu.',
+   'National ID verification is currently supported for': 'Hiện hỗ trợ xác minh bằng thẻ căn cước cho',
+   'Verification lives inside the app under “Verify Yourself”. It takes about 3 minutes and you only do it once.':
+      'Bạn xác minh ngay trong ứng dụng, tại mục “Xác minh danh tính”. Chỉ mất khoảng 3 phút và bạn chỉ cần làm một lần.',
 
    // src/views/academy/moneyGuideTopics.tsx
    'Buy USDC with PHP, then Send Crypto → External Wallet → Base network.':
@@ -455,6 +460,9 @@ export const vietnameseCoverageE: Record<string, string> = {
    '4 weeks': '4 tuần',
    '1 month': '1 tháng',
    '2 months': '2 tháng',
+   'Choose how much you want to borrow, when you will repay, and why you need the loan.':
+      'Chọn số tiền bạn muốn vay, thời điểm bạn sẽ trả và lý do bạn cần khoản vay.',
+   "That's above your current limit of $": 'Số tiền này vượt quá hạn mức hiện tại của bạn là $',
 
    // src/views/dashboard/components/MilestoneSheets.tsx
    'Pandesal points earned': 'Điểm Pandesal đã nhận',
@@ -1377,5 +1385,81 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Chúng tôi kiểm tra vị trí của bạn để giữ an toàn cho việc cho vay và phát hiện gian lận. Thông tin này chỉ dùng để xác minh yêu cầu của bạn — không bao giờ được chia sẻ với người cho vay.',
 
    // src/views/dashboard/components/UserGreeting.tsx
-   'Verify Yourself >': 'Xác minh danh tính >'
+   'Verify Yourself >': 'Xác minh danh tính >',
+
+   // src/components/BorrowerVerificationBadge.tsx
+   'In review': 'Đang xem xét',
+   Unfinished: 'Chưa hoàn tất',
+
+   // src/views/support/Guides.tsx
+   'Getting Started': 'Bắt đầu',
+
+   // src/app/auth/line/callback/page.tsx
+   'Missing LINE authorization code. Please try again.': 'Thiếu mã xác thực LINE. Vui lòng thử lại.',
+   'LINE login state mismatch. Please try again.': 'Trạng thái đăng nhập LINE không khớp. Vui lòng thử lại.',
+   'LINE login failed.': 'Đăng nhập LINE không thành công.',
+   'Unexpected error during LINE login.': 'Đã xảy ra lỗi ngoài dự kiến khi đăng nhập LINE.',
+   'LINE login failed': 'Đăng nhập LINE không thành công',
+
+   // src/app/verify/page.tsx
+   "Then you'll submit your national ID.": 'Sau đó bạn sẽ gửi thẻ căn cước.',
+   "Then you'll verify with World ID.": 'Sau đó bạn sẽ xác minh bằng World ID.',
+   "Tap the button to start the face scan — you'll be brought back here automatically when it's done.":
+      'Nhấn nút để bắt đầu quét khuôn mặt — bạn sẽ được tự động đưa trở lại đây khi xong.',
+   'Tap the button to open the face scan in a new tab. Keep this page open — it will update automatically when done.':
+      'Nhấn nút để mở bước quét khuôn mặt trong thẻ mới. Hãy giữ trang này mở — trang sẽ tự cập nhật khi xong.',
+   'A quick ID + selfie check — about 3 minutes.': 'Kiểm tra nhanh giấy tờ + selfie — khoảng 3 phút.',
+   "You'll be brought back here automatically when it's done.": 'Bạn sẽ được tự động đưa trở lại đây khi xong.',
+   'It opens in a new tab; keep this page open and it will update automatically.':
+      'Bước này mở trong thẻ mới; hãy giữ trang này mở và trang sẽ tự cập nhật.',
+   'Your ID is checked by our secure verification partner and is never stored by Moodeng.':
+      'Giấy tờ tùy thân của bạn được đối tác xác minh bảo mật của chúng tôi kiểm tra và không bao giờ được Moodeng lưu trữ.',
+
+   // src/lib/web3/openfort/walletFaceGate.ts
+   'This face already has a wallet': 'Khuôn mặt này đã có ví',
+   'Each person can have one Moodeng Instant Wallet. If you already have a Moodeng account, sign in to that one — or connect a Base Account instead.':
+      'Mỗi người chỉ có thể có một Instant Wallet trên Moodeng. Nếu bạn đã có tài khoản Moodeng, hãy đăng nhập vào tài khoản đó — hoặc kết nối Base Account thay thế.',
+   "That doesn't match your verified ID": 'Khuôn mặt không khớp với giấy tờ đã xác minh',
+   'This account was verified with a different face. For your security we can only create the wallet for the verified account holder. Please scan again as the account holder, or contact support.':
+      'Tài khoản này đã được xác minh bằng một khuôn mặt khác. Để bảo vệ bạn, chúng tôi chỉ có thể tạo ví cho chủ tài khoản đã xác minh. Vui lòng để chính chủ tài khoản quét lại, hoặc liên hệ bộ phận hỗ trợ.',
+   "We couldn't complete the scan": 'Chúng tôi chưa hoàn tất được bước quét',
+   'Find good, even lighting, remove hats or sunglasses, and hold your phone at eye level. Then try again.':
+      'Tìm chỗ đủ sáng, ánh sáng đều, bỏ mũ hoặc kính râm và giữ điện thoại ngang tầm mắt. Rồi thử lại.',
+   'This usually takes a few seconds.': 'Việc này thường chỉ mất vài giây.',
+   'A quick face check': 'Kiểm tra khuôn mặt nhanh',
+   "It takes about ten seconds and keeps wallets to one per person. We don't store your photo.":
+      'Chỉ mất khoảng mười giây và giúp đảm bảo mỗi người chỉ có một ví. Chúng tôi không lưu ảnh của bạn.',
+   'Already have a wallet.': 'Bạn đã có ví.',
+
+   // src/lib/web3/openfort/shieldSession.ts
+   'You need to be signed in to create your Instant Wallet.': 'Bạn cần đăng nhập để tạo Instant Wallet.',
+   'A quick face check is needed before we can create your Instant Wallet.':
+      'Cần kiểm tra khuôn mặt nhanh trước khi chúng tôi có thể tạo Instant Wallet cho bạn.',
+
+   // src/lib/basePay.ts
+   'Payment failed': 'Thanh toán không thành công',
+   'Payment status unavailable': 'Không có trạng thái thanh toán',
+   'Payment failed on-chain': 'Thanh toán on-chain không thành công',
+   'Payment was not confirmed in time': 'Thanh toán chưa được xác nhận kịp thời',
+
+   // src/lib/reasonQuality.ts
+   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
+      'Vui lòng viết lý do bằng tiếng Anh — người cho vay đọc lý do không biết tiếng Tagalog.',
+   'Write it as a sentence — what the money is for and when you get paid.':
+      'Hãy viết thành một câu — số tiền dùng để làm gì và khi nào bạn nhận lương.',
+   "This doesn't look like real words yet — tell lenders what the loan is for.":
+      'Nội dung này chưa giống từ ngữ thật — hãy cho người cho vay biết khoản vay dùng để làm gì.',
+   'Try saying it once, clearly — repeating words does not help lenders.':
+      'Hãy nói rõ một lần — lặp lại từ ngữ không giúp ích cho người cho vay.',
+
+   // src/lib/withdraw/cashoutFaceGate.ts
+   "This doesn't match the account holder": 'Khuôn mặt không khớp với chủ tài khoản',
+   'For your protection we could not confirm this is the person who verified this account. This cash-out has been held and our team has been notified. Please contact support.':
+      'Để bảo vệ bạn, chúng tôi không thể xác nhận đây là người đã xác minh tài khoản này. Giao dịch rút tiền này đã bị tạm giữ và đội ngũ của chúng tôi đã được thông báo. Vui lòng liên hệ bộ phận hỗ trợ.',
+   'We need to verify you manually': 'Chúng tôi cần xác minh bạn thủ công',
+   "We couldn't find a reference photo on file to check against. Please contact support to complete this cash-out.":
+      'Chúng tôi không tìm thấy ảnh đối chiếu trong hồ sơ. Vui lòng liên hệ bộ phận hỗ trợ để hoàn tất giao dịch rút tiền này.',
+   'Quick check before you cash out': 'Kiểm tra nhanh trước khi rút tiền',
+   "Since this is your first cash-out, we need a quick face check to confirm it's really you. It takes about ten seconds.":
+      'Vì đây là lần rút tiền đầu tiên của bạn, chúng tôi cần kiểm tra khuôn mặt nhanh để xác nhận đúng là bạn. Chỉ mất khoảng mười giây.'
 };
