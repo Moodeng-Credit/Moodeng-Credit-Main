@@ -1249,5 +1249,60 @@ export const indonesianCoverageB: Record<string, string> = {
    'How do I manage my account and security settings?': 'Bagaimana cara mengelola akun dan pengaturan keamananku?',
    'Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that\'s also where you export your wallet key (Account → Account Settings → Wallet).':
       'Akunmu terhubung ke dompetmu, jadi keamanan dompet adalah keamanan akun. Dari layar Akun kamu bisa memperbarui nama tampilan, mengelola email, mengganti kata sandi, dan keluar akun. Jika kamu memakai Instant Wallet, di sanalah juga tempat kamu mengekspor kunci dompetmu (Akun → Pengaturan Akun → Dompet).',
-   'Managing your account': 'Mengelola akunmu'
+   'Managing your account': 'Mengelola akunmu',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'Sort By': 'Urutkan Berdasarkan',
+   Status: 'Status',
+   'Apply Filter': 'Terapkan Filter',
+   'Performance Summary': 'Ringkasan performa',
+   'Funding Transactions': 'Transaksi pendanaan',
+   'View All Transactions': 'Lihat semua transaksi',
+   'No transactions found': 'Tidak ada transaksi ditemukan',
+   'Low to High': 'Rendah ke Tinggi',
+   'High to Low': 'Tinggi ke Rendah',
+   'New to Old': 'Baru ke Lama',
+   'Old to New': 'Lama ke Baru',
+   Default: 'Gagal bayar',
+   'Total Earnings': 'Total pendapatan',
+   'Total Loans Lent out': 'Total pinjaman yang disalurkan',
+   'Total Loss': 'Total kerugian',
+   'Total Loans Funded': 'Total pinjaman yang didanai',
+   'Search Fundings': 'Cari pendanaan',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   'This loan is no longer available.': 'Pinjaman ini sudah tidak tersedia.',
+   'Thank you for funding': 'Terima kasih sudah mendanai',
+   'View transaction on Basescan ↗': 'Lihat transaksi di Basescan ↗',
+   'View My Funded Loans': 'Lihat pinjaman yang aku danai',
+   'You pay': 'Kamu bayar',
+   'You receive': 'Kamu terima',
+   'IOU points': 'Poin IOU',
+   'Loan Note ID': 'ID Loan Note',
+   'You paid': 'Kamu membayar',
+   'Expected repayment': 'Perkiraan pembayaran kembali',
+   'IOU points earned': 'Poin IOU didapat',
+   'Fund this loan': 'Danai pinjaman ini',
+
+   // src/views/signin/SignInPage.tsx
+   'Welcome back to Moodeng': 'Selamat datang kembali di Moodeng',
+   'Sign in to access your account.': 'Masuk untuk mengakses akunmu.',
+   'Remember Me': 'Ingat saya',
+   'Sign In to Moodeng': 'Masuk ke Moodeng',
+   'Take a tour first': 'Lihat tur dulu',
+   'Authentication failed': 'Autentikasi gagal',
+   'Email Address': 'Alamat email',
+   'Enter your email address': 'Masukkan alamat emailmu',
+   'Enter your password': 'Masukkan kata sandimu',
+
+   // src/views/signup/SignUpPage.tsx
+   'Welcome to Moodeng Credit': 'Selamat datang di Moodeng Credit',
+   'It takes just a few minutes to get started.': 'Hanya perlu beberapa menit untuk memulai.',
+   'Sign Up with Email': 'Daftar dengan email',
+   'Choose a username': 'Pilih username',
+
+   // src/views/support/FAQ.tsx
+   'Frequently Asked Questions | Moodeng Credit': 'Pertanyaan yang Sering Diajukan | Moodeng Credit',
+   'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, the Instant Wallet (and Base Accounts), fees, and staying safe from loan sharks.':
+      'Jawaban tentang cara kerja Moodeng Credit — meminjam dalam USDC, poin Pandesal, Level Kredit, Instant Wallet (dan Base Account), biaya, dan cara tetap aman dari rentenir.'
 };
