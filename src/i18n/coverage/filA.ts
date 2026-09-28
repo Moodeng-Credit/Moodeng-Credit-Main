@@ -583,6 +583,10 @@ export const filipinoCoverageA: Record<string, string> = {
       'Ang anumang request na mas mababa sa $15 credit limit mo ay nagiging trust-building loan.',
    '$10 is below your $15 limit': 'Mas mababa ang $10 sa $15 limit mo',
    'Does not raise Credit Level': 'Hindi nagpapataas ng Credit Level',
+   '$15 request': '$15 na request',
+   'A request for your full $15 credit limit is a credit-building loan.':
+      'Credit-building loan ang request na katumbas ng buong $15 credit limit mo.',
+   '$15 is your full limit': '$15 ang buong limit mo',
    '$20 request': '$20 na request',
    'Credit-Building Loan': 'Credit-Building Loan',
    'Any request above your $15 credit limit becomes a credit-building loan.':
@@ -662,6 +666,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'On-time repayment builds trust': 'Ang on-time na pagbabayad ay bumubuo ng tiwala',
    'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Pandesal points and credit limit.':
       'Ipadala ang USDC sa repayment address na nasa Magbayad screen — mula sa wallet, exchange, o local na serbisyo. Kapag nagbayad ka on time, tumataas ang Pandesal points at credit limit mo.',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time earns Pandesal points, and repaying a full-limit loan on time raises your credit limit.':
+      'Ipadala ang USDC sa repayment address na nasa Magbayad screen — mula sa wallet, exchange, o local na serbisyo. Kikita ka ng Pandesal points kapag nagbayad ka on time, at tataas ang credit limit mo kapag nabayaran mo on time ang isang full-limit loan.',
    'From a wallet': 'Mula sa wallet',
    'From an exchange': 'Mula sa exchange',
    'Base network': 'Base network',

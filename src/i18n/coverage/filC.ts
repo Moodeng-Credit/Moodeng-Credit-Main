@@ -365,6 +365,8 @@ export const filipinoCoverageC: Record<string, string> = {
       'May dalawang uri ng loan ang Moodeng. Pareho kang kikita ng Pandesal points sa dalawa — pero full-limit na Credit-Building Loan lang ang nagpapataas ng borrowing limit mo.',
    'Your limit': 'Ang limit mo',
    'Use it when:': 'Gamitin ito kapag:',
+   'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
+      'Karamihan ng borrower ay gumagamit ng pareho — Trust-Building Loan para manatiling aktibo, Credit-Building Loan para umakyat.',
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
       'Karamihan ng borrower ay gumagamit ng pareho — Trust-Building Loan para manatiling aktibo, Credit-Building Loan para umakyat.',
    'Trust is the currency before the credit.': 'Tiwala muna bago credit.',
@@ -759,6 +761,8 @@ export const filipinoCoverageC: Record<string, string> = {
    Low: 'Mababa',
    'Very Low': 'Napakababa',
    'Close loan mix explanation': 'Isara ang paliwanag ng loan mix',
+   'Trust-building loans': 'Mga Trust-Building Loan',
+   'Credit-building loans': 'Mga Credit-Building Loan',
    'Trust loans': 'Mga Trust-Building Loan',
    'Credit loans': 'Mga Credit-Building Loan',
    'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
