@@ -2,7 +2,7 @@
 // English text. Loaded on demand with the rest of this locale's coverage (see ./index.ts).
 export const filipinoCoverageLanding: Record<string, string> = {
    // src/components/marketing/MarketingPageShell.tsx
-   'Toggle benefits menu': 'Buksan o isara ang menu',
+   'Toggle benefits menu': 'Buksan o isara ang menu ng mga benepisyo',
 
    // src/views/borrowerBenefits/BorrowerBenefits.tsx
    'Borrower Benefits | Moodeng Credit': 'Mga benepisyo ng borrower | Moodeng Credit',
@@ -35,6 +35,9 @@ export const filipinoCoverageLanding: Record<string, string> = {
    'If I borrow $35 instead of $40 can I unlock $60?': 'Kung $35 ang hiramin ko imbes na $40, ma-u-unlock ko ba ang $60?',
    'Why Our Cumulative System Benefits You': 'Bakit panalo ka sa cumulative system namin',
    'Flexibility to take multiple smaller loans': 'Puwedeng kumuha ng ilang mas maliliit na loan',
+
+   'Only a loan for your full limit, repaid in full and on time, unlocks the next level.':
+      'Ang loan lang na katumbas ng buong limit mo, na nabayaran nang buo at on time, ang nag-a-unlock ng susunod na level.',
 
    // src/views/about/sections/DirectLendBorrowSection.tsx
    'Repayment + Interest': 'Bayad + interes',
@@ -97,8 +100,8 @@ export const filipinoCoverageLanding: Record<string, string> = {
    'Icon clock': 'Icon ng orasan',
 
    // src/views/landing/sections/RevolutionizeSection.tsx
-   'A New Era of Microloans': 'Bagong panahon ng microloans',
-   'No hidden fees, no surprises, and no changes.': 'Walang hidden fees, walang sorpresa, at walang biglang pagbabago.',
+   'A New Era of Microloans': 'Bagong panahon ng mga microloan',
+   'No hidden fees, no surprises, and no changes.': 'Walang nakatagong fee, walang sorpresa, at walang biglang pagbabago.',
    "Everything is safely tracked on our blockchain, so you always know exactly what you're paying.":
       'Ligtas na naka-record ang lahat sa blockchain namin, kaya lagi mong alam kung magkano mismo ang binabayaran mo.',
    'Next-Level Credit Score': 'Next-level na credit score',
@@ -143,7 +146,7 @@ export const filipinoCoverageLanding: Record<string, string> = {
    'Directly?': 'nang direkta?',
    'Token rewards': 'Mga token reward',
    'Earn tokens by lending. Help govern the platform you support.':
-      'Kumita ng tokens sa pagpapahiram. Makibahagi sa pagpapatakbo ng platform na sinusuportahan mo.',
+      'Kumita ng token sa pagpapahiram. Makibahagi sa pagpapatakbo ng platform na sinusuportahan mo.',
    'Passive Income': 'Passive income',
    'Generate returns while supporting borrowers in underserved regions.':
       'Kumita habang sinusuportahan ang mga borrower sa mga lugar na kulang sa serbisyong pinansyal.',
@@ -167,14 +170,14 @@ export const filipinoCoverageLanding: Record<string, string> = {
       'Pinopondohan ang mga espesyal na gamutan na hindi sakop ng national insurance.',
    'Water for Villages': 'Tubig para sa mga baryo',
    'Funding sustainable village water infrastructure through community microloans.':
-      'Pinopondohan ang pangmatagalang water system ng mga baryo sa pamamagitan ng community microloans.',
+      'Pinopondohan ang pangmatagalang water system ng mga baryo sa pamamagitan ng mga community microloan.',
    'School Supplies in India': 'School supplies sa India',
    'Helping families get school essentials': 'Tinutulungan ang mga pamilya na makuha ang mga gamit sa eskuwela',
 
    // src/views/landing/sections/WhatPeopleSaySection.tsx
    'WHAT PEOPLE ARE SAYING': 'ANG SINASABI NG MGA TAO',
    'Moodeng’s microloans helped me launch my small business. The gradual credit limit increase was perfect for me. Banks here in Rwanda don’t help!':
-      'Natulungan ako ng microloans ng Moodeng na simulan ang maliit kong negosyo. Swak sa akin ang unti-unting pagtaas ng credit limit. Hindi tumutulong ang mga bangko rito sa Rwanda!',
+      'Natulungan ako ng mga microloan ng Moodeng na simulan ang maliit kong negosyo. Swak sa akin ang unti-unting pagtaas ng credit limit. Hindi tumutulong ang mga bangko rito sa Rwanda!',
    'As a lender it is cool to see it’s on-chain only. I gave it a try and threw some money on some people with interesting stories. Happy to help them! Getting paid back is a plus too.':
       'Bilang lender, astig na on-chain lang ang lahat. Sinubukan ko at nagpahiram ako sa ilang taong may interesting na kuwento. Masaya akong nakatulong! Plus pa na nababayaran ako.',
    'Active Lender': 'Aktibong lender',
@@ -184,7 +187,7 @@ export const filipinoCoverageLanding: Record<string, string> = {
       'Masarap malaman na totoong tao ang tinutulungan mo. Iyon ang mahalaga sa huli. Wala namang mawawala sa akin kung magpapahiram ako nang kaunti rito at doon.',
 
    // src/views/landing/sections/StartBuildingSection.tsx
-   'WITH MICROLOANS': 'SA PAMAMAGITAN NG MICROLOANS',
+   'WITH MICROLOANS': 'SA PAMAMAGITAN NG MGA MICROLOAN',
    'Small Loans': 'Maliliit na loan',
    'Gradual Growth': 'Unti-unting paglago',
    Enable: 'I-enable',
@@ -214,5 +217,31 @@ export const filipinoCoverageLanding: Record<string, string> = {
       'Nagsisimula kami sa mga Pilipino at Southeast Asian na nagtatrabaho sa abroad. Kayang punan ng maliliit na loan ang biglaang pangangailangan at matulungan ang mga borrower na bumuo ng sariling credit.',
    'We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.':
       'Nagsisimula kami sa mga worker at migrant sa mga hub gaya ng South Korea, Taiwan, Japan, Singapore, at iba pang kalapit na lungsod.',
-   'ID verified': 'ID verified'
+   'ID verified': 'ID verified',
+   // src/views/lenderBenefits (verification copy corrected to ID + selfie / World ID)
+   'Identity verified': 'Verified ang identity',
+   'Borrowers pass a quick ID + selfie check, or verify with World ID, before they can request funding.':
+      'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng pondo.',
+   'Worker hubs first': 'Mga worker hub muna',
+   'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
+      'Nagsisimula kami sa mga worker hub sa ibang bansa, kasama ang South Korea, Taiwan, Japan, Singapore, at mga kalapit na lungsod.',
+   'Worker corridors': 'Mga worker corridor',
+   'Verified borrowers first': 'Mga verified na borrower muna',
+   'Every borrower completes a one-time identity check before requesting a loan.':
+      'Dumadaan ang bawat borrower sa identity check na isang beses lang gagawin bago mag-request ng loan.',
+   'Identity checks help us start with users who can prove they are unique, real borrowers.':
+      'Dahil sa identity check, makakapagsimula kami sa mga user na kayang patunayang natatangi at totoong borrower sila.',
+   'Identity verification helps confirm one real person behind each borrower account.':
+      'Tinutulungan ng identity verification na makumpirmang may isang totoong tao sa likod ng bawat borrower account.',
+   'Verification is a trust signal, not a loan guarantee.': 'Senyales ng tiwala ang verification, hindi garantiya ng loan.',
+   'Verified first': 'Verified muna',
+   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
+      'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng loan. Dahil dito, alam ng mga lender na totoong tao ang kausap nila, at ang verification partner namin ang nagche-check ng ID — hindi ito kailanman iniimbak ng Moodeng.',
+   'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
+      'Puwedeng mag-verify gamit ang World ID ang mga borrower na gumagamit na ng World App, sa halip na mag-ID + selfie check.',
+   'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':
+      'Nagsisimula kami sa mga Pilipino at taga-Southeast Asia na nagtatrabaho sa ibang bansa. Kayang punan ng maliliit na loan ang biglaang kakulangan at tulungan ang mga borrower na bumuo ng sariling credit.',
+   'We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.':
+      'Nagsisimula kami sa mga worker at migrant sa mga hub tulad ng South Korea, Taiwan, Japan, Singapore, at iba pang kalapit na lungsod.',
+   'ID verified': 'Verified ang ID'
 };
