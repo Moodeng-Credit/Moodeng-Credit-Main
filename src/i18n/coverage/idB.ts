@@ -761,7 +761,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'applied: +$': 'diterapkan: +$',
    'starting limit': 'limit awal',
    'Checking code...': 'Mengecek kode...',
-   'No code needed. You can continue normally.': 'Tidak punya kode? Kamu tetap bisa lanjut seperti biasa.',
+   'No code needed. You can continue normally.': 'Tidak perlu kode. Kamu tetap bisa lanjut seperti biasa.',
    'Please add your Facebook so we can reach out to you. We also have a':
       'Tambahkan Facebook kamu agar kami bisa menghubungimu. Kami juga punya',
    '$10 referral program': 'program referal $10',
@@ -1171,10 +1171,10 @@ export const indonesianCoverageB: Record<string, string> = {
    'USDC → pesos, step by step': 'USDC → peso, langkah demi langkah',
    'How do I cash out to GCash or my bank?': 'Bagaimana cara mencairkan dana ke GCash atau rekening bankku?',
    "Choosing the wrong network can lose the funds — this is the single most important detail. Moodeng charges $0 to cash out; the only cost is the exchange's own fee.":
-      'Memilih jaringan yang salah bisa membuat dananya hilang — ini detail paling penting. Moodeng tidak mengenakan biaya untuk mencairkan dana; satu-satunya biaya adalah biaya dari exchange itu sendiri.',
+      'Memilih jaringan yang salah bisa membuat dananya hilang — ini detail paling penting. Moodeng mengenakan biaya $0 untuk mencairkan dana; satu-satunya biaya adalah biaya dari exchange itu sendiri.',
    'Withdrawing to a bank account': 'Menarik dana ke rekening bank',
    'How much does cashing out cost?': 'Berapa biaya untuk mencairkan dana?',
-   'Moodeng charges $0; exchanges have a small fee': 'Moodeng tidak mengenakan biaya; exchange mengenakan biaya kecil',
+   'Moodeng charges $0; exchanges have a small fee': 'Moodeng mengenakan biaya $0; exchange mengenakan biaya kecil',
    'How much does it cost to cash out?': 'Berapa biaya untuk mencairkan dana?',
    'Your repayment reputation': 'Reputasi pembayaran kembalimu',
    'What are Pandesal points and how are they calculated?': 'Apa itu poin Pandesal dan bagaimana cara menghitungnya?',
