@@ -277,5 +277,255 @@ export const indonesianCoverageE: Record<string, string> = {
    'Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.':
       'Beli USDC dengan PHP, lalu gunakan Send Crypto → External Wallet → jaringan Base.',
    'Always repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. And always choose Base as the network.':
-      'Selalu bayar sebelum jatuh tempo — pembayaran tepat waktu menambah poin Pandesal kamu dan membuka Level Kredit yang lebih tinggi. Dan selalu pilih Base sebagai jaringannya.'
+      'Selalu bayar sebelum jatuh tempo — pembayaran tepat waktu menambah poin Pandesal kamu dan membuka Level Kredit yang lebih tinggi. Dan selalu pilih Base sebagai jaringannya.',
+   // src/lib/verificationUiState.ts (rendered in RequestBoard, UserGreeting, VerificationCTA, LoanRequestModal)
+   'View status': 'Lihat status',
+   'View details': 'Lihat detail',
+   'View status >': 'Lihat status >',
+   'Continue verification >': 'Lanjutkan verifikasi >',
+   'Try again >': 'Coba lagi >',
+   'View details >': 'Lihat detail >',
+   'Verify Yourself >': 'Verifikasi Diri >',
+   'Verified >': 'Terverifikasi >',
+   'View status →': 'Lihat status →',
+   'Continue verification →': 'Lanjutkan verifikasi →',
+   'Try again →': 'Coba lagi →',
+   'View details →': 'Lihat detail →',
+   'Verify Yourself →': 'Verifikasi Diri →',
+   'Verified →': 'Terverifikasi →',
+   'In review': 'Sedang ditinjau',
+   Unfinished: 'Belum selesai',
+   Declined: 'Ditolak',
+   Blocked: 'Diblokir',
+
+   // src/views/dashboard-v2/dashboardV2Model.ts (DashboardV2 hero and milestones)
+   'Repay a loan on time': 'Bayar pinjaman tepat waktu',
+   '2-loan on-time streak': '2 pinjaman beruntun dibayar tepat waktu',
+   'Repay a full-limit credit': 'Bayar pinjaman senilai limit penuh',
+   'Borrow from 2 lenders': 'Pinjam dari 2 pemberi pinjaman',
+   'Repay $100 total': 'Bayar kembali total $100',
+   'Become a trusted borrower': 'Jadi peminjam tepercaya',
+   '₱50 GrabFood voucher': 'Voucher GrabFood ₱50',
+   'to unlock LV.1': 'untuk membuka LV.1',
+   Top: 'Level tertinggi',
+   'level reached': 'tercapai',
+   Paused: 'Dijeda',
+   '· repay on time to resume': '· bayar tepat waktu untuk melanjutkan',
+   'left to LV.2': 'lagi menuju LV.2',
+   'left to LV.3': 'lagi menuju LV.3',
+   'left to LV.4': 'lagi menuju LV.4',
+   'left to LV.5': 'lagi menuju LV.5',
+   'left to LV.6': 'lagi menuju LV.6',
+   'left to LV.7': 'lagi menuju LV.7',
+   'left to LV.8': 'lagi menuju LV.8',
+
+   // src/views/milestones/Milestones.tsx
+   'all preview rewards': 'semua hadiah pratinjau',
+
+   // src/views/dashboard/components/ConnectStep.tsx
+   '1 more characters': '1 karakter lagi',
+   '2 more characters': '2 karakter lagi',
+   '3 more characters': '3 karakter lagi',
+   '4 more characters': '4 karakter lagi',
+   '5 more characters': '5 karakter lagi',
+   '6 more characters': '6 karakter lagi',
+   '7 more characters': '7 karakter lagi',
+   '8 more characters': '8 karakter lagi',
+   '9 more characters': '9 karakter lagi',
+   '10 more characters': '10 karakter lagi',
+
+   // src/views/dashboard/components/ContactsStep.tsx
+   'Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.':
+      'Notifikasi diblokir. Izinkan notifikasi untuk moodeng.app di pengaturan browser kamu, lalu ketuk lagi.',
+
+   // src/views/dashboard/components/LoanRequestModal.tsx
+   '1st-5th': 'Tanggal 1-5',
+   '10th-15th': 'Tanggal 10-15',
+   '15th-20th': 'Tanggal 15-20',
+   '25th-30th': 'Tanggal 25-30',
+   "That's above your current limit of $15.": 'Itu melebihi limit kamu saat ini, yaitu $15.',
+   "That's above your current limit of $20.": 'Itu melebihi limit kamu saat ini, yaitu $20.',
+   "That's above your current limit of $40.": 'Itu melebihi limit kamu saat ini, yaitu $40.',
+   "That's above your current limit of $60.": 'Itu melebihi limit kamu saat ini, yaitu $60.',
+   "That's above your current limit of $80.": 'Itu melebihi limit kamu saat ini, yaitu $80.',
+   "That's above your current limit of $100.": 'Itu melebihi limit kamu saat ini, yaitu $100.',
+   "That's above your current limit of $120.": 'Itu melebihi limit kamu saat ini, yaitu $120.',
+   "That's above your current limit of $140.": 'Itu melebihi limit kamu saat ini, yaitu $140.',
+
+   // src/views/dashboard/components/UserCard.tsx, src/views/fund/FundBridge.tsx, src/views/repay/Repay.tsx
+   'View transaction': 'Lihat transaksi',
+
+   // src/views/fund/FundBridge.tsx
+   'No route available for this amount.': 'Tidak ada rute yang tersedia untuk jumlah ini.',
+   'Unsupported source chain.': 'Chain asal tidak didukung.',
+   'Bridge failed. Please try again.': 'Bridge gagal. Silakan coba lagi.',
+   'Transaction cancelled.': 'Transaksi dibatalkan.',
+   'Preparing…': 'Menyiapkan…',
+   'Approve USDC in wallet…': 'Setujui USDC di dompet…',
+   'Confirm bridge in wallet…': 'Konfirmasi bridge di dompet…',
+   'Bridging to Base…': 'Mem-bridge ke Base…',
+   'Sent to Base ✓': 'Terkirim ke Base ✓',
+   'Network + bridge cost': 'Biaya jaringan + bridge',
+   'Submitted — funds arrive on Base in': 'Terkirim — dana tiba di Base dalam',
+   '~1 min': '~1 menit',
+   '~2 min': '~2 menit',
+   '~3 min': '~3 menit',
+   '~4 min': '~4 menit',
+   '~5 min': '~5 menit',
+   '~10 min': '~10 menit',
+   '~15 min': '~15 menit',
+   '~20 min': '~20 menit',
+   '~30 min': '~30 menit',
+   '~10 sec': '~10 detik',
+   '~15 sec': '~15 detik',
+   '~20 sec': '~20 detik',
+   '~30 sec': '~30 detik',
+   '~45 sec': '~45 detik',
+   '~60 sec': '~60 detik',
+   'Live quote · Powered by': 'Kuotasi langsung · Didukung oleh',
+
+   // src/views/fund/FundWalletSheet.tsx
+   // Overrides idB: "Send USDC on the" is followed by "Base network" (= "Jaringan Base"), so the
+   // fragment itself must not say "jaringan" again.
+   'Send USDC on the': 'Kirim USDC lewat',
+   'to this address:': 'ke alamat ini:',
+   'Connect a wallet first so we know where to send your USDC.': 'Hubungkan dompet dulu supaya kami tahu ke mana USDC kamu dikirim.',
+   'Could not start Coinbase.': 'Coinbase tidak bisa dibuka.',
+   'Card purchases aren’t available just yet — try a bridge below.': 'Pembelian dengan kartu belum tersedia — coba bridge di bawah.',
+   only: 'saja',
+   '~1.5% fee': 'biaya ~1.5%',
+   '< 0.5% fee': 'biaya < 0.5%',
+   'SOL and USDC to Base · opens Superbridge': 'SOL dan USDC ke Base · membuka Superbridge',
+   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
+      'Mau cara lain? Kamu juga bisa membeli USDC di exchange (Binance P2P, Coins.ph, PDAX, GCrypto), lewat layanan eksternal seperti Moneybees, atau mengirimnya dari dompet mana pun — selalu lewat jaringan Base.',
+
+   // src/views/fund/StripeOnrampModal.tsx
+   'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':
+      'Pembelian dengan kartu lewat Stripe belum tersedia di negaramu. Coba opsi Coinbase di bawah — jangkauan wilayahnya lebih luas.',
+   'Couldn’t start the card purchase. Try the Coinbase option below.':
+      'Pembelian dengan kartu tidak bisa dimulai. Coba opsi Coinbase di bawah.',
+   'Couldn’t load Stripe. Check your connection and try again.': 'Stripe tidak bisa dimuat. Periksa koneksimu lalu coba lagi.',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'this borrower': 'peminjam ini',
+
+   // src/views/lender/performance/LenderPerformance.tsx
+   higher: 'lebih tinggi',
+   lower: 'lebih rendah',
+   'vs. previous period': 'dibanding periode sebelumnya',
+   there: 'Sobat',
+
+   // src/views/lender/supported/SupportedLoans.tsx
+   pts: 'poin',
+
+   // src/views/onboarding/ConnectWallet.tsx
+   'Trust, Rainbow, Argent & more supported wallets': 'Trust, Rainbow, Argent & dompet lain yang didukung',
+
+   // src/lib/web3/openfort/OpenfortContext.tsx
+   'The Instant Wallet is not available right now.': 'Instant Wallet sedang tidak tersedia.',
+   "Couldn't create your wallet": 'Dompetmu gagal dibuat',
+
+   // src/views/signin/SignInPage.tsx
+   'This account has been closed. If you think this is a mistake, contact support on Telegram.':
+      'Akun ini sudah ditutup. Jika menurutmu ini keliru, hubungi dukungan lewat Telegram.',
+   OR: 'ATAU',
+   'Too many attempts detected': 'Terlalu banyak percobaan',
+   'New account needed': 'Perlu akun baru',
+   'Email not found': 'Email tidak ditemukan',
+   'Incorrect credentials': 'Email atau kata sandi salah',
+   "Don't have an account?": 'Belum punya akun?',
+
+   // src/views/signup/SignUpPage.tsx
+   'Account already exists': 'Akun sudah ada',
+   'Logging you in…': 'Sedang memasukkan kamu…',
+   'Could not reach the server. Check your connection and try again.': 'Server tidak bisa dijangkau. Periksa koneksimu lalu coba lagi.',
+   'Already linked': 'Sudah tertaut',
+   'Already registered': 'Sudah terdaftar',
+   'Email address taken': 'Alamat email sudah dipakai',
+   'Password too weak': 'Kata sandi terlalu lemah',
+
+   // src/app/forgot-password/page.tsx
+   'Verifying...': 'Memverifikasi...',
+
+   // src/views/user-profile/UserProfile.tsx
+   'Lending Summary': 'Ringkasan Pendanaan',
+   'No Defaults': 'Tanpa Gagal Bayar',
+   'Borrowers Backed': 'Peminjam yang Didukung',
+   'No loans funded yet': 'Belum ada pinjaman yang didanai',
+   'This lender has not funded a loan yet, so there is nothing to summarise.':
+      'Pemberi pinjaman ini belum mendanai pinjaman apa pun, jadi belum ada yang bisa diringkas.',
+   'Lending Patterns': 'Pola Pendanaan',
+   'Loans Funded': 'Pinjaman yang Didanai',
+   'Who this lender has backed and the status of each loan.':
+      'Siapa saja yang didukung pemberi pinjaman ini dan status setiap pinjamannya.',
+   'Loan / borrower': 'Pinjaman / peminjam',
+   'Usual amount funded': 'Jumlah dana biasanya',
+   'Typical time to be repaid': 'Waktu biasanya hingga dibayar kembali',
+   'Repeat borrowers': 'Peminjam berulang',
+   'Overdue against them': 'Terlambat bayar kepada mereka',
+   'Trust-building loans': 'Trust-Building Loan',
+   'Credit-building loans': 'Credit-Building Loan',
+
+   // src/views/support/FAQ.tsx
+   'FAQ categories': 'Kategori FAQ',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
+      'Sebagian besar peminjam memakai keduanya — Trust-Building Loan agar tetap aktif, Credit-Building Loan untuk naik level.',
+
+   // src/views/help/helpTopics.ts
+   'Tap "Apply for a Loan" to start.': 'Ketuk "Ajukan pinjaman" untuk mulai.',
+   'Tap "Create Instant Wallet" — your wallet is created straight from your Moodeng login, no app needed. (Prefer a Base Account? Set one up at account.base.app and connect it instead.)':
+      'Ketuk "Buat Instant Wallet" — dompetmu langsung dibuat dari login Moodeng kamu, tanpa perlu aplikasi. (Lebih suka Base Account? Buat di account.base.app lalu hubungkan sebagai gantinya.)',
+   'Tap "Verify Yourself" and complete "Verify Your ID" — about 3 minutes.':
+      'Ketuk "Verifikasi Diri" lalu selesaikan "Verifikasi ID Kamu" — sekitar 3 menit.',
+   'Open the Request Board and set your amount (up to your limit), repayment date, and a clear reason.':
+      'Buka Papan Permintaan lalu atur jumlahnya (maksimal sebesar limitmu), tanggal pembayaran kembali, dan alasan yang jelas.',
+   'Choose "Verify Your ID" — a photo of your national ID plus a selfie. Have good, even lighting.':
+      'Pilih "Verifikasi ID Kamu" — foto KTP ditambah selfie. Pastikan pencahayaannya bagus dan merata.',
+   'Already use World App? You can choose "Verify with World ID" instead.':
+      'Sudah pakai World App? Kamu bisa memilih "Verifikasi dengan World ID" sebagai gantinya.',
+   'Most checks finish within minutes. If yours needs a human review, we notify you as soon as it is done — usually within a few hours, at most 1 business day.':
+      'Sebagian besar pengecekan selesai dalam hitungan menit. Jika punyamu perlu ditinjau manual, kami akan memberi tahu begitu selesai — biasanya dalam beberapa jam, paling lama 1 hari kerja.',
+   'Choose "Verify Your ID" — the quick national ID photo + selfie check, about 3 minutes.':
+      'Pilih "Verifikasi ID Kamu" — pengecekan cepat foto KTP + selfie, sekitar 3 menit.',
+   'Already a World App user? Choose "Verify with World ID" instead.':
+      'Sudah jadi pengguna World App? Pilih "Verifikasi dengan World ID" saja.',
+   'If it is stuck, retry in a real browser (Chrome or Safari) and make sure the photo is clear and well lit.':
+      'Kalau macet, coba lagi di browser biasa (Chrome atau Safari) dan pastikan fotonya jelas dan terang.',
+   'You do not need the Coinbase app. Base is a network built by Coinbase, but the app is a different thing.':
+      'Kamu tidak perlu aplikasi Coinbase. Base memang jaringan buatan Coinbase, tapi aplikasinya hal yang berbeda.',
+   'A Base Account is passwordless and seedless — you sign in with email or a passkey.':
+      'Base Account tidak memakai kata sandi maupun seed phrase — kamu masuk dengan email atau passkey.',
+   'Use a real browser — Chrome or Safari — not a browser inside another app.':
+      'Gunakan browser biasa — Chrome atau Safari — bukan browser di dalam aplikasi lain.',
+   'Try again at account.base.app.': 'Coba lagi di account.base.app.',
+   'If it still fails, your network may be blocking Base — see "Base won\'t load (PLDT / Smart)".':
+      'Kalau masih gagal, jaringanmu mungkin memblokir Base — lihat "Base tidak mau memuat (PLDT / Smart)".',
+   'Switch Wi-Fi ↔ mobile data. If one network blocks it, the other often works.':
+      'Ganti Wi-Fi ↔ data seluler. Kalau satu jaringan memblokirnya, jaringan lain sering kali bisa.',
+   'Install the free "1.1.1.1" app by Cloudflare, turn it On, then reopen account.base.app.':
+      'Pasang aplikasi gratis "1.1.1.1" dari Cloudflare, nyalakan, lalu buka lagi account.base.app.',
+   'Or use a reputable free VPN like Proton VPN — turn it on before opening the sign-in page, connect to a nearby location, then reopen Moodeng.':
+      'Atau pakai VPN gratis yang tepercaya seperti Proton VPN — nyalakan sebelum membuka halaman masuk, sambungkan ke lokasi terdekat, lalu buka lagi Moodeng.',
+   'Or copy the link and paste it into Chrome or Safari directly.': 'Atau salin tautannya dan tempel langsung di Chrome atau Safari.',
+   'Then sign in and connect your wallet again from there.': 'Lalu masuk dan hubungkan dompetmu lagi dari sana.',
+   'Open your wallet app and disconnect Moodeng if it shows as connected.':
+      'Buka aplikasi dompetmu dan putuskan koneksi Moodeng jika tertulis masih terhubung.',
+   'Close the browser completely, then reopen it.': 'Tutup browser sepenuhnya, lalu buka lagi.',
+   'Open Moodeng again in Chrome or Safari — not a browser inside another app.':
+      'Buka lagi Moodeng di Chrome atau Safari — bukan browser di dalam aplikasi lain.',
+   'Tap Connect Wallet again and approve the request when it appears.':
+      'Ketuk "Hubungkan dompet" lagi dan setujui permintaannya saat muncul.',
+   'Approve the pop-up when it appears.': 'Setujui pop-up saat muncul.',
+   'If nothing appears, redo the "Wallet won\'t connect" reset.':
+      'Kalau tidak ada yang muncul, ulangi langkah reset di "Dompet tidak mau terhubung".',
+   'Buy USDC on an exchange you use — Binance P2P, Coins.ph, PDAX, or GCrypto (GCash).':
+      'Beli USDC di exchange yang kamu pakai — Binance P2P, Coins.ph, PDAX, atau GCrypto (GCash).',
+   'Send your USDC to an exchange or service — GCrypto (GCash), Coins.ph, PDAX, or Binance P2P.':
+      'Kirim USDC kamu ke exchange atau layanan — GCrypto (GCash), Coins.ph, PDAX, atau Binance P2P.',
+   "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.":
+      'Moodeng sendiri tidak memungut biaya ($0) — satu-satunya biaya adalah biaya konversi di exchange. Coins.ph adalah rute termurah yang kami temukan di Filipina: sekitar 0.70% untuk satu kali pulang-pergi. Untuk pinjaman $15 yang dicairkan lalu dibayar kembali, total biayanya lewat Coins.ph kira-kira ₱6.50 (sekitar $0.10) — biaya trading kecil di tiap arah, pencairan ke bank lewat PESONet yang gratis, dan biaya jaringan yang sangat kecil. Kalau ingin pesonya masuk seketika, InstaPay menambah biaya tetap ₱5 (pulang-pergi ≈ ₱11.50, sekitar $0.19). Layanan lain menyelipkan margin mereka di kurs, jadi biasanya lebih mahal.',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
+      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman senilai seluruh limitmu saat ini — membayarnya tepat waktu akan menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman apa pun yang lebih kecil dari limitmu; pinjaman ini tetap menambah riwayat pembayaran kembali dan reputasimu di mata pemberi pinjaman, tapi tidak menaikkan Level Kredit kamu. Sebagian besar peminjam memakai keduanya — Trust-Building Loan agar riwayat pembayaran kembali tetap aktif, Credit-Building Loan untuk menaikkan limit.'
 };
