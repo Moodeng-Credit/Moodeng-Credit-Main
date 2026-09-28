@@ -497,5 +497,88 @@ export const filipinoCoverageA: Record<string, string> = {
    'Close verification help': 'Isara ang tulong sa verification',
 
    // src/components/worldId/modal/AlreadyUsedModal.tsx
-   'Got it': 'Nakuha ko'
+   'Got it': 'Nakuha ko',
+
+   // src/views/about/sections/CreditGrowthSystemSection.tsx
+   'CREDIT GROWTH SYSTEM': 'SISTEMA NG PAGLAGO NG CREDIT',
+   'Grow Your Credit Limit Through Step Borrowing': 'Palaguin ang Credit Limit Mo sa Pamamagitan ng Step Borrowing',
+   'Your Credit Limit Grows with Every $20 You Borrow and Repay!':
+      'Lumalaki ang Credit Limit Mo sa Bawat $20 na Hinihiram at Binabayaran Mo!',
+   'The more you borrow and repay, the more you can borrow in the future.':
+      'Kung mas marami kang hinihiram at binabayaran, mas marami ka ring mahihiram sa hinaharap.',
+   'Borrow + Repay Original $20 to unlock $40': 'Humiram + Magbayad ng Orihinal na $20 para ma-unlock ang $40',
+   Grow: 'Lumago',
+   Build: 'Bumuo',
+   Expand: 'Palawakin',
+   Unlock: 'I-unlock',
+   'Ongoing Growth': 'Patuloy na Paglago',
+   'Keep going forever and grow!': 'Magpatuloy magpakailanman at lumago!',
+   'Build Your Credit, Step by Step': 'Buuin ang Credit Mo, Hakbang-Hakbang',
+   "Unlock Your Financial Potential with Moodeng's Unique Borrowing System":
+      'I-unlock ang Potensyal ng Pananalapi Mo gamit ang Natatanging Borrowing System ng Moodeng',
+   'If I borrow $35 instead of $40 can I unlock $60?':
+      'Kung mangungutang ako ng $35 sa halip na $40, ma-u-unlock ko ba ang $60?',
+   "Borrowing under $40 won't unlock $60 - it shows you are not ready. But, you can borrow smaller amounts to prove yourself.":
+      'Ang paghiram nang mas mababa sa $40 ay hindi mag-u-unlock ng $60 - ipinapakita nito na hindi ka pa ready. Pero puwede kang humiram ng mas maliit na halaga para patunayan ang sarili mo.',
+   'Does borrowing or repaying more unlock the next level??':
+      'Ang paghiram o pagbabayad ba ng mas marami ang nag-u-unlock ng susunod na level??',
+   'The only thing relevant to unlocking the next level is the amount you borrowed. Not the amount you repaid.':
+      'Ang tanging mahalaga para ma-unlock ang susunod na level ay ang halagang hiniram mo. Hindi ang halagang binayaran mo.',
+   'Can I skip a level by borrowing more than required?':
+      'Puwede ko bang laktawan ang isang level sa pamamagitan ng paghiram nang mas marami kaysa sa kailangan?',
+   'No, each level must be unlocked step-by-step with consistent borrowing.':
+      'Hindi, kailangang i-unlock ang bawat level nang paisa-isa sa pamamagitan ng regular na paghiram.',
+   'Why Our Cumulative System Benefits You': 'Bakit Nakikinabang Ka sa Aming Cumulative System',
+   'Flexibility to take multiple smaller loans': 'Flexibility na kumuha ng maramihang mas maliliit na loan',
+   'Build credit at your own pace': 'Bumuo ng credit sa sarili mong bilis',
+   'Reward for consistent borrowing and repayment': 'Reward para sa regular na paghiram at pagbabayad',
+   'Clear path to accessing larger loan amounts': 'Malinaw na daan para ma-access ang mas malalaking halaga ng loan',
+
+   // src/views/about/sections/DirectLendBorrowSection.tsx
+   'How Direct Lend & Borrow Works': 'Paano Gumagana ang Direct Lend & Borrow',
+   'Funds in USDT/USDC': 'Pondo gamit ang USDT/USDC',
+   'Credit Score Improves': 'Bumubuti ang Credit Score',
+
+   // src/views/about/sections/MoodengCreditSection.tsx
+   'Want to learn more about Moodeng Credit?': 'Gusto mo bang malaman pa ang tungkol sa Moodeng Credit?',
+   'Contact us today to learn more about joining our community and unlocking the benefits awaiting you.':
+      "Makipag-ugnayan sa amin ngayon para malaman pa ang tungkol sa pagsali sa aming community at pag-unlock ng mga benepisyong naghihintay sa'yo.",
+   'Contact Us via Email': 'Kontakin Kami sa Email',
+
+   // src/views/about/sections/RulesOfRepayingSection.tsx
+   'RULES OF REPAYING': 'MGA PATAKARAN SA PAGBABAYAD',
+   'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
+      'Nag-aalok ang Moodeng ng flexible, blockchain-based na microloans. Magbayad nang responsable para bumuo ng credit score mo.',
+   'You must pay the lender directly by hitting the repay button.':
+      'Kailangan mong bayaran nang direkta ang lender sa pamamagitan ng pag-tap sa repay button.',
+   'UP-TO-YOU': "NASA'YO NA",
+   'Flexible repayments: Any amount up to deadline': 'Flexible na pagbabayad: Kahit anong halaga hanggang sa deadline',
+   'Build credit score with each on-time payment': 'Bumuo ng credit score sa bawat on-time na bayad',
+   'Blockchain records all loan transactions': 'Nire-record ng blockchain ang lahat ng loan transactions',
+   'Sign up for notifications about your loans': 'Mag-sign up para sa mga notification tungkol sa mga loan mo',
+
+   // src/views/about/sections/WelcomeHeroSection.tsx
+   'To get funded, you need to write why you need it, so someone will fund you.':
+      "Para mapondohan ka, kailangan mong isulat kung bakit mo ito kailangan, para may magpondo sa'yo.",
+   'Welcome to Moodeng Academy': 'Welcome sa Moodeng Academy',
+   'And make sure to submit a request within your credit limit.':
+      'At siguraduhing mag-submit ng request na nasa loob ng credit limit mo.',
+   'Ask For Help': 'Humingi ng Tulong',
+   'Offer Help': 'Mag-alok ng Tulong',
+   'How much do you need today? i.e. $15': 'Magkano ang kailangan mo ngayon? hal. $15',
+   'Enter how much you will payback? i.e. $17': 'Ilagay kung magkano ang babayaran mo? hal. $17',
+   'Type your reason? i.e. an emergency, etc.': 'I-type ang dahilan mo? hal. emergency, atbp.',
+   Other: 'Iba pa',
+   'Repayment timeline': 'Timeline ng pagbabayad',
+   'Submit Request': 'I-submit ang Request',
+   'Your available credit limit: $15': 'Ang available credit limit mo: $15',
+   'Set Your Own Terms': 'Itakda ang Sarili Mong Terms',
+   'Enter amount, i.e. $15': 'Ilagay ang halaga, hal. $15',
+   'Enter amount to repay, i.e. $18': 'Ilagay ang halagang babayaran, hal. $18',
+   'Enter reason i.e. an emergency, etc.': 'Ilagay ang dahilan hal. emergency, atbp.',
+   'How It Works': 'Paano Ito Gumagana',
+   '1. Enter your loan amount': '1. Ilagay ang halaga ng loan mo',
+   '3. Specify payback amount': '3. Tukuyin ang halaga ng payback',
+   '4. Explain your reason for the loan': '4. Ipaliwanag ang dahilan mo sa loan',
+   '5. Submit your request': '5. I-submit ang request mo'
 };
