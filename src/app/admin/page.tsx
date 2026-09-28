@@ -10,6 +10,7 @@ import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
 import AdminSearch from '@/app/admin/AdminSearch';
 import AdminShell from '@/app/admin/AdminShell';
+import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
@@ -57,36 +58,6 @@ import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
 
-type AdminTab =
-   | 'users'
-   | 'calendar'
-   | 'analytics'
-   | 'ux-health'
-   | 'on-chain'
-   | 'loans'
-   | 'pricing'
-   | 'coming-due'
-   | 'extensions'
-   | 'points'
-   | 'trust-points'
-   | 'defaults'
-   | 'requests'
-   | 'refunds'
-   | 'risk'
-   | 'self-lending'
-   | 'mule-risk'
-   | 'referrals'
-   | 'borrower-contacts'
-   | 'notifications'
-   | 'chat'
-   | 'relay'
-   | 'demo-platform'
-   | 'demo-b2c-dashboard'
-   | 'demo-b2c-assets'
-   | 'demo-monday'
-   | 'demo-map'
-   | 'demo-console'
-   | 'demo-spec';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -95,94 +66,6 @@ type NoticeTemplate = {
    title: string;
    body: string;
 };
-
-type NavGroup = { id: string; label: string; items: Array<{ id: AdminTab; label: string }> };
-
-const navGroups: NavGroup[] = [
-   {
-      id: 'overview',
-      label: 'Overview',
-      items: [
-         { id: 'users', label: 'User directory' },
-         { id: 'calendar', label: 'Calendar' },
-         { id: 'borrower-contacts', label: 'Borrower contacts' },
-         { id: 'analytics', label: 'Growth & analytics' },
-         { id: 'ux-health', label: 'UX health' },
-         { id: 'on-chain', label: 'On-chain (Base)' }
-      ]
-   },
-   {
-      id: 'loans',
-      label: 'Loans',
-      items: [
-         { id: 'loans', label: 'Loans' },
-         { id: 'pricing', label: 'Pricing health' },
-         { id: 'coming-due', label: 'Coming due' },
-         { id: 'extensions', label: 'Loan extensions' },
-         { id: 'requests', label: 'Loan request review' },
-         { id: 'refunds', label: 'Refunds' },
-         { id: 'defaults', label: 'Default recovery' }
-      ]
-   },
-   {
-      id: 'points',
-      label: 'Points',
-      items: [
-         { id: 'points', label: 'IOU points' },
-         { id: 'trust-points', label: 'Pandesal points' }
-      ]
-   },
-   {
-      id: 'risk',
-      label: 'Risk & fraud',
-      items: [
-         { id: 'risk', label: 'Risk assessment' },
-         { id: 'self-lending', label: 'Self-lending?' },
-         { id: 'mule-risk', label: 'Mule risk' }
-      ]
-   },
-   {
-      id: 'growth',
-      label: 'Growth & comms',
-      items: [
-         { id: 'referrals', label: 'Referral codes' },
-         { id: 'notifications', label: 'Notifications' }
-      ]
-   },
-   {
-      id: 'support',
-      label: 'Support',
-      items: [{ id: 'chat', label: 'Live chat' }]
-   },
-   {
-      id: 'funding',
-      label: 'Funding',
-      items: [{ id: 'relay', label: 'Liquidity Relay' }]
-   },
-   {
-      id: 'demo',
-      label: 'B2B demo',
-      items: [{ id: 'demo-platform', label: 'Platform demo' }]
-   },
-   {
-      id: 'demo-b2c',
-      label: 'B2C dashboard demo',
-      items: [
-         { id: 'demo-b2c-dashboard', label: 'Borrower dashboard' },
-         { id: 'demo-b2c-assets', label: 'Asset pack' }
-      ]
-   },
-   {
-      id: 'demo-old',
-      label: 'Old version B2B demo',
-      items: [
-         { id: 'demo-monday', label: 'The Monday Problem' },
-         { id: 'demo-map', label: 'Pool map' },
-         { id: 'demo-console', label: 'Facility console' },
-         { id: 'demo-spec', label: 'Build spec' }
-      ]
-   }
-];
 
 const recoveryPaths: Array<{ name: RecoveryPath; label: string; detail: string }> = [
    { name: 'repay_now', label: 'Repay now', detail: 'Keep the account paused and direct the borrower to repay or contact support.' },
@@ -393,42 +276,6 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-const ALL_ADMIN_TABS: readonly AdminTab[] = [
-   'users',
-   'calendar',
-   'analytics',
-   'ux-health',
-   'on-chain',
-   'loans',
-   'pricing',
-   'coming-due',
-   'extensions',
-   'points',
-   'trust-points',
-   'defaults',
-   'requests',
-   'refunds',
-   'risk',
-   'self-lending',
-   'mule-risk',
-   'referrals',
-   'borrower-contacts',
-   'notifications',
-   'chat',
-   'relay',
-   'demo-platform',
-   'demo-b2c-dashboard',
-   'demo-b2c-assets',
-   'demo-monday',
-   'demo-map',
-   'demo-console',
-   'demo-spec'
-];
-
-function isAdminTab(value: string): value is AdminTab {
-   return (ALL_ADMIN_TABS as readonly string[]).includes(value);
-}
-
 // Legacy ?tab= links (predate the /admin/:tab routes) keep working.
 function legacyQueryTab(): AdminTab {
    if (typeof window === 'undefined') return 'users';
@@ -442,7 +289,9 @@ export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
-   const visibleNavGroups = isFundingAdmin ? navGroups : navGroups.filter((group) => group.id !== 'funding');
+   const visibleNavGroups = isFundingAdmin
+      ? navGroups
+      : navGroups.map((group) => ({ ...group, items: group.items.filter((item) => item.id !== 'relay') }));
    const navigate = useNavigate();
    const { tab: tabParam } = useParams<{ tab?: string }>();
    // The URL is the source of truth for the active tab: /admin/relay, /admin/points, …
@@ -820,6 +669,11 @@ export default function AdminPanel() {
          adminName={currentAdminName}
          adminInitial={adminInitial}
          groups={visibleNavGroups}
+         counts={{
+            requests: overview?.loanRequestReviewCount ?? 0,
+            defaults: overview?.defaultedLoanCount ?? 0,
+            risk: overview?.highRiskProfileCount ?? 0
+         }}
          activeTab={activeTab}
          onSelectTab={(tab) => setActiveTab(tab as AdminTab)}
          search={<AdminSearch pages={searchPages} users={users} requests={loanRequests} onSelect={handleSearchSelect} />}
@@ -934,7 +788,7 @@ export default function AdminPanel() {
                   {!adminDataLoaded ? <EmptyPanel message="Loading user directory from Supabase..." /> : null}
                   {adminDataLoaded
                      ? filteredDirectory.map((user) => (
-                          <article key={user.id} id={`admin-user-${user.id}`} className="scroll-mt-24 border-b border-[#2a1453] last:border-b-0">
+                          <article key={user.id} id={`admin-user-${user.id}`} className="scroll-mt-32 border-b border-[#2a1453] last:border-b-0">
                              <div className="grid gap-5 p-6">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                    <div className="flex min-w-0 gap-4">
