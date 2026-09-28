@@ -221,7 +221,7 @@ type TooltipId = 'terms' | 'limit' | 'usdc';
 
 const tooltipCopy: Record<TooltipId, string> = {
    terms: 'Choose how much you want to borrow, when you will repay, and why you need the loan.',
-   limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
+   limit: 'Your current maximum borrow amount. Borrowing your full limit and repaying it on time raises this limit.',
    usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
 

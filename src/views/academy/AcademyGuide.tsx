@@ -136,7 +136,7 @@ const quizQuestions: QuizQuestion[] = [
    },
    {
       id: 'credit-loan',
-      question: 'Your credit limit is $15. What is a $20 request?',
+      question: 'Your credit limit is $15. What is a $15 request?',
       options: ['Trust-building', 'Credit-building', 'Already repaid'],
       answer: 'Credit-building'
    },
