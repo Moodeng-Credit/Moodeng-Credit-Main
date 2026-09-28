@@ -4,7 +4,10 @@
 //
 // Modes:
 //   POST { user_id }            single-user (action trigger / admin button)
-//   POST { batch: true }        recompute every user (cron / admin button)
+//   POST { batch: true }        recompute new, active users (cron / admin button) — see
+//                               batchUserIds(): signed up in the last 14 days AND logged in
+//                               during the last 7. Older or dormant accounts only get scored
+//                               on demand, so they stop re-alerting every morning.
 //   Optional body: { trigger: 'loan_request' | 'repayment' | 'manual' | 'daily_batch' | 'signup' }
 //
 // Required env:
@@ -207,6 +210,37 @@ async function computeOne(userId: string, trigger: string) {
   };
 }
 
+// ----- Batch scope ----------------------------------------------------------
+// The daily batch used to score every user, and long-dormant accounts that sit in the
+// Critical band re-fired a "critical band" email every day (24h dedup). Fraud risk is
+// concentrated in fresh accounts, so the batch only covers accounts created in the last
+// BATCH_NEW_ACCOUNT_DAYS that were seen (auth_ip_log) in the last BATCH_ACTIVE_DAYS.
+
+const BATCH_NEW_ACCOUNT_DAYS = 14;
+const BATCH_ACTIVE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+async function batchUserIds(): Promise<string[]> {
+  const createdCutoff = new Date(Date.now() - BATCH_NEW_ACCOUNT_DAYS * DAY_MS).toISOString();
+  const activeCutoff = new Date(Date.now() - BATCH_ACTIVE_DAYS * DAY_MS).toISOString();
+
+  const { data: newUsers, error: usersError } = await supa
+    .from('users')
+    .select('id')
+    .gte('created_at', createdCutoff);
+  if (usersError) throw usersError;
+  const newIds = (newUsers ?? []).map((u) => u.id as string);
+  if (newIds.length === 0) return [];
+
+  const { data: seen, error: seenError } = await supa
+    .from('auth_ip_log')
+    .select('user_id')
+    .in('user_id', newIds)
+    .gte('last_seen_at', activeCutoff);
+  if (seenError) throw seenError;
+  return [...new Set((seen ?? []).map((r) => r.user_id as string))];
+}
+
 // ----- HTTP handler ---------------------------------------------------------
 
 Deno.serve(async (req) => {
@@ -221,33 +255,21 @@ Deno.serve(async (req) => {
 
   try {
     if (body.batch === true) {
-      const PAGE = 100;
-      let offset = 0;
       const summary = {
         total: 0,
         by_band: { Low: 0, Medium: 0, High: 0, Critical: 0 } as Record<string, number>,
         alerts_fired: 0,
         errors: [] as Array<{ user_id: string; error: string }>
       };
-      while (true) {
-        const { data: users, error } = await supa
-          .from('users')
-          .select('id')
-          .range(offset, offset + PAGE - 1);
-        if (error) throw error;
-        if (!users || users.length === 0) break;
-        for (const u of users) {
-          try {
-            const r = await computeOne(u.id as string, trigger);
-            summary.total += 1;
-            summary.by_band[r.band] = (summary.by_band[r.band] ?? 0) + 1;
-            summary.alerts_fired += r.alerts.length;
-          } catch (e) {
-            summary.errors.push({ user_id: u.id as string, error: (e as Error).message });
-          }
+      for (const userId of await batchUserIds()) {
+        try {
+          const r = await computeOne(userId, trigger);
+          summary.total += 1;
+          summary.by_band[r.band] = (summary.by_band[r.band] ?? 0) + 1;
+          summary.alerts_fired += r.alerts.length;
+        } catch (e) {
+          summary.errors.push({ user_id: userId, error: (e as Error).message });
         }
-        if (users.length < PAGE) break;
-        offset += PAGE;
       }
       // Record the batch run so the heartbeat can confirm the CRS engine is alive.
       // Only batch (cron) runs are logged; per-user manual recomputes would flood the ledger.

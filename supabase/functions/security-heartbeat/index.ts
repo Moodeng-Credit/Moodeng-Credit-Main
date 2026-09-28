@@ -51,6 +51,17 @@ serve(async (req) => {
    const scanRow = lastScan as { started_at?: string; finished_at?: string } | null;
    const scanLastOkAt = scanRow?.finished_at ?? scanRow?.started_at ?? null;
 
+   const { data: lastRiskBatch } = await supabase
+      .from('security_job_runs')
+      .select('started_at, finished_at')
+      .eq('job_name', 'risk-score-recompute')
+      .eq('ok', true)
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+   const riskBatchRow = lastRiskBatch as { started_at?: string; finished_at?: string } | null;
+   const riskBatchLastOkAt = riskBatchRow?.finished_at ?? riskBatchRow?.started_at ?? null;
+
    const ipCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
    const riskCutoff = new Date(now.getTime() - 26 * 60 * 60 * 1000).toISOString();
    const backlogCutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -90,6 +101,7 @@ serve(async (req) => {
       scanLastOkAt,
       ipLogins24h,
       riskScores26h,
+      riskBatchLastOkAt,
       missingCriticalEnv,
       missingDegradedEnv,
       fraudChatIdConfigured,
