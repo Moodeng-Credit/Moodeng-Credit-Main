@@ -203,5 +203,111 @@ export const filipinoCoverageF: Record<string, string> = {
       'Hindi mo natapos ang World ID verification. Puwede mong subukan ulit anumang oras.',
    'You cannot lend to your own loan request. Please lend to other users.':
       'Hindi ka puwedeng magpahiram sa sarili mong loan request. Magpahiram sa ibang user.',
-   'View Other Loans': 'Tingnan ang ibang loan'
+   'View Other Loans': 'Tingnan ang ibang loan',
+
+   // src/components/tables/DataTable.tsx
+   'No data available': 'Walang available na data',
+
+   // src/components/support/LiveChatHost.tsx
+   'Message from Moodeng Support': 'Mensahe mula sa Moodeng Support',
+   'The team replied to your chat. Tap to read it.': 'Sumagot na ang team sa chat mo. I-tap para mabasa.',
+   'Open chat': 'Buksan ang chat',
+
+   // src/components/filters/DatePicker.tsx
+   Su: 'Lin',
+   Mo: 'Lun',
+   Tu: 'Mar',
+   We: 'Miy',
+   Th: 'Huw',
+   Fr: 'Biy',
+   Sa: 'Sab',
+
+   // src/components/filters/FilterSidebar.tsx
+   'Payback %': '% ng babayaran',
+
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   'We weren’t able to verify you with': 'Hindi ka namin na-verify gamit ang',
+   'your ID': 'ID mo',
+   'this time. No worries — you can try again whenever you’re ready.':
+      'ngayon. Walang problema — puwede mong subukan ulit kapag handa ka na.',
+   'or get help from our team': 'o humingi ng tulong sa team namin',
+
+   // src/components/verification/VerifiedCelebrationNotifier.tsx
+   'Manual review complete — you’re verified!': 'Tapos na ang manual review — verified ka na!',
+   'Your ID is verified!': 'Verified na ang ID mo!',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
+      'Galing! Kinumpirma ng mga reviewer namin ang mga dokumento mo. May full access ka na — simulan nang bumuo ng tiwala sa mga lender.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
+      'Galing! Kumpirmado na ang identity mo. May full access ka na — simulan nang bumuo ng tiwala sa mga lender.',
+
+   // src/components/verification/VerifyYourselfModal.tsx
+   'NFC-enabled (biometric) passport': 'NFC-enabled (biometric) na passport',
+   'from one of these countries, and you must currently be in one of them:':
+      'mula sa isa sa mga bansang ito, at dapat nasa isa ka sa mga ito ngayon:',
+   'Availability changes —': 'Nagbabago ang availability —',
+   'check the live map': 'tingnan ang live map',
+   'for exact locations.': 'para sa eksaktong mga lokasyon.',
+
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'Getting World ID ready...': 'Inihahanda ang World ID...',
+   'Continue in World App': 'Ituloy sa World App',
+   "World ID didn't open?": 'Hindi nagbukas ang World ID?',
+   'Opening World ID...': 'Binubuksan ang World ID...',
+   'One moment — setting up your secure verification.': 'Sandali lang — inihahanda namin ang secure na verification mo.',
+   'Everything is ready. Tap "Open World App" to verify you. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Handa na ang lahat. I-tap ang "Buksan ang World App" para ma-verify ka. Kung wala ka pang World App, gagabayan ka sa pag-install nito — tapos bumalik dito para tapusin.',
+   'Everything is ready. Tap "Open World App" to verify your passport or ID. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Handa na ang lahat. I-tap ang "Buksan ang World App" para ma-verify ang passport o ID mo. Kung wala ka pang World App, gagabayan ka sa pag-install nito — tapos bumalik dito para tapusin.',
+   'Tap "Open World ID" to launch World App. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'I-tap ang "Buksan ang World ID" para mabuksan ang World App. Kung wala ka pang World App, gagabayan ka sa pag-install nito — tapos bumalik dito para tapusin.',
+   "World App will open to verify you. Keep this screen open — you'll come back here to finish.":
+      'Magbubukas ang World App para ma-verify ka. Huwag isara ang screen na ito — babalik ka rito para tapusin.',
+   "World App will open to verify your passport or ID. Keep this screen open — you'll come back here to finish.":
+      'Magbubukas ang World App para ma-verify ang passport o ID mo. Huwag isara ang screen na ito — babalik ka rito para tapusin.',
+   'Open World App': 'Buksan ang World App',
+   'Open World ID': 'Buksan ang World ID',
+   'Still verifying your World ID': 'Vine-verify pa ang World ID mo',
+   'Verifying your World ID': 'Vine-verify ang World ID mo',
+   'Verification Successful': 'Matagumpay ang verification',
+   'Verification is taking too long': 'Masyadong natatagalan ang verification',
+   'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.':
+      'Mas matagal ito kaysa karaniwan. Huwag isara ang screen na ito habang tinatapos ng Moodeng ang pag-sync.',
+   'This usually takes less than 10 seconds. Keep this screen open.': 'Karaniwang wala pang 10 segundo ito. Huwag isara ang screen na ito.',
+   'Your World ID is linked to Moodeng.': 'Naka-link na ang World ID mo sa Moodeng.',
+   'Please try again or return to the previous step.': 'Subukan ulit o bumalik sa nakaraang hakbang.',
+   'Verification complete': 'Tapos na ang verification',
+   'Verification interrupted': 'Naputol ang verification',
+   'Finalizing verification': 'Tinatapos ang verification',
+   'Confirming verification': 'Kinukumpirma ang verification',
+   'Your status has been updated securely.': 'Ligtas na na-update ang status mo.',
+   'The verification did not finish. Try again when you are ready.': 'Hindi natapos ang verification. Subukan ulit kapag handa ka na.',
+   'Your verification is being processed securely.': 'Ligtas na pinoproseso ang verification mo.',
+   'Need help verifying?': 'Kailangan mo ng tulong sa pag-verify?',
+   'If World ID finished but Moodeng did not update, choose a support channel.':
+      'Kung natapos na ang World ID pero hindi nag-update ang Moodeng, pumili ng support channel.',
+   'No further action is needed.': 'Wala ka nang kailangang gawin.',
+   'Your verification status is protected.': 'Protektado ang verification status mo.',
+
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'World ID Verification': 'Pag-verify gamit ang World ID',
+
+   // src/components/worldId/useWorldIdVerification.ts
+   'You must be logged in to verify your World ID.': 'Kailangan mong mag-log in para ma-verify ang World ID mo.',
+   'World ID verification was accepted, but the account status did not update.':
+      'Tinanggap ang World ID verification, pero hindi nag-update ang status ng account.',
+   'Failed to prepare World ID verification.': 'Hindi naihanda ang World ID verification.',
+   'Verification failed.': 'Hindi nagtagumpay ang verification.',
+
+   // src/config/avatarBackgrounds.ts (avatar picker aria-labels in src/views/account/AvatarUploadModal.tsx)
+   'Purple avatar background': 'Background ng avatar: Lila',
+   'Mint avatar background': 'Background ng avatar: Mint',
+   'Sky avatar background': 'Background ng avatar: Asul-langit',
+   'Peach avatar background': 'Background ng avatar: Peach',
+   'Rose avatar background': 'Background ng avatar: Rosas',
+   'Lemon avatar background': 'Background ng avatar: Lemon',
+   'Stone avatar background': 'Background ng avatar: Abo',
+   'Night avatar background': 'Background ng avatar: Gabi',
+
+   // src/config/stripeOnrampConfig.ts
+   'US (excl. Hawaii) and EU only': 'US (maliban sa Hawaii) at EU lang'
 };
