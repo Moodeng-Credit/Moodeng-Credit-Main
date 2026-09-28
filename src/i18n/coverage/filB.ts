@@ -240,7 +240,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Grab Now': 'Kunin na',
    'Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal.':
       'I-verify ang identity ko: +10 Pandesal. I-unlock ang paghiram at ang pagpapakain ng pandesal kay Moodeng.',
-   'Connect Wallet: +10 Pandesal. Receive USDC loans.': 'Ikonek ang wallet: +10 Pandesal. Tumanggap ng USDC loans.',
+   'Connect Wallet: +10 Pandesal. Receive USDC loans.': 'Ikonekta ang wallet: +10 Pandesal. Tumanggap ng USDC loans.',
    'Turn on repayment reminders': 'I-on ang repayment reminders',
    'Get a heads-up before your due date so you never pay late.': 'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
    'Turn on': 'I-on',
@@ -589,7 +589,7 @@ export const filipinoCoverageB: Record<string, string> = {
       'Walang lumalabas na prompt? Siguraduhing bukas ang wallet app mo sa device na ito — o mag-reconnect dito.',
    'Reconnect wallet': 'I-reconnect ang wallet',
    'Due On': 'Due Sa',
-   'Get back USDC': 'Makukuha Muli na USDC',
+   'Get back USDC': 'Ibabalik na USDC',
    'View Request': 'Tingnan ang Request',
    'Your Loan Request': 'Ang Loan Request Mo',
    'Help Received': 'Natanggap ang Tulong',

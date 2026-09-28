@@ -7,7 +7,7 @@ export const filipinoCoverageC: Record<string, string> = {
       'Dito papasok ang loan mo — ginagawa ito mula sa Moodeng login mo, walang app na kailangan. Kikita ka rin ng Pandesal points.',
    'Setting up your wallet — this takes a few seconds. Keep this screen open.':
       'Sine-set up ang wallet mo — ilang segundo lang ito. Huwag isara ang screen na ito.',
-   'Connect Your Base Wallet': 'Ikonek ang Base Wallet mo',
+   'Connect Your Base Wallet': 'Ikonekta ang Base Wallet mo',
    'No app needed': 'Walang app',
    'Created from your Moodeng login in seconds. Fully yours — export the key anytime.':
       'Ginagawa mula sa Moodeng login mo sa loob ng ilang segundo. Sa iyo talaga ito — puwede mong i-export ang key anumang oras.',
@@ -17,23 +17,23 @@ export const filipinoCoverageC: Record<string, string> = {
    'Connecting your wallet lets Moodeng read your on-chain activity to award Pandesal points and send USDC loans directly to you. We never ask for your private keys or seed phrase.':
       'Kapag ikinonek mo ang wallet mo, mababasa ng Moodeng ang on-chain activity mo para mabigyan ka ng Pandesal points at direktang maipadala sa iyo ang USDC loans. Hindi namin kailanman hihingin ang private keys o seed phrase mo.',
    "Your Instant Wallet holds your USDC loans and earns you Pandesal points. It's created instantly from your Moodeng login — no app and no seed phrase — and it's fully yours: you can export its key anytime. Prefer a Base Account? You can connect one instead. We never ask for your private keys or seed phrase.":
-      'Nasa Instant Wallet mo ang USDC loans mo, at dito ka kumikita ng Pandesal points. Agad itong ginagawa mula sa Moodeng login mo — walang app at walang seed phrase — at sa iyo talaga ito: puwede mong i-export ang key nito anumang oras. Mas gusto mo ang Base Account? Puwede mo itong ikonek sa halip. Hindi namin kailanman hihingin ang private keys o seed phrase mo.',
+      'Nasa Instant Wallet mo ang USDC loans mo, at dito ka kumikita ng Pandesal points. Agad itong ginagawa mula sa Moodeng login mo — walang app at walang seed phrase — at sa iyo talaga ito: puwede mong i-export ang key nito anumang oras. Mas gusto mo ang Base Account? Puwede mo itong ikonekta sa halip. Hindi namin kailanman hihingin ang private keys o seed phrase mo.',
    'Connecting…': 'Kumokonekta…',
    'Connecting...': 'Kumokonekta...',
-   'Prefer a Base Account? Connect it instead': 'Mas gusto mo ang Base Account? Ikonek ito',
+   'Prefer a Base Account? Connect it instead': 'Mas gusto mo ang Base Account? Ikonekta ito',
    'Creating your wallet…': 'Ginagawa ang wallet mo…',
    'Create Instant Wallet': 'Gumawa ng Instant Wallet',
-   'Connect Base Wallet': 'Ikonek ang Base Wallet',
+   'Connect Base Wallet': 'Ikonekta ang Base Wallet',
    'Select a wallet above': 'Pumili ng wallet sa itaas',
    'Includes a ten-second face check, so Instant Wallets stay one per person.':
       'May kasamang sampung segundong face check, para isa lang ang Instant Wallet bawat tao.',
-   'or connect a Base Account or another wallet': 'o ikonek ang Base Account o ibang wallet',
+   'or connect a Base Account or another wallet': 'o ikonekta ang Base Account o ibang wallet',
    'Other Wallets': 'Ibang wallet',
    'Trust, Rainbow, Argent & more supported wallets': 'Trust, Rainbow, Argent at iba pang supported na wallet',
    'Moodeng hippo': 'Hippo ng Moodeng',
    'Wallet unavailable': 'Hindi available ang wallet',
    'Connection failed': 'Hindi nakakonekta',
-   'Could not connect wallet. Please try again.': 'Hindi maikonek ang wallet. Subukan ulit.',
+   'Could not connect wallet. Please try again.': 'Hindi nakonekta ang wallet. Subukan ulit.',
 
    // src/views/onboarding/WalletAlreadyLinked.tsx
    'This wallet is already in use': 'Ginagamit na ang wallet na ito',
@@ -49,12 +49,12 @@ export const filipinoCoverageC: Record<string, string> = {
 
    // src/views/onboarding/WalletConnectHelp.tsx
    'Trouble connecting?': 'Nahihirapang kumonek?',
-   'Use the popup that opens when you tap Connect.': 'Gamitin ang popup na bumubukas kapag na-tap mo ang Ikonek.',
+   'Use the popup that opens when you tap Connect.': 'Gamitin ang popup na bumubukas kapag na-tap mo ang Ikonekta.',
    "You don't need to download a separate Base app from the app store — creating an account there won't connect here.":
       'Hindi mo kailangang mag-download ng hiwalay na Base app mula sa app store — kahit gumawa ka ng account doon, hindi ito makokonek dito.',
    'Seeing a “connection is not private” warning?': 'May lumalabas bang “connection is not private” na warning?',
    "Your phone's clock is probably off. In Settings, set date & time to automatic, then tap Connect again.":
-      'Malamang mali ang oras sa phone mo. Sa Settings ng phone, i-set sa automatic ang date & time, tapos i-tap ulit ang Ikonek.',
+      'Malamang mali ang oras sa phone mo. Sa Settings ng phone, i-set sa automatic ang date & time, tapos i-tap ulit ang Ikonekta.',
    'Still stuck?': 'Hindi pa rin gumagana?',
    'Switch between Wi‑Fi and mobile data, make sure your browser is up to date, and reconnect.':
       'Magpalit sa pagitan ng Wi‑Fi at mobile data, siguraduhing updated ang browser mo, at kumonek ulit.',
@@ -77,7 +77,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'One quick face check': 'Isang mabilis na face check',
    'Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.':
       'Isa lang ang Instant Wallet bawat tao, kaya humihingi kami ng sampung segundong scan bago gawin ang sa iyo. Hindi mo na ito kakailanganin ulit.',
-   'Connect a wallet I already own': 'Ikonek ang wallet na mayroon na ako',
+   'Connect a wallet I already own': 'Ikonekta ang wallet na mayroon na ako',
    'Could not start the face check. Please try again.': 'Hindi masimulan ang face check. Subukan ulit.',
    'Quick face check': 'Mabilis na face check',
    'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
@@ -133,12 +133,12 @@ export const filipinoCoverageC: Record<string, string> = {
    'Test Email': 'Test email',
    'Send a test email to verify your email configuration': 'Magpadala ng test email para ma-check ang email configuration mo',
    'Send Test Email': 'Magpadala ng test email',
-   'Connect your telegram to get the latest updates': 'Ikonek ang Telegram mo para makuha ang pinakabagong updates',
-   'Connect your WhatsApp to get the latest updates': 'Ikonek ang WhatsApp mo para makuha ang pinakabagong updates',
+   'Connect your telegram to get the latest updates': 'Ikonekta ang Telegram mo para makuha ang pinakabagong updates',
+   'Connect your WhatsApp to get the latest updates': 'Ikonekta ang WhatsApp mo para makuha ang pinakabagong updates',
    'Change Username': 'Palitan ang username',
    'Change Email': 'Palitan ang email',
    Update: 'I-update',
-   Connect: 'Ikonek',
+   Connect: 'Ikonekta',
 
    // src/views/profile/components/settings/SecuritySettings.tsx
    'This information will be shown publicly so be careful what information you provide':
@@ -151,7 +151,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Load More...': 'Mag-load pa...',
 
    // src/views/profile/components/shared/TelegramModal.tsx
-   'Connect Telegram.': 'Ikonek ang Telegram.',
+   'Connect Telegram.': 'Ikonekta ang Telegram.',
 
    // src/views/profile/components/tabs/CreditLevelCard.tsx
    'Progression Paused (Late Repayment)': 'Naka-pause ang progress (late na bayad)',
@@ -291,7 +291,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Add a wallet to borrow': 'Magdagdag ng wallet para makahiram',
    'Add Wallet': 'Magdagdag ng wallet',
    'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
-      'Verified ka na. I-set up ang Instant Wallet mo (o ikonek ang Base Account) para manatiling naka-link sa Moodeng account mo ang loans at mga bayad.',
+      'Verified ka na. I-set up ang Instant Wallet mo (o ikonekta ang Base Account) para manatiling naka-link sa Moodeng account mo ang loans at mga bayad.',
    'Your repayment activity will appear here once a lender funds your first loan.':
       'Lalabas dito ang activity ng pagbabayad mo kapag napondohan na ng lender ang una mong loan.',
    'No repayments yet': 'Wala pang bayad',
@@ -760,8 +760,8 @@ export const filipinoCoverageC: Record<string, string> = {
    Low: 'Mababa',
    'Very Low': 'Napakababa',
    'Close loan mix explanation': 'Isara ang paliwanag ng loan mix',
-   'Trust loans': 'Mga Trust Loan',
-   'Credit loans': 'Mga Credit Loan',
+   'Trust loans': 'Mga Trust-Building Loan',
+   'Credit loans': 'Mga Credit-Building Loan',
    'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
       'Mas maliliit na loan na mas mababa sa kasalukuyang limit. Tumutulong itong ipakita na kaya ng borrower na magbayad, pero hindi nito tinataas ang credit level.',
    'Credit-level signal': 'Senyales ng Credit Level',
