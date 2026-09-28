@@ -83,9 +83,9 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Verified humans, clearer lending signals.': 'Người thật đã xác minh, tín hiệu cho vay rõ ràng hơn.',
    'Borrowers verify with World ID before they can request loans. That gives lenders a real-person signal without asking borrowers to hand over private documents to Moodeng.':
       'Người vay xác minh bằng World ID trước khi có thể yêu cầu khoản vay. Nhờ đó, người cho vay biết đây là người thật mà người vay không phải nộp giấy tờ cá nhân cho Moodeng.',
-   'Unique person': 'Người duy nhất',
+   'Unique person': 'Người thật, không trùng lặp',
    'One account': 'Một tài khoản',
-   'Less bot risk': 'Ít rủi ro bot',
+   'Less bot risk': 'Giảm rủi ro bot',
    'Verified with': 'Xác minh bằng',
    'Borrowers prove uniqueness through World App and Orb availability in the markets we support first.':
       'Người vay chứng minh mình là người duy nhất qua World App và Orb tại những thị trường chúng tôi hỗ trợ đầu tiên.',
@@ -109,7 +109,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'First markets': 'Thị trường đầu tiên',
 
    // src/views/lenderBenefits/sections/ProblemSection.tsx
-   'A global dilemma': 'Một nghịch lý toàn cầu',
+   'A global dilemma': 'Một bài toán toàn cầu',
    'Help workers build credit away from home.': 'Giúp người lao động xây dựng tín dụng khi xa quê.',
    'Overseas borrowers often need modest emergency money while their local credit history stays trapped somewhere else. Moodeng helps repayment become a record they can keep building.':
       'Người vay ở nước ngoài thường cần một khoản tiền khẩn cấp nhỏ, trong khi lịch sử tín dụng của họ lại bị kẹt ở quê nhà. Moodeng giúp việc trả nợ trở thành hồ sơ mà họ có thể tiếp tục xây dựng.',
@@ -259,7 +259,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Use the popup that opens when you tap Connect.': 'Hãy dùng cửa sổ bật lên xuất hiện khi bạn nhấn Kết nối.',
    "You don't need to download a separate Base app from the app store — creating an account there won't connect here.":
       'Bạn không cần tải ứng dụng Base riêng từ kho ứng dụng — tạo tài khoản ở đó sẽ không kết nối được tại đây.',
-   'Seeing a “connection is not private” warning?': 'Thấy cảnh báo “kết nối không riêng tư”?',
+   'Seeing a “connection is not private” warning?': 'Thấy cảnh báo “Kết nối của bạn không phải là kết nối riêng tư”?',
    "Your phone's clock is probably off. In Settings, set date & time to automatic, then tap Connect again.":
       'Có thể đồng hồ trên điện thoại của bạn bị lệch. Trong Cài đặt, hãy đặt ngày và giờ tự động, rồi nhấn Kết nối lại.',
    'Still stuck?': 'Vẫn chưa được?',
@@ -305,7 +305,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Start face check': 'Bắt đầu quét khuôn mặt',
 
    // src/views/onboarding/walletPickerOptions.tsx
-   'Top Pick': 'Nổi bật nhất',
+   'Top Pick': 'Lựa chọn hàng đầu',
    Popular: 'Phổ biến',
    'Zero fees': 'Miễn phí',
    'Best for beginners': 'Tốt nhất cho người mới',
@@ -326,7 +326,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Borrow Insight': 'Thông tin người vay',
    'posted on': 'đăng ngày',
    'Waiting for Funding': 'Đang chờ cấp vốn',
-   Asking: 'Yêu cầu',
+   Asking: 'Cần vay',
    Payback: 'Số tiền hoàn trả',
    Loan: 'Khoản vay',
    'Delete Loan Request?': 'Xóa yêu cầu vay?',
@@ -398,13 +398,13 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Unlocked!': 'Đã mở khóa!',
    'Request Loan': 'Yêu cầu vay',
    'Credit Unlocked': 'Đã mở khóa hạn mức',
-   LOCKED: 'Đã khóa',
+   LOCKED: 'ĐÃ KHÓA',
 
    // src/views/profile/components/tabs/DashboardTab.tsx
    'Loan Summary': 'Tổng quan khoản vay',
    'Lender Diversity Score': 'Điểm đa dạng người cho vay',
    Points: 'điểm',
-   'PAY LOANS NOW': 'Trả nợ ngay',
+   'PAY LOANS NOW': 'TRẢ NỢ NGAY',
    Info: 'Thông tin',
 
    // src/views/profile/components/tabs/SettingsTab.tsx
@@ -421,7 +421,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Open PDAX': 'Mở PDAX',
    'Open Binance': 'Mở Binance',
    'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash':
-      'Đề xuất · phí thấp nhất · mua USDC bằng PHP, rút về ngân hàng hoặc GCash',
+      'Khuyên dùng · phí thấp nhất · mua USDC bằng PHP, rút về ngân hàng hoặc GCash',
    "External option · you follow Moneybees' own process": 'Lựa chọn bên ngoài · bạn làm theo quy trình riêng của Moneybees',
    'Visit moneybees.ph → follow their own process → share your wallet address → pay only after they confirm':
       'Truy cập moneybees.ph → làm theo quy trình của họ → chia sẻ địa chỉ ví → chỉ thanh toán sau khi họ xác nhận',
@@ -595,7 +595,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Take the interactive tour': 'Xem hướng dẫn tương tác',
    'A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.':
       'Hướng dẫn 2 phút: chọn vai trò, xác minh, yêu cầu hoặc cấp vốn cho khoản vay, trả nợ và xây dựng tín dụng.',
-   'Getting Started | Moodeng Credit': 'Bắt đầu | Moodeng Credit',
+   'Getting Started | Moodeng Credit': 'Hướng dẫn bắt đầu | Moodeng Credit',
    'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
       'Tìm hiểu những điều cơ bản về Moodeng: xem hướng dẫn và lợi ích, tìm hiểu USDC hoạt động ra sao, hiểu về hệ thống nâng hạng tín dụng và khám phá Học viện cùng blog.',
 
@@ -624,20 +624,20 @@ export const vietnameseCoverageC: Record<string, string> = {
       'Mọi người đều bắt đầu ở Hạng 1. Mỗi Credit-Building Loan thành công sẽ mở khóa hạn mức vay tiếp theo.',
    'Repay on time, and the next level unlocks itself.': 'Trả nợ đúng hạn, hạng tiếp theo sẽ tự động mở khóa.',
    'Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing power compounds with every clean repayment.':
-      'Yêu cầu khoản vay, trả nợ trước ngày đến hạn, hạn mức của bạn sẽ tự động tăng lên — khả năng vay của bạn tích lũy qua từng lần trả nợ sạch sẽ.',
+      'Yêu cầu khoản vay, trả nợ trước ngày đến hạn, hạn mức của bạn sẽ tự động tăng lên — khả năng vay của bạn tích lũy qua từng lần trả nợ đầy đủ, đúng hạn.',
    'Two kinds of loan': 'Hai loại khoản vay',
-   'Trust-Building vs Credit-Building': 'Trust-Building và Credit-Building',
+   'Trust-Building vs Credit-Building': 'Trust-Building Loan và Credit-Building Loan',
    'Moodeng has two loan types. Both earn you Pandesal points — but only a full-limit Credit-Building Loan raises your borrowing limit.':
       'Moodeng có hai loại khoản vay. Cả hai đều giúp bạn kiếm điểm Pandesal — nhưng chỉ Credit-Building Loan bằng toàn bộ hạn mức mới nâng hạn mức vay của bạn.',
    'Your limit': 'Hạn mức của bạn',
    'Use it when:': 'Dùng khi:',
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
-      'Hầu hết người vay dùng cả hai — trust loan để duy trì hoạt động, credit loan để nâng hạng.',
+      'Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động, Credit-Building Loan để nâng hạng.',
    'Trust is the currency before the credit.': 'Niềm tin là đồng tiền đi trước tín dụng.',
    'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
-      'Mỗi khoản vay bạn trả sạch sẽ — kể cả một Trust-Building Loan nhỏ — đều tích lũy uy tín mà người cho vay có thể thấy được. Chính niềm tin đó giúp yêu cầu tiếp theo của bạn được cấp vốn nhanh hơn.',
+      'Mỗi khoản vay bạn trả đầy đủ, đúng hạn — kể cả một Trust-Building Loan nhỏ — đều tích lũy uy tín mà người cho vay có thể thấy được. Chính niềm tin đó giúp yêu cầu tiếp theo của bạn được cấp vốn nhanh hơn.',
    'Level up faster': 'Nâng hạng nhanh hơn',
-   'Do this, not that': 'Nên làm điều này, đừng làm điều kia',
+   'Do this, not that': 'Nên và không nên',
    'A few habits keep your climb steady and protect the Pandesal points you are earning.':
       'Vài thói quen nhỏ giúp bạn nâng hạng đều đặn và bảo vệ số điểm Pandesal bạn đang tích lũy.',
    'Credit Levels, answered': 'Giải đáp về Hạng tín dụng',
@@ -660,14 +660,14 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Level 1 unlocks $15 — small on purpose, since you have no history yet.':
       'Hạng 1 mở khóa $15 — cố tình nhỏ, vì bạn chưa có lịch sử vay.',
    'How you grow': 'Cách bạn nâng hạng',
-   'Repay your full limit': 'Trả hết toàn bộ hạn mức',
+   'Repay your full limit': 'Vay và trả đủ toàn bộ hạn mức',
    'A full-limit loan repaid on time raises your cap.': 'Một khoản vay bằng toàn bộ hạn mức, trả đúng hạn, sẽ nâng mức trần của bạn.',
    'That single clean repayment is what moves you up — nothing else does.':
-      'Chính lần trả nợ sạch sẽ đó đưa bạn lên hạng — không gì khác làm được điều này.',
+      'Chính lần trả nợ đầy đủ, đúng hạn đó đưa bạn lên hạng — không gì khác làm được điều này.',
    'The pace': 'Nhịp độ',
    'One level at a time': 'Mỗi lần chỉ lên một hạng',
    'No skipping or buying ahead — each level is earned from the one before.':
-      'Không thể bỏ qua hay mua trước — mỗi hạng đều phải kiếm được từ hạng trước đó.',
+      'Không thể bỏ qua hay mua trước — mỗi hạng đều phải đạt được từ hạng trước đó.',
    'Below your current limit': 'Thấp hơn hạn mức hiện tại của bạn',
    'A loan for less than your current limit.': 'Khoản vay thấp hơn hạn mức hiện tại của bạn.',
    'Stays the same': 'Giữ nguyên',
@@ -678,32 +678,32 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Request your full current limit only when you are confident you can repay it.':
       'Chỉ yêu cầu toàn bộ hạn mức hiện tại khi bạn chắc chắn có thể trả được.',
    'Pick a repayment date you can comfortably hit. Repaying early is always fine.':
-      'Chọn ngày trả nợ mà bạn có thể thoải mái đáp ứng. Trả sớm luôn luôn ổn.',
+      'Chọn ngày trả nợ mà bạn thoải mái trả kịp. Trả sớm luôn được.',
    'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.':
       'Đừng vay toàn bộ hạn mức nếu bạn không chắc chắn — một lần trễ hạn sẽ làm tạm dừng quá trình nâng hạng của bạn.',
    'Do not expect extra or early payments to skip a level. Growth is always one step at a time.':
       'Đừng mong đợi việc trả thêm hay trả sớm sẽ giúp bỏ qua một hạng. Việc nâng hạng luôn diễn ra từng bước một.',
    'Understanding your Pandesal points': 'Hiểu về điểm Pandesal của bạn',
-   'Trust-Building vs Credit-Building loans': 'Khoản vay Trust-Building và Credit-Building',
+   'Trust-Building vs Credit-Building loans': 'Trust-Building Loan và Credit-Building Loan',
    'How repayments affect your Pandesal points': 'Việc trả nợ ảnh hưởng đến điểm Pandesal của bạn như thế nào',
    'What is a Credit Level on Moodeng?': 'Hạng tín dụng trên Moodeng là gì?',
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Hạng tín dụng chính là hạn mức vay của bạn. Mọi người đều bắt đầu ở Hạng 1 với hạn mức $15, và hạn mức này tăng lên khi bạn hoàn thành các Credit-Building Loan.',
    'How do I move to the next level?': 'Làm sao để lên hạng tiếp theo?',
    'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Một lần trả nợ sạch sẽ mở khóa hạn mức tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+      'Vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả đầy đủ, đúng hạn. Mỗi lần trả nợ như vậy sẽ mở khóa hạn mức tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
    'Does borrowing a small amount level me up?': 'Vay một khoản nhỏ có giúp tôi lên hạng không?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Không. Vay thấp hơn hạn mức của bạn là một Trust-Building Loan. Nó giúp cải thiện uy tín của bạn với người cho vay nhưng không nâng Hạng tín dụng của bạn. Chỉ một Credit-Building Loan bằng toàn bộ hạn mức mới giúp bạn tiến lên.',
    'Can I skip levels by repaying early or paying extra?': 'Tôi có thể bỏ qua các hạng bằng cách trả sớm hoặc trả thêm không?',
    'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
-      'Không. Moodeng chỉ cho lên từng hạng một. Trả thêm hay trả sớm không giúp bỏ qua bước nào — mỗi hạn mức mới đều phải kiếm được bằng cách trả xong hạng trước đó.',
+      'Không. Moodeng chỉ cho lên từng hạng một. Trả thêm hay trả sớm không giúp bỏ qua bước nào — mỗi hạn mức mới đều phải đạt được bằng cách hoàn thành hạng trước đó.',
    'Why does the limit start at only $15?': 'Vì sao hạn mức chỉ bắt đầu ở $15?',
    'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
       'Hạn mức khởi điểm nhỏ giúp giảm rủi ro cho người cho vay khi cấp vốn cho ai đó chưa có lịch sử vay. Khi bạn chứng minh được khả năng trả nợ đáng tin cậy, hạn mức của bạn và niềm tin của người cho vay sẽ cùng tăng lên.',
    'How long does it take to reach the $60 level?': 'Mất bao lâu để đạt đến hạng $60?',
    'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
-      'Không có mốc thời gian cố định. Mỗi hạng cần một khoản vay bằng toàn bộ hạn mức được trả đúng hạn, nên tốc độ phụ thuộc vào việc bạn vay và trả nhanh thế nào. Người vay trả nợ sạch sẽ có thể lên hạng chỉ sau vài chu kỳ vay.',
+      'Không có mốc thời gian cố định. Mỗi hạng cần một khoản vay bằng toàn bộ hạn mức được trả đúng hạn, nên tốc độ phụ thuộc vào việc bạn vay và trả nhanh thế nào. Người vay trả nợ đầy đủ, đúng hạn có thể lên hạng chỉ sau vài chu kỳ vay.',
    'What happens if I miss a repayment?': 'Điều gì xảy ra nếu tôi trễ hạn trả nợ?',
    'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
       'Một lần trả trễ hoặc bỏ lỡ sẽ làm giảm điểm Pandesal của bạn và có thể làm tạm dừng tiến trình nâng hạng. Người cho vay rất coi trọng việc trễ hạn, vì vậy trả đúng hạn quan trọng hơn số tiền vay.',
@@ -719,7 +719,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.':
       'Chính xác — chỉ một Credit-Building Loan bằng toàn bộ hạn mức, trả đúng hạn, mới nâng mức trần của bạn.',
    'Nice try! Only a full-limit Credit-Building Loan raises your level.':
-      'Gần đúng rồi! Chỉ Credit-Building Loan bằng toàn bộ hạn mức mới nâng hạng của bạn.',
+      'Tiếc quá! Chỉ Credit-Building Loan bằng toàn bộ hạn mức mới nâng hạng của bạn.',
    'Your limit is $20. You borrow $10 and repay on time. What happens?':
       'Hạn mức của bạn là $20. Bạn vay $10 và trả đúng hạn. Điều gì sẽ xảy ra?',
    'Right! Small loans build trust — they just don’t raise your limit.':
@@ -733,7 +733,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'You got it — a missed repayment pauses progress and dents your Pandesal points.':
       'Đúng rồi — trễ hạn sẽ làm tạm dừng tiến trình và giảm điểm Pandesal của bạn.',
    'Actually it’s a late or missed repayment — that’s what pauses your climb.':
-      'Thực ra là do trả trễ hoặc bỏ lỡ hạn — đó chính là điều làm chậm việc nâng hạng của bạn.',
+      'Thực ra là do trả trễ hoặc bỏ lỡ hạn — đó chính là điều làm tạm dừng việc nâng hạng của bạn.',
    'Credit Level Legend': 'Huyền thoại Hạng tín dụng',
    'Rising Star': 'Ngôi sao đang lên',
    'Just getting started': 'Vừa mới bắt đầu',
@@ -771,17 +771,17 @@ export const vietnameseCoverageC: Record<string, string> = {
    'USDC (USD Coin) is a': 'USDC (USD Coin) là một',
    'The reasons': 'Những lý do',
    'Free transfers, solid technology, real security, and a value that never drifts.':
-      'Chuyển tiền miễn phí, công nghệ vững chắc, bảo mật thực sự, và giá trị không bao giờ trôi dạt.',
+      'Chuyển tiền miễn phí, công nghệ vững chắc, bảo mật thực sự, và giá trị luôn ổn định.',
    'Where it is used': 'Nơi nó được sử dụng',
    'USDC works in two worlds. Here is which is which — and where Moodeng fits.':
       'USDC hoạt động trong hai thế giới. Đây là sự khác biệt giữa chúng — và Moodeng nằm ở đâu.',
    'On Moodeng:': 'Trên Moodeng:',
    Definitions: 'Định nghĩa',
-   'The words, in plain English': 'Các từ ngữ, giải thích dễ hiểu',
+   'The words, in plain English': 'Giải thích thuật ngữ dễ hiểu',
    'Staking and yield get mixed up a lot — so do payments and DeFi. Here is what each one really means.':
       'Staking và yield thường bị nhầm lẫn với nhau — thanh toán và DeFi cũng vậy. Đây là ý nghĩa thực sự của từng khái niệm.',
    'Staking secures a blockchain and pays rewards for doing so — you cannot stake USDC that way. Yield is simply the return for lending or supplying USDC in DeFi. Moodeng does neither: it uses USDC to fund and repay community loans.':
-      'Staking giúp bảo mật một blockchain và được trả thưởng vì điều đó — bạn không thể staking USDC theo cách đó. Yield đơn giản là lợi nhuận khi cho vay hoặc cung cấp USDC trong DeFi. Moodeng không làm cả hai việc này: Moodeng dùng USDC để cấp vốn và trả nợ cho các khoản vay cộng đồng.',
+      'Staking giúp bảo mật một blockchain và được trả thưởng vì điều đó — bạn không thể staking USDC theo cách đó. Yield đơn giản là lợi nhuận khi cho vay hoặc cung cấp USDC trong DeFi. Moodeng không làm việc nào trong hai việc này: Moodeng dùng USDC để cấp vốn và trả nợ cho các khoản vay cộng đồng.',
    'Quick answers to what borrowers ask most about the dollar behind their loans.':
       'Câu trả lời nhanh cho những điều người vay hay thắc mắc về đồng đô la đứng sau khoản vay của họ.',
    'USDC is the money layer under everything you do on Moodeng.': 'USDC là lớp tiền tệ nền tảng cho mọi việc bạn làm trên Moodeng.',
@@ -798,7 +798,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'USDC is a digital dollar that settles on a blockchain in seconds, 24/7.':
       'USDC là đồng đô la kỹ thuật số được xử lý trên blockchain chỉ trong vài giây, suốt 24/7.',
    'It runs on open networks (Moodeng uses Base) and can move across chains — so value travels as easily as a message.':
-      'Nó chạy trên các mạng lưới mở (Moodeng dùng Base) và có thể di chuyển qua nhiều chain khác nhau — nên giá trị di chuyển dễ dàng như một tin nhắn.',
+      'Nó chạy trên các mạng lưới mở (Moodeng dùng Base) và có thể di chuyển qua nhiều chuỗi khác nhau — nên giá trị di chuyển dễ dàng như một tin nhắn.',
    'Regulated and fully backed': 'Được quản lý và đảm bảo đầy đủ',
    'Every USDC is backed 1:1 by cash and short-term US Treasuries.':
       'Mỗi USDC đều được đảm bảo 1:1 bằng tiền mặt và trái phiếu Kho bạc Mỹ ngắn hạn.',
@@ -807,7 +807,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    Usability: 'Tính tiện dụng',
    'A dollar that holds its value': 'Một đồng đô la giữ nguyên giá trị',
    'One USDC is always worth one dollar, so loan amounts never drift.':
-      'Một USDC luôn có giá trị bằng một đô la, nên số tiền vay không bao giờ trôi dạt.',
+      'Một USDC luôn có giá trị bằng một đô la, nên số tiền vay không bao giờ bị biến động.',
    'You can hold, send, and receive it from almost anywhere without relying on a traditional bank account.':
       'Bạn có thể giữ, gửi và nhận nó từ hầu như bất cứ đâu mà không cần dựa vào tài khoản ngân hàng truyền thống.',
    'The everyday economy': 'Nền kinh tế hằng ngày',
@@ -844,7 +844,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'See the people building borrower trust.': 'Xem những người đang xây dựng niềm tin cho người vay.',
 
    // src/views/transactions/TransactionDetail.tsx
-   'Optional Gift': 'Quà tặng tùy chọn',
+   'Optional Gift': 'Quà tặng (không bắt buộc)',
    'Would you like to return the interest as a gift?': 'Bạn có muốn trả lại phần lãi như một món quà không?',
    'Interest to return': 'Phần lãi cần trả lại',
    'Return interest?': 'Trả lại phần lãi?',
@@ -882,7 +882,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Identity verification completed.': 'Đã hoàn tất xác minh danh tính.',
    'No loan activity yet': 'Chưa có hoạt động vay nào',
    'No funded loans have been recorded for this borrower yet.': 'Chưa có khoản vay nào được cấp vốn cho người vay này.',
-   'Repeat Lender Relationship': 'Mối quan hệ với người cho vay lặp lại',
+   'Repeat Lender Relationship': 'Vay lại người cho vay cũ',
    'Borrowed again from an existing lender.': 'Vay lại từ một người cho vay đã từng cấp vốn.',
    'Partial Repayment Made': 'Đã trả một phần nợ',
    'Credit Limit Unlocked': 'Đã mở khóa hạn mức tín dụng',
@@ -890,7 +890,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Loan remains unpaid past the due date.': 'Khoản vay vẫn chưa được trả sau ngày đến hạn.',
    'More Trust-Building Loans': 'Nhiều khoản Trust-Building Loan hơn',
    'This borrower has more smaller trust-building loans than full-limit credit-building loans. These help show repayment history, but they do not raise credit level.':
-      'Người vay này có nhiều khoản trust-building loan nhỏ hơn là các khoản credit-building loan bằng toàn bộ hạn mức. Những khoản vay này giúp thể hiện lịch sử trả nợ, nhưng không nâng hạng tín dụng.',
+      'Người vay này có nhiều Trust-Building Loan nhỏ hơn là Credit-Building Loan bằng toàn bộ hạn mức. Những khoản vay này giúp thể hiện lịch sử trả nợ, nhưng không nâng hạng tín dụng.',
 
    // src/views/user-profile/UserProfile.tsx
    'Borrower context': 'Bối cảnh người vay',
@@ -937,7 +937,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'How Credit Level Works': 'Hạng tín dụng hoạt động như thế nào',
    'Credit Level shows the borrower’s current borrowing tier.': 'Hạng tín dụng thể hiện bậc vay hiện tại của người vay.',
    'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
-      'Người vay lên hạng bằng cách vay một khoản Credit-Building bằng hạn mức hiện tại và trả nợ thành công.',
+      'Người vay lên hạng bằng cách vay một Credit-Building Loan bằng toàn bộ hạn mức hiện tại và trả nợ thành công.',
    'Credit Levels': 'Hạng tín dụng',
    'Credit limit': 'Hạn mức tín dụng',
    'How Lender Diversity Works': 'Đa dạng người cho vay hoạt động như thế nào',
@@ -1002,7 +1002,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Looks for loans arriving in suspicious clusters instead of normal lending intervals.':
       'Tìm kiếm các khoản vay xuất hiện thành từng cụm đáng ngờ thay vì theo khoảng cách cho vay bình thường.',
    'Recent suspicious patterns matter more. Older clean history fades over time.':
-      'Các mô hình đáng ngờ gần đây có ảnh hưởng nhiều hơn. Lịch sử sạch cũ hơn sẽ mờ dần theo thời gian.',
+      'Các mô hình đáng ngờ gần đây có ảnh hưởng nhiều hơn. Lịch sử bình thường từ lâu sẽ giảm dần ảnh hưởng theo thời gian.',
    'Group coordination': 'Sự phối hợp theo nhóm',
    'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
       'Kiểm tra xem có nhiều người cho vay xuất hiện cùng một thời điểm hay không, điều này có thể gợi ý một nhóm được huy động.',
@@ -1012,8 +1012,8 @@ export const vietnameseCoverageC: Record<string, string> = {
    Low: 'Thấp',
    'Very Low': 'Rất thấp',
    'Close loan mix explanation': 'Đóng phần giải thích cơ cấu khoản vay',
-   'Trust loans': 'Khoản vay Trust',
-   'Credit loans': 'Khoản vay Credit',
+   'Trust loans': 'Khoản vay xây dựng niềm tin',
+   'Credit loans': 'Khoản vay nâng hạng',
    'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
       'Khoản vay nhỏ hơn hạn mức hiện tại. Chúng giúp cho thấy người vay có khả năng trả nợ, nhưng không nâng hạng tín dụng.',
    'Credit-level signal': 'Tín hiệu hạng tín dụng',
@@ -1023,7 +1023,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    // src/views/withdraw/CashoutFaceCheck.tsx
    'Back to withdraw': 'Quay lại rút tiền',
    "Since this is your first cash-out, we ask for a ten-second scan to confirm it's really you before sending any money out.":
-      'Vì đây là lần rút tiền mặt đầu tiên của bạn, chúng tôi cần bạn quét khuôn mặt trong mười giây để xác nhận đúng là bạn trước khi gửi bất kỳ khoản tiền nào.',
+      'Vì đây là lần rút tiền mặt đầu tiên của bạn, chúng tôi cần bạn quét khuôn mặt trong 10 giây để xác nhận đúng là bạn trước khi gửi bất kỳ khoản tiền nào.',
 
    // src/views/withdraw/Withdraw.tsx
    "You're sending": 'Bạn đang gửi',
@@ -1037,7 +1037,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    'Sell for local currency via P2P marketplace': 'Bán lấy tiền địa phương qua sàn P2P',
    'GCash, Maya or Bank · 30 min–hours': 'GCash, Maya hoặc ngân hàng · 30 phút–vài giờ',
    'External option · buy and sell via their own process': 'Lựa chọn bên ngoài · bạn tự mua bán theo quy trình riêng của họ',
-   "You follow Moneybees' instructions directly": 'Bạn làm theo hướng dẫn của Moneybees trực tiếp',
+   "You follow Moneybees' instructions directly": 'Bạn làm theo trực tiếp hướng dẫn của Moneybees',
    'How this works': 'Cách thức hoạt động',
    'Show me how': 'Chỉ cho tôi cách làm',
    'Video guide coming soon': 'Video hướng dẫn sắp ra mắt',
@@ -1081,7 +1081,7 @@ export const vietnameseCoverageC: Record<string, string> = {
    "Finish verifying on the Moneybees page that opened, then tap below. Once Moneybees confirms your identity, they'll reach out by chat.":
       'Hoàn tất xác minh trên trang Moneybees vừa mở ra, sau đó nhấn vào nút bên dưới. Khi Moneybees xác nhận danh tính của bạn, họ sẽ liên hệ qua chat.',
    'Reopen Moneybees verification': 'Mở lại trang xác minh Moneybees',
-   'Continue to Moneybees KYC': 'Tiếp tục đến KYC của Moneybees',
+   'Continue to Moneybees KYC': 'Tiếp tục xác minh KYC với Moneybees',
    'Open GCrypto in GCash': 'Mở GCrypto trong GCash',
    'How to open GCrypto in GCash': 'Cách mở GCrypto trong GCash',
    'Copy your GCash address': 'Sao chép địa chỉ GCash của bạn',
