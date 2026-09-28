@@ -129,7 +129,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       steps: {
          en: [
             'Create your account with a username, email, and password.',
-            'Tap "Apply for a Loan" to start.',
+            'Tap "Apply for a loan" to start.',
             'Tap "Create Instant Wallet" — your wallet is created straight from your Moodeng login, no app needed. (Prefer a Base Account? Set one up at account.base.app and connect it instead.)',
             'Tap "Verify Yourself" and complete "Verify Your ID" — about 3 minutes.',
             'Open the Request Board and set your amount (up to your limit), repayment date, and a clear reason.'

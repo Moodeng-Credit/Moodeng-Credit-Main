@@ -227,7 +227,7 @@ const LoanChoiceScreen = (): JSX.Element => (
       </div>
       <div className="academy-choice-rule">
          <span>Below $15 = Trust-Building</span>
-         <span>Above $15 = Credit-Building</span>
+         <span>Full $15 = Credit-Building</span>
       </div>
       <div className="academy-choice-grid">
          <div className="academy-choice-card academy-choice-card--trust">
