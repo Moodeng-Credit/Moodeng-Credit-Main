@@ -39,6 +39,7 @@ export const indonesianCoverageA: Record<string, string> = {
       'Masukkan kode 8 digit dari email terbaru Moodeng untuk membuat kata sandi akun ini.',
    'Your email link was accepted. Sign in to continue if Moodeng did not open your account automatically.':
       'Link email kamu diterima. Masuk untuk melanjutkan jika Moodeng tidak membuka akunmu secara otomatis.',
+   'Confirm Email': 'Konfirmasi Email',
 
    // src/app/auth/confirm/page.tsx
    'Account access': 'Akses akun',
@@ -121,6 +122,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Last updated: June 2026': 'Terakhir diperbarui: Juni 2026',
    'Looking for our Privacy Policy?': 'Mencari Kebijakan Privasi kami?',
    'View Privacy Policy →': 'Lihat Kebijakan Privasi →',
+   '"Data deletion request"': '"Data deletion request" (permintaan penghapusan data)',
 
    // src/app/forgot-password/page.tsx
    'Could not send a reset code. Try again in a moment.': 'Kode reset gagal dikirim. Coba lagi sebentar lagi.',
@@ -630,9 +632,12 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // src/components/verification/CountryFlags.tsx
    Vietnam: 'Vietnam',
+   Taiwan: 'Taiwan',
    'South Korea': 'Korea Selatan',
    Philippines: 'Filipina',
+   Malaysia: 'Malaysia',
    Japan: 'Jepang',
+   Indonesia: 'Indonesia',
    Thailand: 'Thailand',
 
    // src/components/verification/VerificationUnsuccessfulModal.tsx
@@ -693,5 +698,85 @@ export const indonesianCoverageA: Record<string, string> = {
    'Back to verification options': 'Kembali ke pilihan verifikasi',
    'Verify Yourself': 'Verifikasi Diri',
    'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
-      'Konfirmasi identitasmu untuk membuka akunmu — pengecekan satu kali yang butuh sekitar 3 menit.'
+      'Konfirmasi identitasmu untuk membuka akunmu — pengecekan satu kali yang butuh sekitar 3 menit.',
+
+   // src/components/worldId/WorldIDVerificationStatus.tsx
+   "To confirm your identity and show it's really you, we use World ID. This helps keep our community safe, avoids bots, and builds trust for borrowers.":
+      'Untuk mengonfirmasi identitasmu dan menunjukkan bahwa ini benar-benar kamu, kami menggunakan World ID. Ini membantu menjaga keamanan komunitas kami, mencegah bot, dan membangun kepercayaan untuk peminjam.',
+   'Human Verified with World ID': 'Terverifikasi sebagai Manusia dengan World ID',
+
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'This may take a few seconds.': 'Ini mungkin butuh beberapa detik.',
+   'Keep waiting': 'Tetap tunggu',
+   'Verification status': 'Status verifikasi',
+   'Having trouble?': 'Mengalami masalah?',
+   'Still stuck? Contact support': 'Masih terkendala? Hubungi dukungan',
+   'Close verification help': 'Tutup bantuan verifikasi',
+
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'Got it': 'Mengerti',
+
+   // src/views/academy/AcademyGuide.tsx
+   'Set Up Your Instant Wallet': 'Siapkan Instant Wallet Kamu',
+   'Set Up Your Wallet': 'Siapkan Dompetmu',
+   'Gasless transactions are supported on Base.': 'Transaksi tanpa gas didukung di Base.',
+   'Available credit limit': 'Limit kredit yang tersedia',
+   '$10 request': 'Permintaan $10',
+   'Any request below your $15 credit limit becomes a trust-building loan.':
+      'Permintaan berapa pun di bawah limit kredit $15 kamu menjadi trust-building loan.',
+   '$10 is below your $15 limit': '$10 di bawah limitmu $15',
+   'Does not raise Credit Level': 'Tidak menaikkan Level Kredit',
+   '$20 request': 'Permintaan $20',
+   'Any request above your $15 credit limit becomes a credit-building loan.':
+      'Permintaan berapa pun di atas limit kredit $15 kamu menjadi credit-building loan.',
+   '$20 is above your $15 limit': '$20 di atas limitmu $15',
+   'Can increase your next limit': 'Bisa menaikkan limit berikutnya',
+   'Best when repayment is clear': 'Paling baik jika pembayaran kembali jelas',
+   'Borrow amount': 'Jumlah pinjaman',
+   'Payback amount': 'Jumlah bayar kembali',
+   Reason: 'Alasan',
+   'Needs money before Friday': 'Butuh uang sebelum hari Jumat',
+   'Short term': 'Jangka pendek',
+   'Repayment amount': 'Jumlah pembayaran kembali',
+   'Usual loan size': 'Besaran pinjaman biasanya',
+   'Typical payment time': 'Waktu pembayaran biasanya',
+   'See How Growth Works': 'Lihat Cara Kerja Pertumbuhan',
+   'Mecha says': 'Kata Mecha',
+   'Video guide': 'Panduan video',
+   'Want to learn more? Open the step-by-step credit guide.':
+      'Ingin belajar lebih lanjut? Buka panduan kredit langkah demi langkah.',
+   'Moodeng Academy Quiz': 'Kuis Moodeng Academy',
+   'Ready for the check?': 'Siap untuk pengecekannya?',
+   'Start quiz': 'Mulai kuis',
+   'Retake quiz': 'Ulangi kuis',
+   'Submit a loan request': 'Ajukan permintaan pinjaman',
+   'Get matched on the request board': 'Dapatkan kecocokan di papan permintaan',
+   'Grow your next limit': 'Tumbuhkan limit berikutnya',
+   'Full-limit loans repaid on time can unlock the next level, helping you build a visible credit record.':
+      'Pinjaman limit penuh yang dibayar tepat waktu bisa membuka level berikutnya, membantu kamu membangun rekam jejak kredit yang terlihat.',
+   'Level up': 'Naik Level',
+   Quiz: 'Kuis',
+   'Why do borrowers verify with World ID?': 'Kenapa peminjam verifikasi dengan World ID?',
+   'To prove they are unique': 'Untuk membuktikan mereka unik',
+   'Why do borrowers set up a wallet (Instant Wallet or Base Account)?':
+      'Kenapa peminjam menyiapkan dompet (Instant Wallet atau Base Account)?',
+   'To receive USDC loans and build onchain reputation': 'Untuk menerima pinjaman USDC dan membangun reputasi onchain',
+   'Your credit limit is $15. What is a $10 request?': 'Limit kreditmu $15. Apa itu permintaan $10?',
+   'Your credit limit is $15. What is a $20 request?': 'Limit kreditmu $15. Apa itu permintaan $20?',
+   'What helps a borrower build a stronger record?': 'Apa yang membantu peminjam membangun rekam jejak yang lebih kuat?',
+   'Repaying clearly and on time': 'Membayar kembali dengan jelas dan tepat waktu',
+   'Nice practice request.': 'Latihan permintaan yang bagus.',
+   'Strong repayment move.': 'Langkah pembayaran kembali yang kuat.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
+      'Bagus! Membayar kembali itu sangat penting di Moodeng. Pembayaran tepat waktu membantu rekam jejak kepercayaanmu, membuat pemberi pinjaman tetap yakin, dan bisa membuka limit pinjaman yang lebih baik seiring waktu.',
+   'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
+      'Kata Mecha: pinjaman limit penuh yang dibayar tepat waktu adalah cara peminjam membangun rekam jejak kredit yang lebih kuat. Jaga pembayaran tetap bersih, dan limit berikutnya bisa tumbuh.',
+   'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.':
+      'Panduan langkah demi langkah alur peminjam Moodeng — daftar, verifikasi, siapkan Instant Wallet kamu (atau hubungkan Base Account), ajukan pinjaman, bayar kembali, dan tumbuhkan limit kreditmu.',
+   'Close message': 'Tutup pesan',
+   'Academy path': 'Alur Academy',
+   'Close tutorial video': 'Tutup video tutorial',
+   'Moodeng Academy tutorial video': 'Video tutorial Moodeng Academy',
+   'Moodeng Credit steps': 'Langkah-langkah Moodeng Credit',
+   'Choose reward type': 'Pilih jenis hadiah'
 };
