@@ -146,9 +146,6 @@ export const filipinoCoverageA: Record<string, string> = {
    'Use at least 8 characters.': 'Gumamit ng kahit 8 characters.',
    'Updating…': 'Nag-a-update…',
 
-   // src/app/role-selection/page.tsx
-   'Moodeng hippo': 'Si Moodeng na hippo',
-
    // src/app/simple/page.tsx
    'Simple Page - CSS and Navigation working!': 'Simple Page - gumagana ang CSS at Navigation!',
 
@@ -279,13 +276,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'View IOU point history': 'Tingnan ang history ng IOU points',
 
    // src/components/UserPay.tsx
-   'Still confirming': 'Kinukumpirma pa',
-   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
-      'Naipadala na ang bayad mo at sandali pa bago ito ma-confirm. Awtomatiko itong mag-a-update.',
    'Unknown error': 'Hindi kilalang error',
-   'Payment Sent, Still Recording': 'Naipadala ang bayad, nire-record pa',
-   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.',
    'Loan Repayment': 'Pagbabayad ng loan',
    'Total Due': 'Kabuuang babayaran',
    'Amount Paid': 'Nabayaran na',
