@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
-
-import { getMechaCopy } from '@/components/mecha/mechaCopy';
 import type { MechaContext } from '@/components/mecha/mechaBus';
+import { getMechaCopy } from '@/components/mecha/mechaCopy';
 import { clearThread, loadThread, maxMessageSeq, saveThread } from '@/components/mecha/mechaStorage';
+
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type MechaRole = 'user' | 'assistant';
 
@@ -50,10 +50,7 @@ export function useMechaChat({ locale, getContext, persistKey }: UseMechaChatOpt
       if (persistKey) saveThread(persistKey, { messages, feedback });
    }, [persistKey, messages, feedback]);
 
-   const buildPayload = useCallback(
-      (history: MechaMessage[]) => history.map((m) => ({ role: m.role, content: m.content })),
-      []
-   );
+   const buildPayload = useCallback((history: MechaMessage[]) => history.map((m) => ({ role: m.role, content: m.content })), []);
 
    const currentContext = useCallback((): MechaContext & { locale?: string } => {
       const ctx = getContext?.() ?? {};
@@ -75,10 +72,7 @@ export function useMechaChat({ locale, getContext, persistKey }: UseMechaChatOpt
 
             const res = (data ?? null) as SupportChatResponse | null;
             const reply = (res?.reply || '').trim() || copy.errorLine;
-            setMessages((prev) => [
-               ...prev,
-               { id: nextId(), role: 'assistant', content: reply, offerHuman: res?.offer_human === true }
-            ]);
+            setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: reply, offerHuman: res?.offer_human === true }]);
          } catch (err) {
             console.warn('[Mecha] chat failed', err);
             setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: copy.errorLine, offerHuman: true, isError: true }]);

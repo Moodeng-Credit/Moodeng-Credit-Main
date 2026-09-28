@@ -146,7 +146,7 @@ Malawak din itong tinatanggap: lahat ng malalaking crypto exchange ay tumatangga
 
 I-tap ang "Verify Yourself" sa app para magsimula. Karamihan ng check ay natatapos sa loob ng ilang minuto.`,
       readMorePath: '/academy/money/verify',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    }
 ];
 
@@ -156,18 +156,18 @@ const FILIPINO_BORROWER_FAQS: AccountFAQItem[] = [
       question: 'Paano ko maililipat ang loan ko sa local bank account ko?',
       answer: `Ipadala ang USDC mo sa isang exchange o local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), at iba pa — ibenta ito roon, at i-withdraw ang local currency diretso sa bank o e-wallet mo.
 
-Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagpapadala ng USDC. Nasa buong guide ang video walkthrough at step-by-step na instructions para sa bawat serbisyo.`,
+Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagpapadala ng USDC. Nasa buong gabay ang video walkthrough at step-by-step na instructions para sa bawat serbisyo.`,
       readMorePath: '/academy/money/withdraw',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    },
    {
       id: 'how-to-repay',
       question: 'Paano ko babayaran ang loan ko?',
       answer: `Buksan ang Magbayad screen — makikita mo roon ang eksaktong halagang dapat bayaran at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph, PDAX, GCrypto, at iba pa) — laging sa Base network.
 
-Magbayad bago ang due date — nagdadagdag ng Pandesal points ang bayad na on time, at kapag nabayaran mo nang on time ang loan na katumbas ng buong limit mo, maa-unlock ang susunod na Credit Level. Nasa buong guide ang bawat paraan ng pagbabayad.`,
+Magbayad bago ang due date — nagdadagdag ng Pandesal points ang bayad na on time, at kapag nabayaran mo nang on time ang loan na katumbas ng buong limit mo, maa-unlock ang susunod na Credit Level. Nasa buong gabay ang bawat paraan ng pagbabayad.`,
       readMorePath: '/academy/money/repay',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    },
    {
       id: 'borrow-below-limit',
@@ -206,7 +206,7 @@ Para sa mga lender lang ang IOU — ang mga borrower naman ay bumubuo ng Pandesa
 
 Isang account lang ang puwedeng i-verify ng bawat tao, kaya ang borrower profile at repayment history na nakikita mo ay pag-aari ng iisang totoong tao — at hindi basta makakabalik ang mga na-ban gamit ang bagong account.`,
       readMorePath: '/academy/money/verify',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    },
    {
       id: 'how-borrowers-increase-credit-limit',

@@ -32,7 +32,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          page: 'Set up your Instant Wallet (or connect a Base Account)',
          nudge: {
             en: 'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.',
-            fil: 'Nagse-set up ng wallet? Gagawin ang Instant Wallet mo mula sa Moodeng login mo — walang app na ida-download. Gagabayan kita.'
+            fil: 'Nagse-set up ka ng wallet? Gagawin ang Instant Wallet mo gamit ang Moodeng login mo — walang app na ida-download. Gagabayan kita.'
          },
          quickReplies: {
             en: ['What is the Instant Wallet?', 'Can I use a Base Account instead?', 'My wallet won’t connect'],
@@ -84,7 +84,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          page: 'Request board',
          quickReplies: {
             en: ['How do I request a loan?', 'How does funding work?', 'What are Pandesal points?'],
-            fil: ['Paano mag-request ng loan?', 'Paano gumagana ang funding?', 'Ano ang Pandesal points?']
+            fil: ['Paano mag-request ng loan?', 'Paano napopondohan ang loan?', 'Ano ang Pandesal points?']
          }
       }
    },
