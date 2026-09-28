@@ -140,5 +140,128 @@ export const thaiCoverageF: Record<string, string> = {
    'Cannot Lend to Yourself': 'ปล่อยกู้ให้ตัวเองไม่ได้',
    'You cannot lend to your own loan request. Please lend to other users.':
       'คุณไม่สามารถปล่อยกู้ให้คำขอเงินกู้ของตัวเองได้ โปรดปล่อยกู้ให้ผู้ใช้คนอื่น',
-   'View Other Loans': 'ดูคำขอเงินกู้อื่น'
+   'View Other Loans': 'ดูคำขอเงินกู้อื่น',
+
+   // src/components/UserPay.tsx
+   Partial: 'ชำระบางส่วน',
+
+   // src/components/WalletNetworkBlockNotice.tsx
+   'app fixes it — install it, switch it on, then reconnect. It works on WiFi and mobile data.':
+      'ช่วยแก้ปัญหานี้ได้ ติดตั้งแอป เปิดใช้งาน แล้วเชื่อมต่อใหม่ ใช้ได้ทั้งกับ WiFi และอินเทอร์เน็ตมือถือ',
+   "I've turned it on — Retry": 'เปิดแล้ว — ลองอีกครั้ง',
+
+   // src/components/auth/AuthErrorAlert.tsx
+   'that provider': 'ผู้ให้บริการนั้น',
+   '. This is usually temporary — please try again.': ' ปัญหานี้มักเกิดขึ้นชั่วคราว โปรดลองอีกครั้ง',
+   'reset your password': 'รีเซ็ตรหัสผ่าน',
+   "if you've forgotten it.": 'หากคุณลืมรหัสผ่าน',
+
+   // src/components/auth/AuthFooter.tsx
+   '© 2026 Moodeng Credit All Rights Reserved': '© 2026 Moodeng Credit สงวนลิขสิทธิ์',
+
+   // src/components/auth/AuthInputField.tsx
+   'Hide password': 'ซ่อนรหัสผ่าน',
+   'Show password': 'แสดงรหัสผ่าน',
+
+   // src/components/auth/SignUpFormErrorAlert.tsx
+   'This email is already linked to a Google account. Use a different email address or':
+      'อีเมลนี้เชื่อมโยงกับบัญชี Google อยู่แล้ว โปรดใช้อีเมลอื่น หรือ',
+   'instead.': 'แทน',
+
+   // src/components/auth/SocialAuthButtons.tsx
+   'Sign Up with Google': 'สมัครสมาชิกด้วย Google',
+   'Facebook sign-in coming soon': 'การเข้าสู่ระบบด้วย Facebook จะเปิดให้ใช้เร็ว ๆ นี้',
+
+   // src/components/filters/FilterSidebar.tsx
+   'Payback %': 'อัตราชำระคืน %',
+
+   // src/components/mecha/mechaCopy.ts
+   'Moodeng Support Officer': 'เจ้าหน้าที่ฝ่ายช่วยเหลือของ Moodeng',
+   'Ask me anything about Moodeng…': 'ถามอะไรก็ได้เกี่ยวกับ Moodeng…',
+   Send: 'ส่ง',
+   "Hi, I'm Mecha 🤖 — ask me anything about Moodeng: verifying, wallets, borrowing, or cashing out.":
+      'สวัสดี ฉันคือ Mecha 🤖 ถามอะไรก็ได้เกี่ยวกับ Moodeng ไม่ว่าจะเป็นการยืนยันตัวตน กระเป๋าเงิน การกู้ยืม หรือการถอนเป็นเงินสด',
+   'Try asking': 'ลองถามดู',
+   'Talk to the team': 'คุยกับทีมงาน',
+   'Want a real person? I can pass this chat to the Moodeng team.': 'อยากคุยกับเจ้าหน้าที่จริงไหม ฉันส่งต่อแชทนี้ให้ทีม Moodeng ได้',
+   'Connect me with the team': 'ติดต่อทีมงาน',
+   'Sent! The team has your question and will follow up. You can keep chatting with me too.':
+      'ส่งแล้ว! ทีมงานได้รับคำถามของคุณแล้วและจะติดต่อกลับ คุณยังคุยกับฉันต่อได้เช่นกัน',
+   'How can the team reach you? (optional)': 'ทีมงานจะติดต่อคุณได้ทางไหน (ไม่บังคับ)',
+   'Something went wrong on my end. Please try again, or I can connect you with the team.':
+      'เกิดข้อผิดพลาดจากฝั่งฉัน โปรดลองอีกครั้ง หรือให้ฉันส่งต่อคุณให้ทีมงาน',
+   'Chat with Mecha': 'แชทกับ Mecha',
+   'Close chat': 'ปิดแชท',
+   'Ask Mecha anything, or browse the popular guides below.': 'ถาม Mecha ได้ทุกเรื่อง หรือดูคู่มือยอดนิยมด้านล่าง',
+   'Popular right now': 'ยอดนิยมตอนนี้',
+   'Mecha answers from Moodeng’s help docs.': 'Mecha ตอบจากเอกสารช่วยเหลือของ Moodeng',
+   'Browse all FAQs & guides →': 'ดูคำถามที่พบบ่อยและคู่มือทั้งหมด →',
+   'Mecha is typing': 'Mecha กำลังพิมพ์',
+   Helpful: 'มีประโยชน์',
+   'Not helpful': 'ไม่มีประโยชน์',
+   'Thanks for the feedback!': 'ขอบคุณสำหรับความคิดเห็น!',
+
+   // src/components/support/LiveChatHost.tsx
+   'Message from Moodeng Support': 'ข้อความจากฝ่ายช่วยเหลือ Moodeng',
+   'The team replied to your chat. Tap to read it.': 'ทีมงานตอบกลับแชทของคุณแล้ว แตะเพื่ออ่าน',
+   'Open chat': 'เปิดแชท',
+
+   // src/components/tables/DataTable.tsx
+   'No data available': 'ไม่มีข้อมูล',
+
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   'your ID': 'บัตรประชาชนของคุณ',
+   'or get help from our team': 'หรือขอความช่วยเหลือจากทีมของเรา',
+
+   // src/components/verification/VerifyYourselfModal.tsx
+   '🇺🇸 United States': '🇺🇸 สหรัฐอเมริกา',
+   '🇬🇧 United Kingdom': '🇬🇧 สหราชอาณาจักร',
+   '🇯🇵 Japan': '🇯🇵 ญี่ปุ่น',
+   '🇰🇷 South Korea': '🇰🇷 เกาหลีใต้',
+   '🇹🇼 Taiwan': '🇹🇼 ไต้หวัน',
+   '🇲🇾 Malaysia': '🇲🇾 มาเลเซีย',
+   '🇲🇽 Mexico': '🇲🇽 เม็กซิโก',
+   '🇨🇷 Costa Rica': '🇨🇷 คอสตาริกา',
+   '🇵🇦 Panama': '🇵🇦 ปานามา',
+   '🇨🇴 Colombia': '🇨🇴 โคลอมเบีย',
+   '🇨🇱 Chile': '🇨🇱 ชิลี',
+   '🇦🇷 Argentina': '🇦🇷 อาร์เจนตินา',
+   '🇸🇬 Singapore': '🇸🇬 สิงคโปร์',
+   '🇹🇭 Thailand': '🇹🇭 ไทย',
+   '🇵🇭 Philippines': '🇵🇭 ฟิลิปปินส์',
+   '🇩🇪 Germany': '🇩🇪 เยอรมนี',
+   '🇦🇹 Austria': '🇦🇹 ออสเตรีย',
+   '🇵🇱 Poland': '🇵🇱 โปแลนด์',
+   '🇬🇹 Guatemala': '🇬🇹 กัวเตมาลา',
+   '🇪🇨 Ecuador': '🇪🇨 เอกวาดอร์',
+   '🇵🇪 Peru': '🇵🇪 เปรู',
+   '🇧🇷 Brazil': '🇧🇷 บราซิล',
+   'NFC-enabled (biometric) passport': 'หนังสือเดินทางที่รองรับ NFC (หนังสือเดินทางไบโอเมตริกซ์)',
+   'Availability changes —': 'พื้นที่ให้บริการอาจเปลี่ยนแปลงได้ —',
+   'check the live map': 'ดูแผนที่ล่าสุด',
+   'for exact locations.': 'เพื่อตรวจสอบตำแหน่งที่แน่นอน',
+
+   // src/components/worldId/useWorldIdVerification.ts
+   'You must be logged in to verify your World ID.': 'คุณต้องเข้าสู่ระบบก่อนจึงจะยืนยัน World ID ได้',
+   'World ID verification was accepted, but the account status did not update.': 'การยืนยัน World ID ผ่านแล้ว แต่สถานะบัญชียังไม่อัปเดต',
+   'Failed to prepare World ID verification.': 'เตรียมการยืนยัน World ID ไม่สำเร็จ',
+   'Verification failed.': 'การยืนยันตัวตนไม่สำเร็จ',
+
+   // src/config/stripeOnrampConfig.ts
+   'US (excl. Hawaii) and EU only': 'เฉพาะสหรัฐอเมริกา (ยกเว้นฮาวาย) และสหภาพยุโรป',
+
+   // src/constants/errorMessages.ts
+   'We encountered an unexpected error. Please try again or contact support if the problem persists.':
+      'เกิดข้อผิดพลาดที่ไม่คาดคิด โปรดลองอีกครั้ง หรือติดต่อฝ่ายช่วยเหลือหากยังพบปัญหาอยู่',
+   'Go to Dashboard': 'ไปที่แดชบอร์ด',
+
+   // src/constants/loanOptions.ts
+   '0% to 5%': '0% ถึง 5%',
+   '5% to 10%': '5% ถึง 10%',
+   '10% to 20%': '10% ถึง 20%',
+   'Next Week': 'สัปดาห์หน้า',
+   'Next 30 Days': '30 วันข้างหน้า',
+   'Next 60 Days': '60 วันข้างหน้า',
+   'After 90 Days+': 'หลัง 90 วันขึ้นไป',
+   'Beginner Borrower': 'ผู้ยืมมือใหม่'
 };
