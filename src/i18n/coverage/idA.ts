@@ -743,8 +743,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'See How Growth Works': 'Lihat Cara Kerja Pertumbuhan',
    'Mecha says': 'Kata Mecha',
    'Video guide': 'Panduan video',
-   'Want to learn more? Open the step-by-step credit guide.':
-      'Ingin belajar lebih lanjut? Buka panduan kredit langkah demi langkah.',
+   'Want to learn more? Open the step-by-step credit guide.': 'Ingin belajar lebih lanjut? Buka panduan kredit langkah demi langkah.',
    'Moodeng Academy Quiz': 'Kuis Moodeng Academy',
    'Ready for the check?': 'Siap untuk pengecekannya?',
    'Start quiz': 'Mulai kuis',
@@ -829,7 +828,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Lenders are funding real people, not anonymous accounts. That confidence is what gets requests on the board funded.':
       'Pemberi pinjaman mendanai orang sungguhan, bukan akun anonim. Keyakinan itulah yang membuat permintaan di papan didanai.',
    'Your physical national ID': 'KTP fisik kamu',
-   'The real card in hand, not a photocopy or a picture on another screen.': 'Kartu asli di tangan, bukan fotokopi atau foto di layar lain.',
+   'The real card in hand, not a photocopy or a picture on another screen.':
+      'Kartu asli di tangan, bukan fotokopi atau foto di layar lain.',
    'Avoid glare and hard shadows across the card or your face.': 'Hindari silau dan bayangan tajam di kartu atau wajahmu.',
    'Chrome or Safari': 'Chrome atau Safari',
    'Not the browser inside Facebook or Messenger — those can stall the check.':
@@ -887,8 +887,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'You have active loans': 'Kamu memiliki pinjaman aktif',
    'Change anyway': 'Tetap ubah',
    'Disconnect wallet': 'Putuskan koneksi dompet',
-   'Add an email in Personal details to receive email alerts.':
-      'Tambahkan email di Detail pribadi untuk menerima notifikasi email.',
+   'Add an email in Personal details to receive email alerts.': 'Tambahkan email di Detail pribadi untuk menerima notifikasi email.',
    'Account activity': 'Aktivitas akun',
    'Security and account updates': 'Keamanan dan pembaruan akun',
    'Loan activity': 'Aktivitas pinjaman',
@@ -934,5 +933,88 @@ export const indonesianCoverageA: Record<string, string> = {
    'Alert types': 'Jenis notifikasi',
    'Account activity notifications': 'Notifikasi aktivitas akun',
    'Loan activity notifications': 'Notifikasi aktivitas pinjaman',
-   'Moodeng news notifications': 'Notifikasi berita Moodeng'
+   'Moodeng news notifications': 'Notifikasi berita Moodeng',
+
+   // src/views/account/AvatarUploadModal.tsx
+   'Change background only': 'Hanya ubah latar belakang',
+   'Click to upload': 'Klik untuk unggah',
+   'PNG, JPG, WEBP · up to 5 MB': 'PNG, JPG, WEBP · hingga 5 MB',
+   'Drag to reposition · use the slider to zoom': 'Seret untuk mengatur posisi · gunakan slider untuk zoom',
+   'Avatar background': 'Latar belakang avatar',
+   'Failed to save avatar.': 'Gagal menyimpan avatar.',
+   'Failed to save avatar background.': 'Gagal menyimpan latar belakang avatar.',
+   'Current profile photo': 'Foto profil saat ini',
+
+   // src/views/account/BaseNetworkSheet.tsx
+   'Moodeng runs on Base': 'Moodeng berjalan di Base',
+   'Base is the blockchain network Moodeng is built on. Your wallet, your USDC, every loan you fund and every repayment you make all live here.':
+      'Base adalah jaringan blockchain tempat Moodeng dibangun. Dompetmu, USDC-mu, setiap pinjaman yang kamu danai, dan setiap pembayaran kembali yang kamu lakukan, semuanya ada di sini.',
+   'Learn more about Base': 'Pelajari lebih lanjut tentang Base',
+   'Fast and cheap by design': 'Dirancang cepat dan murah',
+   'Secured by Ethereum': 'Diamankan oleh Ethereum',
+   'Base inherits Ethereum’s security while staying low-cost. Your USDC balance and loan history are recorded on-chain, where they can’t be quietly changed.':
+      'Base mewarisi keamanan Ethereum sambil tetap murah. Saldo USDC dan riwayat pinjamanmu tercatat on-chain, sehingga tidak bisa diubah diam-diam.',
+   'Close overlay': 'Tutup overlay',
+
+   // src/views/account/EditBioInfoModal.tsx
+   'Change Bio Info': 'Ubah Info Bio',
+   'Update the details lenders see about your work, income, and what you typically need help with.':
+      'Perbarui detail yang dilihat pemberi pinjaman tentang pekerjaan, penghasilan, dan hal yang biasanya kamu butuh bantuan.',
+   'What do you do for work?': 'Apa pekerjaanmu?',
+   'Any other income sources?': 'Ada sumber penghasilan lain?',
+   'How would you describe your work?': 'Bagaimana kamu menggambarkan pekerjaanmu?',
+   'Helps lenders see that repayment timing makes sense.': 'Membantu pemberi pinjaman melihat bahwa waktu pembayaran kembali masuk akal.',
+   'When do you usually get paid?': 'Kapan biasanya kamu menerima gaji?',
+   'What is your approximate monthly income?': 'Berapa perkiraan penghasilan bulananmu?',
+   'What do your recurring expenses cost per month?': 'Berapa pengeluaran rutin bulananmu?',
+   'Helps lenders understand your financial commitments.': 'Membantu pemberi pinjaman memahami komitmen keuanganmu.',
+   'Pick all that apply.': 'Pilih semua yang sesuai.',
+   'What do you usually need short-term help with?': 'Untuk apa biasanya kamu butuh bantuan jangka pendek?',
+
+   // src/views/account/ExportInstantWalletKey.tsx
+   'Export wallet key': 'Ekspor kunci dompet',
+   'Your private key': 'Kunci pribadimu',
+   'Anyone with this key controls your funds. Never share it or type it into any website. Moodeng will never ask for it.':
+      'Siapa pun yang memiliki kunci ini mengendalikan danamu. Jangan pernah membagikannya atau mengetiknya di situs web mana pun. Moodeng tidak akan pernah memintanya.',
+   'Copy key': 'Salin kunci',
+   'Export your wallet key': 'Ekspor kunci dompetmu',
+   'Please try again in a moment.': 'Coba lagi sebentar lagi.',
+
+   // src/views/account/TwoFactorSettings.tsx
+   'Set up authenticator app': 'Siapkan aplikasi autentikator',
+   'Scan this QR code with Google Authenticator, Authy, or 1Password, then enter the 6-digit code it shows.':
+      'Pindai kode QR ini dengan Google Authenticator, Authy, atau 1Password, lalu masukkan kode 6 digit yang muncul.',
+   "Can't scan? Enter this code manually:": 'Tidak bisa memindai? Masukkan kode ini secara manual:',
+   'Authenticator app': 'Aplikasi autentikator',
+   Passkey: 'Passkey',
+   'Failed to start setup': 'Gagal memulai penyiapan',
+   'Scan with your authenticator app': 'Pindai dengan aplikasi autentikatormu',
+   'Failed to remove': 'Gagal menghapus',
+   'Failed to add passkey': 'Gagal menambahkan passkey',
+   'Optional. Add an extra step when you sign in.': 'Opsional. Tambahkan langkah ekstra saat kamu masuk.',
+   'Optional. Use Face ID, Touch ID, or a security key on this device.':
+      'Opsional. Gunakan Face ID, Touch ID, atau kunci keamanan di perangkat ini.',
+
+   // src/views/account/WalletAccountInsights.tsx
+   'USDC on Base': 'USDC di Base',
+   'Balance unavailable': 'Saldo tidak tersedia',
+   Current: 'Saat ini',
+   'Some repayments go to another wallet': 'Sebagian pembayaran kembali dikirim ke dompet lain',
+   'View loan history': 'Lihat riwayat pinjaman',
+   'Activity unavailable': 'Aktivitas tidak tersedia',
+   'Your wallet is still connected. Try again to load recent activity.':
+      'Dompetmu masih terhubung. Coba lagi untuk memuat aktivitas terbaru.',
+   'No activity yet': 'Belum ada aktivitas',
+   'Loans and repayments will appear here.': 'Pinjaman dan pembayaran kembali akan muncul di sini.',
+   'Check for on-chain transfers': 'Cek transfer on-chain',
+   'On-chain transfers could not load. Confirmed loan events are shown.':
+      'Transfer on-chain tidak bisa dimuat. Peristiwa pinjaman yang terkonfirmasi ditampilkan.',
+   'View all loan activity': 'Lihat semua aktivitas pinjaman',
+   'Wallet history unavailable': 'Riwayat dompet tidak tersedia',
+   'We could not load wallets previously used with this account.': 'Kami tidak bisa memuat dompet yang pernah dipakai dengan akun ini.',
+   Balance: 'Saldo',
+   'Loading USDC balance': 'Memuat saldo USDC',
+   'Recent activity': 'Aktivitas terbaru',
+   'Loading recent wallet activity': 'Memuat aktivitas dompet terbaru',
+   'Wallet history': 'Riwayat dompet'
 };
