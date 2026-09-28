@@ -27,7 +27,6 @@ export const thaiCoverageA: Record<string, string> = {
       'กระเป๋าเงินของคุณใช้สำหรับสะสมแต้ม Pandesal และรับเงินกู้เป็น USDC',
    'Open the latest Moodeng email.': 'เปิดอีเมลล่าสุดจาก Moodeng',
    'Sent to': 'ส่งไปที่',
-   Tap: 'แตะ',
    'Confirm Email': 'ยืนยันอีเมล',
    'inside that email to finish setup.': 'ในอีเมลนั้นเพื่อตั้งค่าให้เสร็จสิ้น',
    'Moodeng holding a lock': 'Moodeng ถือแม่กุญแจ',
@@ -113,7 +112,6 @@ export const thaiCoverageA: Record<string, string> = {
    'The login method you used (Facebook, Google, LINE, Telegram, or email)':
       'วิธีเข้าสู่ระบบที่คุณใช้ (Facebook Google LINE Telegram หรืออีเมล)',
    'Confirmation that you want your personal data deleted': 'คำยืนยันว่าคุณต้องการให้ลบข้อมูลส่วนบุคคลของคุณ',
-   Contact: 'ติดต่อ',
    'Data deletion and privacy requests:': 'คำขอลบข้อมูลและคำขอด้านความเป็นส่วนตัว:',
    'General support:': 'ความช่วยเหลือทั่วไป:',
    '← Back to Moodeng Credit': '← กลับไปที่ Moodeng Credit',
@@ -252,7 +250,6 @@ export const thaiCoverageA: Record<string, string> = {
       'เพื่อให้ Moodeng ปลอดภัยและป้องกันบัญชีปลอมหรือบัญชีซ้ำ ผู้ยืมทุกคนต้องยืนยันตัวตนสั้น ๆ เพียงครั้งเดียว',
    'Verify Your ID': 'ยืนยันด้วยบัตรประชาชน',
    Recommended: 'แนะนำ',
-   'Quick national ID & selfie check — available in select countries.': 'ตรวจบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้ได้ในบางประเทศ',
    'Supported countries': 'ประเทศที่รองรับ',
    'Not in a supported country?': 'ไม่ได้อยู่ในประเทศที่รองรับใช่ไหม?',
    'Verify with World ID': 'ยืนยันด้วย World ID',
@@ -315,7 +312,6 @@ export const thaiCoverageA: Record<string, string> = {
    'Finish the steps in the verification tab — this page updates automatically when you’re done.':
       'ทำขั้นตอนในแท็บยืนยันตัวตนให้เสร็จ หน้านี้จะอัปเดตเองเมื่อคุณทำเสร็จ',
    'Confirming your verification…': 'กำลังยืนยันผลการยืนยันตัวตน…',
-   'Almost there': 'ใกล้เสร็จแล้ว',
    'Your face scan is still finishing up. This usually takes a moment. Left before finishing the scan? Start over below for a fresh one.':
       'การสแกนใบหน้าของคุณกำลังจะเสร็จ ปกติใช้เวลาไม่นาน หากคุณออกก่อนสแกนเสร็จ ให้กดเริ่มใหม่ด้านล่างเพื่อสแกนอีกครั้ง',
    'Check again': 'ตรวจสอบอีกครั้ง',
@@ -329,10 +325,8 @@ export const thaiCoverageA: Record<string, string> = {
       'เรากำลังตรวจสอบข้อมูลของคุณ ส่วนใหญ่จะเสร็จภายในไม่กี่นาที และหน้าจอนี้จะอัปเดตเองเมื่อเสร็จ หากคุณออกก่อนทำครบทุกขั้นตอน ให้กดเริ่มใหม่ด้านล่าง',
    'Check status': 'ตรวจสอบสถานะ',
    'Go to dashboard': 'ไปที่แดชบอร์ด',
-   'Manual review in progress': 'กำลังตรวจสอบโดยเจ้าหน้าที่',
    "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll update your status automatically. Want it faster? Message us below and we'll expedite your review.":
       'การยืนยันตัวตนของคุณต้องให้เจ้าหน้าที่ตรวจสอบสั้น ๆ โดยปกติใช้เวลาไม่กี่ชั่วโมง แต่อาจนานสุด 1 วันทำการ เราจะอัปเดตสถานะให้โดยอัตโนมัติ หากต้องการให้เร็วขึ้น ส่งข้อความถึงเราด้านล่าง แล้วเราจะเร่งตรวจสอบให้',
-   "Verification didn't pass": 'การยืนยันตัวตนไม่ผ่าน',
    "We weren't able to verify your identity. This can happen if the document image was unclear, expired, or didn't match your face. A few things that usually fix it:":
       'เราไม่สามารถยืนยันตัวตนของคุณได้ ซึ่งอาจเกิดจากรูปเอกสารไม่ชัด เอกสารหมดอายุ หรือไม่ตรงกับใบหน้าของคุณ วิธีที่มักช่วยแก้ปัญหาได้มีดังนี้:',
    'Try again': 'ลองอีกครั้ง',
@@ -343,7 +337,6 @@ export const thaiCoverageA: Record<string, string> = {
       'ดูเหมือนว่าหน้ายืนยันตัวตนถูกปิดก่อนทำครบทุกขั้นตอน เราจึงตรวจสอบตัวตนของคุณไม่เสร็จ ไม่เป็นไร คุณเริ่มใหม่ได้ทุกเมื่อ',
    'Continue verification': 'ยืนยันตัวตนต่อ',
    'Opening…': 'กำลังเปิด…',
-   'Checking…': 'กำลังตรวจสอบ…',
    'Verified!': 'ยืนยันแล้ว!',
    'Your identity has been confirmed. Taking you to the next step.': 'ยืนยันตัวตนของคุณเรียบร้อยแล้ว กำลังพาคุณไปยังขั้นตอนถัดไป',
    'This identity is already registered': 'ตัวตนนี้ลงทะเบียนไว้แล้ว',
@@ -383,7 +376,6 @@ export const thaiCoverageA: Record<string, string> = {
    Skip: 'ข้าม',
    Back: 'ย้อนกลับ',
    Finished: 'เสร็จสิ้น',
-   Next: 'ถัดไป',
 
    // src/components/Header/MobileNav.tsx
    'Mobile navigation': 'เมนูนำทางบนมือถือ',
@@ -426,7 +418,6 @@ export const thaiCoverageA: Record<string, string> = {
       ' ไม่สามารถเปิดกระเป๋าเงินของคุณผ่านเบราว์เซอร์ในแอปได้ การชำระคืนจึงค้างอยู่ที่หน้านี้ โปรดเปิดหน้านี้ใน Chrome หรือ Safari เพื่อชำระ ใช้เวลาเพียงไม่กี่วินาที',
    'Your repay link': 'ลิงก์ชำระคืนของคุณ',
    'Copied ✓': 'คัดลอกแล้ว ✓',
-   Copy: 'คัดลอก',
    'Open in Safari': 'เปิดใน Safari',
    "If a button doesn't open your browser, tap": 'หากกดปุ่มแล้วเบราว์เซอร์ไม่เปิด ให้แตะ',
    'at the top of': 'ที่ด้านบนของ',
@@ -449,7 +440,6 @@ export const thaiCoverageA: Record<string, string> = {
    Info: 'ข้อมูล',
    'Here is some information.': 'นี่คือข้อมูลบางส่วน',
    'Error!': 'ข้อผิดพลาด!',
-   'Something went wrong.': 'เกิดข้อผิดพลาด',
    Warning: 'คำเตือน',
    'Please check this.': 'โปรดตรวจสอบ',
    'Example error message': 'ตัวอย่างข้อความแสดงข้อผิดพลาด',
@@ -465,7 +455,6 @@ export const thaiCoverageA: Record<string, string> = {
    VERIFY: 'ยืนยันตัวตน',
    'SIGN IN': 'เข้าสู่ระบบ',
    'SIGN OUT': 'ออกจากระบบ',
-   'View IOU point history': 'ดูประวัติแต้ม IOU',
    Verified: 'ยืนยันแล้ว',
 
    // src/components/UserPay.tsx
@@ -476,16 +465,9 @@ export const thaiCoverageA: Record<string, string> = {
    Stablecoin: 'สเตเบิลคอยน์',
    'Repayment Amount': 'จำนวนเงินที่ชำระคืน',
    'Enter custom amount': 'กรอกจำนวนเงินที่ต้องการ',
-   'Processing...': 'กำลังดำเนินการ...',
    'You can repay any amount at any time before the due date. Ensure full repayment by the due date to maintain your credit score.':
       'คุณชำระคืนเท่าไรก็ได้ เมื่อไรก็ได้ก่อนวันครบกำหนด โปรดชำระให้ครบภายในวันครบกำหนดเพื่อรักษาคะแนนเครดิตของคุณ',
-   'Still confirming': 'ยังยืนยันอยู่',
-   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
-      'ส่งการชำระเงินของคุณแล้ว และกำลังรอการยืนยันสักครู่ ข้อมูลจะอัปเดตโดยอัตโนมัติ',
    'Unknown error': 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ',
-   'Payment Sent, Still Recording': 'ส่งการชำระเงินแล้ว กำลังบันทึก',
-   'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'การชำระเงินของคุณสำเร็จแล้ว แต่เรายังบันทึกไม่ได้ เราจะลองใหม่โดยอัตโนมัติ หากข้อมูลไม่อัปเดต โปรดติดต่อฝ่ายช่วยเหลือ',
    // src/components/BorrowerVerificationBadge.tsx
    'Verified Borrower': 'ผู้ยืมที่ยืนยันแล้ว',
    // src/components/WalletNetworkBlockNotice.tsx

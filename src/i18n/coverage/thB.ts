@@ -9,7 +9,6 @@ export const thaiCoverageB: Record<string, string> = {
    'This is a product direction, not a guarantee. Real-world lenders decide their own approvals, but Moodeng can make borrower history clearer, more portable, and easier to evaluate.':
       'นี่คือทิศทางของผลิตภัณฑ์ ไม่ใช่การรับประกัน ผู้ให้กู้ในโลกจริงเป็นผู้ตัดสินการอนุมัติเอง แต่ Moodeng ช่วยให้ประวัติของผู้ยืมชัดเจนขึ้น พกพาได้มากขึ้น และประเมินได้ง่ายขึ้น',
    Now: 'ตอนนี้',
-   Next: 'ถัดไป',
    Later: 'ภายหลัง',
    Goal: 'เป้าหมาย',
    'Start with verified repayment records': 'เริ่มจากประวัติการชำระคืนที่ได้รับการยืนยัน',
@@ -143,7 +142,6 @@ export const thaiCoverageB: Record<string, string> = {
    'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.':
       'นี่คือเงินกู้สำหรับเพิ่มระดับ คุณยืมเต็มวงเงินปัจจุบันและชำระคืนตามเงื่อนไขของเงินกู้ที่ได้รับให้ตรงเวลา',
    'Late or missed repayment': 'ชำระคืนล่าช้าหรือไม่ได้ชำระ',
-   'Past due': 'เลยกำหนด',
    'Can pause progress': 'อาจทำให้ความคืบหน้าหยุดชะงัก',
    'Your level does not become the main signal anymore. Lenders will care about the missed repayment first.':
       'ระดับของคุณจะไม่ใช่สิ่งที่ผู้ให้กู้ดูเป็นหลักอีกต่อไป ผู้ให้กู้จะให้ความสำคัญกับการชำระคืนที่พลาดไปก่อน',
@@ -260,7 +258,6 @@ export const thaiCoverageB: Record<string, string> = {
    'When you repay your first loan on time, you and': 'เมื่อคุณชำระคืนเงินกู้ครั้งแรกตรงเวลา คุณและ',
    'both get one.': 'จะได้รับคนละใบ',
    'Join Moodeng': 'เข้าร่วม Moodeng',
-   'Already have an account?': 'มีบัญชีอยู่แล้วใช่ไหม?',
    'Tell us where to send your GrabFood voucher code.': 'บอกเราว่าจะให้ส่งโค้ดบัตรกำนัล GrabFood ไปที่ใด',
    'Thanks for inviting them. Where should we send your voucher code?': 'ขอบคุณที่ชวนเพื่อนมา จะให้เราส่งโค้ดบัตรกำนัลของคุณไปที่ใด?',
    'Thanks for joining with a friend. Where should we send your voucher code?':
@@ -346,7 +343,6 @@ export const thaiCoverageB: Record<string, string> = {
       'หมุดหมายเป็นอีกช่องทางในการรับแต้ม Pandesal ทำให้สำเร็จเพื่อเสริมโปรไฟล์ของคุณ และทำให้ผู้ให้กู้มั่นใจในคำขอของคุณมากขึ้น',
 
    // src/views/dashboard/RequestBoard.tsx
-   'Hello,': 'สวัสดี',
    'Edit display name': 'แก้ไขชื่อที่แสดง',
    'Role not selected': 'ยังไม่ได้เลือกบทบาท',
    'Verification in progress': 'กำลังยืนยันตัวตน',
@@ -355,7 +351,6 @@ export const thaiCoverageB: Record<string, string> = {
    'Continue verification >': 'ยืนยันตัวตนต่อ >',
    'Try again >': 'ลองอีกครั้ง >',
    'View details >': 'ดูรายละเอียด >',
-   'View IOU point history': 'ดูประวัติแต้ม IOU',
    'Browse requests now. Choose a role when you are ready to borrow or lend.': 'ดูคำขอได้เลย แล้วเลือกบทบาทเมื่อคุณพร้อมจะยืมหรือให้กู้',
    'Browse requests publicly.': 'ดูคำขอแบบสาธารณะ',
    'Pick borrower or lender to unlock your dashboard, repayment, and history.':
@@ -934,7 +929,6 @@ export const thaiCoverageB: Record<string, string> = {
    'Upcoming Loan Dues': 'เงินกู้ที่ใกล้ครบกำหนด',
    Unknown: 'ไม่ทราบ',
    Default: 'ผิดนัดชำระ',
-   'Due in': 'ครบกำหนดใน',
    today: 'วันนี้',
    'View Insights': 'ดูข้อมูลเชิงลึก',
    '1 day': '1 วัน',
@@ -980,19 +974,13 @@ export const thaiCoverageB: Record<string, string> = {
    'for funding, plus': 'จากการปล่อยกู้ บวกอีก',
    'Unknown user': 'ผู้ใช้ที่ไม่ทราบชื่อ',
    'Thank You!': 'ขอบคุณ!',
-   'Still confirming': 'กำลังยืนยัน',
-   'Your payment was sent and is taking a moment to confirm. This will update automatically.':
-      'ส่งการชำระเงินของคุณแล้ว และกำลังรอการยืนยันสักครู่ ข้อมูลจะอัปเดตโดยอัตโนมัติ',
-   'Payment Sent, Still Recording': 'ส่งเงินแล้ว กำลังบันทึกข้อมูล',
    'Unknown Reason': 'ไม่ระบุเหตุผล',
    'Link copied': 'คัดลอกลิงก์แล้ว',
    'Send it to a lender so they can fund this request.': 'ส่งลิงก์ให้ผู้ให้กู้เพื่อให้ปล่อยกู้ให้คำขอนี้',
    'Could not copy link': 'คัดลอกลิงก์ไม่ได้',
-   'Confirming on Base…': 'กำลังยืนยันบน Base…',
    'Sending your help…': 'กำลังส่งความช่วยเหลือ…',
    'Recording your funding — hang tight.': 'กำลังบันทึกการปล่อยกู้ของคุณ — รอสักครู่',
    'Approve in the Coinbase window. It may be behind this one.': 'อนุมัติในหน้าต่าง Coinbase ซึ่งอาจซ่อนอยู่หลังหน้าต่างนี้',
-   'Approve the transaction in your wallet.': 'อนุมัติธุรกรรมในกระเป๋าเงินของคุณ',
    'View transaction': 'ดูธุรกรรม',
    'Not seeing a prompt? Make sure your wallet app is open on this device — or reconnect it here.':
       'ไม่เห็นหน้าต่างยืนยันใช่ไหม? ตรวจสอบว่าแอปกระเป๋าเงินเปิดอยู่บนอุปกรณ์นี้ — หรือเชื่อมต่อใหม่ที่นี่',
