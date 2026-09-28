@@ -1346,5 +1346,35 @@ export const thaiCoverageB: Record<string, string> = {
    'Loading USDC balance': 'กำลังโหลดยอดคงเหลือ USDC',
    'Recent activity': 'กิจกรรมล่าสุด',
    'Loading recent wallet activity': 'กำลังโหลดกิจกรรมล่าสุดของกระเป๋าเงิน',
-   'Wallet history': 'ประวัติกระเป๋าเงิน'
+   'Wallet history': 'ประวัติกระเป๋าเงิน',
+
+   // src/views/borrowerBenefits/BorrowerBenefits.tsx
+   'Borrower Benefits | Moodeng Credit': 'สิทธิประโยชน์สำหรับผู้ยืม | Moodeng Credit',
+   'Why borrowers choose Moodeng Credit: fast global access to small USDC loans, our mission and roadmap, and building verifiable credit as you repay.':
+      'ทำไมผู้ยืมถึงเลือก Moodeng Credit: เข้าถึงเงินกู้ USDC ขนาดเล็กได้อย่างรวดเร็วทั่วโลก พันธกิจและแผนงานของเรา และการสร้างเครดิตที่ตรวจสอบได้ในทุกการชำระคืน',
+
+   // src/views/borrowerBenefits/sections/FastGlobalAccessSection.tsx
+   'Why borrowing feels different': 'ทำไมการยืมเงินที่นี่ถึงต่างออกไป',
+   'Direct lender-to-borrower': 'จากผู้ให้กู้ถึงผู้ยืมโดยตรง',
+   'A lender funds your request directly. Moodeng helps show the terms and record the repayment history without hiding the process behind a middle-man.':
+      'ผู้ให้กู้ปล่อยกู้ให้คำขอของคุณโดยตรง Moodeng ช่วยแสดงเงื่อนไขและบันทึกประวัติการชำระคืน โดยไม่ซ่อนขั้นตอนไว้หลังคนกลาง',
+   'Funded in your wallet': 'ปล่อยกู้เข้ากระเป๋าเงินของคุณ',
+   'When a lender funds your request, USDC moves through your digital wallet so the money and repayment record are easier to track.':
+      'เมื่อผู้ให้กู้ปล่อยกู้ตามคำขอของคุณ USDC จะเคลื่อนผ่านกระเป๋าเงินดิจิทัลของคุณ ทำให้ติดตามเงินและประวัติการชำระคืนได้ง่ายขึ้น',
+   'Terms shown upfront': 'แสดงเงื่อนไขให้เห็นตั้งแต่แรก',
+   'You choose the request amount, repayment amount, due date, and reason before a lender decides whether to fund it.':
+      'คุณเป็นผู้กำหนดจำนวนเงินที่ขอ จำนวนที่ต้องชำระคืน วันครบกำหนด และเหตุผล ก่อนที่ผู้ให้กู้จะตัดสินใจว่าจะปล่อยกู้หรือไม่',
+
+   // src/views/borrowerBenefits/sections/HeroSection.tsx
+   'Microloans with USDC to build your credit': 'สินเชื่อรายย่อยด้วย USDC เพื่อสร้างเครดิตของคุณ',
+
+   // src/views/borrowerBenefits/sections/OurMissionSection.tsx
+   'Our Mission': 'พันธกิจของเรา',
+   "Dr. Muhammad Yunus won a Nobel Prize for creating opportunities through small loans. We're bringing his vision to life with cutting-edge technology.":
+      'ดร. มูฮัมหมัด ยูนุส ได้รับรางวัลโนเบลจากการสร้างโอกาสผ่านเงินกู้ขนาดเล็ก เรากำลังทำให้วิสัยทัศน์ของเขาเป็นจริงด้วยเทคโนโลยีล้ำสมัย',
+   'By using': 'การใช้',
+   'Get started': 'เริ่มต้นใช้งาน',
+
+   // src/views/dashboard/components/UserCard.tsx
+   'Moodeng loan request': 'คำขอเงินกู้ Moodeng'
 };
