@@ -563,4 +563,58 @@ export const thaiCoverageC: Record<string, string> = {
    remaining: 'ที่ยังค้างอยู่',
    leaves: 'จะเหลือ',
    'Past due': 'เกินกำหนด',
+
+   // src/views/signin/SignInPage.tsx
+   'Welcome back to Moodeng': 'ยินดีต้อนรับกลับสู่ Moodeng',
+   'Sign in to access your account.': 'เข้าสู่ระบบเพื่อเข้าใช้บัญชีของคุณ',
+   'Remember Me': 'จดจำฉันไว้',
+   'Sign In to Moodeng': 'เข้าสู่ระบบ Moodeng',
+   'Take a tour first': 'ดูทัวร์ก่อน',
+   'Authentication failed': 'ยืนยันตัวตนเพื่อเข้าสู่ระบบไม่สำเร็จ',
+   'Email Address': 'ที่อยู่อีเมล',
+   'Enter your email address': 'กรอกที่อยู่อีเมลของคุณ',
+   'Enter your password': 'กรอกรหัสผ่านของคุณ',
+   'This account has been closed. If you think this is a mistake, contact support on Telegram.':
+      'บัญชีนี้ถูกปิดแล้ว หากคุณคิดว่าเกิดข้อผิดพลาด โปรดติดต่อฝ่ายช่วยเหลือทาง Telegram',
+   OR: 'หรือ',
+   'Too many attempts detected': 'พยายามเข้าสู่ระบบหลายครั้งเกินไป',
+   'New account needed': 'ต้องสร้างบัญชีใหม่',
+   'Email not found': 'ไม่พบอีเมลนี้',
+   'Incorrect credentials': 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+   "Don't have an account?": 'ยังไม่มีบัญชีใช่ไหม?',
+
+   // src/views/signup/SignUpPage.tsx
+   'Welcome to Moodeng Credit': 'ยินดีต้อนรับสู่ Moodeng Credit',
+   'It takes just a few minutes to get started.': 'ใช้เวลาเพียงไม่กี่นาทีก็เริ่มต้นได้',
+   'Sign Up with Email': 'สมัครสมาชิกด้วยอีเมล',
+   'Choose a username': 'ตั้งชื่อผู้ใช้',
+   'Account already exists': 'มีบัญชีนี้อยู่แล้ว',
+   'Logging you in…': 'กำลังเข้าสู่ระบบให้คุณ…',
+   'Could not reach the server. Check your connection and try again.': 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง',
+   'Already have an account?': 'มีบัญชีอยู่แล้วใช่ไหม?',
+   'Already linked': 'เชื่อมโยงแล้ว',
+   'Already registered': 'ลงทะเบียนแล้ว',
+   'Email address taken': 'อีเมลนี้ถูกใช้แล้ว',
+   'Password too weak': 'รหัสผ่านคาดเดาง่ายเกินไป',
+
+   // src/views/support/FAQ.tsx
+   'Frequently Asked Questions | Moodeng Credit': 'คำถามที่พบบ่อย | Moodeng Credit',
+   'Frequently Asked Questions': 'คำถามที่พบบ่อย',
+   'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, the Instant Wallet (and Base Accounts), fees, and staying safe from loan sharks.':
+      'คำตอบเกี่ยวกับวิธีการทำงานของ Moodeng Credit ทั้งการยืมเป็น USDC แต้ม Pandesal ระดับเครดิต Instant Wallet (และ Base Account) ค่าธรรมเนียม และการป้องกันตัวจากเงินกู้นอกระบบ',
+   General: 'ทั่วไป',
+   Borrowing: 'การยืม',
+   All: 'ทั้งหมด',
+   'Search FAQs': 'ค้นหาคำถามที่พบบ่อย',
+   'No questions match your search.': 'ไม่พบคำถามที่ตรงกับการค้นหาของคุณ',
+   'FAQ categories': 'หมวดหมู่คำถามที่พบบ่อย',
+
+   // src/views/support/GettingStarted.tsx
+   'See how Moodeng works': 'ดูว่า Moodeng ทำงานอย่างไร',
+   'Take the interactive tour': 'ลองทัวร์แบบอินเทอร์แอกทีฟ',
+   'A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.':
+      'ทัวร์ 2 นาที: เลือกบทบาท ยืนยันตัวตน ขอหรือปล่อยกู้ ชำระคืน และสร้างเครดิต',
+   'Getting Started | Moodeng Credit': 'เริ่มต้นใช้งาน | Moodeng Credit',
+   'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
+      'เรียนรู้พื้นฐานของ Moodeng: ดูคู่มือและสิทธิประโยชน์ ดูว่า USDC ทำงานอย่างไร ทำความเข้าใจการเพิ่มระดับเครดิต และสำรวจอะคาเดมีกับบล็อก',
 };
