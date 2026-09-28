@@ -417,7 +417,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'and repaying $': 'và trả $',
    by: 'trước ngày',
    'World App users can verify with World ID instead.': 'Người dùng World App có thể xác minh bằng World ID.',
-   'Quick national ID & selfie check — available in select countries.': 'Kiểm tra nhanh thẻ căn cước & ảnh selfie — hỗ trợ tại một số quốc gia.',
+   'Quick national ID & selfie check — available in select countries.':
+      'Kiểm tra nhanh thẻ căn cước & ảnh selfie — hỗ trợ tại một số quốc gia.',
    'Quick answers before you sign up.': 'Giải đáp nhanh trước khi bạn đăng ký.',
    'Take tour': 'Xem hướng dẫn',
    'See more': 'Xem thêm',
@@ -715,7 +716,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'No fee': 'Miễn phí',
    'Base network only': 'Chỉ mạng Base',
    'Send USDC on the': 'Gửi USDC trên',
-   'Only send USDC on Base. Other tokens or networks may be lost.': 'Chỉ gửi USDC trên Base. Gửi token khác hoặc qua mạng khác có thể khiến bạn mất tiền.',
+   'Only send USDC on Base. Other tokens or networks may be lost.':
+      'Chỉ gửi USDC trên Base. Gửi token khác hoặc qua mạng khác có thể khiến bạn mất tiền.',
    'Buy USDC with card': 'Mua USDC bằng thẻ',
    'Powered by Stripe': 'Cung cấp bởi Stripe',
    'Stays in the app': 'Không rời ứng dụng',

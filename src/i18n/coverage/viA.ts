@@ -725,6 +725,9 @@ export const vietnameseCoverageA: Record<string, string> = {
    Unlock: 'Mở khóa',
    'Ongoing Growth': 'Tăng trưởng liên tục',
    'Keep going forever and grow!': 'Cứ tiếp tục mãi và phát triển!',
+   'Your Credit Limit Grows Each Time You Repay a Full-Limit Loan on Time!':
+      'Hạn mức tín dụng của bạn tăng lên mỗi khi bạn trả đúng hạn một khoản vay bằng toàn bộ hạn mức!',
+   'The current maximum limit.': 'Hạn mức tối đa hiện tại.',
    'Build Your Credit, Step by Step': 'Xây dựng tín dụng của bạn, từng bước một',
    "Unlock Your Financial Potential with Moodeng's Unique Borrowing System":
       'Mở khóa tiềm năng tài chính của bạn với hệ thống vay độc đáo của Moodeng',
@@ -916,8 +919,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
       'Để giữ Moodeng an toàn và công bằng, mỗi người vay hoàn thành một lượt kiểm tra danh tính ngắn. Điều này giúp loại bỏ tài khoản giả và trùng lặp khỏi cộng đồng, và đó là điều giúp người cho vay tin tưởng vào các yêu cầu mà họ cấp vốn.',
    'The recommended route: Verify Your ID.': 'Cách được khuyên dùng: Xác minh bằng giấy tờ tùy thân.',
-   'National ID verification is available for these countries.':
-      'Xác minh bằng thẻ căn cước hiện có tại các quốc gia sau.',
+   'National ID verification is available for these countries.': 'Xác minh bằng thẻ căn cước hiện có tại các quốc gia sau.',
    'Pass on the first try': 'Vượt qua ngay lần đầu',
    'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
       'Nếu bạn đã được xác minh trong World App — trực tiếp tại một Orb, hoặc bằng hộ chiếu sinh trắc học — bạn có thể chọn',
