@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import type { CredentialType } from '@worldcoin/idkit';
+
 import { AlreadyUsedModal } from '@/components/worldId/modal/AlreadyUsedModal';
 
 import { useWorldIdVerification } from '@/components/worldId/useWorldIdVerification';
@@ -15,6 +17,10 @@ interface WorldIDVerificationProps {
 
 const WORLD_ID_ACTION_DESCRIPTION = 'Verify a borrower as a unique human before borrowing.';
 
+// Orb (Proof of Human) or a passport added in World App: World App proves whichever the person
+// has. The server checks the credential in the proof and records either as is_world_id = ACTIVE.
+const WORLD_ID_CREDENTIALS: readonly CredentialType[] = ['proof_of_human', 'passport'];
+
 const isOrbVerificationActive = (user: { isWorldId?: string }) => user.isWorldId === 'ACTIVE';
 
 export default function WorldIDVerification({
@@ -25,7 +31,7 @@ export default function WorldIDVerification({
    showSuccessFeedback = true
 }: WorldIDVerificationProps) {
    const verification = useWorldIdVerification({
-      credential: 'proof_of_human',
+      credentials: WORLD_ID_CREDENTIALS,
       actionDescription: WORLD_ID_ACTION_DESCRIPTION,
       isVerificationActive: isOrbVerificationActive,
       logTag: 'WorldID',

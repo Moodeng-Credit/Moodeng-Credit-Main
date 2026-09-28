@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-import WorldIDPassportVerification from '@/components/worldId/WorldIDPassportVerification';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { isAndroidDevice, isIOSDevice } from '@/components/worldId/worldIdLaunch';
 
@@ -962,7 +961,6 @@ export default function VerifyFlow() {
    }
 
    if (step === 'confirm' && flow) {
-      const isPassport = flow.method === 'worldid-passport';
       const trigger = ({ open }: { open: () => void }) => (
          <button
             type="button"
@@ -975,21 +973,11 @@ export default function VerifyFlow() {
       return (
          <ConfirmScreen
             worldIdTrigger={
-               isPassport ? (
-                  <WorldIDPassportVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
-                     {trigger}
-                  </WorldIDPassportVerification>
-               ) : (
-                  <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
-                     {trigger}
-                  </WorldIDVerification>
-               )
+               <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
+                  {trigger}
+               </WorldIDVerification>
             }
-            requirementHint={
-               isPassport
-                  ? 'Requires a passport added to your World App.'
-                  : 'Requires a World ID verified at an Orb.'
-            }
+            requirementHint="Works with a World ID verified at an Orb or with a passport added in World App."
             onVerifyWithId={() => void startKyc(flow)}
          />
       );

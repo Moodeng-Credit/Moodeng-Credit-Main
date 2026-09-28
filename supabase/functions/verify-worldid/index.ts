@@ -29,16 +29,47 @@ type WorldIdRequestBody = {
   type?: 'rp-signature' | 'verify'
   action?: string
   proof?: Record<string, unknown>
-  // Which World ID credential the frontend used. Optional + backward compatible:
-  // the existing Orb flow omits it. 'passport' is sent by the passport flow.
-  method?: 'orb' | 'passport'
-  credential_type?: 'proof_of_human' | 'passport'
 }
 
-// Whether the request is the Passport/ID flow. Defaults to false so the existing Orb
-// flow (which omits these fields) keeps writing the original is_world_id columns.
-const isPassportRequest = (body: WorldIdRequestBody): boolean =>
-  body.method === 'passport' || body.credential_type === 'passport'
+// Credentials that count as a verified borrower: Orb (Proof of Human) and a passport added in
+// World App. Anything else World ID can prove (selfie check, mnc, ...) is weaker and rejected.
+// The credential is read from the verified proof itself, never from what the browser claims.
+const ACCEPTED_SCHEMA_IDS: Record<number, 'orb' | 'passport'> = { 1: 'orb', 9303: 'passport' }
+const ACCEPTED_IDENTIFIERS: Record<string, 'orb' | 'passport'> = {
+  proof_of_human: 'orb',
+  orb: 'orb',
+  passport: 'passport',
+}
+
+type CredentialCheck =
+  | { ok: true; credential: 'orb' | 'passport' | 'unknown'; nullifier?: string }
+  | { ok: false; identifiers: string[] }
+
+const checkCredential = (proof: Record<string, unknown>): CredentialCheck => {
+  const responses = Array.isArray(proof.responses)
+    ? (proof.responses.filter((item) => item && typeof item === 'object') as Record<string, unknown>[])
+    : []
+  // No per-credential responses to inspect (unexpected for World ID 4): keep the old behaviour
+  // and let the Developer Portal's verdict decide, but log it so we notice.
+  if (responses.length === 0) {
+    return { ok: true, credential: 'unknown' }
+  }
+
+  for (const item of responses) {
+    const schemaId = typeof item.issuer_schema_id === 'number' ? item.issuer_schema_id : undefined
+    const identifier = typeof item.identifier === 'string' ? item.identifier : undefined
+    const credential =
+      schemaId !== undefined ? ACCEPTED_SCHEMA_IDS[schemaId] : identifier ? ACCEPTED_IDENTIFIERS[identifier] : undefined
+    if (credential) {
+      return { ok: true, credential, nullifier: typeof item.nullifier === 'string' ? item.nullifier : undefined }
+    }
+  }
+
+  return {
+    ok: false,
+    identifiers: responses.map((item) => String(item.identifier ?? item.issuer_schema_id ?? 'unknown')),
+  }
+}
 
 const errorResponse = (error: string, status: number, errorCode = 'SERVER_ERROR', details?: unknown) => {
   return new Response(JSON.stringify({ success: false, error, errorCode, details }), { status, headers: corsHeaders })
@@ -234,6 +265,20 @@ serve(async (req) => {
       return errorResponse('World ID proof is required', 400, 'WORLDID_INVALID_PROOF')
     }
 
+    if (typeof proof.action === 'string' && proof.action !== action) {
+      return errorResponse('World ID proof is for a different action', 400, 'WORLDID_INVALID_PROOF')
+    }
+
+    const credentialCheck = checkCredential(proof)
+    if (!credentialCheck.ok) {
+      console.warn('[verify-worldid] rejected credential', { userId: user.id, identifiers: credentialCheck.identifiers })
+      return errorResponse(
+        'This World ID credential is not accepted. Verify at an Orb or add a passport in World App.',
+        400,
+        'WORLDID_INVALID_LEVEL'
+      )
+    }
+
     const verifyResponse = await fetch(`${getDeveloperPortalBaseUrl()}/api/v4/verify/${verifyTarget}`, {
       method: 'POST',
       headers: {
@@ -245,10 +290,16 @@ serve(async (req) => {
     const verifyRes = (await verifyResponse.json().catch(() => null)) as Record<string, unknown> | null
 
     if (!verifyResponse.ok || !verifyRes?.success) {
+      console.error('[verify-worldid] Developer Portal rejected proof', {
+        userId: user.id,
+        status: verifyResponse.status,
+        code: verifyRes?.code,
+        detail: verifyRes?.detail,
+      })
       return errorResponse('World ID verification failed', 400, 'WORLDID_VERIFICATION_FAILED', verifyRes)
     }
 
-    const nullifierHash = extractNullifier(proof, verifyRes)
+    const nullifierHash = credentialCheck.nullifier ?? extractNullifier(proof, verifyRes)
     if (!nullifierHash) {
       return errorResponse('World ID proof did not include a nullifier', 400, 'WORLDID_INVALID_PROOF', verifyRes)
     }
@@ -258,16 +309,13 @@ serve(async (req) => {
       getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY', 'SERVER_ERROR')
     )
 
-    // Orb and Passport are tracked in separate columns so the two verification methods
-    // are independent. Each has its own nullifier namespace, so dedup against the matching column.
-    const passportFlow = isPassportRequest(body)
-    const statusColumn = passportFlow ? 'is_world_id_passport' : 'is_world_id'
-    const nullifierColumn = passportFlow ? 'nullifier_hash_passport' : 'nullifier_hash'
-
+    // Orb and passport both mark the borrower World ID verified (is_world_id), which is what the
+    // loan, cash-out and wallet gates already check. Both nullifiers go in the same UNIQUE
+    // column, so one proof can't verify two accounts whichever credential it came from.
     const { data: existingUser, error: existingUserError } = await adminSupabase
       .from('users')
       .select('id')
-      .eq(nullifierColumn, nullifierHash)
+      .eq('nullifier_hash', nullifierHash)
       .neq('id', user.id)
       .maybeSingle()
 
@@ -282,16 +330,21 @@ serve(async (req) => {
     const { error: updateError } = await adminSupabase
       .from('users')
       .update({
-        [statusColumn]: 'ACTIVE',
-        [nullifierColumn]: nullifierHash
+        is_world_id: 'ACTIVE',
+        nullifier_hash: nullifierHash
       })
       .eq('id', user.id)
 
     if (updateError) {
+      // Another account claimed this nullifier between the check above and this write.
+      if (updateError.code === '23505') {
+        return errorResponse('World ID already used', 400, 'WORLDID_ALREADY_USED')
+      }
       return errorResponse('Failed to update user', 500, 'USER_UPDATE_FAILED', updateError)
     }
 
-    return successResponse({ nullifier_hash: nullifierHash })
+    console.log('[verify-worldid] verified', { userId: user.id, credential: credentialCheck.credential })
+    return successResponse({ nullifier_hash: nullifierHash, credential: credentialCheck.credential })
   } catch (error) {
     const status = typeof error === 'object' && error !== null && 'status' in error ? Number(error.status) : 500
     const errorCode = typeof error === 'object' && error !== null && 'errorCode' in error ? String(error.errorCode) : 'SERVER_ERROR'

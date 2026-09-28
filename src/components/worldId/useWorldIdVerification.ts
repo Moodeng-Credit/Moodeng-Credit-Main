@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { CredentialRequest, IDKit, IDKitErrorCodes, type IDKitResult, type RpContext } from '@worldcoin/idkit';
+import { any, CredentialRequest, type CredentialType, IDKit, IDKitErrorCodes, type IDKitResult, type RpContext } from '@worldcoin/idkit';
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,6 +25,7 @@ import {
    REQUEST_KEEP_WARM_LEAD_MS,
    type PreparedWorldIdRequest
 } from '@/components/worldId/worldIdLaunch';
+import { getWorldIdFailureOutcome } from '@/components/worldId/worldIdErrors';
 
 const WORLD_ID_ACTION_ID = 'verify-borrower';
 const WORLD_ID_ENVIRONMENT = (import.meta.env.VITE_WORLD_ID_ENVIRONMENT ||
@@ -54,8 +56,11 @@ const wait = (ms: number) =>
 type PrepareErrorPresentation = 'notify' | 'quiet';
 
 export interface WorldIdVerificationConfig {
-   /** World ID credential to request ('proof_of_human' for Orb, 'passport' for Passport/ID). */
-   credential: Parameters<typeof CredentialRequest>[0];
+   /**
+    * World ID credentials to accept ('proof_of_human' = Orb, 'passport' = Passport/ID). More than
+    * one becomes an any-of request: World App proves whichever the person has. Must be referentially stable.
+    */
+   credentials: readonly CredentialType[];
    actionDescription: string;
    /** Extra fields merged into the `{ type: 'verify', proof }` backend payload. Must be referentially stable. */
    verifyExtraBody?: Record<string, unknown>;
@@ -68,7 +73,7 @@ export interface WorldIdVerificationConfig {
 }
 
 export function useWorldIdVerification({
-   credential,
+   credentials,
    actionDescription,
    verifyExtraBody,
    isVerificationActive,
@@ -241,14 +246,18 @@ export function useWorldIdVerification({
          allow_legacy_proofs: false,
          environment: WORLD_ID_ENVIRONMENT,
          return_to: buildWorldIdReturnToUrl(window.location.href)
-      }).constraints(CredentialRequest(credential));
+      }).constraints(
+         credentials.length === 1
+            ? CredentialRequest(credentials[0])
+            : any(...credentials.map((credential) => CredentialRequest(credential)))
+      );
 
       return {
          connectorURI: request.connectorURI,
          pollOnce: () => request.pollOnce(),
          usableUntilMs: getRequestUsableUntilMs(nextRpContext.expires_at)
       };
-   }, [action, actionDescription, app_id, credential, fetchRpContext]);
+   }, [action, actionDescription, app_id, credentials, fetchRpContext]);
 
    const prepareWorldIdRequest = useCallback(() => {
       const cached = preparedRequestRef.current;
@@ -412,28 +421,22 @@ export function useWorldIdVerification({
    const handleError = useCallback(
       (errorCode: IDKitErrorCodes) => {
          const isFinishingVerification = verificationFeedbackState === 'processing' || verificationFeedbackState === 'success';
+         // Record why World App said no: before this, every failure looked like "Server Error"
+         // and there was no way to tell a missing Orb/passport from a broken setup.
+         console.warn(`[${logTag}] World ID request failed:`, errorCode);
+         if (import.meta.env.PROD) {
+            posthog.capture('worldid_request_failed', { error_code: errorCode, credentials: credentials.join(',') });
+         }
 
-         if (
-            errorCode === IDKitErrorCodes.NullifierReplayed ||
-            errorCode === IDKitErrorCodes.MaxVerificationsReached ||
-            (errorCode === IDKitErrorCodes.FailedByHostApp && alreadyUsedRef.current)
-         ) {
+         const outcome = getWorldIdFailureOutcome(errorCode, { alreadyUsed: alreadyUsedRef.current, isFinishingVerification });
+         if (outcome.kind === 'already_used') {
             alreadyUsedRef.current = false;
             showAlreadyUsedWarning();
-         } else if (
-            errorCode === IDKitErrorCodes.UserRejected ||
-            errorCode === IDKitErrorCodes.Cancelled ||
-            errorCode === IDKitErrorCodes.VerificationRejected ||
-            errorCode === IDKitErrorCodes.RpSignatureExpired
-         ) {
-            if (!isFinishingVerification) {
-               showToastByConfig('worldid_not_completed');
-            }
-         } else if (errorCode !== IDKitErrorCodes.FailedByHostApp) {
-            showToastByConfig('server_error');
+         } else if (outcome.kind === 'toast') {
+            showToastByConfig(outcome.toastKey);
          }
       },
-      [showAlreadyUsedWarning, showToastByConfig, verificationFeedbackState]
+      [credentials, logTag, showAlreadyUsedWarning, showToastByConfig, verificationFeedbackState]
    );
 
    const showLaunchFallback = useCallback(() => {
@@ -474,6 +477,9 @@ export function useWorldIdVerification({
                   setVerificationLaunchState('idle');
                   handleError(IDKitErrorCodes.Timeout);
                   preparedRequestRef.current = null;
+                  prepareRequestPromiseRef.current = null;
+                  // Re-warm so the next tap can launch World App directly (mobile needs a cached request).
+                  void prepareWorldIdRequest().catch((error) => presentPrepareError(error, 'quiet'));
                   return;
                }
 
@@ -519,7 +525,8 @@ export function useWorldIdVerification({
             if (pollRunRef.current === runId) {
                setVerificationLaunchState('idle');
                console.error(`[${logTag}] beginPollingWorldIdRequest error:`, error);
-               showToastByConfig('server_error');
+               // pollOnce throws on network failures talking to the World bridge.
+               showToastByConfig('worldid_connection_failed');
             }
          });
       },
