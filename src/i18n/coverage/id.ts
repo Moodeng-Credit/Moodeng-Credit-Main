@@ -2,6 +2,7 @@ import { indonesianCoverageA } from '@/i18n/coverage/idA';
 import { indonesianCoverageB } from '@/i18n/coverage/idB';
 import { indonesianCoverageC } from '@/i18n/coverage/idC';
 import { indonesianCoverageD } from '@/i18n/coverage/idD';
+import { indonesianCoverageE } from '@/i18n/coverage/idE';
 import { indonesianCoverageLanding } from '@/i18n/coverage/idLanding';
 
 export const screenCoverage: Record<string, string> = {
@@ -9,5 +10,6 @@ export const screenCoverage: Record<string, string> = {
    ...indonesianCoverageB,
    ...indonesianCoverageC,
    ...indonesianCoverageD,
+   ...indonesianCoverageE,
    ...indonesianCoverageLanding
 };
