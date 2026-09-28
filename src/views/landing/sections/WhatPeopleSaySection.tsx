@@ -22,7 +22,7 @@ export default function WhatPeopleSaySection(): JSX.Element {
                         </div>
                         <img
                            className="absolute w-[50px] h-[37px] top-0 left-[1186px] object-cover"
-                           alt="Svg"
+                           alt=""
                            src="https://c.animaapp.com/VPWnEuWR/img/svg-3.svg"
                            width={50}
                            height={37}

@@ -29,7 +29,7 @@ export default function StartBuildingSection(): JSX.Element {
             <div className="absolute w-[1068px] h-[50px] top-[279px] left-[186px]">
                <img
                   className="absolute w-[27px] h-[27px] top-0 left-px object-cover"
-                  alt="Svg"
+                  alt=""
                   src="https://c.animaapp.com/VPWnEuWR/img/svg-4.svg"
                   width={27}
                   height={27}
@@ -40,7 +40,7 @@ export default function StartBuildingSection(): JSX.Element {
                   </div>
                   <img
                      className="absolute w-[27px] h-[27px] top-0 left-[165px] object-cover"
-                     alt="Svg"
+                     alt=""
                      src="https://c.animaapp.com/VPWnEuWR/img/svg-5.svg"
                      width={27}
                      height={27}
@@ -58,7 +58,7 @@ export default function StartBuildingSection(): JSX.Element {
                <div className="absolute w-[165px] h-[31px] -top-px left-[445px]">
                   <img
                      className="absolute w-[41px] h-[27px] top-px left-0 object-cover"
-                     alt="Svg"
+                     alt=""
                      src="https://c.animaapp.com/VPWnEuWR/img/svg-6.svg"
                      width={41}
                      height={27}
@@ -72,7 +72,7 @@ export default function StartBuildingSection(): JSX.Element {
                </div>
                <img
                   className="absolute w-[27px] h-[27px] top-0 left-[631px] object-cover"
-                  alt="Svg"
+                  alt=""
                   src="https://c.animaapp.com/VPWnEuWR/img/svg-7.svg"
                   width={27}
                   height={27}
@@ -85,7 +85,7 @@ export default function StartBuildingSection(): JSX.Element {
                </div>
                <img
                   className="absolute w-[27px] h-[27px] top-0 left-[840px] object-cover"
-                  alt="Svg"
+                  alt=""
                   src="https://c.animaapp.com/VPWnEuWR/img/svg-8.svg"
                   width={27}
                   height={27}

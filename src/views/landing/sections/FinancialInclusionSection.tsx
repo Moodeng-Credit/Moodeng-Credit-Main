@@ -42,21 +42,21 @@ export default function FinancialInclusionSection(): JSX.Element {
                                  <div className="relative w-[309px] h-[324px]">
                                     <img
                                        className="absolute w-[300px] h-[307px] top-[17px] left-0"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-3.svg"
                                        width={300}
                                        height={307}
                                     />
                                     <img
                                        className="absolute w-[264px] h-14 top-[155px] left-[18px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-4.svg"
                                        width={100}
                                        height={100}
                                     />
                                     <img
                                        className="absolute w-[264px] h-14 top-[221px] left-[18px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-5.svg"
                                        width={100}
                                        height={100}
@@ -147,14 +147,14 @@ export default function FinancialInclusionSection(): JSX.Element {
                                     <div className="absolute w-[165px] h-[85px] top-0 left-[15px]">
                                        <img
                                           className="absolute w-[35px] h-[31px] top-[54px] left-[34px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-11.svg"
                                           width={35}
                                           height={31}
                                        />
                                        <img
                                           className="absolute w-[165px] h-[65px] top-0 left-0"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-12.svg"
                                           width={165}
                                           height={65}
@@ -166,14 +166,14 @@ export default function FinancialInclusionSection(): JSX.Element {
                                     <div className="absolute w-[177px] h-[85px] top-[161px] left-0">
                                        <img
                                           className="absolute w-[35px] h-[31px] top-[54px] left-[93px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-13.svg"
                                           width={35}
                                           height={31}
                                        />
                                        <img
                                           className="absolute w-[177px] h-[65px] top-0 left-0"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-14.svg"
                                           width={177}
                                           height={65}
@@ -185,14 +185,14 @@ export default function FinancialInclusionSection(): JSX.Element {
                                     <div className="absolute w-[204px] h-[85px] top-[84px] left-[114px]">
                                        <img
                                           className="absolute w-[35px] h-[31px] top-[54px] left-[106px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-15.svg"
                                           width={35}
                                           height={31}
                                        />
                                        <img
                                           className="absolute w-[204px] h-[65px] top-0 left-0"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-16.svg"
                                           width={204}
                                           height={65}
@@ -206,14 +206,14 @@ export default function FinancialInclusionSection(): JSX.Element {
                                     <div className="absolute w-[23px] h-[15px] top-[18px] left-[13px]">
                                        <img
                                           className="absolute w-[22px] h-3.5 top-0.5 left-px"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-18.svg"
                                           width={100}
                                           height={100}
                                        />
                                        <img
                                           className="absolute w-[5px] h-1.5 top-0 left-0"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-19.svg"
                                           width={100}
                                           height={100}
@@ -221,7 +221,7 @@ export default function FinancialInclusionSection(): JSX.Element {
                                     </div>
                                     <img
                                        className="absolute w-[5px] h-1.5 top-[13px] left-[23px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-20.svg"
                                        width={100}
                                        height={100}
@@ -230,21 +230,21 @@ export default function FinancialInclusionSection(): JSX.Element {
                                  <div className="absolute w-[45px] h-[45px] top-[173px] left-[218px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-21.svg)] bg-[100%_100%]">
                                     <img
                                        className="absolute w-6 h-2.5 top-[23px] left-2.5"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-22.svg"
                                        width={24}
                                        height={8}
                                     />
                                     <img
                                        className="absolute w-[5px] h-[7px] top-3.5 left-4"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-23.svg"
                                        width={5}
                                        height={7}
                                     />
                                     <img
                                        className="absolute w-[5px] h-[7px] top-4 left-[26px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-24.svg"
                                        width={5}
                                        height={7}
@@ -254,21 +254,21 @@ export default function FinancialInclusionSection(): JSX.Element {
                               <div className="absolute w-[45px] h-[45px] top-[249px] left-[84px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-25.svg)] bg-[100%_100%]">
                                  <img
                                     className="absolute w-[25px] h-[9px] top-6 left-[11px]"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-26.svg"
                                     width={25}
                                     height={9}
                                  />
                                  <img
                                     className="absolute w-1 h-[7px] top-[15px] left-3.5"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-27.svg"
                                     width={100}
                                     height={100}
                                  />
                                  <img
                                     className="absolute w-1 h-[7px] top-3.5 left-[25px]"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-28.svg"
                                     width={100}
                                     height={100}
@@ -314,21 +314,21 @@ export default function FinancialInclusionSection(): JSX.Element {
                                  <div className="absolute w-[72px] h-[74px] top-[81px] left-[34px]">
                                     <img
                                        className="absolute w-[71px] h-[71px] top-[3px] left-0"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-30.svg"
                                        width={71}
                                        height={71}
                                     />
                                     <img
                                        className="absolute w-11 h-[71px] top-[3px] left-[26px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-31.svg"
                                        width={100}
                                        height={100}
                                     />
                                     <img
                                        className="absolute w-[21px] h-[21px] top-0 left-[51px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-32.svg"
                                        width={21}
                                        height={21}
@@ -362,70 +362,70 @@ export default function FinancialInclusionSection(): JSX.Element {
                                  <div className="relative w-[290px] h-[234px]">
                                     <img
                                        className="absolute w-[252px] h-[234px] top-0 left-0"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-83.svg"
                                        width={252}
                                        height={234}
                                     />
                                     <img
                                        className="absolute w-[74px] h-[74px] top-[88px] left-[35px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-34.svg"
                                        width={74}
                                        height={74}
                                     />
                                     <img
                                        className="absolute w-[37px] h-[34px] top-[88px] left-[72px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-35.svg"
                                        width={37}
                                        height={34}
                                     />
                                     <img
                                        className="absolute w-[22px] h-[22px] top-[84px] left-[88px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-36.svg"
                                        width={22}
                                        height={22}
                                     />
                                     <img
                                        className="absolute w-[98px] h-4 top-[218px] left-[148px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-37.svg"
                                        width={100}
                                        height={100}
                                     />
                                     <img
                                        className="absolute w-[98px] h-[42px] top-48 left-[148px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-38.svg"
                                        width={98}
                                        height={42}
                                     />
                                     <img
                                        className="absolute w-[98px] h-11 top-[165px] left-[148px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-39.svg"
                                        width={100}
                                        height={100}
                                     />
                                     <img
                                        className="absolute w-[98px] h-11 top-[137px] left-[148px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-40.svg"
                                        width={100}
                                        height={100}
                                     />
                                     <img
                                        className="absolute w-[98px] h-11 top-[111px] left-[148px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-41.svg"
                                        width={100}
                                        height={100}
                                     />
                                     <img
                                        className="absolute w-[98px] h-[38px] top-[93px] left-[148px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-42.svg"
                                        width={98}
                                        height={38}
@@ -451,7 +451,7 @@ export default function FinancialInclusionSection(): JSX.Element {
             />
             <img
                className="absolute w-[221px] h-[65px] top-[325px] left-[555px]"
-               alt="Vector"
+               alt=""
                src="https://c.animaapp.com/VPWnEuWR/img/vector-44.svg"
                width={221}
                height={65}

@@ -40,7 +40,7 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                   </div>
                   <div className="flex flex-col p-5 mt-8 w-full bg-white rounded-xl border border-indigo-700 border-solid max-md:max-w-full">
                      <div className="pr-16 pb-px pl-16 text-2xl font-extrabold text-center text-indigo-700 max-md:px-5 max-md:max-w-full">
-                        Your Credit Limit Grows with Every $20 You Borrow and Repay!
+                        Your Credit Limit Grows Each Time You Repay a Full-Limit Loan on Time!
                      </div>
                      <div className="px-20 pb-px mt-4 text-base text-center text-indigo-700 max-md:px-5 max-md:max-w-full">
                         The more you borrow and repay, the more you can borrow in the future.
@@ -113,10 +113,10 @@ export default function CreditGrowthSystemSection(): JSX.Element {
                            <div className="flex flex-col pb-2.5 w-10 text-base text-white whitespace-nowrap min-h-[50px]">
                               <div className="self-stretch px-4 pt-2 w-full h-10 bg-indigo-700 rounded-3xl min-h-[40px]">7</div>
                            </div>
-                           <div className="pb-px text-xl whitespace-nowrap">$120+</div>
+                           <div className="pb-px text-xl whitespace-nowrap">$140</div>
                            <div className="text-sm">Ongoing Growth</div>
                            <div className="flex flex-col pt-1.5 text-sm">
-                              <div className="px-4">Keep going forever and grow!</div>
+                              <div className="px-4">The current maximum limit.</div>
                            </div>
                         </div>
                      </div>
