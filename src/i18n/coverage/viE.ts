@@ -6,13 +6,75 @@ export const vietnameseCoverageE: Record<string, string> = {
    'A request for your full $15 credit limit is a credit-building loan.':
       'Yêu cầu bằng toàn bộ hạn mức tín dụng $15 của bạn là một Credit-Building Loan.',
    '$15 is your full limit': '$15 là toàn bộ hạn mức của bạn',
+   'Step 1': 'Bước 1',
+   'Step 2': 'Bước 2',
+   'Step 3': 'Bước 3',
+   'Step 4': 'Bước 4',
+   'Step 5': 'Bước 5',
+   'Step 6': 'Bước 6',
+   'Step 7': 'Bước 7',
+   'Step 8': 'Bước 8',
+   'Set up wallet': 'Thiết lập ví',
+   'Amount decides': 'Số tiền quyết định',
+   Browse: 'Xem bảng',
+   'To skip repayment': 'Để khỏi phải trả nợ',
+   'To hide from lenders': 'Để trốn tránh người cho vay',
+   'To hide repayment history': 'Để che giấu lịch sử trả nợ',
+   'To skip World ID': 'Để bỏ qua World ID',
+   'Trust-building': 'Trust-Building',
+   'A lender loan': 'Khoản vay của người cho vay',
+   'Already repaid': 'Đã trả xong',
+   'Changing names often': 'Thường xuyên đổi tên',
+   'Ignoring the request board': 'Phớt lờ bảng yêu cầu',
+   'Needs $15 • 2 days': 'Cần $15 • 2 ngày',
+   '$13 repaid / $18 total': 'Đã trả $13 / tổng $18',
+   '0 days': '0 ngày',
+   'Finish the quick check. Score': 'Hoàn thành bài kiểm tra nhanh. Đúng',
+   'or better to pass. This is a learning score today, not a live IOU or Pandesal points balance.':
+      'câu trở lên là đạt. Đây chỉ là điểm luyện tập, không phải số dư điểm IOU hay điểm Pandesal thật.',
+   Answer: 'Trả lời',
+   'quick questions. Each correct answer earns': 'câu hỏi nhanh. Mỗi câu trả lời đúng được',
+   'points toward your Academy score.': 'điểm, cộng vào điểm Học viện của bạn.',
+   Question: 'Câu hỏi',
+   'Submit answer': 'Gửi câu trả lời',
+   'Next question': 'Câu tiếp theo',
+   'See score': 'Xem điểm',
+   'Academy passed': 'Đã hoàn thành Học viện',
+   Register: 'Đăng ký',
 
    // src/views/academy/MoneyGuide.tsx
    'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time earns Pandesal points, and repaying a full-limit loan on time raises your credit limit.':
       'Gửi USDC đến địa chỉ trả nợ hiển thị trên màn hình Trả nợ — từ ví, sàn giao dịch hoặc dịch vụ tại địa phương. Trả nợ đúng hạn giúp bạn nhận điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ nâng hạn mức tín dụng của bạn.',
+   'One-time · about 3 minutes': 'Một lần · khoảng 3 phút',
+   'ID photo': 'Ảnh giấy tờ tùy thân',
 
    // src/views/academy/VerifyGuide.tsx
    'Chrome or Safari': 'Chrome hoặc Safari',
+   'Tap "Verify Yourself" in the app and choose "Verify Your ID".':
+      'Nhấn "Xác minh danh tính" trong ứng dụng và chọn "Xác minh bằng giấy tờ tùy thân".',
+   'Have your physical national ID ready and find good, even lighting.':
+      'Chuẩn bị sẵn thẻ căn cước bản gốc và tìm chỗ đủ sáng, ánh sáng đều.',
+   'Complete the quick ID photo + selfie check — it takes about 3 minutes.':
+      'Hoàn tất bước kiểm tra nhanh bằng ảnh giấy tờ + selfie — chỉ mất khoảng 3 phút.',
+   'Most checks finish in minutes. If yours needs a human review, we will notify you as soon as it is done — usually within a few hours, at most 1 business day.':
+      'Hầu hết lượt kiểm tra hoàn tất trong vài phút. Nếu hồ sơ của bạn cần nhân viên xem xét, chúng tôi sẽ thông báo cho bạn ngay khi xong — thường trong vài giờ, tối đa 1 ngày làm việc.',
+   'Good, even lighting': 'Đủ sáng, ánh sáng đều',
+   'Open Moodeng in Chrome or Safari. In-app browsers inside Facebook or Messenger are the most common reason a check gets stuck.':
+      'Mở Moodeng bằng Chrome hoặc Safari. Trình duyệt bên trong Facebook hoặc Messenger là lý do phổ biến nhất khiến bước kiểm tra bị kẹt.',
+   'Make sure the whole ID is in frame, in focus, and readable — no fingers over the text and no glare washing it out.':
+      'Đảm bảo toàn bộ giấy tờ nằm trong khung hình, rõ nét và đọc được — không để ngón tay che chữ và không bị lóa sáng.',
+   'If the check does get stuck, you can simply retry it with a clearer, well-lit photo.':
+      'Nếu bước kiểm tra bị kẹt, bạn chỉ cần thử lại với ảnh rõ hơn và đủ sáng.',
+   'Yes. If you are already verified in World App, either in person at an Orb or with a biometric passport, you can choose "Verify with World ID" and confirm through the World App instead of doing the ID check.':
+      'Có. Nếu bạn đã được xác minh trong World App, dù là trực tiếp tại một Orb hay bằng hộ chiếu sinh trắc học, bạn có thể chọn "Xác minh bằng World ID" và xác nhận qua World App thay vì kiểm tra giấy tờ.',
+   'instead and confirm through the World App, rather than doing the ID photo check.':
+      'để xác nhận qua World App, thay vì làm bước kiểm tra bằng ảnh giấy tờ tùy thân.',
+   "What you'll need": 'Bạn cần chuẩn bị',
+   'One-time · about 3 minutes · free': 'Một lần · khoảng 3 phút · miễn phí',
+   'Open the app to verify': 'Mở ứng dụng để xác minh',
+   'Buy USDC and send it to your wallet on Base.': 'Mua USDC và gửi vào ví của bạn trên mạng Base.',
+   'Cash out USDC to your bank or e-wallet.': 'Rút USDC về ngân hàng hoặc ví điện tử của bạn.',
+   'Repay on time to earn Pandesal points.': 'Trả nợ đúng hạn để nhận điểm Pandesal.',
 
    // src/views/academy/moneyGuideTopics.tsx
    'Buy USDC with PHP, then Send Crypto → External Wallet → Base network.':
@@ -31,6 +93,18 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Deposit USDC, convert to PHP, and cash out to your bank or GCash.': 'Nạp USDC, đổi sang PHP và rút về ngân hàng hoặc GCash của bạn.',
    'If crypto is enabled in your GCash app, you can receive supported crypto and convert inside GCash.':
       'Nếu ứng dụng GCash của bạn đã bật tính năng crypto, bạn có thể nhận các loại crypto được hỗ trợ và quy đổi ngay trong GCash.',
+   'The key detail: always choose Base as the network. Sending on the wrong network can result in lost funds.':
+      'Điều quan trọng nhất: luôn chọn mạng Base. Gửi sai mạng có thể khiến bạn mất tiền.',
+   'The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.':
+      'Điều quan trọng nhất: luôn chọn mạng Base khi nạp tiền vào sàn giao dịch. Dùng sai mạng có thể khiến bạn mất tiền.',
+   'Open the Repay screen to see the amount due and copy the repayment address.':
+      'Mở màn hình Trả nợ để xem số tiền đến hạn và sao chép địa chỉ trả nợ.',
+   'Send USDC to that address from a wallet, an exchange, or a local service — always on the Base network.':
+      'Gửi USDC đến địa chỉ đó từ ví, sàn giao dịch hoặc dịch vụ tại địa phương — luôn trên mạng Base.',
+   'Don’t hold USDC yet? Buy it first, send it to your wallet, then repay from there.':
+      'Chưa có USDC? Hãy mua trước, gửi vào ví của bạn, rồi trả nợ từ ví đó.',
+   'Always repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. And always choose Base as the network.':
+      'Luôn trả nợ trước ngày đến hạn — trả đúng hạn giúp bạn tích điểm Pandesal và mở khóa Hạng tín dụng cao hơn. Và luôn chọn mạng Base.',
 
    // src/views/fund/FundWalletSheet.tsx
    'Your USDC balance': 'Số dư USDC của bạn',
@@ -115,5 +189,59 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Use a real browser — Chrome or Safari — not a browser inside another app.':
       'Dùng trình duyệt thật — Chrome hoặc Safari — không dùng trình duyệt bên trong ứng dụng khác.',
    'You do not need the Coinbase app. Base is a network built by Coinbase, but the app is a different thing.':
-      'Bạn không cần ứng dụng Coinbase. Base là mạng do Coinbase xây dựng, nhưng ứng dụng Coinbase là một thứ khác.'
+      'Bạn không cần ứng dụng Coinbase. Base là mạng do Coinbase xây dựng, nhưng ứng dụng Coinbase là một thứ khác.',
+
+   // src/views/dashboard/components/ConnectStep.tsx
+   "Glad you're here!": 'Rất vui được gặp bạn!',
+   'We missed you!': 'Tiếc là chưa gặp được bạn!',
+   'Welcome back': 'Chào mừng bạn quay lại',
+   'A quick 15-min call with Emma sets you up to cash out and repay easily.':
+      'Một cuộc gọi nhanh 15 phút với Emma sẽ giúp bạn thiết lập để rút tiền và trả nợ dễ dàng.',
+   'We meet every borrower on a quick 15-min video call before their first loan.':
+      'Chúng tôi gặp mọi người vay qua một cuộc gọi video nhanh 15 phút trước khoản vay đầu tiên.',
+   'Before your first loan, we like to meet every borrower — we approve within a day.':
+      'Trước khoản vay đầu tiên, chúng tôi muốn gặp từng người vay — chúng tôi duyệt trong vòng một ngày.',
+   'Book call': 'Đặt lịch gọi',
+   'Send to the team': 'Gửi cho đội ngũ',
+   'Book your call with Emma': 'Đặt lịch gọi với Emma',
+   'Book your 15-min call': 'Đặt lịch gọi 15 phút',
+   'Quick ID check — have it ready': 'Kiểm tra giấy tờ nhanh — hãy chuẩn bị sẵn',
+   '$10 cash': '$10 tiền mặt',
+   'for every friend you refer': 'cho mỗi người bạn bạn giới thiệu',
+   Rent: 'Tiền nhà',
+   Bills: 'Hóa đơn',
+   'School fees': 'Học phí',
+   Medical: 'Y tế',
+   Family: 'Gia đình',
+   'Business stock': 'Hàng kinh doanh',
+   Transport: 'Đi lại',
+   "What's the loan for?": 'Bạn vay để làm gì?',
+   'e.g. Rent is due before payday on the 15th': 'VD: Tiền nhà đến hạn ngày 15, trước ngày lĩnh lương',
+   'more characters': 'ký tự nữa',
+   '✓ Looks good': '✓ Ổn rồi',
+   Referral: 'Mã giới thiệu',
+   applied: 'đã được áp dụng',
+   'Next: book your call': 'Tiếp theo: đặt lịch gọi',
+   'Please confirm Messenger first, then send.': 'Vui lòng xác nhận Messenger trước, rồi gửi.',
+   'Tell us a little about what you need.': 'Hãy cho chúng tôi biết đôi chút về nhu cầu của bạn.',
+   'Only borrower accounts can apply for loans.': 'Chỉ tài khoản người vay mới có thể đăng ký vay.',
+   'Please book your call first.': 'Vui lòng đặt lịch gọi trước.',
+   "Your account can't apply right now. Message us on Messenger for help.":
+      'Tài khoản của bạn hiện chưa thể đăng ký vay. Hãy nhắn tin cho chúng tôi qua Messenger để được hỗ trợ.',
+   "Couldn't send right now — please try again in a moment.": 'Chưa gửi được lúc này — vui lòng thử lại sau giây lát.',
+   'The team is unlocking your loan request — we’ll message you the moment it’s ready.':
+      'Đội ngũ đang mở khóa yêu cầu vay của bạn — chúng tôi sẽ nhắn tin cho bạn ngay khi xong.',
+   'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.':
+      'Bạn đã đặt lịch! Nhấn “Tôi sẽ có mặt” để chúng tôi giữ chỗ cho bạn — bạn có thể đăng ký vay ngay sau cuộc gọi.',
+   "✅ I'll be there": '✅ Tôi sẽ có mặt',
+   'Thank you for confirming! You can apply right after the call.': 'Cảm ơn bạn đã xác nhận! Bạn có thể đăng ký vay ngay sau cuộc gọi.',
+   'Thanks for reaching out! We usually reply within a day on Messenger.':
+      'Cảm ơn bạn đã liên hệ! Chúng tôi thường trả lời trong vòng một ngày qua Messenger.',
+   'Thanks for joining!': 'Cảm ơn bạn đã tham gia!',
+   'See you on the call with Emma': 'Hẹn gặp bạn trong cuộc gọi với Emma',
+   'We’re reviewing your request': 'Chúng tôi đang xem xét yêu cầu của bạn',
+   'With Emma Moodeng · Zoom': 'Với Emma Moodeng · Zoom',
+   'Moodeng team · Zoom': 'Đội ngũ Moodeng · Zoom',
+   '· your local time': '· giờ địa phương của bạn',
+   '✅ You confirmed — see you there!': '✅ Bạn đã xác nhận — hẹn gặp bạn nhé!'
 };
