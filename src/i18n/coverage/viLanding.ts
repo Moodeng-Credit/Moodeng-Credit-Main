@@ -145,12 +145,12 @@ export const vietnameseCoverageLanding: Record<string, string> = {
    'Worker hubs first': 'Ưu tiên các trung tâm lao động',
    'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
       'Chúng tôi bắt đầu từ các trung tâm lao động ở nước ngoài, gồm Hàn Quốc, Đài Loan, Nhật Bản, Singapore và các thành phố lân cận.',
-   'Worker corridors': 'Hành lang lao động',
+   'Worker corridors': 'Các tuyến lao động',
    'Verified borrowers first': 'Ưu tiên người vay đã xác minh',
    'Every borrower completes a one-time identity check before requesting a loan.':
       'Mỗi người vay đều hoàn tất bước xác minh danh tính một lần trước khi yêu cầu vay.',
    'Identity checks help us start with users who can prove they are unique, real borrowers.':
-      'Bước xác minh danh tính giúp chúng tôi bắt đầu với những người dùng chứng minh được họ là người vay thật và duy nhất.',
+      'Bước xác minh danh tính giúp chúng tôi bắt đầu với những người dùng chứng minh được mình là người vay thật và không trùng lặp.',
    'Identity verification helps confirm one real person behind each borrower account.':
       'Xác minh danh tính giúp đảm bảo mỗi tài khoản người vay thuộc về đúng một người thật.',
    'Verification is a trust signal, not a loan guarantee.': 'Xác minh là tín hiệu tin cậy, không phải bảo đảm khoản vay.',
