@@ -694,5 +694,49 @@ export const vietnameseCoverageB: Record<string, string> = {
    'No referral code — book a call.': 'Không có mã giới thiệu — hãy đặt lịch gọi.',
    'Moodeng video call': 'Cuộc gọi video Moodeng',
    'Your short video hello with the Moodeng team — see how Moodeng works and ask anything.':
-      'Buổi trò chuyện video ngắn cùng đội ngũ Moodeng — xem cách Moodeng hoạt động và hỏi bất cứ điều gì.'
+      'Buổi trò chuyện video ngắn cùng đội ngũ Moodeng — xem cách Moodeng hoạt động và hỏi bất cứ điều gì.',
+   // src/views/fund/FundBridge.tsx
+   'Bridge to Base': 'Bắc cầu sang Base',
+   'From chain': 'Chuỗi nguồn',
+   'Select a chain': 'Chọn một chuỗi',
+   'Amount (USDC)': 'Số tiền (USDC)',
+   'To chain': 'Chuỗi đích',
+   'Fetching best rate…': 'Đang tìm tỷ giá tốt nhất…',
+   'Quote Details': 'Chi tiết báo giá',
+   'You send': 'Bạn gửi',
+   'You receive on Base': 'Bạn nhận trên Base',
+   'Estimated time': 'Thời gian dự kiến',
+   'Pay from': 'Thanh toán từ',
+   'Could not fetch a quote. Please try again.': 'Không thể lấy báo giá. Vui lòng thử lại.',
+   // src/views/fund/FundWalletSheet.tsx
+   'Opening Coinbase…': 'Đang mở Coinbase…',
+   'Coinbase checks if you’re already signed in.': 'Coinbase sẽ kiểm tra xem bạn đã đăng nhập chưa.',
+   'If not, you’ll sign in (or create an account).': 'Nếu chưa, bạn sẽ đăng nhập (hoặc tạo tài khoản).',
+   'Pay with your card — USDC lands in your wallet.': 'Thanh toán bằng thẻ của bạn — USDC sẽ về ví của bạn.',
+   'Fund your wallet': 'Nạp tiền vào ví của bạn',
+   'Deposit USDC': 'Nạp USDC',
+   'Already have USDC? Send it to your wallet on Base': 'Đã có USDC? Gửi vào ví của bạn trên Base',
+   'No fee': 'Miễn phí',
+   'Base network only': 'Chỉ mạng Base',
+   'Send USDC on the': 'Gửi USDC trên',
+   'Only send USDC on Base. Other tokens or networks may be lost.': 'Chỉ gửi USDC trên Base. Token hoặc mạng khác có thể bị mất.',
+   'Buy USDC with card': 'Mua USDC bằng thẻ',
+   'Powered by Stripe': 'Được hỗ trợ bởi Stripe',
+   'Stays in the app': 'Ở lại trong ứng dụng',
+   'Supported in': 'Hỗ trợ tại',
+   'Buy USDC with debit card': 'Mua USDC bằng thẻ ghi nợ',
+   'Coinbase account needed': 'Cần có tài khoản Coinbase',
+   'Coinbase checks if you’re signed in — if not, you’ll sign in first, then pay by card.':
+      'Coinbase sẽ kiểm tra xem bạn đã đăng nhập chưa — nếu chưa, bạn sẽ đăng nhập trước, sau đó thanh toán bằng thẻ.',
+   'Bridge from another chain': 'Bắc cầu từ chuỗi khác',
+   'Already have stablecoins? Move them to Base': 'Đã có stablecoin? Chuyển sang Base',
+   'Bridge from Solana': 'Bắc cầu từ Solana',
+   'Gas only': 'Chỉ phí gas',
+   'Loading balance': 'Đang tải số dư',
+   // src/views/fund/StripeOnrampModal.tsx
+   'Opening secure checkout…': 'Đang mở trang thanh toán an toàn…',
+   'Back to funding options': 'Quay lại các cách nạp tiền',
+   'Payment confirmed': 'Đã xác nhận thanh toán',
+   'Your USDC is on its way to your wallet on Base. It usually lands within a minute.':
+      'USDC của bạn đang được chuyển đến ví trên Base. Thường sẽ về trong vòng một phút.'
 };
