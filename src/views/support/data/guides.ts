@@ -801,22 +801,22 @@ const VIETNAMESE_GUIDES: Record<string, LocalizedGuideArticle> = {
       body: `Làm theo các bước đơn giản sau để gửi yêu cầu vay đầu tiên trên Moodeng Credit. Bạn cũng có thể xem video hướng dẫn quy trình này tại đây: https://youtube.com/shorts/fKpBC9zD6Hk?si=KoU6NRuIguzLw-Hh.
 
 Bước 1: Tạo tài khoản
-Đăng ký trên nền tảng Moodeng bằng cách nhập tên người dùng, email và mật khẩu bạn muốn. Bấm "Tạo tài khoản" để tiếp tục.
+Đăng ký trên nền tảng Moodeng bằng cách nhập tên người dùng, email và mật khẩu bạn muốn. Nhấn "Tạo tài khoản" để tiếp tục.
 
 Bước 2: Bắt đầu đăng ký vay
-Sau khi đăng nhập, bấm nút "Đăng ký vay" để bắt đầu.
+Sau khi đăng nhập, nhấn nút "Đăng ký vay" để bắt đầu.
 
 Bước 3: Thiết lập ví
 Để giao dịch an toàn trên Moodeng, bạn cần có ví. Mặc định, bạn dùng Moodeng Instant Wallet — ví được tạo từ tài khoản đăng nhập Moodeng của bạn, không cần ứng dụng riêng hay cụm từ khôi phục (seed phrase). Nếu muốn, bạn có thể dùng Base Account thay thế: truy cập https://account.base.app và làm theo hướng dẫn đăng ký.
 
 Bước 4: Kết nối ví
-Quay lại Moodeng và bấm "Kết nối ví" để tạo Instant Wallet — hoặc liên kết an toàn Base Account nếu bạn đã chọn dùng — để ví được gắn với tài khoản Moodeng của bạn.
+Quay lại Moodeng và nhấn "Kết nối ví" để tạo Instant Wallet — hoặc liên kết an toàn Base Account nếu bạn đã chọn dùng — để ví được gắn với tài khoản Moodeng của bạn.
 
 Bước 5: Xác minh danh tính
-Để đảm bảo an toàn cho cộng đồng, bấm "Xác minh danh tính" và hoàn tất bước kiểm tra nhanh bằng giấy tờ tùy thân + ảnh selfie ("Xác minh bằng giấy tờ tùy thân") — chỉ mất khoảng 3 phút. Đã dùng World App? Bạn có thể chọn "Xác minh bằng World ID".
+Để đảm bảo an toàn cho cộng đồng, nhấn "Xác minh danh tính" và hoàn tất bước kiểm tra nhanh bằng giấy tờ tùy thân + ảnh selfie ("Xác minh bằng giấy tờ tùy thân") — chỉ mất khoảng 3 phút. Đã dùng World App? Bạn có thể chọn "Xác minh bằng World ID".
 
 Bước 6: Gửi yêu cầu
-Bấm "Khám phá Bảng yêu cầu" để đặt các điều khoản cho khoản vay của bạn. Bạn cần xác định:
+Nhấn "Khám phá Bảng yêu cầu" để đặt các điều khoản cho khoản vay của bạn. Bạn cần xác định:
 - Số tiền muốn vay.
 - Số tiền trả và ngày trả.
 - Lý do vay rõ ràng, giúp bạn tạo dựng niềm tin với những người cho vay tiềm năng.`
@@ -853,7 +853,7 @@ Hầu hết người vay dùng cả hai: khoản vay xây dựng niềm tin đ�
    'how-repayments-affect-your-trust-score': {
       title: 'Việc trả nợ ảnh hưởng đến điểm Pandesal như thế nào',
       lastUpdated: '9 tháng 6, 2026',
-      body: `Mỗi lần trả nợ, dù là cho Credit-Building Loan hay Trust-Building Loan, đều ảnh hưởng trực tiếp đến điểm Pandesal — thước đo uy tín của bạn trên nền tảng. Hệ thống của chúng tôi được thiết kế để ghi nhận hành vi nhất quán, đáng tin cậy và trung thực; những khoản vay nhỏ được trả sòng phẳng có giá trị với uy tín của bạn hơn những khoản vay lớn được trả thiếu nghiêm túc.
+      body: `Mỗi lần trả nợ, dù là cho Credit-Building Loan hay Trust-Building Loan, đều ảnh hưởng trực tiếp đến điểm Pandesal — thước đo uy tín của bạn trên nền tảng. Hệ thống của chúng tôi được thiết kế để ghi nhận hành vi nhất quán, đáng tin cậy và trung thực; những khoản vay nhỏ được trả đầy đủ, đúng hạn có giá trị với uy tín của bạn hơn những khoản vay lớn trả chậm hoặc trả thiếu.
 
 Cách tính điểm
 
@@ -960,8 +960,8 @@ Vì sao cần xác minh?
 - Bảo mật: đảm bảo mỗi yêu cầu đến từ một người thật, duy nhất, giúp ngăn chặn gian lận.
 - Quyền truy cập: xác minh xong sẽ mở khóa tính năng yêu cầu vay và bắt đầu tích lũy điểm Pandesal của bạn.
 
-Cách được khuyến nghị: Xác minh bằng giấy tờ tùy thân
-1. Bấm "Xác minh danh tính" trong ứng dụng và chọn "Xác minh bằng giấy tờ tùy thân".
+Cách được khuyên dùng: Xác minh bằng giấy tờ tùy thân
+1. Nhấn "Xác minh danh tính" trong ứng dụng và chọn "Xác minh bằng giấy tờ tùy thân".
 2. Chuẩn bị sẵn thẻ căn cước bản gốc và tìm nơi có ánh sáng tốt, đều.
 3. Hoàn tất bước chụp ảnh giấy tờ + selfie nhanh — chỉ mất khoảng 3 phút.
 4. Hầu hết lượt xác minh hoàn tất trong vài phút. Nếu hồ sơ của bạn cần được xét duyệt thủ công, chúng tôi sẽ thông báo ngay khi xong (thường trong vài giờ, tối đa 1 ngày làm việc).
