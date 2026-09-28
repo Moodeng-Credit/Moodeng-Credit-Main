@@ -723,5 +723,185 @@ export const vietnameseCoverageA: Record<string, string> = {
    "Verify You're Human": 'Xác minh bạn là người thật',
    "Prove you're a real person with World ID": 'Chứng minh bạn là người thật bằng World ID',
    // src/components/worldId/modal/verificationModalConfig.tsx
-   'After completing verification at Orb': 'Sau khi hoàn tất xác minh tại Orb'
+   'After completing verification at Orb': 'Sau khi hoàn tất xác minh tại Orb',
+   // src/components/UserPay.tsx
+   Stablecoin: 'Stablecoin',
+   // src/views/FAQ.tsx
+   FAQs: 'Câu hỏi thường gặp',
+   'The Comprehensive FAQ Guide to Credit Growth, Secure Loans, and Transparent Financial Management':
+      'Hướng dẫn đầy đủ về câu hỏi thường gặp: tăng hạn mức tín dụng, khoản vay an toàn và quản lý tài chính minh bạch',
+   // src/views/about/sections/CreditGrowthSystemSection.tsx
+   'CREDIT GROWTH SYSTEM': 'HỆ THỐNG TĂNG TRƯỞNG TÍN DỤNG',
+   'Grow Your Credit Limit Through Step Borrowing': 'Tăng hạn mức tín dụng của bạn qua từng bước vay',
+   'Your Credit Limit Grows with Every $20 You Borrow and Repay!':
+      'Hạn mức tín dụng của bạn tăng lên sau mỗi 20 đô la bạn vay và trả nợ!',
+   'The more you borrow and repay, the more you can borrow in the future.':
+      'Bạn vay và trả nợ càng nhiều, bạn càng có thể vay nhiều hơn trong tương lai.',
+   'Borrow + Repay Original $20 to unlock $40': 'Vay + trả nợ 20 đô la ban đầu để mở khóa 40 đô la',
+   Grow: 'Tăng trưởng',
+   Build: 'Xây dựng',
+   Expand: 'Mở rộng',
+   Unlock: 'Mở khóa',
+   'Ongoing Growth': 'Tăng trưởng liên tục',
+   'Keep going forever and grow!': 'Cứ tiếp tục mãi và phát triển!',
+   'Build Your Credit, Step by Step': 'Xây dựng tín dụng của bạn, từng bước một',
+   "Unlock Your Financial Potential with Moodeng's Unique Borrowing System":
+      'Mở khóa tiềm năng tài chính của bạn với hệ thống vay độc đáo của Moodeng',
+   'If I borrow $35 instead of $40 can I unlock $60?': 'Nếu tôi vay 35 đô la thay vì 40 đô la, tôi có thể mở khóa 60 đô la không?',
+   "Borrowing under $40 won't unlock $60 - it shows you are not ready. But, you can borrow smaller amounts to prove yourself.":
+      'Vay dưới 40 đô la sẽ không mở khóa 60 đô la - điều đó cho thấy bạn chưa sẵn sàng. Nhưng bạn có thể vay số tiền nhỏ hơn để chứng minh bản thân.',
+   'Does borrowing or repaying more unlock the next level??': 'Vay hoặc trả nợ nhiều hơn có mở khóa hạng tiếp theo không??',
+   'The only thing relevant to unlocking the next level is the amount you borrowed. Not the amount you repaid.':
+      'Điều duy nhất liên quan đến việc mở khóa hạng tiếp theo là số tiền bạn đã vay. Không phải số tiền bạn đã trả.',
+   'Can I skip a level by borrowing more than required?': 'Tôi có thể bỏ qua một hạng bằng cách vay nhiều hơn mức yêu cầu không?',
+   'No, each level must be unlocked step-by-step with consistent borrowing.':
+      'Không, mỗi hạng phải được mở khóa từng bước bằng cách vay đều đặn.',
+   'Why Our Cumulative System Benefits You': 'Vì sao hệ thống tích lũy của chúng tôi có lợi cho bạn',
+   'Flexibility to take multiple smaller loans': 'Linh hoạt vay nhiều khoản nhỏ hơn',
+   'Build credit at your own pace': 'Xây dựng tín dụng theo nhịp độ của riêng bạn',
+   'Reward for consistent borrowing and repayment': 'Phần thưởng cho việc vay và trả nợ đều đặn',
+   'Clear path to accessing larger loan amounts': 'Lộ trình rõ ràng để tiếp cận các khoản vay lớn hơn',
+   // src/views/about/sections/DirectLendBorrowSection.tsx
+   'How Direct Lend & Borrow Works': 'Cách hoạt động của Cho vay & Vay trực tiếp',
+   'Funds in USDT/USDC': 'Cấp vốn bằng USDT/USDC',
+   'Credit Score Improves': 'Điểm tín dụng được cải thiện',
+   // src/views/about/sections/MoodengCreditSection.tsx
+   'Want to learn more about Moodeng Credit?': 'Bạn muốn tìm hiểu thêm về Moodeng Credit?',
+   'Contact us today to learn more about joining our community and unlocking the benefits awaiting you.':
+      'Liên hệ với chúng tôi ngay hôm nay để tìm hiểu thêm về việc tham gia cộng đồng và mở khóa những lợi ích đang chờ đón bạn.',
+   'Contact Us via Email': 'Liên hệ qua Email',
+   // src/views/about/sections/RulesOfRepayingSection.tsx
+   'RULES OF REPAYING': 'QUY TẮC TRẢ NỢ',
+   'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
+      'Moodeng cung cấp các khoản vay nhỏ linh hoạt dựa trên blockchain. Hãy trả nợ có trách nhiệm để xây dựng điểm tín dụng của bạn.',
+   'You must pay the lender directly by hitting the repay button.': 'Bạn phải trả trực tiếp cho người cho vay bằng cách bấm nút trả nợ.',
+   'UP-TO-YOU': 'TÙY BẠN',
+   'Flexible repayments: Any amount up to deadline': 'Trả nợ linh hoạt: Bất kỳ số tiền nào trước hạn chót',
+   'Build credit score with each on-time payment': 'Xây dựng điểm tín dụng với mỗi lần thanh toán đúng hạn',
+   'Blockchain records all loan transactions': 'Blockchain ghi lại mọi giao dịch vay',
+   'Sign up for notifications about your loans': 'Đăng ký nhận thông báo về khoản vay của bạn',
+   // src/views/about/sections/WelcomeHeroSection.tsx
+   'To get funded, you need to write why you need it, so someone will fund you.':
+      'Để được cấp vốn, bạn cần viết lý do bạn cần khoản vay, để có người cấp vốn cho bạn.',
+   'Welcome to Moodeng Academy': 'Chào mừng đến với Moodeng Academy',
+   'And make sure to submit a request within your credit limit.': 'Và nhớ gửi yêu cầu trong hạn mức tín dụng của bạn.',
+   'Ask For Help': 'Yêu cầu giúp đỡ',
+   'Offer Help': 'Đề nghị giúp đỡ',
+   'How much do you need today? i.e. $15': 'Hôm nay bạn cần bao nhiêu? Ví dụ: $15',
+   'Enter how much you will payback? i.e. $17': 'Nhập số tiền bạn sẽ trả lại? Ví dụ: $17',
+   'Type your reason? i.e. an emergency, etc.': 'Nhập lý do của bạn? Ví dụ: trường hợp khẩn cấp, v.v.',
+   Other: 'Khác',
+   'Repayment timeline': 'Thời gian trả nợ',
+   'Submit Request': 'Gửi yêu cầu',
+   'Your available credit limit: $15': 'Hạn mức tín dụng khả dụng của bạn: $15',
+   'Set Your Own Terms': 'Tự đặt điều khoản của bạn',
+   'Enter amount, i.e. $15': 'Nhập số tiền, ví dụ: $15',
+   'Enter amount to repay, i.e. $18': 'Nhập số tiền cần trả, ví dụ: $18',
+   'Enter reason i.e. an emergency, etc.': 'Nhập lý do, ví dụ: trường hợp khẩn cấp, v.v.',
+   'How It Works': 'Cách hoạt động',
+   '1. Enter your loan amount': '1. Nhập số tiền vay của bạn',
+   '3. Specify payback amount': '3. Chỉ định số tiền trả lại',
+   '4. Explain your reason for the loan': '4. Giải thích lý do vay của bạn',
+   '5. Submit your request': '5. Gửi yêu cầu của bạn',
+   // src/views/academy/AcademyGuide.tsx
+   'Create your Moodeng Account': 'Tạo tài khoản Moodeng của bạn',
+   'Enter the same email you will use for your borrower account.': 'Nhập email bạn sẽ dùng cho tài khoản người vay của mình.',
+   'Create your password': 'Tạo mật khẩu của bạn',
+   'Create An Account': 'Tạo tài khoản',
+   'Set Up Your Instant Wallet': 'Thiết lập Instant Wallet của bạn',
+   'Your Instant Wallet is created from your Moodeng login — no app and no seed phrase. Prefer a Base Account? You can connect one instead. Moodeng keeps the flow inside the app.':
+      'Instant Wallet của bạn được tạo từ tài khoản đăng nhập Moodeng — không cần ứng dụng, không cần cụm từ khôi phục. Muốn dùng Base Account hơn? Bạn có thể kết nối một ví khác thay thế. Moodeng giữ toàn bộ quy trình trong ứng dụng.',
+   'Set Up Your Wallet': 'Thiết lập ví của bạn',
+   'Gasless transactions are supported on Base.': 'Giao dịch không mất phí gas được hỗ trợ trên Base.',
+   'Prove you are a real person. This is a one-time step before larger borrowing limits.':
+      'Chứng minh bạn là người thật. Đây là bước thực hiện một lần trước khi có hạn mức vay lớn hơn.',
+   'Available credit limit': 'Hạn mức tín dụng khả dụng',
+   '$10 request': 'Yêu cầu $10',
+   'Trust-Building Loan': 'Trust-Building Loan',
+   'Any request below your $15 credit limit becomes a trust-building loan.':
+      'Bất kỳ yêu cầu nào dưới hạn mức tín dụng $15 của bạn đều trở thành Trust-Building Loan.',
+   '$10 is below your $15 limit': '$10 thấp hơn hạn mức $15 của bạn',
+   'Does not raise Credit Level': 'Không nâng Hạng tín dụng',
+   '$20 request': 'Yêu cầu $20',
+   'Credit-Building Loan': 'Credit-Building Loan',
+   'Any request above your $15 credit limit becomes a credit-building loan.':
+      'Bất kỳ yêu cầu nào trên hạn mức tín dụng $15 của bạn đều trở thành Credit-Building Loan.',
+   '$20 is above your $15 limit': '$20 cao hơn hạn mức $15 của bạn',
+   'Can increase your next limit': 'Có thể tăng hạn mức tiếp theo của bạn',
+   'Best when repayment is clear': 'Tốt nhất khi kế hoạch trả nợ rõ ràng',
+   'Borrow amount': 'Số tiền vay',
+   'Payback amount': 'Số tiền trả lại',
+   Reason: 'Lý do',
+   'Needs money before Friday': 'Cần tiền trước thứ Sáu',
+   'Short term': 'Ngắn hạn',
+   'Repayment amount': 'Số tiền trả nợ',
+   'Borrower Insights': 'Thông tin người vay',
+   'Usual loan size': 'Quy mô khoản vay thường gặp',
+   'Typical payment time': 'Thời gian trả nợ thường gặp',
+   'See How Growth Works': 'Xem cách tăng trưởng hoạt động',
+   'Mecha says': 'Mecha nói',
+   'How to use Moodeng Credit': 'Cách sử dụng Moodeng Credit',
+   'A simple walkthrough of the borrower flow. Start here if you want to know what to click, what lenders see, and how repayment grows your limit.':
+      'Hướng dẫn đơn giản về quy trình dành cho người vay. Bắt đầu từ đây nếu bạn muốn biết cần bấm gì, người cho vay thấy gì, và việc trả nợ giúp tăng hạn mức của bạn như thế nào.',
+   'Tutorial Video': 'Video hướng dẫn',
+   'Watch the quick Moodeng walkthrough.': 'Xem video hướng dẫn nhanh của Moodeng.',
+   'I am Mecha. I will walk you through Moodeng step by step.': 'Tôi là Mecha. Tôi sẽ hướng dẫn bạn dùng Moodeng từng bước một.',
+   'Video guide': 'Video hướng dẫn',
+   'Want to learn more? Open the step-by-step credit guide.': 'Muốn tìm hiểu thêm? Mở hướng dẫn tín dụng từng bước.',
+   'Final quiz': 'Bài kiểm tra cuối',
+   'Earn your Academy reward': 'Nhận phần thưởng Academy của bạn',
+   'Moodeng Academy Quiz': 'Bài kiểm tra Moodeng Academy',
+   'Ready for the check?': 'Sẵn sàng kiểm tra chưa?',
+   'Start quiz': 'Bắt đầu bài kiểm tra',
+   'Retake quiz': 'Làm lại bài kiểm tra',
+   'Create your account': 'Tạo tài khoản của bạn',
+   'Sign up with email so Moodeng can save your borrower profile, loans, repayments, and credit progress.':
+      'Đăng ký bằng email để Moodeng có thể lưu hồ sơ người vay, khoản vay, khoản trả nợ và tiến trình tín dụng của bạn.',
+   'Verify once to prove you are unique. After that, lenders can trust that your request is tied to one real borrower.':
+      'Xác minh một lần để chứng minh bạn là duy nhất. Sau đó, người cho vay có thể tin rằng yêu cầu của bạn gắn với một người vay thật.',
+   'Add your wallet': 'Thêm ví của bạn',
+   'Set up your Instant Wallet from your Moodeng login (or connect a Base Account if you prefer), so lenders can fund loans directly there and Moodeng can track repayment history.':
+      'Thiết lập Instant Wallet từ tài khoản đăng nhập Moodeng của bạn (hoặc kết nối Base Account nếu bạn thích), để người cho vay có thể cấp vốn trực tiếp vào đó và Moodeng có thể theo dõi lịch sử trả nợ.',
+   'Your amount sets the loan type': 'Số tiền của bạn quyết định loại khoản vay',
+   'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.':
+      'Nếu yêu cầu của bạn thấp hơn hạn mức tín dụng, đó là Trust-Building Loan. Nếu yêu cầu bằng toàn bộ hạn mức tín dụng, đó là Credit-Building Loan.',
+   'Submit a loan request': 'Gửi yêu cầu vay',
+   'Pick your amount, choose when you will repay, and explain why you need support before posting to lenders.':
+      'Chọn số tiền, chọn thời điểm bạn sẽ trả nợ, và giải thích lý do bạn cần hỗ trợ trước khi đăng cho người cho vay xem.',
+   'Get matched on the request board': 'Được ghép nối trên Bảng yêu cầu',
+   'Your request appears on the board where lenders can review the terms and decide whether to fund it.':
+      'Yêu cầu của bạn sẽ xuất hiện trên bảng, nơi người cho vay có thể xem xét điều khoản và quyết định có cấp vốn hay không.',
+   'Repay clearly': 'Trả nợ rõ ràng',
+   'Pay back the agreed amount on time. Moodeng tracks repayment progress clearly in your account.':
+      'Trả đúng hạn số tiền đã thỏa thuận. Moodeng theo dõi tiến trình trả nợ rõ ràng trong tài khoản của bạn.',
+   'Grow your next limit': 'Tăng hạn mức tiếp theo của bạn',
+   'Full-limit loans repaid on time can unlock the next level, helping you build a visible credit record.':
+      'Khoản vay bằng toàn bộ hạn mức được trả đúng hạn có thể mở khóa hạng tiếp theo, giúp bạn xây dựng lịch sử tín dụng rõ ràng.',
+   'Level up': 'Lên hạng',
+   Quiz: 'Bài kiểm tra',
+   'Why do borrowers verify with World ID?': 'Vì sao người vay xác minh bằng World ID?',
+   'To prove they are unique': 'Để chứng minh họ là duy nhất',
+   'Why do borrowers set up a wallet (Instant Wallet or Base Account)?': 'Vì sao người vay thiết lập ví (Instant Wallet hoặc Base Account)?',
+   'To receive USDC loans and build onchain reputation': 'Để nhận khoản vay USDC và xây dựng uy tín on-chain',
+   'Your credit limit is $15. What is a $10 request?': 'Hạn mức tín dụng của bạn là $15. Yêu cầu $10 là gì?',
+   'Your credit limit is $15. What is a $20 request?': 'Hạn mức tín dụng của bạn là $15. Yêu cầu $20 là gì?',
+   'Credit-building': 'Credit-Building',
+   'What helps a borrower build a stronger record?': 'Điều gì giúp người vay xây dựng lịch sử tín dụng vững chắc hơn?',
+   'Repaying clearly and on time': 'Trả nợ rõ ràng và đúng hạn',
+   'Nice practice request.': 'Yêu cầu luyện tập tốt đấy.',
+   'Strong repayment move.': 'Bước trả nợ tốt đấy.',
+   'Nice! Repaying is super important on Moodeng. On-time repayment helps your trust record, keeps lenders confident, and can unlock better borrowing limits over time.':
+      'Tuyệt! Trả nợ là điều cực kỳ quan trọng trên Moodeng. Trả nợ đúng hạn giúp xây dựng uy tín của bạn, giữ cho người cho vay yên tâm, và có thể mở khóa hạn mức vay tốt hơn theo thời gian.',
+   'This is how you grow.': 'Đây là cách bạn phát triển.',
+   'Mecha says: full-limit loans repaid on time are how borrowers build a stronger credit record. Keep repayment clean, and your next limit can grow.':
+      'Mecha nói: các khoản vay bằng toàn bộ hạn mức được trả đúng hạn chính là cách người vay xây dựng lịch sử tín dụng vững chắc hơn. Hãy giữ việc trả nợ luôn gọn gàng, và hạn mức tiếp theo của bạn có thể tăng.',
+   'Moodeng Academy | Moodeng Credit': 'Moodeng Academy | Moodeng Credit',
+   'A step-by-step walkthrough of the Moodeng borrower flow — sign up, verify, set up your Instant Wallet (or connect a Base Account), request a loan, repay, and grow your credit limit.':
+      'Hướng dẫn từng bước về quy trình dành cho người vay của Moodeng — đăng ký, xác minh, thiết lập Instant Wallet (hoặc kết nối Base Account), yêu cầu khoản vay, trả nợ và tăng hạn mức tín dụng của bạn.',
+   'Close message': 'Đóng thông báo',
+   'Academy path': 'Lộ trình Academy',
+   'Close tutorial video': 'Đóng video hướng dẫn',
+   'Moodeng Academy tutorial video': 'Video hướng dẫn Moodeng Academy',
+   'Moodeng Credit steps': 'Các bước của Moodeng Credit',
+   'Choose reward type': 'Chọn loại phần thưởng'
 };
