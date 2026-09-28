@@ -892,5 +892,103 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Waiting for your device...': 'Đang chờ thiết bị của bạn...',
    'Face ID, Touch ID, or a security key': 'Face ID, Touch ID hoặc khóa bảo mật',
    'Disable passkey': 'Tắt passkey',
-   'Enable passkey': 'Bật passkey'
+   'Enable passkey': 'Bật passkey',
+
+   // src/shared/points.ts
+   'Build a 2-loan on-time streak': 'Trả đúng hạn 2 khoản vay liên tiếp',
+   'Repay a full-limit credit-builder': 'Trả một khoản vay bằng toàn bộ hạn mức',
+   'Borrow from 2 different lenders': 'Vay từ 2 người cho vay khác nhau',
+   'Reach Credit Level 3': 'Đạt Hạng tín dụng 3',
+   'Become a trusted borrower candidate': 'Trở thành ứng viên người vay đáng tin cậy',
+   'Academy quiz': 'Bài kiểm tra Học viện',
+
+   // src/views/dashboard/dashboardHelpers.ts
+   'Your account can request borrower credit.': 'Tài khoản của bạn đã có thể yêu cầu vay.',
+   'Unlock borrowing and start building your public trust record.':
+      'Mở khóa tính năng vay và bắt đầu xây dựng hồ sơ uy tín công khai của bạn.',
+   'Borrowing unlocked': 'Đã mở khóa vay',
+   'Verified profile': 'Hồ sơ đã xác minh',
+   'Verify now': 'Xác minh ngay',
+   'Account ready': 'Tài khoản đã sẵn sàng',
+   'Ask for a small amount with a clear reason and due date.': 'Yêu cầu một số tiền nhỏ với lý do và ngày đến hạn rõ ràng.',
+   'Visible to lenders': 'Người cho vay có thể thấy',
+   'Request live': 'Yêu cầu đã đăng',
+   'A lender accepts your request and trusts you with your first loan.':
+      'Một người cho vay chấp nhận yêu cầu và tin tưởng giao cho bạn khoản vay đầu tiên.',
+   'First lender signal': 'Tín hiệu đầu tiên từ người cho vay',
+   'Lender signal gained': 'Đã có tín hiệu từ người cho vay',
+   'History started': 'Đã bắt đầu lịch sử',
+   'View requests': 'Xem các yêu cầu',
+   'Pay the full amount before the due date to start your repayment record.':
+      'Trả toàn bộ số tiền trước ngày đến hạn để bắt đầu lịch sử trả nợ của bạn.',
+   '· up to $': '· tối đa $',
+   'Up to $': 'Tối đa $',
+   'Limit progress': 'Tiến độ hạn mức',
+   'Pay loans': 'Trả khoản vay',
+   'Show lenders that your repayment reliability is repeatable.': 'Cho người cho vay thấy bạn luôn trả nợ đáng tin cậy, không chỉ một lần.',
+   'Stronger lender confidence': 'Người cho vay tin tưởng hơn',
+   'Reliability improved': 'Độ tin cậy đã tăng',
+   'Stronger profile': 'Hồ sơ vững hơn',
+   'Use your current Credit Level amount and repay it on time.': 'Vay đúng bằng hạn mức của Hạng tín dụng hiện tại và trả đúng hạn.',
+   'Credit Level progress': 'Tiến độ Hạng tín dụng',
+   'Level progress': 'Tiến độ hạng',
+   'Higher limit path': 'Con đường tới hạn mức cao hơn',
+   'Learn levels': 'Tìm hiểu các hạng',
+   'Build a reputation that does not depend on just one lender.': 'Xây dựng uy tín không phụ thuộc vào chỉ một người cho vay.',
+   'Lender diversity signal': 'Tín hiệu đa dạng người cho vay',
+   'Diversity improved': 'Đa dạng hơn',
+   'Broader trust': 'Niềm tin rộng hơn',
+   'Grow from starter loans into a real repayment history.': 'Phát triển từ những khoản vay đầu tiên thành một lịch sử trả nợ thực sự.',
+   'Volume trust signal': 'Tín hiệu uy tín theo tổng số tiền',
+   'Volume signal': 'Tín hiệu tổng số tiền',
+   '$100 repaid': 'Đã trả $100',
+   'Unlock a higher borrowing limit through verified on-time repayment.':
+      'Mở khóa hạn mức vay cao hơn nhờ trả nợ đúng hạn đã được xác minh.',
+   'Higher borrowing power': 'Khả năng vay cao hơn',
+   'Higher limit unlocked': 'Đã mở khóa hạn mức cao hơn',
+   'View guide': 'Xem hướng dẫn',
+   'Complete 5 on-time repayments, use 3 lenders, and keep defaults resolved.':
+      'Hoàn thành 5 lần trả nợ đúng hạn, vay từ 3 người cho vay và không để khoản vỡ nợ nào chưa giải quyết.',
+   'Future top-user perks': 'Đặc quyền cho người dùng hàng đầu trong tương lai',
+   'Priority signal': 'Tín hiệu ưu tiên',
+   'Review ready': 'Sẵn sàng xét duyệt',
+   'Top milestone': 'Cột mốc cao nhất',
+
+   // src/views/dashboard/trustPointRewards.ts
+   'Silver avatar ring': 'Viền ảnh đại diện bạc',
+   'A clean profile ring around your avatar.': 'Một viền đẹp quanh ảnh đại diện của bạn.',
+   'Gold avatar ring': 'Viền ảnh đại diện vàng',
+   'A stronger profile ring for repeat borrowers.': 'Viền hồ sơ nổi bật hơn dành cho người vay quay lại.',
+   'Trusted profile badge': 'Huy hiệu hồ sơ đáng tin cậy',
+   'A visible badge on your borrower profile.': 'Một huy hiệu hiển thị trên hồ sơ người vay của bạn.',
+   'Top borrower award': 'Giải thưởng người vay hàng đầu',
+   'A collectible profile award for long-term history.': 'Giải thưởng hồ sơ để sưu tầm dành cho lịch sử lâu dài.',
+   'Founding Lucky Cat': 'Mèo may mắn thành viên sáng lập',
+   'A lucky cat for being one of the first Moodeng borrowers.': 'Chú mèo may mắn dành cho những người vay đầu tiên của Moodeng.',
+   'First-time user': 'Người dùng lần đầu',
+
+   // src/components/mecha/mechaCopy.ts
+   'Moodeng Support Officer': 'Nhân viên hỗ trợ của Moodeng',
+   'Ask me anything about Moodeng…': 'Hỏi mình bất cứ điều gì về Moodeng…',
+   "Hi, I'm Mecha 🤖 — ask me anything about Moodeng: verifying, wallets, borrowing, or cashing out.":
+      'Chào bạn, mình là Mecha 🤖 — cứ hỏi mình bất cứ điều gì về Moodeng: xác minh, ví, vay tiền hay rút tiền mặt.',
+   'Try asking': 'Thử hỏi',
+   'Talk to the team': 'Nói chuyện với đội ngũ',
+   'Want a real person? I can pass this chat to the Moodeng team.':
+      'Muốn trò chuyện với người thật? Mình có thể chuyển cuộc trò chuyện này cho đội ngũ Moodeng.',
+   'Connect me with the team': 'Kết nối tôi với đội ngũ',
+   'Sent! The team has your question and will follow up. You can keep chatting with me too.':
+      'Đã gửi! Đội ngũ đã nhận câu hỏi của bạn và sẽ liên hệ lại. Bạn vẫn có thể tiếp tục trò chuyện với mình.',
+   'How can the team reach you? (optional)': 'Đội ngũ có thể liên hệ với bạn qua đâu? (không bắt buộc)',
+   'Something went wrong on my end. Please try again, or I can connect you with the team.':
+      'Mình gặp chút trục trặc. Bạn thử lại nhé, hoặc mình có thể kết nối bạn với đội ngũ.',
+   'Chat with Mecha': 'Trò chuyện với Mecha',
+   'Close chat': 'Đóng trò chuyện',
+   'Ask Mecha anything, or browse the popular guides below.': 'Hỏi Mecha bất cứ điều gì, hoặc xem các hướng dẫn phổ biến bên dưới.',
+   'Popular right now': 'Đang được quan tâm',
+   'Mecha answers from Moodeng’s help docs.': 'Mecha trả lời dựa trên tài liệu trợ giúp của Moodeng.',
+   'Browse all FAQs & guides →': 'Xem tất cả câu hỏi thường gặp & hướng dẫn →',
+   'Mecha is typing': 'Mecha đang nhập',
+   'Not helpful': 'Không hữu ích',
+   'Thanks for the feedback!': 'Cảm ơn bạn đã góp ý!'
 };
