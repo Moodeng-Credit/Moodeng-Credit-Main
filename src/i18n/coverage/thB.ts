@@ -1375,6 +1375,116 @@ export const thaiCoverageB: Record<string, string> = {
    'By using': 'การใช้',
    'Get started': 'เริ่มต้นใช้งาน',
 
+   // src/views/creditLevelingGuide/CreditLevelingGuide.tsx
+   'Trust-building loan': 'Trust-Building Loan',
+   'Credit-building loan': 'Credit-Building Loan',
+
    // src/views/dashboard/components/UserCard.tsx
-   'Moodeng loan request': 'คำขอเงินกู้ Moodeng'
+   'Moodeng loan request': 'คำขอเงินกู้ Moodeng',
+
+   // src/views/help/helpTopics.ts
+   'The Instant Wallet': 'Instant Wallet',
+   'How to repay your loan': 'วิธีชำระคืนเงินกู้',
+   'Send USDC on Base to the Repay address': 'ส่ง USDC บนเครือข่าย Base ไปยังที่อยู่สำหรับชำระคืน',
+   'How do I repay my loan?': 'ฉันจะชำระคืนเงินกู้ได้อย่างไร',
+   'Open the Repay screen — it shows the exact amount and lets you copy the repayment address.':
+      'เปิดหน้าจอชำระคืน หน้านี้จะแสดงจำนวนเงินที่ต้องชำระพอดีและให้คุณคัดลอกที่อยู่สำหรับชำระคืนได้',
+   'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level.':
+      'เลือกเครือข่าย Base เสมอ — เครือข่ายที่ผิดอาจทำให้เงินสูญหาย การชำระคืนก่อนวันครบกำหนดจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะปลดล็อกระดับเครดิตถัดไป',
+   'Ways to repay your loan': 'วิธีชำระคืนเงินกู้ของคุณ',
+   'Add USDC to your wallet': 'เติม USDC เข้ากระเป๋าเงินของคุณ',
+   'Buy on an exchange, send on Base': 'ซื้อจากแพลตฟอร์มแลกเปลี่ยน แล้วส่งบนเครือข่าย Base',
+   'How do I add USDC to my wallet?': 'ฉันจะเติม USDC เข้ากระเป๋าเงินได้อย่างไร',
+   'Buy USDC on an exchange you use — Binance P2P, Coins.ph, PDAX, or GCrypto (GCash).':
+      'ซื้อ USDC จากแพลตฟอร์มแลกเปลี่ยนที่คุณใช้ — Binance P2P, Coins.ph, PDAX หรือ GCrypto (GCash)',
+   'Sending on the wrong network can result in lost funds — always choose Base.':
+      'การส่งผิดเครือข่ายอาจทำให้เงินสูญหาย — เลือกเครือข่าย Base เสมอ',
+   'Ways to add USDC': 'วิธีเติม USDC',
+   'Paying in parts': 'การชำระคืนแบบแบ่งจ่าย',
+   'Some now, some later': 'จ่ายบางส่วนตอนนี้ ที่เหลือทีหลัง',
+   'Can I pay my loan in parts?': 'ฉันสามารถแบ่งจ่ายเงินกู้ได้ไหม',
+   'Yes. The Repay screen has 25% / 50% / 75% / Full buttons or a custom amount, and the loan stays active until it is fully paid. Partial on-time payments still earn Pandesal points — about 7 points for 75% paid, 5 for 50%, 3 for 25% — while a full on-time payment earns the most (10). If part of the payment lands after the due date, that late part earns 0 points, but the amount you owe never grows: no late fees, no rollover. Paying as much as you can before the due date is always better than nothing.':
+      'ได้ หน้าจอชำระคืนมีปุ่ม 25% / 50% / 75% / เต็มจำนวน หรือกรอกจำนวนเองก็ได้ และเงินกู้จะยังคงเปิดอยู่จนกว่าจะชำระครบ การชำระบางส่วนตรงเวลายังคงได้แต้ม Pandesal — ประมาณ 7 แต้มสำหรับ 75% ที่ชำระ, 5 แต้มสำหรับ 50%, 3 แต้มสำหรับ 25% — ขณะที่การชำระเต็มจำนวนตรงเวลาจะได้แต้มมากที่สุด (10 แต้ม) หากมีส่วนที่ชำระหลังวันครบกำหนด ส่วนที่ล่าช้านั้นจะได้ 0 แต้ม แต่จำนวนเงินที่คุณเป็นหนี้จะไม่มีวันเพิ่มขึ้น: ไม่มีค่าปรับล่าช้า ไม่มีการต่ออายุหนี้ การชำระให้มากที่สุดเท่าที่ทำได้ก่อนวันครบกำหนดย่อมดีกว่าไม่ชำระเลยเสมอ',
+   'More than one loan at a time': 'มีเงินกู้มากกว่าหนึ่งรายการพร้อมกัน',
+   'Yes, within your available limit': 'ได้ ภายในวงเงินที่คุณใช้ได้',
+   'Can I have more than one loan at a time?': 'ฉันสามารถมีเงินกู้มากกว่าหนึ่งรายการพร้อมกันได้ไหม',
+   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
+      'ได้ — คุณสามารถมีเงินกู้ที่กำลังดำเนินอยู่มากกว่าหนึ่งรายการพร้อมกัน ตราบใดที่จำนวนใหม่ยังอยู่ในวงเงินที่คุณใช้ได้ วงเงินที่ใช้ได้ของคุณคือวงเงินของระดับปัจจุบัน (ตั้งแต่ $15 ถึง $140) ลบด้วยยอดที่คุณเป็นหนี้อยู่แล้วในเงินกู้ที่กำลังดำเนินอยู่ หากเงินกู้ปัจจุบันของคุณใช้วงเงินเต็มแล้ว ให้ชำระคืนบางส่วนหรือทั้งหมดก่อนขอเพิ่ม บางบัญชีอาจมีการจำกัดจำนวนเงินกู้ที่เปิดพร้อมกันได้ด้วย — หากแอปแจ้งว่าคุณถึงจำนวนสูงสุดแล้ว ให้ชำระคืนสักรายการก่อน',
+   'Cash out to GCash or a bank': 'ถอนเป็นเงินสดเข้า GCash หรือบัญชีธนาคาร',
+   'USDC → pesos, step by step': 'USDC → เปโซ ทีละขั้นตอน',
+   'How do I cash out to GCash or my bank?': 'ฉันจะถอนเป็นเงินสดเข้า GCash หรือบัญชีธนาคารได้อย่างไร',
+   'Send your USDC to an exchange or service — GCrypto (GCash), Coins.ph, PDAX, or Binance P2P.':
+      'ส่ง USDC ของคุณไปยังแพลตฟอร์มแลกเปลี่ยนหรือบริการ — GCrypto (GCash), Coins.ph, PDAX หรือ Binance P2P',
+   "Choosing the wrong network can lose the funds — this is the single most important detail. Moodeng charges $0 to cash out; the only cost is the exchange's own fee.":
+      'การเลือกเครือข่ายผิดอาจทำให้เงินสูญหาย — นี่คือรายละเอียดที่สำคัญที่สุด Moodeng ไม่คิดค่าธรรมเนียมในการถอนเป็นเงินสด ค่าใช้จ่ายเดียวคือค่าธรรมเนียมของแพลตฟอร์มแลกเปลี่ยนเอง',
+   'Withdrawing to a bank account': 'การถอนเข้าบัญชีธนาคาร',
+   'How much does cashing out cost?': 'การถอนเป็นเงินสดมีค่าใช้จ่ายเท่าไร',
+   'Moodeng charges $0; exchanges have a small fee': 'Moodeng ไม่คิดค่าธรรมเนียม แพลตฟอร์มแลกเปลี่ยนมีค่าธรรมเนียมเล็กน้อย',
+   'How much does it cost to cash out?': 'ค่าใช้จ่ายในการถอนเป็นเงินสดคือเท่าไร',
+   "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.":
+      'Moodeng เองไม่คิดค่าธรรมเนียม — ค่าใช้จ่ายเดียวคือค่าธรรมเนียมแปลงสกุลเงินของแพลตฟอร์มแลกเปลี่ยน Coins.ph เป็นเส้นทางที่ถูกที่สุดที่เราพบในฟิลิปปินส์: ประมาณ 0.70% สำหรับรอบไปกลับเต็มรูปแบบ สำหรับเงินกู้ $15 ที่ยืมและชำระคืน ค่าใช้จ่ายทั้งหมดผ่าน Coins.ph อยู่ที่ประมาณ ₱6.50 (ราว $0.10) — ค่าธรรมเนียมซื้อขายเล็กน้อยในแต่ละทาง การถอนผ่านธนาคารด้วย PESONet ที่ไม่มีค่าธรรมเนียม และค่าธรรมเนียมเครือข่ายเพียงเล็กน้อย หากต้องการเปโซทันที InstaPay จะเพิ่มค่าธรรมเนียมคงที่ ₱5 (รอบไปกลับ ≈ ₱11.50 ราว $0.19) บริการอื่น ๆ มักรวมส่วนต่างไว้ในอัตราแลกเปลี่ยนอยู่แล้ว จึงมักมีค่าใช้จ่ายสูงกว่า',
+   'What are Pandesal points?': 'แต้ม Pandesal คืออะไร',
+   'Your repayment reputation': 'ความน่าเชื่อถือด้านการชำระคืนของคุณ',
+   'What are Pandesal points and how are they calculated?': 'แต้ม Pandesal คืออะไร และคำนวณอย่างไร',
+   'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.':
+      'แต้ม Pandesal ของคุณสะท้อนว่าคุณชำระคืนเงินกู้ได้น่าเชื่อถือแค่ไหน แต้มจะเพิ่มขึ้นเมื่อชำระคืนตรงเวลาและครบเต็มจำนวน และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ ผู้ให้กู้ใช้แต้มนี้เพื่อประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่ เนื่องจากแต้มนี้ผูกกับกระเป๋าเงินของคุณ มันจึงติดตัวคุณไปทุกที่ — ไม่ได้ถูกล็อกไว้ในแอปใดแอปหนึ่ง',
+   'What is a Credit Level?': 'ระดับเครดิตคืออะไร',
+   '$15 up to $140, step by step': '$15 ถึง $140 ทีละขั้น',
+   'What is a Credit Level and how do I move up?': 'ระดับเครดิตคืออะไร และจะเลื่อนระดับได้อย่างไร',
+   'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.':
+      'ระดับเครดิตกำหนดว่าคุณสามารถยืมได้เท่าไรในแต่ละครั้ง ทุกคนเริ่มต้นที่ระดับ 1 ด้วยวงเงิน $15 คุณจะเลื่อนระดับขึ้นได้ด้วยการทำ Credit-Building Loan ให้สำเร็จ — เงินกู้เต็มวงเงินปัจจุบันของคุณ ที่ชำระคืนครบและตรงเวลา แต่ละครั้งจะเพิ่มวงเงินของคุณไปตามลำดับ: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในปัจจุบัน',
+   'Grow my credit limit': 'เพิ่มวงเงินเครดิตของฉัน',
+   'From $15 upward': 'จาก $15 ขึ้นไป',
+   'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.':
+      'ชำระคืนตรงเวลา การชำระคืนตรงเวลาจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะเลื่อนระดับของคุณขึ้นหนึ่งขั้น',
+   'Credit-Building vs Trust-Building loans': 'Credit-Building Loan กับ Trust-Building Loan',
+   'Which one raises your limit': 'แบบไหนที่เพิ่มวงเงินของคุณ',
+   "What's the difference between Credit-Building and Trust-Building loans?":
+      'Credit-Building Loan กับ Trust-Building Loan ต่างกันอย่างไร',
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
+      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้กิจกรรมของบัญชียังคงดีอยู่ และ Credit-Building Loan เพื่อเพิ่มวงเงิน',
+   'How repayments affect your points': 'การชำระคืนส่งผลต่อแต้มของคุณอย่างไร',
+   'On-time full = the most points': 'ชำระเต็มจำนวนตรงเวลา = แต้มมากที่สุด',
+   'How do repayments affect my Pandesal points?': 'การชำระคืนส่งผลต่อแต้ม Pandesal ของฉันอย่างไร',
+   'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.':
+      'การชำระคืนทุกครั้งส่งผลต่อแต้ม Pandesal ของคุณ และเงินกู้จำนวนน้อยที่ชำระคืนอย่างเรียบร้อยมีค่ามากกว่าเงินกู้จำนวนมากที่ชำระคืนไม่เรียบร้อย การชำระคืนเต็มจำนวนตรงเวลาจะได้แต้มสูงสุด 10 แต้ม การชำระคืนบางส่วนจะได้แต้มตามสัดส่วน — 75% = 7 แต้ม, 50% = 5 แต้ม, 25% = 3 แต้ม การชำระใด ๆ หลังกำหนดเวลาจะได้ 0 แต้มสำหรับรายการนั้น การผิดนัดชำระจะทิ้งรอยถาวรไว้บนโปรไฟล์สาธารณะของคุณ ซึ่งผู้ให้กู้ทุกคนในอนาคตจะมองเห็นได้',
+   'Where do I put a referral code?': 'ฉันจะใส่โค้ดแนะนำเพื่อนได้ที่ไหน',
+   '+$5 to your starting limit': '+$5 เข้าวงเงินเริ่มต้นของคุณ',
+   'Where do I enter a referral code?': 'ฉันจะกรอกโค้ดแนะนำเพื่อนได้ที่ไหน',
+   'From the Request Board, tap to apply for a loan.': 'จากกระดานคำขอ แตะเพื่อสมัครขอเงินกู้',
+   'A valid referral code adds $5 to your starting credit limit — so a new borrower who normally starts at $15 would start at $20.':
+      'โค้ดแนะนำเพื่อนที่ใช้ได้จะเพิ่ม $5 ให้วงเงินเครดิตเริ่มต้นของคุณ — ดังนั้นผู้ยืมใหม่ที่ปกติเริ่มที่ $15 จะเริ่มที่ $20 แทน',
+   'It says "write it in English"': '"write it in English" ขึ้นเตือน',
+   'Why, and how to fix it': 'ทำไม และแก้ไขอย่างไร',
+   'My loan reason says to write it in English — what should I do?':
+      'เหตุผลการขอกู้ของฉันบอกให้เขียนเป็นภาษาอังกฤษ — ฉันควรทำอย่างไร',
+   'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").':
+      'ผู้ให้กู้บน Moodeng อยู่ในสหรัฐฯ และยุโรป ดังนั้นเหตุผลการขอกู้ต้องเป็นภาษาอังกฤษ — คำขอที่พวกเขาอ่านไม่ออกจะไม่ได้รับการปล่อยกู้ ภาษาตากาล็อก ทากลิช และบิซายา มักเป็นสาเหตุ ทำให้ฟอร์มค้างอยู่จนกว่าจะเขียนใหม่ คำยืมจากภาษาอื่นที่แทรกอยู่ในประโยคภาษาอังกฤษไม่มีปัญหา (เช่น "buying gamot for my mother") — สิ่งที่ทำให้ฟอร์มค้างคือทั้งประโยคที่เป็นภาษาอื่น กฎเดียวกันนี้ใช้กับ "Describe your situation" ในขั้นตอนข้อมูลส่วนตัว แม้ว่าชื่อตำแหน่งงานเองจะยังเป็นภาษาท้องถิ่นได้ (เช่น "sari-sari store owner", "jeepney driver")',
+   'My reason is "too vague"': 'เหตุผลของฉัน "คลุมเครือเกินไป"',
+   "It's a nudge, not a block": 'แค่การเตือน ไม่ใช่การปิดกั้น',
+   "My reason is in English but it still says it's too vague — what do I do?":
+      'เหตุผลของฉันเป็นภาษาอังกฤษแล้วแต่ยังบอกว่าคลุมเครือเกินไป — ฉันควรทำอย่างไร',
+   'That\'s a different check — the reason names nothing specific ("for personal use", "for my needs"). It\'s a nudge, not a block: the field tells you what to add, and tapping "Make Your Request" a second time posts it anyway. Better to say what the money is actually for and when you get paid — specific reasons get funded more.':
+      'นั่นเป็นการตรวจสอบอีกแบบหนึ่ง — เหตุผลที่ไม่ได้ระบุอะไรที่เจาะจง (เช่น "for personal use", "for my needs") เป็นเพียงการเตือน ไม่ใช่การปิดกั้น: ช่องกรอกจะบอกคุณว่าควรเพิ่มอะไร และการแตะ "Make Your Request" อีกครั้งจะโพสต์คำขอได้เหมือนเดิม ควรบอกให้ชัดว่าเงินจะนำไปใช้ทำอะไรจริง ๆ และคุณจะได้รับเงินเดือนเมื่อไร — เหตุผลที่เจาะจงมักได้รับการปล่อยกู้มากกว่า',
+   '"Make Your Request" does nothing': '"Make Your Request" ไม่มีอะไรเกิดขึ้น',
+   "You're not verified yet": 'คุณยังไม่ได้ยืนยันตัวตน',
+   '"Make Your Request" does nothing when I tap it — why?': '"Make Your Request" ไม่มีอะไรเกิดขึ้นเมื่อฉันแตะปุ่ม — ทำไม',
+   "You aren't verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.":
+      'คุณยังไม่ได้ยืนยันตัวตน การแตะปุ่มที่เป็นสีเทาจะทำให้ปุ่มสั่นและไฮไลต์ข้อความด้านบนที่มีปุ่มยืนยันตัวตนแนบมาด้วย การยืนยันตัวตนเป็นขั้นตอนสุดท้ายก่อนที่จะส่งคำขอได้ — ทำ ยืนยันด้วยบัตรประชาชน ให้เสร็จแล้วปุ่มจะพร้อมใช้งาน',
+   'What happens if a loan is unpaid?': 'จะเกิดอะไรขึ้นถ้าเงินกู้ไม่ได้รับการชำระคืน',
+   'Default: a permanent public mark': 'ผิดนัดชำระ: รอยถาวรบนโปรไฟล์สาธารณะ',
+   'What happens if I default on a loan?': 'จะเกิดอะไรขึ้นถ้าฉันผิดนัดชำระเงินกู้',
+   "If a loan isn't repaid it can go into default. A default is a permanent public mark on your record, and your account is frozen from new borrowing until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a Repay Now option at sign-in. The amount owed still never grows (no late fees, no rollover), and Moodeng never contacts family, friends, or coworkers. If your account is frozen and you think it's a mistake, message the team.":
+      'หากเงินกู้ไม่ได้รับการชำระคืน อาจเข้าสู่สถานะผิดนัดชำระ การผิดนัดชำระเป็นรอยถาวรบนประวัติสาธารณะของคุณ และบัญชีของคุณจะถูกระงับไม่ให้ยืมใหม่จนกว่าจะแก้ไขเรียบร้อย — ผู้ยืมที่ผิดนัดชำระหรือเกินกำหนดจะถูกนำไปยังหน้าจอช่วยเหลือบัญชีที่มีตัวเลือก "ชำระคืนตอนนี้" เมื่อเข้าสู่ระบบ จำนวนเงินที่เป็นหนี้จะไม่มีวันเพิ่มขึ้น (ไม่มีค่าปรับล่าช้า ไม่มีการต่ออายุหนี้) และ Moodeng จะไม่ติดต่อครอบครัว เพื่อน หรือเพื่อนร่วมงานของคุณเด็ดขาด หากบัญชีของคุณถูกระงับและคุณคิดว่าเป็นความผิดพลาด ให้ส่งข้อความถึงทีมงาน',
+   'Staying safe on Moodeng': 'การรักษาความปลอดภัยบน Moodeng',
+   'The rules that are always true': 'กฎที่เป็นจริงเสมอ',
+   'How do I stay safe and avoid scams?': 'ฉันจะรักษาความปลอดภัยและหลีกเลี่ยงการหลอกลวงได้อย่างไร',
+   'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.':
+      'มีบางสิ่งที่เป็นจริงเสมอ Moodeng ไม่เคยถือหรือโอนเงินของคุณ — เงินกู้เคลื่อนจากกระเป๋าเงินสู่กระเป๋าเงินโดยตรงระหว่างผู้ให้กู้และผู้ยืม ส่ง USDC บนเครือข่าย Base เสมอ เครือข่ายที่ผิดหมายถึงเงินสูญหาย Instant Wallet และ Base Account ต่างก็ไม่มี seed phrase ดังนั้น Moodeng จะไม่มีวันขอ "seed phrase" หรือ "recovery phrase" จากคุณ — และไม่มีผู้ช่วยเหลือที่แท้จริงคนใดจะขอเช่นกัน เมื่อคุณไม่แน่ใจ การรอและสอบถามก่อนย่อมปลอดภัยกว่าการเดาเสมอ โดยเฉพาะก่อนส่งเงิน',
+   'Manage your account': 'จัดการบัญชีของคุณ',
+   'Name, email, password, sign out': 'ชื่อ อีเมล รหัสผ่าน ออกจากระบบ',
+   'How do I manage my account and security settings?': 'ฉันจะจัดการบัญชีและการตั้งค่าความปลอดภัยของฉันได้อย่างไร',
+   "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).":
+      'บัญชีของคุณผูกกับกระเป๋าเงินของคุณ ดังนั้นความปลอดภัยของกระเป๋าเงินก็คือความปลอดภัยของบัญชี จากหน้าจอบัญชี คุณสามารถอัปเดตชื่อที่แสดง จัดการอีเมล เปลี่ยนรหัสผ่าน และออกจากระบบได้ หากคุณใช้ Instant Wallet หน้านี้ก็เป็นที่ที่คุณส่งออกคีย์กระเป๋าเงินได้เช่นกัน (Account → Account Settings → Wallet)',
+   'Managing your account': 'การจัดการบัญชีของคุณ'
 };
