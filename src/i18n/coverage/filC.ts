@@ -642,5 +642,118 @@ export const filipinoCoverageC: Record<string, string> = {
    'Send only after their instructions': 'Magpadala lang matapos ang mga instructions nila',
    'Get assisted by chat': 'Matulungan sa chat',
    'Confirm your payout': 'Kumpirmahin ang payout mo',
-   'Send only after instructions': 'Magpadala lang matapos ang mga instructions'
+   'Send only after instructions': 'Magpadala lang matapos ang mga instructions',
+
+   // src/views/user-profile/UserProfile.tsx
+   'Borrower context': 'Konteksto ng Borrower',
+   'This account is a lender': 'Isang lender ang account na ito',
+   'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
+      'Nagpapapondo ng loan ang mga lender sa halip na humiram, kaya walang borrowing history na ipapakita dito.',
+   'Verify to unlock LV.1': 'Mag-verify para ma-unlock ang LV.1',
+   'Only you can see this': 'Ikaw lang ang makakakita nito',
+   'Good standing': 'Maayos na Standing',
+   'View loan mix': 'Tingnan ang loan mix',
+   'Your score appears after at least 2 funded loans from different lenders.':
+      'Lalabas ang score mo pagkatapos ng hindi bababa sa 2 na na-fund na loan mula sa magkaibang lender.',
+   'Borrower patterns': 'Mga Pattern ng Borrower',
+   'Recent Loans': 'Mga Kamakailang Loan',
+   'Loan / lender': 'Loan / lender',
+   'No funded loans yet': 'Wala pang na-fund na loan',
+   'Not enough loan history yet': 'Hindi pa sapat ang loan history',
+   'Default History': 'History ng Default',
+   'Missed repayments on this borrower’s past loans.': 'Mga naka-miss na bayad sa mga nakaraang loan ng borrower na ito.',
+   'A default happens when a repayment deadline passes without full repayment.':
+      'May default kapag lumipas ang deadline ng bayad nang hindi kumpleto ang binayaran.',
+   'Loan defaulted': 'Na-default na loan',
+   Unresolved: 'Hindi pa naresolba',
+   'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
+      'Puwedeng magpahiwatig ng repayment risk ang mga default. Dapat suriin ng mga lender ang buong history ng borrower, hindi lang ang credit level.',
+   'Repayment History': 'History ng Pagbabayad',
+   'Money this borrower has already paid back across funded loans.': 'Pera na nabayaran na ng borrower na ito sa mga na-fund na loan.',
+   'Fully repaid': 'Buong nabayaran',
+   'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
+      'Ipinapakita ng mga kumpletong bayad na nakapagbalik na ng pondo ang borrower na ito noon. Puwede pa ring maging kapaki-pakinabang na konteksto ang mga partial na bayad, pero dapat ikumpara ito ng mga lender sa mga due date at natitirang balanse.',
+   'How Credit Level Works': 'Paano Gumagana ang Credit Level',
+   'Credit Level shows the borrower’s current borrowing tier.': 'Ipinapakita ng Credit Level ang kasalukuyang borrowing tier ng borrower.',
+   'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
+      'Nag-le-level up ang mga borrower sa pagkuha ng Credit Building loan sa kasalukuyang limit nila at matagumpay itong pagbabayaran.',
+   'Credit Levels': 'Mga Credit Level',
+   'Credit limit': 'Credit limit',
+   'How Lender Diversity Works': 'Paano Gumagana ang Lender Diversity',
+   'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
+      'Sa borrower nabibilang ang score na ito. Sinusukat nito ang kalidad ng mga taong nagpahiram sa kanila.',
+   'What a high score means': 'Ano ang ibig sabihin ng mataas na score',
+   'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
+      'Mukhang independent, established, at natural ang mga lender. Hindi lahat sila bagong account, hindi lahat sila sabay na nagpondo, at hindi masyadong nakakonsentra sa iisang lender.',
+   'What it is trying to catch': 'Ano ang sinusubukan nitong mahuli',
+   'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
+      'Puwedeng magmukhang mapagkakatiwalaan ang isang borrower sa paggamit ng pekeng lender account para pondohan ang maliliit na loan, tapos humingi ng mas malaking tunay na loan. Hinahanap ng score na ito ang ganitong uri ng coordinated na lender history.',
+   'Score bands': 'Mga Score Band',
+   "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
+      'Hindi nito direktang hinuhusgahan ang borrower. Sinasabi nito sa mga lender kung mukhang organic o kaduda-duda ang lender network ng borrower.',
+   'Read the full docs': 'Basahin ang buong docs',
+   'Lender Diversity Score documentation': 'Dokumentasyon ng Lender Diversity Score',
+   'Why lenders care': 'Bakit mahalaga ito sa mga lender',
+   'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
+      'Ipinapakita ng loan mix kung ang borrower na ito ay mas nagtatayo ng repayment history gamit ang maliliit na loan, o nagtataas ng credit level gamit ang full-limit na bayad.',
+   'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
+      'Puwedeng magkaroon ng pareho ang isang malusog na borrower: maliliit na loan para sa repayment history at full-limit na loan para sa mas mataas na future limit.',
+   'Start with who they are': 'Magsimula sa kung sino sila',
+   'Read the borrower context first — whether they are a verified human, how long they have been a member, and how they earn and repay. It frames every number below and tells you whether their reason to borrow fits their situation.':
+      'Basahin muna ang konteksto ng borrower — kung verified human ba sila, gaano na sila katagal na miyembro, at paano sila kumikita at nagbabayad. Ito ang bumabalangkas sa bawat numero sa ibaba at nagsasabi sa iyo kung akma ang dahilan nila sa paghiram sa sitwasyon nila.',
+   'Check Credit Level': 'Tingnan ang Credit Level',
+   'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.':
+      'Ang Credit Level ang tier ng borrower. Tumutulong ito para maintindihan mo kung gaano na karaming tiwala ang na-unlock nila sa nakaraang pag-uugali.',
+   'Read the loan summary': 'Basahin ang loan summary',
+   'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
+      'Tingnan ang total borrowed, total loans, mga bayad, mga default, at standing. Ibig sabihin ng Good Standing ay walang unresolved na default.',
+   'Look at lender diversity': 'Tingnan ang lender diversity',
+   'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
+      'Ipinapakita nito kung nakakuha ang borrower ng tiwala mula sa maraming lender, hindi lang isang paulit-ulit na relasyon.',
+   'Use behavior patterns': 'Gamitin ang mga behavior pattern',
+   'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
+      'Tumutulong ang mga pattern na ito para husgahan ang risk: gaano sila kadalas humiram, gaano sila kabilis karaniwang magbayad, karaniwang laki ng loan, loan term, at repeat lenders.',
+   'Review recent loans': 'Suriin ang mga kamakailang loan',
+   'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
+      'Gamitin ang recent loan table para kumpirmahin na may repayment history ang borrower na tugma sa request na iniisip mong pondohan.',
+   'Change reading mode': 'Palitan ang reading mode',
+   'Optional: switch to dark mode if it makes this profile easier to read. It changes nothing about the borrower data or your lending decision.':
+      'Opsyonal: lumipat sa dark mode kung mas madali itong basahin ang profile na ito. Wala itong binabago sa data ng borrower o sa desisyon mo sa pagpapahiram.',
+   'Moodeng with trophy': 'Moodeng na may trophy',
+   'How Credit Level works': 'Paano gumagana ang Credit Level',
+   'Total Borrowed': 'Total na Hiniram',
+   'Total Loans': 'Total na Loan',
+   'How Lender Diversity Score works': 'Paano gumagana ang Lender Diversity Score',
+   'Avg days between loans': 'Avg na araw sa pagitan ng loan',
+   'Typical loan term': 'Karaniwang loan term',
+   'Repeat lenders': 'Paulit-ulit na lender',
+   'Close default history': 'Isara ang default history',
+   'Close repayment history': 'Isara ang repayment history',
+   'Close credit level explanation': 'Isara ang paliwanag ng credit level',
+   'Close lender diversity explanation': 'Isara ang paliwanag ng lender diversity',
+   'Amount concentration': 'Konsentrasyon ng Halaga',
+   'Lender newness': 'Kabaguhan ng Lender',
+   'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
+      'Mas risky ang bago o inactive na wallet kumpara sa established na wallet na may tunay na on-chain activity.',
+   'Timing patterns': 'Mga Pattern sa Timing',
+   'Looks for loans arriving in suspicious clusters instead of normal lending intervals.':
+      'Naghahanap ng mga loan na dumarating sa kaduda-dudang cluster sa halip na normal na agwat ng pagpapahiram.',
+   'Recent suspicious patterns matter more. Older clean history fades over time.':
+      'Mas mahalaga ang mga kaduda-dudang pattern kamakailan lang. Unti-unting nawawalan ng bigat ang mas lumang malinis na history.',
+   'Group coordination': 'Koordinasyon ng Grupo',
+   'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
+      'Sinusuri kung maraming lender ang lumitaw nang halos magkasabay, na puwedeng magpahiwatig ng recruited na grupo.',
+   Excellent: 'Napakahusay',
+   Good: 'Mahusay',
+   Fair: 'Katamtaman',
+   Low: 'Mababa',
+   'Very Low': 'Napakababa',
+   'Close loan mix explanation': 'Isara ang paliwanag ng loan mix',
+   'Trust loans': 'Mga Trust Loan',
+   'Credit loans': 'Mga Credit Loan',
+   'Smaller loans below the current limit. They help show the borrower can repay, but they do not raise credit level.':
+      'Mas maliliit na loan na mas mababa sa kasalukuyang limit. Tumutulong itong ipakita na kaya ng borrower na magbayad, pero hindi nito tinataas ang credit level.',
+   'Credit-level signal': 'Senyales ng Credit Level',
+   'A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level.':
+      'Isang full-limit na loan. Kung matagumpay itong mababayaran, puwede nitong ma-unlock ang susunod na credit level ng borrower.'
 };
