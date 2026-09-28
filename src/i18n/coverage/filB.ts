@@ -673,5 +673,58 @@ export const filipinoCoverageB: Record<string, string> = {
    'Next reward': 'Susunod na reward',
    Collectibles: 'Mga Collectible',
    Upcoming: 'Paparating',
-   'Close rewards help': 'Isara ang tulong sa rewards'
+   'Close rewards help': 'Isara ang tulong sa rewards',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'Performance Summary': 'Buod ng Performance',
+   'View All Transactions': 'Tingnan ang Lahat ng Transaction',
+   'No transactions found': 'Walang nahanap na transaction',
+   Default: 'Nag-default',
+   'Total Earnings': 'Kabuuang Kita',
+   'Total Loans Lent out': 'Kabuuang Ipinahiram na Loan',
+   'Total Loss': 'Kabuuang Lugi',
+   'Total Loans Funded': 'Kabuuang Napondohang Loan',
+   'Search Fundings': 'Maghanap ng Funding',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   'This loan is no longer available.': 'Hindi na available ang loan na ito.',
+   'Thank you for funding': 'Salamat sa pagpondo',
+   'View transaction on Basescan ↗': 'Tingnan ang transaction sa Basescan ↗',
+   'View My Funded Loans': 'Tingnan ang Mga Napondohan Kong Loan',
+   'You pay': 'Babayaran mo',
+   'You receive': 'Matatanggap mo',
+   'Loan Note ID': 'Loan Note ID',
+   'You paid': 'Binayaran mo',
+   'Expected repayment': 'Inaasahang Repayment',
+   'IOU points earned': 'Nakuhang IOU points',
+   'Fund this loan': 'Pondohan ang loan na ito',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'Loan not found': 'Hindi nahanap ang loan',
+   'This support link is invalid or the loan is no longer available.': 'Invalid ang support link na ito o hindi na available ang loan.',
+   'Amount funded': 'Halagang Napondohan',
+   'Will repay': 'Babayaran',
+   'You already own this Loan Note.': 'Mayroon ka nang Loan Note na ito.',
+   'You’ll be asked to sign in or sign up, then returned here to complete your support.':
+      'Hihilingin sa iyong mag-sign in o mag-sign up, tapos babalik ka dito para tapusin ang suporta mo.',
+   'Your purchase is confirmed on-chain (you own the Loan Note). We’re still syncing it to your dashboard — it’ll appear shortly. Your funds and IOU points are safe.':
+      'Nakumpirma na ang bili mo on-chain (nasa iyo na ang Loan Note). Sinisync pa namin ito sa dashboard mo — lalabas ito sa lalong madaling panahon. Ligtas ang pera at IOU points mo.',
+   'Remaining owed': 'Natitirang Utang',
+   'IOU points reward': 'Reward na IOU points',
+   'Purchase amount': 'Halaga ng Bili',
+
+   // src/views/lender/performance/LenderPerformance.tsx
+   'Total Lent': 'Kabuuang Ipinahiram',
+
+   // src/views/lender/supported/SupportedLoans.tsx
+   'My Funded Loans': 'Mga Napondohan Kong Loan',
+   'Repayments are automatically sent to your wallet when the borrower repays.':
+      'Awtomatikong ipinapadala ang repayment sa wallet mo kapag nagbayad na ang borrower.',
+   'You haven’t funded any loans yet. Funding links are shared directly with you.':
+      'Wala ka pang napondohang loan. Direktang ibinabahagi sa iyo ang mga funding link.',
+   'Amount paid': 'Halagang Binayaran',
+   'Borrower owes': 'Utang ng Borrower',
+   'Released to you': 'Nailabas Na Sa Iyo',
+   'Held in contract': 'Nakahawak sa Contract',
+   'Repayment destination': 'Destinasyon ng Repayment'
 };
