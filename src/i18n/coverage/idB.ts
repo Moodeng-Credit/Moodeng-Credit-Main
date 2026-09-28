@@ -1002,8 +1002,9 @@ export const indonesianCoverageB: Record<string, string> = {
    'No fee': 'Tanpa biaya',
    'Base network only': 'Hanya jaringan Base',
    'Send USDC on the': 'Kirim USDC di jaringan',
-   'Copied': 'Tersalin',
-   'Only send USDC on Base. Other tokens or networks may be lost.': 'Kirim USDC hanya di Base. Token atau jaringan lain bisa membuat dananya hilang.',
+   Copied: 'Tersalin',
+   'Only send USDC on Base. Other tokens or networks may be lost.':
+      'Kirim USDC hanya di Base. Token atau jaringan lain bisa membuat dananya hilang.',
    'Buy USDC with card': 'Beli USDC dengan kartu',
    'Powered by Stripe': 'Didukung oleh Stripe',
    'Stays in the app': 'Tetap di dalam aplikasi',
@@ -1041,8 +1042,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Tidak ada jawaban yang cocok — coba kata lain, atau hubungi kami di bawah.',
    'Clear search': 'Hapus pencarian',
    'Still need help?': 'Masih butuh bantuan?',
-   'Reach the Moodeng team directly — pick whichever is easiest.':
-      'Hubungi tim Moodeng langsung — pilih cara yang paling mudah untukmu.',
+   'Reach the Moodeng team directly — pick whichever is easiest.': 'Hubungi tim Moodeng langsung — pilih cara yang paling mudah untukmu.',
    Email: 'Email',
    'New to Moodeng? Getting started →': 'Baru di Moodeng? Panduan memulai →',
    'Browse all guides & updates →': 'Lihat semua panduan & update →',
@@ -1120,8 +1120,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Using USDC on Moodeng': 'Memakai USDC di Moodeng',
    "Can't create a Base Account": 'Tidak bisa membuat Base Account',
    "The page won't load fix": 'Cara mengatasi halaman yang tidak mau memuat',
-   "The Base Account page won't load — how do I create one?":
-      'Halaman Base Account tidak mau memuat — bagaimana cara membuatnya?',
+   "The Base Account page won't load — how do I create one?": 'Halaman Base Account tidak mau memuat — bagaimana cara membuatnya?',
    'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.':
       'Ganti dari Wi-Fi ke data seluler (atau sebaliknya). Beberapa jaringan Wi-Fi memblokir proses sign-in — cara ini ternyata cukup sering berhasil.',
    "Base won't load (PLDT / Smart)": 'Base tidak mau memuat (PLDT / Smart)',
@@ -1175,7 +1174,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'More than one loan at a time': 'Lebih dari satu pinjaman sekaligus',
    'Yes, within your available limit': 'Bisa, selama masih dalam limit yang tersedia',
    'Can I have more than one loan at a time?': 'Bisakah aku punya lebih dari satu pinjaman sekaligus?',
-   'Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level\'s limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you\'ve reached your maximum, repay one first.':
+   "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.":
       'Bisa — kamu bisa punya lebih dari satu pinjaman aktif sekaligus, selama jumlah barunya masih muat dalam limit kredit yang tersedia. Limit yang tersedia adalah limit level kamu saat ini (mulai dari $15 hingga $140) dikurangi apa yang sudah kamu utang di pinjaman aktif. Jika pinjaman aktifmu sudah memakai seluruh limitmu, bayar kembali sebagian atau semuanya sebelum mengajukan lagi. Beberapa akun juga mungkin punya batas berapa banyak pinjaman yang bisa aktif sekaligus — jika aplikasi bilang kamu sudah mencapai batas maksimum, bayar kembali salah satunya dulu.',
    'Cash out to GCash or a bank': 'Cairkan dana ke GCash atau rekening bank',
    'USDC → pesos, step by step': 'USDC → peso, langkah demi langkah',
@@ -1201,8 +1200,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Bayar kembali tepat waktu. Pembayaran kembali tepat waktu menghasilkan poin Pandesal, dan membayar kembali pinjaman sebesar limit penuh tepat waktu menaikkanmu satu level.',
    'Credit-Building vs Trust-Building loans': 'Credit-Building Loan vs Trust-Building Loan',
    'Which one raises your limit': 'Mana yang menaikkan limitmu',
-   "What's the difference between Credit-Building and Trust-Building loans?":
-      'Apa bedanya Credit-Building Loan dan Trust-Building Loan?',
+   "What's the difference between Credit-Building and Trust-Building loans?": 'Apa bedanya Credit-Building Loan dan Trust-Building Loan?',
    'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.':
       'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman sebesar limit penuhmu saat ini — membayar kembali tepat waktu menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman lebih kecil di bawah limitmu; pinjaman ini tetap membangun riwayat pembayaran dan reputasimu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit-mu. Kebanyakan peminjam memakai keduanya — Trust-Building Loan untuk menjaga aktivitas tetap sehat, Credit-Building Loan untuk menaikkan limit.',
    'How repayments affect your points': 'Bagaimana pembayaran kembali memengaruhi poinmu',
@@ -1230,14 +1228,13 @@ export const indonesianCoverageB: Record<string, string> = {
       'Itu pengecekan yang berbeda — alasannya tidak menyebutkan hal spesifik ("untuk keperluan pribadi", "untuk kebutuhanku"). Ini cuma pengingat, bukan penghalang: kolomnya memberitahumu apa yang perlu ditambahkan, dan mengetuk "Kirim permintaanmu" untuk kedua kalinya tetap akan memposting permintaanmu. Lebih baik sebutkan untuk apa sebenarnya uang itu dan kapan kamu dapat penghasilan — alasan yang spesifik lebih mudah didanai.',
    '"Make Your Request" does nothing': '"Kirim permintaanmu" tidak melakukan apa-apa',
    "You're not verified yet": 'Kamu belum terverifikasi',
-   '"Make Your Request" does nothing when I tap it — why?':
-      '"Kirim permintaanmu" tidak melakukan apa-apa saat aku mengetuknya — kenapa?',
-   'You aren\'t verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.':
+   '"Make Your Request" does nothing when I tap it — why?': '"Kirim permintaanmu" tidak melakukan apa-apa saat aku mengetuknya — kenapa?',
+   "You aren't verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.":
       'Kamu belum terverifikasi. Mengetuk tombol yang berwarna abu-abu akan membuatnya bergetar dan menyorot catatan di atasnya yang disertai tombol Verifikasi Diri. Verifikasi adalah langkah terakhir sebelum permintaan bisa dikirim — selesaikan Verifikasi ID Kamu dan tombolnya akan aktif.',
    'What happens if a loan is unpaid?': 'Apa yang terjadi jika pinjaman tidak dibayar?',
    'Default: a permanent public mark': 'Gagal bayar: tanda publik yang permanen',
    'What happens if I default on a loan?': 'Apa yang terjadi jika aku gagal bayar pinjaman?',
-   'If a loan isn\'t repaid it can go into default. A default is a permanent public mark on your record, and your account is frozen from new borrowing until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a Repay Now option at sign-in. The amount owed still never grows (no late fees, no rollover), and Moodeng never contacts family, friends, or coworkers. If your account is frozen and you think it\'s a mistake, message the team.':
+   "If a loan isn't repaid it can go into default. A default is a permanent public mark on your record, and your account is frozen from new borrowing until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a Repay Now option at sign-in. The amount owed still never grows (no late fees, no rollover), and Moodeng never contacts family, friends, or coworkers. If your account is frozen and you think it's a mistake, message the team.":
       'Jika pinjaman tidak dibayar, itu bisa berujung gagal bayar. Gagal bayar adalah tanda permanen di catatanmu, dan akunmu dibekukan dari pinjaman baru sampai masalahnya selesai — peminjam yang gagal bayar atau terlambat akan diarahkan ke layar dukungan akun dengan opsi Bayar Sekarang saat sign-in. Jumlah yang kamu utang tidak akan pernah bertambah (tanpa biaya keterlambatan, tanpa rollover), dan Moodeng tidak pernah menghubungi keluarga, teman, atau rekan kerjamu. Jika akunmu dibekukan dan kamu merasa itu kesalahan, kirim pesan ke tim kami.',
    'Staying safe on Moodeng': 'Tetap aman di Moodeng',
    'The rules that are always true': 'Aturan yang selalu berlaku',
@@ -1247,7 +1244,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Manage your account': 'Kelola akunmu',
    'Name, email, password, sign out': 'Nama, email, kata sandi, keluar akun',
    'How do I manage my account and security settings?': 'Bagaimana cara mengelola akun dan pengaturan keamananku?',
-   'Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that\'s also where you export your wallet key (Account → Account Settings → Wallet).':
+   "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).":
       'Akunmu terhubung ke dompetmu, jadi keamanan dompet adalah keamanan akun. Dari layar Akun kamu bisa memperbarui nama tampilan, mengelola email, mengganti kata sandi, dan keluar akun. Jika kamu memakai Instant Wallet, di sanalah juga tempat kamu mengekspor kunci dompetmu (Akun → Pengaturan Akun → Dompet).',
    'Managing your account': 'Mengelola akunmu',
 
