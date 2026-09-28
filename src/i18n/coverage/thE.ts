@@ -1,3 +1,122 @@
 // Thai translations for on-screen English still missing after chunks A–D, keyed by the
 // exact English text. Loaded on demand with the rest of this locale's coverage (see ./index.ts).
-export const thaiCoverageE: Record<string, string> = {};
+export const thaiCoverageE: Record<string, string> = {
+   // src/views/withdraw/Withdraw.tsx
+   '(est.)': '(โดยประมาณ)',
+   'Connect your wallet to see your balance': 'เชื่อมต่อกระเป๋าเงินเพื่อดูยอดเงินของคุณ',
+   "Transfer didn't go through": 'การโอนไม่สำเร็จ',
+   'Nothing left your wallet — you can try again.': 'ไม่มีเงินออกจากกระเป๋าเงินของคุณ คุณลองใหม่ได้',
+   'Still processing — this is taking a little longer than usual. Your transfer is on its way.':
+      'ยังดำเนินการอยู่ ครั้งนี้ใช้เวลานานกว่าปกติเล็กน้อย เงินที่คุณโอนกำลังไปถึงปลายทาง',
+   'Preparing your wallet': 'กำลังเตรียมกระเป๋าเงินของคุณ',
+   'Sending your USDC': 'กำลังส่ง USDC ของคุณ',
+   'Confirming on Base': 'กำลังยืนยันบน Base',
+   "Withdrawal didn't go through": 'การถอนเงินไม่สำเร็จ',
+   'Wallet not connected': 'ยังไม่ได้เชื่อมต่อกระเป๋าเงิน',
+   'Confirm in your wallet…': 'ยืนยันในกระเป๋าเงินของคุณ…',
+   'Cash-out guide': 'คู่มือการถอนเป็นเงินสด',
+   'GCash balance': 'ยอดเงิน GCash',
+   'Send USDC from your Moodeng wallet to your GCash GCrypto account. Once it arrives, sell it for pesos — it lands in your GCash wallet instantly.':
+      'ส่ง USDC จากกระเป๋าเงิน Moodeng ไปยังบัญชี GCrypto ใน GCash ของคุณ เมื่อเงินเข้าแล้ว ให้ขายเป็นเงินเปโซ แล้วเงินจะเข้ากระเป๋าเงิน GCash ของคุณทันที',
+   'Open GCrypto, then tap Receive. Choose USDC and select Base as the network.':
+      'เปิด GCrypto แล้วแตะ Receive เลือก USDC และเลือกเครือข่าย Base',
+   'Official GCash guide': 'คู่มือทางการของ GCash',
+   'Open the GCash app and open "GCrypto" — find it under "View All" or search for it. You\'ll need a fully-verified GCash account.':
+      'เปิดแอป GCash แล้วเปิด "GCrypto" ซึ่งหาได้ใน "View All" หรือค้นหาชื่อ คุณต้องมีบัญชี GCash ที่ยืนยันตัวตนครบถ้วนแล้ว',
+   'Select USDC, then tap "Receive".': 'เลือก USDC แล้วแตะ "Receive"',
+   'Choose "Base" as the network.': 'เลือกเครือข่าย "Base"',
+   'Tap to copy the address shown on the screen.': 'แตะเพื่อคัดลอกที่อยู่ที่แสดงบนหน้าจอ',
+   'GCrypto shows your address.': 'GCrypto จะแสดงที่อยู่ของคุณ',
+   'Tap to copy the address.': 'แตะเพื่อคัดลอกที่อยู่',
+   'Come back to Moodeng and paste it below.': 'กลับมาที่ Moodeng แล้ววางที่อยู่ด้านล่าง',
+   'Paste the address in the field below, then confirm and send.': 'วางที่อยู่ในช่องด้านล่าง แล้วยืนยันและส่ง',
+   'Cash out to pesos in GCash': 'ถอนเป็นเงินเปโซใน GCash',
+   'Once your USDC is in GCrypto, cashing out is two quick steps: sell it for pesos, then move those pesos to your main GCash balance.':
+      'เมื่อ USDC เข้า GCrypto แล้ว การถอนเป็นเงินสดมีเพียงสองขั้นตอน: ขายเป็นเงินเปโซ แล้วย้ายเงินเปโซนั้นไปยังยอดเงินหลักใน GCash',
+   'and tap': 'แล้วแตะ',
+   'trading wallet': 'กระเป๋าเงินเทรด',
+   'Bank, GCash or Maya': 'ธนาคาร GCash หรือ Maya',
+   'Send USDC from your Moodeng wallet to your PDAX account. Once it arrives, sell it for pesos and withdraw to your bank or e-wallet.':
+      'ส่ง USDC จากกระเป๋าเงิน Moodeng ไปยังบัญชี PDAX ของคุณ เมื่อเงินเข้าแล้ว ให้ขายเป็นเงินเปโซและถอนเข้าธนาคารหรือกระเป๋าเงินอิเล็กทรอนิกส์',
+   'Select USDC, tap Receive, then choose Base as the network.': 'เลือก USDC แตะ Receive แล้วเลือกเครือข่าย Base',
+   'Official PDAX guide': 'คู่มือทางการของ PDAX',
+   'Open the PDAX app and tap the Portfolio icon.': 'เปิดแอป PDAX แล้วแตะไอคอน Portfolio',
+   'Select USDC, then tap "Receive" (or Deposit).': 'เลือก USDC แล้วแตะ "Receive" (หรือ Deposit)',
+   'Confirm it says Base before continuing.': 'ตรวจสอบให้แน่ใจว่าขึ้นว่า Base ก่อนดำเนินการต่อ',
+   'Tap to copy the address from the screen.': 'แตะเพื่อคัดลอกที่อยู่จากหน้าจอ',
+   'PDAX shows your receiving address.': 'PDAX จะแสดงที่อยู่รับเงินของคุณ',
+   'Cash out to pesos with PDAX': 'ถอนเป็นเงินเปโซด้วย PDAX',
+   'Once your USDC arrives in PDAX (usually under 1 minute), sell it for pesos and withdraw to your bank, GCash, or Maya.':
+      'เมื่อ USDC เข้า PDAX แล้ว (ปกติไม่ถึง 1 นาที) ให้ขายเป็นเงินเปโซและถอนเข้าธนาคาร GCash หรือ Maya',
+   'as the pair': 'เป็นคู่เทรด',
+   "PDAX shows you the PHP amount you'll receive at the current rate. Tap Sell to confirm.":
+      'PDAX จะแสดงจำนวน PHP ที่คุณจะได้รับตามอัตราปัจจุบัน แตะ Sell เพื่อยืนยัน',
+   'Go to': 'ไปที่',
+   'Choose your payout destination: bank account, GCash, or Maya. GCash and Maya withdrawals arrive in minutes; bank transfers clear same day.':
+      'เลือกปลายทางรับเงิน: บัญชีธนาคาร GCash หรือ Maya การถอนเข้า GCash และ Maya จะถึงภายในไม่กี่นาที ส่วนการโอนเข้าธนาคารจะเสร็จภายในวันเดียวกัน',
+   'Bank or GCash': 'ธนาคารหรือ GCash',
+   'Send USDC from your Moodeng wallet to your Coins.ph account. Once it arrives, sell it for pesos and cash out to your bank or GCash.':
+      'ส่ง USDC จากกระเป๋าเงิน Moodeng ไปยังบัญชี Coins.ph ของคุณ เมื่อเงินเข้าแล้ว ให้ขายเป็นเงินเปโซและถอนเข้าธนาคารหรือ GCash',
+   'Go to your Portfolio, select USDC, then tap Receive. Choose Base as the network.':
+      'ไปที่ Portfolio เลือก USDC แล้วแตะ Receive จากนั้นเลือกเครือข่าย Base',
+   'Official Coins.ph guide': 'คู่มือทางการของ Coins.ph',
+   'Open the Coins.ph app and go to your Portfolio.': 'เปิดแอป Coins.ph แล้วไปที่ Portfolio',
+   'Choose Base as the network.': 'เลือกเครือข่าย Base',
+   'Tap to copy the address shown on screen.': 'แตะเพื่อคัดลอกที่อยู่ที่แสดงบนหน้าจอ',
+   'Cash out to pesos with Coins.ph': 'ถอนเป็นเงินเปโซด้วย Coins.ph',
+   'Once your USDC arrives (usually a few minutes), sell it for pesos and send directly to your bank or GCash.':
+      'เมื่อ USDC เข้าแล้ว (ปกติใช้เวลาไม่กี่นาที) ให้ขายเป็นเงินเปโซและส่งเข้าธนาคารหรือ GCash โดยตรง',
+   ', then select': ' แล้วเลือก',
+   'Select transfer type:': 'เลือกประเภทการโอน:',
+   or: 'หรือ',
+   "Double-check your account number before confirming — wrong transfers can't be reversed.":
+      'ตรวจสอบเลขบัญชีอีกครั้งก่อนยืนยัน การโอนผิดไม่สามารถย้อนกลับได้',
+   'GCash, Maya or Bank': 'GCash Maya หรือธนาคาร',
+   'your bank or local wallet': 'ธนาคารหรือกระเป๋าเงินในประเทศของคุณ',
+   'Tap Wallet, then Receive. Search for USDC and choose Base as the network.':
+      'แตะ Wallet แล้วแตะ Receive ค้นหา USDC และเลือกเครือข่าย Base',
+   'Open the Binance app and sign in.': 'เปิดแอป Binance แล้วเข้าสู่ระบบ',
+   'Tap "Wallet" in the bottom bar.': 'แตะ "Wallet" ที่แถบด้านล่าง',
+   'Tap "Receive" (or Deposit → Deposit Crypto).': 'แตะ "Receive" (หรือ Deposit → Deposit Crypto)',
+   'Search and select USDC (not USDT).': 'ค้นหาและเลือก USDC (ไม่ใช่ USDT)',
+   'Choose "Base" as the network — not BEP20, ERC20, or TRC20.': 'เลือกเครือข่าย "Base" ไม่ใช่ BEP20 ERC20 หรือ TRC20',
+   'Tap Copy Address to copy it.': 'แตะ Copy Address เพื่อคัดลอก',
+   "On the Binance receive screen, you'll see a long address.": 'ในหน้ารับเงินของ Binance คุณจะเห็นที่อยู่ยาว ๆ',
+   'Tap "Copy Address".': 'แตะ "Copy Address"',
+   'Paste the address in the field below, then send.': 'วางที่อยู่ในช่องด้านล่าง แล้วส่ง',
+   'Cash out to pesos with Binance P2P': 'ถอนเป็นเงินเปโซด้วย Binance P2P',
+   'Cash out to local currency with Binance P2P': 'ถอนเป็นสกุลเงินในประเทศด้วย Binance P2P',
+   'Binance P2P walkthrough': 'วิธีใช้ Binance P2P ทีละขั้นตอน',
+   'Once your': 'เมื่อ',
+   'USDC shows in Binance, sell it for': 'USDC ของคุณแสดงใน Binance แล้ว ให้ขายเป็น',
+   pesos: 'เงินเปโซ',
+   'local currency': 'สกุลเงินในประเทศ',
+   "to a verified buyer — Binance holds the crypto in escrow until you're paid.":
+      'ให้กับผู้ซื้อที่ยืนยันตัวตนแล้ว โดย Binance จะพักคริปโตไว้ในระบบ escrow จนกว่าคุณจะได้รับเงิน',
+   'and your payout method': 'และวิธีรับเงินของคุณ',
+   'and payout method': 'และวิธีรับเงิน',
+   'GCash, Maya, or bank transfer (BDO, BPI, etc.).': 'GCash Maya หรือโอนเข้าธนาคาร (BDO BPI ฯลฯ)',
+   'Bank transfer or local payment method.': 'โอนเข้าธนาคารหรือวิธีรับเงินในประเทศ',
+   '95%+ completion rate': 'อัตราสำเร็จ 95%+',
+   'and many completed trades.': 'และมีการซื้อขายที่สำเร็จจำนวนมาก',
+   'Release USDC only after pesos arrive': 'ปล่อย USDC หลังจากเงินเปโซเข้าแล้วเท่านั้น',
+   'Release USDC only after payment arrives': 'ปล่อย USDC หลังจากได้รับเงินแล้วเท่านั้น',
+   'tap "Release" until the': 'แตะ "Release" จนกว่า',
+   'peso payment is actually in your GCash/bank': 'เงินเปโซจะเข้า GCash/ธนาคารของคุณจริง ๆ',
+   'payment is actually in your account': 'เงินจะเข้าบัญชีของคุณจริง ๆ',
+   '. Check it yourself first.': ' ตรวจสอบด้วยตัวเองก่อนทุกครั้ง',
+   'Visit moneybees.ph': 'ไปที่ moneybees.ph',
+   'Start from their official website and follow their process.': 'เริ่มจากเว็บไซต์ทางการของพวกเขา แล้วทำตามขั้นตอน',
+   'Moneybees handles ID checks, the rate, and the payout directly with you.':
+      'Moneybees จะดูแลการตรวจสอบบัตรประชาชน อัตราแลกเปลี่ยน และการจ่ายเงินกับคุณโดยตรง',
+   'Moneybees is an external option some users may use to buy or sell crypto through Moneybees’ own process. It isn’t operated by Moodeng — you’ll need to follow Moneybees’ instructions directly.':
+      'Moneybees เป็นตัวเลือกภายนอกที่ผู้ใช้บางคนอาจใช้ซื้อหรือขายคริปโตตามขั้นตอนของ Moneybees เอง Moodeng ไม่ได้เป็นผู้ให้บริการนี้ คุณต้องทำตามคำแนะนำของ Moneybees โดยตรง',
+   'Cash out with Moneybees': 'ถอนเงินกับ Moneybees',
+   'Send to Binance': 'ส่งไปยัง Binance',
+   'Send to Coins.ph': 'ส่งไปยัง Coins.ph',
+   'Send to GCrypto': 'ส่งไปยัง GCrypto',
+   'Send to PDAX': 'ส่งไปยัง PDAX',
+   'Withdrawal sent': 'ส่งเงินแล้ว',
+   'Your funds are on their way to your exchange.': 'เงินของคุณกำลังส่งไปยังแพลตฟอร์มแลกเปลี่ยนคริปโตของคุณ',
+   'Could not verify this cash-out. Please try again.': 'ไม่สามารถยืนยันการถอนเงินครั้งนี้ได้ โปรดลองอีกครั้ง'
+};
