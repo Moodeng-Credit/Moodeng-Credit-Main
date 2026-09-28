@@ -118,5 +118,145 @@ export const thaiCoverageE: Record<string, string> = {
    'Send to PDAX': 'ส่งไปยัง PDAX',
    'Withdrawal sent': 'ส่งเงินแล้ว',
    'Your funds are on their way to your exchange.': 'เงินของคุณกำลังส่งไปยังแพลตฟอร์มแลกเปลี่ยนคริปโตของคุณ',
-   'Could not verify this cash-out. Please try again.': 'ไม่สามารถยืนยันการถอนเงินครั้งนี้ได้ โปรดลองอีกครั้ง'
+   'Could not verify this cash-out. Please try again.': 'ไม่สามารถยืนยันการถอนเงินครั้งนี้ได้ โปรดลองอีกครั้ง',
+   // src/views/academy/AcademyGuide.tsx
+   'Step 1': 'ขั้นตอนที่ 1',
+   'Step 2': 'ขั้นตอนที่ 2',
+   'Step 3': 'ขั้นตอนที่ 3',
+   'Step 4': 'ขั้นตอนที่ 4',
+   'Step 5': 'ขั้นตอนที่ 5',
+   'Step 6': 'ขั้นตอนที่ 6',
+   'Step 7': 'ขั้นตอนที่ 7',
+   'Step 8': 'ขั้นตอนที่ 8',
+   'Set up wallet': 'ตั้งค่ากระเป๋าเงิน',
+   'Amount decides': 'จำนวนเงินเป็นตัวกำหนด',
+   Browse: 'เลือกดู',
+   '$15 request': 'คำขอ $15',
+   'A request for your full $15 credit limit is a credit-building loan.': 'คำขอเต็มวงเงินกู้ $15 ของคุณคือ Credit-Building Loan',
+   '$15 is your full limit': '$15 คือวงเงินเต็มของคุณ',
+   'Needs $15 • 2 days': 'ต้องการ $15 • 2 วัน',
+   '$13 repaid / $18 total': 'ชำระคืนแล้ว $13 / ทั้งหมด $18',
+   '0 days': '0 วัน',
+   'Money & getting started': 'เรื่องเงินและการเริ่มต้นใช้งาน',
+   'Finish the quick check. Score': 'ทำแบบทดสอบสั้น ๆ ให้เสร็จ โดยต้องได้คะแนน',
+   of: 'จาก',
+   'or better to pass. This is a learning score today, not a live IOU or Pandesal points balance.':
+      'ขึ้นไปจึงจะผ่าน ตอนนี้เป็นเพียงคะแนนเพื่อการเรียนรู้ ไม่ใช่ยอดแต้ม IOU หรือแต้ม Pandesal จริง',
+   'Nice. You earned Academy score.': 'เยี่ยม! คุณได้รับคะแนนอะคาเดมีแล้ว',
+   'Almost. Retake for Academy score.': 'เกือบแล้ว ทำแบบทดสอบใหม่เพื่อรับคะแนนอะคาเดมี',
+   'Score 4+ to earn Academy score. Each correct answer is 2 points.': 'ตอบถูก 4 ข้อขึ้นไปเพื่อรับคะแนนอะคาเดมี ตอบถูกข้อละ 2 แต้ม',
+   Answer: 'ตอบ',
+   'quick questions. Each correct answer earns': 'คำถามสั้น ๆ ตอบถูกแต่ละข้อจะได้รับ',
+   'points toward your Academy score.': 'แต้มสำหรับคะแนนอะคาเดมีของคุณ',
+   Question: 'คำถามที่',
+   'To skip repayment': 'เพื่อจะได้ไม่ต้องชำระคืน',
+   'To hide from lenders': 'เพื่อซ่อนตัวจากผู้ให้กู้',
+   'To hide repayment history': 'เพื่อซ่อนประวัติการชำระคืน',
+   'To skip World ID': 'เพื่อข้ามการยืนยัน World ID',
+   'Trust-building': 'การสร้างความน่าเชื่อถือ',
+   'A lender loan': 'เงินกู้ของผู้ให้กู้',
+   'Already repaid': 'ชำระคืนแล้ว',
+   'Changing names often': 'เปลี่ยนชื่อบ่อย ๆ',
+   'Ignoring the request board': 'ไม่สนใจกระดานคำขอ',
+   'See score': 'ดูคะแนน',
+   'Next question': 'คำถามถัดไป',
+   'Submit answer': 'ส่งคำตอบ',
+   'Academy passed': 'ผ่านอะคาเดมีแล้ว',
+   'You scored 4 of 5. Log in and finish the borrower flow to keep going.':
+      'คุณได้ 4 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ยืมให้เสร็จเพื่อไปต่อ',
+   'You scored 5 of 5. Log in and finish the borrower flow to keep going.':
+      'คุณได้ 5 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ยืมให้เสร็จเพื่อไปต่อ',
+   'You scored 4 of 5. Log in and finish the lender flow to keep going.':
+      'คุณได้ 4 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ให้กู้ให้เสร็จเพื่อไปต่อ',
+   'You scored 5 of 5. Log in and finish the lender flow to keep going.':
+      'คุณได้ 5 จาก 5 คะแนน เข้าสู่ระบบแล้วทำขั้นตอนสำหรับผู้ให้กู้ให้เสร็จเพื่อไปต่อ',
+   'You scored 0 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 0 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
+   'You scored 1 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 1 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
+   'You scored 2 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 2 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
+   'You scored 3 of 5. Score 4 of 5 to unlock Academy score.': 'คุณได้ 3 จาก 5 คะแนน ต้องได้ 4 จาก 5 เพื่อปลดล็อกคะแนนอะคาเดมี',
+   Register: 'สมัครสมาชิก',
+
+   // src/views/academy/MoneyGuide.tsx
+   'One-time · about 3 minutes': 'ทำครั้งเดียว · ประมาณ 3 นาที',
+   'ID photo': 'รูปถ่ายบัตรประชาชน',
+   'Send USDC to an exchange or local service, sell it, and withdraw your local currency to your bank or GCash. The full guide has a video walkthrough.':
+      'ส่ง USDC ไปยังแพลตฟอร์มแลกเปลี่ยนคริปโตหรือบริการในประเทศ ขายเป็นเงินสกุลท้องถิ่น แล้วถอนเข้าธนาคารหรือ GCash ของคุณ คู่มือฉบับเต็มมีวิดีโอสาธิตด้วย',
+   'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time earns Pandesal points, and repaying a full-limit loan on time raises your credit limit.':
+      'ส่ง USDC ไปยังที่อยู่สำหรับชำระคืนที่แสดงในหน้าจอชำระคืน จากกระเป๋าเงิน แพลตฟอร์มแลกเปลี่ยนคริปโต หรือบริการในประเทศ การชำระคืนตรงเวลาจะได้รับแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะเพิ่มวงเงินกู้ของคุณ',
+
+   // src/views/academy/VerifyGuide.tsx
+   'One-time · about 3 minutes · free': 'ทำครั้งเดียว · ประมาณ 3 นาที · ฟรี',
+   "What you'll need": 'สิ่งที่คุณต้องเตรียม',
+   'Good, even lighting': 'แสงสว่างเพียงพอและสม่ำเสมอ',
+   'Chrome or Safari': 'Chrome หรือ Safari',
+   'Tap "Verify Yourself" in the app and choose "Verify Your ID".': 'แตะ "ยืนยันตัวตน" ในแอป แล้วเลือก "ยืนยันด้วยบัตรประชาชน"',
+   'Have your physical national ID ready and find good, even lighting.':
+      'เตรียมบัตรประชาชนตัวจริงให้พร้อม และหาที่ที่มีแสงสว่างเพียงพอและสม่ำเสมอ',
+   'Complete the quick ID photo + selfie check — it takes about 3 minutes.':
+      'ทำการตรวจสอบด้วยรูปถ่ายบัตรประชาชน + เซลฟี่ให้เสร็จ ใช้เวลาประมาณ 3 นาที',
+   'Most checks finish in minutes. If yours needs a human review, we will notify you as soon as it is done — usually within a few hours, at most 1 business day.':
+      'การตรวจสอบส่วนใหญ่เสร็จภายในไม่กี่นาที หากของคุณต้องให้เจ้าหน้าที่ตรวจสอบ เราจะแจ้งให้คุณทราบทันทีที่เสร็จ โดยปกติภายในไม่กี่ชั่วโมง และไม่เกิน 1 วันทำการ',
+   'Open Moodeng in Chrome or Safari. In-app browsers inside Facebook or Messenger are the most common reason a check gets stuck.':
+      'เปิด Moodeng ใน Chrome หรือ Safari เบราว์เซอร์ในแอป Facebook หรือ Messenger คือสาเหตุที่พบบ่อยที่สุดที่ทำให้การตรวจสอบค้าง',
+   'Make sure the whole ID is in frame, in focus, and readable — no fingers over the text and no glare washing it out.':
+      'ให้บัตรทั้งใบอยู่ในกรอบ ภาพคมชัด และอ่านได้ ไม่มีนิ้วบังตัวอักษร และไม่มีแสงสะท้อนจนมองไม่เห็น',
+   'If the check does get stuck, you can simply retry it with a clearer, well-lit photo.':
+      'หากการตรวจสอบค้าง คุณลองใหม่ได้เลยด้วยรูปถ่ายที่ชัดขึ้นและมีแสงสว่างเพียงพอ',
+   'Yes. If you are already verified in World App, either in person at an Orb or with a biometric passport, you can choose "Verify with World ID" and confirm through the World App instead of doing the ID check.':
+      'ได้ หากคุณยืนยันตัวตนใน World App แล้ว ไม่ว่าจะที่ Orb หรือด้วยหนังสือเดินทางแบบไบโอเมตริก คุณสามารถเลือก "ยืนยันด้วย World ID" และยืนยันผ่าน World App แทนการตรวจสอบบัตรประชาชนได้',
+   'National ID verification is currently supported for Vietnam, Taiwan, South Korea, Philippines, Malaysia, Japan, Indonesia, Thailand.':
+      'ขณะนี้รองรับการยืนยันด้วยบัตรประชาชนสำหรับเวียดนาม ไต้หวัน เกาหลีใต้ ฟิลิปปินส์ มาเลเซีย ญี่ปุ่น อินโดนีเซีย และไทย',
+   'Buy USDC and send it to your wallet on Base.': 'ซื้อ USDC แล้วส่งเข้ากระเป๋าเงินของคุณบนเครือข่าย Base',
+   'Cash out USDC to your bank or e-wallet.': 'ถอน USDC เป็นเงินสดเข้าธนาคารหรือกระเป๋าเงินอิเล็กทรอนิกส์',
+   'Repay on time to earn Pandesal points.': 'ชำระคืนตรงเวลาเพื่อรับแต้ม Pandesal',
+   'Open the app to verify': 'เปิดแอปเพื่อยืนยันตัวตน',
+   'instead and confirm through the World App, rather than doing the ID photo check.':
+      'แทน และยืนยันผ่าน World App โดยไม่ต้องตรวจสอบด้วยรูปถ่ายบัตรประชาชน',
+   'Verification lives inside the app under “Verify Yourself”. It takes about 3 minutes and you only do it once.':
+      'การยืนยันตัวตนอยู่ในแอปที่เมนู “ยืนยันตัวตน” ใช้เวลาประมาณ 3 นาที และทำเพียงครั้งเดียว',
+   'Verification & Security article': 'บทความการยืนยันตัวตนและความปลอดภัย',
+
+   // src/views/academy/moneyGuideTopics.tsx
+   'Buy USDC with PHP, then Send Crypto → External Wallet → Base network.':
+      'ซื้อ USDC ด้วย PHP แล้วไปที่ Send Crypto → External Wallet → เครือข่าย Base',
+   'Buy USDC with PHP and withdraw to your wallet on Base.': 'ซื้อ USDC ด้วย PHP แล้วถอนเข้ากระเป๋าเงินของคุณบนเครือข่าย Base',
+   'If crypto is enabled in your GCash app, buy USDC and withdraw via USDCBASE.':
+      'หากแอป GCash ของคุณเปิดใช้งานคริปโตแล้ว ให้ซื้อ USDC และถอนผ่าน USDCBASE',
+   'An over-the-counter service some users may use to buy crypto. Follow Moneybees’ instructions directly on their site.':
+      'บริการซื้อขายนอกตลาด (OTC) ที่ผู้ใช้บางคนอาจใช้ซื้อคริปโต ทำตามคำแนะนำของ Moneybees บนเว็บไซต์ของพวกเขาโดยตรง',
+   'The key detail: always choose Base as the network. Sending on the wrong network can result in lost funds.':
+      'สิ่งสำคัญ: เลือกเครือข่าย Base ทุกครั้ง การส่งผิดเครือข่ายอาจทำให้เงินสูญหาย',
+   'Send USDC to an exchange or local service, sell it, and withdraw your local currency to your bank or GCash.':
+      'ส่ง USDC ไปยังแพลตฟอร์มแลกเปลี่ยนคริปโตหรือบริการในประเทศ ขายเป็นเงินสกุลท้องถิ่น แล้วถอนเข้าธนาคารหรือ GCash ของคุณ',
+   'A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.':
+      'แพลตฟอร์มแลกเปลี่ยนคริปโตของฟิลิปปินส์ที่กำกับดูแลโดย BSP ฝาก USDC ขายเป็น PHP แล้วถอนเข้าบัญชีธนาคารของคุณ',
+   'Deposit USDC, convert to PHP, and cash out to your bank or GCash.': 'ฝาก USDC แปลงเป็น PHP แล้วถอนเป็นเงินสดเข้าธนาคารหรือ GCash',
+   'If crypto is enabled in your GCash app, you can receive supported crypto and convert inside GCash.':
+      'หากแอป GCash ของคุณเปิดใช้งานคริปโตแล้ว คุณสามารถรับคริปโตที่รองรับและแปลงได้ใน GCash',
+   'An over-the-counter service some users may use to sell crypto. Follow Moneybees’ instructions directly on their site.':
+      'บริการซื้อขายนอกตลาด (OTC) ที่ผู้ใช้บางคนอาจใช้ขายคริปโต ทำตามคำแนะนำของ Moneybees บนเว็บไซต์ของพวกเขาโดยตรง',
+   'The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.':
+      'สิ่งสำคัญ: เลือกเครือข่าย Base ทุกครั้งเมื่อฝากเข้าแพลตฟอร์มแลกเปลี่ยนคริปโต การใช้ผิดเครือข่ายอาจทำให้เงินสูญหาย',
+   'Open the Repay screen to see the amount due and copy the repayment address.':
+      'เปิดหน้าจอชำระคืนเพื่อดูยอดที่ต้องชำระและคัดลอกที่อยู่สำหรับชำระคืน',
+   'Send USDC to that address from a wallet, an exchange, or a local service — always on the Base network.':
+      'ส่ง USDC ไปยังที่อยู่นั้นจากกระเป๋าเงิน แพลตฟอร์มแลกเปลี่ยนคริปโต หรือบริการในประเทศ โดยใช้เครือข่าย Base เสมอ',
+   'Don’t hold USDC yet? Buy it first, send it to your wallet, then repay from there.':
+      'ยังไม่มี USDC ใช่ไหม ซื้อก่อน ส่งเข้ากระเป๋าเงินของคุณ แล้วชำระคืนจากกระเป๋าเงินนั้น',
+   'Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.':
+      'ซื้อ USDC ด้วย PHP แล้วใช้ Send Crypto → External Wallet → เครือข่าย Base',
+   'Always repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. And always choose Base as the network.':
+      'ชำระคืนก่อนวันครบกำหนดเสมอ การชำระคืนตรงเวลาช่วยเพิ่มแต้ม Pandesal และช่วยปลดล็อกระดับเครดิตที่สูงขึ้น และอย่าลืมเลือกเครือข่าย Base ทุกครั้ง',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
+      'ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้บัญชีมีความเคลื่อนไหว และ Credit-Building Loan เพื่อไต่ระดับ',
+
+   // src/views/user-profile/UserProfile.tsx
+   'Trust-building loans': 'เงินกู้สร้างความน่าเชื่อถือ',
+   'Credit-building loans': 'เงินกู้เพิ่มระดับเครดิต',
+
+   // src/views/help/helpTopics.ts
+   'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
+      'มีเงินกู้อยู่สองแบบ Credit-Building Loan คือเงินกู้เต็มวงเงินปัจจุบันของคุณ — การชำระคืนตรงเวลาจะเพิ่มวงเงินและปลดล็อกระดับถัดไป ส่วน Trust-Building Loan คือเงินกู้จำนวนใดก็ได้ที่ต่ำกว่าวงเงินของคุณ ซึ่งยังคงช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือกับผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ผู้ยืมส่วนใหญ่ใช้ทั้งสองแบบ — Trust-Building Loan เพื่อให้ประวัติการชำระคืนมีความต่อเนื่อง และ Credit-Building Loan เพื่อเพิ่มวงเงิน'
 };
