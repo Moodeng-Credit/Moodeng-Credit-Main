@@ -480,5 +480,167 @@ export const filipinoCoverageC: Record<string, string> = {
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
       'Isang borrower hippo sa Moodeng kiosk na sumusunod sa credit-building flow: mag-request, magbayad on-time, tapos mag-level up',
    'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
-      'Isang borrower hippo at isang squirrel na nagtatayo ng tiwala kasama ang isang lender sa Moodeng lending desk'
+      'Isang borrower hippo at isang squirrel na nagtatayo ng tiwala kasama ang isang lender sa Moodeng lending desk',
+
+   // src/views/support/PublicGuide.tsx
+   'More guides': 'Higit pang gabay',
+
+   // src/views/support/PublicGuidesIndex.tsx
+   'Everything you need to borrow with confidence — how Credit Levels grow, what your Pandesal points mean, and how USDC loans work.':
+      'Lahat ng kailangan mo para humiram nang may kumpiyansa — kung paano lumalaki ang Credit Levels, ano ang ibig sabihin ng Pandesal points mo, at kung paano gumagana ang mga USDC loan.',
+
+   // src/views/support/UpdateDetail.tsx
+   "What's New": 'Mga Bago',
+   'Published on': 'Na-publish noong',
+
+   // src/views/support/Updates.tsx
+   Latest: 'Pinakabago',
+   'Previous Updates': 'Mga Nakaraang Update',
+
+   // src/views/support/components/NeedMoreHelp.tsx
+   'Message the team and a real person will reply — here and by email.':
+      'Mag-message sa team at may tunay na tao na sasagot — dito at sa email.',
+   'Meet the Moodeng Credit Team': 'Kilalanin ang Moodeng Credit Team',
+   'See the people building borrower trust.': 'Tingnan ang mga taong bumubuo ng tiwala ng borrower.',
+
+   // src/views/transactions/TransactionDetail.tsx
+   Due: 'Due na',
+   'Optional Gift': 'Opsyonal na Regalo',
+   'Would you like to return the interest as a gift?': 'Gusto mo bang ibalik ang interest bilang regalo?',
+   'Interest to return': 'Interest na ibabalik',
+   'Return interest?': 'Ibalik ang interest?',
+   "This is a voluntary gift — once sent, it can't be reversed.":
+      'Kusang-loob na regalo ito — kapag naipadala na, hindi na ito puwedeng bawiin.',
+   'Hide — this keeps going on its own': 'Itago — tuloy pa rin ito nang mag-isa',
+   'Sent successfully!': 'Matagumpay na naipadala!',
+   'Loan Details': 'Detalye ng Loan',
+   'Waiting for lender acceptance': 'Naghihintay ng pag-accept ng lender',
+   'This loan is not funded yet. Repayment starts only after a lender accepts.':
+      'Hindi pa na-fund ang loan na ito. Magsisimula lang ang pagbabayad kapag na-accept na ito ng lender.',
+   'Loan Amount': 'Halaga ng Loan',
+   Outstanding: 'Natitirang Utang',
+   'View on explorer': 'Tingnan sa explorer',
+   Timeline: 'Timeline',
+   'Repay Loan': 'Bayaran ang Loan',
+
+   // src/views/transactions/TransactionHistory.tsx
+   'Interest can be returned': 'Puwedeng ibalik ang interest',
+   Repaid: 'Nabayaran na',
+
+   // src/views/user-profile/LenderDiversityHistory.tsx
+   'Lender Distribution': 'Distribusyon ng Lender',
+   'No lender history yet': 'Wala pang lender history',
+
+   // src/views/user-profile/ProgressHistory.tsx
+   'Started at Level 0': 'Nagsimula sa Level 0',
+   'Borrower account created and credit journey started.': 'Nagawa ang borrower account at nagsimula ang credit journey.',
+   'Identity verification completed.': 'Kumpleto na ang identity verification.',
+   'No loan activity yet': 'Wala pang loan activity',
+   'Repeat Lender Relationship': 'Paulit-ulit na Relasyon sa Lender',
+   'Borrowed again from an existing lender.': 'Humiram muli mula sa kasalukuyang lender.',
+   'Partial Repayment Made': 'May Partial na Bayad',
+   'Credit Limit Unlocked': 'Na-unlock ang Credit Limit',
+   'Defaulted Loan': 'Na-default na Loan',
+   'Loan remains unpaid past the due date.': 'Nananatiling hindi bayad ang loan pagkalipas ng due date.',
+   'More Trust-Building Loans': 'Mas Maraming Trust-Building Loan',
+   'This borrower has more smaller trust-building loans than full-limit credit-building loans. These help show repayment history, but they do not raise credit level.':
+      'Mas marami ang maliliit na trust-building loan ng borrower na ito kaysa sa full-limit na credit-building loan. Tumutulong ito para ipakita ang repayment history, pero hindi nito tinataas ang credit level.',
+
+   // src/views/withdraw/CashoutFaceCheck.tsx
+   'Back to withdraw': 'Bumalik sa withdraw',
+   "Since this is your first cash-out, we ask for a ten-second scan to confirm it's really you before sending any money out.":
+      'Dahil ito ang una mong cash-out, hihilingin namin ang sampung segundong scan para kumpirmahin na ikaw talaga bago magpadala ng pera.',
+
+   // src/views/withdraw/Withdraw.tsx
+   "You're sending": 'Ipinapadala mo',
+   "You'll receive": 'Matatanggap mo',
+   'How this works': 'Paano ito gumagana',
+   'Show me how': 'Ipakita kung paano',
+   'Video guide coming soon': 'Malapit nang dumating ang video guide',
+   'Send only': 'Magpadala lang ng',
+   'Verify Base first': 'I-verify muna ang Base',
+   'How would you like to cash out?': 'Paano mo gustong mag-cash out?',
+   'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
+      'Nasa wallet mo ang mga pondo ng loan mo. I-withdraw o i-convert ang mga ito gamit ang isang exchange, P2P platform, o suportadong local crypto service.',
+   'Learn more about withdrawal options': 'Alamin pa ang mga opsyon sa withdrawal',
+   "I'll do this later": 'Gagawin ko na lang ito mamaya',
+   'Contact support': 'Makipag-ugnayan sa support',
+   'Sent!': 'Naipadala na!',
+   'Cashing out…': 'Nagka-cash out…',
+   'This can take a couple of minutes the first time. Keep this screen open.':
+      'Puwede itong tumagal ng ilang minuto sa unang pagkakataon. Panatilihing bukas ang screen na ito.',
+   'Payout to': 'Ipapadala sa',
+   "Doesn't look like a valid wallet address.": 'Mukhang hindi valid na wallet address ito.',
+   Max: 'Max',
+   "That's more than your available balance.": 'Mas malaki iyan sa available balance mo.',
+   'After it arrives': 'Pagdating nito',
+   'In GCrypto, open': 'Sa GCrypto, buksan ang',
+   Sell: 'Sell',
+   'Go to your': 'Pumunta sa iyong',
+   Withdraw: 'Withdraw',
+   'In PDAX, go to': 'Sa PDAX, pumunta sa',
+   'Wallet → Withdraw PHP': 'Wallet → Withdraw PHP',
+   'Portfolio → Withdraw / Cash Out': 'Portfolio → Withdraw / Cash Out',
+   'How to transfer to Binance': 'Paano mag-transfer sa Binance',
+   'Your Binance transfer address': 'Ang Binance transfer address mo',
+   Open: 'Buksan ang',
+   Choose: 'Piliin ang',
+   'Choose your': 'Piliin ang iyong',
+   'Prefer a': 'Hanapin ang',
+   Never: 'Huwag',
+   'Rate set by Moneybees': 'Rate na itinakda ng Moneybees',
+   Bank: 'Bangko',
+   Maya: 'Maya',
+   'Moneybees is a BSP/AMLC-registered cash-out provider. They handle KYC, exchange rate, transaction details, and PHP payout directly with you.':
+      'Ang Moneybees ay isang BSP/AMLC-registered na cash-out provider. Hinahawakan nila ang KYC, exchange rate, mga detalye ng transaksyon, at PHP payout nang direkta sa iyo.',
+   'Your cash-out steps': 'Ang mga hakbang mo sa cash-out',
+   "You're all set": 'Handa ka na',
+   "Finish verifying on the Moneybees page that opened, then tap below. Once Moneybees confirms your identity, they'll reach out by chat.":
+      'Tapusin ang pag-verify sa Moneybees page na nabuksan, tapos i-tap sa ibaba. Kapag nakumpirma na ng Moneybees ang identity mo, kokontakin ka nila sa chat.',
+   'Reopen Moneybees verification': 'Buksan ulit ang Moneybees verification',
+   'Continue to Moneybees KYC': 'Magpatuloy sa Moneybees KYC',
+   Sent: 'Naipadala',
+   'Open GCrypto in GCash': 'Buksan ang GCrypto sa GCash',
+   'How to open GCrypto in GCash': 'Paano buksan ang GCrypto sa GCash',
+   'Copy your GCash address': 'I-copy ang GCash address mo',
+   'How to copy your GCrypto address': 'Paano i-copy ang GCrypto address mo',
+   'Paste it below': 'I-paste ito sa ibaba',
+   'Enter the amount in USDC or pesos and confirm. The pesos land in your GCrypto trading wallet.':
+      'Ilagay ang halaga sa USDC o piso at kumpirmahin. Mapupunta ang piso sa GCrypto trading wallet mo.',
+   'Move the pesos to your main GCash balance — it usually arrives within a few minutes.':
+      'Ilipat ang piso sa pangunahing GCash balance mo — karaniwang dumarating ito sa loob ng ilang minuto.',
+   'Open PDAX → Portfolio → USDC → Receive': 'Buksan ang PDAX → Portfolio → USDC → Receive',
+   'How to find your PDAX receiving address': 'Paano hanapin ang PDAX receiving address mo',
+   'Copy your PDAX address': 'I-copy ang PDAX address mo',
+   'How to copy your PDAX address': 'Paano i-copy ang PDAX address mo',
+   'Tap the Trade tab at the bottom, then select Sell.': 'I-tap ang Trade tab sa ibaba, tapos piliin ang Sell.',
+   'Search for USDC and choose PHP as the currency you want to receive.':
+      'Hanapin ang USDC at piliin ang PHP bilang currency na gusto mong matanggap.',
+   'Enter the amount and confirm the sale': 'Ilagay ang halaga at kumpirmahin ang sale',
+   'Open Coins.ph → Portfolio → USDC → Receive': 'Buksan ang Coins.ph → Portfolio → USDC → Receive',
+   'How to find your Coins.ph receiving address': 'Paano hanapin ang Coins.ph receiving address mo',
+   'Copy your Coins.ph address': 'I-copy ang Coins.ph address mo',
+   'Enter the amount and tap Sell Now. Your PHP balance updates instantly.':
+      'Ilagay ang halaga at i-tap ang Sell Now. Agad na mag-a-update ang PHP balance mo.',
+   'Tap the Withdraw or Cash Out button from your portfolio screen.': 'I-tap ang Withdraw o Cash Out button mula sa portfolio screen mo.',
+   'Choose your destination: bank account or e-wallet': 'Piliin ang destinasyon mo: bank account o e-wallet',
+   'You can send to your Union Bank, BDO, BPI, or any PH bank — or to GCash or Maya.':
+      'Puwede kang magpadala sa Union Bank, BDO, BPI, o kahit anong PH bank mo — o sa GCash o Maya.',
+   'InstaPay is faster (minutes, ₱50,000 limit per transaction). PESONet clears by end of day for larger amounts.':
+      'Mas mabilis ang InstaPay (minuto lang, ₱50,000 limit kada transaksyon). Nagli-clear ang PESONet sa katapusan ng araw para sa mas malalaking halaga.',
+   'Enter your bank details, then confirm with the OTP': 'Ilagay ang mga detalye ng bank mo, tapos kumpirmahin gamit ang OTP',
+   'Coins.ph sends a one-time code to your registered phone number to authorize the transfer.':
+      'Nagpapadala ang Coins.ph ng one-time code sa naka-rehistrong numero ng telepono mo para i-authorize ang transfer.',
+   'Open Binance → Wallet → Receive': 'Buksan ang Binance → Wallet → Receive',
+   'How to find your Binance receiving address': 'Paano hanapin ang Binance receiving address mo',
+   'Copy your Binance address': 'I-copy ang Binance address mo',
+   'How to copy your Binance address': 'Paano i-copy ang Binance address mo',
+   'Paste your Binance address': 'I-paste ang Binance address mo',
+   'Pick a trustworthy buyer': 'Pumili ng mapagkakatiwalaang buyer',
+   'Enter the amount and place the order': 'Ilagay ang halaga at i-place ang order',
+   'Arrange your cash-out with them': 'Ayusin ang cash-out mo kasama sila',
+   'Send only after their instructions': 'Magpadala lang matapos ang mga instructions nila',
+   'Get assisted by chat': 'Matulungan sa chat',
+   'Confirm your payout': 'Kumpirmahin ang payout mo',
+   'Send only after instructions': 'Magpadala lang matapos ang mga instructions'
 };
