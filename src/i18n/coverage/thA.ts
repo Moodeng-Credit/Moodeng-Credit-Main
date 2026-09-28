@@ -630,10 +630,8 @@ export const thaiCoverageA: Record<string, string> = {
    // src/views/about/sections/CreditGrowthSystemSection.tsx
    'CREDIT GROWTH SYSTEM': 'ระบบการเติบโตของเครดิต',
    'Grow Your Credit Limit Through Step Borrowing': 'เพิ่มวงเงินกู้ของคุณผ่านการยืมทีละขั้น',
-   'Your Credit Limit Grows with Every $20 You Borrow and Repay!':
-      'วงเงินกู้ของคุณเพิ่มขึ้นทุกๆ $20 ที่คุณยืมและชำระคืน!',
-   'The more you borrow and repay, the more you can borrow in the future.':
-      'ยิ่งคุณยืมและชำระคืนมากเท่าไร คุณก็ยิ่งยืมได้มากขึ้นในอนาคต',
+   'Your Credit Limit Grows with Every $20 You Borrow and Repay!': 'วงเงินกู้ของคุณเพิ่มขึ้นทุกๆ $20 ที่คุณยืมและชำระคืน!',
+   'The more you borrow and repay, the more you can borrow in the future.': 'ยิ่งคุณยืมและชำระคืนมากเท่าไร คุณก็ยิ่งยืมได้มากขึ้นในอนาคต',
    Connect: 'เชื่อมต่อ',
    'Borrow + Repay Original $20 to unlock $40': 'ยืม + ชำระคืนเงิน $20 เดิมเพื่อปลดล็อก $40',
    Grow: 'เติบโต',
@@ -652,8 +650,7 @@ export const thaiCoverageA: Record<string, string> = {
    'The only thing relevant to unlocking the next level is the amount you borrowed. Not the amount you repaid.':
       'สิ่งเดียวที่เกี่ยวข้องกับการปลดล็อกระดับถัดไปคือจำนวนเงินที่คุณยืม ไม่ใช่จำนวนเงินที่คุณชำระคืน',
    'Can I skip a level by borrowing more than required?': 'ฉันสามารถข้ามระดับได้ไหมด้วยการยืมมากกว่าที่กำหนด',
-   'No, each level must be unlocked step-by-step with consistent borrowing.':
-      'ไม่ได้ แต่ละระดับต้องปลดล็อกทีละขั้นด้วยการยืมอย่างสม่ำเสมอ',
+   'No, each level must be unlocked step-by-step with consistent borrowing.': 'ไม่ได้ แต่ละระดับต้องปลดล็อกทีละขั้นด้วยการยืมอย่างสม่ำเสมอ',
    'Why Our Cumulative System Benefits You': 'ทำไมระบบสะสมของเราถึงเป็นประโยชน์กับคุณ',
    'Flexibility to take multiple smaller loans': 'ความยืดหยุ่นในการยืมเงินก้อนเล็กหลายครั้ง',
    'Build credit at your own pace': 'สร้างเครดิตตามจังหวะของคุณเอง',
@@ -672,8 +669,7 @@ export const thaiCoverageA: Record<string, string> = {
    'RULES OF REPAYING': 'กฎการชำระคืน',
    'Moodeng offers flexible, blockchain-based microloans. Repay responsibly to build your credit score.':
       'Moodeng มอบสินเชื่อรายย่อยบนบล็อกเชนที่ยืดหยุ่น ชำระคืนอย่างมีความรับผิดชอบเพื่อสร้างคะแนนเครดิตของคุณ',
-   'You must pay the lender directly by hitting the repay button.':
-      'คุณต้องชำระเงินให้ผู้ให้กู้โดยตรงด้วยการกดปุ่มชำระคืน',
+   'You must pay the lender directly by hitting the repay button.': 'คุณต้องชำระเงินให้ผู้ให้กู้โดยตรงด้วยการกดปุ่มชำระคืน',
    'UP-TO-YOU': 'ขึ้นอยู่กับคุณ',
    'Flexible repayments: Any amount up to deadline': 'ชำระคืนได้ยืดหยุ่น จำนวนเท่าไรก็ได้ก่อนถึงกำหนด',
    'Build credit score with each on-time payment': 'สร้างคะแนนเครดิตด้วยการชำระตรงเวลาทุกครั้ง',
@@ -683,8 +679,7 @@ export const thaiCoverageA: Record<string, string> = {
    'To get funded, you need to write why you need it, so someone will fund you.':
       'หากต้องการรับเงินทุน คุณต้องเขียนเหตุผลว่าทำไมคุณถึงต้องการ เพื่อให้มีคนปล่อยกู้ให้คุณ',
    'Welcome to Moodeng Academy': 'ยินดีต้อนรับสู่ Moodeng Academy',
-   'And make sure to submit a request within your credit limit.':
-      'และตรวจสอบให้แน่ใจว่าคำขอของคุณอยู่ในวงเงินกู้ของคุณ',
+   'And make sure to submit a request within your credit limit.': 'และตรวจสอบให้แน่ใจว่าคำขอของคุณอยู่ในวงเงินกู้ของคุณ',
    'Ask For Help': 'ขอความช่วยเหลือ',
    'Offer Help': 'เสนอความช่วยเหลือ',
    'How much do you need today? i.e. $15': 'วันนี้คุณต้องการเงินเท่าไร เช่น $15',
@@ -705,8 +700,7 @@ export const thaiCoverageA: Record<string, string> = {
    '5. Submit your request': '5. ส่งคำขอของคุณ',
    // src/views/academy/AcademyGuide.tsx
    'Create your Moodeng Account': 'สร้างบัญชี Moodeng ของคุณ',
-   'Enter the same email you will use for your borrower account.':
-      'กรอกอีเมลเดียวกับที่คุณจะใช้สำหรับบัญชีผู้ยืมของคุณ',
+   'Enter the same email you will use for your borrower account.': 'กรอกอีเมลเดียวกับที่คุณจะใช้สำหรับบัญชีผู้ยืมของคุณ',
    'Create your password': 'สร้างรหัสผ่านของคุณ',
    'Create An Account': 'สร้างบัญชี',
    'Set Up Your Instant Wallet': 'ตั้งค่า Instant Wallet ของคุณ',
@@ -746,8 +740,7 @@ export const thaiCoverageA: Record<string, string> = {
       'คำแนะนำทีละขั้นตอนสำหรับผู้ยืม เริ่มที่นี่หากคุณต้องการรู้ว่าต้องกดอะไร ผู้ให้กู้เห็นอะไรบ้าง และการชำระคืนช่วยเพิ่มวงเงินของคุณอย่างไร',
    'Tutorial Video': 'วิดีโอสอนการใช้งาน',
    'Watch the quick Moodeng walkthrough.': 'ดูวิดีโอแนะนำ Moodeng แบบย่อ',
-   'I am Mecha. I will walk you through Moodeng step by step.':
-      'ฉันคือ Mecha ฉันจะแนะนำคุณเกี่ยวกับ Moodeng ทีละขั้นตอน',
+   'I am Mecha. I will walk you through Moodeng step by step.': 'ฉันคือ Mecha ฉันจะแนะนำคุณเกี่ยวกับ Moodeng ทีละขั้นตอน',
    'Video guide': 'วิดีโอแนะนำ',
    'Want to learn more? Open the step-by-step credit guide.': 'อยากรู้เพิ่มเติมไหม เปิดคู่มือเครดิตแบบทีละขั้นตอน',
    'Final quiz': 'แบบทดสอบสุดท้าย',
@@ -835,8 +828,7 @@ export const thaiCoverageA: Record<string, string> = {
    'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
       'เพื่อให้ Moodeng ปลอดภัยและเป็นธรรม ผู้ยืมทุกคนต้องผ่านการตรวจสอบตัวตนสั้นๆ หนึ่งครั้ง วิธีนี้ช่วยป้องกันบัญชีปลอมและบัญชีซ้ำออกจากชุมชน และทำให้ผู้ให้กู้มั่นใจในคำขอที่พวกเขาสนับสนุน',
    'The recommended route: Verify Your ID.': 'เส้นทางที่แนะนำ: ยืนยันด้วยบัตรประชาชน',
-   'National ID verification is available for these countries.':
-      'การยืนยันด้วยบัตรประชาชนพร้อมให้บริการในประเทศเหล่านี้',
+   'National ID verification is available for these countries.': 'การยืนยันด้วยบัตรประชาชนพร้อมให้บริการในประเทศเหล่านี้',
    'Pass on the first try': 'ผ่านตั้งแต่ครั้งแรก',
    'If you are already verified in World App — in person at an Orb, or with a biometric passport — you can choose':
       'หากคุณยืนยันตัวตนใน World App แล้ว ไม่ว่าจะที่ Orb หรือด้วยหนังสือเดินทางแบบไบโอเมตริก คุณสามารถเลือก',
@@ -856,8 +848,7 @@ export const thaiCoverageA: Record<string, string> = {
    'Your physical national ID': 'บัตรประชาชนตัวจริงของคุณ',
    'The real card in hand, not a photocopy or a picture on another screen.':
       'บัตรตัวจริงในมือ ไม่ใช่สำเนาถ่ายเอกสารหรือรูปถ่ายจากหน้าจออื่น',
-   'Avoid glare and hard shadows across the card or your face.':
-      'หลีกเลี่ยงแสงสะท้อนและเงาที่ทับบนบัตรหรือใบหน้าของคุณ',
+   'Avoid glare and hard shadows across the card or your face.': 'หลีกเลี่ยงแสงสะท้อนและเงาที่ทับบนบัตรหรือใบหน้าของคุณ',
    'Not the browser inside Facebook or Messenger — those can stall the check.':
       'ไม่ใช่เบราว์เซอร์ในแอป Facebook หรือ Messenger เพราะอาจทำให้การตรวจสอบค้าง',
    'How long does verification take?': 'การยืนยันตัวตนใช้เวลานานแค่ไหน',
@@ -917,8 +908,7 @@ export const thaiCoverageA: Record<string, string> = {
       'นี่คือชื่อที่ผู้ใช้คนอื่นจะเห็นในโปรไฟล์และคำขอเงินกู้ของคุณ',
    'Display Name': 'ชื่อที่แสดง',
    'Telegram Alerts': 'การแจ้งเตือนทาง Telegram',
-   'Connect private loan alerts to your Telegram account.':
-      'เชื่อมต่อการแจ้งเตือนเงินกู้ส่วนตัวเข้ากับบัญชี Telegram ของคุณ',
+   'Connect private loan alerts to your Telegram account.': 'เชื่อมต่อการแจ้งเตือนเงินกู้ส่วนตัวเข้ากับบัญชี Telegram ของคุณ',
    'Open Telegram Bot': 'เปิดบอท Telegram',
    'Check Connection': 'ตรวจสอบการเชื่อมต่อ',
    'Change Wallet': 'เปลี่ยนกระเป๋าเงิน',
@@ -943,8 +933,7 @@ export const thaiCoverageA: Record<string, string> = {
    'You have active loans': 'คุณมีเงินกู้ที่กำลังดำเนินอยู่',
    'Change anyway': 'เปลี่ยนต่อไป',
    'Disconnect wallet': 'ยกเลิกการเชื่อมต่อกระเป๋าเงิน',
-   'Add an email in Personal details to receive email alerts.':
-      'เพิ่มอีเมลในข้อมูลส่วนตัวเพื่อรับการแจ้งเตือนทางอีเมล',
+   'Add an email in Personal details to receive email alerts.': 'เพิ่มอีเมลในข้อมูลส่วนตัวเพื่อรับการแจ้งเตือนทางอีเมล',
    'Account activity': 'กิจกรรมบัญชี',
    'Security and account updates': 'ความปลอดภัยและการอัปเดตบัญชี',
    'Loan activity': 'กิจกรรมเงินกู้',
@@ -963,8 +952,7 @@ export const thaiCoverageA: Record<string, string> = {
    'Verification blocked': 'การยืนยันตัวตนถูกระงับ',
    'Open verification to review the issue.': 'เปิดหน้ายืนยันตัวตนเพื่อตรวจสอบปัญหา',
    'Identity not verified': 'ยังไม่ได้ยืนยันตัวตน',
-   'Complete an identity check to build account trust.':
-      'ทำการตรวจสอบตัวตนให้เสร็จสิ้นเพื่อสร้างความน่าเชื่อถือให้บัญชี',
+   'Complete an identity check to build account trust.': 'ทำการตรวจสอบตัวตนให้เสร็จสิ้นเพื่อสร้างความน่าเชื่อถือให้บัญชี',
    'Enter your old password': 'กรอกรหัสผ่านเดิมของคุณ',
    'Enter your new password': 'กรอกรหัสผ่านใหม่ของคุณ',
    'Confirm your new password': 'ยืนยันรหัสผ่านใหม่ของคุณ',
