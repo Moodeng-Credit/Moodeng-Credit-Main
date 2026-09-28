@@ -122,6 +122,9 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Card purchases aren’t available just yet — try a bridge below.': 'Hiện chưa thể mua bằng thẻ — hãy thử bắc cầu bên dưới.',
    'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
       'Muốn dùng cách khác? Bạn cũng có thể mua USDC trên sàn giao dịch (Binance P2P, Coins.ph, PDAX, GCrypto), qua dịch vụ bên ngoài như Moneybees, hoặc gửi từ bất kỳ ví nào — luôn trên mạng Base.',
+   'Visa / Mastercard · Apple Pay · no account needed': 'Visa / Mastercard · Apple Pay · không cần tài khoản',
+   '~30 sec': '~30 giây',
+   'SOL and USDC to Base · opens Superbridge': 'SOL và USDC sang Base · mở Superbridge',
 
    // src/views/fund/StripeOnrampModal.tsx
    'Something went wrong.': 'Đã có lỗi xảy ra.',
@@ -130,6 +133,7 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Không bắt đầu được giao dịch mua bằng thẻ. Hãy thử tùy chọn Coinbase bên dưới.',
    'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':
       'Tính năng mua bằng thẻ qua Stripe chưa có ở quốc gia của bạn. Hãy thử tùy chọn Coinbase bên dưới — tùy chọn này hỗ trợ nhiều khu vực hơn.',
+   'Secured by Stripe · delivered on Base': 'Bảo mật bởi Stripe · chuyển trên mạng Base',
 
    // src/views/support/HowCreditLevelsWork.tsx
    'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
@@ -235,6 +239,7 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Nhấn Cho phép khi điện thoại hỏi, để chúng tôi có thể nhắc bạn trước ngày đến hạn.',
    "Couldn't turn on reminders — try again in a moment.": 'Không bật được nhắc nhở — hãy thử lại sau giây lát.',
    "Couldn't start verification — try again in a moment.": 'Không bắt đầu xác minh được — hãy thử lại sau giây lát.',
+   'No code returned': 'Không nhận được mã',
 
    // src/views/help/helpTopics.ts
    "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.":
@@ -359,6 +364,10 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Moodeng team · Zoom': 'Đội ngũ Moodeng · Zoom',
    '· your local time': '· giờ địa phương của bạn',
    '✅ You confirmed — see you there!': '✅ Bạn đã xác nhận — hẹn gặp bạn nhé!',
+   "Want us to take another look? Reach out again and tell us what's changed.":
+      'Muốn chúng tôi xem xét lại? Hãy liên hệ lại và cho chúng tôi biết điều gì đã thay đổi.',
+   'No worries — life happens. Pick a new time for your 15-min call':
+      'Đừng lo — chuyện này vẫn thường xảy ra. Hãy chọn giờ mới cho cuộc gọi 15 phút của bạn',
 
    // src/views/dashboard/components/LoanRequestModal.tsx
    'Freelance, gig work, self-employed, or contract': 'Làm tự do, việc thời vụ, tự kinh doanh hoặc theo hợp đồng',
@@ -514,6 +523,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Bridge failed. Please try again.': 'Bắc cầu không thành công. Vui lòng thử lại.',
    'No route available for this amount.': 'Không có tuyến chuyển nào cho số tiền này.',
    'Unsupported source chain.': 'Chuỗi nguồn không được hỗ trợ.',
+   'Live quote · Powered by': 'Báo giá trực tiếp · Cung cấp bởi',
 
    // src/views/withdraw/Withdraw.tsx
    '(est.)': '(ước tính)',
@@ -705,6 +715,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Email not found': 'Không tìm thấy email',
    'Incorrect credentials': 'Thông tin đăng nhập không đúng',
    OR: 'HOẶC',
+   "Don't have an account?": 'Chưa có tài khoản?',
 
    // src/views/signup/SignUpPage.tsx
    'Account already exists': 'Tài khoản đã tồn tại',
@@ -1266,5 +1277,105 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Telegram username is required': 'Vui lòng nhập tên người dùng Telegram',
    'Telegram username must be between 5 and 32 characters': 'Tên người dùng Telegram phải có từ 5 đến 32 ký tự',
    'Telegram username can only contain letters, numbers, and underscores':
-      'Tên người dùng Telegram chỉ được chứa chữ cái, số và dấu gạch dưới'
+      'Tên người dùng Telegram chỉ được chứa chữ cái, số và dấu gạch dưới',
+
+   // src/components/TelegramAuthButton.tsx
+   'Loading Telegram...': 'Đang tải Telegram...',
+
+   // src/components/tables/DataTable.tsx
+   'No data available': 'Không có dữ liệu',
+
+   // src/components/auth/AuthInputField.tsx
+   'Hide password': 'Ẩn mật khẩu',
+   'Show password': 'Hiện mật khẩu',
+
+   // src/components/LineLoginButton.tsx
+   'Sign Up with LINE': 'Đăng ký bằng LINE',
+   'Sign In with LINE': 'Đăng nhập bằng LINE',
+
+   // src/components/ExpiredLoanRequestNotifier.tsx
+   'Loan request expired': 'Yêu cầu vay đã hết hạn',
+   'Loan requests expired': 'Các yêu cầu vay đã hết hạn',
+
+   // src/components/ThemeToggle.tsx
+   'Switch to light mode': 'Chuyển sang chế độ sáng',
+   'Switch to dark mode': 'Chuyển sang chế độ tối',
+
+   // src/components/support/LiveChatHost.tsx
+   'Message from Moodeng Support': 'Tin nhắn từ bộ phận hỗ trợ Moodeng',
+   'The team replied to your chat. Tap to read it.': 'Đội ngũ đã trả lời cuộc trò chuyện của bạn. Nhấn để đọc.',
+   'Open chat': 'Mở trò chuyện',
+
+   // src/components/worldId/useWorldIdVerification.ts
+   'You must be logged in to verify your World ID.': 'Bạn cần đăng nhập để xác minh World ID.',
+   'World ID verification was accepted, but the account status did not update.':
+      'Xác minh World ID đã được chấp nhận, nhưng trạng thái tài khoản chưa được cập nhật.',
+   'Failed to prepare World ID verification.': 'Không chuẩn bị được bước xác minh World ID.',
+   'Verification failed.': 'Xác minh không thành công.',
+
+   // src/config/stripeOnrampConfig.ts
+   'US (excl. Hawaii) and EU only': 'Chỉ Mỹ (trừ Hawaii) và EU',
+
+   // src/constants/errorMessages.ts
+   'We encountered an unexpected error. Please try again or contact support if the problem persists.':
+      'Đã xảy ra lỗi ngoài dự kiến. Vui lòng thử lại hoặc liên hệ bộ phận hỗ trợ nếu sự cố vẫn tiếp diễn.',
+   'Go to Dashboard': 'Đến trang Tổng quan',
+
+   // src/views/transactions/TransactionHistory.tsx
+   'Awaiting lender': 'Đang chờ người cho vay',
+
+   // src/views/profile/components/tabs/useDashboardData.ts
+   'Verify World ID to start borrowing': 'Xác minh World ID để bắt đầu vay',
+
+   // src/views/profile/config/transactionColumns.tsx
+   'All Transaction': 'Tất cả giao dịch',
+   'Returned Amount': 'Số tiền đã hoàn trả',
+   'Date Returned': 'Ngày hoàn trả',
+
+   // src/views/account/Account.tsx
+   'Read the full guide': 'Đọc toàn bộ hướng dẫn',
+
+   // src/views/account/BaseNetworkSheet.tsx
+   'Base is an Ethereum "layer 2" built by Coinbase. Loans fund and repayments settle in seconds for a fraction of a cent — so more of every peso reaches the person, not the network.':
+      'Base là mạng "layer 2" của Ethereum do Coinbase xây dựng. Khoản vay được cấp vốn và khoản trả nợ hoàn tất chỉ trong vài giây với chi phí chưa tới một xu — nên từng đồng peso đến tay người nhận nhiều hơn, thay vì mất vào phí mạng.',
+
+   // src/views/creditLevelingGuide/CreditLevelingGuide.tsx
+   'Credit leveling guide progress': 'Tiến độ đọc hướng dẫn nâng hạng tín dụng',
+
+   // src/views/repay/Repay.tsx
+   'Pay now': 'Trả ngay',
+   'Connect and pay': 'Kết nối và trả',
+
+   // src/views/support/PublicGuidesIndex.tsx
+   'Moodeng Academy — Guides': 'Moodeng Academy — Hướng dẫn',
+   'Plain-language guides to borrowing on Moodeng Credit: Credit Levels, Pandesal points, USDC loans, repayments, verification, and account security.':
+      'Hướng dẫn dễ hiểu về việc vay trên Moodeng Credit: Hạng tín dụng, điểm Pandesal, khoản vay USDC, trả nợ, xác minh và bảo mật tài khoản.',
+
+   // src/views/support/PublicGuide.tsx
+   'By the Moodeng Team · Updated': 'Bởi đội ngũ Moodeng · Cập nhật',
+
+   // src/views/login/components/FormFooter.tsx
+   'By creating an account, you agree to our Terms and Privacy Policy':
+      'Khi tạo tài khoản, bạn đồng ý với Điều khoản và Chính sách quyền riêng tư của chúng tôi',
+   'By signing in you agree to our Terms and Privacy Policy':
+      'Khi đăng nhập, bạn đồng ý với Điều khoản và Chính sách quyền riêng tư của chúng tôi',
+
+   // src/views/borrowerBenefits/BorrowerBenefits.tsx
+   'Borrower benefits reading progress': 'Tiến độ đọc lợi ích cho người vay',
+
+   // src/views/lenderBenefits/LenderBenefits.tsx
+   'Why Lend reading progress': 'Tiến độ đọc phần Vì sao nên cho vay',
+
+   // src/views/help/HelpTopicCard.tsx
+   'Help hub': 'Trung tâm trợ giúp',
+
+   // src/views/onboarding/WalletConnectHelp.tsx
+   'Seeing a “connection is not private” warning?': 'Thấy cảnh báo “kết nối không riêng tư”?',
+
+   // src/views/dashboard/components/LocationPrimingModal.tsx
+   "We check your location to keep lending safe and catch fraud. It's only used to verify your request — never shared with lenders.":
+      'Chúng tôi kiểm tra vị trí của bạn để giữ an toàn cho việc cho vay và phát hiện gian lận. Thông tin này chỉ dùng để xác minh yêu cầu của bạn — không bao giờ được chia sẻ với người cho vay.',
+
+   // src/views/dashboard/components/UserGreeting.tsx
+   'Verify Yourself >': 'Xác minh danh tính >'
 };
