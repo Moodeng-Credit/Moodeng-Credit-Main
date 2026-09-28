@@ -25,7 +25,7 @@ const HOSTS = [
 
 const CAL_BASE = 'https://api.cal.com/v2';
 const SCHEDULES_VERSION = '2024-06-11';
-const BOOKINGS_VERSION = '2024-08-13';
+const BOOKINGS_VERSION = '2026-05-01';
 
 const CORS = {
    'Access-Control-Allow-Origin': '*',
@@ -61,11 +61,14 @@ type Booking = {
 
 const asUrl = (value: unknown) => (typeof value === 'string' && /^https?:\/\//.test(value) ? value : null);
 
-// Bookings in [from, to), cancelled and rejected ones dropped. Pages through with take/skip.
+// Bookings in [from, to), cancelled and rejected ones dropped. Cursor pagination per the
+// 2026-05-01 bookings API; capped at 10 pages (1000 bookings) as a safety bound.
 const fetchBookings = async (apiKey: string, from: string, to: string): Promise<Booking[]> => {
    const out: Booking[] = [];
-   for (let skip = 0; skip < 500; skip += 100) {
-      const qs = new URLSearchParams({ afterStart: from, beforeEnd: to, sortStart: 'asc', take: '100', skip: String(skip) });
+   let cursor: string | null = null;
+   for (let page = 0; page < 10; page++) {
+      const qs = new URLSearchParams({ afterStart: from, beforeEnd: to, sortStart: 'asc', limit: '100' });
+      if (cursor) qs.set('cursor', cursor);
       const body = await calFetch(apiKey, `/bookings?${qs}`, BOOKINGS_VERSION);
       const rows = Array.isArray(body?.data) ? body.data : [];
       for (const b of rows) {
@@ -86,7 +89,8 @@ const fetchBookings = async (apiKey: string, from: string, to: string): Promise<
             }))
          });
       }
-      if (rows.length < 100) break;
+      cursor = typeof body?.pagination?.nextCursor === 'string' ? body.pagination.nextCursor : null;
+      if (!cursor || body?.pagination?.hasMore === false || rows.length === 0) break;
    }
    return out;
 };
