@@ -406,5 +406,33 @@ export const filipinoCoverageA: Record<string, string> = {
    'Power Lender': 'Power Lender',
 
    // src/components/UserPay.tsx
-   Stablecoin: 'Stablecoin'
+   Stablecoin: 'Stablecoin',
+
+   // src/components/filters/DatePicker.tsx
+   Clear: 'I-clear',
+   Today: 'Ngayon',
+   'Pick a date...': 'Pumili ng petsa...',
+
+   // src/components/filters/FilterSidebar.tsx
+   Filters: 'Mga Filter',
+   'Close filters': 'Isara ang mga filter',
+   'Swipe right to close filters': 'I-swipe pakanan para isara ang mga filter',
+   'Payback is the total amount the borrower agrees to return. This filters the extra payback above the loan principal. Example: a $10 loan with a $13 payback is 30%.':
+      'Ang payback ang kabuuang halagang sinang-ayunan ng borrower na ibalik. Fine-filter nito ang extra na payback sa itaas ng loan principal. Halimbawa: ang $10 na loan na may $13 na payback ay 30%.',
+   'Repayment Date': 'Petsa ng Pagbabayad',
+   'Borrow Type': 'Uri ng Paghiram',
+
+   // src/components/filters/SortButtons.tsx
+   Lowest: 'Pinakamababa',
+   Highest: 'Pinakamataas',
+   Oldest: 'Pinakaluma',
+   Newest: 'Pinakabago',
+
+   // src/components/marketing/MarketingPageShell.tsx
+   'Open App': 'Buksan ang App',
+   App: 'App',
+   Academy: 'Academy',
+   'Benefits navigation': 'Menu ng mga benepisyo',
+   'Toggle benefits menu': 'I-toggle ang menu ng mga benepisyo',
+   'Mobile benefits navigation': 'Mobile na menu ng mga benepisyo'
 };
