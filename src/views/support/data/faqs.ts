@@ -402,11 +402,11 @@ Bạn bắt đầu ở Hạng 1 với hạn mức $15. Mỗi lần trả đủ m
    {
       id: 'what-is-a-base-wallet',
       question: 'Moodeng dùng ví nào?',
-      answer: `Người vay trên Moodeng mặc định dùng Instant Wallet. Đây là ví của chính Moodeng, được tạo ngay từ tài khoản đăng nhập Moodeng của bạn: không cần tải ứng dụng và không phải ghi lại cụm từ khôi phục (seed phrase). Khoản vay sẽ được chuyển vào ví này, và ví hoàn toàn thuộc về bạn — bạn có thể xuất khóa riêng (private key) bất cứ lúc nào.
+      answer: `Người vay trên Moodeng mặc định dùng Instant Wallet. Đây là ví của chính Moodeng, được tạo ngay từ tài khoản đăng nhập Moodeng của bạn: không cần tải ứng dụng và không phải ghi lại cụm từ khôi phục (seed phrase). Khoản vay sẽ được chuyển vào ví này, và ví hoàn toàn thuộc về bạn — bạn có thể xuất khóa riêng tư (private key) bất cứ lúc nào.
 
 Instant Wallet chạy trên Base, một mạng blockchain Layer 2 do Coinbase xây dựng, được thiết kế cho các giao dịch crypto nhanh, rẻ và an toàn. Moodeng dùng Base vì một lý do quan trọng: giao dịch USDC không mất phí gas. Gửi hoặc nhận USDC bằng Instant Wallet hoặc Base Account trên Base không tốn bất kỳ phí mạng nào. Khi bạn nhận khoản vay, toàn bộ số tiền sẽ vào ví của bạn. Khi bạn trả nợ, người cho vay nhận lại đủ từng xu.
 
-Bạn thích dùng Base Account hơn? Bạn có thể kết nối Base Account thay cho Instant Wallet. Base Account là ví thông minh của ứng dụng Base — cũng không cần mật khẩu và không có seed phrase, nên bạn đăng nhập bằng email hoặc khóa truy cập (passkey) và không có cụm từ khôi phục 12 từ nào có thể bị mất. Với người cho vay, chúng tôi khuyến nghị dùng Base Account. Người cho vay cũng có thể dùng Instant Wallet hoặc kết nối ví khác (như MetaMask) — Instant Wallet và Base Account giúp giao dịch không mất phí gas.`
+Bạn thích dùng Base Account hơn? Bạn có thể kết nối Base Account thay cho Instant Wallet. Base Account là ví thông minh của ứng dụng Base — cũng không cần mật khẩu và không dùng cụm từ khôi phục (seedless), nên bạn đăng nhập bằng email hoặc khóa truy cập (passkey) và không có cụm từ khôi phục 12 từ nào có thể bị mất. Với người cho vay, chúng tôi khuyến nghị dùng Base Account. Người cho vay cũng có thể dùng Instant Wallet hoặc kết nối ví khác (như MetaMask) — Instant Wallet và Base Account giúp giao dịch không mất phí gas.`
    },
    {
       id: 'what-is-usdc',
@@ -424,7 +424,7 @@ USDC còn có thể chuyển đến bất kỳ đâu trên thế giới chỉ tr
 
 Phí mạng (gas) cũng bằng 0 khi bạn dùng Instant Wallet hoặc Base Account trên Base. Vì vậy, chi phí duy nhất khi dùng Moodeng là lãi suất mà người vay đề xuất — và khoản đó thuộc hoàn toàn về người cho vay, không phải chúng tôi.
 
-Làm sao chúng tôi duy trì miễn phí? Chúng tôi không thu bất kỳ khoản phần trăm nào. Mô hình kinh doanh tương lai của chúng tôi là token IOU, sẽ được ra mắt qua hình thức airdrop cho những người cho vay tích cực. Cho đến lúc đó, Moodeng hoàn toàn miễn phí.`
+Làm sao chúng tôi duy trì miễn phí? Chúng tôi không trích bất kỳ khoản nào. Mô hình kinh doanh tương lai của chúng tôi là token IOU, sẽ được ra mắt qua hình thức airdrop cho những người cho vay tích cực. Cho đến lúc đó, Moodeng hoàn toàn miễn phí.`
    },
    {
       id: 'fight-loan-sharks',
