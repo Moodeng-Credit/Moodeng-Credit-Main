@@ -527,5 +527,50 @@ export const indonesianCoverageE: Record<string, string> = {
    "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.":
       'Moodeng sendiri tidak memungut biaya ($0) — satu-satunya biaya adalah biaya konversi di exchange. Coins.ph adalah rute termurah yang kami temukan di Filipina: sekitar 0.70% untuk satu kali pulang-pergi. Untuk pinjaman $15 yang dicairkan lalu dibayar kembali, total biayanya lewat Coins.ph kira-kira ₱6.50 (sekitar $0.10) — biaya trading kecil di tiap arah, pencairan ke bank lewat PESONet yang gratis, dan biaya jaringan yang sangat kecil. Kalau ingin pesonya masuk seketika, InstaPay menambah biaya tetap ₱5 (pulang-pergi ≈ ₱11.50, sekitar $0.19). Layanan lain menyelipkan margin mereka di kurs, jadi biasanya lebih mahal.',
    'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.':
-      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman senilai seluruh limitmu saat ini — membayarnya tepat waktu akan menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman apa pun yang lebih kecil dari limitmu; pinjaman ini tetap menambah riwayat pembayaran kembali dan reputasimu di mata pemberi pinjaman, tapi tidak menaikkan Level Kredit kamu. Sebagian besar peminjam memakai keduanya — Trust-Building Loan agar riwayat pembayaran kembali tetap aktif, Credit-Building Loan untuk menaikkan limit.'
+      'Ada dua jenis pinjaman. Credit-Building Loan adalah pinjaman senilai seluruh limitmu saat ini — membayarnya tepat waktu akan menaikkan limitmu dan membuka level berikutnya. Trust-Building Loan adalah pinjaman apa pun yang lebih kecil dari limitmu; pinjaman ini tetap menambah riwayat pembayaran kembali dan reputasimu di mata pemberi pinjaman, tapi tidak menaikkan Level Kredit kamu. Sebagian besar peminjam memakai keduanya — Trust-Building Loan agar riwayat pembayaran kembali tetap aktif, Credit-Building Loan untuk menaikkan limit.',
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'Getting World ID ready...': 'Menyiapkan World ID...',
+   'Continue in World App': 'Lanjutkan di World App',
+   "World ID didn't open?": 'World ID tidak terbuka?',
+   'Opening World ID...': 'Membuka World ID...',
+   'One moment — setting up your secure verification.': 'Tunggu sebentar — kami sedang menyiapkan verifikasi amanmu.',
+   'Everything is ready. Tap "Open World App" to verify you. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Semua sudah siap. Ketuk "Buka World App" untuk memverifikasi dirimu. Kalau belum punya World App, kamu akan dipandu untuk memasangnya — lalu kembali ke sini untuk menyelesaikan.',
+   'Everything is ready. Tap "Open World App" to verify your passport or ID. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Semua sudah siap. Ketuk "Buka World App" untuk memverifikasi paspor atau KTP kamu. Kalau belum punya World App, kamu akan dipandu untuk memasangnya — lalu kembali ke sini untuk menyelesaikan.',
+   'Tap "Open World ID" to launch World App. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Ketuk "Buka World ID" untuk membuka World App. Kalau belum punya World App, kamu akan dipandu untuk memasangnya — lalu kembali ke sini untuk menyelesaikan.',
+   "World App will open to verify you. Keep this screen open — you'll come back here to finish.":
+      'World App akan terbuka untuk memverifikasi dirimu. Biarkan layar ini tetap terbuka — kamu akan kembali ke sini untuk menyelesaikan.',
+   "World App will open to verify your passport or ID. Keep this screen open — you'll come back here to finish.":
+      'World App akan terbuka untuk memverifikasi paspor atau KTP kamu. Biarkan layar ini tetap terbuka — kamu akan kembali ke sini untuk menyelesaikan.',
+   'Open World App': 'Buka World App',
+   'Open World ID': 'Buka World ID',
+   'Still verifying your World ID': 'Masih memverifikasi World ID kamu',
+   'Verifying your World ID': 'Memverifikasi World ID kamu',
+   'Verification Successful': 'Verifikasi berhasil',
+   'Verification is taking too long': 'Verifikasi memakan waktu terlalu lama',
+   'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.':
+      'Ini lebih lama dari biasanya. Biarkan layar ini tetap terbuka selagi Moodeng menyelesaikan sinkronisasi.',
+   'This usually takes less than 10 seconds. Keep this screen open.': 'Biasanya kurang dari 10 detik. Biarkan layar ini tetap terbuka.',
+   'Your World ID is linked to Moodeng.': 'World ID kamu sudah tertaut ke Moodeng.',
+   'Please try again or return to the previous step.': 'Silakan coba lagi atau kembali ke langkah sebelumnya.',
+   'Verification complete': 'Verifikasi selesai',
+   'Verification interrupted': 'Verifikasi terputus',
+   'Finalizing verification': 'Menyelesaikan verifikasi',
+   'Confirming verification': 'Mengonfirmasi verifikasi',
+   'Your status has been updated securely.': 'Statusmu sudah diperbarui dengan aman.',
+   'The verification did not finish. Try again when you are ready.': 'Verifikasi belum selesai. Coba lagi saat kamu siap.',
+   'Your verification is being processed securely.': 'Verifikasimu sedang diproses dengan aman.',
+   'Need help verifying?': 'Butuh bantuan verifikasi?',
+   'If World ID finished but Moodeng did not update, choose a support channel.':
+      'Jika World ID sudah selesai tapi Moodeng belum diperbarui, pilih salah satu saluran dukungan.',
+   'No further action is needed.': 'Tidak perlu melakukan apa-apa lagi.',
+   'Your verification status is protected.': 'Status verifikasimu terlindungi.',
+
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'World ID Verification': 'Verifikasi World ID',
+   'World ID Already Linked': 'World ID sudah tertaut',
+   'Your World ID got verified already and connected to one existing account. Moodeng didn’t allow another account to be verified with the same World ID.':
+      'World ID kamu sudah terverifikasi dan tertaut ke satu akun yang ada. Moodeng tidak mengizinkan akun lain diverifikasi dengan World ID yang sama.'
 };

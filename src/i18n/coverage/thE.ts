@@ -287,5 +287,50 @@ export const thaiCoverageE: Record<string, string> = {
    // src/components/worldId/modal/VerificationModalHeader.tsx
    'View information': 'ดูข้อมูล',
    "Verify You're Human": 'ยืนยันว่าคุณเป็นมนุษย์',
-   "Prove you're a real person with World ID": 'พิสูจน์ว่าคุณเป็นบุคคลจริงด้วย World ID'
+   "Prove you're a real person with World ID": 'พิสูจน์ว่าคุณเป็นบุคคลจริงด้วย World ID',
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'Getting World ID ready...': 'กำลังเตรียม World ID...',
+   'Continue in World App': 'ดำเนินการต่อใน World App',
+   "World ID didn't open?": 'World ID ไม่เปิดใช่ไหม',
+   'Opening World ID...': 'กำลังเปิด World ID...',
+   'One moment — setting up your secure verification.': 'รอสักครู่ — กำลังตั้งค่าการยืนยันตัวตนที่ปลอดภัยให้คุณ',
+   'Everything is ready. Tap "Open World App" to verify you. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'ทุกอย่างพร้อมแล้ว แตะ "เปิด World App" เพื่อยืนยันตัวตนของคุณ หากยังไม่มี World App ระบบจะแนะนำให้ติดตั้ง — จากนั้นกลับมาที่นี่เพื่อทำให้เสร็จ',
+   'Everything is ready. Tap "Open World App" to verify your passport or ID. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'ทุกอย่างพร้อมแล้ว แตะ "เปิด World App" เพื่อยืนยันหนังสือเดินทางหรือบัตรประชาชนของคุณ หากยังไม่มี World App ระบบจะแนะนำให้ติดตั้ง — จากนั้นกลับมาที่นี่เพื่อทำให้เสร็จ',
+   'Tap "Open World ID" to launch World App. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'แตะ "เปิด World ID" เพื่อเปิด World App หากยังไม่มี World App ระบบจะแนะนำให้ติดตั้ง — จากนั้นกลับมาที่นี่เพื่อทำให้เสร็จ',
+   "World App will open to verify you. Keep this screen open — you'll come back here to finish.":
+      'World App จะเปิดขึ้นเพื่อยืนยันตัวตนของคุณ เปิดหน้าจอนี้ค้างไว้ — คุณจะกลับมาที่นี่เพื่อทำให้เสร็จ',
+   "World App will open to verify your passport or ID. Keep this screen open — you'll come back here to finish.":
+      'World App จะเปิดขึ้นเพื่อยืนยันหนังสือเดินทางหรือบัตรประชาชนของคุณ เปิดหน้าจอนี้ค้างไว้ — คุณจะกลับมาที่นี่เพื่อทำให้เสร็จ',
+   'Open World App': 'เปิด World App',
+   'Open World ID': 'เปิด World ID',
+   'Still verifying your World ID': 'ยังคงยืนยัน World ID ของคุณอยู่',
+   'Verifying your World ID': 'กำลังยืนยัน World ID ของคุณ',
+   'Verification Successful': 'ยืนยันตัวตนสำเร็จ',
+   'Verification is taking too long': 'การยืนยันตัวตนใช้เวลานานเกินไป',
+   'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.':
+      'ครั้งนี้ใช้เวลานานกว่าปกติ เปิดหน้าจอนี้ค้างไว้ระหว่างที่ Moodeng ซิงค์ข้อมูลให้เสร็จ',
+   'This usually takes less than 10 seconds. Keep this screen open.': 'ปกติใช้เวลาไม่ถึง 10 วินาที เปิดหน้าจอนี้ค้างไว้',
+   'Your World ID is linked to Moodeng.': 'World ID ของคุณเชื่อมโยงกับ Moodeng แล้ว',
+   'Please try again or return to the previous step.': 'โปรดลองอีกครั้ง หรือกลับไปยังขั้นตอนก่อนหน้า',
+   'Verification complete': 'ยืนยันตัวตนเสร็จแล้ว',
+   'Verification interrupted': 'การยืนยันตัวตนหยุดชะงัก',
+   'Finalizing verification': 'กำลังดำเนินการยืนยันตัวตนขั้นสุดท้าย',
+   'Confirming verification': 'กำลังตรวจสอบผลการยืนยันตัวตน',
+   'Your status has been updated securely.': 'อัปเดตสถานะของคุณอย่างปลอดภัยแล้ว',
+   'The verification did not finish. Try again when you are ready.': 'การยืนยันตัวตนยังไม่เสร็จ ลองอีกครั้งเมื่อคุณพร้อม',
+   'Your verification is being processed securely.': 'กำลังดำเนินการยืนยันตัวตนของคุณอย่างปลอดภัย',
+   'Need help verifying?': 'ต้องการความช่วยเหลือในการยืนยันตัวตนใช่ไหม',
+   'If World ID finished but Moodeng did not update, choose a support channel.':
+      'หาก World ID ทำเสร็จแล้วแต่ Moodeng ยังไม่อัปเดต ให้เลือกช่องทางติดต่อฝ่ายช่วยเหลือ',
+   'No further action is needed.': 'คุณไม่ต้องทำอะไรเพิ่มเติม',
+   'Your verification status is protected.': 'สถานะการยืนยันตัวตนของคุณได้รับการปกป้อง',
+
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'World ID Verification': 'การยืนยันด้วย World ID',
+   'World ID Already Linked': 'World ID นี้เชื่อมโยงแล้ว',
+   'Your World ID got verified already and connected to one existing account. Moodeng didn’t allow another account to be verified with the same World ID.':
+      'World ID ของคุณได้รับการยืนยันและเชื่อมโยงกับบัญชีที่มีอยู่แล้วหนึ่งบัญชี Moodeng ไม่อนุญาตให้ยืนยันบัญชีอื่นด้วย World ID เดียวกัน'
 };
