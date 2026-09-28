@@ -526,4 +526,195 @@ export const vietnameseCoverageA: Record<string, string> = {
    Highest: 'Cao nhất',
    Oldest: 'Cũ nhất',
    Newest: 'Mới nhất',
+   // src/components/marketing/MarketingPageShell.tsx
+   'Open App': 'Mở ứng dụng',
+   'Benefits navigation': 'Điều hướng trang lợi ích',
+   'Toggle benefits menu': 'Mở/đóng menu lợi ích',
+   'Mobile benefits navigation': 'Điều hướng trang lợi ích trên di động',
+   'Small USDC loans, World ID verification, and portable repayment history for borrowers building credit abroad.':
+      'Khoản vay USDC nhỏ, xác minh bằng World ID và lịch sử trả nợ có thể mang theo, dành cho người vay đang xây dựng tín dụng ở nước ngoài.',
+   'Read docs': 'Đọc tài liệu',
+   // src/components/mecha/stepContext.ts
+   'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.':
+      'Đang thiết lập ví? Instant Wallet của bạn được tạo từ tài khoản đăng nhập Moodeng — không cần tải ứng dụng nào. Mình có thể hướng dẫn bạn từng bước.',
+   'What is the Instant Wallet?': 'Instant Wallet là gì?',
+   'Can I use a Base Account instead?': 'Tôi có thể dùng Base Account thay thế không?',
+   'My wallet won’t connect': 'Ví của tôi không kết nối được',
+   'Stuck on verifying? I can walk you through it.': 'Bị kẹt ở bước xác minh? Mình có thể hướng dẫn bạn từng bước.',
+   'How do I verify my ID?': 'Làm sao để xác minh giấy tờ tùy thân?',
+   'My verification is stuck': 'Quá trình xác minh của tôi bị kẹt',
+   'What is World ID?': 'World ID là gì?',
+   'How do I repay?': 'Làm sao để trả nợ?',
+   'Where do I buy USDC?': 'Mua USDC ở đâu?',
+   'What network do I use?': 'Tôi dùng mạng nào?',
+   'How do I cash out to GCash?': 'Làm sao để rút tiền về GCash?',
+   'How do I withdraw to my bank?': 'Làm sao để rút tiền về ngân hàng?',
+   'Which network do I pick?': 'Tôi nên chọn mạng nào?',
+   'How do I request a loan?': 'Làm sao để yêu cầu khoản vay?',
+   'How does funding work?': 'Việc cấp vốn hoạt động thế nào?',
+   'What are Pandesal points?': 'Điểm Pandesal là gì?',
+   'How do I increase my credit limit?': 'Làm sao để tăng hạn mức tín dụng?',
+   'How do I get verified?': 'Làm sao để được xác minh?',
+   'How do I cash out?': 'Làm sao để rút ra tiền mặt?',
+   'How do I get started?': 'Làm sao để bắt đầu?',
+   'What do I need to borrow?': 'Tôi cần gì để vay?',
+   'Is Moodeng legit?': 'Moodeng có đáng tin không?',
+   // src/components/support/SupportContactsModal.tsx
+   'Support contacts': 'Kênh hỗ trợ',
+   'Here are support contacts. Choose a channel and we will help you with your Moodeng account.':
+      'Đây là các kênh hỗ trợ. Hãy chọn một kênh và chúng tôi sẽ giúp bạn với tài khoản Moodeng.',
+   'Here are support contacts for your expired loan request. We can help you connect with a lender or decide whether to post again.':
+      'Đây là các kênh hỗ trợ cho yêu cầu vay đã hết hạn của bạn. Chúng tôi có thể giúp bạn kết nối với người cho vay hoặc quyết định có đăng lại hay không.',
+   'Here are support contacts for World ID verification if your status did not update after completing World ID.':
+      'Đây là các kênh hỗ trợ xác minh World ID, nếu trạng thái của bạn chưa cập nhật sau khi hoàn tất World ID.',
+   'Close support contacts': 'Đóng kênh hỗ trợ',
+   'Contact us via': 'Liên hệ với chúng tôi qua',
+   'Live chat': 'Chat trực tuyến',
+   'Fastest — we reply here and by email': 'Nhanh nhất — chúng tôi trả lời tại đây và qua email',
+   // src/components/ui/Modal.tsx
+   'Close modal': 'Đóng cửa sổ',
+   // src/components/ui/YouTubeVideoLightbox.tsx
+   'Credit Levelling Guide': 'Hướng dẫn lên hạng tín dụng',
+   // src/components/verification/CountryFlags.tsx
+   Vietnam: 'Việt Nam',
+   Taiwan: 'Đài Loan',
+   'South Korea': 'Hàn Quốc',
+   Philippines: 'Philippines',
+   Malaysia: 'Malaysia',
+   Japan: 'Nhật Bản',
+   Indonesia: 'Indonesia',
+   Thailand: 'Thái Lan',
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   Verification: 'Xác minh',
+   'Verification didn’t go through': 'Xác minh chưa thành công',
+   'We weren’t able to verify you with': 'Lần này chúng tôi chưa thể xác minh bạn bằng',
+   'your ID': 'giấy tờ tùy thân',
+   'this time. No worries — you can try again whenever you’re ready.': '. Đừng lo — bạn có thể thử lại bất cứ khi nào sẵn sàng.',
+   'or get help from our team': 'hoặc nhờ đội ngũ của chúng tôi hỗ trợ',
+   // src/components/verification/VerifiedCelebrationNotifier.tsx
+   'Manual review complete — you’re verified!': 'Đã xét duyệt thủ công xong — bạn đã được xác minh!',
+   'Your ID is verified!': 'Giấy tờ tùy thân của bạn đã được xác minh!',
+   'Well done! Our reviewers confirmed your documents. You now have full access — start building trust with lenders.':
+      'Tuyệt vời! Đội ngũ xét duyệt đã xác nhận giấy tờ của bạn. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với người cho vay.',
+   'Well done! Your identity is confirmed. You now have full access — start building trust with lenders.':
+      'Tuyệt vời! Danh tính của bạn đã được xác nhận. Giờ bạn đã có toàn quyền truy cập — hãy bắt đầu xây dựng niềm tin với người cho vay.',
+   'Request a loan': 'Yêu cầu khoản vay',
+   // src/components/verification/VerifyYourselfModal.tsx
+   '🇺🇸 United States': '🇺🇸 Hoa Kỳ',
+   '🇬🇧 United Kingdom': '🇬🇧 Vương quốc Anh',
+   '🇯🇵 Japan': '🇯🇵 Nhật Bản',
+   '🇰🇷 South Korea': '🇰🇷 Hàn Quốc',
+   '🇹🇼 Taiwan': '🇹🇼 Đài Loan',
+   '🇲🇽 Mexico': '🇲🇽 Mexico',
+   '🇨🇷 Costa Rica': '🇨🇷 Costa Rica',
+   '🇨🇴 Colombia': '🇨🇴 Colombia',
+   '🇸🇬 Singapore': '🇸🇬 Singapore',
+   '🇹🇭 Thailand': '🇹🇭 Thái Lan',
+   '🇩🇪 Germany': '🇩🇪 Đức',
+   '🇦🇹 Austria': '🇦🇹 Áo',
+   '🇵🇱 Poland': '🇵🇱 Ba Lan',
+   '🇪🇨 Ecuador': '🇪🇨 Ecuador',
+   '🇵🇪 Peru': '🇵🇪 Peru',
+   '🇧🇷 Brazil': '🇧🇷 Brazil',
+   '🇨🇱 Chile': '🇨🇱 Chile',
+   '🇦🇷 Argentina': '🇦🇷 Argentina',
+   'World ID Passport': 'Hộ chiếu World ID',
+   'Verify by scanning your passport with your phone in the World App — no Orb visit needed. You need an':
+      'Xác minh bằng cách quét hộ chiếu với điện thoại trong World App — không cần đến Orb. Bạn cần có',
+   'NFC-enabled (biometric) passport': 'hộ chiếu có chip NFC (sinh trắc học)',
+   'from one of these countries, and you must currently be in one of them:': 'do một trong các quốc gia sau cấp, và hiện bạn phải đang ở một trong các quốc gia đó:',
+   'Look for the chip symbol on your passport cover. You’ll also need a phone with NFC (most modern phones) and the World App installed.':
+      'Hãy tìm biểu tượng chip trên bìa hộ chiếu. Bạn cũng cần một điện thoại có NFC (hầu hết điện thoại hiện đại đều có) và đã cài World App.',
+   'I’m eligible — Continue': 'Tôi đủ điều kiện — Tiếp tục',
+   'Get the World App': 'Tải World App',
+   'Need help with this step?': 'Cần hỗ trợ ở bước này?',
+   'World ID is verified in person at an Orb — a physical device available only in certain countries — or with a passport scan in the World App. Pick the option that matches you.':
+      'World ID được xác minh trực tiếp tại Orb — một thiết bị vật lý chỉ có ở một số quốc gia — hoặc bằng cách quét hộ chiếu trong World App. Hãy chọn cách phù hợp với bạn.',
+   'I’ve been verified at an Orb': 'Tôi đã được xác minh tại Orb',
+   'I’ll verify with my passport': 'Tôi sẽ xác minh bằng hộ chiếu',
+   'New to World ID?': 'Mới dùng World ID?',
+   '1. Download the World App': '1. Tải World App',
+   '2. Find an Orb near you': '2. Tìm Orb gần bạn',
+   'Countries with Orb locations': 'Các quốc gia có điểm đặt Orb',
+   'Availability changes —': 'Địa điểm có thể thay đổi —',
+   'check the live map': 'xem bản đồ trực tuyến',
+   'for exact locations.': 'để biết vị trí chính xác.',
+   'Back to verification options': 'Quay lại các cách xác minh',
+   'Verify Yourself': 'Xác minh danh tính',
+   'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
+      'Xác nhận danh tính để mở khóa tài khoản — chỉ kiểm tra một lần, mất khoảng 3 phút.',
+   // src/components/worldId/WorldIDVerificationStatus.tsx
+   "To confirm your identity and show it's really you, we use World ID. This helps keep our community safe, avoids bots, and builds trust for borrowers.":
+      'Để xác nhận danh tính và chứng minh đúng là bạn, chúng tôi sử dụng World ID. Điều này giúp giữ cộng đồng an toàn, ngăn bot và xây dựng niềm tin cho người vay.',
+   'Human Verified with World ID': 'Đã xác minh là người thật bằng World ID',
+   // src/components/worldId/WorldIdVerificationOverlays.tsx
+   'Getting World ID ready...': 'Đang chuẩn bị World ID...',
+   'Continue in World App': 'Tiếp tục trong World App',
+   "World ID didn't open?": 'World ID chưa mở?',
+   'Opening World ID...': 'Đang mở World ID...',
+   'One moment — setting up your secure verification.': 'Chờ một chút — đang thiết lập bước xác minh bảo mật cho bạn.',
+   'Everything is ready. Tap "Open World App" to verify you. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Mọi thứ đã sẵn sàng. Bấm "Mở World App" để xác minh bạn. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
+   'Everything is ready. Tap "Open World App" to verify your passport or ID. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Mọi thứ đã sẵn sàng. Bấm "Mở World App" để xác minh hộ chiếu hoặc giấy tờ tùy thân. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
+   'Tap "Open World ID" to launch World App. If you don\'t have World App yet, you\'ll be guided to install it — then return here to finish.':
+      'Bấm "Mở World ID" để khởi chạy World App. Nếu bạn chưa có World App, bạn sẽ được hướng dẫn cài đặt — sau đó quay lại đây để hoàn tất.',
+   "World App will open to verify you. Keep this screen open — you'll come back here to finish.":
+      'World App sẽ mở để xác minh bạn. Hãy giữ màn hình này mở — bạn sẽ quay lại đây để hoàn tất.',
+   "World App will open to verify your passport or ID. Keep this screen open — you'll come back here to finish.":
+      'World App sẽ mở để xác minh hộ chiếu hoặc giấy tờ tùy thân của bạn. Hãy giữ màn hình này mở — bạn sẽ quay lại đây để hoàn tất.',
+   'Open World App': 'Mở World App',
+   'Open World ID': 'Mở World ID',
+   'This may take a few seconds.': 'Việc này có thể mất vài giây.',
+   'Still verifying your World ID': 'Vẫn đang xác minh World ID của bạn',
+   'Verifying your World ID': 'Đang xác minh World ID của bạn',
+   'Verification Successful': 'Xác minh thành công',
+   'Verification is taking too long': 'Quá trình xác minh đang mất quá nhiều thời gian',
+   'This is taking longer than usual. Keep this screen open while Moodeng finishes syncing.':
+      'Việc này đang lâu hơn bình thường. Hãy giữ màn hình này mở trong khi Moodeng hoàn tất đồng bộ.',
+   'This usually takes less than 10 seconds. Keep this screen open.': 'Việc này thường mất chưa đến 10 giây. Hãy giữ màn hình này mở.',
+   'Your World ID is linked to Moodeng.': 'World ID của bạn đã được liên kết với Moodeng.',
+   'Please try again or return to the previous step.': 'Vui lòng thử lại hoặc quay lại bước trước.',
+   'Verification complete': 'Đã hoàn tất xác minh',
+   'Verification interrupted': 'Xác minh bị gián đoạn',
+   'Finalizing verification': 'Đang hoàn tất xác minh',
+   'Confirming verification': 'Đang xác nhận xác minh',
+   'Your status has been updated securely.': 'Trạng thái của bạn đã được cập nhật an toàn.',
+   'The verification did not finish. Try again when you are ready.': 'Quá trình xác minh chưa hoàn tất. Hãy thử lại khi bạn sẵn sàng.',
+   'Your verification is being processed securely.': 'Hồ sơ xác minh của bạn đang được xử lý an toàn.',
+   'Need help verifying?': 'Cần hỗ trợ xác minh?',
+   'Close verification help': 'Đóng phần hỗ trợ xác minh',
+   'If World ID finished but Moodeng did not update, choose a support channel.':
+      'Nếu World ID đã hoàn tất nhưng Moodeng chưa cập nhật, hãy chọn một kênh hỗ trợ.',
+   'Keep waiting': 'Tiếp tục chờ',
+   'Verification status': 'Trạng thái xác minh',
+   'No further action is needed.': 'Bạn không cần làm gì thêm.',
+   'Your verification status is protected.': 'Trạng thái xác minh của bạn được bảo vệ.',
+   'Having trouble?': 'Gặp sự cố?',
+   'Still stuck? Contact support': 'Vẫn bị kẹt? Liên hệ hỗ trợ',
+   // src/components/worldId/modal/AlreadyUsedModal.tsx
+   'World ID Verification': 'Xác minh World ID',
+   'World ID Already Linked': 'World ID đã được liên kết',
+   'Your World ID got verified already and connected to one existing account. Moodeng didn’t allow another account to be verified with the same World ID.':
+      'World ID của bạn đã được xác minh và liên kết với một tài khoản hiện có. Moodeng không cho phép xác minh thêm tài khoản khác bằng cùng một World ID.',
+   'Got it': 'Đã hiểu',
+   // src/components/worldId/modal/HowItWorksSection.tsx
+   'How to Verify?': 'Cách xác minh',
+   'Click "Verify with World ID"': 'Bấm "Xác minh bằng World ID"',
+   'Opens the verification modal': 'Mở cửa sổ xác minh',
+   'Scan QR with World App': 'Quét mã QR bằng World App',
+   'Uses your phone camera': 'Dùng camera điện thoại của bạn',
+   'Confirm & Complete': 'Xác nhận và hoàn tất',
+   'Verified instantly': 'Xác minh ngay lập tức',
+   // src/components/worldId/modal/ModalNote.tsx
+   'Note:': 'Lưu ý:',
+   'Privacy-First proof of personhood. Verify without revealing your identity.':
+      'Bằng chứng là người thật, ưu tiên quyền riêng tư. Xác minh mà không tiết lộ danh tính của bạn.',
+   // src/components/worldId/modal/VerificationModalHeader.tsx
+   'View information': 'Xem thông tin',
+   'Verify World ID': 'Xác minh World ID',
+   "Verify You're Human": 'Xác minh bạn là người thật',
+   "Prove you're a real person with World ID": 'Chứng minh bạn là người thật bằng World ID',
+   // src/components/worldId/modal/verificationModalConfig.tsx
+   'After completing verification at Orb': 'Sau khi hoàn tất xác minh tại Orb',
 };
