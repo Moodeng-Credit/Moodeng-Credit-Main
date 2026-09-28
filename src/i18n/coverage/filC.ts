@@ -755,5 +755,80 @@ export const filipinoCoverageC: Record<string, string> = {
       'Mas maliliit na loan na mas mababa sa kasalukuyang limit. Tumutulong itong ipakita na kaya ng borrower na magbayad, pero hindi nito tinataas ang credit level.',
    'Credit-level signal': 'Senyales ng Credit Level',
    'A full-limit loan. If it is repaid successfully, it can unlock the borrower’s next credit level.':
-      'Isang full-limit na loan. Kung matagumpay itong mababayaran, puwede nitong ma-unlock ang susunod na credit level ng borrower.'
+      'Isang full-limit na loan. Kung matagumpay itong mababayaran, puwede nitong ma-unlock ang susunod na credit level ng borrower.',
+
+   // src/views/support/WhyUsdc.tsx
+   'Why we use USDC': 'Bakit ginagamit namin ang USDC',
+   'Every loan on Moodeng is sent and repaid in USDC — a regulated digital dollar pegged 1:1 to the US dollar. Here is what that means, and why it makes small loans faster, cheaper, and safer.':
+      'Lahat ng loan sa Moodeng ay ipinapadala at binabayaran sa USDC — isang regulated na digital dollar na naka-peg 1:1 sa US dollar. Narito kung ano ang ibig sabihin nito, at kung bakit mas mabilis, mas mura, at mas ligtas ang maliliit na loan dahil dito.',
+   'See the definitions': 'Tingnan ang mga kahulugan',
+   'What is USDC?': 'Ano ang USDC?',
+   'USDC (USD Coin) is a': 'Ang USDC (USD Coin) ay isang',
+   'The reasons': 'Ang mga dahilan',
+   'Free transfers, solid technology, real security, and a value that never drifts.':
+      'Libreng transfer, matibay na teknolohiya, tunay na seguridad, at halagang hindi kailanman gumagalaw.',
+   'Where it is used': 'Saan ito ginagamit',
+   'USDC works in two worlds. Here is which is which — and where Moodeng fits.':
+      'Gumagana ang USDC sa dalawang mundo. Narito kung alin ang alin — at kung saan naaangkop ang Moodeng.',
+   'On Moodeng:': 'Sa Moodeng:',
+   Definitions: 'Mga Kahulugan',
+   'The words, in plain English': 'Ang mga salita, sa simpleng paliwanag',
+   'Staking and yield get mixed up a lot — so do payments and DeFi. Here is what each one really means.':
+      'Madalas nalilito ang staking at yield — pati na rin ang payments at DeFi. Narito kung ano talaga ang ibig sabihin ng bawat isa.',
+   'Staking secures a blockchain and pays rewards for doing so — you cannot stake USDC that way. Yield is simply the return for lending or supplying USDC in DeFi. Moodeng does neither: it uses USDC to fund and repay community loans.':
+      'Ang staking ay nagpapatibay ng blockchain at nagbabayad ng rewards dahil dito — hindi mo puwedeng i-stake ang USDC sa ganitong paraan. Ang yield naman ay simpleng return sa pagpapahiram o pagbibigay ng USDC sa DeFi. Wala sa dalawa ang ginagawa ng Moodeng: ginagamit nito ang USDC para pondohan at bayaran ang mga community loan.',
+   'Quick answers to what borrowers ask most about the dollar behind their loans.':
+      'Mabilisang sagot sa mga madalas itanong ng mga borrower tungkol sa dollar sa likod ng loan nila.',
+   'USDC is the money layer under everything you do on Moodeng.': 'Ang USDC ang money layer sa likod ng lahat ng ginagawa mo sa Moodeng.',
+   'Ready to borrow in stable dollars?': 'Handa nang humiram sa stable na dollars?',
+   'Your loan arrives as USDC and you repay in USDC — gasless on Base, and always worth what it says.':
+      'Dumarating ang loan mo bilang USDC at binabayaran mo rin sa USDC — gasless sa Base, at palaging katumbas ng nakasaad na halaga.',
+   'Wallet to wallet': 'Wallet papuntang wallet',
+   'Free transfers, no middleman': 'Libreng transfer, walang middleman',
+   'USDC moves directly between two wallets — no bank in between.':
+      'Direktang gumagalaw ang USDC sa pagitan ng dalawang wallet — walang bangko sa gitna.',
+   'On Base, sending USDC is gasless, so a $20 loan arrives as $20. No wire fees, no cut taken along the way.':
+      'Sa Base, gasless ang pagpapadala ng USDC, kaya dumarating ang $20 loan bilang $20 pa rin. Walang wire fee, walang kaltas sa daan.',
+   Technology: 'Teknolohiya',
+   'Programmable, always-on money': 'Programmable na pera, laging bukas',
+   'USDC is a digital dollar that settles on a blockchain in seconds, 24/7.':
+      'Ang USDC ay digital dollar na nase-settle sa blockchain sa loob ng segundo, 24/7.',
+   'It runs on open networks (Moodeng uses Base) and can move across chains — so value travels as easily as a message.':
+      "Tumatakbo ito sa mga open network (Base ang gamit ng Moodeng) at puwedeng gumalaw sa iba't ibang chain — kaya kasing dali ng pagpapadala ng mensahe ang paglipat ng halaga.",
+   'Regulated and fully backed': 'Regulated at buong sinusuportahan',
+   'Every USDC is backed 1:1 by cash and short-term US Treasuries.':
+      'Bawat USDC ay sinusuportahan nang 1:1 ng cash at short-term US Treasuries.',
+   'Circle, its issuer, publishes independent monthly reserve attestations. Balances are also verifiable on-chain by anyone.':
+      'Naglalathala ang Circle, ang issuer nito, ng independent na buwanang reserve attestations. Ma-verify rin ng kahit sino ang mga balanse on-chain.',
+   Usability: 'Usability',
+   'A dollar that holds its value': 'Isang dollar na hindi nagbabago ang halaga',
+   'One USDC is always worth one dollar, so loan amounts never drift.':
+      'Palaging katumbas ng isang dollar ang isang USDC, kaya hindi kailanman gumagalaw ang halaga ng loan.',
+   'You can hold, send, and receive it from almost anywhere without relying on a traditional bank account.':
+      'Puwede mo itong hawakan, ipadala, at tanggapin halos kahit saan nang hindi umaasa sa tradisyunal na bank account.',
+   'The everyday economy': 'Ang pang-araw-araw na ekonomiya',
+   'Using USDC the way you use cash or a bank transfer — paying people, sending money across borders, or cashing out to your local currency.':
+      'Paggamit ng USDC katulad ng paggamit mo ng cash o bank transfer — pagbabayad sa tao, pagpapadala ng pera sa ibang bansa, o pag-cash out sa local currency mo.',
+   'On-chain finance': 'On-chain na pananalapi',
+   'Decentralized finance': 'Decentralized na pananalapi',
+   'USDC is a regulated stablecoin — a digital dollar issued by Circle and pegged 1:1 to the US dollar. Each USDC is backed by cash and short-term US Treasuries, with independent monthly reserve attestations.':
+      'Ang USDC ay regulated na stablecoin — digital dollar na inilalabas ng Circle at naka-peg 1:1 sa US dollar. Bawat USDC ay sinusuportahan ng cash at short-term US Treasuries, na may independent na buwanang reserve attestations.',
+   'Why does Moodeng use USDC instead of regular money?': 'Bakit USDC ang gamit ng Moodeng sa halip na regular na pera?',
+   'USDC keeps loan values stable, moves wallet-to-wallet in seconds, and is gasless on Base — so a $20 loan is still exactly $20 when you repay it, with no bank fees eating into it.':
+      'Pinapanatili ng USDC na stable ang halaga ng loan, gumagalaw ito wallet-to-wallet sa loob ng segundo, at gasless sa Base — kaya eksaktong $20 pa rin ang $20 loan kapag binayaran mo ito, walang bank fee na kumakain dito.',
+   'Is USDC safe?': 'Ligtas ba ang USDC?',
+   'USDC is issued by the most licensed stablecoin company in the world and is backed 1:1 by highly liquid reserves. Those reserves are attested monthly by independent accounting firms, and every balance is verifiable on-chain.':
+      'Inilalabas ang USDC ng pinaka-licensed na stablecoin company sa mundo at sinusuportahan nang 1:1 ng highly liquid na reserves. Ina-attest buwan-buwan ang mga reserves na iyon ng independent na accounting firm, at ma-verify ang bawat balanse on-chain.',
+   'What is the difference between staking and yield?': 'Ano ang pagkakaiba ng staking at yield?',
+   'Staking means locking a token to help secure a proof-of-stake blockchain in exchange for rewards. Yield is the return you earn by lending or supplying USDC in DeFi. USDC is not a staking token, but it can earn yield.':
+      'Ang staking ay ibig sabihin ay pag-lock ng token para tumulong magpatibay ng proof-of-stake blockchain kapalit ng rewards. Ang yield naman ay ang return na kinikita mo sa pagpapahiram o pagbibigay ng USDC sa DeFi. Hindi staking token ang USDC, pero puwede itong kumita ng yield.',
+   'What is the difference between real-world use and DeFi use?': 'Ano ang pagkakaiba ng real-world use at DeFi use?',
+   'Real-world use is spending or sending USDC like cash — payments, remittances, cashing out. DeFi use is putting USDC into smart-contract apps to lend, borrow, or swap without a bank. Moodeng loans are real-world use.':
+      'Ang real-world use ay ang paggastos o pagpapadala ng USDC tulad ng cash — mga bayad, remittance, pag-cash out. Ang DeFi use naman ay ang paglalagay ng USDC sa mga smart-contract app para magpahiram, humiram, o mag-swap nang walang bangko. Real-world use ang mga loan sa Moodeng.',
+   'Do I pay fees to send USDC on Moodeng?': 'May babayaran ba akong fee para magpadala ng USDC sa Moodeng?',
+   'No. Moodeng uses your Instant Wallet (or a Base Account, if you prefer) on Base, where USDC transfers are gasless. You do not pay network fees to receive a loan or make a repayment.':
+      'Hindi. Ginagamit ng Moodeng ang Instant Wallet mo (o Base Account, kung mas gusto mo) sa Base, kung saan gasless ang mga USDC transfer. Wala kang babayarang network fee para tumanggap ng loan o magbayad.',
+   'No. Moodeng is community lending — USDC is used to fund and repay loans. Staking and yield live in the wider crypto ecosystem, not inside Moodeng.':
+      'Hindi. Community lending ang Moodeng — ginagamit ang USDC para pondohan at bayaran ang mga loan. Nasa mas malawak na crypto ecosystem ang staking at yield, hindi sa loob ng Moodeng.',
+   'Using USDC on Moodeng Credit': 'Paggamit ng USDC sa Moodeng Credit'
 };
