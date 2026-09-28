@@ -131,6 +131,7 @@ export const thaiCoverageE: Record<string, string> = {
    'Set up wallet': 'ตั้งค่ากระเป๋าเงิน',
    'Amount decides': 'จำนวนเงินเป็นตัวกำหนด',
    Browse: 'เลือกดู',
+   'Below $15 = Trust-Building': 'ต่ำกว่า $15 = Trust-Building',
    '$15 request': 'คำขอ $15',
    'A request for your full $15 credit limit is a credit-building loan.': 'คำขอเต็มวงเงินกู้ $15 ของคุณคือ Credit-Building Loan',
    '$15 is your full limit': '$15 คือวงเงินเต็มของคุณ',
