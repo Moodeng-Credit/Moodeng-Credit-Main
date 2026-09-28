@@ -101,7 +101,7 @@ const FILIPINO_FAQS: FAQItem[] = [
       question: 'Ano ang Moodeng Credit?',
       answer: `Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loan sa USDC habang nag-iipon ng Pandesal points na naka-link sa wallet mo.
 
-Sa halip na umasa sa traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsableng paghiram at on-time na pagbabayad. Habang tumatagal, ang tiwalang ito ang nagbibigay-daan para ma-unlock mo ang mas mataas na Credit Level at makapag-request ng mas malalaking loan.
+Sa halip na umasa sa traditional credit score, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsableng paghiram at on-time na pagbabayad. Habang tumatagal, ang tiwalang ito ang nagbibigay-daan para ma-unlock mo ang mas mataas na Credit Level at makapag-request ng mas malalaking loan.
 
 Hindi nakakulong sa iisang app ang Pandesal points mo. Ginawa ang mga ito para ipakita kung gaano ka maaasahan at para tulungan kang bumuo ng reputasyong madadala mo kahit saan.`
    },
@@ -131,16 +131,16 @@ Magsisimula ka sa Level 1 na may $15 limit. Bawat Credit-Building Loan na nabaya
       question: 'Anong wallet ang ginagamit sa Moodeng?',
       answer: `Instant Wallet ang default na gamit ng mga borrower sa Moodeng. Ito ang sariling wallet ng Moodeng, na ginagawa diretso mula sa Moodeng login mo: walang app na ida-download at walang seed phrase na isusulat. Dito papasok ang loan mo, at sa iyo talaga ito — puwede mong i-export ang key nito anumang oras.
 
-Tumatakbo ang Instant Wallet sa Base, isang Layer 2 blockchain network na ginawa ng Coinbase para sa mabilis, mura, at secure na crypto transactions. Isang malaking dahilan kung bakit Base ang gamit ng Moodeng: gasless na USDC transactions. Walang network fee ang pagpapadala o pagtanggap ng USDC gamit ang Instant Wallet o Base Account sa Base. Kapag nakatanggap ka ng loan, buong halaga ang papasok sa wallet mo. Kapag nagbayad ka, bawat sentimo ay babalik sa lender.
+Tumatakbo ang Instant Wallet sa Base, isang Layer 2 blockchain network na ginawa ng Coinbase para sa mabilis, mura, at secure na crypto transaction. Isang malaking dahilan kung bakit Base ang gamit ng Moodeng: gasless na USDC transaction. Walang network fee ang pagpapadala o pagtanggap ng USDC gamit ang Instant Wallet o Base Account sa Base. Kapag nakatanggap ka ng loan, buong halaga ang papasok sa wallet mo. Kapag nagbayad ka, bawat sentimo ay babalik sa lender.
 
-Mas gusto mo ng Base Account? Puwede mo itong ikonekta sa halip. Ang Base Account ay smart wallet ng Base app — passwordless at seedless din, kaya email o passkey ang gamit mo sa pag-sign in at walang 12-word recovery phrase na puwedeng mawala. Para sa mga lender, Base Account ang inirerekomenda namin. Puwede ring gumamit ang mga lender ng Instant Wallet o magkonekta ng ibang wallet (gaya ng MetaMask) — gasless ang transactions kapag Instant Wallet o Base Account ang gamit.`
+Mas gusto mo ng Base Account? Puwede mo itong ikonekta sa halip. Ang Base Account ay smart wallet ng Base app — passwordless at seedless din, kaya email o passkey ang gamit mo sa pag-sign in at walang 12-word recovery phrase na puwedeng mawala. Para sa mga lender, Base Account ang inirerekomenda namin. Puwede ring gumamit ang mga lender ng Instant Wallet o magkonekta ng ibang wallet (gaya ng MetaMask) — gasless ang mga transaksyon kapag Instant Wallet o Base Account ang gamit.`
    },
    {
       id: 'what-is-usdc',
       question: 'Ano ang USDC, at bakit ito ginagamit ng Moodeng?',
       answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar at ini-issue ng Circle, isang regulated na financial company sa US. Ang isang USDC ay laging katumbas ng isang dollar, kaya hindi gumagalaw ang halaga ng mga loan sa Moodeng kahit magbago ang crypto market — ang $20 loan ngayon ay $20 pa rin ang halaga pagdating ng bayaran.
 
-Ginagamit ng Moodeng ang USDC dahil nilulutas nito ang mga problema ng traditional currencies at ng ibang cryptocurrencies. Inaabot ng ilang araw ang USD bank transfers, kailangan ng tamang banking infrastructure sa magkabilang panig, at madalas may fees pa. Ang mga volatile na cryptocurrency tulad ng Bitcoin o ETH ay puwedeng gumalaw nang 10–20% habang tumatakbo ang loan, kaya may currency risk pa ang dalawang panig bukod sa repayment risk. Wala sa dalawang problemang iyon ang USDC.
+Ginagamit ng Moodeng ang USDC dahil nilulutas nito ang mga problema ng tradisyonal na pera at ng ibang cryptocurrency. Inaabot ng ilang araw ang mga USD bank transfer, kailangan ng tamang banking infrastructure sa magkabilang panig, at madalas may fee pa. Ang mga volatile na cryptocurrency tulad ng Bitcoin o ETH ay puwedeng gumalaw nang 10–20% habang tumatakbo ang loan, kaya may currency risk pa ang dalawang panig bukod sa repayment risk. Wala sa dalawang problemang iyon ang USDC.
 
 Naipapadala rin ang USDC kahit saan sa mundo sa loob ng ilang segundo, tinatanggap ito ng lahat ng malalaking exchange (puwede mo itong i-convert sa local currency mo sa Coinbase, Binance, Kraken, o sa mga local on/off-ramp), at gasless ito kapag ginamit sa Base. Gumagana ito saan ka man naroroon — sa Manila, Lagos, o Mumbai.`
    },
@@ -149,20 +149,20 @@ Naipapadala rin ang USDC kahit saan sa mundo sa loob ng ilang segundo, tinatangg
       question: 'May fees ba ang Moodeng?',
       answer: `Wala. Libre gamitin ang Moodeng Credit. Walang platform fee sa paghiram, walang fee sa pagpapahiram, walang monthly subscription, at walang setup cost. 100% ng pinondohan ng lender ay napupunta sa borrower, at 100% ng bayad ay napupunta sa lender.
 
-Zero rin ang network fees (gas) kapag Instant Wallet o Base Account sa Base ang gamit mo. Kaya ang tanging gastos sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower — at buo itong napupunta sa lender, hindi sa amin.
+Zero rin ang network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit mo. Kaya ang tanging gastos sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower — at buo itong napupunta sa lender, hindi sa amin.
 
 Paano namin napapanatiling libre ito? Hindi kami kumukuha ng parte. Ang future business model namin ay ang IOU token, na ilulunsad namin sa pamamagitan ng airdrop sa mga aktibong lender. Hanggang sa panahong iyon, ganap na walang fee ang Moodeng.`
    },
    {
       id: 'fight-loan-sharks',
-      question: 'Paano tumutulong ang Moodeng laban sa loan sharks?',
-      answer: `Ang loan sharks — mga informal lender na naniningil ng 20–100% na interes kada linggo, nananakot ng mga borrower, at ikinukulong ang mga tao sa paulit-ulit na utang — ay problema sa buong mundo. Daan-daang milyong unbanked at underbanked na tao ang walang ibang malapitan para sa emergency cash, kaya paulit-ulit silang nagbabayad nang ilang beses na mas malaki kaysa sa hiniram nila.
+      question: 'Paano tumutulong ang Moodeng laban sa mga loan shark?',
+      answer: `Ang mga loan shark — mga informal lender na naniningil ng 20–100% na interes kada linggo, nananakot ng mga borrower, at ikinukulong ang mga tao sa paulit-ulit na utang — ay problema sa buong mundo. Daan-daang milyong unbanked at underbanked na tao ang walang ibang malapitan para sa emergency cash, kaya paulit-ulit silang nagbabayad nang ilang beses na mas malaki kaysa sa hiniram nila.
 
 Ginawa ang Moodeng Credit bilang mas patas na alternatibo. Ang borrower ang nagtatakda ng interest rate, at tinatanggap (o nilalampasan) ito ng mga lender sa isang transparent na marketplace — walang nakatagong singil, walang compounding na daya. Ang maliliit na starter loan ($15–$60 sa Credit Level 1–4) ay tugma sa talagang kailangan ng mga borrower para sa short-term na emergency, kasama ang credit-building system na nagpapalaki ng limit mo habang pinapatunayan mong maaasahan ka.
 
 Walang collateral at walang bank account na kailangan — mabilis na identity check lang (ID photo at selfie, o World ID) at wallet (ang Instant Wallet ng Moodeng na gagawin mula sa login mo, o Base Account kung mas gusto mo). Kahit sinong may phone ay puwedeng makahiram. At dala mo kahit saan ang reputasyon mo (naka-link sa wallet at verified identity mo), kaya nakakabuo ka ng tunay na credit history na pinagkakatiwalaan ng mga lender — sa halip na manatiling nakakulong sa cycle.
 
-Hindi namin sinasabing papalitan namin ang mga bangko para sa lahat. Pero para sa mga taong napipilitang lumapit sa loan sharks dahil wala silang ibang pagpipilian, layunin ng Moodeng na maging mas ligtas, mas patas, at mas marangal na daan.`
+Hindi namin sinasabing papalitan namin ang mga bangko para sa lahat. Pero para sa mga taong napipilitang lumapit sa mga loan shark dahil wala silang ibang pagpipilian, layunin ng Moodeng na maging mas ligtas, mas patas, at mas marangal na daan.`
    },
    {
       id: 'what-is-credit-building-loan',
@@ -171,18 +171,18 @@ Hindi namin sinasabing papalitan namin ang mga bangko para sa lahat. Pero para s
 
 Ganito ito gumagana. Magsisimula ka sa Credit Level 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aakyat ang limit mo sa $20. Hiramin ang buong $20 sa susunod at bayaran, at maa-unlock mo ang $40. Tapos $60. Tuloy-tuloy ang pag-akyat sa mas matataas na level.
 
-Ang mas maliliit na loan na mas mababa sa buong limit mo ay tinatawag na Trust-Building Loans. Nakakatulong pa rin ang mga ito — pinapalago nila ang repayment record at reputasyon mo sa mga lender — pero hindi nila tinataas ang Credit Level mo. Kaya kung goal mong bumuo ng credit at mag-unlock ng mas malalaking loan, full-limit na Credit-Building Loans ang dapat mong kunin at bayaran.
+Ang mas maliliit na loan na mas mababa sa buong limit mo ay tinatawag na Trust-Building Loan. Nakakatulong pa rin ang mga ito — pinapalago nila ang repayment record at reputasyon mo sa mga lender — pero hindi nila tinataas ang Credit Level mo. Kaya kung goal mong bumuo ng credit at mag-unlock ng mas malalaking loan, full-limit na Credit-Building Loan ang dapat mong kunin at bayaran.
 
-Hindi tulad ng bank credit card o traditional na credit-builder product, hindi nire-report sa credit bureau ang credit sa Moodeng. Naka-track ito on-chain, nakatali sa wallet at verified identity mo, at madadala mo sa kahit anong platform na nakakonekta sa system.`
+Hindi tulad ng bank credit card o traditional na credit-builder product, hindi nire-report sa credit bureau ang credit sa Moodeng. Naka-track ito on-chain, nakatali sa wallet at verified identity mo, at madadala mo sa kahit anong platform na nakakonekta sa sistema.`
    },
    {
       id: 'small-loan',
       question: 'Puwede ba akong makakuha ng maliit na loan sa Moodeng?',
       answer: `Oo — para talaga sa maliliit na loan ginawa ang Moodeng. Nagsisimula ang mga bagong borrower sa $15 limit, at ginawa ang platform para sa short-term at maliliit na halaga ng pautang: emergency cash, pantawid bago sumahod, o minsanang gastos.
 
-Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fees. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo), itatakda mo ang repayment date at interest rate, at ang mga lender ang magpapasya kung popondohan ka nila.
+Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fee. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo), itatakda mo ang repayment date at interest rate, at ang mga lender ang magpapasya kung popondohan ka nila.
 
-Bawat full-limit na loan na nabayaran mo nang on time ay nagpapataas ng limit mo nang isang hakbang — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
+Bawat full-limit na loan na nabayaran mo on time ay nagpapataas ng limit mo nang isang hakbang — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
    }
 ];
 
