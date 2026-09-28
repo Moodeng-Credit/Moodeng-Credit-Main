@@ -153,7 +153,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Reset links can only be used once and expire quickly. Tap below to send yourself a fresh link, then open the newest Moodeng email.':
       'Liên kết đặt lại chỉ dùng được một lần và nhanh hết hạn. Bấm bên dưới để gửi cho bạn một liên kết mới, rồi mở email mới nhất từ Moodeng.',
    'Request a new link': 'Yêu cầu liên kết mới',
-   'This reset link is ready. Enter matching passwords to continue.': 'Liên kết đặt lại đã sẵn sàng. Nhập hai mật khẩu trùng khớp để tiếp tục.',
+   'This reset link is ready. Enter matching passwords to continue.':
+      'Liên kết đặt lại đã sẵn sàng. Nhập hai mật khẩu trùng khớp để tiếp tục.',
    'Confirm password': 'Xác nhận mật khẩu',
    'Passwords do not match.': 'Mật khẩu không khớp.',
    'Updating…': 'Đang cập nhật…',
@@ -251,10 +252,13 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Supported countries': 'Quốc gia được hỗ trợ',
    'Not in a supported country?': 'Không ở quốc gia được hỗ trợ?',
    'Verify with World ID': 'Xác minh bằng World ID',
-   'For World App users — verified at an Orb or with a passport.': 'Dành cho người dùng World App — đã xác minh tại Orb hoặc bằng hộ chiếu.',
+   'For World App users — verified at an Orb or with a passport.':
+      'Dành cho người dùng World App — đã xác minh tại Orb hoặc bằng hộ chiếu.',
    // src/app/verify/page.tsx
-   'Retake in bright, even light — no glare or shadows on the ID': 'Chụp lại nơi đủ sáng, ánh sáng đều — không lóa hay bóng đổ trên giấy tờ',
-   'Lay the ID flat and fill the frame; make sure all text is sharp': 'Đặt giấy tờ nằm phẳng và lấp đầy khung hình; đảm bảo mọi chữ đều rõ nét',
+   'Retake in bright, even light — no glare or shadows on the ID':
+      'Chụp lại nơi đủ sáng, ánh sáng đều — không lóa hay bóng đổ trên giấy tờ',
+   'Lay the ID flat and fill the frame; make sure all text is sharp':
+      'Đặt giấy tờ nằm phẳng và lấp đầy khung hình; đảm bảo mọi chữ đều rõ nét',
    'Use a currently valid (not expired) ID document': 'Dùng giấy tờ tùy thân còn hiệu lực (chưa hết hạn)',
    'Remove hats, glasses and masks for the selfie': 'Bỏ mũ, kính và khẩu trang khi chụp selfie',
    'Face the camera straight on, with your whole face visible': 'Nhìn thẳng vào camera, để lộ toàn bộ khuôn mặt',
@@ -329,7 +333,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Continue verification': 'Tiếp tục xác minh',
    'Opening…': 'Đang mở…',
    'Verified!': 'Đã xác minh!',
-   'Your identity has been confirmed. Taking you to the next step.': 'Danh tính của bạn đã được xác nhận. Đang chuyển bạn sang bước tiếp theo.',
+   'Your identity has been confirmed. Taking you to the next step.':
+      'Danh tính của bạn đã được xác nhận. Đang chuyển bạn sang bước tiếp theo.',
    'This identity is already registered': 'Danh tính này đã được đăng ký',
    'Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support.':
       'Hệ thống phát hiện đã có một tài khoản được xác minh bằng khuôn mặt này. Mỗi người chỉ được xác minh một lần. Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ bộ phận hỗ trợ.',
@@ -473,7 +478,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Try a different email': 'Thử email khác',
    or: 'hoặc',
    'Looks like you are new to Moodeng.': 'Có vẻ bạn là người mới trên Moodeng.',
-   'Create an account first, then verify the email code Moodeng sends you.': 'Hãy tạo tài khoản trước, rồi xác minh mã mà Moodeng gửi vào email của bạn.',
+   'Create an account first, then verify the email code Moodeng sends you.':
+      'Hãy tạo tài khoản trước, rồi xác minh mã mà Moodeng gửi vào email của bạn.',
    'Create account': 'Tạo tài khoản',
    'Use a different email': 'Dùng email khác',
    'The email or password you entered is incorrect.': 'Email hoặc mật khẩu bạn nhập không đúng.',
@@ -622,7 +628,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'Verify by scanning your passport with your phone in the World App — no Orb visit needed. You need an':
       'Xác minh bằng cách quét hộ chiếu với điện thoại trong World App — không cần đến Orb. Bạn cần có',
    'NFC-enabled (biometric) passport': 'hộ chiếu có chip NFC (sinh trắc học)',
-   'from one of these countries, and you must currently be in one of them:': 'do một trong các quốc gia sau cấp, và hiện bạn phải đang ở một trong các quốc gia đó:',
+   'from one of these countries, and you must currently be in one of them:':
+      'do một trong các quốc gia sau cấp, và hiện bạn phải đang ở một trong các quốc gia đó:',
    'Look for the chip symbol on your passport cover. You’ll also need a phone with NFC (most modern phones) and the World App installed.':
       'Hãy tìm biểu tượng chip trên bìa hộ chiếu. Bạn cũng cần một điện thoại có NFC (hầu hết điện thoại hiện đại đều có) và đã cài World App.',
    'I’m eligible — Continue': 'Tôi đủ điều kiện — Tiếp tục',
@@ -716,5 +723,5 @@ export const vietnameseCoverageA: Record<string, string> = {
    "Verify You're Human": 'Xác minh bạn là người thật',
    "Prove you're a real person with World ID": 'Chứng minh bạn là người thật bằng World ID',
    // src/components/worldId/modal/verificationModalConfig.tsx
-   'After completing verification at Orb': 'Sau khi hoàn tất xác minh tại Orb',
+   'After completing verification at Orb': 'Sau khi hoàn tất xác minh tại Orb'
 };

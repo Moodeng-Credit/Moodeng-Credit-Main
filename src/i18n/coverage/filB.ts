@@ -221,8 +221,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Please check your name and mobile number.': 'Pakitingnan ulit ang pangalan at mobile number mo.',
    'Salamat! We got it.': 'Salamat! Natanggap na namin.',
    "We'll send your ₱": 'Ipapadala namin ang ₱',
-   'GrabFood voucher code to your mobile within 2 business days.':
-      'GrabFood voucher code mo sa mobile mo sa loob ng 2 business days.',
+   'GrabFood voucher code to your mobile within 2 business days.': 'GrabFood voucher code mo sa mobile mo sa loob ng 2 business days.',
    'Preview sample — nothing was sent.': 'Preview sample lang — walang naipadala.',
    'Mobile number (GCash)': 'Mobile number (GCash)',
    'Email (optional)': 'Email (optional)',
@@ -247,8 +246,7 @@ export const filipinoCoverageB: Record<string, string> = {
       'I-verify ang identity ko: +10 Pandesal. I-unlock ang paghiram at ang pagpapakain ng pandesal kay Moodeng.',
    'Connect Wallet: +10 Pandesal. Receive USDC loans.': 'Ikonek ang wallet: +10 Pandesal. Tumanggap ng USDC loans.',
    'Turn on repayment reminders': 'I-on ang repayment reminders',
-   'Get a heads-up before your due date so you never pay late.':
-      'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
+   'Get a heads-up before your due date so you never pay late.': 'Makakuha ng paalala bago ang due date para hindi ka ma-late.',
    'Turn on': 'I-on',
 
    // src/views/dashboard-v2/components/DashboardV2Hero.tsx
@@ -307,5 +305,5 @@ export const filipinoCoverageB: Record<string, string> = {
    'Pandesal points track your reputation on Moodeng. Verification, clean repayment, and healthy activity make lenders more confident in you.':
       'Sinusukat ng Pandesal points ang reputasyon mo sa Moodeng. Sa verification, malinis na pagbabayad, at maayos na activity, mas nagtitiwala sa iyo ang mga lender.',
    'Milestones are extra ways to earn Pandesal points. Complete them to strengthen your profile and make lenders more confident in your requests.':
-      'Ang milestones ay mga dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.',
+      'Ang milestones ay mga dagdag na paraan para makakuha ng Pandesal points. Tapusin ang mga ito para lumakas ang profile mo at mas magtiwala ang mga lender sa mga request mo.'
 };

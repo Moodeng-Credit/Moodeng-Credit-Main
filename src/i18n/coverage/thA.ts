@@ -48,8 +48,7 @@ export const thaiCoverageA: Record<string, string> = {
       'หากหาอีเมลไม่เจอ ให้ดูในโฟลเดอร์สแปมหรือโปรโมชัน แล้วเปิดอีเมลล่าสุดจาก Moodeng',
 
    // src/app/auth/confirm/page.tsx
-   'We could not finish checking your email session. Please sign in again.':
-      'เราตรวจสอบเซสชันอีเมลของคุณไม่สำเร็จ โปรดเข้าสู่ระบบอีกครั้ง',
+   'We could not finish checking your email session. Please sign in again.': 'เราตรวจสอบเซสชันอีเมลของคุณไม่สำเร็จ โปรดเข้าสู่ระบบอีกครั้ง',
    'This account can’t sign in': 'บัญชีนี้เข้าสู่ระบบไม่ได้',
    'It has been suspended. If you think this is a mistake, email us and we’ll look into it.':
       'บัญชีนี้ถูกระงับ หากคุณคิดว่านี่เป็นความผิดพลาด โปรดส่งอีเมลถึงเรา แล้วเราจะตรวจสอบให้',
@@ -162,7 +161,8 @@ export const thaiCoverageA: Record<string, string> = {
    'Reset links can only be used once and expire quickly. Tap below to send yourself a fresh link, then open the newest Moodeng email.':
       'ลิงก์รีเซ็ตใช้ได้เพียงครั้งเดียวและหมดอายุเร็ว แตะด้านล่างเพื่อส่งลิงก์ใหม่ให้ตัวเอง แล้วเปิดอีเมลล่าสุดจาก Moodeng',
    'Request a new link': 'ขอลิงก์ใหม่',
-   'This reset link is ready. Enter matching passwords to continue.': 'ลิงก์รีเซ็ตนี้พร้อมใช้งานแล้ว กรอกรหัสผ่านให้ตรงกันทั้งสองช่องเพื่อดำเนินการต่อ',
+   'This reset link is ready. Enter matching passwords to continue.':
+      'ลิงก์รีเซ็ตนี้พร้อมใช้งานแล้ว กรอกรหัสผ่านให้ตรงกันทั้งสองช่องเพื่อดำเนินการต่อ',
    'Use at least 8 characters.': 'ใช้อย่างน้อย 8 ตัวอักษร',
    'Confirm password': 'ยืนยันรหัสผ่าน',
    'Passwords do not match.': 'รหัสผ่านไม่ตรงกัน',
@@ -252,8 +252,7 @@ export const thaiCoverageA: Record<string, string> = {
       'เพื่อให้ Moodeng ปลอดภัยและป้องกันบัญชีปลอมหรือบัญชีซ้ำ ผู้ยืมทุกคนต้องยืนยันตัวตนสั้น ๆ เพียงครั้งเดียว',
    'Verify Your ID': 'ยืนยันด้วยบัตรประชาชน',
    Recommended: 'แนะนำ',
-   'Quick national ID & selfie check — available in select countries.':
-      'ตรวจบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้ได้ในบางประเทศ',
+   'Quick national ID & selfie check — available in select countries.': 'ตรวจบัตรประชาชนและเซลฟีอย่างรวดเร็ว ใช้ได้ในบางประเทศ',
    'Supported countries': 'ประเทศที่รองรับ',
    'Not in a supported country?': 'ไม่ได้อยู่ในประเทศที่รองรับใช่ไหม?',
    'Verify with World ID': 'ยืนยันด้วย World ID',
@@ -486,5 +485,5 @@ export const thaiCoverageA: Record<string, string> = {
    'Unknown error': 'ข้อผิดพลาดที่ไม่ทราบสาเหตุ',
    'Payment Sent, Still Recording': 'ส่งการชำระเงินแล้ว กำลังบันทึก',
    'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'การชำระเงินของคุณสำเร็จแล้ว แต่เรายังบันทึกไม่ได้ เราจะลองใหม่โดยอัตโนมัติ หากข้อมูลไม่อัปเดต โปรดติดต่อฝ่ายช่วยเหลือ',
+      'การชำระเงินของคุณสำเร็จแล้ว แต่เรายังบันทึกไม่ได้ เราจะลองใหม่โดยอัตโนมัติ หากข้อมูลไม่อัปเดต โปรดติดต่อฝ่ายช่วยเหลือ'
 };

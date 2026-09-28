@@ -92,11 +92,9 @@ export const indonesianCoverageA: Record<string, string> = {
    'This page explains how to submit a deletion request and what to expect after you do.':
       'Halaman ini menjelaskan cara mengajukan permintaan penghapusan dan apa yang terjadi setelahnya.',
    'How to request deletion': 'Cara meminta penghapusan',
-   'from the email address on your account, with the subject line':
-      'dari alamat email yang terdaftar di akunmu, dengan subjek',
+   'from the email address on your account, with the subject line': 'dari alamat email yang terdaftar di akunmu, dengan subjek',
    '. To help us locate your records, please include:': '. Agar kami bisa menemukan datamu, sertakan:',
-   'The email address or wallet address associated with your account':
-      'Alamat email atau alamat dompet yang terkait dengan akunmu',
+   'The email address or wallet address associated with your account': 'Alamat email atau alamat dompet yang terkait dengan akunmu',
    'The login method you used (Facebook, Google, LINE, Telegram, or email)':
       'Metode login yang kamu pakai (Facebook, Google, LINE, Telegram, atau email)',
    'Confirmation that you want your personal data deleted': 'Konfirmasi bahwa kamu ingin data pribadimu dihapus',
@@ -133,8 +131,7 @@ export const indonesianCoverageA: Record<string, string> = {
       'Jika ada akun dengan email itu, kode 8 digit sedang dikirim. Masukkan di bawah untuk melanjutkan.',
    'That code is invalid or expired. Check the latest email or request a new code.':
       'Kode itu tidak valid atau sudah kedaluwarsa. Cek email terbaru atau minta kode baru.',
-   'A new code is on its way. Use the latest email from Moodeng.':
-      'Kode baru sedang dikirim. Gunakan email terbaru dari Moodeng.',
+   'A new code is on its way. Use the latest email from Moodeng.': 'Kode baru sedang dikirim. Gunakan email terbaru dari Moodeng.',
    'Back to email entry': 'Kembali ke pengisian email',
    'Enter your code': 'Masukkan kodemu',
    'Reset your password': 'Reset kata sandi',
@@ -151,8 +148,7 @@ export const indonesianCoverageA: Record<string, string> = {
    "Verify it's you": 'Verifikasi bahwa ini kamu',
    'Enter the code from your authenticator app to finish signing in.':
       'Masukkan kode dari aplikasi autentikator untuk menyelesaikan proses masuk.',
-   'Lost access to your authenticator app? Contact support':
-      'Tidak bisa mengakses aplikasi autentikator? Hubungi dukungan',
+   'Lost access to your authenticator app? Contact support': 'Tidak bisa mengakses aplikasi autentikator? Hubungi dukungan',
    'Enter the 6-digit code from your authenticator app': 'Masukkan kode 6 digit dari aplikasi autentikator',
    'Two-factor authentication': 'Autentikasi dua faktor',
    'Not you? Sign out': 'Bukan kamu? Keluar',
@@ -165,8 +161,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Could not open this reset link. Request a new one.': 'Link reset ini tidak bisa dibuka. Minta link baru.',
    'Passwords do not match.': 'Kata sandi tidak cocok.',
    'Use at least 8 characters for your new password.': 'Gunakan minimal 8 karakter untuk kata sandi barumu.',
-   'Open the reset link from your email before setting a new password.':
-      'Buka link reset dari email kamu sebelum membuat kata sandi baru.',
+   'Open the reset link from your email before setting a new password.': 'Buka link reset dari email kamu sebelum membuat kata sandi baru.',
    'Could not update your password. Try again in a moment.': 'Kata sandi gagal diperbarui. Coba lagi sebentar lagi.',
    'Password updated': 'Kata sandi diperbarui',
    'Your account is secure now.': 'Akunmu sekarang sudah aman.',
@@ -215,8 +210,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Working on Partnerships': 'Mengurus Kemitraan',
    'Supports Moodeng Credit with partnerships, lender outreach, and growth channels, while also working at':
       'Mendukung Moodeng Credit dalam kemitraan, penjangkauan pemberi pinjaman, dan kanal pertumbuhan, sambil juga bekerja di',
-   'helping teams connect with blockchain data infrastructure.':
-      'yang membantu tim terhubung dengan infrastruktur data blockchain.',
+   'helping teams connect with blockchain data infrastructure.': 'yang membantu tim terhubung dengan infrastruktur data blockchain.',
    'Head of Growth': 'Kepala Pertumbuhan',
    'Growth Hacking': 'Growth Hacking',
    'Blockchain Analysis': 'Analisis Blockchain',
@@ -253,13 +247,11 @@ export const indonesianCoverageA: Record<string, string> = {
       'Agar Moodeng tetap aman dan bebas dari akun palsu atau ganda, peminjam menyelesaikan pengecekan identitas singkat satu kali.',
    'Verify Your ID': 'Verifikasi ID Kamu',
    Recommended: 'Disarankan',
-   'Quick national ID & selfie check — available in select countries.':
-      'Cek cepat kartu identitas & selfie — tersedia di negara tertentu.',
+   'Quick national ID & selfie check — available in select countries.': 'Cek cepat kartu identitas & selfie — tersedia di negara tertentu.',
    'Supported countries': 'Negara yang didukung',
    'Not in a supported country?': 'Negaramu tidak didukung?',
    'Verify with World ID': 'Verifikasi dengan World ID',
-   'For World App users — verified at an Orb or with a passport.':
-      'Untuk pengguna World App — terverifikasi di Orb atau dengan paspor.',
+   'For World App users — verified at an Orb or with a passport.': 'Untuk pengguna World App — terverifikasi di Orb atau dengan paspor.',
 
    // src/app/verify/page.tsx
    'Retake in bright, even light — no glare or shadows on the ID':
@@ -301,15 +293,13 @@ export const indonesianCoverageA: Record<string, string> = {
    'Open verification': 'Buka verifikasi',
    'Go back': 'Kembali',
    'Almost there — hang tight while we finish the check.': 'Sebentar lagi — tunggu ya, kami sedang menyelesaikan pengecekan.',
-   'Still checking — face scans usually take a minute or two.':
-      'Masih mengecek — pemindaian wajah biasanya butuh satu atau dua menit.',
+   'Still checking — face scans usually take a minute or two.': 'Masih mengecek — pemindaian wajah biasanya butuh satu atau dua menit.',
    'Face scan in progress. Complete it in the tab that just opened — this page will update automatically when done.':
       'Pemindaian wajah sedang berlangsung. Selesaikan di tab yang baru terbuka — halaman ini akan diperbarui otomatis setelah selesai.',
    'Waiting for face scan…': 'Menunggu pemindaian wajah…',
    'More options': 'Opsi lainnya',
    'Almost there — we’re finishing the review.': 'Sebentar lagi — kami sedang menyelesaikan peninjauan.',
-   'Still confirming — verification usually takes a minute or two.':
-      'Masih mengonfirmasi — verifikasi biasanya butuh satu atau dua menit.',
+   'Still confirming — verification usually takes a minute or two.': 'Masih mengonfirmasi — verifikasi biasanya butuh satu atau dua menit.',
    'Finish the steps in the verification tab — this page updates automatically when you’re done.':
       'Selesaikan langkah-langkahnya di tab verifikasi — halaman ini akan diperbarui otomatis setelah kamu selesai.',
    'Confirming your verification…': 'Mengonfirmasi verifikasimu…',
@@ -342,8 +332,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Continue verification': 'Lanjutkan verifikasi',
    'Opening…': 'Membuka…',
    'Verified!': 'Terverifikasi!',
-   'Your identity has been confirmed. Taking you to the next step.':
-      'Identitasmu sudah dikonfirmasi. Mengarahkanmu ke langkah berikutnya.',
+   'Your identity has been confirmed. Taking you to the next step.': 'Identitasmu sudah dikonfirmasi. Mengarahkanmu ke langkah berikutnya.',
    'This identity is already registered': 'Identitas ini sudah terdaftar',
    'Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support.':
       'Pengecekan kami menemukan akun yang sudah terverifikasi dengan wajah ini. Setiap orang hanya bisa verifikasi satu kali. Jika menurutmu ini keliru, silakan hubungi dukungan.',
@@ -378,8 +367,7 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // src/components/GuidedTourPreview.tsx
    'Want a quick tour?': 'Mau tur singkat?',
-   "Pick a side and we'll walk you through it — no account needed.":
-      'Pilih peranmu dan kami akan memandumu — tanpa perlu akun.',
+   "Pick a side and we'll walk you through it — no account needed.": 'Pilih peranmu dan kami akan memandumu — tanpa perlu akun.',
    'See how Moodeng works in under a minute. You can skip this and use everything normally.':
       'Lihat cara kerja Moodeng dalam kurang dari satu menit. Kamu bisa melewatinya dan tetap memakai semua fitur seperti biasa.',
    'Skip for now': 'Lewati dulu',
@@ -705,5 +693,5 @@ export const indonesianCoverageA: Record<string, string> = {
    'Back to verification options': 'Kembali ke pilihan verifikasi',
    'Verify Yourself': 'Verifikasi Diri',
    'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
-      'Konfirmasi identitasmu untuk membuka akunmu — pengecekan satu kali yang butuh sekitar 3 menit.',
+      'Konfirmasi identitasmu untuk membuka akunmu — pengecekan satu kali yang butuh sekitar 3 menit.'
 };

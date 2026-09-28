@@ -269,7 +269,7 @@ export const indonesianCoverageC: Record<string, string> = {
       'Pinjaman mikro menjadi jalan praktis bagi peminjam untuk membangun bukti dari waktu ke waktu.',
    'Moodeng Credit wallet illustration': 'Ilustrasi dompet Moodeng Credit',
 
-// src/views/login/components/AuthCard.tsx
+   // src/views/login/components/AuthCard.tsx
    'Create your account to get started with moodeng.': 'Buat akun kamu untuk mulai menggunakan Moodeng.',
    'Moodeng Mascot': 'Maskot Moodeng',
 

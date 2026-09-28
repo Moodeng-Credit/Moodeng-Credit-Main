@@ -356,5 +356,5 @@ export const filipinoCoverageA: Record<string, string> = {
    Soon: 'Malapit na',
 
    // src/components/auth/TelegramLoginTile.tsx
-   'Sign in with Telegram': 'Mag-sign in gamit ang Telegram',
+   'Sign in with Telegram': 'Mag-sign in gamit ang Telegram'
 };

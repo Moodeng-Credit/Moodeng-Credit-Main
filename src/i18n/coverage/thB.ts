@@ -135,11 +135,9 @@ export const thaiCoverageB: Record<string, string> = {
    'Borrow $80 and repay funded terms on time': 'ยืม $80 และชำระคืนตามเงื่อนไขให้ตรงเวลา',
    'Borrow $100 and repay funded terms on time': 'ยืม $100 และชำระคืนตามเงื่อนไขให้ตรงเวลา',
    'Borrow $120 and repay funded terms on time': 'ยืม $120 และชำระคืนตามเงื่อนไขให้ตรงเวลา',
-   'Trust-building loan': 'Trust-Building Loan',
    '$10 of $15': '$10 จาก $15',
    'Useful when you need less than your full limit. It can help lenders trust you, but it does not raise your credit level.':
       'เหมาะเมื่อคุณต้องการเงินน้อยกว่าวงเงินเต็ม ช่วยให้ผู้ให้กู้ไว้วางใจคุณมากขึ้น แต่ไม่ได้เพิ่มระดับเครดิตของคุณ',
-   'Credit-building loan': 'Credit-Building Loan',
    '$15 of $15': '$15 จาก $15',
    'Can unlock $20': 'ปลดล็อก $20 ได้',
    'This is the level-up loan. You borrow your full current limit and repay the funded terms on time.':
@@ -1201,7 +1199,6 @@ export const thaiCoverageB: Record<string, string> = {
       'หากค้าง ให้ลองใหม่ในเบราว์เซอร์จริง (Chrome หรือ Safari) และตรวจสอบให้แน่ใจว่ารูปชัดและมีแสงสว่างเพียงพอ',
    'Signing up alone is not enough — verifying is the last step before you can send a request.':
       'การสมัครอย่างเดียวยังไม่พอ — การยืนยันตัวตนคือขั้นตอนสุดท้ายก่อนที่คุณจะส่งคำขอได้',
-   'The Instant Wallet': 'Instant Wallet',
    'Your default wallet — no app, no seed phrase': 'กระเป๋าเงินเริ่มต้นของคุณ — ไม่ต้องใช้แอป ไม่มี seed phrase',
    'What is the Instant Wallet and is it safe?': 'Instant Wallet คืออะไร และปลอดภัยไหม?',
    "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.":

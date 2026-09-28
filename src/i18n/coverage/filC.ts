@@ -274,7 +274,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm':
       'Transfer → Send Crypto → USDC → External Wallet → i-paste ang address → Base network → i-confirm',
    'Wallet → USDCBASE → Withdraw → Paste wallet address': 'Wallet → USDCBASE → Withdraw → I-paste ang wallet address',
-   'Wallet → Withdraw → USDC → Network: Base → Paste wallet address': 'Wallet → Withdraw → USDC → Network: Base → I-paste ang wallet address',
+   'Wallet → Withdraw → USDC → Network: Base → Paste wallet address':
+      'Wallet → Withdraw → USDC → Network: Base → I-paste ang wallet address',
    'Open Coins.ph': 'Buksan ang Coins.ph',
    'Visit Moneybees': 'Pumunta sa Moneybees',
    'Open GCrypto': 'Buksan ang GCrypto',
@@ -301,5 +302,5 @@ export const filipinoCoverageC: Record<string, string> = {
       'Naipadala na ang bayad mo at sandali pa bago ito ma-confirm. Kusa itong mag-a-update.',
    'Payment Sent, Still Recording': 'Naipadala ang bayad, nire-record pa',
    'Your payment went through but we could not record it yet. We will keep retrying automatically — contact support if it does not update.':
-      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.',
+      'Pumasok na ang bayad mo pero hindi pa namin ito ma-record. Awtomatiko naming susubukan ulit — kontakin ang support kung hindi ito mag-update.'
 };

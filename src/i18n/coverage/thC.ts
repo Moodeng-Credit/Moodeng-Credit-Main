@@ -47,7 +47,8 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/lender/supported/SupportedLoans.tsx
    'My Funded Loans': 'เงินกู้ที่ฉันปล่อยกู้',
-   'Repayments are automatically sent to your wallet when the borrower repays.': 'เมื่อผู้ยืมชำระคืน เงินจะถูกส่งเข้ากระเป๋าเงินของคุณโดยอัตโนมัติ',
+   'Repayments are automatically sent to your wallet when the borrower repays.':
+      'เมื่อผู้ยืมชำระคืน เงินจะถูกส่งเข้ากระเป๋าเงินของคุณโดยอัตโนมัติ',
    'You haven’t funded any loans yet. Funding links are shared directly with you.':
       'คุณยังไม่ได้ปล่อยกู้ ลิงก์สำหรับปล่อยกู้จะถูกส่งถึงคุณโดยตรง',
    'Amount paid': 'ยอดที่ชำระแล้ว',
@@ -61,7 +62,7 @@ export const thaiCoverageC: Record<string, string> = {
    'fully repays, or on the due date for whatever has been paid so far. No claim needed.':
       'ชำระคืนครบ หรือในวันครบกำหนดสำหรับยอดที่ชำระมาแล้ว โดยไม่ต้องกดรับ',
 
-// src/views/lenderBenefits/LenderBenefits.tsx
+   // src/views/lenderBenefits/LenderBenefits.tsx
    'Why Lend on Moodeng | Moodeng Credit': 'ทำไมต้องปล่อยกู้กับ Moodeng | Moodeng Credit',
    'Why lend on Moodeng Credit: meet verified borrowers, see how we verify identity, and learn the incentives for funding small USDC loans.':
       'ทำไมต้องปล่อยกู้กับ Moodeng Credit: รู้จักผู้ยืมที่ยืนยันตัวตนแล้ว ดูว่าเรายืนยันตัวตนอย่างไร และเรียนรู้สิทธิประโยชน์ของการปล่อยกู้ USDC จำนวนเล็กน้อย',
@@ -71,7 +72,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Fund verified workers building credit abroad.': 'ปล่อยกู้ให้แรงงานที่ยืนยันตัวตนแล้ว ซึ่งกำลังสร้างเครดิตในต่างแดน',
    'We are starting with Filipinos and Southeast Asians overseas in places where World ID verification is available. Small loans can cover urgent gaps and help borrowers build credit independently.':
       'เราเริ่มจากชาวฟิลิปปินส์และชาวเอเชียตะวันออกเฉียงใต้ในต่างแดน ในพื้นที่ที่มีบริการยืนยันตัวตนด้วย World ID เงินกู้จำนวนเล็กน้อยช่วยอุดช่องว่างเร่งด่วน และช่วยให้ผู้ยืมสร้างเครดิตได้ด้วยตัวเอง',
-   'Start with verified USDC microloans in real worker corridors.': 'เริ่มต้นกับสินเชื่อรายย่อย USDC ที่ผ่านการยืนยันตัวตน ในเส้นทางที่แรงงานเดินทางไปทำงานจริง',
+   'Start with verified USDC microloans in real worker corridors.':
+      'เริ่มต้นกับสินเชื่อรายย่อย USDC ที่ผ่านการยืนยันตัวตน ในเส้นทางที่แรงงานเดินทางไปทำงานจริง',
    'Community information': 'ข้อมูลชุมชน',
 
    // src/views/lenderBenefits/sections/FeaturesSection.tsx
@@ -96,7 +98,8 @@ export const thaiCoverageC: Record<string, string> = {
 
    // src/views/lenderBenefits/sections/MeetYourFutureBorrowersSection.tsx
    'First borrower communities': 'ชุมชนผู้ยืมกลุ่มแรก',
-   'Meet overseas Filipinos and Southeast Asians building credit abroad.': 'รู้จักชาวฟิลิปปินส์และชาวเอเชียตะวันออกเฉียงใต้ที่กำลังสร้างเครดิตในต่างแดน',
+   'Meet overseas Filipinos and Southeast Asians building credit abroad.':
+      'รู้จักชาวฟิลิปปินส์และชาวเอเชียตะวันออกเฉียงใต้ที่กำลังสร้างเครดิตในต่างแดน',
    'We are starting with workers and migrants in places where World ID verification is practical, including South Korea, Taiwan, Japan, Singapore, and other Orb-supported cities.':
       'เราเริ่มจากแรงงานและผู้ย้ายถิ่นในพื้นที่ที่ยืนยันตัวตนด้วย World ID ได้สะดวก เช่น เกาหลีใต้ ไต้หวัน ญี่ปุ่น สิงคโปร์ และเมืองอื่น ๆ ที่มี Orb ให้บริการ',
    'Filipino workers': 'แรงงานฟิลิปปินส์',
@@ -116,7 +119,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Traditional credit: starts over at zero': 'เครดิตแบบดั้งเดิม: ต้องเริ่มจากศูนย์ใหม่',
    'The problem': 'ปัญหา',
    'Good repayment rarely travels.': 'ประวัติชำระคืนที่ดีแทบไม่เคยติดตัวไปด้วย',
-   'That creates a trust gap for borrowers and a missed opportunity for lenders.': 'สิ่งนี้ทำให้ผู้ยืมขาดความน่าเชื่อถือ และผู้ให้กู้พลาดโอกาส',
+   'That creates a trust gap for borrowers and a missed opportunity for lenders.':
+      'สิ่งนี้ทำให้ผู้ยืมขาดความน่าเชื่อถือ และผู้ให้กู้พลาดโอกาส',
    'Credit gets reset': 'เครดิตถูกรีเซ็ต',
    'A Filipino or SEA worker can repay responsibly abroad and still have no useful credit record.':
       'แรงงานฟิลิปปินส์หรือจากเอเชียตะวันออกเฉียงใต้อาจชำระคืนอย่างรับผิดชอบในต่างแดน แต่ก็ยังไม่มีประวัติเครดิตที่นำไปใช้ได้',
@@ -124,7 +128,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Lenders cannot easily see the trust signals that should matter for a small emergency loan.':
       'ผู้ให้กู้มองไม่เห็นสัญญาณความน่าเชื่อถือที่ควรใช้พิจารณาเงินกู้ฉุกเฉินจำนวนเล็กน้อยได้ง่าย ๆ',
    'Bad options fill the gap': 'ทางเลือกที่แย่เข้ามาแทนที่',
-   'Quick-loan apps step in with pressure, high costs, and little long-term upside.': 'แอปเงินกู้ด่วนเข้ามาพร้อมการกดดัน ค่าใช้จ่ายสูง และแทบไม่มีประโยชน์ในระยะยาว',
+   'Quick-loan apps step in with pressure, high costs, and little long-term upside.':
+      'แอปเงินกู้ด่วนเข้ามาพร้อมการกดดัน ค่าใช้จ่ายสูง และแทบไม่มีประโยชน์ในระยะยาว',
    'A group of people held together in a circular illustration': 'ภาพประกอบกลุ่มคนที่รวมตัวกันเป็นวงกลม',
 
    // src/views/lenderBenefits/sections/VerifyIdentitySection.tsx
@@ -132,9 +137,12 @@ export const thaiCoverageC: Record<string, string> = {
    'World ID is a trust signal, not a loan guarantee.': 'World ID เป็นสัญญาณความน่าเชื่อถือ ไม่ใช่การรับประกันเงินกู้',
    'Verification makes the borrower harder to fake. The credit signal still comes from transparent terms, small USDC loans, and repayment behavior over time.':
       'การยืนยันตัวตนทำให้ปลอมเป็นผู้ยืมได้ยากขึ้น แต่สัญญาณด้านเครดิตยังมาจากเงื่อนไขที่โปร่งใส เงินกู้ USDC จำนวนเล็กน้อย และพฤติกรรมการชำระคืนในระยะยาว',
-   'World ID helps confirm one real person behind each borrower account.': 'World ID ช่วยยืนยันว่ามีคนจริงหนึ่งคนอยู่เบื้องหลังบัญชีผู้ยืมแต่ละบัญชี',
-   'Moodeng can show verification status without storing passport-style documents.': 'Moodeng แสดงสถานะการยืนยันตัวตนได้ โดยไม่ต้องจัดเก็บเอกสารอย่างหนังสือเดินทาง',
-   'Lenders still evaluate loan terms, history, and repayment behavior before funding.': 'ผู้ให้กู้ยังคงพิจารณาเงื่อนไขเงินกู้ ประวัติ และพฤติกรรมการชำระคืนก่อนปล่อยกู้',
+   'World ID helps confirm one real person behind each borrower account.':
+      'World ID ช่วยยืนยันว่ามีคนจริงหนึ่งคนอยู่เบื้องหลังบัญชีผู้ยืมแต่ละบัญชี',
+   'Moodeng can show verification status without storing passport-style documents.':
+      'Moodeng แสดงสถานะการยืนยันตัวตนได้ โดยไม่ต้องจัดเก็บเอกสารอย่างหนังสือเดินทาง',
+   'Lenders still evaluate loan terms, history, and repayment behavior before funding.':
+      'ผู้ให้กู้ยังคงพิจารณาเงื่อนไขเงินกู้ ประวัติ และพฤติกรรมการชำระคืนก่อนปล่อยกู้',
    'World ID first': 'เริ่มจาก World ID',
 
    // src/views/lenderBenefits/sections/Web3WalletSection.tsx
@@ -143,72 +151,39 @@ export const thaiCoverageC: Record<string, string> = {
    'Moodeng turns small, transparent repayments into a portable credit record borrowers can keep building, even while working abroad.':
       'Moodeng เปลี่ยนการชำระคืนจำนวนเล็กน้อยที่โปร่งใสให้เป็นประวัติเครดิตที่พกพาได้ ผู้ยืมจึงสร้างต่อยอดได้เรื่อย ๆ แม้ทำงานอยู่ต่างแดน',
    'Portable wallet history': 'ประวัติที่ติดไปกับกระเป๋าเงิน',
-   'Repayment activity can travel with overseas workers through their wallet.': 'ประวัติการชำระคืนติดตัวแรงงานในต่างแดนไปได้ผ่านกระเป๋าเงินของพวกเขา',
+   'Repayment activity can travel with overseas workers through their wallet.':
+      'ประวัติการชำระคืนติดตัวแรงงานในต่างแดนไปได้ผ่านกระเป๋าเงินของพวกเขา',
    'Transparent loan behavior': 'พฤติกรรมการกู้ที่โปร่งใส',
-   'Lenders can review onchain repayment signals instead of starting from zero.': 'ผู้ให้กู้ดูสัญญาณการชำระคืนแบบออนเชนได้ แทนที่จะต้องเริ่มจากศูนย์',
+   'Lenders can review onchain repayment signals instead of starting from zero.':
+      'ผู้ให้กู้ดูสัญญาณการชำระคืนแบบออนเชนได้ แทนที่จะต้องเริ่มจากศูนย์',
    'Small loans, real signal': 'เงินกู้เล็ก สัญญาณจริง',
-   'Microloans create a practical path for borrowers to build proof over time.': 'สินเชื่อรายย่อยเป็นเส้นทางที่ใช้ได้จริง ให้ผู้ยืมสร้างหลักฐานความน่าเชื่อถือได้ทีละขั้น',
+   'Microloans create a practical path for borrowers to build proof over time.':
+      'สินเชื่อรายย่อยเป็นเส้นทางที่ใช้ได้จริง ให้ผู้ยืมสร้างหลักฐานความน่าเชื่อถือได้ทีละขั้น',
    'Moodeng Credit wallet illustration': 'ภาพประกอบกระเป๋าเงิน Moodeng Credit',
 
    // src/views/onboarding/WalletFaceCheck.tsx
-   "We couldn't finish creating your wallet. Please try again.": 'Kami belum berhasil membuat dompet kamu. Silakan coba lagi.',
-   'Could not start the face check. Please try again.': 'Tidak bisa memulai cek wajah. Silakan coba lagi.',
-   'Quick face check': 'Cek wajah singkat',
    'A short liveness scan keeps Instant Wallets to one per person, which is what lets us cover the network fees. We never store your photo, and it is only needed to create the wallet — not to sign in, send or repay.':
       'Pemindaian liveness singkat memastikan setiap orang hanya punya satu Instant Wallet, dan karena itulah kami bisa menanggung biaya jaringan. Kami tidak pernah menyimpan fotomu, dan pemindaian ini hanya diperlukan untuk membuat dompet — bukan untuk masuk, mengirim, atau membayar kembali.',
-   'Try the scan again': 'Coba pindai lagi',
-   'Connect a wallet instead': 'Hubungkan dompet lain saja',
-   'Creating your wallet': 'Membuat dompet kamu',
-   'This takes a few seconds. Keep this screen open.': 'Ini butuh beberapa detik. Jangan tutup layar ini.',
-   'Still checking': 'Masih memeriksa',
    'This is taking longer than usual. Your scan is safe — check again in a moment.':
       'Prosesnya lebih lama dari biasanya. Hasil pindaianmu aman — cek lagi sebentar lagi.',
-   'Start a new scan': 'Mulai pindai baru',
-   'One quick face check': 'Satu cek wajah singkat',
    'Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.':
       'Setiap orang hanya bisa punya satu Instant Wallet, jadi kami minta pemindaian sepuluh detik sebelum membuat dompetmu. Kamu tidak perlu melakukannya lagi.',
-   'Starting…': 'Memulai…',
-   'Start face check': 'Mulai cek wajah',
-   'Connect a wallet I already own': 'Hubungkan dompet yang sudah saya punya',
 
    // src/views/onboarding/Welcome.tsx (the id copy block renders for id; this English title is a fallback)
-   Onboarding: 'Mulai',
 
    // src/views/onboarding/walletPickerOptions.tsx
-   'Top Pick': 'Pilihan utama',
-   'Zero fees': 'Tanpa biaya',
-   'Best for beginners': 'Terbaik untuk pemula',
-   'Sleek UI': 'Tampilan rapi',
-   'Simple & secure': 'Simpel & aman',
-   Popular: 'Populer',
    Universal: 'Universal',
-   'Widely Used': 'Banyak dipakai',
 
    // src/views/profile/components/Calendar.tsx
-   'Loan Insights': 'Wawasan pinjaman',
 
    // src/views/profile/components/Card.tsx
-   'You Funded': 'Kamu mendanai',
-   'Due on': 'Jatuh tempo',
-   'Fully Repaid': 'Lunas',
-   'Repayment Progress': 'Progres pembayaran kembali',
-   'Remaining for Complete Payback': 'lagi hingga lunas',
-   'Borrow Insight': 'Detail peminjam',
-   'posted on': 'diposting pada',
-   'Waiting for Funding': 'Menunggu pendanaan',
-   Asking: 'Diminta',
-   'Delete Loan Request?': 'Hapus permintaan pinjaman?',
    'Are you sure you want to delete this loan request? This action cannot be undone.':
       'Yakin mau menghapus permintaan pinjaman ini? Tindakan ini tidak bisa dibatalkan.',
-   'Delete Request': 'Hapus permintaan',
 
    // src/views/profile/components/navigation/MobileNav.tsx
-   'Toggle menu': 'Buka/tutup menu',
 
    // src/views/profile/components/navigation/Sidebar.tsx
-   'View more': 'Lihat selengkapnya',
    Menu: 'Menu',
-สะสม',
    Upcoming: 'ถัดไป',
    'Close rewards help': 'ปิดคำอธิบายรางวัล',
    'pts left': 'แต้มก่อนปลดล็อก',
@@ -224,7 +199,8 @@ export const thaiCoverageC: Record<string, string> = {
       'ตั้งค่า Instant Wallet ของคุณ (หรือเชื่อมต่อ Base Account) เพื่อปลดล็อกการยืมและเริ่มสร้างประวัติความน่าเชื่อถือแบบสาธารณะ',
    'Verify your identity to unlock borrowing and start building your public trust record.':
       'ยืนยันตัวตนเพื่อปลดล็อกการยืมและเริ่มสร้างประวัติความน่าเชื่อถือแบบสาธารณะ',
-   'Your reputation milestones will appear here as you repay loans on time.': 'หมุดหมายความน่าเชื่อถือของคุณจะแสดงที่นี่เมื่อคุณชำระคืนเงินกู้ตรงเวลา',
+   'Your reputation milestones will appear here as you repay loans on time.':
+      'หมุดหมายความน่าเชื่อถือของคุณจะแสดงที่นี่เมื่อคุณชำระคืนเงินกู้ตรงเวลา',
 
    // src/views/onboarding/Congratulations.tsx
    'Moodeng celebrating': 'Moodeng กำลังฉลอง',
@@ -234,7 +210,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Create your Instant Wallet': 'สร้าง Instant Wallet ของคุณ',
    'Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.':
       'เงินกู้ของคุณจะเข้ามาที่นี่ สร้างจากบัญชีที่ใช้เข้าสู่ระบบ Moodeng โดยไม่ต้องติดตั้งแอป และยังได้รับแต้ม Pandesal ด้วย',
-   'Setting up your wallet — this takes a few seconds. Keep this screen open.': 'กำลังตั้งค่ากระเป๋าเงินของคุณ ใช้เวลาเพียงไม่กี่วินาที โปรดเปิดหน้านี้ค้างไว้',
+   'Setting up your wallet — this takes a few seconds. Keep this screen open.':
+      'กำลังตั้งค่ากระเป๋าเงินของคุณ ใช้เวลาเพียงไม่กี่วินาที โปรดเปิดหน้านี้ค้างไว้',
    'Connect Your Base Wallet': 'เชื่อมต่อกระเป๋า Base ของคุณ',
    'Connect Your Wallet': 'เชื่อมต่อกระเป๋าเงินของคุณ',
    'Think of this as your digital checking account.': 'เปรียบเสมือนบัญชีเงินฝากกระแสรายวันแบบดิจิทัลของคุณ',
@@ -302,7 +279,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Try the scan again': 'สแกนอีกครั้ง',
    'Connect a wallet instead': 'เชื่อมต่อกระเป๋าเงินแทน',
    'Still checking': 'ยังตรวจสอบอยู่',
-   'This is taking longer than usual. Your scan is safe — check again in a moment.': 'ขั้นตอนนี้ใช้เวลานานกว่าปกติ ผลการสแกนของคุณยังปลอดภัยอยู่ โปรดตรวจสอบอีกครั้งในอีกสักครู่',
+   'This is taking longer than usual. Your scan is safe — check again in a moment.':
+      'ขั้นตอนนี้ใช้เวลานานกว่าปกติ ผลการสแกนของคุณยังปลอดภัยอยู่ โปรดตรวจสอบอีกครั้งในอีกสักครู่',
    'Start a new scan': 'เริ่มสแกนใหม่',
    'One quick face check': 'สแกนใบหน้าสั้น ๆ หนึ่งครั้ง',
    'Instant Wallets are one per person, so we ask for a ten-second scan before creating yours. You will not need it again.':
@@ -338,7 +316,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Borrow Insight': 'ข้อมูลผู้ยืม',
    Asking: 'ยอดที่ขอ',
    'Delete Loan Request?': 'ลบคำขอเงินกู้ใช่ไหม?',
-   'Are you sure you want to delete this loan request? This action cannot be undone.': 'คุณแน่ใจหรือไม่ว่าต้องการลบคำขอเงินกู้นี้? การดำเนินการนี้ย้อนกลับไม่ได้',
+   'Are you sure you want to delete this loan request? This action cannot be undone.':
+      'คุณแน่ใจหรือไม่ว่าต้องการลบคำขอเงินกู้นี้? การดำเนินการนี้ย้อนกลับไม่ได้',
    Lent: 'ปล่อยกู้แล้ว',
    to: 'ให้',
    'Fully Repaid': 'ชำระคืนครบแล้ว',
@@ -391,7 +370,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Send Test Email': 'ส่งอีเมลทดสอบ',
 
    // src/views/profile/components/settings/SecuritySettings.tsx
-   'This information will be shown publicly so be careful what information you provide': 'ข้อมูลนี้จะแสดงต่อสาธารณะ โปรดระมัดระวังข้อมูลที่คุณให้',
+   'This information will be shown publicly so be careful what information you provide':
+      'ข้อมูลนี้จะแสดงต่อสาธารณะ โปรดระมัดระวังข้อมูลที่คุณให้',
    'Wrong network': 'เครือข่ายไม่ถูกต้อง',
    Disconnect: 'ยกเลิกการเชื่อมต่อ',
    'New Password': 'รหัสผ่านใหม่',
@@ -464,7 +444,8 @@ export const thaiCoverageC: Record<string, string> = {
    'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
       'คุณยืนยันตัวตนแล้ว โปรดตั้งค่า Instant Wallet (หรือเชื่อมต่อ Base Account) เพื่อให้เงินกู้และการชำระคืนผูกอยู่กับบัญชี Moodeng ของคุณ',
    'Add a wallet to borrow': 'เพิ่มกระเป๋าเงินเพื่อยืม',
-   'Your repayment activity will appear here once a lender funds your first loan.': 'กิจกรรมการชำระคืนของคุณจะแสดงที่นี่เมื่อผู้ให้กู้ปล่อยกู้ครั้งแรกให้คุณ',
+   'Your repayment activity will appear here once a lender funds your first loan.':
+      'กิจกรรมการชำระคืนของคุณจะแสดงที่นี่เมื่อผู้ให้กู้ปล่อยกู้ครั้งแรกให้คุณ',
    'No repayments yet': 'ยังไม่มีการชำระคืน',
    'How to withdraw USDC from PDAX to your wallet': 'วิธีถอน USDC จาก PDAX เข้ากระเป๋าเงินของคุณ',
    'Repay amount': 'จำนวนเงินที่ชำระคืน',
@@ -477,7 +458,8 @@ export const thaiCoverageC: Record<string, string> = {
    'Open GCrypto': 'เปิด GCrypto',
    'Open PDAX': 'เปิด PDAX',
    'Open Binance': 'เปิด Binance',
-   'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash': 'แนะนำ · ค่าธรรมเนียมต่ำสุด · ซื้อ USDC ด้วยเงินเปโซ ถอนเข้าบัญชีธนาคารหรือ GCash ได้',
+   'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash':
+      'แนะนำ · ค่าธรรมเนียมต่ำสุด · ซื้อ USDC ด้วยเงินเปโซ ถอนเข้าบัญชีธนาคารหรือ GCash ได้',
    "External option · you follow Moneybees' own process": 'ตัวเลือกภายนอก · ทำตามขั้นตอนของ Moneybees เอง',
    'Visit moneybees.ph → follow their own process → share your wallet address → pay only after they confirm':
       'ไปที่ moneybees.ph → ทำตามขั้นตอนของพวกเขา → แชร์ที่อยู่กระเป๋าเงินของคุณ → ชำระเงินหลังจากพวกเขายืนยันแล้วเท่านั้น',
@@ -515,13 +497,15 @@ export const thaiCoverageC: Record<string, string> = {
    'to repay.': 'จึงจะชำระคืนได้',
    "Pick where you'll buy or withdraw USDC.": 'เลือกแหล่งที่คุณจะซื้อหรือถอน USDC',
    'works well for most people': 'เหมาะกับคนส่วนใหญ่',
-   "— and works the same whether you're in the Philippines or traveling.": '— และใช้งานได้เหมือนกันไม่ว่าคุณจะอยู่ในฟิลิปปินส์หรือกำลังเดินทาง',
+   "— and works the same whether you're in the Philippines or traveling.":
+      '— และใช้งานได้เหมือนกันไม่ว่าคุณจะอยู่ในฟิลิปปินส์หรือกำลังเดินทาง',
    'is also available under "Other options".': 'ก็มีให้เลือกใน "ตัวเลือกอื่น"',
    'Fewer options': 'ตัวเลือกน้อยลง',
    'Other options': 'ตัวเลือกอื่น',
    'You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is available in your country.':
       'คุณชำระคืนได้จากกระเป๋าเงิน แพลตฟอร์มแลกเปลี่ยนคริปโต แพลตฟอร์ม P2P หรือบริการคริปโตในประเทศ แล้วแต่ว่าในประเทศของคุณมีช่องทางใด',
-   "This is the same wallet your loan was sent to. Copy it — you'll paste it into": 'นี่คือกระเป๋าเงินเดียวกับที่ใช้รับเงินกู้ของคุณ คัดลอกไว้แล้วนำไปวางใน',
+   "This is the same wallet your loan was sent to. Copy it — you'll paste it into":
+      'นี่คือกระเป๋าเงินเดียวกับที่ใช้รับเงินกู้ของคุณ คัดลอกไว้แล้วนำไปวางใน',
    'as the destination.': 'เป็นปลายทาง',
    'Tap to copy your wallet address': 'แตะเพื่อคัดลอกที่อยู่กระเป๋าเงินของคุณ',
    'Now open Moneybees below →': 'จากนั้นเปิด Moneybees ด้านล่าง →',
@@ -616,5 +600,5 @@ export const thaiCoverageC: Record<string, string> = {
       'ทัวร์ 2 นาที: เลือกบทบาท ยืนยันตัวตน ขอหรือปล่อยกู้ ชำระคืน และสร้างเครดิต',
    'Getting Started | Moodeng Credit': 'เริ่มต้นใช้งาน | Moodeng Credit',
    'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
-      'เรียนรู้พื้นฐานของ Moodeng: ดูคู่มือและสิทธิประโยชน์ ดูว่า USDC ทำงานอย่างไร ทำความเข้าใจการเพิ่มระดับเครดิต และสำรวจอะคาเดมีกับบล็อก',
+      'เรียนรู้พื้นฐานของ Moodeng: ดูคู่มือและสิทธิประโยชน์ ดูว่า USDC ทำงานอย่างไร ทำความเข้าใจการเพิ่มระดับเครดิต และสำรวจอะคาเดมีกับบล็อก'
 };
