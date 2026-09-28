@@ -356,5 +356,55 @@ export const filipinoCoverageA: Record<string, string> = {
    Soon: 'Malapit na',
 
    // src/components/auth/TelegramLoginTile.tsx
-   'Sign in with Telegram': 'Mag-sign in gamit ang Telegram'
+   'Sign in with Telegram': 'Mag-sign in gamit ang Telegram',
+
+   // src/app/verify/page.tsx
+   'Continue to World ID': 'Magpatuloy sa World ID',
+   'Step 1 of 2 done': 'Tapos na ang Step 1 ng 2',
+   'No World ID? Verify with your ID instead': 'Walang World ID? I-verify na lang gamit ang ID mo',
+   'Need help from our team?': 'Kailangan ng tulong mula sa team namin?',
+   'Message us on Telegram': 'I-message kami sa Telegram',
+   'Message us on Facebook': 'I-message kami sa Facebook',
+   'Something went wrong. Please try again.': 'May nangyaring mali. Subukan ulit.',
+   'Ready for face scan': 'Ready na para sa face scan',
+   'Setting up…': 'Sine-set up…',
+   'Starting your verification. Keep this screen open.': 'Sinisimulan ang verification mo. Panatilihing bukas ang screen na ito.',
+   'Before you start': 'Bago ka magsimula',
+   'Open verification': 'Buksan ang verification',
+   'Waiting for face scan…': 'Hinihintay ang face scan…',
+   'More options': 'Higit pang options',
+   'Confirming your verification…': 'Kinukumpirma ang verification mo…',
+   'Almost there': 'Halos tapos na',
+   'Your face scan is still finishing up. This usually takes a moment. Left before finishing the scan? Start over below for a fresh one.':
+      'Tinatapos pa ang face scan mo. Karaniwang saglit lang ito. Umalis ka ba bago matapos ang scan? Magsimula ulit sa ibaba para sa bagong scan.',
+   'Start over': 'Magsimula ulit',
+   'Face scan not finished': 'Hindi natapos ang face scan',
+   'It looks like the face scan was closed before it was completed. No problem — start a new scan below. It only takes about 30 seconds.':
+      'Mukhang na-close ang face scan bago ito natapos. Walang problema — magsimula ng bagong scan sa ibaba. Mga 30 seconds lang ito.',
+   'Start new face scan': 'Magsimula ng bagong face scan',
+   'Reviewing your verification…': 'Sinusuri ang verification mo…',
+   'Check status': 'Tingnan ang status',
+   'Go to dashboard': 'Pumunta sa dashboard',
+   'Manual review in progress': 'Isinasagawa ang manual review',
+   'Continue verification': 'Ipagpatuloy ang verification',
+   'Verified!': 'Verified!',
+   'Your identity has been confirmed. Taking you to the next step.': 'Nakumpirma na ang identity mo. Dinadala ka na sa susunod na step.',
+   'This identity is already registered': 'Naka-register na ang identity na ito',
+   'Our checks found an account already verified with this face. Each person can only verify once. If you think this is a mistake, please contact support.':
+      'Natagpuan ng mga check namin na may account na verified na gamit ang face na ito. Isang beses lang puwedeng mag-verify ang bawat tao. Kung sa tingin mo ay mali ito, makipag-ugnayan sa support.',
+   'Continue to app': 'Magpatuloy sa app',
+   'Something went wrong': 'May nangyaring mali',
+   'Preparing verification.': 'Ihinahanda ang verification.',
+
+   // src/components/Header/MobileNav.tsx
+   'Mobile navigation': 'Menu ng mobile',
+
+   // src/components/InAppBrowserNotice.tsx
+   'Open in Browser': 'Buksan sa Browser',
+
+   // src/components/PowerLenderBadge.tsx
+   'Power Lender': 'Power Lender',
+
+   // src/components/UserPay.tsx
+   Stablecoin: 'Stablecoin'
 };
