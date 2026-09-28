@@ -382,7 +382,7 @@ export const indonesianCoverageE: Record<string, string> = {
    '~30 sec': '~30 detik',
    '~45 sec': '~45 detik',
    '~60 sec': '~60 detik',
-   'Live quote · Powered by': 'Kuotasi langsung · Didukung oleh',
+   'Live quote · Powered by': 'Harga langsung · Didukung oleh',
 
    // src/views/fund/FundWalletSheet.tsx
    // Overrides idB: "Send USDC on the" is followed by "Base network" (= "Jaringan Base"), so the
@@ -437,7 +437,7 @@ export const indonesianCoverageE: Record<string, string> = {
 
    // src/views/signup/SignUpPage.tsx
    'Account already exists': 'Akun sudah ada',
-   'Logging you in…': 'Sedang memasukkan kamu…',
+   'Logging you in…': 'Sedang masuk…',
    'Could not reach the server. Check your connection and try again.': 'Server tidak bisa dijangkau. Periksa koneksimu lalu coba lagi.',
    'Already linked': 'Sudah tertaut',
    'Already registered': 'Sudah terdaftar',
@@ -462,7 +462,7 @@ export const indonesianCoverageE: Record<string, string> = {
    'Usual amount funded': 'Jumlah dana biasanya',
    'Typical time to be repaid': 'Waktu biasanya hingga dibayar kembali',
    'Repeat borrowers': 'Peminjam berulang',
-   'Overdue against them': 'Terlambat bayar kepada mereka',
+   'Overdue against them': 'Terlambat bayar',
    'Trust-building loans': 'Trust-Building Loan',
    'Credit-building loans': 'Credit-Building Loan',
 
