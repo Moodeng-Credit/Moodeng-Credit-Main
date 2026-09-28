@@ -4,7 +4,7 @@ export const filipinoCoverageC: Record<string, string> = {
    // src/views/onboarding/ConnectWallet.tsx
    'Create your Instant Wallet': 'Gumawa ng Instant Wallet mo',
    'Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.':
-      'Dito papasok ang loan mo — ginagawa ito mula sa Moodeng login mo, walang app na kailangan. Kikita ka rin ng Pandesal points.',
+      'Dito papasok ang loan mo — ginawa mula sa Moodeng login mo, walang app na kailangan. Makakakuha ka rin ng Pandesal points.',
    'Setting up your wallet — this takes a few seconds. Keep this screen open.':
       'Sine-set up ang wallet mo — ilang segundo lang ito. Huwag isara ang screen na ito.',
    'Connect Your Base Wallet': 'Ikonekta ang Base Wallet mo',
@@ -15,12 +15,12 @@ export const filipinoCoverageC: Record<string, string> = {
    'Create Your Instant Wallet': 'Gumawa ng Instant Wallet mo',
    'Moodeng wallet': 'Wallet ng Moodeng',
    'Connecting your wallet lets Moodeng read your on-chain activity to award Pandesal points and send USDC loans directly to you. We never ask for your private keys or seed phrase.':
-      'Kapag ikinonek mo ang wallet mo, mababasa ng Moodeng ang on-chain activity mo para mabigyan ka ng Pandesal points at direktang maipadala sa iyo ang USDC loans. Hindi namin kailanman hihingin ang private keys o seed phrase mo.',
+      'Kapag ikinonekta mo ang wallet mo, mababasa ng Moodeng ang on-chain na aktibidad mo para mabigyan ka ng Pandesal points at direktang maipadala sa iyo ang mga USDC loan. Hindi namin kailanman hihingin ang private key o seed phrase mo.',
    "Your Instant Wallet holds your USDC loans and earns you Pandesal points. It's created instantly from your Moodeng login — no app and no seed phrase — and it's fully yours: you can export its key anytime. Prefer a Base Account? You can connect one instead. We never ask for your private keys or seed phrase.":
-      'Nasa Instant Wallet mo ang USDC loans mo, at dito ka kumikita ng Pandesal points. Agad itong ginagawa mula sa Moodeng login mo — walang app at walang seed phrase — at sa iyo talaga ito: puwede mong i-export ang key nito anumang oras. Mas gusto mo ang Base Account? Puwede mo itong ikonekta sa halip. Hindi namin kailanman hihingin ang private keys o seed phrase mo.',
+      'Nasa Instant Wallet mo ang mga USDC loan mo, at dito ka kumikita ng Pandesal points. Agad itong ginagawa mula sa Moodeng login mo — walang app at walang seed phrase — at sa iyo talaga ito: puwede mong i-export ang key nito anumang oras. Mas gusto mo ng Base Account? Puwede mo rin itong ikonekta. Hindi namin kailanman hihingin ang private key o seed phrase mo.',
    'Connecting…': 'Kumokonekta…',
    'Connecting...': 'Kumokonekta...',
-   'Prefer a Base Account? Connect it instead': 'Mas gusto mo ang Base Account? Ikonekta ito',
+   'Prefer a Base Account? Connect it instead': 'Mas gusto mo ng Base Account? Ikonekta na lang ito',
    'Creating your wallet…': 'Ginagawa ang wallet mo…',
    'Create Instant Wallet': 'Gumawa ng Instant Wallet',
    'Connect Base Wallet': 'Ikonekta ang Base Wallet',
@@ -40,7 +40,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'This wallet is already linked to another Moodeng account. To keep lending fair and prevent self-lending, each wallet can belong to only one account.':
       'Naka-link na ang wallet na ito sa ibang Moodeng account. Para manatiling patas ang pagpapahiram at maiwasan ang pagpapahiram sa sarili, isang account lang ang puwedeng may-ari ng bawat wallet.',
    'What you can do': 'Ano ang puwede mong gawin',
-   'Connect a different wallet address to this lender account.': 'Magkonek ng ibang wallet address sa lender account na ito.',
+   'Connect a different wallet address to this lender account.': 'Magkonekta ng ibang wallet address sa lender account na ito.',
    'If you created a borrower account by mistake, remove this wallet from it first — or ask us to delete that account or switch its role.':
       'Kung hindi sinasadyang nakagawa ka ng borrower account, alisin muna roon ang wallet na ito — o hilingin sa amin na i-delete ang account na iyon o palitan ang role nito.',
    "Not sure what happened? Message us and we'll help.": 'Hindi sigurado kung ano ang nangyari? I-message kami at tutulungan ka namin.',
@@ -48,28 +48,28 @@ export const filipinoCoverageC: Record<string, string> = {
    'Use a different wallet': 'Gumamit ng ibang wallet',
 
    // src/views/onboarding/WalletConnectHelp.tsx
-   'Trouble connecting?': 'Nahihirapang kumonek?',
+   'Trouble connecting?': 'Nahihirapang kumonekta?',
    'Use the popup that opens when you tap Connect.': 'Gamitin ang popup na bumubukas kapag na-tap mo ang Ikonekta.',
    "You don't need to download a separate Base app from the app store — creating an account there won't connect here.":
-      'Hindi mo kailangang mag-download ng hiwalay na Base app mula sa app store — kahit gumawa ka ng account doon, hindi ito makokonek dito.',
+      'Hindi mo kailangang mag-download ng hiwalay na Base app mula sa app store — kahit gumawa ka ng account doon, hindi ito makokonekta rito.',
    'Seeing a “connection is not private” warning?': 'May lumalabas bang “connection is not private” na warning?',
    "Your phone's clock is probably off. In Settings, set date & time to automatic, then tap Connect again.":
       'Malamang mali ang oras sa phone mo. Sa Settings ng phone, i-set sa automatic ang date & time, tapos i-tap ulit ang Ikonekta.',
-   'Still stuck?': 'Hindi pa rin gumagana?',
+   'Still stuck?': 'Naiipit pa rin?',
    'Switch between Wi‑Fi and mobile data, make sure your browser is up to date, and reconnect.':
-      'Magpalit sa pagitan ng Wi‑Fi at mobile data, siguraduhing updated ang browser mo, at kumonek ulit.',
+      'Magpalit sa pagitan ng Wi‑Fi at mobile data, siguraduhing updated ang browser mo, at kumonekta ulit.',
 
    // src/views/onboarding/WalletConnected.tsx
    'Use Your Instant Wallet or a Base Account': 'Gamitin ang Instant Wallet mo o ang Base Account',
    'Your Instant Wallet Is Ready': 'Handa na ang Instant Wallet mo',
    'Wallet Connected': 'Nakakonekta na ang wallet',
    'Loans you receive land right in the app — no other app needed. It also earns you Pandesal points.':
-      'Diretso sa app papasok ang loans na matatanggap mo — hindi na kailangan ng ibang app. Kikita ka rin dito ng Pandesal points.',
+      'Diretso sa app papasok ang mga loan na matatanggap mo — hindi na kailangan ng ibang app. Kikita ka rin dito ng Pandesal points.',
    'Loading…': 'Naglo-load…',
 
    // src/views/onboarding/WalletFaceCheck.tsx
    'Try the scan again': 'Subukan ulit ang scan',
-   'Connect a wallet instead': 'Magkonek na lang ng wallet',
+   'Connect a wallet instead': 'Magkonekta na lang ng wallet',
    'Still checking': 'Sinusuri pa',
    'This is taking longer than usual. Your scan is safe — check again in a moment.':
       'Mas matagal ito kaysa karaniwan. Ligtas ang scan mo — tingnan ulit maya-maya.',
@@ -93,7 +93,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Start face check': 'Simulan ang face check',
 
    // src/views/onboarding/walletPickerOptions.tsx
-   'Zero fees': 'Walang fees',
+   'Zero fees': 'Walang fee',
    'Best for beginners': 'Swak sa mga baguhan',
    'Sleek UI': 'Magandang UI',
    'Simple & secure': 'Simple at secure',
@@ -107,7 +107,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'You Funded': 'Nagpahiram ka ng',
    'Due on': 'Due sa',
    'Fully Repaid': 'Bayad na nang buo',
-   'Repayment Progress': 'Progreso ng bayad',
+   'Repayment Progress': 'Progreso ng pagbabayad',
    'Remaining for Complete Payback': 'pa ang natitira para mabayaran nang buo',
    'Borrow Insight': 'Insight sa borrower',
    'posted on': 'na-post noong',
@@ -133,8 +133,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Test Email': 'Test email',
    'Send a test email to verify your email configuration': 'Magpadala ng test email para ma-check ang email configuration mo',
    'Send Test Email': 'Magpadala ng test email',
-   'Connect your telegram to get the latest updates': 'Ikonekta ang Telegram mo para makuha ang pinakabagong updates',
-   'Connect your WhatsApp to get the latest updates': 'Ikonekta ang WhatsApp mo para makuha ang pinakabagong updates',
+   'Connect your telegram to get the latest updates': 'Ikonekta ang Telegram mo para makuha ang mga pinakabagong update',
+   'Connect your WhatsApp to get the latest updates': 'Ikonekta ang WhatsApp mo para makuha ang mga pinakabagong update',
    'Change Username': 'Palitan ang username',
    'Change Email': 'Palitan ang email',
    Update: 'I-update',
@@ -163,13 +163,13 @@ export const filipinoCoverageC: Record<string, string> = {
    LOCKED: 'NAKA-LOCK',
 
    // src/views/profile/components/tabs/DashboardTab.tsx
-   'Loan Summary': 'Summary ng loans',
-   'PAY LOANS NOW': 'MAGBAYAD NG LOANS NGAYON',
+   'Loan Summary': 'Buod ng mga loan',
+   'PAY LOANS NOW': 'MAGBAYAD NG LOAN NGAYON',
    Info: 'Impormasyon',
 
    // src/views/profile/components/tabs/SettingsTab.tsx
    'Revert Changes': 'Ibalik ang dati',
-   'Save Changes': 'I-save ang changes',
+   'Save Changes': 'I-save ang mga pagbabago',
 
    // src/views/profile/components/tabs/SupportTab.tsx
    'Support content coming soon...': 'Malapit na ang support content...',
@@ -195,24 +195,24 @@ export const filipinoCoverageC: Record<string, string> = {
    'more USDC': 'USDC',
    'to repay.': 'para makabayad.',
    'Choose your source': 'Pumili ng source',
-   'Loading your options…': 'Nilo-load ang options mo…',
+   'Loading your options…': 'Naglo-load ang mga opsyon mo…',
    "Pick where you'll buy or withdraw USDC.": 'Piliin kung saan ka bibili o magwi-withdraw ng USDC.',
    'works well for most people': 'ang swak sa karamihan',
    "— and works the same whether you're in the Philippines or traveling.":
       '— at pareho lang ang gamit nito nasa Pilipinas ka man o nagbibiyahe.',
-   'is also available under "Other options".': 'ay available din sa "Iba pang options".',
-   'Other options': 'Iba pang options',
-   'Fewer options': 'Mas kaunting options',
+   'is also available under "Other options".': 'ay available din sa "Iba pang opsyon".',
+   'Other options': 'Iba pang opsyon',
+   'Fewer options': 'Mas kaunting opsyon',
    'You can repay from a wallet, an exchange, a P2P platform, or a local crypto service — whatever is available in your country.':
       'Puwede kang magbayad mula sa wallet, exchange, P2P platform, o local crypto service — kung ano ang available sa bansa mo.',
-   'Copy your wallet address': 'I-copy ang wallet address mo',
+   'Copy your wallet address': 'Kopyahin ang wallet address mo',
    "This is the same wallet your loan was sent to. Copy it — you'll share it with Moneybees so they send your USDC here.":
-      'Ito rin ang wallet kung saan ipinadala ang loan mo. I-copy ito — ibibigay mo ito sa Moneybees para dito nila ipadala ang USDC mo.',
+      'Ito rin ang wallet kung saan ipinadala ang loan mo. Kopyahin ito — ibibigay mo ito sa Moneybees para dito nila ipadala ang USDC mo.',
    "This is the same wallet your loan was sent to. Copy it — you'll paste it into":
-      'Ito rin ang wallet kung saan ipinadala ang loan mo. I-copy ito — ipe-paste mo ito sa',
+      'Ito rin ang wallet kung saan ipinadala ang loan mo. Kopyahin ito — ipe-paste mo ito sa',
    'as the destination.': 'bilang destination.',
-   'Copied!': 'Na-copy na!',
-   'Tap to copy your wallet address': 'I-tap para i-copy ang wallet address mo',
+   'Copied!': 'Nakopya na!',
+   'Tap to copy your wallet address': 'I-tap para kopyahin ang wallet address mo',
    'Now open Moneybees below →': 'Buksan na ang Moneybees sa ibaba →',
    'Now paste it into the app below →': 'I-paste na ito sa app sa ibaba →',
    '⚠️ Send on the BASE network only': '⚠️ Sa BASE network ka lang magpadala',
@@ -220,17 +220,17 @@ export const filipinoCoverageC: Record<string, string> = {
       'Ang USDC na ipinadala sa Ethereum, Polygon, o anumang ibang network ay mapupunta sa address na ito sa maling chain at tuluyang mawawala — hindi na ito mababawi. Kapag tinanong ng',
    'asks which network, choose': 'kung aling network, piliin ang',
    'Visit moneybees.ph and follow their own process': 'Pumunta sa moneybees.ph at sundin ang sarili nilang proseso',
-   'They handle ID checks and the rate directly with you': 'Sila mismo ang bahala sa ID checks at sa rate kasama mo',
+   'They handle ID checks and the rate directly with you': 'Sila mismo ang bahala sa ID check at sa rate, direkta sa iyo',
    'Share your address —': 'Ibigay ang address mo —',
-   'copy it here': 'i-copy dito',
+   'copy it here': 'kopyahin dito',
    '· pay only after they confirm': '· magbayad lang kapag nag-confirm na sila',
    'Moneybees is an external service — you transact with them directly; Moodeng isn’t part of the transaction.':
       'External service ang Moneybees — direkta kang makikipag-transaksyon sa kanila; hindi kasali ang Moodeng sa transaksyon.',
    In: 'Sa',
-   Select: 'Piliin',
+   Select: 'Piliin ang',
    'network — not Ethereum or Polygon': 'network — hindi Ethereum o Polygon',
    'Look for': 'Hanapin ang',
-   '— not USDC or other tokens': '— hindi USDC o ibang tokens',
+   '— not USDC or other tokens': '— hindi USDC o ibang token',
    'How to withdraw USDC from PDAX to your wallet': 'Paano mag-withdraw ng USDC mula sa PDAX papunta sa wallet mo',
    "'s fee": ' fee',
    'Moodeng fee': 'Fee ng Moodeng',
@@ -256,10 +256,10 @@ export const filipinoCoverageC: Record<string, string> = {
    'Paying less than the full $': 'Ang pagbabayad nang mas mababa sa buong $',
    'reduces what you owe, but your account stays restricted until this loan is fully repaid.':
       'ay nagpapababa ng utang mo, pero mananatiling restricted ang account mo hangga’t hindi pa buong bayad ang loan na ito.',
-   'of $': 'mula sa $',
+   'of $': 'sa $',
    remaining: 'na natitira',
    leaves: 'may',
-   'Clears this loan ✓': 'Buong mababayaran ang loan na ito ✓',
+   'Clears this loan ✓': 'Mababayaran nang buo ang loan na ito ✓',
    'Adjust repay amount': 'I-adjust ang halagang babayaran',
    'How to repay': 'Paano magbayad',
    'Close video': 'Isara ang video',
@@ -270,7 +270,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Show repayment details': 'Ipakita ang detalye ng bayad',
    'Repay next loan': 'Bayaran ang susunod na loan',
    'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash':
-      'Recommended · pinakamababang fees · bumili ng USDC gamit ang PHP, mag-cash out sa bank o GCash',
+      'Inirerekomenda · pinakamababang fee · bumili ng USDC gamit ang PHP, mag-cash out sa bank o GCash',
    'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm':
       'Transfer → Send Crypto → USDC → External Wallet → i-paste ang address → Base network → i-confirm',
    'Wallet → USDCBASE → Withdraw → Paste wallet address': 'Wallet → USDCBASE → Withdraw → I-paste ang wallet address',
@@ -284,19 +284,19 @@ export const filipinoCoverageC: Record<string, string> = {
    'Enter an amount greater than 0.': 'Maglagay ng halagang higit sa 0.',
    'Finish setup to start borrowing': 'Tapusin ang setup para makapagsimulang humiram',
    'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.':
-      'Mag-verify at i-set up ang wallet mo (Instant Wallet, o Base Account kung mas gusto mo) bago mag-request ng loans. Lalabas dito ang mga bayad mo kapag napondohan na ng lender ang una mong loan.',
+      'Mag-verify at i-set up ang wallet mo (Instant Wallet, o Base Account kung mas gusto mo) bago mag-request ng loan. Lalabas dito ang mga bayad mo kapag napondohan na ng lender ang una mong loan.',
    'Verify yourself to borrow': 'Mag-verify para makahiram',
    'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.':
-      'Naidagdag na ang wallet mo. Tapusin ang verification bago mag-request ng loans. Lalabas dito ang mga bayad mo kapag napondohan na.',
+      'Naidagdag na ang wallet mo. Tapusin ang verification bago mag-request ng loan. Lalabas dito ang mga bayad mo kapag napondohan na.',
    'Add a wallet to borrow': 'Magdagdag ng wallet para makahiram',
    'Add Wallet': 'Magdagdag ng wallet',
    'You are verified. Set up your Instant Wallet (or connect a Base Account) so loans and repayments can stay tied to your Moodeng account.':
-      'Verified ka na. I-set up ang Instant Wallet mo (o ikonekta ang Base Account) para manatiling naka-link sa Moodeng account mo ang loans at mga bayad.',
+      'Verified ka na. I-set up ang Instant Wallet mo (o ikonekta ang Base Account) para manatiling naka-link sa Moodeng account mo ang mga loan at bayad.',
    'Your repayment activity will appear here once a lender funds your first loan.':
-      'Lalabas dito ang activity ng pagbabayad mo kapag napondohan na ng lender ang una mong loan.',
+      'Lalabas dito ang record ng pagbabayad mo kapag napondohan na ng lender ang una mong loan.',
    'No repayments yet': 'Wala pang bayad',
-   'Copy failed': 'Hindi na-copy',
-   'Could not copy your wallet address. Copy it manually.': 'Hindi ma-copy ang wallet address mo. I-copy ito nang mano-mano.',
+   'Copy failed': 'Hindi nakopya',
+   'Could not copy your wallet address. Copy it manually.': 'Hindi makopya ang wallet address mo. Kopyahin ito nang mano-mano.',
    'Still confirming': 'Kinukumpirma pa',
    'Your payment was sent and is taking a moment to confirm. This will update automatically.':
       'Naipadala na ang bayad mo at sandali pa bago ito ma-confirm. Kusa itong mag-a-update.',
@@ -315,10 +315,10 @@ export const filipinoCoverageC: Record<string, string> = {
    Loan: 'Loan',
 
    // src/views/signin/SignInPage.tsx
-   'Authentication failed': 'Nabigo ang authentication',
+   'Authentication failed': 'Hindi nagtagumpay ang authentication',
 
    // src/views/signup/SignUpPage.tsx
-   'It takes just a few minutes to get started.': 'Ilang minuto lang ito para makapagsimula.',
+   'It takes just a few minutes to get started.': 'Ilang minuto lang para makapagsimula.',
    'Choose a username': 'Pumili ng username',
 
    // src/views/support/FAQ.tsx
@@ -328,7 +328,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'See how Moodeng works': 'Tingnan kung paano gumagana ang Moodeng',
    'Take the interactive tour': 'Simulan ang interactive tour',
    'A 2-minute walkthrough: choose a role, verify, request or fund a loan, repay and build credit.':
-      '2-minutong walkthrough: pumili ng role, mag-verify, mag-request o mag-fund ng loan, magbayad, at bumuo ng credit.',
+      '2-minutong walkthrough: pumili ng role, mag-verify, mag-request o magpondo ng loan, magbayad, at bumuo ng credit.',
    'Getting Started | Moodeng Credit': 'Pagsisimula | Moodeng Credit',
    'Learn the Moodeng basics: browse guides and benefits, see how USDC works, understand credit leveling, and explore the Academy and blog.':
       'Alamin ang mga basics ng Moodeng: tingnan ang mga gabay at benepisyo, alamin kung paano gumagana ang USDC, unawain ang credit leveling, at tuklasin ang Academy at blog.',
@@ -342,66 +342,67 @@ export const filipinoCoverageC: Record<string, string> = {
    'Apply for loan': 'Mag-apply ng loan',
    'Repayment complete': 'Kumpleto na ang bayad',
    'Level 2 unlocked': 'Na-unlock ang Level 2',
-   'How Credit Levels work': 'Paano gumagana ang Credit Levels',
+   'How Credit Levels work': 'Paano gumagana ang Credit Level',
    'Your Credit Level is your borrowing limit. Everyone starts at $15 — and it grows each time you repay a full-limit loan on time.':
-      'Ang Credit Level mo ang borrowing limit mo. Lahat ay nagsisimula sa $15 — at lumalaki ito tuwing binabayaran mo nang on-time ang full-limit loan.',
-   'Deep dive': 'Buong detalye',
+      'Ang Credit Level mo ang borrowing limit mo. Lahat ay nagsisimula sa $15 — at tumataas ito tuwing nababayaran mo on time ang isang full-limit loan.',
+   'Deep dive': 'Mas malalim na paliwanag',
    'Credit limit climbing across four levels': 'Umaakyat na credit limit sa apat na level',
    'Each Credit-Building Loan repaid on time steps your limit up to the next level.':
-      'Bawat Credit-Building Loan na babayaran nang on-time ay nagpapataas ng limit mo papunta sa susunod na level.',
+      'Bawat Credit-Building Loan na nabayaran on time ay nag-aakyat ng limit mo sa susunod na level.',
    'The basics': 'Ang basics',
    'Three things to know': 'Tatlong dapat malaman',
    'Credit Levels reward one clear pattern: borrow your full limit, repay it on time, unlock the next limit.':
-      'Isang malinaw na pattern lang ang ginagantimpalaan ng Credit Levels: hiramin ang buong limit mo, bayaran on-time, ma-unlock ang susunod na limit.',
+      'Isang malinaw na pattern lang ang nire-reward ng Credit Level: hiramin ang buong limit mo, bayaran ito on time, at i-unlock ang susunod na limit.',
    'The ladder': 'Ang hagdanan',
    'Everyone starts at Level 1. Each successful Credit-Building Loan unlocks the next borrowing limit.':
       'Lahat ay nagsisimula sa Level 1. Bawat matagumpay na Credit-Building Loan ay nag-a-unlock ng susunod na borrowing limit.',
-   'Repay on time, and the next level unlocks itself.': 'Magbayad nang on-time, at awtomatikong ma-a-unlock ang susunod na level.',
+   'Repay on time, and the next level unlocks itself.': 'Magbayad on time, at kusang ma-a-unlock ang susunod na level.',
    'Request a loan, repay it by the due date, and your limit steps up automatically — your borrowing power compounds with every clean repayment.':
       'Mag-request ng loan, bayaran ito bago ang due date, at awtomatikong tataas ang limit mo — lumalaki ang borrowing power mo sa bawat malinis na bayad.',
    'Two kinds of loan': 'Dalawang uri ng loan',
    'Trust-Building vs Credit-Building': 'Trust-Building vs Credit-Building',
    'Moodeng has two loan types. Both earn you Pandesal points — but only a full-limit Credit-Building Loan raises your borrowing limit.':
-      'May dalawang uri ng loan ang Moodeng. Parehong kumikita ka ng Pandesal points — pero isang full-limit Credit-Building Loan lang ang nagpapataas ng borrowing limit mo.',
+      'May dalawang uri ng loan ang Moodeng. Pareho kang kikita ng Pandesal points sa dalawa — pero full-limit na Credit-Building Loan lang ang nagpapataas ng borrowing limit mo.',
    'Your limit': 'Ang limit mo',
    'Use it when:': 'Gamitin ito kapag:',
    'Most borrowers use both — trust loans to stay active, credit loans to climb.':
-      'Karamihan ng borrower ay gumagamit ng pareho — trust loans para manatiling active, credit loans para umakyat.',
-   'Trust is the currency before the credit.': 'Ang tiwala ang currency bago ang credit.',
+      'Karamihan ng borrower ay gumagamit ng pareho — Trust-Building Loan para manatiling aktibo, Credit-Building Loan para umakyat.',
+   'Trust is the currency before the credit.': 'Tiwala muna bago credit.',
    'Every loan you repay cleanly — even a small Trust-Building Loan — deposits reputation that lenders can see. That trust is what gets your next request funded faster.':
-      'Bawat loan na malinis mong babayaran — kahit maliit na Trust-Building Loan — ay nagdadagdag ng reputasyon na makikita ng mga lender. Ang tiwalang iyon ang nagpapabilis ng pag-fund ng susunod mong request.',
-   'Level up faster': 'Mas mabilis na umakyat ng level',
+      'Bawat loan na malinis mong nababayaran — kahit maliit na Trust-Building Loan — ay nagdadagdag ng reputasyong nakikita ng mga lender. Ang tiwalang iyon ang nagpapabilis ng pagpopondo sa susunod mong request.',
+   'Level up faster': 'Mag-level up nang mas mabilis',
    'Do this, not that': 'Gawin ito, huwag iyon',
    'A few habits keep your climb steady and protect the Pandesal points you are earning.':
-      'Ilang habits lang ang kailangan para panatilihing steady ang pag-akyat mo at protektahan ang Pandesal points na kinikita mo.',
-   'Credit Levels, answered': 'Credit Levels, sinagot',
+      'Ilang gawi lang ang kailangan para manatiling tuloy-tuloy ang pag-akyat mo at maprotektahan ang Pandesal points na kinikita mo.',
+   'Credit Levels, answered': 'Mga sagot tungkol sa Credit Level',
    'Quick answers to the questions borrowers ask most about levelling up.':
       'Mabilisang sagot sa mga madalas itanong ng mga borrower tungkol sa pag-level up.',
    'Keep learning': 'Magpatuloy sa pag-aaral',
    'Related guides': 'Kaugnay na mga gabay',
    'Credit Levels work hand in hand with your Pandesal points and repayment history.':
-      'Magkatuwang ang Credit Levels at ang Pandesal points at repayment history mo.',
+      'Magkatuwang ang Credit Level, ang Pandesal points mo, at ang history ng pagbabayad mo.',
    'Pop quiz': 'Pop quiz',
    'Are you a Credit Level pro?': 'Isa ka bang Credit Level pro?',
    'Five quick questions. No pressure — your hippo believes in you.':
       'Limang mabilisang tanong. Walang pressure — naniniwala sa iyo ang hippo mo.',
-   'Ready to grow your limit?': 'Handa nang palakihin ang limit mo?',
+   'Ready to grow your limit?': 'Handa ka na bang palakihin ang limit mo?',
    'Only request your full limit when you are confident you can repay on time. Smaller loans still build trust.':
-      'Mag-request lang ng buong limit kapag sigurado kang babayaran ito on-time. Nagtatayo pa rin ng tiwala ang mas maliliit na loan.',
+      'Mag-request lang ng buong limit kapag sigurado kang mababayaran mo ito on time. Bumubuo pa rin ng tiwala ang mas maliliit na loan.',
    'What it is': 'Ano ito',
    'A level is a limit': 'Ang level ay isang limit',
-   'Your level sets the most you can borrow at once.': 'Itinatakda ng level mo ang pinakamalaking puwede mong hiramin nang sabay.',
+   'Your level sets the most you can borrow at once.':
+      'Itinatakda ng level mo ang pinakamalaking halagang puwede mong hiramin sa isang pagkakataon.',
    'Level 1 unlocks $15 — small on purpose, since you have no history yet.':
       'Nag-a-unlock ang Level 1 ng $15 — sadyang maliit, dahil wala ka pang history.',
-   'How you grow': 'Paano ka lumalaki',
+   'How you grow': 'Paano ka umaakyat',
    'Repay your full limit': 'Bayaran ang buong limit mo',
-   'A full-limit loan repaid on time raises your cap.': 'Ang full-limit loan na babayaran nang on-time ang nagpapataas ng cap mo.',
+   'A full-limit loan repaid on time raises your cap.': 'Ang full-limit loan na nabayaran on time ang nagpapataas ng limit mo.',
    'That single clean repayment is what moves you up — nothing else does.':
       'Ang isang malinis na bayad na iyon ang nagpapaakyat sa iyo — wala nang iba.',
    'The pace': 'Ang bilis',
-   'One level at a time': 'Isang level lang sa isang pagkakataon',
+   'One level at a time': 'Paisa-isang level',
    'No skipping or buying ahead — each level is earned from the one before.':
-      'Walang laktawan o pag-una — kinikita ang bawat level mula sa naunang level.',
+      'Walang paglaktaw o pagbabayad para mauna — pinaghihirapan ang bawat level mula sa nauna rito.',
    'Below your current limit': 'Mas mababa sa kasalukuyang limit mo',
    'A loan for less than your current limit.': 'Loan na mas mababa sa kasalukuyang limit mo.',
    'Stays the same': 'Nananatiling pareho',
@@ -412,65 +413,64 @@ export const filipinoCoverageC: Record<string, string> = {
    'Request your full current limit only when you are confident you can repay it.':
       'Mag-request ng buo mong kasalukuyang limit lang kapag sigurado kang babayaran mo ito.',
    'Pick a repayment date you can comfortably hit. Repaying early is always fine.':
-      'Pumili ng repayment date na kaya mong tapatan nang komportable. Okay lang lagi ang maagang pagbabayad.',
+      'Pumili ng petsa ng pagbabayad na siguradong kaya mo. Laging okay ang maagang pagbabayad.',
    'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.':
-      'Huwag kumuha ng full-limit loan kung hindi ka sigurado — ang isang missed na bayad ay nagpapahinto sa progress mo.',
+      'Huwag kumuha ng full-limit loan kung hindi ka sigurado — mahihinto ang progress mo kahit sa isang na-miss na bayad.',
    'Do not expect extra or early payments to skip a level. Growth is always one step at a time.':
-      'Huwag umasang ang extra o maagang bayad ay makakalaktaw ng level. Isang hakbang lang palagi ang paglaki.',
+      'Huwag umasang makakalaktaw ka ng level dahil sa sobra o maagang bayad. Laging paisa-isang hakbang ang pag-akyat.',
    'Understanding your Pandesal points': 'Pag-unawa sa Pandesal points mo',
-   'Trust-Building vs Credit-Building loans': 'Trust-Building vs Credit-Building loans',
+   'Trust-Building vs Credit-Building loans': 'Trust-Building Loan vs Credit-Building Loan',
    'How repayments affect your Pandesal points': 'Paano naaapektuhan ng pagbabayad ang Pandesal points mo',
    'What is a Credit Level on Moodeng?': 'Ano ang Credit Level sa Moodeng?',
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Ang Credit Level ay ang borrowing limit mo. Lahat ay nagsisimula sa Level 1 na may $15 limit, at lumalaki ang limit habang natatapos mo ang mga Credit-Building Loan.',
    'How do I move to the next level?': 'Paano ako makakapunta sa susunod na level?',
    'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment unlocks the next limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
-      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on-time. Ang malinis na bayad ang nag-a-unlock ng susunod na limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+      'Kumuha ng Credit-Building Loan sa buo mong kasalukuyang limit at bayaran ito nang buo at on time. Ang malinis na bayad ang nag-a-unlock ng susunod na limit — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
    'Does borrowing a small amount level me up?': 'Puwede ba akong mag-level up sa paghiram ng maliit na halaga?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
-      'Hindi. Ang paghiram na mas mababa sa limit mo ay Trust-Building Loan. Pinapaganda nito ang reputasyon mo sa mga lender pero hindi nito tinataas ang Credit Level mo. Isang full-limit Credit-Building Loan lang ang nagpapasulong sa iyo.',
+      'Hindi. Trust-Building Loan ang paghiram nang mas mababa sa limit mo. Pinapaganda nito ang reputasyon mo sa mga lender pero hindi nito tinataas ang Credit Level mo. Full-limit na Credit-Building Loan lang ang nagpapaakyat sa iyo.',
    'Can I skip levels by repaying early or paying extra?':
       'Puwede ba akong lumaktaw ng level sa pamamagitan ng maagang bayad o extra na bayad?',
    'No. Moodeng advances one level at a time. Paying extra or repaying early does not skip a step — each new limit is earned by repaying the level before it.':
-      'Hindi. Isang level lang sa isang pagkakataon ang inilalabas ng Moodeng. Hindi nakakalaktaw ng hakbang ang extra o maagang bayad — kinikita ang bawat bagong limit sa pagbabayad ng level bago rito.',
+      'Hindi. Paisa-isang level ang pag-akyat sa Moodeng. Hindi ka makakalaktaw ng hakbang dahil sa sobra o maagang bayad — nakukuha ang bawat bagong limit sa pagbabayad sa level bago nito.',
    'Why does the limit start at only $15?': 'Bakit $15 lang ang panimulang limit?',
    'Small starting limits keep risk low for the lenders funding someone with no track record yet. As you prove reliable repayment, your limit and lender confidence grow together.':
-      'Mababang risk ang resulta ng maliit na panimulang limit para sa mga lender na nagpo-fund sa taong wala pang track record. Habang pinapatunayan mo ang maaasahang pagbabayad, sabay na lumalaki ang limit mo at ang tiwala ng lender.',
+      'Pinapababa ng maliit na panimulang limit ang risk para sa mga lender na nagpopondo sa taong wala pang track record. Habang pinapatunayan mong maaasahan ka sa pagbabayad, sabay na lumalaki ang limit mo at ang tiwala ng mga lender.',
    'How long does it take to reach the $60 level?': 'Gaano katagal bago maabot ang $60 na level?',
    'There is no fixed timeline. Each level needs one full-limit loan repaid on time, so the pace depends on how quickly you borrow and repay. Borrowers who repay cleanly can climb in just a few loan cycles.':
-      'Walang fixed na timeline. Isang full-limit loan na babayaran nang on-time ang kailangan sa bawat level, kaya nakadepende ang bilis sa kung gaano ka kabilis humiram at magbayad. Puwedeng umakyat ang mga borrower na malinis magbayad sa loob lang ng ilang loan cycle.',
+      'Walang takdang timeline. Isang full-limit loan na nabayaran on time ang kailangan sa bawat level, kaya nakadepende ang bilis sa kung gaano ka kabilis humiram at magbayad. Puwedeng makaakyat sa loob lang ng ilang loan cycle ang mga borrower na malinis magbayad.',
    'What happens if I miss a repayment?': 'Ano ang mangyayari kung ma-miss ko ang isang bayad?',
    'A late or missed repayment reduces your Pandesal points and can pause your progress. Lenders weigh the missed repayment heavily, so keeping payments on time matters more than borrowing size.':
-      'Ang huli o naka-miss na bayad ay nagbabawas ng Pandesal points mo at puwedeng maghinto ng progress mo. Malaki ang timbang ng missed repayment sa mga lender, kaya mas mahalaga ang pagbabayad on-time kaysa sa laki ng hinihiram.',
+      'Nababawasan ang Pandesal points mo at puwedeng mahinto ang progress mo kapag huli o na-miss ang bayad. Malaki ang timbang ng na-miss na bayad sa mga lender, kaya mas mahalaga ang pagbabayad on time kaysa sa laki ng hinihiram.',
    'Does my Credit Level ever reset?': 'Nare-reset ba ang Credit Level ko?',
    'Your progress is tied to your wallet and repayment history, so it travels with you. Missed repayments do not erase your level, but they reduce your Pandesal points and can slow further growth.':
-      'Nakatali ang progress mo sa wallet at repayment history mo, kaya sumasama ito sa iyo. Hindi binubura ng mga missed na bayad ang level mo, pero binabawasan nila ang Pandesal points mo at puwedeng magpabagal ng karagdagang paglaki.',
+      'Nakatali ang progress mo sa wallet at history ng pagbabayad mo, kaya sumasama ito sa iyo. Hindi binubura ng mga na-miss na bayad ang level mo, pero binabawasan nito ang Pandesal points mo at puwedeng bumagal ang pag-akyat mo.',
    'What borrowing limit does everyone start with?': 'Anong borrowing limit ang panimula ng lahat?',
    'Yep — everyone starts at $15. Small, but the climb begins here.':
       'Oo — lahat ay nagsisimula sa $15. Maliit, pero dito nagsisimula ang pag-akyat.',
-   'Close, but no. Level 1 starts everyone at a $15 limit.': 'Malapit na, pero hindi. Sinisimulan ng Level 1 ang lahat sa $15 na limit.',
+   'Close, but no. Level 1 starts everyone at a $15 limit.': 'Muntik na, pero hindi. Lahat ay nagsisimula sa Level 1 na may $15 na limit.',
    'Which loan actually levels you up?': 'Aling loan talaga ang nagpapa-level up sa iyo?',
    'Exactly — only a full-limit Credit-Building Loan, repaid on time, bumps your cap.':
-      'Tama — isang full-limit Credit-Building Loan lang, na babayaran on-time, ang nagpapataas ng cap mo.',
+      'Tama — full-limit na Credit-Building Loan lang, na nabayaran on time, ang nagpapataas ng limit mo.',
    'Nice try! Only a full-limit Credit-Building Loan raises your level.':
-      'Malapit na! Isang full-limit Credit-Building Loan lang ang nagtataas ng level mo.',
+      'Muntik na! Full-limit na Credit-Building Loan lang ang nagpapataas ng level mo.',
    'Your limit is $20. You borrow $10 and repay on time. What happens?':
-      '$20 ang limit mo. Humiram ka ng $10 at binayaran on-time. Ano ang mangyayari?',
+      '$20 ang limit mo. Humiram ka ng $10 at nagbayad on time. Ano ang mangyayari?',
    'Right! Small loans build trust — they just don’t raise your limit.':
-      'Tama! Nagtatayo ng tiwala ang maliliit na loan — pero hindi nila tinataas ang limit mo.',
+      'Tama! Bumubuo ng tiwala ang maliliit na loan — hindi lang nila tinataas ang limit mo.',
    'Not quite — a sub-limit loan builds trust but keeps your limit at $20.':
-      'Hindi masyado — nagtatayo ng tiwala ang sub-limit na loan pero nananatili ang limit mo sa $20.',
+      'Hindi pa tama — bumubuo ng tiwala ang loan na mas mababa sa limit, pero mananatili sa $20 ang limit mo.',
    'Can you skip from $15 straight to $60?': 'Puwede bang lumaktaw mula $15 diretso sa $60?',
-   'Correct — Moodeng climbs one level at a time. No shortcuts.':
-      'Tama — umaakyat ang Moodeng nang isang level sa isang pagkakataon. Walang shortcut.',
-   'Nope — there are no shortcuts. It’s one level at a time.': 'Hindi — walang shortcut. Isang level lang sa isang pagkakataon.',
+   'Correct — Moodeng climbs one level at a time. No shortcuts.': 'Tama — paisa-isang level ang pag-akyat sa Moodeng. Walang shortcut.',
+   'Nope — there are no shortcuts. It’s one level at a time.': 'Hindi — walang shortcut. Paisa-isang level lang.',
    'What slows your climb the most?': 'Ano ang pinaka-nagpapabagal sa pag-akyat mo?',
    'You got it — a missed repayment pauses progress and dents your Pandesal points.':
-      'Tama ka — ang missed na bayad ay nagpapahinto ng progress at nagbabawas ng Pandesal points mo.',
+      'Tama ka — kapag na-miss ang bayad, mahihinto ang progress at mababawasan ang Pandesal points mo.',
    'Actually it’s a late or missed repayment — that’s what pauses your climb.':
-      'Sa totoo lang, ang huli o missed na bayad — iyon ang nagpapahinto sa pag-akyat mo.',
-   'Credit Level Legend': 'Alamat ng Credit Level',
-   'Rising Star': 'Bituing Sumisikat',
+      'Ang totoo, huli o na-miss na bayad — iyon ang nagpapahinto sa pag-akyat mo.',
+   'Credit Level Legend': 'Eksperto sa Credit Level',
+   'Rising Star': 'Sumisikat na bituin',
    'Just getting started': 'Bagong nagsisimula pa lang',
    'Answer choices': 'Mga pagpipilian sa sagot',
    'See your credit limit on the request board': 'Tingnan ang credit limit mo sa request board',
@@ -478,34 +478,34 @@ export const filipinoCoverageC: Record<string, string> = {
    'See live requests on the request board': 'Tingnan ang live na mga request sa request board',
    'Credit limit growing from fifteen to sixty dollars': 'Lumalaking credit limit mula labinlimang dolyar hanggang animnapung dolyar',
    'A borrower hippo at a Moodeng kiosk following the credit-building flow: request, repay on time, then level up':
-      'Isang borrower hippo sa Moodeng kiosk na sumusunod sa credit-building flow: mag-request, magbayad on-time, tapos mag-level up',
+      'Isang borrower hippo sa Moodeng kiosk na sumusunod sa credit-building flow: mag-request, magbayad on time, tapos mag-level up',
    'A borrower hippo and a squirrel building trust with a lender at the Moodeng lending desk':
-      'Isang borrower hippo at isang squirrel na nagtatayo ng tiwala kasama ang isang lender sa Moodeng lending desk',
+      'Isang borrower hippo at isang squirrel na bumubuo ng tiwala kasama ang isang lender sa Moodeng lending desk',
 
    // src/views/support/PublicGuide.tsx
-   'More guides': 'Higit pang gabay',
+   'More guides': 'Iba pang gabay',
 
    // src/views/support/PublicGuidesIndex.tsx
    'Everything you need to borrow with confidence — how Credit Levels grow, what your Pandesal points mean, and how USDC loans work.':
-      'Lahat ng kailangan mo para humiram nang may kumpiyansa — kung paano lumalaki ang Credit Levels, ano ang ibig sabihin ng Pandesal points mo, at kung paano gumagana ang mga USDC loan.',
+      'Lahat ng kailangan mo para humiram nang may kumpiyansa — kung paano umaakyat ang Credit Level, ano ang ibig sabihin ng Pandesal points mo, at kung paano gumagana ang mga USDC loan.',
 
    // src/views/support/UpdateDetail.tsx
-   "What's New": 'Mga Bago',
+   "What's New": 'Ano ang bago',
    'Published on': 'Na-publish noong',
 
    // src/views/support/Updates.tsx
    Latest: 'Pinakabago',
-   'Previous Updates': 'Mga Nakaraang Update',
+   'Previous Updates': 'Mga nakaraang update',
 
    // src/views/support/components/NeedMoreHelp.tsx
    'Message the team and a real person will reply — here and by email.':
-      'Mag-message sa team at may tunay na tao na sasagot — dito at sa email.',
+      'I-message ang team at isang totoong tao ang sasagot — rito at sa email.',
    'Meet the Moodeng Credit Team': 'Kilalanin ang Moodeng Credit Team',
-   'See the people building borrower trust.': 'Tingnan ang mga taong bumubuo ng tiwala ng borrower.',
+   'See the people building borrower trust.': 'Kilalanin ang mga taong bumubuo ng tiwala para sa mga borrower.',
 
    // src/views/transactions/TransactionDetail.tsx
    Due: 'Due na',
-   'Optional Gift': 'Opsyonal na Regalo',
+   'Optional Gift': 'Opsyonal na regalo',
    'Would you like to return the interest as a gift?': 'Gusto mo bang ibalik ang interest bilang regalo?',
    'Interest to return': 'Interest na ibabalik',
    'Return interest?': 'Ibalik ang interest?',
@@ -513,38 +513,38 @@ export const filipinoCoverageC: Record<string, string> = {
       'Kusang-loob na regalo ito — kapag naipadala na, hindi na ito puwedeng bawiin.',
    'Hide — this keeps going on its own': 'Itago — tuloy pa rin ito nang mag-isa',
    'Sent successfully!': 'Matagumpay na naipadala!',
-   'Loan Details': 'Detalye ng Loan',
+   'Loan Details': 'Detalye ng loan',
    'Waiting for lender acceptance': 'Naghihintay ng pag-accept ng lender',
    'This loan is not funded yet. Repayment starts only after a lender accepts.':
-      'Hindi pa na-fund ang loan na ito. Magsisimula lang ang pagbabayad kapag na-accept na ito ng lender.',
-   'Loan Amount': 'Halaga ng Loan',
-   Outstanding: 'Natitirang Utang',
+      'Hindi pa napopondohan ang loan na ito. Magsisimula lang ang pagbabayad kapag tinanggap na ito ng lender.',
+   'Loan Amount': 'Halaga ng loan',
+   Outstanding: 'Natitirang utang',
    'View on explorer': 'Tingnan sa explorer',
    Timeline: 'Timeline',
-   'Repay Loan': 'Bayaran ang Loan',
+   'Repay Loan': 'Bayaran ang loan',
 
    // src/views/transactions/TransactionHistory.tsx
    'Interest can be returned': 'Puwedeng ibalik ang interest',
    Repaid: 'Nabayaran na',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
-   'Lender Distribution': 'Distribusyon ng Lender',
+   'Lender Distribution': 'Distribusyon ng mga lender',
    'No lender history yet': 'Wala pang lender history',
 
    // src/views/user-profile/ProgressHistory.tsx
    'Started at Level 0': 'Nagsimula sa Level 0',
    'Borrower account created and credit journey started.': 'Nagawa ang borrower account at nagsimula ang credit journey.',
    'Identity verification completed.': 'Kumpleto na ang identity verification.',
-   'No loan activity yet': 'Wala pang loan activity',
-   'Repeat Lender Relationship': 'Paulit-ulit na Relasyon sa Lender',
-   'Borrowed again from an existing lender.': 'Humiram muli mula sa kasalukuyang lender.',
-   'Partial Repayment Made': 'May Partial na Bayad',
-   'Credit Limit Unlocked': 'Na-unlock ang Credit Limit',
-   'Defaulted Loan': 'Na-default na Loan',
+   'No loan activity yet': 'Wala pang aktibidad ng loan',
+   'Repeat Lender Relationship': 'Umuulit na lender',
+   'Borrowed again from an existing lender.': 'Humiram ulit sa dating lender.',
+   'Partial Repayment Made': 'May partial na bayad',
+   'Credit Limit Unlocked': 'Na-unlock ang credit limit',
+   'Defaulted Loan': 'Loan na nag-default',
    'Loan remains unpaid past the due date.': 'Nananatiling hindi bayad ang loan pagkalipas ng due date.',
-   'More Trust-Building Loans': 'Mas Maraming Trust-Building Loan',
+   'More Trust-Building Loans': 'Mas maraming Trust-Building Loan',
    'This borrower has more smaller trust-building loans than full-limit credit-building loans. These help show repayment history, but they do not raise credit level.':
-      'Mas marami ang maliliit na trust-building loan ng borrower na ito kaysa sa full-limit na credit-building loan. Tumutulong ito para ipakita ang repayment history, pero hindi nito tinataas ang credit level.',
+      'Mas marami ang maliliit na trust-building loan ng borrower na ito kaysa sa full-limit na credit-building loan. Nakakatulong ang mga ito na ipakita ang history ng pagbabayad, pero hindi nito tinataas ang Credit Level.',
 
    // src/views/withdraw/CashoutFaceCheck.tsx
    'Back to withdraw': 'Bumalik sa withdraw',
@@ -555,16 +555,15 @@ export const filipinoCoverageC: Record<string, string> = {
    "You're sending": 'Ipinapadala mo',
    "You'll receive": 'Matatanggap mo',
    'Sell for pesos, withdraw to bank or GCash': 'Ibenta para sa pesos, mag-withdraw sa bangko o GCash',
-   'Lowest fees · bank or GCash · ~30 min': 'Pinakamababang fees · bangko o GCash · ~30 min',
+   'Lowest fees · bank or GCash · ~30 min': 'Pinakamababang fee · bangko o GCash · ~30 min',
    'Cash out straight to your GCash': 'Direktang i-cash out sa GCash mo',
    'GCash balance · ~5 min': 'GCash balance · ~5 min',
    'Sell for pesos, withdraw to bank or e-wallet': 'Ibenta para sa pesos, mag-withdraw sa bangko o e-wallet',
    'Bank, GCash or Maya · ~30 min': 'Bangko, GCash o Maya · ~30 min',
    'Sell for local currency via P2P marketplace': 'Ibenta para sa local currency gamit ang P2P marketplace',
    'GCash, Maya or Bank · 30 min–hours': 'GCash, Maya o Bangko · 30 min–oras',
-   'External option · buy and sell via their own process':
-      'External option · ikaw mismo ang bibili at magbebenta gamit ang sarili nilang proseso',
-   "You follow Moneybees' instructions directly": 'Sundin mo nang direkta ang mga instructions ng Moneybees',
+   'External option · buy and sell via their own process': 'External na opsyon · bibili at magbebenta ka ayon sa sarili nilang proseso',
+   "You follow Moneybees' instructions directly": 'Direkta mong susundin ang mga tagubilin ng Moneybees',
    'How this works': 'Paano ito gumagana',
    'Show me how': 'Ipakita kung paano',
    'Video guide coming soon': 'Malapit nang dumating ang video guide',
@@ -573,7 +572,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'How would you like to cash out?': 'Paano mo gustong mag-cash out?',
    'Your loan funds are in your wallet. Withdraw or convert them using an exchange, P2P platform, or a supported local crypto service.':
       'Nasa wallet mo ang mga pondo ng loan mo. I-withdraw o i-convert ang mga ito gamit ang isang exchange, P2P platform, o suportadong local crypto service.',
-   'Learn more about withdrawal options': 'Alamin pa ang mga opsyon sa withdrawal',
+   'Learn more about withdrawal options': 'Alamin pa ang mga opsyon sa pag-withdraw',
    "I'll do this later": 'Gagawin ko na lang ito mamaya',
    'Contact support': 'Makipag-ugnayan sa support',
    'Sent!': 'Naipadala na!',
@@ -613,8 +612,8 @@ export const filipinoCoverageC: Record<string, string> = {
    Sent: 'Naipadala',
    'Open GCrypto in GCash': 'Buksan ang GCrypto sa GCash',
    'How to open GCrypto in GCash': 'Paano buksan ang GCrypto sa GCash',
-   'Copy your GCash address': 'I-copy ang GCash address mo',
-   'How to copy your GCrypto address': 'Paano i-copy ang GCrypto address mo',
+   'Copy your GCash address': 'Kopyahin ang GCash address mo',
+   'How to copy your GCrypto address': 'Paano kopyahin ang GCrypto address mo',
    'Paste it below': 'I-paste ito sa ibaba',
    'Enter the amount in USDC or pesos and confirm. The pesos land in your GCrypto trading wallet.':
       'Ilagay ang halaga sa USDC o piso at kumpirmahin. Mapupunta ang piso sa GCrypto trading wallet mo.',
@@ -622,15 +621,15 @@ export const filipinoCoverageC: Record<string, string> = {
       'Ilipat ang piso sa pangunahing GCash balance mo — karaniwang dumarating ito sa loob ng ilang minuto.',
    'Open PDAX → Portfolio → USDC → Receive': 'Buksan ang PDAX → Portfolio → USDC → Receive',
    'How to find your PDAX receiving address': 'Paano hanapin ang PDAX receiving address mo',
-   'Copy your PDAX address': 'I-copy ang PDAX address mo',
-   'How to copy your PDAX address': 'Paano i-copy ang PDAX address mo',
+   'Copy your PDAX address': 'Kopyahin ang PDAX address mo',
+   'How to copy your PDAX address': 'Paano kopyahin ang PDAX address mo',
    'Tap the Trade tab at the bottom, then select Sell.': 'I-tap ang Trade tab sa ibaba, tapos piliin ang Sell.',
    'Search for USDC and choose PHP as the currency you want to receive.':
       'Hanapin ang USDC at piliin ang PHP bilang currency na gusto mong matanggap.',
    'Enter the amount and confirm the sale': 'Ilagay ang halaga at kumpirmahin ang sale',
    'Open Coins.ph → Portfolio → USDC → Receive': 'Buksan ang Coins.ph → Portfolio → USDC → Receive',
    'How to find your Coins.ph receiving address': 'Paano hanapin ang Coins.ph receiving address mo',
-   'Copy your Coins.ph address': 'I-copy ang Coins.ph address mo',
+   'Copy your Coins.ph address': 'Kopyahin ang Coins.ph address mo',
    'Enter the amount and tap Sell Now. Your PHP balance updates instantly.':
       'Ilagay ang halaga at i-tap ang Sell Now. Agad na mag-a-update ang PHP balance mo.',
    'Tap the Withdraw or Cash Out button from your portfolio screen.': 'I-tap ang Withdraw o Cash Out button mula sa portfolio screen mo.',
@@ -638,120 +637,120 @@ export const filipinoCoverageC: Record<string, string> = {
    'You can send to your Union Bank, BDO, BPI, or any PH bank — or to GCash or Maya.':
       'Puwede kang magpadala sa Union Bank, BDO, BPI, o kahit anong PH bank mo — o sa GCash o Maya.',
    'InstaPay is faster (minutes, ₱50,000 limit per transaction). PESONet clears by end of day for larger amounts.':
-      'Mas mabilis ang InstaPay (minuto lang, ₱50,000 limit kada transaksyon). Nagli-clear ang PESONet sa katapusan ng araw para sa mas malalaking halaga.',
+      'Mas mabilis ang InstaPay (ilang minuto lang, ₱50,000 ang limit kada transaksyon). Pumapasok ang PESONet bago matapos ang araw, para sa mas malalaking halaga.',
    'Enter your bank details, then confirm with the OTP': 'Ilagay ang mga detalye ng bank mo, tapos kumpirmahin gamit ang OTP',
    'Coins.ph sends a one-time code to your registered phone number to authorize the transfer.':
       'Nagpapadala ang Coins.ph ng one-time code sa naka-rehistrong numero ng telepono mo para i-authorize ang transfer.',
    'Open Binance → Wallet → Receive': 'Buksan ang Binance → Wallet → Receive',
    'How to find your Binance receiving address': 'Paano hanapin ang Binance receiving address mo',
-   'Copy your Binance address': 'I-copy ang Binance address mo',
-   'How to copy your Binance address': 'Paano i-copy ang Binance address mo',
+   'Copy your Binance address': 'Kopyahin ang Binance address mo',
+   'How to copy your Binance address': 'Paano kopyahin ang Binance address mo',
    'Paste your Binance address': 'I-paste ang Binance address mo',
    'Pick a trustworthy buyer': 'Pumili ng mapagkakatiwalaang buyer',
    'Enter the amount and place the order': 'Ilagay ang halaga at i-place ang order',
-   'Arrange your cash-out with them': 'Ayusin ang cash-out mo kasama sila',
-   'Send only after their instructions': 'Magpadala lang matapos ang mga instructions nila',
-   'Get assisted by chat': 'Matulungan sa chat',
+   'Arrange your cash-out with them': 'Makipag-ayos sa kanila para sa cash-out mo',
+   'Send only after their instructions': 'Magpadala lang kapag naibigay na nila ang mga tagubilin',
+   'Get assisted by chat': 'Magpatulong sa chat',
    'Confirm your payout': 'Kumpirmahin ang payout mo',
-   'Send only after instructions': 'Magpadala lang matapos ang mga instructions',
+   'Send only after instructions': 'Magpadala lang pagkatapos ng mga tagubilin',
 
    // src/views/user-profile/UserProfile.tsx
-   'Borrower context': 'Konteksto ng Borrower',
+   'Borrower context': 'Konteksto ng borrower',
    'This account is a lender': 'Isang lender ang account na ito',
    'Lenders fund loans rather than borrow, so there is no borrowing history to show here.':
-      'Nagpapapondo ng loan ang mga lender sa halip na humiram, kaya walang borrowing history na ipapakita dito.',
+      'Nagpopondo ng loan ang mga lender sa halip na humiram, kaya walang history ng paghiram na maipapakita rito.',
    'Verify to unlock LV.1': 'Mag-verify para ma-unlock ang LV.1',
    'Only you can see this': 'Ikaw lang ang makakakita nito',
-   'Good standing': 'Maayos na Standing',
+   'Good standing': 'Maayos na standing',
    'View loan mix': 'Tingnan ang loan mix',
    'Your score appears after at least 2 funded loans from different lenders.':
-      'Lalabas ang score mo pagkatapos ng hindi bababa sa 2 na na-fund na loan mula sa magkaibang lender.',
-   'Borrower patterns': 'Mga Pattern ng Borrower',
-   'Recent Loans': 'Mga Kamakailang Loan',
+      'Lalabas ang score mo pagkatapos ng hindi bababa sa 2 napondohang loan mula sa magkakaibang lender.',
+   'Borrower patterns': 'Mga pattern ng borrower',
+   'Recent Loans': 'Mga kamakailang loan',
    'Loan / lender': 'Loan / lender',
-   'No funded loans yet': 'Wala pang na-fund na loan',
+   'No funded loans yet': 'Wala pang napondohang loan',
    'Not enough loan history yet': 'Hindi pa sapat ang loan history',
-   'Default History': 'History ng Default',
-   'Missed repayments on this borrower’s past loans.': 'Mga naka-miss na bayad sa mga nakaraang loan ng borrower na ito.',
+   'Default History': 'History ng default',
+   'Missed repayments on this borrower’s past loans.': 'Mga na-miss na bayad sa mga nakaraang loan ng borrower na ito.',
    'A default happens when a repayment deadline passes without full repayment.':
       'May default kapag lumipas ang deadline ng bayad nang hindi kumpleto ang binayaran.',
-   'Loan defaulted': 'Na-default na loan',
+   'Loan defaulted': 'Nag-default ang loan',
    Unresolved: 'Hindi pa naresolba',
    'Defaults may signal repayment risk. Lenders should review the borrower’s full history, not just credit level.':
       'Puwedeng magpahiwatig ng repayment risk ang mga default. Dapat suriin ng mga lender ang buong history ng borrower, hindi lang ang credit level.',
-   'Repayment History': 'History ng Pagbabayad',
-   'Money this borrower has already paid back across funded loans.': 'Pera na nabayaran na ng borrower na ito sa mga na-fund na loan.',
-   'Fully repaid': 'Buong nabayaran',
+   'Repayment History': 'History ng pagbabayad',
+   'Money this borrower has already paid back across funded loans.': 'Perang naibalik na ng borrower na ito sa mga napondohang loan.',
+   'Fully repaid': 'Bayad na nang buo',
    'Completed repayments show this borrower has returned funds before. Partial repayments can still be useful context, but lenders should compare them with due dates and remaining balances.':
       'Ipinapakita ng mga kumpletong bayad na nakapagbalik na ng pondo ang borrower na ito noon. Puwede pa ring maging kapaki-pakinabang na konteksto ang mga partial na bayad, pero dapat ikumpara ito ng mga lender sa mga due date at natitirang balanse.',
-   'How Credit Level Works': 'Paano Gumagana ang Credit Level',
+   'How Credit Level Works': 'Paano gumagana ang Credit Level',
    'Credit Level shows the borrower’s current borrowing tier.': 'Ipinapakita ng Credit Level ang kasalukuyang borrowing tier ng borrower.',
    'Borrowers level up by taking a Credit Building loan at their current limit and repaying it successfully.':
-      'Nag-le-level up ang mga borrower sa pagkuha ng Credit Building loan sa kasalukuyang limit nila at matagumpay itong pagbabayaran.',
+      'Nagle-level up ang mga borrower kapag kumuha sila ng Credit-Building Loan na katumbas ng kasalukuyang limit nila at nabayaran ito nang maayos.',
    'Credit Levels': 'Mga Credit Level',
    'Credit limit': 'Credit limit',
-   'How Lender Diversity Works': 'Paano Gumagana ang Lender Diversity',
+   'How Lender Diversity Works': 'Paano gumagana ang Lender Diversity',
    'This score belongs to the borrower. It measures the quality of the people who have lent to them.':
-      'Sa borrower nabibilang ang score na ito. Sinusukat nito ang kalidad ng mga taong nagpahiram sa kanila.',
+      'Sa borrower ang score na ito. Sinusukat nito ang kalidad ng mga taong nagpahiram sa kanila.',
    'What a high score means': 'Ano ang ibig sabihin ng mataas na score',
    'Lenders look independent, established, and natural. They are not all new accounts, not all funding at once, and not overly concentrated in one lender.':
       'Mukhang independent, established, at natural ang mga lender. Hindi lahat sila bagong account, hindi lahat sila sabay na nagpondo, at hindi masyadong nakakonsentra sa iisang lender.',
    'What it is trying to catch': 'Ano ang sinusubukan nitong mahuli',
    'A borrower could look trustworthy by using fake lender accounts to fund small loans, then ask for a larger real loan. This score looks for that kind of coordinated lender history.':
       'Puwedeng magmukhang mapagkakatiwalaan ang isang borrower sa paggamit ng pekeng lender account para pondohan ang maliliit na loan, tapos humingi ng mas malaking tunay na loan. Hinahanap ng score na ito ang ganitong uri ng coordinated na lender history.',
-   'Score bands': 'Mga Score Band',
+   'Score bands': 'Mga score band',
    "This does not judge the borrower directly. It tells lenders whether the borrower's lender network looks organic or suspicious.":
       'Hindi nito direktang hinuhusgahan ang borrower. Sinasabi nito sa mga lender kung mukhang organic o kaduda-duda ang lender network ng borrower.',
    'Read the full docs': 'Basahin ang buong docs',
    'Lender Diversity Score documentation': 'Dokumentasyon ng Lender Diversity Score',
    'Why lenders care': 'Bakit mahalaga ito sa mga lender',
    'Loan mix shows whether this borrower is mostly building repayment history with smaller loans, or raising their credit level with full-limit repayments.':
-      'Ipinapakita ng loan mix kung ang borrower na ito ay mas nagtatayo ng repayment history gamit ang maliliit na loan, o nagtataas ng credit level gamit ang full-limit na bayad.',
+      'Ipinapakita ng loan mix kung mas bumubuo ang borrower na ito ng history ng pagbabayad gamit ang maliliit na loan, o nagpapataas ng Credit Level gamit ang mga full-limit na bayad.',
    'A healthy borrower can have both: smaller loans for repayment history and full-limit loans for higher future limits.':
       'Puwedeng magkaroon ng pareho ang isang malusog na borrower: maliliit na loan para sa repayment history at full-limit na loan para sa mas mataas na future limit.',
    'Start with who they are': 'Magsimula sa kung sino sila',
    'Read the borrower context first — whether they are a verified human, how long they have been a member, and how they earn and repay. It frames every number below and tells you whether their reason to borrow fits their situation.':
-      'Basahin muna ang konteksto ng borrower — kung verified human ba sila, gaano na sila katagal na miyembro, at paano sila kumikita at nagbabayad. Ito ang bumabalangkas sa bawat numero sa ibaba at nagsasabi sa iyo kung akma ang dahilan nila sa paghiram sa sitwasyon nila.',
+      'Basahin muna ang konteksto ng borrower — kung verified na tao ba sila, gaano na sila katagal na miyembro, at paano sila kumikita at nagbabayad. Ito ang nagbibigay-kahulugan sa bawat numero sa ibaba at nagsasabi sa iyo kung akma ang dahilan nila sa paghiram sa sitwasyon nila.',
    'Check Credit Level': 'Tingnan ang Credit Level',
    'Credit Level is the borrower tier. It helps you understand how much trust they have already unlocked through prior behavior.':
-      'Ang Credit Level ang tier ng borrower. Tumutulong ito para maintindihan mo kung gaano na karaming tiwala ang na-unlock nila sa nakaraang pag-uugali.',
+      'Ang Credit Level ang tier ng borrower. Tinutulungan ka nitong maintindihan kung gaano na karaming tiwala ang na-unlock nila dahil sa mga nagawa nila dati.',
    'Read the loan summary': 'Basahin ang loan summary',
    'Look at total borrowed, total loans, repayments, defaults, and standing. Good Standing means there are no unresolved defaults.':
-      'Tingnan ang total borrowed, total loans, mga bayad, mga default, at standing. Ibig sabihin ng Good Standing ay walang unresolved na default.',
+      'Tingnan ang kabuuang hiniram, kabuuang loan, mga bayad, mga default, at standing. Ibig sabihin ng Maayos na standing ay walang hindi pa naresolbang default.',
    'Look at lender diversity': 'Tingnan ang lender diversity',
    'This shows whether the borrower has earned trust from multiple lenders, not just one repeated relationship.':
       'Ipinapakita nito kung nakakuha ang borrower ng tiwala mula sa maraming lender, hindi lang isang paulit-ulit na relasyon.',
    'Use behavior patterns': 'Gamitin ang mga behavior pattern',
    'These patterns help you judge risk: how often they borrow, how fast they usually repay, typical loan size, loan term, and repeat lenders.':
-      'Tumutulong ang mga pattern na ito para husgahan ang risk: gaano sila kadalas humiram, gaano sila kabilis karaniwang magbayad, karaniwang laki ng loan, loan term, at repeat lenders.',
+      'Tinutulungan ka ng mga pattern na ito na tantyahin ang risk: gaano sila kadalas humiram, gaano sila kabilis karaniwang magbayad, karaniwang laki ng loan, loan term, at mga umuulit na lender.',
    'Review recent loans': 'Suriin ang mga kamakailang loan',
    'Use the recent loan table to confirm the borrower has a repayment history that matches the request you are thinking about funding.':
-      'Gamitin ang recent loan table para kumpirmahin na may repayment history ang borrower na tugma sa request na iniisip mong pondohan.',
+      'Gamitin ang talaan ng mga kamakailang loan para kumpirmahin na may history ng pagbabayad ang borrower na tugma sa request na iniisip mong pondohan.',
    'Change reading mode': 'Palitan ang reading mode',
    'Optional: switch to dark mode if it makes this profile easier to read. It changes nothing about the borrower data or your lending decision.':
-      'Opsyonal: lumipat sa dark mode kung mas madali itong basahin ang profile na ito. Wala itong binabago sa data ng borrower o sa desisyon mo sa pagpapahiram.',
+      'Opsyonal: lumipat sa dark mode kung mas madali mong mababasa ang profile na ito. Wala itong binabago sa data ng borrower o sa desisyon mo sa pagpapahiram.',
    'Moodeng with trophy': 'Moodeng na may trophy',
    'How Credit Level works': 'Paano gumagana ang Credit Level',
-   'Total Borrowed': 'Total na Hiniram',
-   'Total Loans': 'Total na Loan',
+   'Total Borrowed': 'Kabuuang hiniram',
+   'Total Loans': 'Kabuuang loan',
    'How Lender Diversity Score works': 'Paano gumagana ang Lender Diversity Score',
-   'Avg days between loans': 'Avg na araw sa pagitan ng loan',
+   'Avg days between loans': 'Average na araw sa pagitan ng mga loan',
    'Typical loan term': 'Karaniwang loan term',
-   'Repeat lenders': 'Paulit-ulit na lender',
+   'Repeat lenders': 'Mga umuulit na lender',
    'Close default history': 'Isara ang default history',
    'Close repayment history': 'Isara ang repayment history',
    'Close credit level explanation': 'Isara ang paliwanag ng credit level',
    'Close lender diversity explanation': 'Isara ang paliwanag ng lender diversity',
-   'Amount concentration': 'Konsentrasyon ng Halaga',
-   'Lender newness': 'Kabaguhan ng Lender',
+   'Amount concentration': 'Konsentrasyon ng halaga',
+   'Lender newness': 'Gaano kabago ang lender',
    'New or inactive wallets count as riskier than established wallets with real on-chain activity.':
-      'Mas risky ang bago o inactive na wallet kumpara sa established na wallet na may tunay na on-chain activity.',
-   'Timing patterns': 'Mga Pattern sa Timing',
+      'Mas risky ang bago o hindi aktibong wallet kumpara sa matagal nang wallet na may totoong on-chain na aktibidad.',
+   'Timing patterns': 'Mga pattern sa timing',
    'Looks for loans arriving in suspicious clusters instead of normal lending intervals.':
       'Naghahanap ng mga loan na dumarating sa kaduda-dudang cluster sa halip na normal na agwat ng pagpapahiram.',
    'Recent suspicious patterns matter more. Older clean history fades over time.':
       'Mas mahalaga ang mga kaduda-dudang pattern kamakailan lang. Unti-unting nawawalan ng bigat ang mas lumang malinis na history.',
-   'Group coordination': 'Koordinasyon ng Grupo',
+   'Group coordination': 'Koordinasyon ng grupo',
    'Checks whether many lenders appeared around the same time, which can suggest a recruited group.':
       'Sinusuri kung maraming lender ang lumitaw nang halos magkasabay, na puwedeng magpahiwatig ng recruited na grupo.',
    Excellent: 'Napakahusay',
@@ -791,7 +790,7 @@ export const filipinoCoverageC: Record<string, string> = {
    'Quick answers to what borrowers ask most about the dollar behind their loans.':
       'Mabilisang sagot sa mga madalas itanong ng mga borrower tungkol sa dollar sa likod ng loan nila.',
    'USDC is the money layer under everything you do on Moodeng.': 'Ang USDC ang money layer sa likod ng lahat ng ginagawa mo sa Moodeng.',
-   'Ready to borrow in stable dollars?': 'Handa nang humiram sa stable na dollars?',
+   'Ready to borrow in stable dollars?': 'Handa ka na bang humiram sa stable na dollar?',
    'Your loan arrives as USDC and you repay in USDC — gasless on Base, and always worth what it says.':
       'Dumarating ang loan mo bilang USDC at binabayaran mo rin sa USDC — gasless sa Base, at palaging katumbas ng nakasaad na halaga.',
    'Wallet to wallet': 'Wallet papuntang wallet',
@@ -806,11 +805,11 @@ export const filipinoCoverageC: Record<string, string> = {
       'Ang USDC ay digital dollar na nase-settle sa blockchain sa loob ng segundo, 24/7.',
    'It runs on open networks (Moodeng uses Base) and can move across chains — so value travels as easily as a message.':
       "Tumatakbo ito sa mga open network (Base ang gamit ng Moodeng) at puwedeng gumalaw sa iba't ibang chain — kaya kasing dali ng pagpapadala ng mensahe ang paglipat ng halaga.",
-   'Regulated and fully backed': 'Regulated at buong sinusuportahan',
+   'Regulated and fully backed': 'Regulated at buo ang reserba',
    'Every USDC is backed 1:1 by cash and short-term US Treasuries.':
       'Bawat USDC ay sinusuportahan nang 1:1 ng cash at short-term US Treasuries.',
    'Circle, its issuer, publishes independent monthly reserve attestations. Balances are also verifiable on-chain by anyone.':
-      'Naglalathala ang Circle, ang issuer nito, ng independent na buwanang reserve attestations. Ma-verify rin ng kahit sino ang mga balanse on-chain.',
+      'Naglalathala ang Circle, ang issuer nito, ng independent na buwanang reserve attestation. Puwede ring i-verify ng kahit sino ang mga balance on-chain.',
    Usability: 'Usability',
    'A dollar that holds its value': 'Isang dollar na hindi nagbabago ang halaga',
    'One USDC is always worth one dollar, so loan amounts never drift.':
@@ -829,10 +828,10 @@ export const filipinoCoverageC: Record<string, string> = {
       'Pinapanatili ng USDC na stable ang halaga ng loan, gumagalaw ito wallet-to-wallet sa loob ng segundo, at gasless sa Base — kaya eksaktong $20 pa rin ang $20 loan kapag binayaran mo ito, walang bank fee na kumakain dito.',
    'Is USDC safe?': 'Ligtas ba ang USDC?',
    'USDC is issued by the most licensed stablecoin company in the world and is backed 1:1 by highly liquid reserves. Those reserves are attested monthly by independent accounting firms, and every balance is verifiable on-chain.':
-      'Inilalabas ang USDC ng pinaka-licensed na stablecoin company sa mundo at sinusuportahan nang 1:1 ng highly liquid na reserves. Ina-attest buwan-buwan ang mga reserves na iyon ng independent na accounting firm, at ma-verify ang bawat balanse on-chain.',
+      'Inilalabas ang USDC ng pinaka-licensed na stablecoin company sa mundo at sinusuportahan ito nang 1:1 ng mga highly liquid na reserve. Buwan-buwang ina-attest ng mga independent na accounting firm ang mga reserve na iyon, at puwedeng i-verify on-chain ang bawat balance.',
    'What is the difference between staking and yield?': 'Ano ang pagkakaiba ng staking at yield?',
    'Staking means locking a token to help secure a proof-of-stake blockchain in exchange for rewards. Yield is the return you earn by lending or supplying USDC in DeFi. USDC is not a staking token, but it can earn yield.':
-      'Ang staking ay ibig sabihin ay pag-lock ng token para tumulong magpatibay ng proof-of-stake blockchain kapalit ng rewards. Ang yield naman ay ang return na kinikita mo sa pagpapahiram o pagbibigay ng USDC sa DeFi. Hindi staking token ang USDC, pero puwede itong kumita ng yield.',
+      'Ang staking ay ang pag-lock ng token para tumulong magpatibay ng proof-of-stake blockchain kapalit ng rewards. Ang yield naman ay ang kinikita mo sa pagpapahiram o pagbibigay ng USDC sa DeFi. Hindi staking token ang USDC, pero puwede itong kumita ng yield.',
    'What is the difference between real-world use and DeFi use?': 'Ano ang pagkakaiba ng real-world use at DeFi use?',
    'Real-world use is spending or sending USDC like cash — payments, remittances, cashing out. DeFi use is putting USDC into smart-contract apps to lend, borrow, or swap without a bank. Moodeng loans are real-world use.':
       'Ang real-world use ay ang paggastos o pagpapadala ng USDC tulad ng cash — mga bayad, remittance, pag-cash out. Ang DeFi use naman ay ang paglalagay ng USDC sa mga smart-contract app para magpahiram, humiram, o mag-swap nang walang bangko. Real-world use ang mga loan sa Moodeng.',
