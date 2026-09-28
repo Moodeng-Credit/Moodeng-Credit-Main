@@ -474,10 +474,10 @@ export const filipinoCoverageA: Record<string, string> = {
    'Get the World App': 'Kunin ang World App',
    'Need help with this step?': 'Kailangan ng tulong sa step na ito?',
    'World ID is verified in person at an Orb — a physical device available only in certain countries — or with a passport scan in the World App. Pick the option that matches you.':
-      'Ang World ID ay verified nang personal sa isang Orb — isang physical device na available lang sa ilang bansa — o sa pamamagitan ng pag-scan ng passport sa World App. Piliin ang option na akma sa\'yo.',
+      "Ang World ID ay verified nang personal sa isang Orb — isang physical device na available lang sa ilang bansa — o sa pamamagitan ng pag-scan ng passport sa World App. Piliin ang option na akma sa'yo.",
    'New to World ID?': 'Bago sa World ID?',
    '1. Download the World App': '1. I-download ang World App',
-   '2. Find an Orb near you': '2. Maghanap ng Orb malapit sa\'yo',
+   '2. Find an Orb near you': "2. Maghanap ng Orb malapit sa'yo",
    'Countries with Orb locations': 'Mga bansang may Orb location',
    'Back to verification options': 'Bumalik sa mga option ng verification',
    'Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.':
@@ -516,8 +516,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Build Your Credit, Step by Step': 'Buuin ang Credit Mo, Hakbang-Hakbang',
    "Unlock Your Financial Potential with Moodeng's Unique Borrowing System":
       'I-unlock ang Potensyal ng Pananalapi Mo gamit ang Natatanging Borrowing System ng Moodeng',
-   'If I borrow $35 instead of $40 can I unlock $60?':
-      'Kung mangungutang ako ng $35 sa halip na $40, ma-u-unlock ko ba ang $60?',
+   'If I borrow $35 instead of $40 can I unlock $60?': 'Kung mangungutang ako ng $35 sa halip na $40, ma-u-unlock ko ba ang $60?',
    "Borrowing under $40 won't unlock $60 - it shows you are not ready. But, you can borrow smaller amounts to prove yourself.":
       'Ang paghiram nang mas mababa sa $40 ay hindi mag-u-unlock ng $60 - ipinapakita nito na hindi ka pa ready. Pero puwede kang humiram ng mas maliit na halaga para patunayan ang sarili mo.',
    'Does borrowing or repaying more unlock the next level??':
@@ -561,8 +560,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'To get funded, you need to write why you need it, so someone will fund you.':
       "Para mapondohan ka, kailangan mong isulat kung bakit mo ito kailangan, para may magpondo sa'yo.",
    'Welcome to Moodeng Academy': 'Welcome sa Moodeng Academy',
-   'And make sure to submit a request within your credit limit.':
-      'At siguraduhing mag-submit ng request na nasa loob ng credit limit mo.',
+   'And make sure to submit a request within your credit limit.': 'At siguraduhing mag-submit ng request na nasa loob ng credit limit mo.',
    'Ask For Help': 'Humingi ng Tulong',
    'Offer Help': 'Mag-alok ng Tulong',
    'How much do you need today? i.e. $15': 'Magkano ang kailangan mo ngayon? hal. $15',
@@ -613,8 +611,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Mecha says': 'Sabi ni Mecha',
    'Moodeng Academy': 'Moodeng Academy',
    'Video guide': 'Video na Gabay',
-   'Want to learn more? Open the step-by-step credit guide.':
-      'Gusto mo bang matuto pa? Buksan ang step-by-step na credit guide.',
+   'Want to learn more? Open the step-by-step credit guide.': 'Gusto mo bang matuto pa? Buksan ang step-by-step na credit guide.',
    'Moodeng Academy Quiz': 'Moodeng Academy Quiz',
    'Ready for the check?': 'Ready ka na ba sa check?',
    'Start quiz': 'Simulan ang quiz',
@@ -680,7 +677,7 @@ export const filipinoCoverageA: Record<string, string> = {
 
    // src/views/academy/VerifyGuide.tsx
    Money: 'Pera',
-   "To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.":
+   'To keep Moodeng safe and fair, every borrower completes one short identity check. It keeps fake and duplicate accounts out of the community, and it is what lets lenders trust the requests they fund.':
       'Para mapanatiling ligtas at patas ang Moodeng, kumpletuhin ng bawat borrower ang isang maikling identity check. Pinapanatili nito na wala sa community ang mga peke at duplicate na account, at ito ang nagpapahintulot sa mga lender na magtiwala sa mga request na pinopondohan nila.',
    'The recommended route: Verify Your ID.': 'Ang inirerekomendang paraan: Verify Your ID.',
    'National ID verification is available for these countries.': 'Available ang National ID verification para sa mga bansang ito.',
@@ -744,8 +741,7 @@ export const filipinoCoverageA: Record<string, string> = {
       'Ipadala ang USDC sa isang exchange o local na serbisyo, ibenta ito, at i-withdraw ang local currency mo sa bank mo o GCash.',
    'You can cash out by sending your USDC to a supported exchange or service, selling it there, and transferring the local currency to your bank account or e-wallet.':
       'Puwede kang mag-cash out sa pamamagitan ng pagpadala ng USDC mo sa isang supported na exchange o serbisyo, pagbebenta nito roon, at paglilipat ng local currency papunta sa bank account o e-wallet mo.',
-   'Watch: sending USDC from your Base account to Binance':
-      'Panoorin: pagpapadala ng USDC mula sa Base account mo papunta sa Binance',
+   'Watch: sending USDC from your Base account to Binance': 'Panoorin: pagpapadala ng USDC mula sa Base account mo papunta sa Binance',
    'Common ways to cash out': 'Mga Karaniwang Paraan para Mag-cash Out',
    'Send USDC to your Binance account (choose the Base network), sell it through P2P, and receive local currency straight to your bank or e-wallet.':
       'Ipadala ang USDC sa Binance account mo (piliin ang Base network), ibenta ito sa pamamagitan ng P2P, at tumanggap ng local currency direkta sa bank o e-wallet mo.',
@@ -801,8 +797,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'You have active loans': 'May mga active kang loan',
    'Change anyway': 'Baguhin pa rin',
    'Disconnect wallet': 'I-disconnect ang wallet',
-   'Add an email in Personal details to receive email alerts.':
-      'Magdagdag ng email sa Personal details para makatanggap ng email alerts.',
+   'Add an email in Personal details to receive email alerts.': 'Magdagdag ng email sa Personal details para makatanggap ng email alerts.',
    'Account activity': 'Aktibidad sa Account',
    'Security and account updates': 'Security at mga update sa account',
    'Loan activity': 'Aktibidad sa Loan',
@@ -822,8 +817,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Verification blocked': 'Naka-block ang verification',
    'Open verification to review the issue.': 'Buksan ang verification para suriin ang isyu.',
    'Identity not verified': 'Hindi pa verified ang identity',
-   'Complete an identity check to build account trust.':
-      'Kumpletuhin ang identity check para bumuo ng tiwala sa account.',
+   'Complete an identity check to build account trust.': 'Kumpletuhin ang identity check para bumuo ng tiwala sa account.',
    'Enter your old password': 'Ilagay ang lumang password mo',
    'Enter your new password': 'Ilagay ang bagong password mo',
    'Failed to send verification code': 'Hindi naipadala ang verification code',
@@ -851,5 +845,43 @@ export const filipinoCoverageA: Record<string, string> = {
    'Alert types': 'Mga Uri ng Alert',
    'Account activity notifications': 'Mga notification sa aktibidad ng account',
    'Loan activity notifications': 'Mga notification sa aktibidad ng loan',
-   'Moodeng news notifications': 'Mga notification sa balita ng Moodeng'
+   'Moodeng news notifications': 'Mga notification sa balita ng Moodeng',
+
+   // src/views/account/AvatarUploadModal.tsx
+   'Change background only': 'Baguhin lang ang Background',
+   'Click to upload': 'I-click para mag-upload',
+   'PNG, JPG, WEBP · up to 5 MB': 'PNG, JPG, WEBP · hanggang 5 MB',
+   'Drag to reposition · use the slider to zoom': 'I-drag para i-reposition · gamitin ang slider para mag-zoom',
+   'Avatar background': 'Background ng Avatar',
+   'Failed to save avatar.': 'Hindi na-save ang avatar.',
+   'Failed to save avatar background.': 'Hindi na-save ang background ng avatar.',
+   'Current profile photo': 'Kasalukuyang profile photo',
+
+   // src/views/account/BaseNetworkSheet.tsx
+   'Moodeng runs on Base': 'Tumatakbo ang Moodeng sa Base',
+   'Base is the blockchain network Moodeng is built on. Your wallet, your USDC, every loan you fund and every repayment you make all live here.':
+      'Ang Base ang blockchain network kung saan itinayo ang Moodeng. Ang wallet mo, ang USDC mo, bawat loan na pinopondohan mo, at bawat pagbabayad na ginagawa mo ay nandito lahat.',
+   'Learn more about Base': 'Alamin pa ang Tungkol sa Base',
+   'Fast and cheap by design': 'Mabilis at Mura sa Disenyo',
+   'Secured by Ethereum': 'Protektado ng Ethereum',
+   'Base inherits Ethereum’s security while staying low-cost. Your USDC balance and loan history are recorded on-chain, where they can’t be quietly changed.':
+      'Minana ng Base ang security ng Ethereum habang nananatiling mura. Ang balance mong USDC at loan history ay naka-record on-chain, kung saan hindi ito puwedeng baguhin nang tahimik.',
+   'Close overlay': 'Isara ang overlay',
+
+   // src/views/account/EditBioInfoModal.tsx
+   'Change Bio Info': 'Baguhin ang Bio Info',
+   'Update the details lenders see about your work, income, and what you typically need help with.':
+      'I-update ang mga detalyeng nakikita ng mga lender tungkol sa trabaho mo, kita, at karaniwang kailangan mong tulong.',
+   'What do you do for work?': 'Ano ang trabaho mo?',
+   'Any other income sources?': 'May iba ka pa bang pinagkukunan ng kita?',
+   'How would you describe your work?': 'Paano mo ide-describe ang trabaho mo?',
+   'Helps lenders see that repayment timing makes sense.':
+      'Nakakatulong ito sa mga lender na makita na makatuwiran ang timing ng pagbabayad.',
+   'When do you usually get paid?': 'Kailan ka karaniwang nasusweldo?',
+   'What is your approximate monthly income?': 'Ano ang tinatayang buwanang kita mo?',
+   'What do your recurring expenses cost per month?': 'Magkano ang regular na gastusin mo kada buwan?',
+   'Helps lenders understand your financial commitments.':
+      'Nakakatulong ito sa mga lender na maintindihan ang mga financial commitment mo.',
+   'Pick all that apply.': 'Piliin ang lahat ng naaangkop.',
+   'What do you usually need short-term help with?': 'Ano ang karaniwang kailangan mong panandaliang tulong?'
 };
