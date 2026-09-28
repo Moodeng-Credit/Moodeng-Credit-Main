@@ -198,32 +198,6 @@ export const filipinoCoverageLanding: Record<string, string> = {
       'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng pondo.',
    'Worker hubs first': 'Mga worker hub muna',
    'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
-      'Nagsisimula kami sa mga hub ng mga overseas worker, kasama ang South Korea, Taiwan, Japan, Singapore, at mga kalapit na lungsod.',
-   'Worker corridors': 'Mga worker corridor',
-   'Verified borrowers first': 'Verified na borrower muna',
-   'Every borrower completes a one-time identity check before requesting a loan.':
-      'Dumadaan ang bawat borrower sa one-time na identity check bago mag-request ng loan.',
-   'Identity checks help us start with users who can prove they are unique, real borrowers.':
-      'Sa identity check, nakakapagsimula kami sa mga user na napapatunayang iisa at totoong borrower.',
-   'Identity verification helps confirm one real person behind each borrower account.':
-      'Tinutulungan ng identity verification na makumpirmang iisang totoong tao ang nasa likod ng bawat borrower account.',
-   'Verification is a trust signal, not a loan guarantee.': 'Senyales ng tiwala ang verification, hindi garantiya ng loan.',
-   'Verified first': 'Verified muna',
-   'Borrowers complete a quick ID + selfie check, or verify with World ID, before they can request loans. That gives lenders a real-person signal, and the ID is checked by our verification partner, never stored by Moodeng.':
-      'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng loan. Kaya nakakasiguro ang mga lender na totoong tao ang borrower, at ang ID ay sinusuri ng verification partner namin at hindi kailanman iniimbak ng Moodeng.',
-   'Borrowers who already use World App can verify with World ID instead of the ID + selfie check.':
-      'Ang mga borrower na gumagamit na ng World App ay puwedeng mag-verify gamit ang World ID sa halip na ID + selfie check.',
-   'We are starting with Filipinos and Southeast Asians working overseas. Small loans can cover urgent gaps and help borrowers build credit independently.':
-      'Nagsisimula kami sa mga Pilipino at Southeast Asian na nagtatrabaho sa abroad. Kayang punan ng maliliit na loan ang biglaang pangangailangan at matulungan ang mga borrower na bumuo ng sariling credit.',
-   'We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.':
-      'Nagsisimula kami sa mga worker at migrant sa mga hub gaya ng South Korea, Taiwan, Japan, Singapore, at iba pang kalapit na lungsod.',
-   'ID verified': 'ID verified',
-   // src/views/lenderBenefits (verification copy corrected to ID + selfie / World ID)
-   'Identity verified': 'Verified ang identity',
-   'Borrowers pass a quick ID + selfie check, or verify with World ID, before they can request funding.':
-      'Dumadaan ang mga borrower sa mabilis na ID + selfie check, o nagve-verify gamit ang World ID, bago sila makapag-request ng pondo.',
-   'Worker hubs first': 'Mga worker hub muna',
-   'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.':
       'Nagsisimula kami sa mga worker hub sa ibang bansa, kasama ang South Korea, Taiwan, Japan, Singapore, at mga kalapit na lungsod.',
    'Worker corridors': 'Mga worker corridor',
    'Verified borrowers first': 'Mga verified na borrower muna',
