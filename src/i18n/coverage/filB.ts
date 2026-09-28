@@ -518,5 +518,42 @@ export const filipinoCoverageB: Record<string, string> = {
    'Ask Mecha to write this in English': 'Hilingin kay Mecha na isulat ito sa English',
    'Choose repayment date': 'Piliin ang repayment date',
    'Previous month': 'Nakaraang buwan',
-   'Next month': 'Susunod na buwan'
+   'Next month': 'Susunod na buwan',
+
+   // src/views/dashboard/components/LoanSummarySection.tsx
+   Total: 'Total',
+
+   // src/views/dashboard/components/LocationPrimingModal.tsx
+   'One last step': 'Isang huling hakbang',
+   'Share location': 'I-share ang lokasyon',
+
+   // src/views/dashboard/components/MilestoneSheets.tsx
+   'Why it matters': 'Bakit mahalaga ito',
+   'What changes on your profile': 'Ano ang magbabago sa profile mo',
+   'Complete earlier milestones first': 'Tapusin muna ang mga naunang milestone',
+   'Build trust one step at a time': 'Bumuo ng tiwala nang paunti-unti',
+   'Complete clear actions, such as verifying your identity and repaying on time. Each completed milestone adds Pandesal points to your borrower profile.':
+      'Tapusin ang mga malinaw na aksyon, gaya ng pag-verify ng identity mo at pagbabayad on time. Ang bawat natapos na milestone ay nagdaragdag ng Pandesal points sa borrower profile mo.',
+   'Next milestone': 'Susunod na milestone',
+   'The clearest action you can complete now.': 'Ang pinakamalinaw na aksyon na puwede mong tapusin ngayon.',
+   'Locked milestones': 'Mga naka-lock na milestone',
+   'These become available after earlier steps are complete.': 'Magiging available ang mga ito pagkatapos matapos ang mga naunang hakbang.',
+   'View Milestone': 'Tingnan ang Milestone',
+   Unlocked: 'Naka-unlock',
+
+   // src/views/dashboard/components/ReputationMilestones.tsx
+   'Reputation Milestones': 'Reputation Milestones',
+   'Milestones show what to do next to build trust with lenders.':
+      'Ipinapakita ng milestones kung ano ang susunod mong gagawin para bumuo ng tiwala sa mga lender.',
+   'Complete milestones to unlock higher loan levels.': 'Tapusin ang mga milestone para ma-unlock ang mas mataas na loan level.',
+   'How milestones work': 'Kung paano gumagana ang milestones',
+
+   // src/views/dashboard/components/SuccessModal.tsx
+   'Loan request submitted': 'Naisumite na ang loan request',
+   'Your loan request is now live. Lenders can review it and fund your request.':
+      'Live na ang loan request mo. Puwede na itong suriin ng mga lender at pondohan ang request mo.',
+   'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great lenders.':
+      'Sumali sa Moodeng borrower group sa Facebook o Telegram para maipakilala ka namin sa mahuhusay na lender.',
+   'Join on Telegram': 'Sumali sa Telegram',
+   'Join on Facebook': 'Sumali sa Facebook'
 };
