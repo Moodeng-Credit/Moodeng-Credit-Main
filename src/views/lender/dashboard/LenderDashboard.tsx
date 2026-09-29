@@ -20,6 +20,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { isOffPlatformSettledRefund, type Loan } from '@/types/loanTypes';
 import { isLoanPastDue } from '@/utils/loanOverdue';
+import { currentDateLocale } from '@/utils/dateFormatters';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -63,7 +64,7 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDateShort(dateStr: string): string {
-   return new Date(dateStr).toLocaleDateString('en-US', {
+   return new Date(dateStr).toLocaleDateString(currentDateLocale(), {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -72,7 +73,7 @@ function formatDateShort(dateStr: string): string {
 
 function formatMemberSince(dateStr: string | null | undefined): string {
    if (!dateStr) return '—';
-   return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+   return new Date(dateStr).toLocaleDateString(currentDateLocale(), { month: 'long', year: 'numeric' });
 }
 
 function computeEarningsChange(loans: Loan[]): { total: number; changePercent: number } {
