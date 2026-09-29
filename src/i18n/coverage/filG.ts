@@ -588,5 +588,56 @@ export const filipinoCoverageG: Record<string, string> = {
    'Date Returned': 'Petsa ng pagbalik',
 
    // src/views/repay/Repay.tsx
-   'your loan': 'loan mo'
+   'your loan': 'loan mo',
+
+   // src/views/signin/SignInPage.tsx
+   'This account has been closed. If you think this is a mistake, contact support on Telegram.':
+      'Isinara na ang account na ito. Kung sa tingin mo ay pagkakamali ito, makipag-ugnayan sa support sa Telegram.',
+
+   // src/views/signup/SignUpPage.tsx
+   'Account already exists': 'May account na',
+   'Logging you in…': 'Nila-log in ka…',
+   'Could not reach the server. Check your connection and try again.':
+      'Hindi maabot ang server. I-check ang connection mo at subukan ulit.',
+   'Already linked': 'Naka-link na',
+   'Already registered': 'Registered na',
+   'Email address taken': 'May gumagamit na ng email address na ito',
+   'Password too weak': 'Masyadong mahina ang password',
+
+   // src/views/support/FAQ.tsx
+   'FAQ categories': 'Mga kategorya ng FAQ',
+
+   // src/views/support/PublicGuide.tsx
+   'By the Moodeng Team · Updated': 'Mula sa Moodeng Team · Na-update noong',
+   'Read guide →': 'Basahin ang gabay →',
+
+   // src/views/support/Updates.tsx
+   Updates: 'Mga update',
+
+   // src/views/support/data/updates.ts (body text keeps its paragraph breaks: the page uses whitespace-pre-line)
+   'Live Filters & Cleaner Borrowing Flow': 'Live na mga filter at mas malinis na daloy ng paghiram',
+   'Request Board and history filters now update as you tap':
+      'Agad nang nag-a-update ang mga filter ng Request Board at history habang nagta-tap ka',
+   'Latest May 2026 update': 'Pinakabagong update ng May 2026',
+   'The Request Board and Transaction History now feel much more immediate. Filters apply while you choose them, so you can narrow results without pressing an extra Apply button or losing sight of the list behind the panel. Search, amount, date, type, repayment, and status choices are easier to test quickly. This release also cleans up the borrower path around loan actions: • unverified borrowers are guided back into onboarding before requesting a loan • verified borrowers without a wallet (Instant Wallet or Base Account) go straight to the wallet step • filter panels stay focused on browsing instead of blocking the board The goal is simple: fewer dead ends, fewer confusing taps, and a request board that updates the moment you make a choice.':
+      'Mas mabilis na ang pakiramdam ng Request Board at Transaction History.\n\nNag-a-apply na ang mga filter habang pumipili ka, kaya puwede mong paliitin ang resulta nang hindi pumipindot ng dagdag na Apply button o nawawala sa paningin ang listahan sa likod ng panel. Mas madali nang subukan agad ang search, halaga, petsa, uri, pagbabayad, at status.\n\nInayos din ng release na ito ang daloy ng borrower sa mga loan action:\n• ang mga borrower na hindi pa verified ay ibinabalik sa onboarding bago mag-request ng loan\n• ang mga verified na borrower na wala pang wallet (Instant Wallet o Base Account) ay diretso sa wallet step\n• nakatuon ang mga filter panel sa pag-browse sa halip na takpan ang board\n\nSimple ang layunin: mas kaunting dead end, mas kaunting nakakalitong tap, at request board na nag-a-update sa sandaling pumili ka.',
+   'Base Wallet & World ID Onboarding': 'Onboarding ng Base Wallet at World ID',
+   'Clearer wallet handoff • Stronger human verification flow': 'Mas malinaw na paglipat sa wallet • Mas matibay na human verification',
+   'Borrower onboarding has been tightened so each step leads naturally into the next. The Base Wallet screen is simpler, the connected-wallet success screen now uses the final success mark, and World ID actions are easier to understand from the Request Board and onboarding flow. This update also improves duplicate World ID handling and keeps borrowers moving through the right next step after wallet connection, verification, or a request-board action.':
+      'Inayos ang onboarding ng borrower para natural na humantong ang bawat hakbang sa susunod.\n\nMas simple na ang Base Wallet screen, ginagamit na ng success screen ng nakakonektang wallet ang final na success mark, at mas madali nang maintindihan ang mga World ID action mula sa Request Board at onboarding.\n\nPinapahusay din ng update na ito ang paghawak sa duplicate na World ID at pinapanatiling nasa tamang susunod na hakbang ang mga borrower pagkatapos magkonekta ng wallet, mag-verify, o gumawa ng action sa request board.',
+   'Clearer Loan & Repay States': 'Mas malinaw na status ng loan at pagbabayad',
+   'Pending funding, repayment, and navigation are easier to trust':
+      'Mas mapagkakatiwalaan na ang pending na pagpopondo, pagbabayad, at navigation',
+   'Loan screens now do a better job showing what is actually happening. Pending requests are clearer before they are funded, repayment screens avoid misleading action states, and bottom navigation between Request Board, Repay, Dashboard, History, and Account is more reliable. These changes are designed to make the app feel calmer when money is involved: the screen should say whether a loan is waiting, active, repaid, or unavailable without making you guess.':
+      'Mas malinaw nang ipinapakita ng mga loan screen kung ano talaga ang nangyayari.\n\nMas malinaw na ang mga pending na request bago mapondohan, iniiwasan na ng mga repayment screen ang nakakalitong action state, at mas maaasahan na ang bottom navigation sa pagitan ng Request Board, Magbayad, Dashboard, History, at Account.\n\nGinawa ang mga pagbabagong ito para mas panatag ang pakiramdam sa app kapag pera ang usapan: dapat sabihin ng screen kung naghihintay, aktibo, bayad na, o hindi available ang loan nang hindi ka pinapahula.',
+   'Trust System & Admin Readiness': 'Trust system at kahandaan ng admin',
+   'Cleaner IOU rules • Better account status and recovery controls':
+      'Mas malinis na IOU rules • Mas mahusay na account status at recovery controls',
+   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'Ginawang mas pare-pareho ang trust layer sa likod ng Moodeng.\n\nMas madali nang intindihin ang mga patakaran sa IOU points ng lender, mas tugma na sa totoong estado ng account ang mga admin status control, at mas maaasahan na ang data na ginagamit ng mga recovery workflow.\n\nKaramihan sa trabahong ito ay nasa likod ng eksena, pero mahalaga ito: kailangang magtugma ang mga record ng borrower, insentibo ng lender, mga overdue na loan, at mga restriction sa account bago ligtas na mapalaki ang produkto.',
+   'Support Library & Credit Education': 'Support library at edukasyon sa credit',
+   'Repayment guides • Credit leveling • Borrower safety content':
+      'Mga gabay sa pagbabayad • Credit leveling • Content para sa kaligtasan ng borrower',
+   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'Ni-refresh ang support area batay sa mga tanong na talagang itinatanong ng mga borrower at lender.\n\nMas malinaw nang ipinapaliwanag ng mga gabay ang pagbabayad, Pandesal points, credit leveling, World ID, pag-set up ng Base Wallet, at kaligtasan ng borrower.\n\nNagdagdag din kami ng mas maraming educational content tungkol sa portable na repayment history at mas ligtas na alternatibo sa mapang-abusong pagpapautang, para maintindihan ng mga bagong user kung ano ang binubuo ng Moodeng bago sila mag-request o magpondo ng loan.'
 };
