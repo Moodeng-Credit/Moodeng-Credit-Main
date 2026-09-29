@@ -7,12 +7,14 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Browser push state the tests flip: whether push works here, the permission, and whether this is
-// iPhone Safari (push only from the Home Screen).
+// iPhone Safari (push only from the Home Screen). `locale` is the app language the popup should
+// render in.
 const env = vi.hoisted(() => ({
    supported: true,
    permission: 'default' as string,
    needsHomeScreen: false,
-   enable: vi.fn(async () => 'subscribed')
+   enable: vi.fn(async () => 'subscribed'),
+   locale: 'en' as string
 }));
 
 vi.mock('@/lib/push/webPushClient', () => ({
@@ -24,6 +26,13 @@ vi.mock('@/lib/push/webPushClient', () => ({
 
 vi.mock('@/hooks/usePushNotifications', () => ({
    usePushNotifications: () => ({ isSupported: env.supported, isBusy: false, enable: env.enable })
+}));
+
+vi.mock('@/i18n', () => ({ useLocalization: () => ({ locale: env.locale }) }));
+
+vi.mock('@/lib/inAppBrowser', () => ({
+   detectInAppBrowser: () => ({ isInApp: false, appName: null }),
+   openInSafari: vi.fn()
 }));
 
 const { default: LenderFundedPopup } = await import('@/components/funding/LenderFundedPopup');
@@ -62,6 +71,7 @@ describe('LenderFundedPopup', () => {
       env.permission = 'default';
       env.needsHomeScreen = false;
       env.enable.mockClear();
+      env.locale = 'en';
       onClose.mockClear();
       container = document.createElement('div');
       document.body.appendChild(container);
@@ -154,5 +164,28 @@ describe('LenderFundedPopup', () => {
 
       await act(async () => buttonByText(container, 'Got It')?.click());
       expect(onClose).toHaveBeenCalledTimes(1);
+   });
+
+   it('renders in the lender’s own app language, not just English', async () => {
+      env.locale = 'th';
+      await render();
+      expect(container.textContent).toContain('คุณปล่อยกู้ให้ Mimi แล้ว!');
+      expect(container.textContent).toContain('อยากรู้ไหมว่าเมื่อไหร่คุณจะได้รับเงินคืน');
+      expect(buttonByText(container, 'แจ้งเตือนเมื่อได้รับเงินคืน')).toBeTruthy();
+      expect(container.textContent).not.toContain('Notify Me When Repaid');
+   });
+
+   it('translates the iPhone Home Screen guide too', async () => {
+      env.locale = 'th';
+      env.supported = false;
+      env.needsHomeScreen = true;
+      await render();
+      await act(async () => buttonByText(container, 'แจ้งเตือนเมื่อได้รับเงินคืน')?.click());
+      expect(container.textContent).toContain('เพิ่ม Moodeng ไปยังหน้าจอโฮมของคุณ');
+      const steps = Array.from(container.querySelectorAll('ol li')).map((li) => li.textContent);
+      expect(steps).toHaveLength(4);
+      expect(steps[0]).toContain('Share');
+      expect(steps[3]).toContain('เปิด');
+      expect(container.textContent).not.toContain('Add Moodeng to your Home Screen');
    });
 });

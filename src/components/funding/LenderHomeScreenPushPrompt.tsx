@@ -5,7 +5,41 @@ import { useLenderPushTurnOn } from '@/components/funding/useLenderPushTurnOn';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
+import { type LocaleCode, useLocalization } from '@/i18n';
 import { getPushPermission, isIosHomeScreenApp, isPushConfigured, isPushSupported } from '@/lib/push/webPushClient';
+
+const PROMPT_COPY: Record<LocaleCode, { title: string; heading: string; body: string; turnOn: string }> = {
+   en: {
+      title: 'You’re on the Home Screen!',
+      heading: 'Turn on notifications',
+      body: 'Get notified the moment a borrower repays you.',
+      turnOn: 'Turn On'
+   },
+   fil: {
+      title: 'Nasa Home Screen ka na!',
+      heading: 'I-on ang mga notification',
+      body: 'Makatanggap ng abiso sa sandaling bayaran ka ng isang borrower.',
+      turnOn: 'I-on'
+   },
+   id: {
+      title: 'Kamu sudah ada di Home Screen!',
+      heading: 'Aktifkan notifikasi',
+      body: 'Dapatkan notifikasi begitu seorang peminjam membayarmu kembali.',
+      turnOn: 'Aktifkan'
+   },
+   th: {
+      title: 'คุณอยู่บนหน้าจอโฮมแล้ว!',
+      heading: 'เปิดการแจ้งเตือน',
+      body: 'รับการแจ้งเตือนทันทีที่ผู้ยืมชำระคืนให้คุณ',
+      turnOn: 'เปิด'
+   },
+   vi: {
+      title: 'Bạn đã ở Màn hình chính!',
+      heading: 'Bật thông báo',
+      body: 'Nhận thông báo ngay khi người vay trả nợ cho bạn.',
+      turnOn: 'Bật'
+   }
+};
 
 // Home Screen web apps keep their own storage, separate from Safari, so this is "asked once in the
 // Home Screen app", whatever happened in Safari before.
@@ -39,6 +73,8 @@ export default function LenderHomeScreenPushPrompt({ userId }: { userId: string 
    const eligible = useMemo(shouldPrompt, []);
    const [isOpen, setIsOpen] = useState(eligible);
    const push = usePushNotifications(userId, { autoPrompt: false });
+   const { locale } = useLocalization();
+   const copy = PROMPT_COPY[locale];
 
    const close = useCallback(() => setIsOpen(false), []);
    const { status, turnOn } = useLenderPushTurnOn(push.enable, close);
@@ -50,15 +86,15 @@ export default function LenderHomeScreenPushPrompt({ userId }: { userId: string 
    if (!isOpen) return null;
 
    return (
-      <LenderPopupShell title="You’re on the Home Screen!" labelledBy="lender-home-screen-push-title" onClose={close}>
+      <LenderPopupShell title={copy.title} labelledBy="lender-home-screen-push-title" onClose={close}>
          <div className="w-full text-[#594d65]">
             <p id="lender-home-screen-push-title" className="text-[24px] font-bold leading-6">
-               Turn on notifications
+               {copy.heading}
             </p>
-            <p className="mt-1 text-[20px] leading-6">Get notified the moment a borrower repays you.</p>
+            <p className="mt-1 text-[20px] leading-6">{copy.body}</p>
          </div>
          <img src="/icons/bell-ringing-3d.png" alt="" className="h-[94px] w-[94px] object-contain" />
-         <TurnOnButton label="Turn On" status={status} onTurnOn={() => void turnOn()} onDone={close} />
+         <TurnOnButton label={copy.turnOn} status={status} onTurnOn={() => void turnOn()} onDone={close} />
       </LenderPopupShell>
    );
 }
