@@ -17,6 +17,11 @@ verify_jwt = false
 [functions.sendpulse-messenger-verify]
 verify_jwt = false
 
+# SendPulse bot webhooks (Bot settings → Webhooks). SendPulse can't send a Supabase JWT or custom
+# headers there, so the gate is ?secret=<SENDPULSE_EVENTS_SECRET> in the URL, checked in the function.
+[functions.sendpulse-events]
+verify_jwt = false
+
 # Public Cal.com webhook — Cal.com calls this unauthenticated and signs it with x-cal-signature-256,
 # so it must not require a Supabase JWT (the signature is what authenticates it).
 [functions.calcom-webhook]

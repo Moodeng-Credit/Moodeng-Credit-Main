@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
+import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
 import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -29,16 +30,9 @@ const CORS = {
 const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
-// SendPulse may send a bare ref ("MDNG-1234") or a typed message ("MDNG-1234 hi", "verify MDNG-1234").
-// Try the whole trimmed string first, then each alphanumeric/dash token, and strip a leading verify_.
-const candidateCodes = (raw: string): string[] => {
-   const trimmed = (raw ?? '').trim().replace(/^verify[_-]?/i, '');
-   const tokens = trimmed
-      .split(/\s+/)
-      .map((t) => t.replace(/[^A-Za-z0-9-]/g, '').replace(/^verify[_-]?/i, ''))
-      .filter((t) => t.length >= 4);
-   return [...new Set([trimmed, ...tokens].filter(Boolean))];
-};
+// SendPulse may send a bare ref ("MDNG-3D66AD") or a typed message ("mdng 3d66ad hi", "verify MDNG-3D66AD").
+// extractMessengerCodes only ever yields the exact MDNG-XXXXXX shape, and lookups below use eq — never
+// ilike, whose % and _ wildcards let "MDNG-%" confirm whichever code happened to be pending.
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -47,14 +41,24 @@ type Svc = any;
 // repayment record. Best-effort: a failed ping must never fail the borrower's verification.
 const announceConnected = async (svc: Svc, userId: string, contactId: string | null, flowName: string | null) => {
    try {
-      const [{ data: borrower }, { data: loans }, { data: chatRow }, contact] = await Promise.all([
+      const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }] = await Promise.all([
          svc.from('users').select('username, display_name, email').eq('id', userId).maybeSingle(),
          svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
          svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
-         contactId ? getMessengerContact(contactId) : Promise.resolve(null)
+         contactId ? getMessengerContact(contactId) : Promise.resolve(null),
+         contactId ? svc.from('users').select('username').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] })
       ]);
       if (!borrower) return;
-      const text = buildFacebookConnectedAlert(borrower, messengerDisplayName(contact) ?? flowName, (loans ?? []) as LoanRecord[]);
+      const alsoLinkedTo = ((sharing ?? []) as Array<{ username: string | null }>).map((u) =>
+         u.username ? `@${u.username}` : 'another account'
+      );
+      const text = buildFacebookConnectedAlert(
+         borrower,
+         messengerDisplayName(contact) ?? flowName,
+         (loans ?? []) as LoanRecord[],
+         Date.now(),
+         alsoLinkedTo
+      );
       const chat = (chatRow as { value?: string } | null)?.value;
       if (chat)
          await sendTelegramMessage(chat, text).catch((err: unknown) =>
@@ -98,11 +102,12 @@ serve(async (req) => {
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
    const nowIso = new Date().toISOString();
 
-   for (const cand of candidateCodes(raw)) {
+   const codes = extractMessengerCodes(raw);
+   for (const cand of codes) {
       const { data, error } = await svc
          .from('contact_verification_codes')
          .select('id, code, user_id, expires_at, verified_at')
-         .ilike('code', cand)
+         .eq('code', cand)
          .eq('channel', 'messenger')
          .is('verified_at', null)
          .limit(1);
@@ -130,14 +135,20 @@ serve(async (req) => {
       // the flow saved on the contact; fall back to whatever id the flow's request carried.
       const contactId = (await findMessengerContactIdByCode(pending.code)) ?? (body.contact_id ? String(body.contact_id) : null) ?? psid;
 
-      const { error: codeError } = await svc
+      // Claim the code atomically: the SendPulse flow and sendpulse-events can confirm the same code
+      // at the same moment, and only one of them should stamp it and announce it.
+      const { data: claimed, error: codeError } = await svc
          .from('contact_verification_codes')
          .update({ verified_at: nowIso, sender_psid: contactId })
-         .eq('id', pending.id);
+         .eq('id', pending.id)
+         .is('verified_at', null)
+         .select('id')
+         .maybeSingle();
       if (codeError) {
          console.error('sendpulse-messenger-verify: mark code failed', codeError.message);
          return json({ ok: false, error: 'update_failed' }, 500);
       }
+      if (!claimed) return json({ ok: true, already: true });
 
       const { data: before } = await svc.from('users').select('messenger_verified_at').eq('id', pending.user_id).maybeSingle();
       const { error: userError } = await svc
@@ -157,11 +168,11 @@ serve(async (req) => {
    // used to find nothing and answer "that link didn't work or has expired" right after the success
    // message. A code confirmed in the last few minutes is a repeat, not a failure.
    const recentCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-   for (const cand of candidateCodes(raw)) {
+   for (const cand of codes) {
       const { data: repeat } = await svc
          .from('contact_verification_codes')
          .select('id')
-         .ilike('code', cand)
+         .eq('code', cand)
          .eq('channel', 'messenger')
          .gte('verified_at', recentCutoff)
          .limit(1);

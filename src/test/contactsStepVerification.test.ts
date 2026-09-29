@@ -141,12 +141,12 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       });
 
       // Give the link a fair chance first.
-      expect(container.textContent).not.toContain('Messenger not opening?');
+      expect(container.textContent).not.toContain('Not confirmed yet?');
 
       await act(async () => {
          await vi.advanceTimersByTimeAsync(60_000);
       });
-      expect(container.textContent).toContain('Messenger not opening?');
+      expect(container.textContent).toContain('Not confirmed yet?');
       expect(container.textContent).toContain('MDNG-ABC123');
       // No way around it: Continue waits for the Page to confirm the typed code.
       expect(continueButton(container).disabled).toBe(true);
@@ -155,6 +155,72 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       await act(async () => {
          await vi.advanceTimersByTimeAsync(3100);
       });
+      expect(continueButton(container).disabled).toBe(false);
+   });
+
+   it('offers the backups a few seconds after they come back from Messenger unconfirmed (no minute-long wait)', async () => {
+      const setVisibility = async (state: 'hidden' | 'visible') => {
+         Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+         await act(async () => {
+            document.dispatchEvent(new Event('visibilitychange'));
+            await Promise.resolve();
+         });
+      };
+      await render();
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+
+      // A focus/visibility blip without actually leaving for Messenger doesn't count.
+      await setVisibility('visible');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(5_000);
+      });
+      expect(container.textContent).not.toContain('Not confirmed yet?');
+
+      // Off to Messenger and back, still unconfirmed → backups after the short grace.
+      await setVisibility('hidden');
+      await setVisibility('visible');
+      expect(container.textContent).not.toContain('Not confirmed yet?');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(4_100);
+      });
+      expect(container.textContent).toContain('Not confirmed yet?');
+      expect(container.textContent).toContain('MDNG-ABC123');
+      expect(container.textContent).toContain('second try usually works');
+
+      // Tapping "Open Messenger again" in the backups reopens the same coded link.
+      const again = Array.from(container.querySelectorAll('button')).filter((b) => b.textContent?.trim() === 'Open Messenger again');
+      expect(again.length).toBe(2);
+      openSpy.mockClear();
+      await act(async () => {
+         again[1].click();
+      });
+      expect(openSpy.mock.calls[0][0]).toContain('__mdng_code=MDNG-ABC123');
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+   });
+
+   it('does not show the backups when the bot confirms them while they were away', async () => {
+      await render();
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+      Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+      await act(async () => {
+         document.dispatchEvent(new Event('visibilitychange'));
+      });
+      supa.state.usersRow.messenger_verified_at = '2026-09-29T07:23:00Z';
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+      await act(async () => {
+         document.dispatchEvent(new Event('visibilitychange'));
+         await Promise.resolve();
+      });
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(4_100);
+      });
+      expect(container.textContent).not.toContain('Not confirmed yet?');
       expect(continueButton(container).disabled).toBe(false);
    });
 

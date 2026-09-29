@@ -75,6 +75,13 @@ export const getMessengerContact = async (contactId: string): Promise<SendPulseC
 // The bot behind the "Confirm Facebook" flow (Moodeng Credit Page).
 export const SENDPULSE_BOT_ID = Deno.env.get('SENDPULSE_BOT_ID')?.trim() || '81acb48b-e32c-4c85-b29f-0efae2ca2716';
 
+// Server copy of buildMessengerVerifyLink (src/config/contactVerification.ts), for links we email. Same
+// SendPulse "launch a flow with parameters" format, deliberately unencoded to match SendPulse's parser.
+export const MESSENGER_PAGE_ID = Deno.env.get('MESSENGER_PAGE_ID')?.trim() || '1148756028310286';
+const CONFIRM_FB_FLOW_ID = Deno.env.get('SENDPULSE_CONFIRM_FB_FLOW_ID')?.trim() || '3598d58c-7ade-4b7c-9f12-7ed39350fe41';
+export const MESSENGER_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
+export const buildMessengerVerifyLink = (code: string) => `https://m.me/${MESSENGER_PAGE_ID}?ref=${CONFIRM_FB_FLOW_ID}__mdng_code=${code}`;
+
 // The flow stores the borrower's one-time code on their SendPulse contact as the `mdng_code`
 // variable. Looking the contact up by that code gives the SendPulse contact id — the only id the
 // send API accepts (Facebook's numeric PSID is rejected) — whatever the flow's API request sends us.
