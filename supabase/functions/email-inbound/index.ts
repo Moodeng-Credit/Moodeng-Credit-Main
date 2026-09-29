@@ -66,6 +66,21 @@ type InboundEmail = {
    messageId: string | null;
    inReplyTo: string | null;
    references: string[];
+   /** Sent by a machine (no-reply sender, mailing list, auto-reply) rather than a person. */
+   automated: boolean;
+};
+
+// support@ also receives service mail (Zoom meeting notices, billing, newsletters). Those are not
+// support requests, so they must never become Discord tickets.
+const AUTOMATED_SENDER = /^(no-?reply|do-?not-?reply|notifications?|notify|mailer-daemon|postmaster|bounces?|alerts?|news(letter)?|billing|receipts?)([@+._-]|$)/i;
+
+const isAutomated = (fromEmail: string, headers: unknown, readHeaderFn: (h: unknown, name: string) => string | null): boolean => {
+   if (AUTOMATED_SENDER.test(fromEmail)) return true;
+   const autoSubmitted = readHeaderFn(headers, 'auto-submitted');
+   if (autoSubmitted && autoSubmitted.toLowerCase() !== 'no') return true;
+   if (readHeaderFn(headers, 'list-unsubscribe') || readHeaderFn(headers, 'list-id')) return true;
+   const precedence = readHeaderFn(headers, 'precedence')?.toLowerCase();
+   return precedence === 'bulk' || precedence === 'list' || precedence === 'junk' || precedence === 'auto_reply';
 };
 
 // "Jane Doe <jane@example.com>" | "jane@example.com" -> { name, email }
@@ -201,7 +216,9 @@ const parseInbound = (payload: Record<string, unknown>): InboundEmail | null => 
    const inReplyTo = extractMessageIds(readHeader(headers, 'in-reply-to'))[0] ?? null;
    const references = extractMessageIds(readHeader(headers, 'references'));
 
-   return { fromEmail, fromName, toList, subject, body, messageId, inReplyTo, references };
+   const automated = isAutomated(fromEmail, headers, readHeader);
+
+   return { fromEmail, fromName, toList, subject, body, messageId, inReplyTo, references, automated };
 };
 
 // reply+<uuid>@… in any recipient address -> the reply token.
@@ -299,6 +316,10 @@ serve(async (req) => {
 
    const email = parseInbound(payload);
    if (!email) return jsonResponse({ error: 'unparseable_email' }, 400);
+   if (email.automated) {
+      console.log('[email-inbound] ignored automated mail from', email.fromEmail);
+      return jsonResponse({ ok: true, ignored: 'automated' });
+   }
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
