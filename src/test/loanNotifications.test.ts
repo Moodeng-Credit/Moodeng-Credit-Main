@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+   buildLenderRepaymentEmail,
    buildLenderRepaymentTelegram,
    buildLoanNotificationEmail,
    buildLoanNotificationTelegram,
@@ -333,6 +334,28 @@ describe('buildLoanNotificationTelegram', () => {
       expect(result.text).toContain('@lender_one');
       expect(result.text).toContain('sam repaid $275.00 USDC for LOAN-123');
       expect(result.text).toContain('https://moodeng.app/dashboard');
+   });
+
+   it('builds the lender repayment email with the funding wallet and tx link', () => {
+      const result = buildLenderRepaymentEmail(
+         {
+            ...baseLoan,
+            repaid_amount: 275,
+            repayment_status: 'Paid',
+            updated_at: '2026-01-12T00:00:00.000Z',
+            lender_wallet: '0x1234567890abcdef1234567890abcdef12345678',
+            hash: [`0x${'a'.repeat(64)}`, `0x${'b'.repeat(64)}`]
+         },
+         { username: 'lender-01', email: 'lender@example.com' },
+         recipient
+      );
+
+      expect(result.subject).toBe('sam repaid your loan');
+      expect(result.text).toContain('sam repaid $275.00 USDC for loan LOAN-123');
+      expect(result.text).toContain('0x1234…5678');
+      expect(result.text).toContain(`https://basescan.org/tx/0x${'b'.repeat(64)}`);
+      expect(result.html).toContain('You got repaid');
+      expect(result.html).toContain('https://moodeng.app/dashboard');
    });
 });
 
