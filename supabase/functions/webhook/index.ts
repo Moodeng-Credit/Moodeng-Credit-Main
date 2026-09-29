@@ -1,3 +1,5 @@
+// LEGACY — the bot's webhook moved to telegram-webhook on 2026-09-29 (this one ignored button taps).
+// Kept only so an old setWebhook doesn't 404; don't point the bot back here.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
