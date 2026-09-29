@@ -102,9 +102,12 @@ const notifyTeamBooking = async (
    hostId: string,
    start: string,
    attendee: { name: string; email: string; timeZone: string },
+   joinUrl: string | null,
    tgChat: string
 ) => {
-   const text = `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}`;
+   const text =
+      `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}` +
+      `\nJoin: ${joinUrl ?? 'no link on the booking — check the host’s Cal.com'}`;
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
    // caller — never the lender or support group.
@@ -259,7 +262,7 @@ serve(async (req) => {
                const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
                teamChat = ((setting as { value?: string } | null)?.value) ?? '';
             }
-            await notifyTeamBooking(hostId, start, attendee, teamChat);
+            await notifyTeamBooking(hostId, start, attendee, result.joinUrl, teamChat);
             return json({ ok: true, host: hostId, start });
          }
          if (result.error !== 'taken') break;
