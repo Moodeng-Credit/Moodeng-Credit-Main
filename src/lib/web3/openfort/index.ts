@@ -9,7 +9,8 @@ export { OpenfortProvider, useOpenfort, type OpenfortStatus } from '@/lib/web3/o
 export {
    ensureEmbeddedWalletReady,
    exportEmbeddedPrivateKey,
-   sendUsdcFromEmbeddedWallet
+   sendUsdcFromEmbeddedWallet,
+   type WalletSetupPhase
 } from '@/lib/web3/openfort/embeddedWallet';
 export { useCreateInstantWallet, type InstantWalletReturnTo } from '@/lib/web3/openfort/useCreateInstantWallet';
 export {

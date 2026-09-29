@@ -192,24 +192,24 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(continueButton(container).disabled).toBe(false);
    });
 
-   it('does not block an iPhone-Safari borrower, and tells them where the Share button is', async () => {
+   it('does not block an iPhone-Safari borrower, and shows no Home Screen instructions', async () => {
       const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
       Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain('Add to Home Screen');
-      // The old copy just said "tap Share"; borrowers couldn't find it, so we now say where it is.
-      expect(container.textContent).toContain('bottom of the screen');
+      // The old "In Safari, tap Share → Add to Home Screen" box read like a scam and made people stop.
+      expect(container.textContent).not.toContain('Add to Home Screen');
+      expect(container.textContent).not.toContain('Safari');
    });
 
-   it("tells a Facebook in-app-browser borrower to open in Safari (there is no Share button there)", async () => {
+   it('does not block a Facebook in-app-browser borrower, and shows no browser instructions', async () => {
       const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 [FBAN/FBIOS;FBAV/450.0]';
       Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain('Open in Safari');
+      expect(container.textContent).not.toContain('Open in Safari');
       expect(container.textContent).not.toContain('Add to Home Screen');
    });
 
