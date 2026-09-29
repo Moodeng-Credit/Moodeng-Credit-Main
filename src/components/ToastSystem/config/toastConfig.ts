@@ -394,6 +394,31 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       message: 'You did not complete World ID verification. You can try again anytime.'
    },
 
+   worldid_credential_missing: {
+      toastType: TOAST_TYPES.WARNING,
+      title: 'World ID Not Verified Yet',
+      message:
+         'Your World App needs an Orb verification or a passport added before it can verify you. You can verify with your ID instead.'
+   },
+
+   worldid_credential_pending: {
+      toastType: TOAST_TYPES.WARNING,
+      title: 'World ID Still Processing',
+      message: 'World App is still finishing your verification. Try again in a few hours, or verify with your ID instead.'
+   },
+
+   worldid_connection_failed: {
+      toastType: TOAST_TYPES.WARNING,
+      title: "Couldn't Reach World App",
+      message: 'The connection to World App dropped before verification finished. Please try again.'
+   },
+
+   worldid_unavailable: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'World ID Unavailable',
+      message: "World ID verification isn't working right now. Please verify with your ID instead, or try again later."
+   },
+
    self_lending_not_allowed: {
       toastType: TOAST_TYPES.ERROR,
       title: 'Cannot Lend to Yourself',

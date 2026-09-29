@@ -46,7 +46,11 @@ export type ToastErrorType =
    | 'password_weak'
    | 'self_lending_not_allowed'
    | 'wallet_missing'
-   | 'worldid_not_completed';
+   | 'worldid_not_completed'
+   | 'worldid_credential_missing'
+   | 'worldid_credential_pending'
+   | 'worldid_connection_failed'
+   | 'worldid_unavailable';
 
 export interface ToastConfig {
    success: ToastSuccessType;
