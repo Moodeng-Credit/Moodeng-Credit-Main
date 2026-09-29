@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail } from '../_shared/email.ts';
 import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import {
+   buildLenderRepaymentEmail,
    buildLenderRepaymentTelegram,
    buildLoanNotificationEmail,
    buildRepaymentTeamFeedMessage,
@@ -162,7 +163,7 @@ serve(async (req) => {
    }
 
    const { data: lender, error: lenderError } = loan.lender_user_id
-      ? await supabase.from('users').select('id, username, telegram_username, email, chat_id, notif_push').eq('id', loan.lender_user_id).maybeSingle()
+      ? await supabase.from('users').select('id, username, telegram_username, email, chat_id, notif_push, notif_transaction_activity').eq('id', loan.lender_user_id).maybeSingle()
       : { data: null, error: null };
 
    if (lenderError) {
@@ -285,7 +286,23 @@ serve(async (req) => {
       }
    }
 
-   if (!emailSent && !telegramSent && !pushSent) {
+   // Lender email. Telegram is opt-in and web push only reaches a device that's awake, so a lender with
+   // neither (most of them) used to hear nothing at all when they got paid back.
+   let lenderEmailSent = false;
+   if (lender?.email && lender.notif_transaction_activity !== false && !lenderAlreadySent) {
+      try {
+         const { subject, text, html } = buildLenderRepaymentEmail(loan, lender, borrower);
+         await sendEmail(lender.email, subject, text, html);
+         lenderEmailSent = true;
+         if (!telegramSent && !pushSent) {
+            notificationRows.push({ loan_id: loan.id, user_id: lender.id, notification_type: 'repayment_received' });
+         }
+      } catch (error) {
+         console.error('Lender repayment email failed', error instanceof Error ? error.message : String(error));
+      }
+   }
+
+   if (!emailSent && !telegramSent && !pushSent && !lenderEmailSent) {
       return new Response(
          JSON.stringify({ message: 'No eligible borrower/lender target', teamFeedSent }),
          { status: 200, headers: corsHeaders }
@@ -300,5 +317,5 @@ serve(async (req) => {
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, teamFeedSent }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, pushSent, lenderEmailSent, teamFeedSent }), { status: 200, headers: corsHeaders });
 });
