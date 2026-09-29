@@ -105,5 +105,112 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Loan request progress: step 4 of 4, Contact': 'Tiến độ yêu cầu vay: bước 4/4, Liên hệ',
    'Loan request progress: step 4 of 4, Meet the team': 'Tiến độ yêu cầu vay: bước 4/4, Gặp đội ngũ',
    'Loan request progress: step 4 of 5, Contact': 'Tiến độ yêu cầu vay: bước 4/5, Liên hệ',
-   'Loan request progress: step 5 of 5, Meet the team': 'Tiến độ yêu cầu vay: bước 5/5, Gặp đội ngũ'
+   'Loan request progress: step 5 of 5, Meet the team': 'Tiến độ yêu cầu vay: bước 5/5, Gặp đội ngũ',
+
+   // src/views/dashboard/components/MilestoneSheets.tsx
+   'Close milestone detail': 'Đóng chi tiết cột mốc',
+   'Close milestone help': 'Đóng hướng dẫn cột mốc',
+
+   // src/views/dashboard/components/TrustScoreSection.tsx
+   'pts to': 'điểm nữa để đạt',
+   'Top tier reached': 'Đã đạt cấp cao nhất',
+
+   // src/views/dashboard/components/UpcomingLoanDues.tsx
+   'Due in': 'Đến hạn trong',
+   today: 'hôm nay',
+   'View Insights': 'Xem chi tiết',
+   '1 day': '1 ngày',
+   '2 days': '2 ngày',
+   '3 days': '3 ngày',
+   '4 days': '4 ngày',
+   '5 days': '5 ngày',
+   '6 days': '6 ngày',
+   '7 days': '7 ngày',
+   '8 days': '8 ngày',
+   '9 days': '9 ngày',
+   '10 days': '10 ngày',
+   '11 days': '11 ngày',
+   '12 days': '12 ngày',
+   '13 days': '13 ngày',
+   '14 days': '14 ngày',
+   '15 days': '15 ngày',
+   '16 days': '16 ngày',
+   '17 days': '17 ngày',
+   '18 days': '18 ngày',
+   '19 days': '19 ngày',
+   '20 days': '20 ngày',
+   '21 days': '21 ngày',
+   '22 days': '22 ngày',
+   '23 days': '23 ngày',
+   '24 days': '24 ngày',
+   '25 days': '25 ngày',
+   '26 days': '26 ngày',
+   '27 days': '27 ngày',
+   '28 days': '28 ngày',
+   '29 days': '29 ngày',
+   '30 days': '30 ngày',
+   '31 days': '31 ngày',
+   '32 days': '32 ngày',
+   '33 days': '33 ngày',
+   '34 days': '34 ngày',
+   '35 days': '35 ngày',
+   '36 days': '36 ngày',
+   '37 days': '37 ngày',
+   '38 days': '38 ngày',
+   '39 days': '39 ngày',
+   '40 days': '40 ngày',
+   '41 days': '41 ngày',
+   '42 days': '42 ngày',
+   '43 days': '43 ngày',
+   '44 days': '44 ngày',
+   '45 days': '45 ngày',
+   '46 days': '46 ngày',
+   '47 days': '47 ngày',
+   '48 days': '48 ngày',
+   '49 days': '49 ngày',
+   '50 days': '50 ngày',
+   '51 days': '51 ngày',
+   '52 days': '52 ngày',
+   '53 days': '53 ngày',
+   '54 days': '54 ngày',
+   '55 days': '55 ngày',
+   '56 days': '56 ngày',
+   '57 days': '57 ngày',
+   '58 days': '58 ngày',
+   '59 days': '59 ngày',
+   '60 days': '60 ngày',
+
+   // src/views/dashboard/components/connectKit.tsx
+   Confirmed: 'Đã xác nhận',
+
+   // src/views/fund/FundWalletSheet.tsx
+   '. Stripe handles ID checks and payment — USDC lands on Base.':
+      '. Stripe lo phần kiểm tra giấy tờ tùy thân và thanh toán — USDC sẽ về ví của bạn trên mạng Base.',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'vs previous period': 'so với kỳ trước',
+   "You haven't funded any loans yet.": 'Bạn chưa cấp vốn cho khoản vay nào.',
+   'No transactions match your search or filters.': 'Không có giao dịch nào khớp với tìm kiếm hoặc bộ lọc của bạn.',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   '’s loan. If they repay, the repayment is automatically sent to your wallet.':
+      '. Khi người vay trả nợ, tiền sẽ tự động được gửi vào ví của bạn.',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'Due date': 'Ngày đến hạn',
+
+   // src/views/lender/loanNote/useBuyLoanNote.ts
+   Unavailable: 'Không khả dụng',
+   'USDC in your wallet to fund this loan.': 'USDC trong ví để cấp vốn cho khoản vay này.',
+
+   // src/views/milestones/Milestones.tsx
+   'pts left': 'điểm nữa',
+   'Unlocks at 50 Pandesal points': 'Mở khóa khi đạt 50 điểm Pandesal',
+   'Unlocks at 120 Pandesal points': 'Mở khóa khi đạt 120 điểm Pandesal',
+   'Unlocks at 250 Pandesal points': 'Mở khóa khi đạt 250 điểm Pandesal',
+   'Unlocks at 500 Pandesal points': 'Mở khóa khi đạt 500 điểm Pandesal',
+   'Unlocked at 50 Pandesal points': 'Đã mở khóa khi đạt 50 điểm Pandesal',
+   'Unlocked at 120 Pandesal points': 'Đã mở khóa khi đạt 120 điểm Pandesal',
+   'Unlocked at 250 Pandesal points': 'Đã mở khóa khi đạt 250 điểm Pandesal',
+   'Unlocked at 500 Pandesal points': 'Đã mở khóa khi đạt 500 điểm Pandesal'
 };
