@@ -443,5 +443,128 @@ export const thaiCoverageF: Record<string, string> = {
 
    // src/views/account/Account.tsx
    User: 'ผู้ใช้',
-   'Read the full guide': 'อ่านคู่มือฉบับเต็ม'
+   'Read the full guide': 'อ่านคู่มือฉบับเต็ม',
+
+   // src/views/account/AccountSettings.tsx
+   'Appearance & language': 'รูปลักษณ์และภาษา',
+   'Security & verification': 'ความปลอดภัยและการยืนยันตัวตน',
+   'Keep your profile and contact details up to date.': 'อัปเดตโปรไฟล์และข้อมูลติดต่อของคุณให้เป็นปัจจุบันอยู่เสมอ',
+   'These choices apply throughout Moodeng.': 'การตั้งค่าเหล่านี้มีผลทั่วทั้ง Moodeng',
+   'Manage sign-in security and identity checks.': 'จัดการความปลอดภัยในการเข้าสู่ระบบและการยืนยันตัวตน',
+   'Manage the wallet used for loans and repayments.': 'จัดการกระเป๋าเงินที่ใช้สำหรับเงินกู้และการชำระคืน',
+   'Choose which account and loan alerts you receive.': 'เลือกการแจ้งเตือนเกี่ยวกับบัญชีและเงินกู้ที่คุณต้องการรับ',
+   'All fields are required': 'โปรดกรอกข้อมูลให้ครบทุกช่อง',
+   'New password and confirm password do not match': 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน',
+   'Password must be at least 6 characters': 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+   'Unable to verify current account': 'ไม่สามารถยืนยันบัญชีปัจจุบันได้',
+   'Current password is incorrect': 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
+   'Your password has been changed.': 'เปลี่ยนรหัสผ่านของคุณแล้ว',
+   'Failed to update password': 'อัปเดตรหัสผ่านไม่สำเร็จ',
+   'Emails do not match': 'อีเมลไม่ตรงกัน',
+   'Code resent': 'ส่งรหัสอีกครั้งแล้ว',
+   'We sent a new verification code to': 'เราได้ส่งรหัสยืนยันใหม่ไปที่',
+   'Enter the verification code we sent to your new email': 'กรอกรหัสยืนยันที่เราส่งไปยังอีเมลใหม่ของคุณ',
+   'Email updated': 'อัปเดตอีเมลแล้ว',
+   'Your email address has been changed.': 'เปลี่ยนที่อยู่อีเมลของคุณแล้ว',
+   'Invalid or expired code. Please try again.': 'รหัสไม่ถูกต้องหรือหมดอายุแล้ว โปรดลองอีกครั้ง',
+   'Sending code...': 'กำลังส่งรหัส...',
+   'Send verification code': 'ส่งรหัสยืนยัน',
+   '. Enter it below to confirm the change.': ' กรอกรหัสด้านล่างเพื่อยืนยันการเปลี่ยนแปลง',
+   "Didn't get a code? Resend": 'ไม่ได้รับรหัสใช่ไหม ส่งอีกครั้ง',
+   'Confirm email change': 'ยืนยันการเปลี่ยนอีเมล',
+   'Display name is required': 'โปรดกรอกชื่อที่แสดง',
+   'Display name updated': 'อัปเดตชื่อที่แสดงแล้ว',
+   'Your display name has been changed.': 'เปลี่ยนชื่อที่แสดงของคุณแล้ว',
+   'Failed to update display name': 'อัปเดตชื่อที่แสดงไม่สำเร็จ',
+   'Save changes': 'บันทึกการเปลี่ยนแปลง',
+   'Telegram alerts not connected': 'ยังไม่ได้เชื่อมต่อการแจ้งเตือนทาง Telegram',
+   'Open Telegram, tap Start in the bot, then check again.': 'เปิด Telegram แตะ Start ในบอท แล้วตรวจสอบอีกครั้ง',
+   'We could not save the new wallet. Your previous wallet is still saved.':
+      'เราบันทึกกระเป๋าเงินใหม่ไม่สำเร็จ กระเป๋าเงินเดิมของคุณยังบันทึกไว้อยู่',
+   'Wallet changed': 'เปลี่ยนกระเป๋าเงินแล้ว',
+   'Your new wallet has been connected.': 'เชื่อมต่อกระเป๋าเงินใหม่ของคุณแล้ว',
+   'Wallet unchanged': 'กระเป๋าเงินไม่มีการเปลี่ยนแปลง',
+   'You reconnected the same wallet.': 'คุณเชื่อมต่อกระเป๋าเงินใบเดิมอีกครั้ง',
+   'Connection was cancelled or failed. Your previous wallet is still saved.':
+      'การเชื่อมต่อถูกยกเลิกหรือไม่สำเร็จ กระเป๋าเงินเดิมของคุณยังบันทึกไว้อยู่',
+   'Connection took too long. Your previous wallet is still saved.': 'การเชื่อมต่อใช้เวลานานเกินไป กระเป๋าเงินเดิมของคุณยังบันทึกไว้อยู่',
+   'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.':
+      'สร้าง Instant Wallet หรือเลือก Base Account ใหม่หากต้องการ กระเป๋าเงินปัจจุบันของคุณจะยังบันทึกไว้จนกว่าจะยืนยันกระเป๋าเงินใหม่',
+   'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.':
+      'เลือก Base Account ใหม่ กระเป๋าเงินปัจจุบันของคุณจะยังบันทึกไว้จนกว่าจะยืนยันกระเป๋าเงินใหม่',
+   'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.':
+      'เลือกกระเป๋าเงินใหม่ กระเป๋าเงินปัจจุบันของคุณจะยังบันทึกไว้จนกว่าจะยืนยันกระเป๋าเงินใหม่',
+   'Create Instant Wallet — no app needed': 'สร้าง Instant Wallet — ไม่ต้องใช้แอป',
+   'Connect a Base Account instead': 'เชื่อมต่อ Base Account แทน',
+   'or, no wallet app?': 'หรือไม่มีแอปกระเป๋าเงินใช่ไหม',
+   'Create an Instant Wallet instead': 'สร้าง Instant Wallet แทน',
+   'No email added': 'ยังไม่ได้เพิ่มอีเมล',
+   Add: 'เพิ่ม',
+   'Add an email for account recovery and important alerts.': 'เพิ่มอีเมลสำหรับกู้คืนบัญชีและรับการแจ้งเตือนสำคัญ',
+   'Used for account recovery and important alerts.': 'ใช้สำหรับกู้คืนบัญชีและรับการแจ้งเตือนสำคัญ',
+   'Not Connected': 'ยังไม่ได้เชื่อมต่อ',
+   "You have 1 active loan still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่ยังต้องชำระคืน คุณจะเปลี่ยนกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   "You have 1 active loan still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่ยังต้องชำระคืน คุณจะยกเลิกการเชื่อมต่อกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   "You have 2 active loans still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 2 รายการที่ยังต้องชำระคืน คุณจะเปลี่ยนกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   "You have 2 active loans still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 2 รายการที่ยังต้องชำระคืน คุณจะยกเลิกการเชื่อมต่อกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   'You have 1 active loan being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Changing your wallet here is safe. It only affects loans you fund from now on.':
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่อยู่ระหว่างการชำระคืน การชำระคืนจะยังเข้ากระเป๋าเงินที่คุณใช้ปล่อยกู้แต่ละรายการ ไม่ใช่กระเป๋าเงินที่คุณเชื่อมต่อที่นี่ การเปลี่ยนกระเป๋าเงินที่นี่จึงปลอดภัย และจะมีผลเฉพาะเงินกู้ที่คุณปล่อยกู้นับจากนี้',
+   'You have 1 active loan being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Disconnecting your wallet here is safe. It only affects loans you fund from now on.':
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่อยู่ระหว่างการชำระคืน การชำระคืนจะยังเข้ากระเป๋าเงินที่คุณใช้ปล่อยกู้แต่ละรายการ ไม่ใช่กระเป๋าเงินที่คุณเชื่อมต่อที่นี่ การยกเลิกการเชื่อมต่อกระเป๋าเงินที่นี่จึงปลอดภัย และจะมีผลเฉพาะเงินกู้ที่คุณปล่อยกู้นับจากนี้',
+   "You can't change your wallet while you have an active loan.": 'คุณเปลี่ยนกระเป๋าเงินไม่ได้ขณะที่มีเงินกู้ที่กำลังดำเนินอยู่',
+   "You can't disconnect your wallet while you have an active loan.":
+      'คุณยกเลิกการเชื่อมต่อกระเป๋าเงินไม่ได้ขณะที่มีเงินกู้ที่กำลังดำเนินอยู่',
+   'Wallet disconnected': 'ยกเลิกการเชื่อมต่อกระเป๋าเงินแล้ว',
+   'Your wallet has been removed from this account.': 'นำกระเป๋าเงินของคุณออกจากบัญชีนี้แล้ว',
+   'Photo updated': 'อัปเดตรูปภาพแล้ว',
+   'Your profile photo has been changed.': 'เปลี่ยนรูปโปรไฟล์ของคุณแล้ว',
+   'Failed to update profile photo': 'อัปเดตรูปโปรไฟล์ไม่สำเร็จ',
+   'Telegram connection link was not created': 'สร้างลิงก์เชื่อมต่อ Telegram ไม่สำเร็จ',
+   'Add an email for recovery': 'เพิ่มอีเมลสำหรับกู้คืนบัญชี',
+   'Light mode': 'โหมดสว่าง',
+   'Password & sign-in': 'รหัสผ่านและการเข้าสู่ระบบ',
+   '0 of 3 preferences enabled': 'เปิดใช้ 0 จาก 3 รายการ',
+   '1 of 3 preferences enabled': 'เปิดใช้ 1 จาก 3 รายการ',
+   '2 of 3 preferences enabled': 'เปิดใช้ 2 จาก 3 รายการ',
+   '3 of 3 preferences enabled': 'เปิดใช้ครบทั้ง 3 รายการ',
+   'Back to settings': 'กลับไปที่การตั้งค่า',
+   'Back to account': 'กลับไปที่บัญชี',
+   'Account settings': 'การตั้งค่าบัญชี',
+   'This wallet receives your loans and records your repayments.': 'กระเป๋าเงินนี้ใช้รับเงินกู้และบันทึกการชำระคืนของคุณ',
+   'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.':
+      'กระเป๋าเงินนี้ใช้ปล่อยกู้รายการใหม่ ส่วนการชำระคืนของเงินกู้เดิมจะยังกลับไปที่กระเป๋าเงินที่ใช้กับแต่ละรายการ',
+   'Manage how you sign in to Moodeng.': 'จัดการวิธีเข้าสู่ระบบ Moodeng ของคุณ',
+   'Helps people recognize you': 'ช่วยให้ผู้อื่นจำคุณได้',
+   'Not set': 'ยังไม่ได้ตั้งค่า',
+   'Work, income, and what you need help with': 'งาน รายได้ และเรื่องที่คุณต้องการความช่วยเหลือ',
+   'Use darker surfaces throughout Moodeng': 'ใช้พื้นหลังสีเข้มทั่วทั้ง Moodeng',
+   View: 'ดู',
+   'Ready to receive loans and record repayments.': 'พร้อมรับเงินกู้และบันทึกการชำระคืนแล้ว',
+   'Ready for your Moodeng loans and repayment history.': 'พร้อมสำหรับเงินกู้และประวัติการชำระคืนของคุณบน Moodeng แล้ว',
+   'This removes your saved wallet. You will need to connect or create one again before borrowing or repaying.':
+      'การดำเนินการนี้จะนำกระเป๋าเงินที่บันทึกไว้ออก คุณจะต้องเชื่อมต่อหรือสร้างกระเป๋าเงินใหม่อีกครั้งก่อนยืมหรือชำระคืน',
+   'This removes the wallet from your account. You can reconnect it anytime.':
+      'การดำเนินการนี้จะนำกระเป๋าเงินออกจากบัญชีของคุณ คุณเชื่อมต่อใหม่ได้ทุกเมื่อ',
+   'Your account is using MetaMask. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ MetaMask โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Phantom. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Phantom โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Rainbow. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Rainbow โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Trust Wallet. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Trust Wallet โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Argent. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Argent โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using WalletConnect. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ WalletConnect โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Wallet. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้กระเป๋าเงินอื่น โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Reconnect and confirm this is a Base Account before you borrow or repay.':
+      'เชื่อมต่อใหม่และยืนยันว่าเป็น Base Account ก่อนยืมหรือชำระคืน',
+   'Remove this saved wallet from your account': 'นำกระเป๋าเงินที่บันทึกไว้นี้ออกจากบัญชีของคุณ',
+   'Stop using this wallet for new loans': 'หยุดใช้กระเป๋าเงินนี้สำหรับเงินกู้รายการใหม่'
 };
