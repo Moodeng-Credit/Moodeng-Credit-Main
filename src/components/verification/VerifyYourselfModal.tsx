@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Download, MapPin } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -287,13 +287,15 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                 button, so people in supported countries (Taiwan, Philippines…) tapped World ID. */}
             <div className="w-full rounded-md-lg border border-md-neutral-300 p-4 flex flex-col gap-md-3">
                <div className="flex items-center gap-3">
-                  <img src="/icons/national-id-3d.png" alt="" aria-hidden="true" className="size-14 shrink-0 object-contain" />
+                  {/* Same 40px soft tile as the account menu's 3D icons; the card is wide, so 28px art reads the same size. */}
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100">
+                     <img src="/icons/national-id-3d.png" alt="" aria-hidden="true" className="size-7 object-contain" />
+                  </span>
                   <div className="flex-1 min-w-0">
                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-md-b1 font-semibold text-md-heading">Verify with your National ID</span>
                         {/* A quiet tag, not a solid purple pill — that read as a second button. */}
-                        <span className="inline-flex items-center gap-1 text-md-b3 font-medium px-2 py-0.5 rounded-full bg-md-green-100 text-md-green-900">
-                           <Check size={12} strokeWidth={3} aria-hidden="true" />
+                        <span className="inline-flex items-center text-md-b3 font-medium px-2 py-0.5 rounded-full bg-md-green-100 text-md-green-900">
                            Recommended
                         </span>
                      </div>
