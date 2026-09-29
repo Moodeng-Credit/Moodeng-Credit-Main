@@ -72,22 +72,11 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
    const due = dueDate ? parseISO(dueDate) : null;
    const repaysLine = `${borrowerName} repays you $${formatCurrency(totalRepayment)}${due && isValid(due) ? ` by ${format(due, 'MMM d')}` : ''}.`;
 
-   const content =
-      pushAsk === 'enable'
-         ? {
-              heading: 'Want to know when you’re repaid?',
-              body: repaysLine,
-              art: '/icons/bell-ringing-3d.png',
-              cta: 'Notify Me When Repaid'
-           }
-         : pushAsk === 'home-screen'
-           ? {
-                heading: 'Get notified on your iPhone',
-                body: 'iPhones need Moodeng on your Home Screen first. It takes 20 seconds.',
-                art: '/icons/add-to-home-screen-3d.png',
-                cta: 'Show Me How'
-             }
-           : { heading: 'Thanks for lending!', body: repaysLine, art: '/icons/check-3d.png', cta: 'Done' };
+   // iPhone gets the same ask as everyone else; the button just leads to the Home Screen steps, since
+   // iOS won't let us turn push on from Safari.
+   const content = pushAsk
+      ? { heading: 'Want to know when you’re repaid?', body: repaysLine, art: '/icons/bell-ringing-3d.png', cta: 'Notify Me When Repaid' }
+      : { heading: 'Thanks for lending!', body: repaysLine, art: '/icons/check-3d.png', cta: 'Done' };
 
    const handleCta = async () => {
       if (pushAsk === 'home-screen') {
@@ -102,9 +91,12 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
       <LenderPopupShell title={`You funded ${borrowerName}!`} labelledBy="lender-funded-popup-title" onClose={onClose}>
          {showSteps ? (
             <>
-               <p id="lender-funded-popup-title" className="text-[24px] font-bold leading-6 text-[#594d65]">
-                  Add Moodeng to your Home Screen
-               </p>
+               <div className="w-full text-[#594d65]">
+                  <p id="lender-funded-popup-title" className="text-[24px] font-bold leading-6">
+                     Add Moodeng to your Home Screen
+                  </p>
+                  <p className="mt-1 text-[16px] leading-[22px]">iPhones only send notifications from apps on your Home Screen.</p>
+               </div>
                <AddToHomeScreenSteps />
                <LenderPopupButton onClick={onClose}>Got It</LenderPopupButton>
             </>

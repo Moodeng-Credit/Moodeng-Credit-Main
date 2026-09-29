@@ -110,12 +110,13 @@ describe('LenderFundedPopup', () => {
       expect(buttonByText(container, 'Done')).toBeTruthy();
    });
 
-   it('on iPhone Safari, "Show Me How" swaps in the step-by-step guide instead of asking', async () => {
+   it('on iPhone Safari, the same ask leads to the step-by-step guide instead of the browser', async () => {
       env.supported = false;
       env.needsHomeScreen = true;
       await render();
-      expect(container.textContent).toContain('Get notified on your iPhone');
-      await act(async () => buttonByText(container, 'Show Me How')?.click());
+      expect(container.textContent).toContain('Want to know when you’re repaid?');
+      expect(container.textContent).toContain('Mimi repays you $44.00 by Oct 12.');
+      await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
       expect(env.enable).not.toHaveBeenCalled();
       expect(onClose).not.toHaveBeenCalled();
       expect(container.textContent).toContain('Add Moodeng to your Home Screen');
