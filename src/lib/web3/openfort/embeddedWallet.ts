@@ -37,18 +37,23 @@ const openfortChains: Record<number, string> | undefined =
 // racing while one is in flight share its promise.
 let provisionInFlight: Promise<EmbeddedAccount> | null = null;
 
+/** The real stages of creating a wallet, reported so the screen can show what's happening. */
+export type WalletSetupPhase = 'securing' | 'creating' | 'saving' | 'done';
+
 /**
  * Ensure the signed-in Supabase user has a ready non-custodial smart account and return it.
  * Idempotent: `configure` recovers the user's existing account when there is one, or creates
  * it on first use. Recovery is AUTOMATIC (self-custodial, no password for the user to lose),
  * unlocked by a one-time Shield session minted server-side.
  */
-export const provisionEmbeddedWallet = async (): Promise<EmbeddedAccount> => {
+export const provisionEmbeddedWallet = async (onPhase?: (phase: WalletSetupPhase) => void): Promise<EmbeddedAccount> => {
    if (provisionInFlight) return provisionInFlight;
 
    provisionInFlight = (async () => {
       const openfort = getOpenfortClient();
+      onPhase?.('securing');
       const encryptionSession = await createShieldEncryptionSession();
+      onPhase?.('creating');
       return openfort.embeddedWallet.configure({
          chainId: OPENFORT_CHAIN_ID,
          chainType: ChainTypeEnum.EVM,

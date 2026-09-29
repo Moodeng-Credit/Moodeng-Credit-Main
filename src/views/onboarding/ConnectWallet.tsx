@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { Check, LoaderCircle } from 'lucide-react';
+
 import { useConnectModal, WalletButton } from '@rainbow-me/rainbowkit';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -16,7 +18,7 @@ import { detectInAppBrowser } from '@/lib/inAppBrowser';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { useCreateInstantWallet, useOpenfort } from '@/lib/web3/openfort';
+import { useCreateInstantWallet, useOpenfort, type WalletSetupPhase } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
@@ -189,7 +191,8 @@ export default function ConnectWallet() {
             // "connect existing wallet" link there so it can never dead-end.
             allowBaseConnect={!keysBlocked}
             onCreateInstantWallet={handleCreateInstantWallet}
-            isCreatingInstantWallet={openfort.isConnecting}
+            isCreatingInstantWallet={instantWallet.isCreating}
+            instantWalletPhase={instantWallet.phase}
             instantWalletError={openfort.error}
          />
       );
@@ -220,7 +223,8 @@ export default function ConnectWallet() {
          // longer needs the build-time gate flag to be on to be safe to show.
          instantWalletConfigured={instantAvailable}
          onCreateInstantWallet={handleCreateInstantWallet}
-         isCreatingInstantWallet={openfort.isConnecting}
+         isCreatingInstantWallet={instantWallet.isCreating}
+         instantWalletPhase={instantWallet.phase}
          instantWalletError={openfort.error}
       />
    );
@@ -238,6 +242,7 @@ function BorrowerConnectView({
    allowBaseConnect,
    onCreateInstantWallet,
    isCreatingInstantWallet,
+   instantWalletPhase,
    instantWalletError
 }: {
    onPreviewConnect: () => void;
@@ -248,6 +253,7 @@ function BorrowerConnectView({
    allowBaseConnect: boolean;
    onCreateInstantWallet: () => void;
    isCreatingInstantWallet: boolean;
+   instantWalletPhase: WalletSetupPhase | null;
    instantWalletError: string | null;
 }) {
    const connectBase = isPreview ? onPreviewConnect : onConnectBaseAccount;
@@ -285,7 +291,7 @@ function BorrowerConnectView({
                      Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.
                   </p>
                </div>
-               <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} />
+               <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} phase={instantWalletPhase} />
                {isCreatingInstantWallet && !instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-neutral-700">
                      Setting up your wallet — this takes a few seconds. Keep this screen open.
@@ -340,15 +346,50 @@ function BorrowerConnectView({
    );
 }
 
-function InstantWalletButton({ onClick, isDisabled }: { onClick: () => void; isDisabled: boolean }) {
+// The real stages of wallet setup (see provisionEmbeddedWallet), shown inside the button so a
+// few seconds of waiting reads as progress rather than a frozen screen.
+const WALLET_SETUP_STEPS: { phase: WalletSetupPhase; label: string }[] = [
+   { phase: 'securing', label: 'Connecting securely…' },
+   { phase: 'creating', label: 'Creating your wallet…' },
+   { phase: 'saving', label: 'Saving it to your account…' },
+   { phase: 'done', label: 'Done — your wallet is ready!' }
+];
+
+function WalletSetupProgress({ phase }: { phase: WalletSetupPhase | null }) {
+   const current = Math.max(0, WALLET_SETUP_STEPS.findIndex((step) => step.phase === phase));
+   const isDone = phase === 'done';
+   return (
+      <span className="flex w-full flex-col items-center gap-2" role="status" aria-live="polite">
+         <span className="flex items-center gap-2">
+            {isDone ? <Check className="size-5 shrink-0" aria-hidden="true" /> : <LoaderCircle className="size-5 shrink-0 animate-spin" aria-hidden="true" />}
+            {WALLET_SETUP_STEPS[current].label}
+         </span>
+         <span className="flex w-full max-w-[240px] gap-1.5" aria-hidden="true">
+            {WALLET_SETUP_STEPS.map((step, index) => (
+               <span
+                  key={step.phase}
+                  className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
+                     index < current || isDone ? 'bg-white' : index === current ? 'animate-pulse bg-white/70' : 'bg-white/25'
+                  }`}
+               />
+            ))}
+         </span>
+         <span className="text-md-b3 font-medium text-white/80">
+            Step {current + 1} of {WALLET_SETUP_STEPS.length}
+         </span>
+      </span>
+   );
+}
+
+function InstantWalletButton({ onClick, isDisabled, phase }: { onClick: () => void; isDisabled: boolean; phase: WalletSetupPhase | null }) {
    return (
       <button
          type="button"
          onClick={onClick}
          disabled={isDisabled}
-         className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_18px_50px_rgba(96,16,210,0.24)] disabled:opacity-60 dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]"
+         className="flex min-h-[56px] w-full items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-semibold text-md-neutral-100 shadow-[0_18px_50px_rgba(96,16,210,0.24)] disabled:cursor-default dark:shadow-[0_18px_60px_rgba(112,16,210,0.38)]"
       >
-         {isDisabled ? 'Creating your wallet…' : 'Create Instant Wallet'}
+         {isDisabled ? <WalletSetupProgress phase={phase} /> : 'Create Instant Wallet'}
          {isDisabled ? null : (
             <span
                className="block size-6 bg-md-neutral-100"
@@ -408,6 +449,7 @@ function LenderConnectView({
    instantWalletConfigured,
    onCreateInstantWallet,
    isCreatingInstantWallet,
+   instantWalletPhase,
    instantWalletError
 }: {
    selectedKey: WalletConnectorKey | null;
@@ -421,6 +463,7 @@ function LenderConnectView({
    instantWalletConfigured: boolean;
    onCreateInstantWallet: () => void;
    isCreatingInstantWallet: boolean;
+   instantWalletPhase: WalletSetupPhase | null;
    instantWalletError: string | null;
 }) {
    const canConnect = Boolean(selectedKey) && !isConnecting;
@@ -508,9 +551,11 @@ function LenderConnectView({
                      type="button"
                      onClick={onCreateInstantWallet}
                      disabled={isCreatingInstantWallet || isConnecting}
-                     className="flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-60"
+                     className={`flex min-h-11 w-full items-center justify-center rounded-md-lg bg-md-primary-1200 px-md-4 py-md-2 text-md-b1 font-semibold text-md-neutral-100 disabled:cursor-default ${
+                        isCreatingInstantWallet ? '' : 'disabled:opacity-60'
+                     }`}
                   >
-                     {isCreatingInstantWallet ? 'Creating your wallet…' : 'Create Instant Wallet'}
+                     {isCreatingInstantWallet ? <WalletSetupProgress phase={instantWalletPhase} /> : 'Create Instant Wallet'}
                   </button>
                   {/* Set expectations before the camera opens, not after. */}
                   <p className="text-md-b3 font-medium text-md-slate-600">

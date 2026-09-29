@@ -14,9 +14,11 @@ interface VerificationLaunchOverlayProps {
    idPrefix: string;
    onOpen: () => void;
    onCancel: () => void;
+   /** Offers the regular ID check on the card itself, for people who don't have World App. */
+   onUseIdInstead?: () => void;
 }
 
-export function VerificationLaunchOverlay({ state, launchPurpose, idPrefix, onOpen, onCancel }: VerificationLaunchOverlayProps) {
+export function VerificationLaunchOverlay({ state, launchPurpose, idPrefix, onOpen, onCancel, onUseIdInstead }: VerificationLaunchOverlayProps) {
    if (state === 'idle') return null;
 
    const showsOpenButton = state === 'ready' || state === 'fallback';
@@ -101,6 +103,19 @@ export function VerificationLaunchOverlay({ state, launchPurpose, idPrefix, onOp
                   </button>
                </>
             )}
+
+            {onUseIdInstead ? (
+               <button
+                  type="button"
+                  onClick={() => {
+                     onCancel();
+                     onUseIdInstead();
+                  }}
+                  className="mt-md-3 inline-flex w-full items-center justify-center rounded-md-lg px-md-3 py-md-2 text-md-b2 font-semibold tracking-normal text-md-primary-1600 underline underline-offset-2"
+               >
+                  Don&rsquo;t have World App? Verify with your ID instead
+               </button>
+            ) : null}
          </div>
       </div>
    );

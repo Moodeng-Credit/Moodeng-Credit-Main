@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronDown, Download, FileText, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Download, FileText, MapPin } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -281,33 +281,28 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                </p>
             </div>
 
-            {/* Primary, recommended path: national ID + selfie check via Didit. */}
-            <button
-               type="button"
-               onClick={() => start('didit')}
-               className="w-full text-left rounded-md-lg border-2 border-md-primary-1200 bg-md-primary-100 p-4 flex items-center gap-3 transition-all duration-150 active:scale-[0.99]"
-            >
-               <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-primary-1200 text-md-neutral-100">
-                  <FileText size={20} />
-               </div>
-               <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                     <span className="text-md-b1 font-semibold text-md-primary-1200">Verify Your ID</span>
-                     <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-md-primary-1200 text-md-neutral-100">
-                        Recommended
-                     </span>
+            {/* Primary, recommended path: national ID + selfie check via Didit. One block that reads
+                top to bottom — what it is, where it works, one solid button. Earlier the highlighted
+                card looked "already selected" and the World ID card below it looked like the only
+                button, so people in supported countries (Taiwan, Philippines…) tapped World ID. */}
+            <div className="w-full rounded-md-lg border border-md-neutral-300 p-4 flex flex-col gap-md-3">
+               <div className="flex items-center gap-3">
+                  <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-primary-1200 text-md-neutral-100">
+                     <FileText size={20} />
                   </div>
-                  <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">
-                     Quick national ID &amp; selfie check — available in select countries.
-                  </p>
+                  <div className="flex-1 min-w-0">
+                     <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your national ID</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-md-primary-1200 text-md-neutral-100">
+                           Recommended
+                        </span>
+                     </div>
+                     <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">
+                        A photo of your ID and a quick selfie. Works in:
+                     </p>
+                  </div>
                </div>
-            </button>
 
-            {/* Supported countries for the recommended path */}
-            <div className="flex flex-col gap-3 w-full">
-               <p className="text-md-b3 font-semibold uppercase tracking-[0.08em] text-md-neutral-700 text-center">
-                  Supported countries
-               </p>
                <div className="grid grid-cols-2 gap-y-3 gap-x-6 w-fit mx-auto">
                   {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
                      <div key={code} className="flex items-center gap-3">
@@ -318,27 +313,30 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                      </div>
                   ))}
                </div>
+
+               <button
+                  type="button"
+                  onClick={() => start('didit')}
+                  className="w-full rounded-md-lg bg-md-primary-1200 text-md-neutral-100 p-4 flex items-center justify-center gap-2 text-md-b1 font-semibold transition-all duration-150 active:scale-[0.99]"
+               >
+                  Continue with national ID
+                  <ArrowRight size={18} aria-hidden="true" />
+               </button>
             </div>
 
-            {/* Secondary, de-emphasised path: World ID (Orb/passport). Labeled — an icon-only
-                button here confused users into not knowing what to tap. */}
-            <div className="flex flex-col gap-1.5 w-full border-t border-md-neutral-300 pt-md-3">
-               <p className="text-md-b3 text-md-neutral-700">Not in a supported country?</p>
+            {/* Secondary path: World ID (Orb/passport), kept as a quiet text link so it can't be
+                mistaken for the main button. */}
+            <div className="flex flex-col items-center gap-1 text-center">
+               <p className="text-md-b3 text-md-neutral-700">Not in one of these countries?</p>
                <button
                   type="button"
                   onClick={() => setStep('orb-info')}
-                  className="w-full rounded-md-lg border border-md-neutral-300 p-3.5 flex items-center gap-3 text-left transition-colors hover:bg-md-neutral-200 active:scale-[0.99]"
+                  className="inline-flex items-center gap-1.5 text-md-b2 font-medium text-md-neutral-1000 underline underline-offset-2 py-1"
                >
-                  <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-neutral-200 text-md-neutral-700">
-                     <WorldIdOrb size={24} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                     <span className="text-md-b1 font-semibold text-md-heading">Verify with World ID</span>
-                     <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">
-                        For World App users — verified at an Orb or with a passport.
-                     </p>
-                  </div>
+                  <WorldIdOrb size={16} />
+                  Use World ID instead
                </button>
+               <p className="text-md-b3 text-md-neutral-700">Only if you already have the World App.</p>
             </div>
 
             <button

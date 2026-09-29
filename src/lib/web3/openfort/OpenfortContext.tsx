@@ -19,7 +19,8 @@ import {
    exportEmbeddedPrivateKey,
    logoutEmbeddedWallet,
    provisionEmbeddedWallet,
-   sendUsdcFromEmbeddedWallet
+   sendUsdcFromEmbeddedWallet,
+   type WalletSetupPhase
 } from '@/lib/web3/openfort/embeddedWallet';
 import { friendlyConnectError } from '@/lib/web3/openfort/errors';
 import { WalletGateError } from '@/lib/web3/openfort/walletFaceGate';
@@ -44,8 +45,11 @@ interface OpenfortContextValue {
     * the others are terminal and need explaining. Null for ordinary failures.
     */
    gateCode: string | null;
-   /** Provision (or recover) the wallet from a user tap, lock it to the account, resolve to the address. */
-   connect: () => Promise<string | null>;
+   /**
+    * Provision (or recover) the wallet from a user tap, lock it to the account, resolve to the address.
+    * `onPhase` hears each real stage so the screen can show progress.
+    */
+   connect: (onPhase?: (phase: WalletSetupPhase) => void) => Promise<string | null>;
    /** Clear the local signer + Openfort auth (does not unlock or delete the wallet). */
    disconnect: () => Promise<void>;
    /** Send USDC as a sponsored, gasless userOp. Returns the tx/userOp hash. */
@@ -91,7 +95,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
       };
    }, [configured, storedWalletProvider]);
 
-   const connect = useCallback(async (): Promise<string | null> => {
+   const connect = useCallback(async (onPhase?: (phase: WalletSetupPhase) => void): Promise<string | null> => {
       if (!configured) {
          setError('The Instant Wallet is not available right now.');
          return null;
@@ -100,9 +104,10 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
       setError(null);
       setGateCode(null);
       try {
-         const account = await provisionEmbeddedWallet();
+         const account = await provisionEmbeddedWallet(onPhase);
          setAddress(account.address);
          setStatus('ready');
+         onPhase?.('saving');
 
          // Lock the borrower to this smart account (mirrors useWalletSync for wagmi wallets).
          // A failure here doesn't invalidate a successfully-created wallet — the address is
@@ -120,6 +125,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
             console.error('[Openfort] wallet-lock sync failed', syncErr);
          }
 
+         onPhase?.('done');
          return account.address;
       } catch (err) {
          console.error('[Openfort] connect failed', err);
