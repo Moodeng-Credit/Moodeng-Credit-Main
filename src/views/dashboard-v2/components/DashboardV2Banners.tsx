@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Bell, BellOff, Share, Wallet } from 'lucide-react';
+import { ArrowUpRight, Wallet } from 'lucide-react';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -140,13 +140,18 @@ export function TurnOnRemindersBanner({
    className?: string;
 }) {
    const copy = { ...REMINDERS_COPY[language], ...copyOverride };
-   const Icon = variant === 'blocked' ? BellOff : variant === 'home-screen' ? Share : Bell;
+   const iconSrc =
+      variant === 'blocked'
+         ? '/icons/bell-off-3d.png'
+         : variant === 'home-screen'
+           ? '/icons/add-to-home-screen-3d.png'
+           : '/icons/bell-ringing-3d.png';
    const title = variant === 'blocked' ? copy.blockedTitle : variant === 'home-screen' ? copy.homeScreenTitle : copy.title;
    const body = variant === 'blocked' ? copy.blockedBody : variant === 'home-screen' ? copy.homeScreenBody : copy.body;
    const content = (
       <>
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
-            <Icon className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+            <img src={iconSrc} alt="" className="size-7 object-contain" />
          </span>
          <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{title}</span>
