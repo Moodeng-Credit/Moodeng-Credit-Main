@@ -656,5 +656,138 @@ export const filipinoCoverageF: Record<string, string> = {
    'Don’t hold USDC yet? Buy it first, send it to your wallet, then repay from there.':
       'Wala ka pang USDC? Bumili muna, ipadala ito sa wallet mo, tapos doon ka magbayad.',
    'Always repay before the due date — on-time repayment builds your Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level. And always choose Base as the network.':
-      'Laging magbayad bago ang due date — nadaragdagan ang Pandesal points mo kapag on time ang bayad, at na-a-unlock ang susunod na Credit Level kapag nabayaran mo on time ang isang full-limit loan. At laging piliin ang Base bilang network.'
+      'Laging magbayad bago ang due date — nadaragdagan ang Pandesal points mo kapag on time ang bayad, at na-a-unlock ang susunod na Credit Level kapag nabayaran mo on time ang isang full-limit loan. At laging piliin ang Base bilang network.',
+
+   // src/hooks/useWallet.ts (support chat topic)
+   'I had a problem with a wallet transaction': 'Nagkaproblema ako sa isang wallet transaction',
+
+   // src/lib/walletProvider.ts
+   'your locked wallet': 'ang naka-lock mong wallet',
+
+   // src/views/account/Account.tsx
+   'Read the full guide': 'Basahin ang buong gabay',
+
+   // src/views/account/AccountSettings.tsx
+   'Appearance & language': 'Itsura at wika',
+   'These choices apply throughout Moodeng.': 'Gagamitin ang mga napili mo sa buong Moodeng.',
+   'Manage sign-in security and identity checks.': 'I-manage ang seguridad ng sign-in at mga identity check.',
+   'Manage the wallet used for loans and repayments.': 'I-manage ang wallet na ginagamit sa mga loan at bayad.',
+   'Choose which account and loan alerts you receive.': 'Piliin kung aling mga alert sa account at loan ang matatanggap mo.',
+   'All fields are required': 'Kailangang punan ang lahat ng field',
+   'New password and confirm password do not match': 'Hindi tugma ang bagong password at ang confirm password',
+   'Unable to verify current account': 'Hindi ma-verify ang kasalukuyang account',
+   'Current password is incorrect': 'Mali ang kasalukuyang password',
+   'Your password has been changed.': 'Napalitan na ang password mo.',
+   'Emails do not match': 'Hindi tugma ang mga email',
+   'Code resent': 'Naipadala ulit ang code',
+   'We sent a new verification code to': 'Nagpadala kami ng bagong verification code sa',
+   'Enter the verification code we sent to your new email': 'Ilagay ang verification code na ipinadala namin sa bago mong email',
+   'Email updated': 'Na-update ang email',
+   'Your email address has been changed.': 'Napalitan na ang email address mo.',
+   'Invalid or expired code. Please try again.': 'Mali o expired na ang code. Subukan ulit.',
+   'Sending code...': 'Ipinapadala ang code...',
+   'Send verification code': 'Ipadala ang verification code',
+   '. Enter it below to confirm the change.': '. Ilagay ito sa ibaba para kumpirmahin ang pagbabago.',
+   "Didn't get a code? Resend": 'Hindi natanggap ang code? I-resend',
+   'Display name is required': 'Kailangan ang display name',
+   'Display name updated': 'Na-update ang display name',
+   'Your display name has been changed.': 'Napalitan na ang display name mo.',
+   'Failed to update display name': 'Hindi na-update ang display name',
+   'Save changes': 'I-save ang mga pagbabago',
+   'Telegram alerts not connected': 'Hindi nakakonekta ang Telegram alerts',
+   'Open Telegram, tap Start in the bot, then check again.': 'Buksan ang Telegram, i-tap ang Start sa bot, tapos i-check ulit.',
+   'We could not save the new wallet. Your previous wallet is still saved.':
+      'Hindi namin na-save ang bagong wallet. Naka-save pa rin ang dati mong wallet.',
+   'Your new wallet has been connected.': 'Nakakonekta na ang bago mong wallet.',
+   'Wallet unchanged': 'Walang pagbabago sa wallet',
+   'You reconnected the same wallet.': 'Ang parehong wallet ang ikinonekta mo ulit.',
+   'Connection was cancelled or failed. Your previous wallet is still saved.':
+      'Na-cancel o hindi natuloy ang connection. Naka-save pa rin ang dati mong wallet.',
+   'Connection took too long. Your previous wallet is still saved.':
+      'Masyadong natagalan ang connection. Naka-save pa rin ang dati mong wallet.',
+   'is not available right now.': 'ay hindi available sa ngayon.',
+   'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.':
+      'Gumawa ng Instant Wallet, o pumili ng bagong Base Account kung iyon ang gusto mo. Mananatiling naka-save ang kasalukuyan mong wallet hanggang makumpirma ang bago.',
+   'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.':
+      'Pumili ng bagong Base Account. Mananatiling naka-save ang kasalukuyan mong wallet hanggang makumpirma ang bago.',
+   'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.':
+      'Pumili ng bagong wallet. Mananatiling naka-save ang kasalukuyan mong wallet hanggang makumpirma ang bago.',
+   'Create Instant Wallet — no app needed': 'Gumawa ng Instant Wallet — walang app na kailangan',
+   'Connect a Base Account instead': 'Magkonekta na lang ng Base Account',
+   'or, no wallet app?': 'o, walang wallet app?',
+   'Create an Instant Wallet instead': 'Gumawa na lang ng Instant Wallet',
+   Add: 'Magdagdag',
+   'Add an email for account recovery and important alerts.': 'Magdagdag ng email para sa account recovery at mahahalagang alert.',
+   'Not Connected': 'Hindi nakakonekta',
+   "You can't change your wallet while you have an active loan.": 'Hindi mo mapapalitan ang wallet mo habang may active loan ka.',
+   "You can't disconnect your wallet while you have an active loan.": 'Hindi mo ma-disconnect ang wallet mo habang may active loan ka.',
+   'Your wallet has been removed from this account.': 'Tinanggal na ang wallet mo sa account na ito.',
+   'Photo updated': 'Na-update ang photo',
+   'Your profile photo has been changed.': 'Napalitan na ang profile photo mo.',
+   'Failed to update profile photo': 'Hindi na-update ang profile photo',
+   'Add an email for recovery': 'Magdagdag ng email para sa recovery',
+   'Password & sign-in': 'Password at sign-in',
+   'of 3 preferences enabled': 'sa 3 preference ang naka-on',
+   'Back to settings': 'Bumalik sa mga setting',
+   'Back to account': 'Bumalik sa account',
+   'This wallet receives your loans and records your repayments.': 'Dito pumapasok ang mga loan mo at dito naitatala ang mga bayad mo.',
+   'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.':
+      'Ito ang wallet na pampondo sa mga bagong loan. Babalik pa rin ang mga kasalukuyang bayad sa wallet na ginamit sa bawat loan.',
+   'Manage how you sign in to Moodeng.': 'I-manage kung paano ka nagsa-sign in sa Moodeng.',
+   'Not set': 'Hindi pa naka-set',
+   'Use darker surfaces throughout Moodeng': 'Gumamit ng mas madilim na itsura sa buong Moodeng',
+   View: 'Tingnan',
+   'Ready to receive loans and record repayments.': 'Handa nang tumanggap ng mga loan at magtala ng mga bayad.',
+   'Ready for your Moodeng loans and repayment history.': 'Handa na para sa mga Moodeng loan at repayment history mo.',
+   'This removes your saved wallet. You will need to connect or create one again before borrowing or repaying.':
+      'Tatanggalin nito ang naka-save mong wallet. Kailangan mong magkonekta o gumawa ulit ng wallet bago humiram o magbayad.',
+   'This removes the wallet from your account. You can reconnect it anytime.':
+      'Tatanggalin nito ang wallet sa account mo. Puwede mo itong ikonekta ulit anumang oras.',
+   'Reconnect and confirm this is a Base Account before you borrow or repay.':
+      'Ikonekta ulit at kumpirmahing Base Account ito bago ka humiram o magbayad.',
+   'Remove this saved wallet from your account': 'Tanggalin ang naka-save na wallet na ito sa account mo',
+   'Stop using this wallet for new loans': 'Huwag nang gamitin ang wallet na ito sa mga bagong loan',
+
+   // src/views/account/BaseNetworkSheet.tsx
+   'Base is an Ethereum "layer 2" built by Coinbase. Loans fund and repayments settle in seconds for a fraction of a cent — so more of every peso reaches the person, not the network.':
+      'Ang Base ay isang Ethereum "layer 2" na gawa ng Coinbase. Ilang segundo lang ang pagpondo ng loan at pagpasok ng bayad, at halos wala pang isang sentimo ang bayad — kaya mas malaking bahagi ng bawat piso ang napupunta sa tao, hindi sa network.',
+
+   // src/views/account/EditBioInfoModal.tsx
+   'Bio info saved': 'Na-save ang bio info',
+   'Your income and budget details have been updated.': 'Na-update na ang mga detalye ng kita at budget mo.',
+   'Failed to save bio info. Please try again.': 'Hindi na-save ang bio info. Subukan ulit.',
+   'e.g. teacher, nurse, market vendor, driver': 'hal. teacher, nurse, tindero sa palengke, driver',
+   'e.g. teacher': 'hal. teacher',
+   'e.g. tutoring, delivery, market trading': 'hal. tutoring, delivery, pagtitinda sa palengke',
+   No: 'Hindi',
+   Yes: 'Oo',
+   'e.g. tutoring on weekends': 'hal. tutoring tuwing weekend',
+   'Save bio info': 'I-save ang bio info',
+
+   // src/views/account/WalletAccountInsights.tsx
+   Changed: 'Pinalitan',
+   Disconnected: 'Na-disconnect',
+   Recorded: 'Naitala',
+
+   // src/views/dashboard-v2/DashboardV2Milestones.tsx
+   'Reward: ₱': 'Premyo: ₱',
+
+   // src/views/dashboard-v2/DashboardV2Rewards.tsx
+   'Sending…': 'Ipinapadala…',
+
+   // src/views/dashboard-v2/components/DashboardV2Hero.tsx
+   '(not reached yet)': '(hindi pa naaabot)',
+
+   // src/views/dashboard-v2/components/DashboardV2Sections.tsx
+   'Upcoming Loan Dues': 'Mga paparating na due ng loan',
+
+   // src/views/dashboard-v2/dashboardV2Model.ts
+   'to unlock LV.1': 'para ma-unlock ang LV.1',
+   'level reached': 'level na ang naabot mo',
+   Paused: 'Naka-pause',
+   '· repay on time to resume': '· magbayad on time para magpatuloy',
+   'left to LV.': 'na lang para sa LV.',
+   'Repay a full-limit loan': 'Magbayad ng full-limit loan',
+   'Borrow from 2 lenders': 'Humiram sa 2 lender',
+   'Become a trusted borrower': 'Maging trusted na borrower'
 };
