@@ -615,5 +615,15 @@ export const indonesianCoverageF: Record<string, string> = {
    'Reconnect and confirm this is a Base Account before you borrow or repay.':
       'Hubungkan ulang dan pastikan ini Base Account sebelum kamu meminjam atau membayar kembali.',
    'Remove this saved wallet from your account': 'Hapus dompet tersimpan ini dari akunmu',
-   'Stop using this wallet for new loans': 'Berhenti memakai dompet ini untuk pinjaman baru'
+   'Stop using this wallet for new loans': 'Berhenti memakai dompet ini untuk pinjaman baru',
+   // "${verb} your wallet here is safe." inside the wallet-change warning
+   Disconnecting: 'Memutus koneksi',
+   Changing: 'Mengganti',
+
+   // src/components/auth/AuthInputField.tsx
+   'Show password': 'Tampilkan kata sandi',
+   'Hide password': 'Sembunyikan kata sandi',
+
+   // src/components/auth/AuthFooter.tsx
+   '© 2026 Moodeng Credit All Rights Reserved': '© 2026 Moodeng Credit. Hak cipta dilindungi undang-undang.'
 };
