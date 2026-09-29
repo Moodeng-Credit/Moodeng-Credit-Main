@@ -991,5 +991,12 @@ export const filipinoCoverageG: Record<string, string> = {
    'Send to PDAX': 'Ipadala sa PDAX',
    'Withdrawal sent': 'Naipadala ang withdrawal',
    'Your funds are on their way to your exchange.': 'Papunta na ang pondo mo sa exchange mo.',
-   'Could not verify this cash-out. Please try again.': 'Hindi ma-verify ang cash-out na ito. Pakisubukan ulit.'
+   'Could not verify this cash-out. Please try again.': 'Hindi ma-verify ang cash-out na ito. Pakisubukan ulit.',
+   // src/views/dashboard/components/ContactsStep.tsx (Messenger recovery, #1001)
+   'Not confirmed yet?': 'Hindi pa nakumpirma?',
+   '. Now that our chat is open, the second try usually works.':
+      '. Ngayong bukas na ang chat namin, karaniwang gumagana na ang pangalawang subok.',
+   'Or send this code to': 'O ipadala ang code na ito sa',
+   "Still stuck? We'll email you, and our team will help you finish.":
+      'Naiipit pa rin? Iee-email ka namin, at tutulungan ka ng team namin na matapos ito.'
 };

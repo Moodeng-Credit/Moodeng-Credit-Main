@@ -443,5 +443,12 @@ export const vietnameseCoverageG: Record<string, string> = {
    'Paste your PDAX address': 'Dán địa chỉ PDAX của bạn',
    'Paste your GCrypto address': 'Dán địa chỉ GCrypto của bạn',
    'Send your': 'Hãy gửi',
-   'USDC only once Moneybees confirms the details.': 'USDC của bạn chỉ sau khi Moneybees xác nhận thông tin.'
+   'USDC only once Moneybees confirms the details.': 'USDC của bạn chỉ sau khi Moneybees xác nhận thông tin.',
+   // src/views/dashboard/components/ContactsStep.tsx (Messenger recovery, #1001)
+   'Not confirmed yet?': 'Chưa được xác nhận?',
+   '. Now that our chat is open, the second try usually works.':
+      '. Vì cuộc trò chuyện của chúng tôi đã mở, lần thử thứ hai thường sẽ thành công.',
+   'Or send this code to': 'Hoặc gửi mã này đến',
+   "Still stuck? We'll email you, and our team will help you finish.":
+      'Vẫn chưa được? Chúng tôi sẽ gửi email cho bạn, và đội ngũ của chúng tôi sẽ giúp bạn hoàn tất.'
 };

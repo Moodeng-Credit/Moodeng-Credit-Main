@@ -580,5 +580,11 @@ export const thaiCoverageG: Record<string, string> = {
    'USDC cash-out.': 'USDC ของคุณให้เสร็จสิ้น',
    "I've completed Moneybees KYC": 'ฉันทำ KYC กับ Moneybees เสร็จแล้ว',
    'I already have Moneybees KYC': 'ฉันทำ KYC กับ Moneybees แล้ว',
-   Ref: 'เลขอ้างอิง'
+   Ref: 'เลขอ้างอิง',
+   // src/views/dashboard/components/ContactsStep.tsx (Messenger recovery, #1001)
+   'Not confirmed yet?': 'ยังไม่ได้รับการยืนยันใช่ไหม',
+   '. Now that our chat is open, the second try usually works.': ' เมื่อแชทของเราเปิดอยู่แล้ว การลองครั้งที่สองมักจะสำเร็จ',
+   'Or send this code to': 'หรือส่งรหัสนี้ไปที่',
+   "Still stuck? We'll email you, and our team will help you finish.":
+      'ยังติดปัญหาอยู่ใช่ไหม เราจะส่งอีเมลถึงคุณ และทีมงานของเราจะช่วยให้คุณทำสำเร็จ'
 };

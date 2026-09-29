@@ -550,5 +550,11 @@ export const indonesianCoverageG: Record<string, string> = {
    '7 loans repaid on time in a row': '7 pinjaman dibayar kembali tepat waktu berturut-turut',
    '8 loans repaid on time in a row': '8 pinjaman dibayar kembali tepat waktu berturut-turut',
    '9 loans repaid on time in a row': '9 pinjaman dibayar kembali tepat waktu berturut-turut',
-   '10 loans repaid on time in a row': '10 pinjaman dibayar kembali tepat waktu berturut-turut'
+   '10 loans repaid on time in a row': '10 pinjaman dibayar kembali tepat waktu berturut-turut',
+   // src/views/dashboard/components/ContactsStep.tsx (Messenger recovery, #1001)
+   'Not confirmed yet?': 'Belum dikonfirmasi?',
+   '. Now that our chat is open, the second try usually works.': '. Karena chat kami sudah terbuka, percobaan kedua biasanya berhasil.',
+   'Or send this code to': 'Atau kirim kode ini ke',
+   "Still stuck? We'll email you, and our team will help you finish.":
+      'Masih belum bisa? Kami akan mengirim email, dan tim kami akan membantumu menyelesaikannya.'
 };
