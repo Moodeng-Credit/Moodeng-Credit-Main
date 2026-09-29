@@ -288,10 +288,11 @@ in four days (Brian 09-26, joanni 09-28, Merry and Aya 09-29). The layers, in th
    One email + one card per borrower per day (`users.messenger_stuck_alerted_at`).
 5. **By hand**: `/confirm MDNG-…` in Telegram, or the ✅ button on either card.
 
-**Setup for layer 3 (SendPulse):** set Supabase secret `SENDPULSE_EVENTS_SECRET` (a new random value, *not* the
-verify secret: request URLs are logged). Then SendPulse → Moodeng Credit bot → Bot settings → Webhooks → URL
-`https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/sendpulse-events?secret=<that value>`, events **Bot
-subscription** and **Incoming message**. Until then layers 1, 2, 4 and 5 still work.
+**Setup for layer 3 (SendPulse):** the webhook secret lives in `telegram_bot_settings` key
+`sendpulse_events_secret` (service-role only; a `SENDPULSE_EVENTS_SECRET` function secret overrides it). It's a
+separate random value, *not* the verify secret, because request URLs are logged. SendPulse → Moodeng Credit bot →
+Bot settings → Webhooks → URL `https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/sendpulse-events?secret=<that
+value>`, events **Bot subscription** and **Incoming message**. Until then layers 1, 2, 4 and 5 still work.
 
 **Why nothing fires for some people at all:** if Facebook never passes the chat to SendPulse (the app isn't the
 one in control of the conversation — e.g. Meta Business Suite automations or Meta's AI agent set as the Page's
@@ -537,7 +538,7 @@ plus many security/digest jobs. Each cron calls an edge function with `net.http_
 | `sendpulse-messenger-verify`          | Receives SendPulse flow's code → marks Messenger verified                 | off; `x-sendpulse-secret`             | `SENDPULSE_VERIFY_SECRET`                                                                 |
 | `messenger-webhook`                   | Direct Meta Messenger webhook (future, needs App Review)                  | off; Meta handshake                   | `MESSENGER_VERIFY_TOKEN`, `MESSENGER_PAGE_ACCESS_TOKEN`                                   |
 | `messenger-stuck-alerts`              | Cron (5 min): code unconfirmed 10+ min → email borrower + KYC card        | **on** (pg_cron, service key)         | `RESEND_API_KEY`                                                                          |
-| `sendpulse-events`                    | SendPulse bot webhooks → typed codes + name/time auto-match               | off; `?secret=`                       | `SENDPULSE_EVENTS_SECRET`, `SENDPULSE_API_KEY`                                            |
+| `sendpulse-events`                    | SendPulse bot webhooks → typed codes + name/time auto-match               | off; `?secret=`                       | `sendpulse_events_secret` setting (or env), `SENDPULSE_API_KEY`                           |
 | `whatsapp-webhook`                    | WhatsApp Cloud API webhook → marks WhatsApp verified                      | off; Meta handshake                   | `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`_, `WHATSAPP_PHONE_NUMBER_ID`_ (*not set) |
 | `telegram-webhook`                    | Bot updates: connect tokens, support chats, lender roster, **`/confirm`** | off; `TELEGRAM_WEBHOOK_SECRET` header | Telegram token                                                                            |
 | `calcom-round-robin`                  | Merged availability + booking for the video call                          | **on** (borrower JWT)                 | `CALCOM_API_KEY_GEORGE`, `CALCOM_API_KEY_EMMA`                                            |

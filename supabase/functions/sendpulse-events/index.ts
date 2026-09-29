@@ -22,7 +22,9 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   https://<project>.supabase.co/functions/v1/sendpulse-events?secret=<SENDPULSE_EVENTS_SECRET>
 // SendPulse can't send a Supabase JWT or custom headers here, so verify_jwt is off in config.toml and
 // the secret in the URL is the gate. It's its own secret, not SENDPULSE_VERIFY_SECRET: request URLs
-// land in Supabase's logs, and this one must not also unlock sendpulse-messenger-verify.
+// land in Supabase's logs, and this one must not also unlock sendpulse-messenger-verify. Read from the
+// SENDPULSE_EVENTS_SECRET function secret, or else from telegram_bot_settings key
+// 'sendpulse_events_secret' (service-role only), so it can be set or rotated without a redeploy.
 // Fail-closed: no secret configured → nothing is accepted.
 //
 // For each subscribe / message FROM a person:
@@ -35,7 +37,7 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //      the person in Messenger; anything less certain → an "Is this them?" card for the team.
 // Always answers 200 so SendPulse doesn't retry; failures are logged.
 
-const EVENTS_SECRET = Deno.env.get('SENDPULSE_EVENTS_SECRET') ?? '';
+const ENV_EVENTS_SECRET = Deno.env.get('SENDPULSE_EVENTS_SECRET')?.trim() ?? '';
 // Sent on to sendpulse-messenger-verify, like the SendPulse flows do.
 const VERIFY_SECRET = Deno.env.get('SENDPULSE_VERIFY_SECRET') ?? '';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -171,18 +173,27 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
    }
 };
 
+const eventsSecret = async (svc: Svc) => {
+   if (ENV_EVENTS_SECRET) return ENV_EVENTS_SECRET;
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'sendpulse_events_secret').maybeSingle();
+   return ((data as { value?: string } | null)?.value ?? '').trim();
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
-   if (!EVENTS_SECRET || !SUPABASE_URL || !SERVICE_KEY) {
-      console.error('sendpulse-events: not configured (SENDPULSE_EVENTS_SECRET / SUPABASE_URL / service key)');
+   if (!SUPABASE_URL || !SERVICE_KEY) return json({ ok: false, error: 'not_configured' }, 503);
+   const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+
+   const expected = await eventsSecret(svc);
+   if (!expected) {
+      console.error('sendpulse-events: no secret configured (SENDPULSE_EVENTS_SECRET or telegram_bot_settings.sendpulse_events_secret)');
       return json({ ok: false, error: 'not_configured' }, 503);
    }
    const presented = new URL(req.url).searchParams.get('secret') ?? req.headers.get('x-sendpulse-secret') ?? '';
-   if (presented !== EVENTS_SECRET) return json({ ok: false, error: 'unauthorized' }, 401);
+   if (presented !== expected) return json({ ok: false, error: 'unauthorized' }, 401);
 
    const body = await req.json().catch(() => null);
    const events = parseSendPulseEvents(body).slice(0, MAX_EVENTS);
-   const svc = createClient(SUPABASE_URL, SERVICE_KEY);
 
    for (const event of events) {
       try {
