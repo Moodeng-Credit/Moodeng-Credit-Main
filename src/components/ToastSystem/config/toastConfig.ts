@@ -354,7 +354,7 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
 
    unauthorized: {
       toastType: TOAST_TYPES.ERROR,
-      title: 'Unauthorised',
+      title: 'Unauthorized',
       message: 'You are not authorized. Please log in.',
       buttonText: 'Log In',
       buttonAction: 'go_to_login',
