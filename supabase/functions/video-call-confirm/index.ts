@@ -27,7 +27,7 @@ serve(async (req) => {
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
    const { data: user, error } = await svc
       .from('users')
-      .select('id, username, display_name, email, video_call_starts_at, video_call_timezone, video_call_confirmed_at')
+      .select('id, username, display_name, email, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_join_url')
       .eq('video_call_confirm_token', token)
       .maybeSingle();
    if (error || !user?.video_call_starts_at) return redirect('expired');
@@ -48,7 +48,8 @@ serve(async (req) => {
       }
 
       const who = [user.display_name, user.username ? `@${user.username}` : null, user.email].filter(Boolean).join(' · ') || user.id;
-      const text = `✅ ${who} confirmed they'll attend their call — ${formatCallTime(user.video_call_starts_at, 'Asia/Bangkok')}`;
+      const joinLine = user.video_call_join_url ? `\nJoin: ${user.video_call_join_url}` : '';
+      const text = `✅ ${who} confirmed they'll attend their call — ${formatCallTime(user.video_call_starts_at, 'Asia/Bangkok')}${joinLine}`;
       try {
          const chat = await getAdminChatId(svc);
          if (chat) await sendTelegramMessage(chat, text);
