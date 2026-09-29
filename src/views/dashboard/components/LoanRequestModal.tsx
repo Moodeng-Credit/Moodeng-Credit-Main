@@ -36,6 +36,7 @@ import { DayPicker } from 'react-day-picker';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import AskMechaButton from '@/components/mecha/AskMechaButton';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -2479,7 +2480,7 @@ export default function LoanRequestModal({
                                     if (trimmedLength > 0 && remaining > 0) {
                                        return (
                                           <span className="font-medium text-md-primary-1200">
-                                             {remaining} more character{remaining === 1 ? '' : 's'} to go
+                                             <MoreCharactersLabel count={remaining} toGo />
                                           </span>
                                        );
                                     }

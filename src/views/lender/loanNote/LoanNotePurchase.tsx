@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import { currentSentences } from '@/i18n/sentences';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
 
@@ -87,7 +88,7 @@ export default function LoanNotePurchase() {
       if (step === 'recording') return 'Finalizing…';
       if (busy) return 'Processing…';
       if (!isLoggedIn) return `Support ${borrowerName}`;
-      return `Fund ${borrowerName}’s loan`;
+      return currentSentences().fundLoanTitle(borrowerName);
    }, [step, busy, isLoggedIn, borrowerName]);
 
    if (isLoading) return <Loading />;

@@ -25,6 +25,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
+import { UniqueLendersLabel } from '@/i18n/SentenceLabels';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import Loading from '@/components/Loading';
 import { useThemeMode } from '@/components/ThemeModeProvider';
@@ -1260,8 +1261,7 @@ const UserProfile = () => {
                                           >
                                              <img src="/icons/lender-diversity-3d.png" alt="" className="h-7 w-7 object-contain" />
                                              <span className="text-[13px] font-semibold text-white">
-                                                {lenderDiversity.uniqueLenders} Unique{' '}
-                                                {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'} ›
+                                                <UniqueLendersLabel count={lenderDiversity.uniqueLenders} /> ›
                                              </span>
                                           </button>
                                        </>

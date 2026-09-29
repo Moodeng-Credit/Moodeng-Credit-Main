@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 
 import { Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
 
+import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { LoanAccessStatus } from '@/types/authTypes';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PerkRow, PrimaryButton, StepTrail } from '@/views/dashboard/components/connectKit';
@@ -236,7 +237,7 @@ export default function ConnectStep({
                value={reason}
             />
             <span className={`self-end text-[12px] font-medium ${trimmedReason.length < MIN_REASON ? 'text-[#b3a9bf]' : 'text-[#4aa256]'}`}>
-               {trimmedReason.length < MIN_REASON ? `${MIN_REASON - trimmedReason.length} more characters` : '✓ Looks good'}
+               {trimmedReason.length < MIN_REASON ? <MoreCharactersLabel count={MIN_REASON - trimmedReason.length} /> : '✓ Looks good'}
             </span>
          </label>
 

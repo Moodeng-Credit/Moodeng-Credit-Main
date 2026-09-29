@@ -2,6 +2,7 @@ import { type CSSProperties, type JSX, type MouseEvent, useEffect, useMemo, useS
 
 import { Link } from 'react-router-dom';
 
+import { currentSentences } from '@/i18n/sentences';
 import { usePageSeo } from '@/hooks/usePageSeo';
 
 import { ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER, computeAcademyQuizPoints } from '@/shared/points';
@@ -488,7 +489,7 @@ export default function AcademyGuide(): JSX.Element {
          return;
       }
 
-      const shouldRestart = window.confirm('Switching reward type will restart the quiz from question 1. Continue?');
+      const shouldRestart = window.confirm(currentSentences().quizRestartConfirm);
 
       if (!shouldRestart) {
          return;
