@@ -2450,6 +2450,94 @@ export async function sendMessengerToBorrower(userId: string, text: string): Pro
 }
 
 // ---------------------------------------------------------------------------
+// Email users — write once, tick people, each gets it by name (admin-send-email edge function).
+// ---------------------------------------------------------------------------
+
+export interface EmailableUserRow {
+   id: string;
+   username: string | null;
+   email: string;
+   role: string | null;
+   verified: boolean;
+   accountStatus: string | null;
+   createdAt: string | null;
+   kycName: string | null;
+   // What {first_name} becomes unless the admin types a different name — same rule as the function.
+   firstName: string;
+}
+
+// KYC names come off the document, often in capitals ("JOAN MAE").
+export const titleCaseName = (value: string) =>
+   value
+      .toLowerCase()
+      .replace(/(^|[\s'-])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase())
+      .trim();
+
+export async function listEmailableUsers(): Promise<EmailableUserRow[]> {
+   const supabase = getSupabaseBrowserClient();
+   const users = await requireOk<AnyRow[]>(
+      supabase
+         .from('users')
+         .select('id,username,display_name,email,user_role,is_didit,account_status,created_at,is_test')
+         .not('email', 'is', null)
+         .order('created_at', { ascending: false })
+         .limit(5000)
+   );
+   const real = users.filter((u) => !u.is_test && String(u.email ?? '').trim());
+   const kyc = await queryByIdChunks(
+      real.map((u) => u.id),
+      (chunk) =>
+         optionalOk<AnyRow[]>(
+            supabase
+               .from('kyc_identities')
+               .select('user_id,full_name,first_name,session_created_at')
+               .in('user_id', chunk)
+               .order('session_created_at', { ascending: false }),
+            []
+         )
+   );
+   const kycByUser = new Map<string, AnyRow>();
+   for (const row of kyc) if (!kycByUser.has(row.user_id)) kycByUser.set(row.user_id, row);
+
+   return real.map((u) => {
+      const k = kycByUser.get(u.id);
+      const kycFirst = k?.first_name ? titleCaseName(String(k.first_name)) : '';
+      return {
+         id: u.id,
+         username: u.username ?? null,
+         email: String(u.email).trim(),
+         role: u.user_role ?? null,
+         verified: u.is_didit === 'ACTIVE',
+         accountStatus: u.account_status ?? null,
+         createdAt: u.created_at ?? null,
+         kycName: k?.full_name ? titleCaseName(String(k.full_name)) : null,
+         firstName: kycFirst || String(u.display_name ?? '').trim() || 'there'
+      };
+   });
+}
+
+export interface AdminEmailResult {
+   userId: string;
+   email: string | null;
+   name: string;
+   status: 'sent' | 'skipped' | 'failed';
+   reason?: string;
+}
+
+export async function sendAdminEmail(input: {
+   recipients: Array<{ userId: string; name?: string }>;
+   subject: string;
+   message: string;
+   dedupeKey?: string;
+}): Promise<{ sent: number; skipped: number; failed: number; results: AdminEmailResult[] }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-send-email', {
+      body: { action: 'send', ...input }
+   });
+   if (error) throw new Error((await readFunctionError(error)) || error.message || 'Could not send the email.');
+   return data as { sent: number; skipped: number; failed: number; results: AdminEmailResult[] };
+}
+
+// ---------------------------------------------------------------------------
 // Calendar — the team's Cal.com availability and bookings (admin-calendar edge function).
 // ---------------------------------------------------------------------------
 

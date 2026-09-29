@@ -115,6 +115,11 @@ verify_jwt = true
 [functions.admin-messenger]
 verify_jwt = true
 
+# Admin → users email (write once, tick people, each gets it by name). Auth is done inside the
+# function: an active admin's session, or X-Admin-Token for server-side sends (no JWT on that path).
+[functions.admin-send-email]
+verify_jwt = false
+
 # Admin refund: repays a lender for an outstanding loan, cancels the loan, and bans +
 # KYC-blacklists the borrower. Re-verifies the caller is an active admin inside the function.
 [functions.admin-refund-loan]
