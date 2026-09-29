@@ -2,9 +2,14 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
-import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
+import { sendEmail } from '../_shared/email.ts';
+import { APPLY_URL, PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import {
    buildMessengerStuckAlert,
+   buildStuckEmail,
+   type EmailOutcome,
+   EMAILED_CODE_TTL_MS,
+   isEmailable,
    LOOKBACK_MS,
    messengerStuckKeyboard,
    REALERT_AFTER_MS,
@@ -13,16 +18,21 @@ import {
    type StuckBorrower,
    type StuckCode
 } from '../_shared/messengerStuckAlert.ts';
+import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Cron-driven (every 5 min): borrowers who tapped "Verify via Messenger" 10+ minutes ago and still
-// aren't confirmed → a card in the KYC Telegram group (with a "Mark Facebook verified" button,
-// handled by telegram-webhook) and a line in Discord #kyc. Timing and wording live in
-// _shared/messengerStuckAlert.ts.
+// aren't confirmed.
+//   1. Their open code is kept alive for 24 h, so the code on their screen and in the email keeps working.
+//   2. They get an email with a one-tap Messenger link, the code to send by hand, and a link back to
+//      their application — the help an admin used to write by hand.
+//   3. The team gets a card in the KYC Telegram group (with a "Mark Facebook verified" button, handled
+//      by telegram-webhook) and a line in Discord #kyc, saying whether the email went out.
+// Timing and wording live in _shared/messengerStuckAlert.ts.
 //
 // start_contact_verification keeps at most one open code per borrower per channel, so each open
 // code here is that borrower's latest attempt. users.messenger_stuck_alerted_at keeps it to one
-// ping per borrower per day.
+// email + one ping per borrower per day.
 //
 // verify_jwt stays on (no config.toml entry → project default), and the pg_cron job calls it with
 // the service key, so only a valid project token reaches it.
@@ -42,7 +52,7 @@ serve(async (req) => {
 
    const { data: codes, error: codesError } = await svc
       .from('contact_verification_codes')
-      .select('code, user_id, created_at')
+      .select('code, user_id, created_at, suggested_contact_name')
       .eq('channel', 'messenger')
       .is('verified_at', null)
       .lt('created_at', new Date(now - STUCK_AFTER_MS).toISOString())
@@ -55,7 +65,7 @@ serve(async (req) => {
 
    const { data: borrowers, error: usersError } = await svc
       .from('users')
-      .select('id, username, display_name, email, user_role, messenger_verified_at, messenger_stuck_alerted_at')
+      .select('id, username, display_name, email, user_role, account_status, messenger_verified_at, messenger_stuck_alerted_at')
       .in(
          'id',
          (codes as StuckCode[]).map((c) => c.user_id)
@@ -74,18 +84,47 @@ serve(async (req) => {
       const borrower = byId.get(code.user_id);
       if (!borrower || !shouldAlertStuck(borrower, now)) continue;
 
-      // Claim the alert before sending, so two overlapping runs can't both post it.
+      // Claim the alert before sending, so two overlapping runs can't both post it — and re-check
+      // they're still unverified, so nobody who just got through is told they're stuck.
       const nowIso = new Date(now).toISOString();
       const { data: claimed } = await svc
          .from('users')
          .update({ messenger_stuck_alerted_at: nowIso })
          .eq('id', borrower.id)
+         .is('messenger_verified_at', null)
          .or(`messenger_stuck_alerted_at.is.null,messenger_stuck_alerted_at.lt."${new Date(now - REALERT_AFTER_MS).toISOString()}"`)
          .select('id')
          .maybeSingle();
       if (!claimed) continue;
 
-      const text = buildMessengerStuckAlert(borrower, code, now);
+      // Keep the code alive for the email (and for the code still on their screen).
+      const { error: extendError } = await svc
+         .from('contact_verification_codes')
+         .update({ expires_at: new Date(now + EMAILED_CODE_TTL_MS).toISOString() })
+         .eq('code', code.code)
+         .is('verified_at', null);
+      if (extendError) console.error('messenger-stuck-alerts: extending code failed', extendError.message);
+
+      let email: EmailOutcome = 'no_email';
+      if (isEmailable(borrower.email) && !extendError) {
+         const { subject, text, html } = buildStuckEmail(borrower, code.code, {
+            messenger: buildMessengerVerifyLink(code.code),
+            apply: APPLY_URL,
+            page: MESSENGER_PAGE_URL
+         });
+         try {
+            await sendEmail(borrower.email.trim(), subject, text, html);
+            email = 'sent';
+         } catch (err) {
+            console.error('messenger-stuck-alerts: email failed', err instanceof Error ? err.message : err);
+            email = 'failed';
+         }
+      } else if (isEmailable(borrower.email)) {
+         // Without a live code the email's link would fail — tell the team instead of sending it.
+         email = 'failed';
+      }
+
+      const text = buildMessengerStuckAlert(borrower, code, now, email);
       if (kycChatId) {
          await sendTelegramMessage(kycChatId, text, { inlineKeyboard: messengerStuckKeyboard(borrower.id, PAGE_INBOX_URL) }).catch(
             (err: unknown) => console.error('messenger-stuck-alerts: telegram send failed', err instanceof Error ? err.message : err)

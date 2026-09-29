@@ -1,10 +1,10 @@
--- Team alert when a borrower's Facebook (Messenger) confirmation stalls.
+-- Recovering borrowers whose Facebook (Messenger) confirmation stalls.
 --
 -- Some phones never pass the m.me link on to the SendPulse bot, so the borrower sits on the contact
 -- step and nobody knows unless they happen to open the Page inbox (Aya, Merry, joanni and Brian,
 -- 2026-09-26..29). The messenger-stuck-alerts function (every 5 min) finds codes left unconfirmed
--- for 10+ minutes and posts a card to the KYC Telegram group with a "Mark Facebook verified"
--- button, plus a line in Discord #kyc.
+-- for 10+ minutes, emails the borrower a link + code (and keeps that code alive for 24 h), and posts
+-- a card to the KYC Telegram group with a "Mark Facebook verified" button, plus a line in Discord #kyc.
 --
 -- users.messenger_stuck_alerted_at keeps it to one ping per borrower per day, however many times
 -- they retry (each retry replaces their open code, so the code row can't carry it).
@@ -14,6 +14,16 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS messenger_stuck_alerted_at TIM
 
 COMMENT ON COLUMN public.users.messenger_stuck_alerted_at IS
    'Last time messenger-stuck-alerts told the team this borrower could not confirm Facebook Messenger. Server-only.';
+
+-- 1b) "Is this them?" — a Facebook chat that reached the Page without a code but with a name close to
+-- this borrower's (sendpulse-events). The team's ✅ button saves this chat as their Messenger line.
+ALTER TABLE public.contact_verification_codes
+  ADD COLUMN IF NOT EXISTS suggested_contact_id TEXT,
+  ADD COLUMN IF NOT EXISTS suggested_contact_name TEXT,
+  ADD COLUMN IF NOT EXISTS suggested_at TIMESTAMPTZ;
+
+COMMENT ON COLUMN public.contact_verification_codes.suggested_contact_id IS
+   'SendPulse contact id of a Facebook chat that may be this borrower (name + timing match). Server-only.';
 
 -- 2) Privileged-column guard ------------------------------------------------------------------------
 -- Re-declared from the deployed body (pg_get_functiondef, 2026-09-29; identical to

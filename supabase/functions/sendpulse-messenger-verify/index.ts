@@ -135,14 +135,20 @@ serve(async (req) => {
       // the flow saved on the contact; fall back to whatever id the flow's request carried.
       const contactId = (await findMessengerContactIdByCode(pending.code)) ?? (body.contact_id ? String(body.contact_id) : null) ?? psid;
 
-      const { error: codeError } = await svc
+      // Claim the code atomically: the SendPulse flow and sendpulse-events can confirm the same code
+      // at the same moment, and only one of them should stamp it and announce it.
+      const { data: claimed, error: codeError } = await svc
          .from('contact_verification_codes')
          .update({ verified_at: nowIso, sender_psid: contactId })
-         .eq('id', pending.id);
+         .eq('id', pending.id)
+         .is('verified_at', null)
+         .select('id')
+         .maybeSingle();
       if (codeError) {
          console.error('sendpulse-messenger-verify: mark code failed', codeError.message);
          return json({ ok: false, error: 'update_failed' }, 500);
       }
+      if (!claimed) return json({ ok: true, already: true });
 
       const { data: before } = await svc.from('users').select('messenger_verified_at').eq('id', pending.user_id).maybeSingle();
       const { error: userError } = await svc

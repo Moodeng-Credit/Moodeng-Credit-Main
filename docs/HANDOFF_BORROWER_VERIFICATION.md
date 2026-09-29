@@ -261,11 +261,73 @@ SendPulse's parser (`__` separates variables, `=` assigns); codes are `[A-Z0-9-]
   Works only for app testers until Meta App Review; kept for the future.
 - **Manual `/confirm <CODE>`** in `telegram-webhook` (admin channels only) — admin relays a code seen in
   the Page inbox. Kept as an override.
-- **Stuck alert** (`messenger-stuck-alerts`, every 5 min) — a borrower whose code is still unconfirmed
-  10 minutes after tapping "Verify via Messenger" gets a card in the KYC Telegram group (plus a line in
-  Discord #kyc) with a **✅ Mark Facebook verified** button and a Page-inbox link. One ping per borrower
-  per day (`users.messenger_stuck_alerted_at`). Built after Aya (2026-09-29): her "Get started" never
-  reached the bot, and we only noticed by opening the inbox.
+
+### 6.5a When the code gets lost — recovery layers (2026-09-29)
+
+Meta doesn't guarantee the m.me `ref` reaches the bot. It only rides along if a first-time chatter taps
+**Get Started** (as `postback.referral`); an existing chat gets it as a `messaging_referrals` event; and Meta's
+own docs say referrals "might not work for some Messenger for Android customers" with no guarantee. Aya
+(2026-09-29) opened the chat and tapped Get Started, yet the bot never heard the code. Four borrowers hit this
+in four days (Brian 09-26, joanni 09-28, Merry and Aya 09-29). The layers, in the order a borrower meets them:
+
+1. **In the app, right away** (`ContactsStep`). Coming back from Messenger unconfirmed, the borrower sees the
+   backups after a 4 s grace: **Open Messenger again** (now that the chat exists, the second tap arrives as a
+   referral and usually works) and the **code to send by hand**. Before, this waited a full minute; Aya left first.
+2. **Typed codes are forgiving** (`_shared/messengerCodes.ts`): any case, any separator or none
+   (`mdng 3d66ad`), O/I/L for 0/1. Matched exactly (`eq`), never `ilike`.
+3. **SendPulse webhooks → `sendpulse-events`** (needs setup, below). Every subscribe/message from a person:
+   - carries a code (typed, or the `mdng_code` their link set) → confirmed through `sendpulse-messenger-verify`,
+     even if the SendPulse keyword trigger missed it;
+   - no code → the Facebook name (read back from SendPulse's API) is compared with borrowers who tapped Verify
+     in the last 30 min (`_shared/messengerAutoMatch.ts`). **One strong match → confirmed automatically**, a
+     Messenger reply tells them, and the team gets a "🤝 Matched by name" note. Anything less certain → an
+     **"Is this them?"** card with ✅ (which also saves that chat as their Messenger line).
+4. **After 10 minutes** (`messenger-stuck-alerts`, every 5 min): the borrower is **emailed** a one-tap link, the
+   code (both kept alive for 24 h), and a link back to their application; the team gets a card in the KYC Telegram
+   group (+ Discord #kyc) with **✅ Mark Facebook verified**, whether the email went out, and any "possible match".
+   One email + one card per borrower per day (`users.messenger_stuck_alerted_at`).
+5. **By hand**: `/confirm MDNG-…` in Telegram, or the ✅ button on either card.
+
+**Setup for layer 3 (SendPulse):** set Supabase secret `SENDPULSE_EVENTS_SECRET` (a new random value, *not* the
+verify secret: request URLs are logged). Then SendPulse → Moodeng Credit bot → Bot settings → Webhooks → URL
+`https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/sendpulse-events?secret=<that value>`, events **Bot
+subscription** and **Incoming message**. Until then layers 1, 2, 4 and 5 still work.
+
+**Why nothing fires for some people at all:** if Facebook never passes the chat to SendPulse (the app isn't the
+one in control of the conversation — e.g. Meta Business Suite automations or Meta's AI agent set as the Page's
+responder — or the message went to the Page's spam/requests folder), no webhook reaches anyone. Check Meta
+Business Suite → Settings → conversation routing / automations if the bot goes quiet for *everyone*.
+
+### 6.5b Edge cases (checked 2026-09-29)
+
+| Situation | What happens now |
+| --- | --- |
+| First-time chatter, code lost on Get Started (Aya) | App backups in 4 s → name/time auto-match if SendPulse saw the chat → email + team card at 10 min |
+| Some Android Messenger versions / Facebook Lite / Messenger Lite drop the ref | Same as above; the typed code works from any device |
+| No Messenger app; link opens facebook.com in a browser | Typed code via facebook.com/messages; email link works later on a phone with Messenger |
+| Moodeng opened inside Facebook's/Messenger's in-app browser | `window.open` may be blocked → "Open Messenger again" is a real tap; backups after 1 min if they never leave |
+| Borrower taps Verify many times (Brian: ~30) | Each tap replaces the open code; old links say "link didn't work, get a fresh one"; one email + one card a day |
+| Borrower opens an old link after tapping again | That code was deleted → bot's ❌ message; the newest code (screen/email) still works |
+| Link or code used after 30 min | Expired → ❌ message; once the 10-min alert fires, the code lives 24 h (for the email) |
+| Typed code with spaces, lowercase, O for 0, punctuation | Accepted (`extractMessengerCodes`) |
+| Someone types `MDNG-%` or `MDNG-______` | Rejected — used to be an `ilike` wildcard that could confirm a random pending borrower |
+| Bot confirms while an admin also taps ✅ / flow + webhook race | Code claimed atomically; the loser answers "already"; no duplicate announcements |
+| Admin taps ✅ and the bot later gets through | The open code is left alone, so the bot still saves their SendPulse contact id (reminders need it) |
+| Same Facebook confirms two Moodeng accounts | Allowed, but the "Facebook connected" card warns "⚠️ Same Facebook is already linked to @…" |
+| Two borrowers with matching names waiting at once | Never auto-confirmed — "Is this them?" card for each |
+| Only a first name matches, or a 1-word Facebook name | Weak → team card, never automatic |
+| A known borrower (already linked) chats with the Page | Ignored by the matcher |
+| Lender / banned / blocked account | Verify endpoint refuses lenders; no emails or cards for lenders, banned or blocked accounts |
+| No email / invalid email on file | No email; the team card says so |
+| Resend down or `RESEND_API_KEY` missing | Card says the email failed |
+| KYC Telegram chat not configured | Discord #kyc still gets the alert (the ✅ button lives only in Telegram) |
+| Borrower got through between cron query and send | Claim re-checks `messenger_verified_at IS NULL`; no email |
+| Cron was down for hours | Only looks back 2 h, so no burst of stale emails when it recovers |
+| SendPulse changes how webhooks identify the bot | Accepts bot id **or** our Page id; logs any skip instead of going silent |
+| SendPulse webhook payload differs from the docs | Parser is defensive (array or object, missing fields); names are read from SendPulse's API, never trusted from the payload |
+| Forged webhook call | Needs `SENDPULSE_EVENTS_SECRET`; codes still go through the verify rules; auto-match only uses API-confirmed names |
+| Bot quiet for everyone (Page routing / Meta AI / SendPulse outage) | All borrowers hit layer 4 → the team sees a burst of cards; check Meta Business Suite routing and SendPulse |
+| Borrower reminders need the SendPulse contact id | Auto-match and "Is this them?" ✅ save it; plain ✅ / `/confirm` can't (no chat known) |
 
 ### 6.6 Cost
 
@@ -474,7 +536,8 @@ plus many security/digest jobs. Each cron calls an edge function with `net.http_
 | ------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `sendpulse-messenger-verify`          | Receives SendPulse flow's code → marks Messenger verified                 | off; `x-sendpulse-secret`             | `SENDPULSE_VERIFY_SECRET`                                                                 |
 | `messenger-webhook`                   | Direct Meta Messenger webhook (future, needs App Review)                  | off; Meta handshake                   | `MESSENGER_VERIFY_TOKEN`, `MESSENGER_PAGE_ACCESS_TOKEN`                                   |
-| `messenger-stuck-alerts`              | Cron (5 min): Messenger code unconfirmed 10+ min → KYC alert + button     | **on** (pg_cron, service key)         | —                                                                                         |
+| `messenger-stuck-alerts`              | Cron (5 min): code unconfirmed 10+ min → email borrower + KYC card        | **on** (pg_cron, service key)         | `RESEND_API_KEY`                                                                          |
+| `sendpulse-events`                    | SendPulse bot webhooks → typed codes + name/time auto-match               | off; `?secret=`                       | `SENDPULSE_EVENTS_SECRET`, `SENDPULSE_API_KEY`                                            |
 | `whatsapp-webhook`                    | WhatsApp Cloud API webhook → marks WhatsApp verified                      | off; Meta handshake                   | `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`_, `WHATSAPP_PHONE_NUMBER_ID`_ (*not set) |
 | `telegram-webhook`                    | Bot updates: connect tokens, support chats, lender roster, **`/confirm`** | off; `TELEGRAM_WEBHOOK_SECRET` header | Telegram token                                                                            |
 | `calcom-round-robin`                  | Merged availability + booking for the video call                          | **on** (borrower JWT)                 | `CALCOM_API_KEY_GEORGE`, `CALCOM_API_KEY_EMMA`                                            |
