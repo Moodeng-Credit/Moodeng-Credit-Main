@@ -247,5 +247,215 @@ export const thaiCoverageG: Record<string, string> = {
    'A collectible profile award for long-term history.': 'รางวัลโปรไฟล์สะสมสำหรับประวัติระยะยาว',
    'Founding Lucky Cat': 'แมวกวักนำโชครุ่นบุกเบิก',
    'A lucky cat for being one of the first Moodeng borrowers.': 'แมวกวักนำโชคสำหรับผู้ที่เป็นหนึ่งในผู้ยืมกลุ่มแรกของ Moodeng',
-   'First-time user': 'ผู้ใช้ครั้งแรก'
+   'First-time user': 'ผู้ใช้ครั้งแรก',
+
+   // src/views/fund/FundWalletSheet.tsx
+   '. Stripe handles ID checks and payment — USDC lands on Base.': '· Stripe ดูแลการตรวจสอบตัวตนและการชำระเงิน — USDC จะเข้าบัญชีบน Base',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'vs previous period': 'เมื่อเทียบกับช่วงก่อนหน้า',
+   "You haven't funded any loans yet.": 'คุณยังไม่ได้ปล่อยกู้เลย',
+   'No transactions match your search or filters.': 'ไม่มีธุรกรรมที่ตรงกับการค้นหาหรือตัวกรองของคุณ',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   '’s loan. If they repay, the repayment is automatically sent to your wallet.':
+      'แล้ว หากผู้ยืมชำระคืน เงินที่ชำระคืนจะถูกส่งเข้ากระเป๋าเงินของคุณโดยอัตโนมัติ',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'Due date': 'วันครบกำหนด',
+
+   // src/views/lender/loanNote/useBuyLoanNote.ts
+   Cancelled: 'ยกเลิกแล้ว',
+   'You cancelled the transaction in your wallet.': 'คุณยกเลิกธุรกรรมในกระเป๋าเงินของคุณแล้ว',
+   'Not enough ETH for gas': 'ETH ไม่พอสำหรับค่า gas',
+   'You need a little ETH on Base for the network fee.': 'คุณต้องมี ETH บน Base เล็กน้อยสำหรับค่าธรรมเนียมเครือข่าย',
+   'No longer available': 'ไม่พร้อมให้บริการแล้ว',
+   'This loan was just funded by someone else.': 'เงินกู้นี้เพิ่งมีผู้อื่นปล่อยกู้ไปแล้ว',
+   'Switch your wallet to Base, then try again.': 'สลับกระเป๋าเงินของคุณไปที่ Base แล้วลองอีกครั้ง',
+   'Purchase failed': 'ซื้อไม่สำเร็จ',
+   'Something went wrong before the payment. Nothing was charged — please try again.':
+      'เกิดข้อผิดพลาดก่อนการชำระเงิน ยังไม่มีการเรียกเก็บเงินใด ๆ — โปรดลองอีกครั้ง',
+   Unavailable: 'ไม่พร้อมใช้งาน',
+   'This loan does not have a sellable Loan Note.': 'เงินกู้นี้ไม่มี Loan Note ที่ขายได้',
+   'Not enough USDC': 'USDC ไม่พอ',
+
+   // src/views/lenderBenefits/config/mostNeededConfig.ts
+   'Korea, Taiwan, Japan': 'เกาหลี ไต้หวัน ญี่ปุ่น',
+   Singapore: 'สิงคโปร์',
+
+   // src/views/milestones/Milestones.tsx
+   'Unlocks at 50 Pandesal points': 'ปลดล็อกเมื่อมี 50 แต้ม Pandesal',
+   'Unlocked at 50 Pandesal points': 'ปลดล็อกแล้วเมื่อมี 50 แต้ม Pandesal',
+   'Unlocks at 120 Pandesal points': 'ปลดล็อกเมื่อมี 120 แต้ม Pandesal',
+   'Unlocked at 120 Pandesal points': 'ปลดล็อกแล้วเมื่อมี 120 แต้ม Pandesal',
+   'Unlocks at 250 Pandesal points': 'ปลดล็อกเมื่อมี 250 แต้ม Pandesal',
+   'Unlocked at 250 Pandesal points': 'ปลดล็อกแล้วเมื่อมี 250 แต้ม Pandesal',
+   'Unlocks at 500 Pandesal points': 'ปลดล็อกเมื่อมี 500 แต้ม Pandesal',
+   'Unlocked at 500 Pandesal points': 'ปลดล็อกแล้วเมื่อมี 500 แต้ม Pandesal',
+
+   // src/views/profile/components/Card.tsx
+   Payback: 'ยอดชำระคืน',
+
+   // src/views/profile/components/settings/ProfileSettings.tsx
+   Update: 'อัปเดต',
+
+   // src/views/profile/components/tabs/useDashboardData.ts
+   'Verify World ID to start borrowing': 'ยืนยันด้วย World ID เพื่อเริ่มกู้ยืม',
+   'Fully repay $15 total on time to unlock this level': 'ชำระคืนให้ครบ $15 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $20 total on time to unlock this level': 'ชำระคืนให้ครบ $20 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $40 total on time to unlock this level': 'ชำระคืนให้ครบ $40 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $60 total on time to unlock this level': 'ชำระคืนให้ครบ $60 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $80 total on time to unlock this level': 'ชำระคืนให้ครบ $80 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $100 total on time to unlock this level': 'ชำระคืนให้ครบ $100 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $120 total on time to unlock this level': 'ชำระคืนให้ครบ $120 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+   'Fully repay $140 total on time to unlock this level': 'ชำระคืนให้ครบ $140 ตรงเวลาเพื่อปลดล็อกระดับนี้',
+
+   // src/views/profile/config/transactionColumns.tsx
+   Transaction: 'ธุรกรรม',
+   'Funded Amount': 'จำนวนที่ปล่อยกู้',
+   'Borrowed Amount': 'จำนวนที่ยืม',
+   'Date Funded': 'วันที่ปล่อยกู้',
+   'Date Borrowed': 'วันที่ยืม',
+   'Returned Amount': 'จำนวนที่ได้รับคืน',
+   Returned: 'ได้รับคืนแล้ว',
+   'Date Returned': 'วันที่ได้รับคืน',
+   "Borrower's Name": 'ชื่อผู้ยืม',
+   "Lender's Name": 'ชื่อผู้ให้กู้',
+   Name: 'ชื่อ',
+
+   // src/views/repay/Repay.tsx
+   'overdue now': 'เกินกำหนดแล้ว',
+   'your loan': 'เงินกู้ของคุณ',
+
+   // src/views/signin/SignInPage.tsx
+   'Moodeng Mascot': 'มาสคอต Moodeng',
+   'Forgot password?': 'ลืมรหัสผ่าน?',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Verify, then make your first request': 'ยืนยันตัวตน แล้วส่งคำขอแรกของคุณ',
+   'Repay your $15 loan on time': 'ชำระคืนเงินกู้ $15 ของคุณตรงเวลา',
+   'Repay your $20 loan on time': 'ชำระคืนเงินกู้ $20 ของคุณตรงเวลา',
+   'Repay your $40 loan on time': 'ชำระคืนเงินกู้ $40 ของคุณตรงเวลา',
+   'Repay your $60 loan on time': 'ชำระคืนเงินกู้ $60 ของคุณตรงเวลา',
+   'Repay your $80 loan on time': 'ชำระคืนเงินกู้ $80 ของคุณตรงเวลา',
+   'Repay your $100 loan on time': 'ชำระคืนเงินกู้ $100 ของคุณตรงเวลา',
+   'Repay your $120 loan on time': 'ชำระคืนเงินกู้ $120 ของคุณตรงเวลา',
+   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'วงเงินเพิ่มขึ้นทีละขั้น $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140',
+   'you need a smaller amount, or want to build trust first.': 'คุณต้องการเงินจำนวนน้อยกว่า หรืออยากสร้างความน่าเชื่อถือก่อน',
+   'also called a Credit Growth Loan': 'หรือที่เรียกว่า Credit Growth Loan',
+   'you’re ready to grow your limit and sure you can repay on time.': 'คุณพร้อมจะเพิ่มวงเงินและมั่นใจว่าชำระคืนได้ตรงเวลา',
+   'How reliable repayment becomes a portable reputation lenders trust.':
+      'การชำระคืนอย่างสม่ำเสมอกลายเป็นความน่าเชื่อถือที่ติดตัวคุณไปได้และผู้ให้กู้ไว้วางใจได้อย่างไร',
+   'The difference between the two loan types and when to use each.': 'ความแตกต่างระหว่างเงินกู้สองประเภท และควรใช้แต่ละแบบเมื่อใด',
+   'Exactly how on-time, partial, and late repayments are scored.': 'การชำระคืนตรงเวลา ชำระบางส่วน และชำระล่าช้าถูกนำมาคิดคะแนนอย่างไร',
+   'Any small loan': 'เงินกู้จำนวนน้อยแบบใดก็ได้',
+   'A full-limit Credit-Building Loan': 'Credit-Building Loan แบบเต็มวงเงิน',
+   'Paying a fee': 'การจ่ายค่าธรรมเนียม',
+   'Logging in daily': 'การเข้าสู่ระบบทุกวัน',
+   'You jump to $40': 'คุณข้ามไปที่ $40 ทันที',
+   'Limit stays $20, trust grows': 'วงเงินยังเป็น $20 แต่ความน่าเชื่อถือเพิ่มขึ้น',
+   'You drop to $15': 'คุณถูกลดลงไปที่ $15',
+   'Nothing, ever': 'ไม่มีผลอะไรเลย',
+   'Yes, pay 4× up front': 'ได้ จ่าย 4× ล่วงหน้า',
+   'No — one level at a time': 'ไม่ได้ — ทีละระดับเท่านั้น',
+   'Only on weekends': 'ได้เฉพาะวันหยุดสุดสัปดาห์',
+   'Yes, with a coupon': 'ได้ ถ้ามีคูปอง',
+   'Repaying early': 'การชำระคืนก่อนกำหนด',
+   'A late or missed repayment': 'การชำระคืนล่าช้าหรือไม่ได้ชำระ',
+   'Borrowing your full limit': 'การกู้เต็มวงเงิน',
+   'Asking questions': 'การถามคำถาม',
+   'Flawless run. You could teach the hippos.': 'ไร้ที่ติ คุณสอนฮิปโปได้เลย',
+   'Solid! You’ve basically got this down.': 'เยี่ยม! คุณเข้าใจเรื่องนี้แล้วเกือบทั้งหมด',
+   'No worries — scroll back up and you’ll ace the rematch.': 'ไม่เป็นไร — เลื่อนกลับขึ้นไปอ่านอีกรอบ แล้วรอบหน้าคุณจะทำได้ดีแน่นอน',
+   'See my score': 'ดูคะแนนของฉัน',
+   Guides: 'คู่มือ',
+   'Updated Jun 2026 · 5 min read': 'อัปเดต มิ.ย. 2026 · อ่าน 5 นาที',
+   'Read guide →': 'อ่านคู่มือ →',
+
+   // src/views/support/PublicGuide.tsx
+   'By the Moodeng Team · Updated': 'โดยทีม Moodeng · อัปเดตเมื่อ',
+
+   // src/views/support/Updates.tsx
+   Updates: 'อัปเดต',
+
+   // src/views/support/WhyUsdc.tsx
+   'Real-world use': 'การใช้งานในชีวิตจริง',
+   'Payments & money movement': 'การชำระเงินและการโอนเงิน',
+   'Send money to family abroad in seconds': 'ส่งเงินให้ครอบครัวในต่างประเทศได้ในไม่กี่วินาที',
+   'Pay a merchant that accepts stablecoins': 'จ่ายเงินให้ร้านค้าที่รับสเตเบิลคอยน์',
+   'Cash out to a bank or exchange': 'ถอนเป็นเงินสดไปยังธนาคารหรือแพลตฟอร์มแลกเปลี่ยนคริปโต',
+   'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.':
+      'บน Moodeng เงินกู้ทำงานแบบนี้: ผู้ให้กู้ส่ง USDC ให้คุณ แล้วคุณชำระคืนเป็น USDC',
+   'DeFi use': 'การใช้งานใน DeFi',
+   'DeFi means "decentralized finance" — financial apps that run on smart contracts instead of a bank. You can lend, borrow, or swap USDC directly from your wallet.':
+      'DeFi ย่อมาจาก "decentralized finance" (การเงินแบบกระจายศูนย์) — แอปการเงินที่ทำงานบนสมาร์ตคอนแทรกต์แทนธนาคาร คุณสามารถให้กู้ กู้ยืม หรือแลกเปลี่ยน USDC ได้โดยตรงจากกระเป๋าเงินของคุณ',
+   'Lend USDC to earn yield': 'ให้กู้ USDC เพื่อรับผลตอบแทน',
+   'Provide liquidity to a trading pool': 'เพิ่มสภาพคล่องให้กับพูลการซื้อขาย',
+   'Borrow against crypto you already hold': 'กู้ยืมโดยใช้คริปโตที่คุณถืออยู่เป็นหลักประกัน',
+   'Moodeng is community lending, not a DeFi yield product — but USDC lets it plug into this wider ecosystem.':
+      'Moodeng คือการให้กู้ยืมในชุมชน ไม่ใช่ผลิตภัณฑ์หาผลตอบแทนแบบ DeFi — แต่ USDC ช่วยให้ Moodeng เชื่อมต่อกับระบบนิเวศที่กว้างขึ้นนี้ได้',
+   'A cryptocurrency designed to hold a steady value. USDC is pegged 1:1 to the US dollar, so it does not swing like Bitcoin.':
+      'คริปโตเคอร์เรนซีที่ออกแบบมาให้มูลค่าคงที่ USDC ผูกค่า 1:1 กับดอลลาร์สหรัฐ จึงไม่ผันผวนเหมือน Bitcoin',
+   'Wallet-to-wallet transfer': 'การโอนจากกระเป๋าเงินถึงกระเป๋าเงิน',
+   'Sending funds straight from one crypto wallet to another, with no bank or payment processor sitting in the middle.':
+      'การส่งเงินตรงจากกระเป๋าเงินคริปโตใบหนึ่งไปยังอีกใบ โดยไม่มีธนาคารหรือผู้ให้บริการชำระเงินเป็นตัวกลาง',
+   'Gas (and “gasless”)': 'Gas (และ “gasless”)',
+   'Gas is the small network fee to move crypto. On Base, USDC transfers are sponsored, so they feel gasless — you pay nothing.':
+      'Gas คือค่าธรรมเนียมเครือข่ายเล็กน้อยสำหรับการโอนคริปโต บน Base การโอน USDC ได้รับการสนับสนุนค่า gas จึงเหมือนไม่มีค่า gas — คุณไม่ต้องจ่ายอะไรเลย',
+   'Spending or sending USDC like ordinary money: payments, remittances, and cashing out to local currency.':
+      'การใช้จ่ายหรือส่ง USDC เหมือนเงินทั่วไป: ชำระเงิน ส่งเงินกลับบ้าน และถอนเป็นเงินสดสกุลท้องถิ่น',
+   'Decentralized finance — lending, borrowing, and trading run by smart contracts on a blockchain instead of a bank.':
+      'การเงินแบบกระจายศูนย์ — การให้กู้ การกู้ยืม และการซื้อขายที่ดำเนินการโดยสมาร์ตคอนแทรกต์บนบล็อกเชนแทนธนาคาร',
+   Staking: 'การ Staking',
+   'Locking up a crypto token to help secure a proof-of-stake blockchain, earning rewards in return. USDC is not a staking token.':
+      'การล็อกโทเคนคริปโตไว้เพื่อช่วยรักษาความปลอดภัยของบล็อกเชนแบบ proof-of-stake และได้รับผลตอบแทนเป็นการแลกเปลี่ยน USDC ไม่ใช่โทเคนสำหรับ staking',
+   Yield: 'ผลตอบแทน (Yield)',
+   'The return you earn by putting USDC to work — for example, lending it out in DeFi. Yield is a payout, not network security.':
+      'ผลตอบแทนที่คุณได้รับจากการนำ USDC ไปใช้ให้เกิดประโยชน์ เช่น ปล่อยกู้ใน DeFi ผลตอบแทนคือเงินที่จ่ายให้คุณ ไม่ใช่การรักษาความปลอดภัยของเครือข่าย',
+   'Does Moodeng offer USDC staking or yield?': 'Moodeng มีบริการ staking หรือผลตอบแทนจาก USDC หรือไม่?',
+   'A quick guide to how USDC is used for loans and repayments in the app.':
+      'คู่มือฉบับย่อว่า USDC ถูกใช้ในการกู้และการชำระคืนในแอปอย่างไร',
+   'Your Instant Wallet is set up from your login (or connect a Base Account) — then send your first request.':
+      'Instant Wallet ของคุณถูกตั้งค่าจากการเข้าสู่ระบบ (หรือเชื่อมต่อ Base Account) — จากนั้นส่งคำขอแรกของคุณ',
+   'How your borrowing limit grows $15 → $20 → $40 → $60 as you repay.':
+      'วงเงินกู้ของคุณเพิ่มขึ้น $15 → $20 → $40 → $60 เมื่อคุณชำระคืนอย่างไร',
+   'Why Moodeng uses USDC': 'ทำไม Moodeng จึงใช้ USDC',
+   'Updated Jul 2026 · 6 min read': 'อัปเดต ก.ค. 2026 · อ่าน 6 นาที',
+   'One USDC always equals one US dollar': '1 USDC มีค่าเท่ากับ 1 ดอลลาร์สหรัฐเสมอ',
+   stablecoin: 'สเตเบิลคอยน์',
+   ': a cryptocurrency built to stay worth exactly one US dollar. It is issued by Circle, backed fully by cash and short-term US Treasuries, and its reserves are attested by independent accounting firms every month. Because it lives on a blockchain, it can move between wallets in seconds — while staying as steady as the dollar it tracks.':
+      ': คริปโตเคอร์เรนซีที่สร้างมาให้มีมูลค่าเท่ากับหนึ่งดอลลาร์สหรัฐพอดี ออกโดย Circle มีเงินสดและพันธบัตรรัฐบาลสหรัฐระยะสั้นหนุนหลังเต็มจำนวน และทุนสำรองได้รับการรับรองโดยบริษัทบัญชีอิสระทุกเดือน เพราะอยู่บนบล็อกเชน จึงโอนระหว่างกระเป๋าเงินได้ในไม่กี่วินาที — ในขณะที่มูลค่ายังคงมั่นคงเท่ากับดอลลาร์ที่ผูกไว้',
+   'Four reasons we chose USDC': 'สี่เหตุผลที่เราเลือก USDC',
+   'Real-world use vs DeFi use': 'การใช้งานในชีวิตจริง vs การใช้งานใน DeFi',
+   'Staking vs yield, side by side:': 'เปรียบเทียบ Staking กับผลตอบแทน (Yield):',
+   'USDC, answered': 'ตอบทุกคำถามเรื่อง USDC',
+
+   // src/views/support/data/updates.ts
+   'Live Filters & Cleaner Borrowing Flow': 'ตัวกรองแบบเรียลไทม์และขั้นตอนการกู้ที่เรียบง่ายขึ้น',
+   'Request Board and history filters now update as you tap': 'ตัวกรองในกระดานคำขอและประวัติจะอัปเดตทันทีที่คุณแตะ',
+   'May 24, 2026': '24 พ.ค. 2026',
+   'Latest May 2026 update': 'อัปเดตล่าสุด พ.ค. 2026',
+   'Base Wallet & World ID Onboarding': 'การเริ่มต้นใช้งาน Base Wallet และ World ID',
+   'Clearer wallet handoff • Stronger human verification flow':
+      'ส่งต่อไปยังกระเป๋าเงินได้ชัดเจนขึ้น • ขั้นตอนยืนยันความเป็นมนุษย์ที่รัดกุมขึ้น',
+   'May 23, 2026': '23 พ.ค. 2026',
+   'Borrower onboarding has been tightened so each step leads naturally into the next. The Base Wallet screen is simpler, the connected-wallet success screen now uses the final success mark, and World ID actions are easier to understand from the Request Board and onboarding flow. This update also improves duplicate World ID handling and keeps borrowers moving through the right next step after wallet connection, verification, or a request-board action.':
+      'ขั้นตอนเริ่มต้นใช้งานของผู้ยืมได้รับการปรับให้กระชับขึ้น เพื่อให้แต่ละขั้นต่อเนื่องไปยังขั้นถัดไปอย่างเป็นธรรมชาติ หน้าจอ Base Wallet เรียบง่ายขึ้น หน้าจอเชื่อมต่อกระเป๋าเงินสำเร็จใช้เครื่องหมายสำเร็จแบบใหม่ และการดำเนินการเกี่ยวกับ World ID เข้าใจง่ายขึ้นทั้งจากกระดานคำขอและขั้นตอนเริ่มต้นใช้งาน อัปเดตนี้ยังปรับปรุงการจัดการ World ID ที่ซ้ำกัน และช่วยพาผู้ยืมไปยังขั้นตอนถัดไปที่ถูกต้องหลังจากเชื่อมต่อกระเป๋าเงิน ยืนยันตัวตน หรือดำเนินการบนกระดานคำขอ',
+   'Clearer Loan & Repay States': 'สถานะเงินกู้และการชำระคืนที่ชัดเจนขึ้น',
+   'Pending funding, repayment, and navigation are easier to trust': 'สถานะรอการปล่อยกู้ การชำระคืน และการนำทางน่าเชื่อถือยิ่งขึ้น',
+   'May 22, 2026': '22 พ.ค. 2026',
+   'Loan screens now do a better job showing what is actually happening. Pending requests are clearer before they are funded, repayment screens avoid misleading action states, and bottom navigation between Request Board, Repay, Dashboard, History, and Account is more reliable. These changes are designed to make the app feel calmer when money is involved: the screen should say whether a loan is waiting, active, repaid, or unavailable without making you guess.':
+      'ตอนนี้หน้าจอเงินกู้แสดงสิ่งที่เกิดขึ้นจริงได้ดีขึ้น คำขอที่รอดำเนินการชัดเจนขึ้นก่อนได้รับการปล่อยกู้ หน้าจอการชำระคืนไม่แสดงสถานะปุ่มที่ทำให้เข้าใจผิด และแถบนำทางด้านล่างระหว่างกระดานคำขอ ชำระคืน แดชบอร์ด ประวัติ และบัญชีทำงานได้เสถียรขึ้น การเปลี่ยนแปลงเหล่านี้ช่วยให้แอปดูสงบและวางใจได้เมื่อเกี่ยวข้องกับเงิน หน้าจอควรบอกได้ว่าเงินกู้กำลังรอ กำลังดำเนินอยู่ ชำระคืนแล้ว หรือไม่พร้อมใช้งาน โดยไม่ต้องให้คุณเดา',
+   'Trust System & Admin Readiness': 'ระบบความน่าเชื่อถือและความพร้อมของระบบผู้ดูแล',
+   'Cleaner IOU rules • Better account status and recovery controls': 'กฎแต้ม IOU ที่ชัดเจนขึ้น • การควบคุมสถานะบัญชีและการกู้คืนที่ดีขึ้น',
+   'May 20, 2026': '20 พ.ค. 2026',
+   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'ระบบความน่าเชื่อถือเบื้องหลัง Moodeng มีความสอดคล้องกันมากขึ้น กฎแต้ม IOU ของผู้ให้กู้เข้าใจง่ายขึ้น การควบคุมสถานะโดยผู้ดูแลตรงกับสถานะบัญชีจริงมากขึ้น และขั้นตอนการกู้คืนมีข้อมูลที่เชื่อถือได้มากขึ้น งานส่วนใหญ่เกิดขึ้นเบื้องหลัง แต่มีความสำคัญ: ประวัติผู้ยืม สิ่งจูงใจของผู้ให้กู้ เงินกู้ที่เกินกำหนด และข้อจำกัดของบัญชีต้องสอดคล้องกันก่อนที่ผลิตภัณฑ์จะขยายได้อย่างปลอดภัย',
+   'Support Library & Credit Education': 'คลังความช่วยเหลือและความรู้ด้านเครดิต',
+   'Repayment guides • Credit leveling • Borrower safety content':
+      'คู่มือการชำระคืน • การเพิ่มระดับเครดิต • เนื้อหาความปลอดภัยสำหรับผู้ยืม',
+   'May 16, 2026': '16 พ.ค. 2026',
+   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'ส่วนช่วยเหลือได้รับการปรับปรุงใหม่โดยยึดตามคำถามที่ผู้ยืมและผู้ให้กู้ถามจริง ตอนนี้คู่มืออธิบายเรื่องการชำระคืน แต้ม Pandesal การเพิ่มระดับเครดิต World ID การตั้งค่า Base Wallet และความปลอดภัยของผู้ยืมด้วยภาษาที่ชัดเจนขึ้น เรายังเพิ่มเนื้อหาความรู้เกี่ยวกับประวัติการชำระคืนที่ติดตัวไปได้ และทางเลือกที่ปลอดภัยกว่าการกู้เงินนอกระบบที่เอารัดเอาเปรียบ เพื่อให้ผู้ใช้ใหม่เข้าใจสิ่งที่ Moodeng กำลังสร้างก่อนจะขอกู้หรือปล่อยกู้'
 };
