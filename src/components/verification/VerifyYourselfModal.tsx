@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, FileText, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, MapPin } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -287,9 +287,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                 button, so people in supported countries (Taiwan, Philippines…) tapped World ID. */}
             <div className="w-full rounded-md-lg border border-md-neutral-300 p-4 flex flex-col gap-md-3">
                <div className="flex items-center gap-3">
-                  <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-primary-1200 text-md-neutral-100">
-                     <FileText size={20} />
-                  </div>
+                  <img src="/icons/national-id-3d.png" alt="" aria-hidden="true" className="size-14 shrink-0 object-contain" />
                   <div className="flex-1 min-w-0">
                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-md-b1 font-semibold text-md-heading">Verify with your National ID</span>
