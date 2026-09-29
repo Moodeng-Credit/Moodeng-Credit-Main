@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ChevronDown, Download, FileText, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Download, FileText, MapPin } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -292,8 +292,10 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   </div>
                   <div className="flex-1 min-w-0">
                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your national ID</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-md-primary-1200 text-md-neutral-100">
+                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your National ID</span>
+                        {/* A quiet tag, not a solid purple pill — that read as a second button. */}
+                        <span className="inline-flex items-center gap-1 text-md-b3 font-medium px-2 py-0.5 rounded-full bg-md-green-100 text-md-green-900">
+                           <Check size={12} strokeWidth={3} aria-hidden="true" />
                            Recommended
                         </span>
                      </div>
@@ -319,7 +321,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   onClick={() => start('didit')}
                   className="w-full rounded-md-lg bg-md-primary-1200 text-md-neutral-100 p-4 flex items-center justify-center gap-2 text-md-b1 font-semibold transition-all duration-150 active:scale-[0.99]"
                >
-                  Continue with national ID
+                  Continue with National ID
                   <ArrowRight size={18} aria-hidden="true" />
                </button>
             </div>
