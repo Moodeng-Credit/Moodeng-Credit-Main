@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
 
@@ -10,8 +10,6 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
-import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
-import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
@@ -72,46 +70,12 @@ export default function ContactsStep({
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
    // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
-   // those borrowers see how to fix it but aren't blocked — Messenger and email still reach them.
+   // those borrowers just don't see the reminders card and aren't blocked — Messenger and email still reach them.
    const push = usePushNotifications(userId);
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
    const pushRequired = push.isSupported;
 
-   // When push can't run here we spell out the fix for THIS browser rather than one generic line.
-   // The old copy told everyone to "tap Share" — but Facebook's/Messenger's in-app browser has no
-   // Share button at all, and even iPhone Safari users couldn't find it, so it just confused people.
-   const pushHelp = useMemo(() => {
-      const info = detectInAppBrowser();
-      if (info.isInApp) {
-         const where = isFacebookInApp(info) ? 'the ••• menu (top right)' : "your browser's menu";
-         return {
-            title: 'Reminders need Safari or Chrome',
-            body: (
-               <>
-                  You&apos;re inside {info.appName ?? 'an app'}&apos;s built-in browser, which can&apos;t show reminders — and it has no
-                  Share button. Tap {where}, choose <b>Open in Safari</b> (or Chrome), then turn reminders on there.
-               </>
-            )
-         };
-      }
-      if (needsHomeScreenForPush()) {
-         return {
-            title: 'Add Moodeng to your Home Screen',
-            body: (
-               <>
-                  In <b>Safari</b>, tap the <b>Share</b> icon — the square with an ↑ arrow, in the bar at the bottom of the screen —
-                  then <b>Add to Home Screen</b>. Open Moodeng from the new icon and turn reminders on. No Share icon means you&apos;re
-                  not in Safari yet — open moodeng.app in Safari first.
-               </>
-            )
-         };
-      }
-      return {
-         title: 'Turn on reminders in your browser',
-         body: <>Allow notifications for moodeng.app in your browser settings, then reload this page.</>
-      };
-   }, []);
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
 
@@ -345,12 +309,11 @@ export default function ContactsStep({
                subtitle={push.isBusy ? 'Turning on…' : 'We remind you before your due date'}
                title="Turn on reminders"
             />
-         ) : (
-            <div className="rounded-[18px] border border-dashed border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-               <p className="font-semibold text-[#4c239f]">{pushHelp.title}</p>
-               <p className="mt-1">{pushHelp.body}</p>
-            </div>
-         )}
+         ) : null}
+         {/* Where push can't run (iPhone not on the Home Screen, Facebook's in-app browser) we used
+             to show "In Safari, tap Share → Add to Home Screen…" here. It read like a scam and
+             confused people into stopping, and it never blocked Continue — Messenger and email
+             still reach them — so we just leave it out. */}
 
          {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
 

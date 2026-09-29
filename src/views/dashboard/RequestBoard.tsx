@@ -493,16 +493,20 @@ function RequestBoard$() {
    const showSubmittedRequestSuccessPreview = import.meta.env.DEV && requestBoardSearchParams.has('submittedRequestSuccessPreview');
    const showTourPreview = forceTourPreview || requestBoardSearchParams.has('tour');
    const shouldStartTourImmediately = requestBoardSearchParams.get('startTour') === '1';
-   // When ?tour=1 is present but no tourRole was chosen yet, we show a role chooser inside
-   // the "Want a quick tour?" intro card so the guest can pick borrow / lend / not sure.
+   // ?tour=1 with no tourRole yet means someone explicitly asked for the tour (a "Take tour"
+   // link, or the congrats screen after onboarding).
    const tourRole = requestBoardSearchParams.get('tourRole');
-   const needsTourRoleChoice = showTourPreview && !isReferralTestMode && !forceTourPreview && !tourRole;
+   const isExplicitTourRequest = showTourPreview && !isReferralTestMode && !forceTourPreview && !tourRole;
    // A guest who isn't signed in can pick "I want to lend" from the role chooser inside the
    // tour intro card (?tour=1&tourRole=lender). That should run the same mocked-lender preview
    // the DEV-only `lenderTourPreview` flag drives — minus the DEV gate — so real production
    // visitors can actually see it. Real, signed-in lenders never match this: it requires
    // the *real* auth state to be empty, not just `isAuthenticated` (which this very flag feeds).
    const isRealUserAuthenticated = Boolean(user?.id && username);
+   // Only guests pick a side (borrow / lend / not sure) in the intro card. A signed-in borrower —
+   // e.g. fresh from the congrats screen — already chose to borrow, so they get the borrower tour
+   // intro on its own, with no lender or "not sure" options.
+   const needsTourRoleChoice = isExplicitTourRequest && !isRealUserAuthenticated;
    const wantsGuestLenderTour = showTourPreview && !isRealUserAuthenticated && tourRole === 'lender';
    const isLenderTourPreview = (import.meta.env.DEV && requestBoardSearchParams.has('lenderTourPreview')) || wantsGuestLenderTour;
    const shouldForceReferralTestUser = isReferralTestMode && showTourPreview;
@@ -559,9 +563,8 @@ function RequestBoard$() {
       showTourPreview &&
       !isGeneralTour &&
       (!isAuthenticated || isBorrower) &&
-      // needsTourRoleChoice means the user explicitly clicked "Take tour" — always show
-      // the chooser regardless of whether they've done a tour before.
-      (needsTourRoleChoice || shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
+      // An explicit "Take tour" always shows the intro, even if they've done the tour before.
+      (isExplicitTourRequest || shouldStartTourImmediately || shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, tourUserId, forceTourPreview));
    const shouldShowLenderTour =
       showTourPreview &&
       isLenderTourPreview &&
@@ -2418,6 +2421,12 @@ function RequestBoard$() {
                onStepChange={handleRequestBoardTourStepChange}
                onStepNext={handleRequestBoardTourStepNext}
                roleOptions={needsTourRoleChoice ? GUEST_TOUR_ROLE_OPTIONS : undefined}
+               introTitle={isAuthenticated && isBorrower ? 'Learn how to borrow' : undefined}
+               introBody={
+                  isAuthenticated && isBorrower
+                     ? 'A one-minute walkthrough of requesting your first loan and paying it back. You can skip it and use everything normally.'
+                     : undefined
+               }
                totalSteps={borrowerTourTotalSteps}
                steps={requestBoardTourSteps}
             />

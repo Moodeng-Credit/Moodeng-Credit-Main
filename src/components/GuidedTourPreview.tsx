@@ -29,6 +29,9 @@ interface GuidedTourPreviewProps {
    onStepBack?: (stepIndex: number) => boolean | void;
    onStepNext?: (stepIndex: number) => boolean | void;
    onStepChange?: (stepIndex: number) => void;
+   /** Replaces the intro card's heading / text, e.g. a borrower-only intro for signed-in borrowers. */
+   introTitle?: string;
+   introBody?: string;
    roleOptions?: TourRoleOption[];
    stepOffset?: number;
    steps: GuidedTourStep[];
@@ -57,6 +60,8 @@ export default function GuidedTourPreview({
    onStepNext,
    onStepChange,
    roleOptions,
+   introTitle,
+   introBody,
    stepOffset = 0,
    steps,
    totalSteps
@@ -362,11 +367,12 @@ export default function GuidedTourPreview({
 
          {!hasStarted ? (
             <article className="pointer-events-auto fixed left-1/2 top-1/2 w-[calc(100vw-64px)] max-w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] border border-md-neutral-400 bg-md-neutral-100 p-md-4 shadow-md-card">
-               <h2 className="text-md-h4 font-semibold text-md-heading">Want a quick tour?</h2>
+               <h2 className="text-md-h4 font-semibold text-md-heading">{introTitle ?? 'Want a quick tour?'}</h2>
                <p className="mt-md-1 text-md-b2 font-normal text-md-neutral-1200">
-                  {roleOptions
-                     ? 'Pick a side and we\'ll walk you through it — no account needed.'
-                     : 'See how Moodeng works in under a minute. You can skip this and use everything normally.'}
+                  {introBody ??
+                     (roleOptions
+                        ? 'Pick a side and we\'ll walk you through it — no account needed.'
+                        : 'See how Moodeng works in under a minute. You can skip this and use everything normally.')}
                </p>
                {roleOptions ? (
                   <div className="mt-md-3 flex flex-col gap-2">
