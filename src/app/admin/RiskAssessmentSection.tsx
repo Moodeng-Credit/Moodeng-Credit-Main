@@ -252,8 +252,8 @@ export default function RiskAssessmentSection({
       <section className="space-y-6">
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-               <h2 className="break-words text-4xl font-black sm:text-5xl">Risk assessment</h2>
-               <p className="mt-3 text-2xl text-[#a89bb8]">
+               <h2 className="break-words text-2xl font-black sm:text-3xl">Risk assessment</h2>
+               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                   Consensus risk score (v1) across 7 signals: identity, velocity, repayment, network /
                   self-lending, amount, engagement, bot patterns.
                </p>

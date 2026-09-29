@@ -62,8 +62,8 @@ export default function DemoB2BSection({ page }: { page: DemoKey }) {
       <section className="space-y-6">
          <div className="flex flex-wrap items-start gap-4">
             <div>
-               <h2 className="break-words text-4xl font-black sm:text-5xl">{demo.title}</h2>
-               <p className="mt-3 max-w-3xl text-2xl text-[#a89bb8]">{demo.blurb}</p>
+               <h2 className="break-words text-2xl font-black sm:text-3xl">{demo.title}</h2>
+               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">{demo.blurb}</p>
             </div>
             <a
                href={demo.file}

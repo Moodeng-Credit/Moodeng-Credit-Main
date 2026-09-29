@@ -1,3 +1,4 @@
+import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
@@ -2446,4 +2447,54 @@ export async function sendMessengerToBorrower(userId: string, text: string): Pro
       return { ok: false, reason: (payload as { reason?: string; error?: string } | null)?.reason ?? 'request_failed' };
    }
    return (data as { ok: boolean; reason?: string }) ?? { ok: false, reason: 'request_failed' };
+}
+
+// ---------------------------------------------------------------------------
+// Calendar — the team's Cal.com availability and bookings (admin-calendar edge function).
+// ---------------------------------------------------------------------------
+
+export interface AdminCalendarBooking {
+   uid: string;
+   title: string;
+   start: string;
+   end: string;
+   status: string;
+   location: string | null;
+   eventSlug: string | null;
+   attendees: Array<{ name: string; email: string; timeZone: string | null }>;
+}
+
+export interface AdminCalendarHost {
+   id: string;
+   schedules: CalSchedule[];
+   bookings: AdminCalendarBooking[];
+   error?: string;
+}
+
+async function invokeAdminCalendar<T>(body: Record<string, unknown>): Promise<T> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-calendar', { body });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      throw new Error((payload as { error?: string } | null)?.error ?? error.message ?? 'Calendar request failed.');
+   }
+   const result = data as T & { error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result;
+}
+
+export async function getAdminCalendar(from: Date, to: Date): Promise<AdminCalendarHost[]> {
+   const result = await invokeAdminCalendar<{ hosts: AdminCalendarHost[] }>({ action: 'overview', from: from.toISOString(), to: to.toISOString() });
+   return result.hosts ?? [];
+}
+
+export async function updateAdminCalendarSchedule(input: {
+   host: string;
+   scheduleId: number;
+   timeZone: string;
+   availability: CalAvailability[];
+   overrides: CalOverride[];
+}): Promise<CalSchedule | null> {
+   const result = await invokeAdminCalendar<{ schedule: CalSchedule | null }>({ action: 'update_schedule', ...input });
+   return result.schedule;
 }
