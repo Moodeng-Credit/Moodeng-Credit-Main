@@ -7,7 +7,6 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
-import RepaidPushCard from '@/components/funding/RepaidPushCard';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
 
@@ -108,7 +107,6 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
                         Confirmed on-chain — you own the Loan Note. We’re syncing it to your dashboard; your funds and points are safe.
                      </p>
                   ) : null}
-                  <RepaidPushCard userId={userId} borrowerName={borrowerName} />
                   <button
                      type="button"
                      onClick={() => navigate('/lender/supported')}

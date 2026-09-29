@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Share, Wallet } from 'lucide-react';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -116,11 +116,8 @@ const REMINDERS_COPY = {
    }
 } as const;
 
-export type RemindersCopy = { [K in keyof (typeof REMINDERS_COPY)['en']]: string };
-
 /**
- * Shown to borrowers with a loan to repay who haven't allowed push. Also reused on the lender's
- * funding success screen (RepaidPushCard) with its own `copy`. When push can't be turned on
+ * Shown to borrowers with a loan to repay who haven't allowed push. When push can't be turned on
  * from here (the browser blocked it, or it's iPhone Safari, which only offers push from the Home
  * Screen) it explains what to do instead of offering a button.
  */
@@ -128,30 +125,21 @@ export function TurnOnRemindersBanner({
    language,
    variant,
    isBusy,
-   onEnable,
-   copy: copyOverride,
-   className = 'mx-5'
+   onEnable
 }: {
    language: DashboardV2Language;
    variant: 'enable' | 'blocked' | 'home-screen';
    isBusy: boolean;
    onEnable: () => void;
-   copy?: Partial<RemindersCopy>;
-   className?: string;
 }) {
-   const copy = { ...REMINDERS_COPY[language], ...copyOverride };
-   const iconSrc =
-      variant === 'blocked'
-         ? '/icons/bell-off-3d.png'
-         : variant === 'home-screen'
-           ? '/icons/add-to-home-screen-3d.png'
-           : '/icons/bell-ringing-3d.png';
+   const copy = REMINDERS_COPY[language];
+   const Icon = variant === 'blocked' ? BellOff : variant === 'home-screen' ? Share : Bell;
    const title = variant === 'blocked' ? copy.blockedTitle : variant === 'home-screen' ? copy.homeScreenTitle : copy.title;
    const body = variant === 'blocked' ? copy.blockedBody : variant === 'home-screen' ? copy.homeScreenBody : copy.body;
    const content = (
       <>
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
-            <img src={iconSrc} alt="" className="size-7 object-contain" />
+            <Icon className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{title}</span>
@@ -159,10 +147,7 @@ export function TurnOnRemindersBanner({
          </span>
       </>
    );
-   const cardClass = clsx(
-      className,
-      'flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]'
-   );
+   const cardClass = 'mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]';
 
    if (variant !== 'enable') {
       return <div className={cardClass}>{content}</div>;

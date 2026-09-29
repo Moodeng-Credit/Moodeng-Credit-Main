@@ -26,19 +26,27 @@ vi.mock('@/hooks/usePushNotifications', () => ({
    usePushNotifications: () => ({ isSupported: env.supported, isBusy: false, enable: env.enable })
 }));
 
-const { default: RepaidPushCard } = await import('@/components/funding/RepaidPushCard');
+const { default: LenderFundedPopup } = await import('@/components/funding/LenderFundedPopup');
 
-// The whole card is the Turn on button, like the borrower dashboard's reminders card.
-const cardButton = (container: HTMLElement) =>
-   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Turn on'));
+const buttonByText = (container: HTMLElement, text: string) =>
+   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
-describe('RepaidPushCard', () => {
+describe('LenderFundedPopup', () => {
    let container: HTMLDivElement;
    let root: Root;
+   const onClose = vi.fn();
 
    const render = async () => {
       await act(async () => {
-         root.render(createElement(RepaidPushCard, { userId: 'lender-1', borrowerName: 'Mimi' }));
+         root.render(
+            createElement(LenderFundedPopup, {
+               userId: 'lender-1',
+               borrowerName: 'Mimi',
+               totalRepayment: 44,
+               dueDate: '2026-10-12',
+               onClose
+            })
+         );
       });
    };
 
@@ -54,6 +62,7 @@ describe('RepaidPushCard', () => {
       env.permission = 'default';
       env.needsHomeScreen = false;
       env.enable.mockClear();
+      onClose.mockClear();
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -64,38 +73,48 @@ describe('RepaidPushCard', () => {
       container.remove();
    });
 
-   it('asks once, and never again on this device even if the lender ignores it', async () => {
+   it('asks for push the first time, then never again on this device', async () => {
       await render();
-      expect(container.textContent).toContain('Get notified when you’re repaid');
-      expect(container.textContent).toContain('the moment Mimi pays you back');
+      expect(container.textContent).toContain('You funded Mimi!');
+      expect(container.textContent).toContain('Want to know when you’re repaid?');
+      expect(container.textContent).toContain('Mimi repays you $44.00 by Oct 12.');
 
       await remount();
-      expect(container.textContent).toBe('');
+      expect(container.textContent).toContain('Thanks for lending!');
+      expect(buttonByText(container, 'Done')).toBeTruthy();
+      expect(buttonByText(container, 'Notify Me When Repaid')).toBeUndefined();
    });
 
-   it('only asks the browser after the lender taps Turn on, then goes away', async () => {
+   it('only asks the browser after the lender taps the button, then closes', async () => {
       await render();
       expect(env.enable).not.toHaveBeenCalled();
-      await act(async () => cardButton(container)?.click());
+      await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
       expect(env.enable).toHaveBeenCalledTimes(1);
-      expect(container.textContent).toBe('');
+      expect(onClose).toHaveBeenCalledTimes(1);
    });
 
-   it('stays hidden when the browser already allowed or blocked notifications', async () => {
+   it('closing skips the ask without asking the browser', async () => {
+      await render();
+      await act(async () => (container.querySelector('button[aria-label="Close"]') as HTMLButtonElement).click());
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(env.enable).not.toHaveBeenCalled();
+   });
+
+   it('no ask when the browser already allowed or blocked notifications', async () => {
       env.permission = 'granted';
       await render();
-      expect(container.textContent).toBe('');
+      expect(buttonByText(container, 'Done')).toBeTruthy();
 
       env.permission = 'denied';
       await remount();
-      expect(container.textContent).toBe('');
+      expect(buttonByText(container, 'Done')).toBeTruthy();
    });
 
-   it('on iPhone Safari explains Add to Home Screen instead of offering a button', async () => {
+   it('on iPhone Safari explains Add to Home Screen', async () => {
       env.supported = false;
       env.needsHomeScreen = true;
       await render();
       expect(container.textContent).toContain('Add to Home Screen');
-      expect(cardButton(container)).toBeUndefined();
+      expect(buttonByText(container, 'Got It')).toBeTruthy();
    });
 });
