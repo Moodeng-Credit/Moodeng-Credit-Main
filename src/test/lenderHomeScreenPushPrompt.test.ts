@@ -59,12 +59,20 @@ describe('LenderHomeScreenPushPrompt', () => {
       container.remove();
    });
 
-   it('gives iPhone Home Screen lenders the one tap iOS needs, once', async () => {
-      await render();
-      expect(container.textContent).toContain('Turn on notifications');
-      await act(async () => buttonByText(container, 'Turn On')?.click());
-      expect(env.enable).toHaveBeenCalledTimes(1);
-      expect(container.textContent).toBe('');
+   it('gives iPhone Home Screen lenders the one tap iOS needs, shows the green check, and asks only once', async () => {
+      vi.useFakeTimers();
+      try {
+         await render();
+         expect(container.textContent).toContain('Turn on notifications');
+         await act(async () => buttonByText(container, 'Turn On')?.click());
+         expect(env.enable).toHaveBeenCalledTimes(1);
+         expect(buttonByText(container, 'Notifications On')).toBeTruthy();
+
+         await act(async () => vi.advanceTimersByTime(1500));
+         expect(container.textContent).toBe('');
+      } finally {
+         vi.useRealTimers();
+      }
 
       await remount();
       expect(container.textContent).toBe('');

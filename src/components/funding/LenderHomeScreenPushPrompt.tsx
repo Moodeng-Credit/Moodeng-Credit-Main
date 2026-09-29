@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import LenderPopupShell, { LenderPopupButton } from '@/components/funding/LenderPopupShell';
+import LenderPopupShell, { TurnOnButton } from '@/components/funding/LenderPopupShell';
+import { useLenderPushTurnOn } from '@/components/funding/useLenderPushTurnOn';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -39,17 +40,14 @@ export default function LenderHomeScreenPushPrompt({ userId }: { userId: string 
    const [isOpen, setIsOpen] = useState(eligible);
    const push = usePushNotifications(userId, { autoPrompt: false });
 
+   const close = useCallback(() => setIsOpen(false), []);
+   const { status, turnOn } = useLenderPushTurnOn(push.enable, close);
+
    useEffect(() => {
       if (eligible) markPromptSeen();
    }, [eligible]);
 
    if (!isOpen) return null;
-
-   const close = () => setIsOpen(false);
-   const handleTurnOn = async () => {
-      await push.enable();
-      close();
-   };
 
    return (
       <LenderPopupShell title="You’re on the Home Screen!" labelledBy="lender-home-screen-push-title" onClose={close}>
@@ -60,9 +58,7 @@ export default function LenderHomeScreenPushPrompt({ userId }: { userId: string 
             <p className="mt-1 text-[20px] leading-6">Get notified the moment a borrower repays you.</p>
          </div>
          <img src="/icons/bell-ringing-3d.png" alt="" className="h-[94px] w-[94px] object-contain" />
-         <LenderPopupButton onClick={() => void handleTurnOn()} disabled={push.isBusy}>
-            Turn On
-         </LenderPopupButton>
+         <TurnOnButton label="Turn On" status={status} onTurnOn={() => void turnOn()} onDone={close} />
       </LenderPopupShell>
    );
 }
