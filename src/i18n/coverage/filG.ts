@@ -496,5 +496,97 @@ export const filipinoCoverageG: Record<string, string> = {
 
    // src/views/fund/FundBridge.tsx (cost row)
    'Network + bridge cost': 'Bayad sa network + bridge',
-   'First-time user': 'Unang beses na user'
+   'First-time user': 'Unang beses na user',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   higher: 'mas mataas',
+   lower: 'mas mababa',
+   'vs previous period': 'kumpara sa nakaraang period',
+   "You haven't funded any loans yet.": 'Wala ka pang napopondohang loan.',
+   'No transactions match your search or filters.': 'Walang transaction na tugma sa search o mga filter mo.',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   'this borrower': 'borrower na ito',
+   'You funded': 'Napondohan mo ang loan ni',
+   '’s loan. If they repay, the repayment is automatically sent to your wallet.':
+      '. Kapag nagbayad siya, awtomatikong ipapadala sa wallet mo ang bayad.',
+   If: 'Kapag si',
+   'repays, the repayment is automatically sent to your wallet — you don’t need to claim anything.':
+      'ay nagbayad, awtomatikong ipapadala sa wallet mo ang bayad — hindi mo na kailangang mag-claim ng kahit ano.',
+   'Checking balance…': 'Chine-check ang balance…',
+   'Approving USDC…': 'Ina-approve ang USDC…',
+   'Confirming purchase…': 'Kinukumpirma ang pagbili…',
+   'Finalizing…': 'Tinatapos…',
+   'Processing…': 'Pinoproseso…',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'Fund this loan and receive the repayment if': 'Pondohan ang loan na ito at matanggap ang bayad kapag si',
+   'pays back.': 'ay nagbayad na.',
+   'Not available for purchase': 'Hindi available para bilhin',
+   '’s loan. If they repay, the repayment is sent straight to your wallet — no claim needed.':
+      '. Kapag nagbayad siya, diretsong ipapadala sa wallet mo ang bayad — hindi na kailangang mag-claim.',
+
+   // src/views/lender/loanNote/useBuyLoanNote.ts
+   Cancelled: 'Kinansela',
+   'You cancelled the transaction in your wallet.': 'Kinansela mo ang transaction sa wallet mo.',
+   'Not enough ETH for gas': 'Kulang ang ETH para sa gas',
+   'You need a little ETH on Base for the network fee.': 'Kailangan mo ng kaunting ETH sa Base para sa network fee.',
+   'No longer available': 'Hindi na available',
+   'This loan was just funded by someone else.': 'Kakapondo lang ng ibang tao sa loan na ito.',
+   'Switch your wallet to Base, then try again.': 'Ilipat sa Base ang wallet mo, saka subukan ulit.',
+   'Purchase failed': 'Nabigo ang pagbili',
+   'Something went wrong before the payment. Nothing was charged — please try again.':
+      'Nagkaproblema bago ang bayad. Walang na-charge — pakisubukan ulit.',
+   Unavailable: 'Hindi available',
+   'This loan does not have a sellable Loan Note.': 'Walang nabebentang Loan Note ang loan na ito.',
+   'Not enough USDC': 'Kulang ang USDC',
+
+   // src/views/lender/performance/LenderPerformance.tsx
+   'vs. previous period': 'kumpara sa nakaraang period',
+
+   // src/views/lender/supported/SupportedLoans.tsx
+   'IOU earned': 'IOU na nakuha',
+   'Repayments are sent to your wallet automatically — when': 'Awtomatikong ipinapadala sa wallet mo ang mga bayad — kapag si',
+   'fully repays, or on the due date for whatever has been paid so far. No claim needed.':
+      'ay nakapagbayad nang buo, o sa due date para sa anumang nabayaran na hanggang noon. Hindi na kailangang mag-claim.',
+
+   // src/views/milestones/Milestones.tsx
+   'Unlocks at 50 Pandesal points': 'Ma-a-unlock sa 50 Pandesal points',
+   'Unlocked at 50 Pandesal points': 'Na-unlock sa 50 Pandesal points',
+   'Unlocks at 120 Pandesal points': 'Ma-a-unlock sa 120 Pandesal points',
+   'Unlocked at 120 Pandesal points': 'Na-unlock sa 120 Pandesal points',
+   'Unlocks at 250 Pandesal points': 'Ma-a-unlock sa 250 Pandesal points',
+   'Unlocked at 250 Pandesal points': 'Na-unlock sa 250 Pandesal points',
+   'Unlocks at 500 Pandesal points': 'Ma-a-unlock sa 500 Pandesal points',
+   'Unlocked at 500 Pandesal points': 'Na-unlock sa 500 Pandesal points',
+   'all preview rewards': 'lahat ng preview reward',
+   '· You won this': '· Napanalunan mo ito',
+   'Start setup': 'Simulan ang setup',
+   'Finish setup with identity verification and your wallet (an Instant Wallet, or a Base Account if you prefer) to unlock borrowing and start building your public trust record.':
+      'Tapusin ang setup sa pamamagitan ng identity verification at ng wallet mo (isang Instant Wallet, o Base Account kung iyon ang gusto mo) para ma-unlock ang paghiram at masimulang buuin ang pampublikong record ng tiwala mo.',
+   'Set up your Instant Wallet (or connect a Base Account) to unlock borrowing and start building your public trust record.':
+      'I-set up ang Instant Wallet mo (o magkonekta ng Base Account) para ma-unlock ang paghiram at masimulang buuin ang pampublikong record ng tiwala mo.',
+   'Verify your identity to unlock borrowing and start building your public trust record.':
+      'I-verify ang pagkakakilanlan mo para ma-unlock ang paghiram at masimulang buuin ang pampublikong record ng tiwala mo.',
+   'Your reputation milestones will appear here as you repay loans on time.':
+      'Lalabas dito ang mga milestone ng reputasyon mo habang nagbabayad ka ng mga loan on time.',
+
+   // src/views/profile/components/tabs/useDashboardData.ts
+   'Verify World ID to start borrowing': 'I-verify ang World ID para makapagsimulang humiram',
+   'Fully repay $15 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $15 para ma-unlock ang level na ito',
+   'Fully repay $20 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $20 para ma-unlock ang level na ito',
+   'Fully repay $40 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $40 para ma-unlock ang level na ito',
+   'Fully repay $60 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $60 para ma-unlock ang level na ito',
+   'Fully repay $80 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $80 para ma-unlock ang level na ito',
+   'Fully repay $100 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $100 para ma-unlock ang level na ito',
+   'Fully repay $120 total on time to unlock this level': 'Bayaran nang buo at on time ang kabuuang $120 para ma-unlock ang level na ito',
+
+   // src/views/profile/config/transactionColumns.tsx
+   'Funded Amount': 'Halagang pinondohan',
+   'Borrowed Amount': 'Halagang hiniram',
+   'Returned Amount': 'Halagang naibalik',
+   'Date Returned': 'Petsa ng pagbalik',
+
+   // src/views/repay/Repay.tsx
+   'your loan': 'loan mo'
 };
