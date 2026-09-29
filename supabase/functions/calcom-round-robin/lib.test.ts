@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { hostsFreeAt, mergeSlots, orderHostsToTry, bookingCooldownUntil, preferSoonSlots, recheckRange } from './lib.ts';
+import { hostsFreeAt, mergeSlots, orderHostsToTry, bookingCooldownUntil, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
 
 Deno.test('mergeSlots unions hosts, de-dupes by instant, and sorts', () => {
    const george = ['2026-09-22T19:00:00.000+07:00', '2026-09-22T20:00:00.000+07:00'];
@@ -60,4 +60,13 @@ Deno.test('two strikes: a second no-show blocks booking for 7 days after the lat
    assertEquals(bookingCooldownUntil(['2026-09-10T00:00:00Z', '2026-09-22T00:00:00Z'], now), '2026-09-29T00:00:00.000Z');
    assertEquals(bookingCooldownUntil(['2026-09-01T00:00:00Z', '2026-09-10T00:00:00Z'], now), null);
    assertEquals(bookingCooldownUntil([null, '2026-09-22T00:00:00Z'], now), null);
+});
+
+Deno.test('teamGuests invites every other cofounder, never the host or the borrower', () => {
+   const emails = { george: 'George@example.com', emma: 'emma@example.com' };
+   assertEquals(teamGuests('emma', emails, 'borrower@example.com'), ['george@example.com']);
+   assertEquals(teamGuests('george', emails, 'borrower@example.com'), ['emma@example.com']);
+   assertEquals(teamGuests('emma', emails, 'GEORGE@example.com'), []); // borrower is a cofounder testing
+   assertEquals(teamGuests('emma', { george: null, emma: 'emma@example.com' }, 'b@example.com'), []); // /me failed
+   assertEquals(teamGuests('emma', { george: 'emma@example.com', emma: 'emma@example.com' }, 'b@example.com'), []); // shared login
 });

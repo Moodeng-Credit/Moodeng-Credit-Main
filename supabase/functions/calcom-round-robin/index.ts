@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
-import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange } from './lib.ts';
+import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -69,6 +69,18 @@ const fetchSlots = async (apiKey: string, eventTypeId: number, start: string, en
    return out;
 };
 
+// The Cal.com account email behind a host's API key — who gets the invite when they're a guest.
+const fetchAccountEmail = async (apiKey: string): Promise<string | null> => {
+   try {
+      const res = await fetch(`${CAL_BASE}/me`, { headers: { Authorization: `Bearer ${apiKey}` } });
+      if (!res.ok) return null;
+      const body = await res.json();
+      return typeof body?.data?.email === 'string' && body.data.email ? body.data.email : null;
+   } catch {
+      return null;
+   }
+};
+
 type Attendee = { name: string; email: string; timeZone: string; language: string };
 
 // Returns the created booking uid, or an error tag. 'taken' means the slot was no longer free.
@@ -77,12 +89,13 @@ const createBooking = async (
    eventTypeId: number,
    start: string,
    attendee: Attendee,
-   metadata: Record<string, string>
+   metadata: Record<string, string>,
+   guests: string[] = []
 ): Promise<{ uid: string; joinUrl: string | null } | { error: 'taken' | 'other' }> => {
    const res = await fetch(`${CAL_BASE}/bookings`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-08-13', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ start, eventTypeId, attendee, metadata })
+      body: JSON.stringify({ start, eventTypeId, attendee, metadata, ...(guests.length ? { guests } : {}) })
    });
    const body = await res.json().catch(() => ({}));
    if (res.ok && body?.data?.uid) {
@@ -215,14 +228,26 @@ serve(async (req) => {
       if (!email) return json({ ok: false, error: 'no_email' });
       const attendee: Attendee = { name: prof?.display_name || prof?.username || 'Moodeng borrower', email, timeZone, language: 'en' };
 
+      // Every configured host (not just the pinned/free ones), so the other cofounder is always invited.
+      const emailsByHost: Record<string, string | null> = {};
+      await Promise.all(
+         HOSTS.map(async (h) => {
+            emailsByHost[h.id] = await fetchAccountEmail(h.apiKey);
+         })
+      );
+
       // Try the seeded host first, then the other(s) if the first races and loses the slot.
       for (const hostId of orderHostsToTry(free, `${user.id}:${start}`)) {
          const host = resolved.find((h) => h.id === hostId);
          if (!host) continue;
-         const result = await createBooking(host.apiKey, host.eventTypeId, start, attendee, {
-            moodeng_user_id: user.id,
-            moodeng_host: hostId
-         });
+         const metadata = { moodeng_user_id: user.id, moodeng_host: hostId };
+         const guests = teamGuests(hostId, emailsByHost, email);
+         let result = await createBooking(host.apiKey, host.eventTypeId, start, attendee, metadata, guests);
+         // The guest invite is a nice-to-have: if Cal.com refuses it, book the borrower without it.
+         if ('error' in result && result.error === 'other' && guests.length) {
+            console.error('calcom-round-robin: booking with team guests failed — retrying without them');
+            result = await createBooking(host.apiKey, host.eventTypeId, start, attendee, metadata);
+         }
          if ('uid' in result) {
             // Source of truth: we made the booking, so stamp the gate directly (the signed webhook
             // will also fire and land on the same values).
