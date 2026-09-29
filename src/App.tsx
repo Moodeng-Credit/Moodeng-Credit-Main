@@ -12,6 +12,7 @@ import { SocialContactRequiredNotifier } from '@/components/SocialContactRequire
 import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
+import LenderHomeScreenPushPrompt from '@/components/funding/LenderHomeScreenPushPrompt';
 import Header from '@/components/Header/Header';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
@@ -235,6 +236,8 @@ export default function App() {
          <SocialContactRequiredNotifier />
          <VerifiedCelebrationNotifier />
          <LenderFundingPrompt />
+         {/* iPhone lenders who followed the Add to Home Screen guide: one tap to turn push on. */}
+         {shouldCheckDefaultedBorrower && user.userRole === 'lender' ? <LenderHomeScreenPushPrompt userId={user.id} /> : null}
          <Routes key={location.pathname}>
             <Route path="/" element={<Home />} />
 
