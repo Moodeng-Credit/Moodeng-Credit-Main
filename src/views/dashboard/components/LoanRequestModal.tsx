@@ -47,7 +47,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict } from '@/lib/loanReasonCheck';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { requestContactSteps } from '@/config/contactVerification';
@@ -1057,9 +1057,14 @@ export default function LoanRequestModal({
    // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
    // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
-   const [liveReasonCheck, setLiveReasonCheck] = useState<{ status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable'; hint: string }>(
-      { status: 'idle', hint: '' }
-   );
+   // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
+   // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
+   const [liveReasonCheck, setLiveReasonCheck] = useState<{
+      status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable';
+      hint: string;
+      suggestion: string;
+      category: ReasonCategory | '';
+   }>({ status: 'idle', hint: '', suggestion: '', category: '' });
    const liveChecksUsedRef = useRef(0);
 
    const isVerified = !showVerify;
@@ -1442,22 +1447,16 @@ export default function LoanRequestModal({
       if (isRepaymentDateFilled) setTermErrors((prev) => (prev.date ? { ...prev, date: undefined } : prev));
    }, [isRepaymentDateFilled]);
 
-   // The low-effort reason check (DeepSeek) runs at final submit — which happens from the bio
-   // step — but its warning renders under the reason field on the terms step. If we're on the
-   // bio step when it fires, bounce back to terms once so the borrower actually sees it (and the
-   // "Message us for help wording this" link), instead of a silent no-op. Once-only, so tapping submit a
-   // second time to post anyway still works; resets when the reason is edited (warning clears).
-   const bouncedForReasonWarningRef = useRef(false);
+   // The final reason check runs at submit, which can happen from the bio, contacts or video-call
+   // step, but its warning (with the hint and a ready rewrite) renders under the reason field on
+   // the terms step. Whenever it fires, bring the borrower back to the terms step so they can fix
+   // it. A weak reason no longer posts, so there's no "submit again to post anyway" to preserve.
    useEffect(() => {
-      if (!reasonWarning) {
-         bouncedForReasonWarningRef.current = false;
-         return;
-      }
-      if (showBorrowerContextStep && !bouncedForReasonWarningRef.current) {
-         bouncedForReasonWarningRef.current = true;
-         setShowBorrowerContextStep(false);
-      }
-   }, [reasonWarning, showBorrowerContextStep]);
+      if (!reasonWarning) return;
+      setShowBorrowerContextStep(false);
+      setShowContactsStep(false);
+      setShowVideoCallStep(false);
+   }, [reasonWarning]);
 
    const formatReferralBoost = (boostAmount: number) => {
       const amount = Number(boostAmount);
@@ -1646,42 +1645,54 @@ export default function LoanRequestModal({
    // check leaves the borrower exactly where they were — silent, never falsely praised.
    useEffect(() => {
       const trimmed = reason.trim();
-      if (!reasonShapeOk) {
-         setLiveReasonCheck({ status: 'idle', hint: '' });
+      // Text the offline check already spotted as not English still goes to the AI check: it
+      // comes back with an English translation the borrower can use in one tap.
+      if (!reasonShapeOk && !(reasonMeetsLength && reasonQuality.code === 'not-english')) {
+         setLiveReasonCheck({ status: 'idle', hint: '', suggestion: '', category: '' });
          return;
       }
 
       const cached = getCachedReasonVerdict(trimmed);
       if (cached) {
-         setLiveReasonCheck({ status: cached.ok ? 'ok' : 'weak', hint: cached.hint });
+         setLiveReasonCheck({
+            status: cached.ok ? 'ok' : 'weak',
+            hint: cached.hint,
+            suggestion: cached.suggestion,
+            category: cached.category
+         });
          return;
       }
 
       // Budget: a borrower rewriting their reason twenty times shouldn't mean twenty DeepSeek
       // calls. Past the cap the field goes quiet and the submit gate does the judging.
       if (liveChecksUsedRef.current >= MAX_LIVE_REASON_CHECKS) {
-         setLiveReasonCheck({ status: 'unavailable', hint: '' });
+         setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
          return;
       }
 
       let cancelled = false;
-      setLiveReasonCheck({ status: 'checking', hint: '' });
+      setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
          const verdict = await checkLoanReason(trimmed);
          if (cancelled) return;
          if (!verdict.checked) {
-            setLiveReasonCheck({ status: 'unavailable', hint: '' });
+            setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
             return;
          }
-         setLiveReasonCheck({ status: verdict.ok ? 'ok' : 'weak', hint: verdict.hint });
+         setLiveReasonCheck({
+            status: verdict.ok ? 'ok' : 'weak',
+            hint: verdict.hint,
+            suggestion: verdict.suggestion,
+            category: verdict.category
+         });
       }, 900);
 
       return () => {
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code]);
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
 
@@ -1709,9 +1720,13 @@ export default function LoanRequestModal({
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
       } else if (reasonQuality.code === 'not-english') {
-         // The one hard rule on this field. Everything else about the reason is a nudge, but a
-         // request the US/EU lenders can't read can't be funded, so it doesn't leave the form.
+         // Lenders are in the US/EU: a request they can't read can't be funded.
          errors.reason = 'Please write your reason in English so lenders can read it.';
+      } else if (liveReasonCheck.status === 'weak') {
+         // The check that ran while they typed already said this reason doesn't tell lenders what
+         // the money is for. Stop here, on the step where they can fix it, not after the bio,
+         // contacts and call steps. The hint and a ready rewrite show under the field.
+         errors.reason = liveReasonCheck.hint || 'Tell lenders what the money will be used for.';
       }
 
       setTermErrors(errors);
@@ -2634,45 +2649,85 @@ export default function LoanRequestModal({
                                     <span>{termErrors.reason}</span>
                                  </div>
                               ) : null}
-                              {reasonWarning ? (
-                                 <div className="mt-md-1 border-t border-[#f0c98a] pt-md-1">
-                                    <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
-                                       <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                       <span>{reasonWarning}</span>
+                              {(() => {
+                                 // A ready-to-post rewrite built from their own words (the English
+                                 // translation when they wrote in another language). One tap uses it.
+                                 const suggestion =
+                                    liveReasonCheck.suggestion && liveReasonCheck.suggestion.trim() !== reason.trim()
+                                       ? liveReasonCheck.suggestion
+                                       : '';
+                                 const suggestionRow = suggestion ? (
+                                    <div className="mt-1.5 flex items-start justify-between gap-md-2 rounded-md-md bg-md-primary-100 px-md-2 py-md-1 dark:bg-[#281b35]">
+                                       <p className="min-w-0 text-md-b3 leading-[18px] text-md-heading">
+                                          <span className="font-semibold text-md-primary-1200">
+                                             {liveReasonCheck.category === 'not_english' ? 'In English: ' : 'Try this: '}
+                                          </span>
+                                          {suggestion}
+                                       </p>
+                                       <button
+                                          type="button"
+                                          onClick={() => {
+                                             setReason(suggestion);
+                                             if (termErrors.reason) setTermErrors((prev) => ({ ...prev, reason: undefined }));
+                                          }}
+                                          className="shrink-0 rounded-full bg-md-primary-1200 px-md-2 py-0.5 text-md-b3 font-semibold text-md-neutral-100 transition active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                       >
+                                          Use this
+                                       </button>
                                     </div>
-                                    {/* Hand the borrower straight to the team on live chat, with the flagged
-                                        reason attached so the agent sees it before they type. */}
+                                 ) : null;
+                                 const helpLink = (
                                     <div className="mt-1.5 pl-[22px]">
                                        <AskSupportButton
                                           variant="link"
-                                          label="Message us for help wording this"
+                                          label={
+                                             liveReasonCheck.category === 'not_english' || reasonQuality.code === 'not-english'
+                                                ? 'Message us to help write this in English'
+                                                : 'Message us for help wording this'
+                                          }
                                           context={{ page: 'Loan request', step: 'loan-reason' }}
-                                          topic={`Loan reason flagged as too vague: "${reason}"`}
+                                          topic={`Loan reason flagged (${liveReasonCheck.category || reasonQuality.code || 'weak'}): "${reason}"`}
                                        />
                                     </div>
-                                 </div>
-                              ) : reasonQuality.code === 'not-english' ? (
-                                 // Offer the team's help rather than leaving "write it in English" as homework.
-                                 <div className="mt-md-1 pl-[22px]">
-                                    <AskSupportButton
-                                       variant="link"
-                                       label="Message us to help write this in English"
-                                       context={{ page: 'Loan request', step: 'loan-reason' }}
-                                       topic={`Needs help writing loan reason in English: "${reason}"`}
-                                    />
-                                 </div>
-                              ) : liveReasonCheck.status === 'weak' ? (
-                                 // Same offer as the submit-time warning, just earlier: the hint is
-                                 // already in the counter row above, so only the way out is needed.
-                                 <div className="mt-md-1 pl-[22px]">
-                                    <AskSupportButton
-                                       variant="link"
-                                       label="Message us for help wording this"
-                                       context={{ page: 'Loan request', step: 'loan-reason' }}
-                                       topic={`Loan reason flagged as too vague: "${reason}"`}
-                                    />
-                                 </div>
-                              ) : null}
+                                 );
+
+                                 if (reasonWarning) {
+                                    return (
+                                       <div className="mt-md-1 border-t border-[#f0c98a] pt-md-1">
+                                          <div className="flex items-start gap-1.5 text-md-b3 font-medium leading-[18px] text-[#92400e]">
+                                             <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                             <span>{reasonWarning}</span>
+                                          </div>
+                                          {suggestionRow}
+                                          {helpLink}
+                                       </div>
+                                    );
+                                 }
+                                 // The hint is already in the counter row above; add the way out.
+                                 if (reasonQuality.code === 'not-english' || liveReasonCheck.status === 'weak') {
+                                    return (
+                                       <>
+                                          {suggestionRow}
+                                          {helpLink}
+                                       </>
+                                    );
+                                 }
+                                 // Passed, with advice: optional, never blocking.
+                                 if (liveReasonCheck.status === 'ok' && liveReasonCheck.category === 'tip' && (liveReasonCheck.hint || suggestion)) {
+                                    return (
+                                       <>
+                                          {liveReasonCheck.hint ? (
+                                             <p className="mt-md-1 text-md-b3 leading-[18px] text-md-neutral-1200">
+                                                <span className="font-semibold">Tip: </span>
+                                                {liveReasonCheck.hint}
+                                             </p>
+                                          ) : null}
+                                          {suggestionRow}
+                                       </>
+                                    );
+                                 }
+                                 return null;
+                              })()}
                            </div>
                         </div>
 
