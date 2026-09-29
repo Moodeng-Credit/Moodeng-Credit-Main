@@ -8,6 +8,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useIsFundingAdmin } from '@/hooks/useIsFundingAdmin';
 
+import AdminSearch from '@/app/admin/AdminSearch';
+import AdminShell from '@/app/admin/AdminShell';
+import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
+import CalendarSection from '@/app/admin/CalendarSection';
+import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
@@ -53,35 +58,6 @@ import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
 import UxHealthSection from './UxHealthSection';
 
-type AdminTab =
-   | 'users'
-   | 'analytics'
-   | 'ux-health'
-   | 'on-chain'
-   | 'loans'
-   | 'pricing'
-   | 'coming-due'
-   | 'extensions'
-   | 'points'
-   | 'trust-points'
-   | 'defaults'
-   | 'requests'
-   | 'refunds'
-   | 'risk'
-   | 'self-lending'
-   | 'mule-risk'
-   | 'referrals'
-   | 'borrower-contacts'
-   | 'notifications'
-   | 'chat'
-   | 'relay'
-   | 'demo-platform'
-   | 'demo-b2c-dashboard'
-   | 'demo-b2c-assets'
-   | 'demo-monday'
-   | 'demo-map'
-   | 'demo-console'
-   | 'demo-spec';
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
 
 type NoticeTemplate = {
@@ -90,93 +66,6 @@ type NoticeTemplate = {
    title: string;
    body: string;
 };
-
-type NavGroup = { id: string; label: string; items: Array<{ id: AdminTab; label: string }> };
-
-const navGroups: NavGroup[] = [
-   {
-      id: 'overview',
-      label: 'Overview',
-      items: [
-         { id: 'users', label: 'User directory' },
-         { id: 'borrower-contacts', label: 'Borrower contacts' },
-         { id: 'analytics', label: 'Growth & analytics' },
-         { id: 'ux-health', label: 'UX health' },
-         { id: 'on-chain', label: 'On-chain (Base)' }
-      ]
-   },
-   {
-      id: 'loans',
-      label: 'Loans',
-      items: [
-         { id: 'loans', label: 'Loans' },
-         { id: 'pricing', label: 'Pricing health' },
-         { id: 'coming-due', label: 'Coming due' },
-         { id: 'extensions', label: 'Loan extensions' },
-         { id: 'requests', label: 'Loan request review' },
-         { id: 'refunds', label: 'Refunds' },
-         { id: 'defaults', label: 'Default recovery' }
-      ]
-   },
-   {
-      id: 'points',
-      label: 'Points',
-      items: [
-         { id: 'points', label: 'IOU points' },
-         { id: 'trust-points', label: 'Pandesal points' }
-      ]
-   },
-   {
-      id: 'risk',
-      label: 'Risk & fraud',
-      items: [
-         { id: 'risk', label: 'Risk assessment' },
-         { id: 'self-lending', label: 'Self-lending?' },
-         { id: 'mule-risk', label: 'Mule risk' }
-      ]
-   },
-   {
-      id: 'growth',
-      label: 'Growth & comms',
-      items: [
-         { id: 'referrals', label: 'Referral codes' },
-         { id: 'notifications', label: 'Notifications' }
-      ]
-   },
-   {
-      id: 'support',
-      label: 'Support',
-      items: [{ id: 'chat', label: 'Live chat' }]
-   },
-   {
-      id: 'funding',
-      label: 'Funding',
-      items: [{ id: 'relay', label: 'Liquidity Relay' }]
-   },
-   {
-      id: 'demo',
-      label: 'B2B demo',
-      items: [{ id: 'demo-platform', label: 'Platform demo' }]
-   },
-   {
-      id: 'demo-b2c',
-      label: 'B2C dashboard demo',
-      items: [
-         { id: 'demo-b2c-dashboard', label: 'Borrower dashboard' },
-         { id: 'demo-b2c-assets', label: 'Asset pack' }
-      ]
-   },
-   {
-      id: 'demo-old',
-      label: 'Old version B2B demo',
-      items: [
-         { id: 'demo-monday', label: 'The Monday Problem' },
-         { id: 'demo-map', label: 'Pool map' },
-         { id: 'demo-console', label: 'Facility console' },
-         { id: 'demo-spec', label: 'Build spec' }
-      ]
-   }
-];
 
 const recoveryPaths: Array<{ name: RecoveryPath; label: string; detail: string }> = [
    { name: 'repay_now', label: 'Repay now', detail: 'Keep the account paused and direct the borrower to repay or contact support.' },
@@ -387,41 +276,6 @@ function hasPositivePoints(points: number | string) {
    return Number(formatPointsMajor(points)) > 0;
 }
 
-const ALL_ADMIN_TABS: readonly AdminTab[] = [
-   'users',
-   'analytics',
-   'ux-health',
-   'on-chain',
-   'loans',
-   'pricing',
-   'coming-due',
-   'extensions',
-   'points',
-   'trust-points',
-   'defaults',
-   'requests',
-   'refunds',
-   'risk',
-   'self-lending',
-   'mule-risk',
-   'referrals',
-   'borrower-contacts',
-   'notifications',
-   'chat',
-   'relay',
-   'demo-platform',
-   'demo-b2c-dashboard',
-   'demo-b2c-assets',
-   'demo-monday',
-   'demo-map',
-   'demo-console',
-   'demo-spec'
-];
-
-function isAdminTab(value: string): value is AdminTab {
-   return (ALL_ADMIN_TABS as readonly string[]).includes(value);
-}
-
 // Legacy ?tab= links (predate the /admin/:tab routes) keep working.
 function legacyQueryTab(): AdminTab {
    if (typeof window === 'undefined') return 'users';
@@ -435,21 +289,14 @@ export default function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
-   const visibleNavGroups = isFundingAdmin ? navGroups : navGroups.filter((group) => group.id !== 'funding');
+   const visibleNavGroups = isFundingAdmin
+      ? navGroups
+      : navGroups.map((group) => ({ ...group, items: group.items.filter((item) => item.id !== 'relay') }));
    const navigate = useNavigate();
    const { tab: tabParam } = useParams<{ tab?: string }>();
    // The URL is the source of truth for the active tab: /admin/relay, /admin/points, …
    // Bare /admin falls back to legacy ?tab= links, then the user directory.
    const activeTab: AdminTab = tabParam && isAdminTab(tabParam) ? tabParam : legacyQueryTab();
-   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
-      () => navGroups.find((group) => group.items.some((item) => item.id === activeTab))?.id ?? navGroups[0].id
-   );
-
-   useEffect(() => {
-      const group = navGroups.find((g) => g.items.some((item) => item.id === activeTab));
-      if (group) setExpandedGroupId(group.id);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [activeTab]);
    const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
    // When the team clicks "Extend" on a coming-due loan, jump to the extensions tab with it preselected.
    const [extensionLoanId, setExtensionLoanId] = useState<string | null>(null);
@@ -501,6 +348,25 @@ export default function AdminPanel() {
       setCountryFilter('all');
       setStatusFilter('all');
    };
+   // Global search bar: pages, users and loan requests, jumping straight to the match.
+   const searchPages = useMemo(
+      () => visibleNavGroups.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.label }))),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [isFundingAdmin]
+   );
+   function handleSearchSelect(result: AdminSearchResult) {
+      if (result.kind === 'page') {
+         setActiveTab(result.id as AdminTab);
+      } else if (result.kind === 'user') {
+         clearDirectoryFilters();
+         setSelectedUserId(result.id);
+         setActiveTab('users');
+         window.setTimeout(() => document.getElementById(`admin-user-${result.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+      } else {
+         setSelectedRequestId(result.id);
+         setActiveTab('requests');
+      }
+   }
    const filteredDirectory = users.filter((user) => {
       if (roleFilter !== 'all' && user.user_role !== roleFilter) return false;
       if (joinedFilter !== 'any') {
@@ -799,1150 +665,1104 @@ export default function AdminPanel() {
    }
 
    return (
-      <main className="min-h-screen bg-[#120429] text-white">
-         <div className="grid min-h-screen lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
-            <aside className="overflow-y-auto bg-[#120429] p-6 text-white sm:p-8 lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
-               <div className="flex min-w-0 shrink-0 items-center gap-4">
-                  <a
-                     href="/account/settings"
-                     className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-3xl font-black text-white no-underline focus:outline focus:outline-4 focus:outline-offset-4 focus:outline-purple-200 sm:h-20 sm:w-20 sm:text-4xl"
-                     title="Account settings"
-                  >
-                     {adminInitial}
-                  </a>
-                  <div className="min-w-0">
-                     <p className="text-sm font-black uppercase tracking-[0.18em] text-purple-200">Live admin panel</p>
-                     <h1 className="mt-1 max-w-full break-words text-2xl font-black leading-tight sm:text-3xl">{currentAdminName}</h1>
-                     <p className="mt-1 text-lg text-purple-200">Moodeng Credit</p>
-                  </div>
+      <AdminShell
+         adminName={currentAdminName}
+         adminInitial={adminInitial}
+         groups={visibleNavGroups}
+         counts={{
+            requests: overview?.loanRequestReviewCount ?? 0,
+            defaults: overview?.defaultedLoanCount ?? 0,
+            risk: overview?.highRiskProfileCount ?? 0
+         }}
+         activeTab={activeTab}
+         onSelectTab={(tab) => setActiveTab(tab as AdminTab)}
+         search={<AdminSearch pages={searchPages} users={users} requests={loanRequests} onSelect={handleSearchSelect} />}
+      >
+         {error ? (
+            <div className="mb-5 rounded-3xl border border-red-900 bg-red-950/60 p-5 text-lg font-bold text-red-300">{error}</div>
+         ) : null}
+         {statusMessage ? (
+            <div className="mb-5 rounded-3xl border border-emerald-900 bg-emerald-950/60 p-5 text-lg font-bold text-emerald-300">
+               {statusMessage}
+            </div>
+         ) : null}
+         {integrityRun?.status && integrityRun.status !== 'success' ? (
+            <div className="mb-5 rounded-3xl border border-amber-900 bg-amber-950/60 p-5 text-lg font-bold text-amber-300">
+               Daily data check found {integrityRun.issue_count} item{integrityRun.issue_count === 1 ? '' : 's'} to review. Last
+               checked {formatDateTime(integrityRun.created_at)}.
+            </div>
+         ) : null}
+         {adminDataLoading ? (
+            <div className="mb-5 rounded-3xl border border-purple-900 bg-purple-950/60 p-5 text-lg font-bold text-purple-300">
+               Loading live Supabase data...
+            </div>
+         ) : null}
+
+         {activeTab === 'users' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">User directory</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Search live borrowers and lenders, review real wallet/account details, and flag accounts for follow-up.
+                  </p>
                </div>
 
-               <nav className="mt-12 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-                  {visibleNavGroups.map((group) => {
-                     const isExpanded = expandedGroupId === group.id;
-                     const hasActiveItem = group.items.some((item) => item.id === activeTab);
-                     return (
-                        <div key={group.id} className="shrink-0 overflow-hidden rounded-2xl border border-[#2a1453] bg-[#1c0a3a]">
-                           <button
-                              type="button"
-                              onClick={() => setExpandedGroupId(isExpanded ? null : group.id)}
-                              aria-expanded={isExpanded}
-                              className={`flex w-full items-center justify-between gap-3 px-6 py-4 text-left text-lg font-black uppercase tracking-wide ${hasActiveItem ? 'text-white' : 'text-purple-200'} hover:bg-[#20103e]`}
-                           >
-                              <span>{group.label}</span>
-                              <span className={`text-sm transition-transform ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true">
-                                 ▾
-                              </span>
-                           </button>
-                           {isExpanded ? (
-                              <div className="grid gap-2 px-3 pb-3">
-                                 {group.items.map((item) => (
-                                    <button
-                                       key={item.id}
-                                       type="button"
-                                       onClick={() => setActiveTab(item.id)}
-                                       className={`rounded-xl border px-5 py-4 text-left text-lg font-black ${activeTab === item.id ? 'border-[#8336f0] bg-[#2a1453] text-white' : 'border-transparent text-purple-200 hover:border-[#8336f0] hover:bg-[#20103e]'}`}
-                                    >
-                                       {item.label}
-                                    </button>
-                                 ))}
-                              </div>
-                           ) : null}
-                        </div>
-                     );
-                  })}
-               </nav>
+               <form onSubmit={handleSearch} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-5 ">
+                  <input
+                     value={search}
+                     onChange={(event) => setSearch(event.target.value)}
+                     placeholder="Search users, wallets, emails"
+                     className="h-16 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-6 text-2xl text-white placeholder:text-[#a89bb8]"
+                  />
+                  <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-[#3d1f6e] text-center text-lg font-black">
+                     {(['all', 'borrower', 'lender', 'unset'] as const).map((role) => (
+                        <button
+                           key={role}
+                           type="button"
+                           onClick={() => setRoleFilter(role)}
+                           className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-[#241044] text-[#a89bb8]'}`}
+                        >
+                           {role === 'all' ? 'Everyone' : role === 'unset' ? 'No role' : `${role}s`}
+                        </button>
+                     ))}
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                     <DirectoryFilter label="Joined" value={joinedFilter} onChange={(value) => setJoinedFilter(value as JoinedFilter)}>
+                        <option value="any">Any time</option>
+                        <option value="24h">Last 24 hours</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                     </DirectoryFilter>
+                     <DirectoryFilter
+                        label="Verification"
+                        value={verificationFilter}
+                        onChange={(value) => setVerificationFilter(value as VerificationFilter)}
+                     >
+                        <option value="all">All</option>
+                        <option value="verified">Verified (any)</option>
+                        <option value="unverified">Not verified</option>
+                        <option value="didit">Didit KYC</option>
+                        <option value="world_id">World ID</option>
+                     </DirectoryFilter>
+                     <DirectoryFilter label="Country (login IP)" value={countryFilter} onChange={setCountryFilter}>
+                        <option value="all">All countries</option>
+                        {countryOptions.map(([iso, count]) => (
+                           <option key={iso} value={iso}>
+                              {iso === 'unknown' ? 'Unknown' : countryLabel(iso)} ({count})
+                           </option>
+                        ))}
+                     </DirectoryFilter>
+                     <DirectoryFilter label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as StatusFilter)}>
+                        <option value="all">All</option>
+                        <option value="active">Active</option>
+                        <option value="blocked">Blocked</option>
+                        <option value="banned">Banned</option>
+                     </DirectoryFilter>
+                  </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-lg text-[#a89bb8]">
+                     <span>
+                        Showing {filteredDirectory.length} of {users.length} users · newest first
+                     </span>
+                     {directoryFiltersActive ? (
+                        <button type="button" onClick={clearDirectoryFilters} className="font-black text-[#c9a7ff] underline">
+                           Clear filters
+                        </button>
+                     ) : null}
+                  </div>
+               </form>
 
-               <div className="mt-6 shrink-0 rounded-3xl border border-[#8336f0] bg-[#241044] p-6">
-                  <p className="text-lg text-purple-200">Data source</p>
-                  <strong className="mt-2 block break-words text-2xl font-black">Supabase live data</strong>
-                  <p className="mt-2 text-lg text-purple-200">No scaffold users or mock loans.</p>
+               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard label="All users" value={overview?.allUserCount ?? users.length} note="Live account count" />
+                  <StatCard label="Open requests" value={overview?.openLoanRequestCount ?? 0} note="Live request board" />
+                  <StatCard label="Overdue loans" value={overview?.defaultedLoanCount ?? 0} note="Needs support review" />
+                  <StatCard
+                     label="Daily check"
+                     value={integrityRun?.issue_count ?? 0}
+                     note={
+                        integrityRun ? `${integrityRun.status} · ${formatDateTime(integrityRun.created_at)}` : 'Waiting for first run'
+                     }
+                  />
                </div>
-            </aside>
 
-            <section className="min-w-0 p-5 sm:p-8 lg:p-10">
-               {error ? (
-                  <div className="mb-5 rounded-3xl border border-red-900 bg-red-950/60 p-5 text-lg font-bold text-red-300">{error}</div>
-               ) : null}
-               {statusMessage ? (
-                  <div className="mb-5 rounded-3xl border border-emerald-900 bg-emerald-950/60 p-5 text-lg font-bold text-emerald-300">
-                     {statusMessage}
-                  </div>
-               ) : null}
-               {integrityRun?.status && integrityRun.status !== 'success' ? (
-                  <div className="mb-5 rounded-3xl border border-amber-900 bg-amber-950/60 p-5 text-lg font-bold text-amber-300">
-                     Daily data check found {integrityRun.issue_count} item{integrityRun.issue_count === 1 ? '' : 's'} to review. Last
-                     checked {formatDateTime(integrityRun.created_at)}.
-                  </div>
-               ) : null}
-               {adminDataLoading ? (
-                  <div className="mb-5 rounded-3xl border border-purple-900 bg-purple-950/60 p-5 text-lg font-bold text-purple-300">
-                     Loading live Supabase data...
-                  </div>
-               ) : null}
-
-               {activeTab === 'users' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black tracking-normal sm:text-5xl">User directory</h2>
-                        <p className="mt-3 max-w-3xl text-2xl text-[#a89bb8]">
-                           Search live borrowers and lenders, review real wallet/account details, and flag accounts for follow-up.
-                        </p>
-                     </div>
-
-                     <form onSubmit={handleSearch} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-5 ">
-                        <input
-                           value={search}
-                           onChange={(event) => setSearch(event.target.value)}
-                           placeholder="Search users, wallets, emails"
-                           className="h-16 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-6 text-2xl text-white placeholder:text-[#a89bb8]"
-                        />
-                        <div className="mt-4 grid grid-cols-4 overflow-hidden rounded-2xl border border-[#3d1f6e] text-center text-lg font-black">
-                           {(['all', 'borrower', 'lender', 'unset'] as const).map((role) => (
-                              <button
-                                 key={role}
-                                 type="button"
-                                 onClick={() => setRoleFilter(role)}
-                                 className={`py-4 capitalize ${roleFilter === role ? 'bg-[#8336f0] text-white' : 'bg-[#241044] text-[#a89bb8]'}`}
-                              >
-                                 {role === 'all' ? 'Everyone' : role === 'unset' ? 'No role' : `${role}s`}
-                              </button>
-                           ))}
-                        </div>
-                        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                           <DirectoryFilter label="Joined" value={joinedFilter} onChange={(value) => setJoinedFilter(value as JoinedFilter)}>
-                              <option value="any">Any time</option>
-                              <option value="24h">Last 24 hours</option>
-                              <option value="7d">Last 7 days</option>
-                              <option value="30d">Last 30 days</option>
-                           </DirectoryFilter>
-                           <DirectoryFilter
-                              label="Verification"
-                              value={verificationFilter}
-                              onChange={(value) => setVerificationFilter(value as VerificationFilter)}
-                           >
-                              <option value="all">All</option>
-                              <option value="verified">Verified (any)</option>
-                              <option value="unverified">Not verified</option>
-                              <option value="didit">Didit KYC</option>
-                              <option value="world_id">World ID</option>
-                           </DirectoryFilter>
-                           <DirectoryFilter label="Country (login IP)" value={countryFilter} onChange={setCountryFilter}>
-                              <option value="all">All countries</option>
-                              {countryOptions.map(([iso, count]) => (
-                                 <option key={iso} value={iso}>
-                                    {iso === 'unknown' ? 'Unknown' : countryLabel(iso)} ({count})
-                                 </option>
-                              ))}
-                           </DirectoryFilter>
-                           <DirectoryFilter label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as StatusFilter)}>
-                              <option value="all">All</option>
-                              <option value="active">Active</option>
-                              <option value="blocked">Blocked</option>
-                              <option value="banned">Banned</option>
-                           </DirectoryFilter>
-                        </div>
-                        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-lg text-[#a89bb8]">
-                           <span>
-                              Showing {filteredDirectory.length} of {users.length} users · newest first
-                           </span>
-                           {directoryFiltersActive ? (
-                              <button type="button" onClick={clearDirectoryFilters} className="font-black text-[#c9a7ff] underline">
-                                 Clear filters
-                              </button>
-                           ) : null}
-                        </div>
-                     </form>
-
-                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatCard label="All users" value={overview?.allUserCount ?? users.length} note="Live account count" />
-                        <StatCard label="Open requests" value={overview?.openLoanRequestCount ?? 0} note="Live request board" />
-                        <StatCard label="Overdue loans" value={overview?.defaultedLoanCount ?? 0} note="Needs support review" />
-                        <StatCard
-                           label="Daily check"
-                           value={integrityRun?.issue_count ?? 0}
-                           note={
-                              integrityRun ? `${integrityRun.status} · ${formatDateTime(integrityRun.created_at)}` : 'Waiting for first run'
-                           }
-                        />
-                     </div>
-
-                     <div className="overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
-                        {!adminDataLoaded ? <EmptyPanel message="Loading user directory from Supabase..." /> : null}
-                        {adminDataLoaded
-                           ? filteredDirectory.map((user) => (
-                                <article key={user.id} className="border-b border-[#2a1453] last:border-b-0">
-                                   <div className="grid gap-5 p-6">
-                                      <div className="flex flex-wrap items-start justify-between gap-4">
-                                         <div className="flex min-w-0 gap-4">
-                                            <button
-                                               type="button"
-                                               onClick={() => setSelectedUserId(user.id)}
-                                               className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white"
-                                            >
-                                               {user.username.charAt(0).toUpperCase()}
-                                            </button>
-                                            <div className="min-w-0">
-                                               <button
-                                                  type="button"
-                                                  onClick={() => setSelectedUserId(user.id)}
-                                                  className="text-left text-3xl font-black underline decoration-2 underline-offset-4"
-                                               >
-                                                  {user.username}
-                                               </button>
-                                               <div className="mt-3 flex flex-wrap gap-3">
-                                                  <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
-                                                  <Badge tone={user.account_status}>{user.account_status}</Badge>
-                                                  <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
-                                                  <Badge tone={isUserVerified(user) ? 'ACTIVE' : 'INACTIVE'}>
-                                                     {isUserVerified(user) ? 'verified' : 'not verified'}
-                                                  </Badge>
-                                                  {user.restriction ? (
-                                                     <Badge tone={user.restriction.status}>admin {user.restriction.status}</Badge>
-                                                  ) : null}
-                                               </div>
-                                               <p className="mt-3 break-all text-xl text-[#a89bb8]">
-                                                  {user.email ?? 'No email'} · {walletLabel(user)} · joined {formatDate(user.created_at)}
-                                                  {user.countryIso
-                                                     ? ` · ${countryLabel(user.countryIso)}${user.city ? ` (${user.city})` : ''}`
-                                                     : ''}
-                                               </p>
-                                            </div>
-                                         </div>
+               <div className="overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
+                  {!adminDataLoaded ? <EmptyPanel message="Loading user directory from Supabase..." /> : null}
+                  {adminDataLoaded
+                     ? filteredDirectory.map((user) => (
+                          <article key={user.id} id={`admin-user-${user.id}`} className="scroll-mt-32 border-b border-[#2a1453] last:border-b-0">
+                             <div className="grid gap-5 p-6">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                   <div className="flex min-w-0 gap-4">
+                                      <button
+                                         type="button"
+                                         onClick={() => setSelectedUserId(user.id)}
+                                         className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-[#8336f0] text-2xl font-black text-white"
+                                      >
+                                         {user.username.charAt(0).toUpperCase()}
+                                      </button>
+                                      <div className="min-w-0">
                                          <button
                                             type="button"
                                             onClick={() => setSelectedUserId(user.id)}
-                                            className="rounded-2xl bg-[#34234f] px-6 py-4 text-xl font-black text-white"
+                                            className="text-left text-3xl font-black underline decoration-2 underline-offset-4"
                                          >
-                                            Manage
+                                            {user.username}
                                          </button>
-                                      </div>
-                                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
-                                         <DirectoryMetric
-                                            label="Account"
-                                            value={user.restriction?.status ?? user.account_status}
-                                            tone={statusTone(user)}
-                                         />
-                                         <DirectoryMetric
-                                            label="Wallet"
-                                            value={`${shortWallet(user.wallet_address)} · ${user.wallet_chain_id ? `chain ${user.wallet_chain_id}` : walletLabel(user)}`}
-                                            tone={user.wallet_address ? 'success' : 'warning'}
-                                         />
-                                         <DirectoryMetric
-                                            label="Borrowed loans"
-                                            value={`${user.borrowedLoanCount} total · ${formatMoney(user.totalBorrowedAmount)}`}
-                                         />
-                                         <DirectoryMetric
-                                            label="Active loans"
-                                            value={user.activeLoanCount}
-                                            tone={user.activeLoanCount > 2 ? 'warning' : 'default'}
-                                         />
-                                         <DirectoryMetric
-                                            label="Paid loans"
-                                            value={`${user.paidLoanCount} paid · ${formatMoney(user.totalRepaidAmount)}`}
-                                            tone={user.paidLoanCount > 0 ? 'success' : 'default'}
-                                         />
-                                         <DirectoryMetric
-                                            label="Overdue loans"
-                                            value={user.overdueLoanCount}
-                                            tone={user.overdueLoanCount > 0 ? 'danger' : 'success'}
-                                         />
-                                         <DirectoryMetric
-                                            label="Outstanding"
-                                            value={formatMoney(user.outstandingDue)}
-                                            tone={user.outstandingDue > 0 ? 'warning' : 'success'}
-                                         />
-                                         <DirectoryMetric label="Open requests" value={user.openRequestCount} />
-                                         <DirectoryMetric
-                                            label="Credit metrics"
-                                            value={`CS ${user.cs ?? 0} · MAL ${user.mal ?? 0} · NAL ${user.nal ?? 0}`}
-                                         />
-                                         <DirectoryMetric
-                                            label="IOU balance"
-                                            value={formatPointsMajor(user.pointsTotal)}
-                                            tone={hasPositivePoints(user.pointsTotal) ? 'success' : 'default'}
-                                         />
-                                         <DirectoryMetric label="Lender activity" value={`${user.lentLoanCount} funded`} />
-                                         <DirectoryMetric
-                                            label="Last loan activity"
-                                            value={formatDate(user.lastLoanAt ?? user.updated_at)}
-                                         />
-                                      </div>
-                                   </div>
-                                   {selectedUser?.id === user.id ? (
-                                      <div className="border-t border-[#2a1453] bg-[#241044] p-6">
-                                         <div className="flex flex-wrap items-center justify-between gap-3">
-                                            <h3 className="text-3xl font-black">Selected account</h3>
-                                            <button
-                                               type="button"
-                                               onClick={() => setSelectedUserId('')}
-                                               className="rounded-full border border-[#3d1f6e] bg-[#241044] px-5 py-3 text-lg font-black text-purple-300"
-                                            >
-                                               Collapse
-                                            </button>
+                                         <div className="mt-3 flex flex-wrap gap-3">
+                                            <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
+                                            <Badge tone={user.account_status}>{user.account_status}</Badge>
+                                            <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
+                                            <Badge tone={isUserVerified(user) ? 'ACTIVE' : 'INACTIVE'}>
+                                               {isUserVerified(user) ? 'verified' : 'not verified'}
+                                            </Badge>
+                                            <Badge tone={user.messenger_verified_at ? 'ACTIVE' : 'INACTIVE'}>
+                                               {user.messenger_verified_at ? 'facebook linked' : 'no facebook'}
+                                            </Badge>
+                                            {user.restriction ? (
+                                               <Badge tone={user.restriction.status}>admin {user.restriction.status}</Badge>
+                                            ) : null}
                                          </div>
-                                         <div className="mt-5 grid gap-4 md:grid-cols-2">
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Name</p>
-                                               <strong className="mt-2 block break-words text-3xl">{user.username}</strong>
-                                            </div>
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Wallet</p>
-                                               <strong className="mt-2 block break-all text-2xl">{shortWallet(user.wallet_address)}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                                                  {user.wallet_provider ?? user.wallet_connector_name ?? 'No wallet provider saved'}
-                                               </p>
-                                            </div>
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Borrower activity</p>
-                                               <strong className="mt-2 block text-2xl">
-                                                  {user.openRequestCount} open requests · {user.activeLoanCount} active ·{' '}
-                                                  {user.paidLoanCount} paid
-                                               </strong>
-                                            </div>
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Outstanding</p>
-                                               <strong className="mt-2 block text-3xl">{formatMoney(user.outstandingDue)}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                                                  {user.overdueLoanCount} overdue loans
-                                               </p>
-                                            </div>
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Credit</p>
-                                               <strong className="mt-2 block text-3xl">${user.cs ?? 0}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                                                  MAL {user.mal ?? 0} · NAL {user.nal ?? 0}
-                                               </p>
-                                            </div>
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">IOU balance</p>
-                                               <strong className="mt-2 block text-3xl">{formatPointsMajor(user.pointsTotal)}</strong>
-                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                                                  {user.pointEventCount} recent events loaded · updated {formatDate(user.pointsUpdatedAt)}
-                                               </p>
-                                            </div>
-                                            <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-                                               <p className="text-sm font-black uppercase text-[#a89bb8]">Admin status</p>
-                                               <strong className="mt-2 block text-2xl">
-                                                  {user.restriction?.status ?? user.account_status}
-                                               </strong>
-                                               <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                                                  {user.restriction?.admin_note ?? 'No admin restriction note.'}
-                                               </p>
-                                            </div>
-                                         </div>
-                                         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                                            <a
-                                               href={`/user/${encodeURIComponent(user.username)}`}
-                                               className="rounded-2xl bg-[#34234f] px-5 py-4 text-center text-xl font-black text-white no-underline"
-                                            >
-                                               Open profile
-                                            </a>
-                                            <button
-                                               type="button"
-                                               onClick={() => {
-                                                  setNoticeUsername(user.username);
-                                                  setActiveTab('notifications');
-                                               }}
-                                               className="rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
-                                            >
-                                               Send notice
-                                            </button>
-                                            <button
-                                               type="button"
-                                               onClick={() => handleWatchlistUser(user, 'watchlist')}
-                                               className="rounded-2xl bg-amber-500 px-5 py-4 text-xl font-black text-white"
-                                            >
-                                               Watchlist
-                                            </button>
-                                            <button
-                                               type="button"
-                                               onClick={() => handleWatchlistUser(user, 'ban_review')}
-                                               className="rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
-                                            >
-                                               Flag ban review
-                                            </button>
-                                            <button
-                                               type="button"
-                                               onClick={() => handleClearRestriction(user)}
-                                               className="rounded-2xl bg-emerald-600 px-5 py-4 text-xl font-black text-white"
-                                            >
-                                               Clear restriction
-                                            </button>
-                                            <button
-                                               type="button"
-                                               onClick={() => handleBanUser(user)}
-                                               disabled={user.account_status === 'banned'}
-                                               className="rounded-2xl bg-red-800 px-5 py-4 text-xl font-black text-white disabled:opacity-40"
-                                            >
-                                               {user.account_status === 'banned' ? 'Banned' : 'Ban'}
-                                            </button>
-                                            <button
-                                               type="button"
-                                               onClick={() => handleResetMfa(user)}
-                                               className="rounded-2xl bg-sky-600 px-5 py-4 text-xl font-black text-white"
-                                            >
-                                               Reset 2FA
-                                            </button>
-                                         </div>
-                                         <p className="mt-3 text-base font-bold text-[#a89bb8]">
-                                            Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
-                                            every authenticator/passkey factor this user has enrolled — use it when they're locked out.
+                                         <p className="mt-3 break-all text-xl text-[#a89bb8]">
+                                            {user.email ?? 'No email'} · {walletLabel(user)} · joined {formatDate(user.created_at)}
+                                            {user.countryIso
+                                               ? ` · ${countryLabel(user.countryIso)}${user.city ? ` (${user.city})` : ''}`
+                                               : ''}
                                          </p>
                                       </div>
-                                   ) : null}
-                                </article>
-                             ))
-                           : null}
-                        {adminDataLoaded && !filteredDirectory.length ? <EmptyPanel message="No users match these filters." /> : null}
-                     </div>
-                  </section>
-               ) : null}
+                                   </div>
+                                   <button
+                                      type="button"
+                                      onClick={() => setSelectedUserId(user.id)}
+                                      className="rounded-2xl bg-[#34234f] px-6 py-4 text-xl font-black text-white"
+                                   >
+                                      Manage
+                                   </button>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
+                                   <DirectoryMetric
+                                      label="Account"
+                                      value={user.restriction?.status ?? user.account_status}
+                                      tone={statusTone(user)}
+                                   />
+                                   <DirectoryMetric
+                                      label="Wallet"
+                                      value={`${shortWallet(user.wallet_address)} · ${user.wallet_chain_id ? `chain ${user.wallet_chain_id}` : walletLabel(user)}`}
+                                      tone={user.wallet_address ? 'success' : 'warning'}
+                                   />
+                                   <DirectoryMetric
+                                      label="Borrowed loans"
+                                      value={`${user.borrowedLoanCount} total · ${formatMoney(user.totalBorrowedAmount)}`}
+                                   />
+                                   <DirectoryMetric
+                                      label="Active loans"
+                                      value={user.activeLoanCount}
+                                      tone={user.activeLoanCount > 2 ? 'warning' : 'default'}
+                                   />
+                                   <DirectoryMetric
+                                      label="Paid loans"
+                                      value={`${user.paidLoanCount} paid · ${formatMoney(user.totalRepaidAmount)}`}
+                                      tone={user.paidLoanCount > 0 ? 'success' : 'default'}
+                                   />
+                                   <DirectoryMetric
+                                      label="Overdue loans"
+                                      value={user.overdueLoanCount}
+                                      tone={user.overdueLoanCount > 0 ? 'danger' : 'success'}
+                                   />
+                                   <DirectoryMetric
+                                      label="Outstanding"
+                                      value={formatMoney(user.outstandingDue)}
+                                      tone={user.outstandingDue > 0 ? 'warning' : 'success'}
+                                   />
+                                   <DirectoryMetric label="Open requests" value={user.openRequestCount} />
+                                   <DirectoryMetric
+                                      label="Credit metrics"
+                                      value={`CS ${user.cs ?? 0} · MAL ${user.mal ?? 0} · NAL ${user.nal ?? 0}`}
+                                   />
+                                   <DirectoryMetric
+                                      label="IOU balance"
+                                      value={formatPointsMajor(user.pointsTotal)}
+                                      tone={hasPositivePoints(user.pointsTotal) ? 'success' : 'default'}
+                                   />
+                                   <DirectoryMetric label="Lender activity" value={`${user.lentLoanCount} funded`} />
+                                   <DirectoryMetric
+                                      label="Last loan activity"
+                                      value={formatDate(user.lastLoanAt ?? user.updated_at)}
+                                   />
+                                </div>
+                             </div>
+                             {selectedUser?.id === user.id ? (
+                                <div className="border-t border-[#2a1453] bg-[#241044] p-6">
+                                   <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <h3 className="text-3xl font-black">Selected account</h3>
+                                      <button
+                                         type="button"
+                                         onClick={() => setSelectedUserId('')}
+                                         className="rounded-full border border-[#3d1f6e] bg-[#241044] px-5 py-3 text-lg font-black text-purple-300"
+                                      >
+                                         Collapse
+                                      </button>
+                                   </div>
+                                   <div className="mt-5 grid gap-4 md:grid-cols-2">
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">Name</p>
+                                         <strong className="mt-2 block break-words text-3xl">{user.username}</strong>
+                                      </div>
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">Wallet</p>
+                                         <strong className="mt-2 block break-all text-2xl">{shortWallet(user.wallet_address)}</strong>
+                                         <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                                            {user.wallet_provider ?? user.wallet_connector_name ?? 'No wallet provider saved'}
+                                         </p>
+                                      </div>
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">Borrower activity</p>
+                                         <strong className="mt-2 block text-2xl">
+                                            {user.openRequestCount} open requests · {user.activeLoanCount} active ·{' '}
+                                            {user.paidLoanCount} paid
+                                         </strong>
+                                      </div>
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">Outstanding</p>
+                                         <strong className="mt-2 block text-3xl">{formatMoney(user.outstandingDue)}</strong>
+                                         <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                                            {user.overdueLoanCount} overdue loans
+                                         </p>
+                                      </div>
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">Credit</p>
+                                         <strong className="mt-2 block text-3xl">${user.cs ?? 0}</strong>
+                                         <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                                            MAL {user.mal ?? 0} · NAL {user.nal ?? 0}
+                                         </p>
+                                      </div>
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">IOU balance</p>
+                                         <strong className="mt-2 block text-3xl">{formatPointsMajor(user.pointsTotal)}</strong>
+                                         <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                                            {user.pointEventCount} recent events loaded · updated {formatDate(user.pointsUpdatedAt)}
+                                         </p>
+                                      </div>
+                                      <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+                                         <p className="text-sm font-black uppercase text-[#a89bb8]">Admin status</p>
+                                         <strong className="mt-2 block text-2xl">
+                                            {user.restriction?.status ?? user.account_status}
+                                         </strong>
+                                         <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                                            {user.restriction?.admin_note ?? 'No admin restriction note.'}
+                                         </p>
+                                      </div>
+                                   </div>
+                                   <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                                      <a
+                                         href={`/user/${encodeURIComponent(user.username)}`}
+                                         className="rounded-2xl bg-[#34234f] px-5 py-4 text-center text-xl font-black text-white no-underline"
+                                      >
+                                         Open profile
+                                      </a>
+                                      <button
+                                         type="button"
+                                         onClick={() => {
+                                            setNoticeUsername(user.username);
+                                            setActiveTab('notifications');
+                                         }}
+                                         className="rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
+                                      >
+                                         Send notice
+                                      </button>
+                                      <button
+                                         type="button"
+                                         onClick={() => handleWatchlistUser(user, 'watchlist')}
+                                         className="rounded-2xl bg-amber-500 px-5 py-4 text-xl font-black text-white"
+                                      >
+                                         Watchlist
+                                      </button>
+                                      <button
+                                         type="button"
+                                         onClick={() => handleWatchlistUser(user, 'ban_review')}
+                                         className="rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
+                                      >
+                                         Flag ban review
+                                      </button>
+                                      <button
+                                         type="button"
+                                         onClick={() => handleClearRestriction(user)}
+                                         className="rounded-2xl bg-emerald-600 px-5 py-4 text-xl font-black text-white"
+                                      >
+                                         Clear restriction
+                                      </button>
+                                      <button
+                                         type="button"
+                                         onClick={() => handleBanUser(user)}
+                                         disabled={user.account_status === 'banned'}
+                                         className="rounded-2xl bg-red-800 px-5 py-4 text-xl font-black text-white disabled:opacity-40"
+                                      >
+                                         {user.account_status === 'banned' ? 'Banned' : 'Ban'}
+                                      </button>
+                                      <button
+                                         type="button"
+                                         onClick={() => handleResetMfa(user)}
+                                         className="rounded-2xl bg-sky-600 px-5 py-4 text-xl font-black text-white"
+                                      >
+                                         Reset 2FA
+                                      </button>
+                                   </div>
+                                   <p className="mt-3 text-base font-bold text-[#a89bb8]">
+                                      Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
+                                      every authenticator/passkey factor this user has enrolled — use it when they're locked out.
+                                   </p>
+                                </div>
+                             ) : null}
+                          </article>
+                       ))
+                     : null}
+                  {adminDataLoaded && !filteredDirectory.length ? <EmptyPanel message="No users match these filters." /> : null}
+               </div>
+            </section>
+         ) : null}
 
-               {activeTab === 'points' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">IOU points</h2>
-                        <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
-                           Lender-only points from <span className="font-black text-white">user_points</span> and{' '}
-                           <span className="font-black text-white">point_events</span>. The guide below reads from the shared points rules
-                           used by the funding code.
-                        </p>
-                     </div>
+         {activeTab === 'points' ? (
+            <section className="space-y-6">
+               <div>
+                  <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">IOU points</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Lender-only points from <span className="font-black text-white">user_points</span> and{' '}
+                     <span className="font-black text-white">point_events</span>. The guide below reads from the shared points rules
+                     used by the funding code.
+                  </p>
+               </div>
 
-                     <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Live rule</p>
-                           <h3 className="mt-2 text-3xl font-black text-white">
-                              {loanFundingPointsPerUsdc} IOU per 1 USDC funded + borrower bonus
-                           </h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
-                              Example: a $20 loan to a first-time borrower earns $20 base IOU + 25 bonus IOU = 45 IOU.
-                           </p>
-                        </div>
-                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
-                           <h3 className="mt-2 text-3xl font-black text-white">IOU guide only</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
-                              This is separate from borrower credit, borrower trust, Academy display rewards, and risk scoring.
-                           </p>
-                           <a
-                              href="#iou-points-reference-guide"
-                              className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
-                           >
-                              Open IOU reference guide
-                           </a>
-                        </div>
-                     </div>
+               <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                  <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                     <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Live rule</p>
+                     <h3 className="mt-2 text-3xl font-black text-white">
+                        {loanFundingPointsPerUsdc} IOU per 1 USDC funded + borrower bonus
+                     </h3>
+                     <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
+                        Example: a $20 loan to a first-time borrower earns $20 base IOU + 25 bonus IOU = 45 IOU.
+                     </p>
+                  </div>
+                  <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                     <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
+                     <h3 className="mt-2 text-3xl font-black text-white">IOU guide only</h3>
+                     <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
+                        This is separate from borrower credit, borrower trust, Academy display rewards, and risk scoring.
+                     </p>
+                     <a
+                        href="#iou-points-reference-guide"
+                        className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
+                     >
+                        Open IOU reference guide
+                     </a>
+                  </div>
+               </div>
 
-                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatCard
-                           label="People with IOU"
-                           value={users.filter((user) => hasPositivePoints(user.pointsTotal)).length}
-                           note="Loaded admin directory"
-                        />
-                        <StatCard
-                           label="IOU events"
-                           value={users.reduce((sum, user) => sum + user.pointEventCount, 0)}
-                           note="Recent point events loaded"
-                        />
-                        <StatCard
-                           label="Live IOU rules"
-                           value={iouPointsAwardRules.filter((rule) => rule.status === 'live').length}
-                           note="Shared rules"
-                        />
-                        <StatCard label="Point system" value={1} note="IOU points only" />
-                     </div>
+               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard
+                     label="People with IOU"
+                     value={users.filter((user) => hasPositivePoints(user.pointsTotal)).length}
+                     note="Loaded admin directory"
+                  />
+                  <StatCard
+                     label="IOU events"
+                     value={users.reduce((sum, user) => sum + user.pointEventCount, 0)}
+                     note="Recent point events loaded"
+                  />
+                  <StatCard
+                     label="Live IOU rules"
+                     value={iouPointsAwardRules.filter((rule) => rule.status === 'live').length}
+                     note="Shared rules"
+                  />
+                  <StatCard label="Point system" value={1} note="IOU points only" />
+               </div>
 
-                     <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                        <h3 className="text-3xl font-black">Current IOU balances</h3>
-                        <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                           Sorted by highest IOU point balance in the currently loaded admin directory.
-                        </p>
-                        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                           {usersByIouPoints.map((user) => (
-                              <article key={user.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
-                                 <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                       <h4 className="break-words text-2xl font-black">{user.username}</h4>
-                                       <p className="mt-1 text-lg font-bold text-[#a89bb8]">{roleLabel(user.user_role)}</p>
+               <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                  <h3 className="text-3xl font-black">Current IOU balances</h3>
+                  <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                     Sorted by highest IOU point balance in the currently loaded admin directory.
+                  </p>
+                  <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                     {usersByIouPoints.map((user) => (
+                        <article key={user.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                           <div className="flex items-start justify-between gap-4">
+                              <div>
+                                 <h4 className="break-words text-2xl font-black">{user.username}</h4>
+                                 <p className="mt-1 text-lg font-bold text-[#a89bb8]">{roleLabel(user.user_role)}</p>
+                              </div>
+                              <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
+                                 {formatPointsMajor(user.pointsTotal)}
+                              </strong>
+                           </div>
+                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                              <DirectoryMetric label="Funded loans" value={user.lentLoanCount} />
+                              <DirectoryMetric label="Points updated" value={formatDate(user.pointsUpdatedAt)} />
+                           </div>
+                           {user.recentPointEvents.length ? (
+                              <div className="mt-4 space-y-3">
+                                 {user.recentPointEvents.map((event) => (
+                                    <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
+                                       <div className="flex flex-wrap items-center justify-between gap-3">
+                                          <strong className="text-lg font-black text-white">
+                                             {pointEventRuleLabel(event.event_type, event.source_type)}
+                                          </strong>
+                                          <Badge tone="active">+{formatPointsMajor(event.delta)} IOU</Badge>
+                                       </div>
+                                       <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
                                     </div>
-                                    <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
-                                       {formatPointsMajor(user.pointsTotal)}
-                                    </strong>
-                                 </div>
-                                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <DirectoryMetric label="Funded loans" value={user.lentLoanCount} />
-                                    <DirectoryMetric label="Points updated" value={formatDate(user.pointsUpdatedAt)} />
-                                 </div>
-                                 {user.recentPointEvents.length ? (
-                                    <div className="mt-4 space-y-3">
-                                       {user.recentPointEvents.map((event) => (
-                                          <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
-                                             <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <strong className="text-lg font-black text-white">
-                                                   {pointEventRuleLabel(event.event_type, event.source_type)}
-                                                </strong>
-                                                <Badge tone="active">+{formatPointsMajor(event.delta)} IOU</Badge>
-                                             </div>
-                                             <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
-                                          </div>
-                                       ))}
-                                    </div>
-                                 ) : (
-                                    <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
-                                       No recent IOU point events loaded.
-                                    </p>
-                                 )}
-                              </article>
-                           ))}
-                        </div>
-                        {!usersByIouPoints.length ? <EmptyPanel message="Loading IOU point balances from Supabase..." /> : null}
-                     </div>
+                                 ))}
+                              </div>
+                           ) : (
+                              <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
+                                 No recent IOU point events loaded.
+                              </p>
+                           )}
+                        </article>
+                     ))}
+                  </div>
+                  {!usersByIouPoints.length ? <EmptyPanel message="Loading IOU point balances from Supabase..." /> : null}
+               </div>
 
-                     <section id="iou-points-reference-guide" className="space-y-5 scroll-mt-8">
-                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
-                           <h3 className="mt-2 text-4xl font-black text-white">IOU points reference guide</h3>
-                           <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
-                              Year 1 only. Later-year tokenomics stay manual until we choose to wire them into the product.
-                           </p>
-                        </div>
-                        <div className="grid gap-5 xl:grid-cols-2">
-                           {iouPointsAwardRules.map((rule) => (
-                              <article key={rule.id} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                                 <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                       <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{rule.system}</p>
-                                       <h4 className="mt-2 text-3xl font-black text-white">{rule.action}</h4>
-                                    </div>
-                                    <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
-                                 </div>
-                                 <dl className="mt-5 grid gap-4">
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Points</dt>
-                                       <dd className="mt-1 text-2xl font-black text-white">{rule.points}</dd>
-                                    </div>
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Who gets it</dt>
-                                       <dd className="mt-1 text-2xl font-black text-white">{rule.actor}</dd>
-                                    </div>
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Criteria</dt>
-                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#a89bb8]">{rule.criteria}</dd>
-                                    </div>
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Example</dt>
-                                       <dd className="mt-1 text-xl font-black text-white">{rule.example}</dd>
-                                    </div>
-                                 </dl>
-                                 {rule.bonusTiers?.length ? (
-                                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                                       {rule.bonusTiers.map((tier) => (
-                                          <div key={tier.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-4">
-                                             <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">
-                                                {tier.borrowerLoanNumber}
-                                             </p>
-                                             <p className="mt-1 text-2xl font-black text-white">+{tier.bonusPoints} IOU</p>
-                                             <p className="mt-1 text-base font-bold text-[#a89bb8]">{tier.criteria}</p>
-                                          </div>
-                                       ))}
-                                    </div>
-                                 ) : null}
-                              </article>
-                           ))}
-                        </div>
-                     </section>
-                  </section>
-               ) : null}
-
-               {activeTab === 'trust-points' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Pandesal points</h2>
-                        <p className="mt-3 max-w-4xl text-2xl text-[#a89bb8]">
-                           Borrower-only Pandesal points from <span className="font-black text-white">user_trust_points</span> and{' '}
-                           <span className="font-black text-white">trust_point_events</span>. These are separate from lender IOU points.
-                        </p>
-                     </div>
-
-                     <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-                        <div className="rounded-3xl border border-emerald-900 bg-emerald-950/60 p-6 ">
-                           <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
-                           <h3 className="mt-2 text-3xl font-black text-white">Live Pandesal points ledger</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
-                              Milestone completions write borrower Pandesal points events into Supabase. Credit limit fields such as
-                              users.cs stay separate.
-                           </p>
-                        </div>
-                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
-                           <h3 className="mt-2 text-3xl font-black text-white">Pandesal points guide only</h3>
-                           <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
-                              This page is intentionally separate from lender IOU points so we do not mix borrower trust with lender
-                              rewards.
-                           </p>
-                           <a
-                              href="#trust-points-reference-guide"
-                              className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
-                           >
-                              Open Pandesal points reference guide
-                           </a>
-                        </div>
-                     </div>
-
-                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatCard label="Borrowers loaded" value={borrowerTrustRows.length} note="Admin directory rows" />
-                        <StatCard
-                           label="With Pandesal points"
-                           value={borrowerTrustRows.filter((user) => hasPositivePoints(user.trustPointsTotal)).length}
-                           note="Stored borrower totals"
-                        />
-                        <StatCard
-                           label="Live Pandesal points rules"
-                           value={trustPointsAwardRules.filter((rule) => rule.status === 'live').length}
-                           note="Milestone rules"
-                        />
-                        <StatCard label="Pandesal points tables" value={2} note="Balance + event ledger" />
-                     </div>
-
-                     <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                        <h3 className="text-3xl font-black">Current Pandesal points balances</h3>
-                        <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                           Sorted by highest stored Pandesal points balance in the currently loaded admin directory.
-                        </p>
-                        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                           {usersByTrustPoints.map((user) => (
-                              <article key={user.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
-                                 <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                       <h4 className="break-words text-2xl font-black">{user.username}</h4>
-                                       <p className="mt-1 text-lg font-bold text-[#a89bb8]">
-                                          {isUserVerified(user) ? 'Verified borrower' : 'Not verified'}
+               <section id="iou-points-reference-guide" className="space-y-5 scroll-mt-8">
+                  <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                     <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
+                     <h3 className="mt-2 text-4xl font-black text-white">IOU points reference guide</h3>
+                     <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
+                        Year 1 only. Later-year tokenomics stay manual until we choose to wire them into the product.
+                     </p>
+                  </div>
+                  <div className="grid gap-5 xl:grid-cols-2">
+                     {iouPointsAwardRules.map((rule) => (
+                        <article key={rule.id} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                 <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{rule.system}</p>
+                                 <h4 className="mt-2 text-3xl font-black text-white">{rule.action}</h4>
+                              </div>
+                              <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
+                           </div>
+                           <dl className="mt-5 grid gap-4">
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Points</dt>
+                                 <dd className="mt-1 text-2xl font-black text-white">{rule.points}</dd>
+                              </div>
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Who gets it</dt>
+                                 <dd className="mt-1 text-2xl font-black text-white">{rule.actor}</dd>
+                              </div>
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Criteria</dt>
+                                 <dd className="mt-1 text-xl font-bold leading-8 text-[#a89bb8]">{rule.criteria}</dd>
+                              </div>
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Example</dt>
+                                 <dd className="mt-1 text-xl font-black text-white">{rule.example}</dd>
+                              </div>
+                           </dl>
+                           {rule.bonusTiers?.length ? (
+                              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                                 {rule.bonusTiers.map((tier) => (
+                                    <div key={tier.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-4">
+                                       <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">
+                                          {tier.borrowerLoanNumber}
                                        </p>
+                                       <p className="mt-1 text-2xl font-black text-white">+{tier.bonusPoints} IOU</p>
+                                       <p className="mt-1 text-base font-bold text-[#a89bb8]">{tier.criteria}</p>
                                     </div>
-                                    <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
-                                       {formatPointsMajor(user.trustPointsTotal)}
-                                    </strong>
-                                 </div>
-                                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <DirectoryMetric label="Pandesal updated" value={formatDate(user.trustPointsUpdatedAt)} />
-                                    <DirectoryMetric label="Pandesal events" value={user.trustPointEventCount} />
-                                    <DirectoryMetric label="Paid loans" value={user.paidLoanCount} />
-                                    <DirectoryMetric label="Credit limit" value={`$${user.cs ?? 0}`} />
-                                 </div>
-                                 {user.recentTrustPointEvents.length ? (
-                                    <div className="mt-4 space-y-3">
-                                       {user.recentTrustPointEvents.map((event) => (
-                                          <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
-                                             <div className="flex flex-wrap items-center justify-between gap-3">
-                                                <strong className="text-lg font-black text-white">{trustPointEventRuleLabel(event)}</strong>
-                                                <Badge tone="active">+{formatPointsMajor(event.delta)} Pandesal</Badge>
-                                             </div>
-                                             <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
-                                          </div>
-                                       ))}
+                                 ))}
+                              </div>
+                           ) : null}
+                        </article>
+                     ))}
+                  </div>
+               </section>
+            </section>
+         ) : null}
+
+         {activeTab === 'trust-points' ? (
+            <section className="space-y-6">
+               <div>
+                  <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Source of truth</p>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Pandesal points</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Borrower-only Pandesal points from <span className="font-black text-white">user_trust_points</span> and{' '}
+                     <span className="font-black text-white">trust_point_events</span>. These are separate from lender IOU points.
+                  </p>
+               </div>
+
+               <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                  <div className="rounded-3xl border border-emerald-900 bg-emerald-950/60 p-6 ">
+                     <p className="text-sm font-black uppercase tracking-wide text-emerald-300">Current storage</p>
+                     <h3 className="mt-2 text-3xl font-black text-white">Live Pandesal points ledger</h3>
+                     <p className="mt-3 text-lg font-bold leading-8 text-emerald-300">
+                        Milestone completions write borrower Pandesal points events into Supabase. Credit limit fields such as
+                        users.cs stay separate.
+                     </p>
+                  </div>
+                  <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                     <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reference guide</p>
+                     <h3 className="mt-2 text-3xl font-black text-white">Pandesal points guide only</h3>
+                     <p className="mt-3 text-lg font-bold leading-8 text-[#a89bb8]">
+                        This page is intentionally separate from lender IOU points so we do not mix borrower trust with lender
+                        rewards.
+                     </p>
+                     <a
+                        href="#trust-points-reference-guide"
+                        className="mt-5 inline-flex rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white no-underline"
+                     >
+                        Open Pandesal points reference guide
+                     </a>
+                  </div>
+               </div>
+
+               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard label="Borrowers loaded" value={borrowerTrustRows.length} note="Admin directory rows" />
+                  <StatCard
+                     label="With Pandesal points"
+                     value={borrowerTrustRows.filter((user) => hasPositivePoints(user.trustPointsTotal)).length}
+                     note="Stored borrower totals"
+                  />
+                  <StatCard
+                     label="Live Pandesal points rules"
+                     value={trustPointsAwardRules.filter((rule) => rule.status === 'live').length}
+                     note="Milestone rules"
+                  />
+                  <StatCard label="Pandesal points tables" value={2} note="Balance + event ledger" />
+               </div>
+
+               <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                  <h3 className="text-3xl font-black">Current Pandesal points balances</h3>
+                  <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                     Sorted by highest stored Pandesal points balance in the currently loaded admin directory.
+                  </p>
+                  <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                     {usersByTrustPoints.map((user) => (
+                        <article key={user.id} className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                           <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div>
+                                 <h4 className="break-words text-2xl font-black">{user.username}</h4>
+                                 <p className="mt-1 text-lg font-bold text-[#a89bb8]">
+                                    {isUserVerified(user) ? 'Verified borrower' : 'Not verified'}
+                                 </p>
+                              </div>
+                              <strong className="rounded-2xl bg-[#1c053d] px-4 py-3 text-2xl font-black text-white">
+                                 {formatPointsMajor(user.trustPointsTotal)}
+                              </strong>
+                           </div>
+                           <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                              <DirectoryMetric label="Pandesal updated" value={formatDate(user.trustPointsUpdatedAt)} />
+                              <DirectoryMetric label="Pandesal events" value={user.trustPointEventCount} />
+                              <DirectoryMetric label="Paid loans" value={user.paidLoanCount} />
+                              <DirectoryMetric label="Credit limit" value={`$${user.cs ?? 0}`} />
+                           </div>
+                           {user.recentTrustPointEvents.length ? (
+                              <div className="mt-4 space-y-3">
+                                 {user.recentTrustPointEvents.map((event) => (
+                                    <div key={event.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
+                                       <div className="flex flex-wrap items-center justify-between gap-3">
+                                          <strong className="text-lg font-black text-white">{trustPointEventRuleLabel(event)}</strong>
+                                          <Badge tone="active">+{formatPointsMajor(event.delta)} Pandesal</Badge>
+                                       </div>
+                                       <p className="mt-2 text-base font-bold text-[#a89bb8]">{formatDateTime(event.created_at)}</p>
                                     </div>
-                                 ) : (
-                                    <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
-                                       No Pandesal points events loaded yet.
+                                 ))}
+                              </div>
+                           ) : (
+                              <p className="mt-4 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 text-lg font-bold text-[#a89bb8]">
+                                 No Pandesal points events loaded yet.
+                              </p>
+                           )}
+                        </article>
+                     ))}
+                  </div>
+                  {!borrowerTrustRows.length ? <EmptyPanel message="No borrower rows loaded yet." /> : null}
+               </div>
+
+               <section id="trust-points-reference-guide" className="space-y-5 scroll-mt-8">
+                  <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                     <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
+                     <h3 className="mt-2 text-4xl font-black text-white">Pandesal points reference guide</h3>
+                     <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
+                        These live rules are stored as milestone definitions and awarded through the borrower Pandesal points ledger.
+                     </p>
+                  </div>
+                  <div className="grid gap-5 xl:grid-cols-2">
+                     {trustPointsAwardRules.map((rule) => (
+                        <article key={rule.id} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                 <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{rule.system}</p>
+                                 <h4 className="mt-2 text-3xl font-black text-white">{rule.action}</h4>
+                              </div>
+                              <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
+                           </div>
+                           <dl className="mt-5 grid gap-4">
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Points</dt>
+                                 <dd className="mt-1 text-2xl font-black text-white">{rule.points}</dd>
+                              </div>
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Who gets it</dt>
+                                 <dd className="mt-1 text-2xl font-black text-white">{rule.actor}</dd>
+                              </div>
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Criteria</dt>
+                                 <dd className="mt-1 text-xl font-bold leading-8 text-[#a89bb8]">{rule.criteria}</dd>
+                              </div>
+                              <div>
+                                 <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Example</dt>
+                                 <dd className="mt-1 text-xl font-black text-white">{rule.example}</dd>
+                              </div>
+                           </dl>
+                        </article>
+                     ))}
+                  </div>
+               </section>
+            </section>
+         ) : null}
+
+         {activeTab === 'defaults' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Default recovery</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Live overdue loans plus active recovery cases. Saving a path creates or updates a recovery case and audit action.
+                  </p>
+               </div>
+               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard label="Overdue loans" value={overview?.defaultedLoanCount ?? 0} note="Live from loans" />
+                  <StatCard label="Recovery cases" value={overview?.recoveryReviewCount ?? 0} note="Needs review / active" />
+                  <StatCard label="Active loans" value={overview?.activeLoanCount ?? 0} note="Funded and unpaid" />
+                  <StatCard label="High risk" value={overview?.highRiskProfileCount ?? 0} note="Risk profile rows" />
+               </div>
+               {!defaultCases.length ? <EmptyPanel message="No overdue loans or active recovery cases found." /> : null}
+               {defaultCases.length ? (
+                  <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,520px)_minmax(0,1fr)]">
+                     <div className="self-start overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
+                        {defaultCases.map((item) => (
+                           <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => {
+                                 setSelectedDefaultCaseId(item.id);
+                                 setSelectedRecoveryPath(item.recovery_path ?? 'repay_now');
+                                 setRecoveryNote(item.admin_note ?? '');
+                              }}
+                              className={`block w-full border-b border-[#2a1453] p-5 text-left transition last:border-b-0 hover:bg-[#241044] ${
+                                 selectedDefaultCase?.id === item.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'
+                              }`}
+                           >
+                              <div className="flex items-start justify-between gap-4">
+                                 <div>
+                                    <h3 className="text-2xl font-black">{item.borrower}</h3>
+                                    <p className="mt-2 text-lg text-[#a89bb8]">
+                                       Lender: {item.lender} · due {formatDate(item.due_date)}
                                     </p>
-                                 )}
-                              </article>
-                           ))}
-                        </div>
-                        {!borrowerTrustRows.length ? <EmptyPanel message="No borrower rows loaded yet." /> : null}
-                     </div>
-
-                     <section id="trust-points-reference-guide" className="space-y-5 scroll-mt-8">
-                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                           <p className="text-sm font-black uppercase tracking-wide text-[#8336f0]">Reference guide</p>
-                           <h3 className="mt-2 text-4xl font-black text-white">Pandesal points reference guide</h3>
-                           <p className="mt-3 text-xl font-bold leading-8 text-[#a89bb8]">
-                              These live rules are stored as milestone definitions and awarded through the borrower Pandesal points ledger.
-                           </p>
-                        </div>
-                        <div className="grid gap-5 xl:grid-cols-2">
-                           {trustPointsAwardRules.map((rule) => (
-                              <article key={rule.id} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                                 <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                       <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">{rule.system}</p>
-                                       <h4 className="mt-2 text-3xl font-black text-white">{rule.action}</h4>
-                                    </div>
-                                    <Badge tone={rule.status === 'live' ? 'active' : 'watchlist'}>{ruleStatusLabel(rule.status)}</Badge>
                                  </div>
-                                 <dl className="mt-5 grid gap-4">
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Points</dt>
-                                       <dd className="mt-1 text-2xl font-black text-white">{rule.points}</dd>
-                                    </div>
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Who gets it</dt>
-                                       <dd className="mt-1 text-2xl font-black text-white">{rule.actor}</dd>
-                                    </div>
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Criteria</dt>
-                                       <dd className="mt-1 text-xl font-bold leading-8 text-[#a89bb8]">{rule.criteria}</dd>
-                                    </div>
-                                    <div>
-                                       <dt className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Example</dt>
-                                       <dd className="mt-1 text-xl font-black text-white">{rule.example}</dd>
-                                    </div>
-                                 </dl>
-                              </article>
-                           ))}
-                        </div>
-                     </section>
-                  </section>
-               ) : null}
-
-               {activeTab === 'defaults' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Default recovery</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Live overdue loans plus active recovery cases. Saving a path creates or updates a recovery case and audit action.
-                        </p>
+                                 <strong className="text-3xl font-black">{formatMoney(item.amount_due)}</strong>
+                              </div>
+                              <div className="mt-4 flex flex-wrap gap-3">
+                                 <Badge tone={item.days_late > 0 ? 'overdue' : 'default'}>{item.days_late} days late</Badge>
+                                 <Badge tone={item.status}>{item.status.replace('_', ' ')}</Badge>
+                                 <Badge tone={item.source}>{item.source === 'overdue_loan' ? 'live loan' : 'recovery case'}</Badge>
+                              </div>
+                              <p className="mt-4 text-lg leading-7 text-[#a89bb8]">
+                                 {item.evidence_summary ?? item.borrower_explanation ?? 'No admin evidence note yet.'}
+                              </p>
+                           </button>
+                        ))}
                      </div>
-                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <StatCard label="Overdue loans" value={overview?.defaultedLoanCount ?? 0} note="Live from loans" />
-                        <StatCard label="Recovery cases" value={overview?.recoveryReviewCount ?? 0} note="Needs review / active" />
-                        <StatCard label="Active loans" value={overview?.activeLoanCount ?? 0} note="Funded and unpaid" />
-                        <StatCard label="High risk" value={overview?.highRiskProfileCount ?? 0} note="Risk profile rows" />
-                     </div>
-                     {!defaultCases.length ? <EmptyPanel message="No overdue loans or active recovery cases found." /> : null}
-                     {defaultCases.length ? (
-                        <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,520px)_minmax(0,1fr)]">
-                           <div className="self-start overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
-                              {defaultCases.map((item) => (
+                     {selectedDefaultCase ? (
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div>
+                                 <h3 className="text-3xl font-black">Recovery plan</h3>
+                                 <p className="mt-2 text-lg font-bold text-[#a89bb8]">
+                                    {selectedDefaultCase.borrower} owes {formatMoney(selectedDefaultCase.amount_due)}.
+                                 </p>
+                              </div>
+                              <Badge tone={selectedDefaultCase.status}>{selectedDefaultCase.status.replace('_', ' ')}</Badge>
+                           </div>
+                           <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                              {recoveryPaths.map((path) => (
                                  <button
-                                    key={item.id}
+                                    key={path.name}
                                     type="button"
-                                    onClick={() => {
-                                       setSelectedDefaultCaseId(item.id);
-                                       setSelectedRecoveryPath(item.recovery_path ?? 'repay_now');
-                                       setRecoveryNote(item.admin_note ?? '');
-                                    }}
-                                    className={`block w-full border-b border-[#2a1453] p-5 text-left transition last:border-b-0 hover:bg-[#241044] ${
-                                       selectedDefaultCase?.id === item.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'
+                                    onClick={() => setSelectedRecoveryPath(path.name)}
+                                    className={`rounded-2xl border p-5 text-left transition ${
+                                       selectedRecoveryPath === path.name
+                                          ? 'border-[#8336f0] bg-[#2a1453] shadow-[0_0_0_3px_rgba(131,54,240,0.12)]'
+                                          : 'border-[#3d1f6e] bg-[#241044] hover:border-[#8336f0]'
                                     }`}
                                  >
-                                    <div className="flex items-start justify-between gap-4">
-                                       <div>
-                                          <h3 className="text-2xl font-black">{item.borrower}</h3>
-                                          <p className="mt-2 text-lg text-[#a89bb8]">
-                                             Lender: {item.lender} · due {formatDate(item.due_date)}
-                                          </p>
-                                       </div>
-                                       <strong className="text-3xl font-black">{formatMoney(item.amount_due)}</strong>
-                                    </div>
-                                    <div className="mt-4 flex flex-wrap gap-3">
-                                       <Badge tone={item.days_late > 0 ? 'overdue' : 'default'}>{item.days_late} days late</Badge>
-                                       <Badge tone={item.status}>{item.status.replace('_', ' ')}</Badge>
-                                       <Badge tone={item.source}>{item.source === 'overdue_loan' ? 'live loan' : 'recovery case'}</Badge>
-                                    </div>
-                                    <p className="mt-4 text-lg leading-7 text-[#a89bb8]">
-                                       {item.evidence_summary ?? item.borrower_explanation ?? 'No admin evidence note yet.'}
-                                    </p>
+                                    <span className="mb-3 inline-flex rounded-full bg-[#241044] px-3 py-1 text-sm font-black uppercase tracking-wide text-[#8336f0]">
+                                       {selectedRecoveryPath === path.name ? 'Selected' : 'Choose'}
+                                    </span>
+                                    <strong className="block text-2xl font-black">{path.label}</strong>
+                                    <span className="mt-2 block text-lg text-[#a89bb8]">{path.detail}</span>
                                  </button>
                               ))}
                            </div>
-                           {selectedDefaultCase ? (
-                              <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                                 <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                       <h3 className="text-3xl font-black">Recovery plan</h3>
-                                       <p className="mt-2 text-lg font-bold text-[#a89bb8]">
-                                          {selectedDefaultCase.borrower} owes {formatMoney(selectedDefaultCase.amount_due)}.
-                                       </p>
-                                    </div>
-                                    <Badge tone={selectedDefaultCase.status}>{selectedDefaultCase.status.replace('_', ' ')}</Badge>
-                                 </div>
-                                 <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                                    {recoveryPaths.map((path) => (
-                                       <button
-                                          key={path.name}
-                                          type="button"
-                                          onClick={() => setSelectedRecoveryPath(path.name)}
-                                          className={`rounded-2xl border p-5 text-left transition ${
-                                             selectedRecoveryPath === path.name
-                                                ? 'border-[#8336f0] bg-[#2a1453] shadow-[0_0_0_3px_rgba(131,54,240,0.12)]'
-                                                : 'border-[#3d1f6e] bg-[#241044] hover:border-[#8336f0]'
-                                          }`}
-                                       >
-                                          <span className="mb-3 inline-flex rounded-full bg-[#241044] px-3 py-1 text-sm font-black uppercase tracking-wide text-[#8336f0]">
-                                             {selectedRecoveryPath === path.name ? 'Selected' : 'Choose'}
-                                          </span>
-                                          <strong className="block text-2xl font-black">{path.label}</strong>
-                                          <span className="mt-2 block text-lg text-[#a89bb8]">{path.detail}</span>
-                                       </button>
-                                    ))}
-                                 </div>
-                                 <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
-                                    Admin note
-                                    <textarea
-                                       value={recoveryNote}
-                                       onChange={(event) => setRecoveryNote(event.target.value)}
-                                       className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
-                                       placeholder="Record the team decision or next step"
-                                    />
-                                 </label>
-                                 <button
-                                    type="button"
-                                    onClick={handleSaveRecoveryPath}
-                                    className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
-                                 >
-                                    Save recovery plan
-                                 </button>
-                                 <p className="mt-3 text-base font-bold text-[#a89bb8]">
-                                    This records the plan and audit action. It does not silently change repayment amounts or send money.
-                                 </p>
-                              </div>
-                           ) : null}
-                        </div>
-                     ) : null}
-                  </section>
-               ) : null}
-
-               {activeTab === 'requests' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loan request review</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Live open requests from the request board. Review actions write to admin review records.
-                        </p>
-                     </div>
-                     {!loanRequests.length ? <EmptyPanel message="No open loan requests found." /> : null}
-                     {loanRequests.length ? (
-                        <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-                           <div className="overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
-                              {loanRequests.map((request) => (
-                                 <button
-                                    key={request.id}
-                                    type="button"
-                                    onClick={() => setSelectedRequestId(request.id)}
-                                    className={`block w-full border-b border-[#2a1453] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'}`}
-                                 >
-                                    <div className="flex items-center justify-between gap-4">
-                                       <h3 className="text-3xl font-black underline underline-offset-4">
-                                          {request.borrower?.username ?? 'Unknown borrower'}
-                                       </h3>
-                                       <strong className="text-3xl">{formatMoney(request.loan_amount)}</strong>
-                                    </div>
-                                    <div className="mt-3 flex flex-wrap gap-3">
-                                       <Badge tone={request.borrower?.user_role ?? 'borrower'}>
-                                          {request.borrower?.user_role ?? 'borrower'}
-                                       </Badge>
-                                       <Badge tone={requestStatus(request)}>{requestStatus(request).replace('_', ' ')}</Badge>
-                                       <Badge tone={isUserVerified(request.borrower) ? 'ACTIVE' : 'INACTIVE'}>
-                                          {isUserVerified(request.borrower) ? 'verified' : 'not verified'}
-                                       </Badge>
-                                    </div>
-                                    <p className="mt-3 text-xl text-[#a89bb8]">{request.reason}</p>
-                                 </button>
-                              ))}
-                           </div>
-                           {selectedRequest ? (
-                              <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                                 <h3 className="text-3xl font-black">Request detail</h3>
-                                 <p className="mt-2 text-xl text-[#a89bb8]">Review clearly. This does not ban the borrower.</p>
-                                 <div className="mt-5 grid gap-4">
-                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
-                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Borrower</p>
-                                       <strong className="mt-2 block text-3xl underline">
-                                          {selectedRequest.borrower?.username ?? 'Unknown borrower'}
-                                       </strong>
-                                    </div>
-                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
-                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Terms</p>
-                                       <strong className="mt-2 block text-2xl">
-                                          {formatMoney(selectedRequest.loan_amount)} request ·{' '}
-                                          {formatMoney(selectedRequest.total_repayment_amount)} repay · due{' '}
-                                          {formatDate(selectedRequest.due_date)}
-                                       </strong>
-                                    </div>
-                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
-                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Reason</p>
-                                       <strong className="mt-2 block text-2xl">{selectedRequest.reason}</strong>
-                                    </div>
-                                    <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
-                                       <p className="text-sm font-black uppercase text-[#a89bb8]">Posted</p>
-                                       <strong className="mt-2 block text-2xl">{formatDate(selectedRequest.created_at)}</strong>
-                                    </div>
-                                    {selectedRequest.review ? (
-                                       <div className="rounded-2xl border border-emerald-900 bg-emerald-950/60 p-5">
-                                          <p className="text-sm font-black uppercase text-emerald-400">Review status</p>
-                                          <strong className="mt-2 block text-2xl text-emerald-300">{selectedRequest.review.status}</strong>
-                                       </div>
-                                    ) : null}
-                                 </div>
-                                 <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
-                                    Review note
-                                    <textarea
-                                       value={requestReviewNote}
-                                       onChange={(event) => setRequestReviewNote(event.target.value)}
-                                       className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
-                                    />
-                                 </label>
-                                 <button
-                                    type="button"
-                                    onClick={() => handleLoanRequestAction('remove_review')}
-                                    className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
-                                 >
-                                    Flag for removal review
-                                 </button>
-                                 <button
-                                    type="button"
-                                    onClick={() => handleLoanRequestAction('keep')}
-                                    className="mt-3 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 py-4 text-xl font-black text-white"
-                                 >
-                                    Reviewed, keep visible
-                                 </button>
-                                 <button
-                                    type="button"
-                                    onClick={() => {
-                                       setNoticeUsername(selectedRequest.borrower?.username ?? '');
-                                       setSelectedTemplateId('borrower-overdue');
-                                       setActiveTab('notifications');
-                                    }}
-                                    className="mt-3 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
-                                 >
-                                    Notify borrower
-                                 </button>
-                              </div>
-                           ) : null}
-                        </div>
-                     ) : null}
-                  </section>
-               ) : null}
-
-               {activeTab === 'risk' ? (
-                  <RiskAssessmentSection
-                     directoryRows={users}
-                     adminDataLoading={adminDataLoading}
-                     adminDataLoaded={adminDataLoaded}
-                     currentAdminId={admin?.user_id ?? reduxUser?.id ?? null}
-                     onSwitchToNotifications={(username) => {
-                        setNoticeUsername(username);
-                        setActiveTab('notifications');
-                     }}
-                  />
-               ) : null}
-
-               {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
-
-               {activeTab === 'mule-risk' ? <MuleRiskSection /> : null}
-
-               {activeTab === 'refunds' ? <RefundSection /> : null}
-
-               {activeTab === 'analytics' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Growth &amp; analytics</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
-                     </div>
-                     <GrowthAnalyticsSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'on-chain' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">On-chain (Base)</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">Admin wallet & LoanManager activity, via Dune.</p>
-                     </div>
-                     <OnChainSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'ux-health' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">UX health</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Where users get stuck or frustrated — sign-in, onboarding, rage clicks, and errors.
-                        </p>
-                     </div>
-                     <UxHealthSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'loans' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loans</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Every loan — requested, active, paid back, or not paid back. Filter and search to dig in.
-                        </p>
-                     </div>
-                     <LoanExplorerSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'pricing' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Pricing health</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Are borrowers pricing their loans right? How the return they offer compares to the suggested range.
-                        </p>
-                     </div>
-                     <PricingHealthSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'coming-due' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Coming due</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Active loans by due date, with a countdown and borrower contact info — so we can nudge before anything defaults.
-                        </p>
-                     </div>
-                     <ComingDueSection
-                        onExtend={(loanId) => {
-                           setExtensionLoanId(loanId);
-                           setActiveTab('extensions');
-                        }}
-                     />
-                  </section>
-               ) : null}
-
-               {activeTab === 'extensions' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Loan extensions</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Push a funded loan&apos;s due date out. Both the borrower and the lender are notified automatically.
-                        </p>
-                     </div>
-                     <LoanExtensionSection initialLoanId={extensionLoanId} actorUserId={admin?.user_id ?? reduxUser?.id ?? null} />
-                  </section>
-               ) : null}
-
-               {activeTab === 'referrals' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Referral codes</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
-                     </div>
-                     <ReferralCodesSection />
-                     <VoucherClaimsSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'borrower-contacts' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Borrower contacts</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Facebook, WhatsApp, Telegram and LINE for every borrower, with who repaid late. Borrowers only.
-                        </p>
-                     </div>
-                     <BorrowerContactsSection />
-                  </section>
-               ) : null}
-
-               {activeTab === 'chat' ? <SupportChatSection /> : null}
-
-               {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
-
-               {activeTab === 'demo-platform' ? <DemoB2BSection page="platform" /> : null}
-               {activeTab === 'demo-b2c-dashboard' ? <DemoB2CSection page="dashboard" /> : null}
-               {activeTab === 'demo-b2c-assets' ? <DemoB2CSection page="assets" /> : null}
-               {activeTab === 'demo-monday' ? <DemoB2BSection page="monday" /> : null}
-               {activeTab === 'demo-map' ? <DemoB2BSection page="map" /> : null}
-               {activeTab === 'demo-console' ? <DemoB2BSection page="console" /> : null}
-               {activeTab === 'demo-spec' ? <DemoB2BSection page="spec" /> : null}
-
-               {activeTab === 'notifications' ? (
-                  <section className="space-y-6">
-                     <div>
-                        <h2 className="break-words text-4xl font-black sm:text-5xl">Notifications</h2>
-                        <p className="mt-3 text-2xl text-[#a89bb8]">
-                           Send in-app notices to real users. These appear when they open Moodeng.
-                        </p>
-                     </div>
-                     <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
-                        <div className="grid gap-4">
-                           {noticeTemplates.map((template) => (
-                              <button
-                                 key={template.id}
-                                 type="button"
-                                 onClick={() => setSelectedTemplateId(template.id)}
-                                 className={`rounded-3xl border p-6 text-left  ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#241044]' : 'border-[#2a1453] bg-[#1c0a3a]'}`}
-                              >
-                                 <Badge tone={template.audience}>{template.audience.replace('_', ' ')}</Badge>
-                                 <h3 className="mt-4 text-3xl font-black">{template.title}</h3>
-                                 <p className="mt-3 text-xl text-[#a89bb8]">{template.body}</p>
-                              </button>
-                           ))}
-                        </div>
-                        <form onSubmit={handleSendNotice} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
-                           <h3 className="text-3xl font-black">Send notification</h3>
-                           <p className="mt-2 text-xl text-[#a89bb8]">Selected: {selectedTemplate.title}</p>
-                           <input
-                              value={noticeUsername}
-                              onChange={(event) => setNoticeUsername(event.target.value)}
-                              placeholder="Username"
-                              className="mt-5 h-16 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 text-2xl text-white placeholder:text-[#a89bb8]"
-                           />
-                           <div className="mt-4 rounded-3xl border border-[#2a1453] bg-[#1c0a3a]">
-                              <div className="border-b border-[#2a1453] p-4">
-                                 <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Matching users</p>
-                                 <p className="mt-1 text-base font-bold text-[#a89bb8]">
-                                    Click a person below to fill the username before sending.
-                                 </p>
-                              </div>
-                              <div className="max-h-80 overflow-y-auto">
-                                 {noticeRecipientRows.length ? (
-                                    noticeRecipientRows.map((user) => (
-                                       <button
-                                          key={user.id}
-                                          type="button"
-                                          onClick={() => setNoticeUsername(user.username)}
-                                          className={`flex w-full items-start gap-3 border-b border-[#2a1453] p-4 text-left last:border-b-0 ${
-                                             noticeUsername === user.username ? 'bg-[#241044]' : 'bg-[#1c0a3a] hover:bg-[#241044]'
-                                          }`}
-                                       >
-                                          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#8336f0] text-lg font-black text-white">
-                                             {user.username.charAt(0).toUpperCase()}
-                                          </span>
-                                          <span className="min-w-0 flex-1">
-                                             <span className="block break-words text-xl font-black text-white">{user.username}</span>
-                                             <span className="mt-1 block break-all text-base font-bold text-[#a89bb8]">
-                                                {shortWallet(user.wallet_address)}
-                                             </span>
-                                          </span>
-                                          <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
-                                       </button>
-                                    ))
-                                 ) : (
-                                    <div className="p-5 text-lg font-bold text-[#a89bb8]">
-                                       {adminDataLoading && !adminDataLoaded
-                                          ? 'Loading matching users from Supabase...'
-                                          : 'No matching users found. Check the spelling or search by wallet.'}
-                                    </div>
-                                 )}
-                              </div>
-                           </div>
-                           <div className="mt-5 rounded-3xl border border-[#2a1453] bg-[#241044] p-5">
-                              <Badge tone={selectedTemplate.audience}>{selectedTemplate.audience.replace('_', ' ')}</Badge>
-                              <h4 className="mt-4 text-3xl font-black">{selectedTemplate.title}</h4>
-                              <p className="mt-3 text-xl text-[#a89bb8]">{selectedTemplate.body}</p>
-                           </div>
-                           <button className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">
-                              Send notification
+                           <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
+                              Admin note
+                              <textarea
+                                 value={recoveryNote}
+                                 onChange={(event) => setRecoveryNote(event.target.value)}
+                                 className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
+                                 placeholder="Record the team decision or next step"
+                              />
+                           </label>
+                           <button
+                              type="button"
+                              onClick={handleSaveRecoveryPath}
+                              className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
+                           >
+                              Save recovery plan
                            </button>
-                        </form>
-                     </div>
-                  </section>
+                           <p className="mt-3 text-base font-bold text-[#a89bb8]">
+                              This records the plan and audit action. It does not silently change repayment amounts or send money.
+                           </p>
+                        </div>
+                     ) : null}
+                  </div>
                ) : null}
             </section>
-         </div>
-      </main>
+         ) : null}
+
+         {activeTab === 'requests' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Loan request review</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Live open requests from the request board. Review actions write to admin review records.
+                  </p>
+               </div>
+               {!loanRequests.length ? <EmptyPanel message="No open loan requests found." /> : null}
+               {loanRequests.length ? (
+                  <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+                     <div className="overflow-hidden rounded-3xl border border-[#2a1453] bg-[#1c0a3a] ">
+                        {loanRequests.map((request) => (
+                           <button
+                              key={request.id}
+                              type="button"
+                              onClick={() => setSelectedRequestId(request.id)}
+                              className={`block w-full border-b border-[#2a1453] p-6 text-left last:border-b-0 ${selectedRequest?.id === request.id ? 'bg-[#241044]' : 'bg-[#1c0a3a]'}`}
+                           >
+                              <div className="flex items-center justify-between gap-4">
+                                 <h3 className="text-3xl font-black underline underline-offset-4">
+                                    {request.borrower?.username ?? 'Unknown borrower'}
+                                 </h3>
+                                 <strong className="text-3xl">{formatMoney(request.loan_amount)}</strong>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-3">
+                                 <Badge tone={request.borrower?.user_role ?? 'borrower'}>
+                                    {request.borrower?.user_role ?? 'borrower'}
+                                 </Badge>
+                                 <Badge tone={requestStatus(request)}>{requestStatus(request).replace('_', ' ')}</Badge>
+                                 <Badge tone={isUserVerified(request.borrower) ? 'ACTIVE' : 'INACTIVE'}>
+                                    {isUserVerified(request.borrower) ? 'verified' : 'not verified'}
+                                 </Badge>
+                              </div>
+                              <p className="mt-3 text-xl text-[#a89bb8]">{request.reason}</p>
+                           </button>
+                        ))}
+                     </div>
+                     {selectedRequest ? (
+                        <div className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                           <h3 className="text-3xl font-black">Request detail</h3>
+                           <p className="mt-2 text-xl text-[#a89bb8]">Review clearly. This does not ban the borrower.</p>
+                           <div className="mt-5 grid gap-4">
+                              <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                 <p className="text-sm font-black uppercase text-[#a89bb8]">Borrower</p>
+                                 <strong className="mt-2 block text-3xl underline">
+                                    {selectedRequest.borrower?.username ?? 'Unknown borrower'}
+                                 </strong>
+                              </div>
+                              <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                 <p className="text-sm font-black uppercase text-[#a89bb8]">Terms</p>
+                                 <strong className="mt-2 block text-2xl">
+                                    {formatMoney(selectedRequest.loan_amount)} request ·{' '}
+                                    {formatMoney(selectedRequest.total_repayment_amount)} repay · due{' '}
+                                    {formatDate(selectedRequest.due_date)}
+                                 </strong>
+                              </div>
+                              <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                 <p className="text-sm font-black uppercase text-[#a89bb8]">Reason</p>
+                                 <strong className="mt-2 block text-2xl">{selectedRequest.reason}</strong>
+                              </div>
+                              <div className="rounded-2xl border border-[#2a1453] bg-[#241044] p-5">
+                                 <p className="text-sm font-black uppercase text-[#a89bb8]">Posted</p>
+                                 <strong className="mt-2 block text-2xl">{formatDate(selectedRequest.created_at)}</strong>
+                              </div>
+                              {selectedRequest.review ? (
+                                 <div className="rounded-2xl border border-emerald-900 bg-emerald-950/60 p-5">
+                                    <p className="text-sm font-black uppercase text-emerald-400">Review status</p>
+                                    <strong className="mt-2 block text-2xl text-emerald-300">{selectedRequest.review.status}</strong>
+                                 </div>
+                              ) : null}
+                           </div>
+                           <label className="mt-5 grid gap-2 text-sm font-black uppercase tracking-wide text-[#a89bb8]">
+                              Review note
+                              <textarea
+                                 value={requestReviewNote}
+                                 onChange={(event) => setRequestReviewNote(event.target.value)}
+                                 className="min-h-28 rounded-2xl border border-[#3d1f6e] bg-[#241044] p-4 text-lg font-bold normal-case tracking-normal text-white placeholder:text-[#a89bb8]"
+                              />
+                           </label>
+                           <button
+                              type="button"
+                              onClick={() => handleLoanRequestAction('remove_review')}
+                              className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-4 text-xl font-black text-white"
+                           >
+                              Flag for removal review
+                           </button>
+                           <button
+                              type="button"
+                              onClick={() => handleLoanRequestAction('keep')}
+                              className="mt-3 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 py-4 text-xl font-black text-white"
+                           >
+                              Reviewed, keep visible
+                           </button>
+                           <button
+                              type="button"
+                              onClick={() => {
+                                 setNoticeUsername(selectedRequest.borrower?.username ?? '');
+                                 setSelectedTemplateId('borrower-overdue');
+                                 setActiveTab('notifications');
+                              }}
+                              className="mt-3 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white"
+                           >
+                              Notify borrower
+                           </button>
+                        </div>
+                     ) : null}
+                  </div>
+               ) : null}
+            </section>
+         ) : null}
+
+         {activeTab === 'risk' ? (
+            <RiskAssessmentSection
+               directoryRows={users}
+               adminDataLoading={adminDataLoading}
+               adminDataLoaded={adminDataLoaded}
+               currentAdminId={admin?.user_id ?? reduxUser?.id ?? null}
+               onSwitchToNotifications={(username) => {
+                  setNoticeUsername(username);
+                  setActiveTab('notifications');
+               }}
+            />
+         ) : null}
+
+         {activeTab === 'self-lending' ? <SelfLendingSection /> : null}
+
+         {activeTab === 'mule-risk' ? <MuleRiskSection /> : null}
+
+         {activeTab === 'refunds' ? <RefundSection /> : null}
+
+         {activeTab === 'analytics' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Growth &amp; analytics</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
+               </div>
+               <GrowthAnalyticsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'on-chain' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">On-chain (Base)</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Admin wallet & LoanManager activity, via Dune.</p>
+               </div>
+               <OnChainSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'ux-health' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">UX health</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Where users get stuck or frustrated — sign-in, onboarding, rage clicks, and errors.
+                  </p>
+               </div>
+               <UxHealthSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'loans' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Loans</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Every loan — requested, active, paid back, or not paid back. Filter and search to dig in.
+                  </p>
+               </div>
+               <LoanExplorerSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'pricing' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Pricing health</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Are borrowers pricing their loans right? How the return they offer compares to the suggested range.
+                  </p>
+               </div>
+               <PricingHealthSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'coming-due' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Coming due</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Active loans by due date, with a countdown and borrower contact info — so we can nudge before anything defaults.
+                  </p>
+               </div>
+               <ComingDueSection
+                  onExtend={(loanId) => {
+                     setExtensionLoanId(loanId);
+                     setActiveTab('extensions');
+                  }}
+               />
+            </section>
+         ) : null}
+
+         {activeTab === 'extensions' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Loan extensions</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Push a funded loan&apos;s due date out. Both the borrower and the lender are notified automatically.
+                  </p>
+               </div>
+               <LoanExtensionSection initialLoanId={extensionLoanId} actorUserId={admin?.user_id ?? reduxUser?.id ?? null} />
+            </section>
+         ) : null}
+
+         {activeTab === 'referrals' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Referral codes</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
+               </div>
+               <ReferralCodesSection />
+               <VoucherClaimsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'borrower-contacts' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Borrower contacts</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Facebook, WhatsApp, Telegram and LINE for every borrower, with who repaid late. Borrowers only.
+                  </p>
+               </div>
+               <BorrowerContactsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'calendar' ? <CalendarSection /> : null}
+
+         {activeTab === 'chat' ? <SupportChatSection /> : null}
+
+         {activeTab === 'relay' && isFundingAdmin ? <RelayLinksSection /> : null}
+
+         {activeTab === 'demo-platform' ? <DemoB2BSection page="platform" /> : null}
+         {activeTab === 'demo-b2c-dashboard' ? <DemoB2CSection page="dashboard" /> : null}
+         {activeTab === 'demo-b2c-assets' ? <DemoB2CSection page="assets" /> : null}
+         {activeTab === 'demo-monday' ? <DemoB2BSection page="monday" /> : null}
+         {activeTab === 'demo-map' ? <DemoB2BSection page="map" /> : null}
+         {activeTab === 'demo-console' ? <DemoB2BSection page="console" /> : null}
+         {activeTab === 'demo-spec' ? <DemoB2BSection page="spec" /> : null}
+
+         {activeTab === 'notifications' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Notifications</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Send in-app notices to real users. These appear when they open Moodeng.
+                  </p>
+               </div>
+               <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
+                  <div className="grid gap-4">
+                     {noticeTemplates.map((template) => (
+                        <button
+                           key={template.id}
+                           type="button"
+                           onClick={() => setSelectedTemplateId(template.id)}
+                           className={`rounded-3xl border p-6 text-left  ${selectedTemplateId === template.id ? 'border-[#8336f0] bg-[#241044]' : 'border-[#2a1453] bg-[#1c0a3a]'}`}
+                        >
+                           <Badge tone={template.audience}>{template.audience.replace('_', ' ')}</Badge>
+                           <h3 className="mt-4 text-3xl font-black">{template.title}</h3>
+                           <p className="mt-3 text-xl text-[#a89bb8]">{template.body}</p>
+                        </button>
+                     ))}
+                  </div>
+                  <form onSubmit={handleSendNotice} className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-6 ">
+                     <h3 className="text-3xl font-black">Send notification</h3>
+                     <p className="mt-2 text-xl text-[#a89bb8]">Selected: {selectedTemplate.title}</p>
+                     <input
+                        value={noticeUsername}
+                        onChange={(event) => setNoticeUsername(event.target.value)}
+                        placeholder="Username"
+                        className="mt-5 h-16 w-full rounded-2xl border border-[#3d1f6e] bg-[#241044] px-5 text-2xl text-white placeholder:text-[#a89bb8]"
+                     />
+                     <div className="mt-4 rounded-3xl border border-[#2a1453] bg-[#1c0a3a]">
+                        <div className="border-b border-[#2a1453] p-4">
+                           <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Matching users</p>
+                           <p className="mt-1 text-base font-bold text-[#a89bb8]">
+                              Click a person below to fill the username before sending.
+                           </p>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto">
+                           {noticeRecipientRows.length ? (
+                              noticeRecipientRows.map((user) => (
+                                 <button
+                                    key={user.id}
+                                    type="button"
+                                    onClick={() => setNoticeUsername(user.username)}
+                                    className={`flex w-full items-start gap-3 border-b border-[#2a1453] p-4 text-left last:border-b-0 ${
+                                       noticeUsername === user.username ? 'bg-[#241044]' : 'bg-[#1c0a3a] hover:bg-[#241044]'
+                                    }`}
+                                 >
+                                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#8336f0] text-lg font-black text-white">
+                                       {user.username.charAt(0).toUpperCase()}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                       <span className="block break-words text-xl font-black text-white">{user.username}</span>
+                                       <span className="mt-1 block break-all text-base font-bold text-[#a89bb8]">
+                                          {shortWallet(user.wallet_address)}
+                                       </span>
+                                    </span>
+                                    <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
+                                 </button>
+                              ))
+                           ) : (
+                              <div className="p-5 text-lg font-bold text-[#a89bb8]">
+                                 {adminDataLoading && !adminDataLoaded
+                                    ? 'Loading matching users from Supabase...'
+                                    : 'No matching users found. Check the spelling or search by wallet.'}
+                              </div>
+                           )}
+                        </div>
+                     </div>
+                     <div className="mt-5 rounded-3xl border border-[#2a1453] bg-[#241044] p-5">
+                        <Badge tone={selectedTemplate.audience}>{selectedTemplate.audience.replace('_', ' ')}</Badge>
+                        <h4 className="mt-4 text-3xl font-black">{selectedTemplate.title}</h4>
+                        <p className="mt-3 text-xl text-[#a89bb8]">{selectedTemplate.body}</p>
+                     </div>
+                     <button className="mt-5 w-full rounded-2xl bg-[#8336f0] px-5 py-4 text-xl font-black text-white">
+                        Send notification
+                     </button>
+                  </form>
+               </div>
+            </section>
+         ) : null}
+      </AdminShell>
    );
 }

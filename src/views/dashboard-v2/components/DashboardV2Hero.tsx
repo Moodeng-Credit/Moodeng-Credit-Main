@@ -136,10 +136,10 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          <DesignImage
             src={getMoodengAsset(browsedTier.id, model.mood)}
             alt={`${browsedTier.label} Moodeng${browsedTierIndex > currentTierIndex ? ' (not reached yet)' : ''}`}
-            // Designer: a tier the borrower hasn't reached yet shows in gray while browsing with the arrows.
+            // Designer: a tier the borrower hasn't reached yet shows in gray (fully opaque) while browsing with the arrows.
             className={clsx(
-               'absolute left-1/2 h-[164px] w-[164px] -translate-x-1/2 transition-[filter,opacity] duration-300',
-               browsedTierIndex > currentTierIndex && 'opacity-70 grayscale'
+               'absolute left-1/2 h-[164px] w-[164px] -translate-x-1/2 transition-[filter] duration-300',
+               browsedTierIndex > currentTierIndex && 'grayscale'
             )}
             style={{ top: CHARACTER_TOP[model.mood] }}
          />
@@ -169,6 +169,15 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             aria-hidden="true"
          />
          <DesignImage src={getTierTrackAsset(model.tier)} className="absolute left-0 top-[260px] h-7 w-full" />
+         {/* Designer: the dot of the tier being browsed with the arrows lights up red and slides along the track. */}
+         <span
+            className="pointer-events-none absolute h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#ff3b4f] shadow-[0_0_0_4px_rgba(255,59,79,0.3),0_1px_3px_rgba(0,0,0,0.3)] transition-[left,top] duration-300"
+            style={{
+               left: `${(TIER_DOT_X[browsedTierIndex] / TRACK_WIDTH) * 100}%`,
+               top: TRACK_TOP + trackYAt(TIER_DOT_X[browsedTierIndex])
+            }}
+            aria-hidden="true"
+         />
          {/* "You are here": a pandesal sitting on the track at the user's progress toward the next tier.
              The track stretches horizontally with the screen but keeps its 28px height, so x is a
              percentage and y is pixels. */}

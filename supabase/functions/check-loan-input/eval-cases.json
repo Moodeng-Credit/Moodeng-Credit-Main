@@ -1,0 +1,60 @@
+{
+  "_about": "Loan-reason checker test set. 'pass' = real reasons lenders funded (must come back good or tip). 'nudge' = no real purpose (vague or placeholder). 'not_english' = must be rejected with an English translation as the suggestion. 'not_allowed' = purposes we never fund. Run: node tools/eval-loan-reason.mjs",
+  "pass": [
+    "Allowance",
+    "Additional vacation funds",
+    "Additional living expenses",
+    "Family expenses in the Philippines",
+    "To support my kids in the Philippines.",
+    "visa application",
+    "Allowance for my parents",
+    "I'm requesting a short-term loan to cover emergency bill payments until my salary is credited on the 31st.",
+    "pay for bills and to pay some emergency at home",
+    "Borrowing to cover rent, electricity, water, and internet bills until my next salary. Repayment will be made on time.",
+    "I'm on summer break. No work No pay.  I need funds to support my kids in the Philippines.",
+    "I need the funds for medical checkup and meds as well",
+    "Utility bills are due last week and our payday is every 20th of the month.",
+    "I will use the money for For electric bills, and medicines",
+    "Need quick cash for electricity bills before payday",
+    "For medical need. I need to buy medicine for maintemamce",
+    "I need it to pay my bills and additional for my business.",
+    "The loan will be used to cover important personal expenses and improve my overall financial stability. I have a stable source of income and a clear repayment plan.",
+    "Need to change engine oil for my old toyota",
+    "urgent personal expenses and manage my finances until my next pay cycle, will pay Sept 20, 2026",
+    "Printer fixing ready to get job interview",
+    "For our living expenses while waiting for our next salary schedule, since we won't be receiving our regular salary in September due to the summer break. This would really help us cover my needs.",
+    "I need extra funds for additional lab tests and blood work.",
+    "I need a short-term loan of $15 (approximately IDR 250,000) to purchase additional ingredients and food supplies for my small UMKM business.",
+    "To my small business, to pay social media advertising",
+    "To repair my bike and laptop that I need for my daily commute",
+    "For medicines and electric bill. I will promise to pay on time.",
+    "I will be using it to buy school supplies. And i am building a good credit rating here.",
+    "I would need to pay my power bill and buy some groceries",
+    "I'm hoping to borrow 20 to help cover an urgent medical need. I need the money for essential expenses such as medicine, consultation, or treatment.",
+    "Emergency Expenses for my medical hope you can help me",
+    "To cover urgent utilities and The funds will help me manage these necessary expenses until my next payday."
+  ],
+  "nudge": [
+    "loan",
+    "need money",
+    "asdfghjkl qwerty",
+    "for personal use",
+    "personal",
+    "help me please",
+    "money money money money money money",
+    "lorem ipsum dolor sit amet consectetur adipiscing",
+    "I need a loan for something I need to buy okay thanks",
+    "test test test test test test test test"
+  ],
+  "not_english": [
+    "Pambayad sa kuryente at gamot ng nanay ko bago ang sahod sa Biyernes",
+    "Kailangan ko pambili ng gamot para sa anak ko na may lagnat",
+    "Untuk bayar bil elektrik dan beli ubat untuk ibu saya sebelum gaji masuk",
+    "Pang bayad ng tuition ng anak ko, sahod ko sa 15"
+  ],
+  "not_allowed": [
+    "Bet on the basketball game this weekend with my friends",
+    "To top up my online casino account before the weekend",
+    "To pay my loan from another lending app that is due tomorrow"
+  ]
+}

@@ -1,3 +1,4 @@
+import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
@@ -66,6 +67,11 @@ export interface AdminDirectoryUser {
    account_status: AccountStatus;
    is_world_id: 'ACTIVE' | 'INACTIVE' | null;
    is_didit: 'ACTIVE' | 'INACTIVE' | null;
+   // Facebook Messenger contact confirmation (the required contact step). messenger_verified_at is set
+   // when they confirm; messenger_psid is the SendPulse contact id we can message them on.
+   messenger_verified_at: string | null;
+   messenger_psid: string | null;
+   whatsapp_verified_at: string | null;
    cs: number | null;
    mal: number | null;
    nal: number | null;
@@ -355,7 +361,7 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
       getSupabaseBrowserClient()
          .from('users')
          .select(
-            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,cs,mal,nal,created_at,updated_at'
          )
          .in('id', uniqueIds)
    );
@@ -436,6 +442,9 @@ async function buildDirectoryRows(
          account_status: normalizeAccountStatus(row.account_status),
          is_world_id: row.is_world_id ?? null,
          is_didit: row.is_didit ?? null,
+         messenger_verified_at: row.messenger_verified_at ?? null,
+         messenger_psid: row.messenger_psid ?? null,
+         whatsapp_verified_at: row.whatsapp_verified_at ?? null,
          cs: row.cs ?? null,
          mal: row.mal ?? null,
          nal: row.nal ?? null,
@@ -576,7 +585,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    let query = supabase
       .from('users')
       .select(
-         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,cs,mal,nal,created_at,updated_at'
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,cs,mal,nal,created_at,updated_at'
       )
       .order('created_at', { ascending: false })
       .limit(2000);
@@ -2438,4 +2447,54 @@ export async function sendMessengerToBorrower(userId: string, text: string): Pro
       return { ok: false, reason: (payload as { reason?: string; error?: string } | null)?.reason ?? 'request_failed' };
    }
    return (data as { ok: boolean; reason?: string }) ?? { ok: false, reason: 'request_failed' };
+}
+
+// ---------------------------------------------------------------------------
+// Calendar — the team's Cal.com availability and bookings (admin-calendar edge function).
+// ---------------------------------------------------------------------------
+
+export interface AdminCalendarBooking {
+   uid: string;
+   title: string;
+   start: string;
+   end: string;
+   status: string;
+   location: string | null;
+   eventSlug: string | null;
+   attendees: Array<{ name: string; email: string; timeZone: string | null }>;
+}
+
+export interface AdminCalendarHost {
+   id: string;
+   schedules: CalSchedule[];
+   bookings: AdminCalendarBooking[];
+   error?: string;
+}
+
+async function invokeAdminCalendar<T>(body: Record<string, unknown>): Promise<T> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-calendar', { body });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      throw new Error((payload as { error?: string } | null)?.error ?? error.message ?? 'Calendar request failed.');
+   }
+   const result = data as T & { error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result;
+}
+
+export async function getAdminCalendar(from: Date, to: Date): Promise<AdminCalendarHost[]> {
+   const result = await invokeAdminCalendar<{ hosts: AdminCalendarHost[] }>({ action: 'overview', from: from.toISOString(), to: to.toISOString() });
+   return result.hosts ?? [];
+}
+
+export async function updateAdminCalendarSchedule(input: {
+   host: string;
+   scheduleId: number;
+   timeZone: string;
+   availability: CalAvailability[];
+   overrides: CalOverride[];
+}): Promise<CalSchedule | null> {
+   const result = await invokeAdminCalendar<{ schedule: CalSchedule | null }>({ action: 'update_schedule', ...input });
+   return result.schedule;
 }

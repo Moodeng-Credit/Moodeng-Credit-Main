@@ -160,6 +160,14 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonAction: 'retry_action'
    },
 
+   worldid_connection_error: {
+      toastType: TOAST_TYPES.ERROR,
+      title: "We couldn't finish verifying",
+      message: "We lost the connection to World ID while confirming your verification. This is on our side, not yours — message us and we'll get you sorted.",
+      buttonText: 'Contact us',
+      buttonAction: 'open_support_chat'
+   },
+
    loan_error: {
       toastType: TOAST_TYPES.ERROR,
       title: "It's awkward 😅",
@@ -384,6 +392,31 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       toastType: TOAST_TYPES.WARNING,
       title: 'Verification Not Completed',
       message: 'You did not complete World ID verification. You can try again anytime.'
+   },
+
+   worldid_credential_missing: {
+      toastType: TOAST_TYPES.WARNING,
+      title: 'World ID Not Verified Yet',
+      message:
+         'Your World App needs an Orb verification or a passport added before it can verify you. You can verify with your ID instead.'
+   },
+
+   worldid_credential_pending: {
+      toastType: TOAST_TYPES.WARNING,
+      title: 'World ID Still Processing',
+      message: 'World App is still finishing your verification. Try again in a few hours, or verify with your ID instead.'
+   },
+
+   worldid_connection_failed: {
+      toastType: TOAST_TYPES.WARNING,
+      title: "Couldn't Reach World App",
+      message: 'The connection to World App dropped before verification finished. Please try again.'
+   },
+
+   worldid_unavailable: {
+      toastType: TOAST_TYPES.ERROR,
+      title: 'World ID Unavailable',
+      message: "World ID verification isn't working right now. Please verify with your ID instead, or try again later."
    },
 
    self_lending_not_allowed: {

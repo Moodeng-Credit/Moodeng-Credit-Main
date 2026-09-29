@@ -29,8 +29,8 @@ export default function SupportChatSection() {
    return (
       <section className="space-y-6">
          <div>
-            <h2 className="break-words text-4xl font-black sm:text-5xl">Live chat</h2>
-            <p className="mt-3 text-2xl text-[#a89bb8]">
+            <h2 className="break-words text-2xl font-black sm:text-3xl">Live chat</h2>
+            <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                Read and reply to borrowers who open the in-app chat. Support runs through Discord now: each website chat opens
                a ticket in the <span className="font-black text-white">#web-support</span> forum, and your reply streams
                straight back into the visitor&rsquo;s chat window.

@@ -192,8 +192,8 @@ export default function RelayLinksSection() {
       <section className="space-y-6">
          <div className="flex items-start justify-between gap-4">
             <div>
-               <h2 className="break-words text-4xl font-black sm:text-5xl">Liquidity Relay</h2>
-               <p className="mt-3 text-2xl text-[#a89bb8]">
+               <h2 className="break-words text-2xl font-black sm:text-3xl">Liquidity Relay</h2>
+               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                   Loans Moodeng fronted via the smart contract. Share a funding link with a lender — they buy the Loan Note, refilling
                   Moodeng&rsquo;s capital. Borrower repayments then go to the lender.
                </p>

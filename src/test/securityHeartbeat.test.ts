@@ -8,6 +8,7 @@ const healthy = (): HeartbeatInput => ({
    scanLastOkAt: new Date(NOW.getTime() - 5 * 60 * 60 * 1000).toISOString(), // 5h ago
    ipLogins24h: 42,
    riskScores26h: 40,
+   riskBatchLastOkAt: new Date(NOW.getTime() - 8 * 60 * 60 * 1000).toISOString(), // 8h ago
    missingCriticalEnv: [],
    missingDegradedEnv: [],
    fraudChatIdConfigured: true,
@@ -55,7 +56,20 @@ describe('buildHeartbeat — failures', () => {
    });
 
    it('flags a stalled CRS engine', () => {
+      const { ok, message } = buildHeartbeat({ ...healthy(), riskScores26h: 0, riskBatchLastOkAt: null });
+      expect(ok).toBe(false);
+      expect(message).toContain('🔴 Risk scoring:');
+   });
+
+   it('stays green when the batch ran OK but had no new active accounts to score', () => {
       const { ok, message } = buildHeartbeat({ ...healthy(), riskScores26h: 0 });
+      expect(ok).toBe(true);
+      expect(message).toContain('✅ Risk scoring:');
+   });
+
+   it('flags a stale risk batch when nothing was scored either', () => {
+      const stale = new Date(NOW.getTime() - 30 * 60 * 60 * 1000).toISOString();
+      const { ok, message } = buildHeartbeat({ ...healthy(), riskScores26h: 0, riskBatchLastOkAt: stale });
       expect(ok).toBe(false);
       expect(message).toContain('🔴 Risk scoring:');
    });
@@ -122,7 +136,7 @@ describe('buildHeartbeat — dispatcher split fields (Phase 3)', () => {
    });
 
    it('titles a red beat with the failure count and keeps detail headerless', () => {
-      const { title, detail, message } = buildHeartbeat({ ...healthy(), ipLogins24h: 0, riskScores26h: 0 });
+      const { title, detail, message } = buildHeartbeat({ ...healthy(), ipLogins24h: 0, riskScores26h: 0, riskBatchLastOkAt: null });
       expect(title).toBe('2 check(s) down');
       expect(detail).not.toContain('SECURITY HEARTBEAT FAILURE');
       expect(message).toBe(`🔴 SECURITY HEARTBEAT FAILURE — 2 check(s) down.\n\n${detail}`);

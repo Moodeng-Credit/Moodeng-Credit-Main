@@ -153,7 +153,7 @@ export default function RiskAssessmentSection({
    );
 
    const recomputeAll = useCallback(async () => {
-      if (typeof window !== 'undefined' && !window.confirm('Recompute risk score for ALL users? This may take a minute.')) return;
+      if (typeof window !== 'undefined' && !window.confirm('Recompute risk score for new, active users (signed up in the last 14 days, seen in the last 7)?')) return;
       setBusy('batch');
       try {
          const r = await fetch('/api/risk-recompute', {
@@ -252,8 +252,8 @@ export default function RiskAssessmentSection({
       <section className="space-y-6">
          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-               <h2 className="break-words text-4xl font-black sm:text-5xl">Risk assessment</h2>
-               <p className="mt-3 text-2xl text-[#a89bb8]">
+               <h2 className="break-words text-2xl font-black sm:text-3xl">Risk assessment</h2>
+               <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
                   Consensus risk score (v1) across 7 signals: identity, velocity, repayment, network /
                   self-lending, amount, engagement, bot patterns.
                </p>
@@ -264,7 +264,7 @@ export default function RiskAssessmentSection({
                disabled={busy === 'batch'}
                className="rounded-2xl bg-[#1c053d] px-5 py-3 text-lg font-black text-white disabled:opacity-50"
             >
-               {busy === 'batch' ? 'Recomputing…' : 'Recompute all'}
+               {busy === 'batch' ? 'Recomputing…' : 'Recompute new & active'}
             </button>
          </div>
 

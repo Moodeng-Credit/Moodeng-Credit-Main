@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
 import GuidedTourPreview from '@/components/GuidedTourPreview';
+import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -23,7 +24,7 @@ import {
    WithdrawBanner
 } from '@/views/dashboard-v2/components/DashboardV2Banners';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
-import { MilestonePopup, MilestoneStreakPopup, VerifyPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
+import { MilestonePopup, MilestoneStreakPopup } from '@/views/dashboard-v2/components/DashboardV2Popups';
 import {
    LoanSummarySection,
    MilestonesSection,
@@ -239,7 +240,8 @@ export default function DashboardV2() {
                onVerify={() => setIsVerifyOpen(true)}
             />
          ) : null}
-         {isVerifyOpen ? <VerifyPopup onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard${previewSearch}`} /> : null}
+         {/* Same "Verify Yourself" chooser as onboarding, Milestones, the loan form and Repay. */}
+         <VerifyYourselfModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} returnTo={`/dashboard${previewSearch}`} />
          {showTour ? (
             <GuidedTourPreview
                startImmediately={searchParams.get('tour') === '1' || searchParams.get('startTour') === '1'}
