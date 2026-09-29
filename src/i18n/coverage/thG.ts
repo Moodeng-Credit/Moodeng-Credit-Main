@@ -112,17 +112,9 @@ export const thaiCoverageG: Record<string, string> = {
    // src/views/dashboard-v2/useDashboardV2Model.ts
    'a lender': 'ผู้ให้กู้',
 
-   // src/views/dashboard/components/ConnectStep.tsx
-
-   // src/views/dashboard/components/CreditLevelSection.tsx
-
    // src/views/dashboard/components/LenderDiversitySection.tsx
    'Unique Lender': 'ผู้ให้กู้ที่ไม่ซ้ำกัน',
    'Unique Lenders': 'ผู้ให้กู้ที่ไม่ซ้ำกัน',
-
-   // src/views/dashboard/components/LoanRequestModal.tsx
-   'more character': 'ตัวอักษร',
-   'to go': 'ที่ยังต้องพิมพ์เพิ่ม',
 
    // src/views/dashboard/components/MilestoneSheets.tsx
    'Close milestone detail': 'ปิดรายละเอียดหมุดหมาย',
@@ -491,7 +483,7 @@ export const thaiCoverageG: Record<string, string> = {
 
    // src/views/transactions/TransactionHistory.tsx
    'Awaiting lender': 'รอผู้ให้กู้',
-   'out of': 'จากยอด',
+   'out of': 'จาก',
 
    // src/views/user-profile/LenderDiversityHistory.tsx
    'Unknown lender': 'ผู้ให้กู้ที่ไม่ทราบชื่อ',
@@ -587,5 +579,6 @@ export const thaiCoverageG: Record<string, string> = {
       'Moneybees จะส่งข้อความหาคุณทางแอปแชทที่คุณเลือก เพื่อยืนยันอัตราแลกเปลี่ยนและดำเนินการถอนเงินสด',
    'USDC cash-out.': 'USDC ของคุณให้เสร็จสิ้น',
    "I've completed Moneybees KYC": 'ฉันทำ KYC กับ Moneybees เสร็จแล้ว',
-   'I already have Moneybees KYC': 'ฉันทำ KYC กับ Moneybees แล้ว'
+   'I already have Moneybees KYC': 'ฉันทำ KYC กับ Moneybees แล้ว',
+   Ref: 'เลขอ้างอิง'
 };
