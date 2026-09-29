@@ -111,12 +111,13 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
          onClick={onClose}
       >
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
-            <p className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8">
+            {/* Usernames run to 45 characters with no spaces, so let them break anywhere and cap at two lines. */}
+            <p className="mb-2 line-clamp-2 max-w-[350px] text-center text-[26px] font-black italic leading-9 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8 [overflow-wrap:anywhere]">
                You funded {borrowerName}!
             </p>
             <div className="w-full rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white shadow-[0_-1px_0_0_#fff]">
                <div className="flex flex-col items-center gap-[9px] px-5 pb-6 pt-[18px] text-center">
-                  <div className="text-[#594d65]">
+                  <div className="w-full text-[#594d65] [overflow-wrap:anywhere]">
                      <p id="lender-funded-popup-title" className="text-[24px] font-bold leading-6">
                         {content.heading}
                      </p>
