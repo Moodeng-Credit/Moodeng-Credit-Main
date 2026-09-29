@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, ChevronDown, Download, FileText, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronDown, Download, MapPin } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -287,13 +287,15 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                 button, so people in supported countries (Taiwan, Philippines…) tapped World ID. */}
             <div className="w-full rounded-md-lg border border-md-neutral-300 p-4 flex flex-col gap-md-3">
                <div className="flex items-center gap-3">
-                  <div className="shrink-0 w-10 h-10 rounded-md-md flex items-center justify-center bg-md-primary-1200 text-md-neutral-100">
-                     <FileText size={20} />
-                  </div>
+                  {/* Same 40px soft tile as the account menu's 3D icons; the card is wide, so 28px art reads the same size. */}
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-md-input bg-md-primary-100">
+                     <img src="/icons/national-id-3d.png" alt="" aria-hidden="true" className="size-7 object-contain" />
+                  </span>
                   <div className="flex-1 min-w-0">
                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your national ID</span>
-                        <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-md-primary-1200 text-md-neutral-100">
+                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your National ID</span>
+                        {/* A quiet tag, not a solid purple pill — that read as a second button. */}
+                        <span className="inline-flex items-center text-md-b3 font-medium px-2 py-0.5 rounded-full bg-md-green-100 text-md-green-900">
                            Recommended
                         </span>
                      </div>
@@ -319,7 +321,7 @@ export default function VerifyYourselfModal({ isOpen, onClose, returnTo }: Verif
                   onClick={() => start('didit')}
                   className="w-full rounded-md-lg bg-md-primary-1200 text-md-neutral-100 p-4 flex items-center justify-center gap-2 text-md-b1 font-semibold transition-all duration-150 active:scale-[0.99]"
                >
-                  Continue with national ID
+                  Continue with National ID
                   <ArrowRight size={18} aria-hidden="true" />
                </button>
             </div>

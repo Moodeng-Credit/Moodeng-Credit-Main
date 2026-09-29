@@ -1092,6 +1092,69 @@ ${actionUrl}`);
    return { actionUrl, text };
 };
 
+// Email twin of buildLenderRepaymentTelegram. Lenders without a linked Telegram chat (and whose push
+// device is asleep or unregistered) otherwise hear nothing when a borrower pays them back.
+export const buildLenderRepaymentEmail = (
+   loan: LoanNotificationLoan,
+   lender: LoanNotificationRecipient,
+   borrower: Pick<LoanNotificationRecipient, 'username' | 'telegram_username'>
+) => {
+   const borrowerName = borrower.username?.trim() || borrower.telegram_username?.trim().replace(/^@/, '') || 'A borrower';
+   const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
+   const formattedPaidDate = formatDate(loan.updated_at ?? null);
+   const dashboardLink = buildDashboardLink();
+   const fundingWallet = shortenWallet(loan.lender_wallet);
+   const hashes = Array.isArray(loan.hash) ? loan.hash : [];
+   const explorerLink =
+      hashes
+         .map((h) => buildTxExplorerLink(h))
+         .filter(Boolean)
+         .at(-1) ?? '';
+
+   const details: DetailRow[] = [
+      { label: 'Loan', value: loan.tracking_id },
+      { label: 'Borrower', value: borrowerName },
+      { label: 'Loan status', value: 'Repaid', icon: '&check;', tone: 'good' },
+      { label: 'Paid on', value: formattedPaidDate }
+   ];
+   if (fundingWallet) {
+      details.push({ label: 'Sent to', value: fundingWallet });
+   }
+
+   const text = normalizeNotificationText(`Hi ${getRecipientName(lender)},
+${borrowerName} repaid ${amountRepaid} for loan ${loan.tracking_id}.
+Paid on: ${formattedPaidDate}
+${fundingWallet ? `Sent to your funding wallet ${fundingWallet} — the wallet you used for this loan.` : ''}
+${explorerLink ? `Verify on-chain: ${explorerLink}` : ''}
+View your dashboard: ${dashboardLink}
+For help, contact support@moodeng.app`);
+
+   const content: EmailContent = {
+      subject: `${borrowerName} repaid your loan`,
+      title: 'You got repaid',
+      intro: `${borrowerName} repaid loan ${loan.tracking_id} in full. Thanks for supporting the Moodeng community.`,
+      amountLabel: 'Amount repaid',
+      amountValue: amountRepaid,
+      details,
+      highlightTitle: 'Funds returned',
+      highlightCopy: fundingWallet
+         ? 'Repayments go back to the wallet that funded the loan, which may differ from the one connected now.'
+         : 'Repayments go back to the wallet that funded the loan.',
+      highlightValue: 'Paid',
+      ctaLabel: 'Open dashboard',
+      ctaHref: dashboardLink,
+      supportText: 'Message us if you cannot find this repayment in your wallet.',
+      telegramText: `Hi Moodeng Credit, I have a question about a repayment I received for loan ${loan.tracking_id}.`,
+      text
+   };
+
+   return {
+      subject: content.subject,
+      text: content.text,
+      html: buildLoanEmailHtml(content, lender)
+   };
+};
+
 // Team-group repayment feed: the operator group (George + Emma) already receives a post for every new
 // loan request via loan-request-lender-suggestions. This is the matching post for when a loan is fully
 // repaid, so the team sees the full request → funded → repaid arc in one channel. Includes the funding

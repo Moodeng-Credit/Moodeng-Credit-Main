@@ -37,6 +37,21 @@ export const orderHostsToTry = (freeHosts: string[], seed: string): string[] => 
    return freeHosts.map((_, i) => freeHosts[(start + i) % freeHosts.length]);
 };
 
+// Everyone on the team who isn't hosting joins as a Cal.com guest, so the invite (with the join
+// link) lands on every cofounder's calendar — not just the round-robin host's. Case-insensitive
+// de-dupe; never the host themself or the borrower.
+export const teamGuests = (hostId: string, emailsByHost: Record<string, string | null>, attendeeEmail: string): string[] => {
+   const skip = new Set([attendeeEmail.toLowerCase(), (emailsByHost[hostId] ?? '').toLowerCase()]);
+   const out: string[] = [];
+   for (const [id, email] of Object.entries(emailsByHost)) {
+      const e = email?.trim().toLowerCase();
+      if (id === hostId || !e || skip.has(e)) continue;
+      skip.add(e);
+      out.push(e);
+   }
+   return out;
+};
+
 // Soonest-first slot offer. Calls booked inside ~a day get far fewer no-shows, and they're the only
 // ones our Messenger reminders can reach (Messenger allows free messages for 24h after the
 // borrower's last interaction, which is the verify tap just before booking). So when there are at

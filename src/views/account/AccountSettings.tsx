@@ -1950,12 +1950,18 @@ export default function AccountSettings() {
                                     className={`flex size-10 shrink-0 items-center justify-center rounded-md-input ${
                                        VERIFICATION_PRESENTATION[verificationState].tone === 'success'
                                           ? 'bg-md-green-100'
-                                          : VERIFICATION_PRESENTATION[verificationState].tone === 'warning'
+                                          : VERIFICATION_PRESENTATION[verificationState].tone === 'warning' || verificationState === 'unverified'
                                             ? 'bg-md-yellow-100'
                                             : 'bg-md-red-100'
                                     }`}
                                  >
-                                    <VerificationStateIcon state={verificationState} className="size-5" />
+                                    {/* Not yet verified (never started or left halfway): the 3D gold shield, at the
+                                        same 24px-in-a-40px-tile size as the account menu's 3D icons. */}
+                                    {verificationState === 'unfinished' || verificationState === 'unverified' ? (
+                                       <img src="/icons/verification-unfinished-3d.png" alt="" aria-hidden="true" className="size-6 object-contain" />
+                                    ) : (
+                                       <VerificationStateIcon state={verificationState} className="size-5" />
+                                    )}
                                  </span>
                                  <div className="min-w-0 flex-1">
                                     <p className="text-md-b1 font-semibold text-md-heading">
