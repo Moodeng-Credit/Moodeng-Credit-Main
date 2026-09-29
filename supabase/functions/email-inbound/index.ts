@@ -66,6 +66,21 @@ type InboundEmail = {
    messageId: string | null;
    inReplyTo: string | null;
    references: string[];
+   /** Sent by a machine (no-reply sender, mailing list, auto-reply) rather than a person. */
+   automated: boolean;
+};
+
+// support@ also receives service mail (Zoom meeting notices, billing, newsletters). Those are not
+// support requests, so they must never become Discord tickets.
+const AUTOMATED_SENDER = /^(no-?reply|do-?not-?reply|notifications?|notify|mailer-daemon|postmaster|bounces?|alerts?|news(letter)?|billing|receipts?)([@+._-]|$)/i;
+
+const isAutomated = (fromEmail: string, headers: unknown, readHeaderFn: (h: unknown, name: string) => string | null): boolean => {
+   if (AUTOMATED_SENDER.test(fromEmail)) return true;
+   const autoSubmitted = readHeaderFn(headers, 'auto-submitted');
+   if (autoSubmitted && autoSubmitted.toLowerCase() !== 'no') return true;
+   if (readHeaderFn(headers, 'list-unsubscribe') || readHeaderFn(headers, 'list-id')) return true;
+   const precedence = readHeaderFn(headers, 'precedence')?.toLowerCase();
+   return precedence === 'bulk' || precedence === 'list' || precedence === 'junk' || precedence === 'auto_reply';
 };
 
 // "Jane Doe <jane@example.com>" | "jane@example.com" -> { name, email }
@@ -121,6 +136,66 @@ const stripHtml = (html: string): string =>
       .replace(/\n{3,}/g, '\n\n')
       .trim();
 
+// Resend's html (and sometimes text) can arrive as a data: URI (html_format: "data_uri").
+const decodeDataUri = (value: string): string => {
+   if (!value.startsWith('data:')) return value;
+   const comma = value.indexOf(',');
+   if (comma === -1) return value;
+   const meta = value.slice(5, comma);
+   const data = value.slice(comma + 1);
+   try {
+      if (meta.includes(';base64')) {
+         const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0));
+         return new TextDecoder().decode(bytes);
+      }
+      return decodeURIComponent(data);
+   } catch {
+      return value;
+   }
+};
+
+// Resend's email.received webhook carries only the envelope (data.email_id, from, to, subject);
+// the body and headers have to be fetched from the Receiving API. Merge them into the payload so
+// parseInbound sees one complete message. No-op for other providers or a payload that already has
+// a body.
+const hydrateFromResend = async (payload: Record<string, unknown>): Promise<Record<string, unknown>> => {
+   const data = payload.data && typeof payload.data === 'object' ? (payload.data as Record<string, unknown>) : null;
+   const emailId = typeof data?.email_id === 'string' ? data.email_id : null;
+   if (!data || !emailId || typeof data.text === 'string' || typeof data.html === 'string') return payload;
+
+   const apiKey = Deno.env.get('RESEND_API_KEY');
+   if (!apiKey) {
+      console.error('[email-inbound] RESEND_API_KEY not set — cannot fetch the body of', emailId);
+      return payload;
+   }
+   try {
+      const res = await fetch(`https://api.resend.com/emails/receiving/${encodeURIComponent(emailId)}`, {
+         headers: { Authorization: `Bearer ${apiKey}` }
+      });
+      if (!res.ok) {
+         console.error('[email-inbound] Resend fetch failed', res.status, (await res.text()).slice(0, 300));
+         return payload;
+      }
+      const full = (await res.json()) as Record<string, unknown>;
+      return {
+         ...payload,
+         data: {
+            ...data,
+            from: full.from ?? data.from,
+            to: full.to ?? data.to,
+            subject: full.subject ?? data.subject,
+            text: typeof full.text === 'string' ? decodeDataUri(full.text) : undefined,
+            html: typeof full.html === 'string' ? decodeDataUri(full.html) : undefined,
+            headers: full.headers ?? data.headers,
+            message_id: full.message_id ?? data.message_id
+         }
+      };
+   } catch (err) {
+      console.error('[email-inbound] Resend fetch error', err);
+      return payload;
+   }
+};
+
 const parseInbound = (payload: Record<string, unknown>): InboundEmail | null => {
    // Resend wraps the message in { type, data: {...} }; a bare forward posts the fields directly.
    const d = (payload.data && typeof payload.data === 'object' ? payload.data : payload) as Record<string, unknown>;
@@ -141,7 +216,9 @@ const parseInbound = (payload: Record<string, unknown>): InboundEmail | null => 
    const inReplyTo = extractMessageIds(readHeader(headers, 'in-reply-to'))[0] ?? null;
    const references = extractMessageIds(readHeader(headers, 'references'));
 
-   return { fromEmail, fromName, toList, subject, body, messageId, inReplyTo, references };
+   const automated = isAutomated(fromEmail, headers, readHeader);
+
+   return { fromEmail, fromName, toList, subject, body, messageId, inReplyTo, references, automated };
 };
 
 // reply+<uuid>@… in any recipient address -> the reply token.
@@ -234,8 +311,15 @@ serve(async (req) => {
       return jsonResponse({ error: 'invalid_json' }, 400);
    }
 
+   // Resend only sends the envelope; fetch the body before parsing.
+   payload = await hydrateFromResend(payload);
+
    const email = parseInbound(payload);
    if (!email) return jsonResponse({ error: 'unparseable_email' }, 400);
+   if (email.automated) {
+      console.log('[email-inbound] ignored automated mail from', email.fromEmail);
+      return jsonResponse({ ok: true, ignored: 'automated' });
+   }
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
