@@ -498,5 +498,163 @@ export const filipinoCoverageF: Record<string, string> = {
    'Please verify your email before signing in. Check your inbox or request a new verification email.':
       'I-verify muna ang email mo bago mag-sign in. Tingnan ang inbox mo o humingi ng bagong verification email.',
    'Please verify your email before signing in. A verification email has been sent to your inbox.':
-      'I-verify muna ang email mo bago mag-sign in. May verification email nang naipadala sa inbox mo.'
+      'I-verify muna ang email mo bago mag-sign in. May verification email nang naipadala sa inbox mo.',
+
+   // src/store/slices/loanSlice.ts
+   'Payment is not confirmed on-chain yet': 'Hindi pa kumpirmado on-chain ang bayad',
+   'Failed to create loan': 'Hindi nagawa ang loan',
+   'Failed to fetch user loans': 'Hindi ma-load ang mga loan mo',
+   'Failed to update loan': 'Hindi na-update ang loan',
+   'Failed to confirm loan payment': 'Hindi nakumpirma ang bayad sa loan',
+   'Failed to delete loan': 'Hindi na-delete ang loan',
+   'This loan request has expired. Ask the borrower to post a new request.':
+      'Nag-expire na ang loan request na ito. Sabihan ang borrower na mag-post ng bagong request.',
+
+   // src/types/errorCodes.ts
+   'Invalid Username or Password. Please try again.': 'Mali ang username o password. Subukan ulit.',
+   'Invalid authentication token.': 'Invalid ang authentication token.',
+   'Invalid or expired reset token.': 'Invalid o expired na ang reset token.',
+   'User not found.': 'Hindi nahanap ang user.',
+   'This World ID verification has already been used by another account.': 'Nagamit na ng ibang account ang World ID verification na ito.',
+   'World ID verification failed. Please try again.': 'Hindi nagtagumpay ang World ID verification. Subukan ulit.',
+   'Invalid World ID proof.': 'Invalid ang World ID proof.',
+   'Invalid World ID verification level.': 'Invalid ang World ID verification level.',
+   'World ID configuration is missing.': 'Kulang ang World ID configuration.',
+   'World ID verification is required.': 'Kailangan ang World ID verification.',
+   'Registration failed. Please try again.': 'Hindi nakapag-register. Subukan ulit.',
+   'Invalid user data.': 'Invalid ang user data.',
+   'Loan not found.': 'Hindi nahanap ang loan.',
+   'Failed to create loan.': 'Hindi nagawa ang loan.',
+   'Repayment amount must be at least $1 more than the borrowed amount.':
+      'Dapat mas mataas nang kahit $1 ang halagang babayaran kaysa sa hiniram na halaga.',
+   'You are not authorized to perform this action on this loan.': 'Wala kang pahintulot na gawin ito sa loan na ito.',
+   'You cannot lend to yourself. Please lend to other users.': 'Hindi ka puwedeng magpahiram sa sarili mo. Magpahiram sa ibang user.',
+   'Validation failed.': 'Hindi pumasa sa validation.',
+   'Required field is missing.': 'May kulang na required na field.',
+   'Invalid format.': 'Invalid ang format.',
+   'Request payload too large.': 'Masyadong malaki ang request.',
+   'Network error. Please check your connection.': 'Error sa network. I-check ang connection mo.',
+   'Transaction failed. Please try again.': 'Hindi nagtagumpay ang transaksyon. Subukan ulit.',
+   'Transaction was declined in your wallet.': 'Na-decline ang transaksyon sa wallet mo.',
+   'Please switch your wallet to the correct network and try again.': 'Ilipat ang wallet mo sa tamang network at subukan ulit.',
+   'Insufficient funds for this transaction.': 'Kulang ang pondo para sa transaksyong ito.',
+   'Wallet address is missing. Please connect your wallet.': 'Walang wallet address. Ikonekta ang wallet mo.',
+   "We couldn't reach your wallet on this device. Approve on the device where it's connected (e.g. your phone), or reconnect here.":
+      'Hindi namin ma-reach ang wallet mo sa device na ito. Mag-approve sa device kung saan ito nakakonekta (hal. sa phone mo), o ikonekta ulit dito.',
+   'Internal server error. Please try again later.': 'Error sa server. Subukan ulit mamaya.',
+   'Database error. Please try again later.': 'Error sa database. Subukan ulit mamaya.',
+   'External service error. Please try again later.': 'Error sa external service. Subukan ulit mamaya.',
+   'An unknown error occurred.': 'May hindi kilalang error.',
+   'Bad request.': 'Invalid ang request.',
+
+   // src/types/successCodes.ts
+   'Login successful': 'Matagumpay ang pag-log in',
+   'Logout successful': 'Matagumpay ang pag-log out',
+   'Registration successful': 'Matagumpay ang pag-register',
+   'Account updated successfully': 'Matagumpay na na-update ang account',
+   'Verification successful': 'Matagumpay ang verification',
+   'Password reset email sent': 'Naipadala na ang password reset email',
+   'Password reset successful': 'Matagumpay na na-reset ang password',
+   'User updated successfully': 'Matagumpay na na-update ang user',
+   'Loan created successfully': 'Matagumpay na nagawa ang loan',
+   'Loan updated successfully': 'Matagumpay na na-update ang loan',
+   'Loan deleted successfully': 'Matagumpay na na-delete ang loan',
+   'Operation successful': 'Matagumpay',
+
+   // src/views/academy/AcademyGuide.tsx
+   'Step 1': 'Hakbang 1',
+   'Step 2': 'Hakbang 2',
+   'Step 3': 'Hakbang 3',
+   'Step 4': 'Hakbang 4',
+   'Step 5': 'Hakbang 5',
+   'Step 6': 'Hakbang 6',
+   'Step 7': 'Hakbang 7',
+   'Step 8': 'Hakbang 8',
+   'Set up wallet': 'I-set up ang wallet',
+   'Amount decides': 'Halaga ang nagpapasya',
+   Browse: 'Tumingin',
+   'To skip repayment': 'Para hindi na magbayad',
+   'To hide from lenders': 'Para magtago sa mga lender',
+   'To hide repayment history': 'Para itago ang history ng pagbabayad',
+   'To skip World ID': 'Para laktawan ang World ID',
+   'A lender loan': 'Loan ng lender',
+   'Already repaid': 'Bayad na',
+   'Changing names often': 'Madalas na pagpapalit ng pangalan',
+   'Ignoring the request board': 'Hindi pagpansin sa request board',
+   'Nice! Although you will need to verify and submit the real loan application in the app, it is great to see you try the flow. Mecha likes the practice: $15 for 2 days, with $17 paid back.':
+      'Galing! Kahit kailangan mo pa ring mag-verify at magsumite ng totoong loan application sa app, maganda na sinubukan mo ang flow. Gusto ni Mecha ang practice: $15 sa loob ng 2 araw, at $17 ang ibabalik.',
+   'Needs $15 • 2 days': 'Kailangan ng $15 • 2 araw',
+   '$13 repaid / $18 total': '$13 nabayaran / $18 kabuuan',
+   '0 days': '0 araw',
+   Register: 'Mag-register',
+   'Nice. You earned Academy score.': 'Galing. Nakuha mo ang Academy score.',
+   'Almost. Retake for Academy score.': 'Muntik na. Ulitin para makuha ang Academy score.',
+   'Score 4+ to earn Academy score. Each correct answer is 2 points.':
+      'Kumuha ng 4+ para makuha ang Academy score. 2 points ang bawat tamang sagot.',
+   Answer: 'Sagutin ang',
+   'quick questions. Each correct answer earns': 'mabilis na tanong. May',
+   'points toward your Academy score.': 'points para sa Academy score mo ang bawat tamang sagot.',
+   Question: 'Tanong',
+   'See score': 'Tingnan ang score',
+   'Next question': 'Susunod na tanong',
+   'Submit answer': 'Isumite ang sagot',
+   'Academy passed': 'Pasado sa Academy',
+   'You scored 4 of 5. Log in and finish the borrower flow to keep going.':
+      'Nakakuha ka ng 4 sa 5. Mag-log in at tapusin ang borrower flow para magpatuloy.',
+   'You scored 5 of 5. Log in and finish the borrower flow to keep going.':
+      'Nakakuha ka ng 5 sa 5. Mag-log in at tapusin ang borrower flow para magpatuloy.',
+   'You scored 4 of 5. Log in and finish the lender flow to keep going.':
+      'Nakakuha ka ng 4 sa 5. Mag-log in at tapusin ang lender flow para magpatuloy.',
+   'You scored 5 of 5. Log in and finish the lender flow to keep going.':
+      'Nakakuha ka ng 5 sa 5. Mag-log in at tapusin ang lender flow para magpatuloy.',
+   'You scored 0 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 0 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
+   'You scored 1 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 1 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
+   'You scored 2 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 2 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
+   'You scored 3 of 5. Score 4 of 5 to unlock Academy score.': 'Nakakuha ka ng 3 sa 5. Kumuha ng 4 sa 5 para ma-unlock ang Academy score.',
+
+   // src/views/academy/MoneyGuide.tsx
+   'One-time · about 3 minutes': 'Isang beses lang · mga 3 minuto',
+   'ID photo': 'Photo ng ID',
+
+   // src/views/academy/VerifyGuide.tsx
+   'Tap "Verify Yourself" in the app and choose "Verify Your ID".': 'I-tap ang "Verify Yourself" sa app at piliin ang "Verify Your ID".',
+   'Have your physical national ID ready and find good, even lighting.':
+      'Ihanda ang physical na national ID mo at humanap ng maayos at pantay na ilaw.',
+   'Complete the quick ID photo + selfie check — it takes about 3 minutes.':
+      'Tapusin ang mabilis na ID photo + selfie check — mga 3 minuto lang ito.',
+   'Most checks finish in minutes. If yours needs a human review, we will notify you as soon as it is done — usually within a few hours, at most 1 business day.':
+      'Karamihan sa mga check ay natatapos sa loob ng ilang minuto. Kung kailangan ng human review ang sa iyo, aabisuhan ka namin agad kapag tapos na — kadalasan sa loob ng ilang oras, at hindi lalampas sa 1 business day.',
+   'Good, even lighting': 'Maayos at pantay na ilaw',
+   'Open Moodeng in Chrome or Safari. In-app browsers inside Facebook or Messenger are the most common reason a check gets stuck.':
+      'Buksan ang Moodeng sa Chrome o Safari. Ang mga in-app browser sa loob ng Facebook o Messenger ang pinakakaraniwang dahilan kung bakit naiipit ang check.',
+   'Make sure the whole ID is in frame, in focus, and readable — no fingers over the text and no glare washing it out.':
+      'Siguraduhing buo ang ID sa frame, malinaw, at nababasa — walang daliring nakatakip sa text at walang silaw na nagpapalabo rito.',
+   'If the check does get stuck, you can simply retry it with a clearer, well-lit photo.':
+      'Kung maipit man ang check, puwede mo lang itong ulitin gamit ang mas malinaw at maliwanag na photo.',
+   'National ID verification is currently supported for Vietnam, Taiwan, South Korea, Philippines, Malaysia, Japan, Indonesia, Thailand.':
+      'Sa ngayon, supported ang national ID verification sa Vietnam, Taiwan, South Korea, Philippines, Malaysia, Japan, Indonesia, at Thailand.',
+   'Yes. If you are already verified in World App, either in person at an Orb or with a biometric passport, you can choose "Verify with World ID" and confirm through the World App instead of doing the ID check.':
+      'Oo. Kung verified ka na sa World App, nang personal man sa isang Orb o gamit ang biometric passport, puwede mong piliin ang "Verify with World ID" at mag-confirm sa World App sa halip na gawin ang ID check.',
+   'Buy USDC and send it to your wallet on Base.': 'Bumili ng USDC at ipadala ito sa wallet mo sa Base.',
+   'Cash out USDC to your bank or e-wallet.': 'I-cash out ang USDC sa bank o e-wallet mo.',
+   'Repay on time to earn Pandesal points.': 'Magbayad on time para kumita ng Pandesal points.',
+   'Open the app to verify': 'Buksan ang app para mag-verify',
+   'One-time · about 3 minutes · free': 'Isang beses lang · mga 3 minuto · libre',
+   "What you'll need": 'Ang mga kakailanganin mo',
+   'instead and confirm through the World App, rather than doing the ID photo check.':
+      'at mag-confirm sa World App, sa halip na gawin ang ID photo check.',
+
+   // src/views/academy/moneyGuideTopics.tsx
+   'The key detail: always choose Base as the network. Sending on the wrong network can result in lost funds.':
+      'Ang mahalagang detalye: laging piliin ang Base bilang network. Puwedeng mawala ang pera kapag sa maling network ka nagpadala.',
+   'The key detail: always select Base as the network when depositing to an exchange. Using the wrong network can result in lost funds.':
+      'Ang mahalagang detalye: laging piliin ang Base bilang network kapag nagde-deposit sa isang exchange. Puwedeng mawala ang pera kapag maling network ang ginamit.',
+   'Open the Repay screen to see the amount due and copy the repayment address.':
+      'Buksan ang Magbayad screen para makita ang halagang dapat bayaran at kopyahin ang repayment address.',
+   'Send USDC to that address from a wallet, an exchange, or a local service — always on the Base network.':
+      'Magpadala ng USDC sa address na iyon mula sa wallet, exchange, o local na serbisyo — laging sa Base network.',
+   'Don’t hold USDC yet? Buy it first, send it to your wallet, then repay from there.':
+      'Wala ka pang USDC? Bumili muna, ipadala ito sa wallet mo, tapos doon ka magbayad.',
+   'Always repay before the due date — on-time repayment builds your Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level. And always choose Base as the network.':
+      'Laging magbayad bago ang due date — nadaragdagan ang Pandesal points mo kapag on time ang bayad, at na-a-unlock ang susunod na Credit Level kapag nabayaran mo on time ang isang full-limit loan. At laging piliin ang Base bilang network.'
 };
