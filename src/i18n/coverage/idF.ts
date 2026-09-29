@@ -491,5 +491,129 @@ export const indonesianCoverageF: Record<string, string> = {
    // src/types/loanTypes.ts (loan and repayment status in the transactions table)
    Lent: 'Didanai',
    Unpaid: 'Belum dibayar',
-   Partial: 'Sebagian'
+   Partial: 'Sebagian',
+
+   // src/views/academy/AcademyGuide.tsx
+   'Nice! Although you will need to verify and submit the real loan application in the app, it is great to see you try the flow. Mecha likes the practice: $15 for 2 days, with $17 paid back.':
+      'Mantap! Meskipun nanti kamu tetap perlu verifikasi dan mengirim pengajuan pinjaman yang sebenarnya di aplikasi, senang melihatmu mencoba alurnya. Mecha suka latihanmu: $15 untuk 2 days, dengan $17 dibayar kembali.',
+
+   // src/views/academy/VerifyGuide.tsx
+   'National ID verification is currently supported for': 'Verifikasi KTP saat ini didukung untuk',
+
+   // src/views/academy/moneyGuideTopics.tsx
+   'Always repay before the due date — on-time repayment builds your Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level. And always choose Base as the network.':
+      'Selalu bayar kembali sebelum jatuh tempo — pembayaran kembali tepat waktu menambah poin Pandesal kamu, dan melunasi pinjaman senilai limit penuh tepat waktu membuka Level Kredit berikutnya. Dan selalu pilih Base sebagai jaringannya.',
+
+   // src/views/account/Account.tsx
+   User: 'Pengguna',
+   'Read the full guide': 'Baca panduan lengkap',
+
+   // src/views/account/AccountSettings.tsx
+   'Appearance & language': 'Tampilan & bahasa',
+   'Security & verification': 'Keamanan & verifikasi',
+   'Keep your profile and contact details up to date.': 'Selalu perbarui profil dan detail kontakmu.',
+   'These choices apply throughout Moodeng.': 'Pilihan ini berlaku di seluruh Moodeng.',
+   'Manage sign-in security and identity checks.': 'Kelola keamanan masuk dan pemeriksaan identitas.',
+   'Manage the wallet used for loans and repayments.': 'Kelola dompet yang dipakai untuk pinjaman dan pembayaran kembali.',
+   'Choose which account and loan alerts you receive.': 'Pilih notifikasi akun dan pinjaman yang ingin kamu terima.',
+   'All fields are required': 'Semua kolom wajib diisi',
+   'New password and confirm password do not match': 'Kata sandi baru dan konfirmasi kata sandi tidak cocok',
+   'Password must be at least 6 characters': 'Kata sandi minimal 6 karakter',
+   'Unable to verify current account': 'Tidak bisa memverifikasi akun saat ini',
+   'Current password is incorrect': 'Kata sandi saat ini salah',
+   'Your password has been changed.': 'Kata sandimu sudah diubah.',
+   'Failed to update password': 'Gagal memperbarui kata sandi',
+   'Emails do not match': 'Email tidak cocok',
+   'Code resent': 'Kode dikirim ulang',
+   'We sent a new verification code to': 'Kami sudah mengirim kode verifikasi baru ke',
+   'Enter the verification code we sent to your new email': 'Masukkan kode verifikasi yang kami kirim ke email barumu',
+   'Email updated': 'Email diperbarui',
+   'Your email address has been changed.': 'Alamat emailmu sudah diubah.',
+   'Invalid or expired code. Please try again.': 'Kode tidak valid atau sudah kedaluwarsa. Silakan coba lagi.',
+   'Sending code...': 'Mengirim kode...',
+   'Send verification code': 'Kirim kode verifikasi',
+   '. Enter it below to confirm the change.': '. Masukkan di bawah untuk mengonfirmasi perubahan.',
+   "Didn't get a code? Resend": 'Tidak menerima kode? Kirim ulang',
+   'Confirm email change': 'Konfirmasi perubahan email',
+   'Display name is required': 'Nama tampilan wajib diisi',
+   'Display name updated': 'Nama tampilan diperbarui',
+   'Your display name has been changed.': 'Nama tampilanmu sudah diubah.',
+   'Failed to update display name': 'Gagal memperbarui nama tampilan',
+   'Save changes': 'Simpan perubahan',
+   'Telegram alerts not connected': 'Notifikasi Telegram belum terhubung',
+   'Open Telegram, tap Start in the bot, then check again.': 'Buka Telegram, ketuk Start di bot, lalu periksa lagi.',
+   'We could not save the new wallet. Your previous wallet is still saved.':
+      'Kami tidak bisa menyimpan dompet baru. Dompet sebelumnya masih tersimpan.',
+   'Wallet changed': 'Dompet diganti',
+   'Your new wallet has been connected.': 'Dompet barumu sudah terhubung.',
+   'Wallet unchanged': 'Dompet tidak berubah',
+   'You reconnected the same wallet.': 'Kamu menghubungkan ulang dompet yang sama.',
+   'Connection was cancelled or failed. Your previous wallet is still saved.':
+      'Koneksi dibatalkan atau gagal. Dompet sebelumnya masih tersimpan.',
+   'Connection took too long. Your previous wallet is still saved.': 'Koneksi terlalu lama. Dompet sebelumnya masih tersimpan.',
+   'is not available right now.': 'sedang tidak tersedia.',
+   'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.':
+      'Buat Instant Wallet, atau pilih Base Account baru jika kamu lebih suka. Dompetmu yang sekarang tetap tersimpan sampai yang baru dikonfirmasi.',
+   'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.':
+      'Pilih Base Account baru. Dompetmu yang sekarang tetap tersimpan sampai yang baru dikonfirmasi.',
+   'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.':
+      'Pilih dompet baru. Dompetmu yang sekarang tetap tersimpan sampai yang baru dikonfirmasi.',
+   'Create Instant Wallet — no app needed': 'Buat Instant Wallet — tanpa aplikasi',
+   'Connect a Base Account instead': 'Hubungkan Base Account saja',
+   'or, no wallet app?': 'atau, tidak punya aplikasi dompet?',
+   'Create an Instant Wallet instead': 'Buat Instant Wallet saja',
+   'No email added': 'Belum ada email',
+   Add: 'Tambah',
+   'Add an email for account recovery and important alerts.': 'Tambahkan email untuk pemulihan akun dan notifikasi penting.',
+   'Used for account recovery and important alerts.': 'Dipakai untuk pemulihan akun dan notifikasi penting.',
+   'Not Connected': 'Belum terhubung',
+   "still to repay. You can't": 'yang masih harus dibayar kembali. Kamu tidak bisa',
+   "your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'dompetmu sampai pinjaman lunas — dompet inilah yang terikat dengan pinjaman dan pembayaran kembalimu.',
+   'Repayments will still arrive at the wallet you funded from (':
+      'Pembayaran kembali tetap akan masuk ke dompet yang kamu pakai untuk mendanai (',
+   '), not the wallet you connect here.': '), bukan dompet yang kamu hubungkan di sini.',
+   'Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here.':
+      'Pembayaran kembali tetap akan masuk ke dompet yang kamu pakai untuk mendanai setiap pinjaman, bukan dompet yang kamu hubungkan di sini.',
+   'being repaid.': 'yang sedang dibayar kembali.',
+   'your wallet here is safe. It only affects loans you fund from now on.':
+      'dompetmu di sini aman. Ini hanya berlaku untuk pinjaman yang kamu danai mulai sekarang.',
+   "You can't change your wallet while you have an active loan.": 'Kamu tidak bisa mengganti dompet selama masih punya pinjaman aktif.',
+   "You can't disconnect your wallet while you have an active loan.":
+      'Kamu tidak bisa memutuskan koneksi dompet selama masih punya pinjaman aktif.',
+   'Wallet disconnected': 'Koneksi dompet diputus',
+   'Your wallet has been removed from this account.': 'Dompetmu sudah dihapus dari akun ini.',
+   'Photo updated': 'Foto diperbarui',
+   'Your profile photo has been changed.': 'Foto profilmu sudah diubah.',
+   'Failed to update profile photo': 'Gagal memperbarui foto profil',
+   'Telegram connection link was not created': 'Tautan koneksi Telegram gagal dibuat',
+   'Add an email for recovery': 'Tambahkan email untuk pemulihan',
+   'Light mode': 'Mode terang',
+   'Password & sign-in': 'Kata sandi & masuk',
+   'of 3 preferences enabled': 'dari 3 preferensi aktif',
+   'Back to settings': 'Kembali ke pengaturan',
+   'Back to account': 'Kembali ke akun',
+   'Account settings': 'Pengaturan akun',
+   'This wallet receives your loans and records your repayments.': 'Dompet ini menerima pinjamanmu dan mencatat pembayaran kembalimu.',
+   'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.':
+      'Dompet ini mendanai pinjaman baru. Pembayaran kembali yang sudah berjalan tetap masuk ke dompet yang dipakai untuk setiap pinjaman.',
+   'Manage how you sign in to Moodeng.': 'Atur cara kamu masuk ke Moodeng.',
+   'Helps people recognize you': 'Membantu orang lain mengenalimu',
+   'Not set': 'Belum diatur',
+   'Work, income, and what you need help with': 'Pekerjaan, penghasilan, dan hal yang perlu dibantu',
+   'Use darker surfaces throughout Moodeng': 'Gunakan tampilan lebih gelap di seluruh Moodeng',
+   View: 'Lihat',
+   'Ready to receive loans and record repayments.': 'Siap menerima pinjaman dan mencatat pembayaran kembali.',
+   'Ready for your Moodeng loans and repayment history.': 'Siap untuk pinjaman Moodeng dan riwayat pembayaran kembalimu.',
+   'This removes your saved wallet. You will need to connect or create one again before borrowing or repaying.':
+      'Ini menghapus dompet tersimpanmu. Kamu perlu menghubungkan atau membuat dompet lagi sebelum meminjam atau membayar kembali.',
+   'This removes the wallet from your account. You can reconnect it anytime.':
+      'Ini menghapus dompet dari akunmu. Kamu bisa menghubungkannya lagi kapan saja.',
+   'Your account is using': 'Akunmu sedang memakai',
+   '. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      '. Beralih ke Instant Wallet atau Base Account agar pinjaman dan pembayaran kembali memakai dompet yang tepat.',
+   'Reconnect and confirm this is a Base Account before you borrow or repay.':
+      'Hubungkan ulang dan pastikan ini Base Account sebelum kamu meminjam atau membayar kembali.',
+   'Remove this saved wallet from your account': 'Hapus dompet tersimpan ini dari akunmu',
+   'Stop using this wallet for new loans': 'Berhenti memakai dompet ini untuk pinjaman baru'
 };
