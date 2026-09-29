@@ -261,7 +261,6 @@ export const indonesianCoverageG: Record<string, string> = {
    'Fully repay $100 total on time to unlock this level': 'Lunasi total $100 tepat waktu untuk membuka level ini',
    'Fully repay $120 total on time to unlock this level': 'Lunasi total $120 tepat waktu untuk membuka level ini',
    // src/views/profile/config/transactionColumns.tsx
-   'All Transaction': 'Semua Transaksi',
    Transaction: 'Transaksi',
    'Funded Amount': 'Jumlah Didanai',
    'Borrowed Amount': 'Jumlah Dipinjam',
