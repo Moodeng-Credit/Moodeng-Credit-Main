@@ -368,7 +368,7 @@ export const filipinoCoverageG: Record<string, string> = {
    // src/views/dashboard/components/VideoCallStep.tsx
    'That time was just taken — pick another, please.': 'Kakakuha lang ng oras na iyan — pumili ng iba, please.',
    "Couldn't book that time. Try again, or contact support.": 'Hindi ma-book ang oras na iyan. Subukan ulit, o makipag-ugnayan sa support.',
-   "You're booked with": 'Naka-book ka na kay',
+   "You're booked with": 'Naka-book ka na kasama',
    'the Moodeng team': 'ang Moodeng team',
    "You've missed two calls, so booking is paused for a week.":
       'Dalawang call na ang na-miss mo, kaya naka-pause ang booking nang isang linggo.',
@@ -382,5 +382,119 @@ export const filipinoCoverageG: Record<string, string> = {
    'Pick a time above': 'Pumili ng oras sa itaas',
 
    // src/views/dashboard/components/connectKit.tsx
-   Confirmed: 'Nakumpirma'
+   Confirmed: 'Nakumpirma',
+
+   // src/views/dashboard/dashboardHelpers.ts
+   'Your account can request borrower credit.': 'Puwede nang mag-request ng loan ang account mo.',
+   'Unlock borrowing and start building your public trust record.':
+      'I-unlock ang paghiram at simulang buuin ang pampublikong record ng tiwala mo.',
+   'Borrowing unlocked': 'Na-unlock ang paghiram',
+   'Verified profile': 'Verified na profile',
+   'Verify now': 'Mag-verify na',
+   'Account ready': 'Handa na ang account',
+   'Ask for a small amount with a clear reason and due date.': 'Humingi ng maliit na halaga na may malinaw na dahilan at due date.',
+   'Visible to lenders': 'Nakikita ng mga lender',
+   'Request live': 'Live na ang request',
+   'A lender accepts your request and trusts you with your first loan.':
+      'Tinatanggap ng isang lender ang request mo at pinagkakatiwalaan ka sa una mong loan.',
+   'First lender signal': 'Unang senyales mula sa lender',
+   'Lender signal gained': 'May senyales na mula sa lender',
+   'History started': 'Nagsimula na ang history',
+   'View requests': 'Tingnan ang mga request',
+   'Pay the full amount before the due date to start your repayment record.':
+      'Bayaran ang buong halaga bago ang due date para masimulan ang repayment record mo.',
+   'Pandesal points earned · up to $15': 'Mga Pandesal point na nakuha · hanggang $15',
+   'Pandesal points earned · up to $20': 'Mga Pandesal point na nakuha · hanggang $20',
+   'Pandesal points earned · up to $40': 'Mga Pandesal point na nakuha · hanggang $40',
+   'Pandesal points earned · up to $60': 'Mga Pandesal point na nakuha · hanggang $60',
+   'Pandesal points earned · up to $80': 'Mga Pandesal point na nakuha · hanggang $80',
+   'Pandesal points earned · up to $100': 'Mga Pandesal point na nakuha · hanggang $100',
+   'Pandesal points earned · up to $120': 'Mga Pandesal point na nakuha · hanggang $120',
+   'Pandesal points earned · up to $140': 'Mga Pandesal point na nakuha · hanggang $140',
+   'Up to $15': 'Hanggang $15',
+   'Up to $20': 'Hanggang $20',
+   'Up to $40': 'Hanggang $40',
+   'Up to $60': 'Hanggang $60',
+   'Up to $80': 'Hanggang $80',
+   'Up to $100': 'Hanggang $100',
+   'Up to $120': 'Hanggang $120',
+   'Up to $140': 'Hanggang $140',
+   'Limit progress': 'Progreso ng limit',
+   'Pay loans': 'Bayaran ang mga loan',
+   'Show lenders that your repayment reliability is repeatable.':
+      'Ipakita sa mga lender na tuloy-tuloy ang pagiging maaasahan mo sa pagbabayad.',
+   'Stronger lender confidence': 'Mas matibay na tiwala ng lender',
+   'Reliability improved': 'Mas naging maaasahan',
+   'Stronger profile': 'Mas matibay na profile',
+   'Use your current Credit Level amount and repay it on time.':
+      'Gamitin ang buong halaga ng kasalukuyang Credit Level mo at bayaran ito on time.',
+   'Credit Level progress': 'Progreso sa Credit Level',
+   'Level progress': 'Progreso sa level',
+   'Higher limit path': 'Daan papunta sa mas mataas na limit',
+   'Learn levels': 'Alamin ang mga level',
+   'Build a reputation that does not depend on just one lender.': 'Bumuo ng reputasyon na hindi nakasalalay sa iisang lender lang.',
+   'Lender diversity signal': 'Senyales ng dami ng lender',
+   'Diversity improved': 'Dumami ang iba’t ibang lender',
+   'Broader trust': 'Mas malawak na tiwala',
+   'Grow from starter loans into a real repayment history.': 'Mula sa mga starter loan, bumuo ng tunay na repayment history.',
+   'Volume trust signal': 'Senyales ng tiwala mula sa dami ng nabayaran',
+   'Volume signal': 'Senyales ng dami',
+   '$100 repaid': '$100 ang nabayaran',
+   'Unlock a higher borrowing limit through verified on-time repayment.':
+      'Mag-unlock ng mas mataas na borrowing limit sa pamamagitan ng verified na on-time na pagbabayad.',
+   'Higher borrowing power': 'Mas malaking kakayahang humiram',
+   'Higher limit unlocked': 'Na-unlock ang mas mataas na limit',
+   'View guide': 'Tingnan ang gabay',
+   'Complete 5 on-time repayments, use 3 lenders, and keep defaults resolved.':
+      'Makumpleto ang 5 on-time na pagbabayad, gumamit ng 3 lender, at siguraduhing resolbado ang anumang default.',
+   'Future top-user perks': 'Mga perk sa hinaharap para sa mga top user',
+   'Priority signal': 'Senyales ng priority',
+   'Review ready': 'Handa na para sa review',
+   'Top milestone': 'Pinakamataas na milestone',
+
+   // src/views/dashboard/trustPointRewards.ts
+   'Silver avatar ring': 'Silver na avatar ring',
+   'A clean profile ring around your avatar.': 'Malinis na profile ring sa paligid ng avatar mo.',
+   'Gold avatar ring': 'Gold na avatar ring',
+   'A stronger profile ring for repeat borrowers.': 'Mas matingkad na profile ring para sa mga paulit-ulit na borrower.',
+   'Trusted profile badge': 'Badge ng pinagkakatiwalaang profile',
+   'A visible badge on your borrower profile.': 'Isang badge na makikita sa borrower profile mo.',
+   'Top borrower award': 'Award para sa top borrower',
+   'A collectible profile award for long-term history.': 'Isang collectible na profile award para sa pangmatagalang history.',
+   'A lucky cat for being one of the first Moodeng borrowers.': 'Isang lucky cat dahil isa ka sa mga unang borrower ng Moodeng.',
+
+   // src/views/fund/FundBridge.tsx
+   'No route available for this amount.': 'Walang available na route para sa halagang ito.',
+   'Unsupported source chain.': 'Hindi suportado ang source chain.',
+   'Bridge failed. Please try again.': 'Nabigo ang bridge. Pakisubukan ulit.',
+   'Transaction cancelled.': 'Kinansela ang transaction.',
+   'Preparing…': 'Inihahanda…',
+   'Approve USDC in wallet…': 'I-approve ang USDC sa wallet…',
+   'Confirm bridge in wallet…': 'Kumpirmahin ang bridge sa wallet…',
+   'Bridging to Base…': 'Bina-bridge papunta sa Base…',
+   'Sent to Base ✓': 'Naipadala sa Base ✓',
+   'Submitted — funds arrive on Base in': 'Naisumite na — darating ang pondo sa Base sa loob ng',
+
+   // src/views/fund/FundWalletSheet.tsx
+   'Connect a wallet first so we know where to send your USDC.':
+      'Magkonekta muna ng wallet para malaman namin kung saan ipapadala ang USDC mo.',
+   'Could not start Coinbase.': 'Hindi masimulan ang Coinbase.',
+   'Card purchases aren’t available just yet — try a bridge below.':
+      'Hindi pa available ang pagbili gamit ang card — subukan ang bridge sa ibaba.',
+   '. Stripe handles ID checks and payment — USDC lands on Base.':
+      '. Ang Stripe ang bahala sa ID check at bayad — sa Base papasok ang USDC.',
+   '~1.5% fee': '~1.5% na fee',
+   'Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto), through an external service like Moneybees, or send it from any wallet — always on the Base network.':
+      'Mas gusto mo ng ibang paraan? Puwede ka ring bumili ng USDC sa isang exchange (Binance P2P, Coins.ph, PDAX, GCrypto), sa isang external service tulad ng Moneybees, o magpadala mula sa kahit anong wallet — laging sa Base network.',
+
+   // src/views/fund/StripeOnrampModal.tsx
+   'Stripe card purchases aren’t available in your country yet. Try the Coinbase option below — it covers more regions.':
+      'Hindi pa available sa bansa mo ang pagbili gamit ang card sa Stripe. Subukan ang Coinbase option sa ibaba — mas maraming rehiyon ang sakop nito.',
+   'Couldn’t start the card purchase. Try the Coinbase option below.':
+      'Hindi masimulan ang pagbili gamit ang card. Subukan ang Coinbase option sa ibaba.',
+   'Couldn’t load Stripe. Check your connection and try again.': 'Hindi ma-load ang Stripe. I-check ang connection mo at subukan ulit.',
+
+   // src/views/fund/FundBridge.tsx (cost row)
+   'Network + bridge cost': 'Bayad sa network + bridge',
+   'First-time user': 'Unang beses na user'
 };
