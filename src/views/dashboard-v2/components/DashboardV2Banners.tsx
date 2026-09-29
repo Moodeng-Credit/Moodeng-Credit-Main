@@ -116,8 +116,11 @@ const REMINDERS_COPY = {
    }
 } as const;
 
+export type RemindersCopy = { [K in keyof (typeof REMINDERS_COPY)['en']]: string };
+
 /**
- * Shown to borrowers with a loan to repay who haven't allowed push. When push can't be turned on
+ * Shown to borrowers with a loan to repay who haven't allowed push. Also reused on the lender's
+ * funding success screen (RepaidPushCard) with its own `copy`. When push can't be turned on
  * from here (the browser blocked it, or it's iPhone Safari, which only offers push from the Home
  * Screen) it explains what to do instead of offering a button.
  */
@@ -125,14 +128,18 @@ export function TurnOnRemindersBanner({
    language,
    variant,
    isBusy,
-   onEnable
+   onEnable,
+   copy: copyOverride,
+   className = 'mx-5'
 }: {
    language: DashboardV2Language;
    variant: 'enable' | 'blocked' | 'home-screen';
    isBusy: boolean;
    onEnable: () => void;
+   copy?: Partial<RemindersCopy>;
+   className?: string;
 }) {
-   const copy = REMINDERS_COPY[language];
+   const copy = { ...REMINDERS_COPY[language], ...copyOverride };
    const Icon = variant === 'blocked' ? BellOff : variant === 'home-screen' ? Share : Bell;
    const title = variant === 'blocked' ? copy.blockedTitle : variant === 'home-screen' ? copy.homeScreenTitle : copy.title;
    const body = variant === 'blocked' ? copy.blockedBody : variant === 'home-screen' ? copy.homeScreenBody : copy.body;
@@ -147,7 +154,10 @@ export function TurnOnRemindersBanner({
          </span>
       </>
    );
-   const cardClass = 'mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]';
+   const cardClass = clsx(
+      className,
+      'flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]'
+   );
 
    if (variant !== 'enable') {
       return <div className={cardClass}>{content}</div>;

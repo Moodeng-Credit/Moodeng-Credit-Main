@@ -28,8 +28,9 @@ vi.mock('@/hooks/usePushNotifications', () => ({
 
 const { default: RepaidPushCard } = await import('@/components/funding/RepaidPushCard');
 
-const buttonByText = (container: HTMLElement, text: string) =>
-   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
+// The whole card is the Turn on button, like the borrower dashboard's reminders card.
+const cardButton = (container: HTMLElement) =>
+   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Turn on'));
 
 describe('RepaidPushCard', () => {
    let container: HTMLDivElement;
@@ -72,24 +73,11 @@ describe('RepaidPushCard', () => {
       expect(container.textContent).toBe('');
    });
 
-   it('"Not now" hides it without asking the browser', async () => {
+   it('only asks the browser after the lender taps Turn on, then goes away', async () => {
       await render();
-      await act(async () => buttonByText(container, 'Not now')?.click());
-      expect(container.textContent).toBe('');
       expect(env.enable).not.toHaveBeenCalled();
-   });
-
-   it('"Turn on" asks the browser and confirms', async () => {
-      await render();
-      await act(async () => buttonByText(container, 'Turn on')?.click());
+      await act(async () => cardButton(container)?.click());
       expect(env.enable).toHaveBeenCalledTimes(1);
-      expect(container.textContent).toContain('We’ll notify you when Mimi repays');
-   });
-
-   it('hides itself if the lender then declines the browser dialog', async () => {
-      env.enable.mockResolvedValueOnce('permission-denied');
-      await render();
-      await act(async () => buttonByText(container, 'Turn on')?.click());
       expect(container.textContent).toBe('');
    });
 
@@ -108,7 +96,6 @@ describe('RepaidPushCard', () => {
       env.needsHomeScreen = true;
       await render();
       expect(container.textContent).toContain('Add to Home Screen');
-      expect(buttonByText(container, 'Turn on')).toBeUndefined();
-      expect(buttonByText(container, 'Got it')).toBeTruthy();
+      expect(cardButton(container)).toBeUndefined();
    });
 });
