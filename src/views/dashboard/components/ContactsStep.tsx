@@ -29,6 +29,11 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 type Channel = 'whatsapp' | 'messenger';
 
 const SHOW_TYPED_CODE_AFTER_MS = 60_000;
+// Coming back from Messenger still unconfirmed: give the bot a few seconds to land, then offer the
+// backups right away instead of making them sit out the full minute. Meta doesn't guarantee the m.me
+// code arrives (a first-time "Get Started", some Android Messenger versions), and Aya on 2026-09-29
+// left without ever seeing the backups.
+const RETURN_GRACE_MS = 4_000;
 const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
 
 export default function ContactsStep({
@@ -67,6 +72,10 @@ export default function ContactsStep({
    const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
+   // Set once the tab is hidden after we open Messenger — i.e. they actually went there. Tracked by a
+   // listener that exists from mount: the tab can hide before React re-renders after the tap.
+   const leftForMessengerRef = useRef(false);
+   const awaitingMessengerRef = useRef(false);
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
    // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
@@ -113,6 +122,14 @@ export default function ContactsStep({
       };
    }, [userId]);
 
+   useEffect(() => {
+      const onHide = () => {
+         if (document.visibilityState === 'hidden' && awaitingMessengerRef.current) leftForMessengerRef.current = true;
+      };
+      document.addEventListener('visibilitychange', onHide);
+      return () => document.removeEventListener('visibilitychange', onHide);
+   }, []);
+
    const stopPolling = () => {
       if (pollRef.current) {
          window.clearInterval(pollRef.current);
@@ -131,8 +148,11 @@ export default function ContactsStep({
    // checkmark can lag — or never appear if they come back to a still-frozen tab and then close it.
    // Re-check the instant the app tab is shown or focused again: this is what actually makes the
    // card flip to "Verified the moment they return", which the poll alone only promises.
+   // Back from Messenger and still not confirmed → show the backups after a short grace (the card
+   // flips to Verified instead if the bot lands in the meantime).
    useEffect(() => {
       if (!messengerLink || messengerVerified) return;
+      let graceTimer: number | null = null;
       const recheck = async () => {
          if (document.visibilityState !== 'visible') return;
          const { data } = await getSupabaseBrowserClient()
@@ -141,13 +161,20 @@ export default function ContactsStep({
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
-         if (data?.messenger_verified_at) setMessengerVerified(true);
+         if (data?.messenger_verified_at) {
+            setMessengerVerified(true);
+            return;
+         }
+         if (leftForMessengerRef.current && graceTimer === null) {
+            graceTimer = window.setTimeout(() => setShowTypedCode(true), RETURN_GRACE_MS);
+         }
       };
       document.addEventListener('visibilitychange', recheck);
       window.addEventListener('focus', recheck);
       return () => {
          document.removeEventListener('visibilitychange', recheck);
          window.removeEventListener('focus', recheck);
+         if (graceTimer !== null) window.clearTimeout(graceTimer);
       };
    }, [messengerLink, messengerVerified, userId]);
 
@@ -178,6 +205,8 @@ export default function ContactsStep({
          if (channel === 'messenger') {
             setMessengerLink(link);
             setMessengerCode(String(code));
+            leftForMessengerRef.current = false;
+            awaitingMessengerRef.current = true;
          }
          window.open(link, '_blank', 'noopener,noreferrer');
 
@@ -256,9 +285,21 @@ export default function ContactsStep({
                </div>
                {showTypedCode && messengerCode ? (
                   <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-                     <p className="font-semibold text-[#4c239f]">Messenger not opening?</p>
+                     <p className="font-semibold text-[#4c239f]">Not confirmed yet?</p>
                      <p className="mt-1">
-                        Send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you automatically.
+                        <b>1.</b> Tap{' '}
+                        <button
+                           type="button"
+                           onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                           className="font-semibold text-md-primary-1200 underline underline-offset-4"
+                        >
+                           Open Messenger again
+                        </button>
+                        . Now that our chat is open, the second try usually works.
+                     </p>
+                     <p className="mt-2">
+                        <b>2.</b> Or send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you
+                        automatically.
                      </p>
                      <div className="mt-2 flex items-center gap-2">
                         <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[16px] font-bold tracking-wide text-md-heading">
@@ -280,6 +321,9 @@ export default function ContactsStep({
                      >
                         Open our Facebook page
                      </a>
+                     <p className="mt-2 text-[13px] text-[#877897]">
+                        Still stuck? We&apos;ll email you, and our team will help you finish.
+                     </p>
                   </div>
                ) : null}
             </>

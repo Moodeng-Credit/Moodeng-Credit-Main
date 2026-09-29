@@ -58,10 +58,16 @@ export type PushNotificationsState = {
  *  - once per device, and only if the browser has never been asked, raise the
  *    permission dialog.
  *
+ * `autoPrompt: false` skips the second job. Lenders get asked in context instead
+ * (RepaidPushCard, right after they fund), where the ask makes sense.
+ *
  * Passing a null userId (signed out) does nothing — we never want to attach a
  * device to no account, or leave a stale one attached to a previous one.
  */
-export function usePushNotifications(userId: string | null | undefined): PushNotificationsState {
+export function usePushNotifications(
+   userId: string | null | undefined,
+   { autoPrompt = true }: { autoPrompt?: boolean } = {}
+): PushNotificationsState {
    const { locale } = useLocalization();
    const [permission, setPermission] = useState<PushPermissionState>(() => getPushPermission());
    const [isSubscribed, setIsSubscribed] = useState(false);
@@ -95,7 +101,7 @@ export function usePushNotifications(userId: string | null | undefined): PushNot
 
    // First-run prompt, once per device.
    useEffect(() => {
-      if (!isSupported || !userId || getPushPermission() !== 'default' || hasBeenPrompted()) {
+      if (!autoPrompt || !isSupported || !userId || getPushPermission() !== 'default' || hasBeenPrompted()) {
          return;
       }
 
@@ -105,7 +111,7 @@ export function usePushNotifications(userId: string | null | undefined): PushNot
       }, AUTO_PROMPT_DELAY_MS);
 
       return () => window.clearTimeout(timer);
-   }, [isSupported, userId, locale, refreshState]);
+   }, [autoPrompt, isSupported, userId, locale, refreshState]);
 
    const enable = useCallback(async (): Promise<PushRegistrationOutcome> => {
       setIsBusy(true);
