@@ -585,5 +585,62 @@ export const indonesianCoverageE: Record<string, string> = {
    'Loan repaid 7 days after the due date.': 'Pinjaman dilunasi 7 hari setelah jatuh tempo.',
    // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
    'Verify your identity to start borrowing': 'Verifikasi identitasmu untuk mulai meminjam',
-   'Send only': 'Kirim hanya'
+   'Send only': 'Kirim hanya',
+   // Strings added on staging (World ID errors, reason check, reminder setup, verify page)
+   'Add your Facebook and turn on notifications so we can reach you the moment your review is done.':
+      'Tambahkan Facebook-mu dan aktifkan notifikasi agar kami bisa langsung menghubungimu saat peninjauanmu selesai.',
+   'Stay in the loop 💜': 'Tetap dapat kabar terbaru 💜',
+   "We couldn't finish verifying": 'Kami belum bisa menyelesaikan verifikasi',
+   "We lost the connection to World ID while confirming your verification. This is on our side, not yours — message us and we'll get you sorted.":
+      'Koneksi kami ke World ID terputus saat mengonfirmasi verifikasimu. Ini masalah di pihak kami, bukan kamu — kirim pesan ke kami dan kami akan membereskannya.',
+   'World ID Not Verified Yet': 'World ID belum terverifikasi',
+   'Your World App needs an Orb verification or a passport added before it can verify you. You can verify with your ID instead.':
+      'World App kamu perlu verifikasi Orb atau paspor sebelum bisa memverifikasimu. Kamu bisa verifikasi dengan ID kamu saja.',
+   'World ID Still Processing': 'World ID masih diproses',
+   'World App is still finishing your verification. Try again in a few hours, or verify with your ID instead.':
+      'World App masih menyelesaikan verifikasimu. Coba lagi dalam beberapa jam, atau verifikasi dengan ID kamu saja.',
+   "Couldn't Reach World App": 'Tidak bisa terhubung ke World App',
+   'The connection to World App dropped before verification finished. Please try again.':
+      'Koneksi ke World App terputus sebelum verifikasi selesai. Silakan coba lagi.',
+   'World ID Unavailable': 'World ID tidak tersedia',
+   "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
+      'Verifikasi World ID sedang tidak berfungsi. Silakan verifikasi dengan ID kamu saja, atau coba lagi nanti.',
+   "World ID verification isn't working": 'Verifikasi World ID tidak berfungsi',
+   'Tell lenders what the money will be used for.': 'Beri tahu pemberi pinjaman untuk apa uang ini akan dipakai.',
+   'Please write it in English': 'Tolong tulis dalam bahasa Inggris',
+   'Improve your reason': 'Perbaiki alasanmu',
+   'Update your reason, then tap “Make Your Request” again.': 'Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
+   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'Beri tahu pemberi pinjaman untuk apa uang ini akan dipakai. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
+   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+      'Tolong tulis alasanmu dalam bahasa Inggris — pemberi pinjaman yang membacanya tidak bisa bahasa Tagalog. Perbarui alasanmu, lalu ketuk “Kirim permintaanmu” lagi.',
+   'Your info is missing': 'Infomu belum lengkap',
+   'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
+      'Kami butuh detail "Tentang kamu" sebelum memposting. Tutup ini dan ketuk Ajukan pinjaman lagi untuk mengisinya — atau ketuk Bantuan dan kami akan membantu.',
+   'the ••• menu (top right)': 'menu ••• (kanan atas)',
+   "your browser's menu": 'menu browser kamu',
+   'Reminders need Safari or Chrome': 'Pengingat butuh Safari atau Chrome',
+   ', choose': ', pilih',
+   '(or Chrome), then turn reminders on there.': '(atau Chrome), lalu aktifkan pengingat di sana.',
+   'Add Moodeng to your Home Screen': 'Tambahkan Moodeng ke Layar Utama',
+   ', tap the': ', ketuk ikon',
+   'icon — the square with an ↑ arrow, in the bar at the bottom of the screen — then':
+      '— kotak dengan panah ↑ di bilah bawah layar — lalu pilih',
+   'Turn on reminders in your browser': 'Aktifkan pengingat di browser kamu',
+   'Allow notifications for moodeng.app in your browser settings, then reload this page.':
+      'Izinkan notifikasi untuk moodeng.app di pengaturan browser kamu, lalu muat ulang halaman ini.',
+   'Confirming on Messenger…': 'Mengonfirmasi di Messenger…',
+   'Keep this screen open — it turns green on its own. Tap': 'Biarkan layar ini tetap terbuka — nanti akan berubah hijau sendiri. Ketuk',
+   'in Messenger if it asks.': 'di Messenger jika diminta.',
+   'Messenger not opening?': 'Messenger tidak terbuka?',
+   'Send this code to': 'Kirim kode ini ke',
+   'on Facebook Messenger, from any app or device. We confirm you automatically.':
+      'lewat Facebook Messenger, dari aplikasi atau perangkat apa pun. Kami akan mengonfirmasi secara otomatis.',
+   'Open our Facebook page': 'Buka halaman Facebook kami',
+   'Submitting…': 'Mengirim…',
+   'In English:': 'Dalam bahasa Inggris:',
+   'Try this:': 'Coba ini:',
+   'Use this': 'Pakai ini',
+   'Message us to help write this in English': 'Kirim pesan ke kami untuk bantuan menulis ini dalam bahasa Inggris',
+   'Message us for help wording this': 'Kirim pesan ke kami untuk bantuan menyusun kalimatnya'
 };

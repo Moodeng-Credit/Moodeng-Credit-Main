@@ -344,5 +344,62 @@ export const thaiCoverageE: Record<string, string> = {
    'Loan repaid 6 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 6 วัน',
    'Loan repaid 7 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 7 วัน',
    // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
-   'Verify your identity to start borrowing': 'ยืนยันตัวตนเพื่อเริ่มกู้เงิน'
+   'Verify your identity to start borrowing': 'ยืนยันตัวตนเพื่อเริ่มกู้เงิน',
+   // Strings added on staging (World ID errors, reason check, reminder setup, verify page)
+   'Add your Facebook and turn on notifications so we can reach you the moment your review is done.':
+      'เพิ่ม Facebook ของคุณและเปิดการแจ้งเตือน เพื่อให้เราติดต่อคุณได้ทันทีเมื่อตรวจสอบเสร็จ',
+   'Stay in the loop 💜': 'ติดตามข่าวสาร 💜',
+   "We couldn't finish verifying": 'เรายังยืนยันตัวตนไม่สำเร็จ',
+   "We lost the connection to World ID while confirming your verification. This is on our side, not yours — message us and we'll get you sorted.":
+      'การเชื่อมต่อกับ World ID ขาดหายระหว่างยืนยันตัวตนของคุณ ปัญหานี้เกิดจากฝั่งเรา ไม่ใช่คุณ ส่งข้อความหาเราแล้วเราจะช่วยจัดการให้',
+   'World ID Not Verified Yet': 'World ID ยังไม่ได้ยืนยัน',
+   'Your World App needs an Orb verification or a passport added before it can verify you. You can verify with your ID instead.':
+      'World App ของคุณต้องมีการยืนยันด้วย Orb หรือเพิ่มพาสปอร์ตก่อนจึงจะยืนยันตัวตนคุณได้ คุณสามารถยืนยันด้วยบัตรประชาชนแทนได้',
+   'World ID Still Processing': 'World ID กำลังดำเนินการ',
+   'World App is still finishing your verification. Try again in a few hours, or verify with your ID instead.':
+      'World App ยังยืนยันตัวตนของคุณไม่เสร็จ ลองใหม่อีกครั้งในอีกไม่กี่ชั่วโมง หรือยืนยันด้วยบัตรประชาชนแทน',
+   "Couldn't Reach World App": 'เชื่อมต่อ World App ไม่ได้',
+   'The connection to World App dropped before verification finished. Please try again.':
+      'การเชื่อมต่อกับ World App ขาดหายก่อนยืนยันตัวตนเสร็จ โปรดลองอีกครั้ง',
+   'World ID Unavailable': 'World ID ใช้งานไม่ได้',
+   "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
+      'การยืนยันด้วย World ID ใช้งานไม่ได้ในขณะนี้ โปรดยืนยันด้วยบัตรประชาชนแทน หรือลองใหม่ภายหลัง',
+   "World ID verification isn't working": 'การยืนยันด้วย World ID ใช้งานไม่ได้',
+   'Tell lenders what the money will be used for.': 'บอกผู้ให้กู้ว่าคุณจะนำเงินไปใช้ทำอะไร',
+   'Please write it in English': 'โปรดเขียนเป็นภาษาอังกฤษ',
+   'Improve your reason': 'ปรับปรุงเหตุผลของคุณ',
+   'Update your reason, then tap “Make Your Request” again.': 'แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
+   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'บอกผู้ให้กู้ว่าคุณจะนำเงินไปใช้ทำอะไร แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
+   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+      'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ เพราะผู้ให้กู้ที่อ่านไม่เข้าใจภาษาตากาล็อก แก้ไขเหตุผลของคุณ แล้วแตะ “ส่งคำขอของคุณ” อีกครั้ง',
+   'Your info is missing': 'ข้อมูลของคุณยังไม่ครบ',
+   'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
+      'เราต้องการรายละเอียด "เกี่ยวกับคุณ" ก่อนโพสต์ ปิดหน้านี้แล้วแตะ ขอเงินกู้ อีกครั้งเพื่อกรอกข้อมูล หรือแตะ ช่วยเหลือ แล้วเราจะช่วยจัดการให้',
+   'the ••• menu (top right)': 'เมนู ••• (มุมขวาบน)',
+   "your browser's menu": 'เมนูของเบราว์เซอร์',
+   'Reminders need Safari or Chrome': 'การแจ้งเตือนต้องใช้ Safari หรือ Chrome',
+   ', choose': ' เลือก',
+   '(or Chrome), then turn reminders on there.': '(หรือ Chrome) แล้วเปิดการแจ้งเตือนที่นั่น',
+   'Add Moodeng to your Home Screen': 'เพิ่ม Moodeng ลงในหน้าจอโฮม',
+   ', tap the': ' แตะไอคอน',
+   'icon — the square with an ↑ arrow, in the bar at the bottom of the screen — then':
+      '— สี่เหลี่ยมที่มีลูกศร ↑ ในแถบด้านล่างของหน้าจอ — แล้วเลือก',
+   'Turn on reminders in your browser': 'เปิดการแจ้งเตือนในเบราว์เซอร์',
+   'Allow notifications for moodeng.app in your browser settings, then reload this page.':
+      'อนุญาตการแจ้งเตือนสำหรับ moodeng.app ในการตั้งค่าเบราว์เซอร์ แล้วโหลดหน้านี้ใหม่',
+   'Confirming on Messenger…': 'กำลังยืนยันใน Messenger…',
+   'Keep this screen open — it turns green on its own. Tap': 'เปิดหน้าจอนี้ค้างไว้ หน้าจอจะเปลี่ยนเป็นสีเขียวเอง แตะ',
+   'in Messenger if it asks.': 'ใน Messenger หากมีการขอ',
+   'Messenger not opening?': 'Messenger ไม่เปิดใช่ไหม?',
+   'Send this code to': 'ส่งรหัสนี้ไปที่',
+   'on Facebook Messenger, from any app or device. We confirm you automatically.':
+      'ทาง Facebook Messenger จากแอปหรืออุปกรณ์ใดก็ได้ เราจะยืนยันให้โดยอัตโนมัติ',
+   'Open our Facebook page': 'เปิดเพจ Facebook ของเรา',
+   'Submitting…': 'กำลังส่ง…',
+   'In English:': 'ภาษาอังกฤษ:',
+   'Try this:': 'ลองแบบนี้:',
+   'Use this': 'ใช้ข้อความนี้',
+   'Message us to help write this in English': 'ส่งข้อความหาเราเพื่อให้ช่วยเขียนเป็นภาษาอังกฤษ',
+   'Message us for help wording this': 'ส่งข้อความหาเราเพื่อให้ช่วยเรียบเรียง'
 };

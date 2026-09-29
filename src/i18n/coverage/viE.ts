@@ -1482,5 +1482,62 @@ export const vietnameseCoverageE: Record<string, string> = {
    'This looks low-effort. Requests that appear to have no real effort may be deleted. Tap “Make Your Request” again to post it anyway.':
       'Lý do này có vẻ quá sơ sài. Các yêu cầu viết qua loa có thể bị xóa. Nhấn “Gửi yêu cầu” lần nữa nếu bạn vẫn muốn đăng.',
    // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
-   'Verify your identity to start borrowing': 'Xác minh danh tính để bắt đầu vay'
+   'Verify your identity to start borrowing': 'Xác minh danh tính để bắt đầu vay',
+   // Strings added on staging (World ID errors, reason check, reminder setup, verify page)
+   'Add your Facebook and turn on notifications so we can reach you the moment your review is done.':
+      'Thêm Facebook của bạn và bật thông báo để chúng tôi liên hệ ngay khi xét duyệt xong.',
+   'Stay in the loop 💜': 'Luôn cập nhật 💜',
+   "We couldn't finish verifying": 'Chúng tôi chưa thể hoàn tất xác minh',
+   "We lost the connection to World ID while confirming your verification. This is on our side, not yours — message us and we'll get you sorted.":
+      'Kết nối của chúng tôi với World ID bị gián đoạn khi đang xác nhận việc xác minh của bạn. Lỗi này ở phía chúng tôi, không phải ở bạn — hãy nhắn tin cho chúng tôi để được hỗ trợ.',
+   'World ID Not Verified Yet': 'World ID chưa được xác minh',
+   'Your World App needs an Orb verification or a passport added before it can verify you. You can verify with your ID instead.':
+      'World App của bạn cần xác minh bằng Orb hoặc thêm hộ chiếu trước khi có thể xác minh bạn. Bạn có thể xác minh bằng thẻ căn cước thay thế.',
+   'World ID Still Processing': 'World ID vẫn đang xử lý',
+   'World App is still finishing your verification. Try again in a few hours, or verify with your ID instead.':
+      'World App vẫn đang hoàn tất việc xác minh của bạn. Hãy thử lại sau vài giờ, hoặc xác minh bằng thẻ căn cước thay thế.',
+   "Couldn't Reach World App": 'Không kết nối được World App',
+   'The connection to World App dropped before verification finished. Please try again.':
+      'Kết nối với World App bị ngắt trước khi xác minh xong. Vui lòng thử lại.',
+   'World ID Unavailable': 'World ID không khả dụng',
+   "World ID verification isn't working right now. Please verify with your ID instead, or try again later.":
+      'Tính năng xác minh World ID hiện không hoạt động. Vui lòng xác minh bằng thẻ căn cước thay thế, hoặc thử lại sau.',
+   "World ID verification isn't working": 'Xác minh World ID không hoạt động',
+   'Tell lenders what the money will be used for.': 'Cho người cho vay biết bạn sẽ dùng tiền vào việc gì.',
+   'Please write it in English': 'Vui lòng viết bằng tiếng Anh',
+   'Improve your reason': 'Chỉnh sửa lý do',
+   'Update your reason, then tap “Make Your Request” again.': 'Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
+   'Tell lenders what the money will be used for. Update your reason, then tap “Make Your Request” again.':
+      'Cho người cho vay biết bạn sẽ dùng tiền vào việc gì. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
+   'Please write your reason in English — the lenders reading it don’t speak Tagalog. Update your reason, then tap “Make Your Request” again.':
+      'Vui lòng viết lý do bằng tiếng Anh — người cho vay đọc nó không biết tiếng Tagalog. Cập nhật lý do của bạn, rồi nhấn “Gửi yêu cầu” lần nữa.',
+   'Your info is missing': 'Thiếu thông tin của bạn',
+   'We need your "About you" details before posting. Close this and tap Request a loan again to fill them in — or tap Help and we\'ll sort it out.':
+      'Chúng tôi cần thông tin "Về bạn" trước khi đăng. Đóng mục này và nhấn Yêu cầu vay lần nữa để điền — hoặc nhấn Trợ giúp để chúng tôi hỗ trợ.',
+   'the ••• menu (top right)': 'menu ••• (góc trên bên phải)',
+   "your browser's menu": 'menu của trình duyệt',
+   'Reminders need Safari or Chrome': 'Nhắc nhở cần Safari hoặc Chrome',
+   ', choose': ', chọn',
+   '(or Chrome), then turn reminders on there.': '(hoặc Chrome), rồi bật nhắc nhở ở đó.',
+   'Add Moodeng to your Home Screen': 'Thêm Moodeng vào Màn hình chính',
+   ', tap the': ', nhấn biểu tượng',
+   'icon — the square with an ↑ arrow, in the bar at the bottom of the screen — then':
+      '— hình vuông có mũi tên ↑ ở thanh dưới cùng màn hình — rồi chọn',
+   'Turn on reminders in your browser': 'Bật nhắc nhở trong trình duyệt',
+   'Allow notifications for moodeng.app in your browser settings, then reload this page.':
+      'Cho phép thông báo cho moodeng.app trong cài đặt trình duyệt, rồi tải lại trang này.',
+   'Confirming on Messenger…': 'Đang xác nhận trên Messenger…',
+   'Keep this screen open — it turns green on its own. Tap': 'Giữ màn hình này mở — nó sẽ tự chuyển sang màu xanh. Nhấn',
+   'in Messenger if it asks.': 'trên Messenger nếu được hỏi.',
+   'Messenger not opening?': 'Messenger không mở?',
+   'Send this code to': 'Gửi mã này đến',
+   'on Facebook Messenger, from any app or device. We confirm you automatically.':
+      'trên Facebook Messenger, từ bất kỳ ứng dụng hay thiết bị nào. Chúng tôi sẽ tự động xác nhận.',
+   'Open our Facebook page': 'Mở trang Facebook của chúng tôi',
+   'Submitting…': 'Đang gửi…',
+   'In English:': 'Bằng tiếng Anh:',
+   'Try this:': 'Thử cách này:',
+   'Use this': 'Dùng câu này',
+   'Message us to help write this in English': 'Nhắn tin cho chúng tôi để được giúp viết bằng tiếng Anh',
+   'Message us for help wording this': 'Nhắn tin cho chúng tôi để được giúp diễn đạt'
 };
