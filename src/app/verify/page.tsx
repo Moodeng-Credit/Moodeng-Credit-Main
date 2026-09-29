@@ -973,7 +973,12 @@ export default function VerifyFlow() {
       return (
          <ConfirmScreen
             worldIdTrigger={
-               <WorldIDVerification onSuccess={handleWorldIdSuccess} showSuccessToast={false} className="w-full">
+               <WorldIDVerification
+                  onSuccess={handleWorldIdSuccess}
+                  showSuccessToast={false}
+                  className="w-full"
+                  onUseIdInstead={() => void startKyc(flow)}
+               >
                   {trigger}
                </WorldIDVerification>
             }

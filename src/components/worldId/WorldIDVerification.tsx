@@ -13,6 +13,8 @@ interface WorldIDVerificationProps {
    className?: string;
    showSuccessToast?: boolean;
    showSuccessFeedback?: boolean;
+   /** When set, the "Opening World ID…" card offers the regular ID check instead. */
+   onUseIdInstead?: () => void;
 }
 
 const WORLD_ID_ACTION_DESCRIPTION = 'Verify a borrower as a unique human before borrowing.';
@@ -28,7 +30,8 @@ export default function WorldIDVerification({
    onSuccess,
    className = '',
    showSuccessToast = true,
-   showSuccessFeedback = true
+   showSuccessFeedback = true,
+   onUseIdInstead
 }: WorldIDVerificationProps) {
    const verification = useWorldIdVerification({
       credentials: WORLD_ID_CREDENTIALS,
@@ -58,6 +61,7 @@ export default function WorldIDVerification({
             idPrefix="world-id"
             onOpen={verification.openWorldId}
             onCancel={verification.cancelLaunch}
+            onUseIdInstead={onUseIdInstead}
          />
 
          <VerificationFeedbackOverlay

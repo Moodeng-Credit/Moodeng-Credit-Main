@@ -4,11 +4,12 @@
 // must behave identically, because the differences are exactly the kind that produce a
 // wallet on one screen and a dead end on the other. Notably: dropping the live wagmi session
 // first, and choosing between "needs a face check" and "this is just a recovery".
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from 'wagmi';
 
+import type { WalletSetupPhase } from '@/lib/web3/openfort/embeddedWallet';
 import { useOpenfort } from '@/lib/web3/openfort/OpenfortContext';
 import { isCashoutHoldCode } from '@/lib/web3/openfort/walletFaceGate';
 
@@ -20,10 +21,15 @@ import { isCashoutHoldCode } from '@/lib/web3/openfort/walletFaceGate';
  */
 export type InstantWalletReturnTo = string;
 
+const DONE_PAUSE_MS = 700;
+
 export const useCreateInstantWallet = (returnTo?: InstantWalletReturnTo) => {
    const navigate = useNavigate();
    const openfort = useOpenfort();
    const { disconnectAsync } = useDisconnect();
+   // Which stage the wallet setup is in, for the progress shown inside the button. Local to the
+   // screen that started it, so it's gone the next time anyone lands on a wallet screen.
+   const [phase, setPhase] = useState<WalletSetupPhase | null>(null);
 
    const createInstantWallet = useCallback(async () => {
       // Drop any live wagmi session first. useWalletSync re-saves a connected wallet whenever
@@ -34,8 +40,10 @@ export const useCreateInstantWallet = (returnTo?: InstantWalletReturnTo) => {
       // No face check before creating an Instant Wallet (removed 2026-09-26, see migration
       // 20260926110000_instant_wallet_no_face_scan): Didit's biometric workflow needed a face already
       // on file, so most people could never pass it.
-      const address = await openfort.connect();
+      const address = await openfort.connect(setPhase);
       if (address) {
+         // Let "Done" show for a beat so the last step lands before the screen changes.
+         await new Promise((resolve) => setTimeout(resolve, DONE_PAUSE_MS));
          navigate('/onboarding/wallet/connected', { replace: true, state: returnTo ? { returnTo } : undefined });
          return;
       }
@@ -43,6 +51,7 @@ export const useCreateInstantWallet = (returnTo?: InstantWalletReturnTo) => {
       // The server is the authority, so it can still refuse after the local check passed —
       // a stale approval, or another tab that already spent it. Send them to the scan, which
       // explains a terminal refusal rather than looping them through a retry.
+      setPhase(null);
       if (openfort.gateCode) {
          // The cash-out hold is a different refusal arriving through the same endpoint: the
          // wallet already exists and is fine, it's the undrawn first loan that needs a face
@@ -56,7 +65,8 @@ export const useCreateInstantWallet = (returnTo?: InstantWalletReturnTo) => {
 
    return {
       createInstantWallet,
-      isCreating: openfort.isConnecting,
+      isCreating: openfort.isConnecting || phase !== null,
+      phase,
       isConfigured: openfort.isConfigured,
       error: openfort.error
    };
