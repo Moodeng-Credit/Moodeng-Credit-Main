@@ -1477,5 +1477,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    Night: 'Đêm',
 
    // src/views/support/Updates.tsx
-   Updates: 'Cập nhật'
+   Updates: 'Cập nhật',
+   // RequestBoard toast, ProgressHistory late-repayment line, transaction table header
+   'This looks low-effort. Requests that appear to have no real effort may be deleted. Tap “Make Your Request” again to post it anyway.':
+      'Lý do này có vẻ quá sơ sài. Các yêu cầu viết qua loa có thể bị xóa. Nhấn “Gửi yêu cầu” lần nữa nếu bạn vẫn muốn đăng.'
 };

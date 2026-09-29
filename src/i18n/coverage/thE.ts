@@ -332,5 +332,15 @@ export const thaiCoverageE: Record<string, string> = {
    'World ID Verification': 'การยืนยันด้วย World ID',
    'World ID Already Linked': 'World ID นี้เชื่อมโยงแล้ว',
    'Your World ID got verified already and connected to one existing account. Moodeng didn’t allow another account to be verified with the same World ID.':
-      'World ID ของคุณได้รับการยืนยันและเชื่อมโยงกับบัญชีที่มีอยู่แล้วหนึ่งบัญชี Moodeng ไม่อนุญาตให้ยืนยันบัญชีอื่นด้วย World ID เดียวกัน'
+      'World ID ของคุณได้รับการยืนยันและเชื่อมโยงกับบัญชีที่มีอยู่แล้วหนึ่งบัญชี Moodeng ไม่อนุญาตให้ยืนยันบัญชีอื่นด้วย World ID เดียวกัน',
+   // RequestBoard toast, ProgressHistory late-repayment line, transaction table header
+   'This looks low-effort. Requests that appear to have no real effort may be deleted. Tap “Make Your Request” again to post it anyway.':
+      'เหตุผลนี้ดูเขียนอย่างลวก ๆ คำขอที่ดูไม่ตั้งใจอาจถูกลบ แตะ “ส่งคำขอของคุณ” อีกครั้งหากยังต้องการโพสต์',
+   'Loan repaid 1 day after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 1 วัน',
+   'Loan repaid 2 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 2 วัน',
+   'Loan repaid 3 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 3 วัน',
+   'Loan repaid 4 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 4 วัน',
+   'Loan repaid 5 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 5 วัน',
+   'Loan repaid 6 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 6 วัน',
+   'Loan repaid 7 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 7 วัน'
 };

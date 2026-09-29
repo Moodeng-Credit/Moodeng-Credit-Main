@@ -572,5 +572,15 @@ export const indonesianCoverageE: Record<string, string> = {
    'World ID Verification': 'Verifikasi World ID',
    'World ID Already Linked': 'World ID sudah tertaut',
    'Your World ID got verified already and connected to one existing account. Moodeng didn’t allow another account to be verified with the same World ID.':
-      'World ID kamu sudah terverifikasi dan tertaut ke satu akun yang ada. Moodeng tidak mengizinkan akun lain diverifikasi dengan World ID yang sama.'
+      'World ID kamu sudah terverifikasi dan tertaut ke satu akun yang ada. Moodeng tidak mengizinkan akun lain diverifikasi dengan World ID yang sama.',
+   // RequestBoard toast, ProgressHistory late-repayment line, transaction table header
+   'This looks low-effort. Requests that appear to have no real effort may be deleted. Tap “Make Your Request” again to post it anyway.':
+      'Alasan ini terlihat asal-asalan. Permintaan yang tampak dibuat tanpa usaha bisa dihapus. Ketuk “Kirim permintaanmu” lagi jika tetap ingin memposting.',
+   'Loan repaid 1 day after the due date.': 'Pinjaman dilunasi 1 hari setelah jatuh tempo.',
+   'Loan repaid 2 days after the due date.': 'Pinjaman dilunasi 2 hari setelah jatuh tempo.',
+   'Loan repaid 3 days after the due date.': 'Pinjaman dilunasi 3 hari setelah jatuh tempo.',
+   'Loan repaid 4 days after the due date.': 'Pinjaman dilunasi 4 hari setelah jatuh tempo.',
+   'Loan repaid 5 days after the due date.': 'Pinjaman dilunasi 5 hari setelah jatuh tempo.',
+   'Loan repaid 6 days after the due date.': 'Pinjaman dilunasi 6 hari setelah jatuh tempo.',
+   'Loan repaid 7 days after the due date.': 'Pinjaman dilunasi 7 hari setelah jatuh tempo.'
 };

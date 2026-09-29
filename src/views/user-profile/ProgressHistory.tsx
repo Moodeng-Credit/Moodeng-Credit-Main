@@ -383,7 +383,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
             description: isEarly
                ? `${classification === 'credit' ? 'Credit Building' : 'Trust Building'} loan closed before due date.`
                : isLate
-                 ? `Loan repaid ${Math.max(1, daysBetween(dueDate, paidDate))} day${daysBetween(dueDate, paidDate) === 1 ? '' : 's'} after the due date.`
+                 ? `Loan repaid ${Math.max(1, daysBetween(dueDate, paidDate))} day${Math.max(1, daysBetween(dueDate, paidDate)) === 1 ? '' : 's'} after the due date.`
                  : 'Remaining balance repaid on time.',
             date: loan.updatedAt,
             amount: repaymentAmount,

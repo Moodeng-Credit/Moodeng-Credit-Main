@@ -1388,7 +1388,7 @@ function RequestBoard$() {
                showToast(
                   TOAST_TYPES.WARNING,
                   'Check your reason',
-                  `${warningText} Tap “Make Your Request” again to post it anyway.`,
+                  `${reasonHint || 'This looks low-effort. Requests that appear to have no real effort may be deleted.'} Tap “Make Your Request” again to post it anyway.`,
                   'OK',
                   'acknowledge'
                );
