@@ -72,10 +72,12 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
    const due = dueDate ? parseISO(dueDate) : null;
    const repaysLine = `${borrowerName} repays you $${formatCurrency(totalRepayment)}${due && isValid(due) ? ` by ${format(due, 'MMM d')}` : ''}.`;
 
+   // The coin ("when you're repaid"), not the bell: the bell is the Home Screen Turn On popup's, and
+   // reusing it here made the two steps look like the same screen.
    // iPhone gets the same ask as everyone else; the button just leads to the Home Screen steps, since
    // iOS won't let us turn push on from Safari.
    const content = pushAsk
-      ? { heading: 'Want to know when you’re repaid?', body: repaysLine, art: '/icons/bell-ringing-3d.png', cta: 'Notify Me When Repaid' }
+      ? { heading: 'Want to know when you’re repaid?', body: repaysLine, art: '/icons/balance-coin-3d.png', cta: 'Notify Me When Repaid' }
       : { heading: 'Thanks for lending!', body: repaysLine, art: '/icons/check-3d.png', cta: 'Done' };
 
    const handleCta = async () => {
