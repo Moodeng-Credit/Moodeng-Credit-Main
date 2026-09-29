@@ -639,5 +639,97 @@ export const filipinoCoverageG: Record<string, string> = {
    'Repayment guides • Credit leveling • Borrower safety content':
       'Mga gabay sa pagbabayad • Credit leveling • Content para sa kaligtasan ng borrower',
    'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
-      'Ni-refresh ang support area batay sa mga tanong na talagang itinatanong ng mga borrower at lender.\n\nMas malinaw nang ipinapaliwanag ng mga gabay ang pagbabayad, Pandesal points, credit leveling, World ID, pag-set up ng Base Wallet, at kaligtasan ng borrower.\n\nNagdagdag din kami ng mas maraming educational content tungkol sa portable na repayment history at mas ligtas na alternatibo sa mapang-abusong pagpapautang, para maintindihan ng mga bagong user kung ano ang binubuo ng Moodeng bago sila mag-request o magpondo ng loan.'
+      'Ni-refresh ang support area batay sa mga tanong na talagang itinatanong ng mga borrower at lender.\n\nMas malinaw nang ipinapaliwanag ng mga gabay ang pagbabayad, Pandesal points, credit leveling, World ID, pag-set up ng Base Wallet, at kaligtasan ng borrower.\n\nNagdagdag din kami ng mas maraming educational content tungkol sa portable na repayment history at mas ligtas na alternatibo sa mapang-abusong pagpapautang, para maintindihan ng mga bagong user kung ano ang binubuo ng Moodeng bago sila mag-request o magpondo ng loan.',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Verify, then make your first request': 'Mag-verify, saka gawin ang una mong request',
+   'Repay your $15 loan on time': 'Bayaran on time ang $15 loan mo',
+   'Repay your $20 loan on time': 'Bayaran on time ang $20 loan mo',
+   'Repay your $40 loan on time': 'Bayaran on time ang $40 loan mo',
+   'Repay your $60 loan on time': 'Bayaran on time ang $60 loan mo',
+   'Repay your $80 loan on time': 'Bayaran on time ang $80 loan mo',
+   'Repay your $100 loan on time': 'Bayaran on time ang $100 loan mo',
+   'Repay your $120 loan on time': 'Bayaran on time ang $120 loan mo',
+   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'Tumataas ang limit nang paisa-isa: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'you need a smaller amount, or want to build trust first.': 'mas maliit na halaga ang kailangan mo, o gusto mo munang bumuo ng tiwala.',
+   'also called a Credit Growth Loan': 'tinatawag ding Credit Growth Loan',
+   'you’re ready to grow your limit and sure you can repay on time.':
+      'handa ka nang palakihin ang limit mo at sigurado kang makakabayad on time.',
+   'How reliable repayment becomes a portable reputation lenders trust.':
+      'Paano nagiging portable na reputasyon na pinagkakatiwalaan ng mga lender ang maaasahang pagbabayad.',
+   'The difference between the two loan types and when to use each.':
+      'Ang pagkakaiba ng dalawang uri ng loan at kung kailan gagamitin ang bawat isa.',
+   'Exactly how on-time, partial, and late repayments are scored.':
+      'Kung paano eksaktong binibigyan ng score ang on-time, partial, at late na pagbabayad.',
+   'Any small loan': 'Kahit anong maliit na loan',
+   'A full-limit Credit-Building Loan': 'Isang full-limit na Credit-Building Loan',
+   'Paying a fee': 'Pagbabayad ng fee',
+   'Logging in daily': 'Pag-log in araw-araw',
+   'You jump to $40': 'Tatalon ka sa $40',
+   'Limit stays $20, trust grows': 'Mananatiling $20 ang limit, lalago ang tiwala',
+   'You drop to $15': 'Bababa ka sa $15',
+   'Nothing, ever': 'Wala, kahit kailan',
+   'Yes, pay 4× up front': 'Oo, magbayad ng 4× nang pauna',
+   'No — one level at a time': 'Hindi — paisa-isang level',
+   'Only on weekends': 'Tuwing weekend lang',
+   'Yes, with a coupon': 'Oo, gamit ang coupon',
+   'Repaying early': 'Maagang pagbabayad',
+   'A late or missed repayment': 'Late o na-miss na bayad',
+   'Borrowing your full limit': 'Paghiram ng buo mong limit',
+   'Asking questions': 'Pagtatanong',
+   'Flawless run. You could teach the hippos.': 'Perpekto! Puwede mo nang turuan ang mga hippo.',
+   'Solid! You’ve basically got this down.': 'Solid! Halos gamay mo na ito.',
+   'No worries — scroll back up and you’ll ace the rematch.': 'Okay lang — mag-scroll pataas at siguradong papasa ka sa susunod.',
+   'See my score': 'Tingnan ang score ko',
+   'Updated Jun 2026 · 5 min read': 'Na-update Jun 2026 · 5 min basahin',
+
+   // src/views/support/WhyUsdc.tsx
+   'Real-world use': 'Gamit sa totoong buhay',
+   'Payments & money movement': 'Pagbabayad at paglipat ng pera',
+   'Send money to family abroad in seconds': 'Magpadala ng pera sa pamilya sa abroad sa loob ng ilang segundo',
+   'Pay a merchant that accepts stablecoins': 'Magbayad sa merchant na tumatanggap ng stablecoin',
+   'Cash out to a bank or exchange': 'Mag-cash out sa bank o exchange',
+   'On Moodeng, this is how loans work: a lender sends you USDC, and you repay in USDC.':
+      'Sa Moodeng, ganito gumagana ang mga loan: pinapadalhan ka ng lender ng USDC, at magbabayad ka rin sa USDC.',
+   'DeFi use': 'Gamit sa DeFi',
+   'DeFi means "decentralized finance" — financial apps that run on smart contracts instead of a bank. You can lend, borrow, or swap USDC directly from your wallet.':
+      'Ang ibig sabihin ng DeFi ay "decentralized finance" — mga financial app na tumatakbo sa smart contract sa halip na sa bangko. Puwede kang magpahiram, humiram, o mag-swap ng USDC diretso mula sa wallet mo.',
+   'Lend USDC to earn yield': 'Magpahiram ng USDC para kumita ng yield',
+   'Provide liquidity to a trading pool': 'Magbigay ng liquidity sa isang trading pool',
+   'Borrow against crypto you already hold': 'Humiram gamit ang crypto na hawak mo na bilang collateral',
+   'Moodeng is community lending, not a DeFi yield product — but USDC lets it plug into this wider ecosystem.':
+      'Community lending ang Moodeng, hindi DeFi yield product — pero dahil sa USDC, nakakakonekta ito sa mas malawak na ecosystem na ito.',
+   'A cryptocurrency designed to hold a steady value. USDC is pegged 1:1 to the US dollar, so it does not swing like Bitcoin.':
+      'Isang cryptocurrency na ginawa para manatiling matatag ang halaga. Naka-peg ang USDC nang 1:1 sa US dollar, kaya hindi ito tumataas-bumababa gaya ng Bitcoin.',
+   'Wallet-to-wallet transfer': 'Wallet-to-wallet na transfer',
+   'Sending funds straight from one crypto wallet to another, with no bank or payment processor sitting in the middle.':
+      'Pagpapadala ng pondo diretso mula sa isang crypto wallet papunta sa isa pa, nang walang bangko o payment processor sa gitna.',
+   'Gas (and “gasless”)': 'Gas (at “gasless”)',
+   'Gas is the small network fee to move crypto. On Base, USDC transfers are sponsored, so they feel gasless — you pay nothing.':
+      'Ang gas ay ang maliit na network fee para maglipat ng crypto. Sa Base, sponsored ang mga USDC transfer, kaya parang gasless — wala kang babayaran.',
+   'Spending or sending USDC like ordinary money: payments, remittances, and cashing out to local currency.':
+      'Paggastos o pagpapadala ng USDC na parang ordinaryong pera: pagbabayad, remittance, at pag-cash out sa local currency.',
+   'Decentralized finance — lending, borrowing, and trading run by smart contracts on a blockchain instead of a bank.':
+      'Decentralized finance — pagpapahiram, paghiram, at trading na pinapatakbo ng smart contract sa isang blockchain sa halip na ng bangko.',
+   'Locking up a crypto token to help secure a proof-of-stake blockchain, earning rewards in return. USDC is not a staking token.':
+      'Pag-lock ng crypto token para makatulong sa seguridad ng isang proof-of-stake blockchain, kapalit ng rewards. Hindi staking token ang USDC.',
+   'The return you earn by putting USDC to work — for example, lending it out in DeFi. Yield is a payout, not network security.':
+      'Ang kita mo kapag pinagtrabaho mo ang USDC — halimbawa, ipinahiram mo ito sa DeFi. Bayad ang yield, hindi seguridad ng network.',
+   'Does Moodeng offer USDC staking or yield?': 'May USDC staking o yield ba ang Moodeng?',
+   'A quick guide to how USDC is used for loans and repayments in the app.':
+      'Mabilisang gabay kung paano ginagamit ang USDC sa mga loan at pagbabayad sa app.',
+   'Your Instant Wallet is set up from your login (or connect a Base Account) — then send your first request.':
+      'Nase-set up ang Instant Wallet mo mula sa login mo (o magkonekta ng Base Account) — saka ipadala ang una mong request.',
+   'How your borrowing limit grows $15 → $20 → $40 → $60 as you repay.':
+      'Kung paano lumalaki ang borrowing limit mo $15 → $20 → $40 → $60 habang nagbabayad ka.',
+   'Updated Jul 2026 · 6 min read': 'Na-update Jul 2026 · 6 min basahin',
+   'One USDC always equals one US dollar': 'Laging katumbas ng isang US dollar ang isang USDC',
+   'Backed 1:1 by cash & short-term US Treasuries': 'Suportado nang 1:1 ng cash at short-term US Treasuries',
+   ': a cryptocurrency built to stay worth exactly one US dollar. It is issued by Circle, backed fully by cash and short-term US Treasuries, and its reserves are attested by independent accounting firms every month. Because it lives on a blockchain, it can move between wallets in seconds — while staying as steady as the dollar it tracks.':
+      ': isang cryptocurrency na ginawa para manatiling eksaktong isang US dollar ang halaga. Inilalabas ito ng Circle, buong suportado ng cash at short-term US Treasuries, at bawat buwan ay bine-verify ng mga independent accounting firm ang reserves nito. Dahil nasa blockchain ito, nakakalipat ito sa pagitan ng mga wallet sa loob ng ilang segundo — habang nananatiling kasing-tatag ng dollar na sinusundan nito.',
+   'Four reasons we chose USDC': 'Apat na dahilan kung bakit USDC ang pinili namin',
+   'Real-world use vs DeFi use': 'Gamit sa totoong buhay vs gamit sa DeFi',
+   'Staking vs yield, side by side:': 'Staking vs yield, magkatabi:',
+   'USDC, answered': 'Mga sagot tungkol sa USDC'
 };
