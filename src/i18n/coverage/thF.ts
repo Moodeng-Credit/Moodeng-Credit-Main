@@ -566,5 +566,219 @@ export const thaiCoverageF: Record<string, string> = {
    'Reconnect and confirm this is a Base Account before you borrow or repay.':
       'เชื่อมต่อใหม่และยืนยันว่าเป็น Base Account ก่อนยืมหรือชำระคืน',
    'Remove this saved wallet from your account': 'นำกระเป๋าเงินที่บันทึกไว้นี้ออกจากบัญชีของคุณ',
-   'Stop using this wallet for new loans': 'หยุดใช้กระเป๋าเงินนี้สำหรับเงินกู้รายการใหม่'
+   'Stop using this wallet for new loans': 'หยุดใช้กระเป๋าเงินนี้สำหรับเงินกู้รายการใหม่',
+
+   // src/app/forgot-password/page.tsx
+   'Enter the 8-digit code we sent to': 'กรอกรหัส 8 หลักที่เราส่งไปที่',
+
+   // src/app/verify/page.tsx
+   "We weren't able to verify your identity. Reason:": 'เราไม่สามารถยืนยันตัวตนของคุณได้ เหตุผล:',
+   '. A few things that usually fix it:': ' วิธีต่อไปนี้มักช่วยแก้ปัญหาได้:',
+
+   // src/components/ExpiredLoanRequestNotifier.tsx
+   'Your 15 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 15 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 20 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 20 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 40 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 40 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 60 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 60 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 80 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 80 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 100 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 100 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 120 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 120 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 140 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 140 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '2 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 2 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '3 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 3 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '4 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 4 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '5 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 5 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '6 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 6 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '7 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 7 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '8 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 8 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '9 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 9 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '10 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 10 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+
+   // src/components/filters/DatePicker.tsx
+   Su: 'อา',
+   Mo: 'จ',
+   Tu: 'อ',
+   We: 'พ',
+   Th: 'พฤ',
+   Fr: 'ศ',
+   Sa: 'ส',
+
+   // src/config/avatarBackgrounds.ts (aria-label in AvatarUploadModal)
+   'Purple avatar background': 'พื้นหลังอวาตาร์สีม่วง',
+   'Mint avatar background': 'พื้นหลังอวาตาร์สีเขียวมิ้นต์',
+   'Sky avatar background': 'พื้นหลังอวาตาร์สีฟ้า',
+   'Peach avatar background': 'พื้นหลังอวาตาร์สีพีช',
+   'Rose avatar background': 'พื้นหลังอวาตาร์สีชมพู',
+   'Lemon avatar background': 'พื้นหลังอวาตาร์สีเหลืองมะนาว',
+   'Stone avatar background': 'พื้นหลังอวาตาร์สีเทาอ่อน',
+   'Night avatar background': 'พื้นหลังอวาตาร์สีกลางคืน',
+
+   // src/constants/dates.ts
+   January: 'มกราคม',
+   February: 'กุมภาพันธ์',
+   March: 'มีนาคม',
+   April: 'เมษายน',
+   May: 'พฤษภาคม',
+   June: 'มิถุนายน',
+   July: 'กรกฎาคม',
+   August: 'สิงหาคม',
+   September: 'กันยายน',
+   October: 'ตุลาคม',
+   November: 'พฤศจิกายน',
+   December: 'ธันวาคม',
+   Jan: 'ม.ค.',
+   Feb: 'ก.พ.',
+   Mar: 'มี.ค.',
+   Apr: 'เม.ย.',
+   Jun: 'มิ.ย.',
+   Jul: 'ก.ค.',
+   Aug: 'ส.ค.',
+   Sep: 'ก.ย.',
+   Oct: 'ต.ค.',
+   Nov: 'พ.ย.',
+   Dec: 'ธ.ค.',
+
+   // src/hooks/useWalletSync.ts
+   'This account is saved to your locked wallet. Switch back to that wallet, or update the saved wallet from Account Settings.':
+      'บัญชีนี้บันทึกไว้กับกระเป๋าเงินที่ล็อกไว้ของคุณ โปรดสลับกลับไปใช้กระเป๋าเงินนั้น หรืออัปเดตกระเป๋าเงินที่บันทึกไว้ในการตั้งค่าบัญชี',
+   'Could not save wallet connection. This might occur if the wallet is already in use.':
+      'บันทึกการเชื่อมต่อกระเป๋าเงินไม่สำเร็จ อาจเกิดจากกระเป๋าเงินนี้ถูกใช้งานอยู่แล้ว',
+
+   // src/lib/borrowerContextFit.ts (lender-facing borrower card)
+   'full-time, mid-month pay': 'งานประจำ · รับเงินกลางเดือน',
+   'full-time, end-of-month pay': 'งานประจำ · รับเงินสิ้นเดือน',
+   'full-time, weekly pay': 'งานประจำ · รับเงินรายสัปดาห์',
+   'full-time, irregular pay': 'งานประจำ · รับเงินไม่แน่นอน',
+   'part-time, mid-month pay': 'งานพาร์ตไทม์ · รับเงินกลางเดือน',
+   'part-time, end-of-month pay': 'งานพาร์ตไทม์ · รับเงินสิ้นเดือน',
+   'part-time, weekly pay': 'งานพาร์ตไทม์ · รับเงินรายสัปดาห์',
+   'part-time, irregular pay': 'งานพาร์ตไทม์ · รับเงินไม่แน่นอน',
+   'freelance, mid-month pay': 'ฟรีแลนซ์ · รับเงินกลางเดือน',
+   'freelance, end-of-month pay': 'ฟรีแลนซ์ · รับเงินสิ้นเดือน',
+   'freelance, weekly pay': 'ฟรีแลนซ์ · รับเงินรายสัปดาห์',
+   'freelance, irregular pay': 'ฟรีแลนซ์ · รับเงินไม่แน่นอน',
+   '1-day gap': 'ห่างกัน 1 วัน',
+   '0-day gap': 'ห่างกัน 0 วัน',
+   '2-day gap': 'ห่างกัน 2 วัน',
+   '3-day gap': 'ห่างกัน 3 วัน',
+   '4-day gap': 'ห่างกัน 4 วัน',
+   '5-day gap': 'ห่างกัน 5 วัน',
+   '6-day gap': 'ห่างกัน 6 วัน',
+   '7-day gap': 'ห่างกัน 7 วัน',
+   '8-day gap': 'ห่างกัน 8 วัน',
+   '9-day gap': 'ห่างกัน 9 วัน',
+   '10-day gap': 'ห่างกัน 10 วัน',
+   '11-day gap': 'ห่างกัน 11 วัน',
+   '12-day gap': 'ห่างกัน 12 วัน',
+   '13-day gap': 'ห่างกัน 13 วัน',
+   '14-day gap': 'ห่างกัน 14 วัน',
+   '15-day gap': 'ห่างกัน 15 วัน',
+   '16-day gap': 'ห่างกัน 16 วัน',
+   '17-day gap': 'ห่างกัน 17 วัน',
+   '18-day gap': 'ห่างกัน 18 วัน',
+   '19-day gap': 'ห่างกัน 19 วัน',
+   '20-day gap': 'ห่างกัน 20 วัน',
+   '21-day gap': 'ห่างกัน 21 วัน',
+   '22-day gap': 'ห่างกัน 22 วัน',
+   '23-day gap': 'ห่างกัน 23 วัน',
+   '24-day gap': 'ห่างกัน 24 วัน',
+   '25-day gap': 'ห่างกัน 25 วัน',
+   '26-day gap': 'ห่างกัน 26 วัน',
+   '27-day gap': 'ห่างกัน 27 วัน',
+   '28-day gap': 'ห่างกัน 28 วัน',
+   '29-day gap': 'ห่างกัน 29 วัน',
+   '30-day gap': 'ห่างกัน 30 วัน',
+   '31-day gap': 'ห่างกัน 31 วัน',
+   'Repaid 2 loans and always came back': 'ชำระคืนแล้ว 2 รายการ และกลับมาใช้บริการเสมอ',
+   'Repaid 3 loans and always came back': 'ชำระคืนแล้ว 3 รายการ และกลับมาใช้บริการเสมอ',
+   'Repaid 4 loans and always came back': 'ชำระคืนแล้ว 4 รายการ และกลับมาใช้บริการเสมอ',
+   "loans repaid — one of the community's reliable borrowers": 'รายการที่ชำระคืนแล้ว — หนึ่งในผู้ยืมที่เชื่อถือได้ของชุมชน',
+   '· 1-day loan': '· เงินกู้ 1 วัน',
+   '· 2-day loan': '· เงินกู้ 2 วัน',
+   '· 3-day loan': '· เงินกู้ 3 วัน',
+   '· 4-day loan': '· เงินกู้ 4 วัน',
+   '· 5-day loan': '· เงินกู้ 5 วัน',
+   '· 6-day loan': '· เงินกู้ 6 วัน',
+   '· 7-day loan': '· เงินกู้ 7 วัน',
+   '· 8-day loan': '· เงินกู้ 8 วัน',
+   '· 9-day loan': '· เงินกู้ 9 วัน',
+   '· 10-day loan': '· เงินกู้ 10 วัน',
+   '· 11-day loan': '· เงินกู้ 11 วัน',
+   '· 12-day loan': '· เงินกู้ 12 วัน',
+   '· 13-day loan': '· เงินกู้ 13 วัน',
+   '· 14-day loan': '· เงินกู้ 14 วัน',
+   '· 15-day loan': '· เงินกู้ 15 วัน',
+   '· 16-day loan': '· เงินกู้ 16 วัน',
+   '· 17-day loan': '· เงินกู้ 17 วัน',
+   '· 18-day loan': '· เงินกู้ 18 วัน',
+   '· 19-day loan': '· เงินกู้ 19 วัน',
+   '· 20-day loan': '· เงินกู้ 20 วัน',
+   '· 21-day loan': '· เงินกู้ 21 วัน',
+   '· 22-day loan': '· เงินกู้ 22 วัน',
+   '· 23-day loan': '· เงินกู้ 23 วัน',
+   '· 24-day loan': '· เงินกู้ 24 วัน',
+   '· 25-day loan': '· เงินกู้ 25 วัน',
+   '· 26-day loan': '· เงินกู้ 26 วัน',
+   '· 27-day loan': '· เงินกู้ 27 วัน',
+   '· 28-day loan': '· เงินกู้ 28 วัน',
+   '· 29-day loan': '· เงินกู้ 29 วัน',
+   '· 30-day loan': '· เงินกู้ 30 วัน',
+   'demonstrates stable income': 'มีรายได้ที่มั่นคง',
+   'demonstrates regular income': 'มีรายได้สม่ำเสมอ',
+   'demonstrates project-based income': 'มีรายได้ตามโปรเจกต์',
+   'paid weekly': 'รับเงินรายสัปดาห์',
+   'paid mid-month': 'รับเงินกลางเดือน',
+   'paid end of the month': 'รับเงินสิ้นเดือน',
+   'under $200': 'ต่ำกว่า $200',
+   'over $700': 'มากกว่า $700',
+   'as main source of income': 'ซึ่งเป็นแหล่งรายได้หลัก',
+   'as other source of income': 'เป็นแหล่งรายได้เสริม',
+   'Spends under $50 a month on': 'ใช้จ่ายต่ำกว่า $50 ต่อเดือนไปกับ',
+   'Spends $50–$150 a month on': 'ใช้จ่าย $50–$150 ต่อเดือนไปกับ',
+   'Spends $150–$300 a month on': 'ใช้จ่าย $150–$300 ต่อเดือนไปกับ',
+   'Spends over $300 a month on': 'ใช้จ่ายมากกว่า $300 ต่อเดือนไปกับ',
+   'family needs': 'ค่าใช้จ่ายในครอบครัว',
+   'emergency costs': 'ค่าใช้จ่ายฉุกเฉิน',
+   'work supplies': 'อุปกรณ์สำหรับทำงาน',
+
+   // src/lib/borrowerCreditUsage.ts
+   'Less than a day left on the board': 'เหลือเวลาบนกระดานไม่ถึง 1 วัน',
+   '1 day left on the board': 'เหลือเวลาบนกระดานอีก 1 วัน',
+   '2 days left on the board': 'เหลือเวลาบนกระดานอีก 2 วัน',
+   '3 days left on the board': 'เหลือเวลาบนกระดานอีก 3 วัน',
+   '4 days left on the board': 'เหลือเวลาบนกระดานอีก 4 วัน',
+   '5 days left on the board': 'เหลือเวลาบนกระดานอีก 5 วัน',
+   '6 days left on the board': 'เหลือเวลาบนกระดานอีก 6 วัน',
+   '7 days left on the board': 'เหลือเวลาบนกระดานอีก 7 วัน',
+
+   // src/lib/worldIdVerificationLabel.ts
+   'Verified Lender': 'ผู้ให้กู้ที่ยืนยันแล้ว',
+
+   // src/store/slices/authSlice.ts
+   'Failed to ensure user profile': 'โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ',
+   'Unable to resolve authenticated user': 'ไม่พบผู้ใช้ที่เข้าสู่ระบบ',
+   'User profile not found': 'ไม่พบโปรไฟล์ผู้ใช้',
+   'No authenticated user to update': 'ไม่พบผู้ใช้ที่เข้าสู่ระบบสำหรับการอัปเดต',
+
+   // src/views/academy/AcademyGuide.tsx
+   'Academy score': 'คะแนนอะคาเดมี',
+   'Nice! Although you will need to verify and submit the real loan application in the app, it is great to see you try the flow. Mecha likes the practice: $15 for 2 days, with $17 paid back.':
+      'เยี่ยมมาก! แม้คุณจะต้องยืนยันตัวตนและส่งคำขอเงินกู้จริงในแอป แต่ดีใจที่เห็นคุณลองทำขั้นตอนนี้ Mecha ชอบการฝึกซ้อมนี้: $15 เป็นเวลา 2 วัน ชำระคืน $17'
 };
