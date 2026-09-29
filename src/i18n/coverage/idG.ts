@@ -208,5 +208,153 @@ export const indonesianCoverageG: Record<string, string> = {
    'A collectible profile award for long-term history.': 'Penghargaan profil koleksi untuk riwayat jangka panjang.',
    'Founding Lucky Cat': 'Lucky Cat Perintis',
    'A lucky cat for being one of the first Moodeng borrowers.': 'Kucing keberuntungan karena kamu salah satu peminjam pertama Moodeng.',
-   'First-time user': 'Pengguna perdana'
+   'First-time user': 'Pengguna perdana',
+   // src/views/fund/FundWalletSheet.tsx
+   '. Stripe handles ID checks and payment — USDC lands on Base.':
+      '. Stripe menangani pemeriksaan ID dan pembayaran — USDC masuk lewat jaringan Base.',
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'vs previous period': 'dibanding periode sebelumnya',
+   Unknown: 'Tidak diketahui',
+   "You haven't funded any loans yet.": 'Kamu belum mendanai pinjaman apa pun.',
+   'No transactions match your search or filters.': 'Tidak ada transaksi yang cocok dengan pencarian atau filtermu.',
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   '’s loan. If they repay, the repayment is automatically sent to your wallet.':
+      '. Jika dia membayar kembali, pembayarannya otomatis dikirim ke dompet kamu.',
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'Due date': 'Jatuh tempo',
+   // src/views/lender/loanNote/useBuyLoanNote.ts
+   Cancelled: 'Dibatalkan',
+   'You cancelled the transaction in your wallet.': 'Kamu membatalkan transaksi di dompetmu.',
+   'Not enough ETH for gas': 'ETH tidak cukup untuk biaya gas',
+   'You need a little ETH on Base for the network fee.': 'Kamu perlu sedikit ETH di jaringan Base untuk biaya jaringan.',
+   'No longer available': 'Sudah tidak tersedia',
+   'This loan was just funded by someone else.': 'Pinjaman ini baru saja didanai orang lain.',
+   'Switch your wallet to Base, then try again.': 'Ganti jaringan dompetmu ke Base, lalu coba lagi.',
+   'Purchase failed': 'Pembelian gagal',
+   'Something went wrong before the payment. Nothing was charged — please try again.':
+      'Terjadi kesalahan sebelum pembayaran. Tidak ada dana yang terpotong — coba lagi.',
+   Unavailable: 'Tidak tersedia',
+   'This loan does not have a sellable Loan Note.': 'Pinjaman ini tidak punya Loan Note yang bisa dijual.',
+   'Not enough USDC': 'USDC tidak cukup',
+   // src/views/milestones/Milestones.tsx
+   '50 pts': '50 poin',
+   '120 pts': '120 poin',
+   '250 pts': '250 poin',
+   '500 pts': '500 poin',
+   'Unlocked at 50 Pandesal points': 'Terbuka di 50 poin Pandesal',
+   'Unlocked at 120 Pandesal points': 'Terbuka di 120 poin Pandesal',
+   'Unlocked at 250 Pandesal points': 'Terbuka di 250 poin Pandesal',
+   'Unlocked at 500 Pandesal points': 'Terbuka di 500 poin Pandesal',
+   'Unlocks at 50 Pandesal points': 'Terbuka di 50 poin Pandesal',
+   'Unlocks at 120 Pandesal points': 'Terbuka di 120 poin Pandesal',
+   'Unlocks at 250 Pandesal points': 'Terbuka di 250 poin Pandesal',
+   'Unlocks at 500 Pandesal points': 'Terbuka di 500 poin Pandesal',
+   // src/views/profile/components/settings/ProfileSettings.tsx
+   Update: 'Perbarui',
+   // src/views/profile/components/tabs/useDashboardData.ts
+   'Verify World ID to start borrowing': 'Verifikasi World ID untuk mulai meminjam',
+   'Fully repay $15 total on time to unlock this level': 'Lunasi total $15 tepat waktu untuk membuka level ini',
+   'Fully repay $20 total on time to unlock this level': 'Lunasi total $20 tepat waktu untuk membuka level ini',
+   'Fully repay $40 total on time to unlock this level': 'Lunasi total $40 tepat waktu untuk membuka level ini',
+   'Fully repay $60 total on time to unlock this level': 'Lunasi total $60 tepat waktu untuk membuka level ini',
+   'Fully repay $80 total on time to unlock this level': 'Lunasi total $80 tepat waktu untuk membuka level ini',
+   'Fully repay $100 total on time to unlock this level': 'Lunasi total $100 tepat waktu untuk membuka level ini',
+   'Fully repay $120 total on time to unlock this level': 'Lunasi total $120 tepat waktu untuk membuka level ini',
+   // src/views/profile/config/transactionColumns.tsx
+   'All Transaction': 'Semua Transaksi',
+   Transaction: 'Transaksi',
+   'Funded Amount': 'Jumlah Didanai',
+   'Borrowed Amount': 'Jumlah Dipinjam',
+   'Date Funded': 'Tanggal Didanai',
+   'Date Borrowed': 'Tanggal Dipinjam',
+   'Returned Amount': 'Jumlah Dikembalikan',
+   Returned: 'Dikembalikan',
+   'Date Returned': 'Tanggal Dikembalikan',
+   "Borrower's Name": 'Nama Peminjam',
+   "Lender's Name": 'Nama Pemberi Pinjaman',
+   Name: 'Nama',
+   // src/views/repay/Repay.tsx
+   'your loan': 'pinjamanmu',
+   // src/views/signup/SignUpPage.tsx
+   'Request short-term loans, repay clearly, and build trust over time.':
+      'Ajukan dana jangka pendek, bayar kembali dengan jelas, dan bangun kepercayaan seiring waktu.',
+   // src/views/support/HowCreditLevelsWork.tsx
+   'Verify, then make your first request': 'Verifikasi, lalu buat permintaan pertamamu',
+   'Repay your $15 loan on time': 'Bayar kembali pinjaman $15 kamu tepat waktu',
+   'Repay your $20 loan on time': 'Bayar kembali pinjaman $20 kamu tepat waktu',
+   'Repay your $40 loan on time': 'Bayar kembali pinjaman $40 kamu tepat waktu',
+   'Repay your $60 loan on time': 'Bayar kembali pinjaman $60 kamu tepat waktu',
+   'Repay your $80 loan on time': 'Bayar kembali pinjaman $80 kamu tepat waktu',
+   'Repay your $100 loan on time': 'Bayar kembali pinjaman $100 kamu tepat waktu',
+   'Repay your $120 loan on time': 'Bayar kembali pinjaman $120 kamu tepat waktu',
+   'Limits step up $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.':
+      'Limit naik bertahap $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+   'you need a smaller amount, or want to build trust first.': 'kamu butuh jumlah yang lebih kecil, atau ingin membangun kepercayaan dulu.',
+   'also called a Credit Growth Loan': 'disebut juga Credit Growth Loan',
+   'you’re ready to grow your limit and sure you can repay on time.':
+      'kamu siap menaikkan limit dan yakin bisa membayar kembali tepat waktu.',
+   'How reliable repayment becomes a portable reputation lenders trust.':
+      'Bagaimana pembayaran kembali yang andal menjadi reputasi portabel yang dipercaya pemberi pinjaman.',
+   'The difference between the two loan types and when to use each.': 'Perbedaan kedua jenis pinjaman dan kapan memakai masing-masing.',
+   'Exactly how on-time, partial, and late repayments are scored.':
+      'Cara persis pembayaran kembali tepat waktu, sebagian, dan terlambat dinilai.',
+   'Any small loan': 'Pinjaman kecil apa pun',
+   'A full-limit Credit-Building Loan': 'Credit-Building Loan senilai limit penuh',
+   'Paying a fee': 'Membayar biaya',
+   'Logging in daily': 'Masuk setiap hari',
+   'You jump to $40': 'Kamu langsung naik ke $40',
+   'Limit stays $20, trust grows': 'Limit tetap $20, kepercayaan bertambah',
+   'You drop to $15': 'Kamu turun ke $15',
+   'Nothing, ever': 'Tidak ada apa-apa, selamanya',
+   'Yes, pay 4× up front': 'Bisa, bayar 4× di muka',
+   'No — one level at a time': 'Tidak — satu level setiap kali',
+   'Only on weekends': 'Hanya di akhir pekan',
+   'Yes, with a coupon': 'Bisa, pakai kupon',
+   'Repaying early': 'Membayar kembali lebih awal',
+   'A late or missed repayment': 'Pembayaran kembali yang terlambat atau terlewat',
+   'Borrowing your full limit': 'Meminjam senilai limit penuh',
+   'Asking questions': 'Bertanya',
+   'Flawless run. You could teach the hippos.': 'Sempurna! Kamu bahkan bisa mengajari para kuda nil.',
+   'Solid! You’ve basically got this down.': 'Mantap! Kamu pada dasarnya sudah paham.',
+   'No worries — scroll back up and you’ll ace the rematch.':
+      'Tidak apa-apa — gulir ke atas lagi, pasti kamu berhasil di percobaan berikutnya.',
+   'See my score': 'Lihat skorku',
+   Guides: 'Panduan',
+   'Updated Jun 2026 · 5 min read': 'Diperbarui Jun 2026 · 5 menit baca',
+   'Read guide →': 'Baca panduan →',
+   // src/views/support/PublicGuide.tsx
+   'By the Moodeng Team · Updated': 'Oleh Tim Moodeng · Diperbarui',
+   // src/views/support/Updates.tsx
+   Updates: 'Pembaruan',
+   // src/views/support/data/updates.ts
+   'Live Filters & Cleaner Borrowing Flow': 'Filter Langsung & Alur Pinjaman yang Lebih Rapi',
+   'Request Board and history filters now update as you tap':
+      'Filter Papan Permintaan dan riwayat kini langsung diperbarui saat kamu mengetuk',
+   'May 24, 2026': '24 Mei 2026',
+   'Latest May 2026 update': 'Pembaruan terbaru Mei 2026',
+   'The Request Board and Transaction History now feel much more immediate. Filters apply while you choose them, so you can narrow results without pressing an extra Apply button or losing sight of the list behind the panel. Search, amount, date, type, repayment, and status choices are easier to test quickly. This release also cleans up the borrower path around loan actions: • unverified borrowers are guided back into onboarding before requesting a loan • verified borrowers without a wallet (Instant Wallet or Base Account) go straight to the wallet step • filter panels stay focused on browsing instead of blocking the board The goal is simple: fewer dead ends, fewer confusing taps, and a request board that updates the moment you make a choice.':
+      'Papan Permintaan dan Riwayat Transaksi kini terasa jauh lebih responsif.\n\nFilter langsung diterapkan saat kamu memilihnya, jadi kamu bisa mempersempit hasil tanpa menekan tombol Terapkan tambahan atau kehilangan pandangan ke daftar di balik panel. Pilihan pencarian, jumlah, tanggal, jenis, pembayaran kembali, dan status jadi lebih mudah dicoba dengan cepat.\n\nRilis ini juga merapikan alur peminjam di sekitar tindakan pinjaman:\n• peminjam yang belum terverifikasi diarahkan kembali ke onboarding sebelum mengajukan pinjaman\n• peminjam terverifikasi yang belum punya dompet (Instant Wallet atau Base Account) langsung dibawa ke langkah dompet\n• panel filter tetap fokus untuk menjelajah, tidak menutupi papan\n\nTujuannya sederhana: lebih sedikit jalan buntu, lebih sedikit ketukan yang membingungkan, dan papan permintaan yang langsung diperbarui begitu kamu memilih.',
+   'Base Wallet & World ID Onboarding': 'Onboarding Base Wallet & World ID',
+   'Clearer wallet handoff • Stronger human verification flow': 'Perpindahan ke dompet lebih jelas • Alur verifikasi manusia lebih kuat',
+   'May 23, 2026': '23 Mei 2026',
+   'Borrower onboarding has been tightened so each step leads naturally into the next. The Base Wallet screen is simpler, the connected-wallet success screen now uses the final success mark, and World ID actions are easier to understand from the Request Board and onboarding flow. This update also improves duplicate World ID handling and keeps borrowers moving through the right next step after wallet connection, verification, or a request-board action.':
+      'Onboarding peminjam kini lebih rapi sehingga setiap langkah mengalir ke langkah berikutnya.\n\nLayar Base Wallet lebih sederhana, layar sukses dompet terhubung kini memakai tanda sukses versi final, dan tindakan World ID lebih mudah dipahami dari Papan Permintaan maupun alur onboarding.\n\nPembaruan ini juga memperbaiki penanganan World ID ganda dan memastikan peminjam terus diarahkan ke langkah yang tepat setelah menghubungkan dompet, verifikasi, atau melakukan tindakan di Papan Permintaan.',
+   'Clearer Loan & Repay States': 'Status Pinjaman & Pembayaran yang Lebih Jelas',
+   'Pending funding, repayment, and navigation are easier to trust':
+      'Pendanaan yang menunggu, pembayaran kembali, dan navigasi kini lebih bisa diandalkan',
+   'May 22, 2026': '22 Mei 2026',
+   'Loan screens now do a better job showing what is actually happening. Pending requests are clearer before they are funded, repayment screens avoid misleading action states, and bottom navigation between Request Board, Repay, Dashboard, History, and Account is more reliable. These changes are designed to make the app feel calmer when money is involved: the screen should say whether a loan is waiting, active, repaid, or unavailable without making you guess.':
+      'Layar pinjaman kini lebih baik dalam menunjukkan apa yang sebenarnya terjadi.\n\nPermintaan yang menunggu lebih jelas sebelum didanai, layar pembayaran kembali tidak lagi menampilkan status tindakan yang menyesatkan, dan navigasi bawah antara Papan Permintaan, Bayar, Dasbor, Riwayat, dan Akun lebih andal.\n\nPerubahan ini dibuat supaya aplikasi terasa lebih tenang saat menyangkut uang: layar harus menjelaskan apakah pinjaman sedang menunggu, aktif, lunas, atau tidak tersedia tanpa membuatmu menebak-nebak.',
+   'Trust System & Admin Readiness': 'Sistem Kepercayaan & Kesiapan Admin',
+   'Cleaner IOU rules • Better account status and recovery controls':
+      'Aturan IOU lebih rapi • Kontrol status akun dan pemulihan lebih baik',
+   'May 20, 2026': '20 Mei 2026',
+   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'Lapisan kepercayaan di balik Moodeng kini lebih konsisten.\n\nAturan poin IOU untuk pemberi pinjaman kini lebih mudah dipahami, kontrol status admin lebih sesuai dengan kondisi akun yang sebenarnya, dan alur pemulihan punya data yang lebih andal.\n\nSebagian besar pekerjaan ini terjadi di balik layar, tapi tetap penting: catatan peminjam, insentif pemberi pinjaman, pinjaman terlambat, dan pembatasan akun harus selaras sebelum produk bisa berkembang dengan aman.',
+   'Support Library & Credit Education': 'Pusat Bantuan & Edukasi Kredit',
+   'Repayment guides • Credit leveling • Borrower safety content':
+      'Panduan pembayaran kembali • Kenaikan Level Kredit • Konten keamanan peminjam',
+   'May 16, 2026': '16 Mei 2026',
+   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'Area bantuan telah diperbarui berdasarkan pertanyaan yang benar-benar diajukan peminjam dan pemberi pinjaman.\n\nPanduan kini menjelaskan pembayaran kembali, poin Pandesal, kenaikan Level Kredit, World ID, pengaturan Base Wallet, dan keamanan peminjam dengan bahasa yang lebih jelas.\n\nKami juga menambahkan lebih banyak konten edukasi tentang riwayat pembayaran kembali yang portabel dan alternatif yang lebih aman dari pinjaman predator, supaya pengguna baru bisa memahami apa yang sedang dibangun Moodeng sebelum mengajukan atau mendanai pinjaman.'
 };
