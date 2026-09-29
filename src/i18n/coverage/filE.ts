@@ -14,5 +14,7 @@ export const filipinoCoverageE: Record<string, string> = {
    'Loan repaid 4 days after the due date.': 'Nabayaran ang loan nang 4 araw pagkalipas ng due date.',
    'Loan repaid 5 days after the due date.': 'Nabayaran ang loan nang 5 araw pagkalipas ng due date.',
    'Loan repaid 6 days after the due date.': 'Nabayaran ang loan nang 6 araw pagkalipas ng due date.',
-   'Loan repaid 7 days after the due date.': 'Nabayaran ang loan nang 7 araw pagkalipas ng due date.'
+   'Loan repaid 7 days after the due date.': 'Nabayaran ang loan nang 7 araw pagkalipas ng due date.',
+   // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
+   'Verify your identity to start borrowing': 'I-verify ang identity mo para makapagsimulang humiram'
 };

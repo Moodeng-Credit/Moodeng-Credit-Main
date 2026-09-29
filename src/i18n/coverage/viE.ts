@@ -1480,5 +1480,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    Updates: 'Cập nhật',
    // RequestBoard toast, ProgressHistory late-repayment line, transaction table header
    'This looks low-effort. Requests that appear to have no real effort may be deleted. Tap “Make Your Request” again to post it anyway.':
-      'Lý do này có vẻ quá sơ sài. Các yêu cầu viết qua loa có thể bị xóa. Nhấn “Gửi yêu cầu” lần nữa nếu bạn vẫn muốn đăng.'
+      'Lý do này có vẻ quá sơ sài. Các yêu cầu viết qua loa có thể bị xóa. Nhấn “Gửi yêu cầu” lần nữa nếu bạn vẫn muốn đăng.',
+   // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
+   'Verify your identity to start borrowing': 'Xác minh danh tính để bắt đầu vay'
 };

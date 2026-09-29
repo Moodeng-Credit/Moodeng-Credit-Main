@@ -342,5 +342,7 @@ export const thaiCoverageE: Record<string, string> = {
    'Loan repaid 4 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 4 วัน',
    'Loan repaid 5 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 5 วัน',
    'Loan repaid 6 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 6 วัน',
-   'Loan repaid 7 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 7 วัน'
+   'Loan repaid 7 days after the due date.': 'ชำระคืนเงินกู้ช้ากว่าวันครบกำหนด 7 วัน',
+   // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
+   'Verify your identity to start borrowing': 'ยืนยันตัวตนเพื่อเริ่มกู้เงิน'
 };

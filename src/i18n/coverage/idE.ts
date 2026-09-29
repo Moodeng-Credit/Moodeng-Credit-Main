@@ -582,5 +582,8 @@ export const indonesianCoverageE: Record<string, string> = {
    'Loan repaid 4 days after the due date.': 'Pinjaman dilunasi 4 hari setelah jatuh tempo.',
    'Loan repaid 5 days after the due date.': 'Pinjaman dilunasi 5 hari setelah jatuh tempo.',
    'Loan repaid 6 days after the due date.': 'Pinjaman dilunasi 6 hari setelah jatuh tempo.',
-   'Loan repaid 7 days after the due date.': 'Pinjaman dilunasi 7 hari setelah jatuh tempo.'
+   'Loan repaid 7 days after the due date.': 'Pinjaman dilunasi 7 hari setelah jatuh tempo.',
+   // useDashboardData unlock requirement (identity check, not World ID only); id withdraw fragment
+   'Verify your identity to start borrowing': 'Verifikasi identitasmu untuk mulai meminjam',
+   'Send only': 'Kirim hanya'
 };
