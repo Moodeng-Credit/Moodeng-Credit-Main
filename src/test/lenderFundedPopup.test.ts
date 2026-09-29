@@ -85,11 +85,37 @@ describe('LenderFundedPopup', () => {
       expect(buttonByText(container, 'Notify Me When Repaid')).toBeUndefined();
    });
 
-   it('only asks the browser after the lender taps the button, then closes', async () => {
+   it('only asks the browser after the tap, then turns green once the backend saved it, then closes', async () => {
+      vi.useFakeTimers();
+      try {
+         await render();
+         expect(env.enable).not.toHaveBeenCalled();
+         await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
+         expect(env.enable).toHaveBeenCalledTimes(1);
+         expect(buttonByText(container, 'Notifications On')).toBeTruthy();
+         expect(onClose).not.toHaveBeenCalled();
+
+         await act(async () => vi.advanceTimersByTime(1500));
+         expect(onClose).toHaveBeenCalledTimes(1);
+      } finally {
+         vi.useRealTimers();
+      }
+   });
+
+   it('says so when the backend could not save it, instead of showing it as on', async () => {
+      env.enable.mockResolvedValueOnce('failed');
       await render();
-      expect(env.enable).not.toHaveBeenCalled();
       await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
-      expect(env.enable).toHaveBeenCalledTimes(1);
+      expect(buttonByText(container, 'Notifications On')).toBeUndefined();
+      expect(container.textContent).toContain('We couldn’t save that');
+      await act(async () => buttonByText(container, 'Done')?.click());
+      expect(onClose).toHaveBeenCalledTimes(1);
+   });
+
+   it('declining the browser dialog just closes the popup', async () => {
+      env.enable.mockResolvedValueOnce('permission-denied');
+      await render();
+      await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
       expect(onClose).toHaveBeenCalledTimes(1);
    });
 

@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { format, isValid, parseISO } from 'date-fns';
 
 import AddToHomeScreenSteps from '@/components/funding/AddToHomeScreenSteps';
-import LenderPopupShell, { LenderPopupButton } from '@/components/funding/LenderPopupShell';
+import LenderPopupShell, { LenderPopupButton, TurnOnButton } from '@/components/funding/LenderPopupShell';
+import { useLenderPushTurnOn } from '@/components/funding/useLenderPushTurnOn';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -64,6 +65,7 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
    const pushAsk = useMemo(pickPushAsk, []);
    const push = usePushNotifications(userId, { autoPrompt: false });
    const [showSteps, setShowSteps] = useState(false);
+   const { status: turnOnStatus, turnOn } = useLenderPushTurnOn(push.enable, onClose);
 
    useEffect(() => {
       if (pushAsk) markAskSeen();
@@ -72,10 +74,9 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
    const due = dueDate ? parseISO(dueDate) : null;
    const repaysLine = `${borrowerName} repays you $${formatCurrency(totalRepayment)}${due && isValid(due) ? ` by ${format(due, 'MMM d')}` : ''}.`;
 
-   // Moodeng hugging a paid coin ("when you're repaid"), not the bell: the bell is the Home Screen Turn On popup's, and
-   // reusing it here made the two steps look like the same screen.
-   // iPhone gets the same ask as everyone else; the button just leads to the Home Screen steps, since
-   // iOS won't let us turn push on from Safari.
+   // Moodeng hugging a paid coin, not the bell: the bell belongs to the Home Screen Turn On popup, and
+   // reusing it here made the two steps look like the same screen. iPhone gets the same ask as everyone
+   // else; its button just leads to the Home Screen steps, since iOS won't turn push on from Safari.
    const content = pushAsk
       ? {
            heading: 'Want to know when you’re repaid?',
@@ -85,13 +86,9 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
         }
       : { heading: 'Thanks for lending!', body: repaysLine, art: '/icons/check-3d.png', cta: 'Done' };
 
-   const handleCta = async () => {
-      if (pushAsk === 'home-screen') {
-         setShowSteps(true);
-         return;
-      }
-      if (pushAsk === 'enable') await push.enable();
-      onClose();
+   const handleCta = () => {
+      if (pushAsk === 'home-screen') setShowSteps(true);
+      else onClose();
    };
 
    return (
@@ -116,9 +113,11 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
                   <p className="mt-1 text-[20px] leading-6">{content.body}</p>
                </div>
                <img src={content.art} alt="" className="h-[94px] w-[94px] object-contain" />
-               <LenderPopupButton onClick={() => void handleCta()} disabled={push.isBusy}>
-                  {content.cta}
-               </LenderPopupButton>
+               {pushAsk === 'enable' ? (
+                  <TurnOnButton label={content.cta} status={turnOnStatus} onTurnOn={() => void turnOn()} onDone={onClose} />
+               ) : (
+                  <LenderPopupButton onClick={handleCta}>{content.cta}</LenderPopupButton>
+               )}
             </>
          )}
       </LenderPopupShell>

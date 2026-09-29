@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react';
 
-import { Ellipsis, Share, SquarePlus } from 'lucide-react';
+import { Compass, Ellipsis, Share, SquarePlus } from 'lucide-react';
 
-import { detectInAppBrowser } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, openInSafari } from '@/lib/inAppBrowser';
 
 // iOS only allows web push from a site added to the Home Screen, and there's no API to add it for
 // the user, so we show them how. Inside Facebook/Messenger/Instagram there's no Share → Add to Home
-// Screen at all, so they first have to hop out to Safari.
+// Screen at all, so they first have to hop out to Safari: a button tries that for them (best effort,
+// iOS doesn't honour it in every app), with the manual route written underneath.
 const inlineIcon = 'mx-0.5 inline-block size-[18px] -translate-y-px align-middle text-[#6b55f7]';
 
 export default function AddToHomeScreenSteps() {
@@ -18,8 +19,18 @@ export default function AddToHomeScreenSteps() {
                  key: 'safari',
                  content: (
                     <>
-                       Tap <Ellipsis className={inlineIcon} aria-label="the ••• menu" /> {inApp.appName ? `in ${inApp.appName} ` : ''}and
-                       choose <b>Open in Safari</b>.
+                       <button
+                          type="button"
+                          onClick={() => openInSafari(window.location.href, inApp)}
+                          className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[#6b55f7] px-3.5 py-1.5 text-[15px] font-semibold text-white active:scale-[0.98]"
+                       >
+                          <Compass className="size-4" aria-hidden="true" />
+                          Open in Safari
+                       </button>
+                       <span className="block text-[14px] leading-5 text-[#7b6b8c]">
+                          Didn’t work? Tap <Ellipsis className={inlineIcon} aria-label="the ••• menu" />
+                          {inApp.appName ? ` in ${inApp.appName}` : ''} and choose <b>Open in Safari</b>.
+                       </span>
                     </>
                  )
               }
@@ -29,7 +40,8 @@ export default function AddToHomeScreenSteps() {
          key: 'share',
          content: (
             <>
-               Tap the <b>Share</b> button <Share className={inlineIcon} aria-hidden="true" /> in Safari’s toolbar.
+               Tap <b>Share</b> <Share className={inlineIcon} aria-hidden="true" /> at the bottom of Safari. On newer iPhones, tap{' '}
+               <Ellipsis className={inlineIcon} aria-label="•••" /> first, then <b>Share</b>.
             </>
          )
       },

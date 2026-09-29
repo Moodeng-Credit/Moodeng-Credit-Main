@@ -1,9 +1,17 @@
 import { type ReactNode, useEffect } from 'react';
 
+import { Check } from 'lucide-react';
+
+import type { TurnOnStatus } from '@/components/funding/useLenderPushTurnOn';
+
 // Same look as the dashboard's milestone popup (Figma "Milestone_9.23version", milestone_verified_popup):
 // dimmed overlay, white-to-lavender card, italic underlined title, gradient pill, round close.
 const GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%)';
+const ON_GRADIENT = 'linear-gradient(77.66deg, #4ade80 0.5%, #16a34a 98.16%)';
 const CLOSE_ICON = '/dashboard-v2/icon-close-large.png';
+
+const BUTTON_CLASS =
+   'flex h-[52px] w-full max-w-[346px] items-center justify-center gap-2 rounded-[35px] px-5 text-[20px] font-semibold tracking-[-0.4px] text-white transition active:scale-[0.99]';
 
 /** The popup's gradient pill button. */
 export function LenderPopupButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: ReactNode }) {
@@ -12,11 +20,53 @@ export function LenderPopupButton({ onClick, disabled, children }: { onClick: ()
          type="button"
          onClick={onClick}
          disabled={disabled}
-         className="flex h-[52px] w-full max-w-[346px] items-center justify-center rounded-[35px] px-5 text-[20px] font-semibold tracking-[-0.4px] text-white transition active:scale-[0.99] disabled:opacity-60"
+         className={`${BUTTON_CLASS} disabled:opacity-60`}
          style={{ backgroundImage: GRADIENT }}
       >
          {children}
       </button>
+   );
+}
+
+/**
+ * The "turn push on" pill: purple until tapped, then green with a check once our backend has saved
+ * the subscription (see useLenderPushTurnOn). A failed save swaps in a Done button and says so.
+ */
+export function TurnOnButton({
+   label,
+   status,
+   onTurnOn,
+   onDone
+}: {
+   label: string;
+   status: TurnOnStatus;
+   onTurnOn: () => void;
+   onDone: () => void;
+}) {
+   if (status === 'on') {
+      return (
+         <button type="button" disabled className={BUTTON_CLASS} style={{ backgroundImage: ON_GRADIENT }} aria-live="polite">
+            <Check className="size-6" strokeWidth={3} aria-hidden="true" />
+            Notifications On
+         </button>
+      );
+   }
+
+   if (status === 'error') {
+      return (
+         <>
+            <p className="text-[15px] leading-5 text-[#b42318]" role="alert">
+               We couldn’t save that. You can turn notifications on later in Settings → Notifications.
+            </p>
+            <LenderPopupButton onClick={onDone}>Done</LenderPopupButton>
+         </>
+      );
+   }
+
+   return (
+      <LenderPopupButton onClick={onTurnOn} disabled={status === 'busy'}>
+         {status === 'busy' ? 'Turning On…' : label}
+      </LenderPopupButton>
    );
 }
 
