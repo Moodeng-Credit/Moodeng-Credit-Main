@@ -510,7 +510,6 @@ export const filipinoCoverageG: Record<string, string> = {
    'You funded': 'Napondohan mo ang loan ni',
    '’s loan. If they repay, the repayment is automatically sent to your wallet.':
       '. Kapag nagbayad siya, awtomatikong ipapadala sa wallet mo ang bayad.',
-   If: 'Kapag si',
    'repays, the repayment is automatically sent to your wallet — you don’t need to claim anything.':
       'ay nagbayad, awtomatikong ipapadala sa wallet mo ang bayad — hindi mo na kailangang mag-claim ng kahit ano.',
    'Checking balance…': 'Chine-check ang balance…',
@@ -734,7 +733,6 @@ export const filipinoCoverageG: Record<string, string> = {
    'USDC, answered': 'Mga sagot tungkol sa USDC',
 
    // src/views/transactions/TransactionDetail.tsx
-   to: 'kay',
    'Not funded yet': 'Hindi pa napopondohan',
    'If applicable': 'Kung naaangkop',
    'Available after funding': 'Available pagkatapos mapondohan',
@@ -878,7 +876,6 @@ export const filipinoCoverageG: Record<string, string> = {
    'USDC is on its way to': 'USDC ang papunta na sa',
    "Withdrawal didn't go through": 'Hindi natuloy ang withdrawal',
    'How to transfer to': 'Paano mag-transfer sa',
-   Your: 'Ang',
    'transfer address': 'transfer address mo',
    'Paste your GCrypto address': 'I-paste ang GCrypto address mo',
    'Paste your PDAX address': 'I-paste ang PDAX address mo',

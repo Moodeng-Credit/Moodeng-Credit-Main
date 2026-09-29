@@ -18,7 +18,7 @@ export const SENTENCES: Record<LocaleCode, Sentences> = {
    en: {
       uniqueLenders: (count) => `${count} Unique ${count === 1 ? 'Lender' : 'Lenders'}`,
       moreCharactersToGo: (count) => `${count} more character${count === 1 ? '' : 's'} to go`,
-      moreCharacters: (count) => `${count} more characters`,
+      moreCharacters: (count) => `${count} more character${count === 1 ? '' : 's'}`,
       fundLoanTitle: (name) => `Fund ${name}’s loan`,
       fundedLoanBody: (name) => `You funded ${name}’s loan. If they repay, the repayment is automatically sent to your wallet.`,
       transferAddress: (exchange) => `Your ${exchange} transfer address`,
