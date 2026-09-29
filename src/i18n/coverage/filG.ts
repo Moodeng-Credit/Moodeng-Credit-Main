@@ -731,5 +731,77 @@ export const filipinoCoverageG: Record<string, string> = {
    'Four reasons we chose USDC': 'Apat na dahilan kung bakit USDC ang pinili namin',
    'Real-world use vs DeFi use': 'Gamit sa totoong buhay vs gamit sa DeFi',
    'Staking vs yield, side by side:': 'Staking vs yield, magkatabi:',
-   'USDC, answered': 'Mga sagot tungkol sa USDC'
+   'USDC, answered': 'Mga sagot tungkol sa USDC',
+
+   // src/views/transactions/TransactionDetail.tsx
+   to: 'kay',
+   'Not funded yet': 'Hindi pa napopondohan',
+   'If applicable': 'Kung naaangkop',
+   'Available after funding': 'Available pagkatapos mapondohan',
+   Refunded: 'Na-refund',
+   'Waiting for lender': 'Naghihintay ng lender',
+   'Repayment schedule': 'Iskedyul ng pagbabayad',
+   'Repayment due': 'Due na ang bayad',
+   'Partial repayment': 'Partial na bayad',
+   'Interest returned': 'Naibalik ang interest',
+   'paid back in full': 'ay nagbayad nang buo',
+   Return: 'Ibalik',
+   Send: 'Ipadala',
+   'Returning to': 'Ibinabalik kay',
+   'Recording your gift — hang tight.': 'Nire-record ang regalo mo — sandali lang.',
+   'You returned': 'Ibinalik mo ang',
+   '. That was kind of you.': '. Ang bait mo.',
+   'Gift from your lender': 'Regalo mula sa lender mo',
+   'You returned the interest': 'Ibinalik mo ang interest',
+   'Interest returned!': 'Naibalik ang interest!',
+   'Cannot return interest': 'Hindi maibalik ang interest',
+   'Borrower wallet address is unavailable.': 'Hindi available ang wallet address ng borrower.',
+   'Lender has not accepted yet': 'Hindi pa tinatanggap ng lender',
+   'Not active': 'Hindi aktibo',
+   'Requested on': 'Ni-request noong',
+   'This repayment was sent to the wallet you funded this loan from:':
+      'Ipinadala ang bayad na ito sa wallet na ginamit mo sa pagpondo ng loan na ito:',
+   'When repaid, funds return to the wallet you funded this loan from:':
+      'Kapag nabayaran, babalik ang pondo sa wallet na ginamit mo sa pagpondo ng loan na ito:',
+   'This differs from the wallet you have connected now (': 'Iba ito sa wallet na nakakonekta sa iyo ngayon (',
+   '). That is expected — repayments go to the wallet used to fund each loan, not your current one. Open':
+      '). Normal iyan — napupunta ang mga bayad sa wallet na ginamit sa pagpondo ng bawat loan, hindi sa kasalukuyan mong wallet. Buksan ang',
+   'to find these funds.': 'para makita ang mga pondong ito.',
+
+   // src/views/transactions/TransactionHistory.tsx
+   'Awaiting lender': 'Naghihintay ng lender',
+   Returned: 'Naibalik ang',
+
+   // src/views/user-profile/LenderDiversityHistory.tsx
+   'Unknown lender': 'Hindi kilalang lender',
+   'Switch lender diversity to light mode': 'Ilipat sa light mode ang lender diversity',
+   'Switch lender diversity to dark mode': 'Ilipat sa dark mode ang lender diversity',
+   Unique: 'natatanging',
+   'Shows how': 'Ipinapakita kung paano nahahati sa mga lender ang funded loan history ni',
+   "'s funded loan history is spread across lenders.": '.',
+
+   // src/views/user-profile/ProgressHistory.tsx
+   'New borrower': 'Bagong borrower',
+   'Credit Building Loan Funded': 'Napondohan ang Credit-Building Loan',
+   'Trust Building Loan Funded': 'Napondohan ang Trust-Building Loan',
+   Activity: 'Aktibidad',
+   'Loan Repaid Early': 'Nabayaran nang maaga ang loan',
+   'Loan Repaid Late': 'Nabayaran nang late ang loan',
+   'Credit Building Loan Repaid': 'Nabayaran ang Credit-Building Loan',
+   'Trust Building Loan Repaid': 'Nabayaran ang Trust-Building Loan',
+   'Credit Building loan closed before due date.': 'Naisara ang Credit-Building Loan bago ang due date.',
+   'Trust Building loan closed before due date.': 'Naisara ang Trust-Building Loan bago ang due date.',
+   'Remaining balance repaid on time.': 'Nabayaran on time ang natitirang balance.',
+   'Early Repayment': 'Maagang bayad',
+   'Unlocked Level 1 with full level credit available.': 'Na-unlock ang Level 1 na may buong credit ng level na available.',
+   'Unlocked Level 2 with full level credit available.': 'Na-unlock ang Level 2 na may buong credit ng level na available.',
+   'Unlocked Level 3 with full level credit available.': 'Na-unlock ang Level 3 na may buong credit ng level na available.',
+   'Unlocked Level 4 with full level credit available.': 'Na-unlock ang Level 4 na may buong credit ng level na available.',
+   'Unlocked Level 5 with full level credit available.': 'Na-unlock ang Level 5 na may buong credit ng level na available.',
+   'Unlocked Level 6 with full level credit available.': 'Na-unlock ang Level 6 na may buong credit ng level na available.',
+   'Unlocked Level 7 with full level credit available.': 'Na-unlock ang Level 7 na may buong credit ng level na available.',
+   'Unlocked Level 8 with full level credit available.': 'Na-unlock ang Level 8 na may buong credit ng level na available.',
+   'Switch progress history to light mode': 'Ilipat sa light mode ang progress history',
+   'Switch progress history to dark mode': 'Ilipat sa dark mode ang progress history',
+   'Defaults Present': 'May mga default'
 };
