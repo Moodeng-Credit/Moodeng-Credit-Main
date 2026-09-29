@@ -37,6 +37,7 @@ import BaseNetworkSheet from '@/views/account/BaseNetworkSheet';
 import EditBioInfoModal from '@/views/account/EditBioInfoModal';
 import ExportInstantWalletKey from '@/views/account/ExportInstantWalletKey';
 import TwoFactorSettings from '@/views/account/TwoFactorSettings';
+import { WALLET_SAFETY_COPY } from '@/views/account/walletSafetyCopy';
 import WalletAccountInsights from '@/views/account/WalletAccountInsights';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
 
@@ -1364,6 +1365,7 @@ export default function AccountSettings() {
    const location = useLocation();
    const [searchParams, setSearchParams] = useSearchParams();
    const { t, locale, locales } = useLocalization();
+   const walletSafetyCopy = WALLET_SAFETY_COPY[locale] ?? WALLET_SAFETY_COPY.en;
    const editTarget = searchParams.get('edit');
    const sectionTarget = searchParams.get('section');
    const activeSection: SettingsSectionKey | null = editTarget ? 'profile' : isSettingsSectionKey(sectionTarget) ? sectionTarget : null;
@@ -1503,11 +1505,9 @@ export default function AccountSettings() {
                .eq('loan_status', 'Lent')
                .or('repayment_status.is.null,repayment_status.neq.Paid');
             if (error || !data || data.length === 0) return { blocked: false };
-            const loanWord = data.length === 1 ? 'loan' : 'loans';
-            const verb = intent === 'disconnect' ? 'disconnect' : 'change';
             return {
                blocked: true,
-               warning: `You have ${data.length} active ${loanWord} still to repay. You can't ${verb} your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.`
+               warning: walletSafetyCopy.borrowerBlocked(data.length, intent)
             };
          }
 
@@ -1525,17 +1525,12 @@ export default function AccountSettings() {
 
          const wallets = [...new Set(data.map((row) => (row.lender_wallet ?? '').trim()).filter(Boolean))];
          const walletList = wallets.map((w) => truncateAddress(w)).join(', ');
-         const loanWord = data.length === 1 ? 'loan' : 'loans';
-         const walletClause = walletList
-            ? ` Repayments will still arrive at the wallet you funded from (${walletList}), not the wallet you connect here.`
-            : ' Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here.';
-         const verb = intent === 'disconnect' ? 'Disconnecting' : 'Changing';
          return {
             blocked: false,
-            warning: `You have ${data.length} active ${loanWord} being repaid.${walletClause} ${verb} your wallet here is safe. It only affects loans you fund from now on.`
+            warning: walletSafetyCopy.lenderWarning(data.length, walletList, intent)
          };
       },
-      [user?.id, isBorrower]
+      [user?.id, isBorrower, walletSafetyCopy]
    );
 
    const handleInitiateWalletChange = useCallback(async () => {
@@ -2202,7 +2197,7 @@ export default function AccountSettings() {
                                     <p className="text-md-b1 font-semibold text-md-heading">Confirm your wallet</p>
                                     <p className="text-md-b2 font-medium text-md-heading">
                                        {borrowerHasNonBaseWallet
-                                          ? `Your account is using ${walletLabel}. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.`
+                                          ? walletSafetyCopy.usingNonBaseWallet(walletLabel)
                                           : 'Reconnect and confirm this is a Base Account before you borrow or repay.'}
                                     </p>
                                  </div>
