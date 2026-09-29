@@ -21,6 +21,7 @@ export type AdminTab =
    | 'mule-risk'
    | 'referrals'
    | 'borrower-contacts'
+   | 'email'
    | 'notifications'
    | 'chat'
    | 'relay'
@@ -42,7 +43,8 @@ export const navGroups: NavGroup[] = [
       label: 'People',
       items: [
          { id: 'users', label: 'Directory' },
-         { id: 'borrower-contacts', label: 'Borrower contacts' }
+         { id: 'borrower-contacts', label: 'Borrower contacts' },
+         { id: 'email', label: 'Email users' }
       ]
    },
    {
@@ -124,6 +126,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'mule-risk',
    'referrals',
    'borrower-contacts',
+   'email',
    'notifications',
    'chat',
    'relay',

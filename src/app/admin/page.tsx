@@ -44,6 +44,7 @@ import BorrowerContactsSection from './BorrowerContactsSection';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
 import DemoB2CSection from './DemoB2CSection';
+import EmailUsersSection from './EmailUsersSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
@@ -1663,6 +1664,18 @@ export default function AdminPanel() {
                   </p>
                </div>
                <BorrowerContactsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'email' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Email users</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Write one message, tick the people, send. Each person gets their own copy addressed by name.
+                  </p>
+               </div>
+               <EmailUsersSection />
             </section>
          ) : null}
 
