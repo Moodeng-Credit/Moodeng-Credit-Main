@@ -1,3 +1,6 @@
+// The bot's Telegram webhook. setWebhook must point here (…/functions/v1/telegram-webhook) with
+// allowed_updates ["message","callback_query"] — otherwise the admin-card buttons (Showed up / No-show,
+// Approve / Reject, Mark sent) and admin commands silently do nothing. Check with getWebhookInfo.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -633,6 +636,12 @@ serve(async (req) => {
 
          await forwardCustomerMessageToSupport(supabase, message);
          return jsonResponse({ message: 'Private message handled' });
+      }
+
+      // /chatid in any group — how a new group's id gets into telegram_bot_settings.
+      if (/^\/chatid(?:@\w+)?\b/i.test(message.text ?? '')) {
+         await sendTelegramMessage(message.chat.id, `Telegram chat_id for this group: ${message.chat.id}`);
+         return jsonResponse({ message: 'Chat id sent' });
       }
 
       // Admin channels: the private team channel and the KYC admin channel.
