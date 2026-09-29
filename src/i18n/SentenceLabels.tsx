@@ -1,12 +1,13 @@
-import { useLocalization } from '@/i18n/LocalizationProvider';
-import { SENTENCES } from '@/i18n/sentences';
+import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
+import { currentSentences, SENTENCES } from '@/i18n/sentences';
 
 // Small text components for sentences that wrap a number or a name (see sentences.ts). They read
 // the current language themselves, so the screens that use them don't need to.
 
+// Falls back to the page language when rendered outside the provider (e.g. isolated component tests).
 function useSentences() {
-   const { locale } = useLocalization();
-   return SENTENCES[locale] ?? SENTENCES.en;
+   const localization = useOptionalLocalization();
+   return localization ? (SENTENCES[localization.locale] ?? SENTENCES.en) : currentSentences();
 }
 
 export function UniqueLendersLabel({ count }: { count: number }) {

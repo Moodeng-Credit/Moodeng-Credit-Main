@@ -356,7 +356,7 @@ describe('Dashboard credit level carousel', () => {
       });
 
       expect(tiers.every((tier) => !tier.unlocked)).toBe(true);
-      expect(tiers[0].unlockRequirement).toContain('Verify World ID');
+      expect(tiers[0].unlockRequirement).toContain('Verify your identity');
    });
 
    it('shows progression paused state for late repayments', () => {
