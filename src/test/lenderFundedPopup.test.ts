@@ -85,11 +85,37 @@ describe('LenderFundedPopup', () => {
       expect(buttonByText(container, 'Notify Me When Repaid')).toBeUndefined();
    });
 
-   it('only asks the browser after the lender taps the button, then closes', async () => {
+   it('only asks the browser after the tap, then turns green once the backend saved it, then closes', async () => {
+      vi.useFakeTimers();
+      try {
+         await render();
+         expect(env.enable).not.toHaveBeenCalled();
+         await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
+         expect(env.enable).toHaveBeenCalledTimes(1);
+         expect(buttonByText(container, 'Notifications On')).toBeTruthy();
+         expect(onClose).not.toHaveBeenCalled();
+
+         await act(async () => vi.advanceTimersByTime(1500));
+         expect(onClose).toHaveBeenCalledTimes(1);
+      } finally {
+         vi.useRealTimers();
+      }
+   });
+
+   it('says so when the backend could not save it, instead of showing it as on', async () => {
+      env.enable.mockResolvedValueOnce('failed');
       await render();
-      expect(env.enable).not.toHaveBeenCalled();
       await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
-      expect(env.enable).toHaveBeenCalledTimes(1);
+      expect(buttonByText(container, 'Notifications On')).toBeUndefined();
+      expect(container.textContent).toContain('We couldn’t save that');
+      await act(async () => buttonByText(container, 'Done')?.click());
+      expect(onClose).toHaveBeenCalledTimes(1);
+   });
+
+   it('declining the browser dialog just closes the popup', async () => {
+      env.enable.mockResolvedValueOnce('permission-denied');
+      await render();
+      await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
       expect(onClose).toHaveBeenCalledTimes(1);
    });
 
@@ -110,11 +136,23 @@ describe('LenderFundedPopup', () => {
       expect(buttonByText(container, 'Done')).toBeTruthy();
    });
 
-   it('on iPhone Safari explains Add to Home Screen', async () => {
+   it('on iPhone Safari, the same ask leads to the step-by-step guide instead of the browser', async () => {
       env.supported = false;
       env.needsHomeScreen = true;
       await render();
-      expect(container.textContent).toContain('Add to Home Screen');
-      expect(buttonByText(container, 'Got It')).toBeTruthy();
+      expect(container.textContent).toContain('Want to know when you’re repaid?');
+      expect(container.textContent).toContain('Mimi repays you $44.00 by Oct 12.');
+      await act(async () => buttonByText(container, 'Notify Me When Repaid')?.click());
+      expect(env.enable).not.toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('Add Moodeng to your Home Screen');
+      const steps = Array.from(container.querySelectorAll('ol li')).map((li) => li.textContent);
+      expect(steps).toHaveLength(4);
+      expect(steps[0]).toContain('Share');
+      expect(steps[1]).toContain('Add to Home Screen');
+      expect(steps[3]).toContain('Turn On');
+
+      await act(async () => buttonByText(container, 'Got It')?.click());
+      expect(onClose).toHaveBeenCalledTimes(1);
    });
 });
