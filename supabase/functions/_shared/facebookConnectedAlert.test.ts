@@ -23,5 +23,16 @@ Deno.test('existing late payer: name, handle, Facebook name and repayment record
 
 Deno.test('brand-new borrower without a Facebook name', () => {
    const text = buildFacebookConnectedAlert({ username: 'new-one', display_name: null, email: null }, null, [], NOW);
-   assertEquals(text, '✅ Facebook connected — new-one\n@new-one\nNew borrower (no loans yet)\nMessage them from Admin → Borrower contacts.');
+   assertEquals(
+      text,
+      '✅ Facebook connected — new-one\n@new-one\nNew borrower (no loans yet)\nMessage them from Admin → Borrower contacts.'
+   );
+});
+
+Deno.test('flags a Facebook that is already linked to other Moodeng accounts', () => {
+   const text = buildFacebookConnectedAlert({ username: 'new-one', display_name: null, email: null }, 'Jaja Reyes', [], NOW, [
+      '@jaja-reyes',
+      '@jaja2'
+   ]);
+   assertEquals(text.includes('⚠️ Same Facebook is already linked to @jaja-reyes, @jaja2'), true);
 });

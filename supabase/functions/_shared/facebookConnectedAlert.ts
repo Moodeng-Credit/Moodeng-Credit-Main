@@ -13,7 +13,9 @@ export const buildFacebookConnectedAlert = (
    borrower: ConnectedBorrower,
    facebookName: string | null,
    loans: LoanRecord[],
-   now = Date.now()
+   now = Date.now(),
+   // Other Moodeng accounts already linked to this same Facebook — one person, several accounts.
+   alsoLinkedTo: string[] = []
 ): string => {
    const funded = loans.filter((l) => l.funded_at && !l.is_test);
    const late = funded.filter((l) => l.due_date && l.repaid_at && Date.parse(l.repaid_at) > Date.parse(l.due_date)).length;
@@ -34,6 +36,7 @@ export const buildFacebookConnectedAlert = (
       who || null,
       facebookName ? `Facebook name: ${facebookName}` : null,
       record,
+      alsoLinkedTo.length ? `⚠️ Same Facebook is already linked to ${alsoLinkedTo.join(', ')}` : null,
       'Message them from Admin → Borrower contacts.'
    ]
       .filter(Boolean)
