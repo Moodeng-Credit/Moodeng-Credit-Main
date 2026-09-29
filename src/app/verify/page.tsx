@@ -977,7 +977,7 @@ export default function VerifyFlow() {
                   {trigger}
                </WorldIDVerification>
             }
-            requirementHint="Works with a World ID verified at an Orb or with a passport added in World App."
+            requirementHint="You need the World App on this phone, with a World ID verified at an Orb or a passport added."
             onVerifyWithId={() => void startKyc(flow)}
          />
       );

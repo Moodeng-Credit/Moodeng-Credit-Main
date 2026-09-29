@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 import { alertDeepSeekFailure } from '../_shared/deepseekAlert.ts';
+import { LOAN_REASON_GUIDE } from './loanReasonGuide.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -19,7 +22,9 @@ const jsonResponse = (body: Record<string, unknown>, status = 200) =>
 // all of those and we fail open — which silently lets low-effort input through and makes
 // the gate feel random (e.g. "for bills" flagged but "pay bills" waved through). Parse
 // defensively so a real verdict is only discarded when there is genuinely no JSON.
-const parseVerdict = (raw: string): { ok?: boolean; hint?: string } | null => {
+type RawVerdict = { ok?: boolean; hint?: string; category?: string; suggestion?: string };
+
+const parseVerdict = (raw: string): RawVerdict | null => {
    if (!raw || !raw.trim()) return null;
    let s = raw.trim();
    const fenced = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -41,13 +46,26 @@ const parseVerdict = (raw: string): { ok?: boolean; hint?: string } | null => {
    }
 };
 
-// DeepSeek model id. The legacy `deepseek-chat` alias is deprecated (retired
-// 2026-07-24) and now just points at v4-flash, so we name it explicitly. Flash
-// is the cheap non-thinking model — right choice for this short classify task.
-const DEEPSEEK_MODEL = 'deepseek-v4-flash';
+// DeepSeek V4 Pro with thinking OFF. Thinking is on by default for DeepSeek's models, and
+// with it on the hidden reasoning used up max_tokens before any answer was written: ~28% of
+// checks came back empty and failed open, so borderline reasons passed or failed by luck.
+// Pro costs ~$0.0005 per check (Sept 2026 pricing) — pennies a month at our volume.
+const DEEPSEEK_MODEL = 'deepseek-v4-pro';
 // Cap how long we'll wait on the AI before failing open, so a slow/hung DeepSeek
 // call never stalls the borrower's form submission.
-const AI_TIMEOUT_MS = 6000;
+const AI_TIMEOUT_MS = 8000;
+
+// Reason verdicts. `good`/`tip` pass (a tip is advice, not a block); the app stops the request
+// for every other category until the borrower fixes it, showing the hint and suggestion.
+const REASON_CATEGORIES = ['good', 'tip', 'vague', 'placeholder', 'not_english', 'not_allowed'] as const;
+type ReasonCategory = (typeof REASON_CATEGORIES)[number];
+const PASSING: ReadonlySet<string> = new Set(['good', 'tip']);
+
+// The answer format lives in code, not in the guide, so editing the guide can never break
+// the JSON the app depends on.
+const REASON_OUTPUT_CONTRACT = `
+Reply with ONLY a JSON object, no other text:
+{"category": "good" | "tip" | "vague" | "placeholder" | "not_english" | "not_allowed", "hint": "<one short friendly sentence, empty for good>", "suggestion": "<a full English reason they could post as-is, or empty>"}`;
 
 type Kind = 'reason' | 'profession' | 'situation';
 
@@ -55,26 +73,9 @@ type Kind = 'reason' | 'profession' | 'situation';
 // specific and understandable enough for a lender, or is it low-effort filler?
 // Note profession: a SHORT answer ("teacher") is fine — we only flag unclear
 // abbreviations, gibberish, or blanks. We never penalize brevity here.
-const PROMPTS: Record<Kind, string> = {
-   reason: `You screen loan-request reasons on a micro-lending app. Borrowers write a short reason so lenders understand what the money is for. The lenders reading these are in the US and Europe.
-
-Reject the reason if EITHER is true:
-1. It is not written in English. Borrowers are mostly Filipino, so Tagalog and Taglish are the common case — reject them even when the meaning is perfectly clear and specific. One borrowed word inside an otherwise-English sentence ("buying gamot for my mother") is fine; a sentence built on Tagalog grammar is not.
-2. It shows no real effort: vague, generic, placeholder, gibberish, or copy-paste filler that could apply to anyone, instead of naming something specific the money will be used for.
-
-Reply with ONLY a JSON object, no other text:
-{"ok": true}  when the reason is in English and is specific and genuine
-{"ok": false, "hint": "<one short, friendly sentence telling them what to fix>"}
-
-Examples:
-"for personal use" -> {"ok": false, "hint": "Too vague — say what you'll actually use the money for."}
-"CSR" -> {"ok": false, "hint": "That doesn't tell lenders anything — describe your real need."}
-"asdfghjkl" -> {"ok": false, "hint": "This looks like random text — write a real reason."}
-"Pambayad sa tuition ng anak ko, sahod ako sa Friday" -> {"ok": false, "hint": "Please write this in English — the lenders reading it don't speak Tagalog."}
-"Kailangan ko ng pambili ng gamot para sa nanay ko" -> {"ok": false, "hint": "Please write this in English so lenders can understand your need."}
-"Rent due Friday, I'm $30 short until payday" -> {"ok": true}
-"Buying medicine for my mother and transport to the clinic" -> {"ok": true}`,
-
+// The reason rubric lives in loan-reason-guide.md (bundled as LOAN_REASON_GUIDE). These two
+// shorter rubrics still live here.
+const PROMPTS: Record<Exclude<Kind, 'reason'>, string> = {
    profession: `You screen the job/profession a borrower typed on a micro-lending app used mainly in the Philippines, so lenders can understand what they do for work.
 
 A GOOD answer names a real, understandable job. A SHORT answer is completely fine — "teacher", "nurse", "driver" are all good. Do NOT reject something just for being short.
@@ -113,6 +114,45 @@ Examples:
 "I run a small online shop and income changes month to month" -> {"ok": true}`
 };
 
+const KINDS: ReadonlySet<string> = new Set<Kind>(['reason', 'profession', 'situation']);
+
+// Who is asking, from the JWT the gateway already verified (verify_jwt = true), so no extra
+// auth round trip. Anonymous calls (anon key) have no subject.
+const callerUserId = (req: Request): string | null => {
+   try {
+      const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      return typeof json.sub === 'string' && json.role === 'authenticated' ? json.sub : null;
+   } catch {
+      return null;
+   }
+};
+
+// Every judged input is kept privately (service role only, no client access) so the team can
+// review what was turned away and tune loan-reason-guide.md. Best effort: a failed insert never
+// affects the borrower.
+const recordCheck = async (row: {
+   user_id: string | null;
+   kind: Kind;
+   text: string;
+   ok: boolean;
+   category: string | null;
+   hint: string;
+   suggestion: string;
+}) => {
+   try {
+      const url = Deno.env.get('SUPABASE_URL');
+      const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!url || !key) return;
+      const { error } = await createClient(url, key).from('loan_input_checks').insert({ ...row, model: DEEPSEEK_MODEL });
+      if (error) console.error('check-loan-input: failed to record check', error.message);
+   } catch (err) {
+      console.error('check-loan-input: failed to record check', err);
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -127,7 +167,8 @@ serve(async (req) => {
       const body = (await req.json().catch(() => ({}))) as { text?: string; reason?: string; kind?: Kind };
       // Accept `text` (new) or `reason` (back-compat); default to the reason rubric.
       const text = (body.text ?? body.reason ?? '').trim();
-      const kind: Kind = body.kind && PROMPTS[body.kind] ? body.kind : 'reason';
+      const kind: Kind = body.kind && KINDS.has(body.kind) ? body.kind : 'reason';
+      const systemPrompt = kind === 'reason' ? `${LOAN_REASON_GUIDE}\n\n${REASON_OUTPUT_CONTRACT}` : PROMPTS[kind];
       if (!text) return jsonResponse({ ok: false, hint: 'Add a bit more so lenders can understand.' });
 
       const ctrl = new AbortController();
@@ -143,12 +184,14 @@ serve(async (req) => {
             },
             body: JSON.stringify({
                model: DEEPSEEK_MODEL,
+               // Thinking is on by default; this is a one-line classification, so skip it.
+               thinking: { type: 'disabled' },
                temperature: 0,
-               // Headroom so a longer hint never truncates mid-JSON (which parses as garbage).
-               max_tokens: 200,
+               // Headroom for the hint and suggestion so the JSON never truncates.
+               max_tokens: 400,
                response_format: { type: 'json_object' },
                messages: [
-                  { role: 'system', content: PROMPTS[kind] },
+                  { role: 'system', content: systemPrompt },
                   { role: 'user', content: `Input: "${text}"` }
                ]
             })
@@ -180,15 +223,27 @@ serve(async (req) => {
          return jsonResponse({ ok: true, skipped: 'parse_error' }); // fail open
       }
 
+      const userId = callerUserId(req);
+
+      if (kind === 'reason') {
+         const category: ReasonCategory = (REASON_CATEGORIES as readonly string[]).includes(verdict.category ?? '')
+            ? (verdict.category as ReasonCategory)
+            : verdict.ok === false
+              ? 'vague'
+              : 'good';
+         const ok = PASSING.has(category);
+         const hint = category === 'good' ? '' : (verdict.hint ?? '').trim() || (ok ? '' : 'Tell lenders what the money will be used for.');
+         const suggestion = category === 'good' ? '' : (verdict.suggestion ?? '').trim().slice(0, 200);
+         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category }));
+         await recordCheck({ user_id: userId, kind, text, ok, category, hint, suggestion });
+         return jsonResponse({ ok, category, hint, suggestion });
+      }
+
       const ok = verdict.ok !== false; // default to allowing unless explicitly rejected
-      // Verdict log — visible in the Supabase function logs. Content is NOT logged (only
-      // its length), so this stays privacy-safe while letting us see how often the check
-      // fires and on which field, to tune the bar.
+      const hint = ok ? '' : verdict.hint || 'Add more detail so lenders can understand.';
       console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, flagged: !ok }));
-      return jsonResponse({
-         ok,
-         hint: ok ? '' : (verdict.hint || 'Add more detail so lenders can understand.')
-      });
+      await recordCheck({ user_id: userId, kind, text, ok, category: null, hint, suggestion: '' });
+      return jsonResponse({ ok, hint });
    } catch (err) {
       console.error('check-loan-input error:', err);
       return jsonResponse({ ok: true, skipped: 'exception' }); // fail open

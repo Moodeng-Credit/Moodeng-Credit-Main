@@ -1,6 +1,12 @@
 [functions.create-user]
 verify_jwt = false
 
+# Inbound support email → ticket. A mail provider (Resend Inbound / Cloudflare Email Worker) POSTs
+# forwarded mail here with no Supabase JWT; it's gated by ?secret=EMAIL_INBOUND_SECRET in the
+# function instead.
+[functions.email-inbound]
+verify_jwt = false
+
 # Public Meta webhook — Facebook calls this unauthenticated (GET handshake + POST events), so it
 # must not require a Supabase JWT.
 [functions.messenger-webhook]

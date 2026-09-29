@@ -12,11 +12,18 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  * the same text share one in-flight request.
  */
 
+/** Verdict categories from check-loan-input (see supabase/functions/check-loan-input/loan-reason-guide.md). */
+export type ReasonCategory = 'good' | 'tip' | 'vague' | 'placeholder' | 'not_english' | 'not_allowed';
+
 export type ReasonVerdict = {
    /** False only when DeepSeek actually judged the text weak. Unreachable ⇒ true. */
    ok: boolean;
-   /** DeepSeek's one-line suggestion. Empty when ok, or when it gave none. */
+   /** One friendly line: why it was flagged, or a tip when it passed as "tip". */
    hint: string;
+   /** Empty when the check couldn't run or an older function version answered. */
+   category: ReasonCategory | '';
+   /** A full English reason built from theirs (the translation for not_english). May be empty. */
+   suggestion: string;
    /** False when the check couldn't run (offline, timeout, bad response) — we failed open. */
    checked: boolean;
 };
@@ -50,14 +57,20 @@ export const checkLoanReason = async (text: string): Promise<ReasonVerdict> => {
          if (error || typeof data?.ok !== 'boolean') {
             // Fail open, but don't remember it — a network blip shouldn't pin a verdict for
             // the rest of the session.
-            return { ok: true, hint: '', checked: false };
+            return { ok: true, hint: '', category: '', suggestion: '', checked: false };
          }
-         const verdict: ReasonVerdict = { ok: data.ok, hint: data.hint ?? '', checked: true };
+         const verdict: ReasonVerdict = {
+            ok: data.ok,
+            hint: data.hint ?? '',
+            category: (data.category as ReasonCategory | undefined) ?? '',
+            suggestion: data.suggestion ?? '',
+            checked: true
+         };
          verdicts.set(key, verdict);
          return verdict;
       } catch (error) {
          console.error('check-loan-input (reason) failed, allowing:', error);
-         return { ok: true, hint: '', checked: false };
+         return { ok: true, hint: '', category: '', suggestion: '', checked: false };
       } finally {
          inFlight.delete(key);
       }

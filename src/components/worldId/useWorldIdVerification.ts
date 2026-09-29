@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { any, CredentialRequest, type CredentialType, IDKit, IDKitErrorCodes, type IDKitResult, type RpContext } from '@worldcoin/idkit';
+import { any, CredentialRequest, type CredentialType, IDKit, type IDKitResult, type RpContext } from '@worldcoin/idkit';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -51,6 +51,37 @@ export const LONG_PROCESSING_SECONDS = 10;
 const wait = (ms: number) =>
    new Promise<void>((resolve) => {
       window.setTimeout(resolve, ms);
+   });
+
+// True while this page is in the background or being left (the tap sent the tab to World App or
+// to World's website). A status check cut off then is expected, not a failure.
+const isPageAway = () =>
+   typeof document !== 'undefined' && (document.visibilityState === 'hidden' || pageUnloading);
+let pageUnloading = false;
+if (typeof window !== 'undefined') {
+   window.addEventListener('pagehide', () => {
+      pageUnloading = true;
+   });
+   window.addEventListener('pageshow', () => {
+      pageUnloading = false;
+   });
+}
+
+// Resolves once the person is back on this page.
+const waitUntilBack = () =>
+   new Promise<void>((resolve) => {
+      if (!isPageAway()) {
+         resolve();
+         return;
+      }
+      const done = () => {
+         if (isPageAway()) return;
+         document.removeEventListener('visibilitychange', done);
+         window.removeEventListener('pageshow', done);
+         resolve();
+      };
+      document.addEventListener('visibilitychange', done);
+      window.addEventListener('pageshow', done);
    });
 
 type PrepareErrorPresentation = 'notify' | 'quiet';
@@ -419,7 +450,8 @@ export function useWorldIdVerification({
    }, [navigate, onSuccess, showSuccessFeedback, showSuccessToast, showToastByConfig]);
 
    const handleError = useCallback(
-      (errorCode: IDKitErrorCodes) => {
+      // A plain string: codes come from World App and our own poll loop (see worldIdErrors.ts).
+      (errorCode: string) => {
          const isFinishingVerification = verificationFeedbackState === 'processing' || verificationFeedbackState === 'success';
          // Record why World App said no: before this, every failure looked like "Server Error"
          // and there was no way to tell a missing Orb/passport from a broken setup.
@@ -475,7 +507,7 @@ export function useWorldIdVerification({
             while (pollRunRef.current === runId) {
                if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
                   setVerificationLaunchState('idle');
-                  handleError(IDKitErrorCodes.Timeout);
+                  handleError('timeout');
                   preparedRequestRef.current = null;
                   prepareRequestPromiseRef.current = null;
                   // Re-warm so the next tap can launch World App directly (mobile needs a cached request).
@@ -483,7 +515,17 @@ export function useWorldIdVerification({
                   return;
                }
 
-               const nextStatus = await request.pollOnce();
+               let nextStatus: Awaited<ReturnType<PreparedWorldIdRequest['pollOnce']>>;
+               try {
+                  nextStatus = await request.pollOnce();
+               } catch (error) {
+                  // Leaving for World App (or World's website when the app isn't installed) can cut
+                  // the status check off mid-request. That's expected: wait until they're back and
+                  // keep checking, instead of showing a connection error they didn't cause.
+                  if (!isPageAway()) throw error;
+                  await waitUntilBack();
+                  continue;
+               }
 
                if (pollRunRef.current !== runId) {
                   return;
@@ -492,7 +534,7 @@ export function useWorldIdVerification({
                if (nextStatus.type === 'confirmed') {
                   if (!nextStatus.result) {
                      setVerificationLaunchState('idle');
-                     handleError(IDKitErrorCodes.UnexpectedResponse);
+                     handleError('unexpected_response');
                      return;
                   }
 
@@ -512,7 +554,7 @@ export function useWorldIdVerification({
 
                if (nextStatus.type === 'failed') {
                   setVerificationLaunchState('idle');
-                  handleError(nextStatus.error ?? IDKitErrorCodes.GenericError);
+                  handleError(nextStatus.error ?? 'generic_error');
                   preparedRequestRef.current = null;
                   prepareRequestPromiseRef.current = null;
                   void prepareWorldIdRequest().catch((error) => presentPrepareError(error, 'quiet'));
@@ -525,8 +567,7 @@ export function useWorldIdVerification({
             if (pollRunRef.current === runId) {
                setVerificationLaunchState('idle');
                console.error(`[${logTag}] beginPollingWorldIdRequest error:`, error);
-               // pollOnce throws on network failures talking to the World bridge.
-               showToastByConfig('worldid_connection_failed');
+               showToastByConfig('worldid_connection_error', { supportTopic: "World ID verification isn't working" });
             }
          });
       },

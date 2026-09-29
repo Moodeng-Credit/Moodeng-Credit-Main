@@ -160,6 +160,14 @@ export const TOAST_CONFIGS: Record<string, ToastConfigItem> = {
       buttonAction: 'retry_action'
    },
 
+   worldid_connection_error: {
+      toastType: TOAST_TYPES.ERROR,
+      title: "We couldn't finish verifying",
+      message: "We lost the connection to World ID while confirming your verification. This is on our side, not yours — message us and we'll get you sorted.",
+      buttonText: 'Contact us',
+      buttonAction: 'open_support_chat'
+   },
+
    loan_error: {
       toastType: TOAST_TYPES.ERROR,
       title: "It's awkward 😅",
