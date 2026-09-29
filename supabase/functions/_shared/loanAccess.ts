@@ -30,7 +30,7 @@ export const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_
 // Opens the loan-request flow straight away (RequestBoard reads ?applyLoan=1).
 export const APPLY_URL = `${SITE_URL}/request-board?applyLoan=1`;
 // Where admins actually talk to the borrower: the Moodeng Credit Page inbox (SendPulse mirrors it).
-const PAGE_INBOX_URL = 'https://business.facebook.com/latest/inbox/messenger?asset_id=1148756028310286';
+export const PAGE_INBOX_URL = 'https://business.facebook.com/latest/inbox/messenger?asset_id=1148756028310286';
 
 // Telegram callback_data for the admin buttons: "la:<a|r|n>:<request uuid>".
 export const LOAN_ACCESS_CALLBACK_PREFIX = 'la:';

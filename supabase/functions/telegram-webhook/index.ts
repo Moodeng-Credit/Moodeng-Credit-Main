@@ -10,6 +10,7 @@ import {
    shortId,
    stampAdminCard
 } from '../_shared/loanAccess.ts';
+import { markMessengerVerified, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
@@ -302,13 +303,15 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 };
 
 // The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
-// vc: (open-flow call attendance) and vo: (GrabFood voucher claim Mark sent / Reject). Honored only when the card sits in an admin channel, so a
-// forwarded card can't be tapped from anywhere else.
+// vc: (open-flow call attendance), vo: (GrabFood voucher claim Mark sent / Reject) and mv: (stuck
+// Facebook confirmation → Mark Facebook verified). Honored only when the card sits in an admin
+// channel, so a forwarded card can't be tapped from anywhere else.
 const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCallbackQuery, adminChatIds: string[]) => {
    const parsed = parseDecisionCallback(query.data);
    const outcome = parsed ? null : parseOutcomeCallback(query.data);
    const voucher = parsed || outcome ? null : parseVoucherCallback(query.data);
-   if (!parsed && !outcome && !voucher) {
+   const messenger = parsed || outcome || voucher ? null : parseMessengerVerifyCallback(query.data);
+   if (!parsed && !outcome && !voucher && !messenger) {
       await answerCallback(query.id, 'Unknown action.');
       return;
    }
@@ -322,7 +325,9 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
       ? await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from))
       : outcome
         ? await recordCallOutcome(supabase, outcome.userId, outcome.outcome, adminHandle(query.from))
-        : await decideVoucherClaim(supabase, voucher!.claimId, voucher!.decision, adminHandle(query.from));
+        : voucher
+          ? await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, adminHandle(query.from))
+          : await markMessengerVerified(supabase, messenger!.userId, adminHandle(query.from));
    await answerCallback(query.id, result.summary);
    if (query.message) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
 };

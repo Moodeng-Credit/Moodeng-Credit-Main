@@ -261,6 +261,11 @@ SendPulse's parser (`__` separates variables, `=` assigns); codes are `[A-Z0-9-]
   Works only for app testers until Meta App Review; kept for the future.
 - **Manual `/confirm <CODE>`** in `telegram-webhook` (admin channels only) — admin relays a code seen in
   the Page inbox. Kept as an override.
+- **Stuck alert** (`messenger-stuck-alerts`, every 5 min) — a borrower whose code is still unconfirmed
+  10 minutes after tapping "Verify via Messenger" gets a card in the KYC Telegram group (plus a line in
+  Discord #kyc) with a **✅ Mark Facebook verified** button and a Page-inbox link. One ping per borrower
+  per day (`users.messenger_stuck_alerted_at`). Built after Aya (2026-09-29): her "Get started" never
+  reached the bot, and we only noticed by opening the inbox.
 
 ### 6.6 Cost
 
@@ -469,6 +474,7 @@ plus many security/digest jobs. Each cron calls an edge function with `net.http_
 | ------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `sendpulse-messenger-verify`          | Receives SendPulse flow's code → marks Messenger verified                 | off; `x-sendpulse-secret`             | `SENDPULSE_VERIFY_SECRET`                                                                 |
 | `messenger-webhook`                   | Direct Meta Messenger webhook (future, needs App Review)                  | off; Meta handshake                   | `MESSENGER_VERIFY_TOKEN`, `MESSENGER_PAGE_ACCESS_TOKEN`                                   |
+| `messenger-stuck-alerts`              | Cron (5 min): Messenger code unconfirmed 10+ min → KYC alert + button     | **on** (pg_cron, service key)         | —                                                                                         |
 | `whatsapp-webhook`                    | WhatsApp Cloud API webhook → marks WhatsApp verified                      | off; Meta handshake                   | `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_ACCESS_TOKEN`_, `WHATSAPP_PHONE_NUMBER_ID`_ (*not set) |
 | `telegram-webhook`                    | Bot updates: connect tokens, support chats, lender roster, **`/confirm`** | off; `TELEGRAM_WEBHOOK_SECRET` header | Telegram token                                                                            |
 | `calcom-round-robin`                  | Merged availability + booking for the video call                          | **on** (borrower JWT)                 | `CALCOM_API_KEY_GEORGE`, `CALCOM_API_KEY_EMMA`                                            |
