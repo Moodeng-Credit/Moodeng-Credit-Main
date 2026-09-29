@@ -9,6 +9,7 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
 import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import LenderFundedPopup from '@/components/funding/LenderFundedPopup';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -850,49 +851,16 @@ export default function UserCard(loan: UserCardProps) {
             />
          ) : null}
 
-         {/* Fund Success Modal */}
-         {showModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-               <div className="bg-white rounded-2xl shadow-lg max-w-sm mx-auto flex flex-col overflow-hidden" style={{ minWidth: '320px' }}>
-                  <div className="bg-gradient-to-r from-[#C55FFF] to-[#7B5FFF] px-6 py-4 flex items-center justify-between">
-                     <h3 className="text-white font-bold text-lg">Funded</h3>
-                     <button
-                        onClick={handleFetch}
-                        className="bg-white rounded-md px-2 py-1 text-[#7B5FFF] font-bold text-lg leading-none transition-all duration-150 hover:brightness-95 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                        type="button"
-                     >
-                        X
-                     </button>
-                  </div>
-                  <div className="p-6 flex flex-col items-center gap-4">
-                     <div className="w-16 h-16 rounded-full bg-md-primary-900 flex items-center justify-center">
-                        <svg
-                           width="32"
-                           height="32"
-                           viewBox="0 0 24 24"
-                           fill="none"
-                           stroke="white"
-                           strokeWidth="3"
-                           strokeLinecap="round"
-                           strokeLinejoin="round"
-                        >
-                           <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                     </div>
-                     <p className="text-md-b1 font-semibold text-md-heading text-center">
-                        You funded ${formatCurrency(loanData.loanAmount)} to {borrowerDisplayName}
-                     </p>
-                     <button
-                        onClick={handleFetch}
-                        className="w-full bg-md-primary-1200 text-white text-md-b1 font-semibold py-3 rounded-md-lg transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
-                        type="button"
-                     >
-                        Done
-                     </button>
-                  </div>
-               </div>
-            </div>
-         )}
+         {/* Fund success: celebrates the funding and asks, once, to turn on repayment notifications. */}
+         {showModal ? (
+            <LenderFundedPopup
+               userId={userId}
+               borrowerName={borrowerDisplayName}
+               totalRepayment={Number(loanData.totalRepaymentAmount ?? 0)}
+               dueDate={loanData.dueDate}
+               onClose={handleFetch}
+            />
+         ) : null}
       </>
    );
 }
