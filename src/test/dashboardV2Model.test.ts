@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 
+import { LocalizationProvider } from '@/i18n';
 import { EMPTY_REWARDS, isValidInviteCode, normalizeInviteCode, parseMyRewards } from '@/lib/friendReferrals';
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 import DashboardV2Hero from '@/views/dashboard-v2/components/DashboardV2Hero';
@@ -151,7 +152,10 @@ describe('dashboard v2 milestones', () => {
 });
 
 describe('dashboard v2 sample states render', () => {
-   const render = (element: ReturnType<typeof createElement>) => renderToStaticMarkup(createElement(MemoryRouter, null, element));
+   // Dashboard sections now read the active language (useLocalization), so render them inside the
+   // same provider the app uses. The test browser reports English, so the copy asserted below is English.
+   const render = (element: ReturnType<typeof createElement>) =>
+      renderToStaticMarkup(createElement(LocalizationProvider, null, createElement(MemoryRouter, null, element)));
 
    it('renders the hero for each design state', () => {
       const unverifiedHero = render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.unverified, showRealAvatar: false }));
