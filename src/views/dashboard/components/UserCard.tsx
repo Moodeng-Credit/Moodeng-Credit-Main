@@ -9,6 +9,7 @@ import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
 import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import RepaidPushCard from '@/components/funding/RepaidPushCard';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
@@ -882,6 +883,7 @@ export default function UserCard(loan: UserCardProps) {
                      <p className="text-md-b1 font-semibold text-md-heading text-center">
                         You funded ${formatCurrency(loanData.loanAmount)} to {borrowerDisplayName}
                      </p>
+                     <RepaidPushCard userId={userId} borrowerName={borrowerDisplayName} />
                      <button
                         onClick={handleFetch}
                         className="w-full bg-md-primary-1200 text-white text-md-b1 font-semibold py-3 rounded-md-lg transition-all duration-150 hover:brightness-110 active:scale-[0.98] active:brightness-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-md-primary-900"
