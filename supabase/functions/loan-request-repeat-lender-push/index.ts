@@ -187,7 +187,7 @@ serve(async (req) => {
 
       const { data: priorLoans, error: priorLoansError } = await supabase
          .from('loans')
-         .select('lender_user_id, total_repayment_amount, repaid_amount, loan_amount, repayment_status, loan_status, is_deleted')
+         .select('lender_user_id, total_repayment_amount, repaid_amount, loan_amount, repayment_status, loan_status')
          .eq('borrower_user_id', loan.borrower_user_id)
          .eq('repayment_status', 'Paid')
          .neq('id', loan.id);
