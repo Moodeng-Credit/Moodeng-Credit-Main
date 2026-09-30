@@ -10,6 +10,8 @@ import {
    LoanNotificationLoan,
    LoanNotificationRecipient
 } from '../_shared/loanNotifications.ts';
+import { dueDayBounds, localHour, QUIET_HOURS_END, resolveTimezone } from '../_shared/loanDeadline.ts';
+import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -292,7 +294,20 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
    }
 
-   const borrowerIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
+   // `due_date < now` only says the due day has BEGUN (it is midnight UTC of that date). A loan is
+   // overdue once the due day has ENDED in the borrower's own timezone.
+   const candidateIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
+   const timezones = await loadBorrowerTimezones(supabase, candidateIds);
+   const zoneFor = (borrowerId: string) => timezones.get(borrowerId) ?? resolveTimezone(null, null);
+   const deadlineByLoanId = new Map<string, Date>();
+   const overdueLoans = (loans ?? []).filter((loan) => {
+      if (!loan.borrower_user_id || !loan.due_date) return false;
+      const { end } = dueDayBounds(loan.due_date, zoneFor(loan.borrower_user_id));
+      deadlineByLoanId.set(loan.id, end);
+      return referenceDate.getTime() >= end.getTime();
+   });
+
+   const borrowerIds = Array.from(new Set(overdueLoans.map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
    const borrowers = await loadBorrowers(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
    const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
@@ -300,7 +315,7 @@ serve(async (req) => {
 
    const borrowerBuckets = new Map<string, Array<LoanNotificationLoan & { id: string }>>();
 
-   for (const loan of loans ?? []) {
+   for (const loan of overdueLoans) {
       if (!loan.borrower_user_id) {
          continue;
       }
@@ -318,9 +333,14 @@ serve(async (req) => {
          continue;
       }
 
+      // Hold until the borrower's local morning; nothing is recorded, so the next run retries.
+      if (localHour(referenceDate, zoneFor(borrowerId)) < QUIET_HOURS_END) {
+         continue;
+      }
+
       const loanIds = borrowerLoans.map((loan) => loan.id);
       const sentStages = await loadSentStagesByLoanId(supabase, { loanIds, userId: borrower.id });
-      const stageByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, getOverdueStage(referenceDate, loan.due_date ?? null)]));
+      const stageByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, getOverdueStage(referenceDate, deadlineByLoanId.get(loan.id)?.toISOString() ?? loan.due_date ?? null)]));
       const pendingLoans = borrowerLoans.filter((loan) => !sentStages.get(loan.id)?.has(stageByLoanId.get(loan.id)!));
 
       if (!pendingLoans.length) {
@@ -379,5 +399,18 @@ serve(async (req) => {
       sentCount += 1;
    }
 
-   return new Response(JSON.stringify({ message: 'Overdue notifications sent', sent: sentCount }), { status: 200, headers: corsHeaders });
+   // Tell the team once per loan that it has gone overdue, whether or not the borrower could be reached.
+   const announced = await postDueTeamFeed(
+      supabase,
+      'team_overdue',
+      overdueLoans as Parameters<typeof postDueTeamFeed>[2],
+      new Map(Array.from(borrowers.entries()).map(([id, borrower]) => [id, borrower.username ?? null])),
+      timezones,
+      referenceDate
+   );
+
+   return new Response(JSON.stringify({ message: 'Overdue notifications sent', sent: sentCount, teamAnnounced: announced }), {
+      status: 200,
+      headers: corsHeaders
+   });
 });
