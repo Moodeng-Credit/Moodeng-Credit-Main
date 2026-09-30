@@ -29,6 +29,7 @@ import {
    WALLET_CHANGE_FAILED_EVENT
 } from '@/lib/walletChangeIntent';
 import { getBaseAccountConnector, getBaseWalletLockStatus, getWalletProviderLabel } from '@/lib/walletProvider';
+import { OPENFORT_WALLET_PROVIDER } from '@/lib/web3/openfort/config';
 import { useCreateInstantWallet, WALLET_FACE_GATE_ENABLED } from '@/lib/web3/openfort';
 import { confirmEmailChange, fetchUser, updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -1400,6 +1401,7 @@ export default function AccountSettings() {
 
    const instantWallet = useCreateInstantWallet('account-settings');
    const hasWallet = Boolean(user?.walletAddress);
+   const isInstantWallet = user?.walletProvider === OPENFORT_WALLET_PROVIDER;
    // Borrowers can now create an Instant Wallet as well as connect a Base Account, so the old
    // "Connect Base Account" label misdescribed the screen it opens.
    const walletSetupLabel = 'Connect';
@@ -2250,7 +2252,10 @@ export default function AccountSettings() {
                            </div>
                         ) : null}
 
-                        {hasWallet && !isDisconnectWalletPending ? (
+                        {/* No self-serve disconnect for an Instant Wallet: it's the borrower's only wallet and holds
+                            their loan money, and a warning in English doesn't protect someone who can't read it
+                            (one real borrower unlinked hers with two taps). Support can still unlink it. */}
+                        {hasWallet && !isInstantWallet && !isDisconnectWalletPending ? (
                            <SettingsGroup label="Wallet access">
                               <button
                                  type="button"
