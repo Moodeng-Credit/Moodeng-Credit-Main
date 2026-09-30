@@ -27,6 +27,7 @@ import CreditLevelSection from '@/views/dashboard/components/CreditLevelSection'
 import DashboardHeader from '@/views/dashboard/components/DashboardHeader';
 import LenderDiversitySection from '@/views/dashboard/components/LenderDiversitySection';
 import LoanSummarySection from '@/views/dashboard/components/LoanSummarySection';
+import RestoreInstantWalletBanner from '@/views/dashboard/components/RestoreInstantWalletBanner';
 import ReputationMilestones from '@/views/dashboard/components/ReputationMilestones';
 import TrustScoreSection from '@/views/dashboard/components/TrustScoreSection';
 import UpcomingLoanDues from '@/views/dashboard/components/UpcomingLoanDues';
@@ -323,6 +324,9 @@ export default function Dashboard() {
             {/* GCash/Atome-style money home: instant-wallet borrowers see their balance first
                 thing on the screen they land on. Self-gates — Base borrowers see nothing. */}
             <WalletBalanceCard />
+
+            {/* Has an Instant Wallet on record but the account isn't linked to it — one tap to restore. */}
+            <RestoreInstantWalletBanner />
 
             <div className="dashboard-score-card bg-md-neutral-100 rounded-md-lg p-4 shadow-md-card flex flex-col gap-4 bg-gradient-to-b from-white to-[#eee6fa]">
                <div data-tour-target="dashboard-trust-score">
