@@ -23,6 +23,8 @@ import {
    type WalletSetupPhase
 } from '@/lib/web3/openfort/embeddedWallet';
 import { friendlyConnectError } from '@/lib/web3/openfort/errors';
+import { reportInstantWalletFailure } from '@/lib/web3/openfort/reportFailure';
+import { retryAsync } from '@/lib/web3/openfort/retry';
 import { WalletGateError } from '@/lib/web3/openfort/walletFaceGate';
 import { updateUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -110,19 +112,33 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
          onPhase?.('saving');
 
          // Lock the borrower to this smart account (mirrors useWalletSync for wagmi wallets).
-         // A failure here doesn't invalidate a successfully-created wallet — the address is
-         // deterministic per user, so a later retry re-locks the same address idempotently.
+         // The wallet itself is fine if this fails — the address is deterministic per user, so a
+         // later tap re-locks the same address idempotently — but swallowing the failure used to
+         // leave people with a wallet on Openfort's side, nothing on their account, and a
+         // "connected" screen anyway. Retry a couple of times for a flaky connection, and if it
+         // still won't save, say so and stop instead of pretending it worked.
          try {
-            await dispatch(
-               updateUser({
-                  walletAddress: account.address,
-                  walletProvider: OPENFORT_WALLET_PROVIDER,
-                  walletConnectorName: OPENFORT_CONNECTOR_NAME,
-                  walletChainId: OPENFORT_CHAIN_ID
-               })
-            ).unwrap();
+            await retryAsync(
+               () =>
+                  dispatch(
+                     updateUser({
+                        walletAddress: account.address,
+                        walletProvider: OPENFORT_WALLET_PROVIDER,
+                        walletConnectorName: OPENFORT_CONNECTOR_NAME,
+                        walletChainId: OPENFORT_CHAIN_ID
+                     })
+                  ).unwrap(),
+               { attempts: 3, delayMs: 700 }
+            );
          } catch (syncErr) {
             console.error('[Openfort] wallet-lock sync failed', syncErr);
+            reportInstantWalletFailure('link', syncErr);
+            const message = "Your wallet was made, but we couldn't save it to your account. Tap the button again — you'll get the same wallet.";
+            setAddress(null);
+            setError(message);
+            setStatus('error');
+            showToast(TOAST_TYPES.ERROR, "Couldn't finish setting up your wallet", message);
+            return null;
          }
 
          onPhase?.('done');
@@ -140,6 +156,7 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
             return null;
          }
 
+         reportInstantWalletFailure('create', err);
          const message = friendlyConnectError(err);
          setError(message);
          setStatus('error');
