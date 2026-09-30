@@ -2145,7 +2145,7 @@ export default function AccountSettings() {
                            />
                         ) : null}
 
-                        {hasWallet && !isDisconnectWalletPending ? (
+                        {hasWallet && !isInstantWallet && !isDisconnectWalletPending ? (
                            <button
                               type="button"
                               onClick={handleInitiateWalletChange}
