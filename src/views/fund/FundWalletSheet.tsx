@@ -478,7 +478,7 @@ export default function FundWalletSheet({ isOpen, onClose, walletAddress }: Fund
              relative z-10 lifts this above the absolute backdrop — otherwise the backdrop paints
              over it and a tap on "Learn more" closed the sheet instead of navigating. */}
          <p className="relative z-10 w-full max-w-[440px] px-4 pb-2 text-[12px] font-normal leading-snug text-md-neutral-800">
-            Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph, PDAX, GCrypto),
+            Prefer another way? You can also buy USDC on an exchange (Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto),
             through an external service like Moneybees, or send it from any wallet — always on the Base network.{' '}
             <button
                type="button"

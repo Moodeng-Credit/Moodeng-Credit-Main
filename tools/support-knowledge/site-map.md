@@ -44,7 +44,7 @@ An interactive, illustrated walkthrough of how to use the app, with a short tuto
 Four short guides, each about the practical mechanics of using USDC on Base:
 
 - **Verify your identity** — a one-time check, about 3 minutes: tap **Verify Yourself**, choose **Verify Your ID**, have your national ID ready in good lighting, complete the ID-photo-and-selfie check. Most people finish in minutes; human review is usually done within a few hours.
-- **Add funds to your wallet** — buying or sending USDC on Base via Binance P2P, Coins.ph, PDAX, GCrypto (GCash), Moneybees, or from another wallet/exchange you already use. Always choose the **Base** network — sending on the wrong network can lose funds.
+- **Add funds to your wallet** — buying or sending USDC on Base via Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto (GCash), Moneybees, or from another wallet/exchange you already use. Always choose the **Base** network — sending on the wrong network can lose funds.
 - **Withdraw to your bank** — selling USDC on an exchange and moving the cash to a bank or e-wallet, via the same list of providers.
 - **Repay your loan** — sending the exact USDC amount shown on the Repay screen to the address shown there, always on Base; buy USDC first if you don't already hold it.
 

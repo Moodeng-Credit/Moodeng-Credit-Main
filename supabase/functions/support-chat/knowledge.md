@@ -114,13 +114,13 @@ Tap "Verify Yourself" in the app to start. Most checks finish within minutes.
 
 ### How do I convert my loan into my local bank account?
 
-Send your USDC to an exchange or local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), and more — sell it there, and withdraw the local currency straight to your bank or e-wallet.
+Send your USDC to an exchange or local service — Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto (GCash), and more — sell it there, and withdraw the local currency straight to your bank or e-wallet.
 
 The key detail: always choose Base as the network when sending USDC. The full guide has a video walkthrough and step-by-step instructions for each service.
 
 ### How do I repay my loan?
 
-Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph, PDAX, GCrypto, and more) — always on the Base network.
+Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto, and more) — always on the Base network.
 
 Repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. The full guide walks through each way to repay.
 
@@ -275,7 +275,7 @@ Withdraw USDC from your exchange account directly to the repayment address. Choo
 Buying USDC first, then repaying
 If you don't hold USDC yet, buy it first and send it to your wallet, then repay from there:
 - Binance P2P: buy USDC with local currency from other users, then withdraw on the Base network.
-- Coins.ph: buy USDC with PHP, then use Send Crypto → External Wallet → Base network.
+- Coins.ph (temporarily paused): buy USDC with PHP, then use Send Crypto → External Wallet → Base network.
 - GCrypto (GCash): if crypto is enabled in your GCash app, buy USDC and withdraw via USDCBASE.
 - PDAX: buy USDC with PHP and withdraw to your wallet on Base.
 - Moneybees (external option): an over-the-counter service some users may use to buy crypto through Moneybees' own process. Follow their instructions directly at https://www.moneybees.ph/.
@@ -293,7 +293,7 @@ Binance P2P
 Buy USDC with local currency directly from other users, then withdraw on the Base network.
 
 Philippine services
-- Coins.ph: buy USDC with PHP, then Send Crypto → External Wallet → Base network.
+- Coins.ph (temporarily paused): buy USDC with PHP, then Send Crypto → External Wallet → Base network.
 - PDAX: buy USDC with PHP and withdraw to your wallet on Base.
 - GCrypto (GCash): if crypto is enabled in your GCash app, buy and withdraw via USDCBASE.
 
@@ -319,7 +319,8 @@ Send USDC to your Binance account (always choose the Base network), then sell it
 PDAX
 A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.
 
-Coins.ph
+Coins.ph (temporarily paused)
+Coins.ph has been temporarily suspended by the Philippine government, so cash-ins and cash-outs there aren't working right now — we'll update this as soon as it's back. Use PDAX or GCrypto in the meantime.
 Deposit USDC, convert to PHP, and cash out to your bank or GCash.
 
 GCrypto (GCash)
@@ -441,13 +442,13 @@ Users with an **Instant Wallet** also see an **Export wallet key** link in the W
 The **Repay** tab lists your active (funded, unpaid) loans, soonest due first.
 
 - If you haven't finished setup yet, you'll see one of: **Finish setup to start borrowing** (**Start Setup**), **Verify yourself to borrow** (**Verify Yourself**), **Add a wallet to borrow** (**Add Wallet**), or, with nothing due, **No repayments yet** (**Request a loan**).
-- If your USDC balance is short of what you owe, an add-funds card appears automatically with your wallet address to copy and a list of places to buy/send USDC on Base — in the Philippines it leads with **Coins.ph** (with **Moneybees**, **GCrypto**, **PDAX** as other options, **Show more** to see the rest); outside the Philippines it leads with **Binance**. It updates live and shows **Received $X USDC** once funds land.
+- If your USDC balance is short of what you owe, an add-funds card appears automatically with your wallet address to copy and a list of places to buy/send USDC on Base — it leads with **PDAX** while Coins.ph is temporarily paused (with **Moneybees**, **GCrypto**, and a greyed-out **Coins.ph** as other options, **Show more** to see the rest); outside the Philippines it leads with **Binance**. It updates live and shows **Received $X USDC** once funds land.
 - To pay: pick the loan (defaults to the one due soonest), enter an amount or tap **25%**, **50%**, **75%**, or **Full**, then tap the **Pay Now** button that appears in the bottom nav. With your Instant Wallet or a Base Account the payment is gasless and goes straight to the lender.
 - Paying off a loan in full shows a **Loan fully repaid** screen with Pandesal points earned and, if it unlocks the next level, a **Credit Level unlocked** panel. A partial payment just shows an inline confirmation and the loan stays active.
 
 ## Cashing out (Withdraw)
 
-Reached only from the Dashboard's **Withdraw your USDC** card (not a nav tab). First screen asks **How would you like to cash out?** with provider choices tailored to your country — in the Philippines: **Coins.ph** (marked Recommended), **GCrypto**, **PDAX**, **Binance**, **Moneybees**; outside the Philippines, **Binance** is usually the recommended one. Always **USDC on Base**. Picking a provider opens a guided send form: how much you're sending vs. receiving, numbered steps for that specific provider (with a **Show me how** guide on most steps), a field to paste your receiving address at that provider, an amount field with **Max**, and a **Send {amount} USDC to {provider}** button.
+Reached only from the Dashboard's **Withdraw your USDC** card (not a nav tab). First screen asks **How would you like to cash out?** with provider choices tailored to your country — in the Philippines: **PDAX** (marked Recommended), **GCrypto**, **Binance**, **Moneybees**, and **Coins.ph** greyed out as *Temporarily paused* (tapping it explains it's suspended for now); outside the Philippines, **Binance** is usually the recommended one. Always **USDC on Base**. Picking a provider opens a guided send form: how much you're sending vs. receiving, numbered steps for that specific provider (with a **Show me how** guide on most steps), a field to paste your receiving address at that provider, an amount field with **Max**, and a **Send {amount} USDC to {provider}** button.
 
 ## Requesting a loan
 
@@ -522,7 +523,7 @@ An interactive, illustrated walkthrough of how to use the app, with a short tuto
 Four short guides, each about the practical mechanics of using USDC on Base:
 
 - **Verify your identity** — a one-time check, about 3 minutes: tap **Verify Yourself**, choose **Verify Your ID**, have your national ID ready in good lighting, complete the ID-photo-and-selfie check. Most people finish in minutes; human review is usually done within a few hours.
-- **Add funds to your wallet** — buying or sending USDC on Base via Binance P2P, Coins.ph, PDAX, GCrypto (GCash), Moneybees, or from another wallet/exchange you already use. Always choose the **Base** network — sending on the wrong network can lose funds.
+- **Add funds to your wallet** — buying or sending USDC on Base via Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto (GCash), Moneybees, or from another wallet/exchange you already use. Always choose the **Base** network — sending on the wrong network can lose funds.
 - **Withdraw to your bank** — selling USDC on an exchange and moving the cash to a bank or e-wallet, via the same list of providers.
 - **Repay your loan** — sending the exact USDC amount shown on the Repay screen to the address shown there, always on Base; buy USDC first if you don't already hold it.
 
@@ -605,7 +606,7 @@ Admin-only screens and tools are intentionally left out of this knowledge base �
 
 **If creating it fails:** they'll see a message saying what went wrong (usually "check your internet and try again", or "sign in again"). Have them retry; if it keeps failing, offer to connect them with the team.
 
-**Cashing out:** same as any wallet — send the USDC to an exchange deposit address (GCrypto, Coins.ph, etc.), or use the withdraw flow. The send is gasless from the Instant Wallet too.
+**Cashing out:** same as any wallet — send the USDC to an exchange deposit address (PDAX, GCrypto, etc. — Coins.ph is temporarily paused), or use the withdraw flow. The send is gasless from the Instant Wallet too.
 
 ## Coinbase app vs Base Account (a common mix-up)
 
@@ -697,17 +698,21 @@ They aren't verified yet. Tapping the greyed button now shakes it and highlights
 - What a code does: a valid referral code adds **+$5 to your starting credit limit**. So a new borrower who normally starts at $15 would start at $20 with a valid code.
 - If a user doesn't have a code, they just tap **Continue to application** — the code is optional and there's no penalty for skipping it.
 
+## ⚠️ Coins.ph is temporarily paused (since 30 Sep 2026)
+
+Coins.ph has been **temporarily suspended by the Philippine government** (the central bank told InstaPay and PESONet to block transfers to it), so **cash-ins and cash-outs through Coins.ph are not working right now**. In the app its option is greyed out. Do **not** recommend Coins.ph for cashing out, adding USDC, or repaying until this notice is removed — recommend **PDAX** first (bank, GCash or Maya), or **GCrypto (GCash)**. GCrypto is powered by PDAX, not Coins.ph, so it still works. If someone already has USDC sitting in Coins.ph, reassure them their funds are theirs, that Coins.ph says it's temporary, and offer to connect them with the team. It will come back — we'll update the app as soon as it does.
+
 ## Cashing out my loan to GCash / a bank (off-ramp)
 
 Users borrow **USDC on the Base network**. To turn it into pesos (or local currency):
-1. Send the USDC to an exchange or local service — **GCrypto (GCash), Coins.ph, PDAX, Binance P2P**, and others.
+1. Send the USDC to an exchange or local service — **PDAX, GCrypto (GCash), Binance P2P**, and others (Coins.ph is temporarily paused — see above).
 2. **Always choose "Base" as the network** when sending — picking the wrong network can lose the funds. This is the single most important detail.
 3. Sell the USDC there and withdraw local currency to the bank or e-wallet.
 
 ## Adding money / buying USDC to repay (on-ramp)
 
 If a user doesn't hold USDC yet and needs to repay:
-1. Buy USDC on **Binance P2P, Coins.ph, PDAX, or GCrypto**.
+1. Buy USDC on **PDAX, GCrypto, or Binance P2P** (Coins.ph is temporarily paused — see above).
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
 3. Repay **before the due date** — on-time repayment earns Pandesal points and unlocks higher credit levels.
 
@@ -721,7 +726,7 @@ You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** butto
 
 ## How much does cashing out cost?
 
-Moodeng itself charges **$0** — the only cost is the exchange's own conversion fee. **Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip.** For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly **₱6.50 (about $0.10)** — that covers the small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly instead of same/next-day, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services (like Moneybees) build their margin into the rate, so they usually cost more.
+Moodeng itself charges **$0** — the only cost is the exchange's own conversion fee. **Right now Coins.ph is temporarily paused (see above), so recommend PDAX.** When Coins.ph is back: **Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip.** For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly **₱6.50 (about $0.10)** — that covers the small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly instead of same/next-day, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services (like Moneybees) build their margin into the rate, so they usually cost more.
 
 ## Defaulting / a loan that goes unpaid
 

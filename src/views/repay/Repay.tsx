@@ -36,6 +36,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
 import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
+import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
@@ -85,6 +86,11 @@ const fundSources = [
 
 type FundSourceId = (typeof fundSources)[number]['id'];
 
+// The hero (featured) source. Coins.ph normally; PDAX while Coins.ph is suspended — Coins.ph then
+// moves under "Other options", greyed out, with its steps kept intact for when it comes back.
+const HERO_SOURCE_ID: FundSourceId = COINS_PH_SUSPENDED ? 'pdax' : 'coinsph';
+const isPausedSource = (id: FundSourceId) => id === 'coinsph' && COINS_PH_SUSPENDED;
+
 // Only the free/not-free distinction is shown to users now (0 = free, anything else = a small
 // fee). The exact cents are no longer displayed — they vary and the exchange shows the real
 // figure at withdrawal — but the values are kept here as the free-vs-small-fee signal.
@@ -102,6 +108,7 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
 // Binance was removed from the hero slot.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
    coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
+   pdax: 'Recommended · buy USDC with PHP, cash out to bank, GCash or Maya',
    moneybees: "External option · you follow Moneybees' own process"
 };
 
@@ -395,7 +402,16 @@ export default function Repay() {
    // short on USDC. It shows their own Base Account address and watches their public
    // on-chain balance — Moodeng never receives or forwards the money.
    const [showAddFunds, setShowAddFunds] = useState(true);
-   const [fundSource, setFundSource] = useState<FundSourceId>('coinsph');
+   const [fundSource, setFundSource] = useState<FundSourceId>(HERO_SOURCE_ID);
+   const [showCoinsPaused, setShowCoinsPaused] = useState(false);
+   const selectFundSource = (id: FundSourceId) => {
+      if (isPausedSource(id)) {
+         setShowCoinsPaused(true);
+         return;
+      }
+      setShowCoinsPaused(false);
+      setFundSource(id);
+   };
    const [copiedAddress, setCopiedAddress] = useState(false);
    const [showHowToVideo, setShowHowToVideo] = useState(false);
    // The two recommended sources (Moneybees, Coins.ph) show by default; GCrypto/PDAX stay
@@ -422,15 +438,17 @@ export default function Repay() {
    const renderSourcePill = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
       const sourceFee = FUND_SOURCE_FEES[source.id];
+      const paused = isPausedSource(source.id);
 
       return (
          <button
             type="button"
             key={source.id}
-            onClick={() => setFundSource(source.id)}
+            onClick={() => selectFundSource(source.id)}
             aria-pressed={isSelected}
+            aria-disabled={paused || undefined}
             style={{ touchAction: 'manipulation' }}
-            className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
+            className={`flex min-h-[44px] w-full cursor-pointer items-center gap-2 rounded-2xl px-3.5 py-1.5 text-md-b2 font-semibold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${paused ? 'opacity-50 grayscale ' : ''}${
                isSelected
                   ? 'border-2 border-[#6c3fe0] bg-[#f3effe] text-[#1a1240] dark:bg-[#2a1740] dark:text-white'
                   : 'border border-[#e9e3f8] bg-white text-[#6b6090] hover:border-md-primary-300 dark:border-[#3d2a60] dark:bg-[#1e1535] dark:text-[#a095c8]'
@@ -439,7 +457,11 @@ export default function Repay() {
             {renderSourceLogo(source.id, false)}
             <span className="flex min-w-0 flex-1 items-center gap-1.5">
                {source.label}
-               {sourceFee === 0 ? (
+               {paused ? (
+                  <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-1.5 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">
+                     Paused
+                  </span>
+               ) : sourceFee === 0 ? (
                   <span className="rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
                      Free
                   </span>
@@ -453,7 +475,7 @@ export default function Repay() {
       );
    };
 
-   // Prominent, full-width primary source — always Coins.ph (fundSources[0]), for everyone.
+   // Prominent, full-width primary source — HERO_SOURCE_ID (Coins.ph, or PDAX while it's suspended), for everyone.
    // Fee badge sits inline with the name; selection is conveyed by border + fill alone (no checkmark).
    const renderHeroSource = (source: (typeof fundSources)[number]) => {
       const isSelected = fundSource === source.id;
@@ -463,7 +485,7 @@ export default function Repay() {
       return (
          <button
             type="button"
-            onClick={() => setFundSource(source.id)}
+            onClick={() => selectFundSource(source.id)}
             aria-pressed={isSelected}
             style={{ touchAction: 'manipulation' }}
             className={`flex w-full cursor-pointer items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-300 ${
@@ -711,7 +733,7 @@ export default function Repay() {
    useEffect(() => {
       if (geoLoading) return;
       if (geoAllowed) {
-         setFundSource((current) => (current === 'binance' ? 'coinsph' : current));
+         setFundSource((current) => (current === 'binance' ? HERO_SOURCE_ID : current));
       }
    }, [geoAllowed, geoLoading]);
 
@@ -1378,7 +1400,10 @@ export default function Repay() {
                                     <>
                                        <p className="mb-3 text-xs text-[#6b6090]">
                                           Pick where you'll buy or withdraw USDC.{' '}
-                                          <span className="font-semibold text-[#6c3fe0]">Coins.ph</span> works well for most people
+                                          <span className="font-semibold text-[#6c3fe0]">
+                                             {fundSources.find((source) => source.id === HERO_SOURCE_ID)?.label}
+                                          </span>{' '}
+                                          works well for most people
                                           {!inPhilippines ? (
                                              <>
                                                 {' '}
@@ -1391,7 +1416,7 @@ export default function Repay() {
                                           )}
                                        </p>
 
-                                       {renderHeroSource(fundSources[0])}
+                                       {renderHeroSource(fundSources.find((source) => source.id === HERO_SOURCE_ID) ?? fundSources[0])}
 
                                        <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>
 
@@ -1399,12 +1424,16 @@ export default function Repay() {
                                           // Local rails always show. Binance is added here ONLY for users detected
                                           // outside the Philippines (see the fundSources comment above for why) — it's
                                           // an added option abroad, never a replacement for the local rails.
+                                          // Whichever of Coins.ph/PDAX isn't the hero lives here; a suspended
+                                          // Coins.ph shows greyed out rather than disappearing.
                                           const otherSources = fundSources.filter(
                                              (source) =>
-                                                source.id === 'gcrypto' ||
-                                                source.id === 'pdax' ||
-                                                (source.id === 'binance' && !inPhilippines)
-                                          );
+                                                source.id !== HERO_SOURCE_ID &&
+                                                (source.id === 'gcrypto' ||
+                                                   source.id === 'pdax' ||
+                                                   source.id === 'coinsph' ||
+                                                   (source.id === 'binance' && !inPhilippines))
+                                          ).sort((a, b) => Number(isPausedSource(a.id)) - Number(isPausedSource(b.id)));
                                           const otherSelected = otherSources.some((source) => source.id === fundSource);
                                           const expanded = showMoreSources || otherSelected;
 
@@ -1427,6 +1456,17 @@ export default function Repay() {
                                                 {expanded ? (
                                                    <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                                                       {otherSources.map((source) => renderSourcePill(source))}
+                                                   </div>
+                                                ) : null}
+                                                {expanded && showCoinsPaused ? (
+                                                   <div
+                                                      role="status"
+                                                      className="mt-2 rounded-xl border border-[#e9e3f8] bg-[#f8f6fd] px-3.5 py-3 dark:border-[#3d2a60] dark:bg-[#1e1535]"
+                                                   >
+                                                      <p className="text-xs font-semibold text-[#1a1240] dark:text-white">{COINS_PH_SUSPENDED_TITLE}</p>
+                                                      <p className="mt-0.5 text-[11px] leading-relaxed text-[#6b6090] dark:text-[#a095c8]">
+                                                         {COINS_PH_SUSPENDED_MESSAGE}
+                                                      </p>
                                                    </div>
                                                 ) : null}
                                              </>
