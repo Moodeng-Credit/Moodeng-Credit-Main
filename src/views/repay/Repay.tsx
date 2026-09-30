@@ -38,6 +38,7 @@ import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
+import { useLocalization } from '@/i18n';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
@@ -70,6 +71,13 @@ const quickRepaymentFractions = [
 // rails. Binance stays excluded specifically for users detected IN the Philippines, where
 // Binance doesn't operate. Order matters: index 0 renders as the hero card, index 1 as the
 // pill below it.
+//
+// Indonesian borrowers (IP in Indonesia, or the app set to Bahasa Indonesia) get Indonesian
+// exchanges only: Reku leads, Tokocrypto is the pill, Pintu/Indodax sit under "Other options".
+// Unlike Filipinos abroad, there are no Filipino borrowers living in Indonesia on the platform, so
+// the Philippine rails and Binance aren't offered there. All four Indonesian exchanges support
+// USDC withdrawals on Base (checked 2026-09-30); they have no deep link because their app URL
+// schemes aren't documented — the web URL hands off to the app where it's installed.
 const fundSources = [
    { id: 'coinsph', label: 'Coins.ph', action: 'Open Coins.ph', href: 'https://coins.ph', deepLink: 'coinsph://' },
    { id: 'moneybees', label: 'Moneybees', action: 'Visit Moneybees', href: 'https://www.moneybees.ph', deepLink: null },
@@ -81,15 +89,51 @@ const fundSources = [
       action: 'Open Binance',
       href: 'https://www.binance.com/en/my/wallet/account/main/withdrawal/crypto/USDC',
       deepLink: 'bnc://app.binance.com/'
-   }
+   },
+   { id: 'reku', label: 'Reku', action: 'Open Reku', href: 'https://reku.id', deepLink: null },
+   { id: 'tokocrypto', label: 'Tokocrypto', action: 'Open Tokocrypto', href: 'https://www.tokocrypto.com', deepLink: null },
+   { id: 'indodax', label: 'Indodax', action: 'Open Indodax', href: 'https://indodax.com', deepLink: null },
+   { id: 'pintu', label: 'Pintu', action: 'Open Pintu', href: 'https://pintu.co.id', deepLink: null }
 ] as const;
 
 type FundSourceId = (typeof fundSources)[number]['id'];
+type FundSource = (typeof fundSources)[number];
+
+const getFundSource = (id: FundSourceId): FundSource => fundSources.find((source) => source.id === id) ?? fundSources[0];
 
 // The hero (featured) source. Coins.ph normally; PDAX while Coins.ph is suspended — Coins.ph then
 // moves under "Other options", greyed out, with its steps kept intact for when it comes back.
 const HERO_SOURCE_ID: FundSourceId = COINS_PH_SUSPENDED ? 'pdax' : 'coinsph';
 const isPausedSource = (id: FundSourceId) => id === 'coinsph' && COINS_PH_SUSPENDED;
+
+// Indonesian layout: Reku is the hero — buying USDC with IDR is free in its Lightning mode (only the
+// 0.0111% CFX levy). Tokocrypto is the pill below it: its withdrawal fee is lower (0.2 vs 0.5 USDC)
+// but it charges ~0.15% to buy, so it only comes out cheaper on repayments under roughly $75.
+const INDONESIA_HERO_SOURCE_ID: FundSourceId = 'reku';
+const INDONESIA_PILL_SOURCE_ID: FundSourceId = 'tokocrypto';
+const INDONESIA_OTHER_SOURCE_IDS: readonly FundSourceId[] = ['pintu', 'indodax'];
+const INDONESIA_SOURCE_IDS: readonly FundSourceId[] = [INDONESIA_HERO_SOURCE_ID, INDONESIA_PILL_SOURCE_ID, ...INDONESIA_OTHER_SOURCE_IDS];
+
+// USDC-on-Base withdrawal fee each Indonesian exchange publishes, shown in the fee card so the
+// borrower knows how much extra to send. Checked 2026-09-30 against each exchange's own fee page:
+// reku.id/fees/crypto (0.5 on Base vs 1 on ERC20, min 2, plus a 0.042 SMS fee when confirming by
+// SMS), tokocrypto.com/en/fees/newschedule (0.2, min 3), and the wallet-transfer fees on
+// pintu.co.id/en/limit-and-fees (1). Indodax only shows its fee inside its app (1.06, read there on
+// 2026-09-30), which is why it sits after Pintu.
+const LISTED_BASE_WITHDRAWAL_FEE_USDC: Partial<Record<FundSourceId, number>> = {
+   reku: 0.5,
+   tokocrypto: 0.2,
+   pintu: 1,
+   indodax: 1.06
+};
+
+// Real app icons (from each exchange's App Store listing) for the Indonesian sources.
+const SOURCE_LOGO_SRC: Partial<Record<FundSourceId, string>> = {
+   reku: '/icons/exchanges/reku.png',
+   tokocrypto: '/icons/exchanges/tokocrypto.png',
+   indodax: '/icons/exchanges/indodax.png',
+   pintu: '/icons/exchanges/pintu.png'
+};
 
 // Only the free/not-free distinction is shown to users now (0 = free, anything else = a small
 // fee). The exact cents are no longer displayed — they vary and the exchange shows the real
@@ -99,17 +143,21 @@ const FUND_SOURCE_FEES: Record<FundSourceId, number | null> = {
    coinsph: null,
    gcrypto: 0.08,
    pdax: 0.08,
-   binance: 0.2
+   binance: 0.2,
+   reku: 0.5,
+   tokocrypto: 0.2,
+   indodax: 1.06,
+   pintu: 1
 };
 
 // Short pitch shown under the hero (primary) source so the recommendation explains itself.
-// coinsph is the only entry that's ever actually rendered (renderHeroSource is only ever
-// called with fundSources[0], i.e. coinsph) — the other entries are unused, kept from before
-// Binance was removed from the hero slot.
+// Only the hero's subtitle is ever rendered (PDAX or Coins.ph, or Reku for Indonesian borrowers);
+// the moneybees entry is unused, kept from before it left the hero slot.
 const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
    coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
    pdax: 'Recommended · buy USDC with PHP, cash out to bank, GCash or Maya',
-   moneybees: "External option · you follow Moneybees' own process"
+   moneybees: "External option · you follow Moneybees' own process",
+   reku: 'Recommended · no fee to buy USDC with IDR · cash out to your bank'
 };
 
 // Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
@@ -120,10 +168,18 @@ const FUND_SOURCE_PATHS: Record<FundSourceId, string> = {
    coinsph: 'Transfer → Send Crypto → USDC → External Wallet → paste address → Base network → confirm',
    gcrypto: 'GCash app → GCrypto → USDCBASE → Withdraw',
    pdax: 'Wallet → USDCBASE → Withdraw → Paste wallet address',
-   binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address'
+   binance: 'Wallet → Withdraw → USDC → Network: Base → Paste wallet address',
+   reku: 'Wallet → USDC → Send → External wallet → Network: Base → paste address → confirm',
+   tokocrypto: 'Wallet → Withdraw → Crypto → USDC → Network: Base → paste address → confirm',
+   indodax: 'Wallet → USDC → Withdraw → Address → Network: Base → paste address',
+   pintu: 'Wallet → USDC → Send → Network: Base → paste address → confirm'
 };
 
 const renderSourceLogo = (id: FundSourceId, isSelected = false) => {
+   const logoSrc = SOURCE_LOGO_SRC[id];
+   if (logoSrc) {
+      return <img src={logoSrc} alt="" aria-hidden="true" className="h-[18px] w-[18px] shrink-0 rounded-[5px]" />;
+   }
    if (id === 'moneybees') {
       // Yellow hexagon stays readable on both white and purple backgrounds
       return (
@@ -366,7 +422,21 @@ export default function Repay() {
       isBaseWallet: isBaseWalletProvider(user?.walletProvider),
       isPreview: usePreviewLoans
    });
-   const { allowed: geoAllowed, loading: geoLoading } = useGeoCheck(usePreviewLoans);
+   const { allowed: geoAllowed, countryCode: geoCountryCode, loading: geoLoading } = useGeoCheck(usePreviewLoans);
+   const { locale } = useLocalization();
+   // Preview mode skips the geo lookup; ?country=ID (or PH, US, …) stands in for it.
+   const previewCountry = usePreviewLoans ? (new URLSearchParams(location.search).get('country')?.toUpperCase() ?? null) : null;
+   // Geo no longer gates the page — anyone (including Filipinos abroad) can repay. The local
+   // rails (Coins.ph, Moneybees, GCrypto, PDAX) are always shown; `inPhilippines` only decides
+   // whether Binance is ALSO offered (it's excluded specifically for users detected IN the
+   // Philippines, where Binance doesn't operate — see the fundSources comment above). We don't
+   // assume a location while the check is still resolving — the source list shows a loader
+   // until `geoLoading` clears.
+   const inPhilippines = previewCountry ? previewCountry === 'PH' : geoAllowed;
+   // Indonesian borrowers get Indonesian exchanges up front (see the fundSources comment). The app
+   // language counts too, so an Indonesian on a VPN or abroad still sees their own exchanges.
+   const inIndonesia = (previewCountry ?? geoCountryCode) === 'ID' || locale === 'id';
+   const heroSourceId = inIndonesia ? INDONESIA_HERO_SOURCE_ID : HERO_SOURCE_ID;
    const repayLoans = usePreviewLoans ? previewLoans : loans;
    const { hasFetched: hasCheckedRepayLoans, isLoading: isCheckingRepayLoans } = useLoanData({
       userId: user.id,
@@ -402,7 +472,7 @@ export default function Repay() {
    // short on USDC. It shows their own Base Account address and watches their public
    // on-chain balance — Moodeng never receives or forwards the money.
    const [showAddFunds, setShowAddFunds] = useState(true);
-   const [fundSource, setFundSource] = useState<FundSourceId>(HERO_SOURCE_ID);
+   const [fundSource, setFundSource] = useState<FundSourceId>(heroSourceId);
    const [showCoinsPaused, setShowCoinsPaused] = useState(false);
    const selectFundSource = (id: FundSourceId) => {
       if (isPausedSource(id)) {
@@ -733,9 +803,16 @@ export default function Repay() {
    useEffect(() => {
       if (geoLoading) return;
       if (geoAllowed) {
-         setFundSource((current) => (current === 'binance' ? HERO_SOURCE_ID : current));
+         setFundSource((current) => (current === 'binance' ? heroSourceId : current));
       }
-   }, [geoAllowed, geoLoading]);
+   }, [geoAllowed, geoLoading, heroSourceId]);
+
+   // The Indonesian layout is only known once geo resolves (or the language changes). Indonesian
+   // and non-Indonesian borrowers are offered different sources, so a selection that isn't offered
+   // in the current layout falls back to its hero; a source still on offer is left alone.
+   useEffect(() => {
+      setFundSource((current) => (INDONESIA_SOURCE_IDS.includes(current) === inIndonesia ? current : heroSourceId));
+   }, [heroSourceId, inIndonesia]);
 
    // When we learn the borrower doesn't hold enough USDC to repay, surface the add-funds
    // helper automatically so the next step is visible without hunting for it. Runs only
@@ -1055,14 +1132,6 @@ export default function Repay() {
    );
 
    useBottomNavPrimaryAction(bottomNavRepayAction);
-
-   // Geo no longer gates the page — anyone (including Filipinos abroad) can repay. The local
-   // rails (Coins.ph, Moneybees, GCrypto, PDAX) are always shown; `inPhilippines` only decides
-   // whether Binance is ALSO offered (it's excluded specifically for users detected IN the
-   // Philippines, where Binance doesn't operate — see the fundSources comment above). We don't
-   // assume a location while the check is still resolving — the source list shows a loader
-   // until `geoLoading` clears.
-   const inPhilippines = geoAllowed;
 
    const shouldShowLoanCheckLoading =
       !usePreviewLoans && Boolean(user.id) && activeLoans.length === 0 && (!hasCheckedRepayLoans || isCheckingRepayLoans);
@@ -1400,11 +1469,15 @@ export default function Repay() {
                                     <>
                                        <p className="mb-3 text-xs text-[#6b6090]">
                                           Pick where you'll buy or withdraw USDC.{' '}
-                                          <span className="font-semibold text-[#6c3fe0]">
-                                             {fundSources.find((source) => source.id === HERO_SOURCE_ID)?.label}
-                                          </span>{' '}
-                                          works well for most people
-                                          {!inPhilippines ? (
+                                          <span className="font-semibold text-[#6c3fe0]">{getFundSource(heroSourceId).label}</span> works
+                                          well for most people
+                                          {inIndonesia ? (
+                                             <>
+                                                {' '}
+                                                in Indonesia. <span className="font-semibold text-[#6c3fe0]">Tokocrypto</span> works too;
+                                                Pintu and Indodax are under "Other options".
+                                             </>
+                                          ) : !inPhilippines ? (
                                              <>
                                                 {' '}
                                                 — and works the same whether you're in the Philippines or traveling.{' '}
@@ -1416,9 +1489,11 @@ export default function Repay() {
                                           )}
                                        </p>
 
-                                       {renderHeroSource(fundSources.find((source) => source.id === HERO_SOURCE_ID) ?? fundSources[0])}
+                                       {renderHeroSource(getFundSource(heroSourceId))}
 
-                                       <div className="mt-1.5">{renderSourcePill(fundSources[1])}</div>
+                                       <div className="mt-1.5">
+                                          {renderSourcePill(inIndonesia ? getFundSource(INDONESIA_PILL_SOURCE_ID) : fundSources[1])}
+                                       </div>
 
                                        {(() => {
                                           // Local rails always show. Binance is added here ONLY for users detected
@@ -1426,14 +1501,19 @@ export default function Repay() {
                                           // an added option abroad, never a replacement for the local rails.
                                           // Whichever of Coins.ph/PDAX isn't the hero lives here; a suspended
                                           // Coins.ph shows greyed out rather than disappearing.
-                                          const otherSources = fundSources.filter(
-                                             (source) =>
-                                                source.id !== HERO_SOURCE_ID &&
-                                                (source.id === 'gcrypto' ||
-                                                   source.id === 'pdax' ||
-                                                   source.id === 'coinsph' ||
-                                                   (source.id === 'binance' && !inPhilippines))
-                                          ).sort((a, b) => Number(isPausedSource(a.id)) - Number(isPausedSource(b.id)));
+                                          // Indonesian borrowers get only Pintu/Indodax here (see the fundSources comment).
+                                          const otherSources = inIndonesia
+                                             ? INDONESIA_OTHER_SOURCE_IDS.map(getFundSource)
+                                             : fundSources
+                                                  .filter(
+                                                     (source) =>
+                                                        source.id !== HERO_SOURCE_ID &&
+                                                        (source.id === 'gcrypto' ||
+                                                           source.id === 'pdax' ||
+                                                           source.id === 'coinsph' ||
+                                                           (source.id === 'binance' && !inPhilippines))
+                                                  )
+                                                  .sort((a, b) => Number(isPausedSource(a.id)) - Number(isPausedSource(b.id)));
                                           const otherSelected = otherSources.some((source) => source.id === fundSource);
                                           const expanded = showMoreSources || otherSelected;
 
@@ -1463,7 +1543,9 @@ export default function Repay() {
                                                       role="status"
                                                       className="mt-2 rounded-xl border border-[#e9e3f8] bg-[#f8f6fd] px-3.5 py-3 dark:border-[#3d2a60] dark:bg-[#1e1535]"
                                                    >
-                                                      <p className="text-xs font-semibold text-[#1a1240] dark:text-white">{COINS_PH_SUSPENDED_TITLE}</p>
+                                                      <p className="text-xs font-semibold text-[#1a1240] dark:text-white">
+                                                         {COINS_PH_SUSPENDED_TITLE}
+                                                      </p>
                                                       <p className="mt-0.5 text-[11px] leading-relaxed text-[#6b6090] dark:text-[#a095c8]">
                                                          {COINS_PH_SUSPENDED_MESSAGE}
                                                       </p>
@@ -1552,9 +1634,9 @@ export default function Repay() {
                                           ⚠️ Send on the BASE network only
                                        </p>
                                        <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#b91c1c] dark:text-[#fca5a5]">
-                                          USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong
-                                          chain and is lost forever — it cannot be recovered. When {activeSource.label} asks which
-                                          network, choose <span className="font-extrabold underline">Base</span>.
+                                          USDC sent on Ethereum, Polygon, or any other network goes to this address on the wrong chain and
+                                          is lost forever — it cannot be recovered. When {activeSource.label} asks which network, choose{' '}
+                                          <span className="font-extrabold underline">Base</span>.
                                        </p>
                                     </div>
                                  </div>
@@ -1632,7 +1714,12 @@ export default function Repay() {
                                           </p>
                                           <div className="mt-2.5 flex items-center gap-1.5 rounded-lg bg-[#ede9f8] px-2.5 py-1.5 dark:bg-[#2a1f4f]">
                                              <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-[#6c3fe0]" aria-hidden="true" />
-                                             {activeSource.id === 'binance' || activeSource.id === 'coinsph' ? (
+                                             {activeSource.id === 'binance' ||
+                                             activeSource.id === 'reku' ||
+                                             activeSource.id === 'coinsph' ||
+                                             activeSource.id === 'tokocrypto' ||
+                                             activeSource.id === 'indodax' ||
+                                             activeSource.id === 'pintu' ? (
                                                 <span className="text-[11px] font-semibold text-[#4a1fb8] dark:text-[#a78bfa]">
                                                    Select <strong>Base</strong> network — not Ethereum or Polygon
                                                 </span>
@@ -1682,6 +1769,7 @@ export default function Repay() {
                                     {(() => {
                                        const fee = FUND_SOURCE_FEES[activeSource.id];
                                        if (fee === 0) return null;
+                                       const listedFee = LISTED_BASE_WITHDRAWAL_FEE_USDC[activeSource.id];
                                        return (
                                           <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3 dark:bg-[#1e1535]">
                                              <div className="flex items-center justify-between text-[12px]">
@@ -1690,7 +1778,7 @@ export default function Repay() {
                                                    {activeSource.label}'s fee
                                                 </span>
                                                 <span className="whitespace-nowrap rounded-full bg-[#ede9f8] px-2 py-0.5 text-[10px] font-bold text-[#6b6090] dark:bg-[#2a1f4f] dark:text-[#a095c8]">
-                                                   Small fee
+                                                   {listedFee !== undefined ? `${listedFee} USDC` : 'Small fee'}
                                                 </span>
                                              </div>
                                              <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]">
@@ -1703,7 +1791,9 @@ export default function Repay() {
                                                 </span>
                                              </div>
                                              <p className="mt-2 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                                                Send a little extra to cover {activeSource.label}'s fee — Moodeng never charges to repay.
+                                                {listedFee !== undefined
+                                                   ? `${activeSource.label} lists ${listedFee} USDC per withdrawal on Base — send that much extra. Moodeng never charges to repay.`
+                                                   : `Send a little extra to cover ${activeSource.label}'s fee — Moodeng never charges to repay.`}
                                              </p>
                                           </div>
                                        );
