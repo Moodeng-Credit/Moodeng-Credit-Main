@@ -42,7 +42,7 @@ export const BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'How do I convert my loan into my local bank account?',
-      answer: `Send your USDC to an exchange or local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), and more — sell it there, and withdraw the local currency straight to your bank or e-wallet.
+      answer: `Send your USDC to an exchange or local service — Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto (GCash), and more — sell it there, and withdraw the local currency straight to your bank or e-wallet.
 
 The key detail: always choose Base as the network when sending USDC. The full guide has a video walkthrough and step-by-step instructions for each service.`,
       readMorePath: '/academy/money/withdraw',
@@ -51,7 +51,7 @@ The key detail: always choose Base as the network when sending USDC. The full gu
    {
       id: 'how-to-repay',
       question: 'How do I repay my loan?',
-      answer: `Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph, PDAX, GCrypto, and more) — always on the Base network.
+      answer: `Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto, and more) — always on the Base network.
 
 Repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. The full guide walks through each way to repay.`,
       readMorePath: '/academy/money/repay',
@@ -154,7 +154,7 @@ const FILIPINO_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Paano ko ililipat ang loan ko sa local bank account ko?',
-      answer: `Ipadala ang USDC mo sa exchange o local service — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), at iba pa — ibenta ito doon, at i-withdraw ang local currency direkta sa bank o e-wallet mo.
+      answer: `Ipadala ang USDC mo sa exchange o local service — Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto (GCash), at iba pa — ibenta ito doon, at i-withdraw ang local currency direkta sa bank o e-wallet mo.
 
 Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagpapadala ng USDC. May video walkthrough at step-by-step na instructions para sa bawat service sa buong guide.`,
       readMorePath: '/academy/money/withdraw',
@@ -163,7 +163,7 @@ Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagpapad
    {
       id: 'how-to-repay',
       question: 'Paano ko babayaran ang loan ko?',
-      answer: `Buksan ang Magbayad screen — makikita mo doon ang eksaktong halaga at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph, PDAX, GCrypto, at iba pa) — palaging sa Base network.
+      answer: `Buksan ang Magbayad screen — makikita mo doon ang eksaktong halaga at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto, at iba pa) — palaging sa Base network.
 
 Magbayad bago ang due date — ang on-time repayment ay nagpapataas ng Pandesal points mo at nag-u-unlock ng mas mataas na antas ng kredito. Nasa buong guide ang bawat paraan ng pagbabayad.`,
       readMorePath: '/academy/money/repay',
@@ -265,7 +265,7 @@ const INDONESIAN_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Bagaimana cara mengubah pinjaman saya ke rekening bank lokal?',
-      answer: `Kirim USDC kamu ke exchange atau layanan lokal — Binance P2P, Coins.ph, PDAX, GCrypto (GCash), dan lainnya — jual di sana, lalu withdraw mata uang lokal langsung ke bank atau e-wallet kamu.
+      answer: `Kirim USDC kamu ke exchange atau layanan lokal — Binance P2P, Coins.ph (sementara dijeda), PDAX, GCrypto (GCash), dan lainnya — jual di sana, lalu withdraw mata uang lokal langsung ke bank atau e-wallet kamu.
 
 Detail penting: selalu pilih Base sebagai network saat mengirim USDC. Panduan lengkap berisi video walkthrough dan langkah-langkah untuk setiap layanan.`,
       readMorePath: '/academy/money/withdraw',
@@ -274,7 +274,7 @@ Detail penting: selalu pilih Base sebagai network saat mengirim USDC. Panduan le
    {
       id: 'how-to-repay',
       question: 'Bagaimana cara membayar pinjaman saya?',
-      answer: `Buka layar Bayar — di sana terlihat jumlah pasti dan alamat pembayaran. Kirim USDC ke sana dari wallet, exchange, atau layanan lokal mana pun. Jika belum punya USDC, beli dulu (Binance P2P, Coins.ph, PDAX, GCrypto, dan lainnya) — selalu di network Base.
+      answer: `Buka layar Bayar — di sana terlihat jumlah pasti dan alamat pembayaran. Kirim USDC ke sana dari wallet, exchange, atau layanan lokal mana pun. Jika belum punya USDC, beli dulu (Binance P2P, Coins.ph (sementara dijeda), PDAX, GCrypto, dan lainnya) — selalu di network Base.
 
 Bayar sebelum tanggal jatuh tempo — pembayaran tepat waktu membangun poin Pandesal dan membuka level kredit lebih tinggi. Panduan lengkap menjelaskan setiap cara membayar.`,
       readMorePath: '/academy/money/repay',
@@ -374,7 +374,7 @@ const THAI_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'ฉันจะแปลงเงินกู้เข้าบัญชีธนาคารท้องถิ่นได้อย่างไร?',
-      answer: `ส่ง USDC ของคุณไปยัง exchange หรือบริการท้องถิ่น — Binance P2P, Coins.ph, PDAX, GCrypto (GCash) และอื่น ๆ — ขายที่นั่น แล้วถอนสกุลเงินท้องถิ่นเข้าธนาคารหรือ e-wallet ของคุณโดยตรง
+      answer: `ส่ง USDC ของคุณไปยัง exchange หรือบริการท้องถิ่น — Binance P2P, Coins.ph (ระงับชั่วคราว), PDAX, GCrypto (GCash) และอื่น ๆ — ขายที่นั่น แล้วถอนสกุลเงินท้องถิ่นเข้าธนาคารหรือ e-wallet ของคุณโดยตรง
 
 รายละเอียดสำคัญ: เลือก Base เป็นเครือข่ายเสมอเมื่อส่ง USDC คู่มือฉบับเต็มมีวิดีโอสาธิตและขั้นตอนของแต่ละบริการ`,
       readMorePath: '/academy/money/withdraw',
@@ -383,7 +383,7 @@ const THAI_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'how-to-repay',
       question: 'ฉันจะชำระคืนเงินกู้ได้อย่างไร?',
-      answer: `เปิดหน้าชำระเงิน — จะแสดงจำนวนเงินที่ต้องชำระและที่อยู่สำหรับชำระคืน ส่ง USDC ไปที่นั่นจากกระเป๋า, exchange หรือบริการท้องถิ่นใดก็ได้ หากยังไม่มี USDC ให้ซื้อก่อน (Binance P2P, Coins.ph, PDAX, GCrypto และอื่น ๆ) — ใช้เครือข่าย Base เสมอ
+      answer: `เปิดหน้าชำระเงิน — จะแสดงจำนวนเงินที่ต้องชำระและที่อยู่สำหรับชำระคืน ส่ง USDC ไปที่นั่นจากกระเป๋า, exchange หรือบริการท้องถิ่นใดก็ได้ หากยังไม่มี USDC ให้ซื้อก่อน (Binance P2P, Coins.ph (ระงับชั่วคราว), PDAX, GCrypto และอื่น ๆ) — ใช้เครือข่าย Base เสมอ
 
 ชำระก่อนวันครบกำหนด — การชำระตรงเวลาช่วยเพิ่มแต้ม Pandesal และปลดล็อกระดับเครดิตที่สูงขึ้น คู่มือฉบับเต็มอธิบายทุกวิธีการชำระ`,
       readMorePath: '/academy/money/repay',
@@ -473,7 +473,7 @@ const VIETNAMESE_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
       question: 'Làm sao chuyển khoản vay về tài khoản ngân hàng địa phương?',
-      answer: `Gửi USDC của bạn đến sàn giao dịch hoặc dịch vụ địa phương — Binance P2P, Coins.ph, PDAX, GCrypto (GCash) và nhiều nơi khác — bán ở đó, rồi rút nội tệ thẳng về ngân hàng hoặc ví điện tử của bạn.
+      answer: `Gửi USDC của bạn đến sàn giao dịch hoặc dịch vụ địa phương — Binance P2P, Coins.ph (tạm ngưng), PDAX, GCrypto (GCash) và nhiều nơi khác — bán ở đó, rồi rút nội tệ thẳng về ngân hàng hoặc ví điện tử của bạn.
 
 Chi tiết quan trọng: luôn chọn Base làm mạng khi gửi USDC. Hướng dẫn đầy đủ có video minh họa và các bước cho từng dịch vụ.`,
       readMorePath: '/academy/money/withdraw',
@@ -482,7 +482,7 @@ Chi tiết quan trọng: luôn chọn Base làm mạng khi gửi USDC. Hướng 
    {
       id: 'how-to-repay',
       question: 'Tôi trả khoản vay bằng cách nào?',
-      answer: `Mở màn hình Trả nợ — ở đó hiển thị số tiền chính xác và địa chỉ trả nợ. Gửi USDC đến đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu chưa có USDC, hãy mua trước (Binance P2P, Coins.ph, PDAX, GCrypto và nhiều nơi khác) — luôn dùng mạng Base.
+      answer: `Mở màn hình Trả nợ — ở đó hiển thị số tiền chính xác và địa chỉ trả nợ. Gửi USDC đến đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu chưa có USDC, hãy mua trước (Binance P2P, Coins.ph (tạm ngưng), PDAX, GCrypto và nhiều nơi khác) — luôn dùng mạng Base.
 
 Trả trước ngày đến hạn — trả đúng hạn giúp tăng điểm Pandesal và mở khóa hạng tín dụng cao hơn. Hướng dẫn đầy đủ mô tả từng cách trả nợ.`,
       readMorePath: '/academy/money/repay',

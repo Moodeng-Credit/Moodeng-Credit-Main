@@ -42,6 +42,7 @@ import useWallet, { type PaymentMethod, useActivePaymentMethod } from '@/hooks/u
 
 import { parseDateSafely } from '@/utils/dateFormatters';
 
+import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
@@ -545,18 +546,29 @@ type PickerRowProps = {
    line2: string;
    recommended?: boolean;
    warn?: boolean;
+   /** Greyed out and never selected; a tap still calls onSelect so the screen can explain why. */
+   paused?: boolean;
 };
 
-function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommended, warn }: PickerRowProps) {
-   const active = selected === id;
+function PickerRow({ id, selected, onSelect, icon, name, line1, line2, recommended, warn, paused }: PickerRowProps) {
+   const active = selected === id && !paused;
    return (
-      <button onClick={() => onSelect(id)} className="relative w-full text-left outline-none">
-         {recommended && (
+      <button
+         onClick={() => onSelect(id)}
+         aria-disabled={paused || undefined}
+         className={`relative w-full text-left outline-none ${paused ? 'opacity-50 grayscale' : ''}`}
+      >
+         {paused && (
+            <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--text-faint)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
+               <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Temporarily paused</span>
+            </div>
+         )}
+         {recommended && !paused && (
             <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--primary)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
                <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Recommended</span>
             </div>
          )}
-         {warn && !recommended && (
+         {warn && !recommended && !paused && (
             <div className="absolute -top-[9px] left-[14px] z-10 bg-[var(--amber-icon)] rounded-full px-[7px] py-[2px] shadow-sm flex items-center justify-center">
                <span className="text-[8px] font-bold text-white uppercase tracking-[0.4px] leading-none">Verify Base first</span>
             </div>
@@ -592,7 +604,31 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
    // a PH mobile carrier as another country anyway. So every provider is always shown below,
    // Coins.ph stays the recommended default for everyone, and a user genuinely abroad can still
    // pick Binance themselves — location must never hide a rail or auto-switch the default.
-   const [selected, setSelected] = useState<Provider>('coinsph');
+   // While Coins.ph is suspended (config/paymentRails) PDAX takes its place as the default.
+   const [selected, setSelected] = useState<Provider>(COINS_PH_SUSPENDED ? 'pdax' : 'coinsph');
+   const [showCoinsPaused, setShowCoinsPaused] = useState(false);
+   const selectProvider = (id: Provider) => {
+      if (id === 'coinsph' && COINS_PH_SUSPENDED) {
+         setShowCoinsPaused(true);
+         return;
+      }
+      setShowCoinsPaused(false);
+      setSelected(id);
+   };
+
+   const coinsPhRow = (
+      <PickerRow
+         selected={selected}
+         onSelect={selectProvider}
+         id="coinsph"
+         recommended={!COINS_PH_SUSPENDED}
+         paused={COINS_PH_SUSPENDED}
+         icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
+         name="Coins.ph"
+         line1="Sell for pesos, withdraw to bank or GCash"
+         line2="Lowest fees · bank or GCash · ~30 min"
+      />
+   );
 
    const NAMES: Record<Provider, string> = {
       moneybees: 'Moneybees',
@@ -653,37 +689,42 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                 the recommended default for everyone; a user genuinely abroad can still pick
                 Binance themselves. */}
             <div className="space-y-[10px]">
+               {!COINS_PH_SUSPENDED && coinsPhRow}
+               {COINS_PH_SUSPENDED && (
+                  <PickerRow
+                     selected={selected}
+                     onSelect={selectProvider}
+                     id="pdax"
+                     recommended
+                     icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
+                     name="PDAX"
+                     line1="Sell for pesos, withdraw to bank or e-wallet"
+                     line2="Bank, GCash or Maya · ~30 min"
+                  />
+               )}
                <PickerRow
                   selected={selected}
-                  onSelect={setSelected}
-                  id="coinsph"
-                  recommended
-                  icon={<CoinsPhAppIcon className="w-[46px] h-[46px]" />}
-                  name="Coins.ph"
-                  line1="Sell for pesos, withdraw to bank or GCash"
-                  line2="Lowest fees · bank or GCash · ~30 min"
-               />
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
+                  onSelect={selectProvider}
                   id="gcash"
                   icon={<GCashAppIcon className="w-[46px] h-[46px]" />}
                   name="GCrypto"
                   line1="Cash out straight to your GCash"
                   line2="GCash balance · ~5 min"
                />
+               {!COINS_PH_SUSPENDED && (
+                  <PickerRow
+                     selected={selected}
+                     onSelect={selectProvider}
+                     id="pdax"
+                     icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
+                     name="PDAX"
+                     line1="Sell for pesos, withdraw to bank or e-wallet"
+                     line2="Bank, GCash or Maya · ~30 min"
+                  />
+               )}
                <PickerRow
                   selected={selected}
-                  onSelect={setSelected}
-                  id="pdax"
-                  icon={<PdaxAppIcon className="w-[46px] h-[46px]" />}
-                  name="PDAX"
-                  line1="Sell for pesos, withdraw to bank or e-wallet"
-                  line2="Bank, GCash or Maya · ~30 min"
-               />
-               <PickerRow
-                  selected={selected}
-                  onSelect={setSelected}
+                  onSelect={selectProvider}
                   id="binance"
                   icon={<BinanceAppIcon className="w-[46px] h-[46px]" />}
                   name="Binance"
@@ -692,13 +733,26 @@ function CelebrateScreen({ onWithdraw, onLater }: { onWithdraw: (p: Provider) =>
                />
                <PickerRow
                   selected={selected}
-                  onSelect={setSelected}
+                  onSelect={selectProvider}
                   id="moneybees"
                   icon={<MoneybeesAppIcon className="w-[46px] h-[46px]" />}
                   name="Moneybees"
                   line1="External option · buy and sell via their own process"
                   line2="You follow Moneybees' instructions directly"
                />
+               {COINS_PH_SUSPENDED && coinsPhRow}
+               {showCoinsPaused && (
+                  <div
+                     role="status"
+                     className="rounded-[14px] border border-[var(--border-card)] bg-[var(--surface-2)] px-[14px] py-[12px] flex gap-[10px]"
+                  >
+                     <Info className="w-[16px] h-[16px] text-[var(--text-muted)] shrink-0 mt-[1px]" />
+                     <div>
+                        <p className="text-[13px] font-semibold text-[var(--ink)]">{COINS_PH_SUSPENDED_TITLE}</p>
+                        <p className="text-[12px] text-[var(--text-muted)] leading-[17px] mt-[2px]">{COINS_PH_SUSPENDED_MESSAGE}</p>
+                     </div>
+                  </div>
+               )}
             </div>
 
             {selected !== 'moneybees' && <BaseOnlyNotice className="mt-[12px]" />}

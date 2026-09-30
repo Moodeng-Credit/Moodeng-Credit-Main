@@ -119,7 +119,7 @@ Withdraw USDC from your exchange account directly to the repayment address. Choo
 Buying USDC first, then repaying
 If you don't hold USDC yet, buy it first and send it to your wallet, then repay from there:
 - Binance P2P: buy USDC with local currency from other users, then withdraw on the Base network.
-- Coins.ph: buy USDC with PHP, then use Send Crypto → External Wallet → Base network.
+- Coins.ph (temporarily paused): buy USDC with PHP, then use Send Crypto → External Wallet → Base network.
 - GCrypto (GCash): if crypto is enabled in your GCash app, buy USDC and withdraw via USDCBASE.
 - PDAX: buy USDC with PHP and withdraw to your wallet on Base.
 - Moneybees (external option): an over-the-counter service some users may use to buy crypto through Moneybees' own process. Follow their instructions directly at https://www.moneybees.ph/.
@@ -139,7 +139,7 @@ Binance P2P
 Buy USDC with local currency directly from other users, then withdraw on the Base network.
 
 Philippine services
-- Coins.ph: buy USDC with PHP, then Send Crypto → External Wallet → Base network.
+- Coins.ph (temporarily paused): buy USDC with PHP, then Send Crypto → External Wallet → Base network.
 - PDAX: buy USDC with PHP and withdraw to your wallet on Base.
 - GCrypto (GCash): if crypto is enabled in your GCash app, buy and withdraw via USDCBASE.
 
@@ -167,7 +167,8 @@ Send USDC to your Binance account (always choose the Base network), then sell it
 PDAX
 A BSP-regulated Philippine exchange. Deposit USDC, sell for PHP, and withdraw to your bank account.
 
-Coins.ph
+Coins.ph (temporarily paused)
+Coins.ph has been temporarily suspended by the Philippine government, so cash-ins and cash-outs there aren't working right now — we'll update this as soon as it's back. Use PDAX or GCrypto in the meantime.
 Deposit USDC, convert to PHP, and cash out to your bank or GCash.
 
 GCrypto (GCash)

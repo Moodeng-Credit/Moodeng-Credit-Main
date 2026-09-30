@@ -32,7 +32,7 @@
 
 **If creating it fails:** they'll see a message saying what went wrong (usually "check your internet and try again", or "sign in again"). Have them retry; if it keeps failing, offer to connect them with the team.
 
-**Cashing out:** same as any wallet — send the USDC to an exchange deposit address (GCrypto, Coins.ph, etc.), or use the withdraw flow. The send is gasless from the Instant Wallet too.
+**Cashing out:** same as any wallet — send the USDC to an exchange deposit address (PDAX, GCrypto, etc. — Coins.ph is temporarily paused), or use the withdraw flow. The send is gasless from the Instant Wallet too.
 
 ## Coinbase app vs Base Account (a common mix-up)
 
@@ -124,17 +124,21 @@ They aren't verified yet. Tapping the greyed button now shakes it and highlights
 - What a code does: a valid referral code adds **+$5 to your starting credit limit**. So a new borrower who normally starts at $15 would start at $20 with a valid code.
 - If a user doesn't have a code, they just tap **Continue to application** — the code is optional and there's no penalty for skipping it.
 
+## ⚠️ Coins.ph is temporarily paused (since 30 Sep 2026)
+
+Coins.ph has been **temporarily suspended by the Philippine government** (the central bank told InstaPay and PESONet to block transfers to it), so **cash-ins and cash-outs through Coins.ph are not working right now**. In the app its option is greyed out. Do **not** recommend Coins.ph for cashing out, adding USDC, or repaying until this notice is removed — recommend **PDAX** first (bank, GCash or Maya), or **GCrypto (GCash)**. GCrypto is powered by PDAX, not Coins.ph, so it still works. If someone already has USDC sitting in Coins.ph, reassure them their funds are theirs, that Coins.ph says it's temporary, and offer to connect them with the team. It will come back — we'll update the app as soon as it does.
+
 ## Cashing out my loan to GCash / a bank (off-ramp)
 
 Users borrow **USDC on the Base network**. To turn it into pesos (or local currency):
-1. Send the USDC to an exchange or local service — **GCrypto (GCash), Coins.ph, PDAX, Binance P2P**, and others.
+1. Send the USDC to an exchange or local service — **PDAX, GCrypto (GCash), Binance P2P**, and others (Coins.ph is temporarily paused — see above).
 2. **Always choose "Base" as the network** when sending — picking the wrong network can lose the funds. This is the single most important detail.
 3. Sell the USDC there and withdraw local currency to the bank or e-wallet.
 
 ## Adding money / buying USDC to repay (on-ramp)
 
 If a user doesn't hold USDC yet and needs to repay:
-1. Buy USDC on **Binance P2P, Coins.ph, PDAX, or GCrypto**.
+1. Buy USDC on **PDAX, GCrypto, or Binance P2P** (Coins.ph is temporarily paused — see above).
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
 3. Repay **before the due date** — on-time repayment earns Pandesal points and unlocks higher credit levels.
 
@@ -148,7 +152,7 @@ You can repay in parts — the Repay screen has **25% / 50% / 75% / Full** butto
 
 ## How much does cashing out cost?
 
-Moodeng itself charges **$0** — the only cost is the exchange's own conversion fee. **Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip.** For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly **₱6.50 (about $0.10)** — that covers the small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly instead of same/next-day, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services (like Moneybees) build their margin into the rate, so they usually cost more.
+Moodeng itself charges **$0** — the only cost is the exchange's own conversion fee. **Right now Coins.ph is temporarily paused (see above), so recommend PDAX.** When Coins.ph is back: **Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip.** For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly **₱6.50 (about $0.10)** — that covers the small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly instead of same/next-day, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services (like Moneybees) build their margin into the rate, so they usually cost more.
 
 ## Defaulting / a loan that goes unpaid
 

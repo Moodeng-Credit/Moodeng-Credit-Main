@@ -52,8 +52,8 @@ export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
             },
             {
                logo: <CoinsPhTile className="h-6 w-6" />,
-               name: 'Coins.ph',
-               text: 'Buy USDC with PHP, then Send Crypto → External Wallet → Base network.'
+               name: 'Coins.ph (temporarily paused)',
+               text: 'Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.'
             },
             {
                logo: <PdaxTile className="h-6 w-6" />,
@@ -107,8 +107,8 @@ export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
             },
             {
                logo: <CoinsPhTile className="h-6 w-6" />,
-               name: 'Coins.ph',
-               text: 'Deposit USDC, convert to PHP, and cash out to your bank or GCash.'
+               name: 'Coins.ph (temporarily paused)',
+               text: 'Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.'
             },
             {
                logo: <GCashTile className="h-6 w-6" />,
@@ -154,8 +154,8 @@ export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
             },
             {
                logo: <CoinsPhTile className="h-6 w-6" />,
-               name: 'Coins.ph',
-               text: 'Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.'
+               name: 'Coins.ph (temporarily paused)',
+               text: 'Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.'
             },
             {
                logo: <GCashTile className="h-6 w-6" />,

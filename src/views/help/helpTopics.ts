@@ -446,13 +446,13 @@ export const HELP_TOPICS: HelpTopic[] = [
       steps: {
          en: [
             'Open the Repay screen — it shows the exact amount and lets you copy the repayment address.',
-            "If you don't hold USDC yet, buy some on Binance P2P, Coins.ph, PDAX, or GCrypto (GCash).",
+            "If you don't hold USDC yet, buy some on Binance P2P, Coins.ph (temporarily paused), PDAX, or GCrypto (GCash).",
             'Send the USDC to the repayment address, and choose Base as the network.',
             'You can pay in parts — the Repay screen has 25% / 50% / 75% / Full buttons, or a custom amount.'
          ],
          fil: [
             'Buksan ang Repay screen — ipinapakita nito ang eksaktong halaga at puwedeng kopyahin ang repayment address.',
-            'Kung wala ka pang USDC, bumili sa Binance P2P, Coins.ph, PDAX, o GCrypto (GCash).',
+            'Kung wala ka pang USDC, bumili sa Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, o GCrypto (GCash).',
             'Ipadala ang USDC sa repayment address, at piliin ang Base bilang network.',
             'Puwede kang magbayad nang paunti-unti — may 25% / 50% / 75% / Full na buttons ang Repay screen, o custom na halaga.'
          ]
@@ -473,12 +473,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How do I add USDC to my wallet?', fil: 'Paano magdagdag ng USDC sa wallet ko?' },
       steps: {
          en: [
-            'Buy USDC on an exchange you use — Binance P2P, Coins.ph, PDAX, or GCrypto (GCash).',
+            'Buy USDC on an exchange you use — Binance P2P, Coins.ph (temporarily paused), PDAX, or GCrypto (GCash).',
             'Withdraw / send it to your Moodeng wallet address.',
             'Always select USDC and the Base network when sending.'
          ],
          fil: [
-            'Bumili ng USDC sa exchange na ginagamit mo — Binance P2P, Coins.ph, PDAX, o GCrypto (GCash).',
+            'Bumili ng USDC sa exchange na ginagamit mo — Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, o GCrypto (GCash).',
             'I-withdraw / ipadala ito sa Moodeng wallet address mo.',
             'Laging piliin ang USDC at ang Base network kapag nagpapadala.'
          ]
@@ -527,12 +527,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How do I cash out to GCash or my bank?', fil: 'Paano mag-cash out sa GCash o sa bank ko?' },
       steps: {
          en: [
-            'Send your USDC to an exchange or service — GCrypto (GCash), Coins.ph, PDAX, or Binance P2P.',
+            'Send your USDC to an exchange or service — GCrypto (GCash), Coins.ph (temporarily paused), PDAX, or Binance P2P.',
             'When sending, always choose Base as the network.',
             'Sell the USDC there, then withdraw pesos to your bank or e-wallet.'
          ],
          fil: [
-            'Ipadala ang USDC mo sa exchange o serbisyo — GCrypto (GCash), Coins.ph, PDAX, o Binance P2P.',
+            'Ipadala ang USDC mo sa exchange o serbisyo — GCrypto (GCash), Coins.ph (pansamantalang naka-pause), PDAX, o Binance P2P.',
             'Kapag nagpapadala, laging piliin ang Base bilang network.',
             'Ibenta ang USDC doon, tapos i-withdraw ang piso sa bank o e-wallet mo.'
          ]
@@ -555,8 +555,8 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'Moodeng charges $0; exchanges have a small fee', fil: '$0 sa Moodeng; may maliit na fee ang exchange' },
       question: { en: 'How much does it cost to cash out?', fil: 'Magkano ang gastos sa pag-cash out?' },
       intro: {
-         en: "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more.",
-         fil: '$0 ang singil ng Moodeng mismo — ang tanging gastos ay ang conversion fee ng exchange. Ang Coins.ph ang pinakamura na nakita namin sa Pilipinas: mga 0.70% para sa buong round trip. Sa $15 na loan na hiniram at binayaran, ang all-in na gastos sa Coins.ph ay mga ₱6.50 (mga $0.10) — maliit na trading fee bawat direksyon, libreng PESONet bank cash-out, at maliit na network fee. Kung gusto mo agad ang piso, may flat na ₱5 ang InstaPay (round trip ≈ ₱11.50, mga $0.19). Ang ibang serbisyo ay nasa rate na ang margin nila, kaya kadalasan mas mahal.'
+         en: "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more. Note: Coins.ph is temporarily paused (suspended by the Philippine government) — until it's back, PDAX is the cheapest option we recommend.",
+         fil: '$0 ang singil ng Moodeng mismo — ang tanging gastos ay ang conversion fee ng exchange. Ang Coins.ph ang pinakamura na nakita namin sa Pilipinas: mga 0.70% para sa buong round trip. Sa $15 na loan na hiniram at binayaran, ang all-in na gastos sa Coins.ph ay mga ₱6.50 (mga $0.10) — maliit na trading fee bawat direksyon, libreng PESONet bank cash-out, at maliit na network fee. Kung gusto mo agad ang piso, may flat na ₱5 ang InstaPay (round trip ≈ ₱11.50, mga $0.19). Ang ibang serbisyo ay nasa rate na ang margin nila, kaya kadalasan mas mahal. Paalala: pansamantalang naka-pause ang Coins.ph (sinuspinde ng gobyerno) — habang wala pa ito, PDAX ang pinakamurang inirerekomenda namin.'
       },
       keywords: ['cash out cost', 'fee', 'how much', 'coins.ph fee', 'instapay']
    },

@@ -9,6 +9,8 @@ import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlag
 import { useGoBack } from '@/hooks/useGoBack';
 import { usePageSeo } from '@/hooks/usePageSeo';
 
+import { COINS_PH_SUSPENDED } from '@/config/paymentRails';
+
 // A logo chip: small brand tile/mark + label. Reuses the real provider marks so the
 // guide shows the same logos the funding/withdraw/repay screens do.
 function LogoChip({ logo, label }: { logo: ReactNode; label: string }) {
@@ -81,7 +83,11 @@ export default function MoneyGuide() {
          chips: (
             <>
                <LogoChip logo={<BinanceTile className="h-4 w-4" />} label="Binance P2P" />
-               <LogoChip logo={<CoinsPhTile className="h-4 w-4" />} label="Coins.ph" />
+               {COINS_PH_SUSPENDED ? (
+                  <LogoChip logo={<PdaxTile className="h-4 w-4" />} label="PDAX" />
+               ) : (
+                  <LogoChip logo={<CoinsPhTile className="h-4 w-4" />} label="Coins.ph" />
+               )}
                <LogoChip logo={<UsdcMark className="h-4 w-4" />} label="USDC" />
                <LogoChip logo={<BaseMark className="h-4 w-4" />} label="Base" />
             </>
@@ -100,7 +106,7 @@ export default function MoneyGuide() {
             <>
                <LogoChip logo={<BinanceTile className="h-4 w-4" />} label="Binance P2P" />
                <LogoChip logo={<PdaxTile className="h-4 w-4" />} label="PDAX" />
-               <LogoChip logo={<CoinsPhTile className="h-4 w-4" />} label="Coins.ph" />
+               {!COINS_PH_SUSPENDED && <LogoChip logo={<CoinsPhTile className="h-4 w-4" />} label="Coins.ph" />}
                <LogoChip logo={<GCashTile className="h-4 w-4" />} label="GCrypto" />
             </>
          ),
