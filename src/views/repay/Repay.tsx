@@ -73,7 +73,7 @@ const quickRepaymentFractions = [
 // pill below it.
 //
 // Indonesian borrowers (IP in Indonesia, or the app set to Bahasa Indonesia) get Indonesian
-// exchanges only: Reku leads, Tokocrypto is the pill, Pintu/Indodax sit under "Other options".
+// exchanges only: Tokocrypto leads, Reku is the pill, Pintu/Indodax sit under "Other options".
 // Unlike Filipinos abroad, there are no Filipino borrowers living in Indonesia on the platform, so
 // the Philippine rails and Binance aren't offered there. All four Indonesian exchanges support
 // USDC withdrawals on Base (checked 2026-09-30); they have no deep link because their app URL
@@ -106,11 +106,13 @@ const getFundSource = (id: FundSourceId): FundSource => fundSources.find((source
 const HERO_SOURCE_ID: FundSourceId = COINS_PH_SUSPENDED ? 'pdax' : 'coinsph';
 const isPausedSource = (id: FundSourceId) => id === 'coinsph' && COINS_PH_SUSPENDED;
 
-// Indonesian layout: Reku is the hero — buying USDC with IDR is free in its Lightning mode (only the
-// 0.0111% CFX levy). Tokocrypto is the pill below it: its withdrawal fee is lower (0.2 vs 0.5 USDC)
-// but it charges ~0.15% to buy, so it only comes out cheaper on repayments under roughly $75.
-const INDONESIA_HERO_SOURCE_ID: FundSourceId = 'reku';
-const INDONESIA_PILL_SOURCE_ID: FundSourceId = 'tokocrypto';
+// Indonesian layout: Tokocrypto is the hero — it's the cheapest at our loan sizes (average ~$15).
+// A $15 repayment topped up by bank transfer costs ~$0.23 there (free bank/VA deposit, 0.2222% to
+// buy USDC/IDR, 0.2 USDC to withdraw on Base) vs ~$0.50 on Reku (0.0111% to buy, 0.5 USDC to
+// withdraw); Reku only wins above ~$140. Tokocrypto charges 2% on QRIS/e-wallet deposits, hence
+// the bank-transfer nudge in its subtitle. Reku is the pill below it.
+const INDONESIA_HERO_SOURCE_ID: FundSourceId = 'tokocrypto';
+const INDONESIA_PILL_SOURCE_ID: FundSourceId = 'reku';
 const INDONESIA_OTHER_SOURCE_IDS: readonly FundSourceId[] = ['pintu', 'indodax'];
 const INDONESIA_SOURCE_IDS: readonly FundSourceId[] = [INDONESIA_HERO_SOURCE_ID, INDONESIA_PILL_SOURCE_ID, ...INDONESIA_OTHER_SOURCE_IDS];
 
@@ -157,7 +159,7 @@ const SOURCE_SUBTITLE: Partial<Record<FundSourceId, string>> = {
    coinsph: 'Recommended · lowest fees · buy USDC with PHP, cash out to bank or GCash',
    pdax: 'Recommended · buy USDC with PHP, cash out to bank, GCash or Maya',
    moneybees: "External option · you follow Moneybees' own process",
-   reku: 'Recommended · no fee to buy USDC with IDR · cash out to your bank'
+   tokocrypto: 'Recommended · lowest fees · top up by bank transfer (QRIS/e-wallet cost 2%)'
 };
 
 // Step-by-step path shown to the user. The exchanges are self-service apps; Moneybees is an
@@ -1474,8 +1476,8 @@ export default function Repay() {
                                           {inIndonesia ? (
                                              <>
                                                 {' '}
-                                                in Indonesia. <span className="font-semibold text-[#6c3fe0]">Tokocrypto</span> works too;
-                                                Pintu and Indodax are under "Other options".
+                                                in Indonesia. <span className="font-semibold text-[#6c3fe0]">Reku</span> works too; Pintu
+                                                and Indodax are under "Other options".
                                              </>
                                           ) : !inPhilippines ? (
                                              <>
