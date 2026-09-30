@@ -127,24 +127,41 @@ const INDONESIA_SOURCE_IDS: readonly FundSourceId[] = [INDONESIA_HERO_SOURCE_ID,
 //   withdrawal 1 USDC (pintu.co.id/en/limit-and-fees).
 // - Indodax: BCA transfer free (min Rp100k), virtual accounts Rp1,665–3,330; buy with IDR ~0.21% all-in;
 //   Base withdrawal 1.06 USDC — Indodax only shows this in its app (read there on 2026-09-30).
+// feeLabel is the rounded fee on a typical ~$20 repayment, shown in the source's tag; buyRate and
+// withdrawUsdc drive the "buy about $X" figure, which uses the borrower's real shortfall.
 type SourceFeeBreakdown = {
-   deposit: string;
+   feeLabel: string;
    buyRate: number;
-   buyLabel: string;
    withdrawUsdc: number;
+   depositTip: string | null;
 };
 
 const SOURCE_FEE_BREAKDOWN: Partial<Record<FundSourceId, SourceFeeBreakdown>> = {
-   tokocrypto: { deposit: 'Free by bank transfer · QRIS/e-wallet 2%', buyRate: 0.002222, buyLabel: '0.22%', withdrawUsdc: 0.2 },
-   reku: { deposit: 'Free by bank transfer · QRIS 0.7%, e-wallet 1.7%', buyRate: 0.000111, buyLabel: '0.01%', withdrawUsdc: 0.5 },
-   pintu: { deposit: 'Free', buyRate: 0, buyLabel: 'No fee (built into price)', withdrawUsdc: 1 },
-   indodax: { deposit: 'Free by BCA transfer · virtual account Rp1,665+', buyRate: 0.0021, buyLabel: '~0.21%', withdrawUsdc: 1.06 }
+   tokocrypto: {
+      feeLabel: '~$0.25',
+      buyRate: 0.002222,
+      withdrawUsdc: 0.2,
+      depositTip: 'Top up by bank transfer — QRIS or e-wallet adds 2%.'
+   },
+   reku: {
+      feeLabel: '~$0.50',
+      buyRate: 0.000111,
+      withdrawUsdc: 0.5,
+      depositTip: 'Top up by bank transfer — QRIS adds 0.7%, e-wallet 1.7%.'
+   },
+   pintu: { feeLabel: '~$1', buyRate: 0, withdrawUsdc: 1, depositTip: null },
+   indodax: {
+      feeLabel: '~$1',
+      buyRate: 0.0021,
+      withdrawUsdc: 1.06,
+      depositTip: 'Top up by BCA transfer — virtual accounts add Rp1,665 or more.'
+   }
 };
 
-// Estimated total fees to add `amount` USDC by bank transfer: the buy fee on what's bought plus the
-// flat send fee. An estimate — prices and fees move, and the exchange shows the exact figure.
-const estimateSourceFees = (breakdown: SourceFeeBreakdown, amount: number) =>
-   Math.round(((amount + breakdown.withdrawUsdc) * breakdown.buyRate + breakdown.withdrawUsdc) * 100) / 100;
+// How much USDC to buy so `amount` still lands after fees: the amount, the flat send fee, and the
+// buy fee on top, rounded UP to the next 10 cents so the borrower never ends up a few cents short.
+const getAmountToBuy = (breakdown: SourceFeeBreakdown, amount: number) =>
+   Math.ceil((amount + breakdown.withdrawUsdc) * (1 + breakdown.buyRate) * 10) / 10;
 
 // Real app icons (from each exchange's App Store listing) for the Indonesian sources.
 const SOURCE_LOGO_SRC: Partial<Record<FundSourceId, string>> = {
@@ -522,12 +539,11 @@ export default function Repay() {
    const effectiveJustFunded = previewArriving ? 121 : justFunded;
    const activeSource = fundSources.find((source) => source.id === fundSource) ?? fundSources[0];
 
-   // Fee tag next to each source's name. Sources with a known fee breakdown show the estimated total
-   // for what this borrower still needs to add; the rest keep the generic "Small fee".
+   // Fee tag next to each source's name: the rounded fee for sources we have figures for, otherwise
+   // the generic "Small fee".
    const getFeeTagLabel = (id: FundSourceId) => {
       const breakdown = SOURCE_FEE_BREAKDOWN[id];
-      if (!breakdown) return 'Small fee';
-      return `≈$${estimateSourceFees(breakdown, fundingShortfall ?? 0).toFixed(2)} fees`;
+      return breakdown ? `${breakdown.feeLabel} fee` : 'Small fee';
    };
 
    // Compact source button used for Coins.ph and the "Other options" exchanges.
@@ -1528,8 +1544,7 @@ export default function Repay() {
                                           // an added option abroad, never a replacement for the local rails.
                                           // Whichever of Coins.ph/PDAX isn't the hero lives here; a suspended
                                           // Coins.ph shows greyed out rather than disappearing.
-                                          // Indonesian borrowers get only Pintu/Indodax here (see the fundSources comment),
-                                          // one per row — their fee-estimate tags don't fit half a row.
+                                          // Indonesian borrowers get only Pintu/Indodax here (see the fundSources comment).
                                           const otherSources = inIndonesia
                                              ? INDONESIA_OTHER_SOURCE_IDS.map(getFundSource)
                                              : fundSources
@@ -1562,7 +1577,7 @@ export default function Repay() {
                                                 </button>
 
                                                 {expanded ? (
-                                                   <div className={`mt-1.5 grid gap-1.5 ${inIndonesia ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                                   <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                                                       {otherSources.map((source) => renderSourcePill(source))}
                                                    </div>
                                                 ) : null}
@@ -1772,6 +1787,47 @@ export default function Repay() {
                                        </div>
                                     )}
 
+                                    {/* Indonesian sources: "buy a little extra" before they leave for the exchange */}
+                                    {(() => {
+                                       const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
+                                       if (!breakdown) return null;
+                                       const amount = fundingShortfall ?? 0;
+                                       const amountToBuy = getAmountToBuy(breakdown, amount);
+                                       return (
+                                          <div className="mb-3 rounded-xl bg-[#fff8e6] px-3.5 py-3 ring-1 ring-[#fcd34d] dark:bg-[#2a2210] dark:ring-[#854d0e]">
+                                             <p className="text-[13px] font-extrabold text-[#1a1240] dark:text-white">
+                                                Buy a little extra to cover the fee
+                                             </p>
+                                             <p className="mt-1 text-[13px] font-semibold leading-snug text-[#1a1240] dark:text-white">
+                                                You need ${formatCurrency(amount)} → buy about{' '}
+                                                <span className="font-extrabold text-[#6c3fe0] dark:text-[#c4b5fd]">
+                                                   ${formatCurrency(amountToBuy)}
+                                                </span>{' '}
+                                                of USDC
+                                             </p>
+                                             <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                {activeSource.label} takes about {breakdown.feeLabel.replace('~', '')} to send your USDC. If
+                                                you only buy ${formatCurrency(amount)}, less than that arrives and your repayment falls
+                                                short.
+                                             </p>
+                                             {breakdown.depositTip ? (
+                                                <p className="mt-1.5 text-[12px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
+                                                   {breakdown.depositTip}
+                                                </p>
+                                             ) : null}
+                                             <div className="mt-2 flex items-center justify-between border-t border-[#fde68a] pt-2 text-[12px] dark:border-[#854d0e]">
+                                                <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
+                                                   <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
+                                                   Moodeng fee
+                                                </span>
+                                                <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
+                                                   Free ✓
+                                                </span>
+                                             </div>
+                                          </div>
+                                       );
+                                    })()}
+
                                     {/* CTA button */}
                                     <button
                                        type="button"
@@ -1798,59 +1854,7 @@ export default function Repay() {
                                        const fee = FUND_SOURCE_FEES[activeSource.id];
                                        if (fee === 0) return null;
                                        const breakdown = SOURCE_FEE_BREAKDOWN[activeSource.id];
-                                       if (breakdown) {
-                                          const amount = fundingShortfall ?? 0;
-                                          const buyFee = Math.round((amount + breakdown.withdrawUsdc) * breakdown.buyRate * 100) / 100;
-                                          const total = estimateSourceFees(breakdown, amount);
-                                          const feeRows: { label: string; value: string }[] = [
-                                             { label: 'Top up rupiah', value: breakdown.deposit },
-                                             {
-                                                label: 'Buy USDC',
-                                                value:
-                                                   breakdown.buyRate > 0
-                                                      ? `${breakdown.buyLabel} · ≈$${buyFee.toFixed(2)}`
-                                                      : breakdown.buyLabel
-                                             },
-                                             { label: 'Send to your wallet (Base)', value: `${breakdown.withdrawUsdc} USDC` }
-                                          ];
-                                          return (
-                                             <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3 dark:bg-[#1e1535]">
-                                                <p className="flex items-center gap-2 text-[12px] font-semibold text-[#1a1240] dark:text-white">
-                                                   {renderSourceLogo(activeSource.id, false)}
-                                                   {activeSource.label}&rsquo;s fees
-                                                </p>
-                                                {feeRows.map((row) => (
-                                                   <div
-                                                      key={row.label}
-                                                      className="mt-2 flex items-start justify-between gap-3 border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]"
-                                                   >
-                                                      <span className="shrink-0 text-[#6b6090] dark:text-[#a095c8]">{row.label}</span>
-                                                      <span className="text-right font-semibold text-[#1a1240] dark:text-white">
-                                                         {row.value}
-                                                      </span>
-                                                   </div>
-                                                ))}
-                                                <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[12px] dark:border-[#2a1f4f]">
-                                                   <span className="flex items-center gap-2 text-[#6b6090] dark:text-[#a095c8]">
-                                                      <ShieldCheck className="h-3.5 w-3.5 text-[#6c3fe0]" aria-hidden="true" />
-                                                      Moodeng fee
-                                                   </span>
-                                                   <span className="whitespace-nowrap rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-bold text-[#16a34a] dark:bg-[#052e16]">
-                                                      Free ✓
-                                                   </span>
-                                                </div>
-                                                <div className="mt-2 flex items-center justify-between border-t border-[#ede9f8] pt-2 text-[13px] font-bold text-[#1a1240] dark:border-[#2a1f4f] dark:text-white">
-                                                   <span>Estimated total by bank transfer</span>
-                                                   <span>≈${total.toFixed(2)}</span>
-                                                </div>
-                                                <p className="mt-2 text-[11px] leading-snug text-[#6b6090] dark:text-[#a095c8]">
-                                                   Buy about ${formatCurrency(amount + total)} of USDC so ${formatCurrency(amount)} lands in
-                                                   your wallet. {activeSource.label} shows the exact fees before you confirm. Moodeng never
-                                                   charges to repay.
-                                                </p>
-                                             </div>
-                                          );
-                                       }
+                                       if (breakdown) return null;
                                        return (
                                           <div className="mt-2.5 rounded-xl bg-[#f8f7fb] px-3.5 py-3 dark:bg-[#1e1535]">
                                              <div className="flex items-center justify-between text-[12px]">
