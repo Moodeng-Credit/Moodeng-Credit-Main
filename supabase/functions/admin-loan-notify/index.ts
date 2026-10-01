@@ -2,6 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
+import { dueDayBounds, formatDeadlineForTeam, loanTimezone } from '../_shared/loanDeadline.ts';
+import { getTeamTimezone, loadBorrowerTimezones } from '../_shared/loanDueTeamFeed.ts';
 import { buildConnectEmail } from '../_shared/loanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -76,7 +78,7 @@ serve(async (req) => {
 
    const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date')
+      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone')
       .eq('id', loanId)
       .maybeSingle();
    if (loanError || !loan) return json({ error: 'Loan not found' }, 404);
@@ -92,6 +94,11 @@ serve(async (req) => {
 
    const outstanding = Math.max(0, Number(loan.total_repayment_amount || 0) - Number(loan.repaid_amount || 0));
    const dueLabel = shortDate(loan.due_date);
+   // The due day ends at midnight in the borrower's zone (saved on the loan). The team sees that
+   // moment on the borrower's clock and on its own; the borrower just sees the date.
+   const borrowerZone = loanTimezone(loan, (await loadBorrowerTimezones(supabase, [borrowerId]).catch(() => new Map())).get(borrowerId) ?? 'Asia/Manila');
+   const teamDueLabel = loan.due_date ? formatDeadlineForTeam(loan.due_date, borrowerZone, await getTeamTimezone(supabase)) : '—';
+   const isPastDueDay = loan.due_date ? Date.now() >= dueDayBounds(loan.due_date, borrowerZone).end.getTime() : false;
    const repayUrl = `${siteUrl()}/repay`;
 
    // --- Compose borrower copy ---
@@ -126,7 +133,7 @@ serve(async (req) => {
             (reason ? `\n\nNote: ${reason}` : '') +
             `\n\nYou still owe ${money(outstanding)}.`;
       } else {
-         const overdue = loan.due_date ? new Date(loan.due_date).getTime() < Date.now() : false;
+         const overdue = isPastDueDay;
          subject = overdue ? 'Your Moodeng loan is overdue' : 'Your Moodeng loan is coming due';
          intro = overdue
             ? `This is a reminder that your loan ${loan.tracking_id} was due on ${dueLabel} and still has ${money(outstanding)} outstanding. Please repay as soon as you can.`
@@ -179,10 +186,10 @@ serve(async (req) => {
       const notifiedLabel = [borrowerEmailSent ? 'email' : null, borrowerTelegramSent ? 'telegram' : null].filter(Boolean).join(' + ') || 'none';
       const teamText =
          kind === 'extension'
-            ? `📅 Loan extended\n${loan.tracking_id} · ${who}\nNew due date: ${dueLabel}${body.daysExtended ? ` (+${dayWord(Number(body.daysExtended))})` : ''}\nOutstanding: ${money(outstanding)}${body.reason ? `\nReason: ${String(body.reason).trim()}` : ''}\nBorrower notified: ${notifiedLabel}`
+            ? `📅 Loan extended\n${loan.tracking_id} · ${who}\nNew due date: ${teamDueLabel}${body.daysExtended ? ` (+${dayWord(Number(body.daysExtended))})` : ''}\nOutstanding: ${money(outstanding)}${body.reason ? `\nReason: ${String(body.reason).trim()}` : ''}\nBorrower notified: ${notifiedLabel}`
             : kind === 'connect'
               ? `💚 Connect sent\n${loan.tracking_id} · ${who}\nOutstanding: ${money(outstanding)}\nBorrower notified: ${notifiedLabel}`
-              : `🔔 Nudge sent\n${loan.tracking_id} · ${who}\nDue: ${dueLabel} · Outstanding: ${money(outstanding)}\nBorrower notified: ${notifiedLabel}`;
+              : `🔔 Nudge sent\n${loan.tracking_id} · ${who}\nDue: ${teamDueLabel} · Outstanding: ${money(outstanding)}\nBorrower notified: ${notifiedLabel}`;
       try {
          const threadId = Deno.env.get('TEAM_TELEGRAM_THREAD_ID');
          await sendTelegramMessage(teamChatId, teamText, threadId ? { messageThreadId: Number(threadId) } : {});

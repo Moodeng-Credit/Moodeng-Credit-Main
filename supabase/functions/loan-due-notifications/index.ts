@@ -9,6 +9,8 @@ import {
    LoanNotificationRecipient,
    LoanNotificationType
 } from '../_shared/loanNotifications.ts';
+import { dueDayBounds, loanTimezone, localHour, QUIET_HOURS_END, resolveTimezone } from '../_shared/loanDeadline.ts';
+import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
 import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
 import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
@@ -315,7 +317,7 @@ serve(async (req) => {
    const { data: loans, error } = await supabase
       .from('loans')
       .select(
-         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, repayment_status'
+         'id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, funded_at, lender_user_id, repayment_status'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -327,6 +329,7 @@ serve(async (req) => {
 
    const borrowerIds = Array.from(new Set((loans ?? []).map((loan) => loan.borrower_user_id).filter(Boolean))) as string[];
    const borrowers = await loadBorrowers(supabase, borrowerIds);
+   const timezones = await loadBorrowerTimezones(supabase, borrowerIds);
    const trustPointRewardContext = await loadTrustPointRewardContext(supabase, borrowerIds);
    const telegramEnabled = await getBorrowerTelegramNotificationsEnabled(supabase);
    // Borrowers reachable by push only — no email, no Telegram — still have to get
@@ -340,13 +343,6 @@ serve(async (req) => {
    );
    const urgentDueLabel = formatHoursAsDueLabel(Number.isNaN(urgentReminderHours) ? 72 : urgentReminderHours);
    const finalDueLabel = formatHoursAsDueLabel(Number.isNaN(finalReminderHours) ? 24 : finalReminderHours);
-
-   // Boundaries of "today" in UTC. due_date is stored at midnight UTC, so a loan
-   // due on calendar day D lands exactly on startOfToday when the cron runs on D.
-   const startOfToday = new Date(referenceDate);
-   startOfToday.setUTCHours(0, 0, 0, 0);
-   const startOfTomorrow = new Date(startOfToday);
-   startOfTomorrow.setUTCDate(startOfTomorrow.getUTCDate() + 1);
 
    const borrowerBuckets = new Map<
       string,
@@ -362,15 +358,18 @@ serve(async (req) => {
          continue;
       }
 
-      const dueDate = new Date(loan.due_date);
+      // The due day is a calendar day in the BORROWER'S timezone (see _shared/loanDeadline.ts), not
+      // midnight UTC: read as an instant, the stored date is already morning in Manila and Bangkok.
+      // The zone saved on the loan when it was posted; older loans fall back to the borrower's.
+      const zone = loanTimezone(loan, timezones.get(loan.borrower_user_id) ?? resolveTimezone(null, null));
+      const { start: dueStart, end: dueEnd } = dueDayBounds(loan.due_date, zone);
 
-      // "Due today" wins over the ≤24h final window: a loan due at midnight today
-      // is already ~0h away (or seconds past), so without this it would either
-      // re-trigger the already-sent "due tomorrow" final or fall straight to the
-      // overdue cron. This gives the borrower a gentle same-day nudge instead.
-      const isDueToday = dueDate.getTime() >= startOfToday.getTime() && dueDate.getTime() < startOfTomorrow.getTime();
-      const isFinalWindow = !isDueToday && dueDate.getTime() >= final.start.getTime() && dueDate.getTime() <= final.end.getTime();
-      const isUrgentWindow = !isDueToday && dueDate.getTime() > urgent.start.getTime() && dueDate.getTime() <= urgent.end.getTime();
+      // "Due today" wins over the ≤24h final window, so a borrower whose due day has begun gets a
+      // gentle same-day nudge rather than a repeat of the "due tomorrow" final. Once the day is
+      // over, the overdue cron takes the loan.
+      const isDueToday = referenceDate.getTime() >= dueStart.getTime() && referenceDate.getTime() < dueEnd.getTime();
+      const isFinalWindow = !isDueToday && dueStart.getTime() >= final.start.getTime() && dueStart.getTime() <= final.end.getTime();
+      const isUrgentWindow = !isDueToday && dueStart.getTime() > urgent.start.getTime() && dueStart.getTime() <= urgent.end.getTime();
 
       if (!isDueToday && !isFinalWindow && !isUrgentWindow) {
          continue;
@@ -394,6 +393,12 @@ serve(async (req) => {
    for (const [borrowerId, bucket] of borrowerBuckets.entries()) {
       const borrower = borrowers.get(borrowerId);
       if (!borrower) {
+         continue;
+      }
+
+      // Never wake someone at 3 AM: hold until their local morning. Nothing is recorded, so the
+      // next hourly run picks it up.
+      if (localHour(referenceDate, timezones.get(borrowerId) ?? resolveTimezone(null, null)) < QUIET_HOURS_END) {
          continue;
       }
 
@@ -462,7 +467,21 @@ serve(async (req) => {
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount, failed: failedCount }), {
+   // Tell the team about everything due today, once per loan and whether or not the borrower was
+   // reachable. Same local-morning gate as the borrower reminders.
+   const dueTodayLoans = Array.from(borrowerBuckets.entries())
+      .filter(([borrowerId]) => localHour(referenceDate, timezones.get(borrowerId) ?? resolveTimezone(null, null)) >= QUIET_HOURS_END)
+      .flatMap(([, bucket]) => bucket.dueToday);
+   const announced = await postDueTeamFeed(
+      supabase,
+      'team_due_today',
+      dueTodayLoans as Parameters<typeof postDueTeamFeed>[2],
+      new Map(Array.from(borrowers.entries()).map(([id, borrower]) => [id, borrower.username ?? null])),
+      timezones,
+      referenceDate
+   );
+
+   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount, failed: failedCount, teamAnnounced: announced }), {
       status: 200,
       headers: corsHeaders
    });

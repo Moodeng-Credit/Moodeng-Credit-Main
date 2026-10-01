@@ -83,6 +83,7 @@ export type Database = {
                coin: string;
                created_at: string | null;
                due_date: string;
+               due_timezone: string | null;
                funded_at: string | null;
                hash: string[] | null;
                id: string;
@@ -116,6 +117,7 @@ export type Database = {
                coin: string;
                created_at?: string | null;
                due_date: string;
+               due_timezone?: string | null;
                funded_at?: string | null;
                hash?: string[] | null;
                id?: string;
@@ -145,6 +147,7 @@ export type Database = {
                coin?: string;
                created_at?: string | null;
                due_date?: string;
+               due_timezone?: string | null;
                funded_at?: string | null;
                hash?: string[] | null;
                id?: string;
@@ -884,6 +887,10 @@ export type Database = {
                cooldown_until: string | null;
                delete_count_24h: number;
             }[];
+         };
+         set_my_timezone: {
+            Args: { p_zone: string };
+            Returns: undefined;
          };
          record_milestone_completion: {
             Args: {

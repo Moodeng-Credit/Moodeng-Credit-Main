@@ -24,6 +24,7 @@ import { VerificationUnsuccessfulModal } from '@/components/verification/Verific
 import { useDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { usePendingInviteRedemption } from '@/hooks/useFriendReferrals';
 import { usePostLoginReturn } from '@/hooks/usePostLoginReturn';
+import { useRecordDeviceTimezone } from '@/hooks/useRecordDeviceTimezone';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import AccountRestrictedPage from '@/app/account-restricted/page';
@@ -156,6 +157,8 @@ export default function App() {
    usePostLoginReturn();
    usePendingInviteRedemption();
    const { user, username, isAuthChecked } = useSelector((state: RootState) => state.auth);
+   // A new loan's due day is measured in the borrower's own time zone, so keep it current.
+   useRecordDeviceTimezone(user?.id);
    const userLoansFetchedAt = useSelector((state: RootState) => state.loans.userLoansFetchedAt);
    const isAuthenticated = Boolean(user?.id && username);
    const shouldCheckDefaultedBorrower = isAuthChecked && isAuthenticated;
