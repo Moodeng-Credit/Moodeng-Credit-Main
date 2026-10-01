@@ -3,11 +3,11 @@ import type { JSX } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { usePageSeo } from '@/hooks/usePageSeo';
-import { useLocalization } from '@/i18n';
-import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
-import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
-import { type GuideArticle, getGuideForLocale, getGuidesForLocale } from '@/views/support/data/guides';
 
+import { useLocalization } from '@/i18n';
+import NeedMoreHelp from '@/views/support/components/NeedMoreHelp';
+import { getGuideForLocale, getGuidesForLocale, type GuideArticle, GUIDES } from '@/views/support/data/guides';
+import HowCreditLevelsWork from '@/views/support/HowCreditLevelsWork';
 import '@/views/support/PublicGuide.css';
 
 function metaDescription(body: string): string {
@@ -16,12 +16,21 @@ function metaDescription(body: string): string {
    return `${flat.slice(0, 152).replace(/\s+\S*$/, '')}…`;
 }
 
+// Structured data needs an ISO date. Localized guides show a translated date, so read the English
+// guide's date (e.g. "Jun 9, 2026") and format it as YYYY-MM-DD.
+function isoGuideDate(slug: string): string | undefined {
+   const englishDate = GUIDES.find((item) => item.slug === slug)?.lastUpdated;
+   const parsed = englishDate ? new Date(`${englishDate} 12:00 UTC`) : null;
+   return parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString().slice(0, 10) : undefined;
+}
+
 function GuideArticleView({ guide, slug, locale }: { guide: GuideArticle; slug: string; locale: string }): JSX.Element {
    const description = metaDescription(guide.body);
    const related = getGuidesForLocale(locale)
       .filter((item) => item.slug !== slug)
       .slice(0, 3);
    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://moodeng.app';
+   const isoDate = isoGuideDate(slug);
 
    usePageSeo({
       title: `${guide.title} | Moodeng Credit`,
@@ -33,8 +42,8 @@ function GuideArticleView({ guide, slug, locale }: { guide: GuideArticle; slug: 
             '@type': 'Article',
             headline: guide.title,
             description,
-            datePublished: guide.lastUpdated,
-            dateModified: guide.lastUpdated,
+            datePublished: isoDate,
+            dateModified: isoDate,
             author: { '@type': 'Organization', name: 'Moodeng Credit' },
             publisher: { '@type': 'Organization', name: 'Moodeng Credit' },
             mainEntityOfPage: `${origin}/learn/${slug}`

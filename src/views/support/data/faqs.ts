@@ -69,7 +69,7 @@ How do we keep things free? We don't take a cut. Our future business model is th
 
 Moodeng Credit is built as a fairer alternative. Interest rates are set by the borrower and accepted (or passed on) by lenders in a transparent marketplace — no hidden charges, no compounding tricks. Small starter loans ($15–$60 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
 
-There's no collateral, no government ID, and no bank account required — just a verified World ID and a wallet (Moodeng's Instant Wallet, set up from your login, or a Base Account if you prefer). Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and World ID), so you build genuine credit history that lenders trust — instead of staying stuck in a cycle.
+There's no collateral and no bank account required — just a quick identity check (an ID photo and a selfie, or World ID) and a wallet (Moodeng's Instant Wallet, set up from your login, or a Base Account if you prefer). Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and verified identity), so you build genuine credit history that lenders trust — instead of staying stuck in a cycle.
 
 We don't claim to replace banks for everyone. But for the people currently using loan sharks because they have no other option, Moodeng aims to be a safer, fairer, more dignified path.`
    },
@@ -82,7 +82,7 @@ Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Bor
 
 Smaller loans below your full limit are called Trust-Building Loans. Those still help — they grow your repayment record and reputation with lenders — but they don't raise your Credit Level. So if your goal is to build credit and unlock larger loans, you specifically want to take out and repay full-limit Credit-Building Loans.
 
-Unlike a bank credit card or traditional credit-builder product, Moodeng's credit isn't reported to a credit bureau. It's tracked on-chain, tied to your wallet and World ID, and portable across any platform that integrates with the system.`
+Unlike a bank credit card or traditional credit-builder product, Moodeng's credit isn't reported to a credit bureau. It's tracked on-chain, tied to your wallet and verified identity, and portable across any platform that integrates with the system.`
    },
    {
       id: 'small-loan',
@@ -91,7 +91,7 @@ Unlike a bank credit card or traditional credit-builder product, Moodeng's credi
 
 There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit), set the repayment date and interest rate, and lenders decide whether to fund you.
 
-Each successful repayment grows your limit step by step — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
+Each full-limit loan you repay on time grows your limit one step — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
    }
 ];
 
@@ -99,90 +99,90 @@ const FILIPINO_FAQS: FAQItem[] = [
    {
       id: 'what-is-moodeng-credit',
       question: 'Ano ang Moodeng Credit?',
-      answer: `Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loans sa USDC habang nag-iipon ng Pandesal points na naka-link sa wallet mo.
+      answer: `Ang Moodeng Credit ay borrowing platform kung saan puwede kang mag-request ng short-term loan sa USDC habang nag-iipon ng Pandesal points na naka-link sa wallet mo.
 
-Sa halip na umasa sa traditional credit scores, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsible borrowing at on-time repayments. Habang tumatagal, ang tiwalang ito ang nag-u-unlock ng mas mataas na antas ng kredito at mas malaking loan amounts.
+Sa halip na umasa sa traditional credit score, tinutulungan ka ng Moodeng na bumuo ng tiwala sa pamamagitan ng responsableng paghiram at on-time na pagbabayad. Habang tumatagal, ang tiwalang ito ang nagbibigay-daan para ma-unlock mo ang mas mataas na Credit Level at makapag-request ng mas malalaking loan.
 
-Hindi nakakulong ang Pandesal points mo sa isang app lang. Dinisenyo ang mga ito para magpakita ng reliability mo at tumulong bumuo ng reputation na madadala mo sa susunod.`
+Hindi nakakulong sa iisang app ang Pandesal points mo. Ginawa ang mga ito para ipakita kung gaano ka maaasahan at para tulungan kang bumuo ng reputasyong madadala mo kahit saan.`
    },
    {
       id: 'how-does-borrowing-work',
       question: 'Paano gumagana ang paghiram sa Moodeng?',
-      answer: `Magpo-post ka ng loan request mula sa Request Board kasama ang amount na gusto mo, hanggang sa current limit mo, repayment date, interest rate, at reason.
+      answer: `Magpo-post ka ng loan request mula sa Request Board kasama ang halagang gusto mo (hanggang sa current limit mo), repayment date, interest rate, at dahilan.
 
-Titingnan ng lenders ang open requests at pipiliin kung alin ang gusto nilang pondohan. Kapag may lender na nag-fund sa iyo, diretso ang USDC sa wallet mo. Babayaran mo sila on or before the agreed date mula sa kahit anong wallet na may USDC.`
+Titingnan ng mga lender ang mga bukas na request at pipiliin kung alin ang popondohan nila. Kapag may lender na nagpondo sa iyo, diretsong ipapadala ang USDC sa wallet mo. Babayaran mo sila sa o bago ang napagkasunduang petsa mula sa kahit anong wallet na may USDC.`
    },
    {
       id: 'what-is-a-trust-score',
       question: 'Ano ang Pandesal points at paano ito kinakalkula?',
-      answer: `Ang Pandesal points mo ay reputation signal na nagpapakita kung gaano ka ka-reliable magbayad ng loans.
+      answer: `Ang Pandesal points mo ay senyales ng reputasyon na nagpapakita kung gaano ka maaasahan sa pagbabayad ng mga loan.
 
-Tumataas ito kapag nagbabayad ka on time at in full, at bumababa kapag late ang payment o nag-default. Ginagamit ito ng lenders para timbangin ang risk kapag nagdedesisyon silang pondohan ang requests mo.`
+Tumataas ito kapag nagbabayad ka nang on time at buo, at bumababa kapag late ang bayad o nag-default ka. Ginagamit ito ng mga lender para timbangin ang risk kapag nagpapasya sila kung popondohan ang mga request mo.`
    },
    {
       id: 'what-is-a-credit-level',
-      question: 'Ano ang antas ng kredito?',
-      answer: `Ang mga antas ng kredito ang kumokontrol kung magkano ang puwede mong hiramin at a time.
+      question: 'Ano ang Credit Level?',
+      answer: `Ang Credit Level ang nagtatakda kung magkano ang puwede mong hiramin sa isang pagkakataon.
 
-Magsisimula ka sa Level 1 na may $15 limit. Bawat full repayment ng Credit-Building Loan ay nagpapataas ng limit mo at nag-u-unlock ng next level: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, at pataas pa.`
+Magsisimula ka sa Level 1 na may $15 limit. Bawat Credit-Building Loan na nabayaran mo nang buo ay nagpapataas ng limit mo at nag-a-unlock ng susunod na level — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum.`
    },
    {
       id: 'what-is-a-base-wallet',
       question: 'Anong wallet ang ginagamit sa Moodeng?',
-      answer: `Instant Wallet ang default na gamit ng borrowers sa Moodeng. Ito ang sariling wallet ng Moodeng, na ginagawa diretso mula sa Moodeng login mo: walang app na ida-download at walang seed phrase na isusulat. Dito papasok ang loan mo, at ikaw ang ganap na may-ari nito — puwede mong i-export ang key nito anumang oras.
+      answer: `Instant Wallet ang default na gamit ng mga borrower sa Moodeng. Ito ang sariling wallet ng Moodeng, na ginagawa diretso mula sa Moodeng login mo: walang app na ida-download at walang seed phrase na isusulat. Dito papasok ang loan mo, at sa iyo talaga ito — puwede mong i-export ang key nito anumang oras.
 
-Tumatakbo ang Instant Wallet sa Base, isang Layer 2 blockchain network na ginawa ng Coinbase para sa mabilis, mura, at secure na crypto transactions. Ginagamit ng Moodeng ang Base dahil sa isang malaking dahilan: gasless USDC transactions. Walang network fee ang pagpapadala o pagtanggap ng USDC gamit ang Instant Wallet o Base Account sa Base. Kapag nakatanggap ka ng loan, buong amount ang papasok sa wallet mo. Kapag nagbayad ka, bawat sentimo ay makakarating sa lender.
+Tumatakbo ang Instant Wallet sa Base, isang Layer 2 blockchain network na ginawa ng Coinbase para sa mabilis, mura, at secure na crypto transaction. Isang malaking dahilan kung bakit Base ang gamit ng Moodeng: gasless na USDC transaction. Walang network fee ang pagpapadala o pagtanggap ng USDC gamit ang Instant Wallet o Base Account sa Base. Kapag nakatanggap ka ng loan, buong halaga ang papasok sa wallet mo. Kapag nagbayad ka, bawat sentimo ay babalik sa lender.
 
-Mas gusto mo ang Base Account? Puwede mo itong ikonekta sa halip. Ang Base Account ay smart wallet ng Base app — passwordless at seedless din, kaya email o passkey ang gamit sa pag-sign in at walang 12-word recovery phrase na puwedeng mawala. Para sa lenders, Base Account ang inirerekomenda namin. Puwede ring gumamit ang lenders ng Instant Wallet o magkonekta ng ibang wallet (gaya ng MetaMask) — gasless ang transactions kapag Instant Wallet o Base Account ang gamit.`
+Mas gusto mo ng Base Account? Puwede mo itong ikonekta sa halip. Ang Base Account ay smart wallet ng Base app — passwordless at seedless din, kaya email o passkey ang gamit mo sa pag-sign in at walang 12-word recovery phrase na puwedeng mawala. Para sa mga lender, Base Account ang inirerekomenda namin. Puwede ring gumamit ang mga lender ng Instant Wallet o magkonekta ng ibang wallet (gaya ng MetaMask) — gasless ang mga transaksyon kapag Instant Wallet o Base Account ang gamit.`
    },
    {
       id: 'what-is-usdc',
       question: 'Ano ang USDC, at bakit ito ginagamit ng Moodeng?',
-      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar at ini-issue ng Circle, isang regulated US financial company. Ang isang USDC ay palaging katumbas ng isang dollar, kaya hindi nagbabago ang loan amounts sa Moodeng dahil sa crypto market swings. Ang $20 na loan ngayon ay $20 pa rin ang halaga kapag repayment na.
+      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar at ini-issue ng Circle, isang regulated na financial company sa US. Ang isang USDC ay laging katumbas ng isang dollar, kaya hindi gumagalaw ang halaga ng mga loan sa Moodeng kahit magbago ang crypto market — ang $20 loan ngayon ay $20 pa rin ang halaga pagdating ng bayaran.
 
-Ginagamit ng Moodeng ang USDC dahil nilulutas nito ang mga problemang meron sa traditional currencies at ibang cryptocurrencies. Ang USD bank transfers ay puwedeng tumagal ng ilang araw, kailangan ng banking access sa magkabilang side, at madalas may fees. Ang volatile crypto tulad ng Bitcoin o ETH ay puwedeng gumalaw ng 10-20% habang active ang loan, kaya nadadagdagan ang currency risk bukod pa sa repayment risk. Wala ang dalawang problemang iyon sa USDC.
+Ginagamit ng Moodeng ang USDC dahil nilulutas nito ang mga problema ng tradisyonal na pera at ng ibang cryptocurrency. Inaabot ng ilang araw ang mga USD bank transfer, kailangan ng tamang banking infrastructure sa magkabilang panig, at madalas may fee pa. Ang mga volatile na cryptocurrency tulad ng Bitcoin o ETH ay puwedeng gumalaw nang 10–20% habang tumatakbo ang loan, kaya may currency risk pa ang dalawang panig bukod sa repayment risk. Wala sa dalawang problemang iyon ang USDC.
 
-Mabilis ding gumagalaw ang USDC kahit saan sa mundo, accepted ito ng major exchanges, at puwede itong i-convert sa local currency sa Coinbase, Binance, Kraken, o local on/off-ramps. Gasless din ito kapag ginamit sa Base. Gumagana ito nasa Manila, Lagos, Mumbai, o kahit saan ka man.`
+Naipapadala rin ang USDC kahit saan sa mundo sa loob ng ilang segundo, tinatanggap ito ng lahat ng malalaking exchange (puwede mo itong i-convert sa local currency mo sa Coinbase, Binance, Kraken, o sa mga local on/off-ramp), at gasless ito kapag ginamit sa Base. Gumagana ito saan ka man naroroon — sa Manila, Lagos, o Mumbai.`
    },
    {
       id: 'does-moodeng-charge-fees',
       question: 'May fees ba ang Moodeng?',
-      answer: `Wala. Libre gamitin ang Moodeng Credit. Walang platform fees sa paghiram, walang fees sa pagpapahiram, walang monthly subscriptions, at walang setup costs. 100% ng pini-fund ng lender ay napupunta sa borrower, at 100% ng repayment ay napupunta sa lender.
+      answer: `Wala. Libre gamitin ang Moodeng Credit. Walang platform fee sa paghiram, walang fee sa pagpapahiram, walang monthly subscription, at walang setup cost. 100% ng pinondohan ng lender ay napupunta sa borrower, at 100% ng bayad ay napupunta sa lender.
 
-Zero rin ang network fees o gas kapag gumagamit ka ng Instant Wallet o Base Account sa Base. Kaya ang tanging cost sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower, at iyon ay buong napupunta sa lender, hindi sa amin.
+Zero rin ang network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit mo. Kaya ang tanging gastos sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower — at buo itong napupunta sa lender, hindi sa amin.
 
-Paano namin pinananatiling libre ito? Hindi kami kumukuha ng cut. Ang future business model namin ay ang IOU token, na ilulunsad namin sa pamamagitan ng airdrop sa active lenders. Hanggang doon, ganap na fee-free ang Moodeng.`
+Paano namin napapanatiling libre ito? Hindi kami kumukuha ng parte. Ang future business model namin ay ang IOU token, na ilulunsad namin sa pamamagitan ng airdrop sa mga aktibong lender. Hanggang sa panahong iyon, ganap na walang fee ang Moodeng.`
    },
    {
       id: 'fight-loan-sharks',
-      question: 'Paano tumutulong ang Moodeng laban sa loan sharks?',
-      answer: `Ang loan sharks ay informal lenders na naniningil ng 20-100% weekly interest, nananakot ng borrowers, at nagkukulong sa tao sa cycle ng utang. Global problem ito. Daan-daang milyong unbanked at underbanked na tao ang walang ibang mapuntahan para sa emergency cash, kaya nauuwi sila sa pagbabayad ng maraming beses ng orihinal nilang hiniram.
+      question: 'Paano tumutulong ang Moodeng laban sa mga loan shark?',
+      answer: `Ang mga loan shark — mga informal lender na naniningil ng 20–100% na interes kada linggo, nananakot ng mga borrower, at ikinukulong ang mga tao sa paulit-ulit na utang — ay problema sa buong mundo. Daan-daang milyong unbanked at underbanked na tao ang walang ibang malapitan para sa emergency cash, kaya paulit-ulit silang nagbabayad nang ilang beses na mas malaki kaysa sa hiniram nila.
 
-Ginawa ang Moodeng Credit bilang mas patas na alternative. Ang interest rates ay sine-set ng borrower at tinatanggap o nilalagpasan ng lenders sa transparent marketplace. Walang hidden charges at walang compounding tricks. Ang small starter loans, gaya ng $15-$60 sa antas ng kredito 1-4, ay tugma sa short-term emergency needs ng borrowers, kasama ang credit-building system na nagpapalaki ng limit habang napapatunayan mo ang reliability mo.
+Ginawa ang Moodeng Credit bilang mas patas na alternatibo. Ang borrower ang nagtatakda ng interest rate, at tinatanggap (o nilalampasan) ito ng mga lender sa isang transparent na marketplace — walang nakatagong singil, walang compounding na daya. Ang maliliit na starter loan ($15–$60 sa Credit Level 1–4) ay tugma sa talagang kailangan ng mga borrower para sa short-term na emergency, kasama ang credit-building system na nagpapalaki ng limit mo habang pinapatunayan mong maaasahan ka.
 
-Walang collateral, walang government ID, at walang bank account na kailangan. Verified World ID at wallet (ang Instant Wallet ng Moodeng na gagawin mula sa login mo, o Base Account kung mas gusto mo) lang. Kahit sinong may phone ay puwedeng maka-access ng loans. At dahil naka-link sa wallet at World ID ang reputation mo, nadadala mo ito at nakakabuo ka ng tunay na credit history na puwedeng pagkatiwalaan ng lenders, sa halip na manatili sa cycle.
+Walang collateral at walang bank account na kailangan — mabilis na identity check lang (ID photo at selfie, o World ID) at wallet (ang Instant Wallet ng Moodeng na gagawin mula sa login mo, o Base Account kung mas gusto mo). Kahit sinong may phone ay puwedeng makahiram. At dala mo kahit saan ang reputasyon mo (naka-link sa wallet at verified identity mo), kaya nakakabuo ka ng tunay na credit history na pinagkakatiwalaan ng mga lender — sa halip na manatiling nakakulong sa cycle.
 
-Hindi namin sinasabing papalitan namin ang banks para sa lahat. Pero para sa mga taong napipilitang gumamit ng loan sharks dahil wala silang ibang option, layunin ng Moodeng na maging mas ligtas, mas patas, at mas dignified na path.`
+Hindi namin sinasabing papalitan namin ang mga bangko para sa lahat. Pero para sa mga taong napipilitang lumapit sa mga loan shark dahil wala silang ibang pagpipilian, layunin ng Moodeng na maging mas ligtas, mas patas, at mas marangal na daan.`
    },
    {
       id: 'what-is-credit-building-loan',
       question: 'Ano ang credit-building loan?',
-      answer: `Ang credit-building loan ay loan na kinukuha mo para palakihin ang credit limit mo sa Moodeng. Para maging credit-building loan, dapat nasa buong current limit ng antas ng kredito mo ang loan, hindi mas mababa.
+      answer: `Ang credit-building loan ay loan na kinukuha mo para mismo palakihin ang credit limit mo sa Moodeng. Para maituring na credit-building loan, dapat katumbas ito ng buong current Credit Level limit mo — hindi mas mababa.
 
-Ganito ito gumagana. Magsisimula ka sa antas ng kredito 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aangat ang limit mo sa $20. Hiramin naman ang buong $20 sa susunod at bayaran, mag-u-unlock ka ng $40. Pagkatapos $60. Patuloy ang progression sa higher levels.
+Ganito ito gumagana. Magsisimula ka sa Credit Level 1 na may $15 borrowing limit. Hiramin ang buong $15 at bayaran on time, at aakyat ang limit mo sa $20. Hiramin ang buong $20 sa susunod at bayaran, at maa-unlock mo ang $40. Tapos $60. Tuloy-tuloy ang pag-akyat sa mas matataas na level.
 
-Ang mas maliliit na loans na mas mababa sa full limit mo ay tinatawag na Trust-Building Loans. Nakakatulong pa rin ang mga iyon dahil pinapalakas nila ang repayment record at reputation mo sa lenders, pero hindi nila tinataas ang antas ng kredito mo. Kaya kung goal mo ang mag-build ng credit at mag-unlock ng mas malalaking loans, kailangan mong kumuha at magbayad ng full-limit Credit-Building Loans.
+Ang mas maliliit na loan na mas mababa sa buong limit mo ay tinatawag na Trust-Building Loan. Nakakatulong pa rin ang mga ito — pinapalago nila ang repayment record at reputasyon mo sa mga lender — pero hindi nila tinataas ang Credit Level mo. Kaya kung goal mong bumuo ng credit at mag-unlock ng mas malalaking loan, full-limit na Credit-Building Loan ang dapat mong kunin at bayaran.
 
-Hindi tulad ng bank credit card o traditional credit-builder product, hindi nire-report sa credit bureau ang credit ng Moodeng. Naka-track ito on-chain, naka-link sa wallet at World ID mo, at portable sa kahit anong platform na mag-iintegrate sa system.`
+Hindi tulad ng bank credit card o traditional na credit-builder product, hindi nire-report sa credit bureau ang credit sa Moodeng. Naka-track ito on-chain, nakatali sa wallet at verified identity mo, at madadala mo sa kahit anong platform na nakakonekta sa sistema.`
    },
    {
       id: 'small-loan',
       question: 'Puwede ba akong makakuha ng maliit na loan sa Moodeng?',
-      answer: `Oo. Maliit na loans talaga ang pangunahing gamit ng Moodeng. Nagsisimula ang bagong borrowers sa $15 limit, at dinisenyo ang platform para sa short-term, low-amount lending: emergency cash, pantawid bago payday, o one-off expenses.
+      answer: `Oo — para talaga sa maliliit na loan ginawa ang Moodeng. Nagsisimula ang mga bagong borrower sa $15 limit, at ginawa ang platform para sa short-term at maliliit na halaga ng pautang: emergency cash, pantawid bago sumahod, o minsanang gastos.
 
-Walang minimum loan amounts, walang monthly subscriptions, walang setup costs, at walang fees. Ire-request mo ang kailangan mo, hanggang sa current limit ng antas ng kredito mo, ise-set ang repayment date at interest rate, at lenders ang magdedesisyon kung popondohan ka nila.
+Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fee. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo), itatakda mo ang repayment date at interest rate, at ang mga lender ang magpapasya kung popondohan ka nila.
 
-Bawat successful repayment ay nagpapalaki ng limit mo step by step: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, at pataas pa. Kaya puwede kang magsimula sa maliit para subukan ang platform with low stakes, bumuo ng reputation, at lumaki lang sa bigger loans kapag handa ka na.`
+Bawat full-limit na loan na nabayaran mo on time ay nagpapataas ng limit mo nang isang hakbang — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
    }
 ];
 
@@ -190,90 +190,90 @@ const INDONESIAN_FAQS: FAQItem[] = [
    {
       id: 'what-is-moodeng-credit',
       question: 'Apa itu Moodeng Credit?',
-      answer: `Moodeng Credit adalah platform pinjaman yang memungkinkan kamu mengajukan pinjaman jangka pendek dalam USDC sambil mengumpulkan Pandesal points yang tertaut ke wallet kamu.
+      answer: `Moodeng Credit adalah platform pinjaman yang memungkinkan kamu mengajukan pinjaman jangka pendek dalam USDC sambil mengumpulkan poin Pandesal yang tertaut ke dompet kamu.
 
-Alih-alih fokus pada skor kredit tradisional, Moodeng membantu kamu membangun kepercayaan lewat pinjaman yang bertanggung jawab dan pembayaran tepat waktu. Seiring waktu, kepercayaan ini membuka level kredit yang lebih tinggi dan jumlah pinjaman yang lebih besar.
+Alih-alih berfokus pada skor kredit tradisional, Moodeng membantu kamu membangun kepercayaan lewat pinjaman yang bertanggung jawab dan pembayaran kembali tepat waktu. Seiring waktu, kepercayaan ini membuka Level Kredit yang lebih tinggi dan jumlah pinjaman yang lebih besar.
 
-Pandesal points kamu tidak terkunci di satu app. Poin ini dirancang untuk mencerminkan keandalan kamu dan membantu kamu membangun reputasi yang bisa dibawa ke depan.`
+Poin Pandesal kamu tidak terkunci di satu aplikasi. Poin ini dirancang untuk mencerminkan keandalan kamu dan membantu kamu membangun reputasi yang bisa kamu bawa ke mana pun.`
    },
    {
       id: 'how-does-borrowing-work',
       question: 'Bagaimana cara meminjam di Moodeng?',
-      answer: `Kamu membuat permintaan pinjaman dari Papan Permintaan dengan jumlah yang diinginkan, sampai batas limit saat ini, tanggal pembayaran, rate bunga, dan alasan pinjaman.
+      answer: `Kamu membuat permintaan pinjaman dari Papan Permintaan dengan jumlah yang kamu inginkan (sampai limit kamu saat ini), tanggal pembayaran kembali, suku bunga, dan alasan meminjam.
 
-Pemberi pinjaman melihat permintaan terbuka dan memilih mana yang ingin mereka danai. Setelah didanai, USDC dikirim langsung ke wallet kamu. Kamu membayar kembali pada atau sebelum tanggal yang disepakati dari wallet mana pun yang memiliki USDC.`
+Pemberi pinjaman melihat permintaan yang terbuka dan memilih mana yang ingin mereka danai. Setelah pemberi pinjaman mendanaimu, USDC dikirim langsung ke dompet kamu. Kamu membayar kembali pada atau sebelum tanggal yang disepakati, dari dompet mana pun yang berisi USDC.`
    },
    {
       id: 'what-is-a-trust-score',
-      question: 'Apa itu Pandesal points dan bagaimana dihitung?',
-      answer: `Pandesal points adalah sinyal reputasi yang menunjukkan seberapa andal kamu membayar pinjaman.
+      question: 'Apa itu poin Pandesal dan bagaimana cara menghitungnya?',
+      answer: `Poin Pandesal adalah sinyal reputasi yang menunjukkan seberapa andal kamu membayar kembali pinjaman.
 
-Poin ini naik saat kamu membayar penuh dan tepat waktu, dan turun saat pembayaran terlambat atau gagal bayar. Pemberi pinjaman memakai poin ini untuk menilai risiko sebelum mendanai permintaan kamu.`
+Poin ini naik saat kamu membayar penuh dan tepat waktu, dan turun saat pembayaran terlambat atau gagal bayar. Pemberi pinjaman memakai poin ini untuk menilai risiko sebelum memutuskan apakah akan mendanai permintaan kamu.`
    },
    {
       id: 'what-is-a-credit-level',
-      question: 'Apa itu level kredit?',
-      answer: `Level kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
+      question: 'Apa itu Level Kredit?',
+      answer: `Level Kredit menentukan berapa banyak yang bisa kamu pinjam dalam satu waktu.
 
-Kamu mulai dari Level 1 dengan limit $15. Setiap pembayaran penuh untuk Credit-Building Loan menaikkan limit dan membuka level berikutnya: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, dan seterusnya.`
+Kamu mulai dari Level 1 dengan limit $15. Setiap kali kamu melunasi Credit-Building Loan secara penuh, limit kamu naik dan level berikutnya terbuka: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum.`
    },
    {
       id: 'what-is-a-base-wallet',
-      question: 'Wallet apa yang dipakai di Moodeng?',
-      answer: `Peminjam di Moodeng memakai Instant Wallet secara default. Ini adalah wallet milik Moodeng yang dibuat langsung dari login Moodeng kamu: tanpa app yang perlu diunduh dan tanpa seed phrase yang perlu dicatat. Pinjaman kamu masuk ke sini, dan wallet ini sepenuhnya milik kamu — kamu bisa mengekspor key-nya kapan saja.
+      question: 'Dompet apa yang dipakai di Moodeng?',
+      answer: `Secara default, peminjam di Moodeng memakai Instant Wallet. Ini adalah dompet milik Moodeng yang dibuat langsung dari login Moodeng kamu: tidak ada aplikasi yang perlu diunduh dan tidak ada seed phrase yang perlu dicatat. Dana pinjaman kamu masuk ke sini, dan dompet ini sepenuhnya milik kamu. Kamu bisa mengekspor kuncinya kapan saja.
 
-Instant Wallet berjalan di Base, jaringan blockchain Layer 2 dari Coinbase yang dirancang untuk transaksi kripto yang cepat, murah, dan aman. Moodeng memakai Base karena satu alasan besar: transaksi USDC tanpa gas. Mengirim atau menerima USDC dengan Instant Wallet atau Base Account di Base tidak memerlukan biaya jaringan. Saat kamu menerima pinjaman, jumlah penuh masuk ke wallet kamu. Saat kamu membayar, pemberi pinjaman menerima seluruh jumlahnya.
+Instant Wallet berjalan di Base, jaringan blockchain Layer 2 buatan Coinbase yang dirancang untuk transaksi kripto yang cepat, murah, dan aman. Moodeng memakai Base karena satu alasan utama: transaksi USDC tanpa biaya gas. Mengirim atau menerima USDC dengan Instant Wallet atau Base Account di Base tidak dikenai biaya jaringan sama sekali. Saat kamu menerima pinjaman, jumlah penuhnya masuk ke dompet kamu. Saat kamu membayar kembali, pemberi pinjaman menerima kembali setiap sennya.
 
-Lebih suka Base Account? Kamu bisa menghubungkannya sebagai gantinya. Base Account adalah smart wallet dari Base app — juga passwordless dan seedless, jadi kamu masuk dengan email atau passkey tanpa recovery phrase 12 kata yang bisa hilang. Untuk pemberi pinjaman, kami merekomendasikan Base Account. Pemberi pinjaman juga bisa memakai Instant Wallet atau menghubungkan wallet lain (seperti MetaMask) — Instant Wallet dan Base Account membuat transaksi tetap gasless.`
+Lebih suka Base Account? Kamu bisa menghubungkannya sebagai gantinya. Base Account adalah smart wallet dari aplikasi Base. Base Account juga tanpa kata sandi dan tanpa seed phrase, jadi kamu masuk dengan email atau passkey, tanpa recovery phrase 12 kata yang bisa hilang. Untuk pemberi pinjaman, kami merekomendasikan Base Account. Pemberi pinjaman juga bisa memakai Instant Wallet atau menghubungkan dompet lain (seperti MetaMask). Instant Wallet dan Base Account membuat transaksi tetap bebas biaya gas.`
    },
    {
       id: 'what-is-usdc',
       question: 'Apa itu USDC, dan mengapa Moodeng memakainya?',
-      answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS dan diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi. Satu USDC selalu setara satu dolar, jadi nilai pinjaman di Moodeng tidak berubah karena pergerakan pasar kripto. Pinjaman $20 hari ini tetap bernilai $20 saat dibayar.
+      answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS dan diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi. Satu USDC selalu setara dengan satu dolar, jadi nilai pinjaman di Moodeng tidak ikut naik-turun mengikuti pasar kripto. Pinjaman $20 hari ini tetap bernilai $20 saat dibayar kembali.
 
-Moodeng memakai USDC karena ini menyelesaikan masalah yang ada pada mata uang tradisional dan kripto lain. Transfer bank USD bisa memakan waktu berhari-hari, membutuhkan akses perbankan di kedua sisi, dan sering memiliki biaya. Kripto volatil seperti Bitcoin atau ETH bisa bergerak 10-20% selama masa pinjaman, menambah risiko mata uang di luar risiko pembayaran. USDC tidak memiliki kedua masalah itu.
+Moodeng memakai USDC karena USDC mengatasi masalah yang dimiliki mata uang tradisional maupun kripto lain. Transfer bank dalam USD bisa memakan waktu berhari-hari, membutuhkan infrastruktur perbankan yang sesuai di kedua sisi, dan sering dikenai biaya. Kripto yang volatil seperti Bitcoin atau ETH bisa naik-turun 10–20% selama masa pinjaman, sehingga kedua pihak menanggung risiko nilai tukar di samping risiko pembayaran. USDC tidak punya kedua masalah itu.
 
-USDC juga bergerak ke mana pun di dunia dalam hitungan detik, didukung oleh bursa kripto besar, dan bisa dikonversi ke mata uang lokal melalui Coinbase, Binance, Kraken, atau on/off-ramp lokal. USDC juga gasless saat digunakan di Base.`
+USDC juga bisa dikirim ke mana pun di dunia dalam hitungan detik, diterima luas oleh semua bursa kripto besar (kamu bisa menukarnya ke mata uang lokal di Coinbase, Binance, Kraken, atau layanan on/off-ramp lokal), dan bebas biaya gas saat dipakai di Base. USDC bisa dipakai di mana saja, baik kamu di Manila, Lagos, maupun Mumbai.`
    },
    {
       id: 'does-moodeng-charge-fees',
       question: 'Apakah Moodeng mengenakan biaya?',
-      answer: `Tidak. Moodeng Credit gratis digunakan. Tidak ada biaya platform untuk meminjam, tidak ada biaya untuk memberi pinjaman, tidak ada langganan bulanan, dan tidak ada biaya setup. 100% dana dari pemberi pinjaman sampai ke peminjam, dan 100% pembayaran sampai ke pemberi pinjaman.
+      answer: `Tidak. Moodeng Credit gratis digunakan. Tidak ada biaya platform untuk meminjam, tidak ada biaya untuk memberi pinjaman, tidak ada langganan bulanan, dan tidak ada biaya awal. 100% dana dari pemberi pinjaman sampai ke peminjam, dan 100% pembayaran kembali sampai ke pemberi pinjaman.
 
-Biaya jaringan atau gas juga nol saat kamu memakai Instant Wallet atau Base Account di Base. Jadi satu-satunya biaya memakai Moodeng adalah rate bunga yang ditawarkan peminjam, dan itu sepenuhnya untuk pemberi pinjaman, bukan untuk kami.
+Biaya jaringan (gas) juga nol saat kamu memakai Instant Wallet atau Base Account di Base. Jadi, satu-satunya biaya memakai Moodeng adalah bunga yang ditawarkan peminjam, dan bunga itu sepenuhnya untuk pemberi pinjaman, bukan untuk kami.
 
-Bagaimana kami menjaga ini tetap gratis? Kami tidak mengambil potongan. Model bisnis masa depan kami adalah token IOU, yang akan diluncurkan lewat airdrop untuk pemberi pinjaman aktif. Sampai saat itu, Moodeng sepenuhnya bebas biaya.`
+Bagaimana kami bisa tetap gratis? Kami tidak mengambil potongan. Model bisnis kami ke depan adalah token IOU, yang akan kami luncurkan lewat airdrop untuk pemberi pinjaman aktif. Sampai saat itu, Moodeng sepenuhnya bebas biaya.`
    },
    {
       id: 'fight-loan-sharks',
       question: 'Bagaimana Moodeng membantu melawan rentenir?',
-      answer: `Rentenir, yaitu pemberi pinjaman informal yang mengenakan bunga mingguan 20-100%, mengancam peminjam, dan menjebak orang dalam siklus utang, adalah masalah global. Ratusan juta orang unbanked dan underbanked tidak punya pilihan lain untuk uang darurat, lalu membayar berkali-kali lipat dari jumlah yang mereka pinjam.
+      answer: `Rentenir, yaitu pemberi pinjaman informal yang mengenakan bunga 20–100% per minggu, mengancam peminjam, dan menjebak orang dalam lingkaran utang, adalah masalah global. Ratusan juta orang yang tidak punya atau minim akses ke layanan bank tidak punya tempat lain untuk mencari uang darurat, dan akhirnya membayar berkali-kali lipat dari jumlah yang mereka pinjam, berulang kali.
 
-Moodeng Credit dibuat sebagai alternatif yang lebih adil. Rate bunga ditentukan oleh peminjam dan diterima atau dilewati oleh pemberi pinjaman di marketplace yang transparan. Tidak ada biaya tersembunyi dan tidak ada trik bunga berbunga. Pinjaman awal kecil, seperti $15-$60 di level kredit 1-4, sesuai dengan kebutuhan darurat jangka pendek, ditambah sistem credit-building yang menaikkan limit saat kamu membuktikan keandalan.
+Moodeng Credit dibuat sebagai alternatif yang lebih adil. Suku bunga ditentukan oleh peminjam, lalu diterima (atau dilewati) oleh pemberi pinjaman di pasar yang transparan. Tidak ada biaya tersembunyi dan tidak ada trik bunga berbunga. Pinjaman awal yang kecil ($15–$60 di Level Kredit 1–4) sesuai dengan kebutuhan nyata peminjam untuk keadaan darurat jangka pendek, ditambah sistem pembangun kredit yang menaikkan limit kamu seiring kamu membuktikan bahwa kamu bisa diandalkan.
 
-Tidak perlu agunan, ID pemerintah, atau rekening bank. Cukup World ID terverifikasi dan wallet (Instant Wallet Moodeng yang dibuat dari login kamu, atau Base Account jika kamu lebih suka). Siapa pun dengan ponsel bisa mengakses pinjaman. Reputasi kamu juga ikut terbawa, karena tertaut ke wallet dan World ID, sehingga kamu membangun riwayat kredit nyata yang bisa dipercaya pemberi pinjaman.
+Tidak perlu agunan dan tidak perlu rekening bank. Cukup verifikasi identitas singkat (foto ID dan selfie, atau World ID) dan sebuah dompet (Instant Wallet Moodeng yang dibuat dari login kamu, atau Base Account jika kamu lebih suka). Siapa pun yang punya ponsel bisa mengakses pinjaman. Reputasi kamu juga ikut ke mana pun kamu pergi (tertaut ke dompet dan identitas terverifikasi kamu), jadi kamu membangun riwayat kredit sungguhan yang dipercaya pemberi pinjaman, alih-alih terus terjebak dalam lingkaran utang.
 
-Kami tidak mengklaim bisa menggantikan bank untuk semua orang. Tetapi untuk orang yang memakai rentenir karena tidak ada pilihan lain, Moodeng bertujuan menjadi jalur yang lebih aman, adil, dan bermartabat.`
+Kami tidak mengklaim bisa menggantikan bank untuk semua orang. Tetapi bagi orang yang saat ini terpaksa memakai rentenir karena tidak ada pilihan lain, Moodeng ingin menjadi jalan yang lebih aman, lebih adil, dan lebih bermartabat.`
    },
    {
       id: 'what-is-credit-building-loan',
-      question: 'Apa itu credit-building loan?',
-      answer: `Credit-building loan adalah pinjaman yang kamu ambil khusus untuk menaikkan credit limit di Moodeng. Agar termasuk credit-building loan, pinjaman harus sebesar limit level kredit kamu saat ini, bukan di bawahnya.
+      question: 'Apa itu Credit-Building Loan?',
+      answer: `Credit-Building Loan adalah pinjaman yang kamu ambil khusus untuk menaikkan limit kredit kamu di Moodeng. Agar terhitung sebagai Credit-Building Loan, pinjaman harus sebesar limit Level Kredit kamu saat ini secara penuh, bukan di bawahnya.
 
-Begini cara kerjanya. Kamu mulai di level kredit 1 dengan limit pinjaman $15. Pinjam penuh $15 dan bayar tepat waktu, lalu limit kamu naik ke $20. Pinjam penuh $20 berikutnya dan bayar, kamu membuka $40. Lalu $60. Progression terus berlanjut di level yang lebih tinggi.
+Begini cara kerjanya. Kamu mulai di Level Kredit 1 dengan limit pinjaman $15. Pinjam penuh $15 dan bayar kembali tepat waktu, lalu limit kamu naik ke $20. Pinjam penuh $20 berikutnya dan bayar kembali, maka $40 terbuka. Lalu $60. Kenaikan ini terus berlanjut di level yang lebih tinggi.
 
-Pinjaman lebih kecil di bawah limit penuh disebut Trust-Building Loans. Pinjaman itu tetap membantu karena membangun riwayat pembayaran dan reputasi dengan pemberi pinjaman, tetapi tidak menaikkan level kredit. Jadi jika tujuan kamu adalah membangun kredit dan membuka pinjaman lebih besar, kamu perlu mengambil dan membayar Credit-Building Loans dengan limit penuh.
+Pinjaman yang lebih kecil dari limit penuh disebut Trust-Building Loan. Pinjaman ini tetap bermanfaat karena membangun riwayat pembayaran kembali dan reputasi kamu di mata pemberi pinjaman, tetapi tidak menaikkan Level Kredit. Jadi, jika tujuan kamu adalah membangun kredit dan membuka pinjaman yang lebih besar, kamu perlu mengambil dan melunasi Credit-Building Loan sebesar limit penuh.
 
-Berbeda dari kartu kredit bank atau produk credit-builder tradisional, kredit Moodeng tidak dilaporkan ke credit bureau. Kredit ini dilacak on-chain, tertaut ke wallet dan World ID kamu, dan portable ke platform mana pun yang mengintegrasikan sistem ini.`
+Berbeda dari kartu kredit bank atau produk pembangun kredit tradisional, kredit Moodeng tidak dilaporkan ke biro kredit. Kredit ini dicatat secara on-chain, tertaut ke dompet dan identitas terverifikasi kamu, dan bisa dibawa ke platform mana pun yang terintegrasi dengan sistem ini.`
    },
    {
       id: 'small-loan',
       question: 'Bisakah saya mendapat pinjaman kecil di Moodeng?',
-      answer: `Ya. Pinjaman kecil memang alasan utama Moodeng dibuat. Peminjam baru mulai dengan limit $15, dan platform ini dirancang untuk pinjaman jangka pendek bernilai kecil: uang darurat, menjembatani kebutuhan sebelum gajian, atau pengeluaran satu kali.
+      answer: `Bisa. Pinjaman kecil memang tujuan utama Moodeng dibuat. Peminjam baru mulai dengan limit $15, dan platform ini dirancang untuk pinjaman jangka pendek bernilai kecil: uang darurat, menutup kebutuhan sebelum gajian, atau pengeluaran sekali waktu.
 
-Tidak ada minimum jumlah pinjaman, tidak ada langganan bulanan, tidak ada biaya setup, dan tidak ada fee. Kamu meminta jumlah yang kamu perlukan, sampai limit level kredit saat ini, menetapkan tanggal pembayaran dan rate bunga, lalu pemberi pinjaman memutuskan apakah ingin mendanai.
+Tidak ada jumlah pinjaman minimum, tidak ada langganan bulanan, tidak ada biaya awal, dan tidak ada biaya apa pun. Kamu mengajukan jumlah yang kamu perlukan (sampai limit Level Kredit kamu saat ini), menentukan tanggal pembayaran kembali dan suku bunga, lalu pemberi pinjaman memutuskan apakah akan mendanaimu.
 
-Setiap pembayaran berhasil menaikkan limit kamu bertahap: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, dan seterusnya. Jadi kamu bisa mulai kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu tumbuh ke pinjaman lebih besar saat sudah siap.`
+Setiap pinjaman sebesar limit penuh yang kamu bayar kembali tepat waktu menaikkan limit kamu satu tingkat: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum. Jadi kamu bisa mulai dari yang kecil untuk mencoba platform dengan risiko rendah, membangun reputasi, lalu naik ke pinjaman yang lebih besar hanya saat kamu sudah siap.`
    }
 ];
 
@@ -281,78 +281,90 @@ const THAI_FAQS: FAQItem[] = [
    {
       id: 'what-is-moodeng-credit',
       question: 'Moodeng Credit คืออะไร?',
-      answer: `Moodeng Credit เป็นแพลตฟอร์มการยืมที่ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสะสม Pandesal points ที่ผูกกับกระเป๋าเงินของคุณ
+      answer: `Moodeng Credit คือแพลตฟอร์มการยืมเงินที่ให้คุณขอเงินกู้ระยะสั้นเป็น USDC พร้อมสะสมแต้ม Pandesal ที่ผูกกับกระเป๋าเงินของคุณ
 
-แทนที่จะอิงคะแนนเครดิตแบบเดิม Moodeng ช่วยให้คุณสร้างความน่าเชื่อถือผ่านการยืมอย่างรับผิดชอบและการชำระคืนตรงเวลา เมื่อเวลาผ่านไป ความน่าเชื่อถือนี้จะช่วยปลดล็อกระดับเครดิตที่สูงขึ้นและขอวงเงินที่มากขึ้นได้
+แทนที่จะยึดคะแนนเครดิตแบบดั้งเดิม Moodeng ช่วยให้คุณสร้างความน่าเชื่อถือผ่านการยืมอย่างรับผิดชอบและการชำระคืนตรงเวลา เมื่อเวลาผ่านไป ความน่าเชื่อถือนี้จะช่วยให้คุณปลดล็อกระดับเครดิตที่สูงขึ้นและขอเงินกู้ได้มากขึ้น
 
-Pandesal points ของคุณไม่ได้ติดอยู่ในแอปเดียว แต่สะท้อนความน่าเชื่อถือและช่วยสร้างชื่อเสียงที่คุณพกต่อไปได้`
+แต้ม Pandesal ของคุณไม่ได้ถูกจำกัดไว้ในแอปใดแอปหนึ่ง แต่ออกแบบมาเพื่อสะท้อนความน่าเชื่อถือของคุณ และช่วยให้คุณสร้างประวัติที่พกติดตัวต่อไปได้`
    },
    {
       id: 'how-does-borrowing-work',
       question: 'การยืมบน Moodeng ทำงานอย่างไร?',
-      answer: `คุณโพสต์คำขอเงินกู้จากกระดานคำขอ พร้อมจำนวนเงินที่ต้องการ ภายในวงเงินปัจจุบัน วันชำระคืน อัตราดอกเบี้ย และเหตุผลในการยืม
+      answer: `คุณโพสต์คำขอเงินกู้จากกระดานคำขอ โดยระบุจำนวนเงินที่ต้องการ (ไม่เกินวงเงินปัจจุบันของคุณ) วันชำระคืน อัตราดอกเบี้ย และเหตุผลในการยืม
 
-ผู้ให้กู้จะดูคำขอที่เปิดอยู่และเลือกคำขอที่ต้องการสนับสนุน เมื่อมีผู้ให้กู้ให้ทุน USDC จะถูกส่งตรงเข้ากระเป๋าของคุณ คุณชำระคืนในหรือก่อนวันที่ตกลงจากกระเป๋าใดก็ได้ที่มี USDC`
+ผู้ให้กู้จะดูคำขอที่เปิดอยู่และเลือกว่าจะปล่อยกู้ให้คำขอใด เมื่อผู้ให้กู้ปล่อยกู้ให้คุณแล้ว USDC จะถูกโอนตรงเข้ากระเป๋าเงินของคุณ จากนั้นคุณชำระคืนให้ผู้ให้กู้ภายในวันที่ตกลงกันไว้ จากกระเป๋าเงินใดก็ได้ที่มี USDC`
    },
    {
       id: 'what-is-a-trust-score',
-      question: 'Pandesal points คืออะไร และคำนวณอย่างไร?',
-      answer: `Pandesal points คือสัญญาณชื่อเสียงที่แสดงว่าคุณชำระเงินกู้ได้สม่ำเสมอแค่ไหน
+      question: 'แต้ม Pandesal คืออะไร และคำนวณอย่างไร?',
+      answer: `แต้ม Pandesal คือตัวชี้วัดความน่าเชื่อถือที่สะท้อนว่าคุณชำระคืนเงินกู้ได้สม่ำเสมอเพียงใด
 
-คะแนนจะเพิ่มขึ้นเมื่อชำระเต็มจำนวนตรงเวลา และลดลงเมื่อชำระล่าช้าหรือผิดนัด ผู้ให้กู้ใช้คะแนนนี้เพื่อประเมินความเสี่ยงก่อนตัดสินใจให้ทุนคำขอของคุณ`
+แต้มจะเพิ่มขึ้นเมื่อคุณชำระคืนเต็มจำนวนตรงเวลา และลดลงเมื่อชำระล่าช้าหรือผิดนัดชำระ ผู้ให้กู้ใช้แต้มนี้ประเมินความเสี่ยงเมื่อตัดสินใจว่าจะปล่อยกู้ตามคำขอของคุณหรือไม่`
    },
    {
       id: 'what-is-a-credit-level',
       question: 'ระดับเครดิตคืออะไร?',
-      answer: `ระดับเครดิตกำหนดว่าคุณสามารถยืมได้มากแค่ไหนในแต่ละครั้ง
+      answer: `ระดับเครดิตกำหนดว่าคุณยืมได้มากเท่าใดในแต่ละครั้ง
 
-คุณเริ่มที่ Level 1 พร้อมวงเงิน $15 การชำระคืนเต็มจำนวนของ Credit-Building Loan แต่ละครั้งจะเพิ่มวงเงินและปลดล็อกระดับถัดไป: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140 และต่อไป`
+คุณเริ่มที่ระดับ 1 ด้วยวงเงิน $15 ทุกครั้งที่คุณชำระคืน Credit-Building Loan ครบเต็มจำนวน วงเงินของคุณจะเพิ่มขึ้นและปลดล็อกระดับถัดไป: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในขณะนี้`
    },
    {
       id: 'what-is-a-base-wallet',
       question: 'Moodeng ใช้กระเป๋าเงินแบบไหน?',
-      answer: `ผู้ยืมบน Moodeng ใช้ Instant Wallet เป็นค่าเริ่มต้น นี่คือกระเป๋าเงินของ Moodeng เองที่สร้างจากการเข้าสู่ระบบ Moodeng ของคุณได้ทันที ไม่ต้องดาวน์โหลดแอปและไม่มี seed phrase เงินกู้ของคุณจะเข้ากระเป๋านี้ และกระเป๋านี้เป็นของคุณเต็มที่ คุณ export key ได้ทุกเมื่อ
+      answer: `ผู้ยืมบน Moodeng ใช้ Instant Wallet เป็นค่าเริ่มต้น นี่คือกระเป๋าเงินของ Moodeng เองที่สร้างขึ้นทันทีจากการเข้าสู่ระบบ Moodeng ของคุณ ไม่ต้องดาวน์โหลดแอป และไม่ต้องจด seed phrase เงินกู้ของคุณจะเข้ากระเป๋าเงินนี้ และกระเป๋าเงินนี้เป็นของคุณโดยสมบูรณ์ คุณส่งออกคีย์ได้ทุกเมื่อ
 
-Instant Wallet ทำงานบน Base ซึ่งเป็นเครือข่ายบล็อกเชน Layer 2 จาก Coinbase ที่ออกแบบมาเพื่อธุรกรรมคริปโตที่รวดเร็ว ถูก และปลอดภัย ธุรกรรม USDC ด้วย Instant Wallet หรือ Base Account บน Base ไม่มีค่า gas เมื่อคุณได้รับเงินกู้ จำนวนเต็มจะเข้ากระเป๋าของคุณ และเมื่อคุณชำระคืน ผู้ให้กู้จะได้รับเต็มจำนวน
+Instant Wallet ทำงานบน Base ซึ่งเป็นเครือข่ายบล็อกเชน Layer 2 ที่ Coinbase พัฒนาขึ้น ออกแบบมาเพื่อธุรกรรมคริปโตที่รวดเร็ว ค่าธรรมเนียมต่ำ และปลอดภัย Moodeng เลือกใช้ Base ด้วยเหตุผลสำคัญข้อเดียว คือธุรกรรม USDC ที่ไม่มีค่า gas การส่งหรือรับ USDC ด้วย Instant Wallet หรือ Base Account บน Base ไม่เสียค่าธรรมเนียมเครือข่ายเลย เมื่อคุณได้รับเงินกู้ เงินจะเข้ากระเป๋าเงินของคุณเต็มจำนวน และเมื่อคุณชำระคืน ผู้ให้กู้ก็จะได้รับเงินคืนครบทุกเซ็นต์
 
-อยากใช้ Base Account มากกว่า? คุณเชื่อมต่อแทนได้ Base Account คือ smart wallet ของแอป Base ซึ่งไม่ต้องใช้รหัสผ่านและไม่มี seed phrase เช่นกัน สำหรับผู้ให้กู้ เราแนะนำ Base Account ผู้ให้กู้ยังใช้ Instant Wallet หรือเชื่อมต่อกระเป๋าเงินอื่น (เช่น MetaMask) ได้ด้วย โดย Instant Wallet และ Base Account จะทำให้ธุรกรรมไม่มีค่า gas`
+อยากใช้ Base Account มากกว่าใช่ไหม? คุณเชื่อมต่อ Base Account แทนได้ Base Account คือ smart wallet ของแอป Base ซึ่งไม่ต้องใช้รหัสผ่านและไม่มี seed phrase เช่นกัน คุณจึงเข้าสู่ระบบด้วยอีเมลหรือพาสคีย์ได้ และไม่มีวลีกู้คืน 12 คำที่อาจทำหาย สำหรับผู้ให้กู้ เราแนะนำให้ใช้ Base Account ผู้ให้กู้ยังใช้ Instant Wallet หรือเชื่อมต่อกระเป๋าเงินอื่น (เช่น MetaMask) ได้ด้วย โดย Instant Wallet และ Base Account จะช่วยให้ธุรกรรมไม่มีค่า gas`
    },
    {
       id: 'what-is-usdc',
-      question: 'USDC คืออะไร และทำไม Moodeng ใช้มัน?',
-      answer: `USDC เป็น stablecoin ที่ผูก 1:1 กับดอลลาร์สหรัฐ ออกโดย Circle ซึ่งเป็นบริษัทการเงินสหรัฐที่อยู่ภายใต้การกำกับดูแล หนึ่ง USDC เท่ากับหนึ่งดอลลาร์เสมอ ทำให้มูลค่าเงินกู้บน Moodeng ไม่ผันผวนตามตลาดคริปโต
+      question: 'USDC คืออะไร และทำไม Moodeng จึงใช้ USDC?',
+      answer: `USDC คือ stablecoin ที่ตรึงมูลค่า 1:1 กับดอลลาร์สหรัฐ ออกโดย Circle ซึ่งเป็นบริษัทการเงินในสหรัฐฯ ที่อยู่ภายใต้การกำกับดูแล 1 USDC มีค่าเท่ากับ 1 ดอลลาร์เสมอ มูลค่าเงินกู้บน Moodeng จึงไม่ผันผวนตามตลาดคริปโต เงินกู้ $20 ในวันนี้ก็ยังมีมูลค่า $20 ในวันที่ชำระคืน
 
-Moodeng ใช้ USDC เพราะโอนทั่วโลกได้รวดเร็ว เป็นที่ยอมรับในตลาดแลกเปลี่ยนหลัก และไม่มีค่า gas เมื่อใช้บน Base คุณจึงสามารถรับ ถือ แปลงเป็นเงินท้องถิ่น หรือใช้บนเชนได้ตามต้องการ`
+Moodeng ใช้ USDC เพราะช่วยแก้ปัญหาที่ทั้งสกุลเงินแบบดั้งเดิมและคริปโตเคอร์เรนซีอื่น ๆ มีอยู่ การโอนเงินดอลลาร์ผ่านธนาคารใช้เวลาหลายวัน ทั้งสองฝ่ายต้องมีระบบธนาคารที่รองรับ และมักมีค่าธรรมเนียม ส่วนคริปโตที่ราคาผันผวนอย่าง Bitcoin หรือ ETH อาจขึ้นลงได้ 10–20% ระหว่างอายุเงินกู้ ทำให้ทั้งสองฝ่ายต้องแบกรับความเสี่ยงด้านค่าเงินเพิ่มจากความเสี่ยงเรื่องการชำระคืน USDC ไม่มีปัญหาทั้งสองข้อนี้
+
+นอกจากนี้ USDC ยังโอนไปได้ทุกที่ทั่วโลกภายในไม่กี่วินาที เป็นที่ยอมรับในแพลตฟอร์มแลกเปลี่ยนคริปโตรายใหญ่ทุกแห่ง (คุณแปลงเป็นเงินสกุลท้องถิ่นได้ที่ Coinbase Binance Kraken หรือบริการแลกเปลี่ยนในประเทศ) และไม่มีค่า gas เมื่อใช้บน Base ไม่ว่าคุณจะอยู่ที่มะนิลา ลากอส หรือมุมไบ ก็ใช้งานได้เหมือนกัน`
    },
    {
       id: 'does-moodeng-charge-fees',
       question: 'Moodeng คิดค่าธรรมเนียมหรือไม่?',
-      answer: `ไม่ Moodeng Credit ใช้งานฟรี ไม่มีค่าธรรมเนียมแพลตฟอร์มสำหรับการยืมหรือให้กู้ ไม่มีค่าสมัครรายเดือน และไม่มีค่าเริ่มต้น เงินที่ผู้ให้กู้ให้ทุนจะถึงผู้ยืม 100% และเงินชำระคืนจะถึงผู้ให้กู้ 100%
+      answer: `ไม่มี Moodeng Credit ใช้งานได้ฟรี ไม่มีค่าธรรมเนียมแพลตฟอร์มทั้งการยืมและการปล่อยกู้ ไม่มีค่าสมาชิกรายเดือน และไม่มีค่าธรรมเนียมแรกเข้า เงินที่ผู้ให้กู้ปล่อยกู้จะถึงมือผู้ยืม 100% และเงินที่ชำระคืนจะถึงมือผู้ให้กู้ 100%
 
-ค่า network fee หรือ gas ก็เป็นศูนย์เมื่อใช้ Instant Wallet หรือ Base Account บน Base ค่าใช้จ่ายเดียวคือดอกเบี้ยที่ผู้ยืมเสนอ และเงินส่วนนั้นเป็นของผู้ให้กู้ทั้งหมด ไม่ใช่ของเรา`
+ค่าธรรมเนียมเครือข่าย (ค่า gas) ก็เป็นศูนย์เช่นกันเมื่อคุณใช้ Instant Wallet หรือ Base Account บน Base ค่าใช้จ่ายเดียวในการใช้ Moodeng จึงเป็นดอกเบี้ยที่ผู้ยืมเสนอ และดอกเบี้ยนั้นเป็นของผู้ให้กู้ทั้งหมด ไม่ใช่ของเรา
+
+เราให้บริการฟรีได้อย่างไร? เราไม่หักส่วนแบ่งใด ๆ โมเดลธุรกิจในอนาคตของเราคือโทเคน IOU ซึ่งเราจะเปิดตัวด้วยการแจก airdrop ให้ผู้ให้กู้ที่ใช้งานอยู่ จนถึงตอนนั้น Moodeng จะไม่มีค่าธรรมเนียมใด ๆ ทั้งสิ้น`
    },
    {
       id: 'fight-loan-sharks',
       question: 'Moodeng ช่วยต่อสู้กับเงินกู้นอกระบบอย่างไร?',
-      answer: `เงินกู้นอกระบบที่คิดดอกเบี้ยรายสัปดาห์สูง ข่มขู่ผู้ยืม และทำให้คนติดวงจรหนี้เป็นปัญหาทั่วโลก หลายคนไม่มีทางเลือกอื่นเมื่อต้องใช้เงินฉุกเฉิน
+      answer: `เจ้าหนี้นอกระบบที่คิดดอกเบี้ย 20–100% ต่อสัปดาห์ ข่มขู่ผู้ยืม และทำให้ผู้คนติดอยู่ในวงจรหนี้ เป็นปัญหาระดับโลก ผู้คนหลายร้อยล้านคนที่เข้าไม่ถึงหรือเข้าถึงบริการธนาคารได้จำกัดไม่มีที่พึ่งอื่นเมื่อต้องการเงินฉุกเฉิน และสุดท้ายต้องจ่ายคืนมากกว่าที่ยืมไปหลายเท่าซ้ำแล้วซ้ำเล่า
 
-Moodeng Credit ถูกสร้างเป็นทางเลือกที่เป็นธรรมกว่า อัตราดอกเบี้ยถูกกำหนดโดยผู้ยืมและยอมรับโดยผู้ให้กู้ในตลาดที่โปร่งใส ไม่มีค่าใช้จ่ายแอบแฝง ไม่มีดอกเบี้ยทบต้นแบบหลอกลวง และใช้เงินกู้เริ่มต้นขนาดเล็กพร้อมระบบสร้างเครดิตที่เพิ่มวงเงินเมื่อคุณพิสูจน์ความน่าเชื่อถือ`
+Moodeng Credit ถูกสร้างขึ้นเป็นทางเลือกที่เป็นธรรมกว่า ผู้ยืมเป็นผู้กำหนดอัตราดอกเบี้ย และผู้ให้กู้เลือกได้ว่าจะรับหรือไม่ในตลาดที่โปร่งใส ไม่มีค่าใช้จ่ายแอบแฝง ไม่มีกลเม็ดดอกเบี้ยทบต้น เงินกู้เริ่มต้นขนาดเล็ก ($15–$60 ที่ระดับเครดิต 1–4) ตรงกับสิ่งที่ผู้ยืมต้องการจริงในยามฉุกเฉินระยะสั้น ควบคู่กับระบบสร้างเครดิตที่เพิ่มวงเงินให้เมื่อคุณพิสูจน์ได้ว่าน่าเชื่อถือ
+
+ไม่ต้องมีหลักประกันและไม่ต้องมีบัญชีธนาคาร ขอเพียงการยืนยันตัวตนอย่างรวดเร็ว (รูปถ่ายบัตรประชาชนและเซลฟี่ หรือ World ID) และกระเป๋าเงิน (Instant Wallet ของ Moodeng ที่ตั้งค่าได้จากการเข้าสู่ระบบ หรือ Base Account หากคุณต้องการ) ใครที่มีโทรศัพท์ก็เข้าถึงเงินกู้ได้ และความน่าเชื่อถือของคุณจะติดตัวคุณไปด้วย (ผูกกับกระเป๋าเงินและตัวตนที่ยืนยันแล้ว) คุณจึงสร้างประวัติเครดิตที่แท้จริงซึ่งผู้ให้กู้ไว้วางใจได้ แทนที่จะติดอยู่ในวงจรเดิม
+
+เราไม่ได้อ้างว่าจะมาแทนที่ธนาคารสำหรับทุกคน แต่สำหรับผู้ที่ต้องพึ่งเงินกู้นอกระบบเพราะไม่มีทางเลือกอื่น Moodeng ตั้งใจเป็นเส้นทางที่ปลอดภัยกว่า เป็นธรรมกว่า และให้เกียรติผู้ยืมมากกว่า`
    },
    {
       id: 'what-is-credit-building-loan',
       question: 'Credit-Building Loan คืออะไร?',
-      answer: `Credit-Building Loan คือเงินกู้ที่คุณใช้เพื่อเพิ่มวงเงินเครดิตบน Moodeng โดยต้องเป็นเงินกู้เต็มวงเงินระดับเครดิตปัจจุบัน ไม่ต่ำกว่านั้น
+      answer: `Credit-Building Loan คือเงินกู้ที่คุณยืมเพื่อเพิ่มวงเงินบน Moodeng โดยเฉพาะ เงินกู้จะนับเป็น Credit-Building Loan ได้ก็ต่อเมื่อเป็นจำนวนเต็มวงเงินตามระดับเครดิตปัจจุบันของคุณ ไม่ใช่ต่ำกว่านั้น
 
-เช่น คุณเริ่มที่ Level 1 วงเงิน $15 ยืมเต็ม $15 และชำระคืนตรงเวลา วงเงินจะเพิ่มเป็น $20 ครั้งต่อไปยืมเต็ม $20 และชำระคืน ก็จะปลดล็อก $40 แล้วต่อไปเป็น $60
+วิธีการทำงานมีดังนี้ คุณเริ่มที่ระดับเครดิต 1 ด้วยวงเงิน $15 เมื่อยืมเต็ม $15 และชำระคืนตรงเวลา วงเงินของคุณจะเพิ่มเป็น $20 ครั้งถัดไปยืมเต็ม $20 และชำระคืน คุณจะปลดล็อก $40 จากนั้นเป็น $60 และลำดับขั้นนี้จะดำเนินต่อไปในระดับที่สูงขึ้น
 
-เงินกู้ที่ต่ำกว่าเต็มวงเงินเรียกว่า Trust-Building Loan ซึ่งช่วยสร้างประวัติการชำระและชื่อเสียง แต่ไม่เพิ่มระดับเครดิต`
+เงินกู้ที่น้อยกว่าวงเงินเต็มเรียกว่า Trust-Building Loan ซึ่งยังคงมีประโยชน์ เพราะช่วยสร้างประวัติการชำระคืนและความน่าเชื่อถือในสายตาผู้ให้กู้ แต่ไม่ได้เพิ่มระดับเครดิตของคุณ ดังนั้นหากเป้าหมายของคุณคือการสร้างเครดิตและปลดล็อกเงินกู้ที่ใหญ่ขึ้น คุณควรยืมและชำระคืน Credit-Building Loan แบบเต็มวงเงิน
+
+Moodeng ไม่ได้รายงานข้อมูลเครดิตไปยังบริษัทข้อมูลเครดิต ซึ่งต่างจากบัตรเครดิตของธนาคารหรือผลิตภัณฑ์สร้างเครดิตแบบดั้งเดิม เครดิตของคุณถูกบันทึกแบบออนเชน ผูกกับกระเป๋าเงินและตัวตนที่ยืนยันแล้วของคุณ และนำไปใช้ได้กับทุกแพลตฟอร์มที่เชื่อมต่อกับระบบนี้`
    },
    {
       id: 'small-loan',
       question: 'ฉันขอเงินกู้ขนาดเล็กกับ Moodeng ได้ไหม?',
-      answer: `ได้ เงินกู้ขนาดเล็กคือสิ่งที่ Moodeng สร้างมาเพื่อทำ ผู้ยืมใหม่เริ่มด้วยวงเงิน $15 และแพลตฟอร์มออกแบบมาสำหรับเงินกู้ระยะสั้นจำนวนไม่สูง เช่น เงินฉุกเฉินหรือค่าใช้จ่ายครั้งเดียว
+      answer: `ได้ Moodeng ถูกออกแบบมาเพื่อเงินกู้ขนาดเล็กโดยเฉพาะ ผู้ยืมใหม่เริ่มต้นด้วยวงเงิน $15 และแพลตฟอร์มนี้สร้างขึ้นสำหรับการกู้ยืมระยะสั้นจำนวนไม่มาก เช่น เงินฉุกเฉิน เงินหมุนระหว่างรอเงินเดือนออก หรือค่าใช้จ่ายเฉพาะครั้ง
 
-ไม่มีขั้นต่ำ ไม่มีค่าสมัครรายเดือน ไม่มีค่าเริ่มต้น และไม่มีค่าธรรมเนียม คุณขอเท่าที่ต้องการภายในวงเงิน กำหนดวันชำระคืนและอัตราดอกเบี้ย แล้วผู้ให้กู้จะตัดสินใจว่าจะให้ทุนหรือไม่`
+ไม่มียอดกู้ขั้นต่ำ ไม่มีค่าสมาชิกรายเดือน ไม่มีค่าธรรมเนียมแรกเข้า และไม่มีค่าธรรมเนียมใด ๆ คุณขอเท่าที่ต้องการ (ไม่เกินวงเงินตามระดับเครดิตปัจจุบัน) กำหนดวันชำระคืนและอัตราดอกเบี้ยเอง แล้วผู้ให้กู้จะตัดสินใจว่าจะปล่อยกู้ให้คุณหรือไม่
+
+ทุกครั้งที่คุณชำระคืนเงินกู้แบบเต็มวงเงินตรงเวลา วงเงินของคุณจะเพิ่มขึ้นหนึ่งขั้น: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในขณะนี้ คุณจึงเริ่มจากจำนวนน้อยเพื่อทดลองใช้แพลตฟอร์มโดยมีความเสี่ยงต่ำ สร้างความน่าเชื่อถือ แล้วค่อยขยับไปสู่เงินกู้ที่ใหญ่ขึ้นเมื่อคุณพร้อม`
    }
 ];
 
@@ -360,78 +372,90 @@ const VIETNAMESE_FAQS: FAQItem[] = [
    {
       id: 'what-is-moodeng-credit',
       question: 'Moodeng Credit là gì?',
-      answer: `Moodeng Credit là nền tảng vay cho phép bạn yêu cầu các khoản vay ngắn hạn bằng USDC đồng thời tích lũy Pandesal points gắn với ví của bạn.
+      answer: `Moodeng Credit là nền tảng vay cho phép bạn yêu cầu các khoản vay ngắn hạn bằng USDC, đồng thời tích lũy điểm Pandesal gắn với ví của bạn.
 
-Thay vì tập trung vào điểm tín dụng truyền thống, Moodeng giúp bạn xây dựng niềm tin qua việc vay có trách nhiệm và trả đúng hạn. Theo thời gian, niềm tin này giúp bạn mở khóa hạng tín dụng cao hơn và yêu cầu khoản vay lớn hơn.
+Thay vì dựa vào điểm tín dụng truyền thống, Moodeng giúp bạn xây dựng niềm tin thông qua việc vay có trách nhiệm và trả nợ đúng hạn. Theo thời gian, niềm tin này giúp bạn mở khóa Hạng tín dụng cao hơn và yêu cầu những khoản vay lớn hơn.
 
-Pandesal points của bạn không bị khóa trong một ứng dụng. Điểm này phản ánh độ tin cậy và giúp bạn xây dựng uy tín có thể mang theo.`
+Điểm Pandesal của bạn không bị khóa trong một ứng dụng duy nhất. Điểm được thiết kế để phản ánh mức độ đáng tin cậy của bạn và giúp bạn xây dựng uy tín có thể mang theo về sau.`
    },
    {
       id: 'how-does-borrowing-work',
       question: 'Việc vay trên Moodeng hoạt động như thế nào?',
-      answer: `Bạn đăng một yêu cầu vay từ Bảng yêu cầu với số tiền mong muốn, trong hạn mức hiện tại, ngày trả, lãi suất và lý do vay.
+      answer: `Bạn đăng yêu cầu vay trên Bảng yêu cầu, kèm số tiền mong muốn (trong phạm vi hạn mức hiện tại), ngày trả, lãi suất và lý do vay.
 
-Người cho vay xem các yêu cầu đang mở và chọn khoản muốn cấp vốn. Khi được cấp vốn, USDC được chuyển thẳng vào ví của bạn. Bạn trả lại vào hoặc trước ngày đã thỏa thuận từ bất kỳ ví nào có USDC.`
+Người cho vay xem các yêu cầu đang mở và chọn yêu cầu muốn cấp vốn. Khi một người cho vay cấp vốn cho bạn, USDC sẽ được chuyển thẳng vào ví của bạn. Bạn trả lại cho họ vào hoặc trước ngày đã thỏa thuận, từ bất kỳ ví nào có USDC.`
    },
    {
       id: 'what-is-a-trust-score',
-      question: 'Pandesal points là gì và được tính như thế nào?',
-      answer: `Pandesal points là tín hiệu uy tín cho thấy bạn trả khoản vay đáng tin cậy đến mức nào.
+      question: 'Điểm Pandesal là gì và được tính như thế nào?',
+      answer: `Điểm Pandesal là tín hiệu uy tín, phản ánh mức độ đáng tin cậy trong việc trả nợ của bạn.
 
-Điểm tăng khi bạn trả đủ và đúng hạn, và giảm khi trả muộn hoặc vỡ nợ. Người cho vay dùng điểm này để đánh giá rủi ro trước khi cấp vốn cho yêu cầu của bạn.`
+Điểm tăng khi bạn trả đủ và đúng hạn, và giảm khi bạn trả trễ hoặc vỡ nợ. Người cho vay dùng điểm này để đánh giá rủi ro khi quyết định có cấp vốn cho yêu cầu của bạn hay không.`
    },
    {
       id: 'what-is-a-credit-level',
       question: 'Hạng tín dụng là gì?',
-      answer: `Hạng tín dụng kiểm soát số tiền bạn có thể vay trong một lần.
+      answer: `Hạng tín dụng quyết định số tiền tối đa bạn có thể vay mỗi lần.
 
-Bạn bắt đầu ở Level 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ tăng hạn mức và mở khóa cấp tiếp theo: $15 -> $20 -> $40 -> $60 -> $80 -> $100 -> $120 -> $140, và tiếp tục.`
+Bạn bắt đầu ở Hạng 1 với hạn mức $15. Mỗi lần trả đủ một Credit-Building Loan sẽ nâng hạn mức và mở khóa hạng tiếp theo — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại.`
    },
    {
       id: 'what-is-a-base-wallet',
       question: 'Moodeng dùng ví nào?',
-      answer: `Người vay trên Moodeng dùng Instant Wallet theo mặc định. Đây là ví riêng của Moodeng, được tạo ngay từ thông tin đăng nhập Moodeng của bạn: không cần tải ứng dụng và không có seed phrase. Khoản vay của bạn sẽ vào ví này, và ví hoàn toàn thuộc về bạn — bạn có thể xuất key bất cứ lúc nào.
+      answer: `Người vay trên Moodeng mặc định dùng Instant Wallet. Đây là ví của chính Moodeng, được tạo ngay từ tài khoản đăng nhập Moodeng của bạn: không cần tải ứng dụng và không phải ghi lại cụm từ khôi phục (seed phrase). Khoản vay sẽ được chuyển vào ví này, và ví hoàn toàn thuộc về bạn — bạn có thể xuất khóa riêng tư (private key) bất cứ lúc nào.
 
-Instant Wallet chạy trên Base, mạng blockchain Layer 2 do Coinbase xây dựng cho giao dịch crypto nhanh, rẻ và an toàn. Giao dịch USDC bằng Instant Wallet hoặc Base Account trên Base không tốn gas. Khi bạn nhận khoản vay, toàn bộ số tiền vào ví của bạn. Khi bạn trả, người cho vay nhận đủ số tiền.
+Instant Wallet chạy trên Base, một mạng blockchain Layer 2 do Coinbase xây dựng, được thiết kế cho các giao dịch crypto nhanh, rẻ và an toàn. Moodeng dùng Base vì một lý do quan trọng: giao dịch USDC không mất phí gas. Gửi hoặc nhận USDC bằng Instant Wallet hoặc Base Account trên Base không tốn bất kỳ phí mạng nào. Khi bạn nhận khoản vay, toàn bộ số tiền sẽ vào ví của bạn. Khi bạn trả nợ, người cho vay nhận lại đủ từng xu.
 
-Thích dùng Base Account hơn? Bạn có thể kết nối nó thay thế. Base Account là ví thông minh của ứng dụng Base — cũng không cần mật khẩu và không có seed phrase. Với người cho vay, chúng tôi khuyến nghị dùng Base Account. Người cho vay cũng có thể dùng Instant Wallet hoặc kết nối ví khác (như MetaMask) — Instant Wallet và Base Account giúp giao dịch không tốn gas.`
+Bạn thích dùng Base Account hơn? Bạn có thể kết nối Base Account thay cho Instant Wallet. Base Account là ví thông minh của ứng dụng Base — cũng không cần mật khẩu và không dùng cụm từ khôi phục (seedless), nên bạn đăng nhập bằng email hoặc khóa truy cập (passkey) và không có cụm từ khôi phục 12 từ nào có thể bị mất. Với người cho vay, chúng tôi khuyến nghị dùng Base Account. Người cho vay cũng có thể dùng Instant Wallet hoặc kết nối ví khác (như MetaMask) — Instant Wallet và Base Account giúp giao dịch không mất phí gas.`
    },
    {
       id: 'what-is-usdc',
-      question: 'USDC là gì và vì sao Moodeng dùng nó?',
-      answer: `USDC là stablecoin neo 1:1 với đô la Mỹ, do Circle phát hành. Một USDC luôn bằng một đô la, nên giá trị khoản vay trên Moodeng không biến động theo thị trường crypto.
+      question: 'USDC là gì và vì sao Moodeng sử dụng USDC?',
+      answer: `USDC là stablecoin neo giá 1:1 với đô la Mỹ, do Circle — một công ty tài chính được quản lý tại Mỹ — phát hành. Một USDC luôn bằng một đô la, nên số tiền vay trên Moodeng không biến động theo thị trường crypto — khoản vay $20 hôm nay vẫn có giá trị $20 khi trả.
 
-Moodeng dùng USDC vì nó chuyển toàn cầu nhanh, được các sàn lớn hỗ trợ, có thể đổi sang tiền địa phương và không tốn gas khi dùng trên Base. Bạn có thể nhận, giữ, dùng on-chain hoặc rút ra tiền pháp định theo lựa chọn của mình.`
+Moodeng dùng USDC vì nó giải quyết những vấn đề mà cả tiền tệ truyền thống lẫn các loại tiền mã hóa khác đều gặp phải. Chuyển khoản ngân hàng bằng USD mất nhiều ngày, đòi hỏi cả hai bên có hạ tầng ngân hàng phù hợp và thường tốn phí. Các loại tiền mã hóa biến động mạnh như Bitcoin hay ETH có thể dao động 10–20% trong suốt thời hạn khoản vay, khiến cả hai bên chịu thêm rủi ro tỷ giá bên cạnh rủi ro trả nợ. USDC không gặp vấn đề nào trong số đó.
+
+USDC còn có thể chuyển đến bất kỳ đâu trên thế giới chỉ trong vài giây, được mọi sàn giao dịch lớn chấp nhận (bạn có thể đổi sang tiền địa phương trên Coinbase, Binance, Kraken hoặc các dịch vụ nạp/rút tại địa phương) và không mất phí gas khi dùng trên Base. USDC hoạt động dù bạn ở Manila, Lagos hay Mumbai.`
    },
    {
       id: 'does-moodeng-charge-fees',
       question: 'Moodeng có tính phí không?',
-      answer: `Không. Moodeng Credit miễn phí sử dụng. Không có phí nền tảng khi vay, không có phí khi cho vay, không có gói tháng và không có phí thiết lập. 100% tiền người cho vay cấp đến người vay, và 100% tiền trả lại đến người cho vay.
+      answer: `Không. Moodeng Credit miễn phí sử dụng. Không có phí nền tảng khi vay, không có phí khi cho vay, không có phí thuê bao hàng tháng, không có phí thiết lập. 100% số tiền người cho vay cấp vốn được chuyển đến người vay, và 100% khoản trả nợ được chuyển đến người cho vay.
 
-Phí mạng hoặc gas cũng bằng 0 khi bạn dùng Instant Wallet hoặc Base Account trên Base. Chi phí duy nhất là lãi suất người vay tự đề xuất, và phần đó thuộc hoàn toàn về người cho vay.`
+Phí mạng (gas) cũng bằng 0 khi bạn dùng Instant Wallet hoặc Base Account trên Base. Vì vậy, chi phí duy nhất khi dùng Moodeng là lãi suất mà người vay đề xuất — và khoản đó thuộc hoàn toàn về người cho vay, không phải chúng tôi.
+
+Làm sao chúng tôi duy trì miễn phí? Chúng tôi không trích bất kỳ khoản nào. Mô hình kinh doanh tương lai của chúng tôi là token IOU, sẽ được ra mắt qua hình thức airdrop cho những người cho vay tích cực. Cho đến lúc đó, Moodeng hoàn toàn miễn phí.`
    },
    {
       id: 'fight-loan-sharks',
       question: 'Moodeng giúp chống cho vay nặng lãi như thế nào?',
-      answer: `Cho vay nặng lãi là vấn đề toàn cầu: lãi tuần rất cao, đe dọa người vay và khiến người ta mắc kẹt trong vòng xoáy nợ. Nhiều người không có tài khoản ngân hàng hoặc thiếu dịch vụ tài chính không còn lựa chọn nào khác khi cần tiền khẩn cấp.
+      answer: `Cho vay nặng lãi — những người cho vay phi chính thức tính lãi 20–100% mỗi tuần, đe dọa người vay và đẩy họ vào vòng xoáy nợ nần — là vấn đề toàn cầu. Hàng trăm triệu người không có hoặc ít được tiếp cận dịch vụ ngân hàng không còn nơi nào khác để tìm tiền khẩn cấp, và rốt cuộc phải trả gấp nhiều lần số tiền đã vay, hết lần này đến lần khác.
 
-Moodeng Credit là một lựa chọn công bằng hơn. Lãi suất do người vay đặt và người cho vay chấp nhận trong một thị trường minh bạch. Không có phí ẩn, không có trò lãi chồng lãi, và các khoản vay nhỏ ban đầu phù hợp nhu cầu ngắn hạn trong khi hệ thống xây dựng tín dụng tăng hạn mức khi bạn chứng minh độ tin cậy.`
+Moodeng Credit được xây dựng như một lựa chọn công bằng hơn. Lãi suất do người vay đặt ra và được người cho vay chấp nhận (hoặc bỏ qua) trong một thị trường minh bạch — không phí ẩn, không chiêu trò lãi chồng lãi. Các khoản vay khởi đầu nhỏ ($15–$60 ở Hạng tín dụng 1–4) đúng với nhu cầu thực tế của người vay trong những tình huống khẩn cấp ngắn hạn, đi kèm hệ thống xây dựng tín dụng giúp tăng hạn mức khi bạn chứng minh được sự đáng tin cậy.
+
+Không cần tài sản thế chấp và không cần tài khoản ngân hàng — chỉ cần một bước xác minh danh tính nhanh (ảnh giấy tờ tùy thân và ảnh selfie, hoặc World ID) và một ví (Instant Wallet của Moodeng, được thiết lập từ tài khoản đăng nhập của bạn, hoặc Base Account nếu bạn muốn). Bất kỳ ai có điện thoại đều có thể vay. Và uy tín luôn đi cùng bạn (gắn với ví và danh tính đã xác minh của bạn), nên bạn xây dựng được lịch sử tín dụng thật sự mà người cho vay tin tưởng — thay vì mắc kẹt trong vòng luẩn quẩn.
+
+Chúng tôi không tuyên bố sẽ thay thế ngân hàng cho tất cả mọi người. Nhưng với những người hiện phải tìm đến vay nặng lãi vì không còn lựa chọn nào khác, Moodeng hướng đến một con đường an toàn hơn, công bằng hơn và đàng hoàng hơn.`
    },
    {
       id: 'what-is-credit-building-loan',
-      question: 'Credit-Building Loan là gì?',
-      answer: `Credit-Building Loan là khoản vay bạn dùng để tăng hạn mức tín dụng trên Moodeng. Để được tính là loại này, khoản vay phải bằng toàn bộ hạn mức hạng tín dụng hiện tại, không thấp hơn.
+      question: 'Khoản vay xây dựng tín dụng (Credit-Building Loan) là gì?',
+      answer: `Khoản vay xây dựng tín dụng là khoản vay bạn thực hiện nhằm mục đích tăng hạn mức tín dụng trên Moodeng. Để được tính là khoản vay này, số tiền vay phải bằng toàn bộ hạn mức hiện tại của bạn — không được thấp hơn.
 
-Bạn bắt đầu ở hạng tín dụng 1 với hạn mức $15. Vay đủ $15 và trả đúng hạn, hạn mức tăng lên $20. Lần sau vay đủ $20 và trả, bạn mở khóa $40, rồi $60.
+Cách hoạt động như sau. Bạn bắt đầu ở Hạng tín dụng 1 với hạn mức vay $15. Vay đủ $15 và trả đúng hạn, hạn mức của bạn sẽ tăng lên $20. Lần sau vay đủ $20 và trả nợ, bạn mở khóa $40. Rồi đến $60. Lộ trình tiếp tục như vậy ở các hạng cao hơn.
 
-Các khoản vay nhỏ hơn hạn mức được gọi là Trust-Building Loan. Chúng vẫn giúp xây dựng lịch sử trả và uy tín, nhưng không tăng hạng tín dụng.`
+Các khoản vay nhỏ hơn toàn bộ hạn mức được gọi là Trust-Building Loan (khoản vay xây dựng niềm tin). Những khoản vay này vẫn có ích — chúng giúp bạn xây dựng lịch sử trả nợ và uy tín với người cho vay — nhưng không nâng Hạng tín dụng của bạn. Vì vậy, nếu mục tiêu của bạn là xây dựng tín dụng và mở khóa các khoản vay lớn hơn, bạn nên vay và trả các Credit-Building Loan bằng toàn bộ hạn mức.
+
+Khác với thẻ tín dụng ngân hàng hay các sản phẩm xây dựng tín dụng truyền thống, tín dụng trên Moodeng không được báo cáo cho trung tâm thông tin tín dụng. Tín dụng được ghi nhận on-chain, gắn với ví và danh tính đã xác minh của bạn, và có thể mang theo sang bất kỳ nền tảng nào tích hợp với hệ thống.`
    },
    {
       id: 'small-loan',
       question: 'Tôi có thể vay khoản nhỏ với Moodeng không?',
-      answer: `Có. Khoản vay nhỏ chính là điều Moodeng được xây dựng để hỗ trợ. Người vay mới bắt đầu với hạn mức $15, và nền tảng được thiết kế cho vay ngắn hạn, số tiền nhỏ: tiền khẩn cấp, bắc cầu trước ngày lương, hoặc chi phí một lần.
+      answer: `Có — khoản vay nhỏ chính là thứ Moodeng được xây dựng để phục vụ. Người vay mới bắt đầu với hạn mức $15, và nền tảng được thiết kế cho các khoản vay ngắn hạn, số tiền nhỏ: tiền khẩn cấp, trang trải trước ngày nhận lương, các khoản chi một lần.
 
-Không có số tiền tối thiểu, không có phí tháng, không có phí thiết lập và không có phí nền tảng. Bạn yêu cầu số tiền cần vay trong hạn mức hiện tại, đặt ngày trả và lãi suất, rồi người cho vay quyết định có cấp vốn hay không.`
+Không có số tiền vay tối thiểu, không có phí thuê bao hàng tháng, không có phí thiết lập và không có bất kỳ khoản phí nào. Bạn yêu cầu số tiền mình cần (trong phạm vi hạn mức của Hạng tín dụng hiện tại), đặt ngày trả và lãi suất, rồi người cho vay sẽ quyết định có cấp vốn cho bạn hay không.
+
+Mỗi khoản vay bằng toàn bộ hạn mức mà bạn trả đúng hạn sẽ nâng hạn mức lên một bậc — $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại. Vì vậy, bạn có thể bắt đầu nhỏ để thử nền tảng với rủi ro thấp, xây dựng uy tín, và chỉ chuyển sang các khoản vay lớn hơn khi bạn đã sẵn sàng.`
    }
 ];
 

@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import { FundedLoanBody, FundLoanTitle } from '@/i18n/SentenceLabels';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
 
@@ -83,7 +84,7 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
                   <div>
                      <h2 className="text-md-h5 font-semibold text-md-heading">Thank you for funding</h2>
                      <p className="mt-md-2 text-md-b2 text-[#6d6d6d]">
-                        You funded {borrowerName}’s loan. If they repay, the repayment is automatically sent to your wallet.
+                        <FundedLoanBody name={borrowerName} />
                      </p>
                   </div>
                   <dl className="w-full space-y-md-1 rounded-[16px] border border-[#f0f0f0] p-md-3 text-left">
@@ -118,7 +119,9 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
                </div>
             ) : (
                <>
-                  <h2 className="text-md-h5 font-semibold text-md-heading">Fund {borrowerName}’s loan</h2>
+                  <h2 className="text-md-h5 font-semibold text-md-heading">
+                     <FundLoanTitle name={borrowerName} />
+                  </h2>
                   <div className="mt-md-3 flex items-center gap-md-2">
                      <UserAvatar src={data.borrowerAvatarUrl ?? undefined} alt={borrowerName} size={48} />
                      <div>
@@ -164,7 +167,7 @@ export default function LenderFundLoanModal({ loanId, onClose }: Props) {
                               ? 'Finalizing…'
                               : busy
                                 ? 'Processing…'
-                                : `Fund ${borrowerName}’s loan`}
+                                : <FundLoanTitle name={borrowerName} />}
                      {!busy ? <Send className="w-5 h-5" /> : null}
                   </button>
                </>

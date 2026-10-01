@@ -134,7 +134,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                      <span className="text-md-h5 text-md-heading">Moodeng Credit</span>
                   </Link>
                   <p className="mt-md-2 text-md-b2 font-medium text-md-neutral-700">
-                     Small USDC loans, World ID verification, and portable repayment history for borrowers building credit abroad.
+                     Small USDC loans, quick identity verification, and portable repayment history for borrowers building credit abroad.
                   </p>
                   <p className="mt-md-3 text-md-b3 font-semibold uppercase tracking-[0.12em] text-md-neutral-700">© 2026 Moodeng Credit</p>
                </div>

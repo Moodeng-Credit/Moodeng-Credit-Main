@@ -285,7 +285,7 @@ export function DashboardV2Referral() {
    const inviteLink = model.referralCode ? buildInviteLink(model.referralCode) : null;
    const shareText =
       language === 'fil'
-         ? 'Libreng pagkain para sa ating dalawa! Sumali sa Moodeng Credit gamit ang code ko:'
+         ? `Libreng pagkain para sa ating dalawa! Sumali sa Moodeng Credit gamit ang code ko na ${code}:`
          : `Free meal for both of us! Join Moodeng Credit with my code ${code}:`;
 
    const copyCode = async () => {

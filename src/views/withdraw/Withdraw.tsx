@@ -29,6 +29,7 @@ import { useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { erc20Abi } from 'viem';
 
+import { TransferAddressLabel } from '@/i18n/SentenceLabels';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { useAccount, useReadContract, useWaitForTransactionReceipt } from 'wagmi';
 
@@ -1221,7 +1222,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
 
                <Card className="p-[16px] space-y-[12px]">
                   <p className="text-[16px] text-[var(--ink)]" style={{ fontWeight: 590, letterSpacing: '-0.02em' }}>
-                     Your {cfg.short} transfer address
+                     <TransferAddressLabel exchange={cfg.short} />
                   </p>
                   <div className="space-y-[6px]">
                      <div

@@ -26,7 +26,7 @@ export default function WhyLendSection(): JSX.Element {
                   </p>
                   <img
                      className="absolute w-[50px] h-[37px] top-0 left-[1186px] object-cover"
-                     alt="Svg"
+                     alt=""
                      src="https://c.animaapp.com/VPWnEuWR/img/svg-2.svg"
                      width={50}
                      height={37}
@@ -72,14 +72,14 @@ export default function WhyLendSection(): JSX.Element {
                   <div className="relative w-[110px] h-[135px] -left-1 bg-[url(https://c.animaapp.com/VPWnEuWR/img/catuu-1@2x.png)] bg-cover bg-[50%_50%]">
                      <img
                         className="absolute w-10 h-10 top-[79px] left-4 object-cover"
-                        alt="Acffc aa f"
+                        alt=""
                         src="https://c.animaapp.com/VPWnEuWR/img/a5cf6f4c-aa64-458f-be0c-e885084dbb87-transformed-1@2x.png"
                         width={40}
                         height={40}
                      />
                      <img
                         className="absolute w-[47px] h-6 top-[89px] left-[13px] object-cover"
-                        alt="Img"
+                        alt=""
                         src="https://c.animaapp.com/VPWnEuWR/img/oukwgyzftkmjv95wwbf2ww-removebg-preview-1@2x.png"
                         width={100}
                         height={100}

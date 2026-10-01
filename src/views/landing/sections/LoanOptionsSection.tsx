@@ -27,14 +27,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                     <div className="relative w-[290px] h-[234px]">
                                        <img
                                           className="absolute w-[290px] h-[234px] top-0 left-0 -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-60.svg"
                                           width={290}
                                           height={234}
                                        />
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[123px] left-[230px] -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-52.svg"
                                           width={21}
                                           height={21}
@@ -51,7 +51,7 @@ export default function LoanOptionsSection(): JSX.Element {
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[130px] left-7 -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-47.svg"
                                           width={19}
                                           height={19}
@@ -74,14 +74,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        </p>
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[101px] left-[214px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-64.svg"
                                           width={21}
                                           height={21}
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[113px] left-6"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-50.svg"
                                           width={19}
                                           height={19}
@@ -126,14 +126,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                     <div className="relative w-[290px] h-[234px]">
                                        <img
                                           className="absolute w-[290px] h-[234px] top-0 left-0 -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-60.svg"
                                           width={290}
                                           height={234}
                                        />
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[123px] left-[230px] -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-52.svg"
                                           width={21}
                                           height={21}
@@ -150,7 +150,7 @@ export default function LoanOptionsSection(): JSX.Element {
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[130px] left-7 -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-53.svg"
                                           width={19}
                                           height={19}
@@ -175,14 +175,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        </p>
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[101px] left-[214px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-64.svg"
                                           width={21}
                                           height={21}
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[113px] left-6"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-56.svg"
                                           width={19}
                                           height={19}
@@ -211,14 +211,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        <div className="relative w-[290px] h-[232px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-57.svg)] bg-[100%_100%]">
                                           <img
                                              className="absolute w-[21px] h-[21px] top-[89px] left-[238px]"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-58.svg"
                                              width={21}
                                              height={21}
                                           />
                                           <img
                                              className="absolute w-[19px] h-[19px] top-[103px] left-[35px]"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-59.svg"
                                              width={19}
                                              height={19}
@@ -251,14 +251,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                     <div className="relative w-[290px] h-[234px]">
                                        <img
                                           className="absolute w-[290px] h-[234px] top-0 left-0 -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-60.svg"
                                           width={290}
                                           height={234}
                                        />
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[120px] left-[235px] -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-61.svg"
                                           width={21}
                                           height={21}
@@ -275,7 +275,7 @@ export default function LoanOptionsSection(): JSX.Element {
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[136px] left-[23px] -rotate-180"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-62.svg"
                                           width={19}
                                           height={19}
@@ -298,14 +298,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        </p>
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[101px] left-[214px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-64.svg"
                                           width={21}
                                           height={21}
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[113px] left-6"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-65.svg"
                                           width={19}
                                           height={19}
@@ -335,14 +335,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        <div className="relative w-[290px] h-[232px] bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-66.svg)] bg-[100%_100%]">
                                           <img
                                              className="absolute w-[21px] h-[21px] top-[89px] left-[238px]"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-73.svg"
                                              width={21}
                                              height={21}
                                           />
                                           <img
                                              className="absolute w-[19px] h-[19px] top-[103px] left-[35px]"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-68.svg"
                                              width={19}
                                              height={19}
@@ -378,14 +378,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        <div className="relative w-[290px] h-[234px]">
                                           <img
                                              className="absolute w-[290px] h-[234px] top-0 left-0 -rotate-180"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-69.svg"
                                              width={290}
                                              height={234}
                                           />
                                           <img
                                              className="absolute w-[21px] h-[21px] top-[120px] left-[235px] -rotate-180"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-70.svg"
                                              width={21}
                                              height={21}
@@ -402,7 +402,7 @@ export default function LoanOptionsSection(): JSX.Element {
                                           />
                                           <img
                                              className="absolute w-[19px] h-[19px] top-[136px] left-[23px] -rotate-180"
-                                             alt="Vector"
+                                             alt=""
                                              src="https://c.animaapp.com/VPWnEuWR/img/vector-71.svg"
                                              width={19}
                                              height={19}
@@ -435,14 +435,14 @@ export default function LoanOptionsSection(): JSX.Element {
                                        </p>
                                        <img
                                           className="absolute w-[21px] h-[21px] top-[101px] left-[214px]"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-73.svg"
                                           width={21}
                                           height={21}
                                        />
                                        <img
                                           className="absolute w-[19px] h-[19px] top-[113px] left-6"
-                                          alt="Vector"
+                                          alt=""
                                           src="https://c.animaapp.com/VPWnEuWR/img/vector-74.svg"
                                           width={19}
                                           height={19}
@@ -476,14 +476,14 @@ export default function LoanOptionsSection(): JSX.Element {
          </div>
          <img
             className="absolute w-[77px] h-[77px] top-[165px] left-[453px]"
-            alt="Vector"
+            alt=""
             src="https://c.animaapp.com/VPWnEuWR/img/vector-75.svg"
             width={77}
             height={77}
          />
          <img
             className="absolute w-[77px] h-[77px] top-[165px] left-[1384px]"
-            alt="Vector"
+            alt=""
             src="https://c.animaapp.com/VPWnEuWR/img/vector-76.svg"
             width={77}
             height={77}

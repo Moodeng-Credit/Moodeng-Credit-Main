@@ -21,7 +21,7 @@ export default function CreditRebornSection(): JSX.Element {
                                  <div className="absolute w-[290px] h-[232px] top-0 left-0 bg-[url(https://c.animaapp.com/VPWnEuWR/img/vector-77.svg)] bg-[100%_100%]">
                                     <img
                                        className="absolute w-[21px] h-[21px] top-[76px] left-[73px]"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-80.svg"
                                        width={21}
                                        height={21}
@@ -29,14 +29,14 @@ export default function CreditRebornSection(): JSX.Element {
                                  </div>
                                  <img
                                     className="absolute w-[17px] h-[19px] top-[2223px] left-[2821px]"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-79@2x.png"
                                     width={17}
                                     height={19}
                                  />
                                  <img
                                     className="absolute w-[62px] h-[82px] top-[2318px] left-[2776px]"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-79@2x.png"
                                     width={62}
                                     height={82}
@@ -62,7 +62,7 @@ export default function CreditRebornSection(): JSX.Element {
                               <div className="absolute w-56 h-[72px] top-3 left-[34px]">
                                  <img
                                     className="absolute w-[21px] h-[21px] top-[51px] left-[197px]"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-82.svg"
                                     width={21}
                                     height={21}
@@ -97,14 +97,14 @@ export default function CreditRebornSection(): JSX.Element {
                               <div className="relative w-[290px] h-[234px]">
                                  <img
                                     className="absolute w-[252px] h-[234px] top-0 left-0"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-83.svg"
                                     width={252}
                                     height={234}
                                  />
                                  <img
                                     className="absolute w-[22px] h-[22px] top-[77px] left-[202px]"
-                                    alt="Vector"
+                                    alt=""
                                     src="https://c.animaapp.com/VPWnEuWR/img/vector-84.svg"
                                     width={22}
                                     height={22}

@@ -34,7 +34,7 @@ const WELCOME_COPY = {
       borrowerSubtitle: 'Humiram nang responsable. Bumuo ng tiwala. Mag-unlock ng mas mataas na limit habang tumatagal.',
       getStartedTitle: 'Magsimula ngayon',
       recommended: 'Inirerekomenda',
-      setupBody: 'I-set up ang account mo at i-verify ang pagkakakilanlan para ma-access ang credit',
+      setupBody: 'I-set up ang account mo at i-verify ang identity mo para makahiram',
       startSetup: 'Simulan ang setup',
       watchTutorial: 'Panoorin ang tutorial',
       checkFirstTitle: 'Tingnan muna',
@@ -44,53 +44,53 @@ const WELCOME_COPY = {
       exploreMoodeng: 'I-explore ang Moodeng'
    },
    id: {
-      title: 'Mulai',
+      title: 'Persiapan akun',
       lenderHeadline: 'Beri pinjaman kepada orang sungguhan dan bantu mereka membangun kredit.',
       lenderSubtitle: 'Dapatkan imbal hasil onchain dengan Base.',
-      borrowerHeadline: 'Kamu sedang membangun reputasi yang bisa dibawa wallet kamu ke mana saja.',
+      borrowerHeadline: 'Kamu sedang membangun reputasi yang bisa dibawa dompetmu ke mana saja.',
       borrowerSubtitle: 'Pinjam dengan bertanggung jawab. Bangun kepercayaan. Buka limit lebih besar dari waktu ke waktu.',
       getStartedTitle: 'Mulai sekarang',
       recommended: 'Direkomendasikan',
       setupBody: 'Siapkan akun dan verifikasi identitas kamu untuk mengakses kredit',
-      startSetup: 'Mulai setup',
+      startSetup: 'Mulai persiapan',
       watchTutorial: 'Tonton tutorial',
       checkFirstTitle: 'Lihat dulu',
       noCommitment: 'Tanpa komitmen',
-      checkFirstBody: 'Jelajahi fitur, bandingkan rate, dan lihat cara kerjanya',
-      previewItems: ['Lihat fitur', 'Lihat rate', 'Pelajari cara kerjanya'],
+      checkFirstBody: 'Jelajahi fitur, bandingkan suku bunga, dan lihat cara kerjanya',
+      previewItems: ['Lihat fitur', 'Lihat suku bunga', 'Pelajari cara kerjanya'],
       exploreMoodeng: 'Jelajahi Moodeng'
    },
    th: {
       title: 'เริ่มต้น',
-      lenderHeadline: 'ให้กู้กับคนจริงและช่วยพวกเขาสร้างเครดิต',
-      lenderSubtitle: 'รับผลตอบแทน onchain ด้วย Base',
-      borrowerHeadline: 'คุณกำลังสร้างชื่อเสียงที่กระเป๋าของคุณพาไปได้ทุกที่',
-      borrowerSubtitle: 'ยืมอย่างรับผิดชอบ สร้างความน่าเชื่อถือ และปลดล็อกเพิ่มขึ้นเมื่อเวลาผ่านไป',
-      getStartedTitle: 'เริ่มตอนนี้',
+      lenderHeadline: 'ปล่อยกู้ให้คนจริง และช่วยให้พวกเขาสร้างเครดิต',
+      lenderSubtitle: 'รับผลตอบแทนแบบออนเชนบน Base',
+      borrowerHeadline: 'คุณกำลังสร้างประวัติความน่าเชื่อถือที่ติดตัวไปกับกระเป๋าเงินได้ทุกที่',
+      borrowerSubtitle: 'ยืมอย่างรับผิดชอบ สร้างความน่าเชื่อถือ แล้วปลดล็อกวงเงินที่สูงขึ้นเมื่อเวลาผ่านไป',
+      getStartedTitle: 'เริ่มต้นเลย',
       recommended: 'แนะนำ',
       setupBody: 'ตั้งค่าบัญชีและยืนยันตัวตนเพื่อเข้าถึงเครดิต',
       startSetup: 'เริ่มตั้งค่า',
       watchTutorial: 'ดูบทแนะนำ',
-      checkFirstTitle: 'ดูก่อน',
+      checkFirstTitle: 'ลองดูก่อน',
       noCommitment: 'ไม่มีข้อผูกมัด',
-      checkFirstBody: 'สำรวจฟีเจอร์ เปรียบเทียบอัตรา และดูว่าทำงานอย่างไร',
-      previewItems: ['ดูฟีเจอร์', 'ดูอัตรา', 'เรียนรู้วิธีทำงาน'],
+      checkFirstBody: 'สำรวจฟีเจอร์ เปรียบเทียบอัตราดอกเบี้ย และดูว่าทุกอย่างทำงานอย่างไร',
+      previewItems: ['ดูฟีเจอร์', 'ดูอัตราดอกเบี้ย', 'เรียนรู้วิธีการทำงาน'],
       exploreMoodeng: 'สำรวจ Moodeng'
    },
    vi: {
       title: 'Bắt đầu',
       lenderHeadline: 'Cho người thật vay và giúp họ xây dựng tín dụng.',
-      lenderSubtitle: 'Kiếm lợi suất onchain với Base.',
+      lenderSubtitle: 'Kiếm tiền onchain — hoạt động trên Base.',
       borrowerHeadline: 'Bạn đang xây dựng uy tín mà ví của bạn có thể mang đi mọi nơi.',
       borrowerSubtitle: 'Vay có trách nhiệm. Xây dựng niềm tin. Mở khóa thêm theo thời gian.',
       getStartedTitle: 'Bắt đầu ngay',
-      recommended: 'Đề xuất',
-      setupBody: 'Thiết lập tài khoản và xác minh danh tính để truy cập tín dụng',
+      recommended: 'Khuyên dùng',
+      setupBody: 'Thiết lập tài khoản và xác minh danh tính để tiếp cận tín dụng',
       startSetup: 'Bắt đầu thiết lập',
       watchTutorial: 'Xem hướng dẫn',
       checkFirstTitle: 'Xem trước',
       noCommitment: 'Không cam kết',
-      checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem cách hoạt động',
+      checkFirstBody: 'Khám phá tính năng, so sánh lãi suất và xem mọi thứ hoạt động ra sao',
       previewItems: ['Xem tính năng', 'Xem lãi suất', 'Tìm hiểu cách hoạt động'],
       exploreMoodeng: 'Khám phá Moodeng'
    }
@@ -248,7 +248,10 @@ export default function Welcome() {
                      <p className="text-md-b1 text-md-blue-800 dark:text-md-blue-200">{copy.checkFirstBody}</p>
                      <ul className="flex flex-col gap-md-0 pt-md-1">
                         {copy.previewItems.map((item) => (
-                           <li key={item} className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200">
+                           <li
+                              key={item}
+                              className="flex gap-md-1 items-center text-md-b2 font-semibold text-md-blue-1000 dark:text-md-blue-200"
+                           >
                               <span className="size-[6px] rounded-full bg-md-blue-700 shrink-0" />
                               {item}
                            </li>

@@ -28,29 +28,32 @@ const COPY = {
    title: { en: 'How can we help?', fil: 'Paano ka namin matutulungan?' },
    subtitle: {
       en: 'Search below, or browse the topics. A real person is one tap away on every answer.',
-      fil: 'Maghanap sa ibaba, o mag-browse ng mga paksa. May totoong tao na isang tap lang sa bawat sagot.'
+      fil: 'Maghanap sa ibaba, o mag-browse ng mga paksa. Isang tap lang sa bawat sagot, may totoong tao nang tutulong sa iyo.'
    },
    searchPlaceholder: { en: 'Search help — wallet, cash out, verify…', fil: 'Maghanap — wallet, cash out, verify…' },
    chatTitle: { en: 'Message the Moodeng team', fil: 'Mag-message sa Moodeng team' },
    chatBody: {
       en: 'Payouts, verification, wallets, repayments — anything. We answer here and by email, so you will not miss the reply.',
-      fil: 'Payout, verification, wallet, bayad — kahit ano. Sasagot kami dito at sa email, kaya hindi mo mami-miss ang sagot.'
+      fil: 'Payout, verification, wallet, bayad — kahit ano. Sasagot kami rito at sa email, kaya hindi mo mami-miss ang sagot.'
    },
    chatCta: { en: 'Start a conversation', fil: 'Magsimula ng usapan' },
    replyTime: { en: 'We usually reply within a few hours.', fil: 'Karaniwan kaming sumasagot sa loob ng ilang oras.' },
    resultsLabel: { en: 'Results', fil: 'Mga resulta' },
-   noResults: { en: 'No answers matched — try different words, or reach us below.', fil: 'Walang tumugmang sagot — subukan ang ibang salita, o kontakin kami sa ibaba.' },
+   noResults: {
+      en: 'No answers matched — try different words, or reach us below.',
+      fil: 'Walang tumugmang sagot — subukan ang ibang salita, o makipag-ugnayan sa amin sa ibaba.'
+   },
    clearSearch: { en: 'Clear search', fil: 'I-clear ang search' },
    stillLabel: { en: 'Still need help?', fil: 'Kailangan mo pa ng tulong?' },
    stillBody: {
       en: 'Reach the Moodeng team directly — pick whichever is easiest.',
-      fil: 'Kontakin nang diretso ang Moodeng team — piliin ang pinakamadali.'
+      fil: 'Makipag-ugnayan nang diretso sa Moodeng team — piliin kung alin ang pinakamadali para sa iyo.'
    },
    telegram: { en: 'Telegram', fil: 'Telegram' },
    facebook: { en: 'Facebook', fil: 'Facebook' },
    email: { en: 'Email', fil: 'Email' },
-   gettingStarted: { en: 'New to Moodeng? Getting started →', fil: 'Bago sa Moodeng? Magsimula →' },
-   browseAll: { en: 'Browse all guides & updates →', fil: 'Tingnan lahat ng gabay at updates →' }
+   gettingStarted: { en: 'New to Moodeng? Getting started →', fil: 'Bago sa Moodeng? Pagsisimula →' },
+   browseAll: { en: 'Browse all guides & updates →', fil: 'Tingnan ang lahat ng gabay at update →' }
 } satisfies Record<string, LocalizedText>;
 
 /** Flatten a topic into one lowercase haystack for search. */
@@ -105,7 +108,10 @@ export default function HelpHub(): JSX.Element {
 
             {/* Search */}
             <div className="relative mt-5">
-               <Search className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#8b8299]" aria-hidden="true" />
+               <Search
+                  className="pointer-events-none absolute left-4 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#8b8299]"
+                  aria-hidden="true"
+               />
                <input
                   type="search"
                   value={query}

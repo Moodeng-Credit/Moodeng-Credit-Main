@@ -116,7 +116,7 @@ const MILESTONE_TITLES: Record<string, string> = {
    'first-funded-loan': 'Get funded by a lender',
    'first-on-time-repayment': 'Repay a loan on time',
    'two-on-time-streak': '2-loan on-time streak',
-   'full-limit-credit-builder': 'Repay a full-limit credit',
+   'full-limit-credit-builder': 'Repay a full-limit loan',
    'two-unique-lenders': 'Borrow from 2 lenders',
    'repay-100-total': 'Repay $100 total',
    'trusted-borrower-candidate': 'Become a trusted borrower'

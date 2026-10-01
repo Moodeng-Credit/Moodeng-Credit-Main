@@ -41,7 +41,7 @@ export default function RevolutionizeSection(): JSX.Element {
                                     Your privacy matters.{' '}
                                  </span>
                                  <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-bold text-[#171420] text-[22.9px] tracking-[0] leading-8">
-                                    Moodeng never collects your name, contacts, social media, SIM, or photos.
+                                    Moodeng never reads your contacts, social media, SIM, or photo gallery.
                                  </span>
                                  <span className="[font-family:'PP_Telegraf-Regular',Helvetica] font-normal text-[#171420] text-[22.9px] tracking-[0] leading-8">
                                     {' '}
@@ -79,7 +79,7 @@ export default function RevolutionizeSection(): JSX.Element {
                         </div>
                         <img
                            className="absolute w-[50px] h-[37px] top-[4800px] left-[3798px] object-cover"
-                           alt="Svg"
+                           alt=""
                            src="https://c.animaapp.com/VPWnEuWR/img/vector-79@2x.png"
                            width={50}
                            height={37}
@@ -93,7 +93,7 @@ export default function RevolutionizeSection(): JSX.Element {
                         </div>
                         <img
                            className="absolute w-10 h-10 top-[26px] left-6"
-                           alt="Svg"
+                           alt=""
                            src="https://c.animaapp.com/VPWnEuWR/img/svg-1782751338-638.svg"
                            width={40}
                            height={40}
@@ -111,7 +111,7 @@ export default function RevolutionizeSection(): JSX.Element {
                                  <div className="relative w-[21px] h-5 bg-[url(https://c.animaapp.com/VPWnEuWR/img/star-4.svg)] bg-[100%_100%]">
                                     <img
                                        className="absolute w-2 h-[5px] top-2 left-1.5"
-                                       alt="Vector"
+                                       alt=""
                                        src="https://c.animaapp.com/VPWnEuWR/img/vector-4-1.svg"
                                        width={100}
                                        height={100}

@@ -4,7 +4,7 @@ import { ArrowRight, LockKeyhole, UserCheck } from 'lucide-react';
 
 const listData = [
    {
-      title: 'World ID helps confirm one real person behind each borrower account.'
+      title: 'Identity verification helps confirm one real person behind each borrower account.'
    },
    {
       title: 'Moodeng can show verification status without storing passport-style documents.'
@@ -21,7 +21,9 @@ export default function VerifyIdentitySection(): JSX.Element {
             <UserCheck className="size-5" />
             Identity layer
          </div>
-         <div className="mt-4 text-4xl font-semibold leading-tight max-md:text-3xl">World ID is a trust signal, not a loan guarantee.</div>
+         <div className="mt-4 text-4xl font-semibold leading-tight max-md:text-3xl">
+            Verification is a trust signal, not a loan guarantee.
+         </div>
          <div className="mt-4 text-xl leading-8 text-white/82 max-md:text-lg">
             Verification makes the borrower harder to fake. The credit signal still comes from transparent terms, small USDC loans, and
             repayment behavior over time.
@@ -36,7 +38,7 @@ export default function VerifyIdentitySection(): JSX.Element {
                ))}
             </ul>
             <div className="flex shrink-0 items-center gap-2 rounded-full bg-white px-5 py-3 font-semibold text-zinc-950">
-               World ID first
+               Verified first
                <ArrowRight className="size-4" />
             </div>
          </div>

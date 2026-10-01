@@ -84,7 +84,7 @@ export const mostNeededCards: CardData[] = [
          { label: 'Japan', value: '🇯🇵' },
          { label: 'Singapore', value: '🇸🇬' }
       ],
-      title: 'Orb-ready corridors',
+      title: 'Worker corridors',
       titleColor: 'text-indigo-500',
       accentColor: '#6366f1',
       accentSoftColor: '#eef2ff',
@@ -93,8 +93,8 @@ export const mostNeededCards: CardData[] = [
       subtitle: 'abroad',
       features: [
          {
-            title: 'World ID access first',
-            description: 'We focus where borrowers can verify with World ID through nearby Orb locations.'
+            title: 'Verified borrowers first',
+            description: 'Every borrower completes a one-time identity check before requesting a loan.'
          },
          {
             title: 'Korea, Taiwan, Japan',
@@ -102,7 +102,7 @@ export const mostNeededCards: CardData[] = [
          },
          {
             title: 'Singapore and beyond',
-            description: 'Orb availability helps us start with users who can prove they are unique, real borrowers.'
+            description: 'Identity checks help us start with users who can prove they are unique, real borrowers.'
          }
       ],
       opportunitySection: {

@@ -1,5 +1,5 @@
 import { MONTHS } from '@/constants/dates';
-import type { LocaleCode } from '@/i18n/translations';
+import { type LocaleCode, resolveLocaleCode } from '@/i18n/translations';
 
 /**
  * Safely parse a date that might be a Date object, ISO string, or timestamp
@@ -23,11 +23,14 @@ export const parseDateSafely = (dateValue: string | Date): Date => {
 };
 
 /**
- * Format an ISO date string to a readable format (e.g., "January 15, 2024")
+ * Format an ISO date string to a readable format in the app language (e.g., "January 15, 2024")
  */
 export const formatDate = (isoDateString: string): string => {
    const [year, month, day] = isoDateString.split('T')[0].split('-');
-   return `${MONTHS[parseInt(month)]} ${day}, ${year}`;
+   const locale = currentDateLocale();
+   if (locale === 'en-US') return `${MONTHS[parseInt(month)]} ${day}, ${year}`;
+   const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+   return new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(date);
 };
 
 /**
@@ -38,15 +41,29 @@ export const calculateDaysBetween = (date1: Date, date2: Date): number => {
    return Math.round(timeDiff / (1000 * 60 * 60 * 24));
 };
 
-const getDateFormatterLocale = (locale: LocaleCode) => {
+// Thai keeps the Gregorian year (2026) to match the rest of the app's copy.
+export const getDateFormatterLocale = (locale: LocaleCode) => {
    if (locale === 'fil') return 'fil-PH';
    if (locale === 'id') return 'id-ID';
+   if (locale === 'th') return 'th-TH-u-ca-gregory';
+   if (locale === 'vi') return 'vi-VN';
    return 'en-US';
+};
+
+/**
+ * Date locale for the language the app is showing, for helpers outside React. The
+ * LocalizationProvider keeps <html lang> in sync with the chosen language.
+ */
+export const currentDateLocale = (): string => {
+   if (typeof document === 'undefined') return 'en-US';
+   return getDateFormatterLocale(resolveLocaleCode(document.documentElement.lang) ?? 'en');
 };
 
 const getDaysLabel = (days: number, locale: LocaleCode) => {
    if (locale === 'fil') return `${days} araw`;
    if (locale === 'id') return `${days} hari`;
+   if (locale === 'th') return `${days} วัน`;
+   if (locale === 'vi') return `${days} ngày`;
    return `${days} ${days === 1 ? 'day' : 'days'}`;
 };
 

@@ -110,27 +110,27 @@ const ACCOUNT_COPY: Record<
       accountInformation: 'Impormasyon ng account',
       accountItems: {
          settings: 'Mga setting ng account',
-         loanHistory: 'Tingnan ang kasaysayan ng loan transactions'
+         loanHistory: 'Tingnan ang history ng mga loan transaction'
       },
       contactItems: {
-         community: 'Sumali sa community',
+         community: 'Sumali sa komunidad namin',
          help: 'Humingi ng tulong',
-         contact: 'Kontakin kami'
+         contact: 'Makipag-ugnayan sa amin'
       },
       getInTouch: 'Makipag-ugnayan',
       commonQuestions: 'Mga karaniwang tanong',
       viewMore: 'Tingnan pa',
-      creditGuide: 'Panoorin ang gabay sa pagpapataas ng antas ng kredito',
-      verified: 'Beripikado',
-      notVerified: 'Hindi beripikado',
-      connectWallet: 'Ikonek ang wallet',
+      creditGuide: 'Panoorin ang gabay namin sa Credit Leveling',
+      verified: 'Verified',
+      notVerified: 'Hindi pa verified',
+      connectWallet: 'Ikonekta ang wallet',
       addBaseWallet: 'I-set up ang wallet',
       signOut: 'Mag-sign out',
       signOutTitle: 'Mag-sign out?',
       signOutBody: 'Puwede kang mag-sign in ulit anumang oras. Mananatili sa wallet mo ang Pandesal points mo.',
-      signingOut: 'Nag-sign out...',
-      cancel: 'Kanselahin',
-      settingsAria: 'Pumunta sa Account Settings',
+      signingOut: 'Nagsa-sign out...',
+      cancel: 'Huwag na',
+      settingsAria: 'Pumunta sa mga setting ng account',
       helpLabel: 'Tulong'
    },
    id: {
@@ -142,22 +142,22 @@ const ACCOUNT_COPY: Record<
       contactItems: {
          community: 'Bergabung dengan komunitas',
          help: 'Dapatkan bantuan',
-         contact: 'Hubungi kami'
+         contact: 'Kontak kami'
       },
       getInTouch: 'Hubungi kami',
       commonQuestions: 'Pertanyaan umum',
       viewMore: 'Lihat lainnya',
-      creditGuide: 'Tonton panduan peningkatan level kredit',
+      creditGuide: 'Tonton panduan naik Level Kredit',
       verified: 'Terverifikasi',
       notVerified: 'Belum terverifikasi',
-      connectWallet: 'Hubungkan wallet',
+      connectWallet: 'Hubungkan dompet',
       addBaseWallet: 'Siapkan dompet',
       signOut: 'Keluar',
       signOutTitle: 'Keluar?',
-      signOutBody: 'Kamu bisa masuk lagi kapan saja. Pandesal points tetap bersama wallet kamu.',
-      signingOut: 'Keluar...',
+      signOutBody: 'Kamu bisa masuk lagi kapan saja. Poin Pandesal kamu tetap terhubung dengan dompetmu.',
+      signingOut: 'Sedang keluar...',
       cancel: 'Batal',
-      settingsAria: 'Buka Pengaturan Akun',
+      settingsAria: 'Buka pengaturan akun',
       helpLabel: 'Bantuan'
    },
    th: {
@@ -171,17 +171,17 @@ const ACCOUNT_COPY: Record<
          help: 'ขอความช่วยเหลือ',
          contact: 'ติดต่อเรา'
       },
-      getInTouch: 'ติดต่อเรา',
+      getInTouch: 'ช่องทางติดต่อ',
       commonQuestions: 'คำถามที่พบบ่อย',
       viewMore: 'ดูเพิ่มเติม',
-      creditGuide: 'ดูคู่มือการเพิ่มระดับเครดิต',
+      creditGuide: 'ดูคู่มือการเลื่อนระดับเครดิต',
       verified: 'ยืนยันแล้ว',
       notVerified: 'ยังไม่ได้ยืนยัน',
       connectWallet: 'เชื่อมต่อกระเป๋าเงิน',
       addBaseWallet: 'ตั้งค่ากระเป๋าเงิน',
       signOut: 'ออกจากระบบ',
-      signOutTitle: 'ออกจากระบบ?',
-      signOutBody: 'คุณสามารถเข้าสู่ระบบใหม่ได้ทุกเมื่อ Pandesal points จะยังอยู่กับกระเป๋าเงินของคุณ',
+      signOutTitle: 'ต้องการออกจากระบบใช่ไหม?',
+      signOutBody: 'คุณกลับมาเข้าสู่ระบบได้ทุกเมื่อ แต้ม Pandesal ของคุณจะยังผูกอยู่กับกระเป๋าเงินของคุณ',
       signingOut: 'กำลังออกจากระบบ...',
       cancel: 'ยกเลิก',
       settingsAria: 'ไปที่การตั้งค่าบัญชี',
@@ -196,7 +196,7 @@ const ACCOUNT_COPY: Record<
       contactItems: {
          community: 'Tham gia cộng đồng',
          help: 'Nhận trợ giúp',
-         contact: 'Liên hệ chúng tôi'
+         contact: 'Liên hệ với chúng tôi'
       },
       getInTouch: 'Liên hệ',
       commonQuestions: 'Câu hỏi thường gặp',
@@ -208,7 +208,7 @@ const ACCOUNT_COPY: Record<
       addBaseWallet: 'Thiết lập ví',
       signOut: 'Đăng xuất',
       signOutTitle: 'Đăng xuất?',
-      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Pandesal points vẫn đi cùng ví của bạn.',
+      signOutBody: 'Bạn có thể đăng nhập lại bất cứ lúc nào. Điểm Pandesal vẫn đi cùng ví của bạn.',
       signingOut: 'Đang đăng xuất...',
       cancel: 'Hủy',
       settingsAria: 'Đi tới Cài đặt tài khoản',

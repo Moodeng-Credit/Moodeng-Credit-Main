@@ -1,6 +1,7 @@
 import { useSelector } from 'react-redux';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { type RootState } from '@/store/store';
 
@@ -35,17 +36,18 @@ const PUSH_COPY: Record<LocaleCode, PushCopy> = {
    fil: {
       label: 'Push notifications sa device na ito',
       description:
-         'Makakatanggap ka ng abiso kapag malapit nang mag-due ang bayad mo, o kapag humiram ulit ang borrower na nakabayad na sa iyo. Sa device na ito lang.',
+         'Makakatanggap ka ng notification sa mismong oras na due na ang isang bayad, o kapag nag-request ulit ang borrower na nakabayad na sa iyo. Para sa device na ito lang.',
       enable: 'I-on',
       disable: 'I-off',
       working: 'Sandali lang…',
-      blocked: 'Naka-block ang notifications sa browser settings mo. I-allow mo muna doon, tapos balik ka rito.',
-      unsupported: 'Hindi kayang mag-push notification ng browser na ito. Subukan ang Chrome, o i-add ang Moodeng sa home screen.'
+      blocked: 'Naka-block ang mga notification sa browser settings mo. I-allow mo muna roon, tapos bumalik ka rito.',
+      unsupported:
+         'Hindi kayang magpakita ng push notification ng browser na ito. Subukan ang Chrome, o i-add ang Moodeng sa home screen mo.'
    },
    id: {
       label: 'Notifikasi push di perangkat ini',
       description:
-         'Dapatkan notifikasi saat pembayaran jatuh tempo, atau saat peminjam yang sudah melunasi ke kamu mengajukan lagi. Hanya untuk perangkat ini.',
+         'Dapatkan notifikasi begitu pembayaran jatuh tempo, atau saat peminjam yang sudah melunasi pinjaman darimu mengajukan pinjaman lagi. Hanya berlaku untuk perangkat ini.',
       enable: 'Aktifkan',
       disable: 'Matikan',
       working: 'Memproses…',
@@ -78,7 +80,7 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
    },
    fil: {
       title: 'Mga notification',
-      body: 'Makakatanggap ka ng abiso tungkol sa activity sa account mo. Ipapadala ang notifications sa email na ibinigay mo.',
+      body: 'Makakatanggap ka ng notification tungkol sa activity sa account mo. Ipapadala ang mga notification sa email na ibinigay mo.',
       options: [
          {
             id: 'account-activity',
@@ -87,13 +89,13 @@ const NOTIFICATION_SETTINGS_COPY: Record<LocaleCode, { title: string; body: stri
          },
          {
             id: 'transaction-activity',
-            label: 'Aktibidad ng transaksyon',
-            description: 'Makakatanggap ka ng mahahalagang notification tungkol sa transactions mo.'
+            label: 'Activity ng transaksyon',
+            description: 'Makakatanggap ka ng mahahalagang notification tungkol sa mga transaksyon mo.'
          },
          {
             id: 'moodeng-blogs',
             label: 'Mga blog ng Moodeng',
-            description: 'Makatanggap ng updates tungkol sa pinakabagong balita, updates, at blogs namin.'
+            description: 'Makakatanggap ka ng pinakabagong balita, update, at blog namin.'
          }
       ]
    },
@@ -178,12 +180,8 @@ export default function NotificationSettings() {
                   ) : null}
                </div>
 
-               {isBlocked ? (
-                  <p className="text-[8px] text-[#b4291f] font-normal leading-[10px]">{pushCopy.blocked}</p>
-               ) : null}
-               {push.isSupported ? null : (
-                  <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px]">{pushCopy.unsupported}</p>
-               )}
+               {isBlocked ? <p className="text-[8px] text-[#b4291f] font-normal leading-[10px]">{pushCopy.blocked}</p> : null}
+               {push.isSupported ? null : <p className="text-[8px] text-[#4a4a4a] font-normal leading-[10px]">{pushCopy.unsupported}</p>}
             </div>
          </div>
       </form>

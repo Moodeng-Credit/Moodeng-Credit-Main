@@ -1,0 +1,454 @@
+// Vietnamese translations for on-screen English found by the full-code scan (round two), keyed by
+// the exact English text. Loaded on demand with the rest of this locale's coverage (see ./index.ts).
+export const vietnameseCoverageG: Record<string, string> = {
+   // src/views/account/AvatarUploadModal.tsx
+   'or drag and drop': 'hoặc kéo và thả',
+   'Purple avatar background': 'Nền ảnh đại diện màu tím',
+   'Mint avatar background': 'Nền ảnh đại diện màu xanh bạc hà',
+   'Sky avatar background': 'Nền ảnh đại diện màu xanh da trời',
+   'Peach avatar background': 'Nền ảnh đại diện màu hồng đào',
+   'Rose avatar background': 'Nền ảnh đại diện màu hồng',
+   'Lemon avatar background': 'Nền ảnh đại diện màu vàng chanh',
+   'Stone avatar background': 'Nền ảnh đại diện màu xám đá',
+   'Night avatar background': 'Nền ảnh đại diện màu đen',
+
+   // src/views/account/EditBioInfoModal.tsx
+   'e.g. teacher, nurse, market vendor, driver': 'VD: giáo viên, y tá, tiểu thương, tài xế',
+   'e.g. tutoring, delivery, market trading': 'VD: dạy kèm, giao hàng, buôn bán ở chợ',
+
+   // src/views/account/TwoFactorSettings.tsx
+   Enabled: 'Đã bật',
+   'authenticator app': 'ứng dụng xác thực',
+   'Remove authenticator app': 'Gỡ ứng dụng xác thực',
+   'Remove passkey': 'Gỡ passkey',
+   'authenticator app removed': 'Đã gỡ ứng dụng xác thực',
+   'passkey removed': 'Đã gỡ passkey',
+
+   // src/views/dashboard-v2/components/DashboardV2Banners.tsx
+   '₱100 GrabFood Voucher: kumain kayong dalawa. Mag-refer.': 'Phiếu quà tặng GrabFood ₱100: cả hai cùng được ăn. Hãy giới thiệu bạn bè.',
+
+   // src/views/dashboard-v2/components/DashboardV2Popups.tsx
+   '& Feed Moodeng': '& cho Moodeng ăn',
+   'Keep going & Feed Moodeng': 'Tiếp tục & cho Moodeng ăn',
+
+   // src/views/dashboard-v2/components/DashboardV2Sections.tsx
+   'Rookie tier voucher': 'Phiếu quà tặng cấp Rookie',
+
+   // src/views/dashboard-v2/dashboardV2Model.ts
+   'left to LV.1': 'nữa để lên LV.1',
+   'Repay a full-limit loan': 'Trả một khoản vay bằng toàn bộ hạn mức',
+
+   // src/views/dashboard-v2/useDashboardV2Model.ts
+   'a lender': 'một người cho vay',
+
+   // src/views/dashboard/RequestBoard.tsx
+   'This looks low-effort. Requests that appear to have no real effort may be deleted — submit again to post anyway. Tap “Make Your Request” again to post it anyway.':
+      'Lý do này có vẻ quá sơ sài. Các yêu cầu viết qua loa có thể bị xóa. Nhấn “Gửi yêu cầu” lần nữa nếu bạn vẫn muốn đăng.',
+
+   // src/views/dashboard/components/ConnectStep.tsx
+   'No worries — life happens. Pick a new time for your 15-min call.':
+      'Không sao đâu — chuyện bất ngờ ai cũng gặp. Hãy chọn thời gian mới cho cuộc gọi 15 phút nhé.',
+   'No worries — life happens. Pick a new time for your 15-min call with Emma.':
+      'Không sao đâu — chuyện bất ngờ ai cũng gặp. Hãy chọn thời gian mới cho cuộc gọi 15 phút với Emma nhé.',
+
+   // src/views/dashboard/components/CreditLevelSection.tsx
+   "You're at the top credit level — nicely done.": 'Bạn đã đạt Hạng tín dụng cao nhất — làm tốt lắm!',
+   'Repay on time to reach Level 1 — up to $15.': 'Trả nợ đúng hạn để lên Hạng 1 — hạn mức tối đa $15.',
+   'Repay on time to reach Level 2 — up to $20.': 'Trả nợ đúng hạn để lên Hạng 2 — hạn mức tối đa $20.',
+   'Repay on time to reach Level 3 — up to $40.': 'Trả nợ đúng hạn để lên Hạng 3 — hạn mức tối đa $40.',
+   'Repay on time to reach Level 4 — up to $60.': 'Trả nợ đúng hạn để lên Hạng 4 — hạn mức tối đa $60.',
+   'Repay on time to reach Level 5 — up to $80.': 'Trả nợ đúng hạn để lên Hạng 5 — hạn mức tối đa $80.',
+   'Repay on time to reach Level 6 — up to $100.': 'Trả nợ đúng hạn để lên Hạng 6 — hạn mức tối đa $100.',
+   'Repay on time to reach Level 7 — up to $120.': 'Trả nợ đúng hạn để lên Hạng 7 — hạn mức tối đa $120.',
+   'Repay on time to reach Level 8 — up to $140.': 'Trả nợ đúng hạn để lên Hạng 8 — hạn mức tối đa $140.',
+
+   // src/views/dashboard/components/LenderDiversitySection.tsx
+   '1 Unique Lender': '1 người cho vay khác nhau',
+   '0 Unique Lenders': '0 người cho vay khác nhau',
+   '2 Unique Lenders': '2 người cho vay khác nhau',
+   '3 Unique Lenders': '3 người cho vay khác nhau',
+   '4 Unique Lenders': '4 người cho vay khác nhau',
+   '5 Unique Lenders': '5 người cho vay khác nhau',
+   '6 Unique Lenders': '6 người cho vay khác nhau',
+   '7 Unique Lenders': '7 người cho vay khác nhau',
+   '8 Unique Lenders': '8 người cho vay khác nhau',
+   '9 Unique Lenders': '9 người cho vay khác nhau',
+   '10 Unique Lenders': '10 người cho vay khác nhau',
+   '11 Unique Lenders': '11 người cho vay khác nhau',
+   '12 Unique Lenders': '12 người cho vay khác nhau',
+   '13 Unique Lenders': '13 người cho vay khác nhau',
+   '14 Unique Lenders': '14 người cho vay khác nhau',
+   '15 Unique Lenders': '15 người cho vay khác nhau',
+   '16 Unique Lenders': '16 người cho vay khác nhau',
+   '17 Unique Lenders': '17 người cho vay khác nhau',
+   '18 Unique Lenders': '18 người cho vay khác nhau',
+   '19 Unique Lenders': '19 người cho vay khác nhau',
+   '20 Unique Lenders': '20 người cho vay khác nhau',
+
+   // src/views/dashboard/components/LoanRequestModal.tsx
+   'Please add a little more — at least': 'Vui lòng viết thêm một chút — tối thiểu',
+   'characters (': 'ký tự (',
+   'Loan request progress: step 1 of 2, Your terms': 'Tiến độ yêu cầu vay: bước 1/2, Điều khoản của bạn',
+   'Loan request progress: step 1 of 3, Your terms': 'Tiến độ yêu cầu vay: bước 1/3, Điều khoản của bạn',
+   'Loan request progress: step 1 of 4, Your terms': 'Tiến độ yêu cầu vay: bước 1/4, Điều khoản của bạn',
+   'Loan request progress: step 1 of 5, Your terms': 'Tiến độ yêu cầu vay: bước 1/5, Điều khoản của bạn',
+   'Loan request progress: step 2 of 2, Contact': 'Tiến độ yêu cầu vay: bước 2/2, Liên hệ',
+   'Loan request progress: step 2 of 2, Meet the team': 'Tiến độ yêu cầu vay: bước 2/2, Gặp đội ngũ',
+   'Loan request progress: step 2 of 3, About you': 'Tiến độ yêu cầu vay: bước 2/3, Về bạn',
+   'Loan request progress: step 2 of 3, Contact': 'Tiến độ yêu cầu vay: bước 2/3, Liên hệ',
+   'Loan request progress: step 2 of 4, About you': 'Tiến độ yêu cầu vay: bước 2/4, Về bạn',
+   'Loan request progress: step 2 of 5, About you': 'Tiến độ yêu cầu vay: bước 2/5, Về bạn',
+   'Loan request progress: step 3 of 3, Meet the team': 'Tiến độ yêu cầu vay: bước 3/3, Gặp đội ngũ',
+   'Loan request progress: step 3 of 3, Repayment context': 'Tiến độ yêu cầu vay: bước 3/3, Hoàn cảnh trả nợ',
+   'Loan request progress: step 3 of 4, Repayment context': 'Tiến độ yêu cầu vay: bước 3/4, Hoàn cảnh trả nợ',
+   'Loan request progress: step 3 of 5, Repayment context': 'Tiến độ yêu cầu vay: bước 3/5, Hoàn cảnh trả nợ',
+   'Loan request progress: step 4 of 4, Contact': 'Tiến độ yêu cầu vay: bước 4/4, Liên hệ',
+   'Loan request progress: step 4 of 4, Meet the team': 'Tiến độ yêu cầu vay: bước 4/4, Gặp đội ngũ',
+   'Loan request progress: step 4 of 5, Contact': 'Tiến độ yêu cầu vay: bước 4/5, Liên hệ',
+   'Loan request progress: step 5 of 5, Meet the team': 'Tiến độ yêu cầu vay: bước 5/5, Gặp đội ngũ',
+
+   // src/views/dashboard/components/MilestoneSheets.tsx
+   'Close milestone detail': 'Đóng chi tiết cột mốc',
+   'Close milestone help': 'Đóng hướng dẫn cột mốc',
+
+   // src/views/dashboard/components/TrustScoreSection.tsx
+   'pts to': 'điểm nữa để đạt',
+   'Top tier reached': 'Đã đạt cấp cao nhất',
+
+   // src/views/dashboard/components/UpcomingLoanDues.tsx
+   'Due in': 'Đến hạn trong',
+   today: 'hôm nay',
+   'View Insights': 'Xem chi tiết',
+   '1 day': '1 ngày',
+   '2 days': '2 ngày',
+   '3 days': '3 ngày',
+   '4 days': '4 ngày',
+   '5 days': '5 ngày',
+   '6 days': '6 ngày',
+   '7 days': '7 ngày',
+   '8 days': '8 ngày',
+   '9 days': '9 ngày',
+   '10 days': '10 ngày',
+   '11 days': '11 ngày',
+   '12 days': '12 ngày',
+   '13 days': '13 ngày',
+   '14 days': '14 ngày',
+   '15 days': '15 ngày',
+   '16 days': '16 ngày',
+   '17 days': '17 ngày',
+   '18 days': '18 ngày',
+   '19 days': '19 ngày',
+   '20 days': '20 ngày',
+   '21 days': '21 ngày',
+   '22 days': '22 ngày',
+   '23 days': '23 ngày',
+   '24 days': '24 ngày',
+   '25 days': '25 ngày',
+   '26 days': '26 ngày',
+   '27 days': '27 ngày',
+   '28 days': '28 ngày',
+   '29 days': '29 ngày',
+   '30 days': '30 ngày',
+   '31 days': '31 ngày',
+   '32 days': '32 ngày',
+   '33 days': '33 ngày',
+   '34 days': '34 ngày',
+   '35 days': '35 ngày',
+   '36 days': '36 ngày',
+   '37 days': '37 ngày',
+   '38 days': '38 ngày',
+   '39 days': '39 ngày',
+   '40 days': '40 ngày',
+   '41 days': '41 ngày',
+   '42 days': '42 ngày',
+   '43 days': '43 ngày',
+   '44 days': '44 ngày',
+   '45 days': '45 ngày',
+   '46 days': '46 ngày',
+   '47 days': '47 ngày',
+   '48 days': '48 ngày',
+   '49 days': '49 ngày',
+   '50 days': '50 ngày',
+   '51 days': '51 ngày',
+   '52 days': '52 ngày',
+   '53 days': '53 ngày',
+   '54 days': '54 ngày',
+   '55 days': '55 ngày',
+   '56 days': '56 ngày',
+   '57 days': '57 ngày',
+   '58 days': '58 ngày',
+   '59 days': '59 ngày',
+   '60 days': '60 ngày',
+
+   // src/views/dashboard/components/connectKit.tsx
+   Confirmed: 'Đã xác nhận',
+
+   // src/views/fund/FundWalletSheet.tsx
+   '. Stripe handles ID checks and payment — USDC lands on Base.':
+      '. Stripe lo phần kiểm tra giấy tờ tùy thân và thanh toán — USDC sẽ về ví của bạn trên mạng Base.',
+
+   // src/views/lender/dashboard/LenderDashboard.tsx
+   'vs previous period': 'so với kỳ trước',
+   "You haven't funded any loans yet.": 'Bạn chưa cấp vốn cho khoản vay nào.',
+   'No transactions match your search or filters.': 'Không có giao dịch nào khớp với tìm kiếm hoặc bộ lọc của bạn.',
+
+   // src/views/lender/loanNote/LenderFundLoanModal.tsx
+   '’s loan. If they repay, the repayment is automatically sent to your wallet.':
+      '. Khi người vay trả nợ, tiền sẽ tự động được gửi vào ví của bạn.',
+
+   // src/views/lender/loanNote/LoanNotePurchase.tsx
+   'Due date': 'Ngày đến hạn',
+
+   // src/views/lender/loanNote/useBuyLoanNote.ts
+   Unavailable: 'Không khả dụng',
+   'USDC in your wallet to fund this loan.': 'USDC trong ví để cấp vốn cho khoản vay này.',
+
+   // src/views/milestones/Milestones.tsx
+   'pts left': 'điểm nữa',
+   'Unlocks at 50 Pandesal points': 'Mở khóa khi đạt 50 điểm Pandesal',
+   'Unlocks at 120 Pandesal points': 'Mở khóa khi đạt 120 điểm Pandesal',
+   'Unlocks at 250 Pandesal points': 'Mở khóa khi đạt 250 điểm Pandesal',
+   'Unlocks at 500 Pandesal points': 'Mở khóa khi đạt 500 điểm Pandesal',
+   'Unlocked at 50 Pandesal points': 'Đã mở khóa khi đạt 50 điểm Pandesal',
+   'Unlocked at 120 Pandesal points': 'Đã mở khóa khi đạt 120 điểm Pandesal',
+   'Unlocked at 250 Pandesal points': 'Đã mở khóa khi đạt 250 điểm Pandesal',
+   'Unlocked at 500 Pandesal points': 'Đã mở khóa khi đạt 500 điểm Pandesal',
+
+   // src/views/profile/components/Card.tsx
+   'Days Left': 'ngày còn lại',
+   'Day Left': 'ngày còn lại',
+   'Hours Left': 'giờ còn lại',
+   'Hour Left': 'giờ còn lại',
+   '1 Day': '1 ngày',
+   '0 Days': '0 ngày',
+   '2 Days': '2 ngày',
+   '3 Days': '3 ngày',
+   '4 Days': '4 ngày',
+   '5 Days': '5 ngày',
+   '6 Days': '6 ngày',
+   '7 Days': '7 ngày',
+   '8 Days': '8 ngày',
+   '9 Days': '9 ngày',
+   '10 Days': '10 ngày',
+   '11 Days': '11 ngày',
+   '12 Days': '12 ngày',
+   '13 Days': '13 ngày',
+   '14 Days': '14 ngày',
+   '15 Days': '15 ngày',
+   '16 Days': '16 ngày',
+   '17 Days': '17 ngày',
+   '18 Days': '18 ngày',
+   '19 Days': '19 ngày',
+   '20 Days': '20 ngày',
+   '21 Days': '21 ngày',
+   '22 Days': '22 ngày',
+   '23 Days': '23 ngày',
+   '24 Days': '24 ngày',
+   '25 Days': '25 ngày',
+   '26 Days': '26 ngày',
+   '27 Days': '27 ngày',
+   '28 Days': '28 ngày',
+   '29 Days': '29 ngày',
+   '30 Days': '30 ngày',
+   '31 Days': '31 ngày',
+   '32 Days': '32 ngày',
+   '33 Days': '33 ngày',
+   '34 Days': '34 ngày',
+   '35 Days': '35 ngày',
+   '36 Days': '36 ngày',
+   '37 Days': '37 ngày',
+   '38 Days': '38 ngày',
+   '39 Days': '39 ngày',
+   '40 Days': '40 ngày',
+   '41 Days': '41 ngày',
+   '42 Days': '42 ngày',
+   '43 Days': '43 ngày',
+   '44 Days': '44 ngày',
+   '45 Days': '45 ngày',
+   '46 Days': '46 ngày',
+   '47 Days': '47 ngày',
+   '48 Days': '48 ngày',
+   '49 Days': '49 ngày',
+   '50 Days': '50 ngày',
+   '51 Days': '51 ngày',
+   '52 Days': '52 ngày',
+   '53 Days': '53 ngày',
+   '54 Days': '54 ngày',
+   '55 Days': '55 ngày',
+   '56 Days': '56 ngày',
+   '57 Days': '57 ngày',
+   '58 Days': '58 ngày',
+   '59 Days': '59 ngày',
+   '60 Days': '60 ngày',
+
+   // src/views/profile/components/tabs/useDashboardData.ts
+   'Fully repay $15 total on time to unlock this level': 'Trả đủ tổng cộng $15 đúng hạn để mở khóa hạng này',
+   'Fully repay $20 total on time to unlock this level': 'Trả đủ tổng cộng $20 đúng hạn để mở khóa hạng này',
+   'Fully repay $40 total on time to unlock this level': 'Trả đủ tổng cộng $40 đúng hạn để mở khóa hạng này',
+   'Fully repay $60 total on time to unlock this level': 'Trả đủ tổng cộng $60 đúng hạn để mở khóa hạng này',
+   'Fully repay $80 total on time to unlock this level': 'Trả đủ tổng cộng $80 đúng hạn để mở khóa hạng này',
+   'Fully repay $100 total on time to unlock this level': 'Trả đủ tổng cộng $100 đúng hạn để mở khóa hạng này',
+   'Fully repay $120 total on time to unlock this level': 'Trả đủ tổng cộng $120 đúng hạn để mở khóa hạng này',
+   'Fully repay $140 total on time to unlock this level': 'Trả đủ tổng cộng $140 đúng hạn để mở khóa hạng này',
+
+   // src/views/profile/config/transactionColumns.tsx
+   Transaction: 'Giao dịch',
+   'Borrowed Amount': 'Số tiền đã vay',
+   'Funded Amount': 'Số tiền đã cấp vốn',
+   'Date Borrowed': 'Ngày vay',
+   'Date Funded': 'Ngày cấp vốn',
+   "Borrower's Name": 'Tên người vay',
+   "Lender's Name": 'Tên người cho vay',
+
+   // src/views/repay/Repay.tsx
+   'your loan': 'khoản vay của bạn',
+
+   // src/views/support/HowCreditLevelsWork.tsx
+   'you need a smaller amount, or want to build trust first.': 'bạn cần số tiền nhỏ hơn, hoặc muốn xây dựng niềm tin trước.',
+   'also called a Credit Growth Loan': 'còn gọi là Credit Growth Loan',
+   'you’re ready to grow your limit and sure you can repay on time.': 'bạn đã sẵn sàng nâng hạn mức và chắc chắn có thể trả nợ đúng hạn.',
+
+   // src/views/support/WhyUsdc.tsx
+   ': a cryptocurrency built to stay worth exactly one US dollar. It is issued by Circle, backed fully by cash and short-term US Treasuries, and its reserves are attested by independent accounting firms every month. Because it lives on a blockchain, it can move between wallets in seconds — while staying as steady as the dollar it tracks.':
+      ': một loại tiền mã hóa được thiết kế để luôn có giá trị đúng bằng một đô la Mỹ. USDC do Circle phát hành, được bảo chứng hoàn toàn bằng tiền mặt và trái phiếu Kho bạc Mỹ ngắn hạn, và khoản dự trữ được các công ty kiểm toán độc lập xác nhận hằng tháng. Vì nằm trên blockchain, USDC có thể chuyển giữa các ví chỉ trong vài giây — mà vẫn ổn định như đồng đô la mà nó bám theo.',
+
+   // src/views/support/data/updates.ts
+   'Live Filters & Cleaner Borrowing Flow': 'Bộ lọc tức thì & quy trình vay gọn gàng hơn',
+   'Request Board and history filters now update as you tap': 'Bộ lọc của Bảng yêu cầu và lịch sử giờ cập nhật ngay khi bạn nhấn',
+   'May 24, 2026': '24 tháng 5, 2026',
+   'Latest May 2026 update': 'Bản cập nhật mới nhất tháng 5/2026',
+   'Base Wallet & World ID Onboarding': 'Ví Base & bắt đầu với World ID',
+   'Clearer wallet handoff • Stronger human verification flow':
+      'Chuyển sang bước ví rõ ràng hơn • Quy trình xác minh người thật chắc chắn hơn',
+   'May 23, 2026': '23 tháng 5, 2026',
+   'Borrower onboarding has been tightened so each step leads naturally into the next. The Base Wallet screen is simpler, the connected-wallet success screen now uses the final success mark, and World ID actions are easier to understand from the Request Board and onboarding flow. This update also improves duplicate World ID handling and keeps borrowers moving through the right next step after wallet connection, verification, or a request-board action.':
+      'Quy trình bắt đầu cho người vay đã được làm gọn để mỗi bước dẫn tự nhiên sang bước tiếp theo. Màn hình Ví Base đơn giản hơn, màn hình kết nối ví thành công giờ dùng biểu tượng thành công chính thức, và các thao tác World ID dễ hiểu hơn từ Bảng yêu cầu và quy trình bắt đầu. Bản cập nhật này cũng xử lý tốt hơn trường hợp World ID bị trùng và giúp người vay đi đúng bước tiếp theo sau khi kết nối ví, xác minh hoặc thao tác trên Bảng yêu cầu.',
+   'Clearer Loan & Repay States': 'Trạng thái khoản vay & trả nợ rõ ràng hơn',
+   'Pending funding, repayment, and navigation are easier to trust': 'Trạng thái chờ cấp vốn, trả nợ và điều hướng đáng tin cậy hơn',
+   'May 22, 2026': '22 tháng 5, 2026',
+   'Loan screens now do a better job showing what is actually happening. Pending requests are clearer before they are funded, repayment screens avoid misleading action states, and bottom navigation between Request Board, Repay, Dashboard, History, and Account is more reliable. These changes are designed to make the app feel calmer when money is involved: the screen should say whether a loan is waiting, active, repaid, or unavailable without making you guess.':
+      'Các màn hình khoản vay giờ thể hiện rõ hơn những gì đang thực sự diễn ra. Yêu cầu đang chờ được hiển thị rõ hơn trước khi được cấp vốn, màn hình trả nợ tránh các trạng thái thao tác gây hiểu nhầm, và thanh điều hướng dưới cùng giữa Bảng yêu cầu, Trả nợ, Tổng quan, Lịch sử và Tài khoản hoạt động ổn định hơn. Những thay đổi này giúp ứng dụng mang lại cảm giác yên tâm hơn khi liên quan đến tiền: màn hình cần cho biết khoản vay đang chờ, đang hoạt động, đã trả xong hay không khả dụng mà không bắt bạn phải đoán.',
+   'Trust System & Admin Readiness': 'Hệ thống niềm tin & sẵn sàng cho quản trị',
+   'Cleaner IOU rules • Better account status and recovery controls':
+      'Quy tắc IOU gọn gàng hơn • Kiểm soát trạng thái tài khoản và khôi phục tốt hơn',
+   'May 20, 2026': '20 tháng 5, 2026',
+   'The trust layer behind Moodeng has been made more consistent. Lender IOU point rules are now easier to reason about, admin status controls are closer to the real account state, and recovery workflows have more reliable data to work from. Most of this work sits behind the scenes, but it matters: borrower records, lender incentives, overdue loans, and account restrictions need to line up before the product can scale safely.':
+      'Lớp niềm tin phía sau Moodeng đã được làm nhất quán hơn. Quy tắc điểm IOU của người cho vay giờ dễ hiểu hơn, các công cụ quản lý trạng thái của quản trị viên sát với trạng thái tài khoản thực tế hơn, và quy trình khôi phục có dữ liệu đáng tin cậy hơn để xử lý. Phần lớn công việc này diễn ra phía sau, nhưng rất quan trọng: hồ sơ người vay, ưu đãi cho người cho vay, khoản vay quá hạn và các hạn chế tài khoản cần khớp với nhau trước khi sản phẩm có thể mở rộng an toàn.',
+   'Support Library & Credit Education': 'Thư viện hỗ trợ & kiến thức tín dụng',
+   'Repayment guides • Credit leveling • Borrower safety content': 'Hướng dẫn trả nợ • Lên hạng tín dụng • Nội dung an toàn cho người vay',
+   'May 16, 2026': '16 tháng 5, 2026',
+   'The support area has been refreshed around the questions borrowers and lenders actually ask. Guides now explain repayment, Pandesal points, credit leveling, World ID, Base Wallet setup, and borrower safety in clearer language. We also added more educational content around portable repayment history and safer alternatives to predatory lending, so new users can understand what Moodeng is building before they request or fund a loan.':
+      'Khu vực hỗ trợ đã được làm mới xoay quanh những câu hỏi mà người vay và người cho vay thực sự đặt ra. Các hướng dẫn giờ giải thích việc trả nợ, điểm Pandesal, cách lên hạng tín dụng, World ID, cách thiết lập Ví Base và an toàn cho người vay bằng ngôn ngữ dễ hiểu hơn. Chúng tôi cũng bổ sung thêm nội dung về lịch sử trả nợ mang theo được và những lựa chọn an toàn hơn thay cho cho vay nặng lãi, để người dùng mới hiểu Moodeng đang xây dựng điều gì trước khi yêu cầu vay hoặc cấp vốn cho một khoản vay.',
+
+   // src/views/transactions/TransactionDetail.tsx
+   Refunded: 'Đã hoàn tiền',
+   'paid back in full': 'đã trả hết nợ',
+
+   // src/views/transactions/TransactionHistory.tsx
+   'out of': 'trên tổng',
+
+   // src/views/user-profile/LenderDiversityHistory.tsx
+   'Excellent Diversity': 'Độ đa dạng xuất sắc',
+   'Good Diversity': 'Độ đa dạng tốt',
+   'Fair Diversity': 'Độ đa dạng khá',
+   'Low Diversity': 'Độ đa dạng thấp',
+   'Very Low Diversity': 'Độ đa dạng rất thấp',
+   lender: 'người cho vay',
+   lenders: 'người cho vay',
+
+   // src/views/user-profile/ProgressHistory.tsx
+   Milestone: 'Cột mốc',
+   Activity: 'Hoạt động',
+   Insight: 'Nhận định',
+   Late: 'Trễ hạn',
+   'Loan received: $': 'Đã nhận khoản vay: $',
+   'from lender.': 'từ người cho vay.',
+   'Credit Building Loan Repaid': 'Credit-Building Loan đã được trả xong',
+   'Trust Building Loan Repaid': 'Trust-Building Loan đã được trả xong',
+   'Credit Building loan closed before due date.': 'Credit-Building Loan đã được trả xong trước ngày đến hạn.',
+   'Trust Building loan closed before due date.': 'Trust-Building Loan đã được trả xong trước ngày đến hạn.',
+   'Loan repaid 1 day after the due date.': 'Khoản vay được trả trễ 1 ngày so với ngày đến hạn.',
+   'Loan repaid 1 days after the due date.': 'Khoản vay được trả trễ 1 ngày so với ngày đến hạn.',
+   'Loan repaid 2 days after the due date.': 'Khoản vay được trả trễ 2 ngày so với ngày đến hạn.',
+   'Loan repaid 3 days after the due date.': 'Khoản vay được trả trễ 3 ngày so với ngày đến hạn.',
+   'Loan repaid 4 days after the due date.': 'Khoản vay được trả trễ 4 ngày so với ngày đến hạn.',
+   'Loan repaid 5 days after the due date.': 'Khoản vay được trả trễ 5 ngày so với ngày đến hạn.',
+   'Loan repaid 6 days after the due date.': 'Khoản vay được trả trễ 6 ngày so với ngày đến hạn.',
+   'Loan repaid 7 days after the due date.': 'Khoản vay được trả trễ 7 ngày so với ngày đến hạn.',
+   'Loan repaid 8 days after the due date.': 'Khoản vay được trả trễ 8 ngày so với ngày đến hạn.',
+   'Loan repaid 9 days after the due date.': 'Khoản vay được trả trễ 9 ngày so với ngày đến hạn.',
+   'Loan repaid 10 days after the due date.': 'Khoản vay được trả trễ 10 ngày so với ngày đến hạn.',
+   'Loan repaid 11 days after the due date.': 'Khoản vay được trả trễ 11 ngày so với ngày đến hạn.',
+   'Loan repaid 12 days after the due date.': 'Khoản vay được trả trễ 12 ngày so với ngày đến hạn.',
+   'Loan repaid 13 days after the due date.': 'Khoản vay được trả trễ 13 ngày so với ngày đến hạn.',
+   'Loan repaid 14 days after the due date.': 'Khoản vay được trả trễ 14 ngày so với ngày đến hạn.',
+   'Loan repaid 15 days after the due date.': 'Khoản vay được trả trễ 15 ngày so với ngày đến hạn.',
+   'Loan repaid 16 days after the due date.': 'Khoản vay được trả trễ 16 ngày so với ngày đến hạn.',
+   'Loan repaid 17 days after the due date.': 'Khoản vay được trả trễ 17 ngày so với ngày đến hạn.',
+   'Loan repaid 18 days after the due date.': 'Khoản vay được trả trễ 18 ngày so với ngày đến hạn.',
+   'Loan repaid 19 days after the due date.': 'Khoản vay được trả trễ 19 ngày so với ngày đến hạn.',
+   'Loan repaid 20 days after the due date.': 'Khoản vay được trả trễ 20 ngày so với ngày đến hạn.',
+   'Loan repaid 21 days after the due date.': 'Khoản vay được trả trễ 21 ngày so với ngày đến hạn.',
+   'Loan repaid 22 days after the due date.': 'Khoản vay được trả trễ 22 ngày so với ngày đến hạn.',
+   'Loan repaid 23 days after the due date.': 'Khoản vay được trả trễ 23 ngày so với ngày đến hạn.',
+   'Loan repaid 24 days after the due date.': 'Khoản vay được trả trễ 24 ngày so với ngày đến hạn.',
+   'Loan repaid 25 days after the due date.': 'Khoản vay được trả trễ 25 ngày so với ngày đến hạn.',
+   'Loan repaid 26 days after the due date.': 'Khoản vay được trả trễ 26 ngày so với ngày đến hạn.',
+   'Loan repaid 27 days after the due date.': 'Khoản vay được trả trễ 27 ngày so với ngày đến hạn.',
+   'Loan repaid 28 days after the due date.': 'Khoản vay được trả trễ 28 ngày so với ngày đến hạn.',
+   'Loan repaid 29 days after the due date.': 'Khoản vay được trả trễ 29 ngày so với ngày đến hạn.',
+   'Loan repaid 30 days after the due date.': 'Khoản vay được trả trễ 30 ngày so với ngày đến hạn.',
+   'Unlocked Level 1 with full level credit available.': 'Đã mở khóa Hạng 1 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 2 with full level credit available.': 'Đã mở khóa Hạng 2 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 3 with full level credit available.': 'Đã mở khóa Hạng 3 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 4 with full level credit available.': 'Đã mở khóa Hạng 4 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 5 with full level credit available.': 'Đã mở khóa Hạng 5 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 6 with full level credit available.': 'Đã mở khóa Hạng 6 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 7 with full level credit available.': 'Đã mở khóa Hạng 7 với toàn bộ hạn mức của hạng.',
+   'Unlocked Level 8 with full level credit available.': 'Đã mở khóa Hạng 8 với toàn bộ hạn mức của hạng.',
+
+   // src/views/user-profile/UserProfile.tsx
+   Expected: 'dự kiến',
+   'funded more than once': 'người vay được cấp vốn hơn một lần',
+   'milestones hit': 'cột mốc đã đạt',
+   Defaults: 'khoản vỡ nợ',
+   Level: 'Hạng',
+   "Checks whether one lender funded most of the borrower's history.":
+      'Kiểm tra xem có một người cho vay nào đã cấp vốn cho phần lớn lịch sử vay của người vay này hay không.',
+   'repays $': 'hoàn trả $',
+   '1 loan repaid on time in a row': '1 khoản vay được trả đúng hạn liên tiếp',
+   '2 loans repaid on time in a row': '2 khoản vay liên tiếp được trả đúng hạn',
+   '3 loans repaid on time in a row': '3 khoản vay liên tiếp được trả đúng hạn',
+   '4 loans repaid on time in a row': '4 khoản vay liên tiếp được trả đúng hạn',
+   '5 loans repaid on time in a row': '5 khoản vay liên tiếp được trả đúng hạn',
+   '6 loans repaid on time in a row': '6 khoản vay liên tiếp được trả đúng hạn',
+   '7 loans repaid on time in a row': '7 khoản vay liên tiếp được trả đúng hạn',
+   '8 loans repaid on time in a row': '8 khoản vay liên tiếp được trả đúng hạn',
+   '9 loans repaid on time in a row': '9 khoản vay liên tiếp được trả đúng hạn',
+   '10 loans repaid on time in a row': '10 khoản vay liên tiếp được trả đúng hạn',
+   '11 loans repaid on time in a row': '11 khoản vay liên tiếp được trả đúng hạn',
+   '12 loans repaid on time in a row': '12 khoản vay liên tiếp được trả đúng hạn',
+   '13 loans repaid on time in a row': '13 khoản vay liên tiếp được trả đúng hạn',
+   '14 loans repaid on time in a row': '14 khoản vay liên tiếp được trả đúng hạn',
+   '15 loans repaid on time in a row': '15 khoản vay liên tiếp được trả đúng hạn',
+   '16 loans repaid on time in a row': '16 khoản vay liên tiếp được trả đúng hạn',
+   '17 loans repaid on time in a row': '17 khoản vay liên tiếp được trả đúng hạn',
+   '18 loans repaid on time in a row': '18 khoản vay liên tiếp được trả đúng hạn',
+   '19 loans repaid on time in a row': '19 khoản vay liên tiếp được trả đúng hạn',
+   '20 loans repaid on time in a row': '20 khoản vay liên tiếp được trả đúng hạn',
+
+   // src/views/withdraw/Withdraw.tsx
+   ', or': ', hoặc',
+   'Paste your Coins.ph address': 'Dán địa chỉ Coins.ph của bạn',
+   'Paste your PDAX address': 'Dán địa chỉ PDAX của bạn',
+   'Paste your GCrypto address': 'Dán địa chỉ GCrypto của bạn',
+   'Send your': 'Hãy gửi',
+   'USDC only once Moneybees confirms the details.': 'USDC của bạn chỉ sau khi Moneybees xác nhận thông tin.',
+   // src/views/dashboard/components/ContactsStep.tsx (Messenger recovery, #1001)
+   'Not confirmed yet?': 'Chưa được xác nhận?',
+   '. Now that our chat is open, the second try usually works.':
+      '. Vì cuộc trò chuyện của chúng tôi đã mở, lần thử thứ hai thường sẽ thành công.',
+   'Or send this code to': 'Hoặc gửi mã này đến',
+   "Still stuck? We'll email you, and our team will help you finish.":
+      'Vẫn chưa được? Chúng tôi sẽ gửi email cho bạn, và đội ngũ của chúng tôi sẽ giúp bạn hoàn tất.'
+};

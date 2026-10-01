@@ -8,7 +8,7 @@ const MODAL_NOTE_COPY = {
       content: 'Privacy-First proof of personhood. Verify without revealing your identity.'
    },
    fil: {
-      content: 'Privacy-first na proof of personhood. Mag-verify nang hindi inilalantad ang identity mo.'
+      content: 'Patunay na totoong tao ka, na inuuna ang privacy mo. Mag-verify nang hindi inilalantad ang identity mo.'
    },
    id: {
       content: 'Proof of personhood yang mengutamakan privasi. Verifikasi tanpa membuka identitas kamu.'

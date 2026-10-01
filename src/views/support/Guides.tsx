@@ -36,20 +36,20 @@ const GUIDE_CATEGORY_LABELS = {
    },
    fil: {
       All: 'Lahat',
-      [GUIDE_CATEGORIES.gettingStarted]: 'Magsimula',
+      [GUIDE_CATEGORIES.gettingStarted]: 'Pagsisimula',
       [GUIDE_CATEGORIES.trustScore]: 'Pandesal points',
-      [GUIDE_CATEGORIES.creditLevel]: 'Antas ng kredito',
-      [GUIDE_CATEGORIES.repayment]: 'Repayment',
+      [GUIDE_CATEGORIES.creditLevel]: 'Credit Level',
+      [GUIDE_CATEGORIES.repayment]: 'Pagbabayad',
       [GUIDE_CATEGORIES.wallet]: 'Wallet',
-      [GUIDE_CATEGORIES.security]: 'Security'
+      [GUIDE_CATEGORIES.security]: 'Seguridad'
    },
    id: {
       All: 'Semua',
       [GUIDE_CATEGORIES.gettingStarted]: 'Mulai',
       [GUIDE_CATEGORIES.trustScore]: 'Poin Pandesal',
-      [GUIDE_CATEGORIES.creditLevel]: 'Level kredit',
-      [GUIDE_CATEGORIES.repayment]: 'Pembayaran',
-      [GUIDE_CATEGORIES.wallet]: 'Wallet',
+      [GUIDE_CATEGORIES.creditLevel]: 'Level Kredit',
+      [GUIDE_CATEGORIES.repayment]: 'Pembayaran kembali',
+      [GUIDE_CATEGORIES.wallet]: 'Dompet',
       [GUIDE_CATEGORIES.security]: 'Keamanan'
    },
    th: {
@@ -79,6 +79,9 @@ const GUIDE_CATEGORY_BY_SLUG: Record<string, GuideCategory> = {
    'trust-building-vs-credit-building-loans': GUIDE_CATEGORIES.creditLevel,
    'how-repayments-affect-your-trust-score': GUIDE_CATEGORIES.repayment,
    'what-happens-when-you-repay-a-loan-on-time': GUIDE_CATEGORIES.repayment,
+   'repaying-your-loan': GUIDE_CATEGORIES.repayment,
+   'adding-funds-to-your-wallet': GUIDE_CATEGORIES.wallet,
+   'withdrawing-to-your-bank': GUIDE_CATEGORIES.wallet,
    'using-usdc-on-moodeng-credit': GUIDE_CATEGORIES.wallet,
    'verification-and-why-its-required': GUIDE_CATEGORIES.gettingStarted,
    'managing-your-account-and-security-settings': GUIDE_CATEGORIES.security

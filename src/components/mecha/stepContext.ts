@@ -32,7 +32,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          page: 'Set up your Instant Wallet (or connect a Base Account)',
          nudge: {
             en: 'Setting up your wallet? Your Instant Wallet is created from your Moodeng login — no app to download. I can walk you through it.',
-            fil: 'Nagse-set up ng wallet? Gagawin ang Instant Wallet mo mula sa Moodeng login mo — walang app na ida-download. Gagabayan kita.'
+            fil: 'Nagse-set up ka ng wallet? Gagawin ang Instant Wallet mo gamit ang Moodeng login mo — walang app na ida-download. Gagabayan kita.'
          },
          quickReplies: {
             en: ['What is the Instant Wallet?', 'Can I use a Base Account instead?', 'My wallet won’t connect'],
@@ -62,7 +62,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          page: 'Repay your loan',
          quickReplies: {
             en: ['How do I repay?', 'Where do I buy USDC?', 'What network do I use?'],
-            fil: ['Paano magbayad ng loan?', 'Saan ako bibili ng USDC?', 'Anong network ang gagamitin ko?']
+            fil: ['Paano ako magbabayad?', 'Saan ako bibili ng USDC?', 'Anong network ang gagamitin ko?']
          }
       }
    },
@@ -84,7 +84,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          page: 'Request board',
          quickReplies: {
             en: ['How do I request a loan?', 'How does funding work?', 'What are Pandesal points?'],
-            fil: ['Paano mag-request ng loan?', 'Paano gumagana ang funding?', 'Ano ang Pandesal points?']
+            fil: ['Paano mag-request ng loan?', 'Paano napopondohan ang loan?', 'Ano ang Pandesal points?']
          }
       }
    },
@@ -95,7 +95,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
          page: 'Dashboard',
          quickReplies: {
             en: ['How do I increase my credit limit?', 'How do I get verified?', 'How do I cash out?'],
-            fil: ['Paano tumaas ang credit limit ko?', 'Paano magpa-verify?', 'Paano mag-cash out?']
+            fil: ['Paano ko mapapataas ang credit limit ko?', 'Paano magpa-verify?', 'Paano mag-cash out?']
          }
       }
    },
@@ -114,7 +114,7 @@ const STEP_TABLE: Array<{ match: (p: string) => boolean; step: MechaStep }> = [
 
 export const DEFAULT_QUICK_REPLIES: LocalizedList = {
    en: ['How do I get verified?', 'How do I cash out to GCash?', 'How do I increase my credit limit?', 'Is Moodeng legit?'],
-   fil: ['Paano magpa-verify?', 'Paano mag-cash out sa GCash?', 'Paano tumaas ang credit limit ko?', 'Legit ba ang Moodeng?']
+   fil: ['Paano magpa-verify?', 'Paano mag-cash out sa GCash?', 'Paano ko mapapataas ang credit limit ko?', 'Legit ba ang Moodeng?']
 };
 
 export function stepForLocation(pathname: string): MechaStep | null {

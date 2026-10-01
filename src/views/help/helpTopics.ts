@@ -51,8 +51,8 @@ export const HELP_CATEGORIES: HelpCategory[] = [
    {
       id: 'money-in',
       emoji: '💸',
-      label: { en: 'Adding & repaying USDC', fil: 'Pagdagdag at pagbayad ng USDC' },
-      blurb: { en: 'Fund your wallet and repay your loan', fil: 'Lagyan ng pondo at bayaran ang loan' }
+      label: { en: 'Adding & repaying USDC', fil: 'Pagdagdag at pagbabayad ng USDC' },
+      blurb: { en: 'Fund your wallet and repay your loan', fil: 'Lagyan ng pondo ang wallet mo at bayaran ang loan' }
    },
    {
       id: 'cash-out',
@@ -70,13 +70,13 @@ export const HELP_CATEGORIES: HelpCategory[] = [
       id: 'writing-request',
       emoji: '✍️',
       label: { en: 'Writing a loan request', fil: 'Pagsulat ng loan request' },
-      blurb: { en: 'Get your request approved and funded', fil: 'Para ma-approve at ma-fund ang request' }
+      blurb: { en: 'Get your request approved and funded', fil: 'Para ma-approve at mapondohan ang request mo' }
    },
    {
       id: 'safety',
       emoji: '🛡️',
       label: { en: 'Safety & your account', fil: 'Kaligtasan at account mo' },
-      blurb: { en: 'Staying safe, and what happens if a loan is unpaid', fil: 'Manatiling ligtas, at kung hindi nabayaran' }
+      blurb: { en: 'Staying safe, and what happens if a loan is unpaid', fil: 'Manatiling ligtas, at kapag hindi nabayaran ang loan' }
    }
 ];
 
@@ -107,15 +107,15 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'getting-started',
       emoji: '🦛',
       title: { en: 'What is Moodeng Credit?', fil: 'Ano ang Moodeng Credit?' },
-      subtitle: { en: 'Small USDC loans that build your credit', fil: 'Maliit na USDC loan na nagpapalaki ng kredito' },
+      subtitle: { en: 'Small USDC loans that build your credit', fil: 'Maliliit na USDC loan na bumubuo ng credit mo' },
       question: { en: 'What is Moodeng Credit and how does it work?', fil: 'Ano ang Moodeng Credit at paano ito gumagana?' },
       intro: {
-         en: 'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points and unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.',
-         fil: 'Sa Moodeng Credit puwede kang humiram ng short-term loan sa USDC habang nag-iipon ng Pandesal points na nakakabit sa wallet mo. Mag-post ka ng request, i-fu-fund ito ng lender diretso sa wallet mo, at babayaran mo on or before ang petsang itinakda mo. Bawat on-time na bayad ay nagdadagdag ng Pandesal points at nagbubukas ng mas mataas na limit — kaya maliit ang simula at lumalaki habang pinapatunayan mong maaasahan ka. Nakakabit sa wallet mo ang reputasyon, kaya kasama mo ito kahit saan.'
+         en: 'Moodeng Credit lets you request short-term loans in USDC while earning Pandesal points linked to your wallet. You post a request, a lender funds it directly to your wallet, and you repay on or before the date you set. Every on-time repayment earns Pandesal points, and repaying a loan at your full limit on time unlocks a higher credit limit — so you start small and grow as you prove reliable. Your reputation is tied to your wallet, so it travels with you rather than being locked inside one app.',
+         fil: 'Sa Moodeng Credit, puwede kang humiram ng short-term loan sa USDC habang nag-iipon ng Pandesal points na nakakabit sa wallet mo. Magpo-post ka ng request, popondohan ito ng lender diretso sa wallet mo, at babayaran mo ito sa o bago ang petsang itinakda mo. Bawat on-time na bayad ay nagdadagdag ng Pandesal points, at kapag nabayaran mo nang on time ang loan na katumbas ng buong limit mo, maa-unlock ang mas mataas na credit limit — kaya maliit ang simula at lalaki ito habang pinapatunayan mong maaasahan ka. Nakakabit sa wallet mo ang reputasyon mo, kaya dala mo ito kahit saan sa halip na nakakulong sa iisang app.'
       },
       guide: {
          path: '/learn/how-to-request-your-first-loan',
-         label: { en: 'How to request your first loan', fil: 'Paano mag-request ng unang loan' }
+         label: { en: 'How to request your first loan', fil: 'Paano mag-request ng unang loan mo' }
       },
       keywords: ['about', 'what is', 'overview', 'how it works']
    },
@@ -129,22 +129,22 @@ export const HELP_TOPICS: HelpTopic[] = [
       steps: {
          en: [
             'Create your account with a username, email, and password.',
-            'Tap "Apply for a Loan" to start.',
+            'Tap "Apply for a loan" to start.',
             'Tap "Create Instant Wallet" — your wallet is created straight from your Moodeng login, no app needed. (Prefer a Base Account? Set one up at account.base.app and connect it instead.)',
             'Tap "Verify Yourself" and complete "Verify Your ID" — about 3 minutes.',
             'Open the Request Board and set your amount (up to your limit), repayment date, and a clear reason.'
          ],
          fil: [
             'Gumawa ng account gamit ang username, email, at password.',
-            'I-tap ang "Apply for a Loan" para magsimula.',
-            'I-tap ang "Create Instant Wallet" — gagawin ang wallet mo diretso mula sa Moodeng login mo, walang app na kailangan. (Mas gusto ang Base Account? Mag-set up nito sa account.base.app at ikonekta na lang.)',
+            'I-tap ang "Mag-apply ng loan" para magsimula.',
+            'I-tap ang "Gumawa ng Instant Wallet" — gagawin ang wallet mo diretso mula sa Moodeng login mo, walang app na kailangan. (Mas gusto mo ng Base Account? Gumawa nito sa account.base.app at iyon na lang ang ikonekta.)',
             'I-tap ang "Verify Yourself" at kumpletuhin ang "Verify Your ID" — mga 3 minuto.',
             'Buksan ang Request Board at itakda ang halaga (hanggang sa limit mo), petsa ng bayad, at malinaw na dahilan.'
          ]
       },
       watchOut: {
          en: 'Signing up and verifying are two separate steps. You cannot post a request until "Verify Your ID" is done.',
-         fil: 'Magkaibang hakbang ang sign up at verify. Hindi ka makaka-post ng request hangga\'t hindi tapos ang "Verify Your ID".'
+         fil: 'Magkaibang hakbang ang pag-sign up at pag-verify. Hindi ka makaka-post ng request hangga\'t hindi tapos ang "Verify Your ID".'
       },
       guide: { path: '/learn/how-to-request-your-first-loan', label: { en: 'Full walkthrough', fil: 'Buong gabay' } },
       keywords: ['start', 'begin', 'apply', 'new']
@@ -158,7 +158,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'Does Moodeng charge any fees?', fil: 'May sinisingil bang bayad ang Moodeng?' },
       intro: {
          en: 'No. Moodeng is free to use — no platform fees on borrowing or lending, no subscriptions, no setup costs. 100% of what a lender funds reaches you, and 100% of your repayment reaches the lender. Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. The only cost is the interest rate the borrower offers, and that goes entirely to the lender, not to us.',
-         fil: 'Wala. Libre ang Moodeng — walang platform fee sa paghiram o pagpapahiram, walang subscription, walang setup cost. 100% ng ini-fund ng lender ay napupunta sa iyo, at 100% ng bayad mo ay napupunta sa lender. Zero din ang network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit. Ang tanging gastos ay ang interest na inaalok ng borrower, at napupunta iyon nang buo sa lender, hindi sa amin.'
+         fil: 'Wala. Libre ang Moodeng — walang platform fee sa paghiram o pagpapahiram, walang subscription, walang setup cost. 100% ng pinondohan ng lender ay napupunta sa iyo, at 100% ng bayad mo ay napupunta sa lender. Wala ring network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit. Ang tanging gastos ay ang interes na inaalok ng borrower, at napupunta iyon nang buo sa lender, hindi sa amin.'
       },
       keywords: ['cost', 'price', 'fee', 'charge', 'free', 'gas']
    },
@@ -166,12 +166,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       id: 'small-loans',
       category: 'getting-started',
       emoji: '🪙',
-      title: { en: 'Can I get a small loan?', fil: 'Puwede bang maliit na loan?' },
+      title: { en: 'Can I get a small loan?', fil: 'Puwede ba ang maliit na loan?' },
       subtitle: { en: 'Yes — this is built for small loans', fil: 'Oo — para dito ginawa ang Moodeng' },
       question: { en: 'Can I get a small loan with Moodeng?', fil: 'Puwede ba akong makakuha ng maliit na loan?' },
       intro: {
-         en: 'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each on-time repayment grows your limit step by step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.',
-         fil: 'Oo — para sa maliliit na loan talaga ginawa ang Moodeng. Nagsisimula ang bagong borrower sa $15 limit, walang minimum, walang subscription, walang fee. Hihingi ka ng kailangan mo hanggang sa limit mo, itatakda ang petsa at interes, at magdedesisyon ang lenders kung i-fu-fund ka. Bawat on-time na bayad ay pinapalaki ang limit, mula $15 hanggang $140 na maximum, kaya puwedeng maliit ang simula at lumaki kapag handa ka na.'
+         en: 'Yes — small loans are exactly what Moodeng is for. New borrowers start at a $15 limit, with no minimum amount, no subscription, and no fees. You request what you need up to your current limit, set the date and interest, and lenders decide whether to fund you. Each full-limit loan you repay on time grows your limit one step, from $15 up to a $140 maximum, so you can start small and grow into larger loans only when you are ready.',
+         fil: 'Oo — para talaga sa maliliit na loan ginawa ang Moodeng. Nagsisimula ang mga bagong borrower sa $15 limit, walang minimum na halaga, walang subscription, at walang fee. Ire-request mo ang kailangan mo hanggang sa kasalukuyang limit mo, itatakda mo ang petsa at interes, at ang mga lender ang magpapasya kung popondohan ka. Bawat full-limit na loan na nabayaran mo nang on time ay nagpapataas ng limit mo nang isang hakbang, mula $15 hanggang $140 na maximum, kaya puwede kang magsimula sa maliit at kumuha lang ng mas malalaking loan kapag handa ka na.'
       },
       keywords: ['minimum', 'smallest', 'first loan amount']
    },
@@ -195,16 +195,16 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Sa app, i-tap ang "Verify Yourself".',
             'Piliin ang "Verify Your ID" — larawan ng national ID mo at isang selfie. Siguraduhing maliwanag at pantay ang ilaw.',
             'Gumagamit ka na ng World App? Puwede mong piliin ang "Verify with World ID".',
-            'Karamihan ay tapos sa loob ng ilang minuto. Kung kailangan ng review ng tao, aabisuhan ka namin agad — kadalasan sa loob ng ilang oras, pinakamatagal 1 business day.'
+            'Karamihan ng check ay natatapos sa loob ng ilang minuto. Kung kailangan ng review ng tao, aabisuhan ka namin agad kapag tapos na ito — kadalasan sa loob ng ilang oras, at hindi lalampas sa 1 business day.'
          ]
       },
       watchOut: {
          en: 'Your ID is checked by our secure verification partner and is never stored by Moodeng. If it gets stuck, retry in Chrome or Safari — not a browser inside Facebook or Messenger — with a clear, well-lit photo.',
-         fil: 'Ang ID mo ay sinusuri ng secure na partner namin at hindi kailanman iniimbak ng Moodeng. Kung na-stuck, subukan ulit sa Chrome o Safari — hindi sa browser na nasa loob ng Facebook o Messenger — na malinaw at maliwanag ang larawan.'
+         fil: 'Ang ID mo ay sinusuri ng secure na partner namin at hindi kailanman iniimbak ng Moodeng. Kung na-stuck, subukan ulit sa Chrome o Safari — hindi sa browser na nasa loob ng Facebook o Messenger — gamit ang malinaw at maliwanag na larawan.'
       },
       guide: {
          path: '/learn/verification-and-why-its-required',
-         label: { en: 'Verification & Security', fil: 'Verification at Security' }
+         label: { en: 'Verification & Security', fil: 'Verification at seguridad' }
       },
       keywords: ['id', 'selfie', 'kyc', 'identity', 'world id']
    },
@@ -234,11 +234,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       watchOut: {
          en: 'Signing up alone is not enough — verifying is the last step before you can send a request.',
-         fil: 'Hindi sapat ang sign up lang — ang verify ang huling hakbang bago ka makapag-request.'
+         fil: 'Hindi sapat ang pag-sign up lang — ang pag-verify ang huling hakbang bago ka makapagpadala ng request.'
       },
       guide: {
          path: '/learn/verification-and-why-its-required',
-         label: { en: 'Verification & Security', fil: 'Verification at Security' }
+         label: { en: 'Verification & Security', fil: 'Verification at seguridad' }
       },
       keywords: ['pending', 'stuck', 'not working', 'unverified']
    },
@@ -253,11 +253,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'What is the Instant Wallet and is it safe?', fil: 'Ano ang Instant Wallet at ligtas ba ito?' },
       intro: {
          en: "The Instant Wallet is Moodeng's default wallet for borrowers: a real, self-custodial wallet set up for you straight from your Moodeng login — no app to download and no seed phrase to write down. Borrowers receive USDC loans in it. (Lenders: we recommend a Base Account, but you can use an Instant Wallet too.) It earns Pandesal points exactly like any other wallet, it works even when Base Account sign-in is blocked (like the PLDT / Smart block), and it is gasless — Moodeng covers the network fees, so you don't need ETH to repay or cash out. Prefer a Base Account? You can connect one instead.",
-         fil: 'Ang Instant Wallet ang default wallet ng borrowers sa Moodeng: totoo at self-custodial na wallet na ise-set up para sa iyo diretso mula sa Moodeng login mo — walang app na ida-download at walang seed phrase na isusulat. Dito tumatanggap ng USDC loan ang borrowers. (Para sa lenders, Base Account ang inirerekomenda namin, pero puwede rin ang Instant Wallet.) Nag-iipon ito ng Pandesal points gaya ng ibang wallet, gumagana kahit naka-block ang Base Account sign-in (gaya ng PLDT / Smart block), at gasless — kami ang sa network fees, kaya hindi mo kailangan ng ETH para magbayad o mag-cash out. Mas gusto ang Base Account? Puwede mo itong ikonekta sa halip.'
+         fil: 'Ang Instant Wallet ang default wallet ng mga borrower sa Moodeng: totoo at self-custodial na wallet na ise-set up para sa iyo diretso mula sa Moodeng login mo — walang app na ida-download at walang seed phrase na isusulat. Dito tinatanggap ng mga borrower ang USDC loan nila. (Para sa mga lender, Base Account ang inirerekomenda namin, pero puwede rin ang Instant Wallet.) Kumikita ito ng Pandesal points gaya ng kahit anong wallet, gumagana kahit naka-block ang Base Account sign-in (gaya ng block sa PLDT / Smart), at gasless — sagot ng Moodeng ang network fee, kaya hindi mo kailangan ng ETH para magbayad o mag-cash out. Mas gusto mo ng Base Account? Puwede mo iyon ikonekta.'
       },
       watchOut: {
          en: 'You fully own it. You can export its private key anytime from Account → Account Settings → Wallet → "Export wallet key" and import it into MetaMask, Trust, or any wallet — then you\'re free to leave Moodeng entirely.',
-         fil: 'Ikaw ang ganap na may-ari. Puwede mong i-export ang private key anumang oras sa Account → Account Settings → Wallet → "Export wallet key" at i-import sa MetaMask, Trust, o kahit anong wallet — tapos malaya kang umalis sa Moodeng.'
+         fil: 'Ikaw ang ganap na may-ari. Puwede mong i-export ang private key anumang oras sa Account → Mga setting ng account → Wallet → "Export wallet key" at i-import sa MetaMask, Trust, o kahit anong wallet — at malaya ka nang umalis sa Moodeng nang tuluyan.'
       },
       keywords: ['instant wallet', 'create my wallet', 'no seed', 'export key', 'embedded wallet']
    },
@@ -278,7 +278,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             'A Base Account is passwordless and seedless — you sign in with email or a passkey.'
          ],
          fil: [
-            'Hindi mo kailangan ang alinman para magsimula — ise-set up ng Moodeng ang Instant Wallet mo mula sa login mo. Kung mas gusto mo ang Base Account, gawin ito sa account.base.app.',
+            'Hindi mo kailangan ang alinman para magsimula — ise-set up ng Moodeng ang Instant Wallet mo mula sa login mo. Kung mas gusto mo ng Base Account, gumawa nito sa account.base.app.',
             'Hindi mo kailangan ang Coinbase app. Ang Base ay network na ginawa ng Coinbase, pero ibang bagay ang app.',
             'Ang Base Account ay walang password at walang seed phrase — email o passkey ang gamit sa pag-sign in.'
          ]
@@ -295,7 +295,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'wallet',
       emoji: '🆕',
       title: { en: "Can't create a Base Account", fil: 'Hindi makagawa ng Base Account' },
-      subtitle: { en: "The page won't load fix", fil: 'Ayos kapag ayaw mag-load ng page' },
+      subtitle: { en: "The page won't load fix", fil: 'Solusyon kapag ayaw mag-load ang page' },
       question: {
          en: "The Base Account page won't load — how do I create one?",
          fil: 'Ayaw mag-load ng Base Account page — paano ako gagawa?'
@@ -305,13 +305,13 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Switch from Wi-Fi to mobile data (or the other way around). Some Wi-Fi networks block the sign-in — this fixes it surprisingly often.',
             'Use a real browser — Chrome or Safari — not a browser inside another app.',
             'Try again at account.base.app.',
-            'If it still fails, your network may be blocking Base — see "Base won\'t load in the Philippines".'
+            'If it still fails, your network may be blocking Base — see "Base won\'t load (PLDT / Smart)".'
          ],
          fil: [
-            'Lumipat mula Wi-Fi papuntang mobile data (o kabaligtaran). May mga Wi-Fi na hina-block ang sign-in — madalas itong nakaka-ayos.',
+            'Lumipat mula Wi-Fi papuntang mobile data (o kabaligtaran). May mga Wi-Fi na hina-block ang sign-in — madalas, naaayos nito ang problema.',
             'Gumamit ng totoong browser — Chrome o Safari — hindi sa browser na nasa loob ng ibang app.',
             'Subukan ulit sa account.base.app.',
-            'Kung ayaw pa rin, baka hina-block ng network mo ang Base — tingnan ang "Ayaw mag-load ng Base sa Pilipinas".'
+            'Kung ayaw pa rin, baka hina-block ng network mo ang Base — tingnan ang "Ayaw mag-load ng Base (PLDT / Smart)".'
          ]
       },
       keywords: ['base account', 'wont load', 'cant create', 'sign up base']
@@ -321,14 +321,14 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'wallet',
       emoji: '📶',
       title: { en: "Base won't load (PLDT / Smart)", fil: 'Ayaw mag-load ng Base (PLDT / Smart)' },
-      subtitle: { en: 'Network blocking — three fixes', fil: 'Bina-block ng network — tatlong ayos' },
+      subtitle: { en: 'Network blocking — three fixes', fil: 'Bina-block ng network — tatlong solusyon' },
       question: {
          en: "Base won't load on my network and my wallet won't connect — what do I do?",
          fil: 'Ayaw mag-load ng Base sa network ko at ayaw kumonekta ng wallet — ano ang gagawin ko?'
       },
       intro: {
          en: 'Some Philippine networks (notably PLDT and Smart) block the sign-in service Base uses. When that happens, account.base.app won\'t load or connecting your wallet dead-ends — sometimes with a "your connection is not private" or security warning — even though the rest of the internet works. This is the network, not your phone or account.',
-         fil: 'May mga Philippine network (lalo na PLDT at Smart) na hina-block ang sign-in service ng Base. Kapag ganito, ayaw mag-load ng account.base.app o dede-dead-end ang pag-connect ng wallet — minsan may "your connection is not private" o security warning — kahit gumagana ang iba pang internet. Network ito, hindi ang phone o account mo.'
+         fil: 'May mga Philippine network (lalo na PLDT at Smart) na hina-block ang sign-in service ng Base. Kapag ganito, ayaw mag-load ng account.base.app o hindi natutuloy ang pag-connect ng wallet — minsan may "your connection is not private" o security warning — kahit gumagana ang iba pang internet. Sa network ang problema, hindi sa phone o account mo.'
       },
       steps: {
          en: [
@@ -338,8 +338,8 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Or use a reputable free VPN like Proton VPN — turn it on before opening the sign-in page, connect to a nearby location, then reopen Moodeng.'
          ],
          fil: [
-            'Pinakamadali — Instant Wallet na lang ang gamitin. I-tap ang "Create Instant Wallet" sa wallet screen. Walang app, walang seed phrase, at kami na ang sa network fees.',
-            'Lumipat ng Wi-Fi ↔ mobile data. Kung isa ang naka-block, madalas gumagana ang isa.',
+            'Pinakamadali — Instant Wallet na lang ang gamitin. I-tap ang "Gumawa ng Instant Wallet" sa wallet screen. Walang app, walang seed phrase, at sagot na ang network fee mo.',
+            'Lumipat ng Wi-Fi ↔ mobile data. Kung naka-block ang isa, madalas gumagana ang kabila.',
             'I-install ang libreng "1.1.1.1" app ng Cloudflare, i-On ito, tapos buksan ulit ang account.base.app.',
             'O gumamit ng maaasahang libreng VPN gaya ng Proton VPN — i-on bago buksan ang sign-in page, kumonekta sa malapit na lokasyon, tapos buksan ulit ang Moodeng.'
          ]
@@ -355,14 +355,14 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'wallet',
       emoji: '🌐',
       title: { en: 'Open in a real browser', fil: 'Buksan sa totoong browser' },
-      subtitle: { en: 'Fix sign-in inside Facebook / Messenger', fil: 'Ayos kapag sa loob ng Facebook / Messenger' },
+      subtitle: { en: 'Fix sign-in inside Facebook / Messenger', fil: 'Ayusin ang sign-in sa loob ng Facebook / Messenger' },
       question: {
          en: "Sign-in / my wallet won't work when I opened Moodeng from Facebook — what do I do?",
          fil: 'Ayaw gumana ng sign-in / wallet nang binuksan ang Moodeng mula sa Facebook — ano ang gagawin ko?'
       },
       intro: {
          en: "If you opened Moodeng by tapping a link inside Facebook, Messenger, Instagram, or LINE, you're in that app's built-in mini-browser. Sign-in and wallet pop-ups often fail silently there — nothing happens, or you see a 403 error.",
-         fil: 'Kung binuksan mo ang Moodeng sa pamamagitan ng link sa loob ng Facebook, Messenger, Instagram, o LINE, nasa built-in na mini-browser ka ng app na iyon. Madalas na tahimik na nabi-bigo doon ang sign-in at wallet pop-up — walang nangyayari, o may 403 error.'
+         fil: 'Kung binuksan mo ang Moodeng sa pamamagitan ng link sa loob ng Facebook, Messenger, Instagram, o LINE, nasa built-in na mini-browser ka ng app na iyon. Doon, madalas pumapalya ang sign-in at wallet pop-up nang walang lumalabas na error — walang nangyayari, o may 403 error.'
       },
       steps: {
          en: [
@@ -371,9 +371,9 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Then sign in and connect your wallet again from there.'
          ],
          fil: [
-            'I-tap ang tatlong tuldok (⋯) sa gilid at piliin ang "Open in Chrome" / "Open in Safari" / "Open in external browser".',
+            'I-tap ang tatlong tuldok (⋯) sa sulok at piliin ang "Open in Chrome" / "Open in Safari" / "Open in external browser".',
             'O kopyahin ang link at i-paste nang diretso sa Chrome o Safari.',
-            'Tapos mag-sign in at ikonekta ulit ang wallet mula doon.'
+            'Tapos mag-sign in at ikonekta ulit ang wallet mo mula roon.'
          ]
       },
       keywords: ['in-app browser', 'facebook browser', 'messenger', '403', 'open in chrome']
@@ -401,7 +401,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             'Buksan ang wallet app mo at i-disconnect ang Moodeng kung nakakonekta ito.',
             'Isara nang buo ang browser, tapos buksan ulit.',
             'Buksan ulit ang Moodeng sa Chrome o Safari — hindi sa browser na nasa loob ng ibang app.',
-            'I-tap ulit ang Connect Wallet at aprubahan ang request kapag lumabas.'
+            'I-tap ulit ang "Ikonekta ang wallet" at aprubahan ang request kapag lumabas ito.'
          ]
       },
       watchOut: {
@@ -418,7 +418,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: 'When you have to tap twice', fil: 'Kapag kailangang i-tap nang dalawang beses' },
       question: {
          en: '"Try again" keeps popping up / I have to tap twice — how do I fix it?',
-         fil: 'Paulit-ulit ang "Try again" / kailangang i-tap ng dalawang beses — paano ayusin?'
+         fil: 'Paulit-ulit ang "Try again" / kailangang i-tap nang dalawang beses — paano ayusin?'
       },
       steps: {
          en: [
@@ -427,7 +427,7 @@ export const HELP_TOPICS: HelpTopic[] = [
             'If nothing appears, redo the "Wallet won\'t connect" reset.'
          ],
          fil: [
-            'I-tap nang diretso ang connect / approve button — huwag hintaying mangyari mag-isa.',
+            'I-tap nang diretso ang connect / approve button — huwag hintaying mangyari ito nang kusa.',
             'Aprubahan ang pop-up kapag lumabas.',
             'Kung walang lumalabas, ulitin ang reset sa "Ayaw kumonekta ng wallet".'
          ]
@@ -441,7 +441,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'money-in',
       emoji: '💸',
       title: { en: 'How to repay your loan', fil: 'Paano bayaran ang loan' },
-      subtitle: { en: 'Send USDC on Base to the Repay address', fil: 'Magpadala ng USDC sa Base sa Repay address' },
+      subtitle: { en: 'Send USDC on Base to the Repay address', fil: 'Magpadala ng USDC sa Base papunta sa repayment address' },
       question: { en: 'How do I repay my loan?', fil: 'Paano bayaran ang loan ko?' },
       steps: {
          en: [
@@ -451,17 +451,17 @@ export const HELP_TOPICS: HelpTopic[] = [
             'You can pay in parts — the Repay screen has 25% / 50% / 75% / Full buttons, or a custom amount.'
          ],
          fil: [
-            'Buksan ang Repay screen — ipinapakita nito ang eksaktong halaga at puwedeng kopyahin ang repayment address.',
+            'Buksan ang Magbayad screen — ipinapakita nito ang eksaktong halaga at doon mo makokopya ang repayment address.',
             'Kung wala ka pang USDC, bumili sa Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, o GCrypto (GCash).',
             'Ipadala ang USDC sa repayment address, at piliin ang Base bilang network.',
-            'Puwede kang magbayad nang paunti-unti — may 25% / 50% / 75% / Full na buttons ang Repay screen, o custom na halaga.'
+            'Puwede kang magbayad nang paunti-unti — may mga button na 25% / 50% / 75% / Buong halaga ang Magbayad screen, o puwede kang maglagay ng sariling halaga.'
          ]
       },
       watchOut: {
-         en: 'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points and unlocks higher credit levels.',
-         fil: 'Laging piliin ang Base bilang network — ang maling network ay puwedeng magpawala ng pera. Ang pagbayad bago ang due date ay nagdadagdag ng Pandesal points at nagbubukas ng mas mataas na level.'
+         en: 'Always select Base as the network — the wrong network can lose the funds. Repaying before the due date earns Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level.',
+         fil: 'Laging piliin ang Base bilang network — puwedeng mawala ang pera kapag mali ang network. Nagdadagdag ng Pandesal points ang pagbabayad bago ang due date, at kapag nabayaran mo nang on time ang full-limit na loan, maa-unlock ang susunod na Credit Level.'
       },
-      guide: { path: '/learn/repaying-your-loan', label: { en: 'Ways to repay your loan', fil: 'Mga paraan ng pagbayad' } },
+      guide: { path: '/learn/repaying-your-loan', label: { en: 'Ways to repay your loan', fil: 'Mga paraan ng pagbabayad ng loan mo' } },
       keywords: ['repay', 'pay back', 'due', 'binance', 'coins.ph', 'pdax']
    },
    {
@@ -485,21 +485,21 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       watchOut: {
          en: 'Sending on the wrong network can result in lost funds — always choose Base.',
-         fil: 'Ang pagpadala sa maling network ay puwedeng magpawala ng pera — laging piliin ang Base.'
+         fil: 'Puwedeng mawala ang pera kapag mali ang network na ginamit sa pagpapadala — laging piliin ang Base.'
       },
-      guide: { path: '/learn/adding-funds-to-your-wallet', label: { en: 'Ways to add USDC', fil: 'Mga paraan ng pagdagdag ng USDC' } },
+      guide: { path: '/learn/adding-funds-to-your-wallet', label: { en: 'Ways to add USDC', fil: 'Mga paraan para magdagdag ng USDC' } },
       keywords: ['add funds', 'buy usdc', 'deposit', 'top up', 'on-ramp']
    },
    {
       id: 'paying-in-parts',
       category: 'money-in',
       emoji: '🧩',
-      title: { en: 'Paying in parts', fil: 'Pagbayad nang paunti-unti' },
-      subtitle: { en: 'Some now, some later', fil: 'Konti ngayon, konti mamaya' },
+      title: { en: 'Paying in parts', fil: 'Pagbabayad nang paunti-unti' },
+      subtitle: { en: 'Some now, some later', fil: 'Kaunti ngayon, kaunti sa susunod' },
       question: { en: 'Can I pay my loan in parts?', fil: 'Puwede bang hulugan ang loan?' },
       intro: {
          en: 'Yes. The Repay screen has 25% / 50% / 75% / Full buttons or a custom amount, and the loan stays active until it is fully paid. Partial on-time payments still earn Pandesal points — about 7 points for 75% paid, 5 for 50%, 3 for 25% — while a full on-time payment earns the most (10). If part of the payment lands after the due date, that late part earns 0 points, but the amount you owe never grows: no late fees, no rollover. Paying as much as you can before the due date is always better than nothing.',
-         fil: "Oo. May 25% / 50% / 75% / Full na buttons ang Repay screen o custom na halaga, at aktibo pa rin ang loan hangga't hindi pa buo ang bayad. Ang partial na on-time na bayad ay may Pandesal points pa rin — mga 7 puntos sa 75%, 5 sa 50%, 3 sa 25% — habang pinakamalaki ang buong on-time na bayad (10). Kung may bahaging huli sa due date, 0 puntos iyon, pero hindi lumalaki ang utang mo: walang late fee, walang rollover. Mas mabuti ang bayad nang kaya mo bago ang due date kaysa wala."
+         fil: "Oo. May mga button na 25% / 50% / 75% / Buong halaga ang Magbayad screen, o puwede kang maglagay ng sariling halaga, at aktibo pa rin ang loan hangga't hindi pa buo ang bayad. May Pandesal points pa rin ang bahaging bayad na on time — mga 7 puntos sa 75%, 5 sa 50%, 3 sa 25% — habang pinakamarami ang makukuha sa buong bayad na on time (10). Kung may bahagi ng bayad na pumasok pagkalipas ng due date, 0 puntos ang bahaging iyon, pero hindi lumalaki ang utang mo: walang late fee, walang rollover. Mas mabuti nang magbayad ng kaya mo bago ang due date kaysa wala."
       },
       keywords: ['partial', 'installment', 'hulugan', 'part payment']
    },
@@ -512,7 +512,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'Can I have more than one loan at a time?', fil: 'Puwede bang higit sa isang loan nang sabay?' },
       intro: {
          en: "Yes — you can have more than one active loan at the same time, as long as the new amount fits within your available credit limit. Your available limit is your current level's limit (anywhere from $15 up to $140) minus what you already owe on active loans. If your current loans already use your whole limit, repay some or all before requesting more. Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum, repay one first.",
-         fil: 'Oo — puwede kang magkaroon ng higit sa isang aktibong loan nang sabay, basta kasya ang bagong halaga sa available na limit mo. Ang available na limit ay ang limit ng kasalukuyang level mo (mula $15 hanggang $140) bawas ang utang mo sa aktibong loans. Kung nagamit na ng kasalukuyang loans ang buong limit, magbayad muna bago humiling ng iba. May mga account din na may cap kung ilang loan ang puwedeng aktibo — kung sabi ng app na umabot ka na sa max, magbayad muna ng isa.'
+         fil: 'Oo — puwede kang magkaroon ng higit sa isang aktibong loan nang sabay, basta kasya ang bagong halaga sa available na limit mo. Ang available na limit ay ang limit ng kasalukuyang level mo (mula $15 hanggang $140) bawas ang utang mo sa mga aktibong loan. Kung nagamit na ng mga kasalukuyang loan mo ang buong limit, bayaran muna ang ilan o lahat bago mag-request ulit. May mga account din na may limitasyon kung ilang loan ang puwedeng aktibo nang sabay — kung sinabi ng app na naabot mo na ang maximum, bayaran muna ang isa.'
       },
       keywords: ['two loans', 'multiple', 'second loan', 'at once']
    },
@@ -523,7 +523,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'cash-out',
       emoji: '🏦',
       title: { en: 'Cash out to GCash or a bank', fil: 'Mag-cash out sa GCash o bank' },
-      subtitle: { en: 'USDC → pesos, step by step', fil: 'USDC → pesos, hakbang-hakbang' },
+      subtitle: { en: 'USDC → pesos, step by step', fil: 'USDC → piso, hakbang-hakbang' },
       question: { en: 'How do I cash out to GCash or my bank?', fil: 'Paano mag-cash out sa GCash o sa bank ko?' },
       steps: {
          en: [
@@ -539,7 +539,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       watchOut: {
          en: "Choosing the wrong network can lose the funds — this is the single most important detail. Moodeng charges $0 to cash out; the only cost is the exchange's own fee.",
-         fil: 'Ang maling network ay puwedeng magpawala ng pera — ito ang pinakaimportanteng detalye. $0 ang singil ng Moodeng sa cash out; ang bayad lang ay sa exchange mismo.'
+         fil: 'Puwedeng mawala ang pera kapag mali ang network — ito ang pinakaimportanteng detalye. $0 ang singil ng Moodeng sa cash out; ang tanging bayad ay ang fee ng exchange.'
       },
       guide: {
          path: '/learn/withdrawing-to-your-bank',
@@ -556,7 +556,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How much does it cost to cash out?', fil: 'Magkano ang gastos sa pag-cash out?' },
       intro: {
          en: "Moodeng itself charges $0 — the only cost is the exchange's conversion fee. Coins.ph is the cheapest route we've found in the Philippines: about 0.70% for a full round trip. For a $15 loan taken out and repaid, the all-in cost through Coins.ph is roughly ₱6.50 (about $0.10) — a small trading fee each way, a free PESONet bank cash-out, and the tiny network fee. If you want the pesos instantly, InstaPay adds a flat ₱5 (round trip ≈ ₱11.50, about $0.19). Other services build their margin into the rate, so they usually cost more. Note: Coins.ph is temporarily paused (suspended by the Philippine government) — until it's back, PDAX is the cheapest option we recommend.",
-         fil: '$0 ang singil ng Moodeng mismo — ang tanging gastos ay ang conversion fee ng exchange. Ang Coins.ph ang pinakamura na nakita namin sa Pilipinas: mga 0.70% para sa buong round trip. Sa $15 na loan na hiniram at binayaran, ang all-in na gastos sa Coins.ph ay mga ₱6.50 (mga $0.10) — maliit na trading fee bawat direksyon, libreng PESONet bank cash-out, at maliit na network fee. Kung gusto mo agad ang piso, may flat na ₱5 ang InstaPay (round trip ≈ ₱11.50, mga $0.19). Ang ibang serbisyo ay nasa rate na ang margin nila, kaya kadalasan mas mahal. Paalala: pansamantalang naka-pause ang Coins.ph (sinuspinde ng gobyerno) — habang wala pa ito, PDAX ang pinakamurang inirerekomenda namin.'
+         fil: '$0 ang singil ng Moodeng mismo — ang tanging gastos ay ang conversion fee ng exchange. Ang Coins.ph ang pinakamura na nakita namin sa Pilipinas: mga 0.70% para sa buong round trip. Sa $15 na loan na hiniram at binayaran, ang all-in na gastos sa Coins.ph ay mga ₱6.50 (mga $0.10) — maliit na trading fee bawat direksyon, libreng PESONet bank cash-out, at maliit na network fee. Kung gusto mo agad ang piso, may flat na ₱5 ang InstaPay (round trip ≈ ₱11.50, mga $0.19). Sa ibang serbisyo, kasama na sa rate ang margin nila, kaya kadalasan mas mahal. Paalala: pansamantalang naka-pause ang Coins.ph (sinuspinde ng gobyerno) — habang wala pa ito, PDAX ang pinakamurang inirerekomenda namin.'
       },
       keywords: ['cash out cost', 'fee', 'how much', 'coins.ph fee', 'instapay']
    },
@@ -567,15 +567,15 @@ export const HELP_TOPICS: HelpTopic[] = [
       category: 'credit',
       emoji: '⭐',
       title: { en: 'What are Pandesal points?', fil: 'Ano ang Pandesal points?' },
-      subtitle: { en: 'Your repayment reputation', fil: 'Ang reputasyon mo sa pagbayad' },
+      subtitle: { en: 'Your repayment reputation', fil: 'Ang reputasyon mo sa pagbabayad' },
       question: { en: 'What are Pandesal points and how are they calculated?', fil: 'Ano ang Pandesal points at paano ito kinakalkula?' },
       intro: {
          en: 'Your Pandesal points reflect how reliably you repay loans. They rise with on-time, in-full repayments and drop with late payments or defaults. Lenders use them to gauge risk when deciding whether to fund your requests. Because they are tied to your wallet, they travel with you — they are not locked inside one app.',
-         fil: 'Ipinapakita ng Pandesal points mo kung gaano ka kaaasahan sa pagbayad. Tumataas ito sa on-time at buong bayad at bumababa sa huli o default. Ginagamit ito ng lenders para tantiyahin ang risk kapag magdedesisyon silang i-fund ka. Dahil nakakabit ito sa wallet mo, kasama mo ito — hindi nakakulong sa iisang app.'
+         fil: 'Ipinapakita ng Pandesal points mo kung gaano ka maaasahan sa pagbabayad. Tumataas ito kapag on time at buo ang bayad, at bumababa kapag late ka o nag-default. Ginagamit ito ng mga lender para tantiyahin ang risk kapag nagpapasya sila kung popondohan ka. Dahil nakakabit ito sa wallet mo, kasama mo ito — hindi nakakulong sa iisang app.'
       },
       guide: {
          path: '/learn/understanding-your-trust-score',
-         label: { en: 'Understanding your Pandesal points', fil: 'Pag-unawa sa Pandesal points' }
+         label: { en: 'Understanding your Pandesal points', fil: 'Pag-unawa sa Pandesal points mo' }
       },
       keywords: ['trust score', 'pandesal points', 'pandesal', 'reputation', 'ts']
    },
@@ -585,12 +585,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       emoji: '🎚️',
       title: { en: 'What is a Credit Level?', fil: 'Ano ang Credit Level?' },
       subtitle: { en: '$15 up to $140, step by step', fil: '$15 hanggang $140, hakbang-hakbang' },
-      question: { en: 'What is a Credit Level and how do I move up?', fil: 'Ano ang Credit Level at paano tumaas?' },
+      question: { en: 'What is a Credit Level and how do I move up?', fil: 'Ano ang Credit Level at paano ako aakyat ng level?' },
       intro: {
          en: 'Credit Levels control how much you can borrow at a time. Everyone starts at Level 1 with a $15 limit. You move up by completing a Credit-Building Loan — a loan at your full current limit, repaid in full and on time. Each one raises your limit along the ladder: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum.',
-         fil: 'Kinokontrol ng Credit Level kung magkano ang mahihiram mo nang sabay. Lahat ay nagsisimula sa Level 1 na may $15 limit. Tumataas ka sa pamamagitan ng Credit-Building Loan — loan sa buong kasalukuyang limit mo, binayaran nang buo at on time. Bawat isa ay nagtataas ng limit sa hagdan: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum.'
+         fil: 'Kinokontrol ng Credit Level kung magkano ang puwede mong hiramin sa isang pagkakataon. Lahat ay nagsisimula sa Level 1 na may $15 limit. Tumataas ka sa pamamagitan ng Credit-Building Loan — loan sa buong kasalukuyang limit mo, binayaran nang buo at on time. Bawat isa ay nagtataas ng limit sa hagdan: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum.'
       },
-      guide: { path: '/learn/how-credit-levels-work', label: { en: 'How Credit Levels work', fil: 'Paano gumagana ang Credit Levels' } },
+      guide: { path: '/learn/how-credit-levels-work', label: { en: 'How Credit Levels work', fil: 'Paano gumagana ang Credit Level' } },
       keywords: ['credit level', 'limit', 'level up', 'increase limit']
    },
    {
@@ -599,37 +599,37 @@ export const HELP_TOPICS: HelpTopic[] = [
       emoji: '📈',
       title: { en: 'Grow my credit limit', fil: 'Palakihin ang credit limit' },
       subtitle: { en: 'From $15 upward', fil: 'Mula $15 pataas' },
-      question: { en: 'How do I increase my credit limit?', fil: 'Paano tumaas ang credit limit ko?' },
+      question: { en: 'How do I increase my credit limit?', fil: 'Paano ko mapapataas ang credit limit ko?' },
       steps: {
          en: [
-            'Repay on time. On-time repayment earns Pandesal points, which move you up the levels.',
+            'Repay on time. On-time repayment earns Pandesal points, and repaying a full-limit loan on time moves you up a level.',
             'To move up a level, take a Credit-Building Loan — a loan at your full current limit — and repay it in full and on time.',
             'Credit levels run $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
             'A referral code adds $5 to your starting limit — entered at the start of the loan application.'
          ],
          fil: [
-            'Magbayad on time. Ang on-time na bayad ay may Pandesal points na nagtataas ng level mo.',
+            'Magbayad on time. Nagdadagdag ng Pandesal points ang on-time na bayad, at kapag nabayaran mo nang on time ang full-limit na loan, aakyat ka ng isang level.',
             'Para tumaas ng level, kumuha ng Credit-Building Loan — loan sa buong kasalukuyang limit — at bayaran nang buo at on time.',
-            'Ang credit levels ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
+            'Ang mga Credit Level ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140.',
             'May dagdag na $5 sa starting limit mo ang referral code — inilalagay sa simula ng loan application.'
          ]
       },
-      guide: { path: '/learn/how-credit-levels-work', label: { en: 'How Credit Levels work', fil: 'Paano gumagana ang Credit Levels' } },
+      guide: { path: '/learn/how-credit-levels-work', label: { en: 'How Credit Levels work', fil: 'Paano gumagana ang Credit Level' } },
       keywords: ['increase limit', 'grow', 'higher limit', 'level up']
    },
    {
       id: 'credit-vs-trust-loans',
       category: 'credit',
       emoji: '⚖️',
-      title: { en: 'Credit-Building vs Trust-Building loans', fil: 'Credit-Building vs Trust-Building loans' },
+      title: { en: 'Credit-Building vs Trust-Building loans', fil: 'Credit-Building Loan vs Trust-Building Loan' },
       subtitle: { en: 'Which one raises your limit', fil: 'Alin ang nagtataas ng limit' },
       question: {
          en: "What's the difference between Credit-Building and Trust-Building loans?",
-         fil: 'Ano ang pagkakaiba ng Credit-Building at Trust-Building loans?'
+         fil: 'Ano ang pagkakaiba ng Credit-Building Loan at Trust-Building Loan?'
       },
       intro: {
-         en: 'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — trust loans to keep activity healthy, credit loans to grow the limit.',
-         fil: 'May dalawang uri ng loan. Ang Credit-Building Loan ay nasa buong kasalukuyang limit mo — kapag binayaran on time, tumataas ang limit at nabubuksan ang susunod na level. Ang Trust-Building Loan ay kahit anong mas maliit sa limit mo; nagpapalago pa rin ito ng record at reputasyon sa lenders, pero hindi nito itinataas ang Credit Level. Karamihan ay gumagamit ng pareho — trust loans para aktibo, credit loans para lumaki ang limit.'
+         en: 'There are two kinds of loans. A Credit-Building Loan is at your full current limit — repaying one on time raises your limit and unlocks the next level. A Trust-Building Loan is any smaller loan below your limit; it still grows your repayment record and reputation with lenders, but it does not raise your Credit Level. Most borrowers use both — Trust-Building Loans to keep their repayment record active, Credit-Building Loans to grow the limit.',
+         fil: 'May dalawang uri ng loan. Ang Credit-Building Loan ay nasa buong kasalukuyang limit mo — kapag nabayaran mo ito on time, tataas ang limit mo at maa-unlock ang susunod na level. Ang Trust-Building Loan ay kahit anong loan na mas mababa sa limit mo; pinapalago pa rin nito ang repayment record at reputasyon mo sa mga lender, pero hindi nito itinataas ang Credit Level mo. Karamihan ng borrower ay gumagamit ng dalawa — mga Trust-Building Loan para manatiling aktibo ang repayment record nila, at mga Credit-Building Loan para lumaki ang limit.'
       },
       guide: {
          path: '/learn/trust-building-vs-credit-building-loans',
@@ -646,7 +646,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How do repayments affect my Pandesal points?', fil: 'Paano naaapektuhan ng bayad ang Pandesal points ko?' },
       intro: {
          en: 'Every repayment affects your Pandesal points, and small loans repaid cleanly are worth more than large loans repaid sloppily. On-time, full repayment earns the maximum 10 points. Partial repayments earn proportionally — 75% = 7, 50% = 5, 25% = 3. Any payment after the deadline earns 0 for that transaction. A default leaves a permanent mark on your public profile, visible to all future lenders.',
-         fil: 'Bawat bayad ay may epekto sa Pandesal points mo, at mas mahalaga ang maliliit na loan na malinis na binayaran kaysa malalaking loan na palpak. Ang on-time at buong bayad ay may pinakamataas na 10 puntos. Ang partial ay proporsyonal — 75% = 7, 50% = 5, 25% = 3. Ang bayad na huli sa deadline ay 0 para sa transaksyong iyon. Ang default ay nag-iiwan ng permanenteng marka sa public profile mo, nakikita ng lahat ng lender sa hinaharap.'
+         fil: 'Bawat bayad ay may epekto sa Pandesal points mo, at mas mahalaga ang maliliit na loan na malinis na binayaran kaysa malalaking loan na palpak ang pagbabayad. Ang on-time at buong bayad ay may pinakamataas na 10 puntos. Proporsyonal naman ang puntos sa bahaging bayad — 75% = 7, 50% = 5, 25% = 3. Ang anumang bayad pagkalipas ng deadline ay 0 puntos para sa transaksyong iyon. Ang default ay nag-iiwan ng permanenteng marka sa public profile mo, nakikita ng lahat ng lender sa hinaharap.'
       },
       guide: {
          path: '/learn/how-repayments-affect-your-trust-score',
@@ -669,8 +669,8 @@ export const HELP_TOPICS: HelpTopic[] = [
          ],
          fil: [
             'Mula sa Request Board, i-tap para mag-apply ng loan.',
-            'Hihingin ng unang hakbang ang referral code — i-type ito at i-tap ang "Apply code". (Lalabas lang ito para sa verified na borrower.)',
-            'Walang code? I-tap lang ang "Continue to application" — opsyonal ang code at walang parusa kung laktawan mo.'
+            'Sa unang hakbang ng application, hihingin ang referral code — i-type ito at i-tap ang "Apply code". (Lalabas lang ang hakbang na ito para sa mga verified na borrower.)',
+            'Walang code? I-tap lang ang "Continue to application" — opsyonal ang code at walang penalty kung lalaktawan mo.'
          ]
       },
       watchOut: {
@@ -685,15 +685,15 @@ export const HELP_TOPICS: HelpTopic[] = [
       id: 'reason-in-english',
       category: 'writing-request',
       emoji: '🌏',
-      title: { en: 'It says "write it in English"', fil: 'Sabi "write it in English"' },
+      title: { en: 'It says "write it in English"', fil: 'Nakalagay na "write it in English"' },
       subtitle: { en: 'Why, and how to fix it', fil: 'Bakit, at paano ayusin' },
       question: {
          en: 'My loan reason says to write it in English — what should I do?',
-         fil: 'Sabi ng dahilan ko isulat sa English — ano ang gagawin ko?'
+         fil: 'Sinasabi ng form na isulat sa English ang dahilan ng loan ko — ano ang gagawin ko?'
       },
       intro: {
          en: 'Lenders on Moodeng are in the US and Europe, so a loan reason has to be in English — a request they can\'t read doesn\'t get funded. Tagalog, Taglish, and Bisaya are the usual cause; the form stops there until it\'s rewritten. A borrowed word inside an English sentence is fine ("buying gamot for my mother") — it\'s whole sentences in another language that stop the form. The same applies to "Describe your situation" in the bio step, though the job title itself can stay local ("sari-sari store owner", "jeepney driver").',
-         fil: 'Ang mga lender sa Moodeng ay nasa US at Europe, kaya kailangang English ang dahilan ng loan — hindi nafu-fund ang request na hindi nila mabasa. Tagalog, Taglish, at Bisaya ang karaniwang dahilan; hihinto ang form hangga\'t hindi naisusulat muli. Okay lang ang hiram na salita sa loob ng English na pangungusap ("buying gamot for my mother") — ang buong pangungusap sa ibang wika ang humihinto sa form. Pareho rin sa "Describe your situation" sa bio step, pero puwedeng lokal ang job title ("sari-sari store owner", "jeepney driver").'
+         fil: 'Ang mga lender sa Moodeng ay nasa US at Europe, kaya kailangang English ang dahilan ng loan — hindi napopondohan ang request na hindi nila mabasa. Kadalasan, ito ay dahil nakasulat sa Tagalog, Taglish, o Bisaya; hindi tutuloy ang form hangga\'t hindi ito naisusulat muli. Okay lang ang hiram na salita sa loob ng English na pangungusap ("buying gamot for my mother") — ang buong pangungusap sa ibang wika ang nagpapahinto sa form. Pareho rin sa "Describe your situation" sa bio step, pero puwedeng lokal ang job title ("sari-sari store owner", "jeepney driver").'
       },
       keywords: ['english', 'tagalog', 'language', 'reason', 'translate']
    },
@@ -705,11 +705,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       subtitle: { en: "It's a nudge, not a block", fil: 'Paalala lang, hindi harang' },
       question: {
          en: "My reason is in English but it still says it's too vague — what do I do?",
-         fil: 'English na ang dahilan ko pero sabi masyadong vague pa rin — ano ang gagawin ko?'
+         fil: 'English na ang dahilan ko pero sinasabi pa ring masyadong vague — ano ang gagawin ko?'
       },
       intro: {
          en: 'That\'s a different check — the reason names nothing specific ("for personal use", "for my needs"). It\'s a nudge, not a block: the field tells you what to add, and tapping "Make Your Request" a second time posts it anyway. Better to say what the money is actually for and when you get paid — specific reasons get funded more.',
-         fil: 'Ibang check iyon — walang tinutukoy na tiyak ang dahilan ("for personal use", "for my needs"). Paalala lang, hindi harang: sinasabi ng field kung ano ang idagdag, at kapag na-tap mo ang "Make Your Request" sa pangalawang beses, mapo-post pa rin. Mas mabuti sabihin kung para saan talaga ang pera at kailan ka sasahod — mas nafu-fund ang tiyak na dahilan.'
+         fil: 'Ibang check iyon — walang tinutukoy na tiyak ang dahilan ("for personal use", "for my needs"). Paalala lang, hindi harang: sinasabi ng field kung ano ang idagdag, at kapag na-tap mo ang "Make Your Request" sa pangalawang beses, mapo-post pa rin. Mas mabuting sabihin kung para saan talaga ang pera at kailan ka sasahod — mas madalas mapondohan ang tiyak na dahilan.'
       },
       keywords: ['vague', 'reason', 'specific', 'weak']
    },
@@ -725,11 +725,11 @@ export const HELP_TOPICS: HelpTopic[] = [
       },
       intro: {
          en: "You aren't verified yet. Tapping the greyed button shakes it and highlights a note above it with a Verify Yourself button attached. Verification is the last step before a request can be sent — complete Verify Your ID and the button activates.",
-         fil: 'Hindi ka pa verified. Kapag na-tap mo ang naka-grey na button, mayayanig ito at magha-highlight ng paalala sa itaas na may Verify Yourself button. Ang verification ang huling hakbang bago makapagpadala ng request — kumpletuhin ang Verify Your ID at gagana ang button.'
+         fil: 'Hindi ka pa verified. Kapag na-tap mo ang naka-grey na button, gagalaw ito at iha-highlight ang paalala sa itaas nito na may Verify Yourself button. Ang verification ang huling hakbang bago makapagpadala ng request — kumpletuhin ang Verify Your ID at gagana ang button.'
       },
       guide: {
          path: '/learn/verification-and-why-its-required',
-         label: { en: 'Verification & Security', fil: 'Verification at Security' }
+         label: { en: 'Verification & Security', fil: 'Verification at seguridad' }
       },
       keywords: ['make request', 'button', 'grey', 'nothing happens', 'disabled']
    },
@@ -739,12 +739,12 @@ export const HELP_TOPICS: HelpTopic[] = [
       id: 'defaults',
       category: 'safety',
       emoji: '⚠️',
-      title: { en: 'What happens if a loan is unpaid?', fil: 'Ano kung hindi nabayaran ang loan?' },
+      title: { en: 'What happens if a loan is unpaid?', fil: 'Ano ang mangyayari kapag hindi nabayaran ang loan?' },
       subtitle: { en: 'Default: a permanent public mark', fil: 'Default: permanenteng public na marka' },
-      question: { en: 'What happens if I default on a loan?', fil: 'Ano ang mangyayari kung ma-default ang loan ko?' },
+      question: { en: 'What happens if I default on a loan?', fil: 'Ano ang mangyayari kung mag-default ako sa loan?' },
       intro: {
          en: "If a loan isn't repaid it can go into default. A default is a permanent public mark on your record, and your account is frozen from new borrowing until things are resolved — a defaulted or overdue borrower is sent to an account-support screen with a Repay Now option at sign-in. The amount owed still never grows (no late fees, no rollover), and Moodeng never contacts family, friends, or coworkers. If your account is frozen and you think it's a mistake, message the team.",
-         fil: "Kung hindi mabayaran ang loan, puwede itong mapunta sa default. Ang default ay permanenteng public na marka sa record mo, at na-freeze ang account mo sa bagong paghiram hangga't hindi naaayos — ang defaulted o overdue na borrower ay dinadala sa account-support screen na may Repay Now sa pag-sign in. Hindi pa rin lumalaki ang utang (walang late fee, walang rollover), at hindi kailanman kinokontak ng Moodeng ang pamilya, kaibigan, o katrabaho. Kung na-freeze ang account mo at sa tingin mo mali ito, i-message ang team."
+         fil: 'Kung hindi mabayaran ang loan, puwede itong mapunta sa default. Ang default ay permanenteng public na marka sa record mo, at mafe-freeze ang account mo sa bagong paghiram hangga\'t hindi naaayos — pagka-sign in, dinadala ang borrower na nag-default o overdue na sa account-support screen na may opsyong "Magbayad ngayon". Hindi pa rin lumalaki ang utang (walang late fee, walang rollover), at hindi kailanman kinokontak ng Moodeng ang pamilya, kaibigan, o katrabaho. Kung na-freeze ang account mo at sa tingin mo mali ito, i-message ang team.'
       },
       keywords: ['default', 'unpaid', 'overdue', 'frozen', 'blocked account']
    },
@@ -757,7 +757,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How do I stay safe and avoid scams?', fil: 'Paano manatiling ligtas at maiwasan ang scam?' },
       intro: {
          en: 'A few things are always true. Moodeng never holds or moves your money — loans go wallet-to-wallet directly between lender and borrower. Always send USDC on the Base network; the wrong network means lost funds. The Instant Wallet and a Base Account are both seedless, so Moodeng will never ask for a "seed phrase" or "recovery phrase" — and no legitimate helper ever will. When you\'re unsure, it\'s always safe to wait and ask rather than guess, especially before sending funds.',
-         fil: 'May ilang bagay na laging totoo. Hindi kailanman hinahawakan o inililipat ng Moodeng ang pera mo — dumadaan ang loans wallet-to-wallet nang diretso sa pagitan ng lender at borrower. Laging ipadala ang USDC sa Base network; ang maling network ay nawawalang pera. Seedless ang Instant Wallet at ang Base Account, kaya hindi kailanman hihingin ng Moodeng ang "seed phrase" o "recovery phrase" — at walang lehitimong katulong ang hihingi nito. Kapag hindi ka sigurado, laging ligtas na maghintay at magtanong kaysa manghula, lalo na bago magpadala ng pera.'
+         fil: 'May ilang bagay na laging totoo. Hindi kailanman hinahawakan o inililipat ng Moodeng ang pera mo — diretsong napupunta ang mga loan mula sa wallet ng lender papunta sa wallet ng borrower. Laging ipadala ang USDC sa Base network; puwedeng mawala ang pera kapag mali ang network. Seedless ang Instant Wallet at ang Base Account, kaya hindi kailanman hihingin ng Moodeng ang "seed phrase" o "recovery phrase" — at walang lehitimong support o helper ang hihingi nito. Kapag hindi ka sigurado, laging ligtas na maghintay at magtanong kaysa manghula, lalo na bago magpadala ng pera.'
       },
       keywords: ['safety', 'scam', 'seed phrase', 'recovery phrase', 'security']
    },
@@ -770,7 +770,7 @@ export const HELP_TOPICS: HelpTopic[] = [
       question: { en: 'How do I manage my account and security settings?', fil: 'Paano i-manage ang account at security settings ko?' },
       intro: {
          en: "Your account is tied to your wallet, so wallet security is account security. From the Account screen you can update your display name, manage your email, change your password, and sign out. If you use the Instant Wallet, that's also where you export your wallet key (Account → Account Settings → Wallet).",
-         fil: 'Nakakabit ang account mo sa wallet, kaya ang seguridad ng wallet ay seguridad ng account. Mula sa Account screen puwede mong baguhin ang display name, i-manage ang email, palitan ang password, at mag-sign out. Kung Instant Wallet ang gamit mo, doon mo rin ie-export ang wallet key (Account → Account Settings → Wallet).'
+         fil: 'Nakakabit ang account mo sa wallet mo, kaya ang seguridad ng wallet mo ay seguridad din ng account mo. Mula sa Account screen puwede mong baguhin ang display name, i-manage ang email, palitan ang password, at mag-sign out. Kung Instant Wallet ang gamit mo, doon mo rin ie-export ang wallet key (Account → Mga setting ng account → Wallet).'
       },
       guide: {
          path: '/learn/managing-your-account-and-security-settings',

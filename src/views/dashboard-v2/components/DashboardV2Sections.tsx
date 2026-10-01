@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
+import { type LocaleCode, useLocalization } from '@/i18n';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -218,13 +219,45 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
    );
 }
 
-const formatDueLabel = (due: DashboardV2Due) => {
-   if (due.daysRemaining < 0) return `Overdue ${-due.daysRemaining} ${due.daysRemaining === -1 ? 'day' : 'days'}`;
-   if (due.daysRemaining === 0) return 'Due today';
-   return `Due in ${due.daysRemaining} ${due.daysRemaining === 1 ? 'day' : 'days'}`;
+// Built from the day count at render time, so the page translator can't match it; each locale
+// carries its own wording.
+const DUE_LABELS: Record<LocaleCode, { overdue: (days: number) => string; today: string; dueIn: (days: number) => string }> = {
+   en: {
+      overdue: (days) => `Overdue ${days} ${days === 1 ? 'day' : 'days'}`,
+      today: 'Due today',
+      dueIn: (days) => `Due in ${days} ${days === 1 ? 'day' : 'days'}`
+   },
+   fil: {
+      overdue: (days) => `Lampas na nang ${days} araw`,
+      today: 'Due ngayong araw',
+      dueIn: (days) => `Due sa loob ng ${days} araw`
+   },
+   id: {
+      overdue: (days) => `Terlambat ${days} hari`,
+      today: 'Jatuh tempo hari ini',
+      dueIn: (days) => `Jatuh tempo dalam ${days} hari`
+   },
+   th: {
+      overdue: (days) => `เกินกำหนด ${days} วัน`,
+      today: 'ครบกำหนดวันนี้',
+      dueIn: (days) => `ครบกำหนดในอีก ${days} วัน`
+   },
+   vi: {
+      overdue: (days) => `Quá hạn ${days} ngày`,
+      today: 'Đến hạn hôm nay',
+      dueIn: (days) => `Đến hạn sau ${days} ngày`
+   }
+};
+
+const formatDueLabel = (due: DashboardV2Due, locale: LocaleCode) => {
+   const labels = DUE_LABELS[locale] ?? DUE_LABELS.en;
+   if (due.daysRemaining < 0) return labels.overdue(-due.daysRemaining);
+   if (due.daysRemaining === 0) return labels.today;
+   return labels.dueIn(due.daysRemaining);
 };
 
 function DueRow({ due }: { due: DashboardV2Due }) {
+   const { locale } = useLocalization();
    return (
       <div
          className={clsx('flex items-center justify-between py-3', due.isOverdue && '-mx-2.5 px-2.5')}
@@ -241,7 +274,7 @@ function DueRow({ due }: { due: DashboardV2Due }) {
                      due.isOverdue ? 'bg-[#d51728] text-white' : 'bg-[#e0dbff] text-[#5640e0]'
                   )}
                >
-                  {formatDueLabel(due)}
+                  {formatDueLabel(due, locale)}
                </span>
             </div>
             <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8]')}>

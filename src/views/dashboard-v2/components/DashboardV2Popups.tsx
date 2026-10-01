@@ -148,8 +148,8 @@ const STREAK_COPY = {
       title: 'Milestone Streak!',
       unit: () => 'milestone ngayong linggo',
       fed: 'Pandesal na naipakain kay Moodeng',
-      nudge: 'Ituloy mo lang: naghihintay na ang susunod mong milestone.',
-      cta: 'Tingnan ang Susunod'
+      nudge: 'Ituloy mo ang streak: naghihintay na ang susunod mong milestone.',
+      cta: 'Tingnan ang susunod kong milestone'
    }
 } as const;
 

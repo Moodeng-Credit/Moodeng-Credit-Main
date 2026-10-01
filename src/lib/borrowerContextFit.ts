@@ -1,3 +1,5 @@
+import { currentDateLocale } from '@/utils/dateFormatters';
+
 export type BorrowerIncomeType = 'full-time' | 'part-time' | 'freelance' | 'none';
 export type BorrowerPaydayType = 'mid-month' | 'end-of-month' | 'weekly' | 'irregular';
 export type BorrowerContextFitLevel = 'strong' | 'ok' | 'weak' | 'unknown';
@@ -225,7 +227,7 @@ const indefiniteArticle = (word: string): string =>
 // ─── Formatting helpers ────────────────────────────────────────────────────
 
 const formatDateLabel = (date: Date): string =>
-   new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(date);
+   new Intl.DateTimeFormat(currentDateLocale(), { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(date);
 
 const formatAmount = (amount: number): string => {
    if (!Number.isFinite(amount)) return '$0';

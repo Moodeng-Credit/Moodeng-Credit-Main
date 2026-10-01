@@ -2,6 +2,7 @@ import { type CSSProperties, type JSX, type MouseEvent, useEffect, useMemo, useS
 
 import { Link } from 'react-router-dom';
 
+import { currentSentences } from '@/i18n/sentences';
 import { usePageSeo } from '@/hooks/usePageSeo';
 
 import { ACADEMY_QUIZ_POINTS_PER_CORRECT_ANSWER, computeAcademyQuizPoints } from '@/shared/points';
@@ -66,7 +67,7 @@ const steps: AcademyStep[] = [
       id: 'choose',
       eyebrow: 'Step 4',
       title: 'Your amount sets the loan type',
-      body: 'If your request is below your credit limit, it is trust-building. If it is above your credit limit, it is credit-building.',
+      body: 'If your request is below your credit limit, it is trust-building. If it is for your full credit limit, it is credit-building.',
       action: 'Amount decides',
       screen: 'choose'
    },
@@ -136,7 +137,7 @@ const quizQuestions: QuizQuestion[] = [
    },
    {
       id: 'credit-loan',
-      question: 'Your credit limit is $15. What is a $20 request?',
+      question: 'Your credit limit is $15. What is a $15 request?',
       options: ['Trust-building', 'Credit-building', 'Already repaid'],
       answer: 'Credit-building'
    },
@@ -227,7 +228,7 @@ const LoanChoiceScreen = (): JSX.Element => (
       </div>
       <div className="academy-choice-rule">
          <span>Below $15 = Trust-Building</span>
-         <span>Above $15 = Credit-Building</span>
+         <span>Full $15 = Credit-Building</span>
       </div>
       <div className="academy-choice-grid">
          <div className="academy-choice-card academy-choice-card--trust">
@@ -241,11 +242,11 @@ const LoanChoiceScreen = (): JSX.Element => (
             </ul>
          </div>
          <div className="academy-choice-card academy-choice-card--credit">
-            <div className="academy-choice-card__amount">$20 request</div>
+            <div className="academy-choice-card__amount">$15 request</div>
             <h3>Credit-Building Loan</h3>
-            <p>Any request above your $15 credit limit becomes a credit-building loan.</p>
+            <p>A request for your full $15 credit limit is a credit-building loan.</p>
             <ul>
-               <li>$20 is above your $15 limit</li>
+               <li>$15 is your full limit</li>
                <li>Can increase your next limit</li>
                <li>Best when repayment is clear</li>
             </ul>
@@ -488,7 +489,7 @@ export default function AcademyGuide(): JSX.Element {
          return;
       }
 
-      const shouldRestart = window.confirm('Switching reward type will restart the quiz from question 1. Continue?');
+      const shouldRestart = window.confirm(currentSentences().quizRestartConfirm);
 
       if (!shouldRestart) {
          return;
@@ -835,7 +836,7 @@ export default function AcademyGuide(): JSX.Element {
                   <h2>Earn your Academy reward</h2>
                   <p>
                      Finish the quick check. Score {quizPassingScore} of {quizQuestions.length} or better to pass. This is a learning score
-                     today, not a live IOU or trust-points balance.
+                     today, not a live IOU or Pandesal points balance.
                   </p>
                   <div className="academy-role-toggle" aria-label="Choose reward type">
                      <button

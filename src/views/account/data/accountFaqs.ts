@@ -53,7 +53,7 @@ The key detail: always choose Base as the network when sending USDC. The full gu
       question: 'How do I repay my loan?',
       answer: `Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto, and more) — always on the Base network.
 
-Repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. The full guide walks through each way to repay.`,
+Repay before the due date — on-time repayment builds your Pandesal points, and repaying a loan at your full limit on time unlocks the next Credit Level. The full guide walks through each way to repay.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Read the full guide'
    },
@@ -62,7 +62,7 @@ Repay before the due date — on-time repayment builds your Pandesal points and 
       question: 'Can I borrow below my credit limit?',
       answer: `Yes — and we actually recommend it, especially when you're starting out. Borrowing below your limit is called a Trust-Building Loan.
 
-These smaller loans don't count toward unlocking the next Credit Level (for that, you need to borrow your full limit and repay on time), but they do build your repayment history and earn you more Pandesal points than borrowing your maximum would.
+These smaller loans don't count toward unlocking the next Credit Level (for that, you need to borrow your full limit and repay on time), but they do build your repayment history and earn Pandesal points each time you repay on time.
 
 So if you want to grow your reputation quickly, Trust-Building Loans are a great way to do it.`
    },
@@ -73,7 +73,7 @@ So if you want to grow your reputation quickly, Trust-Building Loans are a great
 
 If your limit is $20 and you only borrow $15, that doesn't count toward the next level — even if you repay it perfectly. The system needs to see you can handle the full limit before it raises the ceiling.
 
-Progression goes $15 → $20 → $40 → $60 — and beyond. One step at a time: borrow your max, repay on time, repeat.`
+Progression goes $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, which is the current maximum. One step at a time: borrow your max, repay on time, repeat.`
    }
 ];
 
@@ -126,136 +126,136 @@ const FILIPINO_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
       question: 'Hinahawakan ba ng Moodeng ang pera ko?',
-      answer: `Hindi. Hindi hinahawakan, iniimbak, o ginagalaw ng Moodeng ang funds mo.
+      answer: `Hindi. Hindi hinahawakan, iniingatan, o inililipat ng Moodeng ang pera ng mga user.
 
-Direkta ang loan mula sa wallet ng nagpapahiram papunta sa wallet ng borrower. Direkta rin ang repayments mula sa wallet ng borrower pabalik sa wallet ng nagpapahiram. Tinutulungan lang ng Moodeng ang request board, verification, repayment status, at record keeping para malinaw sa magkabilang side kung ano ang nangyari.`
+Diretso ang loan mula sa wallet ng lender papunta sa wallet ng borrower. Diretso rin ang bayad mula sa wallet ng borrower pabalik sa wallet ng lender. Tumutulong ang Moodeng sa Request Board, verification, status ng bayad, at pagtatala, para malinaw na makita ng magkabilang panig kung ano ang nangyari.`
    },
    {
       id: 'why-usdc',
       question: 'Bakit USDC ang ginagamit ng Moodeng?',
-      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated US financial company, kaya predictable ang halaga ng loan. Ang $20 na loan ngayon ay $20 pa rin kapag binayaran, hindi biglang $15 o $30. Hindi nagkakaroon ng currency risk ang lenders at borrowers dahil lang sumali sila.
+      answer: `Ang USDC ay stablecoin na naka-peg 1:1 sa US dollar. Ini-issue ito ng Circle, isang regulated na financial company sa US, kaya hindi nagbabago ang halaga ng loan — ang $20 loan ngayon ay $20 pa rin pagdating ng bayaran, hindi biglang $15 o $30. Walang currency risk ang mga lender at borrower dahil lang sa pagsali nila.
 
-Mabilis ding ipadala ang USDC globally at, kapag ginamit sa Base gamit ang Instant Wallet mo o Base Account, gasless ito. Ibig sabihin, walang network fees na kakain sa repayment mo - 100% ng ipinadala mo ang makakarating sa lender.
+Mabilis ding maipadala ang USDC kahit saan sa mundo, at kapag ginamit sa Base gamit ang Instant Wallet mo o ang Base Account, wala itong gas fee. Ibig sabihin, walang network fee na babawas sa bayad mo — 100% ng ipinadala mo ang makakarating sa lender mo.
 
-Malawak din itong tinatanggap: supported ang USDC deposits sa major crypto exchanges, at puwede mo itong i-convert sa fiat gaya ng US dollars, pesos, naira, at iba pa. Kapag nakatanggap ka ng loan o repayment, puwede mo itong gamitin on-chain, i-hold, o i-cash out - ikaw ang pipili.`
+Malawak din itong tinatanggap: lahat ng malalaking crypto exchange ay tumatanggap ng USDC deposit, at puwede mo itong i-convert sa fiat (US dollars, piso, naira, at iba pa) halos kahit saan. Kaya kapag nakatanggap ka ng loan o nabayaran ka, puwede mo itong gastusin on-chain, itabi, o i-cash out — ikaw ang bahala.`
    },
    {
       id: 'how-to-get-verified',
-      question: 'Paano ako ma-ve-verify?',
-      answer: `Ang verification ay mabilis at one-time lang na identity check. Ang inirerekomendang paraan ay "Verify Your ID" — maikling national ID photo + selfie check na mga 3 minuto lang at available sa supported countries. Kung gumagamit ka na ng World App, puwede ka ring mag-verify gamit ang World ID.
+      question: 'Paano ako magpa-verify?',
+      answer: `Ang verification ay mabilis at isang beses lang na identity check. Ang inirerekomendang paraan ay ang "Verify Your ID" — mabilis na national ID photo + selfie check na mga 3 minuto lang at gumagana sa mga supported na bansa. Kung gumagamit ka na ng World App, puwede ka ring mag-verify gamit ang World ID.
 
-I-tap ang "Verify Yourself" sa app para magsimula. Karamihan ng checks ay tapos sa loob ng ilang minuto.`,
+I-tap ang "Verify Yourself" sa app para magsimula. Karamihan ng check ay natatapos sa loob ng ilang minuto.`,
       readMorePath: '/academy/money/verify',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    }
 ];
 
 const FILIPINO_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
-      question: 'Paano ko ililipat ang loan ko sa local bank account ko?',
-      answer: `Ipadala ang USDC mo sa exchange o local service — Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto (GCash), at iba pa — ibenta ito doon, at i-withdraw ang local currency direkta sa bank o e-wallet mo.
+      question: 'Paano ko maililipat ang loan ko sa local bank account ko?',
+      answer: `Ipadala ang USDC mo sa isang exchange o local service — Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto (GCash), at iba pa — ibenta ito roon, at i-withdraw ang local currency diretso sa bank o e-wallet mo.
 
-Ang importanteng detalye: palaging piliin ang Base bilang network kapag nagpapadala ng USDC. May video walkthrough at step-by-step na instructions para sa bawat service sa buong guide.`,
+Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagpapadala ng USDC. Nasa buong gabay ang video walkthrough at step-by-step na instructions para sa bawat serbisyo.`,
       readMorePath: '/academy/money/withdraw',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    },
    {
       id: 'how-to-repay',
       question: 'Paano ko babayaran ang loan ko?',
-      answer: `Buksan ang Magbayad screen — makikita mo doon ang eksaktong halaga at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto, at iba pa) — palaging sa Base network.
+      answer: `Buksan ang Magbayad screen — makikita mo roon ang eksaktong halagang dapat bayaran at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto, at iba pa) — laging sa Base network.
 
-Magbayad bago ang due date — ang on-time repayment ay nagpapataas ng Pandesal points mo at nag-u-unlock ng mas mataas na antas ng kredito. Nasa buong guide ang bawat paraan ng pagbabayad.`,
+Magbayad bago ang due date — nagdadagdag ng Pandesal points ang bayad na on time, at kapag nabayaran mo nang on time ang loan na katumbas ng buong limit mo, maa-unlock ang susunod na Credit Level. Nasa buong gabay ang bawat paraan ng pagbabayad.`,
       readMorePath: '/academy/money/repay',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    },
    {
       id: 'borrow-below-limit',
       question: 'Puwede ba akong humiram nang mas mababa sa credit limit ko?',
-      answer: `Oo, at inirerekomenda pa nga namin ito lalo na kung nagsisimula ka pa lang. Ang paghiram nang mas mababa sa limit mo ay tinatawag na Trust-Building Loan.
+      answer: `Oo — at inirerekomenda pa nga namin ito, lalo na kung nagsisimula ka pa lang. Ang paghiram nang mas mababa sa limit mo ay tinatawag na Trust-Building Loan.
 
-Hindi binibilang ang mas maliliit na loans na ito para ma-unlock ang susunod na antas ng kredito. Para doon, kailangan mong hiramin ang buong limit mo at magbayad on time. Pero nakakatulong ang mga ito na bumuo ng repayment history mo at makakuha ng mas maraming Pandesal points kaysa kung lagi mong hihiramin ang maximum.
+Hindi binibilang ang mas maliliit na loan na ito para ma-unlock ang susunod na Credit Level (para roon, kailangan mong hiramin ang buong limit mo at magbayad on time), pero bumubuo ang mga ito ng repayment history mo at kikita ka ng Pandesal points tuwing magbabayad ka on time.
 
-Kaya kung gusto mong mabilis na mapalakas ang reputation mo, magandang paraan ang Trust-Building Loans.`
+Kaya kung gusto mong mabilis na mapalago ang reputasyon mo, magandang paraan ang mga Trust-Building Loan.`
    },
    {
       id: 'increase-credit-limit',
-      question: 'Paano ko tataasan ang credit limit ko?',
-      answer: `Tumataas ang credit limit mo kapag hiniram mo ang buong limit mo at binayaran ito on time. Tinatawag itong Credit-Building Loans.
+      question: 'Paano ko mapapataas ang credit limit ko?',
+      answer: `Tumataas ang credit limit mo kapag hiniram mo ang buong limit mo at binayaran ito on time. Tinatawag itong mga Credit-Building Loan.
 
-Kung $20 ang limit mo at $15 lang ang hiniram mo, hindi iyon bibilang sa next level kahit perfect ang repayment mo. Kailangan makita ng system na kaya mong hawakan ang buong limit bago nito itaas ang ceiling.
+Kung $20 ang limit mo at $15 lang ang hiniram mo, hindi iyon bibilang para sa susunod na level — kahit perpekto pa ang pagbabayad mo. Kailangang makita ng system na kaya mo ang buong limit bago nito itaas ang limit mo.
 
-Ang progression ay $15 -> $20 -> $40 -> $60, at pataas pa. Isang step lang bawat beses: hiramin ang max, magbayad on time, ulitin.`
+Ang pag-akyat ay $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, na siyang kasalukuyang maximum. Paisa-isang hakbang lang: hiramin ang max mo, magbayad on time, at ulitin.`
    }
 ];
 
 const FILIPINO_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'Ano ang IOU Points?',
-      answer: `Ang IOU Points ay reputation points na kinikita ng lenders. Sa Year 1 model, bawat funded loan ay kumikita ng base IOU points batay sa amount na pinondohan, kasama ang borrower-stage bonus. Tinutulungan nitong makita kung sino ang aktibong sumusuporta sa community.
+      question: 'Ano ang IOU points?',
+      answer: `Ang IOU points ay reputation points na kinikita ng mga lender. Sa Year 1 model, bawat napondohang loan ay may base IOU points batay sa halagang pinondohan, dagdag pa ang borrower-stage bonus. Ipinapakita nito kung sino ang aktibong sumusuporta sa komunidad.
 
-Sa ngayon, points pa lang ang IOU. Sa susunod, maglulunsad kami ng token na IOU rin ang pangalan, at ang naipon mong points ay iko-convert sa pamamagitan ng airdrop. Ang pag-hold ng IOU ay mag-u-unlock ng karagdagang benefits na konektado sa platform.
+Sa ngayon, points pa lang ang IOU. Sa hinaharap, maglulunsad kami ng token na IOU rin ang pangalan, at iko-convert ang naipon mong points sa pamamagitan ng airdrop. Kapag may hawak kang IOU, maa-unlock mo ang iba pang benepisyo sa platform.
 
-Para sa lenders lang ang IOU. Ang borrowers naman ay bumubuo ng Pandesal points at antas ng kredito. Kaya kung gusto mong kumita ng IOU, mag-fund ng loan request mula sa Request Board.`
+Para sa mga lender lang ang IOU — ang mga borrower naman ay bumubuo ng Pandesal points at Credit Level nila. Kaya kung gusto mong kumita ng IOU, pondohan ang isang loan request sa Request Board.`
    },
    {
       id: 'how-borrowers-verify',
-      question: 'Paano nave-verify ang borrowers?',
-      answer: `Bawat borrower ay dumadaan sa one-time identity verification — national ID photo + selfie check na may duplicate detection, o World ID para sa mga gumagamit ng World App. Kinukumpirma nito na unique at totoong tao ang bawat borrower, kaya napipigilan ang fake accounts at bots.
+      question: 'Paano nagpapa-verify ang mga borrower?',
+      answer: `Bawat borrower ay dumadaan sa isang beses na identity verification — national ID photo + selfie check na may duplicate detection, o World ID para sa mga gumagamit ng World App. Alinman dito, kinukumpirma nito na iisa at totoong tao ang bawat borrower, kaya napipigilan ang mga pekeng account at bot.
 
-Isang verified account lang ang magagawa ng bawat tao, kaya ang borrower profile at repayment history na nakikita mo ay pag-aari ng iisang totoong individual — at hindi basta makakabalik ang na-ban gamit ang bagong account.`,
+Isang account lang ang puwedeng i-verify ng bawat tao, kaya ang borrower profile at repayment history na nakikita mo ay pag-aari ng iisang totoong tao — at hindi basta makakabalik ang mga na-ban gamit ang bagong account.`,
       readMorePath: '/academy/money/verify',
-      readMoreLabel: 'Basahin ang buong guide'
+      readMoreLabel: 'Basahin ang buong gabay'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
-      question: 'Paano tinataasan ng borrowers ang credit limit nila?',
-      answer: `Tinataasan ng borrowers ang credit limit nila sa pamamagitan ng Credit-Building Loan, kung saan hinihiram nila ang buong current limit nila. Kapag binayaran nila ang full-limit loan na iyon on time, nagle-level up sila at nag-u-unlock ng mas mataas na credit limit.
+      question: 'Paano napapataas ng mga borrower ang credit limit nila?',
+      answer: `Napapataas ng mga borrower ang credit limit nila sa pamamagitan ng Credit-Building Loan, kung saan hinihiram nila ang buong kasalukuyang limit nila. Kapag nabayaran nila nang on time ang full-limit loan na iyon, aakyat sila ng level at maa-unlock ang mas mataas na credit limit.
 
-Kung mas mababa sa limit ang hiniram nila, Trust-Building Loan iyon. Hindi iyon magle-level up sa kanila, pero nakakatulong itong bumuo ng mas malakas na repayment record at mas magandang borrower stats sa platform.`
+Kung mas mababa sa limit nila ang hiniram nila, Trust-Building Loan iyon. Hindi sila aakyat ng level dahil doon, pero nakakatulong ito na bumuo ng mas matibay na repayment record at mas magandang borrower stats sa platform.`
    },
    {
       id: 'how-to-fund-loan',
-      question: 'Paano ako magfa-fund ng loan?',
-      answer: `Pumunta sa Request Board at tingnan ang open loan requests. Ipinapakita ng bawat request ang stats ng borrower, credit limit, requested amount, at repayment term.
+      question: 'Paano ako magpopondo ng loan?',
+      answer: `Pumunta sa Request Board at tingnan ang mga bukas na loan request. Ipinapakita ng bawat request ang stats ng borrower, credit limit, halagang hinihiram, at repayment term.
 
-Kapag may nakita kang gusto mong pondohan, i-tap ang Fund at i-confirm. Aalis agad ang USDC mula sa wallet mo (kadalasan ang Base Account mo, o ang Instant Wallet mo kung iyon ang gamit mo) at diretsong pupunta sa wallet ng borrower. Walang middleman at walang delay.
+Kapag may nakita kang gusto mong pondohan, i-tap ang "Fund" at i-confirm. Agad na aalis ang USDC sa wallet mo (kadalasan ang Base Account mo, o ang Instant Wallet mo kung iyon ang gamit mo) at diretsong mapupunta sa wallet ng borrower — walang middleman, walang delay.
 
-Makikita mo ang lahat ng active loans at repayment statuses mo sa Lender Dashboard.`
+Masusubaybayan mo ang lahat ng aktibong loan mo at ang status ng mga bayad sa Lender Dashboard mo.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Kailan ako mababayaran?',
-      answer: `Ang due date ay sine-set ng borrower kapag nag-post sila ng request. Makikita mo ito nang malinaw sa loan card bago ka mag-fund, kaya alam mo agad ang timeline.
+      answer: `Ang borrower ang nagtatakda ng due date kapag nag-post siya ng request — makikita mo ito nang malinaw sa loan card bago ka magpondo, kaya alam mo agad ang timeline.
 
-Kapag due na ang loan, diretsong magbabayad ang borrower papunta sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Makikita mo ang status ng lahat ng active loans mo sa Lender Dashboard.`
+Pagdating ng due date, diretsong magbabayad ang borrower sa wallet mo — kadalasan ang Base Account mo (o ang Instant Wallet mo, kung iyon ang gamit mo). Masusubaybayan mo ang status ng lahat ng aktibong loan mo sa Lender Dashboard mo.`
    }
 ];
 
 const INDONESIAN_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
-      question: 'Apakah Moodeng menyentuh uang saya?',
-      answer: `Tidak. Moodeng tidak memegang, menyimpan, atau memindahkan dana pengguna untuk kamu.
+      question: 'Apakah Moodeng memegang uang saya?',
+      answer: `Tidak. Moodeng tidak memegang, menyimpan, atau memindahkan dana pengguna atas nama kamu.
 
-Pinjaman berjalan langsung dari wallet pemberi pinjaman ke wallet peminjam. Pembayaran berjalan langsung dari wallet peminjam kembali ke wallet pemberi pinjaman. Moodeng membantu dengan papan permintaan, verifikasi, status pembayaran, dan pencatatan agar kedua sisi bisa melihat dengan jelas apa yang terjadi.`
+Pinjaman dikirim langsung dari dompet pemberi pinjaman ke dompet peminjam. Pembayaran kembali dikirim langsung dari dompet peminjam ke dompet pemberi pinjaman. Moodeng membantu lewat Papan Permintaan, verifikasi, status pembayaran kembali, dan pencatatan, agar kedua pihak bisa melihat dengan jelas apa yang terjadi.`
    },
    {
       id: 'why-usdc',
       question: 'Mengapa Moodeng memakai USDC?',
-      answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS. Diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi, USDC menjaga nilai pinjaman tetap dapat diprediksi. Pinjaman $20 hari ini tetap $20 saat dibayar, bukan tiba-tiba $15 atau $30. Pemberi pinjaman dan peminjam tidak menanggung risiko mata uang hanya karena memakai platform.
+      answer: `USDC adalah stablecoin yang dipatok 1:1 ke dolar AS. Diterbitkan oleh Circle, perusahaan keuangan AS yang teregulasi, USDC menjaga nilai pinjaman tetap bisa diprediksi. Pinjaman $20 hari ini tetap bernilai $20 saat dibayar kembali, bukan $15 atau $30. Pemberi pinjaman dan peminjam tidak menanggung risiko nilai tukar hanya karena ikut serta.
 
-USDC juga cepat dikirim secara global dan, saat dipakai di Base dengan Instant Wallet kamu atau Base Account, sepenuhnya gasless. Artinya tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
+USDC juga cepat dikirim ke seluruh dunia dan, saat dipakai di Base dengan Instant Wallet atau Base Account kamu, sepenuhnya bebas biaya gas. Artinya, tidak ada biaya jaringan yang memotong pembayaran kamu: 100% yang kamu kirim sampai ke pemberi pinjaman.
 
-USDC juga didukung luas. Hampir semua bursa kripto besar mendukung deposit USDC, dan kamu bisa mengubahnya ke fiat seperti dolar AS, peso, naira, dan lainnya di banyak tempat. Saat menerima pinjaman atau pembayaran, kamu bisa memakai on-chain, menyimpan, atau cash out. Pilihannya ada di kamu.`
+USDC juga diterima secara luas: semua bursa kripto besar mendukung setoran USDC, dan kamu bisa menukarnya ke mata uang biasa (dolar AS, peso, naira, dan lainnya) hampir di mana saja. Jadi saat kamu menerima pinjaman atau pembayaran kembali, kamu bisa memakainya secara on-chain, menyimpannya, atau mencairkannya. Pilihannya ada di tangan kamu.`
    },
    {
       id: 'how-to-get-verified',
       question: 'Bagaimana cara saya diverifikasi?',
-      answer: `Verifikasi adalah pemeriksaan identitas satu kali yang cepat. Cara yang direkomendasikan adalah "Verify Your ID" — pemeriksaan singkat foto KTP/ID nasional + selfie yang memakan waktu sekitar 3 menit dan tersedia di negara yang didukung. Jika kamu sudah memakai World App, kamu bisa verifikasi dengan World ID.
+      answer: `Verifikasi adalah pemeriksaan identitas singkat yang cukup dilakukan sekali. Cara yang disarankan adalah "Verifikasi ID Kamu": pemeriksaan singkat foto KTP atau kartu identitas nasional + selfie yang memakan waktu sekitar 3 menit dan tersedia di negara yang didukung. Jika kamu sudah memakai World App, kamu bisa memverifikasi dengan World ID sebagai gantinya.
 
-Tap "Verify Yourself" di app untuk mulai. Sebagian besar pemeriksaan selesai dalam hitungan menit.`,
+Ketuk "Verifikasi Diri" di aplikasi untuk memulai. Sebagian besar pemeriksaan selesai dalam hitungan menit.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Baca panduan lengkap'
    }
@@ -264,107 +264,109 @@ Tap "Verify Yourself" di app untuk mulai. Sebagian besar pemeriksaan selesai dal
 const INDONESIAN_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
-      question: 'Bagaimana cara mengubah pinjaman saya ke rekening bank lokal?',
-      answer: `Kirim USDC kamu ke exchange atau layanan lokal — Binance P2P, Coins.ph (sementara dijeda), PDAX, GCrypto (GCash), dan lainnya — jual di sana, lalu withdraw mata uang lokal langsung ke bank atau e-wallet kamu.
+      question: 'Bagaimana cara mencairkan pinjaman saya ke rekening bank lokal?',
+      answer: `Kirim USDC kamu ke exchange atau layanan yang mendukung USDC di jaringan Base, misalnya Binance P2P, jual di sana, lalu tarik mata uang lokal langsung ke rekening bank atau dompet digital kamu. Pastikan dulu layanan tersebut mendukung jaringan Base sebelum mengirim.
 
-Detail penting: selalu pilih Base sebagai network saat mengirim USDC. Panduan lengkap berisi video walkthrough dan langkah-langkah untuk setiap layanan.`,
+Yang paling penting: selalu pilih Base sebagai jaringan saat mengirim USDC. Panduan lengkap berisi video panduan dan petunjuk langkah demi langkah.`,
       readMorePath: '/academy/money/withdraw',
       readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'how-to-repay',
       question: 'Bagaimana cara membayar pinjaman saya?',
-      answer: `Buka layar Bayar — di sana terlihat jumlah pasti dan alamat pembayaran. Kirim USDC ke sana dari wallet, exchange, atau layanan lokal mana pun. Jika belum punya USDC, beli dulu (Binance P2P, Coins.ph (sementara dijeda), PDAX, GCrypto, dan lainnya) — selalu di network Base.
+      answer: `Buka layar Bayar. Di sana tertera jumlah persis yang harus dibayar dan alamat pembayarannya. Kirim USDC ke alamat itu dari dompet, exchange, atau layanan lokal mana pun. Jika kamu belum punya USDC, beli dulu (misalnya lewat Binance P2P, atau exchange atau aplikasi lain yang mendukung USDC di jaringan Base), dan selalu kirim di jaringan Base.
 
-Bayar sebelum tanggal jatuh tempo — pembayaran tepat waktu membangun poin Pandesal dan membuka level kredit lebih tinggi. Panduan lengkap menjelaskan setiap cara membayar.`,
+Bayar kembali sebelum jatuh tempo. Pembayaran kembali tepat waktu menambah poin Pandesal kamu, dan melunasi pinjaman sebesar limit penuh tepat waktu akan membuka Level Kredit berikutnya. Panduan lengkap menjelaskan setiap cara membayar kembali.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'borrow-below-limit',
-      question: 'Bisakah saya meminjam di bawah credit limit saya?',
-      answer: `Ya, dan kami justru merekomendasikannya, terutama saat kamu baru mulai. Meminjam di bawah limit disebut Trust-Building Loan.
+      question: 'Bisakah saya meminjam di bawah limit kredit saya?',
+      answer: `Bisa, dan kami justru menyarankannya, terutama saat kamu baru mulai. Meminjam di bawah limit disebut Trust-Building Loan.
 
-Pinjaman yang lebih kecil ini tidak dihitung untuk membuka level kredit berikutnya. Untuk itu, kamu perlu meminjam limit penuh dan membayar tepat waktu. Tetapi pinjaman kecil tetap membangun riwayat pembayaran dan memberi lebih banyak poin Pandesal daripada selalu meminjam maksimum.
+Pinjaman yang lebih kecil ini tidak dihitung untuk membuka Level Kredit berikutnya (untuk itu, kamu perlu meminjam sebesar limit penuh dan membayarnya kembali tepat waktu), tetapi pinjaman ini tetap membangun riwayat pembayaran kembali kamu dan memberi lebih banyak poin Pandesal daripada meminjam jumlah maksimum.
 
-Jadi jika kamu ingin cepat membangun reputasi, Trust-Building Loans adalah cara yang bagus.`
+Jadi, jika kamu ingin cepat membangun reputasi, Trust-Building Loan adalah cara yang tepat.`
    },
    {
       id: 'increase-credit-limit',
-      question: 'Bagaimana cara menaikkan credit limit?',
-      answer: `Credit limit kamu naik saat kamu meminjam limit penuh dan membayarnya tepat waktu. Ini disebut Credit-Building Loans.
+      question: 'Bagaimana cara menaikkan limit kredit saya?',
+      answer: `Limit kredit kamu naik saat kamu meminjam sebesar limit penuh dan membayarnya kembali tepat waktu. Pinjaman seperti ini disebut Credit-Building Loan.
 
-Jika limit kamu $20 dan kamu hanya meminjam $15, itu tidak dihitung untuk level berikutnya meskipun pembayaran sempurna. Sistem perlu melihat bahwa kamu bisa menangani limit penuh sebelum menaikkan ceiling.
+Jika limit kamu $20 dan kamu hanya meminjam $15, pinjaman itu tidak dihitung untuk naik ke level berikutnya, meskipun kamu melunasinya dengan sempurna. Sistem perlu melihat bahwa kamu sanggup menangani limit penuh sebelum menaikkan batasnya.
 
-Progression berjalan $15 -> $20 -> $40 -> $60, dan seterusnya. Satu langkah setiap kali: pinjam maksimum, bayar tepat waktu, ulangi.`
+Urutannya: $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, yang saat ini merupakan limit maksimum. Naik satu langkah setiap kali: pinjam sebesar limit maksimum, bayar kembali tepat waktu, lalu ulangi.`
    }
 ];
 
 const INDONESIAN_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'Apa itu IOU Points?',
-      answer: `IOU Points adalah poin reputasi yang didapat pemberi pinjaman. Dalam model Tahun 1, setiap pinjaman yang didanai menghasilkan base IOU points berdasarkan jumlah yang didanai ditambah bonus tahap peminjam. Poin ini menunjukkan siapa yang aktif mendukung komunitas.
+      question: 'Apa itu poin IOU?',
+      answer: `Poin IOU adalah poin reputasi yang didapat pemberi pinjaman. Dalam model Tahun 1, setiap pinjaman yang didanai menghasilkan poin IOU dasar sesuai jumlah yang didanai, ditambah bonus tahap peminjam. Poin ini mencatat siapa saja yang aktif mendukung komunitas.
 
-Saat ini IOU masih berupa poin. Ke depannya, kami akan meluncurkan token yang juga bernama IOU, dan poin yang terkumpul akan dikonversi lewat airdrop. Memegang IOU akan membuka manfaat tambahan yang terhubung ke platform.
+Saat ini IOU hanya berupa poin. Ke depannya, kami akan meluncurkan token yang juga bernama IOU, dan poin yang kamu kumpulkan akan dikonversi lewat airdrop. Memegang IOU akan membuka manfaat tambahan yang terkait dengan platform.
 
-IOU hanya untuk pemberi pinjaman. Peminjam membangun poin Pandesal dan level kredit. Jadi jika kamu ingin mendapatkan IOU, danai permintaan pinjaman dari Papan Permintaan.`
+IOU hanya untuk pemberi pinjaman. Peminjam membangun poin Pandesal dan Level Kredit. Jadi, jika kamu ingin mendapatkan IOU, danai permintaan pinjaman dari Papan Permintaan.`
    },
    {
       id: 'how-borrowers-verify',
       question: 'Bagaimana peminjam diverifikasi?',
-      answer: `Setiap peminjam menyelesaikan verifikasi identitas satu kali — foto ID nasional + selfie dengan deteksi duplikat, atau World ID bagi pengguna World App. Keduanya memastikan setiap peminjam adalah orang sungguhan yang unik, sehingga mencegah akun palsu dan bot.
+      answer: `Setiap peminjam menyelesaikan verifikasi identitas satu kali: pemeriksaan foto kartu identitas nasional + selfie dengan deteksi duplikat, atau World ID bagi yang memakai World App. Dengan cara mana pun, verifikasi ini memastikan setiap peminjam adalah orang sungguhan yang unik, sehingga mencegah akun palsu dan bot.
 
-Setiap orang hanya bisa memverifikasi satu akun, sehingga profil peminjam dan riwayat pembayaran yang kamu lihat milik satu orang nyata — dan yang diblokir tidak bisa kembali dengan akun baru.`,
+Setiap orang hanya bisa memverifikasi satu akun, jadi profil peminjam dan riwayat pembayaran kembali yang kamu lihat benar-benar milik orang yang sama. Pengguna yang diblokir juga tidak bisa begitu saja kembali dengan akun baru.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Baca panduan lengkap'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
-      question: 'Bagaimana peminjam menaikkan credit limit mereka?',
-      answer: `Peminjam menaikkan credit limit dengan mengambil Credit-Building Loan dan meminjam limit penuh saat ini. Jika mereka membayar pinjaman full-limit itu tepat waktu, mereka naik level dan membuka credit limit yang lebih tinggi.
+      question: 'Bagaimana peminjam menaikkan limit kredit mereka?',
+      answer: `Peminjam menaikkan limit kredit dengan mengambil Credit-Building Loan, yaitu meminjam sebesar limit penuh mereka saat ini. Jika mereka melunasi pinjaman sebesar limit penuh itu tepat waktu, mereka naik level dan membuka limit kredit yang lebih tinggi.
 
-Jika mereka meminjam di bawah limit, itu adalah Trust-Building Loan. Itu tidak menaikkan level, tetapi membantu membangun catatan pembayaran yang lebih kuat dan statistik peminjam yang lebih baik di platform.`
+Jika mereka meminjam di bawah limit, pinjaman itu adalah Trust-Building Loan. Pinjaman ini tidak menaikkan level, tetapi membantu membangun riwayat pembayaran kembali yang lebih kuat dan statistik peminjam yang lebih baik di platform.`
    },
    {
       id: 'how-to-fund-loan',
       question: 'Bagaimana cara mendanai pinjaman?',
-      answer: `Buka Papan Permintaan dan lihat permintaan pinjaman yang terbuka. Setiap permintaan menunjukkan statistik peminjam, credit limit, jumlah yang diminta, dan tenor pembayaran.
+      answer: `Buka Papan Permintaan dan lihat permintaan pinjaman yang terbuka. Setiap permintaan menampilkan statistik peminjam, limit kredit, jumlah yang diminta, dan jangka waktu pembayaran kembali.
 
-Saat menemukan pinjaman yang ingin kamu danai, tap Danai dan konfirmasi. USDC langsung keluar dari wallet kamu (biasanya Base Account kamu, atau Instant Wallet kamu jika kamu memakainya) dan masuk langsung ke wallet peminjam. Tidak ada perantara dan tidak ada penundaan.
+Saat menemukan permintaan yang ingin kamu danai, ketuk Danai lalu konfirmasi. USDC langsung keluar dari dompet kamu (biasanya Base Account kamu, atau Instant Wallet jika kamu memakainya) dan masuk langsung ke dompet peminjam. Tanpa perantara, tanpa penundaan.
 
-Kamu bisa melacak semua pinjaman aktif dan status pembayaran dari Lender Dashboard.`
+Kamu bisa memantau semua pinjaman aktif dan status pembayaran kembali dari Dasbor pemberi pinjaman.`
    },
    {
       id: 'when-do-i-get-repaid',
       question: 'Kapan saya dibayar kembali?',
-      answer: `Tanggal jatuh tempo ditentukan oleh peminjam saat mereka membuat permintaan. Kamu akan melihatnya dengan jelas di kartu pinjaman sebelum mendanai, jadi timeline selalu jelas sejak awal.
+      answer: `Tanggal jatuh tempo ditentukan oleh peminjam saat membuat permintaan. Kamu bisa melihatnya dengan jelas di kartu pinjaman sebelum mendanai, jadi kamu selalu tahu jangka waktunya sejak awal.
 
-Saat pinjaman jatuh tempo, peminjam membayar langsung ke wallet kamu — biasanya Base Account kamu (atau Instant Wallet kamu, jika kamu memakainya). Kamu bisa melacak status semua pinjaman aktif di Lender Dashboard.`
+Saat pinjaman jatuh tempo, peminjam membayar kembali langsung ke dompet kamu, biasanya Base Account kamu (atau Instant Wallet, jika kamu memakainya). Kamu bisa memantau status semua pinjaman aktif di Dasbor pemberi pinjaman.`
    }
 ];
 
 const THAI_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
-      question: 'Moodeng จับเงินของฉันไหม?',
-      answer: `ไม่ Moodeng ไม่ถือ ไม่ดูแล และไม่ย้ายเงินของผู้ใช้แทนคุณ
+      question: 'Moodeng ถือหรือเข้าถึงเงินของฉันไหม?',
+      answer: `ไม่เลย Moodeng ไม่ได้ถือ ดูแลรักษา หรือโอนเงินของผู้ใช้แทนคุณ
 
-เงินกู้จะส่งตรงจากกระเป๋าของผู้ให้กู้ไปยังกระเป๋าของผู้ยืม การชำระคืนก็ส่งตรงจากกระเป๋าของผู้ยืมกลับไปยังกระเป๋าของผู้ให้กู้ Moodeng ช่วยเรื่องกระดานคำขอ การยืนยัน สถานะการชำระคืน และการเก็บประวัติเท่านั้น`
+เงินกู้จะโอนตรงจากกระเป๋าเงินของผู้ให้กู้ไปยังกระเป๋าเงินของผู้ยืม และการชำระคืนก็โอนตรงจากกระเป๋าเงินของผู้ยืมกลับไปยังกระเป๋าเงินของผู้ให้กู้ Moodeng ช่วยในส่วนของกระดานคำขอ การยืนยันตัวตน สถานะการชำระคืน และการบันทึกประวัติ เพื่อให้ทั้งสองฝ่ายเห็นได้ชัดเจนว่าเกิดอะไรขึ้นบ้าง`
    },
    {
       id: 'why-usdc',
-      question: 'ทำไม Moodeng ใช้ USDC?',
-      answer: `USDC เป็น stablecoin ที่ผูก 1:1 กับดอลลาร์สหรัฐ ทำให้มูลค่าเงินกู้คาดเดาได้ เงินกู้ $20 วันนี้ยังเป็น $20 ตอนชำระคืน
+      question: 'ทำไม Moodeng จึงใช้ USDC?',
+      answer: `USDC คือ stablecoin ที่ตรึงมูลค่า 1:1 กับดอลลาร์สหรัฐ ออกโดย Circle ซึ่งเป็นบริษัทการเงินในสหรัฐฯ ที่อยู่ภายใต้การกำกับดูแล USDC ทำให้มูลค่าเงินกู้คาดการณ์ได้ เงินกู้ $20 ในวันนี้ก็ยังเป็น $20 ในวันที่ชำระคืน ไม่ใช่ $15 หรือ $30 ผู้ให้กู้และผู้ยืมจึงไม่ต้องรับความเสี่ยงด้านค่าเงินเพียงเพราะเข้าร่วมใช้งาน
 
-USDC ยังส่งได้รวดเร็วทั่วโลก และเมื่อใช้บน Base กับ Instant Wallet ของคุณหรือ Base Account จะไม่มีค่า gas จึงไม่มีค่าธรรมเนียมเครือข่ายมาหักเงินที่คุณชำระคืน`
+USDC ยังส่งไปได้ทั่วโลกอย่างรวดเร็ว และเมื่อใช้บน Base กับ Instant Wallet หรือ Base Account ก็ไม่มีค่า gas เลย ค่าธรรมเนียมเครือข่ายจึงไม่มาหักยอดชำระคืนของคุณ เงินที่คุณส่งจะถึงมือผู้ให้กู้ครบ 100%
+
+นอกจากนี้ USDC ยังเป็นที่ยอมรับอย่างกว้างขวาง แพลตฟอร์มแลกเปลี่ยนคริปโตรายใหญ่ทุกแห่งรองรับการฝาก USDC และคุณแปลงเป็นเงินตราทั่วไป (ดอลลาร์สหรัฐ เปโซ ไนรา ฯลฯ) ได้แทบทุกที่ ดังนั้นเมื่อคุณได้รับเงินกู้หรือได้รับเงินชำระคืน คุณจะใช้จ่ายแบบออนเชน ถือไว้ หรือถอนเป็นเงินสดก็ได้ตามต้องการ`
    },
    {
       id: 'how-to-get-verified',
       question: 'ฉันจะยืนยันตัวตนได้อย่างไร?',
-      answer: `การยืนยันตัวตนเป็นการตรวจสอบครั้งเดียวที่รวดเร็ว วิธีที่แนะนำคือ "Verify Your ID" — ถ่ายรูปบัตรประชาชน + เซลฟี่ ใช้เวลาประมาณ 3 นาที และใช้ได้ในประเทศที่รองรับ หากคุณใช้ World App อยู่แล้ว สามารถยืนยันด้วย World ID แทนได้
+      answer: `การยืนยันตัวตนคือการตรวจสอบที่รวดเร็วและทำเพียงครั้งเดียว วิธีที่แนะนำคือ "ยืนยันด้วยบัตรประชาชน" ซึ่งเป็นการถ่ายรูปบัตรประชาชนและเซลฟี่สั้น ๆ ใช้เวลาประมาณ 3 นาที และใช้ได้ในประเทศที่รองรับ หากคุณใช้ World App อยู่แล้ว คุณยืนยันด้วย World ID แทนได้
 
-แตะ "Verify Yourself" ในแอปเพื่อเริ่มต้น ส่วนใหญ่เสร็จภายในไม่กี่นาที`,
+แตะ "ยืนยันตัวตน" ในแอปเพื่อเริ่มต้น การตรวจสอบส่วนใหญ่เสร็จภายในไม่กี่นาที`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    }
@@ -373,97 +375,109 @@ USDC ยังส่งได้รวดเร็วทั่วโลก แ�
 const THAI_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
-      question: 'ฉันจะแปลงเงินกู้เข้าบัญชีธนาคารท้องถิ่นได้อย่างไร?',
-      answer: `ส่ง USDC ของคุณไปยัง exchange หรือบริการท้องถิ่น — Binance P2P, Coins.ph (ระงับชั่วคราว), PDAX, GCrypto (GCash) และอื่น ๆ — ขายที่นั่น แล้วถอนสกุลเงินท้องถิ่นเข้าธนาคารหรือ e-wallet ของคุณโดยตรง
+      question: 'ฉันจะโอนเงินกู้เข้าบัญชีธนาคารในประเทศได้อย่างไร?',
+      answer: `ส่ง USDC ของคุณไปยังแพลตฟอร์มแลกเปลี่ยนคริปโตหรือบริการในประเทศ เช่น Binance P2P หรือแพลตฟอร์มแลกเปลี่ยนหรือแอปอื่นที่รองรับ USDC บนเครือข่าย Base แล้วขาย USDC ที่นั่น และถอนเงินสกุลท้องถิ่นเข้าบัญชีธนาคารหรือ e-wallet ของคุณโดยตรง ตรวจสอบก่อนส่งทุกครั้งว่าแพลตฟอร์มนั้นรองรับเครือข่าย Base
 
-รายละเอียดสำคัญ: เลือก Base เป็นเครือข่ายเสมอเมื่อส่ง USDC คู่มือฉบับเต็มมีวิดีโอสาธิตและขั้นตอนของแต่ละบริการ`,
+ข้อสำคัญ: เลือกเครือข่าย Base ทุกครั้งเมื่อส่ง USDC คู่มือฉบับเต็มมีวิดีโอสาธิตและคำแนะนำทีละขั้นตอนสำหรับแต่ละบริการ`,
       readMorePath: '/academy/money/withdraw',
       readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    },
    {
       id: 'how-to-repay',
       question: 'ฉันจะชำระคืนเงินกู้ได้อย่างไร?',
-      answer: `เปิดหน้าชำระเงิน — จะแสดงจำนวนเงินที่ต้องชำระและที่อยู่สำหรับชำระคืน ส่ง USDC ไปที่นั่นจากกระเป๋า, exchange หรือบริการท้องถิ่นใดก็ได้ หากยังไม่มี USDC ให้ซื้อก่อน (Binance P2P, Coins.ph (ระงับชั่วคราว), PDAX, GCrypto และอื่น ๆ) — ใช้เครือข่าย Base เสมอ
+      answer: `เปิดหน้า "ชำระคืน" ซึ่งจะแสดงยอดที่ต้องชำระและที่อยู่สำหรับชำระคืนอย่างชัดเจน ส่ง USDC ไปยังที่อยู่นั้นจากกระเป๋าเงิน แพลตฟอร์มแลกเปลี่ยนคริปโต หรือบริการในประเทศใดก็ได้ หากคุณยังไม่มี USDC ให้ซื้อก่อน (เช่น ผ่าน Binance P2P หรือแพลตฟอร์มแลกเปลี่ยนหรือแอปที่รองรับ USDC บนเครือข่าย Base) และใช้เครือข่าย Base ทุกครั้ง
 
-ชำระก่อนวันครบกำหนด — การชำระตรงเวลาช่วยเพิ่มแต้ม Pandesal และปลดล็อกระดับเครดิตที่สูงขึ้น คู่มือฉบับเต็มอธิบายทุกวิธีการชำระ`,
+ชำระคืนก่อนวันครบกำหนด การชำระคืนตรงเวลาช่วยเพิ่มแต้ม Pandesal ของคุณ และการชำระคืนเงินกู้แบบเต็มวงเงินตรงเวลาจะปลดล็อกระดับเครดิตถัดไป คู่มือฉบับเต็มอธิบายทุกวิธีในการชำระคืน`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    },
    {
       id: 'borrow-below-limit',
-      question: 'ฉันยืมต่ำกว่าวงเงินเครดิตได้ไหม?',
-      answer: `ได้ และเราแนะนำโดยเฉพาะเมื่อคุณเพิ่งเริ่ม การยืมต่ำกว่าวงเงินเรียกว่า Trust-Building Loan
+      question: 'ฉันยืมต่ำกว่าวงเงินได้ไหม?',
+      answer: `ได้ และเราแนะนำให้ทำเช่นนั้น โดยเฉพาะเมื่อคุณเพิ่งเริ่มต้น การยืมต่ำกว่าวงเงินเรียกว่า Trust-Building Loan
 
-เงินกู้ขนาดเล็กเหล่านี้ไม่ได้นับเพื่อปลดล็อกระดับเครดิตถัดไป แต่ช่วยสร้างประวัติการชำระคืนและเพิ่มแต้ม Pandesal ได้ดี`
+เงินกู้ขนาดเล็กเหล่านี้ไม่นับรวมในการปลดล็อกระดับเครดิตถัดไป (หากต้องการเลื่อนระดับ คุณต้องยืมเต็มวงเงินและชำระคืนตรงเวลา) แต่ช่วยสร้างประวัติการชำระคืน และทำให้คุณได้แต้ม Pandesal มากกว่าการยืมเต็มวงเงิน
+
+ดังนั้นหากคุณต้องการสร้างความน่าเชื่อถืออย่างรวดเร็ว Trust-Building Loan คือวิธีที่ดีมาก`
    },
    {
       id: 'increase-credit-limit',
-      question: 'ฉันจะเพิ่มวงเงินเครดิตได้อย่างไร?',
-      answer: `วงเงินเครดิตเพิ่มขึ้นเมื่อคุณยืมเต็มวงเงินและชำระคืนตรงเวลา สิ่งนี้เรียกว่า Credit-Building Loan
+      question: 'ฉันจะเพิ่มวงเงินกู้ได้อย่างไร?',
+      answer: `วงเงินของคุณจะเพิ่มขึ้นเมื่อคุณยืมเต็มวงเงินและชำระคืนตรงเวลา เงินกู้แบบนี้เรียกว่า Credit-Building Loan
 
-ถ้าวงเงินของคุณคือ $20 แต่ยืมแค่ $15 จะไม่นับสู่ระดับถัดไป แม้ว่าจะชำระดีมากก็ตาม ระบบต้องเห็นว่าคุณจัดการเต็มวงเงินได้ก่อน`
+หากวงเงินของคุณคือ $20 แต่คุณยืมเพียง $15 เงินกู้นั้นจะไม่นับรวมในการเลื่อนระดับถัดไป แม้คุณจะชำระคืนครบถ้วนตรงเวลาก็ตาม ระบบต้องเห็นว่าคุณจัดการเงินกู้เต็มวงเงินได้ก่อน จึงจะเพิ่มเพดานวงเงินให้
+
+ลำดับขั้นของวงเงินคือ $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140 ซึ่งเป็นวงเงินสูงสุดในขณะนี้ ค่อย ๆ ไปทีละขั้น: ยืมเต็มวงเงิน ชำระคืนตรงเวลา แล้วทำซ้ำ`
    }
 ];
 
 const THAI_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'IOU Points คืออะไร?',
-      answer: `IOU Points คือคะแนนชื่อเสียงที่ผู้ให้กู้ได้รับ ในโมเดลปีแรก เงินกู้ที่ได้รับทุนแต่ละรายการจะสร้าง IOU points ตามจำนวนเงิน พร้อมโบนัสตามสถานะผู้ยืม
+      question: 'แต้ม IOU คืออะไร?',
+      answer: `แต้ม IOU คือแต้มความน่าเชื่อถือที่ผู้ให้กู้ได้รับ ในโมเดลปีแรก เงินกู้แต่ละรายการที่คุณปล่อยกู้จะได้รับแต้ม IOU พื้นฐานตามจำนวนเงินที่ปล่อยกู้ บวกโบนัสตามระดับขั้นของผู้ยืม แต้มเหล่านี้ใช้ติดตามว่าใครกำลังสนับสนุนชุมชนอย่างต่อเนื่อง
 
-ตอนนี้ IOU เป็นคะแนนก่อน ในอนาคตเราจะเปิดตัวโทเคน IOU และคะแนนสะสมจะถูกแปลงผ่าน airdrop`
+ตอนนี้ IOU ยังเป็นเพียงแต้ม ในอนาคตเราจะเปิดตัวโทเคนที่ชื่อ IOU เช่นกัน และแต้มที่คุณสะสมไว้จะถูกแปลงผ่านการแจก airdrop การถือ IOU จะปลดล็อกสิทธิประโยชน์เพิ่มเติมที่เกี่ยวข้องกับแพลตฟอร์ม
+
+IOU มีไว้สำหรับผู้ให้กู้เท่านั้น ส่วนผู้ยืมจะสะสมแต้ม Pandesal และระดับเครดิตแทน ดังนั้นหากคุณต้องการรับ IOU ให้ปล่อยกู้ตามคำขอจากกระดานคำขอ`
    },
    {
       id: 'how-borrowers-verify',
       question: 'ผู้ยืมยืนยันตัวตนอย่างไร?',
-      answer: `ผู้ยืมทุกคนผ่านการยืนยันตัวตนครั้งเดียว — ถ่ายรูปบัตรประชาชน + เซลฟี่พร้อมระบบตรวจจับใบหน้าซ้ำ หรือ World ID สำหรับผู้ที่ใช้ World App ทั้งสองวิธียืนยันว่าผู้ยืมแต่ละคนเป็นบุคคลจริงที่ไม่ซ้ำกัน ช่วยป้องกันบัญชีปลอมและบอท
+      answer: `ผู้ยืมทุกคนต้องยืนยันตัวตนเพียงครั้งเดียว โดยถ่ายรูปบัตรประชาชนและเซลฟี่พร้อมระบบตรวจจับบัญชีซ้ำ หรือใช้ World ID สำหรับผู้ที่ใช้ World App ไม่ว่าวิธีใดก็ยืนยันได้ว่าผู้ยืมแต่ละคนเป็นบุคคลจริงที่ไม่ซ้ำกัน ซึ่งช่วยป้องกันบัญชีปลอมและบอท
 
-แต่ละคนยืนยันได้เพียงหนึ่งบัญชี ดังนั้นโปรไฟล์และประวัติการชำระที่คุณเห็นเป็นของบุคคลจริงคนเดียวกัน`,
+แต่ละคนยืนยันตัวตนได้เพียงหนึ่งบัญชี ดังนั้นโปรไฟล์ผู้ยืมและประวัติการชำระคืนที่คุณเห็นจึงเป็นของบุคคลจริงคนเดียวกัน และผู้ใช้ที่ถูกแบนก็ไม่สามารถกลับมาด้วยบัญชีใหม่ได้ง่าย ๆ`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'อ่านคู่มือฉบับเต็ม'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
-      question: 'ผู้ยืมเพิ่มวงเงินเครดิตอย่างไร?',
-      answer: `ผู้ยืมเพิ่มวงเงินโดยทำ Credit-Building Loan และยืมเต็มวงเงินปัจจุบัน หากชำระเต็มจำนวนตรงเวลา ก็จะเลื่อนระดับและปลดล็อกวงเงินสูงขึ้น`
+      question: 'ผู้ยืมเพิ่มวงเงินกู้ได้อย่างไร?',
+      answer: `ผู้ยืมเพิ่มวงเงินได้ด้วยการกู้ Credit-Building Loan โดยยืมเต็มวงเงินปัจจุบัน หากชำระคืนเงินกู้เต็มวงเงินนั้นตรงเวลา ผู้ยืมจะเลื่อนระดับและปลดล็อกวงเงินที่สูงขึ้น
+
+หากยืมต่ำกว่าวงเงิน เงินกู้นั้นจะเป็น Trust-Building Loan แทน ซึ่งไม่ทำให้เลื่อนระดับ แต่ช่วยสร้างประวัติการชำระคืนที่แข็งแกร่งขึ้นและสถิติผู้ยืมที่ดีขึ้นบนแพลตฟอร์ม`
    },
    {
       id: 'how-to-fund-loan',
-      question: 'ฉันจะให้ทุนเงินกู้ได้อย่างไร?',
-      answer: `ไปที่กระดานคำขอและดูคำขอเงินกู้ที่เปิดอยู่ แต่ละคำขอจะแสดงสถิติผู้ยืม วงเงิน จำนวนเงินที่ต้องการ และเงื่อนไขการชำระคืน
+      question: 'ฉันจะปล่อยกู้ได้อย่างไร?',
+      answer: `ไปที่กระดานคำขอและดูคำขอเงินกู้ที่เปิดอยู่ แต่ละคำขอจะแสดงสถิติของผู้ยืม วงเงิน จำนวนเงินที่ขอ และระยะเวลาชำระคืน
 
-เมื่อพบคำขอที่ต้องการ ให้แตะ Fund และยืนยัน USDC จะออกจากกระเป๋าของคุณ (ปกติคือ Base Account หรือ Instant Wallet หากคุณใช้) ไปยังกระเป๋าของผู้ยืมโดยตรง`
+เมื่อพบคำขอที่ต้องการปล่อยกู้ ให้แตะ "ปล่อยกู้" แล้วยืนยัน USDC จะออกจากกระเป๋าเงินของคุณ (โดยปกติคือ Base Account หรือ Instant Wallet หากคุณใช้) ทันที และโอนตรงไปยังกระเป๋าเงินของผู้ยืม ไม่มีคนกลาง ไม่มีความล่าช้า
+
+คุณติดตามเงินกู้ที่กำลังดำเนินอยู่และสถานะการชำระคืนทั้งหมดได้จากแดชบอร์ดผู้ให้กู้`
    },
    {
       id: 'when-do-i-get-repaid',
-      question: 'ฉันจะได้รับชำระคืนเมื่อไหร่?',
-      answer: `วันครบกำหนดถูกกำหนดโดยผู้ยืมเมื่อโพสต์คำขอ คุณจะเห็นชัดเจนบนการ์ดเงินกู้ก่อนให้ทุน
+      question: 'ฉันจะได้รับเงินชำระคืนเมื่อใด?',
+      answer: `ผู้ยืมเป็นผู้ตั้งวันครบกำหนดเมื่อโพสต์คำขอ คุณจะเห็นวันนี้อย่างชัดเจนบนการ์ดเงินกู้ก่อนปล่อยกู้ จึงรู้กำหนดเวลาล่วงหน้าเสมอ
 
-เมื่อถึงกำหนด ผู้ยืมจะชำระคืนตรงเข้ากระเป๋าของคุณ (ปกติคือ Base Account หรือ Instant Wallet หากคุณใช้) และคุณติดตามสถานะได้จาก Lender Dashboard`
+เมื่อเงินกู้ถึงกำหนด ผู้ยืมจะชำระคืนตรงเข้ากระเป๋าเงินของคุณ (โดยปกติคือ Base Account หรือ Instant Wallet หากคุณใช้) คุณติดตามสถานะของเงินกู้ที่กำลังดำเนินอยู่ทั้งหมดได้จากแดชบอร์ดผู้ให้กู้`
    }
 ];
 
 const VIETNAMESE_SHARED_FAQS: AccountFAQItem[] = [
    {
       id: 'does-moodeng-touch-money',
-      question: 'Moodeng có chạm vào tiền của tôi không?',
-      answer: `Không. Moodeng không giữ, lưu ký hoặc di chuyển tiền của người dùng thay bạn.
+      question: 'Moodeng có nắm giữ tiền của tôi không?',
+      answer: `Không. Moodeng không giữ, lưu ký hoặc chuyển tiền thay bạn.
 
-Khoản vay đi trực tiếp từ ví người cho vay sang ví người vay. Khoản trả đi trực tiếp từ ví người vay về ví người cho vay. Moodeng chỉ hỗ trợ bảng yêu cầu, xác minh, trạng thái trả nợ và ghi nhận lịch sử để hai bên thấy rõ điều gì đã xảy ra.`
+Khoản vay được chuyển trực tiếp từ ví người cho vay sang ví người vay. Khoản trả nợ được chuyển trực tiếp từ ví người vay về ví người cho vay. Moodeng hỗ trợ Bảng yêu cầu, xác minh, trạng thái trả nợ và lưu trữ hồ sơ để cả hai bên đều thấy rõ những gì đã diễn ra.`
    },
    {
       id: 'why-usdc',
       question: 'Vì sao Moodeng dùng USDC?',
-      answer: `USDC là stablecoin neo 1:1 với đô la Mỹ, giúp giá trị khoản vay dễ dự đoán. Khoản vay $20 hôm nay vẫn là $20 khi trả, không thành $15 hay $30.
+      answer: `USDC là stablecoin neo giá 1:1 với đô la Mỹ. Được phát hành bởi Circle — một công ty tài chính được quản lý tại Mỹ — USDC giúp giá trị khoản vay luôn dễ dự đoán: khoản vay $20 hôm nay vẫn là $20 khi trả, không phải $15 hay $30. Người cho vay và người vay không phải chịu rủi ro tỷ giá chỉ vì tham gia.
 
-USDC cũng chuyển toàn cầu rất nhanh và khi dùng trên Base với Instant Wallet của bạn hoặc Base Account thì hoàn toàn không tốn gas. Điều đó có nghĩa là không có phí mạng ăn vào khoản trả của bạn.`
+USDC còn chuyển nhanh trên toàn cầu, và khi dùng trên Base với Instant Wallet hoặc Base Account thì hoàn toàn không mất phí gas. Điều đó có nghĩa là không có phí mạng nào bị trừ vào khoản trả nợ của bạn — 100% số tiền bạn gửi đều đến tay người cho vay.
+
+USDC cũng được chấp nhận rộng rãi: mọi sàn giao dịch crypto lớn đều hỗ trợ nạp USDC, và bạn có thể đổi USDC sang tiền pháp định (đô la Mỹ, peso, naira, v.v.) ở hầu hết mọi nơi. Vì vậy, khi nhận khoản vay hoặc được trả nợ, bạn có thể dùng USDC on-chain, giữ lại hoặc rút ra tiền mặt — tùy bạn lựa chọn.`
    },
    {
       id: 'how-to-get-verified',
-      question: 'Tôi xác minh bằng cách nào?',
-      answer: `Xác minh là một lần kiểm tra danh tính nhanh chóng. Cách được khuyến nghị là "Verify Your ID" — chụp ảnh giấy tờ tùy thân + selfie, mất khoảng 3 phút và áp dụng ở các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể xác minh bằng World ID.
+      question: 'Tôi xác minh danh tính bằng cách nào?',
+      answer: `Xác minh là bước kiểm tra danh tính nhanh, chỉ thực hiện một lần. Cách được khuyên dùng là "Xác minh bằng giấy tờ tùy thân" — chụp nhanh ảnh thẻ căn cước + ảnh selfie, mất khoảng 3 phút và áp dụng tại các quốc gia được hỗ trợ. Nếu bạn đã dùng World App, bạn có thể chọn xác minh bằng World ID.
 
-Bấm "Verify Yourself" trong app để bắt đầu. Hầu hết hoàn tất trong vài phút.`,
+Nhấn "Xác minh danh tính" trong ứng dụng để bắt đầu. Hầu hết lượt xác minh hoàn tất trong vài phút.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    }
@@ -472,73 +486,83 @@ Bấm "Verify Yourself" trong app để bắt đầu. Hầu hết hoàn tất tr
 const VIETNAMESE_BORROWER_FAQS: AccountFAQItem[] = [
    {
       id: 'convert-loan-to-bank',
-      question: 'Làm sao chuyển khoản vay về tài khoản ngân hàng địa phương?',
-      answer: `Gửi USDC của bạn đến sàn giao dịch hoặc dịch vụ địa phương — Binance P2P, Coins.ph (tạm ngưng), PDAX, GCrypto (GCash) và nhiều nơi khác — bán ở đó, rồi rút nội tệ thẳng về ngân hàng hoặc ví điện tử của bạn.
+      question: 'Làm sao để chuyển tiền vay về tài khoản ngân hàng trong nước?',
+      answer: `Gửi USDC của bạn đến một sàn giao dịch hoặc dịch vụ — chẳng hạn Binance P2P, hoặc một sàn giao dịch hay ứng dụng khác hỗ trợ USDC trên mạng Base — bán USDC tại đó, rồi rút tiền địa phương thẳng về tài khoản ngân hàng hoặc ví điện tử của bạn. Hãy kiểm tra xem nền tảng đó có hỗ trợ mạng Base không trước khi gửi.
 
-Chi tiết quan trọng: luôn chọn Base làm mạng khi gửi USDC. Hướng dẫn đầy đủ có video minh họa và các bước cho từng dịch vụ.`,
+Điều quan trọng: luôn chọn mạng Base khi gửi USDC. Hướng dẫn đầy đủ có video minh họa và các bước chi tiết cho từng dịch vụ.`,
       readMorePath: '/academy/money/withdraw',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'how-to-repay',
       question: 'Tôi trả khoản vay bằng cách nào?',
-      answer: `Mở màn hình Trả nợ — ở đó hiển thị số tiền chính xác và địa chỉ trả nợ. Gửi USDC đến đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu chưa có USDC, hãy mua trước (Binance P2P, Coins.ph (tạm ngưng), PDAX, GCrypto và nhiều nơi khác) — luôn dùng mạng Base.
+      answer: `Mở màn hình "Trả nợ" — màn hình này hiển thị chính xác số tiền đến hạn và địa chỉ trả nợ. Gửi USDC đến địa chỉ đó từ bất kỳ ví, sàn giao dịch hoặc dịch vụ địa phương nào. Nếu bạn chưa có USDC, hãy mua trước (qua Binance P2P, hoặc một sàn giao dịch hay ứng dụng khác hỗ trợ USDC trên mạng Base — hãy kiểm tra điều này trước khi gửi) — luôn dùng mạng Base.
 
-Trả trước ngày đến hạn — trả đúng hạn giúp tăng điểm Pandesal và mở khóa hạng tín dụng cao hơn. Hướng dẫn đầy đủ mô tả từng cách trả nợ.`,
+Hãy trả trước ngày đến hạn — trả nợ đúng hạn giúp tăng điểm Pandesal, và trả đúng hạn một khoản vay bằng toàn bộ hạn mức sẽ mở khóa Hạng tín dụng tiếp theo. Hướng dẫn đầy đủ sẽ giải thích từng cách trả nợ.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'borrow-below-limit',
       question: 'Tôi có thể vay thấp hơn hạn mức tín dụng không?',
-      answer: `Có, và chúng tôi thật sự khuyến nghị điều đó, nhất là khi bạn mới bắt đầu. Vay thấp hơn hạn mức được gọi là Trust-Building Loan.
+      answer: `Có — và chúng tôi còn khuyến khích điều đó, nhất là khi bạn mới bắt đầu. Vay thấp hơn hạn mức được gọi là Trust-Building Loan (khoản vay xây dựng niềm tin).
 
-Các khoản nhỏ này không mở khóa hạng tín dụng tiếp theo, nhưng chúng xây dựng lịch sử trả nợ và giúp bạn kiếm nhiều điểm Pandesal hơn.`
+Những khoản vay nhỏ này không được tính vào việc mở khóa Hạng tín dụng tiếp theo (muốn lên hạng, bạn cần vay toàn bộ hạn mức và trả đúng hạn), nhưng chúng giúp xây dựng lịch sử trả nợ và mang lại điểm Pandesal mỗi lần bạn trả đúng hạn.
+
+Vì vậy, nếu bạn muốn nhanh chóng xây dựng uy tín, Trust-Building Loan là một cách rất tốt.`
    },
    {
       id: 'increase-credit-limit',
-      question: 'Làm sao tăng hạn mức tín dụng?',
-      answer: `Hạn mức tăng khi bạn vay toàn bộ hạn mức và trả đúng hạn. Đây gọi là Credit-Building Loan.
+      question: 'Làm sao để tăng hạn mức tín dụng?',
+      answer: `Hạn mức tín dụng của bạn tăng khi bạn vay toàn bộ hạn mức và trả đúng hạn. Những khoản vay này được gọi là Credit-Building Loan (khoản vay xây dựng tín dụng).
 
-Nếu hạn mức là $20 nhưng bạn chỉ vay $15, điều đó không được tính cho cấp tiếp theo, kể cả khi bạn trả hoàn hảo. Hệ thống cần thấy bạn xử lý được toàn bộ hạn mức trước khi nâng trần.`
+Nếu hạn mức của bạn là $20 mà bạn chỉ vay $15, khoản đó không được tính để lên hạng tiếp theo — kể cả khi bạn trả đầy đủ, đúng hạn. Hệ thống cần thấy bạn quản lý được toàn bộ hạn mức trước khi nâng hạn mức.
+
+Lộ trình là $15 → $20 → $40 → $60 → $80 → $100 → $120 → $140, đây là mức tối đa hiện tại. Từng bước một: vay tối đa hạn mức, trả đúng hạn, rồi lặp lại.`
    }
 ];
 
 const VIETNAMESE_LENDER_FAQS: AccountFAQItem[] = [
    {
       id: 'what-are-iou-points',
-      question: 'IOU Points là gì?',
-      answer: `IOU Points là điểm uy tín người cho vay kiếm được. Trong mô hình năm 1, mỗi khoản vay được cấp vốn tạo điểm IOU cơ bản theo số tiền cấp vốn cộng với bonus theo giai đoạn người vay.
+      question: 'Điểm IOU là gì?',
+      answer: `Điểm IOU là điểm uy tín dành cho người cho vay. Theo mô hình Năm thứ nhất, mỗi khoản vay được cấp vốn mang lại điểm IOU cơ bản tương ứng với số tiền cấp vốn, cộng thêm điểm thưởng theo giai đoạn của người vay. Điểm IOU ghi nhận những ai đang tích cực hỗ trợ cộng đồng.
 
-Hiện tại IOU chỉ là điểm. Về sau chúng tôi sẽ ra mắt token cũng tên IOU, và điểm tích lũy của bạn sẽ chuyển đổi qua airdrop.`
+Hiện tại, IOU mới chỉ là điểm. Trong tương lai, chúng tôi sẽ ra mắt một token cũng mang tên IOU, và số điểm bạn tích lũy sẽ được quy đổi qua airdrop. Việc nắm giữ IOU sẽ mở khóa thêm các quyền lợi gắn với nền tảng.
+
+IOU chỉ dành cho người cho vay — người vay thì xây dựng điểm Pandesal và Hạng tín dụng. Vì vậy, nếu bạn muốn kiếm IOU, hãy cấp vốn cho một yêu cầu vay trên Bảng yêu cầu.`
    },
    {
       id: 'how-borrowers-verify',
-      question: 'Người vay xác minh bằng cách nào?',
-      answer: `Mỗi người vay hoàn thành xác minh danh tính một lần — chụp ảnh giấy tờ tùy thân + selfie với hệ thống phát hiện trùng khuôn mặt, hoặc World ID cho người dùng World App. Cả hai cách đều xác nhận mỗi người vay là một người thật duy nhất, giúp ngăn tài khoản giả và bot.
+      question: 'Người vay xác minh danh tính bằng cách nào?',
+      answer: `Mỗi người vay đều hoàn tất xác minh danh tính một lần — chụp ảnh thẻ căn cước + selfie, kèm cơ chế phát hiện trùng lặp, hoặc dùng World ID đối với người dùng World App. Dù theo cách nào, bước này cũng xác nhận mỗi người vay là một người thật và duy nhất, giúp ngăn chặn tài khoản giả và bot.
 
-Mỗi người chỉ xác minh được một tài khoản, nên hồ sơ và lịch sử trả nợ bạn thấy thuộc về đúng một người thật.`,
+Mỗi người chỉ có thể xác minh một tài khoản, nên hồ sơ người vay và lịch sử trả nợ mà bạn thấy đều thuộc về cùng một người thật — và người dùng đã bị cấm không thể đơn giản quay lại bằng một tài khoản mới.`,
       readMorePath: '/academy/money/verify',
       readMoreLabel: 'Đọc hướng dẫn đầy đủ'
    },
    {
       id: 'how-borrowers-increase-credit-limit',
       question: 'Người vay tăng hạn mức tín dụng bằng cách nào?',
-      answer: `Người vay tăng hạn mức bằng cách lấy Credit-Building Loan và vay toàn bộ hạn mức hiện tại. Nếu họ trả khoản full-limit đó đúng hạn, họ lên cấp và mở khóa hạn mức cao hơn.`
+      answer: `Người vay tăng hạn mức tín dụng bằng cách thực hiện một Credit-Building Loan (khoản vay xây dựng tín dụng), tức là vay toàn bộ hạn mức hiện tại. Nếu trả đúng hạn khoản vay bằng toàn bộ hạn mức đó, họ sẽ lên hạng và mở khóa hạn mức tín dụng cao hơn.
+
+Nếu vay thấp hơn hạn mức, đó là Trust-Building Loan (khoản vay xây dựng niềm tin). Khoản vay này không giúp họ lên hạng, nhưng giúp xây dựng lịch sử trả nợ vững chắc hơn và cải thiện các chỉ số người vay trên nền tảng.`
    },
    {
       id: 'how-to-fund-loan',
       question: 'Tôi cấp vốn cho khoản vay bằng cách nào?',
-      answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị thống kê người vay, hạn mức, số tiền yêu cầu và kỳ hạn trả.
+      answer: `Vào Bảng yêu cầu và xem các yêu cầu vay đang mở. Mỗi yêu cầu hiển thị các chỉ số của người vay, hạn mức tín dụng, số tiền yêu cầu và thời hạn trả nợ.
 
-Khi thấy khoản muốn cấp vốn, bấm Fund và xác nhận. USDC rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đi thẳng đến ví của người vay.`
+Khi tìm được yêu cầu bạn muốn cấp vốn, nhấn "Cấp vốn" và xác nhận. USDC sẽ rời ví của bạn (thường là Base Account, hoặc Instant Wallet nếu bạn dùng) ngay lập tức và đến thẳng ví của người vay — không qua trung gian, không chậm trễ.
+
+Bạn có thể theo dõi tất cả khoản vay đang hoạt động và trạng thái trả nợ trên trang Tổng quan người cho vay.`
    },
    {
       id: 'when-do-i-get-repaid',
-      question: 'Khi nào tôi được trả?',
-      answer: `Ngày đến hạn do người vay đặt khi đăng yêu cầu. Bạn sẽ thấy rõ trên thẻ khoản vay trước khi cấp vốn.
+      question: 'Khi nào tôi nhận được tiền trả nợ?',
+      answer: `Ngày đến hạn do người vay đặt khi đăng yêu cầu — bạn sẽ thấy rõ ngày này trên thẻ khoản vay trước khi cấp vốn, nên bạn luôn biết trước thời hạn.
 
-Khi khoản vay đến hạn, người vay trả trực tiếp về ví của bạn — thường là Base Account (hoặc Instant Wallet, nếu bạn dùng). Bạn có thể theo dõi trạng thái các khoản vay đang hoạt động trong Lender Dashboard.`
+Khi khoản vay đến hạn, người vay sẽ trả trực tiếp vào ví của bạn — thường là Base Account (hoặc Instant Wallet, nếu bạn dùng). Bạn có thể theo dõi trạng thái tất cả khoản vay đang hoạt động trên trang Tổng quan người cho vay.`
    }
 ];
 

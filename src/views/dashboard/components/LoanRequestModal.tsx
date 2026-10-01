@@ -37,6 +37,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
+import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
@@ -243,7 +244,7 @@ type TooltipId = 'terms' | 'limit' | 'usdc';
 
 const tooltipCopy: Record<TooltipId, string> = {
    terms: 'Choose how much you want to borrow, when you will repay, and why you need the loan.',
-   limit: 'Your current maximum borrow amount. Repaying loans on time can help increase this limit.',
+   limit: 'Your current maximum borrow amount. Borrowing your full limit and repaying it on time raises this limit.',
    usdc: 'USDC is digital dollars accepted by major exchanges, making borrowing and lending easier across countries.'
 };
 
@@ -2598,7 +2599,7 @@ export default function LoanRequestModal({
                                     if (trimmedLength > 0 && remaining > 0) {
                                        return (
                                           <span className="font-medium text-md-primary-1200">
-                                             {remaining} more character{remaining === 1 ? '' : 's'} to go
+                                             <MoreCharactersLabel count={remaining} toGo />
                                           </span>
                                        );
                                     }

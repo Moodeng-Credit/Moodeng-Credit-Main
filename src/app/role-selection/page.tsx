@@ -25,25 +25,25 @@ const ROLE_SELECTION_COPY = {
       confirming: 'Confirming...',
       confirm: 'Confirm',
       footerLinks: ['Privacy', 'Terms', 'Docs'],
-      copyright: '© 2026 Moodeng Credit All Rights Reserved'
+      copyright: '© 2026 Moodeng Credit. All rights reserved.'
    },
    fil: {
       errorTitle: 'May nangyaring mali',
       errorBody: 'Hindi na-save ang role mo. Subukan ulit.',
       title: 'Paano mo gustong gamitin ang Moodeng Credit?',
-      subtitle: 'Humiling ng panandaliang pautang, magbayad nang malinaw, at bumuo ng tiwala habang tumatagal.',
-      borrowerTitle: 'Humihiram ako',
-      borrowerBody: 'Humiling ng USDC loan at bumuo ng tiwala sa pamamagitan ng pagbabayad sa tamang oras.',
-      lenderTitle: 'Nagpapahiram ako',
-      lenderBody: 'Pondohan ang mga loan request at kumita habang sumusuporta sa mapagkakatiwalaang humihiram.',
+      subtitle: 'Mag-request ng short-term loan, magbayad nang malinaw, at unti-unting bumuo ng tiwala.',
+      borrowerTitle: 'Borrower ako',
+      borrowerBody: 'Mag-request ng USDC loan at bumuo ng tiwala sa pamamagitan ng on-time na pagbabayad.',
+      lenderTitle: 'Lender ako',
+      lenderBody: 'Pondohan ang mga loan request at kumita habang sinusuportahan ang mga mapagkakatiwalaang borrower.',
       confirming: 'Kinukumpirma...',
-      confirm: 'Kumpirmahin',
-      footerLinks: ['Pribasiya', 'Mga Tuntunin', 'Dokumento'],
-      copyright: '© 2026 Moodeng Credit. Nakareserba ang lahat ng karapatan'
+      confirm: 'I-confirm',
+      footerLinks: ['Privacy', 'Terms', 'Docs'],
+      copyright: '© 2026 Moodeng Credit. Nakareserba ang lahat ng karapatan.'
    },
    id: {
-      errorTitle: 'Ada yang salah',
-      errorBody: 'Role kamu gagal disimpan. Coba lagi.',
+      errorTitle: 'Terjadi kesalahan',
+      errorBody: 'Peran kamu gagal disimpan. Coba lagi.',
       title: 'Bagaimana kamu ingin menggunakan Moodeng Credit?',
       subtitle: 'Ajukan pinjaman jangka pendek, bayar dengan jelas, dan bangun kepercayaan dari waktu ke waktu.',
       borrowerTitle: 'Saya peminjam',
@@ -53,17 +53,17 @@ const ROLE_SELECTION_COPY = {
       confirming: 'Mengonfirmasi...',
       confirm: 'Konfirmasi',
       footerLinks: ['Privasi', 'Ketentuan', 'Dokumen'],
-      copyright: '© 2026 Moodeng Credit. Semua hak dilindungi'
+      copyright: '© 2026 Moodeng Credit. Semua hak dilindungi.'
    },
    th: {
       errorTitle: 'มีบางอย่างผิดพลาด',
       errorBody: 'บันทึกบทบาทไม่สำเร็จ โปรดลองอีกครั้ง',
       title: 'คุณต้องการใช้ Moodeng Credit อย่างไร?',
-      subtitle: 'ขอเงินกู้ระยะสั้น ชำระคืนอย่างชัดเจน และสร้างความน่าเชื่อถือเมื่อเวลาผ่านไป',
+      subtitle: 'ขอเงินกู้ระยะสั้น ชำระคืนอย่างโปร่งใส และสร้างความน่าเชื่อถือไปทีละขั้น',
       borrowerTitle: 'ฉันเป็นผู้ยืม',
       borrowerBody: 'ขอเงินกู้ USDC และสร้างความน่าเชื่อถือผ่านการชำระคืนตรงเวลา',
       lenderTitle: 'ฉันเป็นผู้ให้กู้',
-      lenderBody: 'ให้ทุนคำขอเงินกู้และรับผลตอบแทนด้วยการสนับสนุนผู้ยืมที่น่าเชื่อถือ',
+      lenderBody: 'ปล่อยกู้ตามคำขอและรับผลตอบแทนจากการสนับสนุนผู้ยืมที่น่าเชื่อถือ',
       confirming: 'กำลังยืนยัน...',
       confirm: 'ยืนยัน',
       footerLinks: ['ความเป็นส่วนตัว', 'ข้อกำหนด', 'เอกสาร'],
@@ -73,15 +73,15 @@ const ROLE_SELECTION_COPY = {
       errorTitle: 'Có lỗi xảy ra',
       errorBody: 'Không thể lưu vai trò của bạn. Vui lòng thử lại.',
       title: 'Bạn muốn dùng Moodeng Credit như thế nào?',
-      subtitle: 'Yêu cầu khoản vay ngắn hạn, trả rõ ràng và xây dựng niềm tin theo thời gian.',
+      subtitle: 'Yêu cầu khoản vay ngắn hạn, trả nợ minh bạch và xây dựng niềm tin theo thời gian.',
       borrowerTitle: 'Tôi là người vay',
-      borrowerBody: 'Yêu cầu khoản vay USDC và xây dựng niềm tin qua trả đúng hạn.',
+      borrowerBody: 'Yêu cầu khoản vay USDC và xây dựng niềm tin nhờ trả nợ đúng hạn.',
       lenderTitle: 'Tôi là người cho vay',
-      lenderBody: 'Cấp vốn cho yêu cầu vay và kiếm lợi suất bằng cách hỗ trợ người vay đáng tin cậy.',
+      lenderBody: 'Cấp vốn cho các yêu cầu vay và kiếm lợi nhuận bằng cách hỗ trợ những người vay đáng tin cậy.',
       confirming: 'Đang xác nhận...',
       confirm: 'Xác nhận',
       footerLinks: ['Quyền riêng tư', 'Điều khoản', 'Tài liệu'],
-      copyright: '© 2026 Moodeng Credit. Bảo lưu mọi quyền'
+      copyright: '© 2026 Moodeng Credit. Bảo lưu mọi quyền.'
    }
 } satisfies Record<
    LocaleCode,
@@ -137,7 +137,9 @@ export default function RoleSelectionPage() {
                <img src="/hippos/role-selection.png" alt="Moodeng hippo" className="w-[228px] h-[200px] object-cover" />
 
                <div className="flex flex-col gap-1">
-                  <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading dark:text-white">{copy.title}</h1>
+                  <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-md-heading dark:text-white">
+                     {copy.title}
+                  </h1>
                   <p className="text-md-b1 text-md-neutral-700 dark:text-md-neutral-500 tracking-[-0.02em]">{copy.subtitle}</p>
                </div>
 
@@ -152,7 +154,9 @@ export default function RoleSelectionPage() {
                   ].join(' ')}
                >
                   <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading dark:text-white">{copy.borrowerTitle}</span>
-                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">{copy.borrowerBody}</span>
+                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">
+                     {copy.borrowerBody}
+                  </span>
                </button>
 
                <button
@@ -166,7 +170,9 @@ export default function RoleSelectionPage() {
                   ].join(' ')}
                >
                   <span className="text-md-h5 font-semibold tracking-[-0.04em] text-md-heading dark:text-white">{copy.lenderTitle}</span>
-                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">{copy.lenderBody}</span>
+                  <span className="text-md-b2 text-[#45556c] dark:text-md-neutral-500 tracking-[-0.02em] leading-[21px]">
+                     {copy.lenderBody}
+                  </span>
                </button>
 
                <button
@@ -186,7 +192,9 @@ export default function RoleSelectionPage() {
                      <span key={link}>{link}</span>
                   ))}
                </div>
-               <p className="text-[12px] text-md-neutral-1500 dark:text-md-neutral-800 tracking-[-0.02em] leading-[18px]">{copy.copyright}</p>
+               <p className="text-[12px] text-md-neutral-1500 dark:text-md-neutral-800 tracking-[-0.02em] leading-[18px]">
+                  {copy.copyright}
+               </p>
             </div>
          </div>
       </div>

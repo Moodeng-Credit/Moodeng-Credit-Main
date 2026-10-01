@@ -12,19 +12,19 @@ export interface VerifyStatsCardProps {
 
 export const VerifyStatsCardConfig: VerifyStatsCardProps[] = [
    {
-      title: 'World ID verified',
+      title: 'Identity verified',
       titleColor: 'text-sky-600',
       subtitle: 'Real-person signal',
-      description: 'Borrowers prove they are a unique human through World ID before they can request funding.',
+      description: 'Borrowers pass a quick ID + selfie check, or verify with World ID, before they can request funding.',
       icon: BadgeCheck,
       accentColor: '#0ea5e9',
       accentSoftColor: '#e0f2fe'
    },
    {
-      title: 'Orb-first markets',
+      title: 'Worker hubs first',
       titleColor: 'text-indigo-600',
       subtitle: 'SEA worker corridors',
-      description: 'We start where Orb access is practical, including South Korea, Taiwan, Japan, Singapore, and nearby hubs.',
+      description: 'We start with overseas worker hubs, including South Korea, Taiwan, Japan, Singapore, and nearby cities.',
       icon: Globe2,
       accentColor: '#6366f1',
       accentSoftColor: '#eef2ff'

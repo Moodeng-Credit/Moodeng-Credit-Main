@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAccount } from 'wagmi';
 
+import { currentSentences } from '@/i18n/sentences';
 import Loading from '@/components/Loading';
 import UserAvatar from '@/components/UserAvatar';
 
@@ -87,7 +88,7 @@ export default function LoanNotePurchase() {
       if (step === 'recording') return 'Finalizing…';
       if (busy) return 'Processing…';
       if (!isLoggedIn) return `Support ${borrowerName}`;
-      return `Fund ${borrowerName}’s loan`;
+      return currentSentences().fundLoanTitle(borrowerName);
    }, [step, busy, isLoggedIn, borrowerName]);
 
    if (isLoading) return <Loading />;
@@ -142,7 +143,7 @@ export default function LoanNotePurchase() {
                         {data.borrowerUsername ? <p className="text-md-b3 text-md-neutral-700">@{data.borrowerUsername}</p> : null}
                         {data.borrowerCreditLevel != null ? (
                            <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-primary-900 bg-md-primary-100">
-                              <span className="text-md-b4 font-semibold text-md-primary-1200">Trust level {data.borrowerCreditLevel}</span>
+                              <span className="text-md-b4 font-semibold text-md-primary-1200">Credit Level {data.borrowerCreditLevel}</span>
                            </span>
                         ) : null}
                      </div>
