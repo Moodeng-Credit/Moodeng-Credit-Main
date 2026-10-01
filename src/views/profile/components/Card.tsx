@@ -7,9 +7,11 @@ import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import Modal from '@/components/ui/Modal';
 import UserPay from '@/components/UserPay';
 
-import { calculateDaysRemaining, calculateDueDate, calculateHoursRemaining, formatDate } from '@/utils/dateFormatters';
+import { formatDate } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
+
+import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
 
 import { deleteLoan, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -22,9 +24,9 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
    const [showPay, setShowPay] = useState(false);
    const dispatch = useDispatch<AppDispatch>();
 
-   const differenceInDays = calculateDaysRemaining(loan.dueDate);
-   const differenceInHours = calculateHoursRemaining(loan.dueDate);
-   const dueDate = calculateDueDate(loan.dueDate);
+   // Date only (no clock time); days counted to the end of the borrower's due day in their zone.
+   const differenceInDays = getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan, DEFAULT_LOAN_TIMEZONE));
+   const dueDate = new Date(loan.dueDate).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' });
    const postedDate = formatDate(loan.createdAt);
    const badgeStyles = getLoanBadgeStyles(loan.loanStatus, loan.repaymentStatus, differenceInDays);
    const borrowerUsername = loan.borrowerUser ? userProfiles[loan.borrowerUser]?.username ?? loan.borrowerUser : '';
@@ -71,7 +73,9 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                ? 'Fully Repaid'
                : differenceInDays > 0
                  ? `${differenceInDays} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
-                 : `${differenceInHours > 0 ? differenceInHours : '0'} ${differenceInHours > 1 ? 'Hours' : 'Hour'} Left`}
+                 : differenceInDays === 0
+                   ? 'Due Today'
+                   : 'Past Due'}
             )
          </div>
          <div className="p-5 pt-4">

@@ -67,16 +67,33 @@ export const isValidTimezone = (zone: string | null | undefined): zone is string
 // UTC/GMT/Etc on a phone or laptop almost always means "never set", not where someone is. Same rule
 // as app_private.is_usable_timezone in the database.
 export const isUsableTimezone = (zone: string | null | undefined): zone is string =>
-   isValidTimezone(zone) && !/^(utc|gmt|etc\/|zulu|universal|uct)/i.test(zone);
+   isValidTimezone(zone) &&
+   !/^(utc|gmt|etc\/|zulu|universal|uct|posix|right\/|factory|localtime|systemv\/)/i.test(zone) &&
+   /^[A-Za-z]+\/[A-Za-z0-9_+\-/]+$/.test(zone);
 
 /** The zone a loan's due day is measured in: the one saved on the loan, else the borrower's. */
 export const loanTimezone = (loan: { due_timezone?: string | null }, borrowerZone: string): string =>
    isUsableTimezone(loan.due_timezone) ? loan.due_timezone : borrowerZone;
 
-/** Best known zone for a borrower. Never throws; always returns a valid IANA zone. */
-export const resolveTimezone = (savedZone: string | null | undefined, countryIso: string | null | undefined): string => {
-   if (isUsableTimezone(savedZone)) return savedZone;
+/** How far a claimed zone may sit from the login country's before we use the country's instead. */
+export const MAX_ZONE_DRIFT_HOURS = 3;
+
+/**
+ * Best known zone for a borrower. Never throws; always returns a valid IANA zone. The saved (device)
+ * zone wins unless it's more than 3 hours from the country they usually log in from, so a borrower
+ * can't stretch their deadline by picking a far-west zone. Same rule as app_private.resolve_user_timezone.
+ */
+export const resolveTimezone = (
+   savedZone: string | null | undefined,
+   countryIso: string | null | undefined,
+   now: Date = new Date()
+): string => {
    const fromCountry = COUNTRY_TIMEZONES[(countryIso ?? '').toUpperCase()];
+   if (isUsableTimezone(savedZone)) {
+      if (!fromCountry) return savedZone;
+      const drift = Math.abs(zoneOffsetMs(now, savedZone) - zoneOffsetMs(now, fromCountry));
+      if (drift <= MAX_ZONE_DRIFT_HOURS * 60 * 60 * 1000) return savedZone;
+   }
    return fromCountry ?? DEFAULT_TIMEZONE;
 };
 

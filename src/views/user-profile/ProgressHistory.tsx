@@ -29,6 +29,7 @@ import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
+import { getLoanPastDueAt, isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { getCreditTierKey, getNextCreditTier, isExactCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
@@ -238,6 +239,7 @@ const eventIcons: Partial<Record<string, LucideIcon>> = {
    loan_repaid_early: Check,
    loan_repaid_late: Clock3,
    defaulted_loan: AlertTriangle,
+   repayment_in_progress: Clock3,
    credit_limit_unlocked: Star,
    repeat_lender_relationship: Users,
    trust_building_focused_pattern: Lightbulb,
@@ -367,10 +369,12 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
       }
 
       if (loan.repaymentStatus === RepaymentStatus.PAID) {
-         const paidDate = normalizeDate(loan.updatedAt);
+         const paidDate = normalizeDate(loan.repaidAt ?? loan.updatedAt);
          const dueDate = normalizeDate(loan.dueDate);
          const isEarly = paidDate.getTime() < dueDate.getTime();
-         const isLate = paidDate.getTime() > dueDate.getTime();
+         // Only "late" a few days past the borrower's deadline: payments can be held up by tech issues.
+         const isLate = wasRepaidPublicLate(loan.dueDate, paidDate, loan.dueTimezone);
+         const deadline = getLoanPastDueAt(loan.dueDate, loan.dueTimezone);
 
          events.push({
             id: `${loan.id}-repaid`,
@@ -383,7 +387,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
             description: isEarly
                ? `${classification === 'credit' ? 'Credit Building' : 'Trust Building'} loan closed before due date.`
                : isLate
-                 ? `Loan repaid ${Math.max(1, daysBetween(dueDate, paidDate))} day${Math.max(1, daysBetween(dueDate, paidDate)) === 1 ? '' : 's'} after the due date.`
+                 ? `Loan repaid ${Math.max(1, daysBetween(deadline, paidDate))} day${Math.max(1, daysBetween(deadline, paidDate)) === 1 ? '' : 's'} after the due date.`
                  : 'Remaining balance repaid on time.',
             date: loan.updatedAt,
             amount: repaymentAmount,
@@ -409,7 +413,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
                currentCreditLimit = nextLimit;
             }
          }
-      } else if (normalizeDate(loan.dueDate).getTime() < Date.now()) {
+      } else if (isPublicDefault(loan.dueDate, loan.dueTimezone)) {
          events.push({
             id: `${loan.id}-defaulted`,
             type: 'defaulted_loan',
@@ -420,6 +424,19 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
             badgeLabel: 'Default',
             badgeTone: 'red',
             tone: 'red'
+         });
+      } else if (isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone)) {
+         // Just past the deadline: give it a few days before calling it a default.
+         events.push({
+            id: `${loan.id}-repayment-in-progress`,
+            type: 'repayment_in_progress',
+            title: 'Repayment In Progress',
+            description: 'The due date has passed and the repayment is being processed.',
+            date: loan.dueDate,
+            amount: Math.max(0, repaymentAmount - repaidAmount),
+            badgeLabel: 'In progress',
+            badgeTone: 'neutral',
+            tone: 'neutral'
          });
       }
    });
@@ -492,7 +509,7 @@ export default function ProgressHistory() {
       (loan) =>
          loan.loanStatus === LoanStatus.LENT &&
          loan.repaymentStatus !== RepaymentStatus.PAID &&
-         normalizeDate(loan.dueDate).getTime() < Date.now()
+         isPublicDefault(loan.dueDate, loan.dueTimezone)
    ).length;
    const isGoodStanding = defaultCount === 0;
 

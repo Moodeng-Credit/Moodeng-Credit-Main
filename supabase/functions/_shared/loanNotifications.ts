@@ -106,7 +106,7 @@ const formatTrustPoints = (pointsTotal: number | string | null | undefined) => {
    return `${formattedPoints} pts`;
 };
 
-const formatDate = (dateValue: string | null) => {
+const formatDate = (dateValue: string | null, zone: 'UTC' | 'Asia/Manila' = 'UTC') => {
    if (!dateValue) {
       return 'N/A';
    }
@@ -116,15 +116,14 @@ const formatDate = (dateValue: string | null) => {
       return 'N/A';
    }
 
+   // Date only: borrowers and lenders never see a clock time. A due date is a calendar date stored
+   // as midnight UTC, so it's read in UTC; a moment (funded / paid / posted) is read on the Manila
+   // calendar, where most borrowers are.
    return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-      timeZone: 'UTC',
-      timeZoneName: 'short'
+      timeZone: zone
    }).format(parsedDate);
 };
 
@@ -559,7 +558,7 @@ const buildFundedContent = (loan: LoanNotificationLoan, recipient: LoanNotificat
    const formattedLoanAmount = formatUsdcAmount(loan.loan_amount);
    const formattedTotalRepayment = formatUsdcAmount(loan.total_repayment_amount);
    const formattedDueDate = formatDate(loan.due_date);
-   const formattedFundedDate = formatDate(loan.funded_at);
+   const formattedFundedDate = formatDate(loan.funded_at, 'Asia/Manila');
    const trustPointHighlight = buildTrustPointHighlight(recipient, {
       potential: 'Repay this loan on time to unlock eligible milestones.',
       fallback: 'Repay on time to build your borrower record.',
@@ -776,7 +775,7 @@ For help, contact support@moodeng.app`);
 const buildRepaymentReceivedContent = (loan: LoanNotificationLoan, recipient: LoanNotificationRecipient): EmailContent => {
    const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
    const formattedDueDate = formatDate(loan.due_date);
-   const formattedPaidDate = formatDate(loan.updated_at ?? null);
+   const formattedPaidDate = formatDate(loan.updated_at ?? null, 'Asia/Manila');
    const trustPointHighlight = buildTrustPointHighlight(
       {
          ...recipient,
@@ -824,7 +823,7 @@ For help, contact support@moodeng.app`);
 
 const buildRequestExpiredContent = (loan: LoanNotificationLoan, recipient: LoanNotificationRecipient): EmailContent => {
    const requestedAmount = formatUsdcAmount(loan.loan_amount);
-   const postedDate = formatDate(loan.created_at ?? null);
+   const postedDate = formatDate(loan.created_at ?? null, 'Asia/Manila');
    const supportLink = buildSupportLink();
    const text = normalizeNotificationText(`Hi ${getRecipientName(recipient)},
 Your loan request ${loan.tracking_id} expired before it was funded.
@@ -969,7 +968,7 @@ export const buildLoanNotificationTelegram = (
       const text = normalizeNotificationText(`Loan funded
 Hi ${name}, your request for ${formatUsdcAmount(loan.loan_amount)} (${loan.tracking_id}) was funded by ${
          loan.lender_username ?? 'a lender'
-      } on ${formatDate(loan.funded_at)}.
+      } on ${formatDate(loan.funded_at, 'Asia/Manila')}.
 Repay ${formatUsdcAmount(loan.total_repayment_amount)} by ${formatDate(loan.due_date)} to stay in good standing.
 ${actionUrl}`);
 
@@ -1105,7 +1104,7 @@ export const buildLenderRepaymentEmail = (
 ) => {
    const borrowerName = borrower.username?.trim() || borrower.telegram_username?.trim().replace(/^@/, '') || 'A borrower';
    const amountRepaid = formatUsdcAmount(loan.repaid_amount ?? loan.total_repayment_amount);
-   const formattedPaidDate = formatDate(loan.updated_at ?? null);
+   const formattedPaidDate = formatDate(loan.updated_at ?? null, 'Asia/Manila');
    const dashboardLink = buildDashboardLink();
    const fundingWallet = shortenWallet(loan.lender_wallet);
    const hashes = Array.isArray(loan.hash) ? loan.hash : [];

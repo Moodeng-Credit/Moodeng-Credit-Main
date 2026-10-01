@@ -48,9 +48,9 @@ function getLoanDisplayStatus(loan: Loan): LoanDisplayStatus {
    if (loan.refundedAt) return isOffPlatformSettledRefund(loan) ? 'REPAID' : 'REFUNDED';
    if (loan.repaymentStatus === 'Paid') return 'REPAID';
    if (loan.loanStatus === 'Requested') return 'PENDING';
-   // Only a loss once the loan is past its 24h grace window (borrowers span time
-   // zones) — a loan whose repayment is simply due is not yet a loss.
-   if (isLoanPastDue(loan.dueDate)) return 'DEFAULT';
+   // Only a loss once the borrower's due day is over in their zone (and at least 24h past the
+   // stored date) — a loan whose repayment is simply due is not yet a loss.
+   if (isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone)) return 'DEFAULT';
    return 'ACTIVE';
 }
 

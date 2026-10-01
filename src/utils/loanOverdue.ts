@@ -1,3 +1,5 @@
+import { DEFAULT_LOAN_TIMEZONE, getDueDayEnd, isUsableTimezone } from '@/lib/loanDeadline';
+
 import { parseDateSafely } from './dateFormatters';
 
 /**
@@ -16,11 +18,48 @@ export const LOAN_OVERDUE_GRACE_HOURS = 24;
 const GRACE_MS = LOAN_OVERDUE_GRACE_HOURS * 60 * 60 * 1000;
 
 /**
- * Returns true once a loan is more than the grace window past its due date — i.e.
- * it is genuinely a loss. A loan whose repayment is simply due (within the last
- * {@link LOAN_OVERDUE_GRACE_HOURS} hours) is NOT yet past due.
+ * The moment a loan counts as overdue / a loss: the later of the stored due date + 24h and the end
+ * of the borrower's due day in their zone (`loans.due_timezone`, else Manila). Same moment as the
+ * on-time rule for points (app_private.is_loan_repaid_on_time), so Manila is unchanged and borrowers
+ * west of UTC keep their whole day.
  */
-export const isLoanPastDue = (dueDate: string | Date | null | undefined, now: Date = new Date()): boolean => {
-   if (!dueDate) return false;
-   return parseDateSafely(dueDate).getTime() + GRACE_MS <= now.getTime();
+export const getLoanPastDueAt = (dueDate: string | Date, dueTimezone?: string | null): Date => {
+   const graced = parseDateSafely(dueDate).getTime() + GRACE_MS;
+   const zone = isUsableTimezone(dueTimezone) ? dueTimezone : DEFAULT_LOAN_TIMEZONE;
+   return new Date(Math.max(graced, getDueDayEnd(dueDate, zone).getTime()));
 };
+
+/**
+ * Returns true once a loan is past {@link getLoanPastDueAt} — i.e. it is genuinely a loss. A loan
+ * whose repayment is simply due today is NOT yet past due.
+ */
+export const isLoanPastDue = (
+   dueDate: string | Date | null | undefined,
+   now: Date = new Date(),
+   dueTimezone?: string | null
+): boolean => {
+   if (!dueDate) return false;
+   return getLoanPastDueAt(dueDate, dueTimezone).getTime() <= now.getTime();
+};
+
+/** Days we wait past the deadline before calling a loan "late" / "default" in public, in case of tech issues. */
+export const PUBLIC_LATE_GRACE_DAYS = 3;
+const PUBLIC_GRACE_MS = PUBLIC_LATE_GRACE_DAYS * 24 * 60 * 60 * 1000;
+
+/** The moment public labels (profile, history) may say "Late" / "Default". */
+export const getPublicLateAt = (dueDate: string | Date, dueTimezone?: string | null): Date =>
+   new Date(getLoanPastDueAt(dueDate, dueTimezone).getTime() + PUBLIC_GRACE_MS);
+
+/** Unpaid and more than {@link PUBLIC_LATE_GRACE_DAYS} days past the deadline. */
+export const isPublicDefault = (
+   dueDate: string | Date | null | undefined,
+   dueTimezone?: string | null,
+   now: Date = new Date()
+): boolean => !!dueDate && getPublicLateAt(dueDate, dueTimezone).getTime() <= now.getTime();
+
+/** Repaid more than {@link PUBLIC_LATE_GRACE_DAYS} days past the deadline. */
+export const wasRepaidPublicLate = (
+   dueDate: string | Date | null | undefined,
+   paidAt: string | Date | null | undefined,
+   dueTimezone?: string | null
+): boolean => !!dueDate && !!paidAt && parseDateSafely(paidAt).getTime() >= getPublicLateAt(dueDate, dueTimezone).getTime();
