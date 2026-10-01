@@ -155,7 +155,7 @@ export const recordCallOutcome = async (
    // A no-show parks their open request (database trigger); say which one, to them and the team.
    const held = outcome === 'no_show' ? await describeHeldRequests(svc, userId) : '';
    if (outcome === 'no_show') {
-      await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held ? 'missed_call_request_paused' : 'missed_call');
+      await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held.includes('until they attend') ? 'missed_call_request_waiting' : held ? 'missed_call_request_paused' : 'missed_call');
    }
 
    const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}`;

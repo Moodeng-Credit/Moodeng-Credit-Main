@@ -110,12 +110,14 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status')
+         .select('id, loan_amount, coin, reason, borrower_user_id, loan_status, on_hold_since')
          .eq('id', loanId)
          .maybeSingle();
       if (loanError) throw new Error(loanError.message);
       if (!loan) return json({ error: 'Loan not found' }, 404);
       if (loan.loan_status !== 'Requested') return json({ message: 'Loan is not an active request.' });
+      // On hold (waiting for their first video call, or a no-show): lenders aren't pinged until it's released.
+      if (loan.on_hold_since) return json({ message: 'Loan request is on hold; lenders are pinged once it is released.' });
 
       const { data: borrower } = loan.borrower_user_id
          ? await supabase.from('users').select('username').eq('id', loan.borrower_user_id).maybeSingle()

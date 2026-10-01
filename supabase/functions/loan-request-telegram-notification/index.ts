@@ -125,7 +125,7 @@ serve(async (req) => {
 
       const { data: loan, error: loanError } = await supabase
          .from('loans')
-         .select('id, tracking_id, loan_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status')
+         .select('id, tracking_id, loan_amount, coin, due_date, created_at, reason, borrower_user_id, loan_status, on_hold_since, on_hold_reason')
          .eq('id', loanId)
          .maybeSingle();
 
@@ -153,7 +153,14 @@ serve(async (req) => {
       if (historyError) throw new Error(historyError.message);
 
       const loanUrl = buildLoanUrl(loan.id);
-      const message = buildTelegramLoanRequestMessage(loan, history ?? [], borrower, loanUrl);
+      // A request on hold isn't shown to lenders yet: tell the team why, and don't broadcast it.
+      const holdNote =
+         loan.on_hold_since && loan.on_hold_reason === 'awaiting_call'
+            ? '⏸ On hold until their video call: not shown to lenders. It goes live (and lenders are pinged) when you tap ✅ Showed up.\n\n'
+            : loan.on_hold_since
+              ? '⏸ On hold (missed their video call): not shown to lenders until they book a new call.\n\n'
+              : '';
+      const message = holdNote + buildTelegramLoanRequestMessage(loan, history ?? [], borrower, loanUrl);
 
       if (dryRun) {
          return new Response(JSON.stringify({ message, loanUrl }), {
@@ -184,6 +191,13 @@ serve(async (req) => {
          },
          { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
       );
+
+      if (holdNote) {
+         return new Response(JSON.stringify({ message: 'Team notified; request is on hold, so no lender broadcast' }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+         });
+      }
 
       // 2) Public lender-group broadcast — only when explicitly enabled.
       const enabled = (await getSetting(supabase, 'lender_notifications_enabled')) === 'true';

@@ -233,6 +233,12 @@ const BORROWER_MESSAGES = {
       body: "Your Moodeng video call didn't happen, so your loan request is paused for now. Book a new time and it goes straight back on the board.",
       url: `${SITE_URL}/request-board`
    },
+   // Unreferred first-timer: their request only goes up once they've attended a call.
+   missed_call_request_waiting: {
+      title: 'We missed you on the call',
+      body: "Your Moodeng video call didn't happen, so your loan request isn't showing to lenders yet. Tap to book a new time — once we've met on the call, your request goes on the board.",
+      url: APPLY_URL
+   },
    expired: {
       title: 'Still want to borrow with Moodeng?',
       body: "We didn't get to finish connecting. Tap Apply for a loan to reach out again — it only takes a minute.",

@@ -767,17 +767,28 @@ export default function UserCard(loan: UserCardProps) {
                ) : isOwnLoan && loanData.onHoldSince && loanData.loanStatus === 'Requested' ? (
                   // Hidden from lenders until they rebook; booking a new call puts it straight back.
                   <div className="flex flex-col gap-md-2 rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] p-md-3">
-                     <p className="text-md-b2 font-semibold text-[#8a5300]">On hold: book a new call to put it back</p>
-                     <p className="text-md-b3 text-[#8a5300]">
-                        We missed you on your video call, so lenders can&apos;t see this request for now. It goes straight back on the board
-                        once you&apos;ve booked.
-                     </p>
+                     {loanData.onHoldReason === 'awaiting_call' ? (
+                        <>
+                           <p className="text-md-b2 font-semibold text-[#8a5300]">Waiting for your video call</p>
+                           <p className="text-md-b3 text-[#8a5300]">
+                              Lenders will see this request after your short video call with us. Haven&apos;t booked yet, or need a new time?
+                           </p>
+                        </>
+                     ) : (
+                        <>
+                           <p className="text-md-b2 font-semibold text-[#8a5300]">On hold: book a new call to put it back</p>
+                           <p className="text-md-b3 text-[#8a5300]">
+                              We missed you on your video call, so lenders can&apos;t see this request for now. It goes straight back on the board
+                              once you&apos;ve booked.
+                           </p>
+                        </>
+                     )}
                      <button
                         type="button"
                         onClick={() => setShowRebook(true)}
                         className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
                      >
-                        Book a new call
+                        {loanData.onHoldReason === 'awaiting_call' ? 'Book or change your call' : 'Book a new call'}
                      </button>
                   </div>
                ) : isOwnLoan ? (
