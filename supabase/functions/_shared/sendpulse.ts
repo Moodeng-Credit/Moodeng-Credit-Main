@@ -178,7 +178,21 @@ export const sendMessengerMessage = async (
    try {
       const contact = await getMessengerContact(contactId);
       if (!contact) return { ok: false, reason: 'contact_not_found' };
-      if (!isInsideMessagingWindow(contact)) return { ok: false, reason: 'outside_24h_window' };
+      // Unsubscribed or disabled: never message them.
+      const status = Number(contact.status);
+      if (contact.status !== undefined && contact.status !== null && (status === 2 || status === 3)) {
+         return { ok: false, reason: 'unsubscribed' };
+      }
+      // Our own 24h check is advisory only. On 2026-10-01 it said "closed" for every send to a borrower
+      // who had messaged the Page 34 seconds earlier, so funded, no-show and reminder messages were all
+      // silently dropped. SendPulse and Meta enforce the window themselves and reject anything outside
+      // it (postSend logs their answer), so send, and log what the contact looked like when our check
+      // disagreed.
+      if (!isInsideMessagingWindow(contact)) {
+         console.log(
+            `[sendpulse] window check says closed (status=${JSON.stringify(contact.status)}, last_activity_at=${JSON.stringify(contact.last_activity_at)}, unsubscribed_at=${JSON.stringify(contact.unsubscribed_at)}); sending anyway`
+         );
+      }
 
       const token = await getToken();
       if (!token) return { ok: false, reason: 'auth_failed' };
