@@ -14,9 +14,11 @@ import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { BORROWER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isPreviewHost } from '@/lib/previewHost';
 import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
+import { getVerificationUiState } from '@/lib/verificationUiState';
 import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import {
+   ConnectFacebookBanner,
    ConnectWalletBanner,
    TurnOnRemindersBanner,
    VerifyIdentityBanner,
@@ -116,6 +118,9 @@ export default function DashboardV2() {
    const isLoading = isReal && !isReady;
    const isBorrower = useIsBorrower();
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
+   const authUser = useSelector((state: RootState) => state.auth.user);
+   // In manual review without a confirmed Facebook/WhatsApp line: point them back to the Facebook step.
+   const showConnectFacebook = isReal && getVerificationUiState(authUser) === 'review' && !authUser?.hasVerifiedContact;
    const push = usePushNotifications(isReal ? userId : null);
    // Borrowers with something to repay who haven't allowed push. Only permission is checked (not the
    // subscription, which resolves asynchronously) so the card never flashes for someone who has it on.
@@ -207,6 +212,7 @@ export default function DashboardV2() {
                      </div>
                   ) : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
+                  {showConnectFacebook ? <ConnectFacebookBanner language={language} onConnect={() => navigate('/verify')} /> : null}
                   {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
                   {showRemindersBanner ? (
