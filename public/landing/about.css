@@ -794,6 +794,20 @@
    transition-delay: 210ms;
 }
 
+/* Celeste: same story layout as the founders, photo on the left like Emma's. */
+.founder-celeste {
+   background: var(--story-paper);
+}
+
+.founder-celeste .founder-photo-wrap,
+.founder-celeste .founder-media figcaption {
+   max-width: 450px;
+}
+
+.founder-celeste .founder-photo-wrap img {
+   object-position: 50% 24%;
+}
+
 @media (hover: hover) and (pointer: fine) {
    .founder-photo-wrap::before,
    .founder-photo-wrap img {

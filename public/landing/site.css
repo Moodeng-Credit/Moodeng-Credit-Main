@@ -2453,6 +2453,10 @@ li {
    object-fit: cover;
 }
 
+.stack-lg > .person-row + .person-row {
+   margin-top: 20px;
+}
+
 .person b,
 .person small {
    display: block;
