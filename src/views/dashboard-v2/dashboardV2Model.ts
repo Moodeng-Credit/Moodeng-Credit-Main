@@ -1,7 +1,6 @@
-import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
+import { formatCurrency, formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { CREDIT_TIERS, getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
-import { isRepaidOnTime } from '@/lib/creditLeveling';
+import { getCreditLevelNumber, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import type { ClaimableVoucher, MyRewards, VoucherReward } from '@/lib/friendReferrals';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
@@ -64,33 +63,29 @@ export const getMoodengMood = ({
    return 'waiting';
 };
 
-/** Same on-time rule `buildCreditLevels` uses to unlock tiers (fully repaid, on time, not refunded). */
-export const getOnTimeRepaidTotal = (loans: Loan[]): number =>
-   loans
-      .filter((loan) => {
-         if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
-         const repaidAmount = toNumber(loan.repaidAmount);
-         const totalRepayment = toNumber(loan.totalRepaymentAmount);
-         const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
-         return isFullyRepaid && isRepaidOnTime(loan.repaidAt ?? loan.updatedAt, loan.dueDate);
-      })
-      .reduce((sum, loan) => sum + toNumber(loan.loanAmount), 0);
+/**
+ * The borrower's open full-limit (credit-building) loan, if any: funded and not yet fully repaid, at or
+ * above the current limit. Repaying it in full is what unlocks the next level.
+ */
+const findOpenFullLimitLoan = (loans: Loan[], creditLimit: number): Loan | undefined =>
+   loans.find(
+      (loan) =>
+         loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && !loan.refundedAt && toNumber(loan.loanAmount) >= creditLimit
+   );
 
 /**
- * Credit level + progress toward the next one. A tier unlocks once the cumulative on-time repaid
- * amount reaches the previous tier's limit (see `buildCreditLevels`), so the gap to the next level is
- * `currentTier - onTimeRepaidTotal`.
+ * Credit level + what it takes to reach the next one. Only a full-limit loan, fully repaid, unlocks the
+ * next level — smaller (trust-building) loans never do, however much they add up to — so the hint is
+ * either "borrow your full limit" or, while that loan is out, how much of it is left to repay.
  */
 export const getCreditLevelProgress = ({
    creditLimit,
    isVerified,
-   onTimeRepaidTotal,
-   isPaused
+   loans
 }: {
    creditLimit: number;
    isVerified: boolean;
-   onTimeRepaidTotal: number;
-   isPaused: boolean;
+   loans: Loan[];
 }): { level: number; progress: number; hint: CreditLevelHint } => {
    if (!isVerified || creditLimit <= 0) {
       return { level: 0, progress: 0, hint: { highlight: 'Verify', rest: ' to unlock LV.1' } };
@@ -102,17 +97,17 @@ export const getCreditLevelProgress = ({
       return { level, progress: 1, hint: { highlight: 'Top', rest: ' level reached' } };
    }
 
-   const tierIndex = level - 1;
-   const floor = tierIndex > 0 ? CREDIT_TIERS[tierIndex - 1] : 0;
-   const target = CREDIT_TIERS[tierIndex];
-   const remaining = Math.max(target - onTimeRepaidTotal, 0);
-   const progress = target > floor ? Math.min(Math.max((onTimeRepaidTotal - floor) / (target - floor), 0), 1) : 0;
-
-   if (isPaused) {
-      return { level, progress, hint: { highlight: 'Paused', rest: ' · repay on time to resume' } };
+   const nextLevel = ` LV.${level + 1}`;
+   const openLoan = findOpenFullLimitLoan(loans, creditLimit);
+   if (openLoan) {
+      const total = toNumber(openLoan.totalRepaymentAmount);
+      const repaid = toNumber(openLoan.repaidAmount);
+      const remaining = Math.max(total - repaid, 0);
+      const progress = total > 0 ? Math.min(Math.max(repaid / total, 0), 1) : 0;
+      return { level, progress, hint: { highlight: `$${formatCurrency(remaining)}`, rest: ` left to repay for${nextLevel}` } };
    }
 
-   return { level, progress, hint: { highlight: `$${formatCurrency(remaining)}`, rest: ` left to LV.${level + 1}` } };
+   return { level, progress: 0, hint: { highlight: `$${formatNumber(creditLimit)}`, rest: ` full-limit loan unlocks${nextLevel}` } };
 };
 
 /** The designer's shorter titles for the shared milestones (same rules, same points). */

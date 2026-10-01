@@ -20,7 +20,6 @@ import {
    getMoodengMood,
    getMoodengTier,
    getNextTierGoal,
-   getOnTimeRepaidTotal,
    toDashboardV2MilestoneList,
    toDashboardV2Milestones
 } from '@/views/dashboard-v2/dashboardV2Model';
@@ -89,8 +88,7 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
       const credit = getCreditLevelProgress({
          creditLimit,
          isVerified,
-         onTimeRepaidTotal: getOnTimeRepaidTotal(borrowerLoans),
-         isPaused: Boolean(user.creditProgressionPaused)
+         loans: borrowerLoans
       });
       const dues: DashboardV2Due[] = dueLoans.map(({ loan, isOverdue }) => {
          const lender = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;

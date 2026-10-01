@@ -261,7 +261,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             <div className="absolute left-[calc(50%-43px)] top-[384px] z-10 w-[167px]" role="tooltip">
                <span className="absolute left-[17px] top-0 h-0 w-0 border-x-[7px] border-b-[8px] border-x-transparent border-b-[#34268e]/80" />
                <p className="mt-1.5 rounded-[10px] bg-[#34268e]/80 px-[7px] py-[6px] text-[14px] font-medium leading-[14px] text-white">
-                  Unlock higher limits by repaying on time.
+                  Repay a full-limit loan to unlock the next level.
                </p>
             </div>
          ) : null}

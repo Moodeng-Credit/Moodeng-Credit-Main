@@ -271,8 +271,8 @@ const awardFundingPoints = async (admin: Admin, loan: Record<string, unknown>): 
 };
 
 // Mirrors the repay-branch credit-progression logic that used to run in updateLoanStatus: on a
-// fully-repaid loan, level up the borrower's credit limit (or pause it if late). This is now the
-// ONLY writer of users.cs / credit_progression_paused once the Phase 3 lock lands.
+// fully-repaid full-limit loan, level up the borrower's credit limit. This is the ONLY writer of
+// users.cs once the Phase 3 lock lands.
 const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown>): Promise<SideEffectError[]> => {
    const errors: SideEffectError[] = [];
    const borrowerId = loan.borrower_user_id as string | null;
@@ -280,7 +280,7 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
 
    const { data: borrower, error: borrowerError } = await admin
       .from('users')
-      .select('id, cs, is_world_id, is_didit, credit_progression_paused')
+      .select('id, cs, is_world_id, is_didit')
       .eq('id', borrowerId)
       .single();
    if (borrowerError || !borrower) {
@@ -294,7 +294,6 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       // frontend isUserVerified(). Didit is the majority path; gating on World ID alone stalled
       // Didit-verified borrowers' credit-limit growth (this is the authoritative writer).
       isVerified: borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE',
-      isPaused: borrower.credit_progression_paused ?? false,
       repaidAmount: toNumber(loan.repaid_amount as number | string | null),
       totalRepaymentAmount: toNumber(loan.total_repayment_amount as number | string | null),
       loanAmount: toNumber(loan.loan_amount as number | string | null),
@@ -302,18 +301,8 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
    });
 
-   const userUpdates: Record<string, unknown> = {};
-   if (evaluation.shouldPause && !borrower.credit_progression_paused) userUpdates.credit_progression_paused = true;
-   // Recovery: a clean, on-time full repayment un-latches a previously paused borrower so future
-   // repayments can level them up again. Without this, a single (or falsely-flagged) late payment
-   // freezes credit progression permanently.
-   if (!evaluation.isLate && evaluation.isFullyRepaid && borrower.credit_progression_paused) {
-      userUpdates.credit_progression_paused = false;
-   }
-   if (evaluation.shouldLevelUp) userUpdates.cs = evaluation.nextLimit;
-
-   if (Object.keys(userUpdates).length > 0) {
-      const { error: userUpdateError } = await admin.from('users').update(userUpdates).eq('id', borrower.id);
+   if (evaluation.shouldLevelUp) {
+      const { error: userUpdateError } = await admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
       if (userUpdateError) errors.push({ type: 'credit_progression', message: userUpdateError.message });
    }
    return errors;

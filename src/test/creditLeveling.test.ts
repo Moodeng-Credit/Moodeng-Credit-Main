@@ -3,6 +3,8 @@ import { createElement, createRef, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+import { formatDate } from '@/utils/dateFormatters';
+
 import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
@@ -98,7 +100,6 @@ describe('Credit leveling logic', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 15,
          isVerified: true,
-         isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
          loanAmount: 15,
@@ -114,7 +115,6 @@ describe('Credit leveling logic', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 20,
          isVerified: true,
-         isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
          loanAmount: 20,
@@ -126,11 +126,10 @@ describe('Credit leveling logic', () => {
       expect(evaluation.nextLimit).toBe(40);
    });
 
-   it('pauses progression for late repayments and blocks level up', () => {
+   it('still levels up a full-limit loan that was repaid late', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 20,
          isVerified: true,
-         isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
          loanAmount: 20,
@@ -138,7 +137,22 @@ describe('Credit leveling logic', () => {
          paidAt: '2025-02-03T00:00:00.000Z'
       });
 
-      expect(evaluation.shouldPause).toBe(true);
+      expect(evaluation.isLate).toBe(true);
+      expect(evaluation.shouldLevelUp).toBe(true);
+      expect(evaluation.nextLimit).toBe(40);
+   });
+
+   it('does not level up until the full-limit loan is fully repaid', () => {
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 20,
+         isVerified: true,
+         repaidAmount: 10,
+         totalRepaymentAmount: 25,
+         loanAmount: 20,
+         dueDate: '2025-02-01T00:00:00.000Z',
+         paidAt: '2025-01-31T00:00:00.000Z'
+      });
+
       expect(evaluation.shouldLevelUp).toBe(false);
    });
 
@@ -146,7 +160,6 @@ describe('Credit leveling logic', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 20,
          isVerified: true,
-         isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
          loanAmount: 20,
@@ -156,7 +169,6 @@ describe('Credit leveling logic', () => {
       });
 
       expect(evaluation.isLate).toBe(false);
-      expect(evaluation.shouldPause).toBe(false);
       expect(evaluation.shouldLevelUp).toBe(true);
    });
 
@@ -165,7 +177,6 @@ describe('Credit leveling logic', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 20,
          isVerified: true,
-         isPaused: false,
          repaidAmount: 20,
          totalRepaymentAmount: 20,
          loanAmount: 17,
@@ -174,7 +185,6 @@ describe('Credit leveling logic', () => {
       });
 
       expect(evaluation.isFullyRepaid).toBe(true);
-      expect(evaluation.shouldPause).toBe(false);
       expect(evaluation.shouldLevelUp).toBe(false);
    });
 
@@ -182,7 +192,6 @@ describe('Credit leveling logic', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 40,
          isVerified: true,
-         isPaused: false,
          repaidAmount: 50,
          totalRepaymentAmount: 50,
          loanAmount: 45,
@@ -344,7 +353,7 @@ describe('Dashboard credit level carousel', () => {
 
       expect(tiers).toHaveLength(8);
       expect(tiers[0].unlocked).toBe(true);
-      expect(tiers[1].unlockRequirement).toContain('Fully repay $15 total on time');
+      expect(tiers[1].unlockRequirement).toBe('Borrow & repay the full $15 to unlock');
    });
 
    it('builds tiers for an experienced user with multiple repayments', () => {
@@ -364,7 +373,7 @@ describe('Dashboard credit level carousel', () => {
       });
 
       expect(tiers.find((tier) => tier.amount === 60)?.unlocked).toBe(true);
-      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toContain('Fully repay $60 total on time');
+      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toBe('Borrow & repay the full $60 to unlock');
    });
 
    it('locks tiers for unverified users', () => {
@@ -377,13 +386,18 @@ describe('Dashboard credit level carousel', () => {
       expect(tiers[0].unlockRequirement).toContain('Verify World ID');
    });
 
-   it('shows progression paused state for late repayments', () => {
+   it('dates each unlocked tier by the full-limit loan that unlocked it, skipping trust-building loans', () => {
       const tiers = buildCreditLevels({
-         user: { ...baseUser, cs: 40, creditProgressionPaused: true },
-         loans: []
+         user: { ...baseUser, cs: 40 },
+         loans: [
+            createLoan({ id: 'full-15', loanAmount: 15, updatedAt: '2025-01-10T00:00:00.000Z' }),
+            createLoan({ id: 'trust-17', loanAmount: 17, updatedAt: '2025-02-10T00:00:00.000Z' }),
+            createLoan({ id: 'full-20', loanAmount: 20, updatedAt: '2025-03-10T00:00:00.000Z' })
+         ]
       });
 
-      expect(tiers.every((tier) => tier.progressionPaused)).toBe(true);
-      expect(tiers.find((tier) => !tier.unlocked)?.unlockRequirement).toContain('Progression Paused');
+      expect(tiers.find((tier) => tier.amount === 20)?.date).toBe(formatDate('2025-01-10T00:00:00.000Z'));
+      expect(tiers.find((tier) => tier.amount === 40)?.date).toBe(formatDate('2025-03-10T00:00:00.000Z'));
+      expect(tiers.find((tier) => tier.amount === 60)?.unlockRequirement).toBe('Borrow & repay the full $40 to unlock');
    });
 });

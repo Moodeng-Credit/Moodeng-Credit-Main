@@ -22,7 +22,6 @@ export interface CreditLevel {
    isMaxCredit?: boolean;
    unlockRequirement?: string;
    requestable?: boolean;
-   progressionPaused?: boolean;
 }
 
 export type RoleType = 'borrower' | 'lender';
