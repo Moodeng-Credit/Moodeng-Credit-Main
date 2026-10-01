@@ -302,7 +302,10 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
    });
 
    if (evaluation.shouldLevelUp) {
-      const { error: userUpdateError } = await admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
+      // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
+      // first raises the limit, so one full-limit loan can never level a borrower up twice.
+      const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
+      const { error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs));
       if (userUpdateError) errors.push({ type: 'credit_progression', message: userUpdateError.message });
    }
    return errors;
@@ -471,7 +474,9 @@ serve(async (req) => {
       const paidUsd = Number(transfer.micros) / 1e6;
       const newRepaidAmount = Math.min(Number(loan.repaid_amount ?? 0) + paidUsd, Number(loan.total_repayment_amount));
       const isFullyRepaid = newRepaidAmount >= Number(loan.total_repayment_amount) - 0.005;
-      updates.repaid_amount = newRepaidAmount;
+      // Fully repaid within the half-cent tolerance: record the exact total, so every "fully repaid"
+      // check downstream (credit level-up, milestones, Pandesal points) agrees this loan is paid off.
+      updates.repaid_amount = isFullyRepaid ? Number(loan.total_repayment_amount) : newRepaidAmount;
       updates.repayment_status = isFullyRepaid ? 'Paid' : 'Partial';
       if (isFullyRepaid) {
          updates.repaid_at = new Date().toISOString();

@@ -68,7 +68,7 @@ const loadTrustPointRewardData = async (supabase: SupabaseClient, borrowerId: st
    const { data: loans, error: loansError } = await supabase
       .from('loans')
       .select(
-         'id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status, repayment_status, updated_at'
+         'id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status, repayment_status, repaid_at, refunded_at, is_test, updated_at'
       )
       .eq('borrower_user_id', borrowerId);
 
@@ -150,7 +150,7 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, chat_id')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id')
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 

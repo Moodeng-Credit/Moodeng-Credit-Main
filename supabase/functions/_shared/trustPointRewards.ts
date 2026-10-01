@@ -9,12 +9,16 @@ export type TrustPointRewardLoan = {
    lender_user_id?: string | null;
    loan_status?: string | null;
    repayment_status?: string | null;
+   repaid_at?: string | null;
+   refunded_at?: string | null;
+   is_test?: boolean | null;
    updated_at?: string | null;
 };
 
 export type TrustPointRewardUser = {
    cs?: number | string | null;
    is_world_id?: string | boolean | null;
+   is_didit?: string | boolean | null;
 };
 
 export type TrustPointMilestoneDefinition = {
@@ -50,7 +54,17 @@ const toDateMs = (dateValue: string | null | undefined) => {
    return Number.isNaN(time) ? null : time;
 };
 
-const isPaid = (loan: TrustPointRewardLoan) => loan.repayment_status === 'Paid';
+// Mirrors app_private.is_loan_fully_repaid / is_loan_repaid_on_time in the database: a refund reads
+// back as 'Paid' (platform settlement even stamps repaid_amount to the total) but the borrower
+// defaulted, so refunded and test loans never count as repayments.
+const isPaid = (loan: TrustPointRewardLoan) => loan.repayment_status === 'Paid' && !loan.refunded_at && !loan.is_test;
+
+// Due dates are stored at midnight UTC; a loan stays on time through the whole due date.
+const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
+
+// When the loan was repaid. updated_at alone is unreliable: any later edit (interest return, admin
+// fixes) bumps it.
+const getPaidAtMs = (loan: TrustPointRewardLoan) => toDateMs(loan.repaid_at ?? loan.updated_at);
 
 const isFullyRepaid = (loan: TrustPointRewardLoan) => {
    const totalRepayment = toNumber(loan.total_repayment_amount);
@@ -64,10 +78,10 @@ const isPaidOnTime = (loan: TrustPointRewardLoan) => {
       return false;
    }
 
-   const paidAt = toDateMs(loan.updated_at);
+   const paidAt = getPaidAtMs(loan);
    const dueAt = toDateMs(loan.due_date);
 
-   return paidAt !== null && dueAt !== null && paidAt <= dueAt;
+   return paidAt !== null && dueAt !== null && paidAt < dueAt + OVERDUE_AFTER_DUE_DATE_MS;
 };
 
 // Replays the level-up rule: walking fully repaid loans in order from the starting limit, a loan at or
@@ -78,7 +92,7 @@ const getFullLimitLoans = (paidLoans: TrustPointRewardLoan[]) => {
    let replayLimit = CREDIT_TIERS[0];
 
    [...paidLoans.filter(isFullyRepaid)]
-      .sort((a, b) => (toDateMs(a.updated_at) ?? 0) - (toDateMs(b.updated_at) ?? 0))
+      .sort((a, b) => (getPaidAtMs(a) ?? 0) - (getPaidAtMs(b) ?? 0))
       .forEach((loan) => {
          if (toNumber(loan.loan_amount) < replayLimit) return;
          fullLimitLoans.add(loan);
@@ -108,7 +122,7 @@ const getEligibilityByMilestone = (
    });
    const fullLimitLoans = getFullLimitLoans(paidLoans);
    const creditLimit = toNumber(user.cs);
-   const isVerified = user.is_world_id === true || user.is_world_id === 'ACTIVE';
+   const isVerified = user.is_world_id === true || user.is_world_id === 'ACTIVE' || user.is_didit === true || user.is_didit === 'ACTIVE';
 
    return {
       'verify-identity': isVerified,
@@ -134,6 +148,7 @@ export const markLoansRepaid = (loans: TrustPointRewardLoan[], loanIds: string[]
               ...loan,
               repayment_status: 'Paid',
               repaid_amount: loan.total_repayment_amount ?? loan.repaid_amount ?? 0,
+              repaid_at: paidAtValue,
               updated_at: paidAtValue
            }
          : loan
@@ -149,6 +164,7 @@ export const markLoansUnpaid = (loans: TrustPointRewardLoan[], loanIds: string[]
               ...loan,
               repayment_status: 'Unpaid',
               repaid_amount: 0,
+              repaid_at: null,
               updated_at: loan.funded_at ?? loan.due_date ?? null
            }
          : loan
