@@ -23,6 +23,8 @@ export interface Loan {
    onHoldSince?: string;
    // Internal test loan: never counts toward milestones or points (same as the database).
    isTest?: boolean;
+   // Borrower's limit when this loan was fully repaid (server-recorded); principal >= this = full-limit loan.
+   creditLimitAtRepayment?: number;
    onHoldReason?: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions

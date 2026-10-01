@@ -91,7 +91,7 @@ const loadTrustPointRewardContext = async (
    const { data: loans, error: loansError } = await supabase
       .from('loans')
       .select(
-         'id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status, repayment_status, repaid_at, refunded_at, is_test, updated_at'
+         'id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status, repayment_status, repaid_at, refunded_at, is_test, due_timezone, credit_limit_at_repayment, updated_at'
       )
       .in('borrower_user_id', userIds);
 

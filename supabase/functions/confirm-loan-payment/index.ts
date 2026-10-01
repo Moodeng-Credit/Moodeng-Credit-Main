@@ -5,6 +5,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import {
    computeYearOneIouPointsDelta,
    evaluateCreditProgression,
+   getEffectiveCreditLimit,
    getYearOneIouBorrowerBonusPoints,
    LOAN_FUNDING_POINTS_PER_USDC,
    toNumber
@@ -302,12 +303,27 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
    });
 
+   // Record the limit this loan was measured against, so "was it a full-limit loan?" is a fact on the
+   // loan (the full-limit milestone reads it) instead of a reconstruction from history.
+   const isVerified = borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE';
+   if (evaluation.isFullyRepaid && isVerified) {
+      const { error: recordError } = await admin
+         .from('loans')
+         .update({ credit_limit_at_repayment: getEffectiveCreditLimit(borrower.cs ?? 0, true) })
+         .eq('id', loan.id as string)
+         .is('credit_limit_at_repayment', null);
+      if (recordError) errors.push({ type: 'credit_progression', message: `record limit: ${recordError.message}` });
+   }
+
    if (evaluation.shouldLevelUp) {
       // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
       // first raises the limit, so one full-limit loan can never level a borrower up twice.
       const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
-      const { error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs));
+      const { data: leveled, error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)).select('id');
       if (userUpdateError) errors.push({ type: 'credit_progression', message: userUpdateError.message });
+      // The limit changed between reading and writing (a race, a referral, an admin edit): say so
+      // rather than losing the level-up silently.
+      else if (!leveled?.length) errors.push({ type: 'credit_progression', message: 'level-up skipped: the limit changed during this repayment' });
    }
    return errors;
 };

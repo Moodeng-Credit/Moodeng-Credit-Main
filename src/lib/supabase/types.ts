@@ -81,6 +81,7 @@ export type Database = {
                borrower_user_id: string | null;
                borrower_wallet: string | null;
                coin: string;
+               credit_limit_at_repayment: number | null;
                created_at: string | null;
                due_date: string;
                due_timezone: string | null;
@@ -117,6 +118,7 @@ export type Database = {
                borrower_user_id?: string | null;
                borrower_wallet?: string | null;
                coin: string;
+               credit_limit_at_repayment?: number | null;
                created_at?: string | null;
                due_date: string;
                due_timezone?: string | null;
@@ -149,6 +151,7 @@ export type Database = {
                borrower_user_id?: string | null;
                borrower_wallet?: string | null;
                coin?: string;
+               credit_limit_at_repayment?: number | null;
                created_at?: string | null;
                due_date?: string;
                due_timezone?: string | null;

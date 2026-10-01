@@ -48,6 +48,10 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    dueTimezone: row.due_timezone ?? undefined,
    onHoldSince: row.on_hold_since ?? undefined,
    isTest: Boolean((row as { is_test?: boolean | null }).is_test),
+   creditLimitAtRepayment:
+      (row as { credit_limit_at_repayment?: number | null }).credit_limit_at_repayment == null
+         ? undefined
+         : Number((row as { credit_limit_at_repayment?: number | null }).credit_limit_at_repayment),
    onHoldReason: row.on_hold_reason ?? undefined,
    coin: row.coin,
    hash: row.hash,
