@@ -76,7 +76,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
          }
          requestable = isCurrentLimit;
       } else if (isNextTier) {
-         unlockRequirement = `Borrow your full $${currentLimit} limit and repay it to unlock this level`;
+         unlockRequirement = `Borrow & repay the full $${currentLimit} to unlock`;
          date = undefined;
       } else {
          unlockRequirement = 'Locked';

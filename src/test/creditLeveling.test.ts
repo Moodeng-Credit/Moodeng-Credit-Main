@@ -353,7 +353,7 @@ describe('Dashboard credit level carousel', () => {
 
       expect(tiers).toHaveLength(8);
       expect(tiers[0].unlocked).toBe(true);
-      expect(tiers[1].unlockRequirement).toContain('Borrow your full $15 limit');
+      expect(tiers[1].unlockRequirement).toBe('Borrow & repay the full $15 to unlock');
    });
 
    it('builds tiers for an experienced user with multiple repayments', () => {
@@ -373,7 +373,7 @@ describe('Dashboard credit level carousel', () => {
       });
 
       expect(tiers.find((tier) => tier.amount === 60)?.unlocked).toBe(true);
-      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toContain('Borrow your full $60 limit');
+      expect(tiers.find((tier) => tier.amount === 80)?.unlockRequirement).toBe('Borrow & repay the full $60 to unlock');
    });
 
    it('locks tiers for unverified users', () => {
@@ -398,6 +398,6 @@ describe('Dashboard credit level carousel', () => {
 
       expect(tiers.find((tier) => tier.amount === 20)?.date).toBe(formatDate('2025-01-10T00:00:00.000Z'));
       expect(tiers.find((tier) => tier.amount === 40)?.date).toBe(formatDate('2025-03-10T00:00:00.000Z'));
-      expect(tiers.find((tier) => tier.amount === 60)?.unlockRequirement).toContain('Borrow your full $40 limit');
+      expect(tiers.find((tier) => tier.amount === 60)?.unlockRequirement).toBe('Borrow & repay the full $40 to unlock');
    });
 });

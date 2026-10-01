@@ -43,7 +43,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditLevel: 0,
       creditLimit: 0,
       creditInUse: 0,
-      creditHint: { highlight: '$20', rest: ' left to LV.1' },
+      creditHint: { highlight: 'Verify', rest: ' to unlock LV.1' },
       summary: { repaymentsTotal: 0, active: 0, pending: 0, defaulted: 0 },
       dues: [],
       hasOverdue: false
@@ -56,7 +56,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditLevel: 1,
       creditLimit: 15,
       creditInUse: 6.68,
-      creditHint: { highlight: '$13.32', rest: ' left to LV.2' },
+      creditHint: { highlight: '$15', rest: ' full-limit loan unlocks LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 0 },
       dues: [
          { id: 'sample-due-1', amount: 5, daysRemaining: 5, lenderName: 'Maricar Cruz', isOverdue: false },
@@ -74,7 +74,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditLevel: 1,
       creditLimit: 15,
       creditInUse: 9.68,
-      creditHint: { highlight: '$10.32', rest: ' left to LV.2' },
+      creditHint: { highlight: '$15', rest: ' full-limit loan unlocks LV.2' },
       summary: { repaymentsTotal: 1, active: 5, pending: 1.68, defaulted: 3 },
       dues: [
          { id: 'sample-due-0', amount: 3, daysRemaining: 0, lenderName: 'Maricar Cruz', isOverdue: true },
@@ -92,7 +92,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditLevel: 2,
       creditLimit: 20,
       creditInUse: 0,
-      creditHint: { highlight: '$15.00', rest: ' left to LV.3' },
+      creditHint: { highlight: '$20', rest: ' full-limit loan unlocks LV.3' },
       milestones: REWARDED_ALL_MILESTONES.slice(0, 3),
       allMilestones: REWARDED_ALL_MILESTONES,
       summary: { repaymentsTotal: 18, active: 0, pending: 0, defaulted: 0 },
