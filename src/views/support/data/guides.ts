@@ -328,7 +328,7 @@ I-withdraw ang USDC mula sa exchange account mo diretso sa repayment address. Pi
 Bumili muna ng USDC, saka magbayad
 Kung wala ka pang USDC, bumili muna at ipadala ito sa wallet mo, saka magbayad mula roon:
 - Binance P2P: bumili ng USDC gamit ang local currency mula sa ibang user, tapos i-withdraw sa Base network.
-- Coins.ph: bumili ng USDC gamit ang PHP, tapos gamitin ang Send Crypto → External Wallet → Base network.
+- Coins.ph (pansamantalang naka-pause): bumili ng USDC gamit ang PHP, tapos gamitin ang Send Crypto → External Wallet → Base network.
 - GCrypto (GCash): kung naka-enable ang crypto sa GCash app mo, bumili ng USDC at i-withdraw gamit ang USDCBASE.
 - PDAX: bumili ng USDC gamit ang PHP at i-withdraw sa wallet mo sa Base.
 - Moneybees (external na opsyon): over-the-counter service na ginagamit ng ilang user para bumili ng crypto sa sariling proseso ng Moneybees. Sundin nang direkta ang mga tagubilin nila sa https://www.moneybees.ph/.
@@ -347,7 +347,7 @@ Binance P2P
 Bumili ng USDC gamit ang local currency diretso mula sa ibang user, tapos i-withdraw sa Base network.
 
 Mga serbisyo sa Pilipinas
-- Coins.ph: bumili ng USDC gamit ang PHP, tapos Send Crypto → External Wallet → Base network.
+- Coins.ph (pansamantalang naka-pause): bumili ng USDC gamit ang PHP, tapos Send Crypto → External Wallet → Base network.
 - PDAX: bumili ng USDC gamit ang PHP at i-withdraw sa wallet mo sa Base.
 - GCrypto (GCash): kung naka-enable ang crypto sa GCash app mo, bumili at i-withdraw gamit ang USDCBASE.
 
@@ -374,7 +374,8 @@ Ipadala ang USDC sa Binance account mo (laging piliin ang Base network), tapos i
 PDAX
 Isang Philippine exchange na regulated ng BSP. Mag-deposit ng USDC, ibenta ito para sa PHP, at i-withdraw sa bank account mo.
 
-Coins.ph
+Coins.ph (pansamantalang naka-pause)
+Pansamantalang sinuspinde ng gobyerno ng Pilipinas ang Coins.ph, kaya hindi gumagana ngayon ang cash-in at cash-out doon — mag-a-update kami agad kapag bumalik na ito. Gamitin muna ang PDAX o GCrypto.
 Mag-deposit ng USDC, i-convert sa PHP, at i-cash out sa bank o GCash mo.
 
 GCrypto (GCash)
