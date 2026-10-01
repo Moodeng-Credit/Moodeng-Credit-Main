@@ -23,12 +23,13 @@ export async function fetchDefaultedBorrowerSupport(userId: string): Promise<Def
    // Only loans past the 24h grace window count as defaulted — a loan due today (within grace) must
    // not flag the borrower, or they get bounced to /account-restricted and can't reach /repay to pay
    // it off. Mirrors the lender-side grace (PR #872/#873) and the loan-overdue-notifications job.
-   // calculateDefaultedBorrowerSupport re-applies the same graced check as a safety net.
+   // That 24h prefilter is safe: a loan is never past due sooner than due_date + 24h.
+   // calculateDefaultedBorrowerSupport then applies the end-of-their-day rule (due_timezone).
    const graceThreshold = new Date(Date.now() - LOAN_OVERDUE_GRACE_HOURS * 60 * 60 * 1000).toISOString();
    const supabase = getSupabaseBrowserClient();
    const { data, error } = await supabase
       .from('loans')
-      .select('due_date, loan_status, repayment_status, repaid_amount, total_repayment_amount')
+      .select('due_date, due_timezone, loan_status, repayment_status, repaid_amount, total_repayment_amount')
       .eq('borrower_user_id', userId)
       .eq('loan_status', 'Lent')
       .neq('repayment_status', 'Paid')

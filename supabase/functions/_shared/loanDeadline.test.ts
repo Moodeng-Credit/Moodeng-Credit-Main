@@ -85,3 +85,21 @@ Deno.test('the zone saved on the loan wins; UTC-like zones are ignored', () => {
    assertEquals(resolveTimezone('UTC', 'TH'), 'Asia/Bangkok');
 });
 
+
+Deno.test('resolveTimezone: a far-off device zone loses to the login country', () => {
+   const at = new Date('2026-10-02T00:00:00Z');
+   assertEquals(resolveTimezone('Pacific/Pago_Pago', 'PH', at), 'Asia/Manila');
+   assertEquals(resolveTimezone('America/Los_Angeles', 'PH', at), 'Asia/Manila');
+   // Within 3 hours of the country: kept (a Manila borrower whose phone says Bangkok or Tokyo).
+   assertEquals(resolveTimezone('Asia/Bangkok', 'PH', at), 'Asia/Bangkok');
+   assertEquals(resolveTimezone('Asia/Tokyo', 'PH', at), 'Asia/Tokyo');
+   // No known country: the device zone stands.
+   assertEquals(resolveTimezone('America/Los_Angeles', null, at), 'America/Los_Angeles');
+});
+
+Deno.test('isUsableTimezone rejects zone names JS and Postgres read differently', () => {
+   assertEquals(isUsableTimezone('posix/Asia/Manila'), false);
+   assertEquals(isUsableTimezone('Factory'), false);
+   assertEquals(isUsableTimezone('Asia/Manila'), true);
+   assertEquals(isUsableTimezone('America/Argentina/Buenos_Aires'), true);
+});

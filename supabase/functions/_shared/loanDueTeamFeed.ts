@@ -74,7 +74,7 @@ export const loadBorrowerTimezones = async (supabase: SupabaseClient, userIds: s
    }
 
    // Same order as app_private.resolve_user_timezone: device zone, then a booked call's zone, then the
-   // usual login country, then Manila.
+   // usual login country, then Manila — and a device/call zone more than 3h from that country loses to it.
    const saved = new Map<string, { timezone: string | null; video_call_timezone: string | null }>(
       ((users ?? []) as Array<{ id: string; timezone: string | null; video_call_timezone: string | null }>).map((user) => [user.id, user])
    );
@@ -82,7 +82,7 @@ export const loadBorrowerTimezones = async (supabase: SupabaseClient, userIds: s
    for (const id of ids) {
       const row = saved.get(id);
       const country = pickCountry(loginsByUser.get(id) ?? []);
-      zones.set(id, isUsableTimezone(row?.timezone) ? row.timezone : resolveTimezone(row?.video_call_timezone, country));
+      zones.set(id, resolveTimezone(isUsableTimezone(row?.timezone) ? row?.timezone : row?.video_call_timezone, country));
    }
    return zones;
 };

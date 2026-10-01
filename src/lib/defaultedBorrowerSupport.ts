@@ -3,6 +3,7 @@ import { isLoanPastDue } from '@/utils/loanOverdue';
 
 export type DefaultableLoan = {
    due_date: string | null;
+   due_timezone?: string | null;
    loan_status: string | null;
    repayment_status: string | null;
    repaid_amount: number | null;
@@ -28,11 +29,11 @@ export function calculateDefaultedBorrowerSupport(
          return summary;
       }
 
-      // A loan whose repayment is merely due (within the 24h grace window) is NOT yet a default.
+      // A loan whose repayment is merely due (the borrower's due day isn't over yet) is NOT a default.
       // Use the shared graced check so the borrower side matches the lender side (PR #872/#873) and
       // the backend loan-overdue-notifications job — otherwise a borrower repaying ON their due date
       // is wrongly flagged overdue and bounced to /account-restricted, unable to reach /repay.
-      if (!isLoanPastDue(loan.due_date, now)) {
+      if (!isLoanPastDue(loan.due_date, now, loan.due_timezone)) {
          return summary;
       }
 

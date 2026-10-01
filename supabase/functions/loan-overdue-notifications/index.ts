@@ -244,18 +244,15 @@ const getEarliestDueDate = (loans: Array<LoanNotificationLoan & { id: string }>)
       .filter((dueDate): dueDate is string => Boolean(dueDate))
       .sort((first, second) => new Date(first).getTime() - new Date(second).getTime())[0] ?? null;
 
-const formatOverdueBy = (referenceDate: Date, dueDateValue: string | null) => {
-   if (!dueDateValue) {
+// Counted from the deadline (end of the borrower's due day), in whole days: 7 hours late = 1 day,
+// the 3-day and 7-day follow-ups say 3 and 7.
+const formatOverdueBy = (referenceDate: Date, deadline: Date | null | undefined) => {
+   if (!deadline || Number.isNaN(deadline.getTime())) {
       return 'overdue';
    }
 
-   const dueDate = new Date(dueDateValue);
-   if (Number.isNaN(dueDate.getTime())) {
-      return 'overdue';
-   }
-
-   const diffMs = Math.max(0, referenceDate.getTime() - dueDate.getTime());
-   const days = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+   const diffMs = Math.max(0, referenceDate.getTime() - deadline.getTime());
+   const days = Math.max(1, Math.floor(diffMs / DAY_MS));
    return `${days} ${days === 1 ? 'day' : 'days'}`;
 };
 
@@ -352,7 +349,13 @@ serve(async (req) => {
       const aggregate = {
          count: pendingLoans.length,
          totalAmount: pendingLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
-         dueLabel: formatOverdueBy(referenceDate, nextDueDate),
+         dueLabel: formatOverdueBy(
+            referenceDate,
+            pendingLoans
+               .map((loan) => deadlineByLoanId.get(loan.id))
+               .filter((deadline): deadline is Date => Boolean(deadline))
+               .sort((first, second) => first.getTime() - second.getTime())[0]
+         ),
          nextDueDate,
          // A check-in when every loan here already had its first overdue notice.
          followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue'))

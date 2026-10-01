@@ -25,7 +25,9 @@ const isValidTimezone = (zone: string | null | undefined): zone is string => {
 
 /** A real zone that isn't UTC/GMT/Etc, which on a device almost always means "never set". */
 export const isUsableTimezone = (zone: string | null | undefined): zone is string =>
-   isValidTimezone(zone) && !/^(utc|gmt|etc\/|zulu|universal|uct)/i.test(zone);
+   isValidTimezone(zone) &&
+   !/^(utc|gmt|etc\/|zulu|universal|uct|posix|right\/|factory|localtime|systemv\/)/i.test(zone) &&
+   /^[A-Za-z]+\/[A-Za-z0-9_+\-/]+$/.test(zone);
 
 /** The time zone this device is set to, or null when it's unknown or UTC-like. */
 export const getDeviceTimezone = (): string | null => {

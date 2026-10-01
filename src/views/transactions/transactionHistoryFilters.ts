@@ -1,4 +1,5 @@
 import { toNumber } from '@/utils/decimalHelpers';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
 import type { User } from '@/types/authTypes';
 import { isOffPlatformSettledRefund, type Loan, LoanStatus as LoanStatusValue, RepaymentStatus } from '@/types/loanTypes';
@@ -25,8 +26,8 @@ export function getTransactionLoanStatus(loan: Loan, now = new Date()): Transact
    if (loan.repaymentStatus === RepaymentStatus.PAID) return 'REPAID';
    if (loan.loanStatus === LoanStatusValue.REQUESTED) return 'PENDING';
 
-   const dueTime = new Date(loan.dueDate).getTime();
-   const isPastDue = Number.isFinite(dueTime) && dueTime < now.getTime();
+   // Overdue only once the borrower's due day is over in their zone, same as /repay.
+   const isPastDue = Number.isFinite(new Date(loan.dueDate).getTime()) && isLoanPastDue(loan.dueDate, now, loan.dueTimezone);
    if (loan.loanStatus === LoanStatusValue.LENT && isPastDue) return 'DEFAULT';
 
    if (loan.repaymentStatus === RepaymentStatus.PARTIAL) return 'PARTIAL';

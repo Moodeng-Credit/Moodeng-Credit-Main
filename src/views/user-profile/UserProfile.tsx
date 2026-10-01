@@ -35,12 +35,13 @@ import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
+import { isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
 import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
-import { getEffectiveCreditLimit, isRepaidOnTime } from '@/lib/creditLeveling';
+import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isCurrentUserAdmin } from '@/lib/isCurrentUserAdmin';
@@ -202,9 +203,8 @@ const UserProfile = () => {
    // own id lands in the repeat-lender / diversity maths.
    const borrowedLoans = loans.filter((loan) => loan.borrowerUser === resolvedUser.id);
    const fundedLoans = borrowedLoans.filter((loan) => loan.loanStatus === 'Lent');
-   const defaultedLoans = fundedLoans.filter(
-      (loan) => loan.repaymentStatus !== 'Paid' && parseDateSafely(loan.dueDate).getTime() < Date.now()
-   );
+   // Public "Default" only a few days past the borrower's deadline (payments can be held up by tech issues).
+   const defaultedLoans = fundedLoans.filter((loan) => loan.repaymentStatus !== 'Paid' && isPublicDefault(loan.dueDate, loan.dueTimezone));
    const defaultCount = defaultedLoans.length;
    const isGoodStanding = defaultCount === 0;
 
@@ -305,7 +305,7 @@ const UserProfile = () => {
    const repaidToLender = lentLoans.reduce((sum, l) => sum + toNumber(l.repaidAmount), 0);
    const lenderPaidLoans = lentLoans.filter((l) => l.repaymentStatus === 'Paid');
    const lenderActiveLoans = lentLoans.filter((l) => l.repaymentStatus !== 'Paid');
-   const lenderDefaultedLoans = lentLoans.filter((l) => l.repaymentStatus !== 'Paid' && parseDateSafely(l.dueDate).getTime() < Date.now());
+   const lenderDefaultedLoans = lentLoans.filter((l) => l.repaymentStatus !== 'Paid' && isPublicDefault(l.dueDate, l.dueTimezone));
    const borrowerCountMap = lentLoans.reduce<Record<string, number>>((acc, loan) => {
       const name = resolveUsername(loan.borrowerUser) || 'Unknown';
       acc[name] = (acc[name] || 0) + 1;
@@ -379,7 +379,7 @@ const UserProfile = () => {
          .sort((a, b) => parseDateSafely(b.updatedAt).getTime() - parseDateSafely(a.updatedAt).getTime());
       let streak = 0;
       for (const loan of paid) {
-         if (!isRepaidOnTime(loan.updatedAt, loan.dueDate)) break;
+         if (wasRepaidPublicLate(loan.dueDate, loan.repaidAt ?? loan.updatedAt, loan.dueTimezone)) break;
          streak += 1;
       }
       return streak;
@@ -2257,15 +2257,18 @@ type LoanCounterparty = 'lender' | 'borrower';
 
 const getRecentLoanDisplay = (loan: Loan, resolveUsername: (id?: string | null) => string, counterparty: LoanCounterparty) => {
    const isPaid = loan.repaymentStatus === 'Paid';
-   const isDefaulted = !isPaid && parseDateSafely(loan.dueDate).getTime() < Date.now();
+   const isDefaulted = !isPaid && isPublicDefault(loan.dueDate, loan.dueTimezone);
+   const isInProgress = !isPaid && !isDefaulted && isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone);
    const counterpartyName = resolveUsername(counterparty === 'lender' ? loan.lenderUser : loan.borrowerUser) || 'Unknown';
    const fundedDate = formatDate(loan.fundedAt ?? loan.createdAt);
    const statusClassName = isPaid
       ? 'border-[#c4b5fd] bg-[#f5f3ff] text-md-primary-900'
       : isDefaulted
         ? 'border-[#fecaca] bg-[#fef2f2] text-md-red-500'
-        : 'border-[#bbf7d0] bg-[#f0fdf4] text-md-green-700';
-   const statusLabel = isPaid ? 'Repaid' : isDefaulted ? 'Default' : 'Active';
+        : isInProgress
+          ? 'border-[#fde68a] bg-[#fffbeb] text-[#b45309]'
+          : 'border-[#bbf7d0] bg-[#f0fdf4] text-md-green-700';
+   const statusLabel = isPaid ? 'Repaid' : isDefaulted ? 'Default' : isInProgress ? 'In progress' : 'Active';
 
    return {
       fundedDate,
