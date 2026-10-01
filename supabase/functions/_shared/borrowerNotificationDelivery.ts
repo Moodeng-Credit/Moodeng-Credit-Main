@@ -230,9 +230,11 @@ export const sendBorrowerLoanNotification = async (
    if (recipient.messenger_psid && messengerContent) {
       const result = await sendMessengerMessage(recipient.messenger_psid, messengerContent);
       messengerSent = result.ok;
-      if (!result.ok && result.reason !== 'outside_24h_window') {
-         console.error('Borrower Messenger notification failed', { type, reason: result.reason });
-      }
+      // Every outcome is logged, so "did the bot tell them?" is one log search (kryshia's funded
+      // message on 2026-10-01 was skipped with no trace).
+      console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+   } else if (messengerContent) {
+      console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → not sent (no Facebook connected)`);
    }
 
    if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent) {

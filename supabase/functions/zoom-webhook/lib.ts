@@ -89,15 +89,22 @@ export const classifyZoomEvent = (body: ZoomBody): ZoomEvent => {
 // 2026-10-01: George, Emma and two note-taker bots joined, she never did — and the false sighting
 // also marked her as attended, hiding the no-show).
 //   * bot      — a note-taker/recorder; ignored.
-//   * team     — a Moodeng teammate (a @moodeng.app email, a name with "Moodeng", or a host's first
-//                name when the borrower doesn't share it); ignored.
-//   * borrower — the Zoom name shares a word with the borrower's name/username/email; counts.
-//   * unknown  — anything else (often a phone default like "iPhone" or a nickname); counts, but the
-//                alert shows the Zoom name and says it's a maybe, so the host can judge.
+//   * team     — a Moodeng teammate; ignored.
+//   * borrower — clearly the borrower; counts.
+//   * unknown  — can't tell (a phone default like "iPhone", a nickname, or a bare first name the
+//                borrower shares with a host). The host gets a "maybe" alert and the automatic
+//                no-show is held off, so a human decides; it never sets joined/left times.
+// Order matters: a real borrower must never be dropped as a bot (review 2026-10-01: "Harry Potter",
+// "Krispin", "Bot Santos" were), and a teammate must never pass as a borrower who shares their first
+// name ("George Jimmy").
 export type ParticipantKind = 'bot' | 'team' | 'borrower' | 'unknown';
 
-const BOT_NAME =
-   /(note[\s-]?taker|notetaker|otter|fireflies|fathom|read\.ai|\bread ai\b|tl;?dv|tactiq|gong|chorus|grain|avoma|meetgeek|krisp|sembly|bluedot|supernormal|\bbot\b|recorder|assistant)/i;
+// Unmistakable note-taker names, checked before anything else.
+const STRONG_BOT = /(note[\s-]?taker|otter\.ai|fireflies|read\.ai|\bread ai\b|tl;?dv|ai companion|meeting notes|tactiq)/i;
+// Product names that are also words in people's names: whole words only, and only once the name has
+// failed to match the borrower.
+const BRAND_BOT =
+   /\b(bot|otter|fathom|gong|chorus|grain|avoma|meetgeek|krisp|sembly|bluedot|supernormal|notta|bubbles|circleback|granola|airgram|noota|leexi|claap|laxis|rewatch|recorder)\b/i;
 const TEAM_FIRST_NAMES = ['george', 'emma'];
 
 const words = (value: string | null | undefined) =>
@@ -112,7 +119,8 @@ export const classifyParticipant = (
 ): ParticipantKind => {
    const name = participant.name.trim();
    const email = participant.email.trim().toLowerCase();
-   if (BOT_NAME.test(name)) return 'bot';
+   if (borrower.email && email && email === borrower.email.toLowerCase()) return 'borrower';
+   if (STRONG_BOT.test(name)) return 'bot';
    if (email.endsWith('@moodeng.app') || /moodeng/i.test(name)) return 'team';
 
    const borrowerWords = new Set([
@@ -121,9 +129,16 @@ export const classifyParticipant = (
       ...words((borrower.email ?? '').split('@')[0])
    ]);
    const nameWords = words(name);
-   if (borrower.email && email && email === borrower.email.toLowerCase()) return 'borrower';
+
+   // Starts with a host's first name: a teammate, unless another word ties it to this borrower.
+   if (nameWords[0] && TEAM_FIRST_NAMES.includes(nameWords[0])) {
+      const otherWords = nameWords.filter((w) => !TEAM_FIRST_NAMES.includes(w));
+      if (otherWords.some((w) => borrowerWords.has(w))) return 'borrower';
+      if (borrowerWords.has(nameWords[0]) && otherWords.length === 0) return 'unknown';
+      return 'team';
+   }
    if (nameWords.some((w) => borrowerWords.has(w))) return 'borrower';
-   if (nameWords[0] && TEAM_FIRST_NAMES.includes(nameWords[0])) return 'team';
+   if (BRAND_BOT.test(name)) return 'bot';
    return 'unknown';
 };
 

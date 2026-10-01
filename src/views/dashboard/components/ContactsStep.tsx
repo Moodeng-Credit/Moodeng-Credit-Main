@@ -176,6 +176,21 @@ export default function ContactsStep({
       const channel = messengerVerified ? 'messenger' : whatsappVerified ? 'whatsapp' : null;
       if (!channel) return;
       confirmedTrackedRef.current = true;
+      // Done waiting: a later app switch (e.g. to Settings for notifications) isn't a Messenger trip.
+      awaitingMessengerRef.current = false;
+      // Confirmed while they were still away (desktop tabs keep polling): log the return here, since
+      // the return listener is gone once the line is verified.
+      if (leftAtRef.current !== null) {
+         track('contact_verify_returned', {
+            source,
+            channel: 'messenger',
+            attempt: attemptsRef.current,
+            seconds_away: secondsSince(leftAtRef.current),
+            confirmed: true,
+            confirmed_while_away: true
+         });
+         leftAtRef.current = null;
+      }
       track('contact_verify_confirmed', {
          source,
          channel,
@@ -273,6 +288,8 @@ export default function ContactsStep({
    };
 
    const handleVerify = async (channel: Channel) => {
+      // The tap itself, before the code request: a slow or failed start would otherwise leave no trace.
+      track('contact_verify_tapped', { source, channel, attempt: attemptsRef.current + 1 });
       setVerifyError('');
       setStartingChannel(channel);
       try {

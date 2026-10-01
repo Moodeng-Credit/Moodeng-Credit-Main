@@ -21,6 +21,8 @@ export interface Loan {
    // Set while an open request is on hold (e.g. the borrower missed their video call): hidden from
    // lenders and not fundable until they book a new call. Server-only.
    onHoldSince?: string;
+   // Internal test loan: never counts toward milestones or points (same as the database).
+   isTest?: boolean;
    onHoldReason?: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions

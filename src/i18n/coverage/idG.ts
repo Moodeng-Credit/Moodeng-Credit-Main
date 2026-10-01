@@ -556,5 +556,28 @@ export const indonesianCoverageG: Record<string, string> = {
    '. Now that our chat is open, the second try usually works.': '. Karena chat kami sudah terbuka, percobaan kedua biasanya berhasil.',
    'Or send this code to': 'Atau kirim kode ini ke',
    "Still stuck? We'll email you, and our team will help you finish.":
-      'Masih belum bisa? Kami akan mengirim email, dan tim kami akan membantumu menyelesaikannya.'
+      'Masih belum bisa? Kami akan mengirim email, dan tim kami akan membantumu menyelesaikannya.',
+   // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
+   "Repay a full-limit loan to unlock the next level.": "Lunasi pinjaman senilai limit penuh untuk membuka level berikutnya.",
+   "left to repay for LV.2": "lagi yang harus dibayar untuk LV.2",
+   "full-limit loan unlocks LV.2": "pinjaman limit penuh membuka LV.2",
+   "left to repay for LV.3": "lagi yang harus dibayar untuk LV.3",
+   "full-limit loan unlocks LV.3": "pinjaman limit penuh membuka LV.3",
+   "left to repay for LV.4": "lagi yang harus dibayar untuk LV.4",
+   "full-limit loan unlocks LV.4": "pinjaman limit penuh membuka LV.4",
+   "left to repay for LV.5": "lagi yang harus dibayar untuk LV.5",
+   "full-limit loan unlocks LV.5": "pinjaman limit penuh membuka LV.5",
+   "left to repay for LV.6": "lagi yang harus dibayar untuk LV.6",
+   "full-limit loan unlocks LV.6": "pinjaman limit penuh membuka LV.6",
+   "left to repay for LV.7": "lagi yang harus dibayar untuk LV.7",
+   "full-limit loan unlocks LV.7": "pinjaman limit penuh membuka LV.7",
+   "left to repay for LV.8": "lagi yang harus dibayar untuk LV.8",
+   "full-limit loan unlocks LV.8": "pinjaman limit penuh membuka LV.8",
+   "Coins.ph is temporarily paused": "Coins.ph sedang dijeda sementara",
+   "Coins.ph has been temporarily suspended by the Philippine government, so cash-ins and cash-outs there aren't working right now. It'll be back — we'll update this as soon as it is. Until then, please use PDAX or GCrypto (GCash).": "Coins.ph sedang dihentikan sementara oleh pemerintah Filipina, jadi top up dan penarikan di sana belum bisa dilakukan saat ini. Coins.ph akan kembali — kami akan memberi kabar begitu tersedia lagi. Sementara itu, gunakan PDAX atau GCrypto (GCash).",
+   "Temporarily paused": "Dijeda sementara",
+   "Coins.ph (temporarily paused)": "Coins.ph (dijeda sementara)",
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu Send Crypto → External Wallet → jaringan Base.",
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Setor USDC, tukar ke PHP, lalu tarik ke rekening bank atau GCash kamu.",
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu gunakan Send Crypto → External Wallet → jaringan Base."
 };

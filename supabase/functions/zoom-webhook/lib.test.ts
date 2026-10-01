@@ -97,3 +97,28 @@ Deno.test('an unrecognised name is a maybe, not ignored', () => {
    assertEquals(classifyParticipant({ name: 'iPhone', email: '' }, kryshia), 'unknown');
    assertEquals(classifyParticipant({ name: '', email: '' }, kryshia), 'unknown');
 });
+
+Deno.test('real names that contain bot-product words are never dropped as bots', () => {
+   const asSelf = (display: string) => classifyParticipant({ name: display, email: '' }, { display_name: display, username: 'x', email: null });
+   assertEquals(asSelf('Harry Potter'), 'borrower');
+   assertEquals(asSelf('Krispin Dela Cruz'), 'borrower');
+   assertEquals(asSelf('Bot Santos'), 'borrower');
+   assertEquals(asSelf('Gong Li'), 'borrower');
+   assertEquals(asSelf('Grainne Reyes'), 'borrower');
+   // A matching email wins over everything.
+   assertEquals(classifyParticipant({ name: 'Notta', email: 'k@x.com' }, { display_name: 'K', username: 'k', email: 'k@x.com' }), 'borrower');
+});
+
+Deno.test('note-takers are caught, including brand-only names', () => {
+   for (const name of ['Bubbles Notetaker', "jon's Loom Notetaker", 'Notta', 'Granola', 'Zoom AI Companion', 'Circleback']) {
+      assertEquals(classifyParticipant({ name, email: '' }, kryshia), 'bot', name);
+   }
+});
+
+Deno.test('a teammate is not mistaken for a borrower who shares their first name', () => {
+   const georgeJimmy = { display_name: 'George Jimmy', username: 'georgej', email: 'gj@example.com' };
+   assertEquals(classifyParticipant({ name: 'George Lerner', email: '' }, georgeJimmy), 'team');
+   assertEquals(classifyParticipant({ name: 'George Jimmy', email: '' }, georgeJimmy), 'borrower');
+   // A bare shared first name can't be told apart: a maybe, decided by a human.
+   assertEquals(classifyParticipant({ name: 'Emma', email: '' }, { display_name: 'EMMA', username: 'emma1', email: null }), 'unknown');
+});

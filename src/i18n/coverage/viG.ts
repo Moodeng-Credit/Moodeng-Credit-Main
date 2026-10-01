@@ -450,5 +450,28 @@ export const vietnameseCoverageG: Record<string, string> = {
       '. Vì cuộc trò chuyện của chúng tôi đã mở, lần thử thứ hai thường sẽ thành công.',
    'Or send this code to': 'Hoặc gửi mã này đến',
    "Still stuck? We'll email you, and our team will help you finish.":
-      'Vẫn chưa được? Chúng tôi sẽ gửi email cho bạn, và đội ngũ của chúng tôi sẽ giúp bạn hoàn tất.'
+      'Vẫn chưa được? Chúng tôi sẽ gửi email cho bạn, và đội ngũ của chúng tôi sẽ giúp bạn hoàn tất.',
+   // Added 2026-10-01: English that changed after the translation pass (full-limit rule, Coins.ph pause).
+   "Repay a full-limit loan to unlock the next level.": "Trả hết khoản vay toàn hạn mức để mở khóa cấp tiếp theo.",
+   "left to repay for LV.2": "còn phải trả để lên LV.2",
+   "full-limit loan unlocks LV.2": "khoản vay toàn hạn mức sẽ mở khóa LV.2",
+   "left to repay for LV.3": "còn phải trả để lên LV.3",
+   "full-limit loan unlocks LV.3": "khoản vay toàn hạn mức sẽ mở khóa LV.3",
+   "left to repay for LV.4": "còn phải trả để lên LV.4",
+   "full-limit loan unlocks LV.4": "khoản vay toàn hạn mức sẽ mở khóa LV.4",
+   "left to repay for LV.5": "còn phải trả để lên LV.5",
+   "full-limit loan unlocks LV.5": "khoản vay toàn hạn mức sẽ mở khóa LV.5",
+   "left to repay for LV.6": "còn phải trả để lên LV.6",
+   "full-limit loan unlocks LV.6": "khoản vay toàn hạn mức sẽ mở khóa LV.6",
+   "left to repay for LV.7": "còn phải trả để lên LV.7",
+   "full-limit loan unlocks LV.7": "khoản vay toàn hạn mức sẽ mở khóa LV.7",
+   "left to repay for LV.8": "còn phải trả để lên LV.8",
+   "full-limit loan unlocks LV.8": "khoản vay toàn hạn mức sẽ mở khóa LV.8",
+   "Coins.ph is temporarily paused": "Coins.ph đang tạm ngưng",
+   "Coins.ph has been temporarily suspended by the Philippine government, so cash-ins and cash-outs there aren't working right now. It'll be back — we'll update this as soon as it is. Until then, please use PDAX or GCrypto (GCash).": "Coins.ph đã bị chính phủ Philippines tạm đình chỉ, nên hiện không thể nạp hoặc rút tiền qua Coins.ph. Dịch vụ sẽ hoạt động trở lại — chúng tôi sẽ cập nhật ngay khi có. Trong thời gian này, vui lòng dùng PDAX hoặc GCrypto (GCash).",
+   "Temporarily paused": "Tạm ngưng",
+   "Coins.ph (temporarily paused)": "Coins.ph (tạm ngưng)",
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Mua USDC bằng PHP, rồi chọn Send Crypto → External Wallet → mạng Base.",
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Nạp USDC, đổi sang PHP, rồi rút về tài khoản ngân hàng hoặc GCash của bạn.",
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Mua USDC bằng PHP, rồi dùng Send Crypto → External Wallet → mạng Base."
 };
