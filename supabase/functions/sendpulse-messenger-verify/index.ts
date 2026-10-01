@@ -4,7 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
-import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName } from '../_shared/sendpulse.ts';
+import { verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
+import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName, sendMessengerMessage } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
@@ -67,6 +68,36 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    } catch (err) {
       console.error('sendpulse-messenger-verify: announce failed', err instanceof Error ? err.message : err);
+   }
+};
+
+// Supabase's edge runtime keeps a function alive for work registered here after the response is sent.
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
+
+const FOLLOW_UP_DELAY_MS = 5_000;
+
+// The SendPulse flow answers "✅ Your Facebook is confirmed! Head back to the Moodeng app" itself,
+// after this function returns. That's all a borrower heard, even when their ID review had already
+// been approved (kryshia, 2026-10-01: approved 14:39, connected Facebook 14:57, never told on
+// Messenger). So once the first connection lands, follow up with where their verification stands.
+// Sent a few seconds later, so it reads after the flow's own confirmation; they've just messaged
+// the Page, so Meta's 24h window is open. Nothing is sent when there's nothing to add.
+const followUpWithStatus = async (svc: Svc, userId: string, contactId: string | null) => {
+   try {
+      if (!contactId) return;
+      await new Promise((resolve) => setTimeout(resolve, FOLLOW_UP_DELAY_MS));
+      const { data: user } = await svc.from('users').select('is_world_id, is_didit, didit_id_status').eq('id', userId).maybeSingle();
+      const text = user ? verificationFollowUpText(user) : null;
+      if (!text) {
+         console.log(`sendpulse-messenger-verify: no status follow-up for ${userId.slice(0, 8)} (not verified or in review)`);
+         return;
+      }
+      const result = await sendMessengerMessage(contactId, { text });
+      console.log(
+         `sendpulse-messenger-verify: status follow-up for ${userId.slice(0, 8)} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`
+      );
+   } catch (err) {
+      console.error('sendpulse-messenger-verify: status follow-up failed', err instanceof Error ? err.message : err);
    }
 };
 
@@ -159,6 +190,8 @@ serve(async (req) => {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {
          await announceConnected(svc, pending.user_id, contactId, body.name ? String(body.name) : null);
+         const followUp = followUpWithStatus(svc, pending.user_id, contactId);
+         if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(followUp);
       }
 
       return json({ ok: true });
