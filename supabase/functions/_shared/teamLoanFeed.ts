@@ -5,7 +5,7 @@
 
 import { postDiscord } from './discord.ts';
 import { dueDayBounds, formatDeadlineForTeam, localHour, loanTimezone } from './loanDeadline.ts';
-import { getTeamTimezone, loadBorrowerTimezones } from './loanDueTeamFeed.ts';
+import { describeOwed, getTeamTimezone, loadBorrowerTimezones } from './loanDueTeamFeed.ts';
 import { buildTxExplorerLink, getLoanOutstandingAmount } from './loanNotifications.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -230,7 +230,7 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       const byId = new Map(((people ?? []) as Array<{ id: string; username: string | null; telegram_username: string | null }>).map((u) => [u.id, u]));
 
       const lines = upcoming.slice(0, MAX_DIGEST_LINES).map(({ loan, zone, days }) => {
-         const owed = usdc(getLoanOutstandingAmount(loan as never));
+         const owed = describeOwed(loan);
          const lender = loan.lender_user_id ? handle(byId.get(loan.lender_user_id)) : 'unknown';
          return `• **${whenLabel(days)}**: ${handle(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
       });
