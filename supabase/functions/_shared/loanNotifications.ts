@@ -7,6 +7,8 @@ export type LoanNotificationType =
    | 'overdue'
    | 'repayment_received'
    | 'repayment_team_feed'
+   | 'team_due_today'
+   | 'team_overdue'
    | 'request_expired';
 
 export type LoanNotificationLoan = {

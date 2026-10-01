@@ -45,6 +45,7 @@ const mapSupabaseLoanToLoan = (row: LoanRow): Loan => ({
    loanStatus: row.loan_status,
    repaymentStatus: row.repayment_status,
    dueDate: row.due_date,
+   dueTimezone: row.due_timezone ?? undefined,
    coin: row.coin,
    hash: row.hash,
    createdAt: row.created_at,

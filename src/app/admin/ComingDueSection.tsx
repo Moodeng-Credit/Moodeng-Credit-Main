@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import AdminDeadline from './AdminDeadline';
 import { type ComingDueLoan, connectBorrower, listComingDueLoans, nudgeBorrower } from './adminSupabase';
 
 type BucketId = 'overdue' | 'due3' | 'due7' | 'due14' | 'due30' | 'upcoming';
@@ -253,7 +254,9 @@ export default function ComingDueSection({
                                  {countdownLabel(l.days_until_due)}
                               </span>
                            </td>
-                           <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">{shortDate(l.due_date)}</td>
+                           <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">
+                              <AdminDeadline dueDate={l.due_date} dueTimezone={l.due_timezone} />
+                           </td>
                            <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
                            <td className="px-4 py-3 text-sm font-bold text-white">{l.borrower?.username ?? '—'}</td>
                            <td className="px-4 py-3 text-xs font-medium text-[#a89bb8]">

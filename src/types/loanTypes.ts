@@ -15,6 +15,9 @@ export interface Loan {
    loanStatus: string;
    repaymentStatus: string;
    dueDate: string; // ISO 8601 datetime string in UTC (midnight UTC+00)
+   // IANA zone the due day is measured in (saved when the loan was posted). The loan is overdue from
+   // 00:00 the day after dueDate in this zone; see src/lib/loanDeadline.ts.
+   dueTimezone?: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: string;

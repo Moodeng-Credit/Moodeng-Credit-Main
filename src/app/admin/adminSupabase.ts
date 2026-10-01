@@ -1,5 +1,6 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
+import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 
 export type AdminRole = 'owner' | 'admin' | 'support';
 export type NoticeAudience = 'borrower' | 'lender' | 'candidate_lender' | 'admin';
@@ -117,6 +118,8 @@ export interface AdminLoanRecord {
    total_repayment_amount: number;
    repaid_amount: number | null;
    due_date: string;
+   // Zone the due day is measured in (saved on the loan); see src/lib/loanDeadline.ts.
+   due_timezone: string | null;
    reason: string;
    coin: string;
    loan_status: 'Requested' | 'Lent' | null;
@@ -311,6 +314,7 @@ function mapLoan(row: AnyRow, usersById: Map<string, AdminDirectoryUser>): Admin
       total_repayment_amount: toNumber(row.total_repayment_amount),
       repaid_amount: row.repaid_amount == null ? null : toNumber(row.repaid_amount),
       due_date: row.due_date,
+      due_timezone: row.due_timezone ?? null,
       reason: row.reason,
       coin: row.coin,
       loan_status: row.loan_status ?? null,
@@ -682,21 +686,19 @@ export async function listAdminLoans(
    { includeTest = false, limit = 500 }: { includeTest?: boolean; limit?: number } = {}
 ): Promise<AdminLoanRecord[]> {
    const supabase = getSupabaseBrowserClient();
-   const now = new Date().toISOString();
    let query = supabase
       .from('loans')
       .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at'
+         'id,tracking_id,borrower_user_id,lender_user_id,borrower_wallet,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,reason,coin,loan_status,repayment_status,is_test,created_at,funded_at'
       );
 
    if (!includeTest) query = query.eq('is_test', false);
 
    if (status === 'requested') {
       query = query.eq('loan_status', 'Requested');
-   } else if (status === 'active') {
-      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).gte('due_date', now);
-   } else if (status === 'overdue') {
-      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']).lt('due_date', now);
+   } else if (status === 'active' || status === 'overdue') {
+      // Split below: overdue only once the due day has ended in the borrower's zone.
+      query = query.eq('loan_status', 'Lent').in('repayment_status', ['Unpaid', 'Partial']);
    } else if (status === 'repaid') {
       query = query.eq('loan_status', 'Lent').eq('repayment_status', 'Paid');
    }
@@ -704,8 +706,14 @@ export async function listAdminLoans(
    const rows = await requireOk<AnyRow[]>(query.order('created_at', { ascending: false }).limit(limit));
    const userIds = rows.flatMap((loan) => [loan.borrower_user_id, loan.lender_user_id].filter(Boolean));
    const usersById = await fetchUsersByIds(userIds);
-   return rows.map((row) => mapLoan(row, usersById));
+   const loans = rows.map((row) => mapLoan(row, usersById));
+   if (status !== 'active' && status !== 'overdue') return loans;
+   return loans.filter((loan) => isAdminLoanOverdue(loan) === (status === 'overdue'));
 }
+
+/** Overdue once the due day has ended in the borrower's zone (not at midnight UTC). */
+export const isAdminLoanOverdue = (loan: { due_date: string | null; due_timezone?: string | null }): boolean =>
+   Boolean(loan.due_date) && isPastDueDay(loan.due_date as string, getLoanTimezone({ dueTimezone: loan.due_timezone }, DEFAULT_LOAN_TIMEZONE));
 
 // Mark a user or loan as test / real (admin-only, via the gated RPC). Lets admins fix
 // misclassifications or flag new test data straight from the panel.
@@ -739,7 +747,8 @@ export interface ComingDueLoan {
    funded_at: string | null;
    due_date: string;
    tenor_days: number | null; // whole days between funded_at and due_date
-   days_until_due: number; // 0 = due today, negative = overdue, positive = upcoming
+   due_timezone: string | null;
+   days_until_due: number; // 0 = due today, negative = overdue, positive = upcoming (borrower's calendar)
    reason: string | null;
    coin: string | null;
    repayment_status: 'Unpaid' | 'Partial' | 'Paid' | null;
@@ -748,16 +757,11 @@ export interface ComingDueLoan {
    lender: ComingDueParty | null;
 }
 
-// Whole-calendar-day difference between today and the due date, so a loan due later
-// today reads as "due today" (0), tomorrow as 1, and yesterday as -1.
-function calendarDaysUntil(dueDate: string): number {
-   const due = new Date(dueDate);
-   if (Number.isNaN(due.getTime())) return 0;
-   const startOfToday = new Date();
-   startOfToday.setHours(0, 0, 0, 0);
-   const startOfDue = new Date(due);
-   startOfDue.setHours(0, 0, 0, 0);
-   return Math.round((startOfDue.getTime() - startOfToday.getTime()) / 86_400_000);
+// Whole calendar days between today and the due date ON THE BORROWER'S CALENDAR, so a loan due later
+// today reads as "due today" (0), tomorrow as 1, and yesterday as -1, wherever the admin is.
+function calendarDaysUntil(dueDate: string, dueTimezone: string | null): number {
+   if (Number.isNaN(new Date(dueDate).getTime())) return 0;
+   return getDaysUntilDueDay(dueDate, getLoanTimezone({ dueTimezone }, DEFAULT_LOAN_TIMEZONE));
 }
 
 // Whole-day loan term: funding date to due date. Null when either end is missing/invalid.
@@ -776,7 +780,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
    let query = supabase
       .from('loans')
       .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,funded_at,created_at,reason,coin,repayment_status,is_test'
+         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -819,8 +823,9 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
          outstanding: outstandingDue({ total_repayment_amount: row.total_repayment_amount, repaid_amount: row.repaid_amount }),
          funded_at: fundedAt,
          due_date: row.due_date,
+         due_timezone: row.due_timezone ?? null,
          tenor_days: calendarTenorDays(fundedAt, row.due_date),
-         days_until_due: calendarDaysUntil(row.due_date),
+         days_until_due: calendarDaysUntil(row.due_date, row.due_timezone ?? null),
          reason: row.reason ?? null,
          coin: row.coin ?? null,
          repayment_status: row.repayment_status ?? null,

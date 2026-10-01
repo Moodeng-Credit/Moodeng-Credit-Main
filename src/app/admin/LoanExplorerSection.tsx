@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { type AdminLoanRecord, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
+import AdminDeadline from './AdminDeadline';
+import { type AdminLoanRecord, isAdminLoanOverdue, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
 import RemoveLoanRequestDialog from './RemoveLoanRequestDialog';
 
 const FILTERS: Array<{ id: LoanExplorerStatus; label: string }> = [
@@ -19,8 +20,7 @@ function deriveStatus(loan: AdminLoanRecord): DerivedStatus {
    if (loan.loan_status === 'Requested') return 'Requested';
    if (loan.loan_status === 'Lent') {
       if (loan.repayment_status === 'Paid') return 'Paid back';
-      const overdue = loan.due_date ? new Date(loan.due_date).getTime() < Date.now() : false;
-      return overdue ? 'Not paid back' : 'Active';
+      return isAdminLoanOverdue(loan) ? 'Not paid back' : 'Active';
    }
    return 'Unknown';
 }
@@ -201,7 +201,9 @@ export default function LoanExplorerSection() {
                               <td className="px-4 py-3 text-right text-sm font-bold text-[#cfc6dd]">
                                  {l.repaid_amount == null ? '—' : money(l.repaid_amount)}
                               </td>
-                              <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">{shortDate(l.due_date)}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">
+                                 <AdminDeadline dueDate={l.due_date} dueTimezone={l.due_timezone} />
+                              </td>
                               <td className="px-4 py-3 text-sm font-medium text-[#a89bb8]">{shortDate(l.created_at)}</td>
                               <td className="px-4 py-3 text-right">
                                  <button

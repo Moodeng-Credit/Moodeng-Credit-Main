@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
+import AdminDeadline, { formatAdminDeadline } from './AdminDeadline';
 import {
    type ComingDueLoan,
    type ComingDueParty,
@@ -35,11 +36,12 @@ function toDateInputValue(date: Date): string {
    return `${y}-${m}-${d}`;
 }
 
-// Add whole days to the loan's current due date and return a yyyy-mm-dd string.
+// Add whole days to the loan's current due date (a calendar date stored as midnight UTC) and return
+// a yyyy-mm-dd string. Done in UTC so it can't slip a day for an admin west of UTC.
 function presetDate(dueDate: string, days: number): string {
    const base = new Date(dueDate);
-   base.setDate(base.getDate() + days);
-   return toDateInputValue(base);
+   base.setUTCDate(base.getUTCDate() + days);
+   return base.toISOString().slice(0, 10);
 }
 
 const PRESETS = [7, 14, 30];
@@ -111,8 +113,9 @@ export default function LoanExtensionSection({
       setError(null);
       setOutcome(null);
       try {
-         // Interpret the chosen calendar day as end-of-day local time.
-         const newDueDate = new Date(`${newDate}T23:59:59`).toISOString();
+         // Store the chosen calendar day the way every due date is stored (midnight UTC). The loan stays
+         // due until the end of that day in the borrower's zone, whoever extends it and from wherever.
+         const newDueDate = `${newDate}T00:00:00.000Z`;
          const result = await extendLoan({
             loanId: selected.id,
             newDueDate,
@@ -197,7 +200,7 @@ export default function LoanExtensionSection({
                <div className="space-y-5 rounded-3xl border border-[#2a1453] bg-[#150730] p-6">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                      <Field label="Tracking" value={selected.tracking_id} mono />
-                     <Field label="Current due" value={shortDate(selected.due_date)} />
+                     <Field label="Current due" value={<AdminDeadline dueDate={selected.due_date} dueTimezone={selected.due_timezone} />} />
                      <Field label="Borrower" value={selected.borrower?.username ?? '—'} />
                      <Field label="Lender" value={selected.lender?.username ?? '—'} />
                      <Field label="Borrower contact" value={contactLine(selected.borrower)} />
@@ -231,7 +234,8 @@ export default function LoanExtensionSection({
                      />
                      {newDate ? (
                         <p className="mt-2 text-sm font-bold text-[#cfc6dd]">
-                           Moves due date from {shortDate(selected.due_date)} to {shortDate(new Date(`${newDate}T23:59:59`).toISOString())}.
+                           Moves due date from {formatAdminDeadline(selected.due_date, selected.due_timezone)} to{' '}
+                           {formatAdminDeadline(`${newDate}T00:00:00.000Z`, selected.due_timezone)}.
                         </p>
                      ) : null}
                   </div>
@@ -284,7 +288,7 @@ export default function LoanExtensionSection({
    );
 }
 
-function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function Field({ label, value, mono }: { label: string; value: ReactNode; mono?: boolean }) {
    return (
       <div>
          <p className="text-xs font-black uppercase tracking-wide text-[#a89bb8]">{label}</p>

@@ -6,12 +6,13 @@ import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
-import { calculateDaysBetween, calculateDaysRemaining, parseDateSafely } from '@/utils/dateFormatters';
+import { calculateDaysBetween, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
+import { getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
 import { getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { fetchUserProfiles } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -95,7 +96,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          return {
             id: loan.id,
             amount: toNumber(loan.loanAmount),
-            daysRemaining: calculateDaysRemaining(loan.dueDate),
+            // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
+            daysRemaining: getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan)),
             lenderName: lender?.displayName || lender?.username || 'a lender',
             isOverdue
          };

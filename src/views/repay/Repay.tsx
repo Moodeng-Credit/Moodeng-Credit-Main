@@ -43,6 +43,7 @@ import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/baseP
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
+import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -287,9 +288,12 @@ const getProgressPercent = (loan: Loan): number => {
    return Math.min(100, Math.round((toNumber(loan.repaidAmount) / total) * 100));
 };
 
+// The loan is due until the end of its due day in the borrower's zone (src/lib/loanDeadline.ts), so
+// the countdown runs to that moment, not to midnight UTC (8 AM Manila on the due day).
+const getLoanDeadline = (loan: Loan): Date => getDueDayEnd(loan.dueDate, getLoanTimezone(loan));
+
 const getDueCountdownCopy = (loan: Loan): string => {
-   const dueDate = parseDateSafely(loan.dueDate);
-   const totalMinutes = Math.round((dueDate.getTime() - Date.now()) / (1000 * 60));
+   const totalMinutes = Math.round((getLoanDeadline(loan).getTime() - Date.now()) / (1000 * 60));
 
    if (totalMinutes <= 0) return 'overdue now';
 
@@ -308,27 +312,20 @@ const getDueCountdownCopy = (loan: Loan): string => {
    return `${minutes}m left`;
 };
 
+// The calendar due date, read as stored (midnight UTC), so it never slips a day on a device set west
+// of UTC. No clock time: "Due Sep 30" means by the end of Sep 30 where the borrower is.
 const getDueDateShortCopy = (loan: Loan): string =>
    parseDateSafely(loan.dueDate).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'UTC'
    });
 
-const getDueTimeUtcCopy = (loan: Loan): string => {
-   const dueDate = parseDateSafely(loan.dueDate);
-   const hours = dueDate.getUTCHours();
-   const minutes = dueDate.getUTCMinutes().toString().padStart(2, '0');
-   const ampm = hours >= 12 ? 'PM' : 'AM';
-   const displayHours = hours % 12 || 12;
-
-   return `${displayHours}:${minutes} ${ampm} UTC`;
-};
-
-const isLoanOverdue = (loan: Loan): boolean => parseDateSafely(loan.dueDate).getTime() <= Date.now();
+const isLoanOverdue = (loan: Loan): boolean => isPastDueDay(loan.dueDate, getLoanTimezone(loan));
 
 const isLoanDueSoon = (loan: Loan): boolean => {
-   const totalHours = (parseDateSafely(loan.dueDate).getTime() - Date.now()) / (1000 * 60 * 60);
+   const totalHours = (getLoanDeadline(loan).getTime() - Date.now()) / (1000 * 60 * 60);
    return totalHours > 0 && totalHours < 24;
 };
 
@@ -2149,7 +2146,7 @@ export default function Repay() {
                            {isLoanOverdue(selectedLoan) ? 'Past due' : `${getDueCountdownCopy(selectedLoan)}`}
                         </span>
                         <span>
-                           Due {getDueDateShortCopy(selectedLoan)} · {getDueTimeUtcCopy(selectedLoan)}
+                           Due {getDueDateShortCopy(selectedLoan)}
                         </span>
                      </div>
                   </section>
