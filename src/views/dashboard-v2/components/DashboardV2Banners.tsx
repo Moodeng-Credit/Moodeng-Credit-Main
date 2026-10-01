@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { ArrowUpRight, Bell, BellOff, Share, Wallet } from 'lucide-react';
+import { ArrowUpRight, Bell, BellOff, Facebook, Share, Wallet } from 'lucide-react';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -72,6 +72,44 @@ export function VoucherReferralBanner({ language, onRefer }: { language: Dashboa
                Grab Now
             </span>
          </span>
+      </button>
+   );
+}
+
+const CONNECT_FACEBOOK_COPY = {
+   en: {
+      title: 'Connect your Facebook',
+      body: "Your verification is almost done. Connect Messenger so we can tell you the moment it's approved.",
+      cta: 'Connect'
+   },
+   fil: {
+      title: 'I-connect ang Facebook mo',
+      body: 'Malapit nang matapos ang verification mo. I-connect ang Messenger para masabihan ka namin agad kapag approved na.',
+      cta: 'I-connect'
+   }
+} as const;
+
+/**
+ * Shown while a borrower's ID is in manual review and they haven't connected Facebook yet, so they
+ * don't drift off to the request board without the line we'll tell them on. Opens /verify, which
+ * lands on the Facebook step.
+ */
+export function ConnectFacebookBanner({ language, onConnect }: { language: DashboardV2Language; onConnect: () => void }) {
+   const copy = CONNECT_FACEBOOK_COPY[language];
+   return (
+      <button
+         type="button"
+         onClick={onConnect}
+         className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
+      >
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e7f0ff]">
+            <Facebook className="h-5 w-5 text-[#0866FF]" aria-hidden="true" />
+         </span>
+         <span className="min-w-0 flex-1">
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{copy.title}</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c]">{copy.body}</span>
+         </span>
+         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">{copy.cta}</span>
       </button>
    );
 }

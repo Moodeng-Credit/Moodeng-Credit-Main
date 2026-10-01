@@ -2301,6 +2301,7 @@ export default function LoanRequestModal({
             ) : showContactsStep ? (
                <ContactsStep
                   userId={user.id}
+                  source="loan_request"
                   onBack={handleContactsStepBack}
                   onContinue={handleContactsStepContinue}
                   isSubmitting={isSubmitting}

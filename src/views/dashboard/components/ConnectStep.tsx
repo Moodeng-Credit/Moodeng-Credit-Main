@@ -123,6 +123,7 @@ export default function ConnectStep({
       return (
          <ContactsStep
             userId={userId}
+            source="connect"
             onBack={onBack}
             onContinue={() => {
                setError('');

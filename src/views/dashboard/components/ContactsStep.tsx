@@ -1,6 +1,7 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
+import posthog from 'posthog-js';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
@@ -28,6 +29,21 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
 
+// Where this card is shown — sent with every analytics event so we can compare the flows.
+export type ContactsStepSource = 'verify_review' | 'loan_request' | 'connect';
+
+// Every step of the "connect your Facebook" flow is logged to PostHog (contact_verify_*), so a stuck
+// borrower's story is one query instead of a reconstruction from page views and DB timestamps, and
+// we can see how often the first Messenger tap fails. Best-effort: analytics never blocks the flow.
+const track = (event: string, properties: Record<string, unknown>) => {
+   try {
+      posthog.capture(event, properties);
+   } catch {
+      // Analytics unavailable (blocked, not initialised) — the flow carries on.
+   }
+};
+const secondsSince = (startedAt: number | null) => (startedAt === null ? null : Math.round((Date.now() - startedAt) / 1000));
+
 const SHOW_TYPED_CODE_AFTER_MS = 60_000;
 // Coming back from Messenger still unconfirmed: give the bot a few seconds to land, then offer the
 // backups right away instead of making them sit out the full minute. Meta doesn't guarantee the m.me
@@ -42,7 +58,9 @@ export default function ContactsStep({
    onContinue,
    intro,
    whatsappEnabled = WHATSAPP_VERIFY_ENABLED,
-   isSubmitting = false
+   isSubmitting = false,
+   source,
+   backLabel = 'Back'
 }: {
    userId: string;
    onBack: () => void;
@@ -55,6 +73,10 @@ export default function ContactsStep({
    // it does, the parent passes isSubmitting so the button disables + reads "Submitting…" instead of
    // sitting there inert during the network call (inviting a double-tap).
    isSubmitting?: boolean;
+   source: ContactsStepSource;
+   // The secondary button's label. /verify shows this card before the manual-review screen, where
+   // "Back" would read oddly, so it passes "Skip for now".
+   backLabel?: string;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
@@ -76,6 +98,14 @@ export default function ContactsStep({
    // listener that exists from mount: the tab can hide before React re-renders after the tap.
    const leftForMessengerRef = useRef(false);
    const awaitingMessengerRef = useRef(false);
+   // Analytics bookkeeping (refs: listeners outlive renders).
+   const attemptsRef = useRef(0);
+   const firstStartedAtRef = useRef<number | null>(null);
+   const lastStartedAtRef = useRef<number | null>(null);
+   const leftAtRef = useRef<number | null>(null);
+   const lastChannelRef = useRef<Channel | null>(null);
+   const confirmedTrackedRef = useRef(false);
+   const backupTrackedRef = useRef(false);
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
    // iPhone that hasn't added Moodeng to its Home Screen, the Facebook/Messenger in-app browser):
@@ -124,11 +154,47 @@ export default function ContactsStep({
 
    useEffect(() => {
       const onHide = () => {
-         if (document.visibilityState === 'hidden' && awaitingMessengerRef.current) leftForMessengerRef.current = true;
+         if (document.visibilityState !== 'hidden' || !awaitingMessengerRef.current) return;
+         leftForMessengerRef.current = true;
+         if (leftAtRef.current === null) {
+            leftAtRef.current = Date.now();
+            track('contact_verify_left_app', {
+               source,
+               channel: 'messenger',
+               attempt: attemptsRef.current,
+               seconds_since_start: secondsSince(lastStartedAtRef.current)
+            });
+         }
       };
       document.addEventListener('visibilitychange', onHide);
       return () => document.removeEventListener('visibilitychange', onHide);
-   }, []);
+   }, [source]);
+
+   // Confirmed during this visit (not a line verified on an earlier application).
+   useEffect(() => {
+      if (confirmedTrackedRef.current || attemptsRef.current === 0) return;
+      const channel = messengerVerified ? 'messenger' : whatsappVerified ? 'whatsapp' : null;
+      if (!channel) return;
+      confirmedTrackedRef.current = true;
+      track('contact_verify_confirmed', {
+         source,
+         channel,
+         attempts: attemptsRef.current,
+         seconds_since_first_start: secondsSince(firstStartedAtRef.current),
+         seconds_since_last_start: secondsSince(lastStartedAtRef.current),
+         left_app: leftForMessengerRef.current
+      });
+   }, [messengerVerified, whatsappVerified, source]);
+
+   const showBackup = useCallback(
+      (reason: 'timeout' | 'returned_unconfirmed') => {
+         setShowTypedCode(true);
+         if (backupTrackedRef.current) return;
+         backupTrackedRef.current = true;
+         track('contact_verify_backup_shown', { source, channel: 'messenger', reason, attempts: attemptsRef.current });
+      },
+      [source]
+   );
 
    const stopPolling = () => {
       if (pollRef.current) {
@@ -140,9 +206,9 @@ export default function ContactsStep({
 
    useEffect(() => {
       if (!messengerLink || messengerVerified) return;
-      const timer = window.setTimeout(() => setShowTypedCode(true), SHOW_TYPED_CODE_AFTER_MS);
+      const timer = window.setTimeout(() => showBackup('timeout'), SHOW_TYPED_CODE_AFTER_MS);
       return () => window.clearTimeout(timer);
-   }, [messengerLink, messengerVerified]);
+   }, [messengerLink, messengerVerified, showBackup]);
 
    // Mobile browsers freeze the 3s poll above while the borrower is away in Messenger, so the
    // checkmark can lag — or never appear if they come back to a still-frozen tab and then close it.
@@ -161,12 +227,22 @@ export default function ContactsStep({
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (leftAtRef.current !== null) {
+            track('contact_verify_returned', {
+               source,
+               channel: 'messenger',
+               attempt: attemptsRef.current,
+               seconds_away: secondsSince(leftAtRef.current),
+               confirmed: Boolean(data?.messenger_verified_at)
+            });
+            leftAtRef.current = null;
+         }
          if (data?.messenger_verified_at) {
             setMessengerVerified(true);
             return;
          }
          if (leftForMessengerRef.current && graceTimer === null) {
-            graceTimer = window.setTimeout(() => setShowTypedCode(true), RETURN_GRACE_MS);
+            graceTimer = window.setTimeout(() => showBackup('returned_unconfirmed'), RETURN_GRACE_MS);
          }
       };
       document.addEventListener('visibilitychange', recheck);
@@ -176,10 +252,17 @@ export default function ContactsStep({
          window.removeEventListener('focus', recheck);
          if (graceTimer !== null) window.clearTimeout(graceTimer);
       };
-   }, [messengerLink, messengerVerified, userId]);
+   }, [messengerLink, messengerVerified, userId, source, showBackup]);
+
+   const reopenMessenger = (location: 'card' | 'backup') => {
+      if (!messengerLink) return;
+      track('contact_verify_reopen_tapped', { source, channel: 'messenger', location, attempts: attemptsRef.current });
+      window.open(messengerLink, '_blank', 'noopener,noreferrer');
+   };
 
    const copyMessengerCode = async () => {
       if (!messengerCode) return;
+      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current });
       try {
          await navigator.clipboard.writeText(messengerCode);
          setCodeCopied(true);
@@ -202,6 +285,19 @@ export default function ContactsStep({
          if (error || !code) throw error ?? new Error('No code returned');
 
          const link = channel === 'whatsapp' ? buildWhatsAppVerifyLink(code) : buildMessengerVerifyLink(String(code));
+         attemptsRef.current += 1;
+         lastStartedAtRef.current = Date.now();
+         firstStartedAtRef.current ??= lastStartedAtRef.current;
+         lastChannelRef.current = channel;
+         leftAtRef.current = null;
+         track('contact_verify_started', {
+            source,
+            channel,
+            attempt: attemptsRef.current,
+            is_android: /android/i.test(navigator.userAgent),
+            is_ios: /iphone|ipad|ipod/i.test(navigator.userAgent),
+            in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent)
+         });
          if (channel === 'messenger') {
             setMessengerLink(link);
             setMessengerCode(String(code));
@@ -226,6 +322,7 @@ export default function ContactsStep({
          }, 3000);
       } catch (err) {
          console.error(`start verification failed (${channel})`, err);
+         track('contact_verify_start_failed', { source, channel });
          setVerifyError("Couldn't start verification — try again in a moment.");
       } finally {
          setStartingChannel(null);
@@ -234,7 +331,13 @@ export default function ContactsStep({
 
    const handleContinue = () => {
       if (!canContinue) return;
+      track('contact_verify_continue', { source, channel: messengerVerified ? 'messenger' : 'whatsapp', push_on: pushOn });
       onContinue();
+   };
+
+   const handleBack = () => {
+      track('contact_verify_back', { source, contact_verified: contactVerified, attempts: attemptsRef.current, label: backLabel });
+      onBack();
    };
 
    return (
@@ -276,7 +379,7 @@ export default function ContactsStep({
                      </span>
                      <button
                         type="button"
-                        onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                        onClick={() => reopenMessenger('card')}
                         className="mt-1 w-fit text-[14px] font-semibold text-md-primary-1200 underline underline-offset-4"
                      >
                         Open Messenger again
@@ -290,7 +393,7 @@ export default function ContactsStep({
                         <b>1.</b> Tap{' '}
                         <button
                            type="button"
-                           onClick={() => window.open(messengerLink, '_blank', 'noopener,noreferrer')}
+                           onClick={() => reopenMessenger('backup')}
                            className="font-semibold text-md-primary-1200 underline underline-offset-4"
                         >
                            Open Messenger again
@@ -317,6 +420,9 @@ export default function ContactsStep({
                         href={MOODENG_FACEBOOK_PAGE_URL}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() =>
+                           track('contact_verify_page_link_tapped', { source, channel: 'messenger', attempts: attemptsRef.current })
+                        }
                         className="mt-2 inline-block font-semibold text-md-primary-1200 underline underline-offset-4"
                      >
                         Open our Facebook page
@@ -368,7 +474,7 @@ export default function ContactsStep({
             {contactVerified && pushRequired && !pushOn ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
             ) : null}
-            <GhostButton onClick={onBack}>Back</GhostButton>
+            <GhostButton onClick={handleBack}>{backLabel}</GhostButton>
          </div>
       </div>
    );

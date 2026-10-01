@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
+import posthog from 'posthog-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
@@ -97,10 +98,12 @@ type Step =
    | 'id-prep'
    | 'id-pending'
    | 'id-waiting'
+   // A manual review. Shown as the Facebook step first (see showContactsFirst) until the
+   // borrower has a confirmed contact line or chooses "Skip for now".
    | 'id-review'
-   // Reachable only from 'id-review' via "Continue": reuses the loan-flow contacts
-   // card so a borrower waiting on a manual review can add Facebook + push, the two
-   // channels we notify them on the moment the review clears.
+   // Reached from 'id-review' via "Continue": reuses the loan-flow contacts card so a
+   // borrower waiting on a manual review can add Facebook + push, the two channels we
+   // notify them on the moment the review clears.
    | 'id-review-contacts'
    | 'id-declined'
    | 'id-abandoned'
@@ -147,6 +150,19 @@ export default function VerifyFlow() {
    // any earlier poll bail on its next check, so a superseded loop can't stomp state.
    const pollRunRef = useRef(0);
    const startedRef = useRef(false);
+   // Facebook before "Manual review in progress": the review screen is where a borrower
+   // relaxes and leaves, so we ask for the line we'll tell them on first. 'show' latches the
+   // step for this visit: returning from Messenger re-checks the status and refreshes the
+   // user, and the card must not vanish the moment Facebook confirms, before they've turned
+   // on reminders and tapped Continue. 'done' (Continue or Skip) also only lasts this visit —
+   // leave and come back unconnected, and the Facebook step is what they land on again.
+   const [contactsGate, setContactsGate] = useState<'unknown' | 'show' | 'done'>('unknown');
+   const hasVerifiedContact = Boolean(user?.hasVerifiedContact);
+   const showContactsFirst =
+      step === 'id-review' && Boolean(user) && contactsGate !== 'done' && (contactsGate === 'show' || !hasVerifiedContact);
+   useEffect(() => {
+      if (showContactsFirst && contactsGate === 'unknown') setContactsGate('show');
+   }, [showContactsFirst, contactsGate]);
 
    const isLivenessPoll = step === 'liveness-pending';
    const isIdPoll = step === 'id-pending';
@@ -650,6 +666,19 @@ export default function VerifyFlow() {
       return () => window.clearTimeout(timeout);
    }, [step, flow?.returnTo, navigateAfterVerified]);
 
+   // Log which review screen the borrower lands on, once per screen per visit.
+   const reviewScreen = showContactsFirst ? 'contacts_first' : step === 'id-review' ? 'review' : step === 'id-review-contacts' ? 'contacts' : null;
+   const loggedReviewScreensRef = useRef(new Set<string>());
+   useEffect(() => {
+      if (!reviewScreen || loggedReviewScreensRef.current.has(reviewScreen)) return;
+      loggedReviewScreensRef.current.add(reviewScreen);
+      try {
+         posthog.capture('verify_review_screen_shown', { screen: reviewScreen, contact_verified: hasVerifiedContact });
+      } catch {
+         // Analytics unavailable — nothing to do.
+      }
+   }, [reviewScreen, hasVerifiedContact]);
+
    const handleWorldIdSuccess = useCallback(() => {
       navigateAfterVerified(flow?.returnTo);
    }, [flow?.returnTo, navigateAfterVerified]);
@@ -809,39 +838,56 @@ export default function VerifyFlow() {
       );
    }
 
+   if ((showContactsFirst || step === 'id-review-contacts') && user) {
+      // Repurposes the loan-flow "how we reach you" card (Facebook Messenger + push).
+      // ContactsStep gates its own Continue on a confirmed channel; the secondary button
+      // always leads on to the review screen, so a borrower who can't finish is never
+      // trapped here. Both refresh the user so the review screen knows whether the line
+      // is connected (it may be even when they skip: confirmed Facebook but no push).
+      const leaveContacts = () => {
+         setContactsGate('done');
+         setStep('id-review');
+         void dispatch(fetchUser());
+      };
+      return (
+         <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-modal mx-auto w-full">
+            <ContactsStep
+               userId={user.id}
+               source="verify_review"
+               backLabel={showContactsFirst ? 'Skip for now' : 'Back'}
+               onBack={leaveContacts}
+               onContinue={leaveContacts}
+               intro={
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.hello}
+                     subtitle="Your ID is in. Add your Facebook and turn on notifications so we can message you the moment your verification is complete."
+                     title="Almost done 💜"
+                  />
+               }
+            />
+         </div>
+      );
+   }
+
    if (step === 'id-review') {
       return (
          <StatusScreen
             visual="orbit"
             title="Manual review in progress"
-            body="Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. Add your Facebook and turn on notifications so we can tell you the moment it's done."
-            action={{ label: 'Continue', onClick: () => setStep('id-review-contacts') }}
+            body={
+               hasVerifiedContact
+                  ? "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. We'll message you on Facebook the moment it's done."
+                  : "Your verification needs a quick human review — this usually takes a few hours but can take up to 1 business day. Add your Facebook and turn on notifications so we can tell you the moment it's done."
+            }
+            action={
+               hasVerifiedContact
+                  ? { label: 'Go to dashboard', onClick: () => navigate('/dashboard') }
+                  : { label: 'Add Facebook', onClick: () => setStep('id-review-contacts') }
+            }
             secondaryAction={{ label: 'Check status', onClick: () => void checkStatusOnce() }}
-            tertiaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
+            tertiaryAction={hasVerifiedContact ? undefined : { label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />
-      );
-   }
-
-   if (step === 'id-review-contacts' && user) {
-      // Repurposes the loan-flow "how we reach you" card (Facebook Messenger + push).
-      // ContactsStep gates its own Continue on a confirmed channel; Back always returns
-      // to the review screen so a borrower who can't finish is never trapped here.
-      return (
-         <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-modal mx-auto w-full">
-            <ContactsStep
-               userId={user.id}
-               onBack={() => setStep('id-review')}
-               onContinue={() => setStep('id-review')}
-               intro={
-                  <ConnectHero
-                     image={CONNECT_HIPPOS.hello}
-                     subtitle="Add your Facebook and turn on notifications so we can reach you the moment your review is done."
-                     title="Stay in the loop 💜"
-                  />
-               }
-            />
-         </div>
       );
    }
 
