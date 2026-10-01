@@ -1722,12 +1722,13 @@ function RequestBoard$() {
    const filteredLoans = useMemo(() => {
       const allFilters: LoanFilters = { ...filters, search: searchLoan, sortBy: filters.sortBy };
       return filterLoans(
-         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan)),
+         // On-hold requests (missed video call) stay visible only to their own borrower.
+         requestBoardLoans.filter((loan) => isRequestBoardLoanVisible(loan, new Date(), user?.id)),
          allFilters,
          customAmount,
          userProfiles
       );
-   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles]);
+   }, [filters, searchLoan, requestBoardLoans, customAmount, userProfiles, user?.id]);
 
    const {
       displayedItems: displayedLoans,

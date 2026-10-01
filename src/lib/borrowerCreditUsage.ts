@@ -31,8 +31,15 @@ export const getBorrowerUsedCreditAmount = (loans: CreditUsageLoan[], now = new 
 export const getBorrowerActiveLoanCount = (loans: CreditUsageLoan[], now = new Date()) =>
    loans.filter((loan) => isLoanUsingBorrowerCredit(loan, now)).length;
 
-export const isRequestBoardLoanVisible = (loan: Pick<Loan, 'createdAt' | 'loanStatus'>, now = new Date()) =>
-   !isExpiredUnfundedRequest(loan, now);
+/**
+ * Shown on the request board: not expired, and not on hold. A request on hold (the borrower missed
+ * their video call) is hidden from everyone but its borrower, who sees it marked "On hold".
+ */
+export const isRequestBoardLoanVisible = (
+   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'borrowerUser'>>,
+   now = new Date(),
+   viewerUserId?: string | null
+) => !isExpiredUnfundedRequest(loan, now) && (!loan.onHoldSince || (Boolean(viewerUserId) && loan.borrowerUser === viewerUserId));
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;

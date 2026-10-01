@@ -14,6 +14,7 @@
 
 import { ATTENDANCE_COLUMNS, type AttendanceFields, describeAttendance, zoomActiveForHost } from './attendance.ts';
 import { postDiscord } from './discord.ts';
+import { describeHeldRequests } from './loanRequestHold.ts';
 import {
    BORROWER_COLUMNS,
    type BorrowerRow,
@@ -150,11 +151,14 @@ export const recordCallOutcome = async (
       if (approveError) throw new Error(approveError.message);
       approvedNow = true;
       await notifyBorrower(svc, updated as BorrowerRow, 'approved');
-   } else if (outcome === 'no_show') {
-      await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : 'missed_call');
+   }
+   // A no-show parks their open request (database trigger); say which one, to them and the team.
+   const held = outcome === 'no_show' ? await describeHeldRequests(svc, userId) : '';
+   if (outcome === 'no_show') {
+      await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held ? 'missed_call_request_paused' : 'missed_call');
    }
 
-   const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}`;
+   const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
    return { ok: true, summary };
 };

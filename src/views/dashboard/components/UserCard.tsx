@@ -29,6 +29,7 @@ import {
 import { formatBoardExpiryLabel, getRequestBoardExpiry, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
 import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
 import { confirmLoanPayment, fetchLoans, type LoanSideEffectError } from '@/store/slices/loanSlice';
@@ -37,6 +38,7 @@ import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
 import LendChecklistModal from '@/views/dashboard/components/LendChecklistModal';
+import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
 type UserCardProps = Loan & {
    currentUserId?: string;
@@ -175,6 +177,8 @@ export default function UserCard(loan: UserCardProps) {
    // Help"; everyone else falls through to the normal lend flow, byte-for-byte unchanged.
    const isFundingAdmin = useIsFundingAdmin();
    const [showFundingModal, setShowFundingModal] = useState(false);
+   // Borrower's own request on hold (missed video call): book a new call right from the card.
+   const [showRebook, setShowRebook] = useState(false);
    const [showModal, setShowModal] = useState(false);
    const [showWalletChecklist, setShowWalletChecklist] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
@@ -266,6 +270,25 @@ export default function UserCard(loan: UserCardProps) {
 
          if (loanData.borrowerUser === userId) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
+            return;
+         }
+
+         // Re-check the live request right before any money moves: the USDC goes out before the server
+         // confirms, so this is where a request put on hold (borrower missed their call) or already
+         // funded has to be caught. If the check itself fails, carry on: the server still verifies.
+         const { data: liveLoan } = await getSupabaseBrowserClient()
+            .from('loans')
+            .select('loan_status, lender_user_id, on_hold_since')
+            .eq('id', loanData.id)
+            .maybeSingle();
+         if (liveLoan?.on_hold_since) {
+            showToast(TOAST_TYPES.WARNING, 'This request is paused', 'The borrower needs to book a new call before it can be funded.');
+            void dispatch(fetchLoans());
+            return;
+         }
+         if (liveLoan && (liveLoan.loan_status !== 'Requested' || liveLoan.lender_user_id)) {
+            showToast(TOAST_TYPES.WARNING, 'Already funded', 'Someone else just funded this request.');
+            void dispatch(fetchLoans());
             return;
          }
 
@@ -741,6 +764,22 @@ export default function UserCard(loan: UserCardProps) {
                      View Request
                      <ChevronRight className="w-5 h-5" />
                   </Link>
+               ) : isOwnLoan && loanData.onHoldSince && loanData.loanStatus === 'Requested' ? (
+                  // Hidden from lenders until they rebook; booking a new call puts it straight back.
+                  <div className="flex flex-col gap-md-2 rounded-md-lg border border-[#f5c56b] bg-[#fff6e0] p-md-3">
+                     <p className="text-md-b2 font-semibold text-[#8a5300]">On hold: book a new call to put it back</p>
+                     <p className="text-md-b3 text-[#8a5300]">
+                        We missed you on your video call, so lenders can&apos;t see this request for now. It goes straight back on the board
+                        once you&apos;ve booked.
+                     </p>
+                     <button
+                        type="button"
+                        onClick={() => setShowRebook(true)}
+                        className="w-full rounded-md-lg bg-md-primary-1200 py-md-3 text-md-b1 font-semibold text-md-neutral-100 transition-all duration-150 hover:brightness-110 active:scale-[0.98]"
+                     >
+                        Book a new call
+                     </button>
+                  </div>
                ) : isOwnLoan ? (
                   <div className="bg-md-neutral-500 text-md-neutral-1200 text-md-b1 font-semibold py-md-3 rounded-md-lg text-center cursor-not-allowed">
                      Your Loan Request
@@ -830,6 +869,26 @@ export default function UserCard(loan: UserCardProps) {
                onConfirm={handleConfirmFromChecklist}
                onClose={() => setShowWalletChecklist(false)}
             />
+         ) : null}
+
+         {/* Borrower's own request on hold: book a new call without leaving the board. */}
+         {showRebook && userId ? (
+            <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" role="dialog" aria-modal="true">
+               <div className="max-h-[92vh] w-full max-w-modal overflow-hidden rounded-t-[24px] bg-white sm:rounded-[24px]">
+                  <VideoCallStep
+                     userId={userId}
+                     requireUpcoming
+                     intro="Book a new call and your request goes straight back on the board."
+                     continueLabel="Done"
+                     onBack={() => setShowRebook(false)}
+                     onContinue={() => setShowRebook(false)}
+                     onBooked={() => {
+                        // The booking clears the hold on the server; refresh so the card updates.
+                        window.setTimeout(() => void dispatch(fetchLoans()), 4000);
+                     }}
+                  />
+               </div>
+            </div>
          ) : null}
 
          {/* Internal funding fork (George/Emma only): Direct Lend vs Smart Contract Lend */}

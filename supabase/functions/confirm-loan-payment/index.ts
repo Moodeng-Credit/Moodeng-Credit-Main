@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { postDiscord } from '../_shared/discord.ts';
 import {
    computeYearOneIouPointsDelta,
    evaluateCreditProgression,
@@ -469,6 +470,11 @@ serve(async (req) => {
       updates.lender_wallet = transfer.from;
       updates.loan_status = 'Lent';
       updates.funded_at = new Date().toISOString();
+      // The app won't start funding a request that's on hold (no-show), but the USDC is sent before
+      // this confirmation runs, so a payment that raced the hold is still recorded truthfully — the
+      // money moved — and the team is told below.
+      updates.on_hold_since = null;
+      updates.on_hold_reason = null;
    } else if (action === 'repay') {
       updates.hash = [...(loan.hash ?? []), recordHash];
       const paidUsd = Number(transfer.micros) / 1e6;
@@ -498,6 +504,13 @@ serve(async (req) => {
    const sideEffectErrors: SideEffectError[] = [];
 
    if (action === 'fund') {
+      if (loan.on_hold_since) {
+         console.warn(`confirm-loan-payment: ${loan.tracking_id} was funded while on hold (${loan.on_hold_reason ?? 'unknown'})`);
+         await postDiscord(
+            { content: `⚠️ ${loan.tracking_id} was funded while on hold (${loan.on_hold_reason === 'no_show' ? 'borrower missed their call' : loan.on_hold_reason ?? 'unknown'}). The payment is recorded; check in with the borrower.` },
+            { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         );
+      }
       sideEffectErrors.push(...(await awardFundingPoints(admin, updatedLoan)));
       const { error: notifyError } = await admin.functions.invoke('loan-funded-notification', { body: { loanId } });
       if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
