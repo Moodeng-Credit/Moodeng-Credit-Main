@@ -80,4 +80,40 @@ describe('trust point reward calculation', () => {
 
       expect(reward).toBe('50000000');
    });
+
+   describe('full-limit credit-builder milestone', () => {
+      const fullLimitOnly: TrustPointMilestoneDefinition[] = [{ id: 'full-limit-credit-builder', points_awarded: 30000000, is_active: true }];
+      const referenceDate = new Date('2026-06-23T00:00:00.000Z');
+      // A $15 full-limit loan repaid late: it levels the borrower up to $20 but is not on time.
+      const lateFirstLoan: TrustPointRewardLoan = {
+         ...activeLoan,
+         id: 'loan-0',
+         loan_amount: 15,
+         total_repayment_amount: 16,
+         repaid_amount: 16,
+         due_date: '2026-05-10T00:00:00.000Z',
+         repayment_status: 'Paid',
+         updated_at: '2026-05-15T00:00:00.000Z'
+      };
+
+      const rewardFor = (amount: number) => {
+         const nextLoan = { ...activeLoan, loan_amount: amount, total_repayment_amount: amount + 1, due_date: '2026-06-24T00:00:00.000Z' };
+         return calculateTrustPointRewardDelta({
+            beforeLoans: [lateFirstLoan, nextLoan],
+            afterLoans: markLoansRepaid([lateFirstLoan, nextLoan], ['loan-1'], referenceDate),
+            user: { is_world_id: 'ACTIVE', cs: 20 },
+            milestoneDefinitions: fullLimitOnly,
+            completedMilestoneIds: new Set(),
+            referenceDate
+         });
+      };
+
+      it('is not earned by an on-time loan below the current limit, even at a tier amount', () => {
+         expect(rewardFor(15)).toBe('0');
+      });
+
+      it('is earned by an on-time loan at the current limit', () => {
+         expect(rewardFor(20)).toBe('30000000');
+      });
+   });
 });

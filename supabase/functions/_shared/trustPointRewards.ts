@@ -25,7 +25,8 @@ export type TrustPointMilestoneDefinition = {
 
 type EligibilityByMilestone = Record<string, boolean>;
 
-const creditTierLoanAmounts = new Set([15, 20, 40, 60, 80, 100, 120, 140]);
+const CREDIT_TIERS = [15, 20, 40, 60, 80, 100, 120, 140];
+const MAX_CREDIT_LIMIT = CREDIT_TIERS[CREDIT_TIERS.length - 1];
 
 const toNumber = (value: number | string | null | undefined) => {
    const numberValue = Number(value ?? 0);
@@ -69,6 +70,24 @@ const isPaidOnTime = (loan: TrustPointRewardLoan) => {
    return paidAt !== null && dueAt !== null && paidAt <= dueAt;
 };
 
+// Replays the level-up rule: walking fully repaid loans in order from the starting limit, a loan at or
+// above the limit at the time is a full-limit loan and unlocks the next tier. Smaller (trust-building)
+// loans never are, even when the amount happens to be a tier value.
+const getFullLimitLoans = (paidLoans: TrustPointRewardLoan[]) => {
+   const fullLimitLoans = new Set<TrustPointRewardLoan>();
+   let replayLimit = CREDIT_TIERS[0];
+
+   [...paidLoans.filter(isFullyRepaid)]
+      .sort((a, b) => (toDateMs(a.updated_at) ?? 0) - (toDateMs(b.updated_at) ?? 0))
+      .forEach((loan) => {
+         if (toNumber(loan.loan_amount) < replayLimit) return;
+         fullLimitLoans.add(loan);
+         if (replayLimit < MAX_CREDIT_LIMIT) replayLimit = CREDIT_TIERS[CREDIT_TIERS.indexOf(replayLimit) + 1];
+      });
+
+   return fullLimitLoans;
+};
+
 const getEligibilityByMilestone = (
    loans: TrustPointRewardLoan[],
    user: TrustPointRewardUser,
@@ -87,6 +106,7 @@ const getEligibilityByMilestone = (
       const dueAt = toDateMs(loan.due_date);
       return dueAt !== null && dueAt < referenceDate.getTime();
    });
+   const fullLimitLoans = getFullLimitLoans(paidLoans);
    const creditLimit = toNumber(user.cs);
    const isVerified = user.is_world_id === true || user.is_world_id === 'ACTIVE';
 
@@ -96,7 +116,7 @@ const getEligibilityByMilestone = (
       'first-funded-loan': fundedLoans.length >= 1,
       'first-on-time-repayment': onTimePaidLoans.length >= 1,
       'two-on-time-streak': onTimePaidLoans.length >= 2,
-      'full-limit-credit-builder': onTimePaidLoans.some((loan) => creditTierLoanAmounts.has(toNumber(loan.loan_amount))),
+      'full-limit-credit-builder': onTimePaidLoans.some((loan) => fullLimitLoans.has(loan)),
       'two-unique-lenders': uniqueLenderCount >= 2,
       'repay-100-total': totalRepaid >= 100,
       'reach-level-three': isVerified && creditLimit >= 40,

@@ -1,7 +1,7 @@
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
-import { isExactCreditTier } from '@/config/creditTiers';
+import { CREDIT_TIERS, MAX_CREDIT_LIMIT, getNextCreditTier } from '@/config/creditTiers';
 import { isRepaidOnTime } from '@/lib/creditLeveling';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
@@ -87,6 +87,30 @@ export const getFundedBorrowerLoans = (loans: Loan[], userId: string) =>
 
 const getOnTimePaidLoans = (loans: Loan[]) => loans.filter(isLoanPaidOnTime);
 
+/**
+ * Loans that counted as full-limit loans, found by replaying the level-up rule: walking fully repaid
+ * loans in order from the starting limit, a loan at or above the limit at the time is a full-limit
+ * loan and unlocks the next tier. Smaller (trust-building) loans never are, even at a tier amount.
+ */
+const getFullLimitLoans = (loans: Loan[]): Set<Loan> => {
+   const paidAt = (loan: Loan) => parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
+   const fullLimitLoans = new Set<Loan>();
+   let replayLimit: number = CREDIT_TIERS[0];
+   loans
+      .filter((loan) => {
+         if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
+         const totalRepayment = toNumber(loan.totalRepaymentAmount);
+         return totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
+      })
+      .sort((a, b) => paidAt(a) - paidAt(b))
+      .forEach((loan) => {
+         if (toNumber(loan.loanAmount) < replayLimit) return;
+         fullLimitLoans.add(loan);
+         if (replayLimit < MAX_CREDIT_LIMIT) replayLimit = getNextCreditTier(replayLimit);
+      });
+   return fullLimitLoans;
+};
+
 const hasUnresolvedDefault = (loan: Loan): boolean =>
    loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && parseDateSafely(loan.dueDate).getTime() < Date.now();
 
@@ -151,7 +175,8 @@ export const buildReputationMilestones = ({
    const currentLevelAmount = currentLevel?.amount ?? nextLevel?.amount;
    const hasActiveLoanToRepay = borrowerLoans.some((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid');
    const hasRequestedLoan = borrowerLoans.length > 0;
-   const hasFullLimitRepayment = onTimePaidLoans.some((loan) => isExactCreditTier(toNumber(loan.loanAmount)));
+   const fullLimitLoans = getFullLimitLoans(borrowerLoans);
+   const hasFullLimitRepayment = onTimePaidLoans.some((loan) => fullLimitLoans.has(loan));
    const uniqueLenders = countUniqueLenders(fundedLoans);
    const totalRepaid = paidLoans.reduce((sum, loan) => sum + toNumber(loan.repaidAmount), 0);
    const hasDefaults = borrowerLoans.some(hasUnresolvedDefault);
