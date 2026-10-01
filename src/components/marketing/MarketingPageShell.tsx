@@ -3,6 +3,7 @@ import { type ReactNode, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, NavLink } from 'react-router-dom';
 
+import { LanguageMenu } from '@/components/LanguageSwitcher';
 import UserAvatar from '@/components/UserAvatar';
 
 import type { RootState } from '@/store/store';
@@ -73,6 +74,7 @@ export default function MarketingPageShell({ children }: MarketingPageShellProps
                </nav>
 
                <div className="flex items-center gap-md-1">
+                  <LanguageMenu />
                   {isSignedIn ? (
                      <UserAvatar
                         size={44}

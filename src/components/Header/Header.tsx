@@ -7,6 +7,7 @@ import DesktopNav from '@/components/Header/DesktopNav';
 import HeaderLogo from '@/components/Header/HeaderLogo';
 import MobileNav from '@/components/Header/MobileNav';
 import UserMenu from '@/components/Header/UserMenu';
+import { LanguageMenu } from '@/components/LanguageSwitcher';
 
 import { navigationButtons } from '@/config/buttonConfig';
 import { useLocalization } from '@/i18n';
@@ -32,6 +33,7 @@ export default function Header() {
             </div>
 
             <div className="flex items-center gap-4">
+               <LanguageMenu tone="dark" />
                {username ? (
                   <UserMenu dashboardHref="/dashboard" showMenu={showUserMenu} onToggleMenu={toggleUserMenu} onClose={closeUserMenu} />
                ) : (
