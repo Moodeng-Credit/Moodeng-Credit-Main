@@ -101,7 +101,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
-         cumulativeBorrowedAmount: 15,
+         loanAmount: 15,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
@@ -117,7 +117,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
-         cumulativeBorrowedAmount: 20,
+         loanAmount: 20,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
@@ -133,7 +133,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
-         cumulativeBorrowedAmount: 20,
+         loanAmount: 20,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-02-03T00:00:00.000Z'
       });
@@ -149,7 +149,7 @@ describe('Credit leveling logic', () => {
          isPaused: false,
          repaidAmount: 25,
          totalRepaymentAmount: 25,
-         cumulativeBorrowedAmount: 20,
+         loanAmount: 20,
          // due at midnight UTC, repaid later the same day — must not be flagged late
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-02-01T12:24:00.000Z'
@@ -160,14 +160,32 @@ describe('Credit leveling logic', () => {
       expect(evaluation.shouldLevelUp).toBe(true);
    });
 
-   it('levels up when cumulative repayments reach the current limit', () => {
+   it('does not level up a trust-building loan even when principal + interest reaches the limit', () => {
+      // $20 limit, $17 requested, $20 repaid on time — still a trust-building loan.
+      const evaluation = evaluateCreditProgression({
+         currentLimit: 20,
+         isVerified: true,
+         isPaused: false,
+         repaidAmount: 20,
+         totalRepaymentAmount: 20,
+         loanAmount: 17,
+         dueDate: '2025-02-01T00:00:00.000Z',
+         paidAt: '2025-01-31T00:00:00.000Z'
+      });
+
+      expect(evaluation.isFullyRepaid).toBe(true);
+      expect(evaluation.shouldPause).toBe(false);
+      expect(evaluation.shouldLevelUp).toBe(false);
+   });
+
+   it('levels up a request above the current limit', () => {
       const evaluation = evaluateCreditProgression({
          currentLimit: 40,
          isVerified: true,
          isPaused: false,
-         repaidAmount: 10,
-         totalRepaymentAmount: 10,
-         cumulativeBorrowedAmount: 45,
+         repaidAmount: 50,
+         totalRepaymentAmount: 50,
+         loanAmount: 45,
          dueDate: '2025-02-01T00:00:00.000Z',
          paidAt: '2025-01-31T00:00:00.000Z'
       });
