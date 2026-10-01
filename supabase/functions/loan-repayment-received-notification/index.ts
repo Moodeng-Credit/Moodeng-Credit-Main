@@ -12,6 +12,7 @@ import {
 } from '../_shared/loanNotifications.ts';
 import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import { buildRepaymentReceivedPushPayload } from '../_shared/pushMessages.ts';
+import { postLoanRepaidToTeam } from '../_shared/teamLoanFeed.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import {
    calculateTrustPointRewardDelta,
@@ -214,6 +215,8 @@ serve(async (req) => {
    } catch (teamFeedError) {
       console.error('repayment team feed failed', teamFeedError instanceof Error ? teamFeedError.message : teamFeedError);
    }
+
+   await postLoanRepaidToTeam(supabase, loan.id);
 
    if (borrowerAlreadySent && lenderAlreadySent) {
       return new Response(

@@ -9,7 +9,9 @@ export type LoanNotificationType =
    | 'repayment_team_feed'
    | 'team_due_today'
    | 'team_overdue'
-   | 'request_expired';
+   | 'request_expired'
+   | 'team_funded'
+   | 'team_repaid';
 
 export type LoanNotificationLoan = {
    tracking_id: string;
@@ -159,7 +161,7 @@ const shortenWallet = (address?: string | null) => {
 
 // Basescan link for a confirmed on-chain transaction hash. Returns '' for anything that isn't a
 // real 32-byte tx hash (e.g. a Base Account userOperation hash, which 404s on the explorer).
-const buildTxExplorerLink = (hash?: string | null) => {
+export const buildTxExplorerLink = (hash?: string | null) => {
    const value = (hash ?? '').trim();
    if (!/^0x[0-9a-fA-F]{64}$/.test(value)) return '';
    return `https://basescan.org/tx/${value}`;

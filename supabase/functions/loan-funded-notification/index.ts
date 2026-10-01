@@ -6,6 +6,7 @@ import {
    sendBorrowerLoanNotification
 } from '../_shared/borrowerNotificationDelivery.ts';
 import { LoanNotificationType } from '../_shared/loanNotifications.ts';
+import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts';
 import {
    calculateTrustPointRewardDelta,
    markLoansRepaid
@@ -112,6 +113,10 @@ serve(async (req) => {
    if (!loan.borrower_user_id) {
       return new Response(JSON.stringify({ error: 'Loan borrower is missing' }), { status: 400, headers: corsHeaders });
    }
+
+   // Team #loans / admin channel post. Independent of the borrower's own notification (and before its
+   // early returns), once per loan.
+   await postLoanFundedToTeam(supabase, loan.id);
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
