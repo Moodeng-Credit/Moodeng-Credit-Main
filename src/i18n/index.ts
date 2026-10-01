@@ -1,4 +1,5 @@
 export { LocalizationProvider, useLocalization } from '@/i18n/LocalizationProvider';
+export { detectRegion, REGION_LOCALE, type RegionCode, suggestLocaleForRegion } from '@/i18n/region';
 export {
    LOCALE_STORAGE_KEY,
    SUPPORTED_LOCALES,

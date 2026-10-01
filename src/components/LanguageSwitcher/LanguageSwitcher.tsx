@@ -17,7 +17,7 @@ const LANGUAGE_NAME_KEYS: Record<LocaleCode, TranslationKey> = {
 };
 
 export default function LanguageSwitcher({ className = '', tone = 'dark', variant = 'compact' }: LanguageSwitcherProps) {
-   const { locale, locales, setLocale, t } = useLocalization();
+   const { chooseLocale, locale, locales, t } = useLocalization();
    const isLight = tone === 'light';
    const isFull = variant === 'full';
    const groupClasses = isFull
@@ -49,7 +49,7 @@ export default function LanguageSwitcher({ className = '', tone = 'dark', varian
                   aria-label={t('language.switchTo', { language: languageName })}
                   title={languageName}
                   data-i18n-skip={isFull ? true : undefined}
-                  onClick={() => setLocale(language.code)}
+                  onClick={() => chooseLocale(language.code)}
                   className={[
                      isFull
                         ? 'flex w-full items-center justify-between gap-3 rounded-md-input px-4 py-3 text-left text-md-b1 font-semibold leading-6 transition-colors focus:outline-none focus-visible:ring-2'

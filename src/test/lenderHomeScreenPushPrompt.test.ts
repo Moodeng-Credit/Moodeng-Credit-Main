@@ -9,7 +9,8 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const env = vi.hoisted(() => ({
    homeScreenApp: true,
    permission: 'default' as string,
-   enable: vi.fn(async () => 'subscribed')
+   enable: vi.fn(async () => 'subscribed'),
+   locale: 'en' as string
 }));
 
 vi.mock('@/lib/push/webPushClient', () => ({
@@ -22,6 +23,8 @@ vi.mock('@/lib/push/webPushClient', () => ({
 vi.mock('@/hooks/usePushNotifications', () => ({
    usePushNotifications: () => ({ isSupported: true, isBusy: false, enable: env.enable })
 }));
+
+vi.mock('@/i18n', () => ({ useLocalization: () => ({ locale: env.locale }) }));
 
 const { default: LenderHomeScreenPushPrompt } = await import('@/components/funding/LenderHomeScreenPushPrompt');
 
@@ -49,6 +52,7 @@ describe('LenderHomeScreenPushPrompt', () => {
       env.homeScreenApp = true;
       env.permission = 'default';
       env.enable.mockClear();
+      env.locale = 'en';
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -99,5 +103,13 @@ describe('LenderHomeScreenPushPrompt', () => {
       env.permission = 'denied';
       await remount();
       expect(container.textContent).toBe('');
+   });
+
+   it('renders in the lender’s own app language, not just English', async () => {
+      env.locale = 'vi';
+      await render();
+      expect(container.textContent).toContain('Bật thông báo');
+      expect(buttonByText(container, 'Bật')).toBeTruthy();
+      expect(container.textContent).not.toContain('Turn on notifications');
    });
 });

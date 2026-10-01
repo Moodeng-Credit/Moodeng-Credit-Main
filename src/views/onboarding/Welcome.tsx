@@ -5,6 +5,7 @@ import { useLocalization } from '@/i18n/LocalizationProvider';
 import type { LocaleCode } from '@/i18n/translations';
 import type { RootState } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
+import { OnboardingLanguagePicker } from '@/views/onboarding/OnboardingLanguagePicker';
 
 const TUTORIAL_URL = 'https://youtube.com/shorts/fKpBC9zD6Hk';
 
@@ -133,6 +134,8 @@ export default function Welcome() {
 
          <div className="flex flex-col gap-md-4 p-md-4">
             <img src="/hippos/welcome.png" alt="Moodeng hippo" className="w-[110px] h-[96px] object-cover" />
+
+            <OnboardingLanguagePicker />
 
             <div className="flex flex-col gap-md-0 w-full">
                {user?.userRole === 'lender' ? (
