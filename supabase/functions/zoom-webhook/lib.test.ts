@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } from './lib.ts';
+import { classifyParticipant, classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } from './lib.ts';
 
 const SECRET = 'test-secret-token';
 
@@ -39,7 +39,8 @@ Deno.test('borrower in the waiting room = arrived; in the meeting = joined; leav
       meetingId: '81234567890',
       isHost: false,
       at: '2026-09-25T02:59:00.000Z',
-      name: 'Maria'
+      name: 'Maria',
+      email: ''
    });
    assertEquals(classifyZoomEvent(participantEvent('meeting.participant_joined', { user_name: 'Maria', join_time: '2026-09-25T03:01:00Z' })).kind, 'joined');
    assertEquals(classifyZoomEvent(participantEvent('meeting.participant_jbh_waiting', guest)).kind, 'arrived');
@@ -65,4 +66,34 @@ Deno.test('a shared personal-room id matches the booking closest to the event', 
    ];
    assertEquals(pickBooking(rows, at)?.id, 'b');
    assertEquals(pickBooking([{ id: 'far', video_call_starts_at: '2026-09-25T10:00:00Z' }], at), null);
+});
+
+const kryshia = { display_name: 'kryshia gonzales', username: 'sleeptonight00-57e835', email: 'sleeptonight00@gmail.com' };
+
+Deno.test('note-taker bots are never the borrower', () => {
+   for (const name of ["George's Notetaker (Otter.ai)", 'Fireflies.ai Notetaker', 'Read.ai meeting notes', 'Fathom', 'tl;dv recorder', 'Emma AI Notetaker']) {
+      assertEquals(classifyParticipant({ name, email: '' }, kryshia), 'bot', name);
+   }
+});
+
+Deno.test('teammates are never the borrower', () => {
+   assertEquals(classifyParticipant({ name: 'George Lerner', email: '' }, kryshia), 'team');
+   assertEquals(classifyParticipant({ name: 'Emma', email: '' }, kryshia), 'team');
+   assertEquals(classifyParticipant({ name: 'Moodeng Credit', email: '' }, kryshia), 'team');
+   assertEquals(classifyParticipant({ name: 'Anyone', email: 'ops@moodeng.app' }, kryshia), 'team');
+});
+
+Deno.test('the borrower is matched by any shared name word, or by email', () => {
+   assertEquals(classifyParticipant({ name: 'Kryshia Joyce', email: '' }, kryshia), 'borrower');
+   assertEquals(classifyParticipant({ name: 'sleeptonight00', email: '' }, kryshia), 'borrower');
+   assertEquals(classifyParticipant({ name: 'K', email: 'sleeptonight00@gmail.com' }, kryshia), 'borrower');
+});
+
+Deno.test('a borrower who shares a host first name is still the borrower', () => {
+   assertEquals(classifyParticipant({ name: 'Emma Santos', email: '' }, { display_name: 'Emma Santos', username: 'emmas', email: null }), 'borrower');
+});
+
+Deno.test('an unrecognised name is a maybe, not ignored', () => {
+   assertEquals(classifyParticipant({ name: 'iPhone', email: '' }, kryshia), 'unknown');
+   assertEquals(classifyParticipant({ name: '', email: '' }, kryshia), 'unknown');
 });
