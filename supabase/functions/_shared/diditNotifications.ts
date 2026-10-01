@@ -216,13 +216,22 @@ export const notifyUser = async (
       // SendPulse only delivers inside Messenger's 24h window, so this lands when the
       // review clears soon after they set it up (the common case) and silently no-ops
       // otherwise — email/push still carry it. Never throws.
+      // The outcome is logged either way, so "did the bot tell her?" is one log search.
       if (user.messenger_psid) {
-         await sendMessengerMessage(user.messenger_psid, {
+         const result = await sendMessengerMessage(user.messenger_psid, {
             text: `${copy.subject}\n\n${copy.body(reason)}`,
             card: { title: copy.subject, button: { title: copy.cta, url: verifyUrl } }
          }).catch((err: unknown) => {
             console.error('[diditNotifications] User Messenger notification failed:', err instanceof Error ? err.message : err);
+            return null;
          });
+         console.log(
+            `[diditNotifications] Messenger "${outcome}" for ${userId.slice(0, 8)} → ${
+               result?.ok ? 'sent' : `not sent (${result ? result.reason : 'error'})`
+            }`
+         );
+      } else {
+         console.log(`[diditNotifications] Messenger "${outcome}" for ${userId.slice(0, 8)} → not sent (no Facebook connected)`);
       }
    } catch (err) {
       console.error('[diditNotifications] User notification failed:', err instanceof Error ? err.message : err);
