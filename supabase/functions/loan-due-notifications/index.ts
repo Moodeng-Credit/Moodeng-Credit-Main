@@ -11,6 +11,7 @@ import {
 } from '../_shared/loanNotifications.ts';
 import { dueDayBounds, loanTimezone, localHour, QUIET_HOURS_END, resolveTimezone } from '../_shared/loanDeadline.ts';
 import { loadBorrowerTimezones, postDueTeamFeed } from '../_shared/loanDueTeamFeed.ts';
+import { postUpcomingDueDigest } from '../_shared/teamLoanFeed.ts';
 import { loadPushSubscriptions } from '../_shared/pushDelivery.ts';
 import { calculateTrustPointRewardDelta, markLoansRepaid } from '../_shared/trustPointRewards.ts';
 import type { TrustPointMilestoneDefinition, TrustPointRewardLoan, TrustPointRewardUser } from '../_shared/trustPointRewards.ts';
@@ -481,7 +482,10 @@ serve(async (req) => {
       referenceDate
    );
 
-   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount, failed: failedCount, teamAnnounced: announced }), {
+   // #loans: once a day, everything coming due in the next 3 days.
+   const digestLoans = await postUpcomingDueDigest(supabase, referenceDate);
+
+   return new Response(JSON.stringify({ message: 'Notifications processed', sent: sentCount, failed: failedCount, teamAnnounced: announced, digestLoans }), {
       status: 200,
       headers: corsHeaders
    });
