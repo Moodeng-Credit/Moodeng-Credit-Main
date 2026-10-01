@@ -2,7 +2,8 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 
 import { CREDIT_TIERS, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
-import { isRepaidOnTime } from '@/lib/creditLeveling';
+import { OVERDUE_AFTER_DUE_DATE_MS } from '@/lib/creditLeveling';
+import { getDueDayEnd, getLoanTimezone } from '@/lib/loanDeadline';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
 import type { CreditLevel } from '@/views/profile/components/tabs/types';
@@ -78,7 +79,14 @@ const isLoanPaidOnTime = (loan: Loan): boolean => {
    const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
    if (!isFullyRepaid) return false;
    // repaidAt, not updatedAt: any later edit to the loan (interest return, admin fixes) bumps updatedAt.
-   return isRepaidOnTime(loan.repaidAt ?? loan.updatedAt, loan.dueDate);
+   // Before the LATER of due date + 24h and the end of the due day in the loan's zone, the same as
+   // app_private.is_loan_repaid_on_time.
+   const paidAt = parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
+   const deadline = Math.max(
+      parseDateSafely(loan.dueDate).getTime() + OVERDUE_AFTER_DUE_DATE_MS,
+      getDueDayEnd(loan.dueDate, getLoanTimezone(loan, 'Asia/Manila')).getTime()
+   );
+   return paidAt < deadline;
 };
 
 export const getBorrowerLoans = (loans: Loan[], userId: string) => loans.filter((loan) => loan.borrowerUser === userId);
@@ -95,14 +103,19 @@ const getOnTimePaidLoans = (loans: Loan[]) => loans.filter(isLoanPaidOnTime);
  */
 const getFullLimitLoans = (loans: Loan[]): Set<Loan> => {
    const paidAt = (loan: Loan) => parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
-   const fullLimitLoans = new Set<Loan>();
+   const fullyRepaid = loans.filter((loan) => {
+      if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
+      const totalRepayment = toNumber(loan.totalRepaymentAmount);
+      return totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
+   });
+   // Recorded at repayment (server): principal at or above the limit the borrower had then.
+   const fullLimitLoans = new Set<Loan>(
+      fullyRepaid.filter((loan) => loan.creditLimitAtRepayment !== undefined && toNumber(loan.loanAmount) >= loan.creditLimitAtRepayment)
+   );
+   // Loans repaid before that was recorded: replay the level-up rule from the $15 start.
    let replayLimit: number = CREDIT_TIERS[0];
-   loans
-      .filter((loan) => {
-         if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
-         const totalRepayment = toNumber(loan.totalRepaymentAmount);
-         return totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
-      })
+   fullyRepaid
+      .filter((loan) => loan.creditLimitAtRepayment === undefined)
       .sort((a, b) => paidAt(a) - paidAt(b))
       .forEach((loan) => {
          if (toNumber(loan.loanAmount) < replayLimit) return;

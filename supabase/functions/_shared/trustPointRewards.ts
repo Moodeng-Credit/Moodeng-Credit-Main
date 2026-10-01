@@ -1,3 +1,5 @@
+import { dueDayBounds, isUsableTimezone } from './loanDeadline.ts';
+
 export type TrustPointRewardLoan = {
    id?: string | null;
    borrower_user_id?: string | null;
@@ -12,6 +14,9 @@ export type TrustPointRewardLoan = {
    repaid_at?: string | null;
    refunded_at?: string | null;
    is_test?: boolean | null;
+   due_timezone?: string | null;
+   // Borrower's limit when the loan was fully repaid (confirm-loan-payment); principal >= this = full-limit.
+   credit_limit_at_repayment?: number | string | null;
    updated_at?: string | null;
 };
 
@@ -80,18 +85,29 @@ const isPaidOnTime = (loan: TrustPointRewardLoan) => {
 
    const paidAt = getPaidAtMs(loan);
    const dueAt = toDateMs(loan.due_date);
+   if (paidAt === null || dueAt === null || !loan.due_date) return false;
 
-   return paidAt !== null && dueAt !== null && paidAt < dueAt + OVERDUE_AFTER_DUE_DATE_MS;
+   // Same as app_private.is_loan_repaid_on_time: before the LATER of due_date + 24h and the end of the
+   // due day in the loan's own zone, so it's never stricter than before and never stricter than the app.
+   const zone = isUsableTimezone(loan.due_timezone) ? loan.due_timezone : 'Asia/Manila';
+   const deadline = Math.max(dueAt + OVERDUE_AFTER_DUE_DATE_MS, dueDayBounds(loan.due_date, zone).end.getTime());
+   return paidAt < deadline;
 };
 
-// Replays the level-up rule: walking fully repaid loans in order from the starting limit, a loan at or
-// above the limit at the time is a full-limit loan and unlocks the next tier. Smaller (trust-building)
-// loans never are, even when the amount happens to be a tier value.
+// Full-limit loans: principal at or above the limit recorded when the loan was repaid. Loans repaid
+// before that was recorded fall back to replaying the level-up rule from the $15 start (same as
+// private.is_trust_milestone_complete).
+const hasRecordedLimit = (loan: TrustPointRewardLoan) =>
+   loan.credit_limit_at_repayment !== null && loan.credit_limit_at_repayment !== undefined && loan.credit_limit_at_repayment !== '';
+
 const getFullLimitLoans = (paidLoans: TrustPointRewardLoan[]) => {
    const fullLimitLoans = new Set<TrustPointRewardLoan>();
+   for (const loan of paidLoans.filter(isFullyRepaid)) {
+      if (hasRecordedLimit(loan) && toNumber(loan.loan_amount) >= toNumber(loan.credit_limit_at_repayment)) fullLimitLoans.add(loan);
+   }
    let replayLimit = CREDIT_TIERS[0];
 
-   [...paidLoans.filter(isFullyRepaid)]
+   [...paidLoans.filter((loan) => isFullyRepaid(loan) && !hasRecordedLimit(loan))]
       .sort((a, b) => (getPaidAtMs(a) ?? 0) - (getPaidAtMs(b) ?? 0))
       .forEach((loan) => {
          if (toNumber(loan.loan_amount) < replayLimit) return;
@@ -186,8 +202,17 @@ export const calculateTrustPointRewardDelta = ({
    completedMilestoneIds?: Set<string>;
    referenceDate: Date;
 }) => {
+   // A loan this projection marks repaid hasn't had its limit recorded yet: record the borrower's
+   // current limit on it, as confirm-loan-payment will.
+   const paidBefore = new Set(beforeLoans.filter((loan) => isPaid(loan) && isFullyRepaid(loan)).map((loan) => loan.id).filter(Boolean));
+   const currentLimit = Math.min(Math.max(toNumber(user.cs), CREDIT_TIERS[0]), MAX_CREDIT_LIMIT);
+   const projectedAfter = afterLoans.map((loan) =>
+      loan.id && !paidBefore.has(loan.id) && isPaid(loan) && isFullyRepaid(loan) && !hasRecordedLimit(loan)
+         ? { ...loan, credit_limit_at_repayment: currentLimit }
+         : loan
+   );
    const beforeEligibility = getEligibilityByMilestone(beforeLoans, user, referenceDate);
-   const afterEligibility = getEligibilityByMilestone(afterLoans, user, referenceDate);
+   const afterEligibility = getEligibilityByMilestone(projectedAfter, user, referenceDate);
    const alreadyCompleted = completedMilestoneIds ?? new Set<string>();
 
    return milestoneDefinitions
