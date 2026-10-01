@@ -26,10 +26,13 @@ type TeamFeedLoan = {
    due_timezone?: string | null;
    hash?: string[] | null;
    is_test?: boolean | null;
+   loan_status?: string | null;
+   repayment_status?: string | null;
+   funded_at?: string | null;
 };
 
 const LOAN_COLUMNS =
-   'id, tracking_id, borrower_user_id, lender_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, hash, is_test';
+   'id, tracking_id, borrower_user_id, lender_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, due_timezone, hash, is_test, loan_status, repayment_status, funded_at';
 
 const siteUrl = () => (Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 const usdc = (amount: number | null | undefined) => `${Number(amount ?? 0).toFixed(2)} USDC`;
@@ -46,6 +49,11 @@ const claim = async (svc: SupabaseClient, loanId: string, userId: string, type: 
    if (!error) return true;
    if (error.code !== '23505') console.error(`teamLoanFeed: could not claim ${type} for ${loanId}:`, error.message);
    return false;
+};
+
+/** Gives the claim back when nothing went out, so the next call for this loan tries again. */
+const unclaim = async (svc: SupabaseClient, loanId: string, type: TeamFeedType) => {
+   await svc.from('loan_notifications').delete().eq('loan_id', loanId).eq('notification_type', type);
 };
 
 const loadPeople = async (svc: SupabaseClient, loan: TeamFeedLoan) => {
@@ -67,7 +75,8 @@ const loadLoan = async (svc: SupabaseClient, loanId: string): Promise<TeamFeedLo
 export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string): Promise<boolean> => {
    try {
       const loan = await loadLoan(svc, loanId);
-      if (!loan?.borrower_user_id || loan.is_test) return false;
+      // Only a loan that really is funded: the function can be called for any loan id.
+      if (!loan?.borrower_user_id || loan.is_test || loan.loan_status !== 'Lent' || !loan.funded_at) return false;
       if (!(await claim(svc, loan.id, loan.borrower_user_id, 'team_funded'))) return false;
 
       const { borrower, lender } = await loadPeople(svc, loan);
@@ -85,7 +94,7 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
          tx ? `🔗 ${tx}` : ''
       ].filter(Boolean);
 
-      await postDiscord(
+      const discordOk = await postDiscord(
          {
             embeds: [
                {
@@ -99,11 +108,21 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
          { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
       );
 
+      let telegramOk = false;
       const { data: chat } = await svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
       if (chat?.value) {
-         await sendTelegramMessage(chat.value as string, lines.join('\n'), {
+         telegramOk = await sendTelegramMessage(chat.value as string, lines.join('\n'), {
             inlineKeyboard: [[{ text: 'View loan', url }]]
-         }).catch((err) => console.error('teamLoanFeed: funded Telegram failed:', err instanceof Error ? err.message : err));
+         })
+            .then(() => true)
+            .catch((err) => {
+               console.error('teamLoanFeed: funded Telegram failed:', err instanceof Error ? err.message : err);
+               return false;
+            });
+      }
+      if (!discordOk && !telegramOk) {
+         await unclaim(svc, loan.id, 'team_funded');
+         return false;
       }
       return true;
    } catch (err) {
@@ -116,7 +135,7 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
 export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string): Promise<boolean> => {
    try {
       const loan = await loadLoan(svc, loanId);
-      if (!loan?.borrower_user_id || loan.is_test) return false;
+      if (!loan?.borrower_user_id || loan.is_test || loan.repayment_status !== 'Paid') return false;
       if (!(await claim(svc, loan.id, loan.borrower_user_id, 'team_repaid'))) return false;
 
       const { borrower, lender } = await loadPeople(svc, loan);
@@ -130,11 +149,12 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
          .filter(Boolean)
          .join('\n');
 
-      await postDiscord(
+      const ok = await postDiscord(
          { embeds: [{ title: '✅ Loan repaid', description, color: 0x57f287, timestamp: new Date().toISOString() }] },
          { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
       );
-      return true;
+      if (!ok) await unclaim(svc, loan.id, 'team_repaid');
+      return ok;
    } catch (err) {
       console.error('teamLoanFeed: repaid post failed for', loanId, err instanceof Error ? err.message : err);
       return false;
@@ -160,15 +180,27 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       if (localHour(now, teamZone) < DIGEST_HOUR) return 0;
       const today = now.toLocaleDateString('en-CA', { timeZone: teamZone });
 
-      const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', DIGEST_KEY).maybeSingle();
-      if (setting?.value === today) return 0;
-      const { error: claimError } = await svc
+      // Claim today in one conditional update, so two overlapping runs can't both post.
+      await svc
          .from('telegram_bot_settings')
-         .upsert({ key: DIGEST_KEY, value: today, description: 'Last team-local date the #loans "coming due" digest was posted.', updated_at: now.toISOString() });
-      if (claimError) {
-         console.error('teamLoanFeed: could not claim digest day:', claimError.message);
+         .upsert(
+            { key: DIGEST_KEY, value: '', description: 'Last team-local date the #loans "coming due" digest was posted.' },
+            { onConflict: 'key', ignoreDuplicates: true }
+         );
+      const { data: previous } = await svc.from('telegram_bot_settings').select('value').eq('key', DIGEST_KEY).maybeSingle();
+      if (previous?.value === today) return 0;
+      const { data: claimed, error: claimError } = await svc
+         .from('telegram_bot_settings')
+         .update({ value: today, updated_at: now.toISOString() })
+         .eq('key', DIGEST_KEY)
+         .eq('value', previous?.value ?? '')
+         .select('key');
+      if (claimError || !claimed?.length) {
+         if (claimError) console.error('teamLoanFeed: could not claim digest day:', claimError.message);
          return 0;
       }
+      const release = () =>
+         svc.from('telegram_bot_settings').update({ value: previous?.value ?? '' }).eq('key', DIGEST_KEY).eq('value', today);
 
       const { data } = await svc
          .from('loans')
@@ -204,7 +236,7 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       });
       if (upcoming.length > MAX_DIGEST_LINES) lines.push(`…and ${upcoming.length - MAX_DIGEST_LINES} more`);
 
-      await postDiscord(
+      const posted = await postDiscord(
          {
             embeds: [
                {
@@ -217,6 +249,10 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
          },
          { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
       );
+      if (!posted) {
+         await release();
+         return 0;
+      }
       return upcoming.length;
    } catch (err) {
       console.error('teamLoanFeed: due digest failed', err instanceof Error ? err.message : err);

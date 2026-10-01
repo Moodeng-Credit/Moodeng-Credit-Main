@@ -86,15 +86,18 @@ export const MAX_ZONE_DRIFT_HOURS = 3;
 export const resolveTimezone = (
    savedZone: string | null | undefined,
    countryIso: string | null | undefined,
-   now: Date = new Date()
+   now: Date = new Date(),
+   // A new borrower has no usual country yet: their latest login's country, for the 3-hour check only.
+   latestCountryIso?: string | null
 ): string => {
    const fromCountry = COUNTRY_TIMEZONES[(countryIso ?? '').toUpperCase()];
+   const checkZone = fromCountry ?? COUNTRY_TIMEZONES[(latestCountryIso ?? '').toUpperCase()];
    if (isUsableTimezone(savedZone)) {
-      if (!fromCountry) return savedZone;
-      const drift = Math.abs(zoneOffsetMs(now, savedZone) - zoneOffsetMs(now, fromCountry));
+      if (!checkZone) return savedZone;
+      const drift = Math.abs(zoneOffsetMs(now, savedZone) - zoneOffsetMs(now, checkZone));
       if (drift <= MAX_ZONE_DRIFT_HOURS * 60 * 60 * 1000) return savedZone;
    }
-   return fromCountry ?? DEFAULT_TIMEZONE;
+   return checkZone ?? DEFAULT_TIMEZONE;
 };
 
 // Offset (ms) of `zone` from UTC at the instant `at`: positive east of Greenwich.

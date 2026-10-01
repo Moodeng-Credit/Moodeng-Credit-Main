@@ -78,6 +78,15 @@ const isFullyRepaid = (loan: TrustPointRewardLoan) => {
    return totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
 };
 
+// The moment a loan is past due: the LATER of due_date + 24h and the end of the due day in the loan's
+// zone. Same as app_private.loan_past_due_at and the app's getLoanPastDueAt.
+const pastDueAtMs = (loan: TrustPointRewardLoan): number | null => {
+   const dueAt = toDateMs(loan.due_date);
+   if (dueAt === null || !loan.due_date) return null;
+   const zone = isUsableTimezone(loan.due_timezone) ? loan.due_timezone : 'Asia/Manila';
+   return Math.max(dueAt + OVERDUE_AFTER_DUE_DATE_MS, dueDayBounds(loan.due_date, zone).end.getTime());
+};
+
 const isPaidOnTime = (loan: TrustPointRewardLoan) => {
    if (!isPaid(loan) || !isFullyRepaid(loan)) {
       return false;
@@ -133,8 +142,8 @@ const getEligibilityByMilestone = (
          return false;
       }
 
-      const dueAt = toDateMs(loan.due_date);
-      return dueAt !== null && dueAt < referenceDate.getTime();
+      const pastDueAt = pastDueAtMs(loan);
+      return pastDueAt !== null && referenceDate.getTime() >= pastDueAt;
    });
    const fullLimitLoans = getFullLimitLoans(paidLoans);
    const creditLimit = toNumber(user.cs);

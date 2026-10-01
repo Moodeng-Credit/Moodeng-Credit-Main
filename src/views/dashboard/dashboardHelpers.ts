@@ -1,5 +1,6 @@
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
 import { CREDIT_TIERS, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
 import { OVERDUE_AFTER_DUE_DATE_MS } from '@/lib/creditLeveling';
@@ -70,7 +71,7 @@ export const getDashboardMilestoneHighlights = (milestones: DashboardMilestone[]
    return selected.slice(0, limit);
 };
 
-const isLoanPaidOnTime = (loan: Loan): boolean => {
+export const isLoanPaidOnTime = (loan: Loan): boolean => {
    // A refund reads back as 'Paid' with repaidAmount stamped to the full total, but the borrower
    // defaulted — it must never count as an on-time repayment (would advance their credit level).
    if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
@@ -126,7 +127,7 @@ const getFullLimitLoans = (loans: Loan[]): Set<Loan> => {
 };
 
 const hasUnresolvedDefault = (loan: Loan): boolean =>
-   loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && parseDateSafely(loan.dueDate).getTime() < Date.now();
+   loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone);
 
 const countUniqueLenders = (loans: Loan[]): number => new Set(loans.map((loan) => loan.lenderUser).filter(Boolean)).size;
 

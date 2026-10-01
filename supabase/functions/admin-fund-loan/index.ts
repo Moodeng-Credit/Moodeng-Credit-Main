@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
+
 // Records a loan funded by a Moodeng admin (direct transfer OR smart-contract /
 // LoanManager). SECURITY: this route is the real boundary — it independently verifies
 // the caller's JWT email is one of the two admin accounts before recording anything.
@@ -115,6 +117,9 @@ serve(async (req) => {
       .single()
 
     if (error) return json({ error: 'Failed to record funding', details: error.message }, 500)
+
+    // #loans / admin channel "Loan funded" post, same as a lender funding it (once per loan).
+    await postLoanFundedToTeam(supabase, loanId)
 
     return json({ data, message: 'Loan funding recorded' }, 200)
   } catch (error) {

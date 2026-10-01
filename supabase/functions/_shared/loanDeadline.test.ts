@@ -103,3 +103,9 @@ Deno.test('isUsableTimezone rejects zone names JS and Postgres read differently'
    assertEquals(isUsableTimezone('Asia/Manila'), true);
    assertEquals(isUsableTimezone('America/Argentina/Buenos_Aires'), true);
 });
+
+Deno.test('resolveTimezone: a new borrower (no usual country yet) is checked against their latest login', () => {
+   const at = new Date('2026-10-02T00:00:00Z');
+   assertEquals(resolveTimezone('Pacific/Pago_Pago', null, at, 'PH'), 'Asia/Manila');
+   assertEquals(resolveTimezone('Asia/Manila', null, at, 'PH'), 'Asia/Manila');
+});

@@ -4,10 +4,10 @@ import { useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
-import { calculateDaysRemaining } from '@/utils/dateFormatters';
 import { formatCurrency } from '@/utils/decimalHelpers';
 
 import { useLocalization } from '@/i18n';
+import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
 import type { RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 
@@ -51,7 +51,8 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
                 lentBy: 'Lent by'
              };
    const lenderName = loan.lenderUser ? (userProfiles[loan.lenderUser]?.username ?? copy.unknown) : copy.unknown;
-   const daysRemaining = calculateDaysRemaining(loan.dueDate);
+   // Calendar days to the due date on the borrower's own calendar (their zone), not UTC.
+   const daysRemaining = getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan, DEFAULT_LOAN_TIMEZONE));
    const cardBg = loan.isDefaulted ? 'bg-md-red-100' : 'bg-[#fff6d0] dark:bg-[#3d2d12]';
 
    return (
