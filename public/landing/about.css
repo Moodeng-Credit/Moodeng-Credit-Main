@@ -794,62 +794,18 @@
    transition-delay: 210ms;
 }
 
-/* Team members (not founders): a smaller card under the founder stories. */
-.team-member-story {
-   padding-block: clamp(64px, 8vw, 112px);
+/* Celeste: same story layout as the founders, photo on the left like Emma's. */
+.founder-celeste {
    background: var(--story-paper);
 }
 
-.team-member-card {
-   display: grid;
-   gap: 28px;
-   align-items: center;
-   max-width: 860px;
-   margin-top: 22px;
-   border: 1px solid var(--story-line);
-   border-radius: 30px;
-   padding: clamp(22px, 4vw, 40px);
-   background: var(--paper);
-   box-shadow: 0 24px 60px oklch(27% 0.07 296 / 0.1);
+.founder-celeste .founder-photo-wrap,
+.founder-celeste .founder-media figcaption {
+   max-width: 450px;
 }
 
-.team-member-card img {
-   width: min(100%, 220px);
-   height: auto;
-   aspect-ratio: 1;
-   border-radius: 24px;
-   object-fit: cover;
-   object-position: 50% 28%;
-}
-
-.team-member-copy h2 {
-   font-family: var(--font-display);
-   font-size: clamp(2rem, 5vw, 2.6rem);
-   letter-spacing: -0.04em;
-   line-height: 1;
-}
-
-.team-member-role {
-   margin-top: 6px;
-   color: var(--purple-dark);
-   font-size: 0.72rem;
-   font-weight: 840;
-   letter-spacing: 0.11em;
-   text-transform: uppercase;
-}
-
-.team-member-copy p:last-child {
-   margin-top: 16px;
-   color: var(--muted);
-   font-size: 1.02rem;
-   line-height: 1.6;
-}
-
-@media (min-width: 760px) {
-   .team-member-card {
-      grid-template-columns: 220px minmax(0, 1fr);
-      gap: clamp(28px, 4vw, 48px);
-   }
+.founder-celeste .founder-photo-wrap img {
+   object-position: 50% 24%;
 }
 
 @media (hover: hover) and (pointer: fine) {
