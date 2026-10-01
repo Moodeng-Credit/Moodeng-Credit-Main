@@ -6,7 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getAdminChatId, who } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { formatCallTimeForTeam } from '../_shared/videoCall.ts';
-import { classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } from './lib.ts';
+import { classifyParticipant, classifyZoomEvent, hmacSha256Hex, pickBooking, verifyZoomSignature } from './lib.ts';
 
 // Zoom → "is the borrower actually here?", so hosts stop sitting in empty rooms.
 //
@@ -97,6 +97,10 @@ serve(async (req) => {
    }
    // The host coming and going says nothing about the borrower — only the heartbeat above.
    if (event.isHost) return json({ ok: true });
+   // Nor does a teammate or a note-taker bot joining (only the host is flagged by Zoom).
+   const participantKind = classifyParticipant(event, booking);
+   console.log(`zoom-webhook: ${event.kind} "${event.name}" → ${participantKind} (booking ${booking.id.slice(0, 8)})`);
+   if (participantKind === 'bot' || participantKind === 'team') return json({ ok: true, ignored: participantKind });
 
    if (event.kind === 'left') {
       await svc.from('users').update({ video_call_left_at: event.at }).eq('id', booking.id);
@@ -118,9 +122,15 @@ serve(async (req) => {
 
    if (firstArrival && booking.video_call_starts_at) {
       const where = event.kind === 'arrived' ? 'is in the waiting room' : 'just joined the call';
+      // Show the Zoom name: when it doesn't match the borrower it's a maybe, and the host can tell.
+      const zoomName = event.name.trim() || 'no name';
+      const lead =
+         participantKind === 'borrower'
+            ? `🟢 ${who(booking)} ${where} now (Zoom name “${zoomName}”).`
+            : `🟡 Someone ${where} as “${zoomName}”. Maybe ${who(booking)}: the name doesn't match.`;
       const hostName = booking.video_call_host === 'emma' ? 'Emma' : booking.video_call_host === 'george' ? 'George' : 'Host';
       const text = [
-         `🟢 ${who(booking)} ${where} now.`,
+         lead,
          `Call: ${formatCallTimeForTeam(booking.video_call_starts_at, booking.video_call_timezone)}`,
          `${hostName}, you can join now.`
       ].join('\n');
