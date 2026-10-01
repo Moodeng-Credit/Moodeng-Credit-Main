@@ -4,7 +4,6 @@
 
 import { postDiscord } from './discord.ts';
 import { dueDayBounds, formatDeadlineForTeam, isUsableTimezone, loanTimezone, resolveTimezone } from './loanDeadline.ts';
-import { getLoanOutstandingAmount } from './loanNotifications.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -96,6 +95,20 @@ const getSetting = async (supabase: SupabaseClient, key: string): Promise<string
 
 const dollars = (amount: number) => `$${amount.toFixed(2)}`;
 
+/**
+ * What's owed, spelled out so a partly repaid loan doesn't read like the wrong amount:
+ * "$5.00 left of $20.00 (borrowed $15.00, $15.00 paid so far)" or "$20.00 (borrowed $15.00)".
+ */
+export const describeOwed = (loan: { loan_amount: number | null; total_repayment_amount: number | null; repaid_amount?: number | null }) => {
+   const total = Number(loan.total_repayment_amount ?? 0);
+   const paid = Number(loan.repaid_amount ?? 0);
+   const borrowed = Number(loan.loan_amount ?? 0);
+   const left = Math.max(0, total - paid);
+   return paid > 0
+      ? `${dollars(left)} left of ${dollars(total)} (borrowed ${dollars(borrowed)}, ${dollars(paid)} paid so far)`
+      : `${dollars(total)} (borrowed ${dollars(borrowed)})`;
+};
+
 /** The zone the team reads deadlines in (setting team_timezone; Bangkok until someone changes it). */
 export const getTeamTimezone = async (supabase: SupabaseClient): Promise<string> => {
    const zone = await getSetting(supabase, 'team_timezone');
@@ -145,7 +158,7 @@ export const postDueTeamFeed = async (
          const zone = loanTimezone(loan, zones.get(loan.borrower_user_id as string) ?? resolveTimezone(null, null));
          const borrower = usernames.get(loan.borrower_user_id as string) ?? 'someone';
          const lender = loan.lender_user_id ? lenderNames.get(loan.lender_user_id) ?? 'unknown' : 'unknown';
-         const owed = dollars(getLoanOutstandingAmount(loan));
+         const owed = describeOwed(loan);
          const deadline = formatDeadlineForTeam(loan.due_date as string, zone, teamZone);
          if (kind === 'team_due_today') {
             return `• ${borrower} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   overdue after ${deadline}`;
