@@ -133,6 +133,7 @@ describe('ContactsStep analytics trail', () => {
       });
 
       expect(events()).toEqual([
+         'contact_verify_tapped',
          'contact_verify_started',
          'contact_verify_left_app',
          'contact_verify_returned',

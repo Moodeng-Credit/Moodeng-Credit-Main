@@ -2,9 +2,9 @@ import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import { verificationFollowUpText } from './messengerStatusFollowUp.ts';
 
-Deno.test('a borrower already approved (Didit or World ID) hears they are all set', () => {
-   assertEquals(verificationFollowUpText({ is_didit: 'ACTIVE' })?.startsWith('🎉'), true);
-   assertEquals(verificationFollowUpText({ is_world_id: 'ACTIVE', is_didit: 'INACTIVE' })?.startsWith('🎉'), true);
+Deno.test('a borrower already approved (Didit or World ID) hears their ID is already verified', () => {
+   assertEquals(verificationFollowUpText({ is_didit: 'ACTIVE' })?.startsWith('✅'), true);
+   assertEquals(verificationFollowUpText({ is_world_id: 'ACTIVE', is_didit: 'INACTIVE' })?.startsWith('✅'), true);
 });
 
 Deno.test('a borrower in manual review hears we will message them here', () => {

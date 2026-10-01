@@ -103,12 +103,14 @@ serve(async (req) => {
    if (participantKind === 'bot' || participantKind === 'team') return json({ ok: true, ignored: participantKind });
 
    if (event.kind === 'left') {
-      await svc.from('users').update({ video_call_left_at: event.at }).eq('id', booking.id);
+      // Only the borrower's own leave time counts; an unknown leaving says nothing about them.
+      if (participantKind === 'borrower') await svc.from('users').update({ video_call_left_at: event.at }).eq('id', booking.id);
       return json({ ok: true });
    }
 
    // First sighting (waiting room or straight in) — claimed conditionally so Zoom's retries or two
-   // near-simultaneous events can't ping the admins twice.
+   // near-simultaneous events can't ping the admins twice. An unknown participant claims it too: that
+   // holds off the automatic no-show (a human decides) without marking anyone as in the call.
    const { data: firstArrival } = await svc
       .from('users')
       .update({ video_call_arrived_at: event.at })
@@ -116,18 +118,31 @@ serve(async (req) => {
       .is('video_call_arrived_at', null)
       .select('id')
       .maybeSingle();
-   if (event.kind === 'joined') {
-      await svc.from('users').update({ video_call_joined_at: event.at }).eq('id', booking.id).is('video_call_joined_at', null);
+   // "Joined" is only ever the borrower.
+   let borrowerJoinedNow = false;
+   if (event.kind === 'joined' && participantKind === 'borrower') {
+      const { data: joined } = await svc
+         .from('users')
+         .update({ video_call_joined_at: event.at })
+         .eq('id', booking.id)
+         .is('video_call_joined_at', null)
+         .select('id')
+         .maybeSingle();
+      borrowerJoinedNow = Boolean(joined);
    }
 
-   if (firstArrival && booking.video_call_starts_at) {
+   // Alert on the first sighting, and again when the borrower is confirmed in the call after an
+   // earlier sighting (waiting room, or a "maybe" under another name).
+   if ((firstArrival || borrowerJoinedNow) && booking.video_call_starts_at) {
       const where = event.kind === 'arrived' ? 'is in the waiting room' : 'just joined the call';
       // Show the Zoom name: when it doesn't match the borrower it's a maybe, and the host can tell.
       const zoomName = event.name.trim() || 'no name';
       const lead =
          participantKind === 'borrower'
-            ? `🟢 ${who(booking)} ${where} now (Zoom name “${zoomName}”).`
-            : `🟡 Someone ${where} as “${zoomName}”. Maybe ${who(booking)}: the name doesn't match.`;
+            ? firstArrival
+               ? `🟢 ${who(booking)} ${where} (Zoom name “${zoomName}”).`
+               : `🟢 Confirmed: ${who(booking)} is in the call now (Zoom name “${zoomName}”).`
+            : `🟡 Someone ${where} as “${zoomName}”. Maybe ${who(booking)}: the name doesn't match. No automatic no-show; please check.`;
       const hostName = booking.video_call_host === 'emma' ? 'Emma' : booking.video_call_host === 'george' ? 'George' : 'Host';
       const text = [
          lead,

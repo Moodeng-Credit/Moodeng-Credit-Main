@@ -72,7 +72,7 @@ export const getDashboardMilestoneHighlights = (milestones: DashboardMilestone[]
 const isLoanPaidOnTime = (loan: Loan): boolean => {
    // A refund reads back as 'Paid' with repaidAmount stamped to the full total, but the borrower
    // defaulted — it must never count as an on-time repayment (would advance their credit level).
-   if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
+   if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
    const repaidAmount = toNumber(loan.repaidAmount);
    const totalRepayment = toNumber(loan.totalRepaymentAmount);
    const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
@@ -99,7 +99,7 @@ const getFullLimitLoans = (loans: Loan[]): Set<Loan> => {
    let replayLimit: number = CREDIT_TIERS[0];
    loans
       .filter((loan) => {
-         if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
+         if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
          const totalRepayment = toNumber(loan.totalRepaymentAmount);
          return totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
       })
@@ -168,7 +168,8 @@ export const buildReputationMilestones = ({
    recordedCompletionIds?: ReadonlySet<string>;
 }): DashboardMilestone[] => {
    const fundedLoans = borrowerLoans.filter((loan) => loan.loanStatus === 'Lent');
-   const paidLoans = borrowerLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
+   // Same as app_private.is_loan_fully_repaid: refunds and internal test loans never count.
+   const paidLoans = borrowerLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt && !loan.isTest);
    const onTimePaidLoans = getOnTimePaidLoans(borrowerLoans);
    const unlockedLevels = creditLevels.filter((level) => level.unlocked);
    const currentLevel = unlockedLevels[unlockedLevels.length - 1];
