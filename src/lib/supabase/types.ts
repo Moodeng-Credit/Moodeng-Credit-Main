@@ -84,6 +84,8 @@ export type Database = {
                created_at: string | null;
                due_date: string;
                due_timezone: string | null;
+               on_hold_reason: string | null;
+               on_hold_since: string | null;
                funded_at: string | null;
                hash: string[] | null;
                id: string;
@@ -118,6 +120,8 @@ export type Database = {
                created_at?: string | null;
                due_date: string;
                due_timezone?: string | null;
+               on_hold_reason?: string | null;
+               on_hold_since?: string | null;
                funded_at?: string | null;
                hash?: string[] | null;
                id?: string;
@@ -148,6 +152,8 @@ export type Database = {
                created_at?: string | null;
                due_date?: string;
                due_timezone?: string | null;
+               on_hold_reason?: string | null;
+               on_hold_since?: string | null;
                funded_at?: string | null;
                hash?: string[] | null;
                id?: string;

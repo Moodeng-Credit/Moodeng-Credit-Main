@@ -18,6 +18,10 @@ export interface Loan {
    // IANA zone the due day is measured in (saved when the loan was posted). The loan is overdue from
    // 00:00 the day after dueDate in this zone; see src/lib/loanDeadline.ts.
    dueTimezone?: string;
+   // Set while an open request is on hold (e.g. the borrower missed their video call): hidden from
+   // lenders and not fundable until they book a new call. Server-only.
+   onHoldSince?: string;
+   onHoldReason?: string;
    coin: string;
    hash: string[]; // Array of transaction hashes - includes lending transaction + all repayment transactions
    createdAt: string;

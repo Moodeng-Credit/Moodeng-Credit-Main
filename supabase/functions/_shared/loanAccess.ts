@@ -17,6 +17,7 @@ import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
+import { describeHeldRequests } from './loanRequestHold.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -226,6 +227,12 @@ const BORROWER_MESSAGES = {
       body: "Your Moodeng video call didn't happen. Message us on Messenger to set a new time.",
       url: `${SITE_URL}/request-board`
    },
+   // Same, when their open request was put on hold by the no-show.
+   missed_call_request_paused: {
+      title: 'We missed you on the call',
+      body: "Your Moodeng video call didn't happen, so your loan request is paused for now. Book a new time and it goes straight back on the board.",
+      url: `${SITE_URL}/request-board`
+   },
    expired: {
       title: 'Still want to borrow with Moodeng?',
       body: "We didn't get to finish connecting. Tap Apply for a loan to reach out again — it only takes a minute.",
@@ -347,7 +354,9 @@ export const decideLoanAccess = async (
          : decision === 'no_show'
            ? '❌ No-show:'
            : '🚫 Rejected';
-   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}`;
+   // A no-show parks any open request they have (database trigger); say which one.
+   const held = decision === 'no_show' ? await describeHeldRequests(svc, request.user_id) : '';
+   const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return { ok: true, request, borrower, summary };
 };

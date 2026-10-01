@@ -74,6 +74,9 @@ serve(async (req) => {
       funding_method: fundingMethod,
       loan_status: 'Lent',
       funded_at: new Date().toISOString(),
+      // An admin funding a request is a deliberate decision; it's no longer on hold.
+      on_hold_since: null,
+      on_hold_reason: null,
       updated_at: new Date().toISOString(),
     }
     if (borrowerWallet) updates.borrower_wallet = borrowerWallet
