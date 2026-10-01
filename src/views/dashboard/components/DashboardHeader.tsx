@@ -8,9 +8,9 @@ export default function DashboardHeader() {
    const { locale } = useLocalization();
    const copy =
       locale === 'fil'
-         ? { title: 'Buod', back: 'Bumalik', help: 'Buksan ang Tulong at Suporta Center' }
+         ? { title: 'Dashboard', back: 'Bumalik', help: 'Buksan ang Sentro ng Tulong at Suporta' }
          : locale === 'id'
-           ? { title: 'Ringkasan', back: 'Kembali', help: 'Buka pusat bantuan dan dukungan' }
+           ? { title: 'Dasbor', back: 'Kembali', help: 'Buka pusat bantuan dan dukungan' }
            : { title: 'Dashboard', back: 'Back', help: 'Open help and support center' };
 
    return (

@@ -48,32 +48,32 @@ const CONGRATULATIONS_COPY = {
       rows: {
          guides: {
             title: 'Tingnan ang mga gabay',
-            subtitle: 'Mabilisang simula para sa bagong gumagamit'
+            subtitle: 'Quick start para sa mga bagong user'
          },
          telegram: {
             title: 'Humingi ng tulong sa Telegram',
-            subtitle: 'Mag-message para sa tulong sa wallet, deposito, o mga tanong'
+            subtitle: 'Mag-message sa amin para sa tulong sa wallet, deposit, o anumang tanong'
          },
          facebook: {
-            title: 'Kontakin kami sa Facebook',
+            title: 'Makipag-ugnayan sa amin sa Facebook',
             subtitle: 'Sumali sa komunidad at magtanong'
          },
          creditLeveling: {
-            title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito',
+            title: 'Alamin ang Credit Leveling System',
             subtitle: 'Palakihin ang limit, bumuo ng tiwala'
          }
       },
       exploreRequestBoard: 'I-explore ang Request Board',
       exploreNote: 'Puwede mo nang i-explore ang Moodeng Credit at simulan ang journey mo nang may kumpiyansa.',
       communityTitle: 'Boses laban sa hindi patas na pautang',
-      communityBody: 'Sumali sa aming komunidad sa Facebook. Makipag-ugnayan sa ibang gumagamit ng Moodeng Credit.',
-      joinCommunity: 'Sumali sa komunidad'
+      communityBody: 'Sumali sa Facebook community namin. Makipag-connect sa ibang Moodeng Credit user.',
+      joinCommunity: 'Sumali sa komunidad namin'
    },
    id: {
-      headerTitle: 'Kamu siap!',
+      headerTitle: 'Semua sudah siap!',
       title: 'Selamat! 🎉',
       body: 'Akun Moodeng kamu sudah siap dan kamu bisa mulai sekarang!',
-      nextTitle: 'Berikutnya apa?',
+      nextTitle: 'Apa selanjutnya?',
       rows: {
          guides: {
             title: 'Lihat panduan',
@@ -81,14 +81,14 @@ const CONGRATULATIONS_COPY = {
          },
          telegram: {
             title: 'Dapatkan bantuan lewat Telegram',
-            subtitle: 'Kirim pesan untuk bantuan wallet, deposit, atau pertanyaan'
+            subtitle: 'Kirim pesan untuk bantuan dompet, setoran, atau pertanyaan lain'
          },
          facebook: {
             title: 'Hubungi kami di Facebook',
             subtitle: 'Gabung komunitas dan ajukan pertanyaan'
          },
          creditLeveling: {
-            title: 'Pelajari sistem peningkatan level kredit',
+            title: 'Pelajari sistem naik Level Kredit',
             subtitle: 'Naikkan limit, bangun kepercayaan'
          }
       },
@@ -99,10 +99,10 @@ const CONGRATULATIONS_COPY = {
       joinCommunity: 'Gabung komunitas'
    },
    th: {
-      headerTitle: 'พร้อมแล้ว!',
+      headerTitle: 'คุณพร้อมแล้ว',
       title: 'ยินดีด้วย! 🎉',
-      body: 'บัญชี Moodeng ของคุณตั้งค่าเสร็จแล้วและพร้อมเริ่มใช้งาน',
-      nextTitle: 'ต่อไปคืออะไร?',
+      body: 'บัญชี Moodeng ของคุณตั้งค่าเสร็จแล้ว และพร้อมให้คุณเริ่มใช้งานได้เลย!',
+      nextTitle: 'ขั้นตอนต่อไป',
       rows: {
          guides: {
             title: 'ดูคู่มือ',
@@ -110,21 +110,21 @@ const CONGRATULATIONS_COPY = {
          },
          telegram: {
             title: 'รับความช่วยเหลือผ่าน Telegram',
-            subtitle: 'ส่งข้อความหาเราสำหรับความช่วยเหลือเรื่องกระเป๋า การฝาก หรือคำถาม'
+            subtitle: 'ส่งข้อความหาเราเพื่อขอความช่วยเหลือเรื่องกระเป๋าเงิน การฝากเงิน หรือคำถามอื่น ๆ'
          },
          facebook: {
             title: 'ติดต่อเราบน Facebook',
             subtitle: 'เข้าร่วมชุมชนและถามคำถาม'
          },
          creditLeveling: {
-            title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต',
+            title: 'เรียนรู้ระบบการเลื่อนระดับเครดิต',
             subtitle: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ'
          }
       },
       exploreRequestBoard: 'สำรวจกระดานคำขอ',
-      exploreNote: 'คุณสามารถสำรวจ Moodeng Credit และเริ่มต้นได้อย่างมั่นใจแล้ว',
+      exploreNote: 'ตอนนี้คุณสำรวจ Moodeng Credit และเริ่มต้นเส้นทางของคุณได้อย่างมั่นใจแล้ว',
       communityTitle: 'เสียงต่อต้านเงินกู้ที่ไม่เป็นธรรม',
-      communityBody: 'เข้าร่วมชุมชน Facebook ของเรา เชื่อมต่อกับผู้ใช้ Moodeng Credit คนอื่น',
+      communityBody: 'เข้าร่วมชุมชน Facebook ของเรา และพูดคุยกับผู้ใช้ Moodeng Credit คนอื่น ๆ',
       joinCommunity: 'เข้าร่วมชุมชน'
    },
    vi: {
@@ -151,9 +151,9 @@ const CONGRATULATIONS_COPY = {
          }
       },
       exploreRequestBoard: 'Khám phá Bảng yêu cầu',
-      exploreNote: 'Bạn có thể khám phá Moodeng Credit và bắt đầu hành trình với sự tự tin.',
+      exploreNote: 'Giờ đây bạn có thể khám phá Moodeng Credit và tự tin bắt đầu hành trình của mình.',
       communityTitle: 'Tiếng nói chống khoản vay không công bằng',
-      communityBody: 'Tham gia cộng đồng Facebook của chúng tôi. Kết nối với người dùng Moodeng Credit khác.',
+      communityBody: 'Tham gia cộng đồng Facebook của chúng tôi. Kết nối với những người dùng Moodeng Credit khác.',
       joinCommunity: 'Tham gia cộng đồng'
    }
 } satisfies Record<

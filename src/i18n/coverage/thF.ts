@@ -1,0 +1,784 @@
+// Thai translations for on-screen English found by the full-code scan (round two), keyed by
+// the exact English text. Loaded on demand with the rest of this locale's coverage (see ./index.ts).
+export const thaiCoverageF: Record<string, string> = {
+   // src/app/account-restricted/page.tsx
+   'Repay $': 'ชำระคืน $',
+   'to continue.': 'เพื่อดำเนินการต่อ',
+
+   // src/app/auth/line/callback/page.tsx
+   'Missing LINE authorization code. Please try again.': 'ไม่พบรหัสยืนยันสิทธิ์จาก LINE โปรดลองอีกครั้ง',
+   'LINE login state mismatch. Please try again.': 'สถานะการเข้าสู่ระบบด้วย LINE ไม่ตรงกัน โปรดลองอีกครั้ง',
+   'LINE login failed.': 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ',
+   'Unexpected error during LINE login.': 'เกิดข้อผิดพลาดที่ไม่คาดคิดระหว่างเข้าสู่ระบบด้วย LINE',
+   'LINE login failed': 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ',
+
+   // src/app/auth/verify-code/page.tsx
+   'Resend in': 'ส่งอีกครั้งใน',
+
+   // src/app/forgot-password/page.tsx
+   'A code is already on the way. Enter it below, or request a new one in': 'รหัสกำลังส่งไปหาคุณแล้ว กรอกรหัสด้านล่าง หรือขอรหัสใหม่ได้ใน',
+   'Resend code in': 'ส่งรหัสอีกครั้งใน',
+
+   // src/components/BasePaymentReconciler.tsx
+   'Loan Funded': 'ปล่อยกู้สำเร็จแล้ว',
+   'Your $': 'การปล่อยกู้ $',
+   'funding just confirmed. Thank you!': 'ของคุณได้รับการยืนยันแล้ว ขอบคุณ!',
+   'Repayment Confirmed': 'ยืนยันการชำระคืนแล้ว',
+   'Your repayment just confirmed on-chain.': 'การชำระคืนของคุณได้รับการยืนยันแบบออนเชนแล้ว',
+   'Interest Returned': 'ชำระดอกเบี้ยคืนแล้ว',
+   'Your interest payment just confirmed on-chain.': 'การชำระดอกเบี้ยของคุณได้รับการยืนยันแบบออนเชนแล้ว',
+
+   // src/components/ExpiredLoanRequestNotifier.tsx
+   'Loan request expired': 'คำขอเงินกู้หมดอายุแล้ว',
+   'Loan requests expired': 'คำขอเงินกู้หมดอายุแล้ว',
+
+   // src/components/LineLoginButton.tsx
+   'Sign Up with LINE': 'สมัครสมาชิกด้วย LINE',
+   'Sign In with LINE': 'เข้าสู่ระบบด้วย LINE',
+
+   // src/components/TelegramAuthButton.tsx
+   'Loading Telegram...': 'กำลังโหลด Telegram...',
+
+   // src/components/ThemeToggle.tsx
+   'Switch to light mode': 'เปลี่ยนเป็นโหมดสว่าง',
+   'Switch to dark mode': 'เปลี่ยนเป็นโหมดมืด',
+
+   // src/components/ToastSystem/config/toastConfig.ts
+   'Funding Successful!': 'ปล่อยกู้สำเร็จ!',
+   'Review Funding Details': 'ดูรายละเอียดการปล่อยกู้',
+   'Repayment Successful!': 'ชำระคืนสำเร็จ!',
+   'Review Repayment Details': 'ดูรายละเอียดการชำระคืน',
+   'Verification Successful!': 'ยืนยันตัวตนสำเร็จ!',
+   'Congratulations for Verifying.': 'ยินดีด้วย คุณยืนยันตัวตนเรียบร้อยแล้ว',
+   'Continue Loan Request': 'ส่งคำขอเงินกู้ต่อ',
+   'Loan Request Created!': 'สร้างคำขอเงินกู้แล้ว!',
+   'Your request is now live for lenders to review.': 'คำขอของคุณเผยแพร่แล้ว ผู้ให้กู้สามารถเข้ามาดูได้',
+   'View Active Loans': 'ดูเงินกู้ที่กำลังดำเนินอยู่',
+   "It's awkward 😅": 'อุ๊ย ขออภัย 😅',
+   'We were unable to process payment for your funding.': 'เราไม่สามารถดำเนินการชำระเงินสำหรับการปล่อยกู้ของคุณได้',
+   'Try Again?': 'ลองอีกครั้งไหม',
+   'Network Error!': 'เครือข่ายขัดข้อง!',
+   'Please check your Internet Connection': 'โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ',
+   'You Earned IOU Points!': 'คุณได้รับแต้ม IOU!',
+   "You've received": 'คุณได้รับ',
+   'IOU Points!': 'แต้ม IOU!',
+   'Check IOU Points Balance': 'ดูยอดแต้ม IOU',
+   'Insufficient Funds': 'ยอดเงินไม่เพียงพอ',
+   'Transaction declined due to insufficient funds.': 'ธุรกรรมถูกปฏิเสธเนื่องจากยอดเงินไม่เพียงพอ',
+   'Change Funding Source': 'เปลี่ยนแหล่งเงิน',
+   'Transaction Error': 'ธุรกรรมผิดพลาด',
+   'An error occurred during the transaction. Please try again.': 'เกิดข้อผิดพลาดระหว่างทำธุรกรรม โปรดลองอีกครั้ง',
+   'Try again?': 'ลองอีกครั้งไหม',
+   'Transaction Declined': 'ธุรกรรมถูกปฏิเสธ',
+   'You declined the transaction in your wallet. No funds were moved.': 'คุณปฏิเสธธุรกรรมในกระเป๋าเงินของคุณ จึงไม่มีการโอนเงินใด ๆ',
+   'Wrong Network': 'เครือข่ายไม่ถูกต้อง',
+   'Your wallet is connected to the wrong network. Switch networks and try again.':
+      'กระเป๋าเงินของคุณเชื่อมต่อกับเครือข่ายที่ไม่ถูกต้อง โปรดเปลี่ยนเครือข่ายแล้วลองอีกครั้ง',
+   'Verification Failed!': 'ยืนยันตัวตนไม่สำเร็จ!',
+   'Account verification failed. Please try again.': 'การยืนยันบัญชีไม่สำเร็จ โปรดลองอีกครั้ง',
+   'Server Error!': 'เซิร์ฟเวอร์ขัดข้อง!',
+   'An error occurred on the server. Please try again later.': 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์ โปรดลองอีกครั้งในภายหลัง',
+   'We were unable to process your loan request.': 'เราไม่สามารถดำเนินการคำขอเงินกู้ของคุณได้',
+   'Login Failed': 'เข้าสู่ระบบไม่สำเร็จ',
+   'Unable to log in. Please try again.': 'ไม่สามารถเข้าสู่ระบบได้ โปรดลองอีกครั้ง',
+   'Registration Failed': 'สมัครสมาชิกไม่สำเร็จ',
+   'Unable to register. Please try again.': 'ไม่สามารถสมัครสมาชิกได้ โปรดลองอีกครั้ง',
+   'Email Already Registered': 'อีเมลนี้ลงทะเบียนแล้ว',
+   'An account already exists with this email. Please sign in or reset your password if you forgot it.':
+      'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว โปรดเข้าสู่ระบบ หรือรีเซ็ตรหัสผ่านหากคุณลืม',
+   'Weak Password': 'รหัสผ่านไม่ปลอดภัย',
+   'Password does not meet strength requirements.': 'รหัสผ่านไม่ตรงตามข้อกำหนดด้านความปลอดภัย',
+   'WorldId Verification Required': 'ต้องยืนยันด้วย World ID',
+   'Please verify your WorldId ID to create a loan request.': 'โปรดยืนยันด้วย World ID เพื่อสร้างคำขอเงินกู้',
+   'World ID Verified!': 'ยืนยัน World ID แล้ว!',
+   'Your World ID has been successfully verified.': 'ยืนยัน World ID ของคุณสำเร็จแล้ว',
+   'Reset Link Sent': 'ส่งลิงก์รีเซ็ตแล้ว',
+   'A password reset link has been sent to your email.': 'เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลของคุณแล้ว',
+   'Network Selection Required': 'โปรดเลือกเครือข่าย',
+   'Please select a network and coin type.': 'โปรดเลือกเครือข่ายและประเภทเหรียญ',
+   'Invalid Amount': 'จำนวนเงินไม่ถูกต้อง',
+   'Please enter a valid loan amount greater than 0.': 'โปรดกรอกจำนวนเงินกู้ที่ถูกต้องและมากกว่า 0',
+   'Amount Exceeds Limit': 'จำนวนเงินเกินวงเงิน',
+   'The loan amount exceeds your available credit limit.': 'จำนวนเงินกู้เกินวงเงินที่คุณใช้ได้',
+   'View Credit Limit': 'ดูวงเงินกู้',
+   'Repayment Too Low': 'ยอดชำระคืนต่ำเกินไป',
+   'Repayment must be at least $1 more than the amount you borrow.': 'ยอดชำระคืนต้องมากกว่าจำนวนเงินที่คุณกู้อย่างน้อย $1',
+   'Loan Limit Reached': 'มีเงินกู้ครบจำนวนสูงสุดแล้ว',
+   'You have reached your maximum number of active loans.': 'คุณมีเงินกู้ที่กำลังดำเนินอยู่ครบจำนวนสูงสุดแล้ว',
+   'View Profile': 'ดูโปรไฟล์',
+   'Profile Updated!': 'อัปเดตโปรไฟล์แล้ว!',
+   'Your profile has been updated successfully.': 'อัปเดตโปรไฟล์ของคุณเรียบร้อยแล้ว',
+   'Update Successful!': 'อัปเดตสำเร็จ!',
+   'User information updated successfully.': 'อัปเดตข้อมูลผู้ใช้เรียบร้อยแล้ว',
+   'Update Failed': 'อัปเดตไม่สำเร็จ',
+   'Failed to update user information.': 'อัปเดตข้อมูลผู้ใช้ไม่สำเร็จ',
+   'Loan Updated!': 'อัปเดตเงินกู้แล้ว!',
+   'Loan has been updated successfully.': 'อัปเดตเงินกู้เรียบร้อยแล้ว',
+   'View Loans': 'ดูเงินกู้',
+   'Failed to update loan.': 'อัปเดตเงินกู้ไม่สำเร็จ',
+   'Loan Edited!': 'แก้ไขเงินกู้แล้ว!',
+   'Loan has been edited successfully.': 'แก้ไขเงินกู้เรียบร้อยแล้ว',
+   'Edit Failed': 'แก้ไขไม่สำเร็จ',
+   'Failed to edit loan.': 'แก้ไขเงินกู้ไม่สำเร็จ',
+   'Loan Deleted!': 'ลบเงินกู้แล้ว!',
+   'Loan has been deleted successfully.': 'ลบเงินกู้เรียบร้อยแล้ว',
+   'Delete Failed': 'ลบไม่สำเร็จ',
+   'Failed to delete loan.': 'ลบเงินกู้ไม่สำเร็จ',
+   'Session Expired': 'เซสชันหมดอายุ',
+   'Your session has expired. Please log in again.': 'เซสชันของคุณหมดอายุแล้ว โปรดเข้าสู่ระบบอีกครั้ง',
+   Unauthorised: 'ไม่มีสิทธิ์เข้าถึง',
+   'You are not authorized. Please log in.': 'คุณไม่มีสิทธิ์เข้าถึง โปรดเข้าสู่ระบบ',
+   'Duplicate Account Not Allowed': 'ไม่อนุญาตให้มีบัญชีซ้ำ',
+   'We do not allow duplicate accounts. This World ID is already connected to an existing Moodeng account.':
+      'เราไม่อนุญาตให้มีบัญชีซ้ำ World ID นี้เชื่อมต่อกับบัญชี Moodeng ที่มีอยู่แล้ว',
+   'Please connect your wallet to continue.': 'โปรดเชื่อมต่อกระเป๋าเงินของคุณเพื่อดำเนินการต่อ',
+   'Wallet Not Responding': 'กระเป๋าเงินไม่ตอบสนอง',
+   "We couldn't reach your wallet on this device. Approve on the device where it's connected, or reconnect here.":
+      'เราไม่สามารถติดต่อกระเป๋าเงินของคุณบนอุปกรณ์นี้ได้ โปรดอนุมัติบนอุปกรณ์ที่เชื่อมต่อกระเป๋าเงินไว้ หรือเชื่อมต่อใหม่ที่นี่',
+   'Verification Not Completed': 'ยืนยันตัวตนยังไม่เสร็จ',
+   'You did not complete World ID verification. You can try again anytime.': 'คุณยังยืนยันด้วย World ID ไม่เสร็จ ลองใหม่ได้ทุกเมื่อ',
+   'Cannot Lend to Yourself': 'ปล่อยกู้ให้ตัวเองไม่ได้',
+   'You cannot lend to your own loan request. Please lend to other users.':
+      'คุณไม่สามารถปล่อยกู้ให้คำขอเงินกู้ของตัวเองได้ โปรดปล่อยกู้ให้ผู้ใช้คนอื่น',
+   'View Other Loans': 'ดูคำขอเงินกู้อื่น',
+
+   // src/components/UserPay.tsx
+   Partial: 'ชำระบางส่วน',
+
+   // src/components/WalletNetworkBlockNotice.tsx
+   'app fixes it — install it, switch it on, then reconnect. It works on WiFi and mobile data.':
+      'ช่วยแก้ปัญหานี้ได้ ติดตั้งแอป เปิดใช้งาน แล้วเชื่อมต่อใหม่ ใช้ได้ทั้งกับ WiFi และอินเทอร์เน็ตมือถือ',
+   "I've turned it on — Retry": 'เปิดแล้ว — ลองอีกครั้ง',
+
+   // src/components/auth/AuthErrorAlert.tsx
+   'that provider': 'ผู้ให้บริการนั้น',
+   '. This is usually temporary — please try again.': ' ปัญหานี้มักเกิดขึ้นชั่วคราว โปรดลองอีกครั้ง',
+   'reset your password': 'รีเซ็ตรหัสผ่าน',
+   "if you've forgotten it.": 'หากคุณลืมรหัสผ่าน',
+
+   // src/components/auth/AuthFooter.tsx
+   '© 2026 Moodeng Credit All Rights Reserved': '© 2026 Moodeng Credit สงวนลิขสิทธิ์',
+
+   // src/components/auth/AuthInputField.tsx
+   'Hide password': 'ซ่อนรหัสผ่าน',
+   'Show password': 'แสดงรหัสผ่าน',
+
+   // src/components/auth/SignUpFormErrorAlert.tsx
+   'This email is already linked to a Google account. Use a different email address or':
+      'อีเมลนี้เชื่อมโยงกับบัญชี Google อยู่แล้ว โปรดใช้อีเมลอื่น หรือ',
+   'instead.': 'แทน',
+
+   // src/components/auth/SocialAuthButtons.tsx
+   'Sign Up with Google': 'สมัครสมาชิกด้วย Google',
+   'Facebook sign-in coming soon': 'การเข้าสู่ระบบด้วย Facebook จะเปิดให้ใช้เร็ว ๆ นี้',
+
+   // src/components/filters/FilterSidebar.tsx
+   'Payback %': 'อัตราชำระคืน %',
+
+   // src/components/mecha/mechaCopy.ts
+   'Moodeng Support Officer': 'เจ้าหน้าที่ฝ่ายช่วยเหลือของ Moodeng',
+   'Ask me anything about Moodeng…': 'ถามอะไรก็ได้เกี่ยวกับ Moodeng…',
+   Send: 'ส่ง',
+   "Hi, I'm Mecha 🤖 — ask me anything about Moodeng: verifying, wallets, borrowing, or cashing out.":
+      'สวัสดี ฉันคือ Mecha 🤖 ถามอะไรก็ได้เกี่ยวกับ Moodeng ไม่ว่าจะเป็นการยืนยันตัวตน กระเป๋าเงิน การกู้ยืม หรือการถอนเป็นเงินสด',
+   'Try asking': 'ลองถามดู',
+   'Talk to the team': 'คุยกับทีมงาน',
+   'Want a real person? I can pass this chat to the Moodeng team.': 'อยากคุยกับเจ้าหน้าที่จริงไหม ฉันส่งต่อแชทนี้ให้ทีม Moodeng ได้',
+   'Connect me with the team': 'ติดต่อทีมงาน',
+   'Sent! The team has your question and will follow up. You can keep chatting with me too.':
+      'ส่งแล้ว! ทีมงานได้รับคำถามของคุณแล้วและจะติดต่อกลับ คุณยังคุยกับฉันต่อได้เช่นกัน',
+   'How can the team reach you? (optional)': 'ทีมงานจะติดต่อคุณได้ทางไหน (ไม่บังคับ)',
+   'Something went wrong on my end. Please try again, or I can connect you with the team.':
+      'เกิดข้อผิดพลาดจากฝั่งฉัน โปรดลองอีกครั้ง หรือให้ฉันส่งต่อคุณให้ทีมงาน',
+   'Chat with Mecha': 'แชทกับ Mecha',
+   'Close chat': 'ปิดแชท',
+   'Ask Mecha anything, or browse the popular guides below.': 'ถาม Mecha ได้ทุกเรื่อง หรือดูคู่มือยอดนิยมด้านล่าง',
+   'Popular right now': 'ยอดนิยมตอนนี้',
+   'Mecha answers from Moodeng’s help docs.': 'Mecha ตอบจากเอกสารช่วยเหลือของ Moodeng',
+   'Browse all FAQs & guides →': 'ดูคำถามที่พบบ่อยและคู่มือทั้งหมด →',
+   'Mecha is typing': 'Mecha กำลังพิมพ์',
+   Helpful: 'มีประโยชน์',
+   'Not helpful': 'ไม่มีประโยชน์',
+   'Thanks for the feedback!': 'ขอบคุณสำหรับความคิดเห็น!',
+
+   // src/components/support/LiveChatHost.tsx
+   'Message from Moodeng Support': 'ข้อความจากฝ่ายช่วยเหลือ Moodeng',
+   'The team replied to your chat. Tap to read it.': 'ทีมงานตอบกลับแชทของคุณแล้ว แตะเพื่ออ่าน',
+   'Open chat': 'เปิดแชท',
+
+   // src/components/tables/DataTable.tsx
+   'No data available': 'ไม่มีข้อมูล',
+
+   // src/components/verification/VerificationUnsuccessfulModal.tsx
+   'your ID': 'บัตรประชาชนของคุณ',
+   'or get help from our team': 'หรือขอความช่วยเหลือจากทีมของเรา',
+
+   // src/components/verification/VerifyYourselfModal.tsx
+   '🇺🇸 United States': '🇺🇸 สหรัฐอเมริกา',
+   '🇬🇧 United Kingdom': '🇬🇧 สหราชอาณาจักร',
+   '🇯🇵 Japan': '🇯🇵 ญี่ปุ่น',
+   '🇰🇷 South Korea': '🇰🇷 เกาหลีใต้',
+   '🇹🇼 Taiwan': '🇹🇼 ไต้หวัน',
+   '🇲🇾 Malaysia': '🇲🇾 มาเลเซีย',
+   '🇲🇽 Mexico': '🇲🇽 เม็กซิโก',
+   '🇨🇷 Costa Rica': '🇨🇷 คอสตาริกา',
+   '🇵🇦 Panama': '🇵🇦 ปานามา',
+   '🇨🇴 Colombia': '🇨🇴 โคลอมเบีย',
+   '🇨🇱 Chile': '🇨🇱 ชิลี',
+   '🇦🇷 Argentina': '🇦🇷 อาร์เจนตินา',
+   '🇸🇬 Singapore': '🇸🇬 สิงคโปร์',
+   '🇹🇭 Thailand': '🇹🇭 ไทย',
+   '🇵🇭 Philippines': '🇵🇭 ฟิลิปปินส์',
+   '🇩🇪 Germany': '🇩🇪 เยอรมนี',
+   '🇦🇹 Austria': '🇦🇹 ออสเตรีย',
+   '🇵🇱 Poland': '🇵🇱 โปแลนด์',
+   '🇬🇹 Guatemala': '🇬🇹 กัวเตมาลา',
+   '🇪🇨 Ecuador': '🇪🇨 เอกวาดอร์',
+   '🇵🇪 Peru': '🇵🇪 เปรู',
+   '🇧🇷 Brazil': '🇧🇷 บราซิล',
+   'NFC-enabled (biometric) passport': 'หนังสือเดินทางที่รองรับ NFC (หนังสือเดินทางไบโอเมตริกซ์)',
+   'Availability changes —': 'พื้นที่ให้บริการอาจเปลี่ยนแปลงได้ —',
+   'check the live map': 'ดูแผนที่ล่าสุด',
+   'for exact locations.': 'เพื่อตรวจสอบตำแหน่งที่แน่นอน',
+
+   // src/components/worldId/useWorldIdVerification.ts
+   'You must be logged in to verify your World ID.': 'คุณต้องเข้าสู่ระบบก่อนจึงจะยืนยัน World ID ได้',
+   'World ID verification was accepted, but the account status did not update.': 'การยืนยัน World ID ผ่านแล้ว แต่สถานะบัญชียังไม่อัปเดต',
+   'Failed to prepare World ID verification.': 'เตรียมการยืนยัน World ID ไม่สำเร็จ',
+   'Verification failed.': 'การยืนยันตัวตนไม่สำเร็จ',
+
+   // src/config/stripeOnrampConfig.ts
+   'US (excl. Hawaii) and EU only': 'เฉพาะสหรัฐอเมริกา (ยกเว้นฮาวาย) และสหภาพยุโรป',
+
+   // src/constants/errorMessages.ts
+   'We encountered an unexpected error. Please try again or contact support if the problem persists.':
+      'เกิดข้อผิดพลาดที่ไม่คาดคิด โปรดลองอีกครั้ง หรือติดต่อฝ่ายช่วยเหลือหากยังพบปัญหาอยู่',
+   'Go to Dashboard': 'ไปที่แดชบอร์ด',
+
+   // src/constants/loanOptions.ts
+   '0% to 5%': '0% ถึง 5%',
+   '5% to 10%': '5% ถึง 10%',
+   '10% to 20%': '10% ถึง 20%',
+   'Next Week': 'สัปดาห์หน้า',
+   'Next 30 Days': '30 วันข้างหน้า',
+   'Next 60 Days': '60 วันข้างหน้า',
+   'After 90 Days+': 'หลัง 90 วันขึ้นไป',
+   'Beginner Borrower': 'ผู้ยืมมือใหม่',
+
+   // src/hooks/useDefaultedBorrowerSupport.ts
+   'Unable to check overdue loans.': 'ไม่สามารถตรวจสอบเงินกู้ที่เกินกำหนดได้',
+
+   // src/hooks/useLoanData.ts
+   'Failed to fetch loans': 'โหลดข้อมูลเงินกู้ไม่สำเร็จ',
+
+   // src/hooks/useWalletSync.ts
+   'Successfully connected to': 'เชื่อมต่อสำเร็จกับ',
+   'Use your Instant Wallet or a Base Account': 'ใช้ Instant Wallet หรือ Base Account ของคุณ',
+   'Borrowers use their Instant Wallet (or a Base Account, if they prefer) so loans and repayments stay tied to one public record.':
+      'ผู้ยืมใช้ Instant Wallet (หรือ Base Account หากต้องการ) เพื่อให้เงินกู้และการชำระคืนผูกอยู่กับบันทึกสาธารณะเดียวกัน',
+   'Saved wallet mismatch': 'กระเป๋าเงินไม่ตรงกับที่บันทึกไว้',
+   'We could not save the new wallet. Your previous wallet is still saved. Please try again.':
+      'เราไม่สามารถบันทึกกระเป๋าเงินใหม่ได้ กระเป๋าเงินเดิมของคุณยังคงบันทึกอยู่ โปรดลองอีกครั้ง',
+   'Wallet Already Attached': 'กระเป๋าเงินนี้ถูกผูกไว้แล้ว',
+   'This wallet is already connected to another account. Please use a different wallet or disconnect it from the other account first.':
+      'กระเป๋าเงินนี้เชื่อมต่อกับบัญชีอื่นอยู่แล้ว โปรดใช้กระเป๋าเงินอื่น หรือยกเลิกการเชื่อมต่อจากบัญชีนั้นก่อน',
+   'Sign in again': 'เข้าสู่ระบบอีกครั้ง',
+   'Your login session expired before Moodeng could lock this wallet. Please sign in again, then connect your wallet.':
+      'เซสชันการเข้าสู่ระบบของคุณหมดอายุก่อนที่ Moodeng จะล็อกกระเป๋าเงินนี้ได้ โปรดเข้าสู่ระบบอีกครั้ง แล้วเชื่อมต่อกระเป๋าเงินของคุณ',
+   'Failed to Connect Wallet': 'เชื่อมต่อกระเป๋าเงินไม่สำเร็จ',
+
+   // src/lib/basePay.ts
+   'Payment failed': 'การชำระเงินไม่สำเร็จ',
+   'Payment status unavailable': 'ไม่สามารถดูสถานะการชำระเงินได้',
+   'Payment failed on-chain': 'การชำระเงินแบบออนเชนไม่สำเร็จ',
+   'Payment was not confirmed in time': 'การชำระเงินไม่ได้รับการยืนยันภายในเวลาที่กำหนด',
+
+   // src/lib/borrowerContextFit.ts
+   'no income shared': 'ไม่ได้ระบุรายได้',
+   'unclear date': 'วันที่ไม่ชัดเจน',
+   'First time trusting this community': 'ครั้งแรกที่ขอความไว้วางใจจากชุมชนนี้',
+   'Already repaid 1 loan — they follow through': 'ชำระคืนแล้ว 1 รายการ — รักษาคำพูดเสมอ',
+   '· Identity verified': '· ยืนยันตัวตนแล้ว',
+   '· due today': '· ครบกำหนดวันนี้',
+   '· due tomorrow': '· ครบกำหนดพรุ่งนี้',
+
+   // src/lib/loanNotes/api.ts
+   'A Moodeng borrower': 'ผู้ยืมบน Moodeng',
+   'Failed to record funding': 'บันทึกการปล่อยกู้ไม่สำเร็จ',
+   'Failed to record purchase': 'บันทึกการซื้อไม่สำเร็จ',
+   Listed: 'ประกาศขายอยู่',
+   Sold: 'ขายแล้ว',
+
+   // src/lib/loanRequestRepostStatus.ts
+   'You can make another loan request in about 1 minute.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 1 นาที',
+   'You can make another loan request in about 2 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 2 นาที',
+   'You can make another loan request in about 3 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 3 นาที',
+   'You can make another loan request in about 4 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 4 นาที',
+   'You can make another loan request in about 5 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 5 นาที',
+   'You can make another loan request in about 6 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 6 นาที',
+   'You can make another loan request in about 7 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 7 นาที',
+   'You can make another loan request in about 8 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 8 นาที',
+   'You can make another loan request in about 9 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 9 นาที',
+   'You can make another loan request in about 10 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 10 นาที',
+   'You can make another loan request in about 11 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 11 นาที',
+   'You can make another loan request in about 12 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 12 นาที',
+   'You can make another loan request in about 13 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 13 นาที',
+   'You can make another loan request in about 14 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 14 นาที',
+   'You can make another loan request in about 15 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 15 นาที',
+   'You can make another loan request in about 16 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 16 นาที',
+   'You can make another loan request in about 17 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 17 นาที',
+   'You can make another loan request in about 18 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 18 นาที',
+   'You can make another loan request in about 19 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 19 นาที',
+   'You can make another loan request in about 20 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 20 นาที',
+   'You can make another loan request in about 21 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 21 นาที',
+   'You can make another loan request in about 22 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 22 นาที',
+   'You can make another loan request in about 23 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 23 นาที',
+   'You can make another loan request in about 24 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 24 นาที',
+   'You can make another loan request in about 25 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 25 นาที',
+   'You can make another loan request in about 26 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 26 นาที',
+   'You can make another loan request in about 27 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 27 นาที',
+   'You can make another loan request in about 28 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 28 นาที',
+   'You can make another loan request in about 29 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 29 นาที',
+   'You can make another loan request in about 30 minutes.': 'คุณจะส่งคำขอเงินกู้ใหม่ได้ในอีกประมาณ 30 นาที',
+
+   // src/lib/reasonQuality.ts
+   'Please write your reason in English — the lenders reading it don’t speak Tagalog.':
+      'โปรดเขียนเหตุผลเป็นภาษาอังกฤษ — ผู้ให้กู้ที่อ่านไม่ได้ใช้ภาษาตากาล็อก',
+   'Write it as a sentence — what the money is for and when you get paid.':
+      'เขียนเป็นประโยค — บอกว่าจะใช้เงินทำอะไร และคุณจะได้รับเงินเมื่อไร',
+   "This doesn't look like real words yet — tell lenders what the loan is for.":
+      'ข้อความนี้ยังดูไม่เป็นคำที่มีความหมาย — บอกผู้ให้กู้ว่าคุณกู้เงินไปใช้ทำอะไร',
+   'Try saying it once, clearly — repeating words does not help lenders.':
+      'ลองเขียนครั้งเดียวให้ชัดเจน — การพิมพ์คำซ้ำไม่ได้ช่วยให้ผู้ให้กู้เข้าใจ',
+
+   // src/lib/supabase/avatarStorage.ts
+   'You must be signed in to upload an avatar.': 'คุณต้องเข้าสู่ระบบก่อนจึงจะอัปโหลดรูปโปรไฟล์ได้',
+   'Upload failed:': 'อัปโหลดไม่สำเร็จ:',
+
+   // src/lib/verificationUiState.ts
+   Declined: 'ถูกปฏิเสธ',
+   Blocked: 'ถูกระงับ',
+   'View status': 'ดูสถานะ',
+   'View details': 'ดูรายละเอียด',
+
+   // src/lib/web3/openfort/errors.ts
+   'Instant Wallet isn’t available right now. Please try again in a little while.':
+      'Instant Wallet ยังไม่พร้อมใช้งานในขณะนี้ โปรดลองอีกครั้งในอีกสักครู่',
+   "We couldn't reach the wallet service. Check your internet and try again.":
+      'เราไม่สามารถติดต่อบริการกระเป๋าเงินได้ โปรดตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง',
+   'Please sign in again, then try creating your wallet.': 'โปรดเข้าสู่ระบบอีกครั้ง แล้วลองสร้างกระเป๋าเงินอีกครั้ง',
+
+   // src/lib/web3/openfort/shieldSession.ts
+   'You need to be signed in to create your Instant Wallet.': 'คุณต้องเข้าสู่ระบบก่อนจึงจะสร้าง Instant Wallet ได้',
+   'A quick face check is needed before we can create your Instant Wallet.':
+      'ต้องสแกนใบหน้าสั้น ๆ ก่อน เราจึงจะสร้าง Instant Wallet ให้คุณได้',
+
+   // src/lib/web3/openfort/walletFaceGate.ts
+   'This face already has a wallet': 'ใบหน้านี้มีกระเป๋าเงินอยู่แล้ว',
+   'Each person can have one Moodeng Instant Wallet. If you already have a Moodeng account, sign in to that one — or connect a Base Account instead.':
+      'แต่ละคนมี Moodeng Instant Wallet ได้เพียงหนึ่งกระเป๋า หากคุณมีบัญชี Moodeng อยู่แล้ว โปรดเข้าสู่ระบบบัญชีนั้น หรือเชื่อมต่อ Base Account แทน',
+   "That doesn't match your verified ID": 'ใบหน้าไม่ตรงกับบัตรที่คุณใช้ยืนยันตัวตน',
+   'This account was verified with a different face. For your security we can only create the wallet for the verified account holder. Please scan again as the account holder, or contact support.':
+      'บัญชีนี้ยืนยันตัวตนด้วยใบหน้าของบุคคลอื่น เพื่อความปลอดภัยของคุณ เราสร้างกระเป๋าเงินให้ได้เฉพาะเจ้าของบัญชีที่ยืนยันตัวตนแล้วเท่านั้น โปรดสแกนอีกครั้งโดยเจ้าของบัญชี หรือติดต่อฝ่ายช่วยเหลือ',
+   "We couldn't complete the scan": 'เราไม่สามารถสแกนให้เสร็จได้',
+   'Find good, even lighting, remove hats or sunglasses, and hold your phone at eye level. Then try again.':
+      'หาที่ที่มีแสงดีและสม่ำเสมอ ถอดหมวกหรือแว่นกันแดด และถือโทรศัพท์ไว้ระดับสายตา แล้วลองอีกครั้ง',
+   'This usually takes a few seconds.': 'ปกติจะใช้เวลาเพียงไม่กี่วินาที',
+   'A quick face check': 'สแกนใบหน้าสั้น ๆ',
+   "It takes about ten seconds and keeps wallets to one per person. We don't store your photo.":
+      'ใช้เวลาประมาณ 10 วินาที และช่วยให้แต่ละคนมีกระเป๋าเงินได้เพียงหนึ่งกระเป๋า เราไม่จัดเก็บรูปของคุณ',
+   'Already have a wallet.': 'คุณมีกระเป๋าเงินอยู่แล้ว',
+
+   // src/lib/withTimeout.ts
+   'Wallet did not respond in time': 'กระเป๋าเงินไม่ตอบสนองภายในเวลาที่กำหนด',
+
+   // src/lib/withdraw/cashoutFaceGate.ts
+   "This doesn't match the account holder": 'ใบหน้าไม่ตรงกับเจ้าของบัญชี',
+   'For your protection we could not confirm this is the person who verified this account. This cash-out has been held and our team has been notified. Please contact support.':
+      'เพื่อความปลอดภัยของคุณ เราไม่สามารถยืนยันได้ว่านี่คือบุคคลที่ยืนยันตัวตนบัญชีนี้ การถอนเป็นเงินสดครั้งนี้ถูกระงับไว้ก่อน และเราได้แจ้งทีมงานแล้ว โปรดติดต่อฝ่ายช่วยเหลือ',
+   'We need to verify you manually': 'เราต้องยืนยันตัวตนของคุณด้วยเจ้าหน้าที่',
+   "We couldn't find a reference photo on file to check against. Please contact support to complete this cash-out.":
+      'เราไม่พบรูปอ้างอิงในระบบสำหรับใช้ตรวจสอบ โปรดติดต่อฝ่ายช่วยเหลือเพื่อถอนเป็นเงินสดครั้งนี้ให้เสร็จ',
+   'Quick check before you cash out': 'ตรวจสอบสั้น ๆ ก่อนถอนเป็นเงินสด',
+   "Since this is your first cash-out, we need a quick face check to confirm it's really you. It takes about ten seconds.":
+      'เนื่องจากนี่เป็นการถอนเป็นเงินสดครั้งแรกของคุณ เราต้องสแกนใบหน้าสั้น ๆ เพื่อยืนยันว่าเป็นคุณจริง ใช้เวลาประมาณ 10 วินาที',
+
+   // src/shared/points.ts
+   'Build a 2-loan on-time streak': 'ชำระคืนตรงเวลาติดต่อกัน 2 รายการ',
+   'Repay a full-limit credit-builder': 'ชำระคืนเงินกู้สร้างเครดิตแบบเต็มวงเงิน',
+   'Borrow from 2 different lenders': 'กู้จากผู้ให้กู้ 2 รายที่ต่างกัน',
+   'Reach Credit Level 3': 'ไปถึงระดับเครดิต 3',
+   'Become a trusted borrower candidate': 'ก้าวสู่การเป็นผู้ยืมที่น่าเชื่อถือ',
+   'Loan funded': 'ปล่อยกู้แล้ว',
+   'Academy quiz': 'แบบทดสอบอะคาเดมี',
+
+   // src/store/slices/authSlice.ts
+   'An account with this email already exists. Sign in instead, or reset your password if you need to regain access.':
+      'มีบัญชีที่ใช้อีเมลนี้อยู่แล้ว โปรดเข้าสู่ระบบแทน หรือรีเซ็ตรหัสผ่านหากต้องการกลับเข้าใช้งานบัญชี',
+   'Please verify your email before signing in. Check your inbox or request a new verification email.':
+      'โปรดยืนยันอีเมลของคุณก่อนเข้าสู่ระบบ ตรวจสอบกล่องจดหมาย หรือขออีเมลยืนยันฉบับใหม่',
+   'Please verify your email before signing in. A verification email has been sent to your inbox.':
+      'โปรดยืนยันอีเมลของคุณก่อนเข้าสู่ระบบ เราได้ส่งอีเมลยืนยันไปที่กล่องจดหมายของคุณแล้ว',
+   'Not authenticated': 'ยังไม่ได้เข้าสู่ระบบ',
+   'Failed to save borrower context': 'บันทึกข้อมูลผู้ยืมไม่สำเร็จ',
+   'Failed to update user role': 'อัปเดตบทบาทผู้ใช้ไม่สำเร็จ',
+
+   // src/store/slices/loanSlice.ts
+   'Payment is not confirmed on-chain yet': 'การชำระเงินยังไม่ได้รับการยืนยันแบบออนเชน',
+   'Failed to create loan': 'สร้างคำขอเงินกู้ไม่สำเร็จ',
+   'Failed to fetch user loans': 'โหลดข้อมูลเงินกู้ของผู้ใช้ไม่สำเร็จ',
+   'Failed to update loan': 'อัปเดตเงินกู้ไม่สำเร็จ',
+   'Failed to confirm loan payment': 'ยืนยันการชำระเงินกู้ไม่สำเร็จ',
+   'Failed to delete loan': 'ลบเงินกู้ไม่สำเร็จ',
+   'Could not load loan before updating it': 'ไม่สามารถโหลดข้อมูลเงินกู้ก่อนอัปเดตได้',
+   'This loan request has expired. Ask the borrower to post a new request.': 'คำขอเงินกู้นี้หมดอายุแล้ว โปรดขอให้ผู้ยืมโพสต์คำขอใหม่',
+   'Loan request was not deleted': 'ลบคำขอเงินกู้ไม่สำเร็จ',
+
+   // src/types/loanTypes.ts
+   Unpaid: 'ยังไม่ชำระ',
+
+   // src/views/academy/moneyGuideTopics.tsx
+   'Always repay before the due date — on-time repayment builds your Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level. And always choose Base as the network.':
+      'ชำระคืนก่อนวันครบกำหนดเสมอ การชำระคืนตรงเวลาช่วยเพิ่มแต้ม Pandesal และการชำระคืนเงินกู้เต็มวงเงินตรงเวลาจะปลดล็อกระดับเครดิตถัดไป และเลือกเครือข่าย Base ทุกครั้ง',
+
+   // src/views/account/Account.tsx
+   User: 'ผู้ใช้',
+   'Read the full guide': 'อ่านคู่มือฉบับเต็ม',
+
+   // src/views/account/AccountSettings.tsx
+   'Appearance & language': 'รูปลักษณ์และภาษา',
+   'Security & verification': 'ความปลอดภัยและการยืนยันตัวตน',
+   'Keep your profile and contact details up to date.': 'อัปเดตโปรไฟล์และข้อมูลติดต่อของคุณให้เป็นปัจจุบันอยู่เสมอ',
+   'These choices apply throughout Moodeng.': 'การตั้งค่าเหล่านี้มีผลทั่วทั้ง Moodeng',
+   'Manage sign-in security and identity checks.': 'จัดการความปลอดภัยในการเข้าสู่ระบบและการยืนยันตัวตน',
+   'Manage the wallet used for loans and repayments.': 'จัดการกระเป๋าเงินที่ใช้สำหรับเงินกู้และการชำระคืน',
+   'Choose which account and loan alerts you receive.': 'เลือกการแจ้งเตือนเกี่ยวกับบัญชีและเงินกู้ที่คุณต้องการรับ',
+   'All fields are required': 'โปรดกรอกข้อมูลให้ครบทุกช่อง',
+   'New password and confirm password do not match': 'รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน',
+   'Password must be at least 6 characters': 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+   'Unable to verify current account': 'ไม่สามารถยืนยันบัญชีปัจจุบันได้',
+   'Current password is incorrect': 'รหัสผ่านปัจจุบันไม่ถูกต้อง',
+   'Your password has been changed.': 'เปลี่ยนรหัสผ่านของคุณแล้ว',
+   'Failed to update password': 'อัปเดตรหัสผ่านไม่สำเร็จ',
+   'Emails do not match': 'อีเมลไม่ตรงกัน',
+   'Code resent': 'ส่งรหัสอีกครั้งแล้ว',
+   'We sent a new verification code to': 'เราได้ส่งรหัสยืนยันใหม่ไปที่',
+   'Enter the verification code we sent to your new email': 'กรอกรหัสยืนยันที่เราส่งไปยังอีเมลใหม่ของคุณ',
+   'Email updated': 'อัปเดตอีเมลแล้ว',
+   'Your email address has been changed.': 'เปลี่ยนที่อยู่อีเมลของคุณแล้ว',
+   'Invalid or expired code. Please try again.': 'รหัสไม่ถูกต้องหรือหมดอายุแล้ว โปรดลองอีกครั้ง',
+   'Sending code...': 'กำลังส่งรหัส...',
+   'Send verification code': 'ส่งรหัสยืนยัน',
+   '. Enter it below to confirm the change.': ' กรอกรหัสด้านล่างเพื่อยืนยันการเปลี่ยนแปลง',
+   "Didn't get a code? Resend": 'ไม่ได้รับรหัสใช่ไหม ส่งอีกครั้ง',
+   'Confirm email change': 'ยืนยันการเปลี่ยนอีเมล',
+   'Display name is required': 'โปรดกรอกชื่อที่แสดง',
+   'Display name updated': 'อัปเดตชื่อที่แสดงแล้ว',
+   'Your display name has been changed.': 'เปลี่ยนชื่อที่แสดงของคุณแล้ว',
+   'Failed to update display name': 'อัปเดตชื่อที่แสดงไม่สำเร็จ',
+   'Save changes': 'บันทึกการเปลี่ยนแปลง',
+   'Telegram alerts not connected': 'ยังไม่ได้เชื่อมต่อการแจ้งเตือนทาง Telegram',
+   'Open Telegram, tap Start in the bot, then check again.': 'เปิด Telegram แตะ Start ในบอท แล้วตรวจสอบอีกครั้ง',
+   'We could not save the new wallet. Your previous wallet is still saved.':
+      'เราบันทึกกระเป๋าเงินใหม่ไม่สำเร็จ กระเป๋าเงินเดิมของคุณยังบันทึกไว้อยู่',
+   'Wallet changed': 'เปลี่ยนกระเป๋าเงินแล้ว',
+   'Your new wallet has been connected.': 'เชื่อมต่อกระเป๋าเงินใหม่ของคุณแล้ว',
+   'Wallet unchanged': 'กระเป๋าเงินไม่มีการเปลี่ยนแปลง',
+   'You reconnected the same wallet.': 'คุณเชื่อมต่อกระเป๋าเงินใบเดิมอีกครั้ง',
+   'Connection was cancelled or failed. Your previous wallet is still saved.':
+      'การเชื่อมต่อถูกยกเลิกหรือไม่สำเร็จ กระเป๋าเงินเดิมของคุณยังบันทึกไว้อยู่',
+   'Connection took too long. Your previous wallet is still saved.': 'การเชื่อมต่อใช้เวลานานเกินไป กระเป๋าเงินเดิมของคุณยังบันทึกไว้อยู่',
+   'Create an Instant Wallet, or choose a new Base Account if you prefer. Your current wallet stays saved until the new one is confirmed.':
+      'สร้าง Instant Wallet หรือเลือก Base Account ใหม่หากต้องการ กระเป๋าเงินปัจจุบันของคุณจะยังบันทึกไว้จนกว่าจะยืนยันกระเป๋าเงินใหม่',
+   'Choose a new Base Account. Your current wallet stays saved until the new one is confirmed.':
+      'เลือก Base Account ใหม่ กระเป๋าเงินปัจจุบันของคุณจะยังบันทึกไว้จนกว่าจะยืนยันกระเป๋าเงินใหม่',
+   'Choose a new wallet. Your current wallet stays saved until the new one is confirmed.':
+      'เลือกกระเป๋าเงินใหม่ กระเป๋าเงินปัจจุบันของคุณจะยังบันทึกไว้จนกว่าจะยืนยันกระเป๋าเงินใหม่',
+   'Create Instant Wallet — no app needed': 'สร้าง Instant Wallet — ไม่ต้องใช้แอป',
+   'Connect a Base Account instead': 'เชื่อมต่อ Base Account แทน',
+   'or, no wallet app?': 'หรือไม่มีแอปกระเป๋าเงินใช่ไหม',
+   'Create an Instant Wallet instead': 'สร้าง Instant Wallet แทน',
+   'No email added': 'ยังไม่ได้เพิ่มอีเมล',
+   Add: 'เพิ่ม',
+   'Add an email for account recovery and important alerts.': 'เพิ่มอีเมลสำหรับกู้คืนบัญชีและรับการแจ้งเตือนสำคัญ',
+   'Used for account recovery and important alerts.': 'ใช้สำหรับกู้คืนบัญชีและรับการแจ้งเตือนสำคัญ',
+   'Not Connected': 'ยังไม่ได้เชื่อมต่อ',
+   "You have 1 active loan still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่ยังต้องชำระคืน คุณจะเปลี่ยนกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   "You have 1 active loan still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่ยังต้องชำระคืน คุณจะยกเลิกการเชื่อมต่อกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   "You have 2 active loans still to repay. You can't change your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 2 รายการที่ยังต้องชำระคืน คุณจะเปลี่ยนกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   "You have 2 active loans still to repay. You can't disconnect your wallet until it's fully repaid — this is the wallet your loan and repayments are tied to.":
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 2 รายการที่ยังต้องชำระคืน คุณจะยกเลิกการเชื่อมต่อกระเป๋าเงินไม่ได้จนกว่าจะชำระคืนครบ เพราะเงินกู้และการชำระคืนของคุณผูกอยู่กับกระเป๋าเงินนี้',
+   'You have 1 active loan being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Changing your wallet here is safe. It only affects loans you fund from now on.':
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่อยู่ระหว่างการชำระคืน การชำระคืนจะยังเข้ากระเป๋าเงินที่คุณใช้ปล่อยกู้แต่ละรายการ ไม่ใช่กระเป๋าเงินที่คุณเชื่อมต่อที่นี่ การเปลี่ยนกระเป๋าเงินที่นี่จึงปลอดภัย และจะมีผลเฉพาะเงินกู้ที่คุณปล่อยกู้นับจากนี้',
+   'You have 1 active loan being repaid. Repayments will still arrive at the wallet you funded each loan from, not the wallet you connect here. Disconnecting your wallet here is safe. It only affects loans you fund from now on.':
+      'คุณมีเงินกู้ที่กำลังดำเนินอยู่ 1 รายการที่อยู่ระหว่างการชำระคืน การชำระคืนจะยังเข้ากระเป๋าเงินที่คุณใช้ปล่อยกู้แต่ละรายการ ไม่ใช่กระเป๋าเงินที่คุณเชื่อมต่อที่นี่ การยกเลิกการเชื่อมต่อกระเป๋าเงินที่นี่จึงปลอดภัย และจะมีผลเฉพาะเงินกู้ที่คุณปล่อยกู้นับจากนี้',
+   "You can't change your wallet while you have an active loan.": 'คุณเปลี่ยนกระเป๋าเงินไม่ได้ขณะที่มีเงินกู้ที่กำลังดำเนินอยู่',
+   "You can't disconnect your wallet while you have an active loan.":
+      'คุณยกเลิกการเชื่อมต่อกระเป๋าเงินไม่ได้ขณะที่มีเงินกู้ที่กำลังดำเนินอยู่',
+   'Wallet disconnected': 'ยกเลิกการเชื่อมต่อกระเป๋าเงินแล้ว',
+   'Your wallet has been removed from this account.': 'นำกระเป๋าเงินของคุณออกจากบัญชีนี้แล้ว',
+   'Photo updated': 'อัปเดตรูปภาพแล้ว',
+   'Your profile photo has been changed.': 'เปลี่ยนรูปโปรไฟล์ของคุณแล้ว',
+   'Failed to update profile photo': 'อัปเดตรูปโปรไฟล์ไม่สำเร็จ',
+   'Telegram connection link was not created': 'สร้างลิงก์เชื่อมต่อ Telegram ไม่สำเร็จ',
+   'Add an email for recovery': 'เพิ่มอีเมลสำหรับกู้คืนบัญชี',
+   'Light mode': 'โหมดสว่าง',
+   'Password & sign-in': 'รหัสผ่านและการเข้าสู่ระบบ',
+   '0 of 3 preferences enabled': 'เปิดใช้ 0 จาก 3 รายการ',
+   '1 of 3 preferences enabled': 'เปิดใช้ 1 จาก 3 รายการ',
+   '2 of 3 preferences enabled': 'เปิดใช้ 2 จาก 3 รายการ',
+   '3 of 3 preferences enabled': 'เปิดใช้ครบทั้ง 3 รายการ',
+   'Back to settings': 'กลับไปที่การตั้งค่า',
+   'Back to account': 'กลับไปที่บัญชี',
+   'Account settings': 'การตั้งค่าบัญชี',
+   'This wallet receives your loans and records your repayments.': 'กระเป๋าเงินนี้ใช้รับเงินกู้และบันทึกการชำระคืนของคุณ',
+   'This wallet funds new loans. Existing repayments still return to the wallet used for each loan.':
+      'กระเป๋าเงินนี้ใช้ปล่อยกู้รายการใหม่ ส่วนการชำระคืนของเงินกู้เดิมจะยังกลับไปที่กระเป๋าเงินที่ใช้กับแต่ละรายการ',
+   'Manage how you sign in to Moodeng.': 'จัดการวิธีเข้าสู่ระบบ Moodeng ของคุณ',
+   'Helps people recognize you': 'ช่วยให้ผู้อื่นจำคุณได้',
+   'Not set': 'ยังไม่ได้ตั้งค่า',
+   'Work, income, and what you need help with': 'งาน รายได้ และเรื่องที่คุณต้องการความช่วยเหลือ',
+   'Use darker surfaces throughout Moodeng': 'ใช้พื้นหลังสีเข้มทั่วทั้ง Moodeng',
+   View: 'ดู',
+   'Ready to receive loans and record repayments.': 'พร้อมรับเงินกู้และบันทึกการชำระคืนแล้ว',
+   'Ready for your Moodeng loans and repayment history.': 'พร้อมสำหรับเงินกู้และประวัติการชำระคืนของคุณบน Moodeng แล้ว',
+   'This removes your saved wallet. You will need to connect or create one again before borrowing or repaying.':
+      'การดำเนินการนี้จะนำกระเป๋าเงินที่บันทึกไว้ออก คุณจะต้องเชื่อมต่อหรือสร้างกระเป๋าเงินใหม่อีกครั้งก่อนยืมหรือชำระคืน',
+   'This removes the wallet from your account. You can reconnect it anytime.':
+      'การดำเนินการนี้จะนำกระเป๋าเงินออกจากบัญชีของคุณ คุณเชื่อมต่อใหม่ได้ทุกเมื่อ',
+   'Your account is using MetaMask. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ MetaMask โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Phantom. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Phantom โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Rainbow. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Rainbow โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Trust Wallet. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Trust Wallet โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Argent. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ Argent โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using WalletConnect. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้ WalletConnect โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Your account is using Wallet. Switch to your Instant Wallet or a Base Account so loans and repayments use the right wallet.':
+      'บัญชีของคุณกำลังใช้กระเป๋าเงินอื่น โปรดเปลี่ยนไปใช้ Instant Wallet หรือ Base Account เพื่อให้เงินกู้และการชำระคืนใช้กระเป๋าเงินที่ถูกต้อง',
+   'Reconnect and confirm this is a Base Account before you borrow or repay.':
+      'เชื่อมต่อใหม่และยืนยันว่าเป็น Base Account ก่อนยืมหรือชำระคืน',
+   'Remove this saved wallet from your account': 'นำกระเป๋าเงินที่บันทึกไว้นี้ออกจากบัญชีของคุณ',
+   'Stop using this wallet for new loans': 'หยุดใช้กระเป๋าเงินนี้สำหรับเงินกู้รายการใหม่',
+
+   // src/app/forgot-password/page.tsx
+   'Enter the 8-digit code we sent to': 'กรอกรหัส 8 หลักที่เราส่งไปที่',
+
+   // src/app/verify/page.tsx
+   "We weren't able to verify your identity. Reason:": 'เราไม่สามารถยืนยันตัวตนของคุณได้ เหตุผล:',
+   '. A few things that usually fix it:': ' วิธีต่อไปนี้มักช่วยแก้ปัญหาได้:',
+
+   // src/components/ExpiredLoanRequestNotifier.tsx
+   'Your 15 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 15 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 20 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 20 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 40 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 40 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 60 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 60 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 80 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 80 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 100 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 100 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 120 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 120 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   'Your 140 USDC request expired before it was funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอ 140 USDC ของคุณหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '2 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 2 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '3 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 3 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '4 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 4 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '5 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 5 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '6 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 6 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '7 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 7 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '8 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 8 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '9 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 9 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+   '10 loan requests expired before they were funded. Contact support if you need help connecting with a lender or deciding whether to post again.':
+      'คำขอเงินกู้ 10 รายการหมดอายุก่อนได้รับการปล่อยกู้ ติดต่อฝ่ายช่วยเหลือหากต้องการความช่วยเหลือในการหาผู้ให้กู้ หรือตัดสินใจว่าจะโพสต์ใหม่หรือไม่',
+
+   // src/components/filters/DatePicker.tsx
+   Su: 'อา',
+   Mo: 'จ',
+   Tu: 'อ',
+   We: 'พ',
+   Th: 'พฤ',
+   Fr: 'ศ',
+   Sa: 'ส',
+
+   // src/config/avatarBackgrounds.ts (aria-label in AvatarUploadModal)
+   'Purple avatar background': 'พื้นหลังอวาตาร์สีม่วง',
+   'Mint avatar background': 'พื้นหลังอวาตาร์สีเขียวมิ้นต์',
+   'Sky avatar background': 'พื้นหลังอวาตาร์สีฟ้า',
+   'Peach avatar background': 'พื้นหลังอวาตาร์สีพีช',
+   'Rose avatar background': 'พื้นหลังอวาตาร์สีชมพู',
+   'Lemon avatar background': 'พื้นหลังอวาตาร์สีเหลืองมะนาว',
+   'Stone avatar background': 'พื้นหลังอวาตาร์สีเทาอ่อน',
+   'Night avatar background': 'พื้นหลังอวาตาร์สีกลางคืน',
+
+   // src/constants/dates.ts
+   January: 'มกราคม',
+   February: 'กุมภาพันธ์',
+   March: 'มีนาคม',
+   April: 'เมษายน',
+   May: 'พฤษภาคม',
+   June: 'มิถุนายน',
+   July: 'กรกฎาคม',
+   August: 'สิงหาคม',
+   September: 'กันยายน',
+   October: 'ตุลาคม',
+   November: 'พฤศจิกายน',
+   December: 'ธันวาคม',
+   Jan: 'ม.ค.',
+   Feb: 'ก.พ.',
+   Mar: 'มี.ค.',
+   Apr: 'เม.ย.',
+   Jun: 'มิ.ย.',
+   Jul: 'ก.ค.',
+   Aug: 'ส.ค.',
+   Sep: 'ก.ย.',
+   Oct: 'ต.ค.',
+   Nov: 'พ.ย.',
+   Dec: 'ธ.ค.',
+
+   // src/hooks/useWalletSync.ts
+   'This account is saved to your locked wallet. Switch back to that wallet, or update the saved wallet from Account Settings.':
+      'บัญชีนี้บันทึกไว้กับกระเป๋าเงินที่ล็อกไว้ของคุณ โปรดสลับกลับไปใช้กระเป๋าเงินนั้น หรืออัปเดตกระเป๋าเงินที่บันทึกไว้ในการตั้งค่าบัญชี',
+   'Could not save wallet connection. This might occur if the wallet is already in use.':
+      'บันทึกการเชื่อมต่อกระเป๋าเงินไม่สำเร็จ อาจเกิดจากกระเป๋าเงินนี้ถูกใช้งานอยู่แล้ว',
+
+   // src/lib/borrowerContextFit.ts (lender-facing borrower card)
+   'full-time, mid-month pay': 'งานประจำ · รับเงินกลางเดือน',
+   'full-time, end-of-month pay': 'งานประจำ · รับเงินสิ้นเดือน',
+   'full-time, weekly pay': 'งานประจำ · รับเงินรายสัปดาห์',
+   'full-time, irregular pay': 'งานประจำ · รับเงินไม่แน่นอน',
+   'part-time, mid-month pay': 'งานพาร์ตไทม์ · รับเงินกลางเดือน',
+   'part-time, end-of-month pay': 'งานพาร์ตไทม์ · รับเงินสิ้นเดือน',
+   'part-time, weekly pay': 'งานพาร์ตไทม์ · รับเงินรายสัปดาห์',
+   'part-time, irregular pay': 'งานพาร์ตไทม์ · รับเงินไม่แน่นอน',
+   'freelance, mid-month pay': 'ฟรีแลนซ์ · รับเงินกลางเดือน',
+   'freelance, end-of-month pay': 'ฟรีแลนซ์ · รับเงินสิ้นเดือน',
+   'freelance, weekly pay': 'ฟรีแลนซ์ · รับเงินรายสัปดาห์',
+   'freelance, irregular pay': 'ฟรีแลนซ์ · รับเงินไม่แน่นอน',
+   '1-day gap': 'ห่างกัน 1 วัน',
+   '0-day gap': 'ห่างกัน 0 วัน',
+   '2-day gap': 'ห่างกัน 2 วัน',
+   '3-day gap': 'ห่างกัน 3 วัน',
+   '4-day gap': 'ห่างกัน 4 วัน',
+   '5-day gap': 'ห่างกัน 5 วัน',
+   '6-day gap': 'ห่างกัน 6 วัน',
+   '7-day gap': 'ห่างกัน 7 วัน',
+   '8-day gap': 'ห่างกัน 8 วัน',
+   '9-day gap': 'ห่างกัน 9 วัน',
+   '10-day gap': 'ห่างกัน 10 วัน',
+   '11-day gap': 'ห่างกัน 11 วัน',
+   '12-day gap': 'ห่างกัน 12 วัน',
+   '13-day gap': 'ห่างกัน 13 วัน',
+   '14-day gap': 'ห่างกัน 14 วัน',
+   '15-day gap': 'ห่างกัน 15 วัน',
+   '16-day gap': 'ห่างกัน 16 วัน',
+   '17-day gap': 'ห่างกัน 17 วัน',
+   '18-day gap': 'ห่างกัน 18 วัน',
+   '19-day gap': 'ห่างกัน 19 วัน',
+   '20-day gap': 'ห่างกัน 20 วัน',
+   '21-day gap': 'ห่างกัน 21 วัน',
+   '22-day gap': 'ห่างกัน 22 วัน',
+   '23-day gap': 'ห่างกัน 23 วัน',
+   '24-day gap': 'ห่างกัน 24 วัน',
+   '25-day gap': 'ห่างกัน 25 วัน',
+   '26-day gap': 'ห่างกัน 26 วัน',
+   '27-day gap': 'ห่างกัน 27 วัน',
+   '28-day gap': 'ห่างกัน 28 วัน',
+   '29-day gap': 'ห่างกัน 29 วัน',
+   '30-day gap': 'ห่างกัน 30 วัน',
+   '31-day gap': 'ห่างกัน 31 วัน',
+   'Repaid 2 loans and always came back': 'ชำระคืนแล้ว 2 รายการ และกลับมาใช้บริการเสมอ',
+   'Repaid 3 loans and always came back': 'ชำระคืนแล้ว 3 รายการ และกลับมาใช้บริการเสมอ',
+   'Repaid 4 loans and always came back': 'ชำระคืนแล้ว 4 รายการ และกลับมาใช้บริการเสมอ',
+   "loans repaid — one of the community's reliable borrowers": 'รายการที่ชำระคืนแล้ว — หนึ่งในผู้ยืมที่เชื่อถือได้ของชุมชน',
+   '· 1-day loan': '· เงินกู้ 1 วัน',
+   '· 2-day loan': '· เงินกู้ 2 วัน',
+   '· 3-day loan': '· เงินกู้ 3 วัน',
+   '· 4-day loan': '· เงินกู้ 4 วัน',
+   '· 5-day loan': '· เงินกู้ 5 วัน',
+   '· 6-day loan': '· เงินกู้ 6 วัน',
+   '· 7-day loan': '· เงินกู้ 7 วัน',
+   '· 8-day loan': '· เงินกู้ 8 วัน',
+   '· 9-day loan': '· เงินกู้ 9 วัน',
+   '· 10-day loan': '· เงินกู้ 10 วัน',
+   '· 11-day loan': '· เงินกู้ 11 วัน',
+   '· 12-day loan': '· เงินกู้ 12 วัน',
+   '· 13-day loan': '· เงินกู้ 13 วัน',
+   '· 14-day loan': '· เงินกู้ 14 วัน',
+   '· 15-day loan': '· เงินกู้ 15 วัน',
+   '· 16-day loan': '· เงินกู้ 16 วัน',
+   '· 17-day loan': '· เงินกู้ 17 วัน',
+   '· 18-day loan': '· เงินกู้ 18 วัน',
+   '· 19-day loan': '· เงินกู้ 19 วัน',
+   '· 20-day loan': '· เงินกู้ 20 วัน',
+   '· 21-day loan': '· เงินกู้ 21 วัน',
+   '· 22-day loan': '· เงินกู้ 22 วัน',
+   '· 23-day loan': '· เงินกู้ 23 วัน',
+   '· 24-day loan': '· เงินกู้ 24 วัน',
+   '· 25-day loan': '· เงินกู้ 25 วัน',
+   '· 26-day loan': '· เงินกู้ 26 วัน',
+   '· 27-day loan': '· เงินกู้ 27 วัน',
+   '· 28-day loan': '· เงินกู้ 28 วัน',
+   '· 29-day loan': '· เงินกู้ 29 วัน',
+   '· 30-day loan': '· เงินกู้ 30 วัน',
+   'demonstrates stable income': 'มีรายได้ที่มั่นคง',
+   'demonstrates regular income': 'มีรายได้สม่ำเสมอ',
+   'demonstrates project-based income': 'มีรายได้ตามโปรเจกต์',
+   'paid weekly': 'รับเงินรายสัปดาห์',
+   'paid mid-month': 'รับเงินกลางเดือน',
+   'paid end of the month': 'รับเงินสิ้นเดือน',
+   'under $200': 'ต่ำกว่า $200',
+   'over $700': 'มากกว่า $700',
+   'as main source of income': 'ซึ่งเป็นแหล่งรายได้หลัก',
+   'as other source of income': 'เป็นแหล่งรายได้เสริม',
+   'Spends under $50 a month on': 'ใช้จ่ายต่ำกว่า $50 ต่อเดือนไปกับ',
+   'Spends $50–$150 a month on': 'ใช้จ่าย $50–$150 ต่อเดือนไปกับ',
+   'Spends $150–$300 a month on': 'ใช้จ่าย $150–$300 ต่อเดือนไปกับ',
+   'Spends over $300 a month on': 'ใช้จ่ายมากกว่า $300 ต่อเดือนไปกับ',
+   'family needs': 'ค่าใช้จ่ายในครอบครัว',
+   'emergency costs': 'ค่าใช้จ่ายฉุกเฉิน',
+   'work supplies': 'อุปกรณ์สำหรับทำงาน',
+
+   // src/lib/borrowerCreditUsage.ts
+   'Less than a day left on the board': 'เหลือเวลาบนกระดานไม่ถึง 1 วัน',
+   '1 day left on the board': 'เหลือเวลาบนกระดานอีก 1 วัน',
+   '2 days left on the board': 'เหลือเวลาบนกระดานอีก 2 วัน',
+   '3 days left on the board': 'เหลือเวลาบนกระดานอีก 3 วัน',
+   '4 days left on the board': 'เหลือเวลาบนกระดานอีก 4 วัน',
+   '5 days left on the board': 'เหลือเวลาบนกระดานอีก 5 วัน',
+   '6 days left on the board': 'เหลือเวลาบนกระดานอีก 6 วัน',
+   '7 days left on the board': 'เหลือเวลาบนกระดานอีก 7 วัน',
+
+   // src/lib/worldIdVerificationLabel.ts
+   'Verified Lender': 'ผู้ให้กู้ที่ยืนยันแล้ว',
+
+   // src/store/slices/authSlice.ts
+   'Failed to ensure user profile': 'โหลดโปรไฟล์ผู้ใช้ไม่สำเร็จ',
+   'Unable to resolve authenticated user': 'ไม่พบผู้ใช้ที่เข้าสู่ระบบ',
+   'User profile not found': 'ไม่พบโปรไฟล์ผู้ใช้',
+   'No authenticated user to update': 'ไม่พบผู้ใช้ที่เข้าสู่ระบบสำหรับการอัปเดต',
+
+   // src/views/academy/AcademyGuide.tsx
+   'Academy score': 'คะแนนอะคาเดมี',
+   'Nice! Although you will need to verify and submit the real loan application in the app, it is great to see you try the flow. Mecha likes the practice: $15 for 2 days, with $17 paid back.':
+      'เยี่ยมมาก! แม้คุณจะต้องยืนยันตัวตนและส่งคำขอเงินกู้จริงในแอป แต่ดีใจที่เห็นคุณลองทำขั้นตอนนี้ Mecha ชอบการฝึกซ้อมนี้: $15 เป็นเวลา 2 วัน ชำระคืน $17'
+};

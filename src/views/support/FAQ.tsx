@@ -65,14 +65,14 @@ export default function FAQ() {
    const copy =
       locale === 'fil'
          ? {
-              title: 'Mga Madalas Itanong',
-              placeholder: 'Maghanap sa FAQs',
+              title: 'Mga madalas itanong',
+              placeholder: 'Maghanap sa mga FAQ',
               empty: 'Walang tanong na tugma sa search mo.',
               all: 'Lahat',
               [FAQ_CATEGORIES.general]: 'Pangkalahatan',
               [FAQ_CATEGORIES.borrowing]: 'Paghiram',
               [FAQ_CATEGORIES.trustScore]: 'Pandesal points',
-              [FAQ_CATEGORIES.creditLevel]: 'Antas ng kredito',
+              [FAQ_CATEGORIES.creditLevel]: 'Credit Level',
               [FAQ_CATEGORIES.wallet]: 'Wallet'
            }
          : locale === 'id'
@@ -85,7 +85,7 @@ export default function FAQ() {
                 [FAQ_CATEGORIES.borrowing]: 'Pinjaman',
                 [FAQ_CATEGORIES.trustScore]: 'Poin Pandesal',
                 [FAQ_CATEGORIES.creditLevel]: 'Level Kredit',
-                [FAQ_CATEGORIES.wallet]: 'Wallet'
+                [FAQ_CATEGORIES.wallet]: 'Dompet'
              }
            : {
                 title: 'Frequently Asked Questions',

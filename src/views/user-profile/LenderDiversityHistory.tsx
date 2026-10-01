@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 
+import { UniqueLendersLabel } from '@/i18n/SentenceLabels';
 import Loading from '@/components/Loading';
 import { useThemeMode } from '@/components/ThemeModeProvider';
 import { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
@@ -368,7 +369,7 @@ export default function LenderDiversityHistory() {
                         <div className="mt-2 flex items-center gap-2">
                            <Users className="h-4 w-4 text-md-blue-600" strokeWidth={2.4} />
                            <span className="text-[14px] font-semibold text-md-blue-600">
-                              {lenderDiversity.uniqueLenders} Unique {lenderDiversity.uniqueLenders === 1 ? 'Lender' : 'Lenders'}
+                              <UniqueLendersLabel count={lenderDiversity.uniqueLenders} />
                            </span>
                         </div>
                      </div>

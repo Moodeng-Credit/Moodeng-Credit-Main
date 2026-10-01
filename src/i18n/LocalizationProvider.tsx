@@ -116,6 +116,11 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
    );
 }
 
+/** Like useLocalization, but returns null outside a LocalizationProvider instead of throwing. */
+export function useOptionalLocalization() {
+   return useContext(LocalizationContext);
+}
+
 export function useLocalization() {
    const context = useContext(LocalizationContext);
 

@@ -119,7 +119,7 @@ export default function MoneyGuide() {
          iconColor: 'text-[#a2481f]',
          title: 'Repay your loan',
          subtitle: 'On-time repayment builds trust',
-         body: 'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time raises your Pandesal points and credit limit.',
+         body: 'Send USDC to the repayment address shown on the Repay screen — from a wallet, exchange, or local service. Repaying on time earns Pandesal points, and repaying a full-limit loan on time raises your credit limit.',
          chips: (
             <>
                <LogoChip logo={<UsdcMark className="h-4 w-4" />} label="From a wallet" />

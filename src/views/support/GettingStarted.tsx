@@ -84,19 +84,19 @@ const GETTING_STARTED_COPY = {
       ]
    },
    fil: {
-      title: 'Magsimula',
+      title: 'Pagsisimula',
       heading: 'Alamin ang basics ng Moodeng',
-      latestVideo: 'Pinakabagong video guide',
-      latestVideoTitle: 'Pinakabagong video guide',
-      lenderBenefitsTitle: 'Benepisyo para sa nagpapahiram',
+      latestVideo: 'Pinakabagong video na gabay',
+      latestVideoTitle: 'Pinakabagong video na gabay',
+      lenderBenefitsTitle: 'Benepisyo ng lender',
       lenderBenefitsDescription: 'Alamin kung bakit mahalaga ang pagpapahiram',
       basics: [
-         { title: 'Tingnan ang mga gabay', description: 'Quick start para sa bagong users' },
-         { title: 'Tingnan ang benefits', description: 'Alamin kung bakit sulit ito' },
+         { title: 'Tingnan ang mga gabay', description: 'Quick start para sa mga bagong user' },
+         { title: 'Tingnan ang mga benepisyo', description: 'Alamin kung bakit sulit ito' },
          { title: 'Bakit USDC ang gamit ng Moodeng', description: 'Alamin kung paano gumagana ang USDC' },
-         { title: 'Alamin ang sistema ng pagpapataas ng antas ng kredito', description: 'Palakihin ang limits, bumuo ng trust' },
-         { title: 'Matuto pa sa Academy', description: 'Paghiram, wallet, Pandesal points, at antas ng kredito' },
-         { title: 'Basahin ang Moodeng Blogs', description: 'Mga kwento tungkol sa patas na credit, loan sharks, at trust' }
+         { title: 'Alamin ang Credit Leveling System', description: 'Palakihin ang limit, bumuo ng tiwala' },
+         { title: 'Matuto pa sa Academy', description: 'Paghiram, wallet, Pandesal points, at Credit Level' },
+         { title: 'Basahin ang mga blog ng Moodeng', description: 'Mga kuwento tungkol sa patas na credit, mga loan shark, at tiwala' }
       ]
    },
    id: {
@@ -108,10 +108,10 @@ const GETTING_STARTED_COPY = {
       lenderBenefitsDescription: 'Lihat mengapa memberi pinjaman penting',
       basics: [
          { title: 'Lihat panduan', description: 'Mulai cepat untuk pengguna baru' },
-         { title: 'Lihat manfaat', description: 'Lihat mengapa ini berguna' },
+         { title: 'Lihat manfaat', description: 'Lihat kenapa ini sepadan' },
          { title: 'Mengapa Moodeng memakai USDC', description: 'Pelajari cara kerja USDC' },
-         { title: 'Pelajari sistem peningkatan level kredit', description: 'Naikkan limit, bangun kepercayaan' },
-         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, wallet, Pandesal points, dan level kredit' },
+         { title: 'Pelajari sistem naik Level Kredit', description: 'Naikkan limit, bangun kepercayaan' },
+         { title: 'Pelajari lebih lanjut di Academy', description: 'Pinjaman, dompet, poin Pandesal, dan Level Kredit' },
          { title: 'Baca Blog Moodeng', description: 'Cerita tentang kredit adil, rentenir, dan kepercayaan' }
       ]
    },
@@ -121,29 +121,29 @@ const GETTING_STARTED_COPY = {
       latestVideo: 'วิดีโอคู่มือล่าสุด',
       latestVideoTitle: 'วิดีโอคู่มือล่าสุด',
       lenderBenefitsTitle: 'ประโยชน์สำหรับผู้ให้กู้',
-      lenderBenefitsDescription: 'ดูว่าทำไมการให้กู้จึงสำคัญ',
+      lenderBenefitsDescription: 'ดูว่าทำไมการปล่อยกู้จึงสำคัญ',
       basics: [
          { title: 'ดูคู่มือ', description: 'เริ่มต้นอย่างรวดเร็วสำหรับผู้ใช้ใหม่' },
          { title: 'ดูประโยชน์', description: 'ดูว่าทำไมจึงคุ้มค่า' },
-         { title: 'ทำไม Moodeng ใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
-         { title: 'เรียนรู้ระบบการเพิ่มระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
-         { title: 'เรียนรู้เพิ่มเติมที่ Academy', description: 'การยืม, กระเป๋าเงิน, Pandesal points และระดับเครดิต' },
+         { title: 'ทำไม Moodeng จึงใช้ USDC', description: 'เรียนรู้ว่า USDC ทำงานอย่างไร' },
+         { title: 'เรียนรู้ระบบการเลื่อนระดับเครดิต', description: 'เพิ่มวงเงิน สร้างความน่าเชื่อถือ' },
+         { title: 'เรียนรู้เพิ่มเติมที่อะคาเดมี', description: 'การยืม กระเป๋าเงิน แต้ม Pandesal และระดับเครดิต' },
          { title: 'อ่านบล็อก Moodeng', description: 'เรื่องราวเกี่ยวกับเครดิตที่เป็นธรรม เงินกู้นอกระบบ และความน่าเชื่อถือ' }
       ]
    },
    vi: {
       title: 'Bắt đầu',
-      heading: 'Tìm hiểu cơ bản về Moodeng',
+      heading: 'Tìm hiểu những điều cơ bản về Moodeng',
       latestVideo: 'Video hướng dẫn mới nhất',
       latestVideoTitle: 'Video hướng dẫn mới nhất',
       lenderBenefitsTitle: 'Lợi ích cho người cho vay',
-      lenderBenefitsDescription: 'Xem vì sao cho vay quan trọng',
+      lenderBenefitsDescription: 'Xem vì sao việc cho vay có ý nghĩa',
       basics: [
          { title: 'Xem hướng dẫn', description: 'Bắt đầu nhanh cho người dùng mới' },
-         { title: 'Xem lợi ích', description: 'Xem vì sao đáng dùng' },
+         { title: 'Xem lợi ích', description: 'Xem vì sao đáng để thử' },
          { title: 'Vì sao Moodeng dùng USDC', description: 'Tìm hiểu USDC hoạt động ra sao' },
          { title: 'Tìm hiểu hệ thống nâng hạng tín dụng', description: 'Tăng hạn mức, xây dựng niềm tin' },
-         { title: 'Học thêm tại Academy', description: 'Vay, ví, Pandesal points và hạng tín dụng' },
+         { title: 'Tìm hiểu thêm tại Học viện', description: 'Vay, ví, điểm Pandesal và Hạng tín dụng' },
          { title: 'Đọc Blog Moodeng', description: 'Câu chuyện về tín dụng công bằng, cho vay nặng lãi và niềm tin' }
       ]
    }

@@ -65,25 +65,25 @@ const SUPPORT_COPY: Record<
    fil: {
       greeting: (name) => `Kumusta, ${name}`,
       title: 'Sentro ng Tulong at Suporta',
-      subtitle: 'Kailangan ng tulong sa pagsisimula? Mag-browse ng mga artikulo ng tulong o makipag-ugnayan kung kailangan mo ng suporta.',
+      subtitle: 'Kailangan ng tulong sa pagsisimula? Mag-browse ng mga help article o makipag-ugnayan kung kailangan mo ng suporta.',
       communityTitle: 'Sumali sa komunidad',
-      communityDescription: 'Makipag-ugnayan sa ibang humihiram, magbigay ng feedback, at manatiling updated sa Moodeng Credit.',
+      communityDescription: 'Makipag-connect sa ibang borrower, magbigay ng feedback, at manatiling updated sa Moodeng Credit.',
       cards: [
          {
-            label: 'Magsimula',
-            description: 'Bago ka pa lang ba sa Moodeng Credit? Alamin ang mga pangunahing bagay at humiling ng una mong loan.',
+            label: 'Pagsisimula',
+            description: 'Bago ka pa lang ba sa Moodeng Credit? Alamin ang basics at mag-request ng una mong loan.',
             icon: 'play-outline.svg',
             path: '/support/getting-started'
          },
          {
             label: 'Mga gabay',
-            description: 'Mga gabay na step-by-step tungkol sa Pandesal points, antas ng kredito, at pagbabayad.',
+            description: 'Mga gabay na step-by-step tungkol sa Pandesal points, Credit Level, at pagbabayad.',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
             label: 'FAQs',
-            description: 'Malinaw na sagot tungkol sa pautang, tiwala, verification, at pagbabayad.',
+            description: 'Malinaw na sagot tungkol sa mga loan, tiwala, verification, at pagbabayad.',
             icon: 'question_light.svg',
             path: '/help'
          },
@@ -111,19 +111,19 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'Panduan',
-            description: 'Panduan langkah demi langkah untuk Pandesal points, level kredit, dan pembayaran.',
+            description: 'Panduan langkah demi langkah tentang poin Pandesal, Level Kredit, dan pembayaran kembali.',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
             label: 'FAQ',
-            description: 'Jawaban jelas tentang pinjaman, kepercayaan, verifikasi, dan pembayaran.',
+            description: 'Jawaban jelas tentang pinjaman, kepercayaan, verifikasi, dan pembayaran kembali.',
             icon: 'question_light.svg',
             path: '/help'
          },
          {
-            label: 'Update',
-            description: 'Update produk, perubahan, dan pengumuman penting.',
+            label: 'Pembaruan',
+            description: 'Pembaruan produk, perubahan, dan pengumuman penting.',
             icon: 'updates.png',
             path: '/support/updates',
             badge: 'BARU'
@@ -131,9 +131,9 @@ const SUPPORT_COPY: Record<
       ]
    },
    th: {
-      greeting: (name) => `สวัสดี, ${name}`,
-      title: 'ศูนย์ช่วยเหลือและสนับสนุน',
-      subtitle: 'ต้องการความช่วยเหลือในการเริ่มต้นไหม? อ่านบทความช่วยเหลือหรือติดต่อเราหากต้องการการสนับสนุน',
+      greeting: (name) => `สวัสดีคุณ ${name}`,
+      title: 'ศูนย์ช่วยเหลือ',
+      subtitle: 'ต้องการความช่วยเหลือในการเริ่มต้นไหม? อ่านบทความช่วยเหลือ หรือติดต่อเราหากต้องการความช่วยเหลือเพิ่มเติม',
       communityTitle: 'เข้าร่วมชุมชน',
       communityDescription: 'เชื่อมต่อกับผู้ยืมคนอื่น แชร์ความคิดเห็น และติดตามข่าว Moodeng Credit',
       cards: [
@@ -145,13 +145,13 @@ const SUPPORT_COPY: Record<
          },
          {
             label: 'คู่มือ',
-            description: 'คู่มือทีละขั้นตอนสำหรับ Pandesal points, ระดับเครดิต และการชำระคืน',
+            description: 'คู่มือทีละขั้นตอนเกี่ยวกับแต้ม Pandesal ระดับเครดิต และการชำระคืน',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
             label: 'FAQ',
-            description: 'คำตอบชัดเจนเกี่ยวกับเงินกู้ ความน่าเชื่อถือ การยืนยัน และการชำระคืน',
+            description: 'คำตอบที่ชัดเจนเกี่ยวกับเงินกู้ ความน่าเชื่อถือ การยืนยันตัวตน และการชำระคืน',
             icon: 'question_light.svg',
             path: '/help'
          },
@@ -167,24 +167,24 @@ const SUPPORT_COPY: Record<
    vi: {
       greeting: (name) => `Xin chào, ${name}`,
       title: 'Trung tâm trợ giúp & hỗ trợ',
-      subtitle: 'Cần trợ giúp để bắt đầu? Xem bài viết hỗ trợ hoặc liên hệ nếu bạn cần hỗ trợ.',
+      subtitle: 'Cần trợ giúp để bắt đầu? Xem các bài viết trợ giúp hoặc liên hệ với chúng tôi nếu bạn cần hỗ trợ.',
       communityTitle: 'Tham gia cộng đồng',
       communityDescription: 'Kết nối với người vay khác, chia sẻ góp ý và cập nhật tin tức Moodeng Credit.',
       cards: [
          {
             label: 'Bắt đầu',
-            description: 'Mới dùng Moodeng Credit? Tìm hiểu cơ bản và yêu cầu khoản vay đầu tiên.',
+            description: 'Mới dùng Moodeng Credit? Tìm hiểu những điều cơ bản và yêu cầu khoản vay đầu tiên.',
             icon: 'play-outline.svg',
             path: '/support/getting-started'
          },
          {
             label: 'Hướng dẫn',
-            description: 'Hướng dẫn từng bước về Pandesal points, hạng tín dụng và trả nợ.',
+            description: 'Hướng dẫn từng bước về điểm Pandesal, Hạng tín dụng và trả nợ.',
             icon: 'guide.png',
             path: '/support/guides'
          },
          {
-            label: 'FAQ',
+            label: 'Câu hỏi thường gặp',
             description: 'Câu trả lời rõ ràng về khoản vay, niềm tin, xác minh và trả nợ.',
             icon: 'question_light.svg',
             path: '/help'

@@ -15,11 +15,11 @@ const BADGE_COPY = {
       unfinished: 'Unfinished'
    },
    fil: {
-      verified: 'Beripikadong humihiram',
-      notVerified: 'Hindi verified',
+      verified: 'Verified na borrower',
+      notVerified: 'Hindi pa verified',
       pending: 'Pending',
       review: 'Nire-review',
-      unfinished: 'Hindi tapos'
+      unfinished: 'Hindi pa tapos'
    },
    id: {
       verified: 'Peminjam terverifikasi',

@@ -56,7 +56,7 @@ export default function Footer() {
                            />
                         </div>
                         <small className="mt-10 text-xs tracking-normal leading-relaxed">
-                           Copyright © 2025 Moodeng Credit | All rights reserved
+                           Copyright © 2026 Moodeng Credit | All rights reserved
                         </small>
                      </div>
                   </div>

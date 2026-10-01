@@ -65,7 +65,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
       let requestable = false;
 
       if (!isVerified) {
-         unlockRequirement = 'Verify World ID to start borrowing';
+         unlockRequirement = 'Verify your identity to start borrowing';
          date = undefined;
       } else if (isUnlocked) {
          if (amount === CREDIT_TIERS[0]) {

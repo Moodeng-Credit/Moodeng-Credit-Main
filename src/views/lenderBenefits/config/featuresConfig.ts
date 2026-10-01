@@ -6,7 +6,7 @@ export interface FeaturesConfigProps {
 export const featuresConfig: FeaturesConfigProps[] = [
    {
       title: 'Anonymous Lending',
-      description: 'Wallet-based lending with usernames means no one knows your identity.'
+      description: 'Wallet-based lending with usernames keeps your real identity private.'
    },
    {
       title: 'No Fees for Lenders, Ever',

@@ -24,6 +24,7 @@ import {
    type TransactionHistoryTab,
    type TransactionLoanStatus
 } from '@/views/transactions/transactionHistoryFilters';
+import { currentDateLocale } from '@/utils/dateFormatters';
 
 function formatCurrency(amount: number): string {
    return new Intl.NumberFormat('en-US', {
@@ -36,7 +37,7 @@ function formatCurrency(amount: number): string {
 
 function formatDate(dateStr: string | undefined | null): string {
    if (!dateStr) return '—';
-   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+   return new Date(dateStr).toLocaleDateString(currentDateLocale(), { month: 'short', day: '2-digit', year: 'numeric' });
 }
 
 function StatusChip({ status }: { status: TransactionLoanStatus }) {

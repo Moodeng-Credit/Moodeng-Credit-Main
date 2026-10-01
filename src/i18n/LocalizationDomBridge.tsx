@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
+import { loadScreenCoverage } from '@/i18n/coverage';
 import { buildPhraseMap, getTranslation, translateKnownPhrases } from '@/i18n/phraseTranslation';
 import type { LocaleCode } from '@/i18n/translations';
 
@@ -131,7 +132,21 @@ function localizeNode(root: Node, locale: LocaleCode, phraseMap: Map<string, str
 }
 
 export function LocalizationDomBridge({ locale }: { locale: LocaleCode }) {
-   const phraseMap = useMemo(() => buildPhraseMap(locale), [locale]);
+   const [coverage, setCoverage] = useState<{ locale: LocaleCode; phrases: Record<string, string> } | null>(null);
+
+   useEffect(() => {
+      if (locale === 'en') return;
+      let cancelled = false;
+      void loadScreenCoverage(locale).then((phrases) => {
+         if (!cancelled) setCoverage({ locale, phrases });
+      });
+      return () => {
+         cancelled = true;
+      };
+   }, [locale]);
+
+   const localeCoverage = coverage?.locale === locale ? coverage.phrases : undefined;
+   const phraseMap = useMemo(() => buildPhraseMap(locale, localeCoverage), [locale, localeCoverage]);
 
    useEffect(() => {
       if (typeof document === 'undefined') return;

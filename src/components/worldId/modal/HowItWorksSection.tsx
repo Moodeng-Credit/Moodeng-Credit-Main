@@ -28,16 +28,16 @@ const HOW_IT_WORKS_COPY = {
       sectionTitle: 'Paano mag-verify?',
       steps: [
          {
-            title: 'I-click ang "Mag-verify gamit ang World ID"',
+            title: 'I-tap ang "Verify with World ID"',
             description: 'Bubuksan nito ang verification modal'
          },
          {
             title: 'I-scan ang QR gamit ang World App',
-            description: 'Gamitin ang camera ng phone mo'
+            description: 'Gagamitin nito ang camera ng phone mo'
          },
          {
-            title: 'Kumpirmahin at tapusin',
-            description: 'Mave-verify agad'
+            title: 'I-confirm at tapusin',
+            description: 'Verified ka agad'
          }
       ]
    },

@@ -175,7 +175,7 @@ export const MONEY_GUIDE_TOPICS: MoneyGuideTopicConfig[] = [
          ]
       },
       callout:
-         'Always repay before the due date — on-time repayment builds your Pandesal points and unlocks higher credit levels. And always choose Base as the network.'
+         'Always repay before the due date — on-time repayment builds your Pandesal points, and repaying a full-limit loan on time unlocks the next Credit Level. And always choose Base as the network.'
    }
 ];
 

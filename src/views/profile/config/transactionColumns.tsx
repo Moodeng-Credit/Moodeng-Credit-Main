@@ -20,7 +20,7 @@ const renderLoanStatus = (loan: Loan): ReactNode => (
 
 export const getTransactionColumns = (isLender: boolean, userProfiles: Record<string, User>): Column<Loan>[] => [
    {
-      header: 'All Transaction',
+      header: 'All Transactions',
       accessor: 'reason' as const,
       className: 'font-bold text-[#2a56f4]',
       mobileLabel: 'Transaction'

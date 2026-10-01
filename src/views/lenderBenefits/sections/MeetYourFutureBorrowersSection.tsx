@@ -10,11 +10,10 @@ export default function MeetYourFutureBorrowersSection(): JSX.Element {
                   Meet overseas Filipinos and Southeast Asians building credit abroad.
                </h2>
                <p className="mt-5 max-w-[640px] text-2xl leading-8 text-zinc-900 max-md:text-base max-md:leading-6">
-                  We are starting with workers and migrants in places where World ID verification is practical, including South Korea,
-                  Taiwan, Japan, Singapore, and other Orb-supported cities.
+                  We are starting with workers and migrants in hubs such as South Korea, Taiwan, Japan, Singapore, and other nearby cities.
                </p>
                <div className="mt-6 flex flex-wrap gap-2 text-md-b2 font-semibold">
-                  {['Filipino workers', 'SEA migrants', 'Orb verified', 'USDC microloans'].map((label) => (
+                  {['Filipino workers', 'SEA migrants', 'ID verified', 'USDC microloans'].map((label) => (
                      <span key={label} className="rounded-full bg-white/80 px-3 py-2 shadow-sm">
                         {label}
                      </span>

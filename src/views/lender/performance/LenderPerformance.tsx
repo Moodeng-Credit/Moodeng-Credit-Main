@@ -16,6 +16,7 @@ import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { Loan } from '@/types/loanTypes';
 import { isLoanPastDue } from '@/utils/loanOverdue';
+import { currentDateLocale } from '@/utils/dateFormatters';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -67,7 +68,7 @@ function formatCurrency(amount: number): string {
 function formatMemberSince(dateStr: string | null | undefined): string {
    if (!dateStr) return '—';
    const date = new Date(dateStr);
-   const formatted = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+   const formatted = date.toLocaleDateString(currentDateLocale(), { month: 'long', day: 'numeric', year: 'numeric' });
    const daysDiff = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
    return `${formatted} (${daysDiff} days)`;
 }
@@ -111,11 +112,11 @@ function buildChartData(loans: Loan[], period: TimePeriod): ChartPoint[] {
 
       let label: string;
       if (days <= 1) {
-         label = date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+         label = date.toLocaleTimeString(currentDateLocale(), { hour: 'numeric', hour12: true });
       } else if (days <= 90) {
-         label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+         label = date.toLocaleDateString(currentDateLocale(), { month: 'short', day: 'numeric' });
       } else {
-         label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+         label = date.toLocaleDateString(currentDateLocale(), { month: 'short', year: '2-digit' });
       }
 
       return { label, lent, loss };
