@@ -35,7 +35,7 @@ import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 import { useRecordedMilestones } from '@/hooks/useRecordedMilestones';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
-import { isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '@/utils/loanOverdue';
+import { isLoanPastDue, isPublicDefault } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
@@ -57,7 +57,7 @@ import { ClaimVoucherButton } from '@/views/dashboard-v2/components/DashboardV2S
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
 import { getMoodengTier, getNextTierGoal, getVoucherState, MOODENG_TIERS, OWN_VOUCHER } from '@/views/dashboard-v2/dashboardV2Model';
 import type { MoodengMood } from '@/views/dashboard-v2/types';
-import { buildReputationMilestones } from '@/views/dashboard/dashboardHelpers';
+import { buildReputationMilestones, isLoanPaidOnTime } from '@/views/dashboard/dashboardHelpers';
 import { useTrustPointTotal } from '@/views/dashboard/useTrustPointTotal';
 import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
 
@@ -379,7 +379,8 @@ const UserProfile = () => {
          .sort((a, b) => parseDateSafely(b.updatedAt).getTime() - parseDateSafely(a.updatedAt).getTime());
       let streak = 0;
       for (const loan of paid) {
-         if (wasRepaidPublicLate(loan.dueDate, loan.repaidAt ?? loan.updatedAt, loan.dueTimezone)) break;
+         // Same on-time rule as points, so "repaid on time" here always earned the on-time points.
+         if (!isLoanPaidOnTime(loan)) break;
          streak += 1;
       }
       return streak;

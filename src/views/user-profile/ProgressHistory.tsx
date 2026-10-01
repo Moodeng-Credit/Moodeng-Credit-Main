@@ -375,6 +375,8 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
          // Only "late" a few days past the borrower's deadline: payments can be held up by tech issues.
          const isLate = wasRepaidPublicLate(loan.dueDate, paidDate, loan.dueTimezone);
          const deadline = getLoanPastDueAt(loan.dueDate, loan.dueTimezone);
+         // After the deadline but inside the grace: not "late", but not "on time" either (points agree).
+         const isOnTime = paidDate.getTime() < deadline.getTime();
 
          events.push({
             id: `${loan.id}-repaid`,
@@ -388,7 +390,9 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
                ? `${classification === 'credit' ? 'Credit Building' : 'Trust Building'} loan closed before due date.`
                : isLate
                  ? `Loan repaid ${Math.max(1, daysBetween(deadline, paidDate))} day${Math.max(1, daysBetween(deadline, paidDate)) === 1 ? '' : 's'} after the due date.`
-                 : 'Remaining balance repaid on time.',
+                 : isOnTime
+                   ? 'Remaining balance repaid on time.'
+                   : 'Remaining balance repaid.',
             date: loan.updatedAt,
             amount: repaymentAmount,
             badgeLabel: isEarly ? 'Early Repayment' : isLate ? 'Late' : 'Repaid',
@@ -431,7 +435,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
             id: `${loan.id}-repayment-in-progress`,
             type: 'repayment_in_progress',
             title: 'Repayment In Progress',
-            description: 'The due date has passed and the repayment is being processed.',
+            description: "The due date has passed and the repayment hasn't come in yet.",
             date: loan.dueDate,
             amount: Math.max(0, repaymentAmount - repaidAmount),
             badgeLabel: 'In progress',

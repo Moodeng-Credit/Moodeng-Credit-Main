@@ -22,7 +22,7 @@ export const describeHeldRequests = async (svc: SupabaseClient, userId: string):
       const waiting = rows.filter((row) => row.on_hold_reason === 'awaiting_call').map((row) => row.tracking_id).filter(Boolean);
       const lines: string[] = [];
       if (parked.length) lines.push(`${parked.length === 1 ? 'Request' : 'Requests'} ${parked.join(', ')} put on hold until they book a new call.`);
-      if (waiting.length) lines.push(`${waiting.length === 1 ? 'Request' : 'Requests'} ${waiting.join(', ')} stays off the board until they attend a call.`);
+      if (waiting.length) lines.push(`${waiting.length === 1 ? 'Request' : 'Requests'} ${waiting.join(', ')} ${waiting.length === 1 ? 'stays' : 'stay'} off the board until they attend a call.`);
       return lines.join('\n');
    } catch {
       return '';

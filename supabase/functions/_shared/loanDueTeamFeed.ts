@@ -81,8 +81,10 @@ export const loadBorrowerTimezones = async (supabase: SupabaseClient, userIds: s
 
    for (const id of ids) {
       const row = saved.get(id);
-      const country = pickCountry(loginsByUser.get(id) ?? []);
-      zones.set(id, resolveTimezone(isUsableTimezone(row?.timezone) ? row?.timezone : row?.video_call_timezone, country));
+      const rows = loginsByUser.get(id) ?? [];
+      const country = pickCountry(rows);
+      const latest = rows.find((login) => login.country_iso && !login.is_hosting)?.country_iso ?? null;
+      zones.set(id, resolveTimezone(isUsableTimezone(row?.timezone) ? row?.timezone : row?.video_call_timezone, country, new Date(), latest));
    }
    return zones;
 };

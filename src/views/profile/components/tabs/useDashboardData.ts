@@ -4,12 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 import { calculateLenderDiversity } from '@/utils/diversityScore';
 
 import { getNextCreditTier } from '@/config/creditTiers';
 import { CREDIT_TIERS, getEffectiveCreditLimit, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
-import { getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
@@ -152,13 +152,11 @@ export const useDashboardData = (activeRole: RoleType) => {
 
    const loanArrays = useMemo(() => {
       const repayments = userLoans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
-      const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid');
-      // Only a funded loan can be overdue: a request nobody funded has nothing to repay.
-      // Overdue once the due day has ended in the borrower's zone (src/lib/loanDeadline.ts), not at
-      // midnight UTC, which is the morning of the due day in Manila.
-      const defaultedLoans = userLoans.filter(
-         (loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus === 'Unpaid' && isPastDueDay(loan.dueDate, getLoanTimezone(loan))
-      );
+      // Partly repaid loans are still active (and can still be overdue).
+      const activeLoans = userLoans.filter((loan) => loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && !loan.refundedAt);
+      // Only a funded loan can be overdue: a request nobody funded has nothing to repay. Past due at
+      // the same moment as everywhere else (src/utils/loanOverdue.ts), not at midnight UTC.
+      const defaultedLoans = activeLoans.filter((loan) => isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone));
       const pendingLoans = userLoans.filter((loan) => loan.loanStatus === 'Requested');
 
       return { repayments, activeLoans, defaultedLoans, pendingLoans };

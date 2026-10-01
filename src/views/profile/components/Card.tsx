@@ -9,6 +9,7 @@ import UserPay from '@/components/UserPay';
 
 import { formatDate } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 import { getLoanBadgeStyles } from '@/utils/loanStatusFormatters';
 
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
@@ -73,7 +74,7 @@ export default function Card({ type, loan }: { type: boolean; loan: Loan }) {
                ? 'Fully Repaid'
                : differenceInDays > 0
                  ? `${differenceInDays} ${differenceInDays > 1 ? 'Days' : 'Day'} Left`
-                 : differenceInDays === 0
+                 : differenceInDays === 0 || !isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone)
                    ? 'Due Today'
                    : 'Past Due'}
             )
