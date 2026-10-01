@@ -15,7 +15,6 @@ import {
    getMoodengMood,
    getMoodengTier,
    getNextTierGoal,
-   getOnTimeRepaidTotal,
    getVoucherState,
    OWN_VOUCHER,
    REFERRAL_VOUCHERS,
@@ -81,44 +80,46 @@ describe('dashboard v2 Moodeng tiers', () => {
 
 describe('dashboard v2 credit level progress', () => {
    it('asks unverified borrowers to verify', () => {
-      expect(getCreditLevelProgress({ creditLimit: 15, isVerified: false, onTimeRepaidTotal: 0, isPaused: false })).toEqual({
+      expect(getCreditLevelProgress({ creditLimit: 15, isVerified: false, loans: [] })).toEqual({
          level: 0,
          progress: 0,
          hint: { highlight: 'Verify', rest: ' to unlock LV.1' }
       });
    });
 
-   it('shows the amount left to repay on time for the next level', () => {
-      const result = getCreditLevelProgress({ creditLimit: 15, isVerified: true, onTimeRepaidTotal: 6, isPaused: false });
+   it('asks for a full-limit loan when none is open', () => {
+      const result = getCreditLevelProgress({ creditLimit: 15, isVerified: true, loans: [] });
       expect(result.level).toBe(1);
-      expect(result.progress).toBeCloseTo(0.4);
-      expect(result.hint).toEqual({ highlight: '$9.00', rest: ' left to LV.2' });
+      expect(result.progress).toBe(0);
+      expect(result.hint).toEqual({ highlight: '$15', rest: ' full-limit loan unlocks LV.2' });
    });
 
-   it('measures progress within the current level', () => {
-      const result = getCreditLevelProgress({ creditLimit: 20, isVerified: true, onTimeRepaidTotal: 17.5, isPaused: false });
+   it('ignores repaid trust-building loans however much they add up to', () => {
+      // $20 limit, repaid $15 + $17 — still needs a full $20 loan.
+      const loans = [buildPaidLoan({ id: 'a', loanAmount: 15 }), buildPaidLoan({ id: 'b', loanAmount: 17 })];
+      expect(getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans }).hint).toEqual({
+         highlight: '$20',
+         rest: ' full-limit loan unlocks LV.3'
+      });
+   });
+
+   it('shows what is left to repay on an open full-limit loan', () => {
+      const loans = [
+         buildPaidLoan({ id: 'open', loanAmount: 20, repaidAmount: 12, totalRepaymentAmount: 24, repaymentStatus: RepaymentStatus.PARTIAL })
+      ];
+      const result = getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans });
       expect(result.level).toBe(2);
       expect(result.progress).toBeCloseTo(0.5);
-      expect(result.hint.highlight).toBe('$2.50');
+      expect(result.hint).toEqual({ highlight: '$12.00', rest: ' left to repay for LV.3' });
    });
 
-   it('handles the top level and paused progression', () => {
-      expect(getCreditLevelProgress({ creditLimit: 140, isVerified: true, onTimeRepaidTotal: 0, isPaused: false }).hint.highlight).toBe(
-         'Top'
-      );
-      expect(getCreditLevelProgress({ creditLimit: 15, isVerified: true, onTimeRepaidTotal: 0, isPaused: true }).hint.highlight).toBe(
-         'Paused'
-      );
+   it('does not treat an open trust-building loan as progress', () => {
+      const loans = [buildPaidLoan({ id: 'small', loanAmount: 10, repaidAmount: 0, repaymentStatus: RepaymentStatus.UNPAID })];
+      expect(getCreditLevelProgress({ creditLimit: 20, isVerified: true, loans }).hint.rest).toBe(' full-limit loan unlocks LV.3');
    });
 
-   it('only counts fully repaid, on-time, non-refunded loans', () => {
-      const loans = [
-         buildPaidLoan({ id: 'on-time', loanAmount: 15 }),
-         buildPaidLoan({ id: 'late', loanAmount: 20, updatedAt: '2026-06-30T00:00:00.000Z' }),
-         buildPaidLoan({ id: 'refunded', loanAmount: 40, refundedAt: '2026-05-19T00:00:00.000Z' }),
-         buildPaidLoan({ id: 'partial', loanAmount: 60, repaidAmount: 10 })
-      ];
-      expect(getOnTimeRepaidTotal(loans)).toBe(15);
+   it('handles the top level', () => {
+      expect(getCreditLevelProgress({ creditLimit: 140, isVerified: true, loans: [] }).hint.highlight).toBe('Top');
    });
 });
 

@@ -21,7 +21,6 @@ export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date): b
 type CreditProgressionInput = {
    currentLimit: number | null | undefined;
    isVerified: boolean;
-   isPaused: boolean;
    repaidAmount: number | null | undefined;
    totalRepaymentAmount: number | null | undefined;
    /** Principal the borrower requested on the loan just repaid (not the repayment total). */
@@ -31,7 +30,6 @@ type CreditProgressionInput = {
 };
 
 type CreditProgressionResult = {
-   shouldPause: boolean;
    shouldLevelUp: boolean;
    nextLimit: number;
    isLate: boolean;
@@ -46,7 +44,6 @@ export const getEffectiveCreditLimit = (cs: number | null | undefined, isVerifie
 export const evaluateCreditProgression = ({
    currentLimit,
    isVerified,
-   isPaused,
    repaidAmount,
    totalRepaymentAmount,
    loanAmount,
@@ -59,16 +56,14 @@ export const evaluateCreditProgression = ({
    const principal = toNumber(loanAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
    const isLate = !isRepaidOnTime(paidAt, dueDate);
-   // Only a full-limit loan levels you up: request at least your current limit, then repay it on time.
+   // Only a full-limit loan levels you up: request at least your current limit, then repay it in full.
    // A smaller request is a trust-building loan and never levels up, even when principal + interest
-   // reaches the limit or several small loans add up to it.
+   // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late
+   // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
-   const shouldPause = isLate;
-   const canLevelUp =
-      isVerified && !isPaused && !shouldPause && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT;
+   const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT;
 
    return {
-      shouldPause,
       shouldLevelUp: canLevelUp,
       nextLimit: getNextCreditTier(normalizedLimit),
       isLate,

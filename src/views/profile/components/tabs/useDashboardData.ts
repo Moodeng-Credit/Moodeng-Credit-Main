@@ -7,7 +7,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity } from '@/utils/diversityScore';
 
 import { getNextCreditTier } from '@/config/creditTiers';
-import { CREDIT_TIERS, getEffectiveCreditLimit, isRepaidOnTime, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
+import { CREDIT_TIERS, getEffectiveCreditLimit, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -31,31 +31,25 @@ const buildUnlockDate = (date?: string | null): string | undefined => {
 export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLevel[] => {
    const isVerified = isUserVerified(user);
    const currentLimit = getEffectiveCreditLimit(user.cs, isVerified);
-   const isPaused = Boolean(user.creditProgressionPaused);
-   const paidLoans = loans.filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt);
-   const onTimePaidLoans = paidLoans.filter((loan) => {
+   const paidLoans = loans.filter((loan) => {
+      if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
       const repaidAmount = toNumber(loan.repaidAmount);
       const totalRepayment = toNumber(loan.totalRepaymentAmount);
-      const isFullyRepaid = totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
-      return isFullyRepaid && isRepaidOnTime(loan.updatedAt, loan.dueDate);
+      return totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
    });
 
-   const paidOnTimeByTier = new Map<number, Loan>();
-   let cumulativeRepaidAmount = 0;
-   [...onTimePaidLoans]
-      .sort((a, b) => parseDateSafely(a.updatedAt).getTime() - parseDateSafely(b.updatedAt).getTime())
+   // Replay the level-up rule to date each tier: walking repayments in order from the starting limit,
+   // a fully repaid loan at or above the limit at the time unlocks the next tier. Smaller
+   // (trust-building) loans never do. Tiers raised any other way fall back to a generic date.
+   const paidAt = (loan: Loan) => parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
+   const unlockedByTier = new Map<number, Loan>();
+   let replayLimit: number = CREDIT_TIERS[0];
+   [...paidLoans]
+      .sort((a, b) => paidAt(a) - paidAt(b))
       .forEach((loan) => {
-         cumulativeRepaidAmount += toNumber(loan.loanAmount);
-         CREDIT_TIERS.forEach((tier, index) => {
-            if (tier === CREDIT_TIERS[0] || paidOnTimeByTier.has(tier)) {
-               return;
-            }
-
-            const previousTier = CREDIT_TIERS[index - 1];
-            if (cumulativeRepaidAmount >= previousTier) {
-               paidOnTimeByTier.set(tier, loan);
-            }
-         });
+         if (replayLimit >= MAX_CREDIT_LIMIT || toNumber(loan.loanAmount) < replayLimit) return;
+         replayLimit = getNextCreditTier(replayLimit);
+         unlockedByTier.set(replayLimit, loan);
       });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
@@ -77,15 +71,12 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
          if (amount === CREDIT_TIERS[0]) {
             date = buildUnlockDate(user.createdAt) ?? fallbackDate;
          } else {
-            const triggeringLoan = paidOnTimeByTier.get(amount);
-            date = buildUnlockDate(triggeringLoan?.updatedAt) ?? fallbackDate;
+            const triggeringLoan = unlockedByTier.get(amount);
+            date = buildUnlockDate(triggeringLoan?.repaidAt ?? triggeringLoan?.updatedAt) ?? fallbackDate;
          }
          requestable = isCurrentLimit;
-      } else if (isPaused) {
-         unlockRequirement = 'Progression Paused (Late Repayment)';
-         date = undefined;
       } else if (isNextTier) {
-         unlockRequirement = `Fully repay $${currentLimit} total on time to unlock this level`;
+         unlockRequirement = `Borrow your full $${currentLimit} limit and repay it to unlock this level`;
          date = undefined;
       } else {
          unlockRequirement = 'Locked';
@@ -99,8 +90,7 @@ export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLeve
          date,
          unlockRequirement,
          isMaxCredit,
-         requestable,
-         progressionPaused: isPaused
+         requestable
       };
    });
 };
