@@ -12,8 +12,8 @@ export const OVERDUE_AFTER_DUE_DATE_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Whether a repayment made at `paidAt` counts as on time for a loan due at `dueDate`.
- * Single source of truth — use everywhere on-time is judged (credit progression, the cumulative
- * volume gate, and dashboard displays) so they never drift apart.
+ * Single source of truth — use everywhere on-time is judged (credit progression and dashboard
+ * displays) so they never drift apart.
  */
 export const isRepaidOnTime = (paidAt: string | Date, dueDate: string | Date): boolean =>
    parseDateSafely(paidAt).getTime() < parseDateSafely(dueDate).getTime() + OVERDUE_AFTER_DUE_DATE_MS;
@@ -24,7 +24,8 @@ type CreditProgressionInput = {
    isPaused: boolean;
    repaidAmount: number | null | undefined;
    totalRepaymentAmount: number | null | undefined;
-   cumulativeBorrowedAmount: number | null | undefined;
+   /** Principal the borrower requested on the loan just repaid (not the repayment total). */
+   loanAmount: number | null | undefined;
    dueDate: string;
    paidAt: string;
 };
@@ -48,20 +49,23 @@ export const evaluateCreditProgression = ({
    isPaused,
    repaidAmount,
    totalRepaymentAmount,
-   cumulativeBorrowedAmount,
+   loanAmount,
    dueDate,
    paidAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
-   const cumulativeBorrowed = toNumber(cumulativeBorrowedAmount ?? 0);
+   const principal = toNumber(loanAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
    const isLate = !isRepaidOnTime(paidAt, dueDate);
-   const meetsCumulativeVolume = cumulativeBorrowed >= normalizedLimit;
+   // Only a full-limit loan levels you up: request at least your current limit, then repay it on time.
+   // A smaller request is a trust-building loan and never levels up, even when principal + interest
+   // reaches the limit or several small loans add up to it.
+   const isFullLimitLoan = principal >= normalizedLimit;
    const shouldPause = isLate;
    const canLevelUp =
-      isVerified && !isPaused && !shouldPause && isFullyRepaid && meetsCumulativeVolume && normalizedLimit < MAX_CREDIT_LIMIT;
+      isVerified && !isPaused && !shouldPause && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT;
 
    return {
       shouldPause,
