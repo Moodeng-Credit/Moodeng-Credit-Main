@@ -56,7 +56,8 @@ type CreditProgressionInput = {
    isPaused: boolean;
    repaidAmount: number | null | undefined;
    totalRepaymentAmount: number | null | undefined;
-   cumulativeBorrowedAmount: number | null | undefined;
+   /** Principal the borrower requested on the loan just repaid (not the repayment total). */
+   loanAmount: number | null | undefined;
    dueDate: string;
    paidAt: string;
 };
@@ -75,20 +76,23 @@ export const evaluateCreditProgression = ({
    isPaused,
    repaidAmount,
    totalRepaymentAmount,
-   cumulativeBorrowedAmount,
+   loanAmount,
    dueDate,
    paidAt
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
    const totalRepayment = toNumber(totalRepaymentAmount ?? 0);
-   const cumulativeBorrowed = toNumber(cumulativeBorrowedAmount ?? 0);
+   const principal = toNumber(loanAmount ?? 0);
    const isFullyRepaid = totalRepayment > 0 && repaid >= totalRepayment;
    const isLate = !isRepaidOnTime(paidAt, dueDate);
-   const meetsCumulativeVolume = cumulativeBorrowed >= normalizedLimit;
+   // Only a full-limit loan levels you up: request at least your current limit, then repay it on time.
+   // A smaller request is a trust-building loan and never levels up, even when principal + interest
+   // reaches the limit or several small loans add up to it.
+   const isFullLimitLoan = principal >= normalizedLimit;
    const shouldPause = isLate;
    const canLevelUp =
-      isVerified && !isPaused && !shouldPause && isFullyRepaid && meetsCumulativeVolume && normalizedLimit < MAX_CREDIT_LIMIT;
+      isVerified && !isPaused && !shouldPause && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT;
 
    return {
       shouldPause,
@@ -138,25 +142,3 @@ export const computeYearOneIouPointsDelta = (loanAmount: string | number, borrow
    const base = parseAmountToMinorUnits(loanAmount) * LOAN_FUNDING_POINTS_MULTIPLIER;
    return base + pointsMajorToMinor(getYearOneIouBorrowerBonusPoints(borrowerPriorFundedLoanCount));
 };
-
-// Cumulative amount of a borrower's on-time, fully-repaid loans (used for credit level-up volume
-// gate). Ported from the inline reducer in loanSlice.ts. `loans` are the borrower's rows.
-export const computeCumulativeBorrowedAmount = (
-   loans: Array<{
-      loan_amount: number | string | null;
-      repaid_amount: number | string | null;
-      total_repayment_amount: number | string | null;
-      due_date: string | null;
-      repaid_at: string | null;
-      updated_at: string | null;
-   }>
-): number =>
-   loans.reduce((sum, loan) => {
-      const paidAtSource = loan.repaid_at ?? loan.updated_at;
-      if (!loan.due_date || !paidAtSource) return sum;
-      const repaid = toNumber(loan.repaid_amount ?? 0);
-      const totalRepayment = toNumber(loan.total_repayment_amount ?? 0);
-      const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
-      if (!isFullyRepaid) return sum;
-      return isRepaidOnTime(paidAtSource, loan.due_date) ? sum + toNumber(loan.loan_amount ?? 0) : sum;
-   }, 0);

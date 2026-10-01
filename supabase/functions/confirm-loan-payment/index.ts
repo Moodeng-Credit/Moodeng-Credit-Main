@@ -2,7 +2,6 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
-   computeCumulativeBorrowedAmount,
    computeYearOneIouPointsDelta,
    evaluateCreditProgression,
    getYearOneIouBorrowerBonusPoints,
@@ -289,16 +288,6 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       return errors;
    }
 
-   const { data: paidLoans, error: paidLoansError } = await admin
-      .from('loans')
-      .select('loan_amount, repaid_amount, total_repayment_amount, due_date, repaid_at, updated_at')
-      .eq('borrower_user_id', borrowerId)
-      .eq('repayment_status', 'Paid');
-   if (paidLoansError) {
-      errors.push({ type: 'credit_progression', message: paidLoansError.message });
-      return errors;
-   }
-
    const evaluation = evaluateCreditProgression({
       currentLimit: borrower.cs ?? 0,
       // Any supported identity method grants verified status for credit progression, mirroring the
@@ -308,7 +297,7 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       isPaused: borrower.credit_progression_paused ?? false,
       repaidAmount: toNumber(loan.repaid_amount as number | string | null),
       totalRepaymentAmount: toNumber(loan.total_repayment_amount as number | string | null),
-      cumulativeBorrowedAmount: computeCumulativeBorrowedAmount(paidLoans ?? []),
+      loanAmount: toNumber(loan.loan_amount as number | string | null),
       dueDate: String(loan.due_date),
       paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
    });

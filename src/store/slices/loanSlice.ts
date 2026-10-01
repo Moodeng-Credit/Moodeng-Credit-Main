@@ -1,10 +1,8 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { toNumber } from '@/utils/decimalHelpers';
-
 import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
-import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
+import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -457,34 +455,6 @@ export const updateLoanStatus = createAsyncThunk<
       }
 
       if (borrower) {
-         const { data: paidLoans, error: paidLoansError } = await supabase
-            .from('loans')
-            .select('loan_amount, repaid_amount, total_repayment_amount, due_date, repaid_at, updated_at')
-            .eq('borrower_user_id', data.borrower_user_id)
-            .eq('repayment_status', 'Paid')
-            .is('refunded_at', null); // refunds aren't borrower repayments — exclude from credit progression
-
-         if (paidLoansError) {
-            throw new Error(paidLoansError.message);
-         }
-
-         const cumulativeBorrowedAmount = (paidLoans ?? []).reduce((sum, loan) => {
-            const paidAtSource = loan.repaid_at ?? loan.updated_at;
-            if (!loan.due_date || !paidAtSource) {
-               return sum;
-            }
-
-            const repaid = toNumber(loan.repaid_amount ?? 0);
-            const totalRepayment = toNumber(loan.total_repayment_amount ?? 0);
-            const isFullyRepaid = totalRepayment > 0 ? repaid >= totalRepayment : repaid > 0;
-
-            if (!isFullyRepaid) {
-               return sum;
-            }
-
-            return isRepaidOnTime(paidAtSource, loan.due_date) ? sum + toNumber(loan.loan_amount ?? 0) : sum;
-         }, 0);
-
          const creditEvaluation = evaluateCreditProgression({
             currentLimit: borrower.cs ?? 0,
             // Any supported identity method grants verified status for credit progression,
@@ -494,7 +464,7 @@ export const updateLoanStatus = createAsyncThunk<
             isPaused: borrower.credit_progression_paused ?? false,
             repaidAmount: data.repaid_amount,
             totalRepaymentAmount: data.total_repayment_amount,
-            cumulativeBorrowedAmount,
+            loanAmount: data.loan_amount,
             dueDate: data.due_date,
             paidAt: data.repaid_at ?? data.updated_at ?? new Date().toISOString()
          });
