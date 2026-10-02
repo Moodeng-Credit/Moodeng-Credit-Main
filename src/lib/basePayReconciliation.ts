@@ -89,7 +89,15 @@ const PERMANENT_REFUSALS = [
 
 /** True for confirm-loan-payment refusals that will never succeed on retry. */
 export function isPermanentPaymentRefusal(error: unknown): boolean {
-   const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+   // .unwrap() rejects with a plain serialized object ({ message }), not an Error instance.
+   const message =
+      error instanceof Error
+         ? error.message
+         : typeof error === 'string'
+           ? error
+           : error && typeof error === 'object' && 'message' in error
+             ? String((error as { message?: unknown }).message ?? '')
+             : '';
    return PERMANENT_REFUSALS.some((pattern) => pattern.test(message));
 }
 

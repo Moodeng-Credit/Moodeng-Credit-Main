@@ -327,6 +327,21 @@ serve(async (req) => {
       return errorResponse('World ID already used', 400, 'WORLDID_ALREADY_USED')
     }
 
+    // World ID only counts after a face check (the liveness pre-gate, or a full Didit ID check, which
+    // includes one): that check's 1:N face search is what stops one person holding a Didit-verified
+    // account AND a separate World ID account. The app runs it first on the Verify page, but World ID
+    // can also be started from Security Settings, so it's enforced here.
+    const { data: faceRow } = await adminSupabase
+      .from('users')
+      .select('liveness_status, is_didit')
+      .eq('id', user.id)
+      .maybeSingle()
+    const faceChecked =
+      String(faceRow?.liveness_status ?? '').toUpperCase() === 'APPROVED' || String(faceRow?.is_didit ?? '').toUpperCase() === 'ACTIVE'
+    if (!faceChecked) {
+      return errorResponse('Complete the face check on the Verify page first', 400, 'LIVENESS_REQUIRED')
+    }
+
     const { error: updateError } = await adminSupabase
       .from('users')
       .update({

@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ensureAuthUser, mintSession } from '../_shared/mintSession.ts'
 import { crypto } from 'https://deno.land/std@0.177.0/crypto/mod.ts'
 
 const corsHeaders = {
@@ -102,9 +103,14 @@ Deno.serve(async (req) => {
     }
 
     // Prefer an existing Moodeng profile so older telegram_...@moodeng.credit
-    // accounts are not stranded by the newer moodeng.app synthetic email.
-    const email = existingProfile?.email ?? `telegram_${id}@moodeng.app`
-    const password = `tg_${id}_${botToken.slice(0, 8)}`
+    // accounts are not stranded by the newer moodeng.app synthetic email. users.telegram_id is
+    // client-writable, so only trust a profile that really is this Telegram user's login account:
+    // otherwise someone could tag their own account with a victim's Telegram id and the victim's
+    // first Telegram login would land in it.
+    const ownTelegramEmails = [`telegram_${id}@moodeng.app`, `telegram_${id}@moodeng.credit`]
+    const trustedProfile =
+      existingProfile && ownTelegramEmails.includes(String(existingProfile.email ?? '').toLowerCase()) ? existingProfile : null
+    const email = trustedProfile?.email ?? `telegram_${id}@moodeng.app`
 
     const telegramMetadata = {
       telegram_id: id,
@@ -133,68 +139,16 @@ Deno.serve(async (req) => {
       if (error) throw error
     }
 
-    // Sign in first and only reset the password when that fails (first login after a secret
-    // change, or an unconfirmed email). Setting a password through the admin API makes Supabase
-    // revoke EVERY session the user has, so doing it on each login signed people out of their
-    // other tabs/devices — and out of the tab they had just logged into, if a second login raced it.
-    const signIn = () => supabaseAdmin.auth.signInWithPassword({ email, password })
-    let { data: signInData } = await signIn()
-
-    if (!signInData?.session && existingProfile) {
-      const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(existingProfile.id, {
-        password,
-        user_metadata: telegramMetadata,
-        email_confirm: true,
-      })
-
-      if (updateAuthError) {
-        throw updateAuthError
-      }
-
-      ;({ data: signInData } = await signIn())
-    }
-
-    if (signInData?.session) {
-      // Always refresh metadata so photo_url (and name changes) stay current
-      await supabaseAdmin.auth.admin.updateUserById(signInData.session.user.id, {
-        user_metadata: telegramMetadata,
-      })
-      await syncTelegramProfile(signInData.session.user.id)
-
-      return new Response(
-        JSON.stringify({ session: signInData.session }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // User doesn't exist, create them
-    const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: telegramMetadata,
-    })
-
-    if (createError) {
-      throw createError
-    }
-
-    // Sign in the newly created user
-    const { data: newSignInData, error: newSignInError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (newSignInError) {
-      throw newSignInError
-    }
-
-    if (newSignInData.session?.user.id) {
-      await syncTelegramProfile(newSignInData.session.user.id)
-    }
+    // No password: the provider's signature was verified above, so mint the session server-side
+    // (_shared/mintSession.ts). Passwords derived from the provider id were guessable.
+    await ensureAuthUser(supabaseAdmin, email, telegramMetadata)
+    const session = await mintSession(supabaseAdmin, email)
+    // Always refresh metadata so the photo (and name changes) stay current
+    await supabaseAdmin.auth.admin.updateUserById(session.user.id, { user_metadata: telegramMetadata })
+    await syncTelegramProfile(session.user.id)
 
     return new Response(
-      JSON.stringify({ session: newSignInData.session }),
+      JSON.stringify({ session }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

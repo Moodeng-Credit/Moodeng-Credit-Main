@@ -549,9 +549,22 @@ export const confirmLoanPayment = createAsyncThunk<
       throw new PaymentNotConfirmedError(data?.error);
    }
    if (error) {
-      // supabase-js wraps non-2xx as FunctionsHttpError; surface the server's message when present.
-      const context = (error as { context?: { error?: string } })?.context;
-      throw new Error(context?.error || error.message);
+      // supabase-js wraps non-2xx as FunctionsHttpError whose `context` is the raw Response: read the
+      // server's message from its JSON body (the app and the reconciler key off it, e.g. "Contact
+      // support for a refund" or "already been used").
+      const context = (error as { context?: unknown }).context;
+      let serverMessage: string | undefined;
+      if (context instanceof Response) {
+         const body = (await context
+            .clone()
+            .json()
+            .catch(() => null)) as { error?: string; retry?: boolean } | null;
+         if (body?.retry) throw new PaymentNotConfirmedError(body.error);
+         serverMessage = body?.error;
+      } else if (context && typeof context === 'object' && 'error' in context) {
+         serverMessage = String((context as { error?: unknown }).error ?? '') || undefined;
+      }
+      throw new Error(serverMessage || error.message);
    }
    if (data?.error || !data?.loan) {
       throw new Error(data?.error || 'Failed to confirm loan payment');
