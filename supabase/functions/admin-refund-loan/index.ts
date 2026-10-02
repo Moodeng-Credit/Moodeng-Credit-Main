@@ -249,7 +249,10 @@ serve(async (req) => {
    const requiredMicros = BigInt(Math.round(settleAmount * 1e6));
    const expectedRecipient = loan.lender_wallet.toLowerCase();
 
-   const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', hash).maybeSingle();
+   // Hashes are spent in lowercase (Base reads any letter case), same as confirm-loan-payment.
+   if (!/^0x[0-9a-fA-F]{64}$/.test(hash)) return json({ error: 'Invalid transaction hash' }, 400);
+   const normalizedHash = hash.toLowerCase();
+   const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', normalizedHash).maybeSingle();
    if (existingHash) return json({ error: 'This transaction has already been used' }, 409);
 
    let transfer: VerifiedTransfer;
@@ -281,10 +284,13 @@ serve(async (req) => {
       }
    }
 
-   const { error: insertHashError } = await admin.from('used_payment_hashes').insert({ hash, loan_id: loanId });
+   const realTxHash = (transfer.txHash ?? hash).toLowerCase();
+   const { error: insertHashError } = await admin
+      .from('used_payment_hashes')
+      .insert([...new Set([normalizedHash, realTxHash])].map((spent) => ({ hash: spent, loan_id: loanId })));
    if (insertHashError) return json({ error: 'This transaction has already been used' }, 409);
 
-   const recordHash = transfer.txHash ?? hash;
+   const recordHash = realTxHash;
    const nowIso = new Date().toISOString();
    const isPlatformSettlement = settlementMode === 'platform_settlement';
    const refundAmount = settleAmount;
