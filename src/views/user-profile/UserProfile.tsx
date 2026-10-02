@@ -375,8 +375,12 @@ const UserProfile = () => {
    // Current on-time streak: consecutive fully-repaid, on-time loans counting back from the newest.
    const onTimeStreak = (() => {
       const paid = borrowedLoans
-         .filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt)
-         .sort((a, b) => parseDateSafely(b.updatedAt).getTime() - parseDateSafely(a.updatedAt).getTime());
+         // Test loans don't count either way; newest repayment first (repaidAt, not the last edit).
+         .filter((loan) => loan.repaymentStatus === 'Paid' && !loan.refundedAt && !loan.isTest)
+         .sort(
+            (a, b) =>
+               parseDateSafely(b.repaidAt ?? b.updatedAt).getTime() - parseDateSafely(a.repaidAt ?? a.updatedAt).getTime()
+         );
       let streak = 0;
       for (const loan of paid) {
          // Same on-time rule as points, so "repaid on time" here always earned the on-time points.

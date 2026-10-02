@@ -3,7 +3,7 @@
 // team blind: nobody but the borrower was told a repayment was due.
 
 import { postDiscord } from './discord.ts';
-import { dueDayBounds, formatDeadlineForTeam, isUsableTimezone, loanTimezone, resolveTimezone } from './loanDeadline.ts';
+import { formatDeadlineForTeam, formatPastDueForTeam, isUsableTimezone, loanTimezone, pastDueAt, resolveTimezone } from './loanDeadline.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -101,7 +101,8 @@ const dollars = (amount: number) => `$${amount.toFixed(2)}`;
  */
 export const describeOwed = (loan: { loan_amount: number | null; total_repayment_amount: number | null; repaid_amount?: number | null }) => {
    const total = Number(loan.total_repayment_amount ?? 0);
-   const paid = Number(loan.repaid_amount ?? 0);
+   // Never show more paid than owed, even if a record is off.
+   const paid = Math.min(Number(loan.repaid_amount ?? 0), total);
    const borrowed = Number(loan.loan_amount ?? 0);
    const left = Math.max(0, total - paid);
    return paid > 0
@@ -159,13 +160,15 @@ export const postDueTeamFeed = async (
          const borrower = usernames.get(loan.borrower_user_id as string) ?? 'someone';
          const lender = loan.lender_user_id ? lenderNames.get(loan.lender_user_id) ?? 'unknown' : 'unknown';
          const owed = describeOwed(loan);
-         const deadline = formatDeadlineForTeam(loan.due_date as string, zone, teamZone);
+         // "Overdue from" is the real moment the app calls it past due (the later of the end of their due
+         // day and due date + 24h), not 11:59 PM, which for Manila is 8 hours early.
+         const overdueFrom = formatPastDueForTeam(loan.due_date as string, zone, teamZone);
          if (kind === 'team_due_today') {
-            return `• ${borrower} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   overdue after ${deadline}`;
+            return `• ${borrower} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   overdue from ${overdueFrom}`;
          }
-         const { end } = dueDayBounds(loan.due_date as string, zone);
-         const daysLate = Math.max(1, Math.floor((referenceDate.getTime() - end.getTime()) / DAY_MS) + 1);
-         return `• ${borrower} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   was due by ${deadline}, ${daysLate} ${daysLate === 1 ? 'day' : 'days'} late`;
+         const daysLate = Math.floor((referenceDate.getTime() - pastDueAt(loan.due_date as string, zone).getTime()) / DAY_MS);
+         const lateLabel = daysLate < 1 ? 'less than a day late' : `${daysLate} ${daysLate === 1 ? 'day' : 'days'} late`;
+         return `• ${borrower} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   was due ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}, overdue since ${overdueFrom}, ${lateLabel}`;
       });
       if (pending.length > MAX_LINES) lines.push(`…and ${pending.length - MAX_LINES} more`);
 

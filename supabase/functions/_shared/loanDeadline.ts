@@ -194,3 +194,21 @@ export const formatDeadlineForTeam = (dueDate: string | Date, borrowerZone: stri
    return `${theirs} · ${clockIn(lastMinute, teamZone, !sameDay)} ${cityOf(teamZone)} time`;
 };
 
+/**
+ * The moment a loan is past due: the LATER of the end of its due day in `zone` and due_date + 24h.
+ * Same as app_private.loan_past_due_at and the app's getLoanPastDueAt (Manila: 8 AM the next day).
+ */
+export const pastDueAt = (dueDate: string | Date, zone: string): Date =>
+   new Date(Math.max(dueDayBounds(dueDate, zone).end.getTime(), new Date(dueDate).getTime() + 24 * 60 * 60 * 1000));
+
+/** For the team: when the loan becomes overdue, on the borrower's clock and the team's. */
+export const formatPastDueForTeam = (dueDate: string | Date, borrowerZone: string, teamZone: string): string => {
+   const at = pastDueAt(dueDate, borrowerZone);
+   const theirs = `${clockIn(at, borrowerZone, true)} their time (${cityOf(borrowerZone)})`;
+   if (!isValidTimezone(teamZone) || clockIn(at, teamZone, true) === clockIn(at, borrowerZone, true)) {
+      return theirs;
+   }
+   const sameDay = at.toLocaleDateString('en-US', { timeZone: teamZone }) === at.toLocaleDateString('en-US', { timeZone: borrowerZone });
+   return `${theirs} · ${clockIn(at, teamZone, !sameDay)} ${cityOf(teamZone)} time`;
+};
+

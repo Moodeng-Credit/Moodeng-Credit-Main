@@ -926,7 +926,9 @@
    }
 
    .founder-george .founder-photo-wrap,
-   .founder-george .founder-media figcaption {
+   .founder-george .founder-media figcaption,
+   .founder-celeste .founder-photo-wrap,
+   .founder-celeste .founder-media figcaption {
       max-width: 390px;
    }
 }

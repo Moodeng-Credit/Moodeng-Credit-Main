@@ -239,6 +239,12 @@ const BORROWER_MESSAGES = {
       body: "Your Moodeng video call didn't happen, so your loan request isn't showing to lenders yet. Tap to book a new time — once we've met on the call, your request goes on the board.",
       url: APPLY_URL
    },
+   // A no-show that was a mistake (Zoom missed them, or a mis-tap), corrected to "Showed up".
+   no_show_corrected: {
+      title: 'Sorry for the mix-up',
+      body: "We've confirmed you made it to your Moodeng call — thank you. Ignore our earlier message about booking a new time; your loan request is back on the board.",
+      url: `${SITE_URL}/request-board`
+   },
    expired: {
       title: 'Still want to borrow with Moodeng?',
       body: "We didn't get to finish connecting. Tap Apply for a loan to reach out again — it only takes a minute.",

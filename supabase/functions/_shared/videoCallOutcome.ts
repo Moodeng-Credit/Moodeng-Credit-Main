@@ -121,6 +121,8 @@ export const recordCallOutcome = async (
    outcome: CallOutcome,
    decidedBy: string
 ): Promise<{ ok: boolean; summary: string }> => {
+   // A "Showed up" that corrects a no-show tells the borrower: they were told to rebook.
+   const correctingNoShow = outcome === 'attended' && (await loadUser(svc, userId))?.video_call_outcome === 'no_show';
    const update = svc
       .from('users')
       .update({ video_call_outcome: outcome, video_call_outcome_at: new Date().toISOString() })
@@ -159,6 +161,9 @@ export const recordCallOutcome = async (
    }
    // A no-show parks their open request (database trigger); say which one, to them and the team.
    const held = outcome === 'no_show' ? await describeHeldRequests(svc, userId) : '';
+   if (correctingNoShow && !approvedNow) {
+      await notifyBorrower(svc, updated as BorrowerRow, 'no_show_corrected');
+   }
    if (outcome === 'no_show') {
       await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held.includes('until they attend') ? 'missed_call_request_waiting' : held ? 'missed_call_request_paused' : 'missed_call');
    }
@@ -180,7 +185,9 @@ export const autoMarkNoShow = async (svc: SupabaseClient, userId: string): Promi
    }
    const result = request ? await decideLoanAccess(svc, request.id, 'no_show', decidedBy) : await recordCallOutcome(svc, userId, 'no_show', decidedBy);
    if (!result.ok) return null;
-   const text = `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, tap ✅ Showed up (or send /showed) and their request goes back on the board.`;
+   const text = request
+      ? `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed and they'll be approved.`
+      : `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, tap ✅ Showed up (or send /showed) and their request goes back on the board.`;
    try {
       const chat = await getAdminChatId(svc);
       if (chat) await sendTelegramMessage(chat, text);
