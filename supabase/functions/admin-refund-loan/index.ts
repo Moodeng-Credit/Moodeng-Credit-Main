@@ -285,9 +285,9 @@ serve(async (req) => {
    }
 
    const realTxHash = (transfer.txHash ?? hash).toLowerCase();
-   const { error: insertHashError } = await admin
-      .from('used_payment_hashes')
-      .insert([...new Set([normalizedHash, realTxHash])].map((spent) => ({ hash: spent, loan_id: loanId })));
+   // Spend only this payment's own hash: a Base Account payment's bundle tx can carry other people's
+   // payments too, so spending it would block theirs (same rule as confirm-loan-payment).
+   const { error: insertHashError } = await admin.from('used_payment_hashes').insert({ hash: normalizedHash, loan_id: loanId });
    if (insertHashError) return json({ error: 'This transaction has already been used' }, 409);
 
    const recordHash = realTxHash;

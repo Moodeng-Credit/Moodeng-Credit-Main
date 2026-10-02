@@ -5,23 +5,13 @@ import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts'
 
 // Records a loan funded by a Moodeng admin (direct transfer OR smart-contract /
 // LoanManager). SECURITY: this route is the real boundary — it independently verifies
-// the caller's JWT email is one of the two admin accounts before recording anything.
+// the caller is an active owner/admin in admin_users before recording anything.
 // Frontend hiding of the funding modal is convenience only.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
-
-const DEFAULT_ADMIN_EMAILS = ['georgemlerner@gmail.com', 'georgedevdao@gmail.com', 'chonlagarn.i@gmail.com']
-
-const adminEmails = (): string[] => {
-  const fromEnv = (Deno.env.get('ADMIN_ACCOUNT_EMAILS') ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-  return fromEnv.length > 0 ? fromEnv : DEFAULT_ADMIN_EMAILS.map((e) => e.toLowerCase())
 }
 
 const json = (body: unknown, status = 200) =>
@@ -45,10 +35,18 @@ serve(async (req) => {
     if (!token) return json({ error: 'Missing authorization token' }, 401)
 
     const { data: userData, error: userError } = await supabase.auth.getUser(token)
-    const callerEmail = userData?.user?.email?.toLowerCase() ?? ''
-    if (userError || !callerEmail || !adminEmails().includes(callerEmail)) {
-      return json({ error: 'Forbidden: admin account required' }, 403)
-    }
+    const callerId = userData?.user?.id
+    if (userError || !callerId) return json({ error: 'Invalid session' }, 401)
+    // Same gate as the other admin-* functions (admin_users), not a hard-coded email list. Funding
+    // moves money, so owners and admins only, not support.
+    const { data: adminRow } = await supabase
+      .from('admin_users')
+      .select('user_id')
+      .eq('user_id', callerId)
+      .eq('active', true)
+      .in('role', ['owner', 'admin'])
+      .maybeSingle()
+    if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403)
 
     const body = await req.json()
     const {

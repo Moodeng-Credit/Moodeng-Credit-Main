@@ -142,6 +142,15 @@ const decodeUsdcTransfers = (logs: RawLog[] | undefined): DecodedTransfer[] => {
    return transfers;
 };
 
+const USER_OPERATION_EVENT_TOPIC = '0x49628fd1471006c1482da88028e9ce4dbb080b815c9b0344d39e5a8e6ec1419f';
+
+// The smart-account payments (ERC-4337 userOperations) inside a transaction, by sender.
+const decodeUserOpHashes = (logs: RawLog[] | undefined, sender: string): string[] =>
+   (logs ?? [])
+      .filter((log) => (log.topics ?? [])[0]?.toLowerCase() === USER_OPERATION_EVENT_TOPIC && (log.topics ?? []).length >= 3)
+      .filter((log) => topicToAddress((log.topics as string[])[2]) === sender)
+      .map((log) => (log.topics as string[])[1].toLowerCase());
+
 const rpcCall = async (url: string, method: string, params: unknown[]) => {
    const res = await fetch(url, {
       method: 'POST',
@@ -168,6 +177,11 @@ interface VerifiedTransfer {
    // input hash; for 'base' (ERC-4337) payments the input is a userOperation hash — which 404s on the
    // explorer — so we surface the bundler's resolved transactionHash instead.
    txHash?: string;
+   // Hashes this payment spends against replay. A Base Account payment spends only its userOp hash
+   // (a bundler can put several people's payments in one transaction, so the bundle tx hash isn't
+   // this payment's). A plain transaction spends its own hash plus any of the sender's userOps inside
+   // it, so resubmitting a Base payment's bundle tx as a 'wallet' payment can't count it twice.
+   spendHashes: string[];
 }
 
 // Confirms `hash` on-chain and returns the USDC transfer it produced. Throws
@@ -189,7 +203,8 @@ const verifyPayment = async (method: 'wallet' | 'base', hash: string): Promise<V
          to: chosen.to,
          micros: chosen.value,
          blockNumber: result.receipt?.blockNumber,
-         txHash: result.receipt?.transactionHash
+         txHash: result.receipt?.transactionHash,
+         spendHashes: [hash.toLowerCase()]
       };
    }
 
@@ -203,7 +218,8 @@ const verifyPayment = async (method: 'wallet' | 'base', hash: string): Promise<V
       to: transfers[0].to,
       micros: transfers[0].value,
       blockNumber: receipt.blockNumber,
-      txHash: receipt.transactionHash ?? hash
+      txHash: receipt.transactionHash ?? hash,
+      spendHashes: [...new Set([hash.toLowerCase(), ...decodeUserOpHashes(receipt.logs, transfers[0].from)])]
    };
 };
 
@@ -384,14 +400,16 @@ serve(async (req) => {
 
    let expectedRecipient: string | null;
    let requiredMicros: bigint;
+   // The loan can't take this payment any more (funded by someone else, expired, already repaid), but
+   // the USDC may already have moved: verify it anyway and tell the team, so it can be refunded.
+   let closedReason: string | null = null;
    let stateFloorIso: string | null; // the payment's on-chain block must not predate this loan state
 
    if (action === 'fund') {
       if (loan.loan_status !== 'Requested' || loan.lender_user_id) {
-         return jsonResponse({ error: 'This loan is no longer open for funding' }, 409);
-      }
-      if (loan.created_at && new Date(loan.created_at).getTime() + REQUEST_EXPIRATION_MS <= Date.now()) {
-         return jsonResponse({ error: 'This loan request has expired. Ask the borrower to post a new request.' }, 409);
+         closedReason = 'it was already funded';
+      } else if (loan.created_at && new Date(loan.created_at).getTime() + REQUEST_EXPIRATION_MS <= Date.now()) {
+         closedReason = 'the request had expired';
       }
       if (loan.borrower_user_id === callerId) {
          return jsonResponse({ error: 'You cannot fund your own loan request' }, 403);
@@ -403,13 +421,13 @@ serve(async (req) => {
       if (loan.borrower_user_id !== callerId) {
          return jsonResponse({ error: 'Only the borrower can repay this loan' }, 403);
       }
-      if (loan.loan_status !== 'Lent' || loan.repayment_status === 'Paid') {
+      if (loan.loan_status !== 'Lent') {
          return jsonResponse({ error: 'This loan is not awaiting repayment' }, 409);
       }
       expectedRecipient = loan.lender_wallet;
       const remaining = Number(loan.total_repayment_amount) - Number(loan.repaid_amount ?? 0);
-      if (remaining <= 0) {
-         return jsonResponse({ error: 'This loan has already been fully repaid' }, 409);
+      if (loan.repayment_status === 'Paid' || remaining <= 0) {
+         closedReason = 'the loan was already fully repaid';
       }
       requiredMicros = 1n; // any positive on-chain transfer counts; the real amount drives repaid_amount below
       stateFloorIso = loan.funded_at ?? loan.created_at ?? null;
@@ -471,18 +489,32 @@ serve(async (req) => {
       }
    }
 
-   // Record it in one locked database transaction (public.record_loan_payment): it re-checks the loan
-   // is still open for this action, spends BOTH the submitted hash and the real transaction hash (a
-   // Base Account payment's userOp hash and its bundle tx are the same money), and updates the loan.
-   // Two payments at once now queue instead of overwriting each other, two lenders can't both fund,
-   // and a failed update leaves the hash unspent so the payment can be retried.
    const recordHash = (transfer.txHash ?? hash).toLowerCase();
+   const alertUnrecorded = async (what: string) => {
+      console.error(`confirm-loan-payment: ${loan.tracking_id} unrecorded payment ${recordHash} from ${transfer.from}: ${what}`);
+      await postDiscord(
+         {
+            content: `⚠️ ${loan.tracking_id}: a verified ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC payment (${recordHash}, from ${transfer.from}) was NOT recorded because ${what}. It needs refunding.`
+         },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+      );
+   };
+
+   if (closedReason) {
+      await alertUnrecorded(closedReason);
+      return jsonResponse({ error: `This payment couldn't be applied because ${closedReason}. Contact support for a refund.` }, 409);
+   }
+
+   // Record it in one locked database transaction (public.record_loan_payment): it re-checks the loan
+   // is still open for this action, spends this payment's hashes (see VerifiedTransfer.spendHashes)
+   // and updates the loan. Two payments at once queue instead of overwriting each other, two lenders
+   // can't both fund, and a failed update leaves the hashes unspent so the payment can be retried.
    const { data: recorded, error: recordError } = await admin.rpc('record_loan_payment', {
       p_loan_id: loanId,
       p_action: action,
       p_caller: callerId,
-      p_input_hash: normalizedHash,
-      p_tx_hash: recordHash,
+      p_spend_hashes: [...new Set([normalizedHash, ...transfer.spendHashes])],
+      p_record_hash: recordHash,
       p_amount_micros: Number(transfer.micros),
       p_from: transfer.from
    });
@@ -494,18 +526,24 @@ serve(async (req) => {
       if (recordedError === 'hash_used') {
          return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
       }
-      if (action === 'fund' && recordedError === 'not_open') {
-         // The USDC already moved: someone else funded it a moment earlier. Tell the team so it's refunded.
-         console.error(`confirm-loan-payment: ${loan.tracking_id} funded twice; second payment ${recordHash} from ${transfer.from}`);
-         await postDiscord(
-            {
-               content: `⚠️ ${loan.tracking_id} was funded by two lenders at the same moment. The second payment (${recordHash}, from ${transfer.from}) was NOT recorded and needs refunding.`
-            },
-            { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
-         );
-         return jsonResponse({ error: 'This loan was just funded by someone else. Contact support for a refund.' }, 409);
-      }
-      return jsonResponse({ error: 'This loan is not in a state that accepts this payment' }, 409);
+      const why =
+         recordedError === 'not_open'
+            ? 'someone else funded it a moment earlier'
+            : recordedError === 'not_awaiting_repayment'
+              ? 'the loan was already fully repaid'
+              : `the loan couldn't take it (${recordedError})`;
+      await alertUnrecorded(why);
+      return jsonResponse({ error: `This payment couldn't be applied because ${why}. Contact support for a refund.` }, 409);
+   }
+   // Paid more than was owed: the loan is closed at its total; the extra goes back to the payer.
+   const overpaidMicros = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
+   if (overpaidMicros > 5000) {
+      await postDiscord(
+         {
+            content: `⚠️ ${loan.tracking_id}: the borrower paid ${(overpaidMicros / 1e6).toFixed(2)} USDC more than was left (${recordHash}). The loan is closed; the extra needs sending back to ${transfer.from}.`
+         },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+      );
    }
    const updatedLoan = (recorded as { loan?: Record<string, unknown> } | null)?.loan;
    if (!updatedLoan) {

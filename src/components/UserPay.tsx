@@ -1,4 +1,4 @@
-import { type ChangeEvent, type MouseEvent, useCallback, useState } from 'react';
+import { type ChangeEvent, type MouseEvent, useCallback, useRef, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +28,9 @@ function UserPay({ loan }: { loan: Loan }) {
    const userId = user.id;
    const [repaidAmountToAdd, setRepaidAmountToAdd] = useState('');
    const [isProcessing, setIsProcessing] = useState(false);
-   const time = parseDateSafely(loan.createdAt).toISOString();
+   const payInFlightRef = useRef(false);
+   // The due date (a calendar date stored as midnight UTC), not when the request was posted.
+   const time = parseDateSafely(loan.dueDate ?? loan.createdAt).toISOString();
    const { payUsdc } = useWallet();
    const dispatch = useDispatch<AppDispatch>();
    const { showToast, showToastByConfig } = useToast();
@@ -39,9 +41,12 @@ function UserPay({ loan }: { loan: Loan }) {
 
    const executeRepayment = useCallback(
       async (amount: string, method: PaymentMethod) => {
-         if (isProcessing) {
+         if (isProcessing || payInFlightRef.current) {
             return;
          }
+         // Claimed before the first await, so a quick double-tap can't start a second payment.
+         payInFlightRef.current = true;
+         try {
 
          // Only the wagmi path needs the chain guard up front; Base Pay switches to Base itself.
          if (method === 'wallet' && !(await ensureAllowedChain(account.chainId, switchChainAsync))) {
@@ -145,6 +150,9 @@ function UserPay({ loan }: { loan: Loan }) {
             }
          } else {
             setIsProcessing(false);
+         }
+         } finally {
+            payInFlightRef.current = false;
          }
       },
       [

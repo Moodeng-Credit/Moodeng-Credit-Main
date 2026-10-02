@@ -920,13 +920,16 @@ export default function Repay() {
       // from a cold start. An Openfort-locked borrower sends gaslessly from their embedded wallet.
       const method: PaymentMethod = activePaymentMethod;
 
+      // Claimed before the first await, so a quick double-tap can't start a second payment.
+      repayInFlightRef.current = true;
+
       // Only the wagmi path needs the chain guard up front; Base Pay switches to Base itself.
       if (method === 'wallet' && !(await ensureAllowedChain(account.chainId, switchChainAsync))) {
+         repayInFlightRef.current = false;
          showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.NETWORK_REQUIRED));
          return;
       }
 
-      repayInFlightRef.current = true;
       cancelledRef.current = false;
       setIsProcessing(true);
 

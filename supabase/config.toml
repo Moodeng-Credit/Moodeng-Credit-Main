@@ -1,6 +1,3 @@
-[functions.create-user]
-verify_jwt = false
-
 # Inbound support email → ticket. A mail provider (Resend Inbound / Cloudflare Email Worker) POSTs
 # forwarded mail here with no Supabase JWT; it's gated by ?secret=EMAIL_INBOUND_SECRET in the
 # function instead.

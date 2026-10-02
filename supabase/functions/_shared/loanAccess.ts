@@ -242,7 +242,7 @@ const BORROWER_MESSAGES = {
    // A no-show that was a mistake (Zoom missed them, or a mis-tap), corrected to "Showed up".
    no_show_corrected: {
       title: 'Sorry for the mix-up',
-      body: "We've confirmed you made it to your Moodeng call — thank you. Ignore our earlier message about booking a new time; your loan request is back on the board.",
+      body: "We've confirmed you made it to your Moodeng call — thank you. Please ignore our earlier message about booking a new time. If you have a loan request, lenders can see it again.",
       url: `${SITE_URL}/request-board`
    },
    expired: {
