@@ -191,6 +191,9 @@ export default function UserCard(loan: UserCardProps) {
    // resolves after the user has already backed out. (A broadcast that still lands is left
    // to the reconciler — the money moved, so we never silently drop it.)
    const cancelledRef = useRef(false);
+   // Set synchronously on the first tap: isProcessing is React state and only flips after the awaits
+   // below, so a quick double-tap could otherwise start two payments.
+   const lendInFlightRef = useRef(false);
    // Flips true after a few seconds stuck on the pre-broadcast "Approve in your wallet"
    // overlay, so we can surface guidance + a reconnect action instead of a bare spinner
    // when a wallet isn't answering on this device.
@@ -266,7 +269,9 @@ export default function UserCard(loan: UserCardProps) {
 
    const executeLend = useCallback(
       async (method: PaymentMethod) => {
-         if (isProcessing || loanData.loanStatus === 'Lent') return;
+         if (lendInFlightRef.current || isProcessing || loanData.loanStatus === 'Lent') return;
+         lendInFlightRef.current = true;
+         try {
 
          if (loanData.borrowerUser === userId) {
             showToastByConfig(getToastKeyFromErrorCode(ERROR_CODES.LOAN_SELF_LENDING_NOT_ALLOWED));
@@ -421,6 +426,12 @@ export default function UserCard(loan: UserCardProps) {
                } else {
                   const errorMessage = updateResult.error?.message ?? 'Unknown error';
                   console.error('[CRITICAL] Lending transaction succeeded but database update failed:', errorMessage);
+                  if (/contact support for a refund/i.test(errorMessage)) {
+                     // Someone else funded it first (or it expired): retrying won't help, and the team
+                     // has already been alerted to refund this payment.
+                     showToast(TOAST_TYPES.ERROR, 'Payment not applied', `${errorMessage} Our team has been notified.`);
+                     return;
+                  }
                   // The payment itself went through; the pending entry registered above keeps
                   // retrying the DB write, so don't tell the lender their funding "failed".
                   showToast(
@@ -437,6 +448,9 @@ export default function UserCard(loan: UserCardProps) {
          } finally {
             setIsProcessing(false);
             setPendingTxHash(null);
+         }
+         } finally {
+            lendInFlightRef.current = false;
          }
       },
       [

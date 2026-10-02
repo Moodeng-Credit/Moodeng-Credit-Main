@@ -75,6 +75,24 @@ export function registerPendingBasePayment(entry: PendingBasePaymentInput) {
 }
 
 /** Remove an entry once its payment has settled (confirmed + written, or failed). */
+const PERMANENT_REFUSALS = [
+   /already been used/i,
+   /contact support for a refund/i,
+   /not awaiting repayment/i,
+   /not sent to the expected wallet/i,
+   /less than required/i,
+   /predates the loan/i,
+   /invalid transaction hash/i,
+   /cannot fund your own/i,
+   /only the (borrower|lender) can/i
+];
+
+/** True for confirm-loan-payment refusals that will never succeed on retry. */
+export function isPermanentPaymentRefusal(error: unknown): boolean {
+   const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+   return PERMANENT_REFUSALS.some((pattern) => pattern.test(message));
+}
+
 export function clearPendingBasePayment(id: string) {
    writeAll(listPendingBasePayments().filter((e) => e.id !== id));
 }
@@ -158,8 +176,11 @@ export async function reconcilePendingBasePayments(handlers: ReconcileHandlers, 
             });
          }
          clearPendingBasePayment(entry.id);
-      } catch {
-         // DB write failed — keep the entry and retry on the next pass.
+      } catch (error) {
+         // A refusal that retrying can't fix (already recorded, sent to the wrong wallet, the loan was
+         // funded by someone else and the team was alerted…): stop retrying it. Anything else (network,
+         // a temporary server error) keeps the entry for the next pass.
+         if (isPermanentPaymentRefusal(error)) clearPendingBasePayment(entry.id);
       }
    }
 }

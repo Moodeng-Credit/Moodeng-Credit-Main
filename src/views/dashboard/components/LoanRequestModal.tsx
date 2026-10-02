@@ -2402,7 +2402,11 @@ export default function LoanRequestModal({
                               </span>
                               <input
                                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                    setLoanAmount(e.target.value);
+                                    // Whole cents only: a lender's wallet sends 2-decimal amounts, so a
+                                    // sub-cent request could never be funded.
+                                    const next = e.target.value.replace(',', '.');
+                                    if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+                                    setLoanAmount(next);
                                     if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
                                  }}
                                  onFocus={scrollFieldIntoView}
@@ -2435,7 +2439,9 @@ export default function LoanRequestModal({
                            </label>
                            <input
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 setTotalRepaymentAmount(e.target.value);
+                                 const next = e.target.value.replace(',', '.');
+                                 if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
+                                 setTotalRepaymentAmount(next);
                                  if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
                               }}
                               onFocus={scrollFieldIntoView}
