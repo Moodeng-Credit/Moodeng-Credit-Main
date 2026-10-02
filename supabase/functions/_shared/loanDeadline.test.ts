@@ -4,6 +4,7 @@ import {
    dueDayBounds,
    formatDeadline,
    formatDeadlineForTeam,
+   formatPastDueForTeam,
    isUsableTimezone,
    loanTimezone,
    localHour,
@@ -108,4 +109,11 @@ Deno.test('resolveTimezone: a new borrower (no usual country yet) is checked aga
    const at = new Date('2026-10-02T00:00:00Z');
    assertEquals(resolveTimezone('Pacific/Pago_Pago', null, at, 'PH'), 'Asia/Manila');
    assertEquals(resolveTimezone('Asia/Manila', null, at, 'PH'), 'Asia/Manila');
+});
+
+Deno.test('formatPastDueForTeam: the real overdue moment (later of end of day and due + 24h)', () => {
+   // Manila: end of Sep 30 is 16:00Z, due + 24h is Oct 1 00:00Z (8 AM Manila) — the later one wins.
+   assertEquals(formatPastDueForTeam(DUE, 'Asia/Manila', 'Asia/Bangkok'), 'Thu, Oct 1, 8:00 AM their time (Manila) · 7:00 AM Bangkok time');
+   // New York: end of their day (Oct 1 04:00Z) is later than due + 24h.
+   assertEquals(formatPastDueForTeam(DUE, 'America/New_York', 'Asia/Bangkok'), 'Thu, Oct 1, 12:00 AM their time (New York) · 11:00 AM Bangkok time');
 });

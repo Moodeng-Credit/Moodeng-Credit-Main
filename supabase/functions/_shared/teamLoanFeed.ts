@@ -175,6 +175,8 @@ const whenLabel = (days: number) => (days === 0 ? 'today' : days === 1 ? 'tomorr
  * day is claimed in telegram_bot_settings so reruns that hour don't repeat it. Never throws.
  */
 export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new Date()): Promise<number> => {
+   // Set once today is claimed: anything that goes wrong after that gives the day back for the next run.
+   let release: (() => Promise<unknown>) | null = null;
    try {
       const teamZone = await getTeamTimezone(svc);
       if (localHour(now, teamZone) < DIGEST_HOUR) return 0;
@@ -199,16 +201,17 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
          if (claimError) console.error('teamLoanFeed: could not claim digest day:', claimError.message);
          return 0;
       }
-      const release = () =>
-         svc.from('telegram_bot_settings').update({ value: previous?.value ?? '' }).eq('key', DIGEST_KEY).eq('value', today);
+      release = async () =>
+         await svc.from('telegram_bot_settings').update({ value: previous?.value ?? '' }).eq('key', DIGEST_KEY).eq('value', today);
 
-      const { data } = await svc
+      const { data, error: loansError } = await svc
          .from('loans')
          .select(LOAN_COLUMNS)
          .eq('loan_status', 'Lent')
          .neq('repayment_status', 'Paid')
          .gte('due_date', new Date(now.getTime() - 2 * DAY_MS).toISOString())
          .lte('due_date', new Date(now.getTime() + (DIGEST_DAYS + 1) * DAY_MS).toISOString());
+      if (loansError) throw new Error(loansError.message);
       const candidates = ((data ?? []) as TeamFeedLoan[]).filter((loan) => !loan.is_test && loan.borrower_user_id && loan.due_date);
       if (!candidates.length) return 0;
 
@@ -255,6 +258,7 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       }
       return upcoming.length;
    } catch (err) {
+      if (release) await (release as () => Promise<unknown>)().catch(() => undefined);
       console.error('teamLoanFeed: due digest failed', err instanceof Error ? err.message : err);
       return 0;
    }
