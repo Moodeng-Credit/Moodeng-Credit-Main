@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { ensureAuthUser, mintSession } from '../_shared/mintSession.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -102,8 +103,13 @@ Deno.serve(async (req) => {
 
     // Prefer the verified LINE email if the user granted the `email` scope,
     // otherwise fall back to a synthetic, deterministic address.
-    const email = existingProfile?.email ?? payload.email ?? `line_${lineId}@moodeng.app`
-    const password = `line_${lineId}_${channelSecret.slice(0, 8)}`
+    // users.line_id is client-writable, so only trust a profile that really is this LINE user's
+    // login account (their verified LINE email or the synthetic one); otherwise someone could tag their
+    // own account with a victim's LINE id and the victim's first LINE login would land in it.
+    const ownLineEmails = [`line_${lineId}@moodeng.app`, ...(payload.email ? [String(payload.email).toLowerCase()] : [])]
+    const trustedProfile =
+      existingProfile && ownLineEmails.includes(String(existingProfile.email ?? '').toLowerCase()) ? existingProfile : null
+    const email = trustedProfile?.email ?? payload.email ?? `line_${lineId}@moodeng.app`
 
     const lineMetadata = {
       line_id: lineId,
@@ -120,64 +126,16 @@ Deno.serve(async (req) => {
       if (error) throw error
     }
 
-    // Sign in first and only reset the password when that fails (first login after a secret
-    // change, or an unconfirmed email). Setting a password through the admin API makes Supabase
-    // revoke EVERY session the user has, so doing it on each login signed people out of their
-    // other tabs/devices — and out of the tab they had just logged into, if a second login raced it.
-    const signIn = () => supabaseAdmin.auth.signInWithPassword({ email, password })
-    let { data: signInData } = await signIn()
-
-    if (!signInData?.session && existingProfile) {
-      const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(existingProfile.id, {
-        password,
-        user_metadata: lineMetadata,
-        email_confirm: true,
-      })
-
-      if (updateAuthError) {
-        throw updateAuthError
-      }
-
-      ;({ data: signInData } = await signIn())
-    }
-
-    if (signInData?.session) {
-      await supabaseAdmin.auth.admin.updateUserById(signInData.session.user.id, {
-        user_metadata: lineMetadata,
-      })
-      await syncLineProfile(signInData.session.user.id)
-
-      return new Response(
-        JSON.stringify({ session: signInData.session }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // User doesn't exist yet — create them.
-    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: lineMetadata,
-    })
-    if (createError) {
-      throw createError
-    }
-
-    const { data: newSignInData, error: newSignInError } = await supabaseAdmin.auth.signInWithPassword({
-      email,
-      password,
-    })
-    if (newSignInError) {
-      throw newSignInError
-    }
-
-    if (newSignInData.session?.user.id) {
-      await syncLineProfile(newSignInData.session.user.id)
-    }
+    // No password: the provider's signature was verified above, so mint the session server-side
+    // (_shared/mintSession.ts). Passwords derived from the provider id were guessable.
+    await ensureAuthUser(supabaseAdmin, email, lineMetadata)
+    const session = await mintSession(supabaseAdmin, email)
+    // Always refresh metadata so the photo (and name changes) stay current
+    await supabaseAdmin.auth.admin.updateUserById(session.user.id, { user_metadata: lineMetadata })
+    await syncLineProfile(session.user.id)
 
     return new Response(
-      JSON.stringify({ session: newSignInData.session }),
+      JSON.stringify({ session }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

@@ -59,6 +59,7 @@ type DiditDecision = {
    liveness?: DiditFeatureBlock;
    warnings?: unknown;
    status?: string;
+   vendor_data?: string;
 };
 
 const FACE_MATCH_THRESHOLD = 80;
@@ -394,6 +395,14 @@ serve(async (req) => {
       const state = await fetchSessionState(sessionId, apiKey);
       if (!state) {
          return jsonResponse({ synced: false, reason: 'didit-unreachable' });
+      }
+      // A session can only verify the account that started it (create-didit-session sets vendor_data to
+      // the user's id). Before, copying a verified account's session id onto a second account verified
+      // that one too, with no new scan and around the first account's blacklist.
+      const sessionOwner = state.decision?.vendor_data;
+      if (sessionOwner && sessionOwner !== user.id) {
+         console.warn(`[check-didit-status] ${kind} session ${sessionId} belongs to ${sessionOwner}, not ${user.id}`);
+         return jsonResponse({ synced: false, reason: 'session-not-yours' }, 403);
       }
 
       const status = state.status;

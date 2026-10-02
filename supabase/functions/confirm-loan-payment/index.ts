@@ -501,6 +501,15 @@ serve(async (req) => {
    };
 
    if (closedReason) {
+      // Spend this payment's hashes first: if any is already spent it's a resubmission of a payment
+      // that WAS recorded (e.g. a Base payment resubmitted by its bundle tx), so there's nothing to
+      // refund; and spending them means a retry of a genuinely late payment alerts only once.
+      const { error: spendError } = await admin
+         .from('used_payment_hashes')
+         .insert([...new Set([normalizedHash, ...transfer.spendHashes])].map((spent) => ({ hash: spent, loan_id: loanId })));
+      if (spendError) {
+         return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
+      }
       await alertUnrecorded(closedReason);
       return jsonResponse({ error: `This payment couldn't be applied because ${closedReason}. Contact support for a refund.` }, 409);
    }
@@ -524,6 +533,12 @@ serve(async (req) => {
    const recordedError = (recorded as { error?: string } | null)?.error;
    if (recordedError) {
       if (recordedError === 'hash_used') {
+         return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
+      }
+      const { error: spendLateError } = await admin
+         .from('used_payment_hashes')
+         .insert([...new Set([normalizedHash, ...transfer.spendHashes])].map((spent) => ({ hash: spent, loan_id: loanId })));
+      if (spendLateError) {
          return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
       }
       const why =

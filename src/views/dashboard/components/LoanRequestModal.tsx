@@ -2403,8 +2403,9 @@ export default function LoanRequestModal({
                               <input
                                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                     // Whole cents only: a lender's wallet sends 2-decimal amounts, so a
-                                    // sub-cent request could never be funded.
-                                    const next = e.target.value.replace(',', '.');
+                                    // sub-cent request could never be funded. Commas are thousands
+                                    // separators ("1,000"), so they're dropped.
+                                    const next = e.target.value.replace(/,/g, '');
                                     if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
                                     setLoanAmount(next);
                                     if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
@@ -2439,7 +2440,7 @@ export default function LoanRequestModal({
                            </label>
                            <input
                               onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 const next = e.target.value.replace(',', '.');
+                                 const next = e.target.value.replace(/,/g, '');
                                  if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
                                  setTotalRepaymentAmount(next);
                                  if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));

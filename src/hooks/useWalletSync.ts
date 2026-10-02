@@ -265,6 +265,18 @@ export function useWalletSync() {
                      navigate('/onboarding/wallet/blocked', { replace: true });
                   }
                   return;
+               } else if (/wallet is locked/i.test(errorMessage)) {
+                  // The database keeps a borrower's wallet fixed while a request is open or a loan is
+                  // unpaid (a lender pays the wallet saved on the request). Say so plainly.
+                  disconnect();
+                  showToast(
+                     TOAST_TYPES.ERROR,
+                     'Wallet can’t change right now',
+                     'You have an open loan request or an unpaid loan, so your wallet stays the same until it’s closed. Cancel the request or repay the loan, then switch wallets.',
+                     undefined,
+                     undefined
+                  );
+                  return;
                } else if (/auth|session|jwt|authenticated/i.test(errorMessage)) {
                   showToast(
                      TOAST_TYPES.ERROR,
