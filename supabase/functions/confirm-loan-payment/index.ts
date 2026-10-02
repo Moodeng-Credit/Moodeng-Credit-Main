@@ -348,6 +348,11 @@ serve(async (req) => {
    ) {
       return jsonResponse({ error: 'Missing or invalid loanId, hash, method, or action' }, 400);
    }
+   // One spelling per hash: Base reads a hash in any letter case, so the replay check compares lowercase.
+   if (typeof hash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+      return jsonResponse({ error: 'Invalid transaction hash' }, 400);
+   }
+   const normalizedHash = hash.toLowerCase();
 
    const authHeader = req.headers.get('Authorization');
    if (!authHeader) return jsonResponse({ error: 'Missing Authorization header' }, 401);
@@ -372,7 +377,7 @@ serve(async (req) => {
 
    // Every hash may only ever fund/repay ONE loan, ever — otherwise a single real payment could
    // be replayed across many loans to fake-fund/repay all of them.
-   const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', hash).maybeSingle();
+   const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', normalizedHash).maybeSingle();
    if (existingHash) {
       return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
    }
@@ -466,52 +471,45 @@ serve(async (req) => {
       }
    }
 
-   const { error: insertHashError } = await admin.from('used_payment_hashes').insert({ hash, loan_id: loanId });
-   if (insertHashError) {
-      // Unique violation ⇒ a concurrent request already claimed this hash.
-      return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
+   // Record it in one locked database transaction (public.record_loan_payment): it re-checks the loan
+   // is still open for this action, spends BOTH the submitted hash and the real transaction hash (a
+   // Base Account payment's userOp hash and its bundle tx are the same money), and updates the loan.
+   // Two payments at once now queue instead of overwriting each other, two lenders can't both fund,
+   // and a failed update leaves the hash unspent so the payment can be retried.
+   const recordHash = (transfer.txHash ?? hash).toLowerCase();
+   const { data: recorded, error: recordError } = await admin.rpc('record_loan_payment', {
+      p_loan_id: loanId,
+      p_action: action,
+      p_caller: callerId,
+      p_input_hash: normalizedHash,
+      p_tx_hash: recordHash,
+      p_amount_micros: Number(transfer.micros),
+      p_from: transfer.from
+   });
+   if (recordError) {
+      return jsonResponse({ error: recordError.message || 'Failed to update loan' }, 500);
    }
-
-   const updates: Record<string, unknown> = {};
-
-   // Record the real, explorer-verifiable tx hash in loans.hash (dedup still keys on the raw input
-   // `hash` via used_payment_hashes above, so replay protection is unchanged). Before this, base-wallet
-   // payments stored the userOperation hash here, which 404s on Basescan and made repayment disputes
-   // impossible to self-verify.
-   const recordHash = transfer.txHash ?? hash;
-
-   if (action === 'fund') {
-      updates.hash = [...(loan.hash ?? []), recordHash];
-      updates.lender_user_id = callerId;
-      updates.lender_wallet = transfer.from;
-      updates.loan_status = 'Lent';
-      updates.funded_at = new Date().toISOString();
-      // The app won't start funding a request that's on hold (no-show), but the USDC is sent before
-      // this confirmation runs, so a payment that raced the hold is still recorded truthfully — the
-      // money moved — and the team is told below.
-      updates.on_hold_since = null;
-      updates.on_hold_reason = null;
-   } else if (action === 'repay') {
-      updates.hash = [...(loan.hash ?? []), recordHash];
-      const paidUsd = Number(transfer.micros) / 1e6;
-      const newRepaidAmount = Math.min(Number(loan.repaid_amount ?? 0) + paidUsd, Number(loan.total_repayment_amount));
-      const isFullyRepaid = newRepaidAmount >= Number(loan.total_repayment_amount) - 0.005;
-      // Fully repaid within the half-cent tolerance: record the exact total, so every "fully repaid"
-      // check downstream (credit level-up, milestones, Pandesal points) agrees this loan is paid off.
-      updates.repaid_amount = isFullyRepaid ? Number(loan.total_repayment_amount) : newRepaidAmount;
-      updates.repayment_status = isFullyRepaid ? 'Paid' : 'Partial';
-      if (isFullyRepaid) {
-         updates.repaid_at = new Date().toISOString();
+   const recordedError = (recorded as { error?: string } | null)?.error;
+   if (recordedError) {
+      if (recordedError === 'hash_used') {
+         return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
       }
-   } else {
-      // return-interest: interest_return_hash is a single-hash column (not the payment-log array).
-      updates.interest_returned_at = new Date().toISOString();
-      updates.interest_return_hash = recordHash;
+      if (action === 'fund' && recordedError === 'not_open') {
+         // The USDC already moved: someone else funded it a moment earlier. Tell the team so it's refunded.
+         console.error(`confirm-loan-payment: ${loan.tracking_id} funded twice; second payment ${recordHash} from ${transfer.from}`);
+         await postDiscord(
+            {
+               content: `⚠️ ${loan.tracking_id} was funded by two lenders at the same moment. The second payment (${recordHash}, from ${transfer.from}) was NOT recorded and needs refunding.`
+            },
+            { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         );
+         return jsonResponse({ error: 'This loan was just funded by someone else. Contact support for a refund.' }, 409);
+      }
+      return jsonResponse({ error: 'This loan is not in a state that accepts this payment' }, 409);
    }
-
-   const { data: updatedLoan, error: updateError } = await admin.from('loans').update(updates).eq('id', loanId).select().single();
-   if (updateError || !updatedLoan) {
-      return jsonResponse({ error: updateError?.message || 'Failed to update loan' }, 500);
+   const updatedLoan = (recorded as { loan?: Record<string, unknown> } | null)?.loan;
+   if (!updatedLoan) {
+      return jsonResponse({ error: 'Failed to update loan' }, 500);
    }
 
    // --- side effects (points / credit / notifications). These mirror the old client thunk; a

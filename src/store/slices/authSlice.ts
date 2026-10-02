@@ -77,7 +77,6 @@ const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['publi
    return updates;
 };
 
-const normalizeWorldIdStatus = (value?: string | WorldIdStatus | null): WorldIdStatus => (value as WorldIdStatus) ?? WorldId.INACTIVE;
 
 const normalizeProfileText = (value: unknown): string | undefined => {
    if (typeof value !== 'string') return undefined;
@@ -164,7 +163,9 @@ const ensureUserProfileRow = async (
       username: deriveUsername(authUser, overrides?.username),
       display_name: normalizeProfileText(authUser.user_metadata?.name) ?? null,
       email,
-      is_world_id: normalizeWorldIdStatus(overrides?.isWorldId ?? authUser.user_metadata?.is_world_id),
+      // Verification is never taken from sign-up details (the user controls user_metadata); only the
+      // server sets it (verify-worldid, Didit). The database resets it on insert anyway.
+      is_world_id: WorldId.INACTIVE,
       ...getTelegramProfileUpdates(authUser.user_metadata as TelegramAuthData | undefined)
    };
 
