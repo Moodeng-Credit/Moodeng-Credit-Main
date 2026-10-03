@@ -2,8 +2,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 
-import { CREDIT_TIERS, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
-import { OVERDUE_AFTER_DUE_DATE_MS } from '@/lib/creditLeveling';
+import { getFullLimitLoans, OVERDUE_AFTER_DUE_DATE_MS } from '@/lib/creditLeveling';
 import { getDueDayEnd, getLoanTimezone } from '@/lib/loanDeadline';
 import { trustPointMilestoneRuleById } from '@/shared/points';
 import type { Loan } from '@/types/loanTypes';
@@ -96,35 +95,6 @@ export const getFundedBorrowerLoans = (loans: Loan[], userId: string) =>
    getBorrowerLoans(loans, userId).filter((loan) => loan.loanStatus === 'Lent');
 
 const getOnTimePaidLoans = (loans: Loan[]) => loans.filter(isLoanPaidOnTime);
-
-/**
- * Loans that counted as full-limit loans, found by replaying the level-up rule: walking fully repaid
- * loans in order from the starting limit, a loan at or above the limit at the time is a full-limit
- * loan and unlocks the next tier. Smaller (trust-building) loans never are, even at a tier amount.
- */
-const getFullLimitLoans = (loans: Loan[]): Set<Loan> => {
-   const paidAt = (loan: Loan) => parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
-   const fullyRepaid = loans.filter((loan) => {
-      if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
-      const totalRepayment = toNumber(loan.totalRepaymentAmount);
-      return totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
-   });
-   // Recorded at repayment (server): principal at or above the limit the borrower had then.
-   const fullLimitLoans = new Set<Loan>(
-      fullyRepaid.filter((loan) => loan.creditLimitAtRepayment !== undefined && toNumber(loan.loanAmount) >= loan.creditLimitAtRepayment)
-   );
-   // Loans repaid before that was recorded: replay the level-up rule from the $15 start.
-   let replayLimit: number = CREDIT_TIERS[0];
-   fullyRepaid
-      .filter((loan) => loan.creditLimitAtRepayment === undefined)
-      .sort((a, b) => paidAt(a) - paidAt(b))
-      .forEach((loan) => {
-         if (toNumber(loan.loanAmount) < replayLimit) return;
-         fullLimitLoans.add(loan);
-         if (replayLimit < MAX_CREDIT_LIMIT) replayLimit = getNextCreditTier(replayLimit);
-      });
-   return fullLimitLoans;
-};
 
 const hasUnresolvedDefault = (loan: Loan): boolean =>
    loan.loanStatus === 'Lent' && loan.repaymentStatus !== 'Paid' && isLoanPastDue(loan.dueDate, new Date(), loan.dueTimezone);

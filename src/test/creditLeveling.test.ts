@@ -5,11 +5,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { formatDate } from '@/utils/dateFormatters';
 
-import { evaluateCreditProgression, isRepaidOnTime } from '@/lib/creditLeveling';
+import { evaluateCreditProgression, getFullLimitLoans, isRepaidOnTime } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardData';
+import { buildBorrowerTimelineEvents } from '@/views/user-profile/ProgressHistory';
 
 // Push reminders need a real browser; in tests the device "can't do push", so the step doesn't require it.
 vi.mock('@/hooks/usePushNotifications', () => ({
@@ -399,5 +400,57 @@ describe('Dashboard credit level carousel', () => {
       expect(tiers.find((tier) => tier.amount === 20)?.date).toBe(formatDate('2025-01-10T00:00:00.000Z'));
       expect(tiers.find((tier) => tier.amount === 40)?.date).toBe(formatDate('2025-03-10T00:00:00.000Z'));
       expect(tiers.find((tier) => tier.amount === 60)?.unlockRequirement).toBe('Borrow & repay the full $40 to unlock');
+   });
+});
+
+describe('getFullLimitLoans (credit- vs trust-building)', () => {
+   it('replays the rule: $15 at the $15 start is full-limit, then $17 at $20 is trust-building', () => {
+      const first = createLoan({ id: 'a', loanAmount: 15, repaidAt: '2026-09-10T00:00:00.000Z' });
+      const second = createLoan({ id: 'b', loanAmount: 17, repaidAmount: 20, totalRepaymentAmount: 20, repaidAt: '2026-09-30T00:00:00.000Z' });
+      const full = getFullLimitLoans([second, first]);
+      expect(full.get(first)).toBe(15);
+      expect(full.has(second)).toBe(false);
+   });
+
+   it('uses the limit recorded at repayment: a $20 loan on a $40 limit is trust-building', () => {
+      const tierAmountButSmall = createLoan({ id: 'a', loanAmount: 20, creditLimitAtRepayment: 40 });
+      const fullLimit = createLoan({ id: 'b', loanAmount: 40, creditLimitAtRepayment: 40 });
+      const full = getFullLimitLoans([tierAmountButSmall, fullLimit]);
+      expect(full.has(tierAmountButSmall)).toBe(false);
+      expect(full.get(fullLimit)).toBe(40);
+   });
+
+   it('counts an open loan at the current limit only when asked, and never test or refunded loans', () => {
+      const open = createLoan({ id: 'open', loanAmount: 20, repaidAmount: 0, totalRepaymentAmount: 24, repaymentStatus: 'Unpaid' });
+      const openSmall = createLoan({ id: 'small', loanAmount: 10, repaidAmount: 0, totalRepaymentAmount: 12, repaymentStatus: 'Unpaid' });
+      const testLoan = createLoan({ id: 'test', loanAmount: 15, isTest: true });
+      const refunded = createLoan({ id: 'refunded', loanAmount: 15, refundedAt: '2026-09-11T00:00:00.000Z' });
+      expect(getFullLimitLoans([open]).size).toBe(0);
+      const full = getFullLimitLoans([open, openSmall, testLoan, refunded], 20);
+      expect([...full.keys()].map((loan) => loan.id)).toEqual(['open']);
+   });
+});
+
+describe('Borrower progress timeline', () => {
+   const eventsFor = (loans: Loan[], cs = 20) => buildBorrowerTimelineEvents({ ...baseUser, cs }, loans);
+
+   it('labels a tier-amount loan below the limit as trust-building, with no level-up', () => {
+      const events = eventsFor([createLoan({ id: 'a', loanAmount: 20, creditLimitAtRepayment: 40, fundedAt: '2026-09-01T00:00:00.000Z' })], 40);
+      expect(events.some((event) => event.type === 'trust_building_loan_funded')).toBe(true);
+      expect(events.some((event) => event.type === 'credit_limit_unlocked')).toBe(false);
+   });
+
+   it('shows the level-up for a full-limit loan even when it was repaid late', () => {
+      const late = createLoan({
+         id: 'late',
+         loanAmount: 15,
+         creditLimitAtRepayment: 15,
+         dueDate: '2026-09-01T00:00:00.000Z',
+         repaidAt: '2026-09-20T00:00:00.000Z',
+         updatedAt: '2026-09-20T00:00:00.000Z'
+      });
+      const unlocked = eventsFor([late]).find((event) => event.type === 'credit_limit_unlocked');
+      expect(unlocked?.amount).toBe(20);
+      expect(unlocked?.description).toBe('Unlocked Level 2: a $20 limit.');
    });
 });

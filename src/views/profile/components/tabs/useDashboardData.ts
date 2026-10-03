@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 
-import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
+import { formatDate } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 import { calculateLenderDiversity } from '@/utils/diversityScore';
 
 import { getNextCreditTier } from '@/config/creditTiers';
-import { CREDIT_TIERS, getEffectiveCreditLimit, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
+import { CREDIT_TIERS, getEffectiveCreditLimit, getFullLimitLoans, MAX_CREDIT_LIMIT } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUser } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -32,26 +32,12 @@ const buildUnlockDate = (date?: string | null): string | undefined => {
 export const buildCreditLevels = ({ user, loans }: CreditLevelInput): CreditLevel[] => {
    const isVerified = isUserVerified(user);
    const currentLimit = getEffectiveCreditLimit(user.cs, isVerified);
-   const paidLoans = loans.filter((loan) => {
-      if (loan.repaymentStatus !== 'Paid' || loan.refundedAt) return false;
-      const repaidAmount = toNumber(loan.repaidAmount);
-      const totalRepayment = toNumber(loan.totalRepaymentAmount);
-      return totalRepayment > 0 ? repaidAmount >= totalRepayment : repaidAmount > 0;
-   });
-
-   // Replay the level-up rule to date each tier: walking repayments in order from the starting limit,
-   // a fully repaid loan at or above the limit at the time unlocks the next tier. Smaller
-   // (trust-building) loans never do. Tiers raised any other way fall back to a generic date.
-   const paidAt = (loan: Loan) => parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
+   // Date each tier by the full-limit loan that unlocked it (same rule and recorded limits as leveling).
+   // Tiers raised any other way (referral, admin) fall back to a generic date.
    const unlockedByTier = new Map<number, Loan>();
-   let replayLimit: number = CREDIT_TIERS[0];
-   [...paidLoans]
-      .sort((a, b) => paidAt(a) - paidAt(b))
-      .forEach((loan) => {
-         if (replayLimit >= MAX_CREDIT_LIMIT || toNumber(loan.loanAmount) < replayLimit) return;
-         replayLimit = getNextCreditTier(replayLimit);
-         unlockedByTier.set(replayLimit, loan);
-      });
+   getFullLimitLoans(loans).forEach((limitBefore, loan) => {
+      if (limitBefore < MAX_CREDIT_LIMIT) unlockedByTier.set(getNextCreditTier(limitBefore), loan);
+   });
 
    const fallbackDate = buildUnlockDate(user.updatedAt || user.createdAt || new Date().toISOString());
 
