@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
+   isPlaceholderEmail,
    getBorrowerTelegramNotificationsEnabled,
    sendBorrowerLoanNotification
 } from '../_shared/borrowerNotificationDelivery.ts';
@@ -335,7 +336,7 @@ serve(async (req) => {
       // One borrower's failed send must not stop the run for everyone after them (or the team post).
       try {
          const borrower = borrowers.get(borrowerId);
-         if (!borrower || (!borrower.email && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId))) {
+         if (!borrower || ((!borrower.email || isPlaceholderEmail(borrower.email)) && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId))) {
             continue;
          }
 

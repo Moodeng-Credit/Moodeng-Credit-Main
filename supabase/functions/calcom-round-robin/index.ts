@@ -190,7 +190,7 @@ serve(async (req) => {
    // are counted (public.video_call_no_shows logs every open-flow no-show).
    const [{ data: strikes }, { data: openFlowStrikes }] = await Promise.all([
       svc.from('loan_access_requests').select('decided_at').eq('user_id', user.id).eq('status', 'no_show'),
-      svc.from('video_call_no_shows').select('recorded_at').eq('user_id', user.id).eq('active', true)
+      svc.from('video_call_no_shows').select('recorded_at').eq('user_id', user.id).eq('active', true).eq('kind', 'no_show')
    ]);
    const cooldownUntil = bookingCooldownUntil(
       [
@@ -239,7 +239,7 @@ serve(async (req) => {
       // One booking per person: a quick double-book is refused, and booking again replaces the old
       // slot (cancelled on Cal.com once the new one is made), so nobody can hold every slot.
       if (prof?.video_call_scheduled_at && Date.now() - Date.parse(prof.video_call_scheduled_at) < 60_000) {
-         return json({ ok: false, error: 'too_fast' }, 429);
+         return json({ ok: false, error: 'too_fast' });
       }
       const previousBooking =
          prof?.video_call_booking_uid && prof.video_call_starts_at && Date.parse(prof.video_call_starts_at) > Date.now()

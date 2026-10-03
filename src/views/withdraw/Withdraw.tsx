@@ -1136,7 +1136,9 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
    const amtNum = parseFloat(amount);
    // The cap is the verified on-chain balance — never the loan estimate. Until it
    // loads (`spendable == null`) the amount can't be validated, so send stays off.
-   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable;
+   // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
+   const amtValid =
+      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1154,7 +1156,7 @@ function AppFlow({ cfg, onConfirmed, onDone }: { cfg: AppFlowConfig; onConfirmed
       setSending(true);
       setSendPhase('progress');
       try {
-         const result = await send(address.trim(), String(amtNum), cfg.name, () => setConfirming(true));
+         const result = await send(address.trim(), amount.trim(), cfg.name, () => setConfirming(true));
          if (result) {
             sentAmountRef.current = amtNum;
             track('withdraw_sent', { exchange: cfg.name, amount: amtNum });
@@ -1606,7 +1608,9 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
    const addrValid = isValidAddress(address);
    const amtNum = parseFloat(amount);
    // Cap on the verified on-chain balance only; send stays off until it loads.
-   const amtValid = spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable;
+   // USDC has 6 decimals: more than that can't be sent exactly (and String(1e-7) would be '1e-7').
+   const amtValid =
+      spendable != null && !isNaN(amtNum) && amtNum > 0 && amtNum <= spendable && /^\d*(\.\d{0,6})?$/.test(amount.trim());
    const canSend = addrValid && amtValid && !sending;
    const sentAmountRef = useRef(0);
 
@@ -1628,7 +1632,7 @@ function BinanceFlow({ onConfirmed, onDone }: { onConfirmed: (amount: number) =>
       setSending(true);
       setSendPhase('progress');
       try {
-         const result = await send(address.trim(), String(amtNum), 'Binance', () => setConfirming(true));
+         const result = await send(address.trim(), amount.trim(), 'Binance', () => setConfirming(true));
          if (result) {
             sentAmountRef.current = amtNum;
             track('withdraw_sent', { exchange: 'Binance', amount: amtNum });
@@ -2296,7 +2300,8 @@ export default function Withdraw() {
          dueDate: isPreview
             ? 'July 18, 2026'
             : primaryLoan
-              ? parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+              ? // A due date is a calendar date stored as midnight UTC: read it in UTC so it isn't a day early west of UTC.
+                parseDateSafely(primaryLoan.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
               : null,
          walletAddress,
          isPreview,

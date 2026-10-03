@@ -39,7 +39,7 @@ import { getCreditLevelNumber, getNextCreditTier } from '@/config/creditTiers';
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
-import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -893,6 +893,11 @@ export default function Repay() {
       if (!selectedLoan || isProcessing || repayInFlightRef.current) {
          return;
       }
+      // A repayment already approved for this loan but not yet recorded: paying again would overpay.
+      if (hasPendingPaymentForLoan(selectedLoan.id)) {
+         showToast(TOAST_TYPES.INFO, 'Payment still confirming', 'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.');
+         return;
+      }
 
       // In Facebook's in-app browser a Base-Account borrower can't complete the wallet handshake,
       // so never start the (doomed) flow — the screen shows RepayInAppBrowserGate instead. This also
@@ -974,6 +979,16 @@ export default function Repay() {
             return;
          }
 
+         // No lender wallet on file means nowhere to send it: say so instead of a generic failure.
+         if (!selectedLoan.lenderWallet?.trim()) {
+            showToast(
+               TOAST_TYPES.ERROR,
+               'Lender wallet missing',
+               "We can't find where to send this repayment. Please contact support and we'll sort it out."
+            );
+            return;
+         }
+
          // Snapshot the credit limit before the repayment so we can tell if this payoff triggered
          // a level-up (updateLoanStatus raises it server-side + refetches the user).
          const prevCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
@@ -994,8 +1009,21 @@ export default function Repay() {
                   kind: 'repay',
                   id,
                   loanId: selectedLoan.id,
+                  userId: user.id,
                   repaidAmount: newRepaidAmount,
                   repaymentStatus: newRepaymentStatus
+               });
+            },
+            // Approved in the wallet after we stopped waiting: still record the repayment.
+            onLateWalletHash: (hash) => {
+               registerPendingBasePayment({
+                  kind: 'repay',
+                  id: hash,
+                  loanId: selectedLoan.id,
+                  userId: user.id,
+                  repaidAmount: newRepaidAmount,
+                  repaymentStatus: newRepaymentStatus,
+                  method: 'wallet'
                });
             }
          });
@@ -1012,6 +1040,7 @@ export default function Repay() {
                kind: 'repay',
                id: outcome.hash,
                loanId: selectedLoan.id,
+               userId: user.id,
                repaidAmount: newRepaidAmount,
                repaymentStatus: newRepaymentStatus,
                method: toSettlementMethod(method)

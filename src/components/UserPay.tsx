@@ -13,7 +13,7 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
 import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
-import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { areWalletAddressesEqual, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
@@ -42,6 +42,10 @@ function UserPay({ loan }: { loan: Loan }) {
    const executeRepayment = useCallback(
       async (amount: string, method: PaymentMethod) => {
          if (isProcessing || payInFlightRef.current) {
+            return;
+         }
+         if (hasPendingPaymentForLoan(loan.id)) {
+            showToast(TOAST_TYPES.INFO, 'Payment still confirming', 'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.');
             return;
          }
          // Claimed before the first await, so a quick double-tap can't start a second payment.
@@ -79,7 +83,10 @@ function UserPay({ loan }: { loan: Loan }) {
                // On Base Pay approval (before confirmation): arm reconciliation so an
                // approved-but-unconfirmed repayment still records later.
                onSubmitted: (id) => {
-                  registerPendingBasePayment({ kind: 'repay', id, loanId: loan.id, repaidAmount: newRepaidAmount, repaymentStatus });
+                  registerPendingBasePayment({ kind: 'repay', id, loanId: loan.id, repaidAmount: newRepaidAmount, repaymentStatus, userId });
+               },
+               onLateWalletHash: (hash) => {
+                  registerPendingBasePayment({ kind: 'repay', id: hash, loanId: loan.id, repaidAmount: newRepaidAmount, repaymentStatus, userId, method: 'wallet' });
                }
             });
 
@@ -91,6 +98,7 @@ function UserPay({ loan }: { loan: Loan }) {
                      kind: 'repay',
                      id: outcome.hash,
                      loanId: loan.id,
+                     userId,
                      repaidAmount: newRepaidAmount,
                      repaymentStatus,
                      method: toSettlementMethod(method)
@@ -150,6 +158,12 @@ function UserPay({ loan }: { loan: Loan }) {
             }
          } else {
             setIsProcessing(false);
+            // Say why nothing happened (an empty/invalid amount, or more than is owed).
+            showToast(
+               TOAST_TYPES.WARNING,
+               'Check the amount',
+               `Enter an amount above 0 and no more than the $${formatNumber(Math.max(0, totalOwed - toNumber(loan.repaidAmount)))} still owed.`
+            );
          }
          } finally {
             payInFlightRef.current = false;

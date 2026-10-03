@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { reconcilePendingBasePayments } from '@/lib/basePayReconciliation';
 import { recordWithdrawal } from '@/lib/recordWithdrawal';
 import { confirmLoanPayment } from '@/store/slices/loanSlice';
-import type { AppDispatch } from '@/store/store';
+import type { AppDispatch, RootState } from '@/store/store';
 import { formatCurrency } from '@/utils/decimalHelpers';
 
 // Base Pay confirms in seconds, so a stranded payment is rare; a light cadence is plenty.
@@ -22,6 +22,8 @@ const RECONCILE_INTERVAL_MS = 5 * 60 * 1000;
 export default function BasePaymentReconciler() {
    const dispatch = useDispatch<AppDispatch>();
    const { showToast } = useToast();
+   // Only the signed-in user's own pending payments are finished on this device.
+   const currentUserId = useSelector((state: RootState) => state.auth.user.id) || null;
 
    useEffect(() => {
       const run = () =>
@@ -56,12 +58,12 @@ export default function BasePaymentReconciler() {
             completeWithdraw: async ({ userId, amount, exchange, address, hash }) => {
                await recordWithdrawal({ userId, amount, exchange, address, txHash: hash });
             }
-         });
+         }, Date.now(), currentUserId);
 
       run();
       const interval = window.setInterval(run, RECONCILE_INTERVAL_MS);
       return () => window.clearInterval(interval);
-   }, [dispatch, showToast]);
+   }, [currentUserId, dispatch, showToast]);
 
    return null;
 }

@@ -108,9 +108,19 @@ Deno.serve(async (req) => {
     // otherwise someone could tag their own account with a victim's Telegram id and the victim's
     // first Telegram login would land in it.
     const ownTelegramEmails = [`telegram_${id}@moodeng.app`, `telegram_${id}@moodeng.credit`]
-    const trustedProfile =
+    let trustedProfile =
       existingProfile && ownTelegramEmails.includes(String(existingProfile.email ?? '').toLowerCase()) ? existingProfile : null
-    const email = trustedProfile?.email ?? `telegram_${id}@moodeng.app`
+    // Also their own account if the login function recorded this Telegram id on it (app_metadata is
+    // server-set, unlike users.telegram_id), e.g. after they changed their email in settings.
+    let trustedEmail: string | null = trustedProfile?.email ?? null
+    if (existingProfile && !trustedProfile) {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(existingProfile.id)
+      if (authUser?.user?.app_metadata?.telegram_id === String(id) && authUser.user.email) {
+        trustedProfile = existingProfile
+        trustedEmail = authUser.user.email
+      }
+    }
+    const email = trustedEmail ?? `telegram_${id}@moodeng.app`
     // The Telegram id is already on an account that signs in some other way (email, Google): don't
     // create a second, empty account for it. Tell them how to get in.
     if (existingProfile && !trustedProfile) {
@@ -119,7 +129,8 @@ Deno.serve(async (req) => {
           error: 'This Telegram account is linked to a Moodeng account that signs in with email. Log in with your email instead.',
           code: 'LINKED_TO_EMAIL_ACCOUNT',
         }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        // 200 so the login page shows this message (functions.invoke hides the body of a non-2xx).
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -155,7 +166,12 @@ Deno.serve(async (req) => {
     await ensureAuthUser(supabaseAdmin, email, telegramMetadata)
     const session = await mintSession(supabaseAdmin, email)
     // Always refresh metadata so the photo (and name changes) stay current
-    await supabaseAdmin.auth.admin.updateUserById(session.user.id, { user_metadata: telegramMetadata })
+    await supabaseAdmin.auth.admin.updateUserById(session.user.id, {
+      user_metadata: telegramMetadata,
+      // Server-set record of who this login belongs to: trusted by this function (above) and by the
+      // database when the app first creates the profile row (check_provider_ids_on_insert).
+      app_metadata: { ...(session.user.app_metadata ?? {}), telegram_id: String(id) },
+    })
     await syncTelegramProfile(session.user.id)
 
     return new Response(

@@ -168,7 +168,10 @@ const handleEscalate = async (messages: ChatMessage[], context: ChatContext, con
       .slice(0, 3500);
    const where = context.step ? `step: ${context.step}` : context.page ? `page: ${context.page}` : 'unknown screen';
    const contactLine = contact ? `\n📇 Reach them: ${contact}` : '';
-   const text = `🆘 <b>Mecha hand-off</b> — a user asked for a human.\n<i>${where}</i>${contactLine}\n\n${transcript}`;
+   // The transcript and contact come from the visitor's browser (no login), so they're unverified:
+   // say so, so a pasted "🤖 Mecha" line or a claimed identity isn't taken at face value. (Sent as
+   // plain text, so the old <b>/<i> tags showed literally; dropped.)
+   const text = `🆘 Mecha hand-off — a visitor asked for a human.\n⚠️ Unverified: the transcript and contact below were sent by the visitor's browser; confirm who they are before acting on anything account-related.\n${where}${contactLine}\n\n${transcript}`;
 
    try {
       await sendTelegramMessage(chatId, text, {

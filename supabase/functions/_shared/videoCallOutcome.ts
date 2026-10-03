@@ -183,19 +183,27 @@ export const recordCallOutcome = async (
          .select('id')
          .eq('user_id', userId)
          .eq('active', true)
+         .eq('kind', 'no_show')
          .order('recorded_at', { ascending: false })
          .limit(1)
          .maybeSingle();
       if (lastStrike) await svc.from('video_call_no_shows').update({ active: false }).eq('id', (lastStrike as { id: string }).id);
+      // Only a recent gated-flow no-show is this call's; an old, unrelated one stays as it was.
       const { data: lastNoShow } = await svc
          .from('loan_access_requests')
          .select('id')
          .eq('user_id', userId)
          .eq('status', 'no_show')
+         .gte('decided_at', new Date(Date.now() - 7 * 86400000).toISOString())
          .order('decided_at', { ascending: false })
          .limit(1)
          .maybeSingle();
-      if (lastNoShow) await svc.from('loan_access_requests').update({ status: 'approved' }).eq('id', (lastNoShow as { id: string }).id);
+      if (lastNoShow) {
+         await svc
+            .from('loan_access_requests')
+            .update({ status: 'approved', decided_by: `${decidedBy} (corrected no-show)` })
+            .eq('id', (lastNoShow as { id: string }).id);
+      }
    }
    if (correctingNoShow && !approvedNow) {
       await notifyBorrower(svc, updated as BorrowerRow, 'no_show_corrected');

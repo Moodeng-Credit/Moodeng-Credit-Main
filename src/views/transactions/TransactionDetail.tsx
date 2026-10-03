@@ -600,7 +600,7 @@ export default function TransactionDetail() {
             // approved-but-unconfirmed interest return still records later.
             onSubmitted: (id) => {
                setReturnedTxHash(id);
-               registerPendingBasePayment({ kind: 'interest', id, loanId: loan.id });
+               registerPendingBasePayment({ kind: 'interest', id, loanId: loan.id, userId: user.id });
             }
          });
 
@@ -609,7 +609,7 @@ export default function TransactionDetail() {
          // The wagmi path has no onSubmitted: the money is in flight from here, so arm
          // reconciliation now — a DB confirm that fails below gets retried later.
          if (method === 'wallet') {
-            registerPendingBasePayment({ kind: 'interest', id: outcome.hash, loanId: loan.id, method });
+            registerPendingBasePayment({ kind: 'interest', id: outcome.hash, loanId: loan.id, method, userId: user.id });
          }
 
          // Hide the card the moment money is on its way — before the DB write —

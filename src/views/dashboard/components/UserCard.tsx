@@ -19,14 +19,14 @@ import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMeth
 import { formatCurrency, formatNumber } from '@/utils/decimalHelpers';
 
 import { config } from '@/config/wagmiConfig';
-import { clearPendingBasePayment, registerPendingBasePayment } from '@/lib/basePayReconciliation';
+import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import {
    type BorrowerContextProfileData,
    type BorrowerContextResult,
    buildBorrowerContextFit,
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
-import { formatBoardExpiryLabel, getRequestBoardExpiry, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
+import { formatBoardExpiryLabel, getRequestBoardExpiry, isExpiredUnfundedRequest, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -281,11 +281,23 @@ export default function UserCard(loan: UserCardProps) {
          // Re-check the live request right before any money moves: the USDC goes out before the server
          // confirms, so this is where a request put on hold (borrower missed their call) or already
          // funded has to be caught. If the check itself fails, carry on: the server still verifies.
+         // A payment already approved for this request but not yet recorded (e.g. Base Pay still
+         // confirming): a second tap would send the money twice.
+         if (hasPendingPaymentForLoan(loanData.id)) {
+            showToast(TOAST_TYPES.INFO, 'Payment still confirming', 'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.');
+            return;
+         }
          const { data: liveLoan } = await getSupabaseBrowserClient()
             .from('loans')
-            .select('loan_status, lender_user_id, on_hold_since')
+            .select('loan_status, lender_user_id, on_hold_since, created_at')
             .eq('id', loanData.id)
             .maybeSingle();
+         // Requests expire after 7 days; the board only refreshes every minute, so check right now.
+         if (liveLoan?.created_at && isExpiredUnfundedRequest({ createdAt: liveLoan.created_at, loanStatus: liveLoan.loan_status })) {
+            showToast(TOAST_TYPES.WARNING, 'This request has expired', 'The borrower needs to post a new request.');
+            void dispatch(fetchLoans());
+            return;
+         }
          if (liveLoan?.on_hold_since) {
             showToast(TOAST_TYPES.WARNING, 'This request is paused', 'The borrower needs to book a new call before it can be funded.');
             void dispatch(fetchLoans());
@@ -344,6 +356,10 @@ export default function UserCard(loan: UserCardProps) {
                onSubmitted: (id) => {
                   setPendingTxHash(id);
                   registerPendingBasePayment({ kind: 'fund', id, loanId: loanData.id, userId });
+               },
+               // Approved in the wallet after we stopped waiting: still record the funding.
+               onLateWalletHash: (hash) => {
+                  registerPendingBasePayment({ kind: 'fund', id: hash, loanId: loanData.id, userId, method: 'wallet' });
                }
             });
 

@@ -298,14 +298,16 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
             user = (data as { id: string } | null) ?? null;
          }
          if (!user && /^[0-9a-f-]{6,36}$/i.test(cleaned)) {
-            const { data: decided } = await supabase
+            // ids are uuids (no ILIKE on uuid), so match the prefix here over recent requests.
+            const { data: recent } = await supabase
                .from('loan_access_requests')
-               .select('user_id')
-               .ilike('id', `${escapeLike(cleaned)}%`)
+               .select('id, user_id')
                .order('created_at', { ascending: false })
-               .limit(2);
-            const rows = (decided ?? []) as Array<{ user_id: string }>;
-            if (rows.length === 1) user = { id: rows[0].user_id };
+               .limit(500);
+            const rows = ((recent ?? []) as Array<{ id: string; user_id: string }>).filter((row) =>
+               row.id.toLowerCase().startsWith(cleaned.toLowerCase())
+            );
+            if (new Set(rows.map((row) => row.user_id)).size === 1) user = { id: rows[0].user_id };
          }
          if (!user) {
             const { data } = await supabase.from('users').select('id').ilike('username', escapeLike(cleaned)).maybeSingle();

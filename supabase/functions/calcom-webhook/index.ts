@@ -71,18 +71,20 @@ serve(async (req) => {
       // ladder and clears the old "I'll be there" / attendance; an echo must not re-send reminders.
       const { data: current } = await supabase
          .from('users')
-         .select('video_call_starts_at, video_call_booking_uid, email')
+         .select('video_call_starts_at, video_call_booking_uid')
          .eq('id', booking.userId)
          .maybeSingle();
-      // moodeng_user_id comes from the booking link, which anyone could forge to book (and later
-      // cancel) on someone else's behalf. Trust it only for our own booking echoing back, or when the
-      // attendee is that user.
-      const currentRow = current as { video_call_booking_uid?: string | null; email?: string | null } | null;
-      const ownEcho = Boolean(booking.bookingUid && currentRow?.video_call_booking_uid === booking.bookingUid);
-      const userEmail = (currentRow?.email ?? '').trim().toLowerCase();
-      if (!ownEcho && !(userEmail && booking.attendeeEmails.includes(userEmail))) {
-         console.warn(`calcom-webhook: ignored ${booking.triggerEvent} ${booking.bookingUid}: attendee doesn't match user ${booking.userId}`);
-         return jsonResponse({ ok: true, ignored: 'attendee_mismatch' });
+      // moodeng_user_id comes from the booking link, which anyone could forge (an email isn't a
+      // secret either). The app only books through calcom-round-robin, which stamps the uid itself, so
+      // trust only our own booking echoing back, or a reschedule of the booking they currently hold
+      // (e.g. via Cal.com's own reschedule email).
+      const currentRow = current as { video_call_booking_uid?: string | null } | null;
+      const currentUid = currentRow?.video_call_booking_uid ?? null;
+      const ownEcho = Boolean(booking.bookingUid && currentUid === booking.bookingUid);
+      const rescheduleOfCurrent = Boolean(booking.rescheduledFromUid && currentUid === booking.rescheduledFromUid);
+      if (!ownEcho && !rescheduleOfCurrent) {
+         console.warn(`calcom-webhook: ignored ${booking.triggerEvent} ${booking.bookingUid}: not a booking we made for ${booking.userId}`);
+         return jsonResponse({ ok: true, ignored: 'unknown_booking' });
       }
       const currentMs = Date.parse((current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? '');
       const timeMoved = !booking.startsAt || currentMs !== Date.parse(booking.startsAt);
