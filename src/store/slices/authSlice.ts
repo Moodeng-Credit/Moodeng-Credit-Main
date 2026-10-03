@@ -211,7 +211,6 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    mal: row.mal,
    nal: row.nal,
    cs: row.cs,
-   creditProgressionPaused: row.credit_progression_paused ?? false,
    accountStatus: (row as UserRow & { account_status?: AccountStatus | null }).account_status ?? 'active',
    userRole: row.user_role ?? undefined,
    loanAccessStatus: (row as UserRow & { loan_access_status?: LoanAccessStatus | null }).loan_access_status ?? undefined,
@@ -379,7 +378,6 @@ const defaultUser: User = {
    mal: 0,
    nal: 0,
    cs: 0,
-   creditProgressionPaused: false,
    createdAt: '',
    updatedAt: ''
 };

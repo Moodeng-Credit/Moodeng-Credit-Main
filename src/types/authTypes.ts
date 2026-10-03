@@ -76,7 +76,6 @@ export interface User {
    mal: number;
    nal: number;
    cs: number;
-   creditProgressionPaused?: boolean;
    accountStatus?: AccountStatus;
    /** Single source of truth for role-based routing, wallet connect options, and tab bar */
    userRole?: UserRole | null;
@@ -153,7 +152,6 @@ export interface IUser {
    mal: number; // max active loans
    nal: number; // number of active loans
    cs: number; // credit score
-   creditProgressionPaused?: boolean;
    resetToken?: string;
    resetTokenExpiry?: Date;
    createdAt: Date;

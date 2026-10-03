@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { STARTING_CREDIT_LIMIT } from '../../config/creditTiers';
+import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS, STARTING_CREDIT_LIMIT } from '../../config/creditTiers';
 import {
    type AdminReferralCode,
    createReferralCode,
@@ -12,6 +12,9 @@ import {
    setReferralCodeActive,
    updateReferralCode
 } from './adminSupabase';
+
+
+const boostErrorMessage = `Boost must land the $${STARTING_CREDIT_LIMIT} start on a credit level: ${REFERRAL_BOOST_OPTIONS.map((b) => `+$${b}`).join(', ')}.`;
 
 type CodeFilter = 'active' | 'inactive' | 'all';
 
@@ -89,8 +92,8 @@ export default function ReferralCodesSection() {
          setError('Enter a code first.');
          return;
       }
-      if (!Number.isFinite(boost) || boost <= 0) {
-         setError('Boost must be a positive number.');
+      if (!isValidReferralBoost(boost)) {
+         setError(boostErrorMessage);
          return;
       }
       const maxUses = newMaxUses.trim() === '' ? null : Number(newMaxUses);
@@ -187,8 +190,8 @@ export default function ReferralCodesSection() {
    const saveEdit = useCallback(
       async (c: AdminReferralCode) => {
          const boost = Number(editBoost);
-         if (!Number.isFinite(boost) || boost <= 0) {
-            setError('Boost must be a positive number.');
+         if (!isValidReferralBoost(boost)) {
+            setError(boostErrorMessage);
             return;
          }
          const maxUses = editMaxUses.trim() === '' ? null : Number(editMaxUses);
