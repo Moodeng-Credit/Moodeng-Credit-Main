@@ -23,7 +23,8 @@ import {
 // same points/credit/notification side effects the client thunk used to (updateLoanStatus).
 //
 // Body: { loanId: string, hash: string, method: 'wallet' | 'base', action: 'fund' | 'repay' }
-// Response: { loan: <updated loans row>, sideEffectErrors: [...] } | { error: string, retry?: bool }
+// Response: { loan: <updated loans row>, sideEffectErrors: [...], creditLevelUp: { fromLimit, toLimit } | null }
+//           | { error: string, retry?: bool }
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -290,11 +291,17 @@ const awardFundingPoints = async (admin: Admin, loan: Record<string, unknown>): 
 
 // Mirrors the repay-branch credit-progression logic that used to run in updateLoanStatus: on a
 // fully-repaid full-limit loan, level up the borrower's credit limit. This is the ONLY writer of
-// users.cs once the Phase 3 lock lands.
-const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown>): Promise<SideEffectError[]> => {
+// users.cs once the Phase 3 lock lands. (The limit the loan was measured against is recorded by
+// public.record_loan_payment in the same update that marks it Paid.)
+type CreditLevelUp = { fromLimit: number; toLimit: number };
+
+const applyCreditProgression = async (
+   admin: Admin,
+   loan: Record<string, unknown>
+): Promise<{ errors: SideEffectError[]; levelUp: CreditLevelUp | null }> => {
    const errors: SideEffectError[] = [];
    const borrowerId = loan.borrower_user_id as string | null;
-   if (!borrowerId || !loan.due_date) return errors;
+   if (!borrowerId || !loan.due_date) return { errors, levelUp: null };
 
    const { data: borrower, error: borrowerError } = await admin
       .from('users')
@@ -303,7 +310,7 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       .single();
    if (borrowerError || !borrower) {
       errors.push({ type: 'credit_progression', message: borrowerError?.message ?? 'Borrower not found' });
-      return errors;
+      return { errors, levelUp: null };
    }
 
    const evaluation = evaluateCreditProgression({
@@ -319,29 +326,29 @@ const applyCreditProgression = async (admin: Admin, loan: Record<string, unknown
       paidAt: String(loan.repaid_at ?? loan.updated_at ?? new Date().toISOString())
    });
 
-   // Record the limit this loan was measured against, so "was it a full-limit loan?" is a fact on the
-   // loan (the full-limit milestone reads it) instead of a reconstruction from history.
-   const isVerified = borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE';
-   if (evaluation.isFullyRepaid && isVerified) {
-      const { error: recordError } = await admin
-         .from('loans')
-         .update({ credit_limit_at_repayment: getEffectiveCreditLimit(borrower.cs ?? 0, true) })
-         .eq('id', loan.id as string)
-         .is('credit_limit_at_repayment', null);
-      if (recordError) errors.push({ type: 'credit_progression', message: `record limit: ${recordError.message}` });
-   }
+   if (!evaluation.shouldLevelUp) return { errors, levelUp: null };
 
-   if (evaluation.shouldLevelUp) {
-      // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
-      // first raises the limit, so one full-limit loan can never level a borrower up twice.
-      const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
-      const { data: leveled, error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)).select('id');
-      if (userUpdateError) errors.push({ type: 'credit_progression', message: userUpdateError.message });
-      // The limit changed between reading and writing (a race, a referral, an admin edit): say so
-      // rather than losing the level-up silently.
-      else if (!leveled?.length) errors.push({ type: 'credit_progression', message: 'level-up skipped: the limit changed during this repayment' });
+   // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
+   // first raises the limit, so one full-limit loan can never level a borrower up twice.
+   const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
+   const { data: leveled, error: userUpdateError } = await (borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)).select('id');
+   if (userUpdateError) {
+      errors.push({ type: 'credit_progression', message: userUpdateError.message });
+      return { errors, levelUp: null };
    }
-   return errors;
+   if (!leveled?.length) {
+      // The limit changed between reading and writing (a referral, an admin edit, a race). The borrower
+      // earned this level-up, so don't lose it silently: tell the team to look.
+      const { data: nowRow } = await admin.from('users').select('cs').eq('id', borrower.id).maybeSingle();
+      const message = `level-up skipped: the limit changed from $${borrower.cs ?? '?'} to $${nowRow?.cs ?? '?'} during this repayment`;
+      errors.push({ type: 'credit_progression', message });
+      await postDiscord(
+         { content: `⚠️ ${loan.tracking_id}: a full-limit loan was repaid in full but the borrower was NOT levelled up (${message}). Check their limit.` },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+      );
+      return { errors, levelUp: null };
+   }
+   return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: evaluation.nextLimit } };
 };
 
 serve(async (req) => {
@@ -569,6 +576,7 @@ serve(async (req) => {
    // failure here does NOT undo the verified payment write — surface it and let the caller/reconciler
    // decide, exactly as before. ---
    const sideEffectErrors: SideEffectError[] = [];
+   let creditLevelUp: CreditLevelUp | null = null;
 
    if (action === 'fund') {
       if (loan.on_hold_since) {
@@ -584,7 +592,9 @@ serve(async (req) => {
    } else if (action === 'repay' && updatedLoan.repayment_status === 'Paid') {
       // Guarded on action, not just status: a return-interest call also leaves the loan 'Paid', and
       // must NOT re-run credit progression / re-fire the repayment notification.
-      sideEffectErrors.push(...(await applyCreditProgression(admin, updatedLoan)));
+      const progression = await applyCreditProgression(admin, updatedLoan);
+      sideEffectErrors.push(...progression.errors);
+      creditLevelUp = progression.levelUp;
       const { error: notifyError } = await admin.functions.invoke('loan-repayment-received-notification', { body: { loanId } });
       if (notifyError) sideEffectErrors.push({ type: 'loan_notification', message: notifyError.message });
    }
@@ -611,5 +621,5 @@ serve(async (req) => {
       });
    }
 
-   return jsonResponse({ loan: updatedLoan, sideEffectErrors });
+   return jsonResponse({ loan: updatedLoan, sideEffectErrors, creditLevelUp });
 });

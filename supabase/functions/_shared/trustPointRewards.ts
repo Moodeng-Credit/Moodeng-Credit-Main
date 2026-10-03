@@ -103,9 +103,10 @@ const isPaidOnTime = (loan: TrustPointRewardLoan) => {
    return paidAt < deadline;
 };
 
-// Full-limit loans: principal at or above the limit recorded when the loan was repaid. Loans repaid
-// before that was recorded fall back to replaying the level-up rule from the $15 start (same as
-// private.is_trust_milestone_complete).
+// Full-limit loans: principal at or above the limit recorded when the loan was repaid. The limit is
+// recorded atomically with the repayment (public.record_loan_payment) and older loans were backfilled, so
+// a loan without one (the borrower was unverified when they repaid) is not a full-limit loan. Same as
+// private.is_trust_milestone_complete.
 const hasRecordedLimit = (loan: TrustPointRewardLoan) =>
    loan.credit_limit_at_repayment !== null && loan.credit_limit_at_repayment !== undefined && loan.credit_limit_at_repayment !== '';
 
@@ -114,18 +115,11 @@ const getFullLimitLoans = (paidLoans: TrustPointRewardLoan[]) => {
    for (const loan of paidLoans.filter(isFullyRepaid)) {
       if (hasRecordedLimit(loan) && toNumber(loan.loan_amount) >= toNumber(loan.credit_limit_at_repayment)) fullLimitLoans.add(loan);
    }
-   let replayLimit = CREDIT_TIERS[0];
-
-   [...paidLoans.filter((loan) => isFullyRepaid(loan) && !hasRecordedLimit(loan))]
-      .sort((a, b) => (getPaidAtMs(a) ?? 0) - (getPaidAtMs(b) ?? 0))
-      .forEach((loan) => {
-         if (toNumber(loan.loan_amount) < replayLimit) return;
-         fullLimitLoans.add(loan);
-         if (replayLimit < MAX_CREDIT_LIMIT) replayLimit = CREDIT_TIERS[CREDIT_TIERS.indexOf(replayLimit) + 1];
-      });
-
    return fullLimitLoans;
 };
+
+const isVerifiedUser = (user: TrustPointRewardUser) =>
+   user.is_world_id === true || user.is_world_id === 'ACTIVE' || user.is_didit === true || user.is_didit === 'ACTIVE';
 
 const getEligibilityByMilestone = (
    loans: TrustPointRewardLoan[],
@@ -147,7 +141,7 @@ const getEligibilityByMilestone = (
    });
    const fullLimitLoans = getFullLimitLoans(paidLoans);
    const creditLimit = toNumber(user.cs);
-   const isVerified = user.is_world_id === true || user.is_world_id === 'ACTIVE' || user.is_didit === true || user.is_didit === 'ACTIVE';
+   const isVerified = isVerifiedUser(user);
 
    return {
       'verify-identity': isVerified,
@@ -212,11 +206,11 @@ export const calculateTrustPointRewardDelta = ({
    referenceDate: Date;
 }) => {
    // A loan this projection marks repaid hasn't had its limit recorded yet: record the borrower's
-   // current limit on it, as confirm-loan-payment will.
+   // current limit on it, as record_loan_payment will (an unverified borrower has none).
    const paidBefore = new Set(beforeLoans.filter((loan) => isPaid(loan) && isFullyRepaid(loan)).map((loan) => loan.id).filter(Boolean));
    const currentLimit = Math.min(Math.max(toNumber(user.cs), CREDIT_TIERS[0]), MAX_CREDIT_LIMIT);
    const projectedAfter = afterLoans.map((loan) =>
-      loan.id && !paidBefore.has(loan.id) && isPaid(loan) && isFullyRepaid(loan) && !hasRecordedLimit(loan)
+      isVerifiedUser(user) && loan.id && !paidBefore.has(loan.id) && isPaid(loan) && isFullyRepaid(loan) && !hasRecordedLimit(loan)
          ? { ...loan, credit_limit_at_repayment: currentLimit }
          : loan
    );

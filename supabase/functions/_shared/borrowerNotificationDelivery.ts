@@ -51,7 +51,7 @@ export const buildMessengerContent = (
       return {
          text:
             `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
-            `${repay}${due ? ` by ${due}` : ''} to grow your credit level and unlock bigger loans.`,
+            `${repay}${due ? ` by ${due}` : ''} to build your repayment record. Tip: borrow your full limit and repay it to unlock bigger loans.`,
          ...(dashboardUrl ? { card: { title: 'Your loan is funded', button: { title: 'Open Moodeng', url: dashboardUrl } } } : {})
       };
    }

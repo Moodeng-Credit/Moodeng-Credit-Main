@@ -189,6 +189,44 @@ describe('trust point reward calculation', () => {
          expect(reward(20, 20)).toBe('30000000');
       });
 
+      it('an unverified borrower records no limit, so the repayment is not a full-limit loan', () => {
+         const loan = { ...activeLoan, loan_amount: 15, total_repayment_amount: 16 };
+         const result = calculateTrustPointRewardDelta({
+            beforeLoans: [loan],
+            afterLoans: markLoansRepaid([loan], ['loan-1'], referenceDate),
+            user: { is_world_id: 'INACTIVE', is_didit: 'INACTIVE', cs: 15 },
+            milestoneDefinitions: fullLimitOnly,
+            completedMilestoneIds: new Set(),
+            referenceDate
+         });
+         expect(result).toBe('0');
+      });
+
+      it('an older loan with no recorded limit is not replayed into a full-limit loan', () => {
+         // Repaid before the limit was recorded and not backfilled (hand-set test accounts). The old
+         // replay-from-$15 would have counted it as full-limit and so hidden the next real full-limit repayment.
+         const past = {
+            ...activeLoan,
+            id: 'past',
+            loan_amount: 15,
+            total_repayment_amount: 16,
+            repaid_amount: 16,
+            repayment_status: 'Paid',
+            repaid_at: '2026-05-01T00:00:00.000Z',
+            due_date: '2026-05-05T00:00:00.000Z'
+         };
+         const current = { ...activeLoan, loan_amount: 20, total_repayment_amount: 21 };
+         const result = calculateTrustPointRewardDelta({
+            beforeLoans: [past, current],
+            afterLoans: [past, ...markLoansRepaid([current], ['loan-1'], referenceDate)],
+            user: { is_world_id: 'ACTIVE', cs: 20 },
+            milestoneDefinitions: fullLimitOnly,
+            completedMilestoneIds: new Set(),
+            referenceDate
+         });
+         expect(result).toBe('30000000');
+      });
+
       it('a recorded limit on a past loan is used instead of the replay', () => {
          const past = {
             ...activeLoan,

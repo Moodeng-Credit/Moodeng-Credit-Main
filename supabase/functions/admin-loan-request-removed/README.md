@@ -59,7 +59,7 @@ Each code carries the borrower-facing paragraph; the personal note is appended a
 ## Side effects
 
 - Deletes the loan **only** when `loan_status = 'Requested'` and no lender is attached; a funded loan
-  returns 409 instead. Writes `loan_request_delete_events` first, so the existing delete trail holds.
+  returns 409 instead. The delete trail (`loan_request_delete_events`, one row per loan) is written by the delete trigger.
 - Email via Resend from `support@moodeng.app` (`RESEND_FROM`).
 - Telegram only if the borrower has a `chat_id` **and** `telegram_bot_settings.borrower_notifications_enabled = 'true'`.
 - Always writes `admin_audit_logs` with `action = 'loan_request_removed'` and the full reason,
