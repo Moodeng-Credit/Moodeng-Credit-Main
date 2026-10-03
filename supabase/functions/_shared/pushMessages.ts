@@ -194,8 +194,9 @@ const buildRepeatBorrowerPush = (context: RepeatBorrowerPushContext, locale: Pus
  * the ≤24h window (final_reminder) and the ≤72h window (urgent_reminder).
  *
  * The amount leads because that is what the borrower needs to go find. The body
- * carries the deadline and the consequence — credit level is the lever borrowers
- * on this product actually respond to.
+ * carries the deadline and the consequence — staying in good standing (late payments show on the
+ * public repayment record). Credit levels never drop and lateness doesn't block a level-up, so don't
+ * promise or threaten them here.
  */
 const buildDuePush = (
    type: 'final_reminder' | 'urgent_reminder' | 'due_today' | 'overdue',
@@ -211,8 +212,8 @@ const buildDuePush = (
          final_reminder: {
             title: `${amount} USDC due tomorrow`,
             body: isMulti
-               ? `${context.loanCount} repayments are due within ${dueLabel}. Pay on time to keep your credit level.`
-               : `Your repayment is due within ${dueLabel}. Pay on time to keep your credit level.`
+               ? `${context.loanCount} repayments are due within ${dueLabel}. Pay on time to stay in good standing.`
+               : `Your repayment is due within ${dueLabel}. Pay on time to stay in good standing.`
          },
          urgent_reminder: {
             title: `${amount} USDC due soon`,
@@ -229,16 +230,16 @@ const buildDuePush = (
          overdue: {
             title: `${amount} USDC is overdue`,
             body: isMulti
-               ? `${context.loanCount} repayments have passed their due date. Repay now to protect your credit level.`
-               : `Your repayment has passed its due date. Repay now to protect your credit level.`
+               ? `${context.loanCount} repayments have passed their due date. Repay now to protect your good standing.`
+               : `Your repayment has passed its due date. Repay now to protect your good standing.`
          }
       },
       fil: {
          final_reminder: {
             title: `${amount} USDC, due bukas`,
             body: isMulti
-               ? `May ${context.loanCount} bayarin sa loob ng ${dueLabel}. Magbayad on time para hindi bumaba ang credit level mo.`
-               : `Due na sa loob ng ${dueLabel}. Magbayad on time para hindi bumaba ang credit level mo.`
+               ? `May ${context.loanCount} bayarin sa loob ng ${dueLabel}. Magbayad on time para manatiling good standing.`
+               : `Due na sa loob ng ${dueLabel}. Magbayad on time para manatiling good standing.`
          },
          urgent_reminder: {
             title: `${amount} USDC, malapit nang due`,
@@ -255,16 +256,16 @@ const buildDuePush = (
          overdue: {
             title: `Overdue na ang ${amount} USDC`,
             body: isMulti
-               ? `Lampas na sa due date ang ${context.loanCount} bayarin mo. Magbayad na para maprotektahan ang credit level mo.`
-               : `Lampas na sa due date ang bayarin mo. Magbayad na para maprotektahan ang credit level mo.`
+               ? `Lampas na sa due date ang ${context.loanCount} bayarin mo. Magbayad na para maprotektahan ang good standing mo.`
+               : `Lampas na sa due date ang bayarin mo. Magbayad na para maprotektahan ang good standing mo.`
          }
       },
       id: {
          final_reminder: {
             title: `${amount} USDC jatuh tempo besok`,
             body: isMulti
-               ? `${context.loanCount} pembayaran jatuh tempo dalam ${dueLabel}. Bayar tepat waktu agar credit level tetap aman.`
-               : `Jatuh tempo dalam ${dueLabel}. Bayar tepat waktu agar credit level tetap aman.`
+               ? `${context.loanCount} pembayaran jatuh tempo dalam ${dueLabel}. Bayar tepat waktu agar tetap good standing.`
+               : `Jatuh tempo dalam ${dueLabel}. Bayar tepat waktu agar tetap good standing.`
          },
          urgent_reminder: {
             title: `${amount} USDC segera jatuh tempo`,
@@ -281,8 +282,8 @@ const buildDuePush = (
          overdue: {
             title: `${amount} USDC lewat jatuh tempo`,
             body: isMulti
-               ? `${context.loanCount} pembayaran sudah lewat jatuh tempo. Bayar sekarang untuk menjaga credit level.`
-               : `Pembayaran kamu sudah lewat jatuh tempo. Bayar sekarang untuk menjaga credit level.`
+               ? `${context.loanCount} pembayaran sudah lewat jatuh tempo. Bayar sekarang untuk menjaga good standing.`
+               : `Pembayaran kamu sudah lewat jatuh tempo. Bayar sekarang untuk menjaga good standing.`
          }
       }
    };

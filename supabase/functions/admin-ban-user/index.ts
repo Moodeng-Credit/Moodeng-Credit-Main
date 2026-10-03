@@ -151,7 +151,7 @@ serve(async (req) => {
 
    const removedRequests: { tracking_id: string | null; loan_amount: unknown }[] = [];
    for (const loan of openRequests ?? []) {
-      await supabase.from('loan_request_delete_events').insert({ loan_id: loan.id, borrower_user_id: userId });
+      // The delete event is logged by the trg_record_loan_request_delete_event trigger (one per loan).
       const { error: deleteError } = await supabase
          .from('loans')
          .delete()
