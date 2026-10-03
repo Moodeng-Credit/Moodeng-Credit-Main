@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { getBorrowerTelegramNotificationsEnabled, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
 import { LoanNotificationLoan, LoanNotificationRecipient } from '../_shared/loanNotifications.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -83,11 +84,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   // Scheduler only: with the public anon key, anyone could tell every borrower their request expired.
+   if (!(await isInternalRequest(supabase, req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+   }
+
    const body = await req.json().catch(() => ({}));
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
    const expirationDays = parseExpirationDays(body.expirationDays ?? Deno.env.get('REQUEST_EXPIRATION_DAYS'));
    const expiredBefore = getExpirationCutoff(referenceDate, expirationDays);
-   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: loans, error } = await supabase
       .from('loans')
@@ -140,11 +146,15 @@ serve(async (req) => {
          // meant borrowers with no channel, or a flaky send, saw the expired-request
          // toast resurface on every new device/session forever.
          if (borrower.email || borrower.chat_id) {
-            await sendBorrowerLoanNotification('request_expired', loan, borrower, undefined, {
-               telegramEnabled,
-               notifEnabled: (borrower as any).notif_account_activity !== false,
-               push: { supabase, userId: borrower.id }
-            });
+            try {
+               await sendBorrowerLoanNotification('request_expired', loan, borrower, undefined, {
+                  telegramEnabled,
+                  notifEnabled: (borrower as any).notif_account_activity !== false,
+                  push: { supabase, userId: borrower.id }
+               });
+            } catch (sendError) {
+               console.error('request-expired send failed for borrower', sendError instanceof Error ? sendError.message : sendError);
+            }
          }
 
          await recordRequestExpiredNotification(supabase, borrower.id, loan.id);

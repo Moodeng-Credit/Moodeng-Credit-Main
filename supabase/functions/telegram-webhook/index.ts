@@ -289,7 +289,28 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
    if (!request) {
       // Open flow: no request to decide — record attendance on their call instead.
       if (command === 'showed' || command === 'noshow') {
-         const { data: user } = await supabase.from('users').select('id').ilike('username', escapeLike(arg.replace(/^@/, ''))).maybeSingle();
+         // Accept @username, the user's id, or the id of an already-decided request (e.g. after an
+         // automatic no-show the request is no longer pending, but /showed must still correct it).
+         const cleaned = arg.replace(/^@/, '');
+         let user: { id: string } | null = null;
+         if (/^[0-9a-f-]{36}$/i.test(cleaned)) {
+            const { data } = await supabase.from('users').select('id').eq('id', cleaned).maybeSingle();
+            user = (data as { id: string } | null) ?? null;
+         }
+         if (!user && /^[0-9a-f-]{6,36}$/i.test(cleaned)) {
+            const { data: decided } = await supabase
+               .from('loan_access_requests')
+               .select('user_id')
+               .ilike('id', `${escapeLike(cleaned)}%`)
+               .order('created_at', { ascending: false })
+               .limit(2);
+            const rows = (decided ?? []) as Array<{ user_id: string }>;
+            if (rows.length === 1) user = { id: rows[0].user_id };
+         }
+         if (!user) {
+            const { data } = await supabase.from('users').select('id').ilike('username', escapeLike(cleaned)).maybeSingle();
+            user = (data as { id: string } | null) ?? null;
+         }
          if (user?.id) {
             const result = await recordCallOutcome(supabase, user.id, command === 'showed' ? 'attended' : 'no_show', adminHandle(message.from));
             await sendTelegramMessage(chatId, result.summary);
@@ -327,7 +348,7 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    const result = parsed
       ? await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from))
       : outcome
-        ? await recordCallOutcome(supabase, outcome.userId, outcome.outcome, adminHandle(query.from))
+        ? await recordCallOutcome(supabase, outcome.userId, outcome.outcome, adminHandle(query.from), outcome.callKey)
         : voucher
           ? await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, adminHandle(query.from))
           : await markMessengerVerified(supabase, messenger!.userId, adminHandle(query.from));

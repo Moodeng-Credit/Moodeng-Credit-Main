@@ -148,7 +148,10 @@ export const sendBorrowerLoanNotification = async (
    let telegramSent = false;
    let pushSent = false;
    let messengerSent = false;
-   const recipientEmail = recipient.email?.trim();
+   // Telegram/LINE sign-ups get a placeholder address (telegram_<id>@moodeng.app, line_<id>@…) that
+   // nobody reads: mailing it bounces, hurts the domain's reputation, and wrongly counted as "delivered".
+   const rawEmail = recipient.email?.trim();
+   const recipientEmail = rawEmail && !/^(telegram|line)_[^@]+@moodeng\.(app|credit)$/i.test(rawEmail) ? rawEmail : undefined;
    const telegramActionLabel =
       type === 'request_expired'
          ? 'Contact Support'

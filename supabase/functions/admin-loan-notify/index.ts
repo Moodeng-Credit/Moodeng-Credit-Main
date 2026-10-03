@@ -7,6 +7,10 @@ import { getTeamTimezone, loadBorrowerTimezones } from '../_shared/loanDueTeamFe
 import { buildConnectEmail } from '../_shared/loanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
+// Usernames, names and admin-typed reasons go into the HTML email: escape them.
+const escapeHtml = (value: string) =>
+   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string);
+
 // Admin-triggered borrower notifications for the /admin "Coming due" + "Loan extensions" tabs.
 //   kind='extension' — a loan's due date was pushed out (admin_extend_loan already ran).
 //   kind='nudge'     — a reminder that a loan is coming due / overdue.
@@ -144,8 +148,8 @@ serve(async (req) => {
       emailText = `Hi ${name},\n\n${intro}\n\n${helpLine}\n\nRepay here: ${repayUrl}\n\n${signOff}`;
       emailHtml =
          `<div style="font-family:system-ui,Arial,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a">` +
-         `<p>Hi ${name},</p>` +
-         `<p>${intro.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>` +
+         `<p>Hi ${escapeHtml(name)},</p>` +
+         `<p>${escapeHtml(intro).replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>')}</p>` +
          `<p><a href="${repayUrl}" style="display:inline-block;background:#8336f0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:10px;font-weight:700">Repay now</a></p>` +
          `<p>${helpLine.replace(SUPPORT_EMAIL, `<a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>`).replace(SUPPORT_TELEGRAM, `<a href="${SUPPORT_TELEGRAM}">Telegram</a>`)}</p>` +
          `<p>${signOff}</p></div>`;

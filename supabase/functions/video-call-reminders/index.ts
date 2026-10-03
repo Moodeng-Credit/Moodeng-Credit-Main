@@ -16,6 +16,8 @@ import {
 } from '../_shared/videoCall.ts';
 import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
 import { RUNG, type Rung, shouldReleaseSlot, skipsDayBeforeReminder, skipsKeepSpot, targetRung } from './lib.ts';
+import { cancelCalBooking } from '../_shared/calcomCancel.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // keep-your-spot, hour-before / slot release, starting now, we're waiting, admin prompt, auto
@@ -102,22 +104,8 @@ const logMessenger = (u: ReminderUser, result: { ok: boolean; reason?: string })
 const joinButton = (u: ReminderUser): TelegramInlineKeyboard | undefined =>
    u.video_call_join_url ? [[{ text: '🎥 Join the call', url: u.video_call_join_url }]] : undefined;
 
-// Cancel on Cal.com with the host's own key (the same keys calcom-round-robin books with).
-const cancelCalBooking = async (host: string | null, uid: string): Promise<boolean> => {
-   const apiKey = host ? Deno.env.get(`CALCOM_API_KEY_${host.toUpperCase()}`) : '';
-   if (!apiKey) return false;
-   try {
-      const res = await fetch(`https://api.cal.com/v2/bookings/${encodeURIComponent(uid)}/cancel`, {
-         method: 'POST',
-         headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-08-13', 'Content-Type': 'application/json' },
-         body: JSON.stringify({ cancellationReason: 'Not confirmed — the slot was released so another borrower can book it.' })
-      });
-      return res.ok;
-   } catch (err) {
-      console.error('video-call-reminders: cal cancel failed', err instanceof Error ? err.message : err);
-      return false;
-   }
-};
+const cancelSlot = (host: string | null, uid: string) =>
+   cancelCalBooking(host, uid, 'Not confirmed — the slot was released so another borrower can book it.');
 
 const BOOKING_FIELDS = ['video_call_scheduled_at', 'video_call_starts_at', 'video_call_host', 'video_call_booking_uid', 'video_call_join_url', 'video_call_meeting_id'] as const;
 
@@ -137,7 +125,7 @@ const releaseSlot = async (svc: Svc, u: ReminderUser): Promise<boolean> => {
       .maybeSingle();
    if (!claimed) return false; // confirmed or rebooked in the meantime
 
-   if (!(await cancelCalBooking(u.video_call_host, u.video_call_booking_uid as string))) {
+   if (!(await cancelSlot(u.video_call_host, u.video_call_booking_uid as string))) {
       await svc.from('users').update(snapshot).eq('id', u.id);
       return false;
    }
@@ -224,6 +212,7 @@ serve(async (req) => {
    }
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+   if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
    const now = Date.now();
 
    // Every booking from LOOKBACK_H ago to ~25h ahead that hasn't finished the ladder or been decided.

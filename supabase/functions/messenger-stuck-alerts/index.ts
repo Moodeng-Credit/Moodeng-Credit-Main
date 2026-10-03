@@ -20,6 +20,7 @@ import {
 } from '../_shared/messengerStuckAlert.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
 
 // Cron-driven (every 5 min): borrowers who tapped "Verify via Messenger" 10+ minutes ago and still
 // aren't confirmed.
@@ -48,6 +49,7 @@ serve(async (req) => {
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: 'not_configured' }, 500);
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+   if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
    const now = Date.now();
 
    const { data: codes, error: codesError } = await svc
