@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { Link, useSearchParams } from 'react-router-dom';
 
 import UserAvatar from '@/components/UserAvatar';
-import { formatCurrency } from '@/utils/decimalHelpers';
+import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
 import { useLocalization } from '@/i18n';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone } from '@/lib/loanDeadline';
@@ -59,7 +59,10 @@ function LoanDueCard({ loan }: { loan: Loan & { isDefaulted: boolean } }) {
       <div className={`${cardBg} rounded-md-lg p-3.5 min-w-[150px] flex-shrink-0 flex flex-col gap-2`}>
          <UserAvatar userId={loan.lenderUser ?? undefined} alt={copy.lenderAlt} size={32} clickable={false} />
 
-         <p className="text-md-h5 font-semibold text-md-heading">${formatCurrency(loan.loanAmount)}</p>
+         {/* What's still owed, not the amount borrowed. */}
+         <p className="text-md-h5 font-semibold text-md-heading">
+            ${formatCurrency(Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)))}
+         </p>
          {loan.isDefaulted ? (
             <span className="inline-flex self-start items-center px-2 py-0.5 rounded-full bg-md-red-100 text-md-red-500 text-md-b4 font-medium">
                {copy.default}

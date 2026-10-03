@@ -258,7 +258,9 @@ const postToDiscord = async (opts: {
       description: opts.description,
       color: 0x6c3fe0,
       fields: [{ name: 'From', value: `${opts.fromName ? `${opts.fromName} · ` : ''}${opts.fromEmail}`.slice(0, 1024) }],
-      footer: { text: 'Inbound email · reply in this thread to answer the customer' },
+      // The From address isn't authenticated (no SPF/DKIM check here), so anyone can claim to be a
+      // customer. Say so on every post, so "change my wallet" style requests get verified first.
+      footer: { text: 'Inbound email · sender NOT verified: confirm identity before any account change · reply in this thread to answer' },
       timestamp: new Date().toISOString()
    };
 

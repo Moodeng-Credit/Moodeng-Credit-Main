@@ -107,9 +107,19 @@ Deno.serve(async (req) => {
     // login account (their verified LINE email or the synthetic one); otherwise someone could tag their
     // own account with a victim's LINE id and the victim's first LINE login would land in it.
     const ownLineEmails = [`line_${lineId}@moodeng.app`, ...(payload.email ? [String(payload.email).toLowerCase()] : [])]
-    const trustedProfile =
+    let trustedProfile =
       existingProfile && ownLineEmails.includes(String(existingProfile.email ?? '').toLowerCase()) ? existingProfile : null
-    const email = trustedProfile?.email ?? payload.email ?? `line_${lineId}@moodeng.app`
+    // Also their own account if the login function recorded this LINE id on it (app_metadata is
+    // server-set, unlike users.line_id), e.g. after they changed their email in settings.
+    let trustedEmail: string | null = trustedProfile?.email ?? null
+    if (existingProfile && !trustedProfile) {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(existingProfile.id)
+      if (authUser?.user?.app_metadata?.line_id === String(lineId) && authUser.user.email) {
+        trustedProfile = existingProfile
+        trustedEmail = authUser.user.email
+      }
+    }
+    const email = trustedEmail ?? payload.email ?? `line_${lineId}@moodeng.app`
     // The LINE id is already on an account that signs in some other way (email, Google): don't
     // create a second, empty account for it. Tell them how to get in.
     if (existingProfile && !trustedProfile) {
@@ -118,7 +128,8 @@ Deno.serve(async (req) => {
           error: 'This LINE account is linked to a Moodeng account that signs in with email. Log in with your email instead.',
           code: 'LINKED_TO_EMAIL_ACCOUNT',
         }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        // 200 so the login page shows this message (functions.invoke hides the body of a non-2xx).
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -142,7 +153,12 @@ Deno.serve(async (req) => {
     await ensureAuthUser(supabaseAdmin, email, lineMetadata)
     const session = await mintSession(supabaseAdmin, email)
     // Always refresh metadata so the photo (and name changes) stay current
-    await supabaseAdmin.auth.admin.updateUserById(session.user.id, { user_metadata: lineMetadata })
+    await supabaseAdmin.auth.admin.updateUserById(session.user.id, {
+      user_metadata: lineMetadata,
+      // Server-set record of who this login belongs to: trusted by this function (above) and by the
+      // database when the app first creates the profile row (check_provider_ids_on_insert).
+      app_metadata: { ...(session.user.app_metadata ?? {}), line_id: String(lineId) },
+    })
     await syncLineProfile(session.user.id)
 
     return new Response(

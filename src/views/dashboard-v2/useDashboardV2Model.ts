@@ -95,7 +95,8 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
          const lender = loan.lenderUser ? userProfiles[loan.lenderUser] : undefined;
          return {
             id: loan.id,
-            amount: toNumber(loan.loanAmount),
+            // What's still owed (principal + interest − already repaid), not the amount borrowed.
+            amount: Math.max(0, toNumber(loan.totalRepaymentAmount) - toNumber(loan.repaidAmount)),
             // Calendar days in the borrower's zone: 0 = due today, negative = overdue.
             daysRemaining: getDaysUntilDueDay(loan.dueDate, getLoanTimezone(loan)),
             lenderName: lender?.displayName || lender?.username || 'a lender',

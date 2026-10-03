@@ -130,6 +130,8 @@ export default function VideoCallStep({
          if (result?.error === 'cooldown') {
             setCooldownUntil(result.until ?? null);
             setPhase('cooldown');
+         } else if (result?.error === 'too_fast') {
+            setNotice('You just booked a call — give it a minute before changing the time.');
          } else if (result?.error === 'slot_taken') {
             setNotice('That time was just taken — pick another, please.');
             await loadSlots();

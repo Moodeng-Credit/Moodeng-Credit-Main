@@ -96,15 +96,32 @@ describe('reconcilePendingBasePayments', () => {
       expect(listPendingBasePayments()).toHaveLength(0);
    });
 
-   it('drops a failed payment without writing (the money never moved)', async () => {
+   it('drops a failed payment only once it has stayed failed (Base Pay can briefly say failed)', async () => {
       registerPendingBasePayment({ kind: 'fund', id: '0xa', loanId: 'L1', userId: 'U1' });
       mockStatus.mockResolvedValue({ status: 'failed', id: '0xa', message: 'reverted' } as never);
       const h = handlers();
+      const firstPass = Date.now() + MIN_AGE + 1000;
 
-      await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000);
+      // First failed read: kept (and marked), nothing written.
+      await reconcilePendingBasePayments(h, firstPass);
+      expect(h.completeFund).not.toHaveBeenCalled();
+      expect(listPendingBasePayments()).toHaveLength(1);
 
+      // Still failed 10+ minutes later: dropped, still nothing written (the money never moved).
+      await reconcilePendingBasePayments(h, firstPass + 10 * 60 * 1000 + 1);
       expect(h.completeFund).not.toHaveBeenCalled();
       expect(listPendingBasePayments()).toHaveLength(0);
+   });
+
+   it("skips another user's pending payment on a shared device", async () => {
+      registerPendingBasePayment({ kind: 'fund', id: '0xb', loanId: 'L2', userId: 'A' });
+      mockStatus.mockResolvedValue({ status: 'completed', id: '0xb', sender: '0xs' } as never);
+      const h = handlers();
+
+      await reconcilePendingBasePayments(h, Date.now() + MIN_AGE + 1000, 'B');
+
+      expect(h.completeFund).not.toHaveBeenCalled();
+      expect(listPendingBasePayments()).toHaveLength(1);
    });
 
    it('keeps a still-pending payment for a later pass', async () => {

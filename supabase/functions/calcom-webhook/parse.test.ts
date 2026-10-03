@@ -38,7 +38,8 @@ Deno.test('BOOKING_CREATED: user id + host come from embed metadata', () => {
       host: 'george',
       startsAt: '2026-10-01T09:00:00Z',
       joinUrl: 'https://cal.example/x',
-      attendeeEmails: []
+      attendeeEmails: [],
+      rescheduledFromUid: null
    });
 });
 
@@ -61,7 +62,8 @@ Deno.test('falls back to a hidden response field when metadata is absent', () =>
       host: 'emma',
       startsAt: '2026-10-02T10:30:00Z',
       joinUrl: null,
-      attendeeEmails: []
+      attendeeEmails: [],
+      rescheduledFromUid: null
    });
 });
 

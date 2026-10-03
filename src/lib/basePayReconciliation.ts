@@ -38,12 +38,26 @@ const MAX_ENTRY_AGE_MS = 24 * 60 * 60 * 1000;
  */
 export type PendingBasePaymentInput = (
    | { kind: 'fund'; id: string; loanId: string; userId: string }
-   | { kind: 'repay'; id: string; loanId: string; repaidAmount: number; repaymentStatus: string }
-   | { kind: 'interest'; id: string; loanId: string }
+   | { kind: 'repay'; id: string; loanId: string; repaidAmount: number; repaymentStatus: string; userId?: string }
+   | { kind: 'interest'; id: string; loanId: string; userId?: string }
    | { kind: 'withdraw'; id: string; userId: string; amount: number; exchange: string; address: string }
 ) & { method?: 'base' | 'wallet' };
 
-export type PendingBasePayment = PendingBasePaymentInput & { createdAt: number };
+// failedSince: when Base Pay first reported `failed`. It can briefly say that for a payment that then
+// settles, so the entry is only dropped once it has stayed failed for FAILED_CONFIRM_MS.
+export type PendingBasePayment = PendingBasePaymentInput & { createdAt: number; failedSince?: number };
+
+const FAILED_CONFIRM_MS = 10 * 60 * 1000;
+
+/** True while a payment for this loan is approved but not yet recorded: don't let them pay again. */
+export function hasPendingPaymentForLoan(loanId: string | null | undefined): boolean {
+   if (!loanId) return false;
+   return listPendingBasePayments().some((entry) => 'loanId' in entry && entry.loanId === loanId);
+}
+
+function markFailedSince(id: string, at: number) {
+   writeAll(listPendingBasePayments().map((entry) => (entry.id === id ? { ...entry, failedSince: entry.failedSince ?? at } : entry)));
+}
 
 const isBrowser = () => typeof window !== 'undefined' && !!window.localStorage;
 
@@ -124,10 +138,18 @@ export interface ReconcileHandlers {
  * than {@link MIN_RECONCILE_AGE_MS} (still owned by a live poll), completes `completed` ones, and
  * drops `failed`/`not_found` and stale entries. Errors on one entry never block the others.
  */
-export async function reconcilePendingBasePayments(handlers: ReconcileHandlers, now: number = Date.now()): Promise<void> {
+export async function reconcilePendingBasePayments(
+   handlers: ReconcileHandlers,
+   now: number = Date.now(),
+   // Entries are stored per device: only finish the signed-in user's own payments (the server records
+   // the caller as the lender/borrower, so someone else logged in on this device would be wrong).
+   currentUserId?: string | null
+): Promise<void> {
    for (const entry of listPendingBasePayments()) {
       const age = now - entry.createdAt;
       if (age < MIN_RECONCILE_AGE_MS) continue;
+      const owner = 'userId' in entry ? entry.userId : undefined;
+      if (owner && currentUserId !== undefined && owner !== currentUserId) continue;
 
       if (age > MAX_ENTRY_AGE_MS) {
          clearPendingBasePayment(entry.id);
@@ -151,8 +173,13 @@ export async function reconcilePendingBasePayments(handlers: ReconcileHandlers, 
          }
 
          if (status.status === 'failed') {
-            // The money never moved, so there is nothing to write.
-            clearPendingBasePayment(entry.id);
+            // Base Pay can briefly report `failed` for a payment that then settles: only drop the
+            // entry once it has stayed failed for a while (the money never moved, nothing to write).
+            if (!entry.failedSince) {
+               markFailedSince(entry.id, now);
+            } else if (now - entry.failedSince >= FAILED_CONFIRM_MS) {
+               clearPendingBasePayment(entry.id);
+            }
             continue;
          }
          if (status.status !== 'completed') {

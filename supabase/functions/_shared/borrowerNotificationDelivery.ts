@@ -19,6 +19,10 @@ import {
 import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
+/** Telegram/LINE sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…). */
+export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
+   /^(telegram|line)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+
 export type BorrowerNotificationDeliveryResult = {
    emailSent: boolean;
    telegramSent: boolean;
@@ -151,7 +155,7 @@ export const sendBorrowerLoanNotification = async (
    // Telegram/LINE sign-ups get a placeholder address (telegram_<id>@moodeng.app, line_<id>@…) that
    // nobody reads: mailing it bounces, hurts the domain's reputation, and wrongly counted as "delivered".
    const rawEmail = recipient.email?.trim();
-   const recipientEmail = rawEmail && !/^(telegram|line)_[^@]+@moodeng\.(app|credit)$/i.test(rawEmail) ? rawEmail : undefined;
+   const recipientEmail = rawEmail && !isPlaceholderEmail(rawEmail) ? rawEmail : undefined;
    const telegramActionLabel =
       type === 'request_expired'
          ? 'Contact Support'

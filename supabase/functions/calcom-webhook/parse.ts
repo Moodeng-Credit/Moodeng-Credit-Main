@@ -17,6 +17,9 @@ export type CalcomWebhookBody = {
       metadata?: Record<string, unknown>;
       responses?: Record<string, unknown>;
       attendees?: Array<{ email?: unknown }>;
+      rescheduleUid?: unknown;
+      fromReschedule?: unknown;
+      rescheduledFromUid?: unknown;
    };
 };
 
@@ -32,6 +35,8 @@ export type CalcomBooking = {
    // is that user's email (or it's our own booking echoing back), so a forged booking link can't
    // book, move or cancel someone else's call.
    attendeeEmails: string[];
+   // On a reschedule, the uid of the booking it replaces (Cal.com sends it under one of these names).
+   rescheduledFromUid: string | null;
 };
 
 const asUrl = (value: unknown): string | null => (typeof value === 'string' && /^https?:\/\//.test(value) ? value : null);
@@ -87,6 +92,10 @@ export const extractBooking = (body: CalcomWebhookBody): CalcomBooking | null =>
       host: hostRaw === 'george' || hostRaw === 'emma' ? hostRaw : null,
       startsAt: typeof payload.startTime === 'string' && payload.startTime ? payload.startTime : null,
       joinUrl: asUrl(payload.metadata?.videoCallUrl) ?? asUrl(payload.videoCallData?.url) ?? asUrl(payload.location),
-      attendeeEmails: readAttendeeEmails(payload)
+      attendeeEmails: readAttendeeEmails(payload),
+      rescheduledFromUid:
+         [payload.rescheduleUid, payload.fromReschedule, payload.rescheduledFromUid].find(
+            (value): value is string => typeof value === 'string' && value.length > 0
+         ) ?? null
    };
 };

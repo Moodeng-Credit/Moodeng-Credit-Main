@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { getBorrowerTelegramNotificationsEnabled, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
+import { getBorrowerTelegramNotificationsEnabled, isPlaceholderEmail, sendBorrowerLoanNotification } from '../_shared/borrowerNotificationDelivery.ts';
 import {
    getLoanOutstandingAmount,
    getReminderWindows,
@@ -408,7 +408,7 @@ serve(async (req) => {
       // Reachable on at least one channel. Push counts, so a borrower with the
       // app on their phone but no email or Telegram on file still gets reminded.
       // Messenger counts as a channel too (same as the overdue job), so Messenger-only borrowers get reminders.
-      if (!borrower.email && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId)) {
+      if ((!borrower.email || isPlaceholderEmail(borrower.email)) && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId)) {
          continue;
       }
 

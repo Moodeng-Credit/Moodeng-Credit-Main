@@ -115,7 +115,15 @@ const useWallet = () => {
       if (code !== ERROR_CODES.TRANSACTION_REJECTED) openSupportChat('I had a problem with a wallet transaction');
    };
 
-   const Transfer = async (recipient: string, amount: string, id: string, coin: string = 'USDC'): Promise<string | null> => {
+   const Transfer = async (
+      recipient: string,
+      amount: string,
+      id: string,
+      coin: string = 'USDC',
+      // Called if the wallet answers AFTER we stopped waiting (e.g. approved later on the phone), so
+      // the caller can still register the payment for recording instead of the money going unseen.
+      onLateHash?: (hash: string) => void
+   ): Promise<string | null> => {
       const tokenConfig = getAllowedChainTokenConfig();
 
       if (!tokenConfig) {
@@ -142,17 +150,21 @@ const useWallet = () => {
          // provider here) leaves this promise pending forever — the exact hang that stranded
          // a lender on the "Approve in your wallet" spinner. On timeout we classify it as
          // WALLET_UNREACHABLE and tell them what to do instead of spinning indefinitely.
-         const hash = await withTimeout(
-            writeContractAsync({
-               address: tokenAddress as unknown as `0x${string}`,
-               abi: ERC20_ABI,
-               functionName: 'transfer',
-               args: [recipient, amounts]
-            }),
-            WALLET_RESPONSE_TIMEOUT_MS
-         );
-
-         return hash;
+         const send = writeContractAsync({
+            address: tokenAddress as unknown as `0x${string}`,
+            abi: ERC20_ABI,
+            functionName: 'transfer',
+            args: [recipient, amounts]
+         });
+         try {
+            return await withTimeout(send, WALLET_RESPONSE_TIMEOUT_MS);
+         } catch (timeoutErr) {
+            if (timeoutErr instanceof WalletTimeoutError && onLateHash) {
+               // The request is still open in the wallet: if it's approved later, record it.
+               send.then((lateHash) => onLateHash(lateHash)).catch(() => undefined);
+            }
+            throw timeoutErr;
+         }
       } catch (err) {
          // A stale cached build can fail to import a renamed chunk mid-send; reload to the current
          // build instead of surfacing a bogus "Transaction Error" (see staleChunkReload.ts).
@@ -188,7 +200,8 @@ const useWallet = () => {
       loanId,
       coin = 'USDC',
       dataSuffix,
-      onSubmitted
+      onSubmitted,
+      onLateWalletHash
    }: {
       method: PaymentMethod;
       to: string;
@@ -197,6 +210,8 @@ const useWallet = () => {
       coin?: string;
       dataSuffix?: `0x${string}`;
       onSubmitted?: (id: string) => void;
+      /** Wallet path only: the wallet answered after the 60s timeout. Register it so it still records. */
+      onLateWalletHash?: (hash: string) => void;
    }): Promise<PaymentOutcome | null> => {
       if (method === 'base') {
          let submittedId: string | null = null;
@@ -252,7 +267,7 @@ const useWallet = () => {
          }
       }
 
-      const hash = await Transfer(to, usdAmount, loanId, coin);
+      const hash = await Transfer(to, usdAmount, loanId, coin, onLateWalletHash);
       return hash ? { hash } : null;
    };
 
