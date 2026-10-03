@@ -32,7 +32,8 @@ import { formatDate, parseDateSafely } from '@/utils/dateFormatters';
 import { getLoanPastDueAt, isLoanPastDue, isPublicDefault, wasRepaidPublicLate } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditTierKey, getNextCreditTier, isExactCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getNextCreditTier, MAX_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getEffectiveCreditLimit, getFullLimitLoans } from '@/lib/creditLeveling';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { fetchUserProfiles, getUserProfile } from '@/store/slices/authSlice';
 import { getUserLoans } from '@/store/slices/loanSlice';
@@ -254,16 +255,6 @@ const daysBetween = (start: string | Date, end: string | Date): number => {
    return Math.round((endTime - startTime) / (1000 * 60 * 60 * 24));
 };
 
-const classifyLoan = (loan: Loan, seenCreditTiers: Set<number>): LoanClassification => {
-   const amount = toNumber(loan.loanAmount);
-   const tier = getCreditTierKey(amount);
-   if (isExactCreditTier(amount) && !seenCreditTiers.has(tier)) {
-      seenCreditTiers.add(tier);
-      return 'credit';
-   }
-   return 'trust';
-};
-
 export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): BorrowerTimelineEvent[] {
    const events: BorrowerTimelineEvent[] = [
       {
@@ -309,9 +300,10 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
       return events.sort((a, b) => normalizeDate(a.date).getTime() - normalizeDate(b.date).getTime());
    }
 
-   const seenCreditTiers = new Set<number>();
+   // Same rule as leveling: a loan at or above the limit at the time is credit-building (full-limit),
+   // anything smaller is trust-building. Values are the limit each full-limit loan was measured against.
+   const fullLimitLoans = getFullLimitLoans(fundedLoans, getEffectiveCreditLimit(borrower.cs, isUserVerified(borrower)));
    const lenderBorrowCount = new Map<string, number>();
-   let currentCreditLimit = STARTING_CREDIT_LIMIT;
    let creditBuildingCount = 0;
    let trustBuildingCount = 0;
 
@@ -320,7 +312,7 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
       const repaymentAmount = toNumber(loan.totalRepaymentAmount || loan.loanAmount);
       const repaidAmount = toNumber(loan.repaidAmount);
       const fundedDate = loan.fundedAt ?? loan.createdAt;
-      const classification = classifyLoan(loan, seenCreditTiers);
+      const classification: LoanClassification = fullLimitLoans.has(loan) ? 'credit' : 'trust';
       const lenderKey = loan.lenderUser || loan.lenderWallet || 'unknown-lender';
       const previousLenderCount = lenderBorrowCount.get(lenderKey) ?? 0;
 
@@ -400,21 +392,22 @@ export function buildBorrowerTimelineEvents(borrower: User, loans: Loan[]): Borr
             tone: isLate ? 'red' : 'green'
          });
 
-         if (classification === 'credit' && !isLate && loanAmount >= currentCreditLimit) {
-            const nextLimit = getNextCreditTier(currentCreditLimit);
-            if (nextLimit > currentCreditLimit) {
+         // A repaid full-limit loan levels up, late or not (most late payments are tech trouble).
+         const limitBefore = fullLimitLoans.get(loan);
+         if (limitBefore !== undefined && limitBefore < MAX_CREDIT_LIMIT) {
+            const nextLimit = getNextCreditTier(limitBefore);
+            if (nextLimit > limitBefore) {
                events.push({
                   id: `${loan.id}-credit-unlocked-${nextLimit}`,
                   type: 'credit_limit_unlocked',
                   title: 'Credit Limit Unlocked',
-                  description: `Unlocked Level ${Math.max(1, seenCreditTiers.size + 1)} with full level credit available.`,
+                  description: `Unlocked Level ${getCreditLevelNumber(nextLimit)}: a $${nextLimit} limit.`,
                   date: loan.updatedAt,
                   amount: nextLimit,
                   badgeLabel: 'Level Up',
                   badgeTone: 'purple',
                   tone: 'purple'
                });
-               currentCreditLimit = nextLimit;
             }
          }
       } else if (isPublicDefault(loan.dueDate, loan.dueTimezone)) {

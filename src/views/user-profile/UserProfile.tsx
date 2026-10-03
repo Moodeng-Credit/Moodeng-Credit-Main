@@ -39,9 +39,9 @@ import { isLoanPastDue, isPublicDefault } from '@/utils/loanOverdue';
 import { formatNumber, toNumber } from '@/utils/decimalHelpers';
 import { calculateLenderDiversity, getDiversityStatus } from '@/utils/diversityScore';
 
-import { getCreditLevelNumber, getCreditTierKey, isExactCreditTier } from '@/config/creditTiers';
+import { getCreditLevelNumber } from '@/config/creditTiers';
 import { getBorrowerUsedCreditAmount } from '@/lib/borrowerCreditUsage';
-import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
+import { getEffectiveCreditLimit, getFullLimitLoans } from '@/lib/creditLeveling';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
 import { LENDER_GUIDED_TOUR_ID, markGuidedTourCompleted, shouldShowGuidedTour } from '@/lib/guidedTourStorage';
 import { isCurrentUserAdmin } from '@/lib/isCurrentUserAdmin';
@@ -208,28 +208,10 @@ const UserProfile = () => {
    const defaultCount = defaultedLoans.length;
    const isGoodStanding = defaultCount === 0;
 
-   const uniqueLoans: Loan[] = [];
-   const seenAmounts = new Set<number>();
-   for (const loan of fundedLoans) {
-      const amt = toNumber(loan.loanAmount);
-      if (isExactCreditTier(amt) && !seenAmounts.has(amt)) {
-         uniqueLoans.push(loan);
-         seenAmounts.add(amt);
-      }
-   }
-
-   const ignoredTier = new Set<number>();
-   const trustBuildingLoans = fundedLoans.reduce((acc: Loan[], loan: Loan) => {
-      const amt = toNumber(loan.loanAmount);
-      const key = getCreditTierKey(amt);
-      if (isExactCreditTier(amt)) {
-         if (ignoredTier.has(key)) acc.push(loan);
-         else ignoredTier.add(key);
-      } else {
-         acc.push(loan);
-      }
-      return acc;
-   }, []);
+   // Same rule as leveling: credit-building = full-limit loans (at or above the limit at the time);
+   // every other funded loan is trust-building, even at a tier amount ($20 on a $40 limit).
+   const creditBuildingLoans = getFullLimitLoans(fundedLoans, getEffectiveCreditLimit(resolvedUser.cs, isUserVerified(resolvedUser)));
+   const trustBuildingLoans = fundedLoans.filter((loan) => !loan.isTest && !creditBuildingLoans.has(loan));
 
    const countMap = fundedLoans.reduce<Record<string, number>>((acc, loan) => {
       const name = resolveUsername(loan.lenderUser) || 'Unknown';
@@ -337,7 +319,7 @@ const UserProfile = () => {
 
    const diversityScore = lenderDiversity.score;
    const diversityStatus = getDiversityStatus(diversityScore);
-   const creditBuildingCount = uniqueLoans.length;
+   const creditBuildingCount = creditBuildingLoans.size;
    const trustBuildingCount = trustBuildingLoans.length;
    const hasLoanHistory = fundedLoans.length > 0;
 
