@@ -4,7 +4,6 @@ import { toNumber } from '@/utils/decimalHelpers';
 
 import type { Loan } from '@/types/loanTypes';
 
-export const CREDIT_STEP = 20;
 export const MIN_CREDIT_LIMIT = STARTING_CREDIT_LIMIT;
 export { CREDIT_TIERS, MAX_CREDIT_LIMIT };
 
@@ -78,35 +77,23 @@ export const evaluateCreditProgression = ({
  * Same rule as `evaluateCreditProgression`: a loan at or above the limit at the time is full-limit;
  * anything smaller is trust-building, even at a tier amount (a $20 loan on a $40 limit).
  *
- * - Fully repaid loans use the limit the server recorded at repayment (`creditLimitAtRepayment`).
- *   Loans repaid before that was recorded are found by replaying the level-up rule from the $15 start.
+ * - Fully repaid loans use the limit the server recorded at repayment (`creditLimitAtRepayment`, written
+ *   in the same update that marks the loan Paid; older loans were backfilled). A loan with none was
+ *   repaid by an unverified borrower and is not full-limit.
  * - Pass `currentLimit` to also count an open funded loan at or above it. A full-limit request can't
  *   sit alongside any other open loan (the request cap), so the current limit is the one it was taken at.
  */
 export const getFullLimitLoans = (loans: Loan[], currentLimit?: number): Map<Loan, number> => {
-   const paidAt = (loan: Loan) => parseDateSafely(loan.repaidAt ?? loan.updatedAt).getTime();
-   const fullyRepaid = loans.filter((loan) => {
-      if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return false;
-      const totalRepayment = toNumber(loan.totalRepaymentAmount);
-      return totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
-   });
-
    const fullLimitLoans = new Map<Loan, number>();
-   fullyRepaid.forEach((loan) => {
-      if (loan.creditLimitAtRepayment !== undefined && toNumber(loan.loanAmount) >= loan.creditLimitAtRepayment) {
+
+   loans.forEach((loan) => {
+      if (loan.repaymentStatus !== 'Paid' || loan.refundedAt || loan.isTest) return;
+      const totalRepayment = toNumber(loan.totalRepaymentAmount);
+      const isFullyRepaid = totalRepayment > 0 ? toNumber(loan.repaidAmount) >= totalRepayment : toNumber(loan.repaidAmount) > 0;
+      if (isFullyRepaid && loan.creditLimitAtRepayment !== undefined && toNumber(loan.loanAmount) >= loan.creditLimitAtRepayment) {
          fullLimitLoans.set(loan, loan.creditLimitAtRepayment);
       }
    });
-
-   let replayLimit: number = CREDIT_TIERS[0];
-   fullyRepaid
-      .filter((loan) => loan.creditLimitAtRepayment === undefined)
-      .sort((a, b) => paidAt(a) - paidAt(b))
-      .forEach((loan) => {
-         if (toNumber(loan.loanAmount) < replayLimit) return;
-         fullLimitLoans.set(loan, replayLimit);
-         if (replayLimit < MAX_CREDIT_LIMIT) replayLimit = getNextCreditTier(replayLimit);
-      });
 
    if (currentLimit !== undefined && currentLimit > 0) {
       loans

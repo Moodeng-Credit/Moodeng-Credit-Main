@@ -6,36 +6,6 @@
 export const CREDIT_TIERS = [15, 20, 40, 60, 80, 100, 120, 140] as const;
 export const STARTING_CREDIT_LIMIT = CREDIT_TIERS[0];
 export const MAX_CREDIT_LIMIT = CREDIT_TIERS[CREDIT_TIERS.length - 1];
-export const CREDIT_TIER_INCREMENT = 20;
-
-/**
- * Calculate the credit tier key for a given loan amount
- * @param loanAmount - The loan amount
- * @returns The credit tier key (rounded down to nearest tier)
- */
-export function getCreditTierKey(loanAmount: number): number {
-   const matchingTier = [...CREDIT_TIERS].reverse().find((tier) => loanAmount >= tier);
-   return matchingTier ?? 0;
-}
-
-/**
- * Calculate the remainder for a given loan amount against the tier
- * @param loanAmount - The loan amount
- * @returns The remainder when divided by tier increment
- */
-export function getCreditTierRemainder(loanAmount: number): number {
-   const tier = getCreditTierKey(loanAmount);
-   return tier > 0 ? loanAmount - tier : loanAmount;
-}
-
-/**
- * Check if a loan amount matches an exact credit tier
- * @param loanAmount - The loan amount
- * @returns True if the loan amount is exactly on a tier boundary
- */
-export function isExactCreditTier(loanAmount: number): boolean {
-   return CREDIT_TIERS.includes(loanAmount as (typeof CREDIT_TIERS)[number]);
-}
 
 /**
  * Get the next credit tier amount
@@ -47,6 +17,15 @@ export function getNextCreditTier(currentAmount: number): number {
    if (currentTierIndex < 0) return MAX_CREDIT_LIMIT;
    return CREDIT_TIERS[Math.min(currentTierIndex + 1, CREDIT_TIERS.length - 1)];
 }
+
+/**
+ * Boosts a referral code may carry. A new borrower starts at STARTING_CREDIT_LIMIT and a boost lands
+ * them at start + boost, which must be a credit level exactly, or the next level would skip one
+ * (a $10 boost gives $25, and the next tier from $25 is $60). Matches the referral_codes check constraint.
+ */
+export const REFERRAL_BOOST_OPTIONS: readonly number[] = CREDIT_TIERS.slice(1).map((tier) => tier - STARTING_CREDIT_LIMIT);
+
+export const isValidReferralBoost = (boost: number): boolean => REFERRAL_BOOST_OPTIONS.includes(boost);
 
 export function getCreditLevelNumber(creditLimit: number): number {
    const tierIndex = CREDIT_TIERS.findIndex((tier) => tier >= creditLimit);

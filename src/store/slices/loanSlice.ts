@@ -1,26 +1,24 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-import { isExpiredUnfundedRequest } from '@/lib/borrowerCreditUsage';
-import { evaluateCreditProgression } from '@/lib/creditLeveling';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
-import { computeYearOneIouPointsDelta, getYearOneIouBorrowerBonusPoints, loanFundingPointsPerUsdc } from '@/shared/points';
 import { fetchUser } from '@/store/slices/authSlice';
-import type { RootState } from '@/store/store';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
 
 const supabaseClient = () => getSupabaseBrowserClient();
 
 type LoanRow = Database['public']['Tables']['loans']['Row'];
 type LoanInsert = Database['public']['Tables']['loans']['Insert'];
-type LoanUpdate = Database['public']['Tables']['loans']['Update'];
 type LoanRequestRepostStatusRow = Database['public']['Functions']['get_loan_request_repost_status']['Returns'][number];
 export type LoanSideEffectError = {
    type: 'award_points' | 'loan_notification' | 'credit_progression';
    message: string;
 };
+
+/** Reported by confirm-loan-payment when a repayment raised the borrower's credit limit. */
+export type CreditLevelUp = { fromLimit: number; toLimit: number };
 
 /** Thrown when the payment is confirmed-pending on-chain (HTTP 202) — caller should retry later, NOT treat as failure. */
 export class PaymentNotConfirmedError extends Error {
@@ -273,21 +271,6 @@ const loanSlice = createSlice({
             state.isLoading = false;
             state.error = (action.error.message as string) || 'Failed to fetch user loans';
          })
-         .addCase(updateLoanStatus.fulfilled, (state, action) => {
-            const updatedLoan = action.payload;
-            const floanIndex = state.loans.floans.findIndex((loan) => loan.id === updatedLoan.id);
-            if (floanIndex !== -1) {
-               state.loans.floans[floanIndex] = updatedLoan;
-            }
-            const gloanIndex = state.loans.gloans.findIndex((loan) => loan.id === updatedLoan.id);
-            if (gloanIndex !== -1) {
-               state.loans.gloans[gloanIndex] = updatedLoan;
-            }
-            state.userLoansFetchedAt = null;
-         })
-         .addCase(updateLoanStatus.rejected, (state, action) => {
-            state.error = (action.error.message as string) || 'Failed to update loan';
-         })
          .addCase(confirmLoanPayment.fulfilled, (state, action) => {
             const updatedLoan = action.payload;
             const floanIndex = state.loans.floans.findIndex((loan) => loan.id === updatedLoan.id);
@@ -317,214 +300,7 @@ const loanSlice = createSlice({
 export const { clearError, addLoan, updateLoan } = loanSlice.actions;
 
 /**
- * @deprecated DO NOT use for funding/repayment. Writing loan_status/repayment_status/
- * repaid_amount/hash/lender fields from the client is now rejected by a DB trigger (see
- * migration 20260710000000). All money writes must go through {@link confirmLoanPayment}, which
- * verifies the on-chain transfer server-side. This thunk is orphaned pending removal — kept only
- * so nothing silently breaks; see SECURITY-REMEDIATION.md. [[security-lockdown-john-disclosure]]
- */
-export const updateLoanStatus = createAsyncThunk<
-   Loan,
-   {
-      id: string;
-      userId?: string | null;
-      wallet?: string;
-      repaymentStatus?: string;
-      loanStatus?: string;
-      repaidAmount?: number;
-      hash?: string;
-   },
-   { fulfilledMeta: { sideEffectErrors: LoanSideEffectError[] } }
->('loans/updateStatus', async (loanData, { dispatch, getState, fulfillWithValue }) => {
-   const supabase = supabaseClient();
-   const { id, userId, wallet, repaymentStatus, loanStatus, repaidAmount, hash } = loanData;
-   const sideEffectErrors: LoanSideEffectError[] = [];
-
-   const updates: LoanUpdate = {};
-   let currentLoan: Pick<LoanRow, 'created_at' | 'hash' | 'loan_status'> | null = null;
-
-   if (loanStatus === 'Lent' || hash) {
-      const { data: currentLoanRow, error: currentLoanError } = await supabase
-         .from('loans')
-         .select('created_at,hash,loan_status')
-         .eq('id', id)
-         .single();
-
-      if (currentLoanError || !currentLoanRow) {
-         throw new Error(currentLoanError?.message || 'Could not load loan before updating it');
-      }
-
-      currentLoan = currentLoanRow;
-   }
-
-   if (
-      loanStatus === 'Lent' &&
-      currentLoan?.loan_status === 'Requested' &&
-      currentLoan.created_at &&
-      isExpiredUnfundedRequest({ createdAt: currentLoan.created_at, loanStatus: currentLoan.loan_status })
-   ) {
-      throw new Error('This loan request has expired. Ask the borrower to post a new request.');
-   }
-
-   if (userId) {
-      updates.lender_user_id = userId;
-   }
-   if (wallet) {
-      updates.lender_wallet = wallet;
-   }
-   if (repaymentStatus) {
-      updates.repayment_status = repaymentStatus as Database['public']['Enums']['repayment_status'];
-   }
-   if (loanStatus) {
-      updates.loan_status = loanStatus as Database['public']['Enums']['loan_status'];
-   }
-   if (repaidAmount !== undefined) {
-      updates.repaid_amount = repaidAmount;
-   }
-   if (loanStatus === 'Lent') {
-      updates.funded_at = new Date().toISOString();
-   }
-   if (repaymentStatus === 'Paid') {
-      updates.repaid_at = new Date().toISOString();
-   }
-   if (hash) {
-      updates.hash = [...(currentLoan?.hash || []), hash];
-   }
-
-   const { data, error } = await supabase.from('loans').update(updates).eq('id', id).select().single();
-
-   if (error) {
-      throw new Error(error.message);
-   }
-
-   if (!data) {
-      throw new Error('Failed to update loan');
-   }
-
-   if (loanStatus === 'Lent' && data.lender_user_id) {
-      if (!data.borrower_user_id) {
-         const message = 'Could not award IOU points because the funded loan has no borrower user id.';
-         console.error(message);
-         sideEffectErrors.push({ type: 'award_points', message });
-      } else {
-         const { count: borrowerPriorFundedLoanCount, error: borrowerLoanCountError } = await supabase
-            .from('loans')
-            .select('id', { count: 'exact', head: true })
-            .eq('borrower_user_id', data.borrower_user_id)
-            .eq('loan_status', 'Lent')
-            .neq('id', data.id);
-
-         if (borrowerLoanCountError) {
-            console.error('Failed to calculate borrower IOU bonus:', borrowerLoanCountError.message);
-            sideEffectErrors.push({ type: 'award_points', message: borrowerLoanCountError.message });
-         } else {
-            const priorFundedLoanCount = borrowerPriorFundedLoanCount ?? 0;
-            const borrowerBonusPoints = getYearOneIouBorrowerBonusPoints(priorFundedLoanCount);
-            const pointsDelta = computeYearOneIouPointsDelta(String(data.loan_amount), priorFundedLoanCount);
-            const pointsMetadata = {
-               loan_id: data.id,
-               loan_amount: String(data.loan_amount),
-               loan_tracking_id: data.tracking_id,
-               loan_funded_at: data.funded_at,
-               reward_year: 1,
-               base_points_per_usdc: loanFundingPointsPerUsdc,
-               borrower_prior_funded_loan_count: priorFundedLoanCount,
-               borrower_loan_number: priorFundedLoanCount + 1,
-               borrower_bonus_points: borrowerBonusPoints
-            };
-
-            const { error: pointsError } = await supabase.rpc('award_points', {
-               user_id_input: data.lender_user_id,
-               source_type_input: 'loan',
-               source_id_input: data.id,
-               event_type_input: 'funded',
-               delta_input: pointsDelta.toString(),
-               metadata_input: pointsMetadata
-            });
-
-            if (pointsError) {
-               console.error('Failed to award points:', pointsError.message);
-               sideEffectErrors.push({ type: 'award_points', message: pointsError.message });
-            }
-         }
-      }
-   }
-
-   const isPaid = repaymentStatus === 'Paid' || data.repayment_status === 'Paid';
-   if (isPaid && data.borrower_user_id && data.due_date) {
-      const { data: borrower, error: borrowerError } = await supabase
-         .from('users')
-         .select('id, cs, is_world_id, is_didit')
-         .eq('id', data.borrower_user_id)
-         .single();
-
-      if (borrowerError) {
-         throw new Error(borrowerError.message);
-      }
-
-      if (borrower) {
-         const creditEvaluation = evaluateCreditProgression({
-            currentLimit: borrower.cs ?? 0,
-            // Any supported identity method grants verified status for credit progression,
-            // mirroring isUserVerified(). Didit is the majority path; gating on World ID
-            // alone stalled Didit-verified borrowers' credit-limit growth.
-            isVerified: borrower.is_world_id === 'ACTIVE' || borrower.is_didit === 'ACTIVE',
-            repaidAmount: data.repaid_amount,
-            totalRepaymentAmount: data.total_repayment_amount,
-            loanAmount: data.loan_amount,
-            dueDate: data.due_date,
-            paidAt: data.repaid_at ?? data.updated_at ?? new Date().toISOString()
-         });
-
-         const userUpdates: Database['public']['Tables']['users']['Update'] = {};
-
-         if (creditEvaluation.shouldLevelUp) {
-            userUpdates.cs = creditEvaluation.nextLimit;
-         }
-
-         if (Object.keys(userUpdates).length > 0) {
-            const { error: userUpdateError } = await supabase.from('users').update(userUpdates).eq('id', borrower.id);
-
-            if (userUpdateError) {
-               throw new Error(userUpdateError.message);
-            }
-
-            const state = getState() as RootState;
-            if (state.auth.user.id === borrower.id) {
-               await dispatch(fetchUser());
-            }
-         }
-      }
-   }
-
-   if (loanStatus === 'Lent') {
-      const { error: notificationError } = await supabase.functions.invoke('loan-funded-notification', {
-         body: { loanId: id }
-      });
-
-      if (notificationError) {
-         console.error('Failed to send funded notification:', notificationError.message);
-         sideEffectErrors.push({ type: 'loan_notification', message: notificationError.message });
-      }
-   }
-
-   if (repaymentStatus === 'Paid') {
-      const { error: notificationError } = await supabase.functions.invoke('loan-repayment-received-notification', {
-         body: { loanId: id }
-      });
-
-      if (notificationError) {
-         console.error('Failed to send repayment received notification:', notificationError.message);
-         sideEffectErrors.push({ type: 'loan_notification', message: notificationError.message });
-      }
-   }
-
-   return fulfillWithValue(mapSupabaseLoanToLoan(data), { sideEffectErrors });
-});
-
-/**
- * Server-verified funding/repayment. Replaces the money-writing path of {@link updateLoanStatus}:
- * the client can no longer set loan_status/repayment_status/repaid_amount/hash directly (a DB
+ * Server-verified funding/repayment. The client can no longer set loan_status/repayment_status/repaid_amount/hash directly (a DB
  * trigger rejects it) — this invokes the `confirm-loan-payment` Edge Function, which verifies the
  * real on-chain USDC transfer before writing status and running the points/credit/notification
  * side effects server-side. See [[security-lockdown-john-disclosure]].
@@ -535,7 +311,7 @@ export const updateLoanStatus = createAsyncThunk<
 export const confirmLoanPayment = createAsyncThunk<
    Loan,
    { loanId: string; hash: string; method: 'wallet' | 'base'; action: 'fund' | 'repay' | 'return-interest' },
-   { fulfilledMeta: { sideEffectErrors: LoanSideEffectError[] } }
+   { fulfilledMeta: { sideEffectErrors: LoanSideEffectError[]; creditLevelUp: CreditLevelUp | null } }
 >('loans/confirmPayment', async ({ loanId, hash, method, action }, { dispatch, fulfillWithValue }) => {
    const supabase = supabaseClient();
 
@@ -573,12 +349,17 @@ export const confirmLoanPayment = createAsyncThunk<
    const loan = mapSupabaseLoanToLoan(data.loan as LoanRow);
 
    // A fully-repaid loan may have raised the borrower's credit limit server-side; refresh the
-   // signed-in user so the UI reflects it (the old updateLoanStatus did this inline).
+   // signed-in user so the UI reflects it.
    if (action === 'repay' && loan.repaymentStatus === 'Paid') {
       await dispatch(fetchUser());
    }
 
-   return fulfillWithValue(loan, { sideEffectErrors: (data.sideEffectErrors as LoanSideEffectError[]) ?? [] });
+   return fulfillWithValue(loan, {
+      sideEffectErrors: (data.sideEffectErrors as LoanSideEffectError[]) ?? [],
+      // Set by the server only when this repayment actually raised the limit (exact, unlike comparing
+      // before/after limits in the app, which a referral or admin edit in between could fake).
+      creditLevelUp: (data.creditLevelUp as CreditLevelUp | null | undefined) ?? null
+   });
 });
 
 export const deleteLoan = createAsyncThunk('loans/delete', async (loanId: string) => {

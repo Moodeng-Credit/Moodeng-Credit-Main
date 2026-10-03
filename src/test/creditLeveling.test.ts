@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { formatDate } from '@/utils/dateFormatters';
 
+import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS } from '@/config/creditTiers';
 import { evaluateCreditProgression, getFullLimitLoans, isRepaidOnTime } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
@@ -72,7 +73,6 @@ const baseUser: User = {
    mal: 1,
    nal: 0,
    cs: 15,
-   creditProgressionPaused: false,
    createdAt: '2025-01-01T00:00:00.000Z',
    updatedAt: '2025-01-02T00:00:00.000Z'
 };
@@ -391,9 +391,9 @@ describe('Dashboard credit level carousel', () => {
       const tiers = buildCreditLevels({
          user: { ...baseUser, cs: 40 },
          loans: [
-            createLoan({ id: 'full-15', loanAmount: 15, updatedAt: '2025-01-10T00:00:00.000Z' }),
-            createLoan({ id: 'trust-17', loanAmount: 17, updatedAt: '2025-02-10T00:00:00.000Z' }),
-            createLoan({ id: 'full-20', loanAmount: 20, updatedAt: '2025-03-10T00:00:00.000Z' })
+            createLoan({ id: 'full-15', loanAmount: 15, creditLimitAtRepayment: 15, updatedAt: '2025-01-10T00:00:00.000Z' }),
+            createLoan({ id: 'trust-17', loanAmount: 17, creditLimitAtRepayment: 20, updatedAt: '2025-02-10T00:00:00.000Z' }),
+            createLoan({ id: 'full-20', loanAmount: 20, creditLimitAtRepayment: 20, updatedAt: '2025-03-10T00:00:00.000Z' })
          ]
       });
 
@@ -404,12 +404,17 @@ describe('Dashboard credit level carousel', () => {
 });
 
 describe('getFullLimitLoans (credit- vs trust-building)', () => {
-   it('replays the rule: $15 at the $15 start is full-limit, then $17 at $20 is trust-building', () => {
-      const first = createLoan({ id: 'a', loanAmount: 15, repaidAt: '2026-09-10T00:00:00.000Z' });
-      const second = createLoan({ id: 'b', loanAmount: 17, repaidAmount: 20, totalRepaymentAmount: 20, repaidAt: '2026-09-30T00:00:00.000Z' });
+   it('uses the recorded limit: $15 at $15 is full-limit, then $17 at $20 is trust-building', () => {
+      const first = createLoan({ id: 'a', loanAmount: 15, creditLimitAtRepayment: 15 });
+      const second = createLoan({ id: 'b', loanAmount: 17, repaidAmount: 20, totalRepaymentAmount: 20, creditLimitAtRepayment: 20 });
       const full = getFullLimitLoans([second, first]);
       expect(full.get(first)).toBe(15);
       expect(full.has(second)).toBe(false);
+   });
+
+   it('a repaid loan with no recorded limit (unverified borrower) is never full-limit', () => {
+      const unrecorded = createLoan({ id: 'a', loanAmount: 15 });
+      expect(getFullLimitLoans([unrecorded]).size).toBe(0);
    });
 
    it('uses the limit recorded at repayment: a $20 loan on a $40 limit is trust-building', () => {
@@ -452,5 +457,17 @@ describe('Borrower progress timeline', () => {
       const unlocked = eventsFor([late]).find((event) => event.type === 'credit_limit_unlocked');
       expect(unlocked?.amount).toBe(20);
       expect(unlocked?.description).toBe('Unlocked Level 2: a $20 limit.');
+   });
+});
+
+describe('referral boosts', () => {
+   it('only allows a boost that lands the $15 start exactly on a credit level', () => {
+      expect([...REFERRAL_BOOST_OPTIONS]).toEqual([5, 25, 45, 65, 85, 105, 125]);
+      expect(isValidReferralBoost(5)).toBe(true);
+      expect(isValidReferralBoost(25)).toBe(true);
+   });
+
+   it('rejects a boost that would land between levels, which would make the next level skip one', () => {
+      [0, -5, 10, 15, 20, 30, 5.5, Number.NaN].forEach((boost) => expect(isValidReferralBoost(boost)).toBe(false));
    });
 });

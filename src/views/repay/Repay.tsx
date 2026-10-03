@@ -1,5 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { unwrapResult } from '@reduxjs/toolkit';
 import {
    AlertTriangle,
    ArrowLeft,
@@ -989,10 +990,6 @@ export default function Repay() {
             return;
          }
 
-         // Snapshot the credit limit before the repayment so we can tell if this payoff triggered
-         // a level-up (updateLoanStatus raises it server-side + refetches the user).
-         const prevCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
-
          // Recipient is always the lender's on-file funding wallet — chosen by us, never by the
          // payer's wallet choice — so the lender receives at the address they funded from.
          const outcome = await payUsdc({
@@ -1067,14 +1064,17 @@ export default function Repay() {
 
          // Server verifies the on-chain transfer before writing status — it returns the
          // authoritative loan row (repaid amount / status derived from the real transfer).
-         const confirmedLoan = await dispatch(
+         const confirmResult = await dispatch(
             confirmLoanPayment({
                loanId: selectedLoan.id,
                hash: outcome.hash,
                method: toSettlementMethod(method),
                action: 'repay'
             })
-         ).unwrap();
+         );
+         const confirmedLoan = unwrapResult(confirmResult);
+         // The server says whether THIS repayment raised the limit (a full-limit loan, repaid in full).
+         const serverLevelUp = confirmLoanPayment.fulfilled.match(confirmResult) ? confirmResult.meta.creditLevelUp : null;
          // DB write landed — the reconciler has nothing left to finish for this payment.
          clearPendingBasePayment(outcome.hash);
          await dispatch(getUserLoans({ userId: user.id })).unwrap();
@@ -1094,16 +1094,13 @@ export default function Repay() {
             // Borrower backed out of the overlay — the payment still recorded above, but don't
             // slam the full-screen payoff / partial UI over them. The success toast still confirms it.
          } else if (serverFullyRepaid) {
-            // confirmLoanPayment refetched the user, so the store now holds any raised limit.
-            const newCreditLimit = reduxStore.getState().auth.user?.cs ?? 0;
-            const leveledUp = newCreditLimit > prevCreditLimit;
             setShowCompletionDetails(false);
             setCompletion({
                reason: selectedLoan.reason || 'your loan',
                paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
                coin: transferCoin,
                trustPoints: earnedTrustPoints,
-               creditLevelUp: leveledUp ? { toLevel: getCreditLevelNumber(newCreditLimit), newLimit: newCreditLimit } : null
+               creditLevelUp: serverLevelUp ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit } : null
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of

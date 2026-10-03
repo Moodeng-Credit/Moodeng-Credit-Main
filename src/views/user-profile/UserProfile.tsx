@@ -163,15 +163,11 @@ const UserProfile = () => {
          try {
             const { user: fetchedUser } = await dispatch(getUserProfile(username)).unwrap();
             // public_user_profiles blanks the credit limit, which made every borrower read as LV1 here.
-            // Fill in the real limit (and paused flag) so this page matches the dashboard.
+            // Fill in the real limit so this page matches the dashboard.
             const { data: credit } = await getSupabaseBrowserClient()
                .rpc('get_public_credit_limit', { p_user_id: fetchedUser.id })
-               .maybeSingle<{ cs: number | null; credit_progression_paused: boolean | null }>();
-            setProfileUser(
-               credit
-                  ? { ...fetchedUser, cs: credit.cs ?? fetchedUser.cs, creditProgressionPaused: Boolean(credit.credit_progression_paused) }
-                  : fetchedUser
-            );
+               .maybeSingle<{ cs: number | null }>();
+            setProfileUser(credit ? { ...fetchedUser, cs: credit.cs ?? fetchedUser.cs } : fetchedUser);
             await dispatch(getUserLoans({ userId: fetchedUser.id })).unwrap();
          } catch (error) {
             console.error('Error fetching profile:', (error as Error).message || error);

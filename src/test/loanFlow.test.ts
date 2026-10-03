@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import authReducer from '@/store/slices/authSlice';
-import loanReducer, { confirmLoanPayment, deleteLoan, getUserLoans, PaymentNotConfirmedError, updateLoanStatus } from '@/store/slices/loanSlice';
+import loanReducer, { confirmLoanPayment, deleteLoan, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
 
 // Mock the Supabase client
 vi.mock('@/lib/supabase/client', () => ({
@@ -81,114 +81,6 @@ describe('Loan Flow Trigger Integration', () => {
       await pendingFetch;
 
       expect(store.getState().loans.isLoading).toBe(false);
-   });
-
-   it('should trigger the "loan-funded-notification" edge function when a loan status is updated to "Lent"', async () => {
-      const loanUpdatePayload = {
-         id: 'loan-123',
-         loanStatus: 'Lent',
-         wallet: '0x123...'
-      };
-
-      // Dispatch the thunk
-      await store.dispatch(updateLoanStatus(loanUpdatePayload));
-
-      // Assert that the database update was called
-      expect(mockSupabase.from).toHaveBeenCalledWith('loans');
-      expect(mockSupabase.update).toHaveBeenCalledWith(
-         expect.objectContaining({
-            loan_status: 'Lent',
-            lender_wallet: '0x123...'
-         })
-      );
-
-      // Assert that the edge function was invoked
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
-         'loan-funded-notification',
-         expect.objectContaining({
-            body: { loanId: 'loan-123' }
-         })
-      );
-
-      expect(mockSupabase.rpc).toHaveBeenCalledWith(
-         'award_points',
-         expect.objectContaining({
-            user_id_input: 'user-123',
-            source_type_input: 'loan',
-            source_id_input: 'loan-123',
-            event_type_input: 'funded',
-            delta_input: '35000000',
-            metadata_input: expect.objectContaining({
-               reward_year: 1,
-               base_points_per_usdc: 1,
-               borrower_prior_funded_loan_count: 0,
-               borrower_loan_number: 1,
-               borrower_bonus_points: 25
-            })
-         })
-      );
-   });
-
-   it('should trigger the repayment received edge function when a loan is fully paid', async () => {
-      await store.dispatch(
-         updateLoanStatus({
-            id: 'loan-123',
-            repaymentStatus: 'Paid',
-            repaidAmount: 275
-         })
-      );
-
-      expect(mockSupabase.update).toHaveBeenCalledWith(
-         expect.objectContaining({
-            repayment_status: 'Paid',
-            repaid_amount: 275
-         })
-      );
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
-         'loan-repayment-received-notification',
-         expect.objectContaining({
-            body: { loanId: 'loan-123' }
-         })
-      );
-   });
-
-   it('blocks funding when a request is older than the 7-day expiration window', async () => {
-      mockSupabase.single.mockResolvedValueOnce({
-         data: {
-            loan_status: 'Requested',
-            created_at: '2026-04-01T00:00:00.000Z',
-            hash: []
-         },
-         error: null
-      });
-
-      const result = await store.dispatch(
-         updateLoanStatus({
-            id: 'loan-123',
-            loanStatus: 'Lent',
-            wallet: '0x123...'
-         })
-      );
-
-      expect(updateLoanStatus.rejected.match(result)).toBe(true);
-      expect(result.error.message).toBe('This loan request has expired. Ask the borrower to post a new request.');
-      expect(mockSupabase.update).not.toHaveBeenCalled();
-      expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
-   });
-
-   it('should NOT trigger the notification if the status is not "Lent"', async () => {
-      const loanUpdatePayload = {
-         id: 'loan-123',
-         loanStatus: 'Pending',
-         wallet: '0x123...'
-      };
-
-      // Dispatch the thunk
-      await store.dispatch(updateLoanStatus(loanUpdatePayload));
-
-      // Assert that the edge function was NOT invoked
-      expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
-      expect(mockSupabase.rpc).not.toHaveBeenCalled();
    });
 
    it('confirmLoanPayment routes funding through the confirm-loan-payment edge function (no direct loans.update)', async () => {
