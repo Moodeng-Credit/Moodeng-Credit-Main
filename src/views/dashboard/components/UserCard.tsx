@@ -903,7 +903,11 @@ export default function UserCard(loan: UserCardProps) {
                   <VideoCallStep
                      userId={userId}
                      requireUpcoming
-                     intro="Book a new call and your request goes straight back on the board."
+                     intro={
+                        loanData.onHoldReason === 'awaiting_call'
+                           ? 'Pick a time for your call. Your request goes on the board once we’ve met.'
+                           : 'Book a new call and your request goes straight back on the board.'
+                     }
                      continueLabel="Done"
                      onBack={() => setShowRebook(false)}
                      onContinue={() => setShowRebook(false)}

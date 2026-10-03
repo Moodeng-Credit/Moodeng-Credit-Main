@@ -34,12 +34,19 @@ type SupabaseClient = any;
 
 export type CallOutcome = 'attended' | 'no_show';
 
-// callback_data "vc:<a|n>:<user uuid>" — the open-flow attendance buttons.
-export const buildOutcomeCallback = (outcome: CallOutcome, userId: string) => `vc:${outcome === 'attended' ? 'a' : 'n'}:${userId}`;
-export const parseOutcomeCallback = (data?: string | null): { outcome: CallOutcome; userId: string } | null => {
-   const match = (data ?? '').match(/^vc:([an]):([0-9a-f-]{36})$/i);
+// callback_data "vc:<a|n>:<user uuid>:<call key>" — the open-flow attendance buttons. The call key
+// (the call's start, in base-36 minutes) ties a card to ONE call: after a rebook, tapping yesterday's
+// card must not record an outcome for the new call that hasn't happened yet.
+export const callKeyFor = (startsAt: string | null | undefined): string =>
+   startsAt && !Number.isNaN(Date.parse(startsAt)) ? Math.floor(Date.parse(startsAt) / 60000).toString(36) : '';
+export const buildOutcomeCallback = (outcome: CallOutcome, userId: string, startsAt?: string | null) => {
+   const key = callKeyFor(startsAt);
+   return `vc:${outcome === 'attended' ? 'a' : 'n'}:${userId}${key ? `:${key}` : ''}`;
+};
+export const parseOutcomeCallback = (data?: string | null): { outcome: CallOutcome; userId: string; callKey: string | null } | null => {
+   const match = (data ?? '').match(/^vc:([an]):([0-9a-f-]{36})(?::([0-9a-z]+))?$/i);
    if (!match) return null;
-   return { outcome: match[1].toLowerCase() === 'a' ? 'attended' : 'no_show', userId: match[2] };
+   return { outcome: match[1].toLowerCase() === 'a' ? 'attended' : 'no_show', userId: match[2], callKey: match[3]?.toLowerCase() ?? null };
 };
 
 type OutcomeUser = BorrowerRow &
@@ -104,8 +111,8 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
          ? decisionKeyboard(request)
          : [
               [
-                 { text: '✅ Showed up', callback_data: buildOutcomeCallback('attended', userId) },
-                 { text: '❌ No-show', callback_data: buildOutcomeCallback('no_show', userId) }
+                 { text: '✅ Showed up', callback_data: buildOutcomeCallback('attended', userId, user.video_call_starts_at) },
+                 { text: '❌ No-show', callback_data: buildOutcomeCallback('no_show', userId, user.video_call_starts_at) }
               ]
            ]
    });
@@ -119,8 +126,16 @@ export const recordCallOutcome = async (
    svc: SupabaseClient,
    userId: string,
    outcome: CallOutcome,
-   decidedBy: string
+   decidedBy: string,
+   // From a card's button: the call it was sent for. A mismatch means they've rebooked since.
+   expectedCallKey?: string | null
 ): Promise<{ ok: boolean; summary: string }> => {
+   if (expectedCallKey) {
+      const current = await loadUser(svc, userId);
+      if (callKeyFor(current?.video_call_starts_at) !== expectedCallKey) {
+         return { ok: false, summary: "This card is for an earlier call — they've rebooked since, so nothing was changed." };
+      }
+   }
    // A "Showed up" that corrects a no-show tells the borrower: they were told to rebook.
    const correctingNoShow = outcome === 'attended' && (await loadUser(svc, userId))?.video_call_outcome === 'no_show';
    const update = svc
@@ -161,6 +176,27 @@ export const recordCallOutcome = async (
    }
    // A no-show parks their open request (database trigger); say which one, to them and the team.
    const held = outcome === 'no_show' ? await describeHeldRequests(svc, userId) : '';
+   if (correctingNoShow) {
+      // The corrected no-show must not count as a strike toward the rebooking cooldown.
+      const { data: lastStrike } = await svc
+         .from('video_call_no_shows')
+         .select('id')
+         .eq('user_id', userId)
+         .eq('active', true)
+         .order('recorded_at', { ascending: false })
+         .limit(1)
+         .maybeSingle();
+      if (lastStrike) await svc.from('video_call_no_shows').update({ active: false }).eq('id', (lastStrike as { id: string }).id);
+      const { data: lastNoShow } = await svc
+         .from('loan_access_requests')
+         .select('id')
+         .eq('user_id', userId)
+         .eq('status', 'no_show')
+         .order('decided_at', { ascending: false })
+         .limit(1)
+         .maybeSingle();
+      if (lastNoShow) await svc.from('loan_access_requests').update({ status: 'approved' }).eq('id', (lastNoShow as { id: string }).id);
+   }
    if (correctingNoShow && !approvedNow) {
       await notifyBorrower(svc, updated as BorrowerRow, 'no_show_corrected');
    }
@@ -186,8 +222,8 @@ export const autoMarkNoShow = async (svc: SupabaseClient, userId: string): Promi
    const result = request ? await decideLoanAccess(svc, request.id, 'no_show', decidedBy) : await recordCallOutcome(svc, userId, 'no_show', decidedBy);
    if (!result.ok) return null;
    const text = request
-      ? `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed and they'll be approved.`
-      : `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, tap ✅ Showed up (or send /showed) and their request goes back on the board.`;
+      ? `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed ${userId} and they'll be approved.`
+      : `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed ${userId} and their request goes back on the board.`;
    try {
       const chat = await getAdminChatId(svc);
       if (chat) await sendTelegramMessage(chat, text);

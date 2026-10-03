@@ -111,6 +111,17 @@ Deno.serve(async (req) => {
     const trustedProfile =
       existingProfile && ownTelegramEmails.includes(String(existingProfile.email ?? '').toLowerCase()) ? existingProfile : null
     const email = trustedProfile?.email ?? `telegram_${id}@moodeng.app`
+    // The Telegram id is already on an account that signs in some other way (email, Google): don't
+    // create a second, empty account for it. Tell them how to get in.
+    if (existingProfile && !trustedProfile) {
+      return new Response(
+        JSON.stringify({
+          error: 'This Telegram account is linked to a Moodeng account that signs in with email. Log in with your email instead.',
+          code: 'LINKED_TO_EMAIL_ACCOUNT',
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     const telegramMetadata = {
       telegram_id: id,

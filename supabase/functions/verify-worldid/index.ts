@@ -232,6 +232,16 @@ serve(async (req) => {
     }
 
     if (body.type === 'rp-signature') {
+      // Check the face-check requirement (see the verify step) BEFORE World App opens, so nobody is
+      // asked to approve in World App only to be refused afterwards.
+      const faceClient = createClient(getRequiredEnv('SUPABASE_URL'), getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY', 'SERVER_ERROR'))
+      const { data: faceRow } = await faceClient.from('users').select('liveness_status, is_didit').eq('id', user.id).maybeSingle()
+      const faceChecked =
+        String(faceRow?.liveness_status ?? '').toUpperCase() === 'APPROVED' || String(faceRow?.is_didit ?? '').toUpperCase() === 'ACTIVE'
+      if (!faceChecked) {
+        return errorResponse('Complete the face check on the Verify page first', 400, 'LIVENESS_REQUIRED')
+      }
+
       const signingKey = getEnvForWorldId('WORLD_ID_SIGNING_KEY') || Deno.env.get('RP_SIGNING_KEY')
       if (!signingKey) {
         return errorResponse('WORLD_ID_SIGNING_KEY is not configured', 500, 'WORLDID_CONFIG_MISSING')

@@ -322,6 +322,8 @@ serve(async (req) => {
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
+      // Test loans don't get borrower reminders or team posts.
+      .or('is_test.is.null,is_test.eq.false')
       .not('due_date', 'is', null);
 
    if (error) {
@@ -405,9 +407,23 @@ serve(async (req) => {
 
       // Reachable on at least one channel. Push counts, so a borrower with the
       // app on their phone but no email or Telegram on file still gets reminded.
-      if (!borrower.email && !borrower.chat_id && !pushableBorrowerIds.has(borrowerId)) {
+      // Messenger counts as a channel too (same as the overdue job), so Messenger-only borrowers get reminders.
+      if (!borrower.email && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId)) {
          continue;
       }
+
+      // "Due within N days", measured to the real deadline (end of the soonest due day in their zone),
+      // not the fixed reminder window: a short loan entering the window early, or a final reminder
+      // sent the day before, no longer says "3 days" / "24 hours" when that isn't true.
+      const dueWithin = (loans: Array<{ due_date?: string | null; due_timezone?: string | null }>, fallback: string) => {
+         const zone = timezones.get(borrowerId) ?? resolveTimezone(null, null);
+         const ends = loans
+            .filter((loan) => loan.due_date)
+            .map((loan) => dueDayBounds(loan.due_date as string, loanTimezone(loan, zone)).end.getTime());
+         if (!ends.length) return fallback;
+         const days = Math.max(1, Math.ceil((Math.min(...ends) - referenceDate.getTime()) / (24 * 60 * 60 * 1000)));
+         return `${days} ${days === 1 ? 'day' : 'days'}`;
+      };
 
       // One borrower's delivery failure must not abort the run for everyone after them. An
       // unrecorded reminder is simply retried on the next hourly run.
@@ -418,7 +434,7 @@ serve(async (req) => {
                borrower,
                bucket.urgent,
                'urgent_reminder',
-               urgentDueLabel,
+               dueWithin(bucket.urgent, urgentDueLabel),
                trustPointRewardContext,
                referenceDate,
                telegramEnabled
@@ -434,7 +450,7 @@ serve(async (req) => {
                borrower,
                bucket.final,
                'final_reminder',
-               finalDueLabel,
+               dueWithin(bucket.final, finalDueLabel),
                trustPointRewardContext,
                referenceDate,
                telegramEnabled

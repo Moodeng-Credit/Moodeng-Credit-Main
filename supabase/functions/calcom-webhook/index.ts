@@ -71,9 +71,19 @@ serve(async (req) => {
       // ladder and clears the old "I'll be there" / attendance; an echo must not re-send reminders.
       const { data: current } = await supabase
          .from('users')
-         .select('video_call_starts_at')
+         .select('video_call_starts_at, video_call_booking_uid, email')
          .eq('id', booking.userId)
          .maybeSingle();
+      // moodeng_user_id comes from the booking link, which anyone could forge to book (and later
+      // cancel) on someone else's behalf. Trust it only for our own booking echoing back, or when the
+      // attendee is that user.
+      const currentRow = current as { video_call_booking_uid?: string | null; email?: string | null } | null;
+      const ownEcho = Boolean(booking.bookingUid && currentRow?.video_call_booking_uid === booking.bookingUid);
+      const userEmail = (currentRow?.email ?? '').trim().toLowerCase();
+      if (!ownEcho && !(userEmail && booking.attendeeEmails.includes(userEmail))) {
+         console.warn(`calcom-webhook: ignored ${booking.triggerEvent} ${booking.bookingUid}: attendee doesn't match user ${booking.userId}`);
+         return jsonResponse({ ok: true, ignored: 'attendee_mismatch' });
+      }
       const currentMs = Date.parse((current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? '');
       const timeMoved = !booking.startsAt || currentMs !== Date.parse(booking.startsAt);
       const { error } = await supabase
@@ -126,7 +136,9 @@ serve(async (req) => {
             video_call_host: null,
             video_call_starts_at: null,
             video_call_booking_uid: null,
-            video_call_join_url: null
+            video_call_join_url: null,
+            // The cancelled call's Zoom meeting must not keep matching this borrower's attendance.
+            video_call_meeting_id: null
          })
          .eq('video_call_booking_uid', booking.bookingUid)
          .select('id');

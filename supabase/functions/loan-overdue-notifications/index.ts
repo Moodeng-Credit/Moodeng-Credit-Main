@@ -284,6 +284,8 @@ serve(async (req) => {
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
+      // Test loans don't get borrower reminders or team posts.
+      .or('is_test.is.null,is_test.eq.false')
       .not('due_date', 'is', null)
       .lt('due_date', referenceDate.toISOString());
 
@@ -330,81 +332,86 @@ serve(async (req) => {
    let sentCount = 0;
 
    for (const [borrowerId, borrowerLoans] of borrowerBuckets.entries()) {
-      const borrower = borrowers.get(borrowerId);
-      if (!borrower || (!borrower.email && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId))) {
-         continue;
-      }
-
-      // Hold until the borrower's local morning; nothing is recorded, so the next run retries.
-      if (localHour(referenceDate, zoneFor(borrowerId)) < QUIET_HOURS_END) {
-         continue;
-      }
-
-      const loanIds = borrowerLoans.map((loan) => loan.id);
-      const sentStages = await loadSentStagesByLoanId(supabase, { loanIds, userId: borrower.id });
-      const stageByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, getOverdueStage(referenceDate, deadlineByLoanId.get(loan.id)?.toISOString() ?? loan.due_date ?? null)]));
-      const pendingLoans = borrowerLoans.filter((loan) => !sentStages.get(loan.id)?.has(stageByLoanId.get(loan.id)!));
-
-      if (!pendingLoans.length) {
-         continue;
-      }
-
-      const nextDueDate = getEarliestDueDate(pendingLoans);
-      const aggregate = {
-         count: pendingLoans.length,
-         totalAmount: pendingLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
-         dueLabel: formatOverdueBy(
-            referenceDate,
-            pendingLoans
-               .map((loan) => deadlineByLoanId.get(loan.id))
-               .filter((deadline): deadline is Date => Boolean(deadline))
-               .sort((first, second) => first.getTime() - second.getTime())[0]
-         ),
-         nextDueDate,
-         // A check-in when every loan here already had its first overdue notice.
-         followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue'))
-      };
-      const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
-      const trustPointsReward = calculateTrustPointRewardDelta({
-         beforeLoans: allBorrowerLoans,
-         afterLoans: markLoansRepaid(
-            allBorrowerLoans,
-            pendingLoans.map((loan) => loan.id),
-            referenceDate
-         ),
-         user: borrower,
-         milestoneDefinitions: trustPointRewardContext.milestoneDefinitions,
-         completedMilestoneIds: trustPointRewardContext.completedMilestoneIdsByBorrowerId.get(borrower.id),
-         referenceDate
-      });
-
-      const delivery = await sendBorrowerLoanNotification(
-         'overdue',
-         null,
-         {
-            ...borrower,
-            trust_points_reward: trustPointsReward,
-            trust_points_reward_kind: 'potential'
-         },
-         aggregate,
-         {
-            telegramEnabled,
-            notifEnabled: borrower.notif_transaction_activity !== false,
-            push: { supabase, userId: borrower.id }
+      // One borrower's failed send must not stop the run for everyone after them (or the team post).
+      try {
+         const borrower = borrowers.get(borrowerId);
+         if (!borrower || (!borrower.email && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId))) {
+            continue;
          }
-      );
 
-      if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent) {
-         continue;
+         // Hold until the borrower's local morning; nothing is recorded, so the next run retries.
+         if (localHour(referenceDate, zoneFor(borrowerId)) < QUIET_HOURS_END) {
+            continue;
+         }
+
+         const loanIds = borrowerLoans.map((loan) => loan.id);
+         const sentStages = await loadSentStagesByLoanId(supabase, { loanIds, userId: borrower.id });
+         const stageByLoanId = new Map(borrowerLoans.map((loan) => [loan.id, getOverdueStage(referenceDate, deadlineByLoanId.get(loan.id)?.toISOString() ?? loan.due_date ?? null)]));
+         const pendingLoans = borrowerLoans.filter((loan) => !sentStages.get(loan.id)?.has(stageByLoanId.get(loan.id)!));
+
+         if (!pendingLoans.length) {
+            continue;
+         }
+
+         const nextDueDate = getEarliestDueDate(pendingLoans);
+         const aggregate = {
+            count: pendingLoans.length,
+            totalAmount: pendingLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
+            dueLabel: formatOverdueBy(
+               referenceDate,
+               pendingLoans
+                  .map((loan) => deadlineByLoanId.get(loan.id))
+                  .filter((deadline): deadline is Date => Boolean(deadline))
+                  .sort((first, second) => first.getTime() - second.getTime())[0]
+            ),
+            nextDueDate,
+            // A check-in when every loan here already had its first overdue notice.
+            followUp: pendingLoans.every((loan) => sentStages.get(loan.id)?.has('overdue'))
+         };
+         const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
+         const trustPointsReward = calculateTrustPointRewardDelta({
+            beforeLoans: allBorrowerLoans,
+            afterLoans: markLoansRepaid(
+               allBorrowerLoans,
+               pendingLoans.map((loan) => loan.id),
+               referenceDate
+            ),
+            user: borrower,
+            milestoneDefinitions: trustPointRewardContext.milestoneDefinitions,
+            completedMilestoneIds: trustPointRewardContext.completedMilestoneIdsByBorrowerId.get(borrower.id),
+            referenceDate
+         });
+
+         const delivery = await sendBorrowerLoanNotification(
+            'overdue',
+            null,
+            {
+               ...borrower,
+               trust_points_reward: trustPointsReward,
+               trust_points_reward_kind: 'potential'
+            },
+            aggregate,
+            {
+               telegramEnabled,
+               notifEnabled: borrower.notif_transaction_activity !== false,
+               push: { supabase, userId: borrower.id }
+            }
+         );
+
+         if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent) {
+            continue;
+         }
+
+         await recordOverdueNotifications(
+            supabase,
+            borrower.id,
+            pendingLoans.map((loan) => ({ loanId: loan.id, stage: stageByLoanId.get(loan.id)! }))
+         );
+
+         sentCount += 1;
+      } catch (sendError) {
+         console.error('overdue notice failed for borrower', borrowerId, sendError instanceof Error ? sendError.message : sendError);
       }
-
-      await recordOverdueNotifications(
-         supabase,
-         borrower.id,
-         pendingLoans.map((loan) => ({ loanId: loan.id, stage: stageByLoanId.get(loan.id)! }))
-      );
-
-      sentCount += 1;
    }
 
    // Tell the team once per loan that it has gone overdue, whether or not the borrower could be reached.

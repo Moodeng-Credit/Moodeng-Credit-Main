@@ -37,7 +37,8 @@ Deno.test('BOOKING_CREATED: user id + host come from embed metadata', () => {
       userId: 'user-123',
       host: 'george',
       startsAt: '2026-10-01T09:00:00Z',
-      joinUrl: 'https://cal.example/x'
+      joinUrl: 'https://cal.example/x',
+      attendeeEmails: []
    });
 });
 
@@ -59,7 +60,8 @@ Deno.test('falls back to a hidden response field when metadata is absent', () =>
       userId: 'user-777',
       host: 'emma',
       startsAt: '2026-10-02T10:30:00Z',
-      joinUrl: null
+      joinUrl: null,
+      attendeeEmails: []
    });
 });
 
@@ -94,4 +96,17 @@ Deno.test('extractBooking picks up the meeting join link (Zoom / Cal Video)', ()
    assertEquals(booking?.joinUrl, 'https://us06web.zoom.us/j/999');
    const plain = extractBooking({ triggerEvent: 'BOOKING_CREATED', payload: { uid: 'b3', location: 'https://cal.com/video/abc' } });
    assertEquals(plain?.joinUrl, 'https://cal.com/video/abc');
+});
+
+Deno.test('attendee emails are collected (lowercased) from attendees and the email response', () => {
+   const body = {
+      triggerEvent: 'BOOKING_CREATED',
+      payload: {
+         uid: 'bk_2',
+         attendees: [{ email: 'Borrower@Example.com' }, { email: 'george@moodeng.app' }],
+         responses: { email: { value: 'borrower@example.com' } },
+         metadata: { moodeng_user_id: 'u2' }
+      }
+   };
+   assertEquals(extractBooking(body)?.attendeeEmails, ['borrower@example.com', 'george@moodeng.app']);
 });

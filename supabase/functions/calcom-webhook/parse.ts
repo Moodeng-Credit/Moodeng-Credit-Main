@@ -16,6 +16,7 @@ export type CalcomWebhookBody = {
       videoCallData?: { url?: string };
       metadata?: Record<string, unknown>;
       responses?: Record<string, unknown>;
+      attendees?: Array<{ email?: unknown }>;
    };
 };
 
@@ -27,6 +28,10 @@ export type CalcomBooking = {
    startsAt: string | null;
    // The meeting's join link (Zoom / Cal Video), when the payload carries one.
    joinUrl: string | null;
+   // Everyone booked onto it (lowercased): the webhook only trusts moodeng_user_id when one of these
+   // is that user's email (or it's our own booking echoing back), so a forged booking link can't
+   // book, move or cancel someone else's call.
+   attendeeEmails: string[];
 };
 
 const asUrl = (value: unknown): string | null => (typeof value === 'string' && /^https?:\/\//.test(value) ? value : null);
@@ -57,6 +62,17 @@ const readInjectedField = (payload: NonNullable<CalcomWebhookBody['payload']>, k
    return null;
 };
 
+const readAttendeeEmails = (payload: NonNullable<CalcomWebhookBody['payload']>): string[] => {
+   const emails = new Set<string>();
+   for (const attendee of payload.attendees ?? []) {
+      if (typeof attendee?.email === 'string' && attendee.email.includes('@')) emails.add(attendee.email.trim().toLowerCase());
+   }
+   const response = payload.responses?.email;
+   const responseEmail = typeof response === 'string' ? response : (response as { value?: unknown } | undefined)?.value;
+   if (typeof responseEmail === 'string' && responseEmail.includes('@')) emails.add(responseEmail.trim().toLowerCase());
+   return [...emails];
+};
+
 export const extractBooking = (body: CalcomWebhookBody): CalcomBooking | null => {
    const triggerEvent = body.triggerEvent;
    if (!triggerEvent) return null;
@@ -70,6 +86,7 @@ export const extractBooking = (body: CalcomWebhookBody): CalcomBooking | null =>
       userId: readInjectedField(payload, 'moodeng_user_id'),
       host: hostRaw === 'george' || hostRaw === 'emma' ? hostRaw : null,
       startsAt: typeof payload.startTime === 'string' && payload.startTime ? payload.startTime : null,
-      joinUrl: asUrl(payload.metadata?.videoCallUrl) ?? asUrl(payload.videoCallData?.url) ?? asUrl(payload.location)
+      joinUrl: asUrl(payload.metadata?.videoCallUrl) ?? asUrl(payload.videoCallData?.url) ?? asUrl(payload.location),
+      attendeeEmails: readAttendeeEmails(payload)
    };
 };

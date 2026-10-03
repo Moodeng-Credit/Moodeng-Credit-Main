@@ -5,6 +5,7 @@ import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts
 import { postDiscord } from '../_shared/discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
 import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
+import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -185,12 +186,19 @@ serve(async (req) => {
    }
 
    // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
-   const { data: strikes } = await svc
-      .from('loan_access_requests')
-      .select('decided_at')
-      .eq('user_id', user.id)
-      .eq('status', 'no_show');
-   const cooldownUntil = bookingCooldownUntil(((strikes ?? []) as Array<{ decided_at: string | null }>).map((r) => r.decided_at), Date.now());
+   // Gated flows record a no-show on the access request; the open flow only on the user, so both
+   // are counted (public.video_call_no_shows logs every open-flow no-show).
+   const [{ data: strikes }, { data: openFlowStrikes }] = await Promise.all([
+      svc.from('loan_access_requests').select('decided_at').eq('user_id', user.id).eq('status', 'no_show'),
+      svc.from('video_call_no_shows').select('recorded_at').eq('user_id', user.id).eq('active', true)
+   ]);
+   const cooldownUntil = bookingCooldownUntil(
+      [
+         ...((strikes ?? []) as Array<{ decided_at: string | null }>).map((r) => r.decided_at),
+         ...((openFlowStrikes ?? []) as Array<{ recorded_at: string | null }>).map((r) => r.recorded_at)
+      ],
+      Date.now()
+   );
    if (cooldownUntil && (payload.action === 'slots' || payload.action === 'book')) {
       return json({ ok: false, error: 'cooldown', until: cooldownUntil, slots: [] });
    }
@@ -223,7 +231,20 @@ serve(async (req) => {
       const free = hostsFreeAt(start, perHostMap);
       if (free.length === 0) return json({ ok: false, error: 'slot_taken' });
 
-      const { data: prof } = await svc.from('users').select('email, display_name, username').eq('id', user.id).maybeSingle();
+      const { data: prof } = await svc
+         .from('users')
+         .select('email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_scheduled_at')
+         .eq('id', user.id)
+         .maybeSingle();
+      // One booking per person: a quick double-book is refused, and booking again replaces the old
+      // slot (cancelled on Cal.com once the new one is made), so nobody can hold every slot.
+      if (prof?.video_call_scheduled_at && Date.now() - Date.parse(prof.video_call_scheduled_at) < 60_000) {
+         return json({ ok: false, error: 'too_fast' }, 429);
+      }
+      const previousBooking =
+         prof?.video_call_booking_uid && prof.video_call_starts_at && Date.parse(prof.video_call_starts_at) > Date.now()
+            ? { uid: prof.video_call_booking_uid as string, host: (prof.video_call_host as string | null) ?? null }
+            : null;
       const email = prof?.email || user.email;
       if (!email) return json({ ok: false, error: 'no_email' });
       const attendee: Attendee = { name: prof?.display_name || prof?.username || 'Moodeng borrower', email, timeZone, language: 'en' };
@@ -288,6 +309,12 @@ serve(async (req) => {
                teamChat = ((setting as { value?: string } | null)?.value) ?? '';
             }
             await notifyTeamBooking(hostId, start, attendee, result.joinUrl, teamChat);
+            // Free the slot they had before. Our row already points at the new booking, so the cancel
+            // webhook for the old uid matches nothing and sends no "your call was cancelled".
+            if (previousBooking && previousBooking.uid !== result.uid) {
+               const cancelled = await cancelCalBooking(previousBooking.host, previousBooking.uid, 'Rebooked to a new time.');
+               if (!cancelled) console.error(`calcom-round-robin: could not cancel previous booking ${previousBooking.uid}`);
+            }
             return json({ ok: true, host: hostId, start });
          }
          if (result.error !== 'taken') break;

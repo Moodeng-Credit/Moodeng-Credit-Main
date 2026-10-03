@@ -2,14 +2,17 @@ import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
 import { buildDecisionCallback, decisionKeyboard, parseDecisionCallback } from './loanAccess.ts';
 import { formatCallTime } from './videoCall.ts';
-import { buildOutcomeCallback, parseOutcomeCallback } from './videoCallOutcome.ts';
+import { buildOutcomeCallback, callKeyFor, parseOutcomeCallback } from './videoCallOutcome.ts';
 
 const USER = '00000000-0000-4000-8000-000000000102';
 const REQ = '3f2a9c10-1b2c-4d5e-8f90-a1b2c3d4e5f6';
 
 Deno.test('open-flow attendance buttons round-trip', () => {
-   assertEquals(parseOutcomeCallback(buildOutcomeCallback('attended', USER)), { outcome: 'attended', userId: USER });
-   assertEquals(parseOutcomeCallback(buildOutcomeCallback('no_show', USER)), { outcome: 'no_show', userId: USER });
+   assertEquals(parseOutcomeCallback(buildOutcomeCallback('attended', USER)), { outcome: 'attended', userId: USER, callKey: null });
+   assertEquals(parseOutcomeCallback(buildOutcomeCallback('no_show', USER)), { outcome: 'no_show', userId: USER, callKey: null });
+   const withCall = buildOutcomeCallback('no_show', USER, '2026-10-03T09:00:00Z');
+   assertEquals(parseOutcomeCallback(withCall)?.callKey, callKeyFor('2026-10-03T09:00:00Z'));
+   assertEquals(withCall.length <= 64, true); // Telegram's callback_data limit
    assertEquals(parseOutcomeCallback('la:a:' + REQ), null);
 });
 

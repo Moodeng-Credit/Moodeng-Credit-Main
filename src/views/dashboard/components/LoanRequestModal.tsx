@@ -2324,6 +2324,8 @@ export default function LoanRequestModal({
             ) : showVideoCallStep ? (
                <VideoCallStep
                   userId={user.id}
+                  // A past call (e.g. one they missed) doesn't count: show the booking screen again.
+                  requireUpcoming
                   onBack={handleVideoCallStepBack}
                   onContinue={handleVideoCallStepContinue}
                   isSubmitting={isSubmitting}

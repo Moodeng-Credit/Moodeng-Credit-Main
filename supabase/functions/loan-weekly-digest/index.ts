@@ -20,6 +20,8 @@ import type {
    TrustPointRewardUser
 } from '../_shared/trustPointRewards.ts';
 
+import { isInternalRequest } from '../_shared/internalAuth.ts';
+
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -192,6 +194,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   // Scheduler only: with the public anon key, anyone could re-send the digest to every borrower.
+   const authClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   if (!(await isInternalRequest(authClient, req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+   }
+
    const body = await req.json().catch(() => ({}));
    const referenceDate = body.referenceDate ? new Date(body.referenceDate) : new Date();
    const lookbackDays = Number.parseInt(Deno.env.get('WEEKLY_DIGEST_LOOKBACK_DAYS') ?? `${body.lookbackDays ?? 7}`, 10);
@@ -232,58 +240,62 @@ serve(async (req) => {
    let sentCount = 0;
 
    for (const [borrowerId, borrowerLoans] of borrowerBuckets.entries()) {
-      const borrower = borrowers.get(borrowerId);
-      if (!borrower?.email && !borrower?.chat_id) {
-         continue;
-      }
+      try {
+         const borrower = borrowers.get(borrowerId);
+         if (!borrower?.email && !borrower?.chat_id) {
+            continue;
+         }
 
-      const alreadySent = await hasWeeklyDigestBeenSent(supabase, { userId: borrower.id, sentAfter: sentAfter.toISOString() });
-      if (alreadySent) {
-         continue;
-      }
+         const alreadySent = await hasWeeklyDigestBeenSent(supabase, { userId: borrower.id, sentAfter: sentAfter.toISOString() });
+         if (alreadySent) {
+            continue;
+         }
 
-      const aggregate = {
-         count: borrowerLoans.length,
-         totalAmount: borrowerLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
-         nextDueDate: getNextDueDate(borrowerLoans)
-      };
-      const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
-      const trustPointsReward = calculateTrustPointRewardDelta({
-         beforeLoans: allBorrowerLoans,
-         afterLoans: markLoansRepaid(
-            allBorrowerLoans,
-            borrowerLoans.map((loan) => loan.id),
+         const aggregate = {
+            count: borrowerLoans.length,
+            totalAmount: borrowerLoans.reduce((sum, loan) => sum + getLoanOutstandingAmount(loan), 0),
+            nextDueDate: getNextDueDate(borrowerLoans)
+         };
+         const allBorrowerLoans = trustPointRewardContext.loansByBorrowerId.get(borrower.id) ?? [];
+         const trustPointsReward = calculateTrustPointRewardDelta({
+            beforeLoans: allBorrowerLoans,
+            afterLoans: markLoansRepaid(
+               allBorrowerLoans,
+               borrowerLoans.map((loan) => loan.id),
+               referenceDate
+            ),
+            user: borrower,
+            milestoneDefinitions: trustPointRewardContext.milestoneDefinitions,
+            completedMilestoneIds: trustPointRewardContext.completedMilestoneIdsByBorrowerId.get(borrower.id),
             referenceDate
-         ),
-         user: borrower,
-         milestoneDefinitions: trustPointRewardContext.milestoneDefinitions,
-         completedMilestoneIds: trustPointRewardContext.completedMilestoneIdsByBorrowerId.get(borrower.id),
-         referenceDate
-      });
+         });
 
-      const delivery = await sendBorrowerLoanNotification(
-         'weekly_digest',
-         null,
-         {
-            ...borrower,
-            trust_points_reward: trustPointsReward,
-            trust_points_reward_kind: 'potential'
-         },
-         aggregate,
-         { telegramEnabled, notifEnabled: (borrower as any).notif_blogs !== false }
-      );
+         const delivery = await sendBorrowerLoanNotification(
+            'weekly_digest',
+            null,
+            {
+               ...borrower,
+               trust_points_reward: trustPointsReward,
+               trust_points_reward_kind: 'potential'
+            },
+            aggregate,
+            { telegramEnabled, notifEnabled: (borrower as any).notif_blogs !== false }
+         );
 
-      if (!delivery.emailSent && !delivery.telegramSent) {
-         continue;
+         if (!delivery.emailSent && !delivery.telegramSent) {
+            continue;
+         }
+
+         await recordWeeklyDigest(
+            supabase,
+            borrower.id,
+            borrowerLoans.map((loan) => loan.id)
+         );
+
+         sentCount += 1;
+      } catch (sendError) {
+         console.error('weekly digest failed for borrower', sendError instanceof Error ? sendError.message : sendError);
       }
-
-      await recordWeeklyDigest(
-         supabase,
-         borrower.id,
-         borrowerLoans.map((loan) => loan.id)
-      );
-
-      sentCount += 1;
    }
 
    return new Response(JSON.stringify({ message: 'Weekly digests sent', sent: sentCount }), { status: 200, headers: corsHeaders });
