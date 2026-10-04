@@ -11,9 +11,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 // only accepted after proving on-chain that (a) the reported tx/userOp succeeded, (b) it
 // was sent by the claimed buyer wallet, and (c) ownerOf(tokenId) on the LoanManager is
 // that wallet — so a forged request can't mark a loan sold, steal lender status, or mint
-// IOU points without actually paying. When LOAN_MANAGER_ADDRESS is unset (mock mode,
-// nothing on-chain exists) verification is skipped. Price and tokenId are read from the
-// loans row, never from the client.
+// IOU points without actually paying. Price and tokenId are read from the loans row, never
+// from the client.
+//
+// FAIL CLOSED: with no LOAN_MANAGER_ADDRESS there is nothing to verify against, and skipping the
+// proof would let any signed-in user take over a listed loan (the borrower's repayment would then go
+// to them) and mint points for free. So an unset address now refuses every purchase. Mock mode (dev
+// only, nothing on-chain) must be opted into explicitly with LOAN_NOTES_MOCK_MODE=true.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -31,6 +35,7 @@ const RPC_URL = ALCHEMY_ID ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_ID
 const BUNDLER_URL = 'https://api.developer.coinbase.com/rpc/v1/base/S-fOd2n2Oi4fl4e1Crm83XeDXZ7tkg8O'
 // Real mode switch: the deployed LoanManager address (see contracts/DEPLOYMENTS.md). Unset = mock.
 const LOAN_MANAGER_ADDRESS = (Deno.env.get('LOAN_MANAGER_ADDRESS') ?? '').trim().toLowerCase()
+const MOCK_MODE = Deno.env.get('LOAN_NOTES_MOCK_MODE') === 'true'
 
 const OWNER_OF_SELECTOR = '0x6352211e' // ownerOf(uint256)
 
@@ -101,6 +106,11 @@ serve(async (req) => {
     const buyer = userData?.user
     if (userError || !buyer?.id) return json({ error: 'Authentication required' }, 401)
 
+    if (!LOAN_MANAGER_ADDRESS && !MOCK_MODE) {
+      console.error('buy-loan-note: LOAN_MANAGER_ADDRESS is not set and LOAN_NOTES_MOCK_MODE is not enabled; refusing')
+      return json({ error: 'Loan Note purchases are not available right now' }, 503)
+    }
+
     const body = await req.json()
     const { loanId, txHash, buyerWallet } = body ?? {}
 
@@ -112,13 +122,24 @@ serve(async (req) => {
     // from this row — the client's values are never trusted.
     const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, is_sellable, funding_method, tracking_id, listing_price, loan_amount, onchain_loan_id')
+      .select(
+        'id, is_sellable, funding_method, tracking_id, listing_price, loan_amount, onchain_loan_id, borrower_user_id, loan_status, repayment_status, refunded_at'
+      )
       .eq('id', loanId)
       .maybeSingle()
 
     if (loanError || !loan) return json({ error: 'Loan not found' }, 404)
     if (loan.funding_method !== 'smart_contract' || !loan.is_sellable) {
       return json({ error: 'This loan is not available for purchase' }, 409)
+    }
+    // Only an open loan can change hands: a repaid or refunded note has nothing left to buy, and
+    // taking it over would redirect nothing but still mint points.
+    if (loan.loan_status !== 'Lent' || loan.repayment_status === 'Paid' || loan.refunded_at) {
+      return json({ error: 'This loan is no longer open for purchase' }, 409)
+    }
+    // A borrower can't become the lender on their own loan.
+    if (loan.borrower_user_id && loan.borrower_user_id === buyer.id) {
+      return json({ error: 'You cannot buy a Loan Note on your own loan' }, 403)
     }
 
     const priceNumber = Number(loan.listing_price ?? loan.loan_amount ?? 0)
