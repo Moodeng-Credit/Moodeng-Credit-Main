@@ -93,28 +93,12 @@ export const calculateHoursRemaining = (dueDate: string | Date): number => {
 };
 
 /**
- * Calculate days remaining from due date
- * Works with UTC timestamps from Supabase TIMESTAMPTZ
+ * The device's local calendar date as YYYY-MM-DD. Not `toISOString().slice(0, 10)`, which is the UTC
+ * date: for someone in Manila or Jakarta (UTC+8/+7) that is still *yesterday* between midnight and
+ * 8am, which let the request form offer a repayment date that had already passed.
  */
-export const calculateDaysRemaining = (dueDate: string | Date): number => {
-   const dueUTC = parseDateSafely(dueDate);
-
-   // Get today's date in UTC at midnight
-   const todayUTC = new Date();
-   const year = todayUTC.getUTCFullYear();
-   const month = todayUTC.getUTCMonth();
-   const day = todayUTC.getUTCDate();
-   const today = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-
-   // Get due date at midnight UTC
-   const dueYear = dueUTC.getUTCFullYear();
-   const dueMonth = dueUTC.getUTCMonth();
-   const dueDay = dueUTC.getUTCDate();
-   const dueAtMidnight = new Date(Date.UTC(dueYear, dueMonth, dueDay, 0, 0, 0, 0));
-
-   const timeDifference = dueAtMidnight.getTime() - today.getTime();
-   return Math.round(timeDifference / (1000 * 60 * 60 * 24));
-};
+export const toLocalDateString = (date: Date = new Date()): string =>
+   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 /**
  * Get formatted due date with time and timezone from due date string

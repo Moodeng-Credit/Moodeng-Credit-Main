@@ -1,5 +1,7 @@
 import { type ChangeEvent, useRef, useState } from 'react';
 
+import { toLocalDateString } from '@/utils/dateFormatters';
+
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
 import type { LoanFlow } from '@/hooks/useLoanFlow';
@@ -31,7 +33,7 @@ export default function LoanRequestPreview() {
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
    const [submitted, setSubmitted] = useState(false);
-   const today = new Date().toISOString().slice(0, 10);
+   const today = toLocalDateString();
    const params = new URLSearchParams(window.location.search);
    // ?unverified renders the not-yet-verified state (verify blocker + inert submit button).
    const showVerify = params.has('unverified');
