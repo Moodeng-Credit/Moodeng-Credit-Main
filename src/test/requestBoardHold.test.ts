@@ -30,3 +30,21 @@ describe('request board: a request on hold (missed video call)', () => {
       expect(isRequestBoardLoanVisible({ ...request, createdAt: '2026-09-20T08:00:00Z' }, now, 'borrower-1')).toBe(false);
    });
 });
+
+describe('request board: a request whose due day is over', () => {
+   // Due 1 Oct (Manila): past due from 8 AM Manila on 2 Oct (due + 24h).
+   const due = { ...request, dueDate: '2026-10-01T00:00:00Z', dueTimezone: 'Asia/Manila' };
+
+   it('is still shown on its due day', () => {
+      expect(isRequestBoardLoanVisible(due, new Date('2026-10-01T15:00:00Z'), 'lender-1')).toBe(true);
+   });
+
+   it('is hidden from lenders once the due day is over', () => {
+      expect(isRequestBoardLoanVisible(due, new Date('2026-10-02T01:00:00Z'), 'lender-1')).toBe(false);
+      expect(isRequestBoardLoanVisible(due, new Date('2026-10-02T01:00:00Z'))).toBe(false);
+   });
+
+   it('stays visible to its own borrower so they can delete it and post again', () => {
+      expect(isRequestBoardLoanVisible(due, new Date('2026-10-02T01:00:00Z'), 'borrower-1')).toBe(true);
+   });
+});

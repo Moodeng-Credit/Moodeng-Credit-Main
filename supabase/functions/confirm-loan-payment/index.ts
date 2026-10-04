@@ -10,6 +10,7 @@ import {
    LOAN_FUNDING_POINTS_PER_USDC,
    toNumber
 } from '../_shared/creditAndPoints.ts';
+import { DEFAULT_TIMEZONE, loanTimezone, pastDueAt } from '../_shared/loanDeadline.ts';
 
 // Server-side proof-of-payment gate for loan funding/repayment.
 //
@@ -583,6 +584,15 @@ serve(async (req) => {
          console.warn(`confirm-loan-payment: ${loan.tracking_id} was funded while on hold (${loan.on_hold_reason ?? 'unknown'})`);
          await postDiscord(
             { content: `⚠️ ${loan.tracking_id} was funded while on hold (${loan.on_hold_reason === 'no_show' ? 'borrower missed their call' : loan.on_hold_reason ?? 'unknown'}). The payment is recorded; check in with the borrower.` },
+            { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         );
+      }
+      // The app won't fund a request whose due day is over, but the USDC has already reached the
+      // borrower by now, so record it and ask the team to extend it rather than strand the payment.
+      if (loan.due_date && Date.now() >= pastDueAt(loan.due_date, loanTimezone(loan, DEFAULT_TIMEZONE)).getTime()) {
+         console.warn(`confirm-loan-payment: ${loan.tracking_id} was funded after its due day (${loan.due_date})`);
+         await postDiscord(
+            { content: `⚠️ ${loan.tracking_id} was funded after its due day (${String(loan.due_date).slice(0, 10)}), so it starts overdue. The payment is recorded; extend the due date in admin.` },
             { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
          );
       }
