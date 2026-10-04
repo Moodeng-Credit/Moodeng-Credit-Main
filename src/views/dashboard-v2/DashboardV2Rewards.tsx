@@ -104,7 +104,7 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
                         Salamat! We got it.
                      </p>
                      <p className="text-[16px] leading-[22px] text-[#45556c]">
-                        We&apos;ll send your ₱{voucher.amountPhp} GrabFood voucher code to your mobile within 2 business days.
+                        We&apos;ll send your ₱{voucher.amountPhp} GrabFood voucher code to your email within 2 business days.
                      </p>
                      {isPreview ? <p className="text-[12px] text-[#c0b9c8]">Preview sample — nothing was sent.</p> : null}
                   </div>

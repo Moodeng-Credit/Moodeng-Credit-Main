@@ -254,8 +254,8 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Something went wrong. Please try again.': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
    'Salamat! We got it.': 'Cảm ơn bạn! Chúng tôi đã nhận được.',
    "We'll send your ₱": 'Chúng tôi sẽ gửi mã phiếu quà tặng trị giá ₱',
-   'GrabFood voucher code to your mobile within 2 business days.':
-      'dùng trên GrabFood đến số điện thoại của bạn trong vòng 2 ngày làm việc.',
+   'GrabFood voucher code to your email within 2 business days.':
+      'dùng trên GrabFood đến email của bạn trong vòng 2 ngày làm việc.',
    'Preview sample — nothing was sent.': 'Mẫu xem trước — không có gì được gửi.',
    'Full name': 'Họ và tên',
    'Mobile number (GCash)': 'Số điện thoại (GCash)',

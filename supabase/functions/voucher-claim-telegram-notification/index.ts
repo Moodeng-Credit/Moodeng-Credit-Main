@@ -1,4 +1,4 @@
-// Posts a new GrabFood voucher claim to the admin Telegram channel with Mark sent / Reject buttons.
+// Posts a new GrabFood voucher claim to the admin Telegram channel with Send code / Reject buttons.
 // Called by the notify_voucher_claim_telegram trigger on voucher_claims (service key as bearer).
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -51,7 +51,7 @@ serve(async (req) => {
       await sendTelegramMessage(chatId, buildVoucherClaimCard(claim as unknown as VoucherClaimRow), {
          inlineKeyboard: [
             [
-               { text: '✅ Mark sent', callback_data: buildVoucherCallback('sent', claim.id) },
+               { text: '✅ Send code', callback_data: buildVoucherCallback('sent', claim.id) },
                { text: '❌ Reject', callback_data: buildVoucherCallback('rejected', claim.id) }
             ]
          ]
