@@ -76,6 +76,12 @@ verify_jwt = false
 [functions.loan-overdue-notifications]
 verify_jwt = false
 
+# Weekly digest. The cron (jobid 9) sends the internal secret in x-notification-secret and no
+# Authorization header, so the gateway's JWT check rejected every run with 401 (no digest since
+# 2026-09-14). The function itself rejects anything but the scheduler (isInternalRequest), like its siblings.
+[functions.loan-weekly-digest]
+verify_jwt = false
+
 [functions.loan-request-telegram-notification]
 verify_jwt = false
 
