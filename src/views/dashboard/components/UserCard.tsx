@@ -26,7 +26,13 @@ import {
    buildBorrowerContextFit,
    normalizeBorrowerContextProfile
 } from '@/lib/borrowerContextFit';
-import { formatBoardExpiryLabel, getRequestBoardExpiry, isExpiredUnfundedRequest, type RequestBoardExpiry } from '@/lib/borrowerCreditUsage';
+import {
+   formatBoardExpiryLabel,
+   getRequestBoardExpiry,
+   isExpiredUnfundedRequest,
+   isRequestPastItsDueDay,
+   type RequestBoardExpiry
+} from '@/lib/borrowerCreditUsage';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -289,12 +295,21 @@ export default function UserCard(loan: UserCardProps) {
          }
          const { data: liveLoan } = await getSupabaseBrowserClient()
             .from('loans')
-            .select('loan_status, lender_user_id, on_hold_since, created_at')
+            .select('loan_status, lender_user_id, on_hold_since, created_at, due_date, due_timezone')
             .eq('id', loanData.id)
             .maybeSingle();
          // Requests expire after 7 days; the board only refreshes every minute, so check right now.
          if (liveLoan?.created_at && isExpiredUnfundedRequest({ createdAt: liveLoan.created_at, loanStatus: liveLoan.loan_status })) {
             showToast(TOAST_TYPES.WARNING, 'This request has expired', 'The borrower needs to post a new request.');
+            void dispatch(fetchLoans());
+            return;
+         }
+         // Its repayment day is already over: funding now would start the loan overdue.
+         if (
+            liveLoan &&
+            isRequestPastItsDueDay({ dueDate: liveLoan.due_date ?? undefined, dueTimezone: liveLoan.due_timezone ?? undefined, loanStatus: liveLoan.loan_status })
+         ) {
+            showToast(TOAST_TYPES.WARNING, 'This request is past its due date', 'The borrower needs to post a new request.');
             void dispatch(fetchLoans());
             return;
          }

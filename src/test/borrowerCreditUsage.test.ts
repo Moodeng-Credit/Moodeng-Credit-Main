@@ -70,7 +70,7 @@ describe('borrower credit usage', () => {
    });
 
    it('keeps requested loans active until they are 7 days old', () => {
-      const notQuiteExpired = { ...baseLoan, createdAt: '2026-05-13T12:01:00.000Z' };
+      const notQuiteExpired = { ...baseLoan, createdAt: '2026-05-13T12:01:00.000Z', dueDate: '2026-05-30T00:00:00.000Z' };
 
       expect(isExpiredUnfundedRequest(notQuiteExpired, now)).toBe(false);
       expect(isRequestBoardLoanVisible(notQuiteExpired, now)).toBe(true);

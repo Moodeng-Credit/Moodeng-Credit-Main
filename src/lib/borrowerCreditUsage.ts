@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 
 import { parseDateSafely } from '@/utils/dateFormatters';
+import { isLoanPastDue } from '@/utils/loanOverdue';
 
 import { type Loan, LoanStatus, RepaymentStatus } from '@/types/loanTypes';
 
@@ -32,14 +33,26 @@ export const getBorrowerActiveLoanCount = (loans: CreditUsageLoan[], now = new D
    loans.filter((loan) => isLoanUsingBorrowerCredit(loan, now)).length;
 
 /**
- * Shown on the request board: not expired, and not on hold. A request on hold (the borrower missed
- * their video call) is hidden from everyone but its borrower, who sees it marked "On hold".
+ * A request whose repayment day is already over: funding it now would create a loan that is overdue
+ * the moment it starts. Measured with the same deadline as everything else (getLoanPastDueAt).
+ */
+export const isRequestPastItsDueDay = (loan: Partial<Pick<Loan, 'dueDate' | 'dueTimezone' | 'loanStatus'>>, now = new Date()) =>
+   loan.loanStatus === LoanStatus.REQUESTED && isLoanPastDue(loan.dueDate, now, loan.dueTimezone);
+
+/**
+ * Shown on the request board: not expired, not on hold, and its due day not yet over. A request on
+ * hold (the borrower missed their video call) or past its due day is hidden from everyone but its
+ * borrower, who can still see it (and delete it to post a new one).
  */
 export const isRequestBoardLoanVisible = (
-   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'borrowerUser'>>,
+   loan: Pick<Loan, 'createdAt' | 'loanStatus'> & Partial<Pick<Loan, 'onHoldSince' | 'borrowerUser' | 'dueDate' | 'dueTimezone'>>,
    now = new Date(),
    viewerUserId?: string | null
-) => !isExpiredUnfundedRequest(loan, now) && (!loan.onHoldSince || (Boolean(viewerUserId) && loan.borrowerUser === viewerUserId));
+) => {
+   if (isExpiredUnfundedRequest(loan, now)) return false;
+   if (Boolean(viewerUserId) && loan.borrowerUser === viewerUserId) return true;
+   return !loan.onHoldSince && !isRequestPastItsDueDay(loan, now);
+};
 
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
