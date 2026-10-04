@@ -32,6 +32,7 @@ import { useLoanFlow } from '@/hooks/useLoanFlow';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
+import { toLocalDateString } from '@/utils/dateFormatters';
 import { formatCurrency } from '@/utils/decimalHelpers';
 import { filterLoans, type LoanFilters } from '@/utils/loanFilters';
 
@@ -590,7 +591,7 @@ function RequestBoard$() {
       hasLoadedRequestBoardLoans && shouldShowPreviewRequestBoardLoans(location.search, liveRequestBoardLoans);
    const requestBoardLoans = shouldUsePreviewRequestBoardLoans ? previewRequestBoardLoans : liveRequestBoardLoans;
 
-   const today = new Date().toISOString().split('T')[0];
+   const today = toLocalDateString();
    const borrowerUserId = effectiveUser?.id || '';
    const lenderUserId = '';
    const [loanAmount, setLoanAmount] = useState('');
