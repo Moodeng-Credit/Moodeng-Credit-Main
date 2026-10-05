@@ -1792,6 +1792,12 @@
             background: #010101;
             color: #fff;
          }
+         .login-btn.tt.soon {
+            background: #8a8592;
+            color: #f3f1f5;
+            cursor: not-allowed;
+            pointer-events: none;
+         }
          .claim label {
             font-weight: 700;
          }
@@ -2745,10 +2751,10 @@
                   );
                }
                return (
-                  '<div class="claim-login" data-tt hidden><a class="login-btn tt" href="/auth/start/tiktok?next=%2Fstocks">' +
-                  both('Mag-sign up gamit ang TikTok', 'Sign up with TikTok') +
-                  '</a><p class="claim-msg">' +
-                  both('Babalik ka dito pagkatapos, para i-claim.', "You'll come right back here to claim.") +
+                  '<div class="claim-login" data-tt><a class="login-btn tt soon" href="/auth/start/tiktok?next=%2Fstocks" aria-disabled="true" tabindex="-1">' +
+                  both('Sign up gamit ang TikTok — malapit na!', 'Sign up with TikTok — coming soon!') +
+                  '</a><p class="claim-msg" data-tt-msg>' +
+                  both('Sa ngayon, i-type muna ang TikTok username mo sa baba.', 'For now, type your TikTok username below.') +
                   '</p></div><form class="claim" data-claim novalidate><label for="claim-handle">' +
                   both('TikTok username mo', 'Your TikTok username') +
                   '</label><div class="claim-row"><input id="claim-handle" name="handle" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="25" placeholder="@username" /><button type="submit" class="spin-btn">' +
@@ -2804,8 +2810,14 @@
                      if (localStorage.getItem('moodeng:tiktok-test') === '1') live = true;
                   } catch (e) {}
                   if (!live) return;
-                  document.querySelectorAll('.claim-login[data-tt]').forEach(function (a) {
-                     a.hidden = false;
+                  document.querySelectorAll('.login-btn.tt.soon').forEach(function (a) {
+                     a.classList.remove('soon');
+                     a.removeAttribute('aria-disabled');
+                     a.removeAttribute('tabindex');
+                     a.innerHTML = both('Mag-sign up gamit ang TikTok', 'Sign up with TikTok');
+                  });
+                  document.querySelectorAll('[data-tt-msg]').forEach(function (m) {
+                     m.innerHTML = both('Babalik ka dito pagkatapos, para i-claim.', "You'll come right back here to claim.");
                   });
                   document.querySelectorAll('label[for="claim-handle"]').forEach(function (l) {
                      l.innerHTML = both('O i-type ang TikTok username mo', 'Or type your TikTok username');

@@ -148,7 +148,7 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
                {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
-            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (hidden until configured) */}
+            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (grayed out "Soon" until the app is approved) */}
             <div className="relative">
                <TikTokLoginButton isSignUp={isSignUp} iconOnly />
                {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
