@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>Is this stock cheap? | Moodeng Credit</title>
+      <meta
+         name="description"
+         content="P/E, forward P/E, free cash flow yield and PEG explained in plain English, with real numbers for well-known stocks compared against the 10-year US Treasury."
+      />
+      <meta property="og:title" content="Is this stock cheap? Four numbers, in plain English | Moodeng Credit" />
+      <meta
+         property="og:description"
+         content="P/E, forward P/E, FCF yield and PEG for 18 well-known stocks, measured against a 5.24% Treasury. Plus the 3 stocks that pass our scorecard."
+      />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/stocks" />
+      <meta name="twitter:card" content="summary" />
+      <link rel="canonical" href="https://moodeng.app/stocks" />
+      <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
+      <link rel="stylesheet" href="/landing/site.css?v=20260717-hero-note-1" />
+      <style>
+         .stk-page {
+            --stk-pass: var(--green);
+            --stk-pass-soft: var(--green-soft);
+            --stk-fail: var(--rose);
+            --stk-fail-soft: oklch(95.5% 0.03 22);
+            --stk-bond: var(--amber);
+            --stk-note: var(--butter);
+         }
+         .stk-page .site-header {
+            background: var(--night);
+         }
+         .stk-page main h1,
+         .stk-page main h2,
+         .stk-page main h3 {
+            font-family: var(--font-display);
+            letter-spacing: -0.04em;
+            line-height: 1.05;
+         }
+
+         /* Hero */
+         .stk-hero {
+            background: var(--night);
+            color: var(--paper);
+            padding-block: clamp(48px, 7vw, 96px) clamp(40px, 6vw, 72px);
+         }
+         .stk-hero h1 {
+            margin-top: 14px;
+            font-size: clamp(2.3rem, 6.2vw, 4.4rem);
+            max-width: 14ch;
+         }
+         .stk-hero h1 span {
+            color: var(--lavender-200);
+         }
+         .stk-hero-lead {
+            margin-top: 20px;
+            max-width: 56ch;
+            color: var(--night-text);
+            font-size: clamp(1.02rem, 1.6vw, 1.18rem);
+         }
+         .stk-bond {
+            margin-top: 28px;
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 4px 12px;
+            border: 1px solid oklch(85.5% 0.09 305 / 0.35);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            background: var(--night-2);
+         }
+         .stk-bond strong {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            color: var(--butter);
+         }
+         .stk-bond span {
+            color: var(--night-text);
+            font-size: 0.95rem;
+         }
+         .stk-asof {
+            margin-top: 14px;
+            color: var(--night-text);
+            font-size: 0.85rem;
+            opacity: 0.85;
+         }
+
+         /* Sections */
+         .stk-section {
+            padding-block: clamp(48px, 6vw, 80px);
+         }
+         .stk-heading h2 {
+            margin-top: 10px;
+            font-size: clamp(1.8rem, 4.4vw, 2.8rem);
+         }
+         .stk-heading p:not(.eyebrow) {
+            margin-top: 12px;
+            max-width: 62ch;
+            color: var(--ink-soft);
+         }
+
+         /* Top 3 */
+         .stk-tests {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            list-style: none;
+         }
+         .stk-tests li {
+            border: 1px solid var(--line);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            background: var(--paper);
+            font-size: 0.92rem;
+            color: var(--ink-soft);
+         }
+         .stk-tests b {
+            display: block;
+            color: var(--ink);
+         }
+         .stk-picks {
+            margin-top: 28px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+            gap: 16px;
+            list-style: none;
+         }
+         .stk-pick {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            padding: 22px;
+            background: var(--paper);
+            box-shadow: var(--shadow-sm);
+         }
+         .stk-rank {
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--purple-dark);
+            color: var(--paper);
+            font-family: var(--font-display);
+         }
+         .stk-pick-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+         }
+         .stk-pick-head h3 {
+            font-size: 1.35rem;
+         }
+         .stk-pick-head small {
+            display: block;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+         }
+         .stk-checks {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            list-style: none;
+         }
+         .stk-checks li {
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 0.82rem;
+            line-height: 1.25;
+         }
+         .stk-checks li.pass {
+            background: var(--stk-pass-soft);
+            color: oklch(32% 0.1 151);
+         }
+         .stk-checks li.fail {
+            background: var(--stk-fail-soft);
+            color: oklch(38% 0.14 22);
+         }
+         .stk-checks li strong {
+            display: block;
+            font-size: 1.05rem;
+         }
+         .stk-why {
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+         }
+         .stk-catch {
+            margin-top: auto;
+            border-left: 3px solid var(--stk-bond);
+            padding: 4px 0 4px 12px;
+            font-size: 0.9rem;
+            color: var(--ink-soft);
+         }
+         .stk-catch b {
+            color: var(--ink);
+         }
+         .stk-close {
+            margin-top: 18px;
+            color: var(--ink-soft);
+            font-size: 0.92rem;
+         }
+
+         /* Tabs */
+         .stk-tablist {
+            position: sticky;
+            top: 86px;
+            z-index: 20;
+            margin-top: 26px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            border-radius: 999px;
+            padding: 6px;
+            background: var(--lavender-50);
+            border: 1px solid var(--line);
+            scrollbar-width: none;
+         }
+         .stk-tablist::-webkit-scrollbar {
+            display: none;
+         }
+         .stk-tab {
+            flex: 1 0 auto;
+            min-height: 44px;
+            border: 0;
+            border-radius: 999px;
+            padding: 10px 16px;
+            background: transparent;
+            color: var(--purple-ink);
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+         }
+         .stk-tab[aria-selected='true'] {
+            background: var(--ink);
+            color: var(--paper);
+         }
+         @media (max-width: 520px) {
+            .stk-tablist {
+               gap: 2px;
+               padding: 4px;
+            }
+            .stk-tab {
+               flex: 1 1 0;
+               min-width: 0;
+               padding: 8px 4px;
+               font-size: 0.82rem;
+               line-height: 1.15;
+               white-space: normal;
+            }
+         }
+         .stk-tab:focus-visible {
+            outline: 3px solid var(--purple);
+            outline-offset: 2px;
+         }
+         .stk-panel {
+            margin-top: 24px;
+         }
+         #ratios {
+            scroll-margin-top: 80px;
+         }
+         .stk-panel[hidden] {
+            display: none;
+         }
+         .stk-panel-grid {
+            display: grid;
+            gap: 20px;
+         }
+         @media (min-width: 900px) {
+            .stk-panel-grid {
+               grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.3fr);
+               align-items: start;
+            }
+         }
+         .stk-note {
+            border-radius: 6px 6px 22px 6px;
+            padding: 22px;
+            background: var(--stk-note);
+            box-shadow: var(--shadow-sm);
+            rotate: -0.6deg;
+         }
+         .stk-note .stk-formula {
+            font-family: var(--font-display);
+            font-size: clamp(1.25rem, 2.8vw, 1.6rem);
+            line-height: 1.15;
+         }
+         .stk-note p {
+            margin-top: 12px;
+            color: var(--ink-soft);
+         }
+         .stk-note .stk-example {
+            margin-top: 14px;
+            border-top: 1px dashed oklch(53% 0.12 75 / 0.5);
+            padding-top: 12px;
+            color: var(--ink);
+            font-weight: 700;
+         }
+         .stk-read {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            list-style: none;
+         }
+         .stk-read li {
+            border-radius: 999px;
+            padding: 5px 10px;
+            background: oklch(99% 0.01 88 / 0.7);
+            font-size: 0.82rem;
+            font-weight: 700;
+         }
+         .stk-board {
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            padding: clamp(16px, 3vw, 24px);
+            background: var(--paper);
+         }
+         .stk-board-head {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 6px 16px;
+            align-items: baseline;
+         }
+         .stk-board-head h3 {
+            font-size: 1.2rem;
+         }
+         .stk-board-head span {
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 700;
+         }
+         .stk-rows {
+            margin-top: 16px;
+            display: grid;
+            gap: 16px;
+            list-style: none;
+         }
+         .stk-row-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: baseline;
+         }
+         .stk-row-name {
+            font-weight: 800;
+         }
+         .stk-row-name small {
+            margin-left: 6px;
+            color: var(--muted);
+            font-weight: 700;
+            font-size: 0.78rem;
+         }
+         .stk-row-value {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            white-space: nowrap;
+         }
+         .stk-track {
+            position: relative;
+            height: 12px;
+            margin-top: 6px;
+            border-radius: 999px;
+            background: var(--canvas);
+         }
+         .stk-bar {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--purple);
+            transition: width 600ms var(--ease-out);
+         }
+         .stk-bar.good {
+            background: var(--stk-pass);
+         }
+         .stk-bar.bad {
+            background: var(--stk-fail);
+         }
+         .stk-bar.over {
+            background: repeating-linear-gradient(-45deg, var(--stk-fail) 0 8px, oklch(60% 0.17 22) 8px 16px);
+         }
+         .stk-line {
+            position: absolute;
+            top: -5px;
+            bottom: -5px;
+            width: 2px;
+            background: var(--stk-bond);
+         }
+         .stk-row-note {
+            margin-top: 6px;
+            color: var(--ink-soft);
+            font-size: 0.88rem;
+         }
+         .stk-legend {
+            margin-top: 18px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 16px;
+            color: var(--muted);
+            font-size: 0.8rem;
+            font-weight: 700;
+         }
+         .stk-legend i {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            vertical-align: -1px;
+            border-radius: 3px;
+         }
+         .stk-panel-catch {
+            margin-top: 16px;
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            background: var(--amber-soft);
+            color: var(--ink-soft);
+            font-size: 0.93rem;
+         }
+         .stk-panel-catch b {
+            color: var(--ink);
+         }
+
+         /* Full scorecard */
+         .stk-all {
+            margin-top: 28px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius-md);
+            background: var(--paper);
+         }
+         .stk-all summary {
+            cursor: pointer;
+            padding: 16px 20px;
+            font-weight: 800;
+         }
+         .stk-table-wrap {
+            overflow-x: auto;
+            padding: 0 12px 16px;
+         }
+         .stk-table {
+            width: 100%;
+            min-width: 640px;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            font-variant-numeric: tabular-nums;
+         }
+         .stk-table th,
+         .stk-table td {
+            padding: 9px 8px;
+            border-bottom: 1px solid var(--line);
+            text-align: right;
+            white-space: nowrap;
+         }
+         .stk-table th:first-child,
+         .stk-table td:first-child {
+            text-align: left;
+         }
+         .stk-table th {
+            color: var(--muted);
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+         }
+         .stk-table td.pass {
+            color: var(--stk-pass);
+            font-weight: 800;
+         }
+         .stk-table td.fail {
+            color: var(--muted);
+         }
+         .stk-table tr.top td:first-child {
+            font-weight: 800;
+         }
+
+         /* Fine print + CTA */
+         .stk-fine {
+            display: grid;
+            gap: 14px;
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+         }
+         .stk-fine h2 {
+            font-size: 1.4rem;
+            color: var(--ink);
+         }
+         .stk-fine ul {
+            padding-left: 18px;
+         }
+         .stk-cta {
+            display: grid;
+            gap: 18px;
+            border-radius: var(--radius-lg);
+            padding: clamp(24px, 5vw, 44px);
+            background: var(--night);
+            color: var(--paper);
+         }
+         .stk-cta h2 {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+         }
+         .stk-cta p {
+            color: var(--night-text);
+            max-width: 56ch;
+         }
+
+         @media (prefers-reduced-motion: reduce) {
+            .stk-bar {
+               transition: none;
+            }
+         }
+      </style>
+   </head>
+   <body class="stk-page">
+      <a class="skip-link" href="#main-content">Skip to main content</a>
+
+      <header class="site-header">
+         <div class="container">
+            <a class="brand" href="/" aria-label="Moodeng Credit home"
+               ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" /><span>Moodeng Credit</span></a
+            >
+            <nav class="desktop-nav" aria-label="Primary navigation">
+               <a href="/how-it-works">How it works</a><a href="/academy">Academy</a><a href="/about">About us</a>
+            </nav>
+            <div class="header-actions">
+               <a class="button secondary" href="/sign-in">Sign in</a><a class="button" href="/request-board">Get a loan</a
+               ><button
+                  class="menu-button"
+                  type="button"
+                  data-menu-open
+                  aria-label="Open menu"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+               >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                     <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+               </button>
+            </div>
+         </div>
+      </header>
+
+      <dialog class="menu-dialog" data-menu-dialog aria-label="Site menu">
+         <div class="menu-head">
+            <span class="brand"><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</span
+            ><button class="menu-close" type="button" data-menu-close aria-label="Close menu">✕</button>
+         </div>
+         <nav class="menu-links" aria-label="Mobile navigation">
+            <a href="/">Home <span aria-hidden="true">→</span></a
+            ><a href="/stocks" aria-current="page">Is this stock cheap? <span aria-hidden="true">→</span></a
+            ><a href="/academy">Academy <span aria-hidden="true">→</span></a
+            ><a href="/how-it-works">How it works <span aria-hidden="true">→</span></a
+            ><a href="/about">About us <span aria-hidden="true">→</span></a>
+         </nav>
+         <div class="menu-actions">
+            <a class="button" href="/request-board">Get a loan</a><a class="button secondary" href="/sign-in">Sign in</a>
+         </div>
+      </dialog>
+
+      <main id="main-content">
+         <section class="stk-hero" aria-labelledby="stk-title">
+            <div class="container">
+               <p class="eyebrow">Money basics · from our TikTok</p>
+               <h1 id="stk-title">Is this stock cheap? <span>Four numbers tell you.</span></h1>
+               <p class="stk-hero-lead">
+                  P/E, forward P/E, free cash flow yield and PEG, explained in plain English with real numbers for 18 stocks you know. Every
+                  stock is measured against the safest bet in the world: a US government bond.
+               </p>
+               <div class="stk-bond">
+                  <strong>5.24%</strong><span>what a 10-year US Treasury pays a year, almost risk-free. Every stock has to beat this or give you a reason to wait.</span>
+               </div>
+               <p class="stk-asof">Stock data: closing prices on October 2, 2026. Treasury yield: October 1, 2026.</p>
+            </div>
+         </section>
+
+         <section class="stk-section surface-lavender" aria-labelledby="top3-title">
+            <div class="container">
+               <div class="stk-heading">
+                  <p class="eyebrow">Our top 3 by the numbers</p>
+                  <h2 id="top3-title">Which stocks pass all our tests?</h2>
+                  <p>
+                     We ran 18 well-known stocks through four tests. Each test asks the same thing: does this stock pay you more than the
+                     5.24% bond, or is its growth cheap for what you pay?
+                  </p>
+               </div>
+               <ol class="stk-tests" aria-label="The four tests">
+                  <li><b>1. Earnings yield over 5.24%</b>Last year's profit ÷ price</li>
+                  <li><b>2. Forward earnings yield over 5.24%</b>Next year's expected profit ÷ price</li>
+                  <li><b>3. FCF yield over 5.24%</b>Real cash made ÷ company value</li>
+                  <li><b>4. PEG under 1.5</b>Price is fair for the growth expected</li>
+               </ol>
+               <ol class="stk-picks" data-picks aria-label="Top 3 stocks on our scorecard"></ol>
+               <p class="stk-close">
+                  <b>Close calls:</b> General Motors also passes 3 tests, but its cheap forward numbers depend on profit jumping about
+                  seven-fold next year. We break ties by picking the stock that relies least on forecasts. JPMorgan passes every test we can
+                  run, but banks don't report free cash flow the way other companies do, so we can't score it fully.
+               </p>
+               <details class="stk-all">
+                  <summary>See the full scorecard for all 18 stocks</summary>
+                  <div class="stk-table-wrap">
+                     <table class="stk-table" data-scorecard>
+                        <thead>
+                           <tr>
+                              <th scope="col">Stock</th>
+                              <th scope="col">Price</th>
+                              <th scope="col">Earnings yield</th>
+                              <th scope="col">Fwd earnings yield</th>
+                              <th scope="col">FCF yield</th>
+                              <th scope="col">PEG</th>
+                              <th scope="col">Tests passed</th>
+                           </tr>
+                        </thead>
+                        <tbody></tbody>
+                     </table>
+                  </div>
+               </details>
+            </div>
+         </section>
+
+         <section class="stk-section" aria-labelledby="ratios-title" id="ratios">
+            <div class="container">
+               <div class="stk-heading">
+                  <p class="eyebrow">The four numbers</p>
+                  <h2 id="ratios-title">Pick a number. See 5 real stocks.</h2>
+                  <p>Each tab explains one ratio, then shows five stocks from cheapest to most expensive on that measure.</p>
+               </div>
+
+               <div class="stk-tablist" role="tablist" aria-label="Valuation ratios" data-tablist></div>
+               <div data-panels></div>
+            </div>
+         </section>
+
+         <section class="stk-section surface-soft" aria-labelledby="catch-title">
+            <div class="container stk-fine">
+               <h2 id="catch-title">Cheap on paper isn't always cheap</h2>
+               <p>
+                  A low number can mean a bargain, or a business the market thinks is shrinking. Before you trust any ratio, compare the
+                  stock with others in the same industry and ask why it is cheap. Banks, oil companies and carmakers usually trade at
+                  lower P/Es than software companies, and that is normal.
+               </p>
+               <p>
+                  <b>This page is education, not advice to buy or sell.</b> Moodeng Credit is not an investment adviser, and our scorecard
+                  is a simple teaching tool, not a recommendation for your situation. Stocks can lose value. Check the numbers yourself
+                  before you invest, and never invest money you've borrowed or need soon.
+               </p>
+               <div>
+                  <p><b>Sources</b></p>
+                  <ul>
+                     <li>Stock figures: StockAnalysis.com statistics pages, October 2, 2026 close.</li>
+                     <li>10-year Treasury yield: FRED series DGS10, 5.24% on October 1, 2026.</li>
+                     <li>S&amp;P 500 forward P/E (19.0): FactSet Earnings Insight, October 2, 2026.</li>
+                     <li>
+                        Earnings yields are our calculation (1 ÷ P/E). Forward numbers rely on analyst estimates, which change. FCF uses the
+                        last twelve months. Sites calculate PEG differently, so you will see different PEGs for the same stock elsewhere.
+                     </li>
+                  </ul>
+               </div>
+            </div>
+         </section>
+
+         <section class="stk-section" aria-labelledby="cta-title">
+            <div class="container">
+               <div class="stk-cta">
+                  <p class="eyebrow">New video every week</p>
+                  <h2 id="cta-title">Learn money in 60 seconds.</h2>
+                  <p>
+                     We explain one money idea per video: stocks, credit, saving. Follow along on TikTok, and when you need a small loan
+                     with clear terms, Moodeng is here.
+                  </p>
+                  <div class="button-row">
+                     <a class="button light" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer"
+                        >Follow @moodeng.credit</a
+                     ><a class="button subtle" href="/how-it-works">How Moodeng works</a>
+                  </div>
+               </div>
+            </div>
+         </section>
+      </main>
+
+      <footer class="site-footer">
+         <div class="container">
+            <div class="footer-grid">
+               <div class="footer-brand">
+                  <a class="brand" href="/"
+                     ><img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="34" height="34" />Moodeng Credit</a
+                  >
+                  <p>Small person-to-person loans with terms you can understand before you ask.</p>
+               </div>
+               <div class="footer-links">
+                  <div>
+                     <h2>Borrow</h2>
+                     <a href="/how-it-works">How it works</a><a href="/how-to-cash-out">Cash-out guide</a
+                     ><a href="/how-to-repay">Repay guide</a><a href="/learn">Guides</a><a href="/academy">Academy</a>
+                  </div>
+                  <div>
+                     <h2>About</h2>
+                     <a href="/about">About us</a><a href="/for-lenders">For lenders</a><a href="/credit-levels">Credit levels</a
+                     ><a href="/team">Our team</a><a href="/blogs">Blog</a>
+                  </div>
+                  <div>
+                     <h2>Talk to us</h2>
+                     <a href="mailto:support@moodeng.app">Email</a
+                     ><a href="https://t.me/jimmymoodengcredit" target="_blank" rel="noreferrer">Telegram</a
+                     ><a href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer">TikTok</a
+                     ><a href="/support/faq">Help centre</a>
+                  </div>
+               </div>
+            </div>
+            <p class="footer-fine">
+               © 2026 Moodeng Credit. Educational content only, not investment advice.
+               <a href="/privacy-policy">Privacy policy</a> · <a href="/terms">Terms of service</a>
+            </p>
+         </div>
+      </footer>
+
+      <script>
+         (function () {
+            var BOND = 5.24;
+
+            // StockAnalysis statistics pages, Oct 2, 2026 close. fcf/peg null = not reported.
+            var STOCKS = {
+               AAPL: { name: 'Apple', price: 333.69, pe: 38.28, fpe: 36.26, fcf: 2.81, peg: 3.27 },
+               MSFT: { name: 'Microsoft', price: 517.53, pe: 28.83, fpe: 26.21, fcf: 1.74, peg: 1.63 },
+               GOOGL: { name: 'Alphabet', price: 343.5, pe: 17.23, fpe: 25.58, fcf: 1.27, peg: 2.0 },
+               AMZN: { name: 'Amazon', price: 251.52, pe: 20.23, fpe: 26.81, fcf: -0.43, peg: 1.29 },
+               META: { name: 'Meta', price: 728.08, pe: 27.44, fpe: 22.64, fcf: 2.21, peg: 1.15 },
+               NVDA: { name: 'Nvidia', price: 233.95, pe: 29.58, fpe: 19.41, fcf: 2.25, peg: 0.37 },
+               AVGO: { name: 'Broadcom', price: 355.14, pe: 45.33, fpe: 20.49, fcf: 2.32, peg: 0.37 },
+               TSLA: { name: 'Tesla', price: 370.59, pe: 384.57, fpe: 201.25, fcf: 0.39, peg: 9.08 },
+               LMT: { name: 'Lockheed Martin', price: 505.41, pe: 18.62, fpe: 16.39, fcf: 7.48, peg: 0.85 },
+               JPM: { name: 'JPMorgan Chase', price: 332.38, pe: 14.27, fpe: 13.72, fcf: null, peg: 1.37 },
+               'BRK.B': { name: 'Berkshire Hathaway', price: 502.65, pe: 12.55, fpe: 22.88, fcf: 2.25, peg: null },
+               XOM: { name: 'ExxonMobil', price: 164.01, pe: 21.15, fpe: 12.66, fcf: 4.53, peg: 1.18 },
+               KO: { name: 'Coca-Cola', price: 85.65, pe: 25.74, fpe: 25.2, fcf: 3.88, peg: 3.41 },
+               COST: { name: 'Costco', price: 920.65, pe: 44.35, fpe: 40.41, fcf: 2.3, peg: 3.68 },
+               UNH: { name: 'UnitedHealth', price: 371.9, pe: 23.94, fpe: 17.48, fcf: 7.07, peg: 1.2 },
+               PYPL: { name: 'PayPal', price: 52.8, pe: 9.95, fpe: 9.51, fcf: 14.58, peg: 1.35 },
+               GM: { name: 'General Motors', price: 78.27, pe: 39.42, fpe: 5.61, fcf: 20.96, peg: 0.34 },
+               MRK: { name: 'Merck', price: 144.3, pe: 113.37, fpe: 16.9, fcf: 4.51, peg: 3.08 },
+            };
+
+            var PICKS = [
+               {
+                  t: 'LMT',
+                  why: 'Pays more than the bond on profit (5.4%), next year’s profit (6.1%) and cash (7.5%), and its growth is cheap (PEG 0.85).',
+                  catch: 'A slow-growing defence contractor that lives on government budgets. No AI rocket ride here.',
+               },
+               {
+                  t: 'PYPL',
+                  why: 'Under $10 for every $1 of profit, and $6.6B of real cash a year on a $45B company: a 14.6% cash yield.',
+                  catch: 'It is cheap because the market doubts its growth (analysts expect about 6% a year) as payment rivals compete.',
+               },
+               {
+                  t: 'UNH',
+                  why: 'A 7.1% cash yield and 5.7% on next year’s profit, with growth fairly priced (PEG 1.2).',
+                  catch: 'Fails on last year’s profit (4.2%). Health insurers face rising medical costs and heavy government scrutiny.',
+               },
+            ];
+
+            var TABS = [
+               {
+                  id: 'pe',
+                  label: 'P/E',
+                  formula: 'P/E = Price ÷ Earnings per share',
+                  plain: 'How many dollars you pay for $1 of the company’s yearly profit. Lower usually means cheaper.',
+                  example: 'A $100 stock earning $5 a share has a P/E of 20: you pay $20 for every $1 of profit.',
+                  read: ['Under 15: cheap-looking', '15–25: around normal', 'Over 30: priced for growth'],
+                  title: 'P/E, last 12 months',
+                  sub: 'Whole market (S&P 500): 27.1',
+                  rows: [
+                     { t: 'JPM', note: '$14 for $1 of profit. Banks usually trade on lower P/Es.' },
+                     { t: 'LMT', note: 'Below the market. A steady business with slower growth.' },
+                     { t: 'MSFT', note: 'EPS $17.95 × 28.8 ≈ its $517 price. A premium for quality.' },
+                     { t: 'AAPL', note: '$38 for $1 of profit. You are paying for the brand.' },
+                     { t: 'TSLA', note: '$385 for $1 of profit. The price is a bet on much bigger future profit.' },
+                  ],
+                  value: function (s) {
+                     return s.pe;
+                  },
+                  fmt: function (v) {
+                     return v.toFixed(1);
+                  },
+                  max: 50,
+                  tone: function (v) {
+                     return v <= 1 / (BOND / 100) ? 'good' : 'bad';
+                  },
+                  legend: [
+                     ['good', 'Earnings yield beats the 5.24% bond (P/E under 19.1)'],
+                     ['bad', 'Bond pays more today'],
+                  ],
+                  catch:
+                     '<b>Flip it to compare with the bond:</b> 1 ÷ P/E is the earnings yield. A P/E of 20 is a 5% yield, just under the 5.24% bond. <b>The catch:</b> a low P/E can mean a business in decline, or a one-off gain. Alphabet shows 17.2 on last year’s profit but 25.6 on next year’s.',
+               },
+               {
+                  id: 'forward-pe',
+                  label: 'Forward P/E',
+                  formula: 'Forward P/E = Price ÷ NEXT year’s expected earnings',
+                  plain: 'The same idea as P/E, but using the profit analysts expect next year. A big drop from P/E means profit is expected to jump.',
+                  example: 'Nvidia: 29.6 on last year’s profit, 19.4 on next year’s. Analysts expect profit to grow about 50%.',
+                  read: ['Forward lower than P/E: growth expected', 'Forward higher: profit expected to fall'],
+                  title: 'Forward P/E (last year’s P/E in grey)',
+                  sub: 'Whole market (S&P 500): 19.0',
+                  rows: [
+                     { t: 'GM', note: '39.4 → 5.6. Last year’s profit was unusually low; analysts expect a huge rebound.' },
+                     { t: 'XOM', note: '21.2 → 12.7. Implies profit about 67% higher. Oil prices decide if it happens.' },
+                     { t: 'NVDA', note: '29.6 → 19.4. Pricey on the past, about market price on the future.' },
+                     { t: 'MSFT', note: '28.8 → 26.2. Small gap: steady, predictable growth.' },
+                     { t: 'COST', note: '44.4 → 40.4. Even on next year’s profit, $40 for every $1.' },
+                  ],
+                  value: function (s) {
+                     return s.fpe;
+                  },
+                  ghost: function (s) {
+                     return s.pe;
+                  },
+                  fmt: function (v) {
+                     return v.toFixed(1);
+                  },
+                  max: 50,
+                  tone: function (v) {
+                     return v <= 1 / (BOND / 100) ? 'good' : 'bad';
+                  },
+                  legend: [
+                     ['good', 'Beats the bond on next year’s profit (under 19.1)'],
+                     ['bad', 'Bond pays more'],
+                     ['ghost', 'Last year’s P/E'],
+                  ],
+                  catch:
+                     '<b>The catch:</b> forward P/E is only as good as the forecast. Analysts are often wrong, especially for carmakers and oil companies whose profits swing with the economy. GM looks the cheapest here only if that rebound really arrives.',
+               },
+               {
+                  id: 'fcf',
+                  label: 'FCF yield',
+                  formula: 'FCF yield = Free cash flow ÷ Market value',
+                  plain: 'The real cash left after the company pays for its equipment, divided by what the whole company costs. The closest thing a stock has to an interest rate.',
+                  example: '$10B of free cash on a $200B company is a 5% FCF yield. Compare that with the 5.24% bond.',
+                  read: ['Over 5.24%: beats the bond', 'Under 0%: burning cash'],
+                  title: 'FCF yield vs the 5.24% bond',
+                  sub: 'Gold line = 5.24% Treasury',
+                  rows: [
+                     { t: 'PYPL', note: '$6.6B of cash on a $45B company. Cheap because growth is slow.' },
+                     { t: 'LMT', note: '$8.7B of cash on a $117B company.' },
+                     { t: 'UNH', note: '$23.6B of cash on a $334B company.' },
+                     { t: 'KO', note: '$14.3B of cash on a $369B company. Much of it goes out as a 2.5% dividend.' },
+                     { t: 'AMZN', note: '−$11.6B. Spending heavily on AI data centres. Investing, not broken.' },
+                  ],
+                  value: function (s) {
+                     return s.fcf;
+                  },
+                  fmt: function (v) {
+                     return v.toFixed(1) + '%';
+                  },
+                  max: 16,
+                  bondLine: BOND,
+                  tone: function (v) {
+                     return v >= BOND ? 'good' : 'bad';
+                  },
+                  legend: [
+                     ['good', 'Beats the bond'],
+                     ['bad', 'Bond pays more'],
+                     ['line', '5.24% Treasury'],
+                  ],
+                  catch:
+                     '<b>The catch:</b> a very high FCF yield can mean the market doubts the cash will last. A negative one is not automatically bad: Amazon is spending today for profit later. Banks like JPMorgan don’t report FCF in a useful way.',
+               },
+               {
+                  id: 'peg',
+                  label: 'PEG',
+                  formula: 'PEG = P/E ÷ Expected yearly profit growth (%)',
+                  plain: 'P/E alone punishes fast growers. PEG asks: is the price fair for how fast profit is growing?',
+                  example: 'P/E of 20 with profit growing 20% a year: 20 ÷ 20 = PEG of 1.0.',
+                  read: ['Under 1: growth looks cheap', '1–2: fair', 'Over 2: paying up'],
+                  title: 'PEG ratio',
+                  sub: 'Line = 1.0',
+                  rows: [
+                     { t: 'NVDA', note: 'High P/E, but profit is expected to grow even faster.' },
+                     { t: 'LMT', note: 'Modest P/E and modest growth. Still under 1.' },
+                     { t: 'META', note: 'Profit growth roughly keeps up with the price.' },
+                     { t: 'MSFT', note: 'A fair-to-full price for steady growth.' },
+                     { t: 'KO', note: '25× profit for slow growth. You pay for stability and the dividend.' },
+                  ],
+                  value: function (s) {
+                     return s.peg;
+                  },
+                  fmt: function (v) {
+                     return v.toFixed(2);
+                  },
+                  max: 4,
+                  bondLine: 1,
+                  tone: function (v) {
+                     return v < 1.5 ? 'good' : 'bad';
+                  },
+                  legend: [
+                     ['good', 'Under 1.5 (passes our test)'],
+                     ['bad', '1.5 or more'],
+                     ['line', 'PEG of 1.0'],
+                  ],
+                  catch:
+                     '<b>The catch:</b> PEG is only as good as the growth guess, and every site calculates it differently (one year, five years, or something else). You may see a very different PEG for Microsoft elsewhere. Use it to compare stocks on the same site, never across sites.',
+               },
+            ];
+
+            function ey(pe) {
+               return pe > 0 ? 100 / pe : null;
+            }
+
+            function tests(s) {
+               return [ey(s.pe) > BOND, ey(s.fpe) > BOND, s.fcf == null ? null : s.fcf > BOND, s.peg == null ? null : s.peg < 1.5];
+            }
+
+            function esc(str) {
+               return String(str).replace(/[&<>"]/g, function (c) {
+                  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+               });
+            }
+
+            // Top 3 cards
+            var picksEl = document.querySelector('[data-picks]');
+            var labels = ['Earnings yield', 'Fwd earnings yield', 'FCF yield', 'PEG'];
+            picksEl.innerHTML = PICKS.map(function (p, i) {
+               var s = STOCKS[p.t];
+               var vals = [ey(s.pe).toFixed(1) + '%', ey(s.fpe).toFixed(1) + '%', s.fcf.toFixed(1) + '%', s.peg.toFixed(2)];
+               var checks = tests(s)
+                  .map(function (ok, j) {
+                     return (
+                        '<li class="' + (ok ? 'pass' : 'fail') + '"><strong>' + (ok ? '✓ ' : '✗ ') + vals[j] + '</strong>' + labels[j] + '</li>'
+                     );
+                  })
+                  .join('');
+               return (
+                  '<li class="stk-pick"><div class="stk-pick-head"><span class="stk-rank">' +
+                  (i + 1) +
+                  '</span><div><h3>' +
+                  esc(s.name) +
+                  '</h3><small>' +
+                  p.t +
+                  ' · $' +
+                  s.price.toFixed(2) +
+                  '</small></div></div><ul class="stk-checks">' +
+                  checks +
+                  '</ul><p class="stk-why">' +
+                  esc(p.why) +
+                  '</p><p class="stk-catch"><b>The catch:</b> ' +
+                  esc(p.catch) +
+                  '</p></li>'
+               );
+            }).join('');
+
+            // Full scorecard, sorted by tests passed
+            var rows = Object.keys(STOCKS)
+               .map(function (t) {
+                  var s = STOCKS[t];
+                  var r = tests(s);
+                  return { t: t, s: s, r: r, passed: r.filter(Boolean).length, run: r.filter(function (x) { return x !== null; }).length };
+               })
+               .sort(function (a, b) {
+                  return b.passed - a.passed || a.s.pe - b.s.pe;
+               });
+            var picked = PICKS.map(function (p) {
+               return p.t;
+            });
+            document.querySelector('[data-scorecard] tbody').innerHTML = rows
+               .map(function (row) {
+                  var s = row.s;
+                  var cells = [
+                     [ey(s.pe), '%'],
+                     [ey(s.fpe), '%'],
+                     [s.fcf, '%'],
+                     [s.peg, ''],
+                  ]
+                     .map(function (c, j) {
+                        if (c[0] == null) return '<td class="fail">n/a</td>';
+                        return '<td class="' + (row.r[j] ? 'pass' : 'fail') + '">' + c[0].toFixed(2) + c[1] + '</td>';
+                     })
+                     .join('');
+                  return (
+                     '<tr class="' +
+                     (picked.indexOf(row.t) > -1 ? 'top' : '') +
+                     '"><td>' +
+                     esc(s.name) +
+                     ' <span style="color:var(--muted)">' +
+                     row.t +
+                     '</span></td><td>$' +
+                     s.price.toFixed(2) +
+                     '</td>' +
+                     cells +
+                     '<td>' +
+                     row.passed +
+                     ' of ' +
+                     row.run +
+                     '</td></tr>'
+                  );
+               })
+               .join('');
+
+            // Tabs
+            var tablist = document.querySelector('[data-tablist]');
+            var panels = document.querySelector('[data-panels]');
+            var legendSwatch = {
+               good: 'var(--stk-pass)',
+               bad: 'var(--stk-fail)',
+               ghost: 'var(--line)',
+               line: 'var(--stk-bond)',
+            };
+
+            TABS.forEach(function (tab) {
+               var btn = document.createElement('button');
+               btn.className = 'stk-tab';
+               btn.type = 'button';
+               btn.id = 'tab-' + tab.id;
+               btn.setAttribute('role', 'tab');
+               btn.setAttribute('aria-controls', 'panel-' + tab.id);
+               btn.textContent = tab.label;
+               btn.addEventListener('click', function () {
+                  select(tab.id, true);
+               });
+               tablist.appendChild(btn);
+
+               var rowsHtml = tab.rows
+                  .map(function (row) {
+                     var s = STOCKS[row.t];
+                     var v = tab.value(s);
+                     var w = Math.max(0, Math.min(100, (v / tab.max) * 100));
+                     var over = v > tab.max;
+                     var ghost = tab.ghost
+                        ? '<div class="stk-bar" style="position:absolute;inset:0 auto 0 0;background:var(--line);width:' +
+                          Math.min(100, (tab.ghost(s) / tab.max) * 100) +
+                          '%"></div>'
+                        : '';
+                     var line = tab.bondLine != null ? '<span class="stk-line" style="left:' + (tab.bondLine / tab.max) * 100 + '%"></span>' : '';
+                     return (
+                        '<li><div class="stk-row-top"><span class="stk-row-name">' +
+                        esc(s.name) +
+                        '<small>' +
+                        row.t +
+                        '</small></span><span class="stk-row-value">' +
+                        tab.fmt(v) +
+                        (over ? ' ↗' : '') +
+                        '</span></div><div class="stk-track">' +
+                        ghost +
+                        '<div class="stk-bar ' +
+                        (over ? 'over' : tab.tone(v)) +
+                        '" data-w="' +
+                        w +
+                        '" style="position:relative;width:0"></div>' +
+                        line +
+                        '</div><p class="stk-row-note">' +
+                        esc(row.note) +
+                        '</p></li>'
+                     );
+                  })
+                  .join('');
+
+               var legend = tab.legend
+                  .map(function (l) {
+                     var shape = l[0] === 'line' ? 'width:3px;border-radius:0;' : '';
+                     return '<span><i style="' + shape + 'background:' + legendSwatch[l[0]] + '"></i>' + esc(l[1]) + '</span>';
+                  })
+                  .join('');
+
+               var panel = document.createElement('div');
+               panel.className = 'stk-panel';
+               panel.id = 'panel-' + tab.id;
+               panel.setAttribute('role', 'tabpanel');
+               panel.setAttribute('aria-labelledby', 'tab-' + tab.id);
+               panel.tabIndex = 0;
+               panel.hidden = true;
+               panel.innerHTML =
+                  '<div class="stk-panel-grid"><div class="stk-note"><p class="stk-formula">' +
+                  esc(tab.formula) +
+                  '</p><p>' +
+                  esc(tab.plain) +
+                  '</p><p class="stk-example">' +
+                  esc(tab.example) +
+                  '</p><ul class="stk-read">' +
+                  tab.read
+                     .map(function (r) {
+                        return '<li>' + esc(r) + '</li>';
+                     })
+                     .join('') +
+                  '</ul></div><div class="stk-board"><div class="stk-board-head"><h3>' +
+                  esc(tab.title) +
+                  '</h3><span>' +
+                  esc(tab.sub) +
+                  '</span></div><ol class="stk-rows">' +
+                  rowsHtml +
+                  '</ol><div class="stk-legend">' +
+                  legend +
+                  '</div><p class="stk-panel-catch">' +
+                  tab.catch +
+                  '</p></div></div>';
+               panels.appendChild(panel);
+            });
+
+            var tabButtons = Array.from(tablist.querySelectorAll('[role="tab"]'));
+
+            function select(id, focus) {
+               TABS.forEach(function (tab) {
+                  var on = tab.id === id;
+                  var btn = document.getElementById('tab-' + tab.id);
+                  var panel = document.getElementById('panel-' + tab.id);
+                  btn.setAttribute('aria-selected', on ? 'true' : 'false');
+                  btn.tabIndex = on ? 0 : -1;
+                  panel.hidden = !on;
+                  if (on) {
+                     requestAnimationFrame(function () {
+                        panel.querySelectorAll('.stk-bar[data-w]').forEach(function (bar) {
+                           bar.style.width = bar.getAttribute('data-w') + '%';
+                        });
+                     });
+                     if (focus) btn.focus();
+                  }
+               });
+               if (focus && history.replaceState) history.replaceState(null, '', '#' + id);
+            }
+
+            tablist.addEventListener('keydown', function (e) {
+               var i = tabButtons.indexOf(document.activeElement);
+               if (i < 0) return;
+               var next = null;
+               if (e.key === 'ArrowRight') next = (i + 1) % tabButtons.length;
+               if (e.key === 'ArrowLeft') next = (i - 1 + tabButtons.length) % tabButtons.length;
+               if (e.key === 'Home') next = 0;
+               if (e.key === 'End') next = tabButtons.length - 1;
+               if (next === null) return;
+               e.preventDefault();
+               select(TABS[next].id, true);
+            });
+
+            // Deep links for TikTok captions: /stocks#pe, #forward-pe, #fcf, #peg
+            function fromHash() {
+               var id = location.hash.slice(1);
+               var match = TABS.some(function (t) {
+                  return t.id === id;
+               });
+               select(match ? id : TABS[0].id, false);
+               if (match) document.getElementById('ratios').scrollIntoView();
+            }
+            window.addEventListener('hashchange', fromHash);
+            fromHash();
+         })();
+      </script>
+      <script type="module" src="/landing/site.js?v=20260720-credit-levels-1"></script>
+   </body>
+</html>
