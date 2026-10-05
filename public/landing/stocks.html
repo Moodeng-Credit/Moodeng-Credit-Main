@@ -1628,6 +1628,100 @@
             font-size: 15px;
             text-decoration: none;
          }
+
+         /* Bonus draw */
+         .game {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px;
+            border-radius: 18px;
+            padding: 14px;
+            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
+            border: 2px solid #f2c94c;
+            text-align: center;
+            animation: chipin 0.35s ease-out;
+         }
+         .game[hidden] {
+            display: none;
+         }
+         .game-title {
+            font-weight: 800;
+            color: #4a3a00;
+         }
+         .boxes {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+         }
+         .gbox {
+            min-height: 76px;
+            border: 0;
+            border-radius: 16px;
+            background: #fff;
+            font-size: 34px;
+            box-shadow: 0 4px 10px rgb(120 90 0 / 0.18);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+         }
+         .gbox:not(:disabled):active {
+            transform: scale(0.94);
+         }
+         .gbox:not(:disabled) {
+            animation: wiggle 2.2s ease-in-out infinite;
+         }
+         .gbox:disabled {
+            cursor: default;
+            opacity: 0.55;
+         }
+         .gbox.picked {
+            opacity: 1;
+            outline: 3px solid var(--primary-900);
+         }
+         @keyframes wiggle {
+            0%, 80%, 100% { transform: rotate(0); }
+            85% { transform: rotate(-6deg); }
+            92% { transform: rotate(6deg); }
+         }
+         .tickets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+         }
+         .ticket {
+            border-radius: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #ffe680, #f2c94c);
+            color: #4a3a00;
+            font-size: 15px;
+            border: 2px dashed #b88a00;
+         }
+         .no-tix {
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: var(--n-200);
+            color: var(--n-1400);
+            font-weight: 600;
+         }
+         .btn-lite {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+            border: 1px solid var(--primary-300);
+            border-radius: 999px;
+            padding: 8px 16px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+         }
+         @media (prefers-reduced-motion: reduce) {
+            .gbox:not(:disabled),
+            .game {
+               animation: none;
+            }
+         }
       </style>
    </head>
    <body>
@@ -1918,6 +2012,13 @@
                   <span data-l="fil">Paano ito gumagana?</span><span data-l="en">How does this work?</span>
                </button>
                <img src="/hippos/party.png" alt="" width="116" height="116" />
+            </section>
+
+            <section class="card" id="tickets" aria-labelledby="tickets-title">
+               <h3 class="h2" id="tickets-title" style="font-size: 21px"><span data-l="fil">Ang golden tickets mo 🎟️</span><span data-l="en">Your golden tickets 🎟️</span></h3>
+               <p><span data-l="fil">Sagutin nang tama ang quiz, pumili ng kahon, at baka manalo ka ng golden ticket para sa Grab draw!</span><span data-l="en">Answer quizzes right, pick a box, and you might win a golden ticket for the Grab draw!</span></p>
+               <div data-tickets></div>
+               <button type="button" class="btn-lite" data-info="raffle"><span data-l="fil">Paano ang draw? Ano ang premyo?</span><span data-l="en">How does the draw work? What is the prize?</span> <span class="i" aria-hidden="true">i</span></button>
             </section>
 
             <section class="card" aria-labelledby="passed-title">
@@ -2382,10 +2483,87 @@
                   }, 900, sp);
                }
             }
+            // Bonus draw: a right answer = pick 1 of 3 boxes, 1 hides a golden ticket. Saved so a refresh can't re-roll.
+            var TIX_KEY = 'moodeng-stocks-tix';
+            var tix = {};
+            try {
+               tix = JSON.parse(localStorage.getItem(TIX_KEY) || '{}') || {};
+            } catch (e) {
+               tix = {};
+            }
+            function saveTix() {
+               try {
+                  localStorage.setItem(TIX_KEY, JSON.stringify(tix));
+               } catch (e) {}
+            }
+            function randInt(n) {
+               if (window.crypto && crypto.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0] % n;
+               return Math.floor(Math.random() * n);
+            }
+            function ticketCode() {
+               var abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+               var c = 'MD-';
+               for (var k = 0; k < 6; k++) c += abc.charAt(randInt(abc.length));
+               return c;
+            }
+            function ticketCount() {
+               return Object.keys(tix).filter(function (k) {
+                  return tix[k].won;
+               }).length;
+            }
             function updateScore() {
                var n = Object.keys(quizGot).length;
-               scoreChip.hidden = n === 0;
-               scoreChip.innerHTML = n === QUIZ_TOTAL ? both('🎉 ' + n + '/' + n + ' quiz hero!', '🎉 ' + n + '/' + n + ' quiz hero!') : both('🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz', '🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz');
+               var t = ticketCount();
+               scoreChip.hidden = n === 0 && t === 0;
+               var tt = t ? ' · 🎟️ ' + t : '';
+               scoreChip.innerHTML = n === QUIZ_TOTAL ? both('🎉 ' + n + '/' + n + ' quiz hero!' + tt, '🎉 ' + n + '/' + n + ' quiz hero!' + tt) : both('🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz' + tt, '🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz' + tt);
+               var box = document.querySelector('[data-tickets]');
+               var codes = Object.keys(tix)
+                  .filter(function (k) {
+                     return tix[k].won;
+                  })
+                  .map(function (k) {
+                     return '<span class="ticket">🎟️ <b>' + tix[k].code + '</b></span>';
+                  });
+               box.innerHTML = codes.length
+                  ? '<div class="tickets">' + codes.join('') + '</div><p class="small">' + both('I-screenshot ito at i-DM sa @moodeng.credit sa TikTok para sumali sa draw.', 'Screenshot this and DM it to @moodeng.credit on TikTok to enter the draw.') + '</p>'
+                  : '<p class="no-tix">' + both('Wala pang ticket. Sagutin nang tama ang quiz sa Check 1 para makapili ng kahon!', 'No tickets yet. Answer the Check 1 quiz right to pick a box!') + '</p>';
+            }
+            function boxesHtml(id) {
+               var g = tix[id];
+               var h = '<div class="boxes' + (g ? ' done' : '') + '">';
+               for (var k = 0; k < 3; k++) {
+                  var face = g ? (k === g.prize ? '🎟️' : '🥯') : '🎁';
+                  h += '<button type="button" class="gbox' + (g && k === g.pick ? ' picked' : '') + '" data-gpick="' + k + '"' + (g ? ' disabled' : '') + ' aria-label="Box ' + (k + 1) + '">' + face + '</button>';
+               }
+               return h + '</div>';
+            }
+            function renderGame(id) {
+               var gm = document.querySelector('[data-game="' + id + '"]');
+               if (!gm) return;
+               var g = tix[id];
+               gm.hidden = false;
+               gm.innerHTML =
+                  '<p class="game-title">' +
+                  (g
+                     ? g.won
+                        ? both('🎉 Golden ticket! ' + g.code, '🎉 Golden ticket! ' + g.code)
+                        : both('Sayang! Wala sa kahon na iyon. Subukan sa susunod na quiz!', 'So close! Not in that box. Try the next quiz!')
+                     : both('🎁 Bonus draw! Pumili ng kahon: 1 sa 3 ay may golden ticket 🎟️', '🎁 Bonus draw! Pick a box: 1 of 3 hides a golden ticket 🎟️')) +
+                  '</p>' +
+                  boxesHtml(id);
+               gm.querySelectorAll('.gbox').forEach(function (b) {
+                  b.addEventListener('click', function () {
+                     if (tix[id]) return;
+                     var prize = randInt(3);
+                     var pick = +b.getAttribute('data-gpick');
+                     tix[id] = pick === prize ? { won: true, pick: pick, prize: prize, code: ticketCode() } : { won: false, pick: pick, prize: prize };
+                     saveTix();
+                     renderGame(id);
+                     updateScore();
+                     if (tix[id].won) burst(gm.querySelector('.picked') || b);
+                  });
+               });
             }
             Object.keys(QUIZ).forEach(function (id) {
                var q = QUIZ[id];
@@ -2400,6 +2578,12 @@
                      })
                      .join('') +
                   '</div><p class="quiz-fb" aria-live="polite"></p>';
+               var gmEl = document.createElement('div');
+               gmEl.className = 'game';
+               gmEl.setAttribute('data-game', id);
+               gmEl.hidden = true;
+               el.parentNode.insertBefore(gmEl, el.nextSibling);
+               if (tix[id]) renderGame(id);
                var fb = el.querySelector('.quiz-fb');
                el.querySelectorAll('button').forEach(function (b) {
                   b.addEventListener('click', function () {
@@ -2413,10 +2597,13 @@
                         quizGot[id] = true;
                         updateScore();
                         burst(b);
+                        renderGame(id);
                      }
                   });
                });
             });
+
+            updateScore();
 
             // ---------- Explainer sheets ----------
             function examples(filter) {
@@ -2577,6 +2764,29 @@
                      '</small></span><span class="z-pricey">❌<small>' +
                      both('Above 2: masyadong mabagal', 'Over 2: too slow for the price') +
                      '</small></span></div>',
+               },
+               raffle: {
+                  emo: '🎟️',
+                  title: both('Moodeng Grab Draw', 'Moodeng Grab Draw'),
+                  body:
+                     '<p class="big-math">🎁 ' +
+                     both('Premyo: ₱50 GrabFood voucher', 'Prize: ₱50 GrabFood voucher') +
+                     '</p>' +
+                     '<ul class="steps"><li>' +
+                     both('Bawat tamang sagot sa quiz = 1 pagkakataong pumili ng kahon. 1 sa 3 kahon ay may golden ticket 🎟️.', 'Every right quiz answer = 1 chance to pick a box. 1 of the 3 boxes hides a golden ticket 🎟️.') +
+                     '</li><li>' +
+                     both('Bawat golden ticket ay 1 entry sa draw. Hanggang 4 na tickets.', 'Each golden ticket is 1 entry in the draw. Up to 4 tickets.') +
+                     '</li><li>' +
+                     both('Para sumali: i-screenshot ang tickets mo at i-DM sa @moodeng.credit sa TikTok.', 'To enter: screenshot your tickets and DM them to @moodeng.credit on TikTok.') +
+                     '</li><li>' +
+                     both('Iaanunsyo sa TikTok ang petsa ng draw at ang mananalo.', 'The draw date and winner are announced on TikTok.') +
+                     '</li></ul>' +
+                     '<p class="small">' +
+                     both('Walang kailangang bilhin o utangin. Magpaalam muna sa magulang o pinagkakatiwalaang adult. Maaaring i-verify ng Moodeng ang entries, at pwedeng baguhin o ihinto ang draw. Para sa edad 18 pataas ang pagkuha ng premyo.', 'No purchase or loan needed. Ask a parent or trusted adult first. Moodeng may verify entries and may change or stop the draw. Prizes can only be claimed by people 18 or older.') +
+                     '</p>' +
+                     '<a class="yahoo" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noopener noreferrer">' +
+                     both('Pumunta sa TikTok ng Moodeng ↗', 'Go to Moodeng on TikTok ↗') +
+                     '</a>',
                },
                sp500: {
                   emo: '🧺',
