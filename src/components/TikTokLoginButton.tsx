@@ -1,6 +1,6 @@
 import { type JSX, useState } from 'react';
 
-import { isTikTokConfigured, startTikTokLogin } from '@/lib/tiktokAuth';
+import { isTikTokButtonVisible, startTikTokLogin } from '@/lib/tiktokAuth';
 
 interface TikTokLoginButtonProps {
    isSignUp?: boolean;
@@ -31,7 +31,7 @@ const TikTokLogo = ({ size = 22 }: { size?: number }) => (
 export default function TikTokLoginButton({ isSignUp = false, iconOnly = false }: TikTokLoginButtonProps): JSX.Element | null {
    const [isLoading, setIsLoading] = useState(false);
 
-   if (!isTikTokConfigured()) return null;
+   if (!isTikTokButtonVisible()) return null;
 
    const label = isSignUp ? 'Sign Up with TikTok' : 'Sign In with TikTok';
 
