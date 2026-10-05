@@ -604,14 +604,15 @@
             font-weight: 700;
             color: var(--n-1000);
          }
-         .scale span {
+         .scale > span {
             position: absolute;
+            white-space: nowrap;
             translate: -50% 0;
          }
-         .scale span:first-child {
+         .scale > span:first-child {
             translate: 0;
          }
-         .scale span:last-child {
+         .scale > span:last-child {
             translate: -100% 0;
          }
          .zones {
@@ -1290,7 +1291,65 @@
             font-weight: 700;
          }
          .info-body .years {
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(10, 1fr);
+         }
+         .stores {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+         }
+         .store-card {
+            position: relative;
+            display: grid;
+            justify-items: center;
+            gap: 4px;
+            border-radius: 16px;
+            padding: 14px 10px;
+            background: var(--n-200);
+            border: 2px solid var(--n-300);
+            text-align: center;
+         }
+         .store-card.best {
+            border-color: var(--green-700);
+            background: var(--green-100);
+         }
+         .store-card .emo {
+            font-size: 30px;
+         }
+         .store-card small {
+            color: var(--n-1400);
+            font-size: 13px;
+            font-weight: 600;
+         }
+         .store-card strong {
+            font-size: 20px;
+            font-weight: 800;
+         }
+         .store-card .badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            border-radius: 999px;
+            padding: 2px 8px;
+            background: var(--green-700);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+         }
+         .mini-years {
+            display: grid;
+            grid-template-columns: repeat(5, 12px);
+            gap: 3px;
+            margin-top: 6px;
+         }
+         .mini-years i {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            background: var(--primary-500);
+         }
+         .store-card.best .mini-years i {
+            background: var(--green-700);
          }
          .steps {
             display: grid;
@@ -1378,9 +1437,9 @@
                   <span data-l="en">3 easy checks. Real companies. No hard math!</span>
                </p>
                <ul class="learn">
-                  <li><a href="#pe"><span class="emo" aria-hidden="true">🏷️</span><span data-l="fil">Presyo kada ₱1 na kita</span><span data-l="en">Price for ₱1 of profit</span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#pe"><span class="emo" aria-hidden="true">🏷️</span><span data-l="fil">Ilang taon ng kita?</span><span data-l="en">How many years of profit?</span><span class="chev" aria-hidden="true">›</span></a></li>
                   <li><a href="#forward-pe"><span class="emo" aria-hidden="true">🔮</span><span data-l="fil">Gamit ang hula sa next year</span><span data-l="en">Using next year's guess</span><span class="chev" aria-hidden="true">›</span></a></li>
-                  <li><a href="#fcf"><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Presyo kada ₱1 na totoong cash</span><span data-l="en">Price for ₱1 of real cash</span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#fcf"><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Ilang taon ng totoong cash?</span><span data-l="en">How many years of real cash?</span><span class="chev" aria-hidden="true">›</span></a></li>
                </ul>
                <p class="tip">
                   <span class="i" aria-hidden="true">i</span
@@ -1406,31 +1465,39 @@
                </p>
             </section>
 
-            <!-- How to compare: price per kilo -->
+            <!-- Two stores: years of profit -->
             <section class="card" aria-labelledby="kilo-title">
                <h2 class="h2" id="kilo-title">
-                  <span data-l="fil">Paano malalaman kung <em>mura?</em></span><span data-l="en">How do you know if it's <em>cheap?</em></span>
+                  <span data-l="fil">Aling tindahan ang mas <em>sulit?</em></span><span data-l="en">Which store is the better <em>deal?</em></span>
                </h2>
                <p>
-                  <span data-l="fil">Sa palengke, ikinukumpara mo ang bigas gamit ang <strong>presyo kada kilo</strong>:</span>
-                  <span data-l="en">At the market, you compare rice by its <strong>price per kilo</strong>:</span>
+                  <span data-l="fil">Parehong <strong>₱1,000</strong> ang presyo ng dalawang tindahan. Pero magkaiba ang kita nila kada taon:</span>
+                  <span data-l="en">Both stores cost <strong>₱1,000</strong>. But they make different profit each year:</span>
                </p>
-               <div class="tags">
-                  <div class="tag best">
-                     <span class="badge"><span data-l="fil">Mas mura!</span><span data-l="en">Cheaper!</span></span><span class="emo" aria-hidden="true">🍚</span
-                     ><span><span data-l="fil">Bigas A</span><span data-l="en">Rice A</span></span><b>₱50</b><small><span data-l="fil">kada kilo</span><span data-l="en">per kilo</span></small>
+               <div class="stores">
+                  <div class="store-card best">
+                     <span class="badge"><span data-l="fil">Mas sulit!</span><span data-l="en">Better deal!</span></span>
+                     <span class="emo" aria-hidden="true">🏪</span>
+                     <b><span data-l="fil">Tindahan A</span><span data-l="en">Store A</span></b>
+                     <small><span data-l="fil">Kita: ₱100 kada taon</span><span data-l="en">Profit: ₱100 a year</span></small>
+                     <span class="mini-years" data-yrs="10" aria-hidden="true"></span>
+                     <strong><span data-l="fil">10 taon</span><span data-l="en">10 years</span></strong>
                   </div>
-                  <div class="tag">
-                     <span class="emo" aria-hidden="true">🍚</span><span><span data-l="fil">Bigas B</span><span data-l="en">Rice B</span></span><b>₱60</b
-                     ><small><span data-l="fil">kada kilo</span><span data-l="en">per kilo</span></small>
+                  <div class="store-card">
+                     <span class="emo" aria-hidden="true">🏚️</span>
+                     <b><span data-l="fil">Tindahan B</span><span data-l="en">Store B</span></b>
+                     <small><span data-l="fil">Kita: ₱50 kada taon</span><span data-l="en">Profit: ₱50 a year</span></small>
+                     <span class="mini-years" data-yrs="20" aria-hidden="true"></span>
+                     <strong><span data-l="fil">20 taon</span><span data-l="en">20 years</span></strong>
                   </div>
                </div>
+               <p>
+                  <span data-l="fil">Bawat kahon = 1 taon ng kita. Sa Tindahan A, 10 taon lang bago umabot ang kita sa ₱1,000. Sa Tindahan B, 20 taon.</span>
+                  <span data-l="en">Each box = 1 year of profit. Store A's profit adds up to ₱1,000 in just 10 years. Store B takes 20 years.</span>
+               </p>
                <p class="rule">
                   <span class="ic" aria-hidden="true">💡</span
-                  ><span
-                     ><span data-l="fil">Sa stocks, ganito rin: <strong>magkano ang bayad mo (isang beses) para sa ₱1 na kita</strong> ng company kada taon?</span
-                     ><span data-l="en">Stocks work the same way: <strong>how much do you pay (once) for ₱1 of the company's profit each year?</strong></span></span
-                  >
+                  ><span><span data-l="fil">Mas kaunting taon = mas sulit. Ganito rin sa stocks!</span><span data-l="en">Fewer years = better deal. Stocks work the same way!</span></span>
                </p>
             </section>
 
@@ -1438,29 +1505,29 @@
             <section class="card" id="pe" aria-labelledby="pe-title">
                <button type="button" class="step-tag" data-info="pe"><b>1</b><span>Check 1 <small>· P/E</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="pe-title">
-                  <span data-l="fil">Presyo kada <em>₱1 na kita</em></span><span data-l="en">Price for <em>₱1 of profit</em></span>
+                  <span data-l="fil">Ilang taon ng <em>kita?</em></span><span data-l="en">How many years of <em>profit?</em></span>
                </h2>
                <p>
-                  <span data-l="fil">Ang tindahan ay ₱1,000. Kumikita ito ng ₱50 kada taon.</span>
-                  <span data-l="en">The store costs ₱1,000. It makes ₱50 of profit a year.</span>
+                  <span data-l="fil">Para malaman, hatiin ang presyo sa <button type="button" class="term" data-info="profit">kita</button> kada taon:</span>
+                  <span data-l="en">To find out, divide the price by the <button type="button" class="term" data-info="profit">profit</button> each year:</span>
                </p>
                <p class="big-math">
-                  ₱1,000 ÷ ₱50 = ₱20
-                  <small><span data-l="fil">ang bayad mo nang isang beses, para sa bawat ₱1 na kita kada taon</span><span data-l="en">you pay once, for every ₱1 of profit it makes each year</span></small>
+                  ₱1,000 ÷ ₱50 = <span data-l="fil">20 taon</span><span data-l="en">20 years</span>
+                  <small><span data-l="fil">bago umabot ang kita sa presyo</span><span data-l="en">for the profit to add up to the price</span></small>
                </p>
                <p>
-                  <span data-l="fil">'Yan ang <button type="button" class="term" data-info="pe">P/E</button>: <strong>P</strong>rice (presyo) ÷ <strong>E</strong>arnings (<button type="button" class="term" data-info="profit">kita</button>). Parang presyo kada kilo, pero para sa kita.</span>
-                  <span data-l="en">That's the <button type="button" class="term" data-info="pe">P/E</button>: <strong>P</strong>rice ÷ <strong>E</strong>arnings (<button type="button" class="term" data-info="profit">profit</button>). Like price per kilo, but for profit.</span>
+                  <span data-l="fil">Ang bilang ng taon na 'yan ay tinatawag na <button type="button" class="term" data-info="pe">P/E</button>. P/E 20 = 20 taon.</span>
+                  <span data-l="en">That number of years is called the <button type="button" class="term" data-info="pe">P/E</button>. A P/E of 20 = 20 years.</span>
                </p>
                <p class="rule">
                   <span class="ic" aria-hidden="true">👍</span
-                  ><span><span data-l="fil">Mas mababang P/E = mas mura.</span><span data-l="en">Lower P/E = cheaper.</span></span>
+                  ><span><span data-l="fil">Mas kaunting taon = mas mura.</span><span data-l="en">Fewer years = cheaper.</span></span>
                </p>
-               <p class="muted"><span data-l="fil">Simpleng rule of thumb:</span><span data-l="en">A simple rule of thumb:</span></p>
+               <p class="muted"><span data-l="fil">Ang simpleng gabay namin:</span><span data-l="en">Our simple guide:</span></p>
                <div class="zones">
-                  <button type="button" class="z-cheap" data-info="cheap">🟢 <span data-l="fil">Mura</span><span data-l="en">Cheap</span><small><span data-l="fil">below ₱20</span><span data-l="en">under ₱20</span></small><span class="i" aria-hidden="true">i</span></button>
-                  <button type="button" class="z-okay" data-info="okay">🟡 <span data-l="fil">Okay lang</span><span data-l="en">Okay</span><small>₱20–30</small><span class="i" aria-hidden="true">i</span></button>
-                  <button type="button" class="z-pricey" data-info="pricey">🔴 <span data-l="fil">Mahal</span><span data-l="en">Pricey</span><small><span data-l="fil">above ₱30</span><span data-l="en">over ₱30</span></small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-cheap" data-info="cheap">🟢 <span data-l="fil">Mura</span><span data-l="en">Cheap</span><small><span data-l="fil">below 20 taon</span><span data-l="en">under 20 years</span></small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-okay" data-info="okay">🟡 <span data-l="fil">Okay lang</span><span data-l="en">Okay</span><small><span data-l="fil">20–30 taon</span><span data-l="en">20–30 years</span></small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-pricey" data-info="pricey">🔴 <span data-l="fil">Mahal</span><span data-l="en">Pricey</span><small><span data-l="fil">above 30 taon</span><span data-l="en">over 30 years</span></small><span class="i" aria-hidden="true">i</span></button>
                </div>
                <div class="board" data-board="pe"></div>
                <div class="quiz" data-quiz="pe"></div>
@@ -1471,15 +1538,16 @@
                <button type="button" class="step-tag" data-info="fpe"><b>2</b><span>Check 2 <small>· Forward P/E</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="fpe-title"><span data-l="fil">Gamit ang <em>hula</em> sa next year</span><span data-l="en">Using next year's <em>guess</em></span></h2>
                <p>
-                  <span data-l="fil">Parehong tanong, pero gamit ang kitang <button type="button" class="term" data-info="guess">hinuhulaan</button> ng mga expert para sa <strong>next year</strong>.</span>
-                  <span data-l="en">Same question, but using the profit experts <button type="button" class="term" data-info="guess">guess</button> the company will make <strong>next year</strong>.</span>
+                  <span data-l="fil">Hinuhulaan ng mga expert ang kita ng tindahan next year. Kung ₱100 ang hula imbes na ₱50:</span>
+                  <span data-l="en">Experts <button type="button" class="term" data-info="guess">guess</button> the store's profit next year. If they guess ₱100 instead of ₱50:</span>
+               </p>
+               <p class="big-math">
+                  ₱1,000 ÷ ₱100 = <span data-l="fil">10 taon</span><span data-l="en">10 years</span>
+                  <small><span data-l="fil">imbes na 20 taon. Mas mura!</span><span data-l="en">instead of 20 years. Cheaper!</span></small>
                </p>
                <p class="rule">
                   <span class="ic" aria-hidden="true">📈</span
-                  ><span
-                     ><span data-l="fil">Kung lalaki ang kita, bababa ang P/E, kaya mas mura.</span
-                     ><span data-l="en">If profit grows, the P/E drops, so it gets cheaper.</span></span
-                  >
+                  ><span><span data-l="fil">Mas malaking kita next year = mas kaunting taon.</span><span data-l="en">More profit next year = fewer years.</span></span>
                </p>
                <div class="board" data-board="fpe"></div>
                <p class="warn">
@@ -1493,18 +1561,21 @@
             <section class="card" id="fcf" aria-labelledby="fcf-title">
                <button type="button" class="step-tag" data-info="cash"><b>3</b><span>Check 3 <small>· FCF yield</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="fcf-title">
-                  <span data-l="fil">Presyo kada <em>₱1 na totoong cash</em></span><span data-l="en">Price for <em>₱1 of real cash</em></span>
+                  <span data-l="fil">Ilang taon ng <em>totoong cash?</em></span><span data-l="en">How many years of <em>real cash?</em></span>
                </h2>
                <p>
-                  <span data-l="fil">Minsan, ang "kita" ay nasa papel lang. Ang <button type="button" class="term" data-info="cash">totoong cash</button> ay ang pera na natira sa kaha matapos bayaran ang lahat.</span>
-                  <span data-l="en">Sometimes "profit" is only on paper. <button type="button" class="term" data-info="cash">Real cash</button> is the money left in the drawer after paying for everything.</span>
+                  <span data-l="fil">Bilangin ang <button type="button" class="term" data-info="cash">totoong cash</button> na natira sa kaha matapos bayaran ang lahat:</span>
+                  <span data-l="en">Count the <button type="button" class="term" data-info="cash">real cash</button> left in the drawer after paying for everything:</span>
                </p>
+               <div class="math">
+                  <div><span><span data-l="fil">Benta</span><span data-l="en">Sales</span></span><b>₱500</b></div>
+                  <div><span><span data-l="fil">Paninda at kuryente</span><span data-l="en">Goods and electricity</span></span><b>−₱420</b></div>
+                  <div><span><span data-l="fil">Bagong estante</span><span data-l="en">New shelves</span></span><b>−₱20</b></div>
+                  <div class="result"><span><span data-l="fil">Natirang cash</span><span data-l="en">Cash left over</span></span><b>₱60</b></div>
+               </div>
                <p class="big-math">
-                  ₱1,000 ÷ ₱60 = ₱16.7
-                  <small
-                     ><span data-l="fil">kung ₱60 ang natirang cash. Below ₱20 = 🟢 Mura!</span
-                     ><span data-l="en">if ₱60 of cash is left over. Under ₱20 = 🟢 Cheap!</span></small
-                  >
+                  ₱1,000 ÷ ₱60 = <span data-l="fil">16.7 taon</span><span data-l="en">16.7 years</span>
+                  <small><span data-l="fil">Below 20 taon = 🟢 Mura!</span><span data-l="en">Under 20 years = 🟢 Cheap!</span></small>
                </p>
                <div class="board" data-board="fcf"></div>
                <div class="quiz" data-quiz="fcf"></div>
@@ -1514,8 +1585,8 @@
             <section class="results-head" id="results" aria-labelledby="results-title">
                <h2 class="h2" id="results-title"><span data-l="fil">Sino ang pumasa? 🥯</span><span data-l="en">Who passed? 🥯</span></h2>
                <p>
-                  <span data-l="fil">Bawat check na 🟢 Mura (below ₱20) = 1 pandesal.</span>
-                  <span data-l="en">Every check in the 🟢 Cheap zone (under ₱20) = 1 pandesal.</span>
+                  <span data-l="fil">Bawat check na 🟢 Mura (below 20 taon) = 1 pandesal.</span>
+                  <span data-l="en">Every check that's 🟢 Cheap (under 20 years) = 1 pandesal.</span>
                </p>
                <button type="button" class="btn" data-info="pandesal" style="margin-top: 12px; min-height: 36px; font-size: 14px">
                   <span data-l="fil">Paano ito gumagana?</span><span data-l="en">How does this work?</span>
@@ -1578,8 +1649,8 @@
                   <span data-l="en">This isn't advice on what to buy. Stock prices can go down. Talk to a parent or trusted adult before investing.</span>
                </p>
                <p class="small">
-                  <span data-l="fil">Mga numero: StockAnalysis.com at FRED, Oct 2, 2026. Ang "₱ kada ₱1" ay pareho sa P/E. Bakit ₱20? Ang super-safe na 10-year US government bond ay nagbabayad ng 5.24% kada taon, mga ₱19 para sa bawat ₱1 kada taon.</span>
-                  <span data-l="en">Numbers: StockAnalysis.com and FRED, Oct 2, 2026. "₱ for ₱1" is the same number as the P/E. Why ₱20? A super-safe 10-year US government bond pays 5.24% a year, which works out to about ₱19 for each ₱1 a year.</span>
+                  <span data-l="fil">Mga numero: StockAnalysis.com at FRED, Oct 2, 2026. Ang "taon ng kita" ay ang P/E. Bakit 20 taon? Ang super-safe na 10-year US government bond ay nagbabayad ng 5.24% kada taon, kaya mga 19 taon bago umabot ang interest sa perang ipinahiram.</span>
+                  <span data-l="en">Numbers: StockAnalysis.com and FRED, Oct 2, 2026. "Years of profit" is the P/E. Why 20 years? A super-safe 10-year US government bond pays 5.24% a year, so its interest takes about 19 years to add up to what you lent.</span>
                </p>
             </section>
 
@@ -1601,19 +1672,19 @@
 
       <script>
          (function () {
-            // Rule of thumb for "₱ you pay once for ₱1 a year": under 20 cheap, 20–30 okay, over 30 pricey.
-            // 20 sits next to the 10-year US Treasury (5.24% ≈ ₱19 per ₱1), noted in the fine print.
+            // Simple guide for "years of profit to add up to the price" (= P/E): under 20 cheap, 20–30 okay, over 30 pricey.
+            // 20 sits next to the 10-year US Treasury (5.24% a year ≈ 19 years), noted in the fine print.
             var CHEAP = 20;
             var OKAY = 30;
-            var BAR_MAX = 40; // ₱ at the right edge of a price bar
+            var BAR_MAX = 40; // years at the right edge of a bar
             var PHP = 62.6; // ECB reference rate, Oct 2, 2026
             var LANG_KEY = 'moodeng-stocks-lang';
 
             function both(fil, en) {
                return '<span data-l="fil">' + fil + '</span><span data-l="en">' + en + '</span>';
             }
-            function peso(v) {
-               return '₱' + v.toFixed(1);
+            function yrs(v) {
+               return v.toFixed(1) + ' ' + both('taon', 'yrs');
             }
             function usd(v) {
                return '$' + v.toFixed(2);
@@ -1621,7 +1692,7 @@
             function pesoPrice(v) {
                return '₱' + (Math.round((v * PHP) / 10) * 10).toLocaleString('en-US');
             }
-            // FCF yield % → ₱ you pay once for ₱1 of yearly real cash
+            // FCF yield % → years of real cash to add up to the price
             function cashPrice(yieldPct) {
                return yieldPct > 0 ? 100 / yieldPct : null;
             }
@@ -1633,35 +1704,35 @@
             // StockAnalysis statistics pages, Oct 2, 2026 close. pe/fpe = P/E and forward P/E, cash = FCF yield %.
             // VOO forward P/E is the S&P 500 (FactSet). TSLA eps = price ÷ P/E so the worked example adds up.
             var CO = {
-               GOOGL: { name: 'Alphabet', emo: '🔎', price: 343.5, eps: 19.93, pe: 17.23, fpe: 25.58, cash: 1.27, peg: 2.0, fil: 'Google at YouTube', en: 'Google and YouTube',
+               GOOGL: { name: 'Alphabet', emo: '🔎', price: 343.5, eps: 19.93, pe: 17.23, fpe: 25.58, cash: 1.27, cashB: 53.3, peg: 2.0, fil: 'Google at YouTube', en: 'Google and YouTube',
                   line: both("Mukhang mura base sa last year, pero may one-time bonus ang taon na 'yon. Mas mahal ito base sa hula.", 'Looks cheap on last year, but that year had a one-time bonus. It looks pricier on the guess.') },
-               AMZN: { name: 'Amazon', emo: '📦', price: 251.52, eps: 12.44, pe: 20.23, fpe: 26.81, cash: -0.43, peg: 1.29, fil: 'Online shopping at cloud', en: 'Online shopping and cloud',
+               AMZN: { name: 'Amazon', emo: '📦', price: 251.52, eps: 12.44, pe: 20.23, fpe: 26.81, cash: -0.43, cashB: -11.6, peg: 1.29, fil: 'Online shopping at cloud', en: 'Online shopping and cloud',
                   line: both('Okay ang presyo sa P/E, pero walang natirang cash dahil sa laki ng gastos sa AI.', 'An okay price on P/E, but no cash left over because of huge AI spending.') },
-               AAPL: { name: 'Apple', emo: '🍎', price: 333.69, eps: 8.72, pe: 38.28, fpe: 36.26, cash: 2.81, peg: 3.27, fil: 'Gumagawa ng iPhone', en: 'Makes iPhones',
+               AAPL: { name: 'Apple', emo: '🍎', price: 333.69, eps: 8.72, pe: 38.28, fpe: 36.26, cash: 2.81, cashB: 136.7, peg: 3.27, fil: 'Gumagawa ng iPhone', en: 'Makes iPhones',
                   line: both('Pinakamahal dito. Bayad ka para sa sikat na brand, hindi para sa bargain.', 'The priciest one here. You pay for the famous brand, not for a bargain.') },
-               META: { name: 'Meta', emo: '📱', price: 728.08, eps: 26.54, pe: 27.44, fpe: 22.64, cash: 2.21, peg: 1.15, fil: 'Facebook at Instagram', en: 'Facebook and Instagram',
+               META: { name: 'Meta', emo: '📱', price: 728.08, eps: 26.54, pe: 27.44, fpe: 22.64, cash: 2.21, cashB: 41.0, peg: 1.15, fil: 'Facebook at Instagram', en: 'Facebook and Instagram',
                   line: both('Bumababa ang presyo base sa hula kasi lalaki ang kita, pero hindi pa rin mura.', 'The price drops on the guess because profit should grow, but it is still not cheap.') },
-               MSFT: { name: 'Microsoft', emo: '💻', price: 517.53, eps: 17.95, pe: 28.83, fpe: 26.21, cash: 1.74, peg: 1.63, fil: 'Windows at Xbox', en: 'Windows and Xbox',
+               MSFT: { name: 'Microsoft', emo: '💻', price: 517.53, eps: 17.95, pe: 28.83, fpe: 26.21, cash: 1.74, cashB: 67.0, peg: 1.63, fil: 'Windows at Xbox', en: 'Windows and Xbox',
                   line: both('Matatag at malakas na company, pero hindi mura ngayon.', 'A steady, strong company, but not cheap right now.') },
-               NVDA: { name: 'Nvidia', emo: '🎮', price: 233.95, eps: 7.91, pe: 29.58, fpe: 19.41, cash: 2.25, peg: 0.37, fil: 'Chips para sa games at AI', en: 'Chips for games and AI',
+               NVDA: { name: 'Nvidia', emo: '🎮', price: 233.95, eps: 7.91, pe: 29.58, fpe: 19.41, cash: 2.25, cashB: 127.0, peg: 0.37, fil: 'Chips para sa games at AI', en: 'Chips for games and AI',
                   line: both('Mahal base sa last year, pero mura base sa hula, kasi inaasahang tatalon ang kita.', 'Pricey on last year, but cheap on the guess, because profit should jump.') },
-               LMT: { name: 'Lockheed Martin', emo: '✈️', price: 505.41, eps: 27.14, pe: 18.62, fpe: 16.39, cash: 7.48, peg: 0.85, fil: 'Gumagawa ng eroplano', en: 'Makes jets',
+               LMT: { name: 'Lockheed Martin', emo: '✈️', price: 505.41, eps: 27.14, pe: 18.62, fpe: 16.39, cash: 7.48, cashB: 8.7, peg: 0.85, fil: 'Gumagawa ng eroplano', en: 'Makes jets',
                   line: both('Mura sa lahat ng 3 checks. Pero mabagal itong lumaki.', 'Cheap on all 3 checks. But it grows slowly.') },
                VOO: { name: 'VOO (S&P 500)', emo: '🧺', price: 707.54, eps: null, pe: 27.1, fpe: 19.0, cash: null, peg: null, basket: true, fil: 'Basket ng 500 company', en: 'A basket of 500 companies',
                   line: both('Isang bili, may konting parte ka na sa 500 malalaking company sa US. Mura base sa hula next year.', "One buy gives you a tiny piece of 500 big US companies. Cheap on next year's guess.") },
                JPM: { name: 'JPMorgan', emo: '🏦', price: 332.38, eps: 23.3, pe: 14.27, fpe: 13.72, cash: null, peg: 1.37, bank: true, fil: 'Bangko', en: 'Bank',
                   line: both('Malaking bangko. Karaniwang mababa ang P/E ng mga bangko, kaya normal lang na mura ito.', 'A big bank. Banks usually have low P/Es, so looking cheap is normal for them.') },
-               KO: { name: 'Coca-Cola', emo: '🥤', price: 85.65, eps: 3.33, pe: 25.74, fpe: 25.2, cash: 3.88, peg: 3.41, fil: 'Gumagawa ng Coke', en: 'Makes Coke',
+               KO: { name: 'Coca-Cola', emo: '🥤', price: 85.65, eps: 3.33, pe: 25.74, fpe: 25.2, cash: 3.88, cashB: 14.3, peg: 3.41, fil: 'Gumagawa ng Coke', en: 'Makes Coke',
                   line: both('Matatag na soda company. Okay na presyo para sa mabagal pero siguradong kita.', 'A super steady soda company. An okay price for slow but reliable profit.') },
-               TSLA: { name: 'Tesla', emo: '🚗', price: 370.59, eps: 0.96, pe: 384.57, fpe: 201.25, cash: 0.39, peg: 9.08, fil: 'Electric cars', en: 'Electric cars',
-                  line: both('₱385 para sa ₱1 na kita! Taya ng mga tao na lalaki nang sobra ang kita nito.', '₱385 for ₱1 of profit! People are betting its profit will grow a LOT.') },
-               GM: { name: 'General Motors', emo: '🚙', price: 78.27, eps: 1.99, pe: 39.42, fpe: 5.61, cash: 20.96, peg: 0.34, fil: 'Gumagawa ng kotse', en: 'Makes cars',
+               TSLA: { name: 'Tesla', emo: '🚗', price: 370.59, eps: 0.96, pe: 384.57, fpe: 201.25, cash: 0.39, cashB: 5.8, peg: 9.08, fil: 'Electric cars', en: 'Electric cars',
+                  line: both('385 taon ng kita! Taya ng mga tao na lalaki nang sobra ang kita nito.', '385 years of profit! People are betting its profit will grow a LOT.') },
+               GM: { name: 'General Motors', emo: '🚙', price: 78.27, eps: 1.99, pe: 39.42, fpe: 5.61, cash: 20.96, cashB: 14.4, peg: 0.34, fil: 'Gumagawa ng kotse', en: 'Makes cars',
                   line: both('Maliit ang kita last year kaya mukhang mahal. Base sa hula, sobrang mura, kung magkatotoo lang.', 'Small profit last year makes it look pricey. On the guess it looks super cheap, but only if the guess comes true.') },
-               XOM: { name: 'ExxonMobil', emo: '⛽', price: 164.01, eps: 7.76, pe: 21.15, fpe: 12.66, cash: 4.53, peg: 1.18, fil: 'Gasolina', en: 'Gas and oil',
+               XOM: { name: 'ExxonMobil', emo: '⛽', price: 164.01, eps: 7.76, pe: 21.15, fpe: 12.66, cash: 4.53, cashB: 30.6, peg: 1.18, fil: 'Gasolina', en: 'Gas and oil',
                   line: both('Oil company. Tumataas at bumababa ang kita kasabay ng presyo ng langis, kaya mahirap hulaan.', 'An oil company. Profit rises and falls with oil prices, so guesses are tricky.') },
-               PYPL: { name: 'PayPal', emo: '💳', price: 52.8, eps: 5.3, pe: 9.95, fpe: 9.51, cash: 14.58, peg: 1.35, fil: 'Online na bayad', en: 'Online payments',
+               PYPL: { name: 'PayPal', emo: '💳', price: 52.8, eps: 5.3, pe: 9.95, fpe: 9.51, cash: 14.58, cashB: 6.6, peg: 1.35, fil: 'Online na bayad', en: 'Online payments',
                   line: both('Mura sa lahat ng checks, kasi nag-aalala ang mga tao na mabagal na itong lumaki.', 'Cheap on every check, because people worry it will grow slowly.') },
-               UNH: { name: 'UnitedHealth', emo: '🏥', price: 371.9, eps: 15.53, pe: 23.94, fpe: 17.48, cash: 7.07, peg: 1.2, fil: 'Health insurance', en: 'Health insurance',
+               UNH: { name: 'UnitedHealth', emo: '🏥', price: 371.9, eps: 15.53, pe: 23.94, fpe: 17.48, cash: 7.07, cashB: 23.6, peg: 1.2, fil: 'Health insurance', en: 'Health insurance',
                   line: both('Mura base sa hula at sa cash, okay lang base sa last year. Tumataas ang gastos sa ospital.', 'Cheap on the guess and on cash, okay on last year. Hospital costs keep rising.') },
             };
             var INSIDE = ['GOOGL', 'AMZN', 'AAPL', 'META', 'MSFT', 'NVDA', 'LMT', 'VOO']; // Emma's 8
@@ -1669,7 +1740,7 @@
             function zone(price) {
                return price < CHEAP ? 'win' : price <= OKAY ? 'mid' : 'lose';
             }
-            // Price bar: ₱ you pay once for ₱1 a year, over green/yellow/red zone bands. Shorter = cheaper.
+            // Bar: years, over green/yellow/red bands. Shorter = cheaper.
             function bar(price) {
                if (price == null) return '<div class="track"><span class="none">' + both('Walang cash 😬', 'No cash 😬') + '</span></div>';
                var cls = price > BAR_MAX ? 'over' : zone(price);
@@ -1717,7 +1788,7 @@
                   '</small></span><span class="co-val ' +
                   vd.cls +
                   '">' +
-                  (price == null ? '—' : peso(price) + (price > BAR_MAX ? ' ↗' : '')) +
+                  (price == null ? '—' : yrs(price) + (price > BAR_MAX ? ' ↗' : '')) +
                   '<small>' +
                   vd.label +
                   '</small></span><span class="chev" aria-hidden="true">›</span></span>' +
@@ -1730,22 +1801,22 @@
                return '<button type="button" class="board-head" data-info="' + info + '"><span>' + both(fil, en) + '</span>' + I + '</button>';
             }
             var SCALE =
-               '<button type="button" class="scale-btn" data-info="scale" aria-label="How to read the chart"><span class="scale" aria-hidden="true"><span style="left:0">₱0</span><span style="left:50%">₱20</span><span style="left:75%">₱30</span><span style="left:100%">₱40</span></span></button>';
+               '<button type="button" class="scale-btn" data-info="scale" aria-label="How to read the chart"><span class="scale" aria-hidden="true"><span style="left:0">0</span><span style="left:50%">20</span><span style="left:75%">30</span><span style="left:100%">40 ' + both('taon', 'yrs') + '</span></span></button>';
             var KEY =
                '<button type="button" class="key" data-info="scale"><span>' +
-               both('Mas maikli = mas mura', 'Shorter bar = cheaper') +
-               '</span><span>🟢 &lt;₱20 · 🟡 ₱20–30 · 🔴 &gt;₱30</span>' +
+               both('Mas maikli = mas kaunting taon = mas mura', 'Shorter bar = fewer years = cheaper') +
+               '</span><span>' + both('🟢 &lt;20 · 🟡 20–30 · 🔴 &gt;30 taon', '🟢 &lt;20 · 🟡 20–30 · 🔴 &gt;30 years') + '</span>' +
                I +
                '</button>';
             var TAP = '<p class="tap-hint">' + both('I-tap ang company para makita ang lahat ng numero nito ›', 'Tap a company to see all its numbers ›') + '</p>';
 
-            // Check 1: P/E = ₱ you pay once for ₱1 of yearly profit
+            // Check 1: P/E = years of profit to add up to the price
             document.querySelector('[data-board="pe"]').innerHTML =
-               head('payonce', 'Bayad mo nang isang beses, para sa ₱1 na kita kada taon', 'Price you pay once, for ₱1 of profit every year') +
+               head('payonce', 'Ilang taon bago umabot ang kita sa presyo', 'Years for profit to add up to the price') +
                SCALE +
                ['JPM', 'LMT', 'KO', 'AAPL', 'TSLA']
                   .map(function (t) {
-                     var note = t === 'TSLA' ? both('₱385 para sa ₱1?! Umaasa ang mga tao na lalaki nang sobra ang kita nito.', '₱385 for ₱1?! People hope its profit grows a LOT.') : '';
+                     var note = t === 'TSLA' ? both('385 taon?! Umaasa ang mga tao na lalaki nang sobra ang kita nito.', '385 years?! People hope its profit grows a LOT.') : '';
                      return row(t, CO[t].pe, note);
                   })
                   .join('') +
@@ -1754,15 +1825,15 @@
 
             // Check 2: forward P/E
             document.querySelector('[data-board="fpe"]').innerHTML =
-               head('guess', 'Bayad nang isang beses, para sa ₱1 ng HULANG kita next year', "Price you pay once, for ₱1 of next year's GUESSED profit") +
+               head('guess', 'Ilang taon, gamit ang HULANG kita next year', "Years, using next year's GUESSED profit") +
                SCALE +
                ['GM', 'XOM', 'NVDA', 'MSFT', 'AMZN']
                   .map(function (t) {
                      var c = CO[t];
-                     var change = both('Last year ' + peso(c.pe) + ' → next year ' + peso(c.fpe), 'Last year ' + peso(c.pe) + ' → next year ' + peso(c.fpe));
+                     var change = both('Last year ' + yrs(c.pe) + ' → next year ' + yrs(c.fpe), 'Last year ' + yrs(c.pe) + ' → next year ' + yrs(c.fpe));
                      var extra = '';
                      if (t === 'GM') extra = both(' Malaking bagsak! Pero kung magkatotoo lang ang hula.', ' Huge drop! But only if the guess comes true.');
-                     if (t === 'NVDA') extra = both(' Kulang lang sa ₱20, kaya mura na!', ' Just under ₱20, so it lands in the cheap zone!');
+                     if (t === 'NVDA') extra = both(' Kulang lang sa 20 taon, kaya mura na!', ' Just under 20 years, so it counts as cheap!');
                      if (t === 'AMZN') extra = both(' Mas mahal next year kasi mas maliit ang hulang kita.', ' Pricier next year because the guessed profit is smaller.');
                      return row(t, c.fpe, change + extra);
                   })
@@ -1770,9 +1841,9 @@
                KEY +
                TAP;
 
-            // Check 3: ₱ you pay once for ₱1 of yearly real cash (100 ÷ FCF yield)
+            // Check 3: years of real cash to add up to the price (100 ÷ FCF yield)
             document.querySelector('[data-board="fcf"]').innerHTML =
-               head('cashhead', 'Bayad nang isang beses, para sa ₱1 na totoong cash kada taon', 'Price you pay once, for ₱1 of real cash every year') +
+               head('cashhead', 'Ilang taon ng totoong cash para umabot sa presyo', 'Years of real cash to add up to the price') +
                SCALE +
                ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN']
                   .map(function (t) {
@@ -1785,7 +1856,7 @@
                KEY +
                TAP;
 
-            // Results: each check in the cheap zone (under ₱20) = 1 pandesal
+            // Results: each check under 20 years = 1 pandesal
             var WINNERS = [
                { t: 'LMT', but: both('Pero: mabagal lumaki.', 'But: grows slowly.') },
                { t: 'PYPL', but: both('Pero: baka mabagal na itong lumaki.', 'But: it may grow slowly.') },
@@ -1816,6 +1887,11 @@
                })
                .join('');
 
+            // Pictures: year boxes for the two stores
+            document.querySelectorAll('[data-yrs]').forEach(function (el) {
+               el.innerHTML = new Array(+el.getAttribute('data-yrs') + 1).join('<i></i>');
+            });
+
             // Picture: the 100-piece store
             var grid = '';
             for (var g = 0; g < 100; g++) grid += '<span' + (g === 44 ? ' class="you"' : '') + '></span>';
@@ -1826,11 +1902,11 @@
                pe: {
                   q: both('🧠 Alin ang mas mura?', '🧠 Which one is cheaper?'),
                   opts: [
-                     { a: both('🍎 Apple: ₱38 para sa ₱1 na kita', '🍎 Apple: ₱38 for ₱1 of profit'), ok: false },
-                     { a: both('🏦 JPMorgan: ₱14 para sa ₱1 na kita', '🏦 JPMorgan: ₱14 for ₱1 of profit'), ok: true },
+                     { a: both('🍎 Apple: 38 taon ng kita', '🍎 Apple: 38 years of profit'), ok: false },
+                     { a: both('🏦 JPMorgan: 14 taon ng kita', '🏦 JPMorgan: 14 years of profit'), ok: true },
                   ],
-                  right: both('Tama! Mas mababang P/E = mas mura. Parang bigas na mas mura kada kilo.', 'Correct! Lower P/E = cheaper. Like rice that costs less per kilo.'),
-                  wrong: both('Hindi pa. Mas mababang presyo para sa ₱1 = mas mura. Subukan ulit!', 'Not quite. Paying less for ₱1 = cheaper. Try again!'),
+                  right: both('Tama! Mas kaunting taon = mas mura. Parang Tindahan A!', 'Correct! Fewer years = cheaper. Just like Store A!'),
+                  wrong: both('Hindi pa. Mas kaunting taon = mas mura. Subukan ulit!', 'Not quite. Fewer years = cheaper. Try again!'),
                },
                fpe: {
                   q: both('🧠 Sigurado bang tama ang hula?', '🧠 Is the guess always right?'),
@@ -1842,13 +1918,13 @@
                   wrong: both('Hindi pa. Kahit expert, nagkakamali. Subukan ulit!', 'Not quite. Even experts get it wrong. Try again!'),
                },
                fcf: {
-                  q: both('🧠 Alin ang 🟢 mura (below ₱20)?', '🧠 Which one is 🟢 cheap (under ₱20)?'),
+                  q: both('🧠 Alin ang 🟢 mura (below 20 taon)?', '🧠 Which one is 🟢 cheap (under 20 years)?'),
                   opts: [
-                     { a: both('🥤 Coca-Cola: ₱25.8 para sa ₱1 na cash', '🥤 Coca-Cola: ₱25.8 for ₱1 of cash'), ok: false },
-                     { a: both('💳 PayPal: ₱6.9 para sa ₱1 na cash', '💳 PayPal: ₱6.9 for ₱1 of cash'), ok: true },
+                     { a: both('🥤 Coca-Cola: 25.8 taon ng cash', '🥤 Coca-Cola: 25.8 years of cash'), ok: false },
+                     { a: both('💳 PayPal: 6.9 taon ng cash', '💳 PayPal: 6.9 years of cash'), ok: true },
                   ],
-                  right: both('Tama! ₱6.9 ay below ₱20.', 'Correct! ₱6.9 is under ₱20.'),
-                  wrong: both('Hindi pa. ₱25.8 ay above ₱20. Subukan ulit!', 'Not quite. ₱25.8 is over ₱20. Try again!'),
+                  right: both('Tama! 6.9 taon ay below 20.', 'Correct! 6.9 years is under 20.'),
+                  wrong: both('Hindi pa. 25.8 taon ay above 20. Subukan ulit!', 'Not quite. 25.8 years is over 20. Try again!'),
                },
             };
             Object.keys(QUIZ).forEach(function (id) {
@@ -1889,7 +1965,7 @@
                         return CO[a].pe - CO[b].pe;
                      })
                      .map(function (t) {
-                        return '<button type="button" class="co-chip" data-open="' + t + '">' + CO[t].emo + ' ' + CO[t].name + ' <b>' + peso(CO[t].pe) + '</b></button>';
+                        return '<button type="button" class="co-chip" data-open="' + t + '">' + CO[t].emo + ' ' + CO[t].name + ' <b>' + yrs(CO[t].pe) + '</b></button>';
                      })
                      .join('') +
                   '</div>'
@@ -1907,13 +1983,13 @@
                '<div class="zones"><span class="z-cheap">🟢 ' +
                both('Mura', 'Cheap') +
                '<small>' +
-               both('below ₱20', 'under ₱20') +
+               both('below 20 taon', 'under 20 years') +
                '</small></span><span class="z-okay">🟡 ' +
                both('Okay lang', 'Okay') +
-               '<small>₱20–30</small></span><span class="z-pricey">🔴 ' +
+               '<small>' + both('20–30 taon', '20–30 years') + '</small></span><span class="z-pricey">🔴 ' +
                both('Mahal', 'Pricey') +
                '<small>' +
-               both('above ₱30', 'over ₱30') +
+               both('above 30 taon', 'over 30 years') +
                '</small></span></div>';
 
             var INFO = {
@@ -1921,102 +1997,142 @@
                   emo: '🧩',
                   title: both('Ano ang stock?', 'What is a stock?'),
                   body:
-                     p('Ang stock (o share) ay maliit na piraso ng isang company. Kung may hawak ka, may-ari ka ng konting parte ng lahat ng pag-aari at kinikita nito.', 'A stock (or share) is a tiny piece of a company. If you own one, you own a small part of everything it owns and earns.') +
-                     p('Milyon-milyon ang piraso ng malalaking company, kaya maliit na maliit ang isang share.', 'Big companies are cut into millions of pieces, so one share is a very small slice.') +
+                     p('Hatiin ang tindahan ni Aling Nena sa 100 piraso. Bawat piraso ay isang stock (o share). Kung may 1 piraso ka, may-ari ka ng 1 sa 100 parte ng tindahan.', "Cut Aling Nena's store into 100 pieces. Each piece is a stock (or share). Own 1 piece, and you own 1 of the store's 100 parts.") +
+                     p('Ang Apple at Coca-Cola ay hinati sa bilyon-bilyong piraso. Kaya maliit na maliit ang isang share.', 'Apple and Coca-Cola are cut into billions of pieces. So one share is a very tiny slice.') +
                      '<p class="rule"><span class="ic" aria-hidden="true">📈</span><span>' +
-                     both('Pag lumaki ang company at kumita nang mas malaki, kadalasang tumataas ang halaga ng piraso mo.', 'When the company grows and earns more, your piece is usually worth more.') +
+                     both('Pag lumaki ang tindahan at mas kumita, mas mahal na rin ang piraso mo.', 'When the store grows and makes more, your piece is worth more too.') +
                      '</span></p>',
                },
                profit: {
                   emo: '💰',
-                  title: both('Ano ang kita (profit)?', 'What is profit?'),
+                  title: both('Ano ang kita?', 'What is profit?'),
                   body:
-                     p('Ang kita ay ang perang natira sa company matapos bayaran ang lahat ng gastos. Tawag din dito ay "earnings."', 'Profit is the money a company keeps after paying all its costs. It is also called "earnings."') +
-                     '<p class="big-math">₱500 − ₱450 = ₱50<small>' +
-                     both('benta − gastos = kita', 'sales − costs = profit') +
-                     '</small></p>',
+                     p('Ang kita ay ang perang natira matapos bayaran ang lahat ng gastos. Tinatawag din itong "earnings."', 'Profit is the money left after paying all the costs. It is also called "earnings."') +
+                     '<div class="math"><div><span>' +
+                     both('Benta ni Aling Nena', "Aling Nena's sales") +
+                     '</span><b>₱500</b></div><div><span>' +
+                     both('Gastos', 'Costs') +
+                     '</span><b>−₱450</b></div><div class="result"><span>' +
+                     both('Kita', 'Profit') +
+                     '</span><b>₱50</b></div></div>',
                },
                pe: {
-                  emo: '🏷️',
-                  title: 'P/E',
+                  emo: '📅',
+                  title: both('P/E = ilang taon ng kita', 'P/E = years of profit'),
                   body:
-                     p('Ang P/E ay ang bayad mo nang isang beses para sa ₱1 na kita ng company kada taon. P = Price (presyo), E = Earnings (kita).', 'P/E is what you pay once for ₱1 of the company\'s profit each year. P = Price, E = Earnings (profit).') +
-                     '<p class="big-math">₱100 ÷ ₱5 = 20<small>' +
-                     both('presyo ng share ÷ kita kada share', 'share price ÷ profit per share') +
-                     '</small></p>' +
+                     p('Ang tindahan ay ₱1,000 at kumikita ng ₱50 kada taon.', 'A store costs ₱1,000 and makes ₱50 of profit a year.') +
+                     '<p class="big-math">₱1,000 ÷ ₱50 = ' +
+                     both('20 taon', '20 years') +
+                     '</p>' +
+                     years(20) +
+                     p('20 taon bago umabot ang kita sa presyo. Kaya ang P/E nito ay 20. (P = Price/presyo, E = Earnings/kita.)', 'It takes 20 years for the profit to add up to the price. So its P/E is 20. (P = Price, E = Earnings, which means profit.)') +
                      '<p class="rule"><span class="ic" aria-hidden="true">👍</span><span>' +
-                     both('Mas mababang P/E = mas mura.', 'Lower P/E = cheaper.') +
+                     both('Mas kaunting taon = mas mura.', 'Fewer years = cheaper.') +
                      '</span></p>' +
                      ZONES_HTML,
                },
                eps: {
                   emo: '🧾',
-                  title: both('EPS (kita kada share)', 'EPS (earnings per share)'),
+                  title: both('EPS = kita ng bawat piraso', 'EPS = profit for each piece'),
                   body:
-                     p('Ang kita ng company para sa bawat isang share. Kung ₱1,000 ang kita at may 100 shares, ₱10 ang EPS.', "The company's profit for each single share. If it makes ₱1,000 of profit and has 100 shares, EPS is ₱10.") +
+                     p('Ang tindahan ay may 100 piraso at kumita ng ₱1,000 ngayong taon.', 'The store has 100 pieces and made ₱1,000 of profit this year.') +
                      '<p class="big-math">₱1,000 ÷ 100 = ₱10<small>' +
-                     both('kita ÷ bilang ng shares', 'profit ÷ number of shares') +
+                     both('kita ng bawat piraso (EPS)', 'profit for each piece (EPS)') +
                      '</small></p>' +
-                     p('Gamit ito ng P/E: presyo ng share ÷ EPS.', 'P/E uses it: share price ÷ EPS.'),
+                     p('Kung ₱200 ang presyo ng isang piraso:', 'If one piece costs ₱200:') +
+                     '<p class="big-math">₱200 ÷ ₱10 = ' +
+                     both('20 taon', '20 years') +
+                     '<small>' +
+                     both('= ang P/E', '= the P/E') +
+                     '</small></p>',
                },
                fpe: {
                   emo: '🔮',
                   title: 'Forward P/E',
                   body:
-                     p('Parehong P/E, pero gamit ang kitang hinuhulaan ng mga expert para sa next year.', 'The same as P/E, but using the profit experts guess the company will make next year.') +
-                     p('Kung inaasahang lalaki ang kita, mas mababa ang forward P/E kaysa sa P/E, kaya mukhang mas mura.', 'If profit is expected to grow, the forward P/E is lower than the P/E, so it looks cheaper.') +
+                     p('Parehong bilang ng taon, pero gamit ang kitang hinuhulaan ng mga expert para sa next year.', 'The same count of years, but using the profit experts guess for next year.') +
+                     p('Ngayong taon: ₱50 ang kita. Hula next year: ₱100.', 'This year: ₱50 of profit. Guess for next year: ₱100.') +
+                     '<div class="math"><div><span>' +
+                     both('Ngayon: ₱1,000 ÷ ₱50', 'Now: ₱1,000 ÷ ₱50') +
+                     '</span><b>' +
+                     both('20 taon', '20 years') +
+                     '</b></div><div class="result"><span>' +
+                     both('Next year: ₱1,000 ÷ ₱100', 'Next year: ₱1,000 ÷ ₱100') +
+                     '</span><b>' +
+                     both('10 taon', '10 years') +
+                     '</b></div></div>' +
                      '<p class="warn"><span class="ic" aria-hidden="true">⚠️</span><span>' +
-                     both('Hula lang ito. Pwedeng mali!', 'It is only a guess. It can be wrong!') +
+                     both('Hula lang ito. Kung ₱50 pa rin ang kita, 20 taon pa rin!', 'It is only a guess. If profit stays at ₱50, it is still 20 years!') +
                      '</span></p>',
                },
                cash: {
                   emo: '💵',
-                  title: both('Totoong cash (FCF yield)', 'Real cash (FCF yield)'),
+                  title: both('Totoong cash', 'Real cash'),
                   body:
-                     p('Ang free cash flow ay ang totoong cash na natira matapos bayaran ang lahat ng bills at bagong gamit. Iba ito sa kita sa papel.', 'Free cash flow is the real cash left after paying all the bills and buying new equipment. It is different from profit on paper.') +
-                     p('Sa websites, % ang pakita nito (FCF yield). Baliktarin: 100 ÷ FCF yield = bayad mo para sa ₱1 na cash kada taon.', 'Websites show it as a % (FCF yield). Flip it: 100 ÷ FCF yield = what you pay once for ₱1 of cash a year.') +
-                     '<p class="big-math">100 ÷ 14.6 = ₱6.9<small>' +
-                     both('PayPal: FCF yield 14.6%', 'PayPal: FCF yield 14.6%') +
-                     '</small></p>' +
-                     p('Kung below zero, mas malaki ang ginastos ng company kaysa sa pumasok na cash.', 'Below zero means the company spent more cash than came in.'),
+                     p('Ang totoong cash ay ang perang natira talaga sa kaha, matapos bayaran ang paninda, kuryente, at mga bagong gamit gaya ng estante.', 'Real cash is the money actually left in the drawer after paying for goods, electricity, and new things like shelves.') +
+                     '<div class="math"><div><span>' +
+                     both('Benta', 'Sales') +
+                     '</span><b>₱500</b></div><div><span>' +
+                     both('Paninda at kuryente', 'Goods and electricity') +
+                     '</span><b>−₱420</b></div><div><span>' +
+                     both('Bagong estante', 'New shelves') +
+                     '</span><b>−₱20</b></div><div class="result"><span>' +
+                     both('Natirang cash', 'Cash left over') +
+                     '</span><b>₱60</b></div></div>' +
+                     '<p class="big-math">₱1,000 ÷ ₱60 = ' +
+                     both('16.7 taon', '16.7 years') +
+                     '</p>' +
+                     '<p class="small">' +
+                     both('Sa websites, "free cash flow" o "FCF yield" ang tawag dito.', 'Websites call this "free cash flow" or "FCF yield."') +
+                     '</p>',
                },
                peg: {
                   emo: '⚡',
-                  title: 'PEG',
+                  title: both('PEG: sulit ba ang mabilis na paglaki?', 'PEG: is fast growth worth it?'),
                   body:
-                     p('May mga company na sobrang bilis lumaki, kaya okay lang na mas mataas ang P/E nila. Ang PEG ang nagche-check nito.', 'Some companies grow so fast that a higher P/E can be fair. PEG checks that.') +
-                     '<p class="big-math">20 ÷ 20 = 1<small>' +
-                     both('P/E ÷ paglaki ng kita kada taon (%)', 'P/E ÷ yearly profit growth (%)') +
-                     '</small></p>' +
-                     '<div class="zones"><span class="z-cheap">' +
-                     both('Below 1<small>sulit</small>', 'Under 1<small>good deal</small>') +
-                     '</span><span class="z-okay">1–2<small>' +
-                     both('okay lang', 'fair') +
-                     '</small></span><span class="z-pricey">' +
-                     both('Above 2<small>mahal</small>', 'Over 2<small>pricey</small>') +
-                     '</span></div>' +
-                     '<p class="small">' +
-                     both('Iba-iba ang computation ng PEG sa bawat website. Ikumpara lang sa iisang site.', 'Every website calculates PEG a little differently. Only compare on the same site.') +
-                     '</p>',
+                     p('Ang Tindahan C ay ₱1,000 at ₱25 lang ang kita: 40 taon. Mukhang mahal! Pero dumodoble ang kita nito kada taon:', 'Store C costs ₱1,000 and makes only ₱25: 40 years. Looks pricey! But its profit doubles every year:') +
+                     '<div class="math"><div><span>' +
+                     both('Ngayon: ₱25 na kita', 'Now: ₱25 profit') +
+                     '</span><b>' +
+                     both('40 taon', '40 years') +
+                     '</b></div><div><span>' +
+                     both('Next year: ₱50', 'Next year: ₱50') +
+                     '</span><b>' +
+                     both('20 taon', '20 years') +
+                     '</b></div><div class="result"><span>' +
+                     both('Sumunod na taon: ₱100', 'The year after: ₱100') +
+                     '</span><b>' +
+                     both('10 taon', '10 years') +
+                     '</b></div></div>' +
+                     p('Kaya pwedeng sulit pa rin ang maraming taon, kung mabilis lumaki ang kita. Ito ang chine-check ng PEG.', 'So lots of years can still be a good deal if profit grows fast. PEG checks this.') +
+                     '<div class="zones"><span class="z-cheap">✅<small>' +
+                     both('Below 1: sapat ang bilis', 'Under 1: growing fast enough') +
+                     '</small></span><span class="z-okay">🟡<small>' +
+                     both('1–2: pwede na', '1–2: so-so') +
+                     '</small></span><span class="z-pricey">❌<small>' +
+                     both('Above 2: masyadong mabagal', 'Over 2: too slow for the price') +
+                     '</small></span></div>',
                },
                sp500: {
                   emo: '🧺',
                   title: 'S&amp;P 500 / VOO',
                   body:
-                     p('Ang S&P 500 ay listahan ng 500 sa pinakamalalaking company sa US. Sa VOO, makakabili ka ng konting parte ng lahat ng 500 nang sabay.', 'The S&P 500 is a list of 500 of the biggest US companies. VOO lets you buy a tiny piece of all 500 at once.') +
-                     p('Mas safe ito kaysa bumili ng iisang company, kasi hindi ka umaasa sa isa lang.', 'It is less risky than buying one company, because you are not betting on just one.'),
+                     p('Isipin ang isang basket na may maliit na piraso ng 500 pinakamalalaking company sa US: Apple, Microsoft, Coca-Cola, at marami pa.', 'Picture a basket holding a tiny piece of the 500 biggest US companies: Apple, Microsoft, Coca-Cola and many more.') +
+                     p('Sa pagbili ng isang VOO, makukuha mo ang buong basket. Kung humina ang isang company, may 499 pa.', 'Buying one VOO gets you the whole basket. If one company does badly, you still have 499 others.'),
                },
                cheap: {
                   emo: '🟢',
-                  title: both('Mura: below ₱20', 'Cheap: under ₱20'),
+                  title: both('Mura: below 20 taon', 'Cheap: under 20 years'),
                   body:
-                     p('Wala pang ₱20 ang bayad mo para sa bawat ₱1 na kita kada taon. Sa loob ng wala pang 20 taon, mapapantayan ng kita ang presyo.', 'You pay less than ₱20 for each ₱1 of profit a year. In under 20 years, the profit adds up to what you paid.') +
-                     p('Bakit ₱20? Ang super-safe na US government bond ay mga ₱19 para sa bawat ₱1 kada taon. Kaya ang stock na below ₱20 ay kasing-sulit man lang ng bond.', 'Why ₱20? A super-safe US government bond works out to about ₱19 for each ₱1 a year. So a stock under ₱20 is at least as good a deal.') +
+                     p('Wala pang 20 taon bago umabot ang kita sa presyo.', 'The profit adds up to the price in under 20 years.') +
+                     years(14) +
+                     p('Halimbawa: JPMorgan, mga 14 taon.', 'Example: JPMorgan, about 14 years.') +
+                     p('Bakit 20? Kung ipapahiram mo ang pera sa gobyerno ng US (super safe), mga 19 taon bago bumalik sa iyo ang buong halaga sa interest. Kaya ang below 20 ay kasing-sulit man lang.', 'Why 20? If you lend money to the US government (super safe), its interest adds up to what you lent in about 19 years. So under 20 is at least that good.') +
                      '<p class="warn"><span class="ic" aria-hidden="true">🥖</span><span>' +
-                     both('Pero minsan mura ang stock kasi may problema ang business. Alamin kung bakit!', 'But sometimes a stock is cheap because the business has problems. Find out why!') +
+                     both('Pero minsan mura ang stock kasi may problema ang business, parang pandesal na kahapon pa. Alamin kung bakit!', "But sometimes a stock is cheap because the business has problems, like day-old pandesal. Find out why!") +
                      '</span></p>' +
                      '<p class="small">' +
-                     both('Mga mura base sa P/E:', 'Cheap on P/E:') +
+                     both('I-tap para makita:', 'Tap to see:') +
                      '</p>' +
                      examples(function (c) {
                         return c.pe < CHEAP;
@@ -2024,12 +2140,12 @@
                },
                okay: {
                   emo: '🟡',
-                  title: both('Okay lang: ₱20–30', 'Okay: ₱20–30'),
+                  title: both('Okay lang: 20–30 taon', 'Okay: 20–30 years'),
                   body:
-                     p('Normal na presyo para sa matatag na company. Ang buong US market (S&P 500) ay mga ₱27 ngayon.', 'A normal price for a solid company. The whole US market (S&P 500) is about ₱27 right now.') +
-                     p('Hindi bargain, pero hindi rin sobrang mahal.', 'Not a bargain, but not too pricey either.') +
+                     p('Normal na presyo para sa matatag na company. Ang average na malaking company sa US ay mga 27 taon ngayon.', 'A normal price for a strong company. The average big US company is about 27 years right now.') +
+                     years(27) +
                      '<p class="small">' +
-                     both('Mga okay lang base sa P/E:', 'Okay on P/E:') +
+                     both('I-tap para makita:', 'Tap to see:') +
                      '</p>' +
                      examples(function (c) {
                         return c.pe >= CHEAP && c.pe <= OKAY;
@@ -2037,42 +2153,46 @@
                },
                pricey: {
                   emo: '🔴',
-                  title: both('Mahal: above ₱30', 'Pricey: over ₱30'),
+                  title: both('Mahal: above 30 taon', 'Pricey: over 30 years'),
                   body:
-                     p('Malaki ang binabayad ng mga tao ngayon kasi umaasa silang mabilis lalaki ang kita. Kung hindi dumating ang paglaki, pwedeng bumagsak ang presyo.', 'People pay a lot today because they expect profit to grow fast. If the growth does not come, the price can fall.') +
-                     p('Hindi ibig sabihin na pangit ang company. Pwedeng magaling ang company pero mahal ang stock.', "It doesn't mean the company is bad. A great company can still have a pricey stock.") +
+                     p('Higit 30 taon bago umabot ang kita sa presyo. Malaki ang binabayad ng mga tao kasi umaasa silang mabilis lalaki ang kita.', 'More than 30 years for the profit to add up to the price. People pay a lot because they hope profit grows fast.') +
+                     years(38) +
+                     p('Halimbawa: Apple, mga 38 taon. Kung hindi lumaki ang kita, pwedeng bumagsak ang presyo.', "Example: Apple, about 38 years. If profit doesn't grow, the price can fall.") +
+                     p('Pwedeng magaling ang company pero mahal ang stock!', 'A great company can still be a pricey stock!') +
                      '<p class="small">' +
-                     both('Mga mahal base sa P/E:', 'Pricey on P/E:') +
+                     both('I-tap para makita:', 'Tap to see:') +
                      '</p>' +
                      examples(function (c) {
                         return c.pe > OKAY;
                      }),
                },
                payonce: {
-                  emo: '🏷️',
-                  title: both('Bayad nang isang beses, kita kada taon', 'Pay once, earn every year'),
+                  emo: '📅',
+                  title: both('Ilang taon ng kita', 'Years of profit'),
                   body:
-                     p('Halimbawa: magbabayad ka ng ₱14.3 nang isang beses para sa parte ng JPMorgan. Kada taon pagkatapos, kikita ang parteng \'yan ng ₱1.', 'Example: you pay ₱14.3 once for a piece of JPMorgan. Every year after that, your piece earns ₱1 of profit.') +
+                     p('Kung pareho ang kita ng JPMorgan bawat taon, mga 14 taon bago umabot ang kita sa presyo ng stock nito.', "If JPMorgan's profit stayed the same each year, it would take about 14 years to add up to its stock price.") +
                      years(14) +
-                     p('Pagkalipas ng mga 14 taon, kapantay na ng kita ang binayad mo. Mas kaunting taon = mas mura.', 'After about 14 years, the profit adds up to what you paid. Fewer years = cheaper.') +
+                     p('Ang Apple ay mga 38 taon. Kaya mas mura ang JPMorgan.', 'Apple would take about 38 years. So JPMorgan is cheaper.') +
+                     years(38) +
                      ZONES_HTML,
                },
                guess: {
                   emo: '🔮',
                   title: both('Gamit ang hula sa next year', "Using next year's guess"),
                   body:
-                     p('Pinag-aaralan ng mga expert ang company at hinuhulaan nila ang kita nito next year. Ito ang ginagamit ng chart na ito.', "Experts study each company and guess next year's profit. This chart uses that guess.") +
-                     p('Mas malaking hulang kita = mas mababa ang bayad mo para sa ₱1 = mukhang mas mura.', 'Bigger guessed profit = you pay less for each ₱1 = it looks cheaper.') +
+                     p('Pinag-aaralan ng mga expert ang bawat company at hinuhulaan nila ang kita nito next year.', "Experts study each company and guess next year's profit.") +
+                     p('Halimbawa, General Motors: maliit ang kita last year, kaya 39 taon. Pero malaki ang hula para next year, kaya 6 taon lang!', 'Example, General Motors: small profit last year, so 39 years. But experts guess big profit next year, so only 6 years!') +
                      '<p class="warn"><span class="ic" aria-hidden="true">⚠️</span><span>' +
-                     both('Pwedeng mali ang hula, lalo na sa kotse at langis.', 'Guesses can be wrong, especially for cars and oil.') +
+                     both('Kung mali ang hula, 39 taon pa rin ang GM.', 'If the guess is wrong, GM is still 39 years.') +
                      '</span></p>',
                },
                cashhead: {
                   emo: '💵',
-                  title: both('Bayad para sa ₱1 na totoong cash', 'Price for ₱1 of real cash'),
+                  title: both('Ilang taon ng totoong cash', 'Years of real cash'),
                   body:
-                     p('Parehong tanong ng Check 1, pero gamit ang totoong cash na natira sa company, hindi ang kita sa papel.', 'The same question as Check 1, but using the real cash the company has left, not profit on paper.') +
-                     p('Mas mababang presyo para sa ₱1 na cash = mas mura.', 'Lower price for ₱1 of cash = cheaper.') +
+                     p('Parehong bilang ng taon, pero gamit ang totoong cash na natira sa kaha, hindi ang kita sa papel.', 'The same count of years, but using the real cash left in the drawer instead of profit on paper.') +
+                     p('Halimbawa, PayPal: mga 7 taon lang ng totoong cash para umabot sa presyo nito.', 'Example, PayPal: only about 7 years of real cash to add up to its price.') +
+                     years(7) +
                      ZONES_HTML,
                },
                scale: {
@@ -2080,9 +2200,9 @@
                   title: both('Paano basahin ang chart', 'How to read the chart'),
                   body:
                      '<ul class="steps">' +
-                     '<li>' + both('Bawat bar = bayad mo para sa ₱1. <strong>Mas maikli = mas mura.</strong>', 'Each bar = what you pay for ₱1. <strong>Shorter = cheaper.</strong>') + '</li>' +
-                     '<li>' + both('Ang kulay sa likod ay ang zones: berde below ₱20, dilaw ₱20–30, pula above ₱30.', 'The colours behind the bar are the zones: green under ₱20, yellow ₱20–30, red over ₱30.') + '</li>' +
-                     '<li>' + both('Ang guhit-guhit na bar ay lampas sa ₱40, gaya ng Tesla (₱385).', 'A striped bar goes past ₱40, like Tesla (₱385).') + '</li>' +
+                     '<li>' + both('Ang haba ng bar = bilang ng taon. <strong>Mas maikli = mas mura.</strong>', 'Bar length = number of years. <strong>Shorter = cheaper.</strong>') + '</li>' +
+                     '<li>' + both('Berde sa likod = below 20 taon. Dilaw = 20–30. Pula = above 30.', 'Green behind = under 20 years. Yellow = 20–30. Red = over 30.') + '</li>' +
+                     '<li>' + both('Ang guhit-guhit na bar ay lampas sa 40 taon, gaya ng Tesla (385 taon!).', 'A striped bar goes past 40 years, like Tesla (385 years!).') + '</li>' +
                      '<li>' + both('I-tap ang company para makita ang lahat ng numero nito.', 'Tap a company to see all its numbers.') + '</li>' +
                      '</ul>' +
                      ZONES_HTML,
@@ -2091,9 +2211,13 @@
                   emo: '🥯',
                   title: both('Paano ang pandesal score?', 'How the pandesal score works'),
                   body:
-                     p('1 pandesal para sa bawat check kung saan 🟢 mura ang stock (below ₱20):', '1 pandesal for each check where the stock is 🟢 cheap (under ₱20):') +
-                     '<ul class="steps"><li>Check 1 · P/E</li><li>Check 2 · Forward P/E</li><li>Check 3 · ' +
-                     both('Totoong cash', 'Real cash') +
+                     p('1 pandesal para sa bawat check na below 20 taon:', '1 pandesal for each check under 20 years:') +
+                     '<ul class="steps"><li>' +
+                     both('Check 1: taon ng kita', 'Check 1: years of profit') +
+                     '</li><li>' +
+                     both('Check 2: taon ng hulang kita next year', "Check 2: years of next year's guessed profit") +
+                     '</li><li>' +
+                     both('Check 3: taon ng totoong cash', 'Check 3: years of real cash') +
                      '</li></ul>' +
                      p('3 pandesal = mura sa lahat. 0 = mahal sa lahat.', '3 pandesal = cheap on everything. 0 = pricey on everything.') +
                      '<p class="warn"><span class="ic" aria-hidden="true">🥖</span><span>' +
@@ -2159,9 +2283,11 @@
                           usd(s.price) +
                           ' ÷ ' +
                           usd(s.eps) +
-                          ' = P/E ' +
-                          s.pe.toFixed(1) +
-                          '</p>'
+                          ' = ' +
+                          yrs(s.pe) +
+                          '<small>' +
+                          both('presyo ÷ kita ng bawat share = taon ng kita (P/E)', 'price ÷ profit per share = years of profit (P/E)') +
+                          '</small></p>'
                      : '<p>' +
                           both(
                              'Ang 1 share ay ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Hindi ito isang company, kaya ang P/E ay galing sa kita ng lahat ng 500.',
@@ -2174,10 +2300,10 @@
                   'pe',
                   '🏷️',
                   'P/E',
-                  both('Bayad para sa ₱1 na kita', 'Price for ₱1 of profit'),
-                  s.pe.toFixed(1),
+                  both('Ilang taon ng kita', 'Years of profit'),
+                  yrs(s.pe),
                   '<p>' +
-                     both('Magbabayad ka ng <strong>' + peso(s.pe) + '</strong> nang isang beses, para sa bawat ₱1 na kita nito kada taon.', 'You pay <strong>' + peso(s.pe) + '</strong> once, for every ₱1 of profit it makes each year.') +
+                     both('Kung pareho ang kita kada taon, mga <strong>' + yrs(s.pe) + '</strong> bago umabot ang kita sa presyo.', 'If profit stayed the same each year, it would take about <strong>' + yrs(s.pe) + '</strong> to add up to the price.') +
                      '</p>' +
                      bar(s.pe) +
                      pill(s.pe)
@@ -2188,11 +2314,11 @@
                   '🔮',
                   'Forward P/E',
                   both('Gamit ang hula sa next year', "Using next year's guess"),
-                  s.fpe.toFixed(1),
+                  yrs(s.fpe),
                   '<p>' +
                      both(
-                        'Kung tama ang hula: <strong>' + peso(s.fpe) + '</strong> para sa ₱1. ' + (s.fpe < s.pe ? 'Mas mura kasi inaasahang lalaki ang kita.' : 'Mas mahal kasi inaasahang liliit ang kita.'),
-                        'If the guess is right: <strong>' + peso(s.fpe) + '</strong> for ₱1. ' + (s.fpe < s.pe ? 'Cheaper, because profit should grow.' : 'Pricier, because profit should shrink.')
+                        'Kung tama ang hula: <strong>' + yrs(s.fpe) + '</strong>. ' + (s.fpe < s.pe ? 'Mas kaunting taon kasi inaasahang lalaki ang kita.' : 'Mas maraming taon kasi inaasahang liliit ang kita.'),
+                        'If the guess is right: <strong>' + yrs(s.fpe) + '</strong>. ' + (s.fpe < s.pe ? 'Fewer years, because profit should grow.' : 'More years, because profit should shrink.')
                      ) +
                      '</p>' +
                      bar(s.fpe) +
@@ -2207,16 +2333,16 @@
                   'cash',
                   '💵',
                   'FCF yield',
-                  both('Bayad para sa ₱1 na totoong cash', 'Price for ₱1 of real cash'),
-                  s.cash == null ? '—' : s.cash.toFixed(1) + '%',
+                  both('Ilang taon ng totoong cash', 'Years of real cash'),
+                  cp == null ? '—' : yrs(cp),
                   s.cash == null
                      ? '<p>' + noCash + '</p>' + pill(undefined)
                      : '<p>' +
                           (cp == null
-                             ? both('Mas malaki ang ginastos kaysa pumasok, kaya walang natirang cash.', 'It spent more than came in, so no cash was left over.')
+                             ? both('Mas malaki ang ginastos kaysa pumasok: <strong>−$' + Math.abs(s.cashB).toFixed(1) + 'B</strong>. Walang natirang cash.', 'It spent more than came in: <strong>−$' + Math.abs(s.cashB).toFixed(1) + 'B</strong>. No cash left over.')
                              : both(
-                                  'FCF yield na ' + s.cash.toFixed(1) + '% = magbabayad ka ng <strong>' + peso(cp) + '</strong> para sa ₱1 na totoong cash.',
-                                  'An FCF yield of ' + s.cash.toFixed(1) + '% means you pay <strong>' + peso(cp) + '</strong> for ₱1 of real cash.'
+                                  'Natirang cash last year: <strong>$' + s.cashB.toFixed(1) + 'B</strong>. Mga <strong>' + yrs(cp) + '</strong> ng ganyang cash para umabot sa presyo.',
+                                  'Real cash left last year: <strong>$' + s.cashB.toFixed(1) + 'B</strong>. About <strong>' + yrs(cp) + '</strong> of that cash to add up to the price.'
                                )) +
                           '</p>' +
                           bar(cp) +
@@ -2227,18 +2353,18 @@
                   s.peg == null
                      ? '<span class="pill na">' + both('Walang data', 'No data') + '</span>'
                      : s.peg < 1
-                       ? '<span class="pill win">' + both('Sulit para sa growth', 'Good deal for the growth') + '</span>'
+                       ? '<span class="pill win">' + both('✅ Sapat ang bilis ng paglaki para sa presyo', '✅ Growing fast enough for its price') + '</span>'
                        : s.peg <= 2
-                         ? '<span class="pill mid">' + both('Okay lang', 'Fair') + '</span>'
-                         : '<span class="pill lose">' + both('Mahal para sa growth', 'Pricey for the growth') + '</span>';
+                         ? '<span class="pill mid">' + both('🟡 Pwede na', '🟡 So-so') + '</span>'
+                         : '<span class="pill lose">' + both('❌ Masyadong mabagal para sa presyo', '❌ Too slow for its price') + '</span>';
                html += ratio(
                   'peg',
                   '⚡',
                   'PEG',
-                  both('Sulit ba para sa bilis ng paglaki?', 'Is the growth worth the price?'),
+                  both('Sulit ba ang mabilis na paglaki?', 'Is fast growth worth it?'),
                   s.peg == null ? '—' : s.peg.toFixed(2),
                   '<p>' +
-                     both('P/E ÷ bilis ng paglaki ng kita. <strong>Below 1</strong> = sulit, <strong>1–2</strong> = okay, <strong>above 2</strong> = mahal.', 'P/E ÷ how fast profit grows. <strong>Under 1</strong> = good deal, <strong>1–2</strong> = fair, <strong>over 2</strong> = pricey.') +
+                     both('Lumalaki ba ang kita nang sapat na bilis para sulit ang ' + yrs(s.pe) + '? (Parang Tindahan C: i-tap ang "PEG" sa itaas.)', 'Is profit growing fast enough to be worth ' + yrs(s.pe) + '? (Like Store C: tap "PEG" above.)') +
                      '</p>' +
                      pegPill
                );
