@@ -1629,13 +1629,14 @@
             text-decoration: none;
          }
 
-         /* Bonus draw */
+         /* Prize wheel */
          .game {
             display: grid;
-            gap: 10px;
+            justify-items: center;
+            gap: 12px;
             margin-top: 12px;
             border-radius: 18px;
-            padding: 14px;
+            padding: 16px 14px;
             background: linear-gradient(135deg, #fff6c9, #ffe9a6);
             border: 2px solid #f2c94c;
             text-align: center;
@@ -1648,39 +1649,118 @@
             font-weight: 800;
             color: #4a3a00;
          }
-         .boxes {
+         .wheel-wrap {
+            position: relative;
+            width: 232px;
+            height: 244px;
+            padding-top: 12px;
+         }
+         .wpointer {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            z-index: 2;
+            translate: -50% 0;
+            color: var(--heading);
+            font-size: 28px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.3));
+         }
+         .wheel {
+            position: relative;
+            width: 232px;
+            height: 232px;
+            margin-top: 12px;
+            border-radius: 50%;
+            border: 6px solid #fff;
+            box-shadow: 0 8px 20px rgb(60 30 0 / 0.3);
+         }
+         .wl {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+            transform: translate(-50%, -50%) rotate(var(--a)) translateY(-84px);
+         }
+         .whub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            display: grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            translate: -50% -50%;
+            border-radius: 50%;
+            background: #fff;
+            font-size: 24px;
+            box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+         }
+         .spin-btn {
+            min-height: 50px;
+            border: 0;
+            border-radius: 999px;
+            padding: 10px 28px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font: inherit;
+            font-size: 17px;
+            font-weight: 800;
+            box-shadow: 0 6px 14px rgb(96 16 210 / 0.35);
+            cursor: pointer;
+         }
+         .spin-btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+         }
+         .prize-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 8px;
+            text-align: center;
          }
-         .gbox {
-            min-height: 76px;
-            border: 0;
-            border-radius: 16px;
-            background: #fff;
-            font-size: 34px;
-            box-shadow: 0 4px 10px rgb(120 90 0 / 0.18);
-            cursor: pointer;
-            transition: transform 0.15s ease;
+         .prize-stats div {
+            display: grid;
+            border-radius: 14px;
+            padding: 10px 4px;
+            background: var(--n-200);
          }
-         .gbox:not(:disabled):active {
-            transform: scale(0.94);
+         .prize-stats b {
+            font-size: 18px;
          }
-         .gbox:not(:disabled) {
-            animation: wiggle 2.2s ease-in-out infinite;
+         .prize-stats span {
+            color: var(--n-1000);
+            font-size: 12px;
+            font-weight: 600;
          }
-         .gbox:disabled {
-            cursor: default;
-            opacity: 0.55;
+         .prize-win {
+            display: grid;
+            gap: 4px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: var(--green-100);
+            color: var(--green-900);
          }
-         .gbox.picked {
-            opacity: 1;
-            outline: 3px solid var(--primary-900);
+         .prize-hint {
+            border-radius: 14px;
+            padding: 10px 14px;
+            background: var(--yellow-100);
+            font-weight: 600;
          }
-         @keyframes wiggle {
-            0%, 80%, 100% { transform: rotate(0); }
-            85% { transform: rotate(-6deg); }
-            92% { transform: rotate(6deg); }
+         .wheel-sheet {
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            border-radius: 18px;
+            padding: 16px 14px;
+            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
+            text-align: center;
+         }
+         [data-tickets] > * + * {
+            margin-top: 10px;
          }
          .tickets {
             display: flex;
@@ -1717,7 +1797,6 @@
             cursor: pointer;
          }
          @media (prefers-reduced-motion: reduce) {
-            .gbox:not(:disabled),
             .game {
                animation: none;
             }
@@ -2015,10 +2094,10 @@
             </section>
 
             <section class="card" id="tickets" aria-labelledby="tickets-title">
-               <h3 class="h2" id="tickets-title" style="font-size: 21px"><span data-l="fil">Ang golden tickets mo 🎟️</span><span data-l="en">Your golden tickets 🎟️</span></h3>
-               <p><span data-l="fil">Sagutin nang tama ang quiz, pumili ng kahon, at baka manalo ka ng golden ticket para sa Grab draw!</span><span data-l="en">Answer quizzes right, pick a box, and you might win a golden ticket for the Grab draw!</span></p>
+               <h3 class="h2" id="tickets-title" style="font-size: 21px"><span data-l="fil">Ang wheel prizes mo 🎡</span><span data-l="en">Your wheel prizes 🎡</span></h3>
+               <p><span data-l="fil">Bawat tamang sagot = 1 spin ng wheel. 2 golden tickets = Grab draw. Kung kulang, pandesal points pa rin pag nag-sign up ka!</span><span data-l="en">Every right answer = 1 spin of the wheel. 2 golden tickets = Grab draw. Not enough? You still get pandesal points when you sign up!</span></p>
                <div data-tickets></div>
-               <button type="button" class="btn-lite" data-info="raffle"><span data-l="fil">Paano ang draw? Ano ang premyo?</span><span data-l="en">How does the draw work? What is the prize?</span> <span class="i" aria-hidden="true">i</span></button>
+               <button type="button" class="btn-lite" data-info="raffle"><span data-l="fil">Paano ang wheel at ang premyo?</span><span data-l="en">How do the wheel and prizes work?</span> <span class="i" aria-hidden="true">i</span></button>
             </section>
 
             <section class="card" aria-labelledby="passed-title">
@@ -2483,8 +2562,21 @@
                   }, 900, sp);
                }
             }
-            // Bonus draw: a right answer = pick 1 of 3 boxes, 1 hides a golden ticket. Saved so a refresh can't re-roll.
-            var TIX_KEY = 'moodeng-stocks-tix';
+            // Prize wheel: each right quiz answer = 1 spin. Pandesal points, or a golden ticket.
+            // 2 golden tickets unlock the Grab draw; otherwise points are claimed when signing up. Saved so a refresh can't re-roll.
+            var TIX_KEY = 'moodeng-stocks-wheel';
+            var TICKETS_NEEDED = 2;
+            var SEGS = [
+               { k: 'pts', v: 5, c: '#8336f0' },
+               { k: 'pts', v: 10, c: '#f2c94c' },
+               { k: 'ticket', v: 0, c: '#1aa45b' },
+               { k: 'pts', v: 5, c: '#914cf2' },
+               { k: 'pts', v: 20, c: '#fb3748' },
+               { k: 'pts', v: 10, c: '#d3aa00' },
+               { k: 'ticket', v: 0, c: '#116b3c' },
+               { k: 'pts', v: 15, c: '#6010d2' },
+            ];
+            var SEG_DEG = 360 / SEGS.length;
             var tix = {};
             try {
                tix = JSON.parse(localStorage.getItem(TIX_KEY) || '{}') || {};
@@ -2500,69 +2592,105 @@
                if (window.crypto && crypto.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0] % n;
                return Math.floor(Math.random() * n);
             }
-            function ticketCode() {
-               var abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-               var c = 'MD-';
-               for (var k = 0; k < 6; k++) c += abc.charAt(randInt(abc.length));
-               return c;
-            }
-            function ticketCount() {
-               return Object.keys(tix).filter(function (k) {
-                  return tix[k].won;
-               }).length;
+            function totals() {
+               var pts = 0;
+               var tickets = 0;
+               Object.keys(tix).forEach(function (k) {
+                  if (tix[k].kind === 'ticket') tickets++;
+                  else pts += tix[k].val;
+               });
+               return { pts: pts, tickets: tickets, spins: Object.keys(tix).length };
             }
             function updateScore() {
                var n = Object.keys(quizGot).length;
-               var t = ticketCount();
-               scoreChip.hidden = n === 0 && t === 0;
-               var tt = t ? ' · 🎟️ ' + t : '';
-               scoreChip.innerHTML = n === QUIZ_TOTAL ? both('🎉 ' + n + '/' + n + ' quiz hero!' + tt, '🎉 ' + n + '/' + n + ' quiz hero!' + tt) : both('🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz' + tt, '🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz' + tt);
+               var t = totals();
+               scoreChip.hidden = n === 0 && t.spins === 0;
+               var extra = (t.pts ? ' · 🥯 ' + t.pts + ' pts' : '') + (t.tickets ? ' · 🎟️ ' + t.tickets : '');
+               scoreChip.innerHTML = n === QUIZ_TOTAL ? both('🎉 ' + n + '/' + n + ' quiz hero!' + extra, '🎉 ' + n + '/' + n + ' quiz hero!' + extra) : both('🧠 ' + n + '/' + QUIZ_TOTAL + ' quiz' + extra, '🧠 ' + n + '/' + QUIZ_TOTAL + ' quiz' + extra);
+
                var box = document.querySelector('[data-tickets]');
-               var codes = Object.keys(tix)
-                  .filter(function (k) {
-                     return tix[k].won;
-                  })
-                  .map(function (k) {
-                     return '<span class="ticket">🎟️ <b>' + tix[k].code + '</b></span>';
-                  });
-               box.innerHTML = codes.length
-                  ? '<div class="tickets">' + codes.join('') + '</div><p class="small">' + both('I-screenshot ito at i-DM sa @moodeng.credit sa TikTok para sumali sa draw.', 'Screenshot this and DM it to @moodeng.credit on TikTok to enter the draw.') + '</p>'
-                  : '<p class="no-tix">' + both('Wala pang ticket. Sagutin nang tama ang quiz sa Check 1 para makapili ng kahon!', 'No tickets yet. Answer the Check 1 quiz right to pick a box!') + '</p>';
-            }
-            function boxesHtml(id) {
-               var g = tix[id];
-               var h = '<div class="boxes' + (g ? ' done' : '') + '">';
-               for (var k = 0; k < 3; k++) {
-                  var face = g ? (k === g.prize ? '🎟️' : '🥯') : '🎁';
-                  h += '<button type="button" class="gbox' + (g && k === g.pick ? ' picked' : '') + '" data-gpick="' + k + '"' + (g ? ' disabled' : '') + ' aria-label="Box ' + (k + 1) + '">' + face + '</button>';
+               if (!t.spins) {
+                  box.innerHTML = '<p class="no-tix">' + both('Wala ka pang spin. Sagutin nang tama ang quiz sa Check 1 para makapag-spin!', 'No spins yet. Answer the Check 1 quiz right to earn a spin!') + '</p>';
+                  return;
                }
-               return h + '</div>';
+               var enough = t.tickets >= TICKETS_NEEDED;
+               var h = '<div class="prize-stats"><div><b>' + t.spins + '/' + QUIZ_TOTAL + '</b><span>spins</span></div><div><b>🥯 ' + t.pts + '</b><span>' + both('pandesal points', 'pandesal points') + '</span></div><div><b>🎟️ ' + t.tickets + '/' + TICKETS_NEEDED + '</b><span>' + both('golden tickets', 'golden tickets') + '</span></div></div>';
+               if (enough) {
+                  h += '<div class="prize-win"><b>' + both('🎉 Naabot mo ang ' + TICKETS_NEEDED + ' golden tickets para sa Grab draw!', '🎉 You collected ' + TICKETS_NEEDED + ' golden tickets for the Grab draw!') + '</b><span>' + both('Mag-sign up para makuha ang entry mo at ang pandesal points mo.', 'Sign up to claim your entry and your pandesal points.') + '</span></div>';
+               } else {
+                  h += '<p class="prize-hint">' + both('Kulang pa ng ' + (TICKETS_NEEDED - t.tickets) + ' 🎟️ para sa Grab draw. Kahit hindi, may ' + t.pts + ' pandesal points ka pag nag-sign up!', 'You need ' + (TICKETS_NEEDED - t.tickets) + ' more 🎟️ for the Grab draw. Either way, you get ' + t.pts + ' pandesal points when you sign up!') + '</p>';
+               }
+               h += '<a class="yahoo" href="/signup?src=stocks-lesson">🥯 ' + both('Mag-sign up para makuha ang prizes mo', 'Sign up to claim your prizes') + ' ›</a>';
+               box.innerHTML = h;
             }
+            function wheelHtml() {
+               var stops = SEGS.map(function (sg, k) {
+                  return sg.c + ' ' + k * SEG_DEG + 'deg ' + (k + 1) * SEG_DEG + 'deg';
+               }).join(',');
+               var labels = SEGS.map(function (sg, k) {
+                  return '<span class="wl" style="--a:' + (k * SEG_DEG + SEG_DEG / 2) + 'deg">' + (sg.k === 'ticket' ? '🎟️' : '+' + sg.v) + '</span>';
+               }).join('');
+               return '<div class="wheel-wrap"><span class="wpointer" aria-hidden="true">▼</span><div class="wheel" data-wheel style="background:conic-gradient(' + stops + ')">' + labels + '<span class="whub" aria-hidden="true">🥯</span></div></div>';
+            }
+            function resultText(g) {
+               return g.kind === 'ticket'
+                  ? both('🎉 Golden ticket! 🎟️ Isa na sa Grab draw!', '🎉 Golden ticket! 🎟️ One step closer to the Grab draw!')
+                  : both('🥯 +' + g.val + ' pandesal points!', '🥯 +' + g.val + ' pandesal points!');
+            }
+            // The quiz card shows a button; the wheel itself opens in the pop-up sheet.
             function renderGame(id) {
                var gm = document.querySelector('[data-game="' + id + '"]');
                if (!gm) return;
                var g = tix[id];
                gm.hidden = false;
-               gm.innerHTML =
-                  '<p class="game-title">' +
-                  (g
-                     ? g.won
-                        ? both('🎉 Golden ticket! ' + g.code, '🎉 Golden ticket! ' + g.code)
-                        : both('Sayang! Wala sa kahon na iyon. Subukan sa susunod na quiz!', 'So close! Not in that box. Try the next quiz!')
-                     : both('🎁 Bonus draw! Pumili ng kahon: 1 sa 3 ay may golden ticket 🎟️', '🎁 Bonus draw! Pick a box: 1 of 3 hides a golden ticket 🎟️')) +
-                  '</p>' +
-                  boxesHtml(id);
-               gm.querySelectorAll('.gbox').forEach(function (b) {
-                  b.addEventListener('click', function () {
-                     if (tix[id]) return;
-                     var prize = randInt(3);
-                     var pick = +b.getAttribute('data-gpick');
-                     tix[id] = pick === prize ? { won: true, pick: pick, prize: prize, code: ticketCode() } : { won: false, pick: pick, prize: prize };
-                     saveTix();
+               gm.innerHTML = g
+                  ? '<p class="game-title">' + resultText(g) + '</p>'
+                  : '<p class="game-title">' + both('🎁 May spin ka na!', '🎁 You earned a spin!') + '</p><button type="button" class="spin-btn" data-spin-open="' + id + '">' + both('Buksan ang wheel 🎡', 'Open the wheel 🎡') + '</button>';
+               var open = gm.querySelector('[data-spin-open]');
+               if (open) open.addEventListener('click', function () { openWheel(id); });
+            }
+            function openWheel(id) {
+               show(
+                  sheetHead('🎡', both('Prize wheel', 'Prize wheel')) +
+                     '<div class="wheel-sheet">' +
+                     wheelHtml() +
+                     '<p class="game-title" data-wres>' + both('Pindutin ang SPIN!', 'Press SPIN!') + '</p>' +
+                     '<button type="button" class="spin-btn" data-spin>' + both('SPIN! 🎡', 'SPIN! 🎡') + '</button>' +
+                     '<p class="small">' + both('Pandesal points o golden ticket. 2 tickets = Grab draw.', 'Pandesal points or a golden ticket. 2 tickets = Grab draw.') + '</p></div>'
+               );
+               var wheel = dlgBody.querySelector('[data-wheel]');
+               var btn = dlgBody.querySelector('[data-spin]');
+               var res = dlgBody.querySelector('[data-wres]');
+               function landOn(idx, animate) {
+                  var center = idx * SEG_DEG + SEG_DEG / 2;
+                  wheel.style.transition = animate ? 'transform 3.6s cubic-bezier(0.12, 0.7, 0.1, 1)' : 'none';
+                  wheel.style.transform = 'rotate(' + (animate ? 360 * 5 + (360 - center) : 360 - center) + 'deg)';
+               }
+               if (tix[id]) {
+                  landOn(tix[id].seg, false);
+                  res.innerHTML = resultText(tix[id]);
+                  btn.setAttribute('data-close', '');
+                  btn.innerHTML = both('Sige! ✓', 'Done ✓');
+                  return;
+               }
+               btn.addEventListener('click', function () {
+                  if (tix[id] || btn.disabled) return;
+                  var seg = randInt(SEGS.length);
+                  var sg = SEGS[seg];
+                  tix[id] = sg.k === 'ticket' ? { seg: seg, kind: 'ticket' } : { seg: seg, kind: 'pts', val: sg.v };
+                  saveTix();
+                  btn.disabled = true;
+                  var fast = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                  landOn(seg, !fast);
+                  setTimeout(function () {
+                     res.innerHTML = resultText(tix[id]);
+                     btn.disabled = false;
+                     btn.setAttribute('data-close', '');
+                     btn.innerHTML = both('Sige! ✓', 'Done ✓');
                      renderGame(id);
                      updateScore();
-                     if (tix[id].won) burst(gm.querySelector('.picked') || b);
-                  });
+                     burst(wheel);
+                  }, fast ? 0 : 3700);
                });
             }
             Object.keys(QUIZ).forEach(function (id) {
@@ -2766,23 +2894,23 @@
                      '</small></span></div>',
                },
                raffle: {
-                  emo: '🎟️',
-                  title: both('Moodeng Grab Draw', 'Moodeng Grab Draw'),
+                  emo: '🎡',
+                  title: both('Moodeng Prize Wheel', 'Moodeng Prize Wheel'),
                   body:
-                     '<p class="big-math">🎁 ' +
-                     both('Premyo: ₱50 GrabFood voucher', 'Prize: ₱50 GrabFood voucher') +
-                     '</p>' +
                      '<ul class="steps"><li>' +
-                     both('Bawat tamang sagot sa quiz = 1 pagkakataong pumili ng kahon. 1 sa 3 kahon ay may golden ticket 🎟️.', 'Every right quiz answer = 1 chance to pick a box. 1 of the 3 boxes hides a golden ticket 🎟️.') +
+                     both('Bawat tamang sagot sa quiz = 1 spin ng wheel (hanggang 4).', 'Every right quiz answer = 1 spin of the wheel (up to 4).') +
                      '</li><li>' +
-                     both('Bawat golden ticket ay 1 entry sa draw. Hanggang 4 na tickets.', 'Each golden ticket is 1 entry in the draw. Up to 4 tickets.') +
-                     '</li><li>' +
-                     both('Para sumali: i-screenshot ang tickets mo at i-DM sa @moodeng.credit sa TikTok.', 'To enter: screenshot your tickets and DM them to @moodeng.credit on TikTok.') +
-                     '</li><li>' +
-                     both('Iaanunsyo sa TikTok ang petsa ng draw at ang mananalo.', 'The draw date and winner are announced on TikTok.') +
+                     both('Pwedeng lumabas ang pandesal points (+5, +10, +15, +20) o 🎟️ golden ticket.', 'It can land on pandesal points (+5, +10, +15, +20) or a 🎟️ golden ticket.') +
                      '</li></ul>' +
+                     '<p class="big-math">🎁 ' +
+                     both('2 golden tickets = Grab draw (₱50 GrabFood voucher)', '2 golden tickets = Grab draw (₱50 GrabFood voucher)') +
+                     '</p>' +
+                     p('Para makuha ang entry mo sa Grab draw at ang pandesal points mo, mag-sign up sa Moodeng gamit ang button sa Results. Iaanunsyo sa TikTok ang petsa at mananalo.', 'To claim your Grab draw entry and your pandesal points, sign up for Moodeng with the button in Results. The date and winner are announced on TikTok.') +
+                     '<p class="big-math">🥯 ' +
+                     both('Kulang ang tickets? Pandesal points pa rin!', 'Not enough tickets? Pandesal points still count!') +
+                     '</p>' +
                      '<p class="small">' +
-                     both('Walang kailangang bilhin o utangin. Magpaalam muna sa magulang o pinagkakatiwalaang adult. Maaaring i-verify ng Moodeng ang entries, at pwedeng baguhin o ihinto ang draw. Para sa edad 18 pataas ang pagkuha ng premyo.', 'No purchase or loan needed. Ask a parent or trusted adult first. Moodeng may verify entries and may change or stop the draw. Prizes can only be claimed by people 18 or older.') +
+                     both('Walang kailangang bilhin o utangin para maglaro. Magpaalam muna sa magulang o pinagkakatiwalaang adult. Maaaring i-verify ng Moodeng ang entries at pwedeng baguhin o ihinto ang laro. Para sa edad 18 pataas ang pagkuha ng premyo.', 'Nothing to buy or borrow to play. Ask a parent or trusted adult first. Moodeng may verify entries and may change or stop the game. Prizes can only be claimed by people 18 or older.') +
                      '</p>' +
                      '<a class="yahoo" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noopener noreferrer">' +
                      both('Pumunta sa TikTok ng Moodeng ↗', 'Go to Moodeng on TikTok ↗') +
