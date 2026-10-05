@@ -842,7 +842,7 @@
             width: min(100% - 24px, var(--col));
             translate: -50% 0;
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             border-radius: 28px;
             padding: 8px 6px;
             background: rgb(253 252 253 / 0.95);
@@ -881,6 +881,171 @@
             .hero-hippo {
                animation: none;
             }
+         }
+
+         /* Look inside: 8 big stocks */
+         .inside-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+         }
+         .inside-card {
+            display: grid;
+            justify-items: start;
+            gap: 6px;
+            min-height: 108px;
+            border: 1px solid var(--primary-100);
+            border-radius: 18px;
+            padding: 12px;
+            background: var(--n-200);
+            text-align: left;
+            cursor: pointer;
+         }
+         .inside-card:active {
+            scale: 0.98;
+         }
+         .inside-card .co-emo {
+            background: var(--primary-100);
+         }
+         .inside-card b {
+            font-size: 15px;
+            line-height: 1.2;
+         }
+         .inside-card .go {
+            margin-top: auto;
+            color: var(--primary-900);
+            font-size: 13px;
+            font-weight: 700;
+         }
+         .sheet-dlg {
+            width: min(100%, var(--col));
+            max-width: none;
+            max-height: 88vh;
+            margin: auto auto 0;
+            border: 0;
+            border-radius: 26px 26px 0 0;
+            padding: 0;
+            background: var(--n-300);
+            color: var(--heading);
+            overflow: auto;
+            overscroll-behavior: contain;
+         }
+         .sheet-dlg::backdrop {
+            background: rgb(4 0 51 / 0.45);
+         }
+         .sheet-in {
+            display: grid;
+            gap: 12px;
+            padding: 10px 16px calc(24px + env(safe-area-inset-bottom));
+         }
+         .grab {
+            width: 44px;
+            height: 5px;
+            margin: 4px auto 0;
+            border-radius: 999px;
+            background: var(--n-500, #c0b9c8);
+         }
+         .sheet-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+         }
+         .sheet-head .co-emo {
+            width: 52px;
+            height: 52px;
+            font-size: 28px;
+            background: #fff;
+         }
+         .sheet-head h2 {
+            font-size: 22px;
+            font-style: italic;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+         }
+         .sheet-head small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 13px;
+            font-weight: 500;
+            font-style: normal;
+            letter-spacing: 0;
+         }
+         .x {
+            margin-left: auto;
+            width: 40px;
+            height: 40px;
+            flex: none;
+            border: 0;
+            border-radius: 50%;
+            background: #fff;
+            font-size: 18px;
+            cursor: pointer;
+         }
+         .ratio {
+            border-radius: 18px;
+            padding: 14px;
+            background: #fff;
+         }
+         .ratio-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+         }
+         .ratio-top .ic {
+            font-size: 22px;
+         }
+         .ratio-name {
+            min-width: 0;
+            font-weight: 700;
+            line-height: 1.2;
+         }
+         .ratio-name small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 12.5px;
+            font-weight: 500;
+         }
+         .ratio p {
+            margin-top: 8px;
+            font-size: 15px;
+            color: var(--n-1400);
+         }
+         .ratio .coins {
+            margin-top: 10px;
+         }
+         .ratio .pill {
+            display: inline-block;
+            margin-top: 8px;
+            border-radius: 999px;
+            padding: 3px 10px;
+            font-size: 13px;
+            font-weight: 700;
+         }
+         .pill.win {
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .pill.lose {
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+         .pill.mid {
+            background: #fff3c4;
+            color: #6b5200;
+         }
+         .pill.na {
+            background: var(--n-300);
+            color: var(--n-1400);
+         }
+         .one-line {
+            border-radius: 18px;
+            padding: 14px;
+            background: var(--yellow-100);
+            font-weight: 600;
+         }
+         .one-line .pandesals {
+            margin-top: 8px;
          }
       </style>
    </head>
@@ -1075,6 +1240,20 @@
                </div>
             </section>
 
+            <section class="card" id="inside" aria-labelledby="inside-title">
+               <span class="step-tag"><b>🔍</b><span data-l="fil">Silipin</span><span data-l="en">Look inside</span></span>
+               <h2 class="h2" id="inside-title">
+                  <span data-l="fil">Silipin ang <em>8 malalaking stocks</em></span><span data-l="en">Look inside <em>8 big stocks</em></span>
+               </h2>
+               <p class="muted">
+                  <span data-l="fil">I-tap ang isa para makita ang lahat ng numero nito, explained nang simple.</span>
+                  <span data-l="en">Tap one to see all its numbers, explained simply.</span>
+               </p>
+               <div class="inside-grid" data-inside></div>
+            </section>
+
+            <dialog class="sheet-dlg" data-sheet aria-labelledby="sheet-title"><div class="sheet-in" data-sheet-body></div></dialog>
+
             <section class="finish" aria-labelledby="finish-title">
                <h2 class="h2" id="finish-title"><span data-l="fil">Tapos ka na! 🎓</span><span data-l="en">You did it! 🎓</span></h2>
                <p>
@@ -1111,7 +1290,8 @@
          ><a href="#pe" data-go="pe"><span class="ni" aria-hidden="true">📅</span>Check 1</a
          ><a href="#forward-pe" data-go="forward-pe"><span class="ni" aria-hidden="true">🔮</span>Check 2</a
          ><a href="#fcf" data-go="fcf"><span class="ni" aria-hidden="true">💵</span>Check 3</a
-         ><a href="#results" data-go="results"><span class="ni" aria-hidden="true">🏆</span><span data-l="fil">Resulta</span><span data-l="en">Results</span></a>
+         ><a href="#results" data-go="results"><span class="ni" aria-hidden="true">🏆</span><span data-l="fil">Resulta</span><span data-l="en">Results</span></a
+         ><a href="#inside" data-go="inside"><span class="ni" aria-hidden="true">🔍</span><span data-l="fil">Silipin</span><span data-l="en">Look</span></a>
       </nav>
 
       <script>
@@ -1336,6 +1516,241 @@
                      fb.innerHTML = (o.ok ? '🎉 ' : '🤔 ') + (o.ok ? q.right : q.wrong);
                   });
                });
+            });
+
+            // Look inside: Emma's 8 big stocks. StockAnalysis Oct 2, 2026; VOO forward P/E is the S&P 500 (FactSet).
+            var PHP = 62.6; // ECB reference rate, Oct 2, 2026
+            var INSIDE = [
+               {
+                  t: 'GOOGL', name: 'Alphabet', emo: '🔎', price: 343.5, eps: 19.93, pe: 17.23, fpe: 25.58, cash: 1.27, cashB: 53.3, peg: 2.0, div: 0.26,
+                  what: both('Google at YouTube', 'Google and YouTube'),
+                  line: both('Mukhang mura base sa last year, pero may one-time bonus ang taon na \'yon. Malaki rin ang gastos nito sa AI.', 'Looks cheap on last year, but that year had a one-time bonus. It is also spending lots of cash on AI.'),
+               },
+               {
+                  t: 'AMZN', name: 'Amazon', emo: '📦', price: 251.52, eps: 12.44, pe: 20.23, fpe: 26.81, cash: -0.43, cashB: -11.6, peg: 1.29, div: 0,
+                  what: both('Online shopping at cloud', 'Online shopping and cloud'),
+                  line: both('Mas malaki ang ginagastos kaysa sa cash na pumapasok, para sa malalaking AI computer centers. Maghihintay ka, umaasang mas malaki later.', 'Spending more cash than comes in, on giant AI computer centers. You wait now, hoping for more later.'),
+               },
+               {
+                  t: 'AAPL', name: 'Apple', emo: '🍎', price: 333.69, eps: 8.72, pe: 38.28, fpe: 36.26, cash: 2.81, cashB: 136.7, peg: 3.27, div: 0.32,
+                  what: both('iPhone at Mac', 'iPhone and Mac'),
+                  line: both('Pinakamahal dito. Bayad ka para sa sikat na brand, hindi para sa bargain.', 'The priciest one here. You pay for the famous brand, not for a bargain.'),
+               },
+               {
+                  t: 'META', name: 'Meta', emo: '📱', price: 728.08, eps: 26.54, pe: 27.44, fpe: 22.64, cash: 2.21, cashB: 41.0, peg: 1.15, div: 0.29,
+                  what: both('Facebook at Instagram', 'Facebook and Instagram'),
+                  line: both('Inaasahang lalaki ang kita, pero malayo pa ang cash nito sa ₱5.24 ng bond.', 'Profit is expected to grow, but its cash is still far below the bond\'s ₱5.24.'),
+               },
+               {
+                  t: 'MSFT', name: 'Microsoft', emo: '💻', price: 517.53, eps: 17.95, pe: 28.83, fpe: 26.21, cash: 1.74, cashB: 67.0, peg: 1.63, div: 0.76,
+                  what: both('Windows at Xbox', 'Windows and Xbox'),
+                  line: both('Matatag at malakas na company, pero hindi mura kumpara sa bond.', 'A steady, strong company, but not cheap compared with the bond.'),
+               },
+               {
+                  t: 'NVDA', name: 'Nvidia', emo: '🎮', price: 233.95, eps: 7.91, pe: 29.58, fpe: 19.41, cash: 2.25, cashB: 127.0, peg: 0.37, div: 0.43,
+                  what: both('Chips para sa games at AI', 'Chips for games and AI'),
+                  line: both('Mahal base sa last year, pero okay base sa hula, kasi inaasahang tatalon ang kita.', 'Pricey on last year, but fair on next year\'s guess, because profit is expected to jump.'),
+               },
+               {
+                  t: 'LMT', name: 'Lockheed Martin', emo: '✈️', price: 505.41, eps: 27.14, pe: 18.62, fpe: 16.39, cash: 7.48, cashB: 8.7, peg: 0.85, div: 2.73,
+                  what: both('Gumagawa ng eroplano', 'Makes jets'),
+                  line: both('Ito lang dito ang talo ang bond sa lahat ng 3 checks. Pero mabagal itong lumaki.', 'The only one here that beats the bond on all 3 checks. But it grows slowly.'),
+               },
+               {
+                  t: 'VOO', name: 'VOO (S&P 500)', emo: '🧺', price: 707.54, eps: null, pe: 27.1, fpe: 19.0, cash: null, cashB: null, peg: null, div: 1.05,
+                  what: both('Basket ng 500 company', 'A basket of 500 companies'),
+                  line: both('Isang bili, may konting parte ka na sa 500 malalaking company sa US. Halos kapantay ng bond sa hula next year.', 'One buy gives you a tiny piece of 500 big US companies. About even with the bond on next year\'s guess.'),
+               },
+            ];
+
+            function usd(v) {
+               return '$' + v.toFixed(2);
+            }
+            function pesoPrice(v) {
+               return '₱' + (Math.round((v * PHP) / 10) * 10).toLocaleString('en-US');
+            }
+            function pill(win) {
+               return win == null
+                  ? '<span class="pill na">' + both('Walang data', 'No data') + '</span>'
+                  : win
+                    ? '<span class="pill win">' + both('✅ Talo ang bond', '✅ Beats the bond') + '</span>'
+                    : '<span class="pill lose">' + both('❌ Mas malaki ang bond', '❌ Bond wins') + '</span>';
+            }
+            function ratio(ic, name, sub, value, body) {
+               return (
+                  '<div class="ratio"><div class="ratio-top"><span class="ic" aria-hidden="true">' +
+                  ic +
+                  '</span><span class="ratio-name">' +
+                  name +
+                  '<small>' +
+                  sub +
+                  '</small></span><span class="co-val">' +
+                  value +
+                  '</span></div>' +
+                  body +
+                  '</div>'
+               );
+            }
+
+            function sheetHtml(s) {
+               var ey = 100 / s.pe;
+               var fey = 100 / s.fpe;
+               var yrs = Math.round(s.pe);
+               var score = [ey > BOND, fey > BOND, s.cash == null ? null : s.cash > BOND];
+               var html =
+                  '<div class="grab" aria-hidden="true"></div><div class="sheet-head"><span class="co-emo" aria-hidden="true">' +
+                  s.emo +
+                  '</span><h2 id="sheet-title">' +
+                  s.name +
+                  '<small>' +
+                  s.what +
+                  '</small></h2><button type="button" class="x" data-close aria-label="Close">✕</button></div>';
+
+               // Price and profit per share, with the P/E worked out
+               html += ratio(
+                  '🧾',
+                  both('Presyo at kita kada share', 'Price and profit per share'),
+                  'Price · EPS',
+                  usd(s.price),
+                  s.eps
+                     ? '<p>' +
+                          both(
+                             'Ang 1 share ay ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Last year, bawat share ay kumita ng <strong>' + usd(s.eps) + '</strong>. Tawag dito ay EPS.',
+                             '1 share costs ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Last year, each share made <strong>' + usd(s.eps) + '</strong> of profit. That is called EPS.'
+                          ) +
+                          '</p><p class="big-math" style="font-size:17px">' +
+                          usd(s.price) +
+                          ' ÷ ' +
+                          usd(s.eps) +
+                          ' = P/E ' +
+                          s.pe.toFixed(1) +
+                          '</p>'
+                     : '<p>' +
+                          both(
+                             'Ang 1 share ay ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Hindi ito isang company, kaya ang P/E ay galing sa kita ng lahat ng 500.',
+                             '1 share costs ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). It is not one company, so its P/E comes from the profit of all 500.'
+                          ) +
+                          '</p>'
+               );
+
+               // Check 1: P/E
+               html += ratio(
+                  '📅',
+                  'P/E',
+                  both('Ilang taon bago mabawi', 'Years to earn it back'),
+                  s.pe.toFixed(1),
+                  '<p>' +
+                     both(yrs + ' taon bago mabawi. Katumbas ng <strong>' + peso(ey) + ' kada ₱100</strong> kada taon.', yrs + ' years to earn it back. That is <strong>' + peso(ey) + ' per ₱100</strong> each year.') +
+                     '</p><div class="coins" aria-hidden="true">' +
+                     coins(ey) +
+                     '</div>' +
+                     pill(ey > BOND)
+               );
+
+               // Check 2: forward P/E
+               html += ratio(
+                  '🔮',
+                  'Forward P/E',
+                  both('Hula para sa next year', "Next year's guess"),
+                  s.fpe.toFixed(1),
+                  '<p>' +
+                     both(
+                        'Kung tama ang hula: <strong>' + peso(fey) + ' kada ₱100</strong>. ' + (fey > ey ? 'Inaasahang lalaki ang kita.' : 'Inaasahang liliit ang kita.'),
+                        'If the guess is right: <strong>' + peso(fey) + ' per ₱100</strong>. ' + (fey > ey ? 'Profit is expected to grow.' : 'Profit is expected to shrink.')
+                     ) +
+                     '</p><div class="coins" aria-hidden="true">' +
+                     coins(fey) +
+                     '</div>' +
+                     pill(fey > BOND)
+               );
+
+               // Check 3: cash yield
+               html += ratio(
+                  '💵',
+                  'Cash yield',
+                  both('Totoong cash sa kaha', 'Real cash in the drawer'),
+                  s.cash == null ? '—' : s.cash.toFixed(1) + '%',
+                  s.cash == null
+                     ? '<p>' + both('Basket ito, kaya walang sariling cash number.', 'It is a basket, so there is no single cash number.') + '</p>' + pill(null)
+                     : '<p>' +
+                          both(
+                             (s.cashB < 0 ? 'Mas malaki ang ginastos kaysa pumasok: ' : 'Totoong cash last year: ') + '<strong>' + (s.cashB < 0 ? '−' : '') + '$' + Math.abs(s.cashB).toFixed(1) + 'B</strong>. Sa bawat ₱100, ' + peso(s.cash) + '.',
+                             (s.cashB < 0 ? 'Spent more than came in: ' : 'Real cash last year: ') + '<strong>' + (s.cashB < 0 ? '−' : '') + '$' + Math.abs(s.cashB).toFixed(1) + 'B</strong>. Per ₱100, that is ' + peso(s.cash) + '.'
+                          ) +
+                          '</p><div class="coins" aria-hidden="true">' +
+                          coins(s.cash) +
+                          '</div>' +
+                          pill(s.cash > BOND)
+               );
+
+               // PEG
+               var pegPill =
+                  s.peg == null
+                     ? '<span class="pill na">' + both('Walang data', 'No data') + '</span>'
+                     : s.peg < 1
+                       ? '<span class="pill win">' + both('Sulit para sa growth', 'Good deal for the growth') + '</span>'
+                       : s.peg <= 2
+                         ? '<span class="pill mid">' + both('Okay lang', 'Fair') + '</span>'
+                         : '<span class="pill lose">' + both('Mahal para sa growth', 'Pricey for the growth') + '</span>';
+               html += ratio(
+                  '⚡',
+                  'PEG',
+                  both('Sulit ba para sa bilis ng paglaki?', 'Is the growth worth the price?'),
+                  s.peg == null ? '—' : s.peg.toFixed(2),
+                  '<p>' +
+                     both(
+                        'P/E ÷ bilis ng paglaki ng kita. <strong>Below 1</strong> = sulit, <strong>1 hanggang 2</strong> = okay, <strong>above 2</strong> = mahal.',
+                        'P/E ÷ how fast profit grows. <strong>Under 1</strong> = good deal, <strong>1 to 2</strong> = fair, <strong>over 2</strong> = pricey.'
+                     ) +
+                     '</p>' +
+                     pegPill
+               );
+
+               // Dividend
+               html += ratio(
+                  '🎁',
+                  'Dividend',
+                  both('Cash na binibigay diretso sa iyo', 'Cash paid straight to you'),
+                  s.div ? s.div.toFixed(2) + '%' : '0%',
+                  '<p>' +
+                     (s.div
+                        ? both('Bawat taon, may <strong>' + peso(s.div) + ' kada ₱100</strong> na diretso sa bulsa mo.', 'Every year, <strong>' + peso(s.div) + ' per ₱100</strong> goes straight into your pocket.')
+                        : both('Wala! Ginagamit ng company ang lahat ng pera para lumaki.', 'None! The company uses all its money to grow.')) +
+                     '</p>'
+               );
+
+               html += '<div class="one-line">' + both('In one line: ', 'In one line: ') + s.line + pandesals(score.map(Boolean)) + '</div>';
+               html += '<p class="small">' + both('Para sa pag-aaral lang, hindi payo. Numbers: StockAnalysis, Oct 2, 2026.', 'For learning only, not advice. Numbers: StockAnalysis, Oct 2, 2026.') + '</p>';
+               return html;
+            }
+
+            var dlg = document.querySelector('[data-sheet]');
+            var dlgBody = document.querySelector('[data-sheet-body]');
+            document.querySelector('[data-inside]').innerHTML = INSIDE.map(function (s, i) {
+               return (
+                  '<button type="button" class="inside-card" data-open="' +
+                  i +
+                  '"><span class="co-emo" aria-hidden="true">' +
+                  s.emo +
+                  '</span><b>' +
+                  s.name +
+                  '</b><span class="small">' +
+                  s.what +
+                  '</span><span class="go">' +
+                  both('Silipin ›', 'Check inside ›') +
+                  '</span></button>'
+               );
+            }).join('');
+            document.querySelectorAll('[data-open]').forEach(function (b) {
+               b.addEventListener('click', function () {
+                  dlgBody.innerHTML = sheetHtml(INSIDE[+b.getAttribute('data-open')]);
+                  if (dlg.showModal) dlg.showModal();
+                  else dlg.setAttribute('open', '');
+                  dlg.scrollTop = 0;
+               });
+            });
+            dlg.addEventListener('click', function (e) {
+               if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
             });
 
             // Language: ?lang=en|fil wins (shareable), then the viewer's saved choice, then Taglish.
