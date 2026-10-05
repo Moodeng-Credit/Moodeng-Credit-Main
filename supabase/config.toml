@@ -95,6 +95,10 @@ verify_jwt = false
 [functions.voucher-claim-notification]
 verify_jwt = false
 
+# Admin Vouchers page → Send code (admin JWT checked in the function).
+[functions.admin-voucher-send]
+verify_jwt = true
+
 [functions.telegram-webhook]
 verify_jwt = false
 

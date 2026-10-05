@@ -234,7 +234,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Voucher Unlocked!': 'ปลดล็อกบัตรกำนัลแล้ว!',
    'Salamat! We got it.': 'ขอบคุณ! เราได้รับข้อมูลแล้ว',
    "We'll send your ₱": 'เราจะส่งโค้ดบัตรกำนัล GrabFood มูลค่า ₱',
-   'GrabFood voucher code to your mobile within 2 business days.': 'ไปยังเบอร์มือถือของคุณภายใน 2 วันทำการ',
+   'GrabFood voucher code to your email within 2 business days.': 'ไปยังอีเมลของคุณภายใน 2 วันทำการ',
    'Preview sample — nothing was sent.': 'ตัวอย่างเท่านั้น — ไม่มีการส่งข้อมูลใด ๆ',
    'Full name': 'ชื่อ-นามสกุล',
    'Mobile number (GCash)': 'เบอร์มือถือ (GCash)',

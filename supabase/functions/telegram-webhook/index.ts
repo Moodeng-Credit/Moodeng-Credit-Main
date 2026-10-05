@@ -355,7 +355,9 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
           ? await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, adminHandle(query.from))
           : await markMessengerVerified(supabase, messenger!.userId, adminHandle(query.from));
    await answerCallback(query.id, result.summary);
-   if (query.message) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
+   // A voucher send that can be retried (pool empty, email failed) keeps its buttons.
+   const canRetry = 'retry' in result && result.retry === true;
+   if (query.message && !canRetry) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
 };
 
 // /pending — everyone waiting on a decision, oldest first, with the id for /approve etc. A safety

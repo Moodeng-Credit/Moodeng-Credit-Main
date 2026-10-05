@@ -199,7 +199,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Voucher Unlocked!': 'Voucher terbuka!',
    'Salamat! We got it.': 'Terima kasih! Sudah kami terima.',
    "We'll send your ₱": 'Kami akan mengirim kode voucher ₱',
-   'GrabFood voucher code to your mobile within 2 business days.': 'GrabFood ke ponselmu dalam 2 hari kerja.',
+   'GrabFood voucher code to your email within 2 business days.': 'GrabFood ke emailmu dalam 2 hari kerja.',
    'Preview sample — nothing was sent.': 'Contoh pratinjau — tidak ada yang dikirim.',
    'Full name': 'Nama lengkap',
    'Mobile number (GCash)': 'Nomor ponsel (GCash)',

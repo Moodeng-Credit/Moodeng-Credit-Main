@@ -1965,7 +1965,7 @@ export interface AdminVoucherClaim {
    id: string;
    user_id: string;
    username: string | null;
-   reward: 'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee';
+   reward: 'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee' | 'tier_rising' | 'tier_prime' | 'tier_apex';
    amount_php: number;
    full_name: string;
    mobile: string;
@@ -2001,6 +2001,43 @@ export async function updateVoucherClaimStatus(id: string, status: AdminVoucherC
    if (error) throw error;
    // RLS hides rows it refuses to update, so "no error" alone does not mean it worked.
    if (!data || data.length === 0) throw new Error('Claim was not updated (not found or not allowed).');
+}
+
+// GrabFood code pool (voucher_codes). Codes are never read back to the browser: admins add them and see
+// counts; admin-voucher-send hands the next one to a claim and emails it.
+export interface VoucherCodeStock {
+   amount_php: number;
+   available: number;
+   used: number;
+}
+
+export async function getVoucherCodeStock(): Promise<VoucherCodeStock[]> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_voucher_code_stock');
+   if (error) throw error;
+   return ((data ?? []) as AnyRow[]).map((row) => ({
+      amount_php: toNumber(row.amount_php),
+      available: toNumber(row.available),
+      used: toNumber(row.used)
+   }));
+}
+
+export async function addVoucherCodes(amountPhp: number, codes: string[], source?: string | null): Promise<{ added: number; skipped: number }> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('admin_add_voucher_codes', {
+      p_amount_php: amountPhp,
+      p_codes: codes,
+      p_source: source ?? null
+   });
+   if (error) throw error;
+   const result = (data ?? {}) as AnyRow;
+   return { added: toNumber(result.added), skipped: toNumber(result.skipped) };
+}
+
+/** Approve a pending claim: emails the next pool code of its value. `retry` = nothing changed, try again. */
+export async function sendVoucherCodeForClaim(claimId: string): Promise<{ ok: boolean; summary: string; retry?: boolean }> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-voucher-send', { body: { claimId } });
+   if (error) throw new Error(error.message || 'Could not send the code.');
+   if (data?.error) throw new Error(String(data.error));
+   return data as { ok: boolean; summary: string; retry?: boolean };
 }
 
 // ---------------------------------------------------------------------------

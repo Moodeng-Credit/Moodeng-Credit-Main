@@ -217,7 +217,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Please check your name and mobile number.': 'Pakitingnan ulit ang pangalan at mobile number mo.',
    'Salamat! We got it.': 'Salamat! Natanggap na namin.',
    "We'll send your ₱": 'Ipapadala namin ang ₱',
-   'GrabFood voucher code to your mobile within 2 business days.': 'GrabFood voucher code mo sa mobile mo sa loob ng 2 business days.',
+   'GrabFood voucher code to your email within 2 business days.': 'GrabFood voucher code mo sa email mo sa loob ng 2 business days.',
    'Preview sample — nothing was sent.': 'Preview sample lang — walang naipadala.',
    'Mobile number (GCash)': 'Mobile number (GCash)',
    'Email (optional)': 'Email (optional)',
