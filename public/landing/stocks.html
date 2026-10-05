@@ -623,11 +623,8 @@
             font-weight: 700;
             line-height: 1.25;
          }
-         .zones span {
-            border-radius: 12px;
-            padding: 8px 4px;
-         }
          .zones small {
+            font-weight: 600;
             display: block;
             font-size: 12.5px;
             font-weight: 600;
@@ -1063,6 +1060,263 @@
                animation: none;
             }
          }
+
+         /* Tap-to-explain */
+         .i {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 12px;
+            font-weight: 800;
+            font-style: italic;
+            font-family: Georgia, serif;
+         }
+         .term {
+            display: inline;
+            border: 0;
+            border-bottom: 2px dotted var(--primary-500);
+            padding: 0;
+            background: none;
+            color: var(--primary-1200);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+         }
+         button.step-tag {
+            border: 0;
+            font-family: inherit;
+            cursor: pointer;
+         }
+         button.board-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            border: 0;
+            background: none;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .scale-btn {
+            display: block;
+            width: 100%;
+            border: 0;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+         }
+         .scale-btn .scale {
+            display: block;
+         }
+         button.key {
+            width: 100%;
+            align-items: center;
+            border: 0;
+            border-top: 1px solid var(--n-300);
+            background: none;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         button.co {
+            display: block;
+            width: 100%;
+            border: 0;
+            border-top: 1px solid var(--n-300);
+            background: none;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         button.co:active,
+         button.winner:active,
+         .famous button:active {
+            background: var(--n-200);
+         }
+         .co-top {
+            display: flex;
+         }
+         .co .co-note {
+            display: block;
+         }
+         .chev {
+            margin-left: 4px;
+            color: var(--n-1000);
+            font-size: 22px;
+            line-height: 1;
+         }
+         .tap-hint {
+            padding: 6px 0 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-900);
+            text-align: center;
+         }
+         button.winner {
+            width: 100%;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .famous button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            border: 1px solid var(--n-300);
+            border-radius: 14px;
+            padding: 10px;
+            background: var(--n-200);
+            font: inherit;
+            font-weight: 700;
+            font-size: 15px;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .famous li {
+            display: block;
+            border: 0;
+            padding: 0;
+            background: none;
+         }
+         .zones > * {
+            position: relative;
+            border: 0;
+            border-radius: 12px;
+            padding: 8px 4px;
+            font: inherit;
+            font-weight: 700;
+            line-height: 1.25;
+         }
+         .zones > button {
+            cursor: pointer;
+         }
+         .zones > button .i {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            background: rgb(255 255 255 / 0.7);
+         }
+         .learn a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            color: inherit;
+            text-decoration: none;
+         }
+         .learn a .chev {
+            margin-left: auto;
+         }
+         .tip {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: var(--primary-100);
+            color: var(--primary-1500);
+            font-size: 14px;
+            font-weight: 600;
+         }
+         .ratio-top {
+            width: 100%;
+            border: 0;
+            padding: 0;
+            background: none;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .ratio-top .co-val {
+            margin-left: auto;
+         }
+         .pand-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            border: 0;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+         }
+         .back {
+            justify-self: start;
+            border: 0;
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: #fff;
+            color: var(--primary-1200);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+         }
+         .info-body {
+            display: grid;
+            gap: 12px;
+            border-radius: 18px;
+            padding: 16px;
+            background: #fff;
+            font-size: 16px;
+         }
+         .years {
+            display: grid;
+            gap: 4px;
+         }
+         .years span {
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 12px;
+            font-weight: 700;
+         }
+         .info-body .years {
+            grid-template-columns: repeat(7, 1fr);
+         }
+         .steps {
+            display: grid;
+            gap: 6px;
+            padding-left: 20px;
+            list-style: disc;
+         }
+         .co-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+         }
+         .co-chip {
+            border: 1px solid var(--primary-100);
+            border-radius: 999px;
+            padding: 6px 10px;
+            background: var(--n-200);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            color: inherit;
+            cursor: pointer;
+         }
+         .co-chip b {
+            color: var(--primary-1200);
+         }
       </style>
    </head>
    <body>
@@ -1124,10 +1378,17 @@
                   <span data-l="en">3 easy checks. Real companies. No hard math!</span>
                </p>
                <ul class="learn">
-                  <li><span class="emo" aria-hidden="true">🏷️</span><span data-l="fil">Presyo kada ₱1 na kita</span><span data-l="en">Price for ₱1 of profit</span></li>
-                  <li><span class="emo" aria-hidden="true">🔮</span><span data-l="fil">Gamit ang hula sa next year</span><span data-l="en">Using next year's guess</span></li>
-                  <li><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Presyo kada ₱1 na totoong cash</span><span data-l="en">Price for ₱1 of real cash</span></li>
+                  <li><a href="#pe"><span class="emo" aria-hidden="true">🏷️</span><span data-l="fil">Presyo kada ₱1 na kita</span><span data-l="en">Price for ₱1 of profit</span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#forward-pe"><span class="emo" aria-hidden="true">🔮</span><span data-l="fil">Gamit ang hula sa next year</span><span data-l="en">Using next year's guess</span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#fcf"><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Presyo kada ₱1 na totoong cash</span><span data-l="en">Price for ₱1 of real cash</span><span class="chev" aria-hidden="true">›</span></a></li>
                </ul>
+               <p class="tip">
+                  <span class="i" aria-hidden="true">i</span
+                  ><span
+                     ><span data-l="fil">Tip: i-tap ang kahit anong may <u>guhit sa ilalim</u> o "i" para malaman pa.</span
+                     ><span data-l="en">Tip: tap anything with a <u>dotted underline</u> or an "i" to learn more.</span></span
+                  >
+               </p>
             </section>
 
             <!-- What is a stock -->
@@ -1140,8 +1401,8 @@
                <div class="grid100" data-grid100 aria-hidden="true"></div>
                <p class="grid-cap"><span data-l="fil">■ = ikaw!</span><span data-l="en">■ = you!</span></p>
                <p class="say">
-                  <span data-l="fil">🎉 Ang pirasong 'yan ay <strong>stock</strong>. Ang tanong: <strong>sulit ba ang presyo nito?</strong></span>
-                  <span data-l="en">🎉 That piece is a <strong>stock</strong>. The big question: <strong>is it worth its price?</strong></span>
+                  <span data-l="fil">🎉 Ang pirasong 'yan ay <button type="button" class="term" data-info="stock">stock</button>. Ang tanong: <strong>sulit ba ang presyo nito?</strong></span>
+                  <span data-l="en">🎉 That piece is a <button type="button" class="term" data-info="stock">stock</button>. The big question: <strong>is it worth its price?</strong></span>
                </p>
             </section>
 
@@ -1175,7 +1436,7 @@
 
             <!-- Check 1 -->
             <section class="card" id="pe" aria-labelledby="pe-title">
-               <span class="step-tag"><b>1</b><span>Check 1 <small>· P/E</small></span></span>
+               <button type="button" class="step-tag" data-info="pe"><b>1</b><span>Check 1 <small>· P/E</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="pe-title">
                   <span data-l="fil">Presyo kada <em>₱1 na kita</em></span><span data-l="en">Price for <em>₱1 of profit</em></span>
                </h2>
@@ -1188,8 +1449,8 @@
                   <small><span data-l="fil">ang bayad mo nang isang beses, para sa bawat ₱1 na kita kada taon</span><span data-l="en">you pay once, for every ₱1 of profit it makes each year</span></small>
                </p>
                <p>
-                  <span data-l="fil">'Yan ang <strong>P/E</strong>: <strong>P</strong>rice (presyo) ÷ <strong>E</strong>arnings (kita). Parang presyo kada kilo, pero para sa kita.</span>
-                  <span data-l="en">That's the <strong>P/E</strong>: <strong>P</strong>rice ÷ <strong>E</strong>arnings (profit). Like price per kilo, but for profit.</span>
+                  <span data-l="fil">'Yan ang <button type="button" class="term" data-info="pe">P/E</button>: <strong>P</strong>rice (presyo) ÷ <strong>E</strong>arnings (<button type="button" class="term" data-info="profit">kita</button>). Parang presyo kada kilo, pero para sa kita.</span>
+                  <span data-l="en">That's the <button type="button" class="term" data-info="pe">P/E</button>: <strong>P</strong>rice ÷ <strong>E</strong>arnings (<button type="button" class="term" data-info="profit">profit</button>). Like price per kilo, but for profit.</span>
                </p>
                <p class="rule">
                   <span class="ic" aria-hidden="true">👍</span
@@ -1197,9 +1458,9 @@
                </p>
                <p class="muted"><span data-l="fil">Simpleng rule of thumb:</span><span data-l="en">A simple rule of thumb:</span></p>
                <div class="zones">
-                  <span class="z-cheap">🟢 <span data-l="fil">Mura</span><span data-l="en">Cheap</span><small><span data-l="fil">below ₱20</span><span data-l="en">under ₱20</span></small></span>
-                  <span class="z-okay">🟡 <span data-l="fil">Okay lang</span><span data-l="en">Okay</span><small>₱20–30</small></span>
-                  <span class="z-pricey">🔴 <span data-l="fil">Mahal</span><span data-l="en">Pricey</span><small><span data-l="fil">above ₱30</span><span data-l="en">over ₱30</span></small></span>
+                  <button type="button" class="z-cheap" data-info="cheap">🟢 <span data-l="fil">Mura</span><span data-l="en">Cheap</span><small><span data-l="fil">below ₱20</span><span data-l="en">under ₱20</span></small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-okay" data-info="okay">🟡 <span data-l="fil">Okay lang</span><span data-l="en">Okay</span><small>₱20–30</small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-pricey" data-info="pricey">🔴 <span data-l="fil">Mahal</span><span data-l="en">Pricey</span><small><span data-l="fil">above ₱30</span><span data-l="en">over ₱30</span></small><span class="i" aria-hidden="true">i</span></button>
                </div>
                <div class="board" data-board="pe"></div>
                <div class="quiz" data-quiz="pe"></div>
@@ -1207,11 +1468,11 @@
 
             <!-- Check 2 -->
             <section class="card" id="forward-pe" aria-labelledby="fpe-title">
-               <span class="step-tag"><b>2</b><span>Check 2 <small>· Forward P/E</small></span></span>
+               <button type="button" class="step-tag" data-info="fpe"><b>2</b><span>Check 2 <small>· Forward P/E</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="fpe-title"><span data-l="fil">Gamit ang <em>hula</em> sa next year</span><span data-l="en">Using next year's <em>guess</em></span></h2>
                <p>
-                  <span data-l="fil">Parehong tanong, pero gamit ang kitang <strong>hinuhulaan</strong> ng mga expert para sa <strong>next year</strong>.</span>
-                  <span data-l="en">Same question, but using the profit experts <strong>guess</strong> the company will make <strong>next year</strong>.</span>
+                  <span data-l="fil">Parehong tanong, pero gamit ang kitang <button type="button" class="term" data-info="guess">hinuhulaan</button> ng mga expert para sa <strong>next year</strong>.</span>
+                  <span data-l="en">Same question, but using the profit experts <button type="button" class="term" data-info="guess">guess</button> the company will make <strong>next year</strong>.</span>
                </p>
                <p class="rule">
                   <span class="ic" aria-hidden="true">📈</span
@@ -1230,13 +1491,13 @@
 
             <!-- Check 3 -->
             <section class="card" id="fcf" aria-labelledby="fcf-title">
-               <span class="step-tag"><b>3</b><span>Check 3 <small>· FCF yield</small></span></span>
+               <button type="button" class="step-tag" data-info="cash"><b>3</b><span>Check 3 <small>· FCF yield</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="fcf-title">
                   <span data-l="fil">Presyo kada <em>₱1 na totoong cash</em></span><span data-l="en">Price for <em>₱1 of real cash</em></span>
                </h2>
                <p>
-                  <span data-l="fil">Minsan, ang "kita" ay nasa papel lang. Ang <strong>totoong cash</strong> ay ang pera na natira sa kaha matapos bayaran ang lahat.</span>
-                  <span data-l="en">Sometimes "profit" is only on paper. <strong>Real cash</strong> is the money left in the drawer after paying for everything.</span>
+                  <span data-l="fil">Minsan, ang "kita" ay nasa papel lang. Ang <button type="button" class="term" data-info="cash">totoong cash</button> ay ang pera na natira sa kaha matapos bayaran ang lahat.</span>
+                  <span data-l="en">Sometimes "profit" is only on paper. <button type="button" class="term" data-info="cash">Real cash</button> is the money left in the drawer after paying for everything.</span>
                </p>
                <p class="big-math">
                   ₱1,000 ÷ ₱60 = ₱16.7
@@ -1256,6 +1517,9 @@
                   <span data-l="fil">Bawat check na 🟢 Mura (below ₱20) = 1 pandesal.</span>
                   <span data-l="en">Every check in the 🟢 Cheap zone (under ₱20) = 1 pandesal.</span>
                </p>
+               <button type="button" class="btn" data-info="pandesal" style="margin-top: 12px; min-height: 36px; font-size: 14px">
+                  <span data-l="fil">Paano ito gumagana?</span><span data-l="en">How does this work?</span>
+               </button>
                <img src="/hippos/party.png" alt="" width="116" height="116" />
             </section>
 
@@ -1287,8 +1551,8 @@
                   <span data-l="fil">Silipin ang <em>8 malalaking stocks</em></span><span data-l="en">Look inside <em>8 big stocks</em></span>
                </h2>
                <p class="muted">
-                  <span data-l="fil">I-tap ang isa para makita ang lahat ng numero nito, explained nang simple.</span>
-                  <span data-l="en">Tap one to see all its numbers, explained simply.</span>
+                  <span data-l="fil">I-tap ang isa para makita ang lahat ng numero nito, explained nang simple. Sa bawat sheet, i-tap ang pangalan ng numero para malaman ang ibig sabihin.</span>
+                  <span data-l="en">Tap one to see all its numbers, explained simply. In every sheet, tap a number's name to learn what it means.</span>
                </p>
                <div class="inside-grid" data-inside></div>
             </section>
@@ -1337,7 +1601,7 @@
 
       <script>
          (function () {
-            // Rule of thumb for "₱ you pay for ₱1 a year": under 20 cheap, 20–30 okay, over 30 pricey.
+            // Rule of thumb for "₱ you pay once for ₱1 a year": under 20 cheap, 20–30 okay, over 30 pricey.
             // 20 sits next to the 10-year US Treasury (5.24% ≈ ₱19 per ₱1), noted in the fine print.
             var CHEAP = 20;
             var OKAY = 30;
@@ -1345,37 +1609,67 @@
             var PHP = 62.6; // ECB reference rate, Oct 2, 2026
             var LANG_KEY = 'moodeng-stocks-lang';
 
-            // StockAnalysis statistics pages, Oct 2, 2026 close. pe/fpe = P/E and forward P/E, cash = FCF yield %.
-            var CO = {
-               JPM: { name: 'JPMorgan', emo: '🏦', pe: 14.27, fpe: 13.72, cash: null, fil: 'Bangko', en: 'Bank' },
-               LMT: { name: 'Lockheed Martin', emo: '✈️', pe: 18.62, fpe: 16.39, cash: 7.48, fil: 'Gumagawa ng eroplano', en: 'Makes jets' },
-               KO: { name: 'Coca-Cola', emo: '🥤', pe: 25.74, fpe: 25.2, cash: 3.88, fil: 'Gumagawa ng Coke', en: 'Makes Coke' },
-               AAPL: { name: 'Apple', emo: '🍎', pe: 38.28, fpe: 36.26, cash: 2.81, fil: 'Gumagawa ng iPhone', en: 'Makes iPhones' },
-               TSLA: { name: 'Tesla', emo: '🚗', pe: 384.57, fpe: 201.25, cash: 0.39, fil: 'Electric cars', en: 'Electric cars' },
-               NVDA: { name: 'Nvidia', emo: '🎮', pe: 29.58, fpe: 19.41, cash: 2.25, fil: 'Chips para sa games at AI', en: 'Chips for games and AI' },
-               GM: { name: 'General Motors', emo: '🚙', pe: 39.42, fpe: 5.61, cash: 20.96, fil: 'Gumagawa ng kotse', en: 'Makes cars' },
-               MSFT: { name: 'Microsoft', emo: '💻', pe: 28.83, fpe: 26.21, cash: 1.74, fil: 'Windows at Xbox', en: 'Windows and Xbox' },
-               PYPL: { name: 'PayPal', emo: '💳', pe: 9.95, fpe: 9.51, cash: 14.58, fil: 'Online na bayad', en: 'Online payments' },
-               UNH: { name: 'UnitedHealth', emo: '🏥', pe: 23.94, fpe: 17.48, cash: 7.07, fil: 'Health insurance', en: 'Health insurance' },
-               AMZN: { name: 'Amazon', emo: '📦', pe: 20.23, fpe: 26.81, cash: -0.43, fil: 'Online shopping', en: 'Online shopping' },
-               XOM: { name: 'ExxonMobil', emo: '⛽', pe: 21.15, fpe: 12.66, cash: 4.53, fil: 'Gasolina', en: 'Gas and oil' },
-            };
-
             function both(fil, en) {
                return '<span data-l="fil">' + fil + '</span><span data-l="en">' + en + '</span>';
             }
             function peso(v) {
                return '₱' + v.toFixed(1);
             }
-            // FCF yield % → ₱ you pay for ₱1 of yearly cash
+            function usd(v) {
+               return '$' + v.toFixed(2);
+            }
+            function pesoPrice(v) {
+               return '₱' + (Math.round((v * PHP) / 10) * 10).toLocaleString('en-US');
+            }
+            // FCF yield % → ₱ you pay once for ₱1 of yearly real cash
             function cashPrice(yieldPct) {
                return yieldPct > 0 ? 100 / yieldPct : null;
             }
+            function term(key, label) {
+               return '<button type="button" class="term" data-info="' + key + '">' + label + '</button>';
+            }
+            var I = '<span class="i" aria-hidden="true">i</span>';
+
+            // StockAnalysis statistics pages, Oct 2, 2026 close. pe/fpe = P/E and forward P/E, cash = FCF yield %.
+            // VOO forward P/E is the S&P 500 (FactSet). TSLA eps = price ÷ P/E so the worked example adds up.
+            var CO = {
+               GOOGL: { name: 'Alphabet', emo: '🔎', price: 343.5, eps: 19.93, pe: 17.23, fpe: 25.58, cash: 1.27, peg: 2.0, fil: 'Google at YouTube', en: 'Google and YouTube',
+                  line: both("Mukhang mura base sa last year, pero may one-time bonus ang taon na 'yon. Mas mahal ito base sa hula.", 'Looks cheap on last year, but that year had a one-time bonus. It looks pricier on the guess.') },
+               AMZN: { name: 'Amazon', emo: '📦', price: 251.52, eps: 12.44, pe: 20.23, fpe: 26.81, cash: -0.43, peg: 1.29, fil: 'Online shopping at cloud', en: 'Online shopping and cloud',
+                  line: both('Okay ang presyo sa P/E, pero walang natirang cash dahil sa laki ng gastos sa AI.', 'An okay price on P/E, but no cash left over because of huge AI spending.') },
+               AAPL: { name: 'Apple', emo: '🍎', price: 333.69, eps: 8.72, pe: 38.28, fpe: 36.26, cash: 2.81, peg: 3.27, fil: 'Gumagawa ng iPhone', en: 'Makes iPhones',
+                  line: both('Pinakamahal dito. Bayad ka para sa sikat na brand, hindi para sa bargain.', 'The priciest one here. You pay for the famous brand, not for a bargain.') },
+               META: { name: 'Meta', emo: '📱', price: 728.08, eps: 26.54, pe: 27.44, fpe: 22.64, cash: 2.21, peg: 1.15, fil: 'Facebook at Instagram', en: 'Facebook and Instagram',
+                  line: both('Bumababa ang presyo base sa hula kasi lalaki ang kita, pero hindi pa rin mura.', 'The price drops on the guess because profit should grow, but it is still not cheap.') },
+               MSFT: { name: 'Microsoft', emo: '💻', price: 517.53, eps: 17.95, pe: 28.83, fpe: 26.21, cash: 1.74, peg: 1.63, fil: 'Windows at Xbox', en: 'Windows and Xbox',
+                  line: both('Matatag at malakas na company, pero hindi mura ngayon.', 'A steady, strong company, but not cheap right now.') },
+               NVDA: { name: 'Nvidia', emo: '🎮', price: 233.95, eps: 7.91, pe: 29.58, fpe: 19.41, cash: 2.25, peg: 0.37, fil: 'Chips para sa games at AI', en: 'Chips for games and AI',
+                  line: both('Mahal base sa last year, pero mura base sa hula, kasi inaasahang tatalon ang kita.', 'Pricey on last year, but cheap on the guess, because profit should jump.') },
+               LMT: { name: 'Lockheed Martin', emo: '✈️', price: 505.41, eps: 27.14, pe: 18.62, fpe: 16.39, cash: 7.48, peg: 0.85, fil: 'Gumagawa ng eroplano', en: 'Makes jets',
+                  line: both('Mura sa lahat ng 3 checks. Pero mabagal itong lumaki.', 'Cheap on all 3 checks. But it grows slowly.') },
+               VOO: { name: 'VOO (S&P 500)', emo: '🧺', price: 707.54, eps: null, pe: 27.1, fpe: 19.0, cash: null, peg: null, basket: true, fil: 'Basket ng 500 company', en: 'A basket of 500 companies',
+                  line: both('Isang bili, may konting parte ka na sa 500 malalaking company sa US. Mura base sa hula next year.', "One buy gives you a tiny piece of 500 big US companies. Cheap on next year's guess.") },
+               JPM: { name: 'JPMorgan', emo: '🏦', price: 332.38, eps: 23.3, pe: 14.27, fpe: 13.72, cash: null, peg: 1.37, bank: true, fil: 'Bangko', en: 'Bank',
+                  line: both('Malaking bangko. Karaniwang mababa ang P/E ng mga bangko, kaya normal lang na mura ito.', 'A big bank. Banks usually have low P/Es, so looking cheap is normal for them.') },
+               KO: { name: 'Coca-Cola', emo: '🥤', price: 85.65, eps: 3.33, pe: 25.74, fpe: 25.2, cash: 3.88, peg: 3.41, fil: 'Gumagawa ng Coke', en: 'Makes Coke',
+                  line: both('Matatag na soda company. Okay na presyo para sa mabagal pero siguradong kita.', 'A super steady soda company. An okay price for slow but reliable profit.') },
+               TSLA: { name: 'Tesla', emo: '🚗', price: 370.59, eps: 0.96, pe: 384.57, fpe: 201.25, cash: 0.39, peg: 9.08, fil: 'Electric cars', en: 'Electric cars',
+                  line: both('₱385 para sa ₱1 na kita! Taya ng mga tao na lalaki nang sobra ang kita nito.', '₱385 for ₱1 of profit! People are betting its profit will grow a LOT.') },
+               GM: { name: 'General Motors', emo: '🚙', price: 78.27, eps: 1.99, pe: 39.42, fpe: 5.61, cash: 20.96, peg: 0.34, fil: 'Gumagawa ng kotse', en: 'Makes cars',
+                  line: both('Maliit ang kita last year kaya mukhang mahal. Base sa hula, sobrang mura, kung magkatotoo lang.', 'Small profit last year makes it look pricey. On the guess it looks super cheap, but only if the guess comes true.') },
+               XOM: { name: 'ExxonMobil', emo: '⛽', price: 164.01, eps: 7.76, pe: 21.15, fpe: 12.66, cash: 4.53, peg: 1.18, fil: 'Gasolina', en: 'Gas and oil',
+                  line: both('Oil company. Tumataas at bumababa ang kita kasabay ng presyo ng langis, kaya mahirap hulaan.', 'An oil company. Profit rises and falls with oil prices, so guesses are tricky.') },
+               PYPL: { name: 'PayPal', emo: '💳', price: 52.8, eps: 5.3, pe: 9.95, fpe: 9.51, cash: 14.58, peg: 1.35, fil: 'Online na bayad', en: 'Online payments',
+                  line: both('Mura sa lahat ng checks, kasi nag-aalala ang mga tao na mabagal na itong lumaki.', 'Cheap on every check, because people worry it will grow slowly.') },
+               UNH: { name: 'UnitedHealth', emo: '🏥', price: 371.9, eps: 15.53, pe: 23.94, fpe: 17.48, cash: 7.07, peg: 1.2, fil: 'Health insurance', en: 'Health insurance',
+                  line: both('Mura base sa hula at sa cash, okay lang base sa last year. Tumataas ang gastos sa ospital.', 'Cheap on the guess and on cash, okay on last year. Hospital costs keep rising.') },
+            };
+            var INSIDE = ['GOOGL', 'AMZN', 'AAPL', 'META', 'MSFT', 'NVDA', 'LMT', 'VOO']; // Emma's 8
 
             function zone(price) {
                return price < CHEAP ? 'win' : price <= OKAY ? 'mid' : 'lose';
             }
-            // Price bar: ₱ you pay for ₱1 a year, over green/yellow/red zone bands. Shorter = cheaper.
+            // Price bar: ₱ you pay once for ₱1 a year, over green/yellow/red zone bands. Shorter = cheaper.
             function bar(price) {
                if (price == null) return '<div class="track"><span class="none">' + both('Walang cash 😬', 'No cash 😬') + '</span></div>';
                var cls = price > BAR_MAX ? 'over' : zone(price);
@@ -1388,79 +1682,6 @@
                if (z === 'mid') return { cls: z, label: both('🟡 Okay lang', '🟡 Okay') };
                return { cls: z, label: both('🔴 Mahal', '🔴 Pricey') };
             }
-
-            function row(t, price, note) {
-               var c = CO[t];
-               var vd = verdict(price);
-               return (
-                  '<div class="co"><div class="co-top"><span class="co-emo" aria-hidden="true">' +
-                  c.emo +
-                  '</span><span class="co-name">' +
-                  c.name +
-                  '<small>' +
-                  both(c.fil, c.en) +
-                  '</small></span><span class="co-val ' +
-                  vd.cls +
-                  '">' +
-                  (price == null ? '—' : peso(price) + (price > BAR_MAX ? ' ↗' : '')) +
-                  '<small>' +
-                  vd.label +
-                  '</small></span></div>' +
-                  bar(price) +
-                  (note ? '<p class="co-note">' + note + '</p>' : '') +
-                  '</div>'
-               );
-            }
-            var SCALE = '<div class="scale" aria-hidden="true"><span style="left:0">₱0</span><span style="left:50%">₱20</span><span style="left:75%">₱30</span><span style="left:100%">₱40</span></div>';
-            var KEY = '<p class="key"><span>' + both('Mas maikli = mas mura', 'Shorter bar = cheaper') + '</span><span>🟢 &lt;₱20 · 🟡 ₱20–30 · 🔴 &gt;₱30</span></p>';
-
-            // Check 1: P/E = ₱ you pay for ₱1 of profit
-            document.querySelector('[data-board="pe"]').innerHTML =
-               '<p class="board-head">' +
-               both('Bayad mo nang isang beses, para sa ₱1 na kita kada taon', 'Price you pay once, for ₱1 of profit every year') +
-               '</p>' +
-               SCALE +
-               ['JPM', 'LMT', 'KO', 'AAPL', 'TSLA']
-                  .map(function (t) {
-                     var note = t === 'TSLA' ? both('₱385 para sa ₱1?! Umaasa ang mga tao na lalaki nang sobra ang kita nito.', '₱385 for ₱1?! People hope its profit grows a LOT.') : '';
-                     return row(t, CO[t].pe, note);
-                  })
-                  .join('') +
-               KEY;
-
-            // Check 2: forward P/E
-            document.querySelector('[data-board="fpe"]').innerHTML =
-               '<p class="board-head">' +
-               both('Bayad nang isang beses, para sa ₱1 ng HULANG kita next year', "Price you pay once, for ₱1 of next year's GUESSED profit") +
-               '</p>' +
-               SCALE +
-               ['GM', 'XOM', 'NVDA', 'MSFT', 'AMZN']
-                  .map(function (t) {
-                     var c = CO[t];
-                     var change = both('Last year ' + peso(c.pe) + ' → next year ' + peso(c.fpe), 'Last year ' + peso(c.pe) + ' → next year ' + peso(c.fpe));
-                     var extra = '';
-                     if (t === 'GM') extra = both(' Malaking bagsak! Pero kung magkatotoo lang ang hula.', ' Huge drop! But only if the guess comes true.');
-                     if (t === 'NVDA') extra = both(' Kulang lang sa ₱20, kaya mura na!', ' Just under ₱20, so it lands in the cheap zone!');
-                     if (t === 'AMZN') extra = both(' Mas mahal next year kasi mas maliit ang hulang kita.', ' Pricier next year because the guessed profit is smaller.');
-                     return row(t, c.fpe, change + extra);
-                  })
-                  .join('') +
-               KEY;
-
-            // Check 3: ₱ you pay for ₱1 of real cash (1 ÷ FCF yield)
-            document.querySelector('[data-board="fcf"]').innerHTML =
-               '<p class="board-head">' + both('Bayad nang isang beses, para sa ₱1 na totoong cash kada taon', 'Price you pay once, for ₱1 of real cash every year') + '</p>' + SCALE +
-               ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN']
-                  .map(function (t) {
-                     var note = '';
-                     if (t === 'PYPL') note = both('Sobrang mura! Pero mura kasi nag-aalala ang mga tao na mabagal na itong lumaki.', 'Super cheap! But it is cheap because people worry it will grow slowly.');
-                     if (t === 'AMZN') note = both('Mas malaki ang ginastos kaysa pumasok, para sa malalaking AI computer centers.', 'It spent more than came in, on giant AI computer centers.');
-                     return row(t, cashPrice(CO[t].cash), note);
-                  })
-                  .join('') +
-               KEY;
-
-            // Results: 3 checks, each one in the cheap zone (under ₱20) = 1 pandesal
             function score(c) {
                var cp = c.cash == null ? null : cashPrice(c.cash);
                return [c.pe < CHEAP, c.fpe < CHEAP, cp != null && cp < CHEAP];
@@ -1479,6 +1700,92 @@
                   '</span>'
                );
             }
+
+            // One company row in a chart. The whole row opens the company's sheet.
+            function row(t, price, note) {
+               var c = CO[t];
+               var vd = verdict(price);
+               return (
+                  '<button type="button" class="co" data-open="' +
+                  t +
+                  '"><span class="co-top"><span class="co-emo" aria-hidden="true">' +
+                  c.emo +
+                  '</span><span class="co-name">' +
+                  c.name +
+                  '<small>' +
+                  both(c.fil, c.en) +
+                  '</small></span><span class="co-val ' +
+                  vd.cls +
+                  '">' +
+                  (price == null ? '—' : peso(price) + (price > BAR_MAX ? ' ↗' : '')) +
+                  '<small>' +
+                  vd.label +
+                  '</small></span><span class="chev" aria-hidden="true">›</span></span>' +
+                  bar(price) +
+                  (note ? '<span class="co-note">' + note + '</span>' : '') +
+                  '</button>'
+               );
+            }
+            function head(info, fil, en) {
+               return '<button type="button" class="board-head" data-info="' + info + '"><span>' + both(fil, en) + '</span>' + I + '</button>';
+            }
+            var SCALE =
+               '<button type="button" class="scale-btn" data-info="scale" aria-label="How to read the chart"><span class="scale" aria-hidden="true"><span style="left:0">₱0</span><span style="left:50%">₱20</span><span style="left:75%">₱30</span><span style="left:100%">₱40</span></span></button>';
+            var KEY =
+               '<button type="button" class="key" data-info="scale"><span>' +
+               both('Mas maikli = mas mura', 'Shorter bar = cheaper') +
+               '</span><span>🟢 &lt;₱20 · 🟡 ₱20–30 · 🔴 &gt;₱30</span>' +
+               I +
+               '</button>';
+            var TAP = '<p class="tap-hint">' + both('I-tap ang company para makita ang lahat ng numero nito ›', 'Tap a company to see all its numbers ›') + '</p>';
+
+            // Check 1: P/E = ₱ you pay once for ₱1 of yearly profit
+            document.querySelector('[data-board="pe"]').innerHTML =
+               head('payonce', 'Bayad mo nang isang beses, para sa ₱1 na kita kada taon', 'Price you pay once, for ₱1 of profit every year') +
+               SCALE +
+               ['JPM', 'LMT', 'KO', 'AAPL', 'TSLA']
+                  .map(function (t) {
+                     var note = t === 'TSLA' ? both('₱385 para sa ₱1?! Umaasa ang mga tao na lalaki nang sobra ang kita nito.', '₱385 for ₱1?! People hope its profit grows a LOT.') : '';
+                     return row(t, CO[t].pe, note);
+                  })
+                  .join('') +
+               KEY +
+               TAP;
+
+            // Check 2: forward P/E
+            document.querySelector('[data-board="fpe"]').innerHTML =
+               head('guess', 'Bayad nang isang beses, para sa ₱1 ng HULANG kita next year', "Price you pay once, for ₱1 of next year's GUESSED profit") +
+               SCALE +
+               ['GM', 'XOM', 'NVDA', 'MSFT', 'AMZN']
+                  .map(function (t) {
+                     var c = CO[t];
+                     var change = both('Last year ' + peso(c.pe) + ' → next year ' + peso(c.fpe), 'Last year ' + peso(c.pe) + ' → next year ' + peso(c.fpe));
+                     var extra = '';
+                     if (t === 'GM') extra = both(' Malaking bagsak! Pero kung magkatotoo lang ang hula.', ' Huge drop! But only if the guess comes true.');
+                     if (t === 'NVDA') extra = both(' Kulang lang sa ₱20, kaya mura na!', ' Just under ₱20, so it lands in the cheap zone!');
+                     if (t === 'AMZN') extra = both(' Mas mahal next year kasi mas maliit ang hulang kita.', ' Pricier next year because the guessed profit is smaller.');
+                     return row(t, c.fpe, change + extra);
+                  })
+                  .join('') +
+               KEY +
+               TAP;
+
+            // Check 3: ₱ you pay once for ₱1 of yearly real cash (100 ÷ FCF yield)
+            document.querySelector('[data-board="fcf"]').innerHTML =
+               head('cashhead', 'Bayad nang isang beses, para sa ₱1 na totoong cash kada taon', 'Price you pay once, for ₱1 of real cash every year') +
+               SCALE +
+               ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN']
+                  .map(function (t) {
+                     var note = '';
+                     if (t === 'PYPL') note = both('Sobrang mura! Pero mura kasi nag-aalala ang mga tao na mabagal na itong lumaki.', 'Super cheap! But it is cheap because people worry it will grow slowly.');
+                     if (t === 'AMZN') note = both('Mas malaki ang ginastos kaysa pumasok, para sa malalaking AI computer centers.', 'It spent more than came in, on giant AI computer centers.');
+                     return row(t, cashPrice(CO[t].cash), note);
+                  })
+                  .join('') +
+               KEY +
+               TAP;
+
+            // Results: each check in the cheap zone (under ₱20) = 1 pandesal
             var WINNERS = [
                { t: 'LMT', but: both('Pero: mabagal lumaki.', 'But: grows slowly.') },
                { t: 'PYPL', but: both('Pero: baka mabagal na itong lumaki.', 'But: it may grow slowly.') },
@@ -1487,7 +1794,9 @@
             document.querySelector('[data-winners]').innerHTML = WINNERS.map(function (w) {
                var c = CO[w.t];
                return (
-                  '<div class="winner"><span class="rank" aria-hidden="true">' +
+                  '<button type="button" class="winner" data-open="' +
+                  w.t +
+                  '"><span class="rank" aria-hidden="true">' +
                   c.emo +
                   '</span><span class="co-name">' +
                   c.name +
@@ -1497,13 +1806,13 @@
                   w.but +
                   '</small></span>' +
                   pandesals(score(c)) +
-                  '</div>'
+                  '</button>'
                );
             }).join('');
             document.querySelector('[data-famous]').innerHTML = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
                .map(function (t) {
                   var c = CO[t];
-                  return '<li><span aria-hidden="true">' + c.emo + '</span>' + c.name + pandesals(score(c)) + '</li>';
+                  return '<li><button type="button" data-open="' + t + '"><span aria-hidden="true">' + c.emo + '</span>' + c.name + pandesals(score(c)) + '</button></li>';
                })
                .join('');
 
@@ -1568,64 +1877,237 @@
                });
             });
 
-            // Look inside: Emma's 8 big stocks. StockAnalysis Oct 2, 2026; VOO forward P/E is the S&P 500 (FactSet).
-            var INSIDE = [
-               {
-                  name: 'Alphabet', emo: '🔎', price: 343.5, eps: 19.93, pe: 17.23, fpe: 25.58, cash: 1.27, peg: 2.0,
-                  what: both('Google at YouTube', 'Google and YouTube'),
-                  line: both("Mukhang mura base sa last year, pero may one-time bonus ang taon na 'yon. Mas mahal ito base sa hula.", 'Looks cheap on last year, but that year had a one-time bonus. It looks pricier on the guess.'),
-               },
-               {
-                  name: 'Amazon', emo: '📦', price: 251.52, eps: 12.44, pe: 20.23, fpe: 26.81, cash: -0.43, peg: 1.29,
-                  what: both('Online shopping at cloud', 'Online shopping and cloud'),
-                  line: both('Okay ang presyo sa P/E, pero walang natirang cash dahil sa laki ng gastos sa AI.', 'An okay price on P/E, but no cash left over because of huge AI spending.'),
-               },
-               {
-                  name: 'Apple', emo: '🍎', price: 333.69, eps: 8.72, pe: 38.28, fpe: 36.26, cash: 2.81, peg: 3.27,
-                  what: both('iPhone at Mac', 'iPhone and Mac'),
-                  line: both('Pinakamahal dito. Bayad ka para sa sikat na brand, hindi para sa bargain.', 'The priciest one here. You pay for the famous brand, not for a bargain.'),
-               },
-               {
-                  name: 'Meta', emo: '📱', price: 728.08, eps: 26.54, pe: 27.44, fpe: 22.64, cash: 2.21, peg: 1.15,
-                  what: both('Facebook at Instagram', 'Facebook and Instagram'),
-                  line: both('Bumababa ang presyo base sa hula kasi lalaki ang kita, pero hindi pa rin mura.', 'The price drops on the guess because profit should grow, but it is still not cheap.'),
-               },
-               {
-                  name: 'Microsoft', emo: '💻', price: 517.53, eps: 17.95, pe: 28.83, fpe: 26.21, cash: 1.74, peg: 1.63,
-                  what: both('Windows at Xbox', 'Windows and Xbox'),
-                  line: both('Matatag at malakas na company, pero hindi mura ngayon.', 'A steady, strong company, but not cheap right now.'),
-               },
-               {
-                  name: 'Nvidia', emo: '🎮', price: 233.95, eps: 7.91, pe: 29.58, fpe: 19.41, cash: 2.25, peg: 0.37,
-                  what: both('Chips para sa games at AI', 'Chips for games and AI'),
-                  line: both('Mahal base sa last year, pero mura base sa hula, kasi inaasahang tatalon ang kita.', 'Pricey on last year, but cheap on the guess, because profit should jump.'),
-               },
-               {
-                  name: 'Lockheed Martin', emo: '✈️', price: 505.41, eps: 27.14, pe: 18.62, fpe: 16.39, cash: 7.48, peg: 0.85,
-                  what: both('Gumagawa ng eroplano', 'Makes jets'),
-                  line: both('Ito lang dito ang mura sa lahat ng 3 checks. Pero mabagal itong lumaki.', 'The only one here that is cheap on all 3 checks. But it grows slowly.'),
-               },
-               {
-                  name: 'VOO (S&P 500)', emo: '🧺', price: 707.54, eps: null, pe: 27.1, fpe: 19.0, cash: null, peg: null,
-                  what: both('Basket ng 500 company', 'A basket of 500 companies'),
-                  line: both('Isang bili, may konting parte ka na sa 500 malalaking company sa US. Mura base sa hula next year.', "One buy gives you a tiny piece of 500 big US companies. Cheap on next year's guess."),
-               },
-            ];
-
-            function usd(v) {
-               return '$' + v.toFixed(2);
-            }
-            function pesoPrice(v) {
-               return '₱' + (Math.round((v * PHP) / 10) * 10).toLocaleString('en-US');
-            }
-            function pill(price) {
-               if (price === undefined) return '<span class="pill na">' + both('Walang data', 'No data') + '</span>';
-               var vd = verdict(price);
-               return '<span class="pill ' + vd.cls + '">' + vd.label + '</span>';
-            }
-            function ratio(ic, name, sub, value, body) {
+            // ---------- Explainer sheets ----------
+            function examples(filter) {
                return (
-                  '<div class="ratio"><div class="ratio-top"><span class="ic" aria-hidden="true">' +
+                  '<div class="co-chips">' +
+                  Object.keys(CO)
+                     .filter(function (t) {
+                        return filter(CO[t]);
+                     })
+                     .sort(function (a, b) {
+                        return CO[a].pe - CO[b].pe;
+                     })
+                     .map(function (t) {
+                        return '<button type="button" class="co-chip" data-open="' + t + '">' + CO[t].emo + ' ' + CO[t].name + ' <b>' + peso(CO[t].pe) + '</b></button>';
+                     })
+                     .join('') +
+                  '</div>'
+               );
+            }
+            function years(n) {
+               var h = '<div class="years" aria-hidden="true">';
+               for (var y = 1; y <= n; y++) h += '<span>' + y + '</span>';
+               return h + '</div>';
+            }
+            function p(fil, en) {
+               return '<p>' + both(fil, en) + '</p>';
+            }
+            var ZONES_HTML =
+               '<div class="zones"><span class="z-cheap">🟢 ' +
+               both('Mura', 'Cheap') +
+               '<small>' +
+               both('below ₱20', 'under ₱20') +
+               '</small></span><span class="z-okay">🟡 ' +
+               both('Okay lang', 'Okay') +
+               '<small>₱20–30</small></span><span class="z-pricey">🔴 ' +
+               both('Mahal', 'Pricey') +
+               '<small>' +
+               both('above ₱30', 'over ₱30') +
+               '</small></span></div>';
+
+            var INFO = {
+               stock: {
+                  emo: '🧩',
+                  title: both('Ano ang stock?', 'What is a stock?'),
+                  body:
+                     p('Ang stock (o share) ay maliit na piraso ng isang company. Kung may hawak ka, may-ari ka ng konting parte ng lahat ng pag-aari at kinikita nito.', 'A stock (or share) is a tiny piece of a company. If you own one, you own a small part of everything it owns and earns.') +
+                     p('Milyon-milyon ang piraso ng malalaking company, kaya maliit na maliit ang isang share.', 'Big companies are cut into millions of pieces, so one share is a very small slice.') +
+                     '<p class="rule"><span class="ic" aria-hidden="true">📈</span><span>' +
+                     both('Pag lumaki ang company at kumita nang mas malaki, kadalasang tumataas ang halaga ng piraso mo.', 'When the company grows and earns more, your piece is usually worth more.') +
+                     '</span></p>',
+               },
+               profit: {
+                  emo: '💰',
+                  title: both('Ano ang kita (profit)?', 'What is profit?'),
+                  body:
+                     p('Ang kita ay ang perang natira sa company matapos bayaran ang lahat ng gastos. Tawag din dito ay "earnings."', 'Profit is the money a company keeps after paying all its costs. It is also called "earnings."') +
+                     '<p class="big-math">₱500 − ₱450 = ₱50<small>' +
+                     both('benta − gastos = kita', 'sales − costs = profit') +
+                     '</small></p>',
+               },
+               pe: {
+                  emo: '🏷️',
+                  title: 'P/E',
+                  body:
+                     p('Ang P/E ay ang bayad mo nang isang beses para sa ₱1 na kita ng company kada taon. P = Price (presyo), E = Earnings (kita).', 'P/E is what you pay once for ₱1 of the company\'s profit each year. P = Price, E = Earnings (profit).') +
+                     '<p class="big-math">₱100 ÷ ₱5 = 20<small>' +
+                     both('presyo ng share ÷ kita kada share', 'share price ÷ profit per share') +
+                     '</small></p>' +
+                     '<p class="rule"><span class="ic" aria-hidden="true">👍</span><span>' +
+                     both('Mas mababang P/E = mas mura.', 'Lower P/E = cheaper.') +
+                     '</span></p>' +
+                     ZONES_HTML,
+               },
+               eps: {
+                  emo: '🧾',
+                  title: both('EPS (kita kada share)', 'EPS (earnings per share)'),
+                  body:
+                     p('Ang kita ng company para sa bawat isang share. Kung ₱1,000 ang kita at may 100 shares, ₱10 ang EPS.', "The company's profit for each single share. If it makes ₱1,000 of profit and has 100 shares, EPS is ₱10.") +
+                     '<p class="big-math">₱1,000 ÷ 100 = ₱10<small>' +
+                     both('kita ÷ bilang ng shares', 'profit ÷ number of shares') +
+                     '</small></p>' +
+                     p('Gamit ito ng P/E: presyo ng share ÷ EPS.', 'P/E uses it: share price ÷ EPS.'),
+               },
+               fpe: {
+                  emo: '🔮',
+                  title: 'Forward P/E',
+                  body:
+                     p('Parehong P/E, pero gamit ang kitang hinuhulaan ng mga expert para sa next year.', 'The same as P/E, but using the profit experts guess the company will make next year.') +
+                     p('Kung inaasahang lalaki ang kita, mas mababa ang forward P/E kaysa sa P/E, kaya mukhang mas mura.', 'If profit is expected to grow, the forward P/E is lower than the P/E, so it looks cheaper.') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">⚠️</span><span>' +
+                     both('Hula lang ito. Pwedeng mali!', 'It is only a guess. It can be wrong!') +
+                     '</span></p>',
+               },
+               cash: {
+                  emo: '💵',
+                  title: both('Totoong cash (FCF yield)', 'Real cash (FCF yield)'),
+                  body:
+                     p('Ang free cash flow ay ang totoong cash na natira matapos bayaran ang lahat ng bills at bagong gamit. Iba ito sa kita sa papel.', 'Free cash flow is the real cash left after paying all the bills and buying new equipment. It is different from profit on paper.') +
+                     p('Sa websites, % ang pakita nito (FCF yield). Baliktarin: 100 ÷ FCF yield = bayad mo para sa ₱1 na cash kada taon.', 'Websites show it as a % (FCF yield). Flip it: 100 ÷ FCF yield = what you pay once for ₱1 of cash a year.') +
+                     '<p class="big-math">100 ÷ 14.6 = ₱6.9<small>' +
+                     both('PayPal: FCF yield 14.6%', 'PayPal: FCF yield 14.6%') +
+                     '</small></p>' +
+                     p('Kung below zero, mas malaki ang ginastos ng company kaysa sa pumasok na cash.', 'Below zero means the company spent more cash than came in.'),
+               },
+               peg: {
+                  emo: '⚡',
+                  title: 'PEG',
+                  body:
+                     p('May mga company na sobrang bilis lumaki, kaya okay lang na mas mataas ang P/E nila. Ang PEG ang nagche-check nito.', 'Some companies grow so fast that a higher P/E can be fair. PEG checks that.') +
+                     '<p class="big-math">20 ÷ 20 = 1<small>' +
+                     both('P/E ÷ paglaki ng kita kada taon (%)', 'P/E ÷ yearly profit growth (%)') +
+                     '</small></p>' +
+                     '<div class="zones"><span class="z-cheap">' +
+                     both('Below 1<small>sulit</small>', 'Under 1<small>good deal</small>') +
+                     '</span><span class="z-okay">1–2<small>' +
+                     both('okay lang', 'fair') +
+                     '</small></span><span class="z-pricey">' +
+                     both('Above 2<small>mahal</small>', 'Over 2<small>pricey</small>') +
+                     '</span></div>' +
+                     '<p class="small">' +
+                     both('Iba-iba ang computation ng PEG sa bawat website. Ikumpara lang sa iisang site.', 'Every website calculates PEG a little differently. Only compare on the same site.') +
+                     '</p>',
+               },
+               sp500: {
+                  emo: '🧺',
+                  title: 'S&amp;P 500 / VOO',
+                  body:
+                     p('Ang S&P 500 ay listahan ng 500 sa pinakamalalaking company sa US. Sa VOO, makakabili ka ng konting parte ng lahat ng 500 nang sabay.', 'The S&P 500 is a list of 500 of the biggest US companies. VOO lets you buy a tiny piece of all 500 at once.') +
+                     p('Mas safe ito kaysa bumili ng iisang company, kasi hindi ka umaasa sa isa lang.', 'It is less risky than buying one company, because you are not betting on just one.'),
+               },
+               cheap: {
+                  emo: '🟢',
+                  title: both('Mura: below ₱20', 'Cheap: under ₱20'),
+                  body:
+                     p('Wala pang ₱20 ang bayad mo para sa bawat ₱1 na kita kada taon. Sa loob ng wala pang 20 taon, mapapantayan ng kita ang presyo.', 'You pay less than ₱20 for each ₱1 of profit a year. In under 20 years, the profit adds up to what you paid.') +
+                     p('Bakit ₱20? Ang super-safe na US government bond ay mga ₱19 para sa bawat ₱1 kada taon. Kaya ang stock na below ₱20 ay kasing-sulit man lang ng bond.', 'Why ₱20? A super-safe US government bond works out to about ₱19 for each ₱1 a year. So a stock under ₱20 is at least as good a deal.') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">🥖</span><span>' +
+                     both('Pero minsan mura ang stock kasi may problema ang business. Alamin kung bakit!', 'But sometimes a stock is cheap because the business has problems. Find out why!') +
+                     '</span></p>' +
+                     '<p class="small">' +
+                     both('Mga mura base sa P/E:', 'Cheap on P/E:') +
+                     '</p>' +
+                     examples(function (c) {
+                        return c.pe < CHEAP;
+                     }),
+               },
+               okay: {
+                  emo: '🟡',
+                  title: both('Okay lang: ₱20–30', 'Okay: ₱20–30'),
+                  body:
+                     p('Normal na presyo para sa matatag na company. Ang buong US market (S&P 500) ay mga ₱27 ngayon.', 'A normal price for a solid company. The whole US market (S&P 500) is about ₱27 right now.') +
+                     p('Hindi bargain, pero hindi rin sobrang mahal.', 'Not a bargain, but not too pricey either.') +
+                     '<p class="small">' +
+                     both('Mga okay lang base sa P/E:', 'Okay on P/E:') +
+                     '</p>' +
+                     examples(function (c) {
+                        return c.pe >= CHEAP && c.pe <= OKAY;
+                     }),
+               },
+               pricey: {
+                  emo: '🔴',
+                  title: both('Mahal: above ₱30', 'Pricey: over ₱30'),
+                  body:
+                     p('Malaki ang binabayad ng mga tao ngayon kasi umaasa silang mabilis lalaki ang kita. Kung hindi dumating ang paglaki, pwedeng bumagsak ang presyo.', 'People pay a lot today because they expect profit to grow fast. If the growth does not come, the price can fall.') +
+                     p('Hindi ibig sabihin na pangit ang company. Pwedeng magaling ang company pero mahal ang stock.', "It doesn't mean the company is bad. A great company can still have a pricey stock.") +
+                     '<p class="small">' +
+                     both('Mga mahal base sa P/E:', 'Pricey on P/E:') +
+                     '</p>' +
+                     examples(function (c) {
+                        return c.pe > OKAY;
+                     }),
+               },
+               payonce: {
+                  emo: '🏷️',
+                  title: both('Bayad nang isang beses, kita kada taon', 'Pay once, earn every year'),
+                  body:
+                     p('Halimbawa: magbabayad ka ng ₱14.3 nang isang beses para sa parte ng JPMorgan. Kada taon pagkatapos, kikita ang parteng \'yan ng ₱1.', 'Example: you pay ₱14.3 once for a piece of JPMorgan. Every year after that, your piece earns ₱1 of profit.') +
+                     years(14) +
+                     p('Pagkalipas ng mga 14 taon, kapantay na ng kita ang binayad mo. Mas kaunting taon = mas mura.', 'After about 14 years, the profit adds up to what you paid. Fewer years = cheaper.') +
+                     ZONES_HTML,
+               },
+               guess: {
+                  emo: '🔮',
+                  title: both('Gamit ang hula sa next year', "Using next year's guess"),
+                  body:
+                     p('Pinag-aaralan ng mga expert ang company at hinuhulaan nila ang kita nito next year. Ito ang ginagamit ng chart na ito.', "Experts study each company and guess next year's profit. This chart uses that guess.") +
+                     p('Mas malaking hulang kita = mas mababa ang bayad mo para sa ₱1 = mukhang mas mura.', 'Bigger guessed profit = you pay less for each ₱1 = it looks cheaper.') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">⚠️</span><span>' +
+                     both('Pwedeng mali ang hula, lalo na sa kotse at langis.', 'Guesses can be wrong, especially for cars and oil.') +
+                     '</span></p>',
+               },
+               cashhead: {
+                  emo: '💵',
+                  title: both('Bayad para sa ₱1 na totoong cash', 'Price for ₱1 of real cash'),
+                  body:
+                     p('Parehong tanong ng Check 1, pero gamit ang totoong cash na natira sa company, hindi ang kita sa papel.', 'The same question as Check 1, but using the real cash the company has left, not profit on paper.') +
+                     p('Mas mababang presyo para sa ₱1 na cash = mas mura.', 'Lower price for ₱1 of cash = cheaper.') +
+                     ZONES_HTML,
+               },
+               scale: {
+                  emo: '📏',
+                  title: both('Paano basahin ang chart', 'How to read the chart'),
+                  body:
+                     '<ul class="steps">' +
+                     '<li>' + both('Bawat bar = bayad mo para sa ₱1. <strong>Mas maikli = mas mura.</strong>', 'Each bar = what you pay for ₱1. <strong>Shorter = cheaper.</strong>') + '</li>' +
+                     '<li>' + both('Ang kulay sa likod ay ang zones: berde below ₱20, dilaw ₱20–30, pula above ₱30.', 'The colours behind the bar are the zones: green under ₱20, yellow ₱20–30, red over ₱30.') + '</li>' +
+                     '<li>' + both('Ang guhit-guhit na bar ay lampas sa ₱40, gaya ng Tesla (₱385).', 'A striped bar goes past ₱40, like Tesla (₱385).') + '</li>' +
+                     '<li>' + both('I-tap ang company para makita ang lahat ng numero nito.', 'Tap a company to see all its numbers.') + '</li>' +
+                     '</ul>' +
+                     ZONES_HTML,
+               },
+               pandesal: {
+                  emo: '🥯',
+                  title: both('Paano ang pandesal score?', 'How the pandesal score works'),
+                  body:
+                     p('1 pandesal para sa bawat check kung saan 🟢 mura ang stock (below ₱20):', '1 pandesal for each check where the stock is 🟢 cheap (under ₱20):') +
+                     '<ul class="steps"><li>Check 1 · P/E</li><li>Check 2 · Forward P/E</li><li>Check 3 · ' +
+                     both('Totoong cash', 'Real cash') +
+                     '</li></ul>' +
+                     p('3 pandesal = mura sa lahat. 0 = mahal sa lahat.', '3 pandesal = cheap on everything. 0 = pricey on everything.') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">🥖</span><span>' +
+                     both('Tandaan: hindi laging maganda ang mura!', "Remember: cheap isn't always good!") +
+                     '</span></p>',
+               },
+            };
+
+            // ---------- Company sheet ----------
+            function ratio(info, ic, name, sub, value, body) {
+               return (
+                  '<div class="ratio"><button type="button" class="ratio-top" data-info="' +
+                  info +
+                  '"><span class="ic" aria-hidden="true">' +
                   ic +
                   '</span><span class="ratio-name">' +
                   name +
@@ -1633,25 +2115,36 @@
                   sub +
                   '</small></span><span class="co-val">' +
                   value +
-                  '</span></div>' +
+                  '</span>' +
+                  I +
+                  '</button>' +
                   body +
                   '</div>'
                );
             }
-
-            function sheetHtml(s) {
-               var score = [s.pe < CHEAP, s.fpe < CHEAP, s.cash != null && cashPrice(s.cash) != null && cashPrice(s.cash) < CHEAP];
-               var html =
+            function pill(price) {
+               if (price === undefined) return '<span class="pill na">' + both('Walang data', 'No data') + '</span>';
+               var vd = verdict(price);
+               return '<span class="pill ' + vd.cls + '">' + vd.label + '</span>';
+            }
+            function sheetHead(emo, title, sub) {
+               return (
                   '<div class="grab" aria-hidden="true"></div><div class="sheet-head"><span class="co-emo" aria-hidden="true">' +
-                  s.emo +
+                  emo +
                   '</span><h2 id="sheet-title">' +
-                  s.name +
-                  '<small>' +
-                  s.what +
-                  '</small></h2><button type="button" class="x" data-close aria-label="Close">✕</button></div>';
+                  title +
+                  (sub ? '<small>' + sub + '</small>' : '') +
+                  '</h2><button type="button" class="x" data-close aria-label="Close">✕</button></div>'
+               );
+            }
+
+            function companyHtml(t) {
+               var s = CO[t];
+               var html = sheetHead(s.emo, s.name, s.basket ? term('sp500', both(s.fil, s.en)) : both(s.fil, s.en));
 
                // Price and EPS, with the P/E worked out
                html += ratio(
+                  'eps',
                   '🧾',
                   both('Presyo at kita kada share', 'Price and profit per share'),
                   'Price · EPS',
@@ -1677,17 +2170,21 @@
                           '</p>'
                );
 
-               // Check 1: P/E
                html += ratio(
+                  'pe',
                   '🏷️',
                   'P/E',
                   both('Bayad para sa ₱1 na kita', 'Price for ₱1 of profit'),
                   s.pe.toFixed(1),
-                  '<p>' + both('Magbabayad ka ng <strong>' + peso(s.pe) + '</strong> nang isang beses, para sa bawat ₱1 na kita nito kada taon.', 'You pay <strong>' + peso(s.pe) + '</strong> once, for every ₱1 of profit it makes each year.') + '</p>' + bar(s.pe) + pill(s.pe)
+                  '<p>' +
+                     both('Magbabayad ka ng <strong>' + peso(s.pe) + '</strong> nang isang beses, para sa bawat ₱1 na kita nito kada taon.', 'You pay <strong>' + peso(s.pe) + '</strong> once, for every ₱1 of profit it makes each year.') +
+                     '</p>' +
+                     bar(s.pe) +
+                     pill(s.pe)
                );
 
-               // Check 2: forward P/E
                html += ratio(
+                  'fpe',
                   '🔮',
                   'Forward P/E',
                   both('Gamit ang hula sa next year', "Using next year's guess"),
@@ -1702,15 +2199,18 @@
                      pill(s.fpe)
                );
 
-               // Check 3: FCF yield, flipped into ₱ for ₱1 of cash
                var cp = s.cash == null ? undefined : cashPrice(s.cash);
+               var noCash = s.bank
+                  ? both('Bangko ito, kaya walang normal na cash number.', 'It is a bank, so it has no normal cash number.')
+                  : both('Basket ito, kaya walang sariling cash number.', 'It is a basket, so there is no single cash number.');
                html += ratio(
+                  'cash',
                   '💵',
                   'FCF yield',
                   both('Bayad para sa ₱1 na totoong cash', 'Price for ₱1 of real cash'),
                   s.cash == null ? '—' : s.cash.toFixed(1) + '%',
                   s.cash == null
-                     ? '<p>' + both('Basket ito, kaya walang sariling cash number.', 'It is a basket, so there is no single cash number.') + '</p>' + pill(undefined)
+                     ? '<p>' + noCash + '</p>' + pill(undefined)
                      : '<p>' +
                           (cp == null
                              ? both('Mas malaki ang ginastos kaysa pumasok, kaya walang natirang cash.', 'It spent more than came in, so no cash was left over.')
@@ -1723,7 +2223,6 @@
                           pill(cp)
                );
 
-               // PEG
                var pegPill =
                   s.peg == null
                      ? '<span class="pill na">' + both('Walang data', 'No data') + '</span>'
@@ -1733,52 +2232,80 @@
                          ? '<span class="pill mid">' + both('Okay lang', 'Fair') + '</span>'
                          : '<span class="pill lose">' + both('Mahal para sa growth', 'Pricey for the growth') + '</span>';
                html += ratio(
+                  'peg',
                   '⚡',
                   'PEG',
                   both('Sulit ba para sa bilis ng paglaki?', 'Is the growth worth the price?'),
                   s.peg == null ? '—' : s.peg.toFixed(2),
                   '<p>' +
-                     both(
-                        'P/E ÷ bilis ng paglaki ng kita. Mas mabilis lumaki, mas okay ang mataas na P/E. <strong>Below 1</strong> = sulit, <strong>1 hanggang 2</strong> = okay, <strong>above 2</strong> = mahal.',
-                        'P/E ÷ how fast profit grows. A fast grower can deserve a higher P/E. <strong>Under 1</strong> = good deal, <strong>1 to 2</strong> = fair, <strong>over 2</strong> = pricey.'
-                     ) +
+                     both('P/E ÷ bilis ng paglaki ng kita. <strong>Below 1</strong> = sulit, <strong>1–2</strong> = okay, <strong>above 2</strong> = mahal.', 'P/E ÷ how fast profit grows. <strong>Under 1</strong> = good deal, <strong>1–2</strong> = fair, <strong>over 2</strong> = pricey.') +
                      '</p>' +
                      pegPill
                );
 
-               html += '<div class="one-line">' + both('In one line: ', 'In one line: ') + s.line + pandesals(score) + '</div>';
+               html +=
+                  '<div class="one-line">' +
+                  both('In one line: ', 'In one line: ') +
+                  s.line +
+                  '<button type="button" class="pand-btn" data-info="pandesal">' +
+                  pandesals(score(s)) +
+                  I +
+                  '</button></div>';
                html += '<p class="small">' + both('Para sa pag-aaral lang, hindi payo. Numbers: StockAnalysis, Oct 2, 2026.', 'For learning only, not advice. Numbers: StockAnalysis, Oct 2, 2026.') + '</p>';
                return html;
             }
 
+            function infoHtml(key, backTo) {
+               var it = INFO[key];
+               var back = backTo
+                  ? '<button type="button" class="back" data-open="' + backTo + '">‹ ' + both('Balik sa ', 'Back to ') + CO[backTo].name + '</button>'
+                  : '';
+               return sheetHead(it.emo, it.title) + back + '<div class="info-body">' + it.body + '</div>';
+            }
+
+            // ---------- Sheet wiring: any [data-open] or [data-info] anywhere opens the sheet ----------
             var dlg = document.querySelector('[data-sheet]');
             var dlgBody = document.querySelector('[data-sheet-body]');
-            document.querySelector('[data-inside]').innerHTML = INSIDE.map(function (s, i) {
+            var currentCo = null;
+            function show(html) {
+               dlgBody.innerHTML = html;
+               if (!dlg.open) {
+                  if (dlg.showModal) dlg.showModal();
+                  else dlg.setAttribute('open', '');
+               }
+               dlg.scrollTop = 0;
+            }
+            document.addEventListener('click', function (e) {
+               var openBtn = e.target.closest('[data-open]');
+               var infoBtn = e.target.closest('[data-info]');
+               if (openBtn) {
+                  currentCo = openBtn.getAttribute('data-open');
+                  show(companyHtml(currentCo));
+               } else if (infoBtn) {
+                  var fromSheet = dlg.open && dlg.contains(infoBtn) ? currentCo : null;
+                  if (!fromSheet) currentCo = null;
+                  show(infoHtml(infoBtn.getAttribute('data-info'), fromSheet));
+               } else if (e.target === dlg || e.target.closest('[data-close]')) {
+                  dlg.close();
+               }
+            });
+
+            document.querySelector('[data-inside]').innerHTML = INSIDE.map(function (t) {
+               var s = CO[t];
                return (
                   '<button type="button" class="inside-card" data-open="' +
-                  i +
+                  t +
                   '"><span class="co-emo" aria-hidden="true">' +
                   s.emo +
                   '</span><b>' +
                   s.name +
                   '</b><span class="small">' +
-                  s.what +
+                  both(s.fil, s.en) +
                   '</span><span class="go">' +
                   both('Silipin ›', 'Check inside ›') +
                   '</span></button>'
                );
             }).join('');
-            document.querySelectorAll('[data-open]').forEach(function (b) {
-               b.addEventListener('click', function () {
-                  dlgBody.innerHTML = sheetHtml(INSIDE[+b.getAttribute('data-open')]);
-                  if (dlg.showModal) dlg.showModal();
-                  else dlg.setAttribute('open', '');
-                  dlg.scrollTop = 0;
-               });
-            });
-            dlg.addEventListener('click', function (e) {
-               if (e.target === dlg || e.target.closest('[data-close]')) dlg.close();
-            });
 
             // Language: ?lang=en|fil wins (shareable), then the viewer's saved choice, then Taglish.
             var TITLES = { fil: "Mura ba 'tong stock? | Moodeng Credit", en: 'Is this stock cheap? | Moodeng Credit' };
