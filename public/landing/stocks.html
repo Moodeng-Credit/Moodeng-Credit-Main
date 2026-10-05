@@ -1669,32 +1669,30 @@
             filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.3));
          }
          .wheel {
-            position: relative;
+            position: absolute;
+            top: 12px;
+            left: 0;
             width: 232px;
             height: 232px;
-            margin-top: 12px;
             border-radius: 50%;
-            border: 6px solid #fff;
             box-shadow: 0 8px 20px rgb(60 30 0 / 0.3);
+            touch-action: none;
          }
-         .wl {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 800;
-            text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
-            transform: translate(-50%, -50%) rotate(var(--a)) translateY(-84px);
+         .wheel.nowheel {
+            display: grid;
+            place-items: center;
+            background: #fff;
+            font-size: 80px;
          }
          .whub {
             position: absolute;
-            top: 50%;
+            top: 128px;
             left: 50%;
             display: grid;
             place-items: center;
             width: 46px;
             height: 46px;
+            pointer-events: none;
             translate: -50% -50%;
             border-radius: 50%;
             background: #fff;
@@ -2719,13 +2717,7 @@
                });
             }
             function wheelHtml() {
-               var stops = SEGS.map(function (sg, k) {
-                  return sg.c + ' ' + k * SEG_DEG + 'deg ' + (k + 1) * SEG_DEG + 'deg';
-               }).join(',');
-               var labels = SEGS.map(function (sg, k) {
-                  return '<span class="wl" style="--a:' + (k * SEG_DEG + SEG_DEG / 2) + 'deg">' + (sg.k === 'ticket' ? '🎟️' : '+' + sg.v) + '</span>';
-               }).join('');
-               return '<div class="wheel-wrap"><span class="wpointer" aria-hidden="true">▼</span><div class="wheel" data-wheel style="background:conic-gradient(' + stops + ')">' + labels + '<span class="whub" aria-hidden="true">🥯</span></div></div>';
+               return '<div class="wheel-wrap"><span class="wpointer" aria-hidden="true">▼</span><div class="wheel" data-wheel></div><span class="whub" aria-hidden="true">🥯</span></div>';
             }
             function resultText(g) {
                return g.kind === 'ticket'
@@ -2744,48 +2736,97 @@
                var open = gm.querySelector('[data-spin-open]');
                if (open) open.addEventListener('click', function () { openWheel(id); });
             }
+            // The wheel is spin-wheel by CrazyTim (MIT), vendored in /landing/vendor (not loaded from a CDN).
+            // Flick it or press SPIN; the result is recorded once and can't be re-rolled by closing the sheet.
+            var WHEEL_LIB = '/landing/vendor/spin-wheel-esm.js';
             function openWheel(id) {
                show(
                   sheetHead('🎡', both('Prize wheel', 'Prize wheel')) +
                      '<div class="wheel-sheet">' +
                      wheelHtml() +
-                     '<p class="game-title" data-wres>' + both('Pindutin ang SPIN!', 'Press SPIN!') + '</p>' +
+                     '<p class="game-title" data-wres>' + both('I-flick ang wheel o pindutin ang SPIN!', 'Flick the wheel or press SPIN!') + '</p>' +
                      '<button type="button" class="spin-btn" data-spin>' + both('SPIN! 🎡', 'SPIN! 🎡') + '</button>' +
                      '<p class="small">' + both('Pandesal points o golden ticket. 2 tickets = Grab draw.', 'Pandesal points or a golden ticket. 2 tickets = Grab draw.') + '</p></div>'
                );
-               var wheel = dlgBody.querySelector('[data-wheel]');
+               var holder = dlgBody.querySelector('[data-wheel]');
                var btn = dlgBody.querySelector('[data-spin]');
                var res = dlgBody.querySelector('[data-wres]');
-               function landOn(idx, animate) {
-                  var center = idx * SEG_DEG + SEG_DEG / 2;
-                  wheel.style.transition = animate ? 'transform 3.6s cubic-bezier(0.12, 0.7, 0.1, 1)' : 'none';
-                  wheel.style.transform = 'rotate(' + (animate ? 360 * 5 + (360 - center) : 360 - center) + 'deg)';
+               var wheel = null;
+               var done = !!tix[id];
+               var fast = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+               function record(seg) {
+                  var sg = SEGS[seg];
+                  tix[id] = sg.k === 'ticket' ? { seg: seg, kind: 'ticket' } : { seg: seg, kind: 'pts', val: sg.v };
+                  saveTix();
                }
-               if (tix[id]) {
-                  landOn(tix[id].seg, false);
+               function finish() {
+                  done = true;
+                  if (wheel) wheel.isInteractive = false;
+                  res.innerHTML = resultText(tix[id]);
+                  btn.disabled = false;
+                  btn.setAttribute('data-close', '');
+                  btn.innerHTML = both('Sige! ✓', 'Done ✓');
+                  renderGame(id);
+                  updateScore();
+                  burst(holder);
+               }
+               import(WHEEL_LIB)
+                  .then(function (m) {
+                     wheel = new m.Wheel(holder, {
+                        items: SEGS.map(function (sg) {
+                           return { label: sg.k === 'ticket' ? '🎟️' : '+' + sg.v, backgroundColor: sg.c, labelColor: '#fff' };
+                        }),
+                        radius: 0.97,
+                        borderWidth: 6,
+                        borderColor: '#fff',
+                        lineWidth: 0,
+                        itemLabelAlign: 'right',
+                        itemLabelRadius: 0.9,
+                        itemLabelRadiusMax: 0.4,
+                        itemLabelFontSizeMax: 36,
+                        itemLabelFont: 'Archivo, "SF Pro Display", -apple-system, sans-serif',
+                        itemLabelStrokeColor: 'rgba(0,0,0,0.35)',
+                        itemLabelStrokeWidth: 2,
+                        pointerAngle: 0,
+                        isInteractive: !done,
+                        onRest: function (e) {
+                           if (done) return;
+                           if (!tix[id]) record(e.currentIndex); // a flick: the wheel decided
+                           finish();
+                        },
+                     });
+                     if (done) wheel.spinToItem(tix[id].seg, 0, true, 0, 1);
+                  })
+                  .catch(function () {
+                     holder.classList.add('nowheel');
+                     holder.innerHTML = '<span aria-hidden="true">🎡</span>';
+                  });
+               if (done) {
                   res.innerHTML = resultText(tix[id]);
                   btn.setAttribute('data-close', '');
                   btn.innerHTML = both('Sige! ✓', 'Done ✓');
                   return;
                }
                btn.addEventListener('click', function () {
-                  if (tix[id] || btn.disabled) return;
+                  if (done || btn.disabled) return;
                   var seg = randInt(SEGS.length);
-                  var sg = SEGS[seg];
-                  tix[id] = sg.k === 'ticket' ? { seg: seg, kind: 'ticket' } : { seg: seg, kind: 'pts', val: sg.v };
-                  saveTix();
+                  record(seg);
                   btn.disabled = true;
-                  var fast = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                  landOn(seg, !fast);
+                  if (!wheel || fast) {
+                     if (wheel) wheel.spinToItem(seg, 0, true, 0, 1);
+                     // Next tick: finish() turns this button into a "Done" (data-close) button, and the
+                     // click that is still bubbling must not hit it and close the sheet.
+                     setTimeout(finish, 0);
+                     return;
+                  }
+                  wheel.isInteractive = false;
+                  wheel.spinToItem(seg, 3800, true, 5, 1, function (n) {
+                     return 1 - Math.pow(1 - n, 3);
+                  });
+                  // onRest normally ends this; the timer is a backstop if animation frames are throttled.
                   setTimeout(function () {
-                     res.innerHTML = resultText(tix[id]);
-                     btn.disabled = false;
-                     btn.setAttribute('data-close', '');
-                     btn.innerHTML = both('Sige! ✓', 'Done ✓');
-                     renderGame(id);
-                     updateScore();
-                     burst(wheel);
-                  }, fast ? 0 : 3700);
+                     if (!done) finish();
+                  }, 4300);
                });
             }
             Object.keys(QUIZ).forEach(function (id) {
