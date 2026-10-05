@@ -965,16 +965,58 @@
                transition: none;
             }
          }
+         /* Language toggle */
+         .title-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+         }
+         .title-top .kicker {
+            white-space: nowrap;
+         }
+         .lang {
+            display: inline-flex;
+            flex: none;
+            border-radius: 999px;
+            padding: 3px;
+            background: var(--n-300);
+         }
+         .lang button {
+            min-height: 30px;
+            border: 0;
+            border-radius: 999px;
+            padding: 4px 11px;
+            background: transparent;
+            color: var(--n-1400);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+         }
+         .lang button[aria-pressed='true'] {
+            background: #fff;
+            color: var(--primary-1200);
+            box-shadow: 0 1px 3px rgb(27 28 29 / 0.12);
+         }
+         .all summary .all-title {
+            color: inherit;
+            font-size: inherit;
+            font-weight: 600;
+         }
+         .lang button:focus-visible {
+            outline: 3px solid var(--primary-300);
+            outline-offset: 1px;
+         }
       </style>
    </head>
    <body>
-      <a class="skip-link" href="#main">Skip to content</a>
+      <a class="skip-link" href="#main" data-t="skip">Skip to content</a>
 
       <header class="hero">
          <div class="col">
             <div class="topbar">
                <span class="avatar"><img src="/dashboard-v2/moodeng-rookie-1.png" alt="" width="56" height="56" /></span>
-               <div class="hello"><b>Hi, ka-Moodeng! 👋</b><span>Money Basics</span></div>
+               <div class="hello"><b data-t="hello">Hi, ka-Moodeng! 👋</b><span>Money Basics</span></div>
                <nav class="top-pills" aria-label="Moodeng links">
                   <a class="top-pill" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer"
                      ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -996,8 +1038,8 @@
                </nav>
             </div>
             <div class="hero-stage">
-               <p class="bubble">Mura ba 'tong stock? 🤔<small>Tara, i-check natin!</small></p>
-               <img class="hero-hippo" src="/dashboard-v2/moodeng-rookie-2.png" alt="Si Moodeng, kumakain ng pandesal" width="190" height="190" />
+               <p class="bubble" data-t="bubble">Mura ba 'tong stock? 🤔<small>Tara, i-check natin!</small></p>
+               <img class="hero-hippo" src="/dashboard-v2/moodeng-rookie-2.png" alt="" width="190" height="190" />
             </div>
          </div>
       </header>
@@ -1005,78 +1047,65 @@
       <main id="main" class="sheet">
          <div class="col">
             <section class="title-card" aria-labelledby="title">
-               <p class="kicker">Stock check · Oct 2, 2026</p>
-               <h1 id="title">Mura ba <em>'tong stock?</em></h1>
-               <p>
-                  4 na numero lang 'yan, promise. Explained in Taglish with 18 stocks na kilala mo, at presyo in pesos. Lahat sinusukat
-                  laban sa pinaka-safe na investment sa mundo: ang US government bond.
-               </p>
+               <div class="title-top">
+                  <p class="kicker">Oct 2, 2026</p>
+                  <div class="lang" role="group" aria-label="Language">
+                     <button type="button" data-lang="fil" aria-pressed="true">Taglish</button
+                     ><button type="button" data-lang="en" aria-pressed="false">English</button>
+                  </div>
+               </div>
+               <h1 id="title" data-t="h1">Mura ba <em>'tong stock?</em></h1>
+               <p data-t="intro"></p>
                <div class="bond-row">
-                  <span class="lv">5.24%</span><span><b>Ang dapat talunin</b><br />10-year US Treasury</span>
+                  <span class="lv">5.24%</span><span><b data-t="beat"></b><br />10-year US Treasury</span>
                </div>
                <div class="track" aria-hidden="true"><div class="fill" data-fill="52.4" style="width: 0"></div></div>
-               <p class="bond-note">
-                  Parang time deposit sa gobyerno ng US: halos walang risk. Kung hindi ito matalo ng stock, dapat may magandang dahilan
-                  para maghintay.
-               </p>
+               <p class="bond-note" data-t="bondNote"></p>
             </section>
 
             <div class="stack">
                <section class="card store" aria-labelledby="store-title">
                   <div>
-                     <h2 class="h2" id="store-title">Ang Sari-Sari Store Test 🏪</h2>
-                     <p class="lead">Bibilhin mo ang tindahan ni Aling Nena. Sulit ba?</p>
+                     <h2 class="h2" id="store-title" data-t="storeTitle"></h2>
+                     <p class="lead" data-t="storeLead"></p>
                   </div>
                   <img src="/hippos/thinking.png" alt="" width="92" height="112" />
                   <div class="math full">
-                     <div><span>Presyo ng tindahan</span><b>₱1,000,000</b></div>
-                     <div><span>Kita kada taon</span><b>₱50,000</b></div>
+                     <div><span data-t="storePrice"></span><b>₱1,000,000</b></div>
+                     <div><span data-t="storeProfit"></span><b>₱50,000</b></div>
                      <div class="result"><span>₱1,000,000 ÷ ₱50,000</span><b>P/E = 20</b></div>
-                     <div class="result"><span>Baliktarin: ₱50,000 ÷ ₱1,000,000</span><b>5% kada taon</b></div>
+                     <div class="result"><span data-t="storeFlip"></span><b data-t="storeYield"></b></div>
                   </div>
-                  <p class="lead full">
-                     20 taon bago mo mabawi ang puhunan, at 5% lang kada taon. Kulang pa sa 5.24% ng bond! Ganyan din mag-isip tungkol sa
-                     stocks.
-                  </p>
+                  <p class="lead full" data-t="storeEnd"></p>
                </section>
 
                <section class="milestones" id="top3" aria-labelledby="top3-title">
                   <div class="ms-head">
                      <h2 id="top3-title">Top 3 by the numbers</h2>
-                     <p>Pinatakbo namin ang 18 stocks sa 4 na tests. Bawat pasado = 1 pandesal.</p>
-                     <ol class="tests" aria-label="Ang 4 na tests">
-                        <li><img src="/dashboard-v2/pandesal-small.png" alt="" />Kita last year ÷ presyo &gt; 5.24%</li>
-                        <li><img src="/dashboard-v2/pandesal-small.png" alt="" />Expected kita next year ÷ presyo &gt; 5.24%</li>
-                        <li><img src="/dashboard-v2/pandesal-small.png" alt="" />Cash na naiuwi ÷ value &gt; 5.24%</li>
-                        <li><img src="/dashboard-v2/pandesal-small.png" alt="" />PEG &lt; 1.5: sulit para sa growth</li>
-                     </ol>
+                     <p data-t="top3Lead"></p>
+                     <ol class="tests" data-tests></ol>
                      <img class="ms-hippo" src="/hippos/party.png" alt="" width="112" height="112" />
                   </div>
                   <div class="ms-body">
                      <div data-picks></div>
-                     <p class="tap-hint">I-tap ang stock para makita ang detalye ›</p>
+                     <p class="tap-hint" data-t="tapHint"></p>
                   </div>
                </section>
 
-               <section class="close-calls" aria-label="Muntik na">
+               <section class="close-calls" data-t-label="closeTitle">
                   <img src="/dashboard-v2/moodeng-prime-2.png" alt="" width="52" height="52" />
-                  <div>
-                     <b>Muntik na!</b>
-                     General Motors: 3 pandesal din, pero kailangan halos 7x lumaki ang kita next year para totoo ang "mura." Pinili namin
-                     ang hindi masyadong umaasa sa hula. JPMorgan: pasado sa lahat ng kaya naming i-test, pero walang useful na FCF number
-                     ang mga bangko.
-                  </div>
+                  <div data-t="closeCalls"></div>
                </section>
 
                <details class="card all">
-                  <summary>Buong scorecard, 18 stocks <span>Tingnan ›</span></summary>
+                  <summary><span class="all-title" data-t="allTitle"></span> <span data-t="allMore"></span></summary>
                   <div class="table-wrap">
                      <table data-scorecard>
                         <thead>
                            <tr>
                               <th scope="col">Stock</th>
-                              <th scope="col">Presyo</th>
-                              <th scope="col">Kita yield</th>
+                              <th scope="col" data-t="thPrice"></th>
+                              <th scope="col" data-t="thEy"></th>
                               <th scope="col">Fwd yield</th>
                               <th scope="col">FCF yield</th>
                               <th scope="col">PEG</th>
@@ -1089,38 +1118,25 @@
                </details>
 
                <section id="ratios" aria-labelledby="ratios-title">
-                  <h2 class="h2" id="ratios-title">Ang 4 na numero</h2>
-                  <p class="lead">Pumili ng numero. 5 totoong stocks, mula pinakamura hanggang pinakamahal.</p>
+                  <h2 class="h2" id="ratios-title" data-t="ratiosTitle"></h2>
+                  <p class="lead" data-t="ratiosLead"></p>
                   <div class="seg" role="tablist" aria-label="Valuation ratios" data-tablist></div>
                   <div data-panels></div>
                </section>
 
                <section class="card fine" aria-labelledby="fine-title">
-                  <h2 class="h2" id="fine-title">Mura sa papel, hindi laging mura 🙏</h2>
-                  <p>
-                     Ang mababang numero ay pwedeng bargain, o business na inaasahang hihina. Ikumpara ang stock sa ibang company sa
-                     parehong industriya, at alamin kung bakit ito mura.
-                  </p>
-                  <p>
-                     <b>Education lang ito, hindi payo para bumili o magbenta.</b> Hindi investment adviser ang Moodeng Credit, at
-                     teaching tool lang ang scorecard namin, hindi recommendation para sa sitwasyon mo. Pwedeng bumaba ang presyo ng
-                     stocks. I-check mo mismo ang mga numero, at huwag mag-invest ng perang inutang o kailangan mo agad.
-                  </p>
+                  <h2 class="h2" id="fine-title" data-t="fineTitle"></h2>
+                  <p data-t="fine1"></p>
+                  <p data-t="fine2"></p>
                   <div>
                      <b>Sources</b>
-                     <ul>
-                        <li>Stocks: StockAnalysis.com statistics pages, closing prices Oct 2, 2026.</li>
-                        <li>10-year Treasury: FRED (DGS10), 5.24% noong Oct 1, 2026.</li>
-                        <li>S&amp;P 500 forward P/E 19.0: FactSet Earnings Insight, Oct 2, 2026.</li>
-                        <li>Peso: ₱62.60 kada $1, ECB reference rate Oct 2, 2026. Approximate lang ang peso prices.</li>
-                        <li>Earnings yield = 1 ÷ P/E (sarili naming compute). Hula ng analysts ang forward numbers at nagbabago ito.</li>
-                     </ul>
+                     <ul data-t="sources"></ul>
                   </div>
                </section>
 
                <section class="cta" aria-labelledby="cta-title">
-                  <h2 id="cta-title">Matuto ng pera in 60 seconds.</h2>
-                  <p>Isang money idea kada video: stocks, credit, ipon. Follow na!</p>
+                  <h2 id="cta-title" data-t="ctaTitle"></h2>
+                  <p data-t="ctaText"></p>
                   <a class="btn" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer">Follow @moodeng.credit ›</a>
                   <img src="/hippos/sitting-down-pointing-hippo.png" alt="" width="128" height="128" />
                </section>
@@ -1159,6 +1175,97 @@
          (function () {
             var BOND = 5.24;
             var PHP = 62.6; // ECB reference rate, Oct 2, 2026
+            var LANG_KEY = 'moodeng-stocks-lang';
+
+            // Page copy. Values are our own HTML, so they are set with innerHTML.
+            var T = {
+               fil: {
+                  docTitle: "Mura ba 'tong stock? | Moodeng Credit",
+                  skip: 'Skip to content',
+                  hello: 'Hi, ka-Moodeng! 👋',
+                  bubble: "Mura ba 'tong stock? 🤔<small>Tara, i-check natin!</small>",
+                  hippoAlt: 'Si Moodeng, kumakain ng pandesal',
+                  h1: "Mura ba <em>'tong stock?</em>",
+                  intro: "4 na numero lang 'yan, promise. Explained in Taglish with 18 stocks na kilala mo, at presyo in pesos. Lahat sinusukat laban sa pinaka-safe na investment sa mundo: ang US government bond.",
+                  beat: 'Ang dapat talunin',
+                  bondNote: 'Parang time deposit sa gobyerno ng US: halos walang risk. Kung hindi ito matalo ng stock, dapat may magandang dahilan para maghintay.',
+                  storeTitle: 'Ang Sari-Sari Store Test 🏪',
+                  storeLead: 'Bibilhin mo ang tindahan ni Aling Nena. Sulit ba?',
+                  storePrice: 'Presyo ng tindahan',
+                  storeProfit: 'Kita kada taon',
+                  storeFlip: 'Baliktarin: ₱50,000 ÷ ₱1,000,000',
+                  storeYield: '5% kada taon',
+                  storeEnd: '20 taon bago mo mabawi ang puhunan, at 5% lang kada taon. Kulang pa sa 5.24% ng bond! Ganyan din mag-isip tungkol sa stocks.',
+                  top3Lead: 'Pinatakbo namin ang 18 stocks sa 4 na tests. Bawat pasado = 1 pandesal.',
+                  tests: ['Kita last year ÷ presyo &gt; 5.24%', 'Expected kita next year ÷ presyo &gt; 5.24%', 'Cash na naiuwi ÷ value &gt; 5.24%', 'PEG &lt; 1.5: sulit para sa growth'],
+                  testsLabel: 'Ang 4 na tests',
+                  tapHint: 'I-tap ang stock para makita ang detalye ›',
+                  closeTitle: 'Muntik na',
+                  closeCalls:
+                     '<b>Muntik na!</b>General Motors: 3 pandesal din, pero kailangan halos 7x lumaki ang kita next year para totoo ang "mura." Pinili namin ang hindi masyadong umaasa sa hula. JPMorgan: pasado sa lahat ng kaya naming i-test, pero walang useful na FCF number ang mga bangko.',
+                  allTitle: 'Buong scorecard, 18 stocks',
+                  allMore: 'Tingnan ›',
+                  thPrice: 'Presyo',
+                  thEy: 'Kita yield',
+                  ratiosTitle: 'Ang 4 na numero',
+                  ratiosLead: 'Pumili ng numero. 5 totoong stocks, mula pinakamura hanggang pinakamahal.',
+                  fineTitle: 'Mura sa papel, hindi laging mura 🙏',
+                  fine1: 'Ang mababang numero ay pwedeng bargain, o business na inaasahang hihina. Ikumpara ang stock sa ibang company sa parehong industriya, at alamin kung bakit ito mura.',
+                  fine2: '<b>Education lang ito, hindi payo para bumili o magbenta.</b> Hindi investment adviser ang Moodeng Credit, at teaching tool lang ang scorecard namin, hindi recommendation para sa sitwasyon mo. Pwedeng bumaba ang presyo ng stocks. I-check mo mismo ang mga numero, at huwag mag-invest ng perang inutang o kailangan mo agad.',
+                  sources:
+                     '<li>Stocks: StockAnalysis.com statistics pages, closing prices Oct 2, 2026.</li><li>10-year Treasury: FRED (DGS10), 5.24% noong Oct 1, 2026.</li><li>S&amp;P 500 forward P/E 19.0: FactSet Earnings Insight, Oct 2, 2026.</li><li>Peso: ₱62.60 kada $1, ECB reference rate Oct 2, 2026. Approximate lang ang peso prices.</li><li>Earnings yield = 1 ÷ P/E (sarili naming compute). Hula ng analysts ang forward numbers at nagbabago ito.</li>',
+                  ctaTitle: 'Matuto ng pera in 60 seconds.',
+                  ctaText: 'Isang money idea kada video: stocks, credit, ipon. Follow na!',
+                  checkLabels: ['Kita yield', 'Fwd kita yield', 'FCF yield', 'PEG'],
+                  catchLabel: 'Ang catch:',
+                  pandesalOf: function (n) {
+                     return n + ' sa 4 na pandesal';
+                  },
+               },
+               en: {
+                  docTitle: 'Is this stock cheap? | Moodeng Credit',
+                  skip: 'Skip to content',
+                  hello: 'Hi there! 👋',
+                  bubble: "Is this stock cheap? 🤔<small>Let's check!</small>",
+                  hippoAlt: 'Moodeng the hippo eating pandesal',
+                  h1: 'Is this <em>stock cheap?</em>',
+                  intro: 'Just 4 numbers, promise. Explained in plain English with 18 stocks you know, and prices in pesos. Every stock is measured against the safest investment in the world: a US government bond.',
+                  beat: 'The number to beat',
+                  bondNote: "Like a time deposit with the US government: almost no risk. If a stock can't beat this, it needs a good reason for you to wait.",
+                  storeTitle: 'The Sari-Sari Store Test 🏪',
+                  storeLead: "You're buying Aling Nena's corner store. Is it worth it?",
+                  storePrice: 'Price of the store',
+                  storeProfit: 'Profit per year',
+                  storeFlip: 'Flip it: ₱50,000 ÷ ₱1,000,000',
+                  storeYield: '5% a year',
+                  storeEnd: "20 years to earn your money back, and only 5% a year. That's less than the bond's 5.24%! Think about stocks the same way.",
+                  top3Lead: 'We ran 18 stocks through 4 tests. Each pass = 1 pandesal.',
+                  tests: ["Last year's profit ÷ price &gt; 5.24%", "Next year's expected profit ÷ price &gt; 5.24%", 'Cash generated ÷ company value &gt; 5.24%', 'PEG &lt; 1.5: fair price for the growth'],
+                  testsLabel: 'The 4 tests',
+                  tapHint: 'Tap a stock to see the details ›',
+                  closeTitle: 'So close',
+                  closeCalls:
+                     '<b>So close!</b>General Motors: also 3 pandesal, but profit has to grow almost 7x next year for the "cheap" to be real. We picked the stock that relies less on forecasts. JPMorgan: passes every test we can run, but banks don\'t report a useful FCF number.',
+                  allTitle: 'Full scorecard, 18 stocks',
+                  allMore: 'See all ›',
+                  thPrice: 'Price',
+                  thEy: 'Earnings yield',
+                  ratiosTitle: 'The 4 numbers',
+                  ratiosLead: 'Pick a number. 5 real stocks, from cheapest to most expensive.',
+                  fineTitle: "Cheap on paper isn't always cheap 🙏",
+                  fine1: "A low number can mean a bargain, or a business the market expects to shrink. Compare a stock with others in the same industry, and find out why it's cheap.",
+                  fine2: "<b>This is education, not advice to buy or sell.</b> Moodeng Credit is not an investment adviser, and our scorecard is a teaching tool, not a recommendation for your situation. Stocks can lose value. Check the numbers yourself, and never invest money you've borrowed or need soon.",
+                  sources:
+                     '<li>Stocks: StockAnalysis.com statistics pages, closing prices Oct 2, 2026.</li><li>10-year Treasury: FRED (DGS10), 5.24% on Oct 1, 2026.</li><li>S&amp;P 500 forward P/E 19.0: FactSet Earnings Insight, Oct 2, 2026.</li><li>Pesos: ₱62.60 per $1, ECB reference rate Oct 2, 2026. Peso prices are approximate.</li><li>Earnings yield = 1 ÷ P/E (our calculation). Forward numbers are analyst estimates and change.</li>',
+                  ctaTitle: 'Learn money in 60 seconds.',
+                  ctaText: 'One money idea per video: stocks, credit, saving. Follow us!',
+                  checkLabels: ['Earnings yield', 'Fwd earnings yield', 'FCF yield', 'PEG'],
+                  catchLabel: 'The catch:',
+                  pandesalOf: function (n) {
+                     return n + ' of 4 pandesal';
+                  },
+               },
+            };
 
             // StockAnalysis statistics pages, Oct 2, 2026 close. fcf/peg null = not reported.
             var STOCKS = {
@@ -1185,18 +1292,36 @@
             var PICKS = [
                {
                   t: 'LMT',
-                  why: 'Talo ang bond sa lahat: 5.4% sa kita, 6.1% sa expected na kita next year, at 7.5% sa cash. PEG 0.85 pa, kaya mura ang growth.',
-                  catch: 'Mabagal lumago. Defense company ito na umaasa sa budget ng gobyerno, walang AI hype dito.',
+                  why: {
+                     fil: 'Talo ang bond sa lahat: 5.4% sa kita, 6.1% sa expected na kita next year, at 7.5% sa cash. PEG 0.85 pa, kaya mura ang growth.',
+                     en: "Beats the bond on all of them: 5.4% on profit, 6.1% on next year's expected profit and 7.5% on cash. PEG 0.85, so the growth is cheap too.",
+                  },
+                  catch: {
+                     fil: 'Mabagal lumago. Defense company ito na umaasa sa budget ng gobyerno, walang AI hype dito.',
+                     en: 'Slow growth. A defence contractor that depends on government budgets, with no AI hype here.',
+                  },
                },
                {
                   t: 'PYPL',
-                  why: 'Wala pang $10 ang bayad mo sa bawat $1 na kita. $6.6B na cash kada taon sa $45B na company: 14.6% cash yield!',
-                  catch: 'Mura kasi duda ang market sa growth (mga 6% lang kada taon ang expected) dahil sa dami ng kalaban sa payments.',
+                  why: {
+                     fil: 'Wala pang $10 ang bayad mo sa bawat $1 na kita. $6.6B na cash kada taon sa $45B na company: 14.6% cash yield!',
+                     en: 'Under $10 for every $1 of profit. $6.6B of cash a year on a $45B company: a 14.6% cash yield!',
+                  },
+                  catch: {
+                     fil: 'Mura kasi duda ang market sa growth (mga 6% lang kada taon ang expected) dahil sa dami ng kalaban sa payments.',
+                     en: "It's cheap because the market doubts its growth (only about 6% a year expected) with so many payment rivals.",
+                  },
                },
                {
                   t: 'UNH',
-                  why: '7.1% cash yield at 5.7% sa expected na kita next year. PEG 1.2, kaya fair ang presyo.',
-                  catch: 'Bagsak sa kita last year (4.2%). Tumataas ang medical costs at mahigpit ang gobyerno sa health insurers.',
+                  why: {
+                     fil: '7.1% cash yield at 5.7% sa expected na kita next year. PEG 1.2, kaya fair ang presyo.',
+                     en: "A 7.1% cash yield and 5.7% on next year's expected profit. PEG 1.2, so the price is fair.",
+                  },
+                  catch: {
+                     fil: 'Bagsak sa kita last year (4.2%). Tumataas ang medical costs at mahigpit ang gobyerno sa health insurers.',
+                     en: "Fails on last year's profit (4.2%). Medical costs are rising and governments watch health insurers closely.",
+                  },
                },
             ];
 
@@ -1205,19 +1330,6 @@
                   id: 'pe',
                   label: 'P/E',
                   icon: '/dashboard-v2/coupon.png',
-                  formula: 'P/E = Presyo ÷ Kita kada share',
-                  plain: 'Ilang dolyar ang binabayad mo para sa $1 na kita ng company kada taon. Mas mababa, usually mas mura.',
-                  example: '$100 na stock na kumikita ng $5 kada share: P/E 20. $20 ang bayad mo sa bawat $1 na kita.',
-                  read: ['Below 15: mukhang mura', '15–25: normal lang', 'Above 30: bayad ka para sa growth'],
-                  title: 'P/E, last 12 months',
-                  sub: 'Buong market (S&P 500): 27.1',
-                  rows: [
-                     { t: 'JPM', note: '$14 sa bawat $1 na kita. Normal sa bangko ang mababang P/E.' },
-                     { t: 'LMT', note: 'Mas mababa sa market. Steady pero mabagal lumago.' },
-                     { t: 'MSFT', note: 'EPS $17.95 × 28.8 ≈ $517 na presyo. Premium para sa quality.' },
-                     { t: 'AAPL', note: '$38 sa bawat $1 na kita. Binabayaran mo ang brand.' },
-                     { t: 'TSLA', note: '$385 sa bawat $1 na kita! Taya ito sa mas malaking kita in the future.' },
-                  ],
                   value: function (s) {
                      return s.pe;
                   },
@@ -1228,30 +1340,48 @@
                   good: function (v) {
                      return 100 / v > BOND;
                   },
-                  tags: ['Talo ang bond', 'Panalo ang bond'],
-                  legend: [
-                     ['var(--green-700)', 'Talo ang bond (P/E below 19.1)'],
-                     ['var(--red-300)', 'Mas malaki ang bigay ng bond'],
-                  ],
-                  ingat: '<b>Baliktarin para ikumpara sa bond:</b> 1 ÷ P/E = earnings yield. P/E na 20 = 5%, kulang pa sa 5.24%. <b>Pero ingat:</b> pwedeng mababa ang P/E kasi humihina ang business, o may one-time na kita. Alphabet: 17.2 sa kita last year pero 25.6 sa next year.',
+                  rows: ['JPM', 'LMT', 'MSFT', 'AAPL', 'TSLA'],
+                  fil: {
+                     formula: 'P/E = Presyo ÷ Kita kada share',
+                     plain: 'Ilang dolyar ang binabayad mo para sa $1 na kita ng company kada taon. Mas mababa, usually mas mura.',
+                     example: '$100 na stock na kumikita ng $5 kada share: P/E 20. $20 ang bayad mo sa bawat $1 na kita.',
+                     read: ['Below 15: mukhang mura', '15–25: normal lang', 'Above 30: bayad ka para sa growth'],
+                     title: 'P/E, last 12 months',
+                     sub: 'Buong market (S&P 500): 27.1',
+                     notes: [
+                        '$14 sa bawat $1 na kita. Normal sa bangko ang mababang P/E.',
+                        'Mas mababa sa market. Steady pero mabagal lumago.',
+                        'EPS $17.95 × 28.8 ≈ $517 na presyo. Premium para sa quality.',
+                        '$38 sa bawat $1 na kita. Binabayaran mo ang brand.',
+                        '$385 sa bawat $1 na kita! Taya ito sa mas malaking kita in the future.',
+                     ],
+                     tags: ['Talo ang bond', 'Panalo ang bond'],
+                     legend: ['Talo ang bond (P/E below 19.1)', 'Mas malaki ang bigay ng bond'],
+                     ingat: '<b>Baliktarin para ikumpara sa bond:</b> 1 ÷ P/E = earnings yield. P/E na 20 = 5%, kulang pa sa 5.24%. <b>Pero ingat:</b> pwedeng mababa ang P/E kasi humihina ang business, o may one-time na kita. Alphabet: 17.2 sa kita last year pero 25.6 sa next year.',
+                  },
+                  en: {
+                     formula: 'P/E = Price ÷ Earnings per share',
+                     plain: "How many dollars you pay for $1 of the company's yearly profit. Lower usually means cheaper.",
+                     example: 'A $100 stock earning $5 a share has a P/E of 20: you pay $20 for every $1 of profit.',
+                     read: ['Under 15: cheap-looking', '15–25: about normal', 'Over 30: priced for growth'],
+                     title: 'P/E, last 12 months',
+                     sub: 'Whole market (S&P 500): 27.1',
+                     notes: [
+                        '$14 for $1 of profit. Banks usually trade on lower P/Es.',
+                        'Below the market. Steady, but slower growth.',
+                        'EPS $17.95 × 28.8 ≈ its $517 price. A premium for quality.',
+                        '$38 for $1 of profit. You are paying for the brand.',
+                        '$385 for $1 of profit! A bet on much bigger future profit.',
+                     ],
+                     tags: ['Beats the bond', 'Bond wins'],
+                     legend: ['Beats the bond (P/E under 19.1)', 'Bond pays more'],
+                     ingat: '<b>Flip it to compare with the bond:</b> 1 ÷ P/E = earnings yield. A P/E of 20 is 5%, just under 5.24%. <b>The catch:</b> a low P/E can mean a business in decline, or a one-off gain. Alphabet shows 17.2 on last year’s profit but 25.6 on next year’s.',
+                  },
                },
                {
                   id: 'forward-pe',
                   label: 'Forward P/E',
                   icon: '/icons/streak-3d.png',
-                  formula: 'Forward P/E = Presyo ÷ EXPECTED na kita next year',
-                  plain: 'Parehong P/E, pero gamit ang hula ng analysts sa kita next year. Kung bumaba nang malaki, inaasahang lalaki ang kita.',
-                  example: 'Nvidia: 29.6 sa kita last year, 19.4 sa next year. Expected na lalaki ang kita ng mga 50%.',
-                  read: ['Mas mababa sa P/E: may growth', 'Mas mataas: baka bumaba ang kita'],
-                  title: 'Forward P/E',
-                  sub: 'Lilac = P/E last year · S&P 500: 19.0',
-                  rows: [
-                     { t: 'GM', note: '39.4 → 5.6. Sobrang baba ng kita last year; malaking rebound ang inaasahan.' },
-                     { t: 'XOM', note: '21.2 → 12.7. Mga 67% na mas mataas na kita. Presyo ng langis ang magdedesisyon.' },
-                     { t: 'NVDA', note: '29.6 → 19.4. Mahal sa nakaraan, presyong-market sa future.' },
-                     { t: 'MSFT', note: '28.8 → 26.2. Maliit ang gap: steady at predictable.' },
-                     { t: 'COST', note: '44.4 → 40.4. Kahit sa kita next year, $40 sa bawat $1.' },
-                  ],
                   value: function (s) {
                      return s.fpe;
                   },
@@ -1265,31 +1395,48 @@
                   good: function (v) {
                      return 100 / v > BOND;
                   },
-                  tags: ['Talo ang bond', 'Panalo ang bond'],
-                  legend: [
-                     ['var(--green-700)', 'Talo ang bond next year (below 19.1)'],
-                     ['var(--red-300)', 'Panalo ang bond'],
-                     ['var(--primary-300)', 'P/E last year'],
-                  ],
-                  ingat: '<b>Pero ingat:</b> hula lang ang forward P/E. Madalas magkamali ang analysts, lalo na sa kotse at langis na sumasabay sa ekonomiya. Mura lang ang GM kung darating talaga ang rebound.',
+                  rows: ['GM', 'XOM', 'NVDA', 'MSFT', 'COST'],
+                  fil: {
+                     formula: 'Forward P/E = Presyo ÷ EXPECTED na kita next year',
+                     plain: 'Parehong P/E, pero gamit ang hula ng analysts sa kita next year. Kung bumaba nang malaki, inaasahang lalaki ang kita.',
+                     example: 'Nvidia: 29.6 sa kita last year, 19.4 sa next year. Expected na lalaki ang kita ng mga 50%.',
+                     read: ['Mas mababa sa P/E: may growth', 'Mas mataas: baka bumaba ang kita'],
+                     title: 'Forward P/E',
+                     sub: 'Lilac = P/E last year · S&P 500: 19.0',
+                     notes: [
+                        '39.4 → 5.6. Sobrang baba ng kita last year; malaking rebound ang inaasahan.',
+                        '21.2 → 12.7. Mga 67% na mas mataas na kita. Presyo ng langis ang magdedesisyon.',
+                        '29.6 → 19.4. Mahal sa nakaraan, presyong-market sa future.',
+                        '28.8 → 26.2. Maliit ang gap: steady at predictable.',
+                        '44.4 → 40.4. Kahit sa kita next year, $40 sa bawat $1.',
+                     ],
+                     tags: ['Talo ang bond', 'Panalo ang bond'],
+                     legend: ['Talo ang bond next year (below 19.1)', 'Panalo ang bond', 'P/E last year'],
+                     ingat: '<b>Pero ingat:</b> hula lang ang forward P/E. Madalas magkamali ang analysts, lalo na sa kotse at langis na sumasabay sa ekonomiya. Mura lang ang GM kung darating talaga ang rebound.',
+                  },
+                  en: {
+                     formula: 'Forward P/E = Price ÷ NEXT year’s expected earnings',
+                     plain: 'The same idea as P/E, but using the profit analysts expect next year. A big drop from P/E means profit is expected to jump.',
+                     example: 'Nvidia: 29.6 on last year’s profit, 19.4 on next year’s. Analysts expect profit to grow about 50%.',
+                     read: ['Lower than P/E: growth expected', 'Higher: profit may fall'],
+                     title: 'Forward P/E',
+                     sub: 'Lilac = last year’s P/E · S&P 500: 19.0',
+                     notes: [
+                        '39.4 → 5.6. Last year’s profit was unusually low; analysts expect a huge rebound.',
+                        '21.2 → 12.7. Implies profit about 67% higher. Oil prices decide if it happens.',
+                        '29.6 → 19.4. Pricey on the past, about market price on the future.',
+                        '28.8 → 26.2. Small gap: steady, predictable growth.',
+                        '44.4 → 40.4. Even on next year’s profit, $40 for every $1.',
+                     ],
+                     tags: ['Beats the bond', 'Bond wins'],
+                     legend: ['Beats the bond next year (under 19.1)', 'Bond wins', 'Last year’s P/E'],
+                     ingat: '<b>The catch:</b> forward P/E is only as good as the forecast. Analysts are often wrong, especially for carmakers and oil companies whose profits swing with the economy. GM is only cheap if that rebound really arrives.',
+                  },
                },
                {
                   id: 'fcf',
                   label: 'FCF yield',
                   icon: '/icons/balance-coin-3d.png',
-                  formula: 'FCF yield = Free cash flow ÷ Value ng company',
-                  plain: 'Ang totoong cash na natira matapos bayaran ang gamit at pasilidad, hinati sa presyo ng buong company. Ito ang "interest rate" ng isang stock.',
-                  example: 'Sa sari-sari store: ₱60,000 na cash ang naiuwi mo after restock sa ₱1,000,000 na tindahan? 6% FCF yield. Talo ang bond!',
-                  read: ['Above 5.24%: talo ang bond', 'Below 0%: nauubos ang cash'],
-                  title: 'FCF yield vs bond',
-                  sub: 'Gold line = 5.24% bond',
-                  rows: [
-                     { t: 'PYPL', note: '$6.6B na cash sa $45B na company. Mura kasi mabagal ang growth.' },
-                     { t: 'LMT', note: '$8.7B na cash sa $117B na company.' },
-                     { t: 'UNH', note: '$23.6B na cash sa $334B na company.' },
-                     { t: 'KO', note: '$14.3B na cash sa $369B na company. Malaking parte napupunta sa 2.5% dividend.' },
-                     { t: 'AMZN', note: '−$11.6B. Malaki ang gastos sa AI data centers. Nag-iinvest, hindi sira.' },
-                  ],
                   value: function (s) {
                      return s.fcf;
                   },
@@ -1301,31 +1448,48 @@
                   good: function (v) {
                      return v > BOND;
                   },
-                  tags: ['Talo ang bond', 'Panalo ang bond'],
-                  legend: [
-                     ['var(--green-700)', 'Talo ang bond'],
-                     ['var(--red-300)', 'Panalo ang bond'],
-                     ['var(--yellow-700)', '5.24% bond'],
-                  ],
-                  ingat: '<b>Pero ingat:</b> pag sobrang taas ng FCF yield, baka duda ang market na tatagal ang cash. Hindi rin agad masama ang negative: gumagastos ang Amazon ngayon para kumita later. Ang mga bangko gaya ng JPMorgan, walang useful na FCF number.',
+                  rows: ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN'],
+                  fil: {
+                     formula: 'FCF yield = Free cash flow ÷ Value ng company',
+                     plain: 'Ang totoong cash na natira matapos bayaran ang gamit at pasilidad, hinati sa presyo ng buong company. Ito ang "interest rate" ng isang stock.',
+                     example: 'Sa sari-sari store: ₱60,000 na cash ang naiuwi mo after restock sa ₱1,000,000 na tindahan? 6% FCF yield. Talo ang bond!',
+                     read: ['Above 5.24%: talo ang bond', 'Below 0%: nauubos ang cash'],
+                     title: 'FCF yield vs bond',
+                     sub: 'Gold line = 5.24% bond',
+                     notes: [
+                        '$6.6B na cash sa $45B na company. Mura kasi mabagal ang growth.',
+                        '$8.7B na cash sa $117B na company.',
+                        '$23.6B na cash sa $334B na company.',
+                        '$14.3B na cash sa $369B na company. Malaking parte napupunta sa 2.5% dividend.',
+                        '−$11.6B. Malaki ang gastos sa AI data centers. Nag-iinvest, hindi sira.',
+                     ],
+                     tags: ['Talo ang bond', 'Panalo ang bond'],
+                     legend: ['Talo ang bond', 'Panalo ang bond', '5.24% bond'],
+                     ingat: '<b>Pero ingat:</b> pag sobrang taas ng FCF yield, baka duda ang market na tatagal ang cash. Hindi rin agad masama ang negative: gumagastos ang Amazon ngayon para kumita later. Ang mga bangko gaya ng JPMorgan, walang useful na FCF number.',
+                  },
+                  en: {
+                     formula: 'FCF yield = Free cash flow ÷ Company value',
+                     plain: 'The real cash left after the company pays for its equipment, divided by what the whole company costs. The closest thing a stock has to an "interest rate".',
+                     example: 'At the sari-sari store: ₱60,000 of cash left after restocking a ₱1,000,000 store? That’s a 6% FCF yield. Beats the bond!',
+                     read: ['Over 5.24%: beats the bond', 'Under 0%: burning cash'],
+                     title: 'FCF yield vs bond',
+                     sub: 'Gold line = 5.24% bond',
+                     notes: [
+                        '$6.6B of cash on a $45B company. Cheap because growth is slow.',
+                        '$8.7B of cash on a $117B company.',
+                        '$23.6B of cash on a $334B company.',
+                        '$14.3B of cash on a $369B company. Much of it goes out as a 2.5% dividend.',
+                        '−$11.6B. Spending heavily on AI data centres. Investing, not broken.',
+                     ],
+                     tags: ['Beats the bond', 'Bond wins'],
+                     legend: ['Beats the bond', 'Bond wins', '5.24% bond'],
+                     ingat: '<b>The catch:</b> a very high FCF yield can mean the market doubts the cash will last. A negative one isn’t automatically bad: Amazon is spending now to earn later. Banks like JPMorgan don’t report a useful FCF number.',
+                  },
                },
                {
                   id: 'peg',
                   label: 'PEG',
                   icon: '/icons/borrower-patterns-3d.png',
-                  formula: 'PEG = P/E ÷ Growth ng kita kada taon (%)',
-                  plain: 'Sa P/E lang, laging mukhang mahal ang mabilis lumago. Tanong ng PEG: sulit ba ang presyo para sa bilis ng paglago?',
-                  example: 'P/E 20 at lumalaki ang kita ng 20% kada taon: 20 ÷ 20 = PEG 1.0.',
-                  read: ['Below 1: mura ang growth', '1–2: sakto', 'Above 2: mahal na'],
-                  title: 'PEG ratio',
-                  sub: 'Gold line = PEG 1.0',
-                  rows: [
-                     { t: 'NVDA', note: 'Mataas ang P/E, pero mas mabilis pa ang expected na paglago.' },
-                     { t: 'LMT', note: 'Katamtamang P/E, katamtamang growth. Below 1 pa rin.' },
-                     { t: 'META', note: 'Halos sabay ang growth ng kita at ang presyo.' },
-                     { t: 'MSFT', note: 'Sakto hanggang medyo mahal, para sa steady na growth.' },
-                     { t: 'KO', note: '25× ang kita para sa mabagal na growth. Bayad ka para sa stability at dividend.' },
-                  ],
                   value: function (s) {
                      return s.peg;
                   },
@@ -1337,15 +1501,46 @@
                   good: function (v) {
                      return v < 1.5;
                   },
-                  tags: ['Sulit', 'Mahal'],
-                  legend: [
-                     ['var(--green-700)', 'Below 1.5 (pasado)'],
-                     ['var(--red-300)', '1.5 pataas'],
-                     ['var(--yellow-700)', 'PEG 1.0'],
-                  ],
-                  ingat: '<b>Pero ingat:</b> nakadepende ang PEG sa hula ng growth, at iba-iba ang computation ng bawat website. Baka ibang PEG ang makita mo para sa Microsoft sa ibang site. Ikumpara lang ang stocks sa iisang site.',
+                  rows: ['NVDA', 'LMT', 'META', 'MSFT', 'KO'],
+                  fil: {
+                     formula: 'PEG = P/E ÷ Growth ng kita kada taon (%)',
+                     plain: 'Sa P/E lang, laging mukhang mahal ang mabilis lumago. Tanong ng PEG: sulit ba ang presyo para sa bilis ng paglago?',
+                     example: 'P/E 20 at lumalaki ang kita ng 20% kada taon: 20 ÷ 20 = PEG 1.0.',
+                     read: ['Below 1: mura ang growth', '1–2: sakto', 'Above 2: mahal na'],
+                     title: 'PEG ratio',
+                     sub: 'Gold line = PEG 1.0',
+                     notes: [
+                        'Mataas ang P/E, pero mas mabilis pa ang expected na paglago.',
+                        'Katamtamang P/E, katamtamang growth. Below 1 pa rin.',
+                        'Halos sabay ang growth ng kita at ang presyo.',
+                        'Sakto hanggang medyo mahal, para sa steady na growth.',
+                        '25× ang kita para sa mabagal na growth. Bayad ka para sa stability at dividend.',
+                     ],
+                     tags: ['Sulit', 'Mahal'],
+                     legend: ['Below 1.5 (pasado)', '1.5 pataas', 'PEG 1.0'],
+                     ingat: '<b>Pero ingat:</b> nakadepende ang PEG sa hula ng growth, at iba-iba ang computation ng bawat website. Baka ibang PEG ang makita mo para sa Microsoft sa ibang site. Ikumpara lang ang stocks sa iisang site.',
+                  },
+                  en: {
+                     formula: 'PEG = P/E ÷ Yearly profit growth (%)',
+                     plain: 'P/E alone makes fast growers look expensive. PEG asks: is the price fair for how fast profit is growing?',
+                     example: 'P/E of 20 with profit growing 20% a year: 20 ÷ 20 = PEG of 1.0.',
+                     read: ['Under 1: growth looks cheap', '1–2: fair', 'Over 2: paying up'],
+                     title: 'PEG ratio',
+                     sub: 'Gold line = PEG 1.0',
+                     notes: [
+                        'High P/E, but profit is expected to grow even faster.',
+                        'Modest P/E and modest growth. Still under 1.',
+                        'Profit growth roughly keeps up with the price.',
+                        'A fair-to-full price for steady growth.',
+                        '25× profit for slow growth. You pay for stability and the dividend.',
+                     ],
+                     tags: ['Fair price', 'Pricey'],
+                     legend: ['Under 1.5 (passes)', '1.5 or more', 'PEG 1.0'],
+                     ingat: '<b>The catch:</b> PEG depends on a growth guess, and every website calculates it differently. You may see a very different PEG for Microsoft elsewhere. Only compare stocks on the same site.',
+                  },
                },
             ];
+            var LEGEND_COLORS = ['var(--green-700)', 'var(--red-300)'];
 
             function ey(pe) {
                return pe > 0 ? 100 / pe : null;
@@ -1361,105 +1556,232 @@
                   return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
                });
             }
+
+            var lang = 'fil';
+            var current = 'pe';
+            var tablist = document.querySelector('[data-tablist]');
+            var panels = document.querySelector('[data-panels]');
+            var tabIds = TABS.map(function (t) {
+               return t.id;
+            });
+            var navLinks = Array.from(document.querySelectorAll('[data-go]'));
+
+            function renderStatic() {
+               var t = T[lang];
+               document.documentElement.lang = lang === 'en' ? 'en' : 'fil';
+               document.title = t.docTitle;
+               document.querySelectorAll('[data-t]').forEach(function (el) {
+                  el.innerHTML = t[el.getAttribute('data-t')];
+               });
+               document.querySelectorAll('[data-t-label]').forEach(function (el) {
+                  el.setAttribute('aria-label', t[el.getAttribute('data-t-label')]);
+               });
+               document.querySelector('.hero-hippo').alt = t.hippoAlt;
+               var testsEl = document.querySelector('[data-tests]');
+               testsEl.setAttribute('aria-label', t.testsLabel);
+               testsEl.innerHTML = t.tests
+                  .map(function (line) {
+                     return '<li><img src="/dashboard-v2/pandesal-small.png" alt="" />' + line + '</li>';
+                  })
+                  .join('');
+               document.querySelectorAll('[data-lang]').forEach(function (b) {
+                  b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang ? 'true' : 'false');
+               });
+            }
+
             function pandesals(r) {
                var imgs = r
                   .map(function (ok) {
                      return '<img src="/dashboard-v2/pandesal-small.png" alt=""' + (ok ? '' : ' class="off"') + ' />';
                   })
                   .join('');
-               return '<span class="pandesals" role="img" aria-label="' + r.filter(Boolean).length + ' sa 4 na pandesal">' + imgs + '</span>';
+               return '<span class="pandesals" role="img" aria-label="' + T[lang].pandesalOf(r.filter(Boolean).length) + '">' + imgs + '</span>';
             }
 
-            // Top 3
-            var labels = ['Kita yield', 'Fwd kita yield', 'FCF yield', 'PEG'];
-            document.querySelector('[data-picks]').innerHTML = PICKS.map(function (p, i) {
-               var s = STOCKS[p.t];
-               var r = tests(s);
-               var vals = [ey(s.pe).toFixed(1) + '%', ey(s.fpe).toFixed(1) + '%', s.fcf.toFixed(1) + '%', s.peg.toFixed(2)];
-               var checks = r
-                  .map(function (ok, j) {
-                     return '<li class="' + (ok ? 'pass' : 'fail') + '"><b>' + (ok ? '✓ ' : '✗ ') + vals[j] + '</b>' + labels[j] + '</li>';
-                  })
-                  .join('');
-               return (
-                  '<details class="pick"' +
-                  (i === 0 ? ' open' : '') +
-                  '><summary><span class="rank">' +
-                  (i + 1) +
-                  '</span><span class="pick-name"><b>' +
-                  esc(s.name) +
-                  '</b><span>' +
-                  p.t +
-                  ' · $' +
-                  s.price.toFixed(2) +
-                  ' ≈ ' +
-                  peso(s.price) +
-                  '</span></span>' +
-                  pandesals(r) +
-                  '</summary><div class="pick-more"><ul class="checks">' +
-                  checks +
-                  '</ul><p>' +
-                  esc(p.why) +
-                  '</p><p class="catch"><b>Ang catch:</b> ' +
-                  esc(p.catch) +
-                  '</p></div></details>'
-               );
-            }).join('');
-
-            // Full scorecard
-            var picked = PICKS.map(function (p) {
-               return p.t;
-            });
-            document.querySelector('[data-scorecard] tbody').innerHTML = Object.keys(STOCKS)
-               .map(function (t) {
-                  var r = tests(STOCKS[t]);
-                  return {
-                     t: t,
-                     s: STOCKS[t],
-                     r: r,
-                     passed: r.filter(Boolean).length,
-                     run: r.filter(function (x) {
-                        return x !== null;
-                     }).length,
-                  };
-               })
-               .sort(function (a, b) {
-                  return b.passed - a.passed || a.s.pe - b.s.pe;
-               })
-               .map(function (row) {
-                  var s = row.s;
-                  var cells = [
-                     [ey(s.pe), '%'],
-                     [ey(s.fpe), '%'],
-                     [s.fcf, '%'],
-                     [s.peg, ''],
-                  ]
-                     .map(function (c, j) {
-                        if (c[0] == null) return '<td class="fail">n/a</td>';
-                        return '<td class="' + (row.r[j] ? 'pass' : 'fail') + '">' + c[0].toFixed(2) + c[1] + '</td>';
+            function renderPicks() {
+               var t = T[lang];
+               var picksEl = document.querySelector('[data-picks]');
+               var open = Array.from(picksEl.querySelectorAll('details')).map(function (d) {
+                  return d.open;
+               });
+               picksEl.innerHTML = PICKS.map(function (p, i) {
+                  var s = STOCKS[p.t];
+                  var r = tests(s);
+                  var vals = [ey(s.pe).toFixed(1) + '%', ey(s.fpe).toFixed(1) + '%', s.fcf.toFixed(1) + '%', s.peg.toFixed(2)];
+                  var checks = r
+                     .map(function (ok, j) {
+                        return '<li class="' + (ok ? 'pass' : 'fail') + '"><b>' + (ok ? '✓ ' : '✗ ') + vals[j] + '</b>' + t.checkLabels[j] + '</li>';
                      })
                      .join('');
+                  var isOpen = open.length ? open[i] : i === 0;
                   return (
-                     '<tr class="' +
-                     (picked.indexOf(row.t) > -1 ? 'top' : '') +
-                     '"><td>' +
-                     row.t +
-                     '</td><td>' +
+                     '<details class="pick"' +
+                     (isOpen ? ' open' : '') +
+                     '><summary><span class="rank">' +
+                     (i + 1) +
+                     '</span><span class="pick-name"><b>' +
+                     esc(s.name) +
+                     '</b><span>' +
+                     p.t +
+                     ' · $' +
+                     s.price.toFixed(2) +
+                     ' ≈ ' +
                      peso(s.price) +
-                     '</td>' +
-                     cells +
-                     '<td>' +
-                     row.passed +
-                     '/' +
-                     row.run +
-                     '</td></tr>'
+                     '</span></span>' +
+                     pandesals(r) +
+                     '</summary><div class="pick-more"><ul class="checks">' +
+                     checks +
+                     '</ul><p>' +
+                     esc(p.why[lang]) +
+                     '</p><p class="catch"><b>' +
+                     t.catchLabel +
+                     '</b> ' +
+                     esc(p.catch[lang]) +
+                     '</p></div></details>'
                   );
-               })
-               .join('');
+               }).join('');
+            }
 
-            // Ratio tabs
-            var tablist = document.querySelector('[data-tablist]');
-            var panels = document.querySelector('[data-panels]');
+            function renderScorecard() {
+               var picked = PICKS.map(function (p) {
+                  return p.t;
+               });
+               document.querySelector('[data-scorecard] tbody').innerHTML = Object.keys(STOCKS)
+                  .map(function (t) {
+                     var r = tests(STOCKS[t]);
+                     return {
+                        t: t,
+                        s: STOCKS[t],
+                        r: r,
+                        passed: r.filter(Boolean).length,
+                        run: r.filter(function (x) {
+                           return x !== null;
+                        }).length,
+                     };
+                  })
+                  .sort(function (a, b) {
+                     return b.passed - a.passed || a.s.pe - b.s.pe;
+                  })
+                  .map(function (row) {
+                     var s = row.s;
+                     var cells = [
+                        [ey(s.pe), '%'],
+                        [ey(s.fpe), '%'],
+                        [s.fcf, '%'],
+                        [s.peg, ''],
+                     ]
+                        .map(function (c, j) {
+                           if (c[0] == null) return '<td class="fail">n/a</td>';
+                           return '<td class="' + (row.r[j] ? 'pass' : 'fail') + '">' + c[0].toFixed(2) + c[1] + '</td>';
+                        })
+                        .join('');
+                     return (
+                        '<tr class="' +
+                        (picked.indexOf(row.t) > -1 ? 'top' : '') +
+                        '"><td>' +
+                        row.t +
+                        '</td><td>' +
+                        peso(s.price) +
+                        '</td>' +
+                        cells +
+                        '<td>' +
+                        row.passed +
+                        '/' +
+                        row.run +
+                        '</td></tr>'
+                     );
+                  })
+                  .join('');
+            }
+
+            function renderPanels() {
+               panels.innerHTML = '';
+               TABS.forEach(function (tab) {
+                  var c = tab[lang];
+                  var rows = tab.rows
+                     .map(function (ticker, k) {
+                        var s = STOCKS[ticker];
+                        var v = tab.value(s);
+                        var over = v > tab.max;
+                        var ok = tab.good(v);
+                        var w = Math.max(0, Math.min(100, (v / tab.max) * 100));
+                        var ghost = tab.ghost
+                           ? '<span class="ghost" style="width:' + Math.min(100, (tab.ghost(s) / tab.max) * 100) + '%"></span>'
+                           : '';
+                        var line = tab.line != null ? '<span class="line" style="left:' + (tab.line / tab.max) * 100 + '%"></span>' : '';
+                        return (
+                           '<li><div class="row-top"><span class="val">' +
+                           tab.fmt(v) +
+                           (over ? ' ↗' : '') +
+                           '</span><span class="tag ' +
+                           (ok ? 'good' : 'bad') +
+                           '">' +
+                           esc(c.tags[ok ? 0 : 1]) +
+                           '</span><span class="row-name">' +
+                           esc(s.name) +
+                           '<small>' +
+                           ticker +
+                           ' · ' +
+                           peso(s.price) +
+                           '</small></span></div><div class="bar-track">' +
+                           ghost +
+                           '<div class="bar ' +
+                           (over ? 'over' : ok ? 'good' : 'bad') +
+                           '" data-w="' +
+                           w +
+                           '"></div>' +
+                           line +
+                           '</div><p class="row-note">' +
+                           esc(c.notes[k]) +
+                           '</p></li>'
+                        );
+                     })
+                     .join('');
+
+                  var thirdColor = tab.ghost ? 'var(--primary-300)' : 'var(--yellow-700)';
+                  var legend = c.legend
+                     .map(function (label, k) {
+                        return '<span><i style="background:' + (LEGEND_COLORS[k] || thirdColor) + '"></i>' + esc(label) + '</span>';
+                     })
+                     .join('');
+
+                  var panel = document.createElement('div');
+                  panel.className = 'panel';
+                  panel.id = 'panel-' + tab.id;
+                  panel.setAttribute('role', 'tabpanel');
+                  panel.setAttribute('aria-labelledby', 'tab-' + tab.id);
+                  panel.tabIndex = 0;
+                  panel.hidden = true;
+                  panel.innerHTML =
+                     '<div class="note"><img src="' +
+                     tab.icon +
+                     '" alt="" width="44" height="44" /><p class="formula">' +
+                     esc(c.formula) +
+                     '</p><p>' +
+                     esc(c.plain) +
+                     '</p><p class="ex">' +
+                     esc(c.example) +
+                     '</p><ul class="chips">' +
+                     c.read
+                        .map(function (r) {
+                           return '<li>' + esc(r) + '</li>';
+                        })
+                        .join('') +
+                     '</ul></div><div class="card"><div class="board-head"><h3>' +
+                     esc(c.title) +
+                     '</h3><span>' +
+                     esc(c.sub) +
+                     '</span></div><ol class="rows">' +
+                     rows +
+                     '</ol><div class="legend">' +
+                     legend +
+                     '</div></div><p class="ingat">' +
+                     c.ingat +
+                     '</p>';
+                  panels.appendChild(panel);
+               });
+            }
+
             TABS.forEach(function (tab) {
                var btn = document.createElement('button');
                btn.type = 'button';
@@ -1471,93 +1793,7 @@
                   select(tab.id, true);
                });
                tablist.appendChild(btn);
-
-               var rows = tab.rows
-                  .map(function (row) {
-                     var s = STOCKS[row.t];
-                     var v = tab.value(s);
-                     var over = v > tab.max;
-                     var ok = tab.good(v);
-                     var w = Math.max(0, Math.min(100, (v / tab.max) * 100));
-                     var ghost = tab.ghost
-                        ? '<span class="ghost" style="width:' + Math.min(100, (tab.ghost(s) / tab.max) * 100) + '%"></span>'
-                        : '';
-                     var line = tab.line != null ? '<span class="line" style="left:' + (tab.line / tab.max) * 100 + '%"></span>' : '';
-                     return (
-                        '<li><div class="row-top"><span class="val">' +
-                        tab.fmt(v) +
-                        (over ? ' ↗' : '') +
-                        '</span><span class="tag ' +
-                        (ok ? 'good' : 'bad') +
-                        '">' +
-                        tab.tags[ok ? 0 : 1] +
-                        '</span><span class="row-name">' +
-                        esc(s.name) +
-                        '<small>' +
-                        row.t +
-                        ' · ' +
-                        peso(s.price) +
-                        '</small></span></div><div class="bar-track">' +
-                        ghost +
-                        '<div class="bar ' +
-                        (over ? 'over' : ok ? 'good' : 'bad') +
-                        '" data-w="' +
-                        w +
-                        '"></div>' +
-                        line +
-                        '</div><p class="row-note">' +
-                        esc(row.note) +
-                        '</p></li>'
-                     );
-                  })
-                  .join('');
-
-               var legend = tab.legend
-                  .map(function (l) {
-                     return '<span><i style="background:' + l[0] + '"></i>' + esc(l[1]) + '</span>';
-                  })
-                  .join('');
-
-               var panel = document.createElement('div');
-               panel.className = 'panel';
-               panel.id = 'panel-' + tab.id;
-               panel.setAttribute('role', 'tabpanel');
-               panel.setAttribute('aria-labelledby', 'tab-' + tab.id);
-               panel.tabIndex = 0;
-               panel.hidden = true;
-               panel.innerHTML =
-                  '<div class="note"><img src="' +
-                  tab.icon +
-                  '" alt="" width="44" height="44" /><p class="formula">' +
-                  esc(tab.formula) +
-                  '</p><p>' +
-                  esc(tab.plain) +
-                  '</p><p class="ex">' +
-                  esc(tab.example) +
-                  '</p><ul class="chips">' +
-                  tab.read
-                     .map(function (r) {
-                        return '<li>' + esc(r) + '</li>';
-                     })
-                     .join('') +
-                  '</ul></div><div class="card"><div class="board-head"><h3>' +
-                  esc(tab.title) +
-                  '</h3><span>' +
-                  esc(tab.sub) +
-                  '</span></div><ol class="rows">' +
-                  rows +
-                  '</ol><div class="legend">' +
-                  legend +
-                  '</div></div><p class="ingat">' +
-                  tab.ingat +
-                  '</p>';
-               panels.appendChild(panel);
             });
-
-            var tabIds = TABS.map(function (t) {
-               return t.id;
-            });
-            var navLinks = Array.from(document.querySelectorAll('[data-go]'));
 
             function markNav(id) {
                navLinks.forEach(function (a) {
@@ -1566,6 +1802,7 @@
             }
 
             function select(id, focus) {
+               current = id;
                TABS.forEach(function (tab) {
                   var on = tab.id === id;
                   var btn = document.getElementById('tab-' + tab.id);
@@ -1583,8 +1820,32 @@
                   }
                });
                markNav(id);
-               if (focus && history.replaceState) history.replaceState(null, '', '#' + id);
+               if (focus && history.replaceState) history.replaceState(null, '', location.search + '#' + id);
             }
+
+            function render() {
+               renderStatic();
+               renderPicks();
+               renderScorecard();
+               renderPanels();
+               select(current, false);
+            }
+
+            function setLang(next, save) {
+               lang = T[next] ? next : 'fil';
+               if (save) {
+                  try {
+                     localStorage.setItem(LANG_KEY, lang);
+                  } catch (e) {}
+               }
+               render();
+            }
+
+            document.querySelectorAll('[data-lang]').forEach(function (b) {
+               b.addEventListener('click', function () {
+                  setLang(b.getAttribute('data-lang'), true);
+               });
+            });
 
             tablist.addEventListener('keydown', function (e) {
                var i = tabIds.indexOf(document.activeElement.id.replace('tab-', ''));
@@ -1614,13 +1875,24 @@
                a.addEventListener('click', function (e) {
                   e.preventDefault();
                   var id = a.getAttribute('data-go');
-                  if (history.replaceState) history.replaceState(null, '', '#' + id);
+                  if (history.replaceState) history.replaceState(null, '', location.search + '#' + id);
                   go(id, true);
                });
             });
 
+            // Language: ?lang=en or ?lang=fil wins (shareable), then the viewer's saved choice, then Taglish.
+            var params = new URLSearchParams(location.search);
+            var initialLang = params.get('lang');
+            if (!T[initialLang]) {
+               try {
+                  initialLang = localStorage.getItem(LANG_KEY);
+               } catch (e) {
+                  initialLang = null;
+               }
+            }
             var initial = location.hash.slice(1);
-            select(tabIds.indexOf(initial) > -1 ? initial : tabIds[0], false);
+            if (tabIds.indexOf(initial) > -1) current = initial;
+            setLang(initialLang, false);
             markNav(initial === 'top3' || tabIds.indexOf(initial) > -1 ? initial : '');
             if (initial) go(initial, false);
             window.addEventListener('hashchange', function () {
