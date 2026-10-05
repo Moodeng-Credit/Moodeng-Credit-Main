@@ -5976,3 +5976,37 @@ a.button.is-loading::after {
       animation-delay: 0s !important;
    }
 }
+
+/* TikTok login (shown only when public/landing/auth-providers.json enables it) */
+.tiktok-login {
+   display: inline-flex;
+   align-items: center;
+   justify-content: center;
+   width: 44px;
+   height: 44px;
+   flex: none;
+   border: 1px solid oklch(100% 0 0 / 0.22);
+   border-radius: 12px;
+   background: oklch(100% 0 0 / 0.06);
+   transition: background-color 180ms var(--ease-out);
+}
+
+.tiktok-login:hover {
+   background: oklch(100% 0 0 / 0.14);
+}
+
+.tiktok-login svg {
+   width: 26px;
+   height: 26px;
+}
+
+.tiktok-login-wide {
+   gap: 10px;
+   background: #010101;
+   color: #fff;
+}
+
+.tiktok-login-wide svg {
+   width: 24px;
+   height: 24px;
+}
