@@ -1047,6 +1047,37 @@
          .one-line .pandesals {
             margin-top: 8px;
          }
+
+         /* Who gets the profit: company keeps vs paid to you */
+         .split {
+            border-radius: 18px;
+            padding: 14px;
+            background: var(--yellow-100);
+            border: 1px dashed #ecd27a;
+         }
+         .split > * + * {
+            margin-top: 10px;
+         }
+         .split-q {
+            font-size: 18px;
+            font-weight: 800;
+         }
+         .split-row {
+            display: grid;
+            grid-template-columns: 116px minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: #fff;
+            font-size: 15px;
+         }
+         .split-row .coins {
+            justify-content: flex-start;
+         }
+         .split-row b {
+            display: block;
+         }
       </style>
    </head>
    <body>
@@ -1108,7 +1139,7 @@
                   <span data-l="en">3 easy checks. Real companies. No hard math!</span>
                </p>
                <ul class="learn">
-                  <li><span class="emo" aria-hidden="true">📅</span><span data-l="fil">Ilang taon bago mabawi?</span><span data-l="en">Years to earn it back</span></li>
+                  <li><span class="emo" aria-hidden="true">📅</span><span data-l="fil">Ilang taon ng kita?</span><span data-l="en">How many years of profit?</span></li>
                   <li><span class="emo" aria-hidden="true">🔮</span><span data-l="fil">Hula para sa next year</span><span data-l="en">Next year's guess</span></li>
                   <li><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Totoong cash sa kaha</span><span data-l="en">Real cash in the drawer</span></li>
                </ul>
@@ -1133,16 +1164,16 @@
             <section class="card" aria-labelledby="bond-title">
                <h2 class="h2" id="bond-title"><span data-l="fil">Ang <em>safe</em> na choice</span><span data-l="en">The <em>safe</em> choice</span></h2>
                <p>
-                  <span data-l="fil">Ipahiram ang ₱100 sa gobyerno ng US. Kada taon, babalikan ka ng <strong>₱5.24</strong>. Sobrang safe!</span>
-                  <span data-l="en">Lend ₱100 to the US government. Every year, you get <strong>₱5.24</strong> back. Super safe!</span>
+                  <span data-l="fil">Ipahiram ang ₱100 sa gobyerno ng US. Kada taon, <strong>babayaran ka nila ng ₱5.24</strong> na cash. Sobrang safe!</span>
+                  <span data-l="en">Lend ₱100 to the US government. Every year, <strong>they pay you ₱5.24</strong> in cash. Super safe!</span>
                </p>
                <div class="exchange" aria-hidden="true">
                   <span class="bill">₱100</span><span class="arrow">→</span><span class="coins" data-big></span>
-                  <span class="lbl"><span data-l="fil">₱5.24 kada taon</span><span data-l="en">₱5.24 every year</span></span>
+                  <span class="lbl"><span data-l="fil">₱5.24 sa kamay mo, kada taon</span><span data-l="en">₱5.24 in your hand, every year</span></span>
                </div>
                <p class="rule">
                   <span class="ic" aria-hidden="true">🎯</span
-                  ><span><span data-l="fil">Dapat talunin ng stock ang ₱5.24.</span><span data-l="en">A good stock should beat ₱5.24.</span></span>
+                  ><span><span data-l="fil">Dapat kumita ang stock ng higit sa ₱5.24.</span><span data-l="en">A good stock should earn more than ₱5.24.</span></span>
                </p>
                <p class="key">
                   <span><span class="coin"></span>= ₱1</span
@@ -1154,7 +1185,7 @@
             <section class="card" id="pe" aria-labelledby="pe-title">
                <span class="step-tag"><b>1</b><span>Check 1 <small>· P/E</small></span></span>
                <h2 class="h2" id="pe-title">
-                  <span data-l="fil">Ilang taon bago <em>mabawi?</em></span><span data-l="en">How many years to <em>earn it back?</em></span>
+                  <span data-l="fil">Ilang taon ng <em>kita</em> = presyo?</span><span data-l="en">How many years of <em>profit</em> = the price?</span>
                </h2>
                <p>
                   <span data-l="fil">Ang tindahan ay ₱1,000. Kumikita ito ng ₱50 kada taon.</span>
@@ -1162,13 +1193,30 @@
                </p>
                <p class="big-math">
                   ₱1,000 ÷ ₱50 = <span data-l="fil">20 taon</span><span data-l="en">20 years</span>
-                  <small><span data-l="fil">bago mabawi ang pera mo</span><span data-l="en">to get your money back</span></small>
+                  <small><span data-l="fil">ng kita para pantayan ang presyo</span><span data-l="en">of profit to match the price</span></small>
                </p>
                <div class="years" data-years aria-hidden="true"></div>
                <p class="rule">
                   <span class="ic" aria-hidden="true">👍</span
                   ><span><span data-l="fil">Mas kaunting taon = mas mura.</span><span data-l="en">Fewer years = cheaper.</span></span>
                </p>
+               <p>
+                  <span data-l="fil"><strong>Baliktarin natin:</strong> ₱50 ÷ ₱1,000 = <strong>₱5 na kita sa bawat ₱100</strong>. Ngayon pwede na itong ikumpara sa ₱5.24 ng bond!</span>
+                  <span data-l="en"><strong>Now flip it:</strong> ₱50 ÷ ₱1,000 = <strong>₱5 of profit for every ₱100</strong>. Now we can compare it with the bond's ₱5.24!</span>
+               </p>
+               <div class="split">
+                  <p class="split-q"><span data-l="fil">🤔 Mapupunta ba sa kamay mo ang ₱5?</span><span data-l="en">🤔 Do you get that ₱5 in your hand?</span></p>
+                  <p><span data-l="fil">Hindi lahat! Sabihin nating kumita ng ₱5 ang piraso mo ngayong taon:</span><span data-l="en">Not all of it! Say your piece made ₱5 of profit this year:</span></p>
+                  <div class="split-row">
+                     <span class="coins" data-split="4" aria-hidden="true"></span
+                     ><span><b><span data-l="fil">🏪 ₱4: itinatabi ni Aling Nena</span><span data-l="en">🏪 ₱4: Aling Nena keeps it</span></b><span data-l="fil">Para sa dagdag na paninda at mas malaking tindahan.</span><span data-l="en">To buy more goods and grow the store.</span></span>
+                  </div>
+                  <div class="split-row">
+                     <span class="coins" data-split="1" aria-hidden="true"></span
+                     ><span><b><span data-l="fil">🎁 ₱1: binibigay sa iyo</span><span data-l="en">🎁 ₱1: paid to you</span></b><span data-l="fil">Ito ang tinatawag na <strong>dividend</strong>.</span><span data-l="en">This is called a <strong>dividend</strong>.</span></span>
+                  </div>
+                  <p><span data-l="fil">Tulong pa rin sa iyo ang ₱4: pag lumaki ang tindahan, mas tumataas ang halaga ng piraso mo. 📈</span><span data-l="en">The ₱4 still helps you: when the store grows, your piece is worth more. 📈</span></p>
+               </div>
                <div class="board" data-board="pe"></div>
                <div class="quiz" data-quiz="pe"></div>
             </section>
@@ -1373,19 +1421,19 @@
                return '<p class="board-head">' + head + '</p>' + rows.join('');
             }
 
-            // Check 1: years to earn it back, shown as ₱ back per ₱100
+            // Check 1: years of profit to match the price, shown as company profit per ₱100 of stock
             document.querySelector('[data-board="pe"]').innerHTML = board(
-               both('Kita kada taon, sa bawat ₱100', 'Money back each year, per ₱100'),
+               both('Kita ng company kada taon, sa bawat ₱100 na stock', 'Company profit each year, for every ₱100 of stock'),
                ['JPM', 'LMT', 'KO', 'AAPL', 'TSLA'].map(function (t) {
                   var yrs = Math.round(CO[t].pe);
                   var note = t === 'TSLA' ? both('385 taon?! Umaasa ang mga tao na lalaki ito nang sobra.', '385 years?! People hope it grows a LOT.') : '';
-                  return row(t, per100(CO[t].pe), both(yrs + ' taon bago mabawi', yrs + ' years to earn it back'), note);
+                  return row(t, per100(CO[t].pe), both(yrs + ' taon ng kita = presyo', yrs + ' years of profit = the price'), note);
                })
             );
 
             // Check 2: next year's guess
             document.querySelector('[data-board="fpe"]').innerHTML = board(
-               both('Hula para sa next year, sa bawat ₱100', "Next year's guess, per ₱100"),
+               both('Hulang kita next year, sa bawat ₱100 na stock', "Guessed profit next year, for every ₱100 of stock"),
                ['GM', 'XOM', 'NVDA', 'MSFT', 'AMZN'].map(function (t) {
                   var c = CO[t];
                   var sub = both('Last year ', 'Last year ') + peso(per100(c.pe)) + ' → ' + both('next year ', 'next year ') + peso(per100(c.fpe));
@@ -1399,7 +1447,7 @@
 
             // Check 3: real cash
             document.querySelector('[data-board="fcf"]').innerHTML = board(
-               both('Totoong cash kada taon, sa bawat ₱100', 'Real cash each year, per ₱100'),
+               both('Natirang cash ng company, sa bawat ₱100 na stock', "Company's leftover cash, for every ₱100 of stock"),
                ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN'].map(function (t) {
                   var note = '';
                   if (t === 'AMZN') note = both('Gumagastos nang malaki sa bagong computer centers. Parang tindahang nagbubukas ng bagong branch.', 'Spending a lot on new computer centers. Like a store opening a new branch.');
@@ -1461,14 +1509,20 @@
             for (var y = 1; y <= 20; y++) yrs += '<span>' + y + '</span>';
             document.querySelector('[data-years]').innerHTML = yrs;
             document.querySelector('[data-big]').innerHTML = coins(BOND, true);
+            document.querySelectorAll('[data-split]').forEach(function (el) {
+               var n = +el.getAttribute('data-split');
+               var html = '';
+               for (var i = 0; i < n; i++) html += '<span class="coin big"></span>';
+               el.innerHTML = html;
+            });
 
             // Quizzes
             var QUIZ = {
                pe: {
                   q: both('🧠 Alin ang mas mura?', '🧠 Which one is cheaper?'),
                   opts: [
-                     { a: both('🍎 Apple: 38 taon bago mabawi', '🍎 Apple: 38 years to earn it back'), ok: false },
-                     { a: both('🏦 JPMorgan: 14 taon bago mabawi', '🏦 JPMorgan: 14 years to earn it back'), ok: true },
+                     { a: both('🍎 Apple: 38 taon ng kita = presyo', '🍎 Apple: 38 years of profit = the price'), ok: false },
+                     { a: both('🏦 JPMorgan: 14 taon ng kita = presyo', '🏦 JPMorgan: 14 years of profit = the price'), ok: true },
                   ],
                   right: both('Tama! Mas kaunting taon = mas mura.', 'Correct! Fewer years = cheaper.'),
                   wrong: both('Hindi pa. Mas kaunting taon = mas mura. Subukan ulit!', 'Not quite. Fewer years = cheaper. Try again!'),
@@ -1637,10 +1691,10 @@
                html += ratio(
                   '📅',
                   'P/E',
-                  both('Ilang taon bago mabawi', 'Years to earn it back'),
+                  both('Ilang taon ng kita = presyo', 'Years of profit = the price'),
                   s.pe.toFixed(1),
                   '<p>' +
-                     both(yrs + ' taon bago mabawi. Katumbas ng <strong>' + peso(ey) + ' kada ₱100</strong> kada taon.', yrs + ' years to earn it back. That is <strong>' + peso(ey) + ' per ₱100</strong> each year.') +
+                     both(yrs + ' taon ng kita = presyo. Kumikita ang company ng <strong>' + peso(ey) + ' kada ₱100</strong> na stock kada taon, pero karamihan ay itinatabi nito.', yrs + ' years of profit = the price. The company makes <strong>' + peso(ey) + ' per ₱100</strong> of stock each year, but keeps most of it.') +
                      '</p><div class="coins" aria-hidden="true">' +
                      coins(ey) +
                      '</div>' +
@@ -1714,7 +1768,7 @@
                   s.div ? s.div.toFixed(2) + '%' : '0%',
                   '<p>' +
                      (s.div
-                        ? both('Bawat taon, may <strong>' + peso(s.div) + ' kada ₱100</strong> na diretso sa bulsa mo.', 'Every year, <strong>' + peso(s.div) + ' per ₱100</strong> goes straight into your pocket.')
+                        ? both('Ito lang ang parte ng kita na binibigay sa iyo: <strong>' + peso(s.div) + ' kada ₱100</strong> kada taon, diretso sa bulsa mo.', 'This is the only part of the profit paid to you: <strong>' + peso(s.div) + ' per ₱100</strong> each year, straight into your pocket.')
                         : both('Wala! Ginagamit ng company ang lahat ng pera para lumaki.', 'None! The company uses all its money to grow.')) +
                      '</p>'
                );
