@@ -1761,48 +1761,6 @@
             display: grid;
             gap: 8px;
          }
-         .claim-login {
-            display: grid;
-            gap: 10px;
-            margin-top: 4px;
-         }
-         .claim-who {
-            font-size: 16px;
-         }
-         .login-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-         }
-         .login-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 48px;
-            border-radius: 14px;
-            padding: 8px 10px;
-            font-size: 14px;
-            font-weight: 800;
-            text-align: center;
-            text-decoration: none;
-            line-height: 1.2;
-         }
-         .login-btn[hidden] {
-            display: none;
-         }
-         .login-btn.tt {
-            background: #010101;
-            color: #fff;
-         }
-         .login-btn.ln {
-            background: #06c755;
-            color: #fff;
-         }
-         .login-btn.em {
-            background: var(--primary-100);
-            color: var(--primary-1200);
-            border: 1px solid var(--primary-300);
-         }
          .claim label {
             font-weight: 700;
          }
@@ -2176,7 +2134,7 @@
 
             <section class="card" id="tickets" aria-labelledby="tickets-title">
                <h3 class="h2" id="tickets-title" style="font-size: 21px"><span data-l="fil">Ang wheel prizes mo 🎡</span><span data-l="en">Your wheel prizes 🎡</span></h3>
-               <p><span data-l="fil">Bawat tamang sagot = 1 spin ng wheel. 2 golden tickets = Grab draw. Kung kulang, pandesal points pa rin! I-claim sa dulo: mag-log in gamit ang TikTok o LINE.</span><span data-l="en">Every right answer = 1 spin of the wheel. 2 golden tickets = Grab draw. Not enough? You still get pandesal points! Claim at the end: log in with TikTok or LINE.</span></p>
+               <p><span data-l="fil">Bawat tamang sagot = 1 spin ng wheel. 2 golden tickets = Grab draw. Kung kulang, pandesal points pa rin! I-claim sa dulo gamit ang TikTok username mo.</span><span data-l="en">Every right answer = 1 spin of the wheel. 2 golden tickets = Grab draw. Not enough? You still get pandesal points! Claim at the end with your TikTok username.</span></p>
                <div data-tickets></div>
                <button type="button" class="btn-lite" data-info="raffle"><span data-l="fil">Paano ang wheel at ang premyo?</span><span data-l="en">How do the wheel and prizes work?</span> <span class="i" aria-hidden="true">i</span></button>
             </section>
@@ -2697,7 +2655,7 @@
                var enough = t.tickets >= TICKETS_NEEDED;
                var h = '<div class="prize-stats"><div><b>' + t.spins + '/' + QUIZ_TOTAL + '</b><span>spins</span></div><div><b>🥯 ' + t.pts + '</b><span>' + both('pandesal points', 'pandesal points') + '</span></div><div><b>🎟️ ' + t.tickets + '/' + TICKETS_NEEDED + '</b><span>' + both('golden tickets', 'golden tickets') + '</span></div></div>';
                if (enough) {
-                  h += '<div class="prize-win"><b>' + both('🎉 Naabot mo ang ' + TICKETS_NEEDED + ' golden tickets para sa Grab draw!', '🎉 You collected ' + TICKETS_NEEDED + ' golden tickets for the Grab draw!') + '</b><span>' + both('Mag-log in sa baba para i-claim.', 'Log in below to claim.') + '</span></div>';
+                  h += '<div class="prize-win"><b>' + both('🎉 Naabot mo ang ' + TICKETS_NEEDED + ' golden tickets para sa Grab draw!', '🎉 You collected ' + TICKETS_NEEDED + ' golden tickets for the Grab draw!') + '</b><span>' + both('I-claim sa baba gamit ang TikTok username mo.', 'Claim below with your TikTok username.') + '</span></div>';
                } else {
                   h += '<p class="prize-hint">' + both('Kulang pa ng ' + (TICKETS_NEEDED - t.tickets) + ' 🎟️ para sa Grab draw. Kahit hindi, may ' + t.pts + ' pandesal points ka pa rin!', 'You need ' + (TICKETS_NEEDED - t.tickets) + ' more 🎟️ for the Grab draw. Either way, you keep your ' + t.pts + ' pandesal points!') + '</p>';
                }
@@ -2705,139 +2663,36 @@
                box.innerHTML = h;
                bindClaim(t);
             }
-            // Claim: a logged-in account (verified) or a typed TikTok @handle (unverified) goes to the stocks-claim edge function.
+            // Claim: the visitor types their TikTok @handle; the stocks-claim edge function posts it to the team.
             var CLAIM_URL = 'https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/stocks-claim';
             var CLAIM_KEY = 'moodeng-stocks-claimed';
-            // Account names (a TikTok display name, a LINE name) are free text from other people: always escape them.
-            function escHtml(v) {
-               return String(v).replace(/[&<>"']/g, function (c) {
-                  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-               });
-            }
-            function claimedLabel() {
+            function claimedHandle() {
                try {
                   return localStorage.getItem(CLAIM_KEY);
                } catch (e) {
                   return null;
                }
             }
-            // A logged-in Moodeng account (TikTok, LINE, email...) is stored by supabase-js on this same origin.
-            function loggedInAccount() {
-               try {
-                  for (var k = 0; k < localStorage.length; k++) {
-                     var key = localStorage.key(k);
-                     if (!/^sb-.*-auth-token$/.test(key)) continue;
-                     var v = JSON.parse(localStorage.getItem(key) || 'null');
-                     if (!v || !v.access_token || !v.user) continue;
-                     if (v.expires_at && v.expires_at * 1000 < Date.now()) continue;
-                     var m = v.user.user_metadata || {};
-                     return { token: v.access_token, name: m.name || m.full_name || m.display_name || v.user.email || '' };
-                  }
-               } catch (e) {}
-               return null;
-            }
             function claimHtml(t) {
-               var done = claimedLabel();
+               var done = claimedHandle();
                if (done) {
-                  var acct = done.indexOf('acct:') === 0;
-                  var who = escHtml(acct ? done.slice(5) : '@' + done);
-                  return '<div class="prize-win"><b>' + both('✅ Na-claim na bilang ' + who + '!', '✅ Claimed as ' + who + '!') + '</b><span>' + both('Kokontakin ka namin sa TikTok.', "We'll reach out on TikTok.") + '</span></div>';
-               }
-               var me = loggedInAccount();
-               if (me) {
-                  return (
-                     '<div class="claim-login"><p class="claim-who">' +
-                     both('✅ Naka-log in ka bilang ', '✅ Logged in as ') +
-                     '<b>' + (me.name ? escHtml(me.name) : 'Moodeng') + '</b></p><button type="button" class="spin-btn" data-claim-account>' +
-                     both('I-claim ang prizes ko! 🎁', 'Claim my prizes! 🎁') +
-                     '</button><p class="claim-msg" data-claim-msg aria-live="polite">' +
-                     both('Isang beses lang puwedeng mag-claim, kaya tapusin muna ang lahat ng quiz.', 'You can claim once, so finish all the quizzes first.') +
-                     '</p></div>'
-                  );
+                  return '<div class="prize-win"><b>' + both('✅ Na-claim na bilang @' + done + '!', '✅ Claimed as @' + done + '!') + '</b><span>' + both('Kokontakin ka namin sa TikTok.', "We'll reach out on TikTok.") + '</span></div>';
                }
                return (
-                  '<div class="claim-login"><p class="claim-who"><b>' +
-                  both('Mag-log in o mag-sign up para i-claim', 'Log in or sign up to claim') +
-                  '</b></p><div class="login-grid"><a class="login-btn tt" href="/auth/start/tiktok?next=%2Fstocks" hidden>' +
-                  both('Magpatuloy gamit ang TikTok', 'Continue with TikTok') +
-                  '</a><a class="login-btn ln" href="/auth/start/line?next=%2Fstocks">' +
-                  both('Magpatuloy gamit ang LINE', 'Continue with LINE') +
-                  '</a><a class="login-btn em" href="/sign-in">' +
-                  both('Mag-log in gamit ang email', 'Log in with email') +
-                  '</a><a class="login-btn em" href="/signup">' +
-                  both('Mag-sign up', 'Sign up') +
-                  '</a></div><p class="claim-msg">' +
-                  both('Pagkatapos mag-log in, bumalik sa page na ito para i-claim.', 'After logging in, come back to this page to claim.') +
-                  '</p></div><form class="claim" data-claim novalidate><label for="claim-handle">' +
-                  both('O i-type ang TikTok username mo (hindi pa verified)', 'Or type your TikTok username (not verified)') +
+                  '<form class="claim" data-claim novalidate><label for="claim-handle">' +
+                  both('TikTok username mo', 'Your TikTok username') +
                   '</label><div class="claim-row"><input id="claim-handle" name="handle" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="25" placeholder="@username" /><button type="submit" class="spin-btn">' +
                   both('I-claim! 🎁', 'Claim! 🎁') +
-                  '</button></div><p class="claim-msg" data-claim-msg aria-live="polite"></p></form>'
+                  '</button></div><p class="claim-msg" data-claim-msg aria-live="polite">' +
+                  both('Isang beses lang puwedeng mag-claim, kaya tapusin muna ang lahat ng quiz.', 'You can claim once, so finish all the quizzes first.') +
+                  '</p></form>'
                );
             }
-            function sendClaim(body, token, btn, msg, label) {
-               btn.disabled = true;
-               msg.innerHTML = both('Sine-send...', 'Sending...');
-               var headers = { 'Content-Type': 'application/json' };
-               if (token) headers.Authorization = 'Bearer ' + token;
-               fetch(CLAIM_URL, { method: 'POST', headers: headers, body: JSON.stringify(body) })
-                  .then(function (r) {
-                     if (!r.ok) throw new Error(String(r.status));
-                     try {
-                        localStorage.setItem(CLAIM_KEY, label);
-                     } catch (err) {}
-                     updateScore();
-                  })
-                  .catch(function (err) {
-                     btn.disabled = false;
-                     var code = String(err.message);
-                     msg.innerHTML =
-                        code === '401'
-                           ? both('Nag-expire ang log in mo. Mag-log in ulit.', 'Your login expired. Please log in again.')
-                           : code === '503'
-                             ? both('Hindi pa bukas ang claim. Subukan ulit mamaya!', "Claiming isn't open yet. Please try again later!")
-                             : both('May problema sa pag-send. Subukan ulit.', 'Something went wrong sending. Please try again.');
-                  });
-            }
-            // The TikTok button stays hidden until public/landing/auth-providers.json says tiktok: true.
-            var tiktokLive = null;
-            function showTikTokIfLive() {
-               if (tiktokLive === null) {
-                  tiktokLive = fetch('/landing/auth-providers.json', { cache: 'no-cache' })
-                     .then(function (r) {
-                        return r.ok ? r.json() : null;
-                     })
-                     .then(function (cfg) {
-                        return !!cfg && cfg.tiktok === true;
-                     })
-                     .catch(function () {
-                        return false;
-                     });
-               }
-               tiktokLive.then(function (live) {
-                  if (!live) return;
-                  document.querySelectorAll('.login-btn.tt').forEach(function (a) {
-                     a.hidden = false;
-                  });
-               });
-            }
             function bindClaim(t) {
-               showTikTokIfLive();
-               var lang = function () {
-                  return document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'fil';
-               };
-               var acctBtn = document.querySelector('[data-claim-account]');
-               if (acctBtn) {
-                  var me = loggedInAccount();
-                  acctBtn.addEventListener('click', function () {
-                     if (!me) return;
-                     sendClaim({ spins: t.spins, points: t.pts, tickets: t.tickets, lang: lang() }, me.token, acctBtn, acctBtn.parentNode.querySelector('[data-claim-msg]'), 'acct:' + (me.name || 'your account'));
-                  });
-                  return;
-               }
                var form = document.querySelector('[data-claim]');
                if (!form) return;
                var msg = form.querySelector('[data-claim-msg]');
+               var btn = form.querySelector('button');
                form.addEventListener('submit', function (e) {
                   e.preventDefault();
                   var h = form.handle.value.trim().replace(/^@/, '');
@@ -2845,7 +2700,27 @@
                      msg.innerHTML = both('Ilagay ang tamang TikTok username (letra, numero, . at _ lang).', 'Enter a valid TikTok username (letters, numbers, . and _ only).');
                      return;
                   }
-                  sendClaim({ handle: h, spins: t.spins, points: t.pts, tickets: t.tickets, lang: lang() }, null, form.querySelector('button'), msg, h);
+                  btn.disabled = true;
+                  msg.innerHTML = both('Sine-send...', 'Sending...');
+                  fetch(CLAIM_URL, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ handle: h, spins: t.spins, points: t.pts, tickets: t.tickets, lang: document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'fil' }),
+                  })
+                     .then(function (r) {
+                        if (!r.ok) throw new Error(String(r.status));
+                        try {
+                           localStorage.setItem(CLAIM_KEY, h);
+                        } catch (err) {}
+                        updateScore();
+                     })
+                     .catch(function (err) {
+                        btn.disabled = false;
+                        msg.innerHTML =
+                           String(err.message) === '503'
+                              ? both('Hindi pa bukas ang claim. Subukan ulit mamaya!', "Claiming isn't open yet. Please try again later!")
+                              : both('May problema sa pag-send. Subukan ulit.', 'Something went wrong sending. Please try again.');
+                     });
                });
             }
             function wheelHtml() {
@@ -3173,7 +3048,7 @@
                      '<p class="big-math">🎁 ' +
                      both('2 golden tickets = Grab draw (₱50 GrabFood voucher)', '2 golden tickets = Grab draw (₱50 GrabFood voucher)') +
                      '</p>' +
-                     p('Para i-claim ang prizes mo, mag-log in o mag-sign up gamit ang TikTok, LINE o email sa Results pagkatapos ng huling spin. Isang beses lang ang claim. Kokontakin ka namin at iaanunsyo sa TikTok ang mananalo.', 'To claim your prizes, log in or sign up with TikTok, LINE or email in Results after your last spin. You can claim once. We contact you and announce the winner on TikTok.') +
+                     p('Para i-claim ang prizes mo, ilagay ang TikTok username mo sa Results pagkatapos ng huling spin. Isang beses lang ang claim. Kokontakin ka namin sa TikTok at iaanunsyo roon ang mananalo.', 'To claim your prizes, type your TikTok username in Results after your last spin. You can claim once. We contact you on TikTok and announce the winner there.') +
                      '<p class="big-math">🥯 ' +
                      both('Kulang ang tickets? Pandesal points pa rin!', 'Not enough tickets? Pandesal points still count!') +
                      '</p>' +
