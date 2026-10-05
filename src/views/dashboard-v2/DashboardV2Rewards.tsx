@@ -28,7 +28,7 @@ import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Previe
 const PRIMARY_GRADIENT = 'linear-gradient(77.66deg, #9584ff 0.5%, #6b55f7 98.16%)';
 
 const FIELD =
-   'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-white px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9]';
+   'h-12 w-full rounded-[12px] border-2 border-[#e8e4ff] bg-dv2-card px-3.5 text-[16px] text-[#0f172b] outline-none placeholder:text-[#c0b9c8] focus:border-[#7b67f9] dark:border-[#3a2f55] dark:bg-dv2-page dark:focus:border-[#7b67f9]';
 
 const CLAIM_COPY: Record<VoucherReward, { headline: string; body: string }> = {
    first_on_time_repayment: { headline: 'You repaid on time. Treat yourself!', body: 'Tell us where to send your GrabFood voucher code.' },
@@ -91,30 +91,32 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
       >
          {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
-            <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8">
+            <p className="mb-2 text-center text-[26px] font-black italic leading-7 text-[#3c8248] underline decoration-[#4aa256] decoration-4 underline-offset-8 dark:text-[#7fd68b]">
                Voucher Unlocked!
             </p>
-            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center">
+            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#fff6c2] via-white via-40% to-white px-5 pb-6 pt-5 text-center dark:from-[#3a3216] dark:via-dv2-card dark:to-dv2-card">
                {isSubmitted ? (
                   <div className="flex flex-col items-center gap-3 py-4">
                      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#4aa256]">
                         <Check className="h-8 w-8 text-white" strokeWidth={3} aria-hidden="true" />
                      </span>
-                     <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65]">
+                     <p id="dv2-voucher-title" className="text-[24px] font-bold leading-7 text-[#594d65] dark:text-[#e6def2]">
                         Salamat! We got it.
                      </p>
                      <p className="text-[16px] leading-[22px] text-[#45556c]">
                         We&apos;ll send your ₱{voucher.amountPhp} GrabFood voucher code to your mobile within 2 business days.
                      </p>
-                     {isPreview ? <p className="text-[12px] text-[#c0b9c8]">Preview sample — nothing was sent.</p> : null}
+                     {isPreview ? (
+                        <p className="text-[12px] text-[#c0b9c8] dark:text-[#8f819e]">Preview sample — nothing was sent.</p>
+                     ) : null}
                   </div>
                ) : (
                   <form onSubmit={handleSubmit} className="flex flex-col items-center gap-3">
                      <div className="flex items-center gap-2">
                         <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-20 w-20 object-contain" />
-                        <span className="text-[34px] font-black text-[#3c8248]">₱{voucher.amountPhp}</span>
+                        <span className="text-[34px] font-black text-[#3c8248] dark:text-[#7fd68b]">₱{voucher.amountPhp}</span>
                      </div>
-                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65]">
+                     <p id="dv2-voucher-title" className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#e6def2]">
                         {copy.headline}
                      </p>
                      <p className="text-[16px] leading-5 text-[#45556c]">{copy.body}</p>
@@ -138,7 +140,7 @@ export function VoucherClaimPopup({ voucher, isPreview, onClose }: { voucher: Cl
                         aria-label="Email"
                      />
                      {submitClaim.error ? (
-                        <p className="text-[14px] font-medium text-[#d51728]" role="alert">
+                        <p className="text-[14px] font-medium text-[#d51728] dark:text-[#ff8a96]" role="alert">
                            {describeClaimError(submitClaim.error)}
                         </p>
                      ) : null}
