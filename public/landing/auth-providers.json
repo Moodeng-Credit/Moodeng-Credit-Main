@@ -1,4 +1,4 @@
 {
-   "_comment": "Flip tiktok to true ONLY after the TikTok app is approved and TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET + VITE_TIKTOK_CLIENT_KEY are set. It shows the TikTok login button on every landing page and on /stocks.",
+   "_comment": "Flip tiktok to true ONLY after the TikTok Production app is approved and its keys are in Supabase (TIKTOK_CLIENT_KEY/SECRET) and src/lib/tiktokAuth.ts (TIKTOK_CLIENT_KEY, TIKTOK_PUBLIC). Until then testers use ?tiktok=1. It shows the TikTok login button on every landing page and on /stocks.",
    "tiktok": false
 }

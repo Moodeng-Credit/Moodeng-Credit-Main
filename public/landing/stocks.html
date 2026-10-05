@@ -2796,6 +2796,13 @@
                      });
                }
                tiktokLive.then(function (live) {
+                  // Before launch, testers see the button after opening any page with ?tiktok=1 (same flag as the app).
+                  try {
+                     var flag = new URLSearchParams(location.search).get('tiktok');
+                     if (flag === '1') localStorage.setItem('moodeng:tiktok-test', '1');
+                     if (flag === '0') localStorage.removeItem('moodeng:tiktok-test');
+                     if (localStorage.getItem('moodeng:tiktok-test') === '1') live = true;
+                  } catch (e) {}
                   if (!live) return;
                   document.querySelectorAll('.claim-login[data-tt]').forEach(function (a) {
                      a.hidden = false;

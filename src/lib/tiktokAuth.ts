@@ -5,15 +5,44 @@ export const TIKTOK_OAUTH_STATE_KEY = 'tiktok_oauth_state';
 /** Max number of concurrent in-flight login states we remember at once. */
 const MAX_TRACKED_STATES = 10;
 
-/** Public TikTok Login Kit client key (safe to expose to the browser; the client SECRET stays server-side). */
+/**
+ * Public TikTok Login Kit client key (safe to expose to the browser; the client SECRET stays server-side in the
+ * tiktok-login edge function). Currently the Sandbox app's key: it only works for the Sandbox target users until
+ * TikTok approves the Production app, then swap in the Production key (and TIKTOK_CLIENT_KEY/SECRET in Supabase).
+ */
+const TIKTOK_CLIENT_KEY = 'sbaww8ikhon8a2tvwm';
+
+/**
+ * Show TikTok buttons to everyone. Keep false while on the Sandbox key (other people's logins would fail);
+ * until then the buttons only appear after visiting any page with ?tiktok=1 (cleared with ?tiktok=0).
+ * Keep in sync with public/landing/auth-providers.json.
+ */
+const TIKTOK_PUBLIC = false;
+export const TIKTOK_TEST_FLAG_KEY = 'moodeng:tiktok-test';
+
 export function getTikTokClientKey(): string {
    const key = import.meta.env.VITE_TIKTOK_CLIENT_KEY as string | undefined;
-   return typeof key === 'string' ? key.trim() : '';
+   const fromEnv = typeof key === 'string' ? key.trim() : '';
+   return fromEnv && !fromEnv.startsWith('encrypted:') ? fromEnv : TIKTOK_CLIENT_KEY;
 }
 
 export function isTikTokConfigured(): boolean {
    const key = getTikTokClientKey();
    return key.length > 0 && !key.startsWith('encrypted:');
+}
+
+/** Whether to show TikTok login buttons: everyone once TIKTOK_PUBLIC is on, otherwise only testers (?tiktok=1). */
+export function isTikTokButtonVisible(): boolean {
+   if (!isTikTokConfigured()) return false;
+   if (TIKTOK_PUBLIC) return true;
+   try {
+      const flag = new URLSearchParams(window.location.search).get('tiktok');
+      if (flag === '1') localStorage.setItem(TIKTOK_TEST_FLAG_KEY, '1');
+      if (flag === '0') localStorage.removeItem(TIKTOK_TEST_FLAG_KEY);
+      return localStorage.getItem(TIKTOK_TEST_FLAG_KEY) === '1';
+   } catch {
+      return false;
+   }
 }
 
 /**
