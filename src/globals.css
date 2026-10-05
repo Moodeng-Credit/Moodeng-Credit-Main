@@ -116,6 +116,22 @@ a {
    background-color: #a7b9f9;
 }
 
+/* Borrower dashboard (dashboard-v2) surfaces, used via the `dv2-*` Tailwind colors. Dark card matches
+   the global card remap below (#1b1525) so the dashboard sits flush with the rest of the app. */
+:root {
+   --dv2-page: #f7f7f7;
+   --dv2-card: #ffffff;
+   --dv2-card-tint: #f8f6ff;
+   --dv2-tab: #efeaff;
+}
+
+html.dark {
+   --dv2-page: #100d17;
+   --dv2-card: #1b1525;
+   --dv2-card-tint: #221a31;
+   --dv2-tab: #2a2042;
+}
+
 html.dark,
 html.dark body,
 html.dark #root {

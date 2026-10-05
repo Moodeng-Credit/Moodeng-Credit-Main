@@ -18,22 +18,26 @@ const PRIMARY_GRADIENT = 'linear-gradient(85.47deg, #9584ff 0.5%, #6b55f7 98.16%
 const STAT_NUMBER = 'font-medium leading-[18px] tracking-[-0.06em]';
 
 function Divider() {
-   return <div className="h-px w-full bg-[#ece9f1]" aria-hidden="true" />;
+   return <div className="h-px w-full bg-[#ece9f1] dark:bg-[#2c2439]" aria-hidden="true" />;
 }
 
 /** Claim / Pending / Sent pill for an earned voucher. */
 export function VoucherStatusPill({ state, onClaim }: { state: VoucherState; onClaim: () => void }) {
    if (state === 'claimable') return <ClaimVoucherButton onClaim={onClaim} />;
-   if (state === 'loading') return <span className={clsx(PILL_BUTTON, 'animate-pulse bg-[#ece9f1]')} aria-label="Loading voucher" />;
+   if (state === 'loading')
+      return <span className={clsx(PILL_BUTTON, 'animate-pulse bg-[#ece9f1] dark:bg-[#2a2235]')} aria-label="Loading voucher" />;
    if (state === 'rejected') {
       return (
-         <Link to="/help" className={clsx(PILL_BUTTON, 'bg-[#fde8ea] text-[#d51728]')}>
+         <Link to="/help" className={clsx(PILL_BUTTON, 'bg-[#fde8ea] text-[#d51728] dark:bg-[#3c171e] dark:text-[#ff8a96]')}>
             Help
          </Link>
       );
    }
    const label = state === 'sent' ? 'Sent' : state === 'pending' ? 'Pending' : 'Done';
-   const tone = state === 'sent' || state === 'none' ? 'bg-[#e3f5e8] text-[#2f8a4a]' : 'bg-[#fff4cc] text-[#a06a00]';
+   const tone =
+      state === 'sent' || state === 'none'
+         ? 'bg-[#e3f5e8] text-[#2f8a4a] dark:bg-[#113522] dark:text-[#70e4a6]'
+         : 'bg-[#fff4cc] text-[#a06a00] dark:bg-[#3d2d12] dark:text-[#facc6b]';
    return <span className={clsx(PILL_BUTTON, tone)}>{label}</span>;
 }
 
@@ -67,18 +71,18 @@ function MilestoneAction({
    }
 
    if (milestone.status === 'unlocked') {
-      return <span className={clsx(PILL_BUTTON, 'bg-[#e3f5e8] text-[#2f8a4a]')}>Done</span>;
+      return <span className={clsx(PILL_BUTTON, 'bg-[#e3f5e8] text-[#2f8a4a] dark:bg-[#113522] dark:text-[#70e4a6]')}>Done</span>;
    }
 
    if (milestone.status === 'locked') {
       return (
-         <span className={clsx(PILL_BUTTON, 'relative overflow-hidden text-white')}>
+         <span className={clsx(PILL_BUTTON, 'relative overflow-hidden text-white dark:bg-[#2a2235] dark:text-[#8f819e]')}>
             <span
-               className="absolute inset-0"
+               className="absolute inset-0 dark:hidden"
                style={{ backgroundImage: 'linear-gradient(85.47deg, #b9aeff 0.5%, #8b7afa 57.57%, #6b55f7 98.16%)' }}
                aria-hidden="true"
             />
-            <span className="absolute inset-0 bg-white/80 mix-blend-color" aria-hidden="true" />
+            <span className="absolute inset-0 bg-white/80 mix-blend-color dark:hidden" aria-hidden="true" />
             <span className="relative">Locked</span>
          </span>
       );
@@ -120,13 +124,9 @@ export function MilestonesSection({
                         'flex items-center justify-between gap-1',
                         index > 0 && 'py-[14px]',
                         index === 0 && 'pb-[14px]',
-                        milestone.isVoucher && '-mx-1.5 px-1.5'
+                        milestone.isVoucher &&
+                           '-mx-1.5 bg-gradient-to-r from-[rgba(255,206,27,0.36)] from-[10.88%] to-transparent to-[108.81%] px-1.5 dark:from-[rgba(255,206,27,0.16)]'
                      )}
-                     style={
-                        milestone.isVoucher
-                           ? { backgroundImage: 'linear-gradient(90deg, rgba(255,206,27,0.36) 10.88%, rgba(255,255,255,0) 108.81%)' }
-                           : undefined
-                     }
                   >
                      <div className="flex min-w-0 items-center gap-1">
                         <DesignImage
@@ -138,7 +138,7 @@ export function MilestonesSection({
                               className={clsx(
                                  'font-medium leading-6',
                                  index === 0 ? 'text-[20px]' : 'text-[18px]',
-                                 milestone.isVoucher ? 'text-[#833000]' : 'text-[#0f172b]'
+                                 milestone.isVoucher ? 'text-[#833000] dark:text-[#ffc46b]' : 'text-[#0f172b]'
                               )}
                            >
                               {milestone.title}
@@ -154,7 +154,7 @@ export function MilestonesSection({
             ))}
             <Link
                to={allMilestonesHref}
-               className="mt-5 flex items-center justify-center gap-0.5 self-center text-[16px] font-semibold leading-[21px] tracking-[-0.32px] text-[#4492f1]"
+               className="mt-5 flex items-center justify-center gap-0.5 self-center text-[16px] font-semibold leading-[21px] tracking-[-0.32px] text-[#4492f1] dark:text-[#7cb4ff]"
             >
                View All Milestones
                <DesignImage src={DASHBOARD_V2_ASSETS.viewAllChevron} className="h-3.5 w-3.5" />
@@ -177,7 +177,10 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
             <p className="flex items-center gap-1 whitespace-nowrap text-[clamp(13px,4vw,16px)] leading-[18px] text-[#45556c]">
                <DesignImage src={DASHBOARD_V2_ASSETS.repayments} className="h-3.5 w-3.5 shrink-0" />
                <span>
-                  <span className="text-[#6b55f7]">${formatCurrency(summary.repaymentsTotal).replace(/\.00$/, '')}</span> Repayments
+                  <span className="text-[#6b55f7] dark:text-[#b3a6ff]">
+                     ${formatCurrency(summary.repaymentsTotal).replace(/\.00$/, '')}
+                  </span>{' '}
+                  Repayments
                </span>
             </p>
          }
@@ -188,7 +191,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                className="group flex min-w-0 flex-1 flex-col gap-[7px] transition-transform duration-150 active:scale-[0.97]"
             >
                <span className="mb-1 flex items-center gap-0.5">
-                  <span className={clsx(STAT_NUMBER, 'text-[clamp(28px,8.6vw,38px)] text-[#5c44f1]')}>
+                  <span className={clsx(STAT_NUMBER, 'text-[clamp(28px,8.6vw,38px)] text-[#5c44f1] dark:text-[#b3a6ff]')}>
                      {formatCurrency(summary.active)}
                   </span>
                   <DesignImage
@@ -199,7 +202,9 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                <span className="text-[14px] leading-[18px] text-[#45556c]">Active Loans($)</span>
             </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
-               <span className={clsx(STAT_NUMBER, 'text-[clamp(22px,6.4vw,28px)] text-[#594d65]')}>{formatCurrency(summary.pending)}</span>
+               <span className={clsx(STAT_NUMBER, 'text-[clamp(22px,6.4vw,28px)] text-[#594d65] dark:text-[#e6def2]')}>
+                  {formatCurrency(summary.pending)}
+               </span>
                <span className="text-[14px] leading-[18px] text-[#45556c]">Pending Loans($)</span>
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
@@ -207,7 +212,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                   className={clsx(
                      STAT_NUMBER,
                      'text-[clamp(22px,6.4vw,28px)]',
-                     summary.defaulted > 0 ? 'text-[#d51728]' : 'text-[#c0b9c8]'
+                     summary.defaulted > 0 ? 'text-[#d51728] dark:text-[#ff8a96]' : 'text-[#c0b9c8] dark:text-[#5e526f]'
                   )}
                >
                   {formatCurrency(summary.defaulted)}
@@ -260,8 +265,11 @@ function DueRow({ due }: { due: DashboardV2Due }) {
    const { locale } = useLocalization();
    return (
       <div
-         className={clsx('flex items-center justify-between py-3', due.isOverdue && '-mx-2.5 px-2.5')}
-         style={due.isOverdue ? { backgroundImage: 'linear-gradient(90deg, #ff5b6b 0%, #ff8e98 55%, #ffe3e6 100%)' } : undefined}
+         className={clsx(
+            'flex items-center justify-between py-3',
+            due.isOverdue &&
+               '-mx-2.5 bg-gradient-to-r from-[#ff5b6b] via-[#ff8e98] via-55% to-[#ffe3e6] px-2.5 dark:from-[#b4232f] dark:via-[#7d1f2b] dark:to-dv2-card'
+         )}
       >
          <div className="flex flex-col">
             <div className="flex items-center gap-0.5">
@@ -271,13 +279,13 @@ function DueRow({ due }: { due: DashboardV2Due }) {
                <span
                   className={clsx(
                      'flex h-[22px] items-center justify-center rounded-[11px] px-[9px] text-[16px] leading-[18px]',
-                     due.isOverdue ? 'bg-[#d51728] text-white' : 'bg-[#e0dbff] text-[#5640e0]'
+                     due.isOverdue ? 'bg-[#d51728] text-white' : 'bg-[#e0dbff] text-[#5640e0] dark:bg-[#2f2560] dark:text-[#c4b8ff]'
                   )}
                >
                   {formatDueLabel(due, locale)}
                </span>
             </div>
-            <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8]')}>
+            <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8] dark:text-[#8f819e]')}>
                Lent by {due.lenderName}
             </span>
          </div>
@@ -292,14 +300,14 @@ function DueRow({ due }: { due: DashboardV2Due }) {
 
 export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
    return (
-      <section className="mx-5 rounded-[8px] bg-white px-2.5 pb-3.5 pt-5" aria-labelledby="dv2-dues-title">
+      <section className="mx-5 rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-5" aria-labelledby="dv2-dues-title">
          <div className="flex items-center justify-between">
             <h2 id="dv2-dues-title" className="whitespace-nowrap text-[clamp(17px,5vw,20px)] font-medium leading-6 text-[#0f172b]">
                Upcoming Loan Dues
             </h2>
             <Link
                to={model.insightsHref}
-               className="group flex shrink-0 items-center whitespace-nowrap text-[clamp(15px,4.5vw,18px)] leading-[18px] text-[#45556c] transition duration-150 hover:text-[#4f36ef] active:scale-[0.96]"
+               className="group flex shrink-0 items-center whitespace-nowrap text-[clamp(15px,4.5vw,18px)] leading-[18px] text-[#45556c] transition duration-150 hover:text-[#4f36ef] active:scale-[0.96] dark:hover:text-[#b3a6ff]"
             >
                My insights
                <DesignImage

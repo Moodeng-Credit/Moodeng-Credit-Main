@@ -27,8 +27,16 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
          <DesignImage
             src={DASHBOARD_V2_ASSETS.connectWalletBanner}
             alt="Connect Wallet: +10 Pandesal. Receive USDC loans."
-            className="aspect-[878/128] h-auto w-full"
+            className="aspect-[878/128] h-auto w-full dark:hidden"
          />
+         {/* The exported banner has a white card baked in, so dark mode re-sets it in code. */}
+         <span className="mx-5 my-0.5 hidden h-[60px] items-center justify-between gap-2 rounded-[8px] border-2 border-dv2-tab bg-dv2-card px-2.5 text-left dark:flex">
+            <span className="flex min-w-0 flex-col">
+               <span className="truncate text-[clamp(20px,6vw,24px)] font-black italic leading-6 text-[#d9cfe6]">Connect Wallet</span>
+               <span className="truncate text-[14px] leading-[18px] text-[#8f819e]">Receive USDC loans</span>
+            </span>
+            <span className="shrink-0 rounded-full bg-[#6b55f7] px-4 py-1.5 text-[16px] font-bold leading-5 text-white">+10Pandesal</span>
+         </span>
       </button>
    );
 }
@@ -102,7 +110,7 @@ export function ConnectFacebookBanner({ language, onConnect }: { language: Dashb
          onClick={onConnect}
          className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
       >
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e7f0ff]">
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e7f0ff] dark:bg-[#102a3f]">
             <Facebook className="h-5 w-5 text-[#0866FF]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
@@ -122,14 +130,14 @@ export function WithdrawBanner({ onWithdraw }: { onWithdraw: () => void }) {
          onClick={onWithdraw}
          className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
       >
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
-            <Wallet className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
+            <Wallet className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">Withdraw your USDC</span>
             <span className="block text-[14px] leading-[18px] text-[#45556c]">Cash out your funded loan to local currency.</span>
          </span>
-         <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6b55f7]" aria-hidden="true" />
+         <ArrowUpRight className="h-5 w-5 shrink-0 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
       </button>
    );
 }
@@ -176,8 +184,8 @@ export function TurnOnRemindersBanner({
    const body = variant === 'blocked' ? copy.blockedBody : variant === 'home-screen' ? copy.homeScreenBody : copy.body;
    const content = (
       <>
-         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff]">
-            <Icon className="h-5 w-5 text-[#6b55f7]" aria-hidden="true" />
+         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
+            <Icon className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-medium leading-6 text-[#0f172b]">{title}</span>
