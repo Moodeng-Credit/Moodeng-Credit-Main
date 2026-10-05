@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import LineLoginButton from '@/components/LineLoginButton';
+import TikTokLoginButton from '@/components/TikTokLoginButton';
 
 import LastUsedBadge from './LastUsedBadge';
 import TelegramLoginTile from './TelegramLoginTile';
@@ -145,6 +146,12 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
             <div className="relative">
                <LineLoginButton isSignUp={isSignUp} iconOnly />
                {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+            </div>
+
+            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (hidden until configured) */}
+            <div className="relative">
+               <TikTokLoginButton isSignUp={isSignUp} iconOnly />
+               {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
             {/* Facebook: not live yet — grayed out; tapping it flashes a "Soon" hint */}

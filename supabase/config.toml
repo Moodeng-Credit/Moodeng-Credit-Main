@@ -165,3 +165,7 @@ verify_jwt = true
 # Public prize-wheel claim from moodeng.app/stocks (no login; validated + posted to Discord).
 [functions.stocks-claim]
 verify_jwt = false
+
+# TikTok Login Kit callback exchange (public: called from the browser before a session exists).
+[functions.tiktok-login]
+verify_jwt = false

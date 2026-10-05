@@ -5,14 +5,13 @@ import { useNavigate } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import { consumeAuthReturnTo } from '@/lib/authReturn';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
-import { consumeLineState, getLineRedirectUri } from '@/lib/lineAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { consumeTikTokState, getTikTokRedirectUri } from '@/lib/tiktokAuth';
 
-export default function LineCallbackPage(): JSX.Element {
+export default function TikTokCallbackPage(): JSX.Element {
    const navigate = useNavigate();
    const [error, setError] = useState<string | null>(null);
-   // The auth code is single-use; guard against the effect running twice
-   // (StrictMode / remount) which would consume the state then fail the rerun.
+   // The auth code is single-use; guard against the effect running twice (StrictMode / remount).
    const handledRef = useRef(false);
 
    useEffect(() => {
@@ -23,30 +22,29 @@ export default function LineCallbackPage(): JSX.Element {
          const params = new URLSearchParams(window.location.search);
          const code = params.get('code');
          const state = params.get('state');
-         const lineError = params.get('error_description') || params.get('error');
+         const tiktokError = params.get('error_description') || params.get('error');
 
-         if (lineError) {
-            setError(lineError);
+         if (tiktokError) {
+            setError(tiktokError);
             return;
          }
-
          if (!code) {
-            setError('Missing LINE authorization code. Please try again.');
+            setError('Missing TikTok authorization code. Please try again.');
             return;
          }
-         if (!consumeLineState(state)) {
-            setError('LINE login state mismatch. Please try again.');
+         if (!consumeTikTokState(state)) {
+            setError('TikTok login state mismatch. Please try again.');
             return;
          }
 
          const supabase = getSupabaseBrowserClient();
 
-         const { data, error: fnError } = await supabase.functions.invoke('line-login', {
-            body: { code, redirectUri: getLineRedirectUri() }
+         const { data, error: fnError } = await supabase.functions.invoke('tiktok-login', {
+            body: { code, redirectUri: getTikTokRedirectUri() }
          });
 
          if (fnError) {
-            setError(fnError.message || 'LINE login failed.');
+            setError(fnError.message || 'TikTok login failed.');
             return;
          }
          if (data?.error) {
@@ -60,7 +58,7 @@ export default function LineCallbackPage(): JSX.Element {
             return;
          }
 
-         setLastUsedAuth('line');
+         setLastUsedAuth('tiktok');
 
          // Started from the money-lesson page? Send them back there (full load: /stocks is a static page).
          const back = consumeAuthReturnTo();
@@ -73,31 +71,22 @@ export default function LineCallbackPage(): JSX.Element {
          const userId = sessionData?.session?.user?.id;
 
          if (userId) {
-            const { data: profile } = await supabase
-               .from('users')
-               .select('username')
-               .eq('id', userId)
-               .maybeSingle();
-
-            if (profile?.username) {
-               navigate('/dashboard', { replace: true });
-            } else {
-               navigate('/onboarding/role', { replace: true });
-            }
+            const { data: profile } = await supabase.from('users').select('username').eq('id', userId).maybeSingle();
+            navigate(profile?.username ? '/dashboard' : '/onboarding/role', { replace: true });
          } else {
             navigate('/onboarding/role', { replace: true });
          }
       };
 
       run().catch((err: unknown) => {
-         setError(err instanceof Error ? err.message : 'Unexpected error during LINE login.');
+         setError(err instanceof Error ? err.message : 'Unexpected error during TikTok login.');
       });
    }, [navigate]);
 
    if (error) {
       return (
          <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-            <p className="text-lg font-semibold text-red-600">LINE login failed</p>
+            <p className="text-lg font-semibold text-red-600">TikTok login failed</p>
             <p className="text-sm text-gray-600">{error}</p>
             <a href="/sign-in" className="text-sm font-medium text-[#6010D2] underline">
                Back to sign in

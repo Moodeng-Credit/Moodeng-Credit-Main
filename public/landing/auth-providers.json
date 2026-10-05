@@ -1,0 +1,4 @@
+{
+   "_comment": "Flip tiktok to true ONLY after the TikTok app is approved and TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET + VITE_TIKTOK_CLIENT_KEY are set. It shows the TikTok login button on every landing page and on /stocks.",
+   "tiktok": false
+}

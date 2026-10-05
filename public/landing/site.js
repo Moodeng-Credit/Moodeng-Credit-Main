@@ -642,3 +642,50 @@
       mobileCarousel.addListener(resetCarousel);
    }
 })();
+
+// TikTok login button on every landing page. Hidden until public/landing/auth-providers.json says
+// {"tiktok": true}, so we never send visitors to a login that is not switched on yet.
+(function () {
+   var isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+   var loginHref = (isLocal ? 'https://moodeng.app' : '') + '/auth/start/tiktok';
+   var NOTE =
+      'M16.6 5.8c-.9-.6-1.5-1.5-1.7-2.6h-2.9v11.6c0 1.2-1 2.2-2.2 2.2s-2.2-1-2.2-2.2 1-2.2 2.2-2.2c.2 0 .5 0 .7.1V9.7c-.2 0-.5-.1-.7-.1-2.8 0-5.1 2.3-5.1 5.1s2.3 5.1 5.1 5.1 5.1-2.3 5.1-5.1V9.2c1 .8 2.3 1.2 3.6 1.2V7.5c-.8 0-1.6-.3-2.2-.8z';
+   var logo =
+      '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect width="24" height="24" rx="5.5" fill="#010101"/>' +
+      '<path d="' + NOTE + '" fill="#25F4EE" transform="translate(-.6 -.5) scale(.9) translate(1.3 1.3)"/>' +
+      '<path d="' + NOTE + '" fill="#FE2C55" transform="translate(.6 .5) scale(.9) translate(1.3 1.3)"/>' +
+      '<path d="' + NOTE + '" fill="#fff" transform="scale(.9) translate(1.3 1.3)"/></svg>';
+
+   if (!window.fetch) return;
+   fetch('/landing/auth-providers.json', { cache: 'no-cache' })
+      .then(function (r) {
+         return r.ok ? r.json() : null;
+      })
+      .then(function (cfg) {
+         if (!cfg || cfg.tiktok !== true) return;
+
+         var actions = document.querySelector('.header-actions');
+         var menuButton = actions && actions.querySelector('.menu-button');
+         if (actions && !actions.querySelector('.tiktok-login')) {
+            var icon = document.createElement('a');
+            icon.className = 'tiktok-login';
+            icon.href = loginHref;
+            icon.setAttribute('aria-label', 'Continue with TikTok');
+            icon.title = 'Continue with TikTok';
+            icon.innerHTML = logo;
+            actions.insertBefore(icon, menuButton || null);
+         }
+
+         var menuActions = document.querySelector('.menu-actions');
+         if (menuActions && !menuActions.querySelector('.tiktok-login-wide')) {
+            var wide = document.createElement('a');
+            wide.className = 'button tiktok-login-wide';
+            wide.href = loginHref;
+            wide.innerHTML = logo + '<span>Continue with TikTok</span>';
+            menuActions.appendChild(wide);
+         }
+      })
+      .catch(function () {
+         // no config file = no button
+      });
+})();

@@ -33,6 +33,8 @@ import PricingHealthPreview from '@/app/admin/PricingHealthPreview';
 import AuthSuccess from '@/app/auth-success/page';
 import AuthConfirm from '@/app/auth/confirm/page';
 import LineCallback from '@/app/auth/line/callback/page';
+import AuthStartPage from '@/app/auth/start/page';
+import TikTokCallback from '@/app/auth/tiktok/callback/page';
 import TelegramCallback from '@/app/auth/telegram/callback/page';
 import AuthVerifyCode from '@/app/auth/verify-code/page';
 import Benefits from '@/app/benefits/page';
@@ -573,6 +575,8 @@ export default function App() {
             <Route path="/auth/verify-code" element={<AuthVerifyCode />} />
             <Route path="/auth/telegram/callback" element={<TelegramCallback />} />
             <Route path="/auth/line/callback" element={<LineCallback />} />
+            <Route path="/auth/tiktok/callback" element={<TikTokCallback />} />
+            <Route path="/auth/start/:provider" element={<AuthStartPage />} />
 
             {/* Help & Support */}
             {/* Public, shareable chat-first hub (Mecha). Coexists with /help/:loanId
