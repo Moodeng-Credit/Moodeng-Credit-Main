@@ -1560,11 +1560,13 @@
             left: 50%;
             z-index: 40;
             translate: -50% 0;
+            max-width: calc(100vw - 16px);
+            white-space: nowrap;
             border-radius: 999px;
-            padding: 6px 14px;
+            padding: 6px 12px;
             background: var(--heading);
             color: #fff;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 800;
             box-shadow: var(--shadow-nav);
             animation: chipin 0.3s ease-out;
@@ -1748,6 +1750,38 @@
             border-radius: 14px;
             padding: 10px 14px;
             background: var(--yellow-100);
+            font-weight: 600;
+         }
+         .claim {
+            display: grid;
+            gap: 8px;
+         }
+         .claim label {
+            font-weight: 700;
+         }
+         .claim-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+         }
+         .claim input {
+            width: 100%;
+            min-width: 0;
+            min-height: 50px;
+            border: 2px solid var(--primary-300);
+            border-radius: 14px;
+            padding: 8px 14px;
+            font: inherit;
+            font-size: 16px;
+            background: #fff;
+         }
+         .claim .spin-btn {
+            padding: 10px 16px;
+            white-space: nowrap;
+         }
+         .claim-msg {
+            font-size: 13px;
+            color: var(--n-1400);
             font-weight: 600;
          }
          .wheel-sheet {
@@ -2095,7 +2129,7 @@
 
             <section class="card" id="tickets" aria-labelledby="tickets-title">
                <h3 class="h2" id="tickets-title" style="font-size: 21px"><span data-l="fil">Ang wheel prizes mo 🎡</span><span data-l="en">Your wheel prizes 🎡</span></h3>
-               <p><span data-l="fil">Bawat tamang sagot = 1 spin ng wheel. 2 golden tickets = Grab draw. Kung kulang, pandesal points pa rin pag nag-sign up ka!</span><span data-l="en">Every right answer = 1 spin of the wheel. 2 golden tickets = Grab draw. Not enough? You still get pandesal points when you sign up!</span></p>
+               <p><span data-l="fil">Bawat tamang sagot = 1 spin ng wheel. 2 golden tickets = Grab draw. Kung kulang, pandesal points pa rin! I-claim sa dulo gamit ang TikTok username mo.</span><span data-l="en">Every right answer = 1 spin of the wheel. 2 golden tickets = Grab draw. Not enough? You still get pandesal points! Claim at the end with your TikTok username.</span></p>
                <div data-tickets></div>
                <button type="button" class="btn-lite" data-info="raffle"><span data-l="fil">Paano ang wheel at ang premyo?</span><span data-l="en">How do the wheel and prizes work?</span> <span class="i" aria-hidden="true">i</span></button>
             </section>
@@ -2616,12 +2650,73 @@
                var enough = t.tickets >= TICKETS_NEEDED;
                var h = '<div class="prize-stats"><div><b>' + t.spins + '/' + QUIZ_TOTAL + '</b><span>spins</span></div><div><b>🥯 ' + t.pts + '</b><span>' + both('pandesal points', 'pandesal points') + '</span></div><div><b>🎟️ ' + t.tickets + '/' + TICKETS_NEEDED + '</b><span>' + both('golden tickets', 'golden tickets') + '</span></div></div>';
                if (enough) {
-                  h += '<div class="prize-win"><b>' + both('🎉 Naabot mo ang ' + TICKETS_NEEDED + ' golden tickets para sa Grab draw!', '🎉 You collected ' + TICKETS_NEEDED + ' golden tickets for the Grab draw!') + '</b><span>' + both('Mag-sign up para makuha ang entry mo at ang pandesal points mo.', 'Sign up to claim your entry and your pandesal points.') + '</span></div>';
+                  h += '<div class="prize-win"><b>' + both('🎉 Naabot mo ang ' + TICKETS_NEEDED + ' golden tickets para sa Grab draw!', '🎉 You collected ' + TICKETS_NEEDED + ' golden tickets for the Grab draw!') + '</b><span>' + both('I-claim sa baba gamit ang TikTok username mo.', 'Claim below with your TikTok username.') + '</span></div>';
                } else {
-                  h += '<p class="prize-hint">' + both('Kulang pa ng ' + (TICKETS_NEEDED - t.tickets) + ' 🎟️ para sa Grab draw. Kahit hindi, may ' + t.pts + ' pandesal points ka pag nag-sign up!', 'You need ' + (TICKETS_NEEDED - t.tickets) + ' more 🎟️ for the Grab draw. Either way, you get ' + t.pts + ' pandesal points when you sign up!') + '</p>';
+                  h += '<p class="prize-hint">' + both('Kulang pa ng ' + (TICKETS_NEEDED - t.tickets) + ' 🎟️ para sa Grab draw. Kahit hindi, may ' + t.pts + ' pandesal points ka pa rin!', 'You need ' + (TICKETS_NEEDED - t.tickets) + ' more 🎟️ for the Grab draw. Either way, you keep your ' + t.pts + ' pandesal points!') + '</p>';
                }
-               h += '<a class="yahoo" href="/signup?src=stocks-lesson">🥯 ' + both('Mag-sign up para makuha ang prizes mo', 'Sign up to claim your prizes') + ' ›</a>';
+               h += claimHtml(t);
                box.innerHTML = h;
+               bindClaim(t);
+            }
+            // Claim: the visitor types their TikTok @handle; the stocks-claim edge function posts it to the team.
+            var CLAIM_URL = 'https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/stocks-claim';
+            var CLAIM_KEY = 'moodeng-stocks-claimed';
+            function claimedHandle() {
+               try {
+                  return localStorage.getItem(CLAIM_KEY);
+               } catch (e) {
+                  return null;
+               }
+            }
+            function claimHtml(t) {
+               var done = claimedHandle();
+               if (done) {
+                  return '<div class="prize-win"><b>' + both('✅ Na-claim na bilang @' + done + '!', '✅ Claimed as @' + done + '!') + '</b><span>' + both('Kokontakin ka namin sa TikTok.', "We'll reach out on TikTok.") + '</span></div>';
+               }
+               return (
+                  '<form class="claim" data-claim novalidate><label for="claim-handle">' +
+                  both('TikTok username mo', 'Your TikTok username') +
+                  '</label><div class="claim-row"><input id="claim-handle" name="handle" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="25" placeholder="@username" /><button type="submit" class="spin-btn">' +
+                  both('I-claim! 🎁', 'Claim! 🎁') +
+                  '</button></div><p class="claim-msg" data-claim-msg aria-live="polite">' +
+                  both('Isang beses lang puwedeng mag-claim, kaya tapusin muna ang lahat ng quiz.', 'You can claim once, so finish all the quizzes first.') +
+                  '</p></form>'
+               );
+            }
+            function bindClaim(t) {
+               var form = document.querySelector('[data-claim]');
+               if (!form) return;
+               var msg = form.querySelector('[data-claim-msg]');
+               var btn = form.querySelector('button');
+               form.addEventListener('submit', function (e) {
+                  e.preventDefault();
+                  var h = form.handle.value.trim().replace(/^@/, '');
+                  if (!/^[A-Za-z0-9._]{2,24}$/.test(h)) {
+                     msg.innerHTML = both('Ilagay ang tamang TikTok username (letra, numero, . at _ lang).', 'Enter a valid TikTok username (letters, numbers, . and _ only).');
+                     return;
+                  }
+                  btn.disabled = true;
+                  msg.innerHTML = both('Sine-send...', 'Sending...');
+                  fetch(CLAIM_URL, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ handle: h, spins: t.spins, points: t.pts, tickets: t.tickets, lang: document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'fil' }),
+                  })
+                     .then(function (r) {
+                        if (!r.ok) throw new Error(String(r.status));
+                        try {
+                           localStorage.setItem(CLAIM_KEY, h);
+                        } catch (err) {}
+                        updateScore();
+                     })
+                     .catch(function (err) {
+                        btn.disabled = false;
+                        msg.innerHTML =
+                           String(err.message) === '503'
+                              ? both('Hindi pa bukas ang claim. Subukan ulit mamaya!', "Claiming isn't open yet. Please try again later!")
+                              : both('May problema sa pag-send. Subukan ulit.', 'Something went wrong sending. Please try again.');
+                     });
+               });
             }
             function wheelHtml() {
                var stops = SEGS.map(function (sg, k) {
@@ -2905,7 +3000,7 @@
                      '<p class="big-math">🎁 ' +
                      both('2 golden tickets = Grab draw (₱50 GrabFood voucher)', '2 golden tickets = Grab draw (₱50 GrabFood voucher)') +
                      '</p>' +
-                     p('Para makuha ang entry mo sa Grab draw at ang pandesal points mo, mag-sign up sa Moodeng gamit ang button sa Results. Iaanunsyo sa TikTok ang petsa at mananalo.', 'To claim your Grab draw entry and your pandesal points, sign up for Moodeng with the button in Results. The date and winner are announced on TikTok.') +
+                     p('Para i-claim ang prizes mo, ilagay ang TikTok username mo sa Results pagkatapos ng huling spin. Isang beses lang ang claim. Kokontakin ka namin sa TikTok at iaanunsyo roon ang mananalo.', 'To claim your prizes, type your TikTok username in Results after your last spin. You can claim once. We contact you on TikTok and announce the winner there.') +
                      '<p class="big-math">🥯 ' +
                      both('Kulang ang tickets? Pandesal points pa rin!', 'Not enough tickets? Pandesal points still count!') +
                      '</p>' +
