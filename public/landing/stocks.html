@@ -1601,6 +1601,33 @@
                animation: none !important;
             }
          }
+
+         .tk {
+            display: inline-block;
+            margin-left: 2px;
+            border-radius: 6px;
+            padding: 0 6px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 0.72em;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            vertical-align: 0.1em;
+            white-space: nowrap;
+         }
+         .yahoo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            border-radius: 14px;
+            padding: 8px 14px;
+            background: #6001d2;
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            text-decoration: none;
+         }
       </style>
    </head>
    <body>
@@ -1983,6 +2010,12 @@
             function both(fil, en) {
                return '<span data-l="fil">' + fil + '</span><span data-l="en">' + en + '</span>';
             }
+            function tk(t) {
+               return '<span class="tk">' + t + '</span>';
+            }
+            function yahoo(t) {
+               return 'https://finance.yahoo.com/quote/' + encodeURIComponent(t) + '/';
+            }
             function yrs(v) {
                return v.toFixed(1) + ' ' + both('taon', 'yrs');
             }
@@ -2093,6 +2126,8 @@
                   c.emo +
                   '</span><span class="co-name">' +
                   c.name +
+                  ' ' +
+                  tk(t) +
                   '<small>' +
                   both(c.fil, c.en) +
                   '</small></span><span class="co-val ' +
@@ -2258,6 +2293,8 @@
                   c.emo +
                   '</span><span class="co-name">' +
                   c.name +
+                  ' ' +
+                  tk(w.t) +
                   '<small>' +
                   both(c.fil, c.en) +
                   '</small><small>' +
@@ -2270,7 +2307,7 @@
             document.querySelector('[data-famous]').innerHTML = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
                .map(function (t) {
                   var c = CO[t];
-                  return '<li><button type="button" data-open="' + t + '"><span aria-hidden="true">' + c.emo + '</span>' + c.name + pandesals(score(c)) + '</button></li>';
+                  return '<li><button type="button" data-open="' + t + '"><span aria-hidden="true">' + c.emo + '</span>' + c.name + ' ' + tk(t) + pandesals(score(c)) + '</button></li>';
                })
                .join('');
 
@@ -2292,8 +2329,8 @@
                pe: {
                   q: both('🧠 Alin ang mas mura?', '🧠 Which one is cheaper?'),
                   opts: [
-                     { a: both('🍎 Apple: 38 taon ng kita', '🍎 Apple: 38 years of profit'), ok: false },
-                     { a: both('🏦 JPMorgan: 14 taon ng kita', '🏦 JPMorgan: 14 years of profit'), ok: true },
+                     { a: both('🍎 Apple (AAPL): 38 taon ng kita', '🍎 Apple (AAPL): 38 years of profit'), ok: false },
+                     { a: both('🏦 JPMorgan (JPM): 14 taon ng kita', '🏦 JPMorgan (JPM): 14 years of profit'), ok: true },
                   ],
                   right: both('Tama! Mas kaunting taon = mas mura. Parang Tindahan A!', 'Correct! Fewer years = cheaper. Just like Store A!'),
                   wrong: both('Hindi pa. Mas kaunting taon = mas mura. Subukan ulit!', 'Not quite. Fewer years = cheaper. Try again!'),
@@ -2310,8 +2347,8 @@
                fcf: {
                   q: both('🧠 Alin ang 🟢 mura (below 20 taon)?', '🧠 Which one is 🟢 cheap (under 20 years)?'),
                   opts: [
-                     { a: both('🥤 Coca-Cola: 25.8 taon ng cash', '🥤 Coca-Cola: 25.8 years of cash'), ok: false },
-                     { a: both('💳 PayPal: 6.9 taon ng cash', '💳 PayPal: 6.9 years of cash'), ok: true },
+                     { a: both('🥤 Coca-Cola (KO): 25.8 taon ng cash', '🥤 Coca-Cola (KO): 25.8 years of cash'), ok: false },
+                     { a: both('💳 PayPal (PYPL): 6.9 taon ng cash', '💳 PayPal (PYPL): 6.9 years of cash'), ok: true },
                   ],
                   right: both('Tama! 6.9 taon ay below 20.', 'Correct! 6.9 years is under 20.'),
                   wrong: both('Hindi pa. 25.8 taon ay above 20. Subukan ulit!', 'Not quite. 25.8 years is over 20. Try again!'),
@@ -2393,7 +2430,7 @@
                         return CO[a].pe - CO[b].pe;
                      })
                      .map(function (t) {
-                        return '<button type="button" class="co-chip" data-open="' + t + '">' + CO[t].emo + ' ' + CO[t].name + ' <b>' + yrs(CO[t].pe) + '</b></button>';
+                        return '<button type="button" class="co-chip" data-open="' + t + '">' + CO[t].emo + ' ' + CO[t].name + ' ' + tk(t) + ' <b>' + yrs(CO[t].pe) + '</b></button>';
                      })
                      .join('') +
                   '</div>'
@@ -2692,7 +2729,8 @@
 
             function companyHtml(t) {
                var s = CO[t];
-               var html = sheetHead(s.emo, s.name, s.basket ? term('sp500', both(s.fil, s.en)) : both(s.fil, s.en));
+               var html = sheetHead(s.emo, s.name + ' ' + tk(t), s.basket ? term('sp500', both(s.fil, s.en)) : both(s.fil, s.en));
+               html += '<a class="yahoo" href="' + yahoo(t) + '" target="_blank" rel="noopener noreferrer">📈 ' + both('Tingnan ang ' + t + ' sa Yahoo Finance', 'View ' + t + ' on Yahoo Finance') + ' ↗</a>';
 
                // Price and EPS, with the P/E worked out
                html += ratio(
@@ -2812,7 +2850,7 @@
             function infoHtml(key, backTo) {
                var it = INFO[key];
                var back = backTo
-                  ? '<button type="button" class="back" data-open="' + backTo + '">‹ ' + both('Balik sa ', 'Back to ') + CO[backTo].name + '</button>'
+                  ? '<button type="button" class="back" data-open="' + backTo + '">‹ ' + both('Balik sa ', 'Back to ') + CO[backTo].name + ' (' + backTo + ')</button>'
                   : '';
                return sheetHead(it.emo, it.title) + back + '<div class="info-body">' + it.body + '</div>';
             }
@@ -2853,6 +2891,8 @@
                   s.emo +
                   '</span><b>' +
                   s.name +
+                  ' ' +
+                  tk(t) +
                   '</b><span class="small">' +
                   both(s.fil, s.en) +
                   '</span><span class="go">' +
