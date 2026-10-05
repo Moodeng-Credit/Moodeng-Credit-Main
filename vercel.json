@@ -6,6 +6,7 @@
     { "src": "^/how-to-cash-out/?$", "dest": "/landing/how-to-cash-out.html" },
     { "src": "^/how-to-repay/?$", "dest": "/landing/how-to-repay.html" },
     { "src": "^/credit-levels/?$", "dest": "/landing/credit-levels.html" },
+    { "src": "^/stocks/?$", "dest": "/landing/stocks.html" },
     { "src": "^/about/?$", "dest": "/landing/about.html" },
     { "src": "^/for-lenders/?$", "dest": "/landing/for-lenders.html" },
     { "src": "^/token2049/?$", "dest": "/landing/token2049.html" },

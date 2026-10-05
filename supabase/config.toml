@@ -161,3 +161,7 @@ verify_jwt = false
 
 [functions.admin-ban-user]
 verify_jwt = true
+
+# Public prize-wheel claim from moodeng.app/stocks (no login; validated + posted to Discord).
+[functions.stocks-claim]
+verify_jwt = false

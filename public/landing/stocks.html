@@ -1,0 +1,3461 @@
+<!doctype html>
+<html lang="fil" data-lang="fil">
+   <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+      <title>Mura ba 'tong stock? | Moodeng Credit</title>
+      <meta name="description" content="A 5-minute money lesson for beginners: what a stock is, and 3 easy checks to see if it's cheap. Taglish or English." />
+      <meta property="og:title" content="Mura ba 'tong stock? A 5-minute money lesson | Moodeng Credit" />
+      <meta property="og:description" content="Ano ang stock, at 3 madaling checks para malaman kung mura ito. Walang mahirap na math!" />
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content="https://moodeng.app/stocks" />
+      <meta property="og:image" content="https://moodeng.app/dashboard-v2/moodeng-rookie-2.png" />
+      <meta name="twitter:card" content="summary" />
+      <meta name="theme-color" content="#8336f0" />
+      <link rel="canonical" href="https://moodeng.app/stocks" />
+      <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
+      <style>
+         :root {
+            color-scheme: light;
+            --primary-100: #f1e9fd;
+            --primary-300: #d6bcfa;
+            --primary-500: #914cf2;
+            --primary-900: #8336f0;
+            --primary-1200: #6010d2;
+            --primary-1500: #470b9a;
+            --heading: #040033;
+            --n-100: #fdfcfd;
+            --n-200: #f9f8fa;
+            --n-300: #f2f0f5;
+            --n-500: #c0b9c8;
+            --n-1000: #877897;
+            --n-1400: #594d65;
+            --green-100: #d6f8e6;
+            --green-700: #1aa45b;
+            --green-900: #116b3c;
+            --yellow-100: #fff8e1;
+            --yellow-700: #d3aa00;
+            --coin: #f6c445;
+            --coin-dark: #c98f00;
+            --red-100: #fed7da;
+            --red-300: #fb3748;
+            --red-800: #b60413;
+            --shadow-card: 0 2px 4px rgba(27, 28, 29, 0.04);
+            --shadow-nav: 0 4px 40.8px rgba(0, 0, 0, 0.08);
+            --font: 'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --col: 520px;
+         }
+         html[data-lang='en'] [data-l='fil'],
+         html[data-lang='fil'] [data-l='en'] {
+            display: none !important;
+         }
+         *,
+         *::before,
+         *::after {
+            box-sizing: border-box;
+         }
+         html {
+            -webkit-text-size-adjust: 100%;
+            scroll-behavior: smooth;
+         }
+         body {
+            margin: 0;
+            min-width: 320px;
+            background: var(--n-300);
+            color: var(--heading);
+            font-family: var(--font);
+            font-size: 17px;
+            line-height: 1.5;
+            letter-spacing: -0.01em;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: calc(104px + env(safe-area-inset-bottom));
+         }
+         h1,
+         h2,
+         h3,
+         p,
+         ul,
+         ol {
+            margin: 0;
+         }
+         ul,
+         ol {
+            padding: 0;
+            list-style: none;
+         }
+         img {
+            display: block;
+            max-width: 100%;
+         }
+         a {
+            color: inherit;
+         }
+         button {
+            font: inherit;
+            color: inherit;
+         }
+         strong {
+            font-weight: 700;
+         }
+         .skip-link {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            z-index: 99;
+            translate: 0 -200%;
+            border-radius: 10px;
+            padding: 10px 14px;
+            background: var(--heading);
+            color: #fff;
+         }
+         .skip-link:focus {
+            translate: 0;
+         }
+         .col {
+            width: min(100% - 32px, var(--col));
+            margin-inline: auto;
+         }
+         :focus-visible {
+            outline: 3px solid var(--primary-300);
+            outline-offset: 2px;
+         }
+
+         /* Hero: the dashboard's landscape */
+         .hero {
+            position: relative;
+            overflow: hidden;
+            background: url('/dashboard-v2/hero-bg.png') center 30% / cover no-repeat, #cfe4f2;
+            padding-top: env(safe-area-inset-top);
+         }
+         .topbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-top: 16px;
+         }
+         .avatar {
+            width: 52px;
+            height: 52px;
+            flex: none;
+            border-radius: 50%;
+            background: var(--primary-500);
+            overflow: hidden;
+            border: 2px solid #fff;
+         }
+         .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            scale: 1.25;
+            translate: 0 6%;
+         }
+         .hello {
+            min-width: 0;
+         }
+         .hello b {
+            display: block;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            white-space: nowrap;
+         }
+         .hello span {
+            color: var(--n-1400);
+            font-size: 12.5px;
+         }
+         .top-pills {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+         }
+         .top-pill {
+            display: grid;
+            justify-items: center;
+            gap: 1px;
+            border-radius: 999px;
+            padding: 7px 12px;
+            background: rgb(255 255 255 / 0.55);
+            backdrop-filter: blur(8px);
+            font-size: 11px;
+            font-weight: 600;
+            text-decoration: none;
+         }
+         .top-pill.dark {
+            background: rgb(64 64 80 / 0.45);
+            color: #fff;
+         }
+         .top-pill svg {
+            width: 18px;
+            height: 18px;
+         }
+         .hero-stage {
+            position: relative;
+            height: 240px;
+         }
+         .hero-hippo {
+            position: absolute;
+            left: 34%;
+            bottom: 34px;
+            width: 176px;
+            translate: -50% 0;
+            filter: drop-shadow(0 10px 14px rgb(40 60 30 / 0.25));
+            animation: bob 3.2s ease-in-out infinite;
+         }
+         .bubble {
+            position: absolute;
+            z-index: 2;
+            right: 0;
+            top: 34px;
+            max-width: 44%;
+            border-radius: 18px 18px 4px 18px;
+            padding: 10px 12px;
+            background: #fff;
+            box-shadow: var(--shadow-nav);
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.3;
+            rotate: 2deg;
+         }
+         .bubble small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 13px;
+            font-weight: 500;
+         }
+         @keyframes bob {
+            50% {
+               translate: -50% -6px;
+            }
+         }
+
+         /* Cards */
+         .sheet {
+            position: relative;
+            margin-top: -30px;
+            border-radius: 28px 28px 0 0;
+            background: var(--n-300);
+            padding-top: 20px;
+         }
+         .stack {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 16px;
+         }
+         .card {
+            border-radius: 22px;
+            background: var(--n-100);
+            box-shadow: var(--shadow-card);
+            padding: 20px;
+            scroll-margin-top: 12px;
+         }
+         .card > * + * {
+            margin-top: 14px;
+         }
+         .title-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+         }
+         .kicker {
+            color: var(--primary-900);
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+         }
+         .lang {
+            display: inline-flex;
+            flex: none;
+            border-radius: 999px;
+            padding: 3px;
+            background: var(--n-300);
+         }
+         .lang button {
+            min-height: 32px;
+            border: 0;
+            border-radius: 999px;
+            padding: 4px 12px;
+            background: transparent;
+            color: var(--n-1400);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+         }
+         .lang button[aria-pressed='true'] {
+            background: #fff;
+            color: var(--primary-1200);
+            box-shadow: 0 1px 3px rgb(27 28 29 / 0.12);
+         }
+         h1 {
+            font-size: clamp(34px, 9.5vw, 42px);
+            font-style: italic;
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.04em;
+         }
+         h1 em,
+         .h2 em {
+            color: var(--primary-900);
+         }
+         .h2 {
+            font-size: 26px;
+            font-style: italic;
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.04em;
+         }
+         .muted {
+            color: var(--n-1400);
+         }
+         .small {
+            font-size: 13px;
+            color: var(--n-1000);
+         }
+         .step-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 4px 12px 4px 4px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 13px;
+            font-weight: 700;
+         }
+         .step-tag b {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font-size: 14px;
+         }
+         .step-tag small {
+            font-weight: 500;
+            opacity: 0.75;
+         }
+
+         /* "3 checks" list */
+         .learn {
+            display: grid;
+            gap: 8px;
+         }
+         .learn li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: var(--n-200);
+            border: 1px solid var(--primary-100);
+            font-weight: 700;
+         }
+         .learn .emo {
+            width: 42px;
+            height: 42px;
+            flex: none;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--primary-100);
+            font-size: 22px;
+         }
+
+         /* Store grid: 100 pieces */
+         .grid100 {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 3px;
+            max-width: 240px;
+            margin-inline: auto;
+         }
+         .grid100 span {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background: var(--primary-100);
+         }
+         .grid100 span.you {
+            background: var(--primary-900);
+            box-shadow: 0 0 0 3px var(--primary-300);
+         }
+         .grid-cap {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-1200);
+         }
+         .say {
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: var(--yellow-100);
+            font-weight: 600;
+         }
+
+         /* Rice price tags: price per kilo */
+         .tags {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+         }
+         .tag {
+            position: relative;
+            display: grid;
+            justify-items: center;
+            gap: 2px;
+            border-radius: 16px;
+            padding: 14px 10px;
+            background: var(--n-200);
+            border: 2px solid var(--n-300);
+            text-align: center;
+            font-weight: 600;
+         }
+         .tag .emo {
+            font-size: 28px;
+         }
+         .tag b {
+            font-size: 22px;
+            font-weight: 800;
+         }
+         .tag small {
+            color: var(--n-1000);
+            font-size: 13px;
+         }
+         .tag.best {
+            border-color: var(--green-700);
+            background: var(--green-100);
+         }
+         .tag .badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            border-radius: 999px;
+            padding: 2px 8px;
+            background: var(--green-700);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+         }
+
+         .big-math {
+            border-radius: 16px;
+            padding: 14px;
+            background: var(--primary-100);
+            color: var(--primary-1500);
+            text-align: center;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.25;
+         }
+         .big-math small {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+         }
+         .rule {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: var(--green-100);
+            color: var(--green-900);
+            font-size: 18px;
+            font-weight: 700;
+         }
+         .warn {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: #fff4d6;
+            color: #5c4500;
+            font-weight: 600;
+         }
+         .ic {
+            font-size: 24px;
+            line-height: 1;
+         }
+
+         /* Price bars: ₱ you pay for ₱1 a year. Shorter = cheaper. */
+         .board {
+            border-radius: 18px;
+            border: 1px solid var(--primary-100);
+            background: #fff;
+            padding: 4px 14px 10px;
+         }
+         .board-head {
+            padding: 10px 0 6px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--n-1400);
+         }
+         .co {
+            padding: 12px 0;
+            border-top: 1px solid var(--n-300);
+         }
+         .co-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+         }
+         .co-emo {
+            width: 38px;
+            height: 38px;
+            flex: none;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--n-300);
+            font-size: 20px;
+         }
+         .co-name {
+            min-width: 0;
+            font-weight: 700;
+            line-height: 1.2;
+         }
+         .co-name small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 13px;
+            font-weight: 500;
+         }
+         .co-val {
+            margin-left: auto;
+            text-align: right;
+            font-size: 19px;
+            font-weight: 800;
+            white-space: nowrap;
+            line-height: 1.15;
+         }
+         .co-val small {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+         }
+         .co-val.win small {
+            color: var(--green-700);
+         }
+         .co-val.mid small {
+            color: #8a6a00;
+         }
+         .co-val.lose small {
+            color: var(--red-800);
+         }
+         .track {
+            position: relative;
+            height: 14px;
+            margin-top: 10px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #e3f7ec 0 50%, #fff6d6 50% 75%, #ffe4e6 75% 100%);
+         }
+         .bar {
+            height: 100%;
+            border-radius: 999px;
+         }
+         .bar.win {
+            background: var(--green-700);
+         }
+         .bar.mid {
+            background: #f2c94c;
+         }
+         .bar.lose {
+            background: var(--red-300);
+         }
+         .bar.over {
+            background: repeating-linear-gradient(-45deg, var(--red-300) 0 7px, #ff8a95 7px 14px);
+         }
+         .track .none {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            translate: 0 -50%;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--red-800);
+         }
+         .co-note {
+            margin-top: 6px;
+            font-size: 14px;
+            color: var(--n-1400);
+         }
+         .key {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 14px;
+            padding-top: 10px;
+            border-top: 1px solid var(--n-300);
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--n-1000);
+         }
+         .key span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+         }
+         .scale {
+            position: relative;
+            height: 18px;
+            margin: 2px 0 4px;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--n-1000);
+         }
+         .scale > span {
+            position: absolute;
+            white-space: nowrap;
+            translate: -50% 0;
+         }
+         .scale > span:first-child {
+            translate: 0;
+         }
+         .scale > span:last-child {
+            translate: -100% 0;
+         }
+         .zones {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.25;
+         }
+         .zones small {
+            font-weight: 600;
+            display: block;
+            font-size: 12.5px;
+            font-weight: 600;
+         }
+         .z-cheap {
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .z-okay {
+            background: #fff3c4;
+            color: #6b5200;
+         }
+         .z-pricey {
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+
+         /* Quiz */
+         .quiz {
+            border-radius: 18px;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-100), #f8f3ff);
+            border: 1px solid var(--primary-300);
+         }
+         .quiz-q {
+            font-weight: 700;
+         }
+         .quiz-opts {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+         }
+         .quiz-opts button {
+            min-height: 48px;
+            border: 1.5px solid var(--primary-300);
+            border-radius: 14px;
+            padding: 10px 14px;
+            background: #fff;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+         }
+         .quiz-opts button[data-state='right'] {
+            border-color: var(--green-700);
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .quiz-opts button[data-state='wrong'] {
+            border-color: var(--red-300);
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+         .quiz-fb {
+            margin-top: 10px;
+            font-size: 15px;
+            font-weight: 600;
+         }
+         .quiz-fb:empty {
+            display: none;
+         }
+
+         /* Results */
+         .results-head {
+            position: relative;
+            overflow: hidden;
+            border-radius: 22px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-900), var(--primary-1200));
+            color: #fff;
+            scroll-margin-top: 12px;
+         }
+         .results-head .h2 {
+            max-width: 66%;
+         }
+         .results-head p {
+            margin-top: 8px;
+            max-width: 62%;
+            color: var(--primary-100);
+            font-size: 15px;
+         }
+         .results-head img {
+            position: absolute;
+            right: -6px;
+            bottom: -10px;
+            width: 116px;
+         }
+         .winner {
+            display: grid;
+            grid-template-columns: 46px minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            border: 1px solid var(--primary-100);
+            border-radius: 16px;
+            padding: 12px;
+            background: var(--n-200);
+         }
+         .winner + .winner {
+            margin-top: 8px;
+         }
+         .rank {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            border-radius: 13px;
+            background: var(--primary-100);
+            font-size: 22px;
+         }
+         .winner:first-child .rank {
+            background: linear-gradient(135deg, #ffe680, var(--yellow-700));
+         }
+         .winner .co-name small + small {
+            margin-top: 4px;
+            color: #6b5200;
+         }
+         .pandesals {
+            display: flex;
+            gap: 1px;
+         }
+         .pandesals img {
+            width: 20px;
+            height: 20px;
+         }
+         .pandesals img.off {
+            opacity: 0.3;
+            filter: grayscale(1);
+         }
+         .famous {
+            display: grid;
+            gap: 8px;
+         }
+         .famous li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 14px;
+            padding: 10px;
+            background: var(--n-200);
+            border: 1px solid var(--n-300);
+            font-weight: 700;
+            font-size: 15px;
+         }
+         .famous .pandesals {
+            margin-left: auto;
+         }
+         .famous .pandesals img {
+            width: 14px;
+            height: 14px;
+         }
+         .bread {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: 14px;
+            align-items: center;
+            border-radius: 22px;
+            padding: 16px;
+            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
+            color: #4a3a00;
+         }
+         .bread img {
+            width: 64px;
+         }
+         .bread b {
+            display: block;
+            font-size: 19px;
+            font-style: italic;
+            font-weight: 800;
+            color: #2d2300;
+            line-height: 1.2;
+         }
+
+         /* Look inside: 8 big stocks */
+         .inside-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+         }
+         .inside-card {
+            display: grid;
+            justify-items: start;
+            gap: 6px;
+            min-height: 108px;
+            border: 1px solid var(--primary-100);
+            border-radius: 18px;
+            padding: 12px;
+            background: var(--n-200);
+            text-align: left;
+            cursor: pointer;
+         }
+         .inside-card:active {
+            scale: 0.98;
+         }
+         .inside-card .co-emo {
+            background: var(--primary-100);
+         }
+         .inside-card b {
+            font-size: 15px;
+            line-height: 1.2;
+         }
+         .inside-card .go {
+            margin-top: auto;
+            color: var(--primary-900);
+            font-size: 13px;
+            font-weight: 700;
+         }
+         .sheet-dlg {
+            width: min(100%, var(--col));
+            max-width: none;
+            max-height: 88vh;
+            margin: auto auto 0;
+            border: 0;
+            border-radius: 26px 26px 0 0;
+            padding: 0;
+            background: var(--n-300);
+            color: var(--heading);
+            overflow: auto;
+            overscroll-behavior: contain;
+         }
+         .sheet-dlg::backdrop {
+            background: rgb(4 0 51 / 0.45);
+         }
+         .sheet-in {
+            display: grid;
+            gap: 12px;
+            padding: 10px 16px calc(24px + env(safe-area-inset-bottom));
+         }
+         .grab {
+            width: 44px;
+            height: 5px;
+            margin: 4px auto 0;
+            border-radius: 999px;
+            background: var(--n-500);
+         }
+         .sheet-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+         }
+         .sheet-head .co-emo {
+            width: 52px;
+            height: 52px;
+            font-size: 28px;
+            background: #fff;
+         }
+         .sheet-head h2 {
+            font-size: 22px;
+            font-style: italic;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+         }
+         .sheet-head small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 13px;
+            font-weight: 500;
+            font-style: normal;
+            letter-spacing: 0;
+         }
+         .x {
+            margin-left: auto;
+            width: 40px;
+            height: 40px;
+            flex: none;
+            border: 0;
+            border-radius: 50%;
+            background: #fff;
+            font-size: 18px;
+            cursor: pointer;
+         }
+         .ratio {
+            border-radius: 18px;
+            padding: 14px;
+            background: #fff;
+         }
+         .ratio-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+         }
+         .ratio-top .ic {
+            font-size: 22px;
+         }
+         .ratio-name {
+            min-width: 0;
+            font-weight: 700;
+            line-height: 1.2;
+         }
+         .ratio-name small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 12.5px;
+            font-weight: 500;
+         }
+         .ratio p {
+            margin-top: 8px;
+            font-size: 15px;
+            color: var(--n-1400);
+         }
+         .ratio .pill {
+            display: inline-block;
+            margin-top: 8px;
+            border-radius: 999px;
+            padding: 3px 10px;
+            font-size: 13px;
+            font-weight: 700;
+         }
+         .pill.win {
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .pill.lose {
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+         .pill.mid {
+            background: #fff3c4;
+            color: #6b5200;
+         }
+         .pill.na {
+            background: var(--n-300);
+            color: var(--n-1400);
+         }
+         .one-line {
+            border-radius: 18px;
+            padding: 14px;
+            background: var(--yellow-100);
+            font-weight: 600;
+         }
+         .one-line .pandesals {
+            margin-top: 8px;
+         }
+
+         /* Finish + fine print */
+         .finish {
+            position: relative;
+            overflow: hidden;
+            border-radius: 22px;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-900), var(--primary-1500));
+            color: #fff;
+         }
+         .finish .h2 {
+            max-width: 64%;
+         }
+         .finish p {
+            margin-top: 8px;
+            max-width: 60%;
+            color: var(--primary-100);
+            font-size: 15px;
+         }
+         .finish img {
+            position: absolute;
+            right: -4px;
+            bottom: -6px;
+            width: 128px;
+         }
+         .btn {
+            position: relative;
+            z-index: 1;
+            margin-top: 14px;
+            display: inline-flex;
+            align-items: center;
+            min-height: 44px;
+            border-radius: 999px;
+            padding: 8px 18px;
+            background: #fff;
+            color: var(--primary-1200);
+            font-size: 15px;
+            font-weight: 700;
+            text-decoration: none;
+         }
+         .fine {
+            font-size: 15px;
+            color: var(--n-1400);
+         }
+         .footer {
+            margin-top: 18px;
+            color: var(--n-1000);
+            font-size: 12px;
+            text-align: center;
+         }
+         .footer a {
+            color: var(--n-1400);
+         }
+
+         /* Floating bottom nav, same as the app */
+         .nav {
+            position: fixed;
+            left: 50%;
+            bottom: calc(12px + env(safe-area-inset-bottom));
+            z-index: 30;
+            width: min(100% - 24px, var(--col));
+            translate: -50% 0;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            border-radius: 28px;
+            padding: 8px 6px;
+            background: rgb(253 252 253 / 0.95);
+            backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-nav);
+         }
+         .nav a {
+            display: grid;
+            justify-items: center;
+            gap: 2px;
+            border-radius: 18px;
+            padding: 6px 2px;
+            color: var(--n-1000);
+            font-size: 11px;
+            font-weight: 500;
+            text-decoration: none;
+         }
+         .nav .ni {
+            font-size: 20px;
+            line-height: 1.2;
+            filter: grayscale(0.6);
+         }
+         .nav a[aria-current='true'] {
+            color: var(--primary-900);
+            background: var(--primary-100);
+            font-weight: 700;
+         }
+         .nav a[aria-current='true'] .ni {
+            filter: none;
+         }
+
+         @media (prefers-reduced-motion: reduce) {
+            html {
+               scroll-behavior: auto;
+            }
+            .hero-hippo {
+               animation: none;
+            }
+         }
+
+         /* Tap-to-explain */
+         .i {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 50%;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 12px;
+            font-weight: 800;
+            font-style: italic;
+            font-family: Georgia, serif;
+         }
+         .term {
+            display: inline;
+            border: 0;
+            border-bottom: 2px dotted var(--primary-500);
+            padding: 0;
+            background: none;
+            color: var(--primary-1200);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+         }
+         button.step-tag {
+            border: 0;
+            font-family: inherit;
+            cursor: pointer;
+         }
+         button.board-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            border: 0;
+            background: none;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .scale-btn {
+            display: block;
+            width: 100%;
+            border: 0;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+         }
+         .scale-btn .scale {
+            display: block;
+         }
+         button.key {
+            width: 100%;
+            align-items: center;
+            border: 0;
+            border-top: 1px solid var(--n-300);
+            background: none;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         button.co {
+            display: block;
+            width: 100%;
+            border: 0;
+            border-top: 1px solid var(--n-300);
+            background: none;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         button.co:active,
+         button.winner:active,
+         .famous button:active {
+            background: var(--n-200);
+         }
+         .co-top {
+            display: flex;
+         }
+         .co .co-note {
+            display: block;
+         }
+         .chev {
+            margin-left: 4px;
+            color: var(--n-1000);
+            font-size: 22px;
+            line-height: 1;
+         }
+         .tap-hint {
+            padding: 6px 0 4px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-900);
+            text-align: center;
+         }
+         button.winner {
+            width: 100%;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .famous button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            border: 1px solid var(--n-300);
+            border-radius: 14px;
+            padding: 10px;
+            background: var(--n-200);
+            font: inherit;
+            font-weight: 700;
+            font-size: 15px;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .famous li {
+            display: block;
+            border: 0;
+            padding: 0;
+            background: none;
+         }
+         .zones > * {
+            position: relative;
+            border: 0;
+            border-radius: 12px;
+            padding: 8px 4px;
+            font: inherit;
+            font-weight: 700;
+            line-height: 1.25;
+         }
+         .zones > button {
+            cursor: pointer;
+         }
+         .zones > button .i {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 16px;
+            height: 16px;
+            font-size: 10px;
+            background: rgb(255 255 255 / 0.7);
+         }
+         .learn a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            color: inherit;
+            text-decoration: none;
+         }
+         .learn a .chev {
+            margin-left: auto;
+         }
+         .tip {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: var(--primary-100);
+            color: var(--primary-1500);
+            font-size: 14px;
+            font-weight: 600;
+         }
+         .ratio-top {
+            width: 100%;
+            border: 0;
+            padding: 0;
+            background: none;
+            font: inherit;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+         }
+         .ratio-top .co-val {
+            margin-left: auto;
+         }
+         .pand-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            border: 0;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+         }
+         .back {
+            justify-self: start;
+            border: 0;
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: #fff;
+            color: var(--primary-1200);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+         }
+         .info-body {
+            display: grid;
+            gap: 12px;
+            border-radius: 18px;
+            padding: 16px;
+            background: #fff;
+            font-size: 16px;
+         }
+         .years {
+            display: grid;
+            gap: 4px;
+         }
+         .years span {
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 12px;
+            font-weight: 700;
+         }
+         .info-body .years {
+            grid-template-columns: repeat(10, 1fr);
+         }
+         .stores {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+         }
+         .store-card {
+            position: relative;
+            display: grid;
+            justify-items: center;
+            gap: 4px;
+            border-radius: 16px;
+            padding: 14px 10px;
+            background: var(--n-200);
+            border: 2px solid var(--n-300);
+            text-align: center;
+         }
+         .store-card.best {
+            border-color: var(--green-700);
+            background: var(--green-100);
+         }
+         .store-card .emo {
+            font-size: 30px;
+         }
+         .store-card small {
+            color: var(--n-1400);
+            font-size: 13px;
+            font-weight: 600;
+         }
+         .store-card strong {
+            font-size: 20px;
+            font-weight: 800;
+         }
+         .store-card .badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            border-radius: 999px;
+            padding: 2px 8px;
+            background: var(--green-700);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+         }
+         .mini-years {
+            display: grid;
+            grid-template-columns: repeat(5, 12px);
+            gap: 3px;
+            margin-top: 6px;
+         }
+         .mini-years i {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            background: var(--primary-500);
+         }
+         .store-card.best .mini-years i {
+            background: var(--green-700);
+         }
+         .steps {
+            display: grid;
+            gap: 6px;
+            padding-left: 20px;
+            list-style: disc;
+         }
+         .co-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+         }
+         .co-chip {
+            border: 1px solid var(--primary-100);
+            border-radius: 999px;
+            padding: 6px 10px;
+            background: var(--n-200);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            color: inherit;
+            cursor: pointer;
+         }
+         .co-chip b {
+            color: var(--primary-1200);
+         }
+
+         /* Transitions: next cards + level hippo */
+         .next-card {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: 4px 12px;
+            align-items: center;
+            margin-top: 18px !important;
+            border-radius: 20px;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-100), #f8f3ff);
+            border: 1px solid var(--primary-300);
+         }
+         .next-card img {
+            width: 64px;
+            height: 64px;
+            filter: drop-shadow(0 6px 8px rgb(60 30 120 / 0.2));
+         }
+         .bridge {
+            display: grid;
+            gap: 2px;
+            font-size: 15px;
+            color: var(--n-1400);
+            line-height: 1.35;
+         }
+         .bridge b {
+            color: var(--heading);
+            font-size: 17px;
+         }
+         .lvl {
+            justify-self: start;
+            border-radius: 999px;
+            padding: 1px 8px;
+            background: var(--primary-900);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+         }
+         .next {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            min-height: 52px;
+            margin-top: 8px;
+            border-radius: 16px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font-size: 16px;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 6px 16px rgb(96 16 210 / 0.28);
+            animation: nudge 2.4s ease-in-out infinite;
+         }
+         .next .nl {
+            display: block;
+            margin-bottom: 1px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0.85;
+         }
+         .next .arr {
+            font-size: 26px;
+            line-height: 1;
+         }
+         .next:active {
+            scale: 0.98;
+         }
+         @keyframes nudge {
+            0%, 70%, 100% { translate: 0 0; }
+            80% { translate: 4px 0; }
+            90% { translate: 0 0; }
+         }
+         .small-label {
+            font-size: 14px;
+            font-weight: 700;
+         }
+         .learn .n {
+            width: 26px;
+            height: 26px;
+            flex: none;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font-size: 13px;
+         }
+         .learn .n.star {
+            background: linear-gradient(135deg, #ffe680, var(--yellow-700));
+            font-size: 14px;
+         }
+
+         /* Interactive bits */
+         .try,
+         .grow {
+            border-radius: 18px;
+            padding: 14px;
+            background: #fff;
+            border: 2px dashed var(--primary-300);
+            display: grid;
+            gap: 10px;
+         }
+         .try-title,
+         .grow-year {
+            font-weight: 800;
+            font-size: 15px;
+            color: var(--primary-1200);
+         }
+         .try input[type='range'] {
+            width: 100%;
+            height: 36px;
+            accent-color: var(--primary-900);
+         }
+         .try-out,
+         .grow-line {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+         }
+         .try-out strong,
+         .grow-line strong {
+            font-size: 22px;
+            color: var(--primary-1200);
+         }
+         .try .years,
+         .grow .years {
+            grid-template-columns: repeat(10, 1fr);
+         }
+         .years.win span {
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .years.mid span {
+            background: #fff3c4;
+            color: #6b5200;
+         }
+         .years.lose span {
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+         .try-back {
+            margin-top: -4px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--n-1400);
+         }
+         .try-verdict {
+            text-align: center;
+            font-weight: 700;
+         }
+         .grow-btn {
+            min-height: 48px;
+            border: 0;
+            border-radius: 14px;
+            background: var(--heading);
+            color: #fff;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+         }
+         .grow-btn:active {
+            scale: 0.98;
+         }
+         .track.peg {
+            background: linear-gradient(90deg, #e3f7ec 0 25%, #fff6d6 25% 50%, #ffe4e6 50% 100%);
+         }
+         .stores .mini-years i {
+            opacity: 0;
+            scale: 0.4;
+         }
+         .stores.play .mini-years i {
+            animation: popin 0.35s ease-out forwards;
+            animation-delay: calc(var(--i) * 45ms);
+         }
+         @keyframes popin {
+            to {
+               opacity: 1;
+               scale: 1;
+            }
+         }
+         .score-chip {
+            position: fixed;
+            top: calc(10px + env(safe-area-inset-top));
+            left: 50%;
+            z-index: 40;
+            translate: -50% 0;
+            max-width: calc(100vw - 16px);
+            white-space: nowrap;
+            border-radius: 999px;
+            padding: 6px 12px;
+            background: var(--heading);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+            box-shadow: var(--shadow-nav);
+            animation: chipin 0.3s ease-out;
+         }
+         .score-chip[hidden] {
+            display: none;
+         }
+         @keyframes chipin {
+            from {
+               translate: -50% -20px;
+               opacity: 0;
+            }
+         }
+         .burst {
+            position: fixed;
+            z-index: 60;
+            pointer-events: none;
+            font-size: 20px;
+            animation: rise 0.9s ease-out forwards;
+         }
+         @keyframes rise {
+            to {
+               transform: translate(var(--dx), -80px) rotate(20deg);
+               opacity: 0;
+            }
+         }
+         @media (prefers-reduced-motion: reduce) {
+            .next {
+               animation: none;
+            }
+            .stores .mini-years i {
+               opacity: 1;
+               scale: 1;
+               animation: none !important;
+            }
+         }
+
+         .tk {
+            display: inline-block;
+            margin-left: 2px;
+            border-radius: 6px;
+            padding: 0 6px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 0.72em;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            vertical-align: 0.1em;
+            white-space: nowrap;
+         }
+         .yahoo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            border-radius: 14px;
+            padding: 8px 14px;
+            background: #6001d2;
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            text-decoration: none;
+         }
+
+         /* Prize wheel */
+         .game {
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            border-radius: 18px;
+            padding: 16px 14px;
+            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
+            border: 2px solid #f2c94c;
+            text-align: center;
+            animation: chipin 0.35s ease-out;
+         }
+         .game[hidden] {
+            display: none;
+         }
+         .game-title {
+            font-weight: 800;
+            color: #4a3a00;
+         }
+         .wheel-wrap {
+            position: relative;
+            width: 232px;
+            height: 244px;
+            padding-top: 12px;
+         }
+         .wpointer {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            z-index: 2;
+            translate: -50% 0;
+            color: var(--heading);
+            font-size: 28px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 2px rgb(0 0 0 / 0.3));
+         }
+         .wheel {
+            position: absolute;
+            top: 12px;
+            left: 0;
+            width: 232px;
+            height: 232px;
+            border-radius: 50%;
+            box-shadow: 0 8px 20px rgb(60 30 0 / 0.3);
+            touch-action: none;
+         }
+         .wheel.nowheel {
+            display: grid;
+            place-items: center;
+            background: #fff;
+            font-size: 80px;
+         }
+         .whub {
+            position: absolute;
+            top: 128px;
+            left: 50%;
+            display: grid;
+            place-items: center;
+            width: 46px;
+            height: 46px;
+            pointer-events: none;
+            translate: -50% -50%;
+            border-radius: 50%;
+            background: #fff;
+            font-size: 24px;
+            box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+         }
+         .spin-btn {
+            min-height: 50px;
+            border: 0;
+            border-radius: 999px;
+            padding: 10px 28px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font: inherit;
+            font-size: 17px;
+            font-weight: 800;
+            box-shadow: 0 6px 14px rgb(96 16 210 / 0.35);
+            cursor: pointer;
+         }
+         .spin-btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+         }
+         .prize-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            text-align: center;
+         }
+         .prize-stats div {
+            display: grid;
+            border-radius: 14px;
+            padding: 10px 4px;
+            background: var(--n-200);
+         }
+         .prize-stats b {
+            font-size: 18px;
+         }
+         .prize-stats span {
+            color: var(--n-1000);
+            font-size: 12px;
+            font-weight: 600;
+         }
+         .prize-win {
+            display: grid;
+            gap: 4px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .prize-hint {
+            border-radius: 14px;
+            padding: 10px 14px;
+            background: var(--yellow-100);
+            font-weight: 600;
+         }
+         .claim {
+            display: grid;
+            gap: 8px;
+         }
+         .claim label {
+            font-weight: 700;
+         }
+         .claim-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 8px;
+         }
+         .claim input {
+            width: 100%;
+            min-width: 0;
+            min-height: 50px;
+            border: 2px solid var(--primary-300);
+            border-radius: 14px;
+            padding: 8px 14px;
+            font: inherit;
+            font-size: 16px;
+            background: #fff;
+         }
+         .claim .spin-btn {
+            padding: 10px 16px;
+            white-space: nowrap;
+         }
+         .claim-msg {
+            font-size: 13px;
+            color: var(--n-1400);
+            font-weight: 600;
+         }
+         .wheel-sheet {
+            display: grid;
+            justify-items: center;
+            gap: 12px;
+            border-radius: 18px;
+            padding: 16px 14px;
+            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
+            text-align: center;
+         }
+         [data-tickets] > * + * {
+            margin-top: 10px;
+         }
+         .tickets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+         }
+         .ticket {
+            border-radius: 10px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #ffe680, #f2c94c);
+            color: #4a3a00;
+            font-size: 15px;
+            border: 2px dashed #b88a00;
+         }
+         .no-tix {
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: var(--n-200);
+            color: var(--n-1400);
+            font-weight: 600;
+         }
+         .btn-lite {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 44px;
+            border: 1px solid var(--primary-300);
+            border-radius: 999px;
+            padding: 8px 16px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+         }
+         @media (prefers-reduced-motion: reduce) {
+            .game {
+               animation: none;
+            }
+         }
+      </style>
+   </head>
+   <body>
+      <a class="skip-link" href="#main">Skip to content</a>
+
+      <header class="hero">
+         <div class="col">
+            <div class="topbar">
+               <span class="avatar"><img src="/dashboard-v2/moodeng-rookie-1.png" alt="" width="52" height="52" /></span>
+               <div class="hello">
+                  <b><span data-l="fil">Hi, ka-Moodeng! 👋</span><span data-l="en">Hi there! 👋</span></b><span>Money Basics</span>
+               </div>
+               <nav class="top-pills" aria-label="Moodeng links">
+                  <a class="top-pill" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer"
+                     ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                        <path d="M14 4v10.5a3.5 3.5 0 1 1-3.5-3.5M14 4c.5 2.5 2.4 4.2 5 4.5" /></svg
+                     >TikTok</a
+                  ><a class="top-pill dark" href="/"
+                     ><svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                     >
+                        <path d="M4 11l8-6 8 6v8a1 1 0 0 1-1 1h-4v-5h-6v5H5a1 1 0 0 1-1-1z" /></svg
+                     >Home</a
+                  >
+               </nav>
+            </div>
+            <div class="hero-stage">
+               <p class="bubble">
+                  <span data-l="fil">Mura ba 'tong stock? 🤔<small>Alamin natin!</small></span
+                  ><span data-l="en">Is this stock cheap? 🤔<small>Let's find out!</small></span>
+               </p>
+               <img class="hero-hippo" src="/dashboard-v2/moodeng-rookie-2.png" alt="" width="176" height="176" />
+            </div>
+         </div>
+      </header>
+
+      <main id="main" class="sheet">
+         <div class="col stack">
+            <!-- Start -->
+            <section class="card" id="start" aria-labelledby="title">
+               <div class="title-top">
+                  <p class="kicker">5-minute money lesson</p>
+                  <div class="lang" role="group" aria-label="Language">
+                     <button type="button" data-lang="fil" aria-pressed="true">Taglish</button
+                     ><button type="button" data-lang="en" aria-pressed="false">English</button>
+                  </div>
+               </div>
+               <h1 id="title">
+                  <span data-l="fil">Mura ba <em>'tong stock?</em></span><span data-l="en">Is this <em>stock cheap?</em></span>
+               </h1>
+               <p class="muted">
+                  <span data-l="fil">3 madaling checks + 1 bonus. Totoong companies. Walang mahirap na math!</span>
+                  <span data-l="en">3 easy checks + 1 bonus. Real companies. No hard math!</span>
+               </p>
+               <p class="muted small-label"><span data-l="fil">Ang mapa natin:</span><span data-l="en">Our map:</span></p>
+               <ul class="learn">
+                  <li><a href="#pe"><b class="n">1</b><span class="emo" aria-hidden="true">📅</span><span><span data-l="fil">Ilang taon ng kita?</span><span data-l="en">How many years of profit?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#forward-pe"><b class="n">2</b><span class="emo" aria-hidden="true">🔮</span><span><span data-l="fil">Paano ang next year?</span><span data-l="en">What about next year?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#fcf"><b class="n">3</b><span class="emo" aria-hidden="true">💵</span><span><span data-l="fil">Totoong cash ba?</span><span data-l="en">Is the cash real?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#peg"><b class="n star">⭐</b><span class="emo" aria-hidden="true">⚡</span><span><span data-l="fil">Bonus: sulit ba ang mabilis lumaki?</span><span data-l="en">Bonus: is fast growth worth it?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+               </ul>
+               <p class="tip">
+                  <span class="i" aria-hidden="true">i</span
+                  ><span
+                     ><span data-l="fil">Tip: i-tap ang kahit anong may <u>guhit sa ilalim</u> o "i" para malaman pa.</span
+                     ><span data-l="en">Tip: tap anything with a <u>dotted underline</u> or an "i" to learn more.</span></span
+                  >
+               </p>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rookie-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV1 Rookie</span><span data-l="en">LV1 Rookie</span></span><b><span data-l="fil">Handa ka na ba? 🚀</span><span data-l="en">Ready? 🚀</span></b><span><span data-l="fil">Simulan natin sa pinaka-basic: ano ba ang stock?</span><span data-l="en">Let's start with the basics: what even is a stock?</span></span></div>
+                  <a class="next" href="#what"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">Simulan ang lesson</span><span data-l="en">Start the lesson</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- What is a stock -->
+            <section class="card" id="what" aria-labelledby="what-title">
+               <h2 class="h2" id="what-title"><span data-l="fil">Ano ang <em>stock?</em></span><span data-l="en">What's a <em>stock?</em></span></h2>
+               <p>
+                  <span data-l="fil">Hatiin ang tindahan ni Aling Nena sa <strong>100 piraso</strong>. Bumili ka ng 1. May-ari ka na ng konting parte!</span>
+                  <span data-l="en">Cut Aling Nena's store into <strong>100 pieces</strong>. Buy 1. Now you own a tiny part of it!</span>
+               </p>
+               <div class="grid100" data-grid100 aria-hidden="true"></div>
+               <p class="grid-cap"><span data-l="fil">■ = ikaw!</span><span data-l="en">■ = you!</span></p>
+               <p class="say">
+                  <span data-l="fil">🎉 Ang pirasong 'yan ay <button type="button" class="term" data-info="stock">stock</button>. Ang tanong: <strong>sulit ba ang presyo nito?</strong></span>
+                  <span data-l="en">🎉 That piece is a <button type="button" class="term" data-info="stock">stock</button>. The big question: <strong>is it worth its price?</strong></span>
+               </p>
+            
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rookie-2.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV1 Rookie</span><span data-l="en">LV1 Rookie</span></span><b><span data-l="fil">Alam mo na ang stock! 🧩</span><span data-l="en">You know what a stock is! 🧩</span></b><span><span data-l="fil">Ngayon: paano malalaman kung sulit ang presyo? Ikumpara natin ang dalawang tindahan.</span><span data-l="en">Now: how do you know if the price is fair? Let's compare two stores.</span></span></div>
+                  <a class="next" href="#deal"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">Dalawang tindahan</span><span data-l="en">Two stores</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- Two stores: years of profit -->
+            <section class="card" id="deal" aria-labelledby="kilo-title">
+               <h2 class="h2" id="kilo-title">
+                  <span data-l="fil">Aling tindahan ang mas <em>sulit?</em></span><span data-l="en">Which store is the better <em>deal?</em></span>
+               </h2>
+               <p>
+                  <span data-l="fil">Parehong <strong>₱1,000</strong> ang presyo ng dalawang tindahan. Pero magkaiba ang kita nila kada taon:</span>
+                  <span data-l="en">Both stores cost <strong>₱1,000</strong>. But they make different profit each year:</span>
+               </p>
+               <div class="stores">
+                  <div class="store-card best">
+                     <span class="badge"><span data-l="fil">Mas sulit!</span><span data-l="en">Better deal!</span></span>
+                     <span class="emo" aria-hidden="true">🏪</span>
+                     <b><span data-l="fil">Tindahan A</span><span data-l="en">Store A</span></b>
+                     <small><span data-l="fil">Kita: ₱100 kada taon</span><span data-l="en">Profit: ₱100 a year</span></small>
+                     <span class="mini-years" data-yrs="10" aria-hidden="true"></span>
+                     <strong><span data-l="fil">10 taon</span><span data-l="en">10 years</span></strong>
+                  </div>
+                  <div class="store-card">
+                     <span class="emo" aria-hidden="true">🏚️</span>
+                     <b><span data-l="fil">Tindahan B</span><span data-l="en">Store B</span></b>
+                     <small><span data-l="fil">Kita: ₱50 kada taon</span><span data-l="en">Profit: ₱50 a year</span></small>
+                     <span class="mini-years" data-yrs="20" aria-hidden="true"></span>
+                     <strong><span data-l="fil">20 taon</span><span data-l="en">20 years</span></strong>
+                  </div>
+               </div>
+               <p>
+                  <span data-l="fil">Bawat kahon = 1 taon ng kita. Sa Tindahan A, 10 taon lang bago umabot ang kita sa ₱1,000. Sa Tindahan B, 20 taon.</span>
+                  <span data-l="en">Each box = 1 year of profit. Store A's profit adds up to ₱1,000 in just 10 years. Store B takes 20 years.</span>
+               </p>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">💡</span
+                  ><span><span data-l="fil">Mas kaunting taon = mas sulit. Ganito rin sa stocks!</span><span data-l="en">Fewer years = better deal. Stocks work the same way!</span></span>
+               </p>
+            
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rookie-3.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV1 Rookie</span><span data-l="en">LV1 Rookie</span></span><b><span data-l="fil">Mas kaunting taon = mas sulit ✅</span><span data-l="en">Fewer years = better deal ✅</span></b><span><span data-l="fil">Gawin natin ito sa totoong math at totoong companies.</span><span data-l="en">Let's do this with real math and real companies.</span></span></div>
+                  <a class="next" href="#pe"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">Check 1 · Ilang taon ng kita</span><span data-l="en">Check 1 · Years of profit</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- Check 1 -->
+            <section class="card" id="pe" aria-labelledby="pe-title">
+               <button type="button" class="step-tag" data-info="pe"><b>1</b><span>Check 1 <small>of 3 · P/E</small></span><span class="i" aria-hidden="true">i</span></button>
+               <h2 class="h2" id="pe-title">
+                  <span data-l="fil">Ilang taon ng <em>kita?</em></span><span data-l="en">How many years of <em>profit?</em></span>
+               </h2>
+               <p>
+                  <span data-l="fil">Para malaman, hatiin ang presyo sa <button type="button" class="term" data-info="profit">kita</button> kada taon:</span>
+                  <span data-l="en">To find out, divide the price by the <button type="button" class="term" data-info="profit">profit</button> each year:</span>
+               </p>
+               <p class="big-math">
+                  ₱1,000 ÷ ₱50 = <span data-l="fil">20 taon</span><span data-l="en">20 years</span>
+                  <small><span data-l="fil">hanggang mabawi ng tindahan ang ₱1,000 na ibinayad mo</span><span data-l="en">until the store has earned back the ₱1,000 you paid</span></small>
+               </p>
+               <p>
+                  <span data-l="fil">Ang bilang ng taon na 'yan ay tinatawag na <button type="button" class="term" data-info="pe">P/E</button>. P/E 20 = 20 taon.</span>
+                  <span data-l="en">That number of years is called the <button type="button" class="term" data-info="pe">P/E</button>. A P/E of 20 = 20 years.</span>
+               </p>
+               <div class="try">
+                  <p class="try-title">🎛️ <span data-l="fil">Subukan mo! I-drag ang kita ng tindahan ni Aling Nena (presyo: ₱1,000)</span><span data-l="en">Try it! Drag Aling Nena's yearly profit (price: ₱1,000)</span></p>
+                  <input type="range" min="20" max="200" step="10" value="50" data-slider aria-label="Yearly profit" />
+                  <p class="try-out"><span data-sp>₱50</span> <span data-l="fil">kada taon</span><span data-l="en">a year</span> → <strong data-sy>20</strong></p>
+                  <div class="years" data-sbox aria-hidden="true"></div>
+                  <p class="try-back"><span data-l="fil">…hanggang mabawi ng tindahan ang ₱1,000 mo</span><span data-l="en">…until the store earns back your ₱1,000</span></p>
+                  <p class="try-verdict" data-sv aria-live="polite"></p>
+               </div>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">👍</span
+                  ><span><span data-l="fil">Mas kaunting taon = mas mura.</span><span data-l="en">Fewer years = cheaper.</span></span>
+               </p>
+               <p class="muted"><span data-l="fil">Ang simpleng gabay namin:</span><span data-l="en">Our simple guide:</span></p>
+               <div class="zones">
+                  <button type="button" class="z-cheap" data-info="cheap">🟢 <span data-l="fil">Mura</span><span data-l="en">Cheap</span><small><span data-l="fil">below 20 taon</span><span data-l="en">under 20 years</span></small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-okay" data-info="okay">🟡 <span data-l="fil">Okay lang</span><span data-l="en">Okay</span><small><span data-l="fil">20–30 taon</span><span data-l="en">20–30 years</span></small><span class="i" aria-hidden="true">i</span></button>
+                  <button type="button" class="z-pricey" data-info="pricey">🔴 <span data-l="fil">Mahal</span><span data-l="en">Pricey</span><small><span data-l="fil">above 30 taon</span><span data-l="en">over 30 years</span></small><span class="i" aria-hidden="true">i</span></button>
+               </div>
+               <div class="board" data-board="pe"></div>
+               <div class="quiz" data-quiz="pe"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rising-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV2 Rising</span><span data-l="en">LV2 Rising</span></span><b><span data-l="fil">Tapos na ang Check 1! ✅</span><span data-l="en">Check 1 done! ✅</span></b><span><span data-l="fil">Gumamit tayo ng kita ngayong taon. Pero nagbabago ang kita, kaya paano ang next year?</span><span data-l="en">That used this year's profit. But profit changes, so what about next year?</span></span></div>
+                  <a class="next" href="#forward-pe"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">Check 2 · Hula sa next year</span><span data-l="en">Check 2 · Next year's guess</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- Check 2 -->
+            <section class="card" id="forward-pe" aria-labelledby="fpe-title">
+               <button type="button" class="step-tag" data-info="fpe"><b>2</b><span>Check 2 <small>of 3 · Forward P/E</small></span><span class="i" aria-hidden="true">i</span></button>
+               <h2 class="h2" id="fpe-title"><span data-l="fil">Gamit ang <em>hula</em> sa next year</span><span data-l="en">Using next year's <em>guess</em></span></h2>
+               <p>
+                  <span data-l="fil">Hinuhulaan ng mga expert ang kita ng tindahan next year. Kung ₱100 ang hula imbes na ₱50:</span>
+                  <span data-l="en">Experts <button type="button" class="term" data-info="guess">guess</button> the store's profit next year. If they guess ₱100 instead of ₱50:</span>
+               </p>
+               <p class="big-math">
+                  ₱1,000 ÷ ₱100 = <span data-l="fil">10 taon</span><span data-l="en">10 years</span>
+                  <small><span data-l="fil">imbes na 20 taon. Mas mura!</span><span data-l="en">instead of 20 years. Cheaper!</span></small>
+               </p>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">📈</span
+                  ><span><span data-l="fil">Mas malaking kita next year = mas kaunting taon.</span><span data-l="en">More profit next year = fewer years.</span></span>
+               </p>
+               <div class="board" data-board="fpe"></div>
+               <p class="warn">
+                  <span class="ic" aria-hidden="true">⚠️</span
+                  ><span><span data-l="fil">Hula lang 'yan. Pwedeng mali!</span><span data-l="en">It's just a guess. Guesses can be wrong!</span></span>
+               </p>
+               <div class="quiz" data-quiz="fpe"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-prime-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV3 Prime</span><span data-l="en">LV3 Prime</span></span><b><span data-l="fil">Tapos na ang Check 2! ✅</span><span data-l="en">Check 2 done! ✅</span></b><span><span data-l="fil">Ang kita sa papel ay hindi laging pera na mahahawakan mo. Bilangin natin ang totoong cash.</span><span data-l="en">Profit on paper isn't always cash you can touch. Let's count the real cash.</span></span></div>
+                  <a class="next" href="#fcf"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">Check 3 · Totoong cash</span><span data-l="en">Check 3 · Real cash</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- Check 3 -->
+            <section class="card" id="fcf" aria-labelledby="fcf-title">
+               <button type="button" class="step-tag" data-info="cash"><b>3</b><span>Check 3 <small>of 3 · Real cash</small></span><span class="i" aria-hidden="true">i</span></button>
+               <h2 class="h2" id="fcf-title">
+                  <span data-l="fil">Ilang taon ng <em>totoong cash?</em></span><span data-l="en">How many years of <em>real cash?</em></span>
+               </h2>
+               <p>
+                  <span data-l="fil">Bilangin ang <button type="button" class="term" data-info="cash">totoong cash</button> na natira sa kaha matapos bayaran ang lahat:</span>
+                  <span data-l="en">Count the <button type="button" class="term" data-info="cash">real cash</button> left in the drawer after paying for everything:</span>
+               </p>
+               <div class="math">
+                  <div><span><span data-l="fil">Benta</span><span data-l="en">Sales</span></span><b>₱500</b></div>
+                  <div><span><span data-l="fil">Paninda at kuryente</span><span data-l="en">Goods and electricity</span></span><b>−₱420</b></div>
+                  <div><span><span data-l="fil">Bagong estante</span><span data-l="en">New shelves</span></span><b>−₱20</b></div>
+                  <div class="result"><span><span data-l="fil">Natirang cash</span><span data-l="en">Cash left over</span></span><b>₱60</b></div>
+               </div>
+               <p class="big-math">
+                  ₱1,000 ÷ ₱60 = <span data-l="fil">16.7 taon</span><span data-l="en">16.7 years</span>
+                  <small><span data-l="fil">Below 20 taon = 🟢 Mura!</span><span data-l="en">Under 20 years = 🟢 Cheap!</span></small>
+               </p>
+               <div class="board" data-board="fcf"></div>
+               <div class="quiz" data-quiz="fcf"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-apex-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV4 Apex</span><span data-l="en">LV4 Apex</span></span><b><span data-l="fil">Tapos na ang 3 checks! 🎉</span><span data-l="en">All 3 checks done! 🎉</span></b><span><span data-l="fil">Bonus round: may stocks na mukhang mahal pero sobrang bilis lumaki. Sulit ba sila?</span><span data-l="en">Bonus round: some stocks look pricey but grow super fast. Are they worth it?</span></span></div>
+                  <a class="next" href="#peg"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">⭐ Bonus · PEG</span><span data-l="en">⭐ Bonus · PEG</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- Bonus: PEG -->
+            <section class="card" id="peg" aria-labelledby="peg-title">
+               <button type="button" class="step-tag bonus" data-info="peg"><b>⭐</b><span>Bonus <small>· PEG</small></span><span class="i" aria-hidden="true">i</span></button>
+               <h2 class="h2" id="peg-title">
+                  <span data-l="fil">Sulit ba ang <em>mabilis lumaki?</em></span><span data-l="en">Is fast growth <em>worth it?</em></span>
+               </h2>
+               <p>
+                  <span data-l="fil">Ang <strong>Tindahan C</strong> ay ₱1,000, pero ₱25 lang ang kita: <strong>40 taon</strong>! Mukhang sobrang mahal. Pero dumodoble ang kita nito kada taon. I-tap ang button:</span><span data-l="en"><strong>Store C</strong> costs ₱1,000 but makes only ₱25 a year: <strong>40 years</strong>! Looks super pricey. But its profit doubles every year. Tap the button:</span>
+               </p>
+               <div class="grow" data-grow>
+                  <p class="grow-year" data-gyear></p>
+                  <p class="grow-line"><span data-gprofit></span> → <strong data-gyears></strong></p>
+                  <div class="years" data-gboxes aria-hidden="true"></div>
+                  <button type="button" class="grow-btn" data-gbtn></button>
+               </div>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">⚡</span
+                  ><span><span data-l="fil">Pag mabilis lumaki ang kita, bumababa ang taon. Ang <button type="button" class="term" data-info="peg">PEG</button> ang nagche-check nito.</span><span data-l="en">When profit grows fast, the years shrink. <button type="button" class="term" data-info="peg">PEG</button> checks this for real companies.</span></span>
+               </p>
+               <div class="board" data-board="peg"></div>
+               <p class="warn">
+                  <span class="ic" aria-hidden="true">⚠️</span
+                  ><span><span data-l="fil">Hula pa rin ng mga expert ang bilis ng paglaki. Pwedeng mali!</span><span data-l="en">Growth speed is still an expert guess. It can be wrong!</span></span>
+               </p>
+               <div class="quiz" data-quiz="peg"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-apex-2.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV4 Apex ⭐</span><span data-l="en">LV4 Apex ⭐</span></span><b><span data-l="fil">Tapos na ang bonus! 🏆</span><span data-l="en">Bonus done! 🏆</span></b><span><span data-l="fil">Oras na para makita kung aling companies ang pumasa sa lahat.</span><span data-l="en">Time to see which companies passed the checks.</span></span></div>
+                  <a class="next" href="#results"><span><small class="nl"><span data-l="fil">Susunod na lesson</span><span data-l="en">Next lesson</span></small><span data-l="fil">Tingnan ang resulta</span><span data-l="en">See the results</span></span><span class="arr" aria-hidden="true">↓</span></a>
+               </div>
+            </section>
+
+            <!-- Results -->
+            <section class="results-head" id="results" aria-labelledby="results-title">
+               <h2 class="h2" id="results-title"><span data-l="fil">Sino ang pumasa? 🥯</span><span data-l="en">Who passed? 🥯</span></h2>
+               <p>
+                  <span data-l="fil">Bawat check na 🟢 Mura (below 20 taon) = 1 pandesal.</span>
+                  <span data-l="en">Every check that's 🟢 Cheap (under 20 years) = 1 pandesal.</span>
+               </p>
+               <button type="button" class="btn" data-info="pandesal" style="margin-top: 12px; min-height: 36px; font-size: 14px">
+                  <span data-l="fil">Paano ito gumagana?</span><span data-l="en">How does this work?</span>
+               </button>
+               <img src="/hippos/party.png" alt="" width="116" height="116" />
+            </section>
+
+            <section class="card" id="tickets" aria-labelledby="tickets-title">
+               <h3 class="h2" id="tickets-title" style="font-size: 21px"><span data-l="fil">Ang wheel prizes mo 🎡</span><span data-l="en">Your wheel prizes 🎡</span></h3>
+               <p><span data-l="fil">Bawat tamang sagot = 1 spin ng wheel. 2 golden tickets = Grab draw. Kung kulang, pandesal points pa rin! I-claim sa dulo gamit ang TikTok username mo.</span><span data-l="en">Every right answer = 1 spin of the wheel. 2 golden tickets = Grab draw. Not enough? You still get pandesal points! Claim at the end with your TikTok username.</span></p>
+               <div data-tickets></div>
+               <button type="button" class="btn-lite" data-info="raffle"><span data-l="fil">Paano ang wheel at ang premyo?</span><span data-l="en">How do the wheel and prizes work?</span> <span class="i" aria-hidden="true">i</span></button>
+            </section>
+
+            <section class="card" aria-labelledby="passed-title">
+               <h3 class="h2" id="passed-title" style="font-size: 21px">
+                  <span data-l="fil">Ang top 3 sa 18 companies</span><span data-l="en">Top 3 out of 18 companies</span>
+               </h3>
+               <div data-winners></div>
+               <h3 class="h2" style="font-size: 21px"><span data-l="fil">Sikat, pero mahal 😮</span><span data-l="en">Famous, but pricey 😮</span></h3>
+               <ul class="famous" data-famous></ul>
+               <p class="say">
+                  <span data-l="fil">Magaling na company ≠ murang stock!</span><span data-l="en">Great company ≠ cheap stock!</span>
+               </p>
+            </section>
+
+            <section class="bread" aria-labelledby="bread-title">
+               <img src="/dashboard-v2/pandesal-large.png" alt="" width="64" height="64" />
+               <div>
+                  <b id="bread-title"><span data-l="fil">Ang mura, hindi laging maganda!</span><span data-l="en">Cheap isn't always good!</span></b>
+                  <span data-l="fil">Parang pandesal na kahapon pa: mura, pero alamin muna kung bakit.</span>
+                  <span data-l="en">Like day-old pandesal: cheap, but find out why first.</span>
+               </div>
+            </section>
+
+            <!-- Look inside -->
+            <section class="card" id="inside" aria-labelledby="inside-title">
+               <span class="step-tag"><b>🔍</b><span data-l="fil">Silipin</span><span data-l="en">Look inside</span></span>
+               <h2 class="h2" id="inside-title">
+                  <span data-l="fil">Silipin ang <em>8 malalaking stocks</em></span><span data-l="en">Look inside <em>8 big stocks</em></span>
+               </h2>
+               <p class="muted">
+                  <span data-l="fil">I-tap ang isa para makita ang lahat ng numero nito, explained nang simple. Sa bawat sheet, i-tap ang pangalan ng numero para malaman ang ibig sabihin.</span>
+                  <span data-l="en">Tap one to see all its numbers, explained simply. In every sheet, tap a number's name to learn what it means.</span>
+               </p>
+               <div class="inside-grid" data-inside></div>
+            </section>
+
+            <dialog class="sheet-dlg" data-sheet aria-labelledby="sheet-title"><div class="sheet-in" data-sheet-body></div></dialog>
+
+            <section class="finish" aria-labelledby="finish-title">
+               <h2 class="h2" id="finish-title"><span data-l="fil">Tapos ka na! 🎓</span><span data-l="en">You did it! 🎓</span></h2>
+               <p>
+                  <span data-l="fil">Isang money lesson kada video sa TikTok!</span>
+                  <span data-l="en">One money lesson per video on TikTok!</span>
+               </p>
+               <a class="btn" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer">Follow @moodeng.credit ›</a>
+               <img src="/hippos/sitting-down-pointing-hippo.png" alt="" width="128" height="128" />
+            </section>
+
+            <section class="card fine" aria-labelledby="fine-title">
+               <h2 class="h2" id="fine-title" style="font-size: 19px">
+                  <span data-l="fil">Para sa pag-aaral lang 🙏</span><span data-l="en">Just for learning 🙏</span>
+               </h2>
+               <p>
+                  <span data-l="fil">Hindi ito payo kung ano ang bibilhin. Pwedeng bumaba ang presyo ng stocks. Magtanong muna sa magulang o pinagkakatiwalaang adult bago mag-invest.</span>
+                  <span data-l="en">This isn't advice on what to buy. Stock prices can go down. Talk to a parent or trusted adult before investing.</span>
+               </p>
+               <p class="small">
+                  <span data-l="fil">Mga numero: StockAnalysis.com at FRED, Oct 2, 2026. Ang "taon ng kita" ay ang P/E. Bakit 20 taon? Ang super-safe na 10-year US government bond ay nagbabayad ng 5.24% kada taon, kaya mga 19 taon bago umabot ang interest sa perang ipinahiram.</span>
+                  <span data-l="en">Numbers: StockAnalysis.com and FRED, Oct 2, 2026. "Years of profit" is the P/E. Why 20 years? A super-safe 10-year US government bond pays 5.24% a year, so its interest takes about 19 years to add up to what you lent.</span>
+               </p>
+            </section>
+
+            <p class="footer">
+               © 2026 Moodeng Credit · Educational content only, not investment advice<br />
+               <a href="/how-it-works">How Moodeng works</a> · <a href="/privacy-policy">Privacy</a> · <a href="/terms">Terms</a>
+            </p>
+         </div>
+      </main>
+
+      <nav class="nav" aria-label="Lesson steps">
+         <a href="#start" data-go="start"><span class="ni" aria-hidden="true">🏁</span><span data-l="fil">Simula</span><span data-l="en">Start</span></a
+         ><a href="#pe" data-go="pe"><span class="ni" aria-hidden="true">📅</span><span data-l="fil">Taon</span><span data-l="en">Years</span></a
+         ><a href="#forward-pe" data-go="forward-pe"><span class="ni" aria-hidden="true">🔮</span><span data-l="fil">Hula</span><span data-l="en">Guess</span></a
+         ><a href="#fcf" data-go="fcf"><span class="ni" aria-hidden="true">💵</span>Cash</a
+         ><a href="#peg" data-go="peg"><span class="ni" aria-hidden="true">⚡</span><span data-l="fil">Bonus</span><span data-l="en">Bonus</span></a
+         ><a href="#results" data-go="results"><span class="ni" aria-hidden="true">🏆</span><span data-l="fil">Resulta</span><span data-l="en">Results</span></a>
+      </nav>
+      <div class="score-chip" data-score hidden aria-live="polite"></div>
+
+      <script>
+         (function () {
+            // Simple guide for "years of profit to add up to the price" (= P/E): under 20 cheap, 20–30 okay, over 30 pricey.
+            // 20 sits next to the 10-year US Treasury (5.24% a year ≈ 19 years), noted in the fine print.
+            var CHEAP = 20;
+            var OKAY = 30;
+            var BAR_MAX = 40; // years at the right edge of a bar
+            var PHP = 62.6; // ECB reference rate, Oct 2, 2026
+            var LANG_KEY = 'moodeng-stocks-lang';
+
+            function both(fil, en) {
+               return '<span data-l="fil">' + fil + '</span><span data-l="en">' + en + '</span>';
+            }
+            function tk(t) {
+               return '<span class="tk">' + t + '</span>';
+            }
+            function yahoo(t) {
+               return 'https://finance.yahoo.com/quote/' + encodeURIComponent(t) + '/';
+            }
+            function yrs(v) {
+               return v.toFixed(1) + ' ' + both('taon', 'yrs');
+            }
+            function usd(v) {
+               return '$' + v.toFixed(2);
+            }
+            function pesoPrice(v) {
+               return '₱' + (Math.round((v * PHP) / 10) * 10).toLocaleString('en-US');
+            }
+            // FCF yield % → years of real cash to add up to the price
+            function cashPrice(yieldPct) {
+               return yieldPct > 0 ? 100 / yieldPct : null;
+            }
+            function term(key, label) {
+               return '<button type="button" class="term" data-info="' + key + '">' + label + '</button>';
+            }
+            var I = '<span class="i" aria-hidden="true">i</span>';
+
+            // StockAnalysis statistics pages, Oct 2, 2026 close. pe/fpe = P/E and forward P/E, cash = FCF yield %.
+            // VOO forward P/E is the S&P 500 (FactSet). TSLA eps = price ÷ P/E so the worked example adds up.
+            var CO = {
+               GOOGL: { name: 'Alphabet', emo: '🔎', price: 343.5, eps: 19.93, pe: 17.23, fpe: 25.58, cash: 1.27, cashB: 53.3, peg: 2.0, fil: 'Google at YouTube', en: 'Google and YouTube',
+                  line: both("Mukhang mura base sa last year, pero may one-time bonus ang taon na 'yon. Mas mahal ito base sa hula.", 'Looks cheap on last year, but that year had a one-time bonus. It looks pricier on the guess.') },
+               AMZN: { name: 'Amazon', emo: '📦', price: 251.52, eps: 12.44, pe: 20.23, fpe: 26.81, cash: -0.43, cashB: -11.6, peg: 1.29, fil: 'Online shopping at cloud', en: 'Online shopping and cloud',
+                  line: both('Okay ang presyo sa P/E, pero walang natirang cash dahil sa laki ng gastos sa AI.', 'An okay price on P/E, but no cash left over because of huge AI spending.') },
+               AAPL: { name: 'Apple', emo: '🍎', price: 333.69, eps: 8.72, pe: 38.28, fpe: 36.26, cash: 2.81, cashB: 136.7, peg: 3.27, fil: 'Gumagawa ng iPhone', en: 'Makes iPhones',
+                  line: both('Pinakamahal dito. Bayad ka para sa sikat na brand, hindi para sa bargain.', 'The priciest one here. You pay for the famous brand, not for a bargain.') },
+               META: { name: 'Meta', emo: '📱', price: 728.08, eps: 26.54, pe: 27.44, fpe: 22.64, cash: 2.21, cashB: 41.0, peg: 1.15, fil: 'Facebook at Instagram', en: 'Facebook and Instagram',
+                  line: both('Bumababa ang presyo base sa hula kasi lalaki ang kita, pero hindi pa rin mura.', 'The price drops on the guess because profit should grow, but it is still not cheap.') },
+               MSFT: { name: 'Microsoft', emo: '💻', price: 517.53, eps: 17.95, pe: 28.83, fpe: 26.21, cash: 1.74, cashB: 67.0, peg: 1.63, fil: 'Windows at Xbox', en: 'Windows and Xbox',
+                  line: both('Matatag at malakas na company, pero hindi mura ngayon.', 'A steady, strong company, but not cheap right now.') },
+               NVDA: { name: 'Nvidia', emo: '🎮', price: 233.95, eps: 7.91, pe: 29.58, fpe: 19.41, cash: 2.25, cashB: 127.0, peg: 0.37, fil: 'Chips para sa games at AI', en: 'Chips for games and AI',
+                  line: both('Mahal base sa last year, pero mura base sa hula, kasi inaasahang tatalon ang kita.', 'Pricey on last year, but cheap on the guess, because profit should jump.') },
+               LMT: { name: 'Lockheed Martin', emo: '✈️', price: 505.41, eps: 27.14, pe: 18.62, fpe: 16.39, cash: 7.48, cashB: 8.7, peg: 0.85, fil: 'Gumagawa ng eroplano', en: 'Makes jets',
+                  line: both('Mura sa lahat ng 3 checks. Pero mabagal itong lumaki.', 'Cheap on all 3 checks. But it grows slowly.') },
+               VOO: { name: 'VOO (S&P 500)', emo: '🧺', price: 707.54, eps: null, pe: 27.1, fpe: 19.0, cash: null, peg: null, basket: true, fil: 'Basket ng 500 company', en: 'A basket of 500 companies',
+                  line: both('Isang bili, may konting parte ka na sa 500 malalaking company sa US. Mura base sa hula next year.', "One buy gives you a tiny piece of 500 big US companies. Cheap on next year's guess.") },
+               JPM: { name: 'JPMorgan', emo: '🏦', price: 332.38, eps: 23.3, pe: 14.27, fpe: 13.72, cash: null, peg: 1.37, bank: true, fil: 'Bangko', en: 'Bank',
+                  line: both('Malaking bangko. Karaniwang mababa ang P/E ng mga bangko, kaya normal lang na mura ito.', 'A big bank. Banks usually have low P/Es, so looking cheap is normal for them.') },
+               KO: { name: 'Coca-Cola', emo: '🥤', price: 85.65, eps: 3.33, pe: 25.74, fpe: 25.2, cash: 3.88, cashB: 14.3, peg: 3.41, fil: 'Gumagawa ng Coke', en: 'Makes Coke',
+                  line: both('Matatag na soda company. Okay na presyo para sa mabagal pero siguradong kita.', 'A super steady soda company. An okay price for slow but reliable profit.') },
+               TSLA: { name: 'Tesla', emo: '🚗', price: 370.59, eps: 0.96, pe: 384.57, fpe: 201.25, cash: 0.39, cashB: 5.8, peg: 9.08, fil: 'Electric cars', en: 'Electric cars',
+                  line: both('385 taon ng kita! Taya ng mga tao na lalaki nang sobra ang kita nito.', '385 years of profit! People are betting its profit will grow a LOT.') },
+               GM: { name: 'General Motors', emo: '🚙', price: 78.27, eps: 1.99, pe: 39.42, fpe: 5.61, cash: 20.96, cashB: 14.4, peg: 0.34, fil: 'Gumagawa ng kotse', en: 'Makes cars',
+                  line: both('Maliit ang kita last year kaya mukhang mahal. Base sa hula, sobrang mura, kung magkatotoo lang.', 'Small profit last year makes it look pricey. On the guess it looks super cheap, but only if the guess comes true.') },
+               XOM: { name: 'ExxonMobil', emo: '⛽', price: 164.01, eps: 7.76, pe: 21.15, fpe: 12.66, cash: 4.53, cashB: 30.6, peg: 1.18, fil: 'Gasolina', en: 'Gas and oil',
+                  line: both('Oil company. Tumataas at bumababa ang kita kasabay ng presyo ng langis, kaya mahirap hulaan.', 'An oil company. Profit rises and falls with oil prices, so guesses are tricky.') },
+               PYPL: { name: 'PayPal', emo: '💳', price: 52.8, eps: 5.3, pe: 9.95, fpe: 9.51, cash: 14.58, cashB: 6.6, peg: 1.35, fil: 'Online na bayad', en: 'Online payments',
+                  line: both('Mura sa lahat ng checks, kasi nag-aalala ang mga tao na mabagal na itong lumaki.', 'Cheap on every check, because people worry it will grow slowly.') },
+               UNH: { name: 'UnitedHealth', emo: '🏥', price: 371.9, eps: 15.53, pe: 23.94, fpe: 17.48, cash: 7.07, cashB: 23.6, peg: 1.2, fil: 'Health insurance', en: 'Health insurance',
+                  line: both('Mura base sa hula at sa cash, okay lang base sa last year. Tumataas ang gastos sa ospital.', 'Cheap on the guess and on cash, okay on last year. Hospital costs keep rising.') },
+            };
+            var INSIDE = ['GOOGL', 'AMZN', 'AAPL', 'META', 'MSFT', 'NVDA', 'LMT', 'VOO']; // Emma's 8
+
+            function zone(price) {
+               return price < CHEAP ? 'win' : price <= OKAY ? 'mid' : 'lose';
+            }
+            // Bar: years, over green/yellow/red bands. Shorter = cheaper.
+            function bar(price) {
+               if (price == null) return '<div class="track"><span class="none">' + both('Walang cash 😬', 'No cash 😬') + '</span></div>';
+               var cls = price > BAR_MAX ? 'over' : zone(price);
+               return '<div class="track"><div class="bar ' + cls + '" style="width:' + Math.min(100, (price / BAR_MAX) * 100) + '%"></div></div>';
+            }
+            function verdict(price) {
+               if (price == null) return { cls: 'lose', label: both('❌ Walang cash', '❌ No cash') };
+               var z = zone(price);
+               if (z === 'win') return { cls: z, label: both('🟢 Mura', '🟢 Cheap') };
+               if (z === 'mid') return { cls: z, label: both('🟡 Okay lang', '🟡 Okay') };
+               return { cls: z, label: both('🔴 Mahal', '🔴 Pricey') };
+            }
+            function score(c) {
+               var cp = c.cash == null ? null : cashPrice(c.cash);
+               return [c.pe < CHEAP, c.fpe < CHEAP, cp != null && cp < CHEAP];
+            }
+            function pandesals(r) {
+               var n = r.filter(Boolean).length;
+               return (
+                  '<span class="pandesals" role="img" aria-label="' +
+                  n +
+                  '/3">' +
+                  r
+                     .map(function (ok) {
+                        return '<img src="/dashboard-v2/pandesal-small.png" alt=""' + (ok ? '' : ' class="off"') + ' />';
+                     })
+                     .join('') +
+                  '</span>'
+               );
+            }
+
+            // One company row in a chart. The whole row opens the company's sheet.
+            function pegVerdict(v) {
+               if (v < 1) return { cls: 'win', label: both('✅ Sapat ang bilis', '✅ Fast enough') };
+               if (v <= 2) return { cls: 'mid', label: both('🟡 Pwede na', '🟡 So-so') };
+               return { cls: 'lose', label: both('❌ Masyadong mabagal', '❌ Too slow') };
+            }
+            function barPeg(v) {
+               var cls = v < 1 ? 'win' : v <= 2 ? 'mid' : 'lose';
+               return '<div class="track peg"><div class="bar ' + cls + '" style="width:' + Math.min(100, (v / 4) * 100) + '%"></div></div>';
+            }
+            function row(t, price, note, kind) {
+               var c = CO[t];
+               var peg = kind === 'peg';
+               var vd = peg ? pegVerdict(price) : verdict(price);
+               return (
+                  '<button type="button" class="co" data-open="' +
+                  t +
+                  '"><span class="co-top"><span class="co-emo" aria-hidden="true">' +
+                  c.emo +
+                  '</span><span class="co-name">' +
+                  c.name +
+                  ' ' +
+                  tk(t) +
+                  '<small>' +
+                  both(c.fil, c.en) +
+                  '</small></span><span class="co-val ' +
+                  vd.cls +
+                  '">' +
+                  (price == null ? '—' : peg ? price.toFixed(2) : yrs(price) + (price > BAR_MAX ? ' ↗' : '')) +
+                  '<small>' +
+                  vd.label +
+                  '</small></span><span class="chev" aria-hidden="true">›</span></span>' +
+                  (peg ? barPeg(price) : bar(price)) +
+                  (note ? '<span class="co-note">' + note + '</span>' : '') +
+                  '</button>'
+               );
+            }
+            function head(info, fil, en) {
+               return '<button type="button" class="board-head" data-info="' + info + '"><span>' + both(fil, en) + '</span>' + I + '</button>';
+            }
+            var SCALE =
+               '<button type="button" class="scale-btn" data-info="scale" aria-label="How to read the chart"><span class="scale" aria-hidden="true"><span style="left:0">0</span><span style="left:50%">20</span><span style="left:75%">30</span><span style="left:100%">40 ' + both('taon', 'yrs') + '</span></span></button>';
+            var KEY =
+               '<button type="button" class="key" data-info="scale"><span>' +
+               both('Mas maikli = mas kaunting taon = mas mura', 'Shorter bar = fewer years = cheaper') +
+               '</span><span>' + both('🟢 &lt;20 · 🟡 20–30 · 🔴 &gt;30 taon', '🟢 &lt;20 · 🟡 20–30 · 🔴 &gt;30 years') + '</span>' +
+               I +
+               '</button>';
+            var TAP = '<p class="tap-hint">' + both('I-tap ang company para makita ang lahat ng numero nito ›', 'Tap a company to see all its numbers ›') + '</p>';
+
+            // Check 1: P/E = years of profit to add up to the price
+            document.querySelector('[data-board="pe"]').innerHTML =
+               head('payonce', 'Ilang taon bago umabot ang kita sa presyo', 'Years for profit to add up to the price') +
+               SCALE +
+               ['JPM', 'LMT', 'KO', 'AAPL', 'TSLA']
+                  .map(function (t) {
+                     var note = t === 'TSLA' ? both('385 taon?! Umaasa ang mga tao na lalaki nang sobra ang kita nito.', '385 years?! People hope its profit grows a LOT.') : '';
+                     return row(t, CO[t].pe, note);
+                  })
+                  .join('') +
+               KEY +
+               TAP;
+
+            // Check 2: forward P/E
+            document.querySelector('[data-board="fpe"]').innerHTML =
+               head('guess', 'Ilang taon, gamit ang HULANG kita next year', "Years, using next year's GUESSED profit") +
+               SCALE +
+               ['GM', 'XOM', 'NVDA', 'MSFT', 'AMZN']
+                  .map(function (t) {
+                     var c = CO[t];
+                     var change = both('Last year ' + yrs(c.pe) + ' → next year ' + yrs(c.fpe), 'Last year ' + yrs(c.pe) + ' → next year ' + yrs(c.fpe));
+                     var extra = '';
+                     if (t === 'GM') extra = both(' Malaking bagsak! Pero kung magkatotoo lang ang hula.', ' Huge drop! But only if the guess comes true.');
+                     if (t === 'NVDA') extra = both(' Kulang lang sa 20 taon, kaya mura na!', ' Just under 20 years, so it counts as cheap!');
+                     if (t === 'AMZN') extra = both(' Mas mahal next year kasi mas maliit ang hulang kita.', ' Pricier next year because the guessed profit is smaller.');
+                     return row(t, c.fpe, change + extra);
+                  })
+                  .join('') +
+               KEY +
+               TAP;
+
+            // Check 3: years of real cash to add up to the price (100 ÷ FCF yield)
+            document.querySelector('[data-board="fcf"]').innerHTML =
+               head('cashhead', 'Ilang taon ng totoong cash para umabot sa presyo', 'Years of real cash to add up to the price') +
+               SCALE +
+               ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN']
+                  .map(function (t) {
+                     var note = '';
+                     if (t === 'PYPL') note = both('Sobrang mura! Pero mura kasi nag-aalala ang mga tao na mabagal na itong lumaki.', 'Super cheap! But it is cheap because people worry it will grow slowly.');
+                     if (t === 'AMZN') note = both('Mas malaki ang ginastos kaysa pumasok, para sa malalaking AI computer centers.', 'It spent more than came in, on giant AI computer centers.');
+                     return row(t, cashPrice(CO[t].cash), note);
+                  })
+                  .join('') +
+               KEY +
+               TAP;
+
+            // Bonus: PEG board. Bar 0–4, green under 1, yellow 1–2, red over 2.
+            var SCALE_PEG =
+               '<button type="button" class="scale-btn" data-info="peg" aria-label="PEG"><span class="scale" aria-hidden="true"><span style="left:0">0</span><span style="left:25%">1</span><span style="left:50%">2</span><span style="left:100%">4+</span></span></button>';
+            var KEY_PEG =
+               '<button type="button" class="key" data-info="peg"><span>' +
+               both('Mas maikli = sulit ang paglaki', 'Shorter bar = growth is worth it') +
+               '</span><span>' +
+               both('✅ &lt;1 · 🟡 1–2 · ❌ &gt;2', '✅ &lt;1 · 🟡 1–2 · ❌ &gt;2') +
+               '</span>' +
+               I +
+               '</button>';
+            var PEG_NOTES = {
+               NVDA: both('Pinakamabilis lumaki ang kita nito, kaya sulit kahit mataas ang taon.', 'Its profit is expected to grow the fastest, so the years are worth it.'),
+               LMT: both('Mabagal lumaki pero mura, kaya okay.', "Grows slowly, but it's cheap, so it's fine."),
+               META: both('Sakto ang bilis ng paglaki para sa presyo.', 'Growing about as fast as its price asks.'),
+               MSFT: both('Okay ang paglaki, medyo mahal ang presyo.', 'Decent growth, but the price is a bit full.'),
+               KO: both('Mabagal lumaki pero mataas ang presyo.', 'Slow growth for a high price.'),
+            };
+            document.querySelector('[data-board="peg"]').innerHTML =
+               head('peg', 'Sapat ba ang bilis ng paglaki para sa presyo?', 'Is growth fast enough for the price?') +
+               SCALE_PEG +
+               ['NVDA', 'LMT', 'META', 'MSFT', 'KO']
+                  .map(function (t) {
+                     return row(t, CO[t].peg, PEG_NOTES[t], 'peg');
+                  })
+                  .join('') +
+               KEY_PEG +
+               TAP;
+
+            // Store C: profit doubles each year, years shrink 40 → 20 → 10
+            var GROW = [{ p: 25, y: 40 }, { p: 50, y: 20 }, { p: 100, y: 10 }];
+            var gi = 0;
+            var growEl = document.querySelector('[data-grow]');
+            function renderGrow() {
+               var g = GROW[gi];
+               var boxes = '';
+               for (var k = 1; k <= g.y; k++) boxes += '<span>' + k + '</span>';
+               growEl.querySelector('[data-gyear]').innerHTML = both('Taon ' + (gi + 1) + (gi === 0 ? ' · Ngayon' : ''), 'Year ' + (gi + 1) + (gi === 0 ? ' · Now' : ''));
+               growEl.querySelector('[data-gprofit]').innerHTML = both('Kita: ₱' + g.p, 'Profit: ₱' + g.p);
+               growEl.querySelector('[data-gyears]').innerHTML = g.y + ' ' + both('taon', 'years') + ' ' + { win: '🟢', mid: '🟡', lose: '🔴' }[zone(g.y)];
+               var box = growEl.querySelector('[data-gboxes]');
+               box.className = 'years ' + zone(g.y);
+               box.innerHTML = boxes;
+               growEl.querySelector('[data-gbtn]').innerHTML = gi < 2 ? both('Next year ▶', 'Next year ▶') : both('Ulitin ↺', 'Start again ↺');
+            }
+            growEl.querySelector('[data-gbtn]').addEventListener('click', function () {
+               gi = (gi + 1) % GROW.length;
+               renderGrow();
+            });
+            renderGrow();
+
+            // Check 1 slider: drag the store's profit, watch the years
+            var slider = document.querySelector('[data-slider]');
+            function renderTry() {
+               var pr = +slider.value;
+               var y = 1000 / pr;
+               var z = zone(y);
+               document.querySelector('[data-sp]').textContent = '₱' + pr;
+               document.querySelector('[data-sy]').innerHTML = Math.round(y * 10) / 10 + ' ' + both('taon', 'years');
+               var h = '';
+               for (var k = 1; k <= Math.round(y); k++) h += '<span>' + k + '</span>';
+               var box = document.querySelector('[data-sbox]');
+               box.className = 'years ' + z;
+               box.innerHTML = h;
+               document.querySelector('[data-sv]').innerHTML =
+                  z === 'win'
+                     ? both('🟢 Mura! Mabilis umabot ang kita sa presyo.', '🟢 Cheap! The profit adds up to the price fast.')
+                     : z === 'mid'
+                       ? both('🟡 Okay lang. Katamtamang tagal.', '🟡 Okay. A middle amount of time.')
+                       : both('🔴 Mahal! Matagal bago umabot ang kita.', '🔴 Pricey! It takes a long time.');
+            }
+            slider.addEventListener('input', renderTry);
+            renderTry();
+
+            // Two-store boxes animate in when scrolled into view
+            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // Results: each check under 20 years = 1 pandesal
+            var WINNERS = [
+               { t: 'LMT', but: both('Pero: mabagal lumaki.', 'But: grows slowly.') },
+               { t: 'PYPL', but: both('Pero: baka mabagal na itong lumaki.', 'But: it may grow slowly.') },
+               { t: 'UNH', but: both('Pero: tumataas ang gastos sa ospital.', 'But: hospital costs keep rising.') },
+            ];
+            document.querySelector('[data-winners]').innerHTML = WINNERS.map(function (w) {
+               var c = CO[w.t];
+               return (
+                  '<button type="button" class="winner" data-open="' +
+                  w.t +
+                  '"><span class="rank" aria-hidden="true">' +
+                  c.emo +
+                  '</span><span class="co-name">' +
+                  c.name +
+                  ' ' +
+                  tk(w.t) +
+                  '<small>' +
+                  both(c.fil, c.en) +
+                  '</small><small>' +
+                  w.but +
+                  '</small></span>' +
+                  pandesals(score(c)) +
+                  '</button>'
+               );
+            }).join('');
+            document.querySelector('[data-famous]').innerHTML = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
+               .map(function (t) {
+                  var c = CO[t];
+                  return '<li><button type="button" data-open="' + t + '"><span aria-hidden="true">' + c.emo + '</span>' + c.name + ' ' + tk(t) + pandesals(score(c)) + '</button></li>';
+               })
+               .join('');
+
+            // Pictures: year boxes for the two stores
+            document.querySelectorAll('[data-yrs]').forEach(function (el) {
+               var n = +el.getAttribute('data-yrs');
+               var h = '';
+               for (var q = 0; q < n; q++) h += '<i style="--i:' + q + '"></i>';
+               el.innerHTML = h;
+            });
+
+            // Picture: the 100-piece store
+            var grid = '';
+            for (var g = 0; g < 100; g++) grid += '<span' + (g === 44 ? ' class="you"' : '') + '></span>';
+            document.querySelector('[data-grid100]').innerHTML = grid;
+
+            // Quizzes
+            var QUIZ = {
+               pe: {
+                  q: both('🧠 Alin ang mas mura?', '🧠 Which one is cheaper?'),
+                  opts: [
+                     { a: both('🍎 Apple (AAPL): 38 taon ng kita', '🍎 Apple (AAPL): 38 years of profit'), ok: false },
+                     { a: both('🏦 JPMorgan (JPM): 14 taon ng kita', '🏦 JPMorgan (JPM): 14 years of profit'), ok: true },
+                  ],
+                  right: both('Tama! Mas kaunting taon = mas mura. Parang Tindahan A!', 'Correct! Fewer years = cheaper. Just like Store A!'),
+                  wrong: both('Hindi pa. Mas kaunting taon = mas mura. Subukan ulit!', 'Not quite. Fewer years = cheaper. Try again!'),
+               },
+               fpe: {
+                  q: both('🧠 Sigurado bang tama ang hula?', '🧠 Is the guess always right?'),
+                  opts: [
+                     { a: both('Oo, laging tama', 'Yes, always'), ok: false },
+                     { a: both('Hindi, pwedeng mali', 'No, it can be wrong'), ok: true },
+                  ],
+                  right: both('Tama! Hula lang ito, kaya mag-ingat.', "Correct! It's only a guess, so be careful."),
+                  wrong: both('Hindi pa. Kahit expert, nagkakamali. Subukan ulit!', 'Not quite. Even experts get it wrong. Try again!'),
+               },
+               fcf: {
+                  q: both('🧠 Alin ang 🟢 mura (below 20 taon)?', '🧠 Which one is 🟢 cheap (under 20 years)?'),
+                  opts: [
+                     { a: both('🥤 Coca-Cola (KO): 25.8 taon ng cash', '🥤 Coca-Cola (KO): 25.8 years of cash'), ok: false },
+                     { a: both('💳 PayPal (PYPL): 6.9 taon ng cash', '💳 PayPal (PYPL): 6.9 years of cash'), ok: true },
+                  ],
+                  right: both('Tama! 6.9 taon ay below 20.', 'Correct! 6.9 years is under 20.'),
+                  wrong: both('Hindi pa. 25.8 taon ay above 20. Subukan ulit!', 'Not quite. 25.8 years is over 20. Try again!'),
+               },
+               peg: {
+                  q: both('🧠 Tindahan C: 40 taon ngayon, pero dumodoble ang kita kada taon. Pangit ba agad itong deal?', '🧠 Store C: 40 years now, but profit doubles every year. Is it automatically a bad deal?'),
+                  opts: [
+                     { a: both('Oo, 40 taon ay 40 taon', 'Yes, 40 years is 40 years'), ok: false },
+                     { a: both('Hindi, pwedeng sulit kasi mabilis lumaki', 'No, it can be worth it because it grows fast'), ok: true },
+                  ],
+                  right: both('Tama! 40 → 20 → 10 taon. Mabilis lumaki = bumababa ang taon.', 'Correct! 40 → 20 → 10 years. Fast growth = fewer years.'),
+                  wrong: both('Hindi pa. Tingnan ulit ang Tindahan C: 40 → 20 → 10 taon!', 'Not quite. Look at Store C again: 40 → 20 → 10 years!'),
+               },
+            };
+            var quizGot = {};
+            var QUIZ_TOTAL = Object.keys(QUIZ).length;
+            var scoreChip = document.querySelector('[data-score]');
+            function burst(btn) {
+               if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+               var r = btn.getBoundingClientRect();
+               for (var b = 0; b < 6; b++) {
+                  var sp = document.createElement('span');
+                  sp.className = 'burst';
+                  sp.textContent = '🥯';
+                  sp.style.left = r.left + r.width / 2 + (b - 2.5) * 12 + 'px';
+                  sp.style.top = r.top + 'px';
+                  sp.style.setProperty('--dx', (b - 2.5) * 16 + 'px');
+                  document.body.appendChild(sp);
+                  setTimeout(function (el) {
+                     el.remove();
+                  }, 900, sp);
+               }
+            }
+            // Prize wheel: each right quiz answer = 1 spin. Pandesal points, or a golden ticket.
+            // 2 golden tickets unlock the Grab draw; otherwise points are claimed when signing up. Saved so a refresh can't re-roll.
+            var TIX_KEY = 'moodeng-stocks-wheel';
+            var TICKETS_NEEDED = 2;
+            var SEGS = [
+               { k: 'pts', v: 5, c: '#8336f0' },
+               { k: 'pts', v: 10, c: '#f2c94c' },
+               { k: 'ticket', v: 0, c: '#1aa45b' },
+               { k: 'pts', v: 5, c: '#914cf2' },
+               { k: 'pts', v: 20, c: '#fb3748' },
+               { k: 'pts', v: 10, c: '#d3aa00' },
+               { k: 'ticket', v: 0, c: '#116b3c' },
+               { k: 'pts', v: 15, c: '#6010d2' },
+            ];
+            var SEG_DEG = 360 / SEGS.length;
+            var tix = {};
+            try {
+               tix = JSON.parse(localStorage.getItem(TIX_KEY) || '{}') || {};
+            } catch (e) {
+               tix = {};
+            }
+            function saveTix() {
+               try {
+                  localStorage.setItem(TIX_KEY, JSON.stringify(tix));
+               } catch (e) {}
+            }
+            function randInt(n) {
+               if (window.crypto && crypto.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0] % n;
+               return Math.floor(Math.random() * n);
+            }
+            function totals() {
+               var pts = 0;
+               var tickets = 0;
+               Object.keys(tix).forEach(function (k) {
+                  if (tix[k].kind === 'ticket') tickets++;
+                  else pts += tix[k].val;
+               });
+               return { pts: pts, tickets: tickets, spins: Object.keys(tix).length };
+            }
+            function updateScore() {
+               var n = Object.keys(quizGot).length;
+               var t = totals();
+               scoreChip.hidden = n === 0 && t.spins === 0;
+               var extra = (t.pts ? ' · 🥯 ' + t.pts + ' pts' : '') + (t.tickets ? ' · 🎟️ ' + t.tickets : '');
+               scoreChip.innerHTML = n === QUIZ_TOTAL ? both('🎉 ' + n + '/' + n + ' quiz hero!' + extra, '🎉 ' + n + '/' + n + ' quiz hero!' + extra) : both('🧠 ' + n + '/' + QUIZ_TOTAL + ' quiz' + extra, '🧠 ' + n + '/' + QUIZ_TOTAL + ' quiz' + extra);
+
+               var box = document.querySelector('[data-tickets]');
+               if (!t.spins) {
+                  box.innerHTML = '<p class="no-tix">' + both('Wala ka pang spin. Sagutin nang tama ang quiz sa Check 1 para makapag-spin!', 'No spins yet. Answer the Check 1 quiz right to earn a spin!') + '</p>';
+                  return;
+               }
+               var enough = t.tickets >= TICKETS_NEEDED;
+               var h = '<div class="prize-stats"><div><b>' + t.spins + '/' + QUIZ_TOTAL + '</b><span>spins</span></div><div><b>🥯 ' + t.pts + '</b><span>' + both('pandesal points', 'pandesal points') + '</span></div><div><b>🎟️ ' + t.tickets + '/' + TICKETS_NEEDED + '</b><span>' + both('golden tickets', 'golden tickets') + '</span></div></div>';
+               if (enough) {
+                  h += '<div class="prize-win"><b>' + both('🎉 Naabot mo ang ' + TICKETS_NEEDED + ' golden tickets para sa Grab draw!', '🎉 You collected ' + TICKETS_NEEDED + ' golden tickets for the Grab draw!') + '</b><span>' + both('I-claim sa baba gamit ang TikTok username mo.', 'Claim below with your TikTok username.') + '</span></div>';
+               } else {
+                  h += '<p class="prize-hint">' + both('Kulang pa ng ' + (TICKETS_NEEDED - t.tickets) + ' 🎟️ para sa Grab draw. Kahit hindi, may ' + t.pts + ' pandesal points ka pa rin!', 'You need ' + (TICKETS_NEEDED - t.tickets) + ' more 🎟️ for the Grab draw. Either way, you keep your ' + t.pts + ' pandesal points!') + '</p>';
+               }
+               h += claimHtml(t);
+               box.innerHTML = h;
+               bindClaim(t);
+            }
+            // Claim: the visitor types their TikTok @handle; the stocks-claim edge function posts it to the team.
+            var CLAIM_URL = 'https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/stocks-claim';
+            var CLAIM_KEY = 'moodeng-stocks-claimed';
+            function claimedHandle() {
+               try {
+                  return localStorage.getItem(CLAIM_KEY);
+               } catch (e) {
+                  return null;
+               }
+            }
+            function claimHtml(t) {
+               var done = claimedHandle();
+               if (done) {
+                  return '<div class="prize-win"><b>' + both('✅ Na-claim na bilang @' + done + '!', '✅ Claimed as @' + done + '!') + '</b><span>' + both('Kokontakin ka namin sa TikTok.', "We'll reach out on TikTok.") + '</span></div>';
+               }
+               return (
+                  '<form class="claim" data-claim novalidate><label for="claim-handle">' +
+                  both('TikTok username mo', 'Your TikTok username') +
+                  '</label><div class="claim-row"><input id="claim-handle" name="handle" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="25" placeholder="@username" /><button type="submit" class="spin-btn">' +
+                  both('I-claim! 🎁', 'Claim! 🎁') +
+                  '</button></div><p class="claim-msg" data-claim-msg aria-live="polite">' +
+                  both('Isang beses lang puwedeng mag-claim, kaya tapusin muna ang lahat ng quiz.', 'You can claim once, so finish all the quizzes first.') +
+                  '</p></form>'
+               );
+            }
+            function bindClaim(t) {
+               var form = document.querySelector('[data-claim]');
+               if (!form) return;
+               var msg = form.querySelector('[data-claim-msg]');
+               var btn = form.querySelector('button');
+               form.addEventListener('submit', function (e) {
+                  e.preventDefault();
+                  var h = form.handle.value.trim().replace(/^@/, '');
+                  if (!/^[A-Za-z0-9._]{2,24}$/.test(h)) {
+                     msg.innerHTML = both('Ilagay ang tamang TikTok username (letra, numero, . at _ lang).', 'Enter a valid TikTok username (letters, numbers, . and _ only).');
+                     return;
+                  }
+                  btn.disabled = true;
+                  msg.innerHTML = both('Sine-send...', 'Sending...');
+                  fetch(CLAIM_URL, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ handle: h, spins: t.spins, points: t.pts, tickets: t.tickets, lang: document.documentElement.getAttribute('data-lang') === 'en' ? 'en' : 'fil' }),
+                  })
+                     .then(function (r) {
+                        if (!r.ok) throw new Error(String(r.status));
+                        try {
+                           localStorage.setItem(CLAIM_KEY, h);
+                        } catch (err) {}
+                        updateScore();
+                     })
+                     .catch(function (err) {
+                        btn.disabled = false;
+                        msg.innerHTML =
+                           String(err.message) === '503'
+                              ? both('Hindi pa bukas ang claim. Subukan ulit mamaya!', "Claiming isn't open yet. Please try again later!")
+                              : both('May problema sa pag-send. Subukan ulit.', 'Something went wrong sending. Please try again.');
+                     });
+               });
+            }
+            function wheelHtml() {
+               return '<div class="wheel-wrap"><span class="wpointer" aria-hidden="true">▼</span><div class="wheel" data-wheel></div><span class="whub" aria-hidden="true">🥯</span></div>';
+            }
+            function resultText(g) {
+               return g.kind === 'ticket'
+                  ? both('🎉 Golden ticket! 🎟️ Isa na sa Grab draw!', '🎉 Golden ticket! 🎟️ One step closer to the Grab draw!')
+                  : both('🥯 +' + g.val + ' pandesal points!', '🥯 +' + g.val + ' pandesal points!');
+            }
+            // The quiz card shows a button; the wheel itself opens in the pop-up sheet.
+            function renderGame(id) {
+               var gm = document.querySelector('[data-game="' + id + '"]');
+               if (!gm) return;
+               var g = tix[id];
+               gm.hidden = false;
+               gm.innerHTML = g
+                  ? '<p class="game-title">' + resultText(g) + '</p>'
+                  : '<p class="game-title">' + both('🎁 May spin ka na!', '🎁 You earned a spin!') + '</p><button type="button" class="spin-btn" data-spin-open="' + id + '">' + both('Buksan ang wheel 🎡', 'Open the wheel 🎡') + '</button>';
+               var open = gm.querySelector('[data-spin-open]');
+               if (open) open.addEventListener('click', function () { openWheel(id); });
+            }
+            // The wheel is spin-wheel by CrazyTim (MIT), vendored in /landing/vendor (not loaded from a CDN).
+            // Flick it or press SPIN; the result is recorded once and can't be re-rolled by closing the sheet.
+            var WHEEL_LIB = '/landing/vendor/spin-wheel-esm.js';
+            function openWheel(id) {
+               show(
+                  sheetHead('🎡', both('Prize wheel', 'Prize wheel')) +
+                     '<div class="wheel-sheet">' +
+                     wheelHtml() +
+                     '<p class="game-title" data-wres>' + both('I-flick ang wheel o pindutin ang SPIN!', 'Flick the wheel or press SPIN!') + '</p>' +
+                     '<button type="button" class="spin-btn" data-spin>' + both('SPIN! 🎡', 'SPIN! 🎡') + '</button>' +
+                     '<p class="small">' + both('Pandesal points o golden ticket. 2 tickets = Grab draw.', 'Pandesal points or a golden ticket. 2 tickets = Grab draw.') + '</p></div>'
+               );
+               var holder = dlgBody.querySelector('[data-wheel]');
+               var btn = dlgBody.querySelector('[data-spin]');
+               var res = dlgBody.querySelector('[data-wres]');
+               var wheel = null;
+               var done = !!tix[id];
+               var fast = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+               function record(seg) {
+                  var sg = SEGS[seg];
+                  tix[id] = sg.k === 'ticket' ? { seg: seg, kind: 'ticket' } : { seg: seg, kind: 'pts', val: sg.v };
+                  saveTix();
+               }
+               function finish() {
+                  done = true;
+                  if (wheel) wheel.isInteractive = false;
+                  res.innerHTML = resultText(tix[id]);
+                  btn.disabled = false;
+                  btn.setAttribute('data-close', '');
+                  btn.innerHTML = both('Sige! ✓', 'Done ✓');
+                  renderGame(id);
+                  updateScore();
+                  burst(holder);
+               }
+               import(WHEEL_LIB)
+                  .then(function (m) {
+                     wheel = new m.Wheel(holder, {
+                        items: SEGS.map(function (sg) {
+                           return { label: sg.k === 'ticket' ? '🎟️' : '+' + sg.v, backgroundColor: sg.c, labelColor: '#fff' };
+                        }),
+                        radius: 0.97,
+                        borderWidth: 6,
+                        borderColor: '#fff',
+                        lineWidth: 0,
+                        itemLabelAlign: 'right',
+                        itemLabelRadius: 0.9,
+                        itemLabelRadiusMax: 0.4,
+                        itemLabelFontSizeMax: 36,
+                        itemLabelFont: 'Archivo, "SF Pro Display", -apple-system, sans-serif',
+                        itemLabelStrokeColor: 'rgba(0,0,0,0.35)',
+                        itemLabelStrokeWidth: 2,
+                        pointerAngle: 0,
+                        isInteractive: !done,
+                        onRest: function (e) {
+                           if (done) return;
+                           if (!tix[id]) record(e.currentIndex); // a flick: the wheel decided
+                           finish();
+                        },
+                     });
+                     if (done) wheel.spinToItem(tix[id].seg, 0, true, 0, 1);
+                  })
+                  .catch(function () {
+                     holder.classList.add('nowheel');
+                     holder.innerHTML = '<span aria-hidden="true">🎡</span>';
+                  });
+               if (done) {
+                  res.innerHTML = resultText(tix[id]);
+                  btn.setAttribute('data-close', '');
+                  btn.innerHTML = both('Sige! ✓', 'Done ✓');
+                  return;
+               }
+               btn.addEventListener('click', function () {
+                  if (done || btn.disabled) return;
+                  var seg = randInt(SEGS.length);
+                  record(seg);
+                  btn.disabled = true;
+                  if (!wheel || fast) {
+                     if (wheel) wheel.spinToItem(seg, 0, true, 0, 1);
+                     // Next tick: finish() turns this button into a "Done" (data-close) button, and the
+                     // click that is still bubbling must not hit it and close the sheet.
+                     setTimeout(finish, 0);
+                     return;
+                  }
+                  wheel.isInteractive = false;
+                  wheel.spinToItem(seg, 3800, true, 5, 1, function (n) {
+                     return 1 - Math.pow(1 - n, 3);
+                  });
+                  // onRest normally ends this; the timer is a backstop if animation frames are throttled.
+                  setTimeout(function () {
+                     if (!done) finish();
+                  }, 4300);
+               });
+            }
+            Object.keys(QUIZ).forEach(function (id) {
+               var q = QUIZ[id];
+               var el = document.querySelector('[data-quiz="' + id + '"]');
+               el.innerHTML =
+                  '<p class="quiz-q">' +
+                  q.q +
+                  '</p><div class="quiz-opts">' +
+                  q.opts
+                     .map(function (o, i) {
+                        return '<button type="button" data-i="' + i + '">' + o.a + '</button>';
+                     })
+                     .join('') +
+                  '</div><p class="quiz-fb" aria-live="polite"></p>';
+               var gmEl = document.createElement('div');
+               gmEl.className = 'game';
+               gmEl.setAttribute('data-game', id);
+               gmEl.hidden = true;
+               el.parentNode.insertBefore(gmEl, el.nextSibling);
+               if (tix[id]) renderGame(id);
+               var fb = el.querySelector('.quiz-fb');
+               el.querySelectorAll('button').forEach(function (b) {
+                  b.addEventListener('click', function () {
+                     var o = q.opts[+b.getAttribute('data-i')];
+                     el.querySelectorAll('button').forEach(function (x) {
+                        x.removeAttribute('data-state');
+                     });
+                     b.setAttribute('data-state', o.ok ? 'right' : 'wrong');
+                     fb.innerHTML = (o.ok ? '🎉 ' : '🤔 ') + (o.ok ? q.right : q.wrong);
+                     if (o.ok && !quizGot[id]) {
+                        quizGot[id] = true;
+                        updateScore();
+                        burst(b);
+                        renderGame(id);
+                     }
+                  });
+               });
+            });
+
+            updateScore();
+
+            // ---------- Explainer sheets ----------
+            function examples(filter) {
+               return (
+                  '<div class="co-chips">' +
+                  Object.keys(CO)
+                     .filter(function (t) {
+                        return filter(CO[t]);
+                     })
+                     .sort(function (a, b) {
+                        return CO[a].pe - CO[b].pe;
+                     })
+                     .map(function (t) {
+                        return '<button type="button" class="co-chip" data-open="' + t + '">' + CO[t].emo + ' ' + CO[t].name + ' ' + tk(t) + ' <b>' + yrs(CO[t].pe) + '</b></button>';
+                     })
+                     .join('') +
+                  '</div>'
+               );
+            }
+            function years(n) {
+               var h = '<div class="years" aria-hidden="true">';
+               for (var y = 1; y <= n; y++) h += '<span>' + y + '</span>';
+               return h + '</div>';
+            }
+            function p(fil, en) {
+               return '<p>' + both(fil, en) + '</p>';
+            }
+            var ZONES_HTML =
+               '<div class="zones"><span class="z-cheap">🟢 ' +
+               both('Mura', 'Cheap') +
+               '<small>' +
+               both('below 20 taon', 'under 20 years') +
+               '</small></span><span class="z-okay">🟡 ' +
+               both('Okay lang', 'Okay') +
+               '<small>' + both('20–30 taon', '20–30 years') + '</small></span><span class="z-pricey">🔴 ' +
+               both('Mahal', 'Pricey') +
+               '<small>' +
+               both('above 30 taon', 'over 30 years') +
+               '</small></span></div>';
+
+            var INFO = {
+               stock: {
+                  emo: '🧩',
+                  title: both('Ano ang stock?', 'What is a stock?'),
+                  body:
+                     p('Hatiin ang tindahan ni Aling Nena sa 100 piraso. Bawat piraso ay isang stock (o share). Kung may 1 piraso ka, may-ari ka ng 1 sa 100 parte ng tindahan.', "Cut Aling Nena's store into 100 pieces. Each piece is a stock (or share). Own 1 piece, and you own 1 of the store's 100 parts.") +
+                     p('Ang Apple at Coca-Cola ay hinati sa bilyon-bilyong piraso. Kaya maliit na maliit ang isang share.', 'Apple and Coca-Cola are cut into billions of pieces. So one share is a very tiny slice.') +
+                     '<p class="rule"><span class="ic" aria-hidden="true">📈</span><span>' +
+                     both('Pag lumaki ang tindahan at mas kumita, mas mahal na rin ang piraso mo.', 'When the store grows and makes more, your piece is worth more too.') +
+                     '</span></p>',
+               },
+               profit: {
+                  emo: '💰',
+                  title: both('Ano ang kita?', 'What is profit?'),
+                  body:
+                     p('Ang kita ay ang perang natira matapos bayaran ang lahat ng gastos. Tinatawag din itong "earnings."', 'Profit is the money left after paying all the costs. It is also called "earnings."') +
+                     '<div class="math"><div><span>' +
+                     both('Benta ni Aling Nena', "Aling Nena's sales") +
+                     '</span><b>₱500</b></div><div><span>' +
+                     both('Gastos', 'Costs') +
+                     '</span><b>−₱450</b></div><div class="result"><span>' +
+                     both('Kita', 'Profit') +
+                     '</span><b>₱50</b></div></div>',
+               },
+               pe: {
+                  emo: '📅',
+                  title: both('P/E = ilang taon ng kita', 'P/E = years of profit'),
+                  body:
+                     p('Ang tindahan ay ₱1,000 at kumikita ng ₱50 kada taon.', 'A store costs ₱1,000 and makes ₱50 of profit a year.') +
+                     '<p class="big-math">₱1,000 ÷ ₱50 = ' +
+                     both('20 taon', '20 years') +
+                     '</p>' +
+                     years(20) +
+                     p('20 taon bago umabot ang kita sa presyo. Kaya ang P/E nito ay 20. (P = Price/presyo, E = Earnings/kita.)', 'It takes 20 years for the profit to add up to the price. So its P/E is 20. (P = Price, E = Earnings, which means profit.)') +
+                     '<p class="rule"><span class="ic" aria-hidden="true">👍</span><span>' +
+                     both('Mas kaunting taon = mas mura.', 'Fewer years = cheaper.') +
+                     '</span></p>' +
+                     ZONES_HTML,
+               },
+               eps: {
+                  emo: '🧾',
+                  title: both('EPS = kita ng bawat piraso', 'EPS = profit for each piece'),
+                  body:
+                     p('Ang tindahan ay may 100 piraso at kumita ng ₱1,000 ngayong taon.', 'The store has 100 pieces and made ₱1,000 of profit this year.') +
+                     '<p class="big-math">₱1,000 ÷ 100 = ₱10<small>' +
+                     both('kita ng bawat piraso (EPS)', 'profit for each piece (EPS)') +
+                     '</small></p>' +
+                     p('Kung ₱200 ang presyo ng isang piraso:', 'If one piece costs ₱200:') +
+                     '<p class="big-math">₱200 ÷ ₱10 = ' +
+                     both('20 taon', '20 years') +
+                     '<small>' +
+                     both('= ang P/E', '= the P/E') +
+                     '</small></p>',
+               },
+               fpe: {
+                  emo: '🔮',
+                  title: 'Forward P/E',
+                  body:
+                     p('Parehong bilang ng taon, pero gamit ang kitang hinuhulaan ng mga expert para sa next year.', 'The same count of years, but using the profit experts guess for next year.') +
+                     p('Ngayong taon: ₱50 ang kita. Hula next year: ₱100.', 'This year: ₱50 of profit. Guess for next year: ₱100.') +
+                     '<div class="math"><div><span>' +
+                     both('Ngayon: ₱1,000 ÷ ₱50', 'Now: ₱1,000 ÷ ₱50') +
+                     '</span><b>' +
+                     both('20 taon', '20 years') +
+                     '</b></div><div class="result"><span>' +
+                     both('Next year: ₱1,000 ÷ ₱100', 'Next year: ₱1,000 ÷ ₱100') +
+                     '</span><b>' +
+                     both('10 taon', '10 years') +
+                     '</b></div></div>' +
+                     '<p class="warn"><span class="ic" aria-hidden="true">⚠️</span><span>' +
+                     both('Hula lang ito. Kung ₱50 pa rin ang kita, 20 taon pa rin!', 'It is only a guess. If profit stays at ₱50, it is still 20 years!') +
+                     '</span></p>',
+               },
+               cash: {
+                  emo: '💵',
+                  title: both('Totoong cash', 'Real cash'),
+                  body:
+                     p('Ang totoong cash ay ang perang natira talaga sa kaha, matapos bayaran ang paninda, kuryente, at mga bagong gamit gaya ng estante.', 'Real cash is the money actually left in the drawer after paying for goods, electricity, and new things like shelves.') +
+                     '<div class="math"><div><span>' +
+                     both('Benta', 'Sales') +
+                     '</span><b>₱500</b></div><div><span>' +
+                     both('Paninda at kuryente', 'Goods and electricity') +
+                     '</span><b>−₱420</b></div><div><span>' +
+                     both('Bagong estante', 'New shelves') +
+                     '</span><b>−₱20</b></div><div class="result"><span>' +
+                     both('Natirang cash', 'Cash left over') +
+                     '</span><b>₱60</b></div></div>' +
+                     '<p class="big-math">₱1,000 ÷ ₱60 = ' +
+                     both('16.7 taon', '16.7 years') +
+                     '</p>' +
+                     '<p class="small">' +
+                     both('Sa websites, "free cash flow" o "FCF yield" ang tawag dito.', 'Websites call this "free cash flow" or "FCF yield."') +
+                     '</p>',
+               },
+               peg: {
+                  emo: '⚡',
+                  title: both('PEG: sulit ba ang mabilis na paglaki?', 'PEG: is fast growth worth it?'),
+                  body:
+                     p('Ang Tindahan C ay ₱1,000 at ₱25 lang ang kita: 40 taon. Mukhang mahal! Pero dumodoble ang kita nito kada taon:', 'Store C costs ₱1,000 and makes only ₱25: 40 years. Looks pricey! But its profit doubles every year:') +
+                     '<div class="math"><div><span>' +
+                     both('Ngayon: ₱25 na kita', 'Now: ₱25 profit') +
+                     '</span><b>' +
+                     both('40 taon', '40 years') +
+                     '</b></div><div><span>' +
+                     both('Next year: ₱50', 'Next year: ₱50') +
+                     '</span><b>' +
+                     both('20 taon', '20 years') +
+                     '</b></div><div class="result"><span>' +
+                     both('Sumunod na taon: ₱100', 'The year after: ₱100') +
+                     '</span><b>' +
+                     both('10 taon', '10 years') +
+                     '</b></div></div>' +
+                     p('Kaya pwedeng sulit pa rin ang maraming taon, kung mabilis lumaki ang kita. Ito ang chine-check ng PEG.', 'So lots of years can still be a good deal if profit grows fast. PEG checks this.') +
+                     '<div class="zones"><span class="z-cheap">✅<small>' +
+                     both('Below 1: sapat ang bilis', 'Under 1: growing fast enough') +
+                     '</small></span><span class="z-okay">🟡<small>' +
+                     both('1–2: pwede na', '1–2: so-so') +
+                     '</small></span><span class="z-pricey">❌<small>' +
+                     both('Above 2: masyadong mabagal', 'Over 2: too slow for the price') +
+                     '</small></span></div>',
+               },
+               raffle: {
+                  emo: '🎡',
+                  title: both('Moodeng Prize Wheel', 'Moodeng Prize Wheel'),
+                  body:
+                     '<ul class="steps"><li>' +
+                     both('Bawat tamang sagot sa quiz = 1 spin ng wheel (hanggang 4).', 'Every right quiz answer = 1 spin of the wheel (up to 4).') +
+                     '</li><li>' +
+                     both('Pwedeng lumabas ang pandesal points (+5, +10, +15, +20) o 🎟️ golden ticket.', 'It can land on pandesal points (+5, +10, +15, +20) or a 🎟️ golden ticket.') +
+                     '</li></ul>' +
+                     '<p class="big-math">🎁 ' +
+                     both('2 golden tickets = Grab draw (₱50 GrabFood voucher)', '2 golden tickets = Grab draw (₱50 GrabFood voucher)') +
+                     '</p>' +
+                     p('Para i-claim ang prizes mo, ilagay ang TikTok username mo sa Results pagkatapos ng huling spin. Isang beses lang ang claim. Kokontakin ka namin sa TikTok at iaanunsyo roon ang mananalo.', 'To claim your prizes, type your TikTok username in Results after your last spin. You can claim once. We contact you on TikTok and announce the winner there.') +
+                     '<p class="big-math">🥯 ' +
+                     both('Kulang ang tickets? Pandesal points pa rin!', 'Not enough tickets? Pandesal points still count!') +
+                     '</p>' +
+                     '<p class="small">' +
+                     both('Walang kailangang bilhin o utangin para maglaro. Magpaalam muna sa magulang o pinagkakatiwalaang adult. Maaaring i-verify ng Moodeng ang entries at pwedeng baguhin o ihinto ang laro. Para sa edad 18 pataas ang pagkuha ng premyo.', 'Nothing to buy or borrow to play. Ask a parent or trusted adult first. Moodeng may verify entries and may change or stop the game. Prizes can only be claimed by people 18 or older.') +
+                     '</p>' +
+                     '<a class="yahoo" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noopener noreferrer">' +
+                     both('Pumunta sa TikTok ng Moodeng ↗', 'Go to Moodeng on TikTok ↗') +
+                     '</a>',
+               },
+               sp500: {
+                  emo: '🧺',
+                  title: 'S&amp;P 500 / VOO',
+                  body:
+                     p('Isipin ang isang basket na may maliit na piraso ng 500 pinakamalalaking company sa US: Apple, Microsoft, Coca-Cola, at marami pa.', 'Picture a basket holding a tiny piece of the 500 biggest US companies: Apple, Microsoft, Coca-Cola and many more.') +
+                     p('Sa pagbili ng isang VOO, makukuha mo ang buong basket. Kung humina ang isang company, may 499 pa.', 'Buying one VOO gets you the whole basket. If one company does badly, you still have 499 others.'),
+               },
+               cheap: {
+                  emo: '🟢',
+                  title: both('Mura: below 20 taon', 'Cheap: under 20 years'),
+                  body:
+                     p('Wala pang 20 taon bago umabot ang kita sa presyo.', 'The profit adds up to the price in under 20 years.') +
+                     years(14) +
+                     p('Halimbawa: JPMorgan, mga 14 taon.', 'Example: JPMorgan, about 14 years.') +
+                     p('Bakit 20? Kung ipapahiram mo ang pera sa gobyerno ng US (super safe), mga 19 taon bago bumalik sa iyo ang buong halaga sa interest. Kaya ang below 20 ay kasing-sulit man lang.', 'Why 20? If you lend money to the US government (super safe), its interest adds up to what you lent in about 19 years. So under 20 is at least that good.') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">🥖</span><span>' +
+                     both('Pero minsan mura ang stock kasi may problema ang business, parang pandesal na kahapon pa. Alamin kung bakit!', "But sometimes a stock is cheap because the business has problems, like day-old pandesal. Find out why!") +
+                     '</span></p>' +
+                     '<p class="small">' +
+                     both('I-tap para makita:', 'Tap to see:') +
+                     '</p>' +
+                     examples(function (c) {
+                        return c.pe < CHEAP;
+                     }),
+               },
+               okay: {
+                  emo: '🟡',
+                  title: both('Okay lang: 20–30 taon', 'Okay: 20–30 years'),
+                  body:
+                     p('Normal na presyo para sa matatag na company. Ang average na malaking company sa US ay mga 27 taon ngayon.', 'A normal price for a strong company. The average big US company is about 27 years right now.') +
+                     years(27) +
+                     '<p class="small">' +
+                     both('I-tap para makita:', 'Tap to see:') +
+                     '</p>' +
+                     examples(function (c) {
+                        return c.pe >= CHEAP && c.pe <= OKAY;
+                     }),
+               },
+               pricey: {
+                  emo: '🔴',
+                  title: both('Mahal: above 30 taon', 'Pricey: over 30 years'),
+                  body:
+                     p('Higit 30 taon bago umabot ang kita sa presyo. Malaki ang binabayad ng mga tao kasi umaasa silang mabilis lalaki ang kita.', 'More than 30 years for the profit to add up to the price. People pay a lot because they hope profit grows fast.') +
+                     years(38) +
+                     p('Halimbawa: Apple, mga 38 taon. Kung hindi lumaki ang kita, pwedeng bumagsak ang presyo.', "Example: Apple, about 38 years. If profit doesn't grow, the price can fall.") +
+                     p('Pwedeng magaling ang company pero mahal ang stock!', 'A great company can still be a pricey stock!') +
+                     '<p class="small">' +
+                     both('I-tap para makita:', 'Tap to see:') +
+                     '</p>' +
+                     examples(function (c) {
+                        return c.pe > OKAY;
+                     }),
+               },
+               payonce: {
+                  emo: '📅',
+                  title: both('Ilang taon ng kita', 'Years of profit'),
+                  body:
+                     p('Kung pareho ang kita ng JPMorgan bawat taon, mga 14 taon bago umabot ang kita sa presyo ng stock nito.', "If JPMorgan's profit stayed the same each year, it would take about 14 years to add up to its stock price.") +
+                     years(14) +
+                     p('Ang Apple ay mga 38 taon. Kaya mas mura ang JPMorgan.', 'Apple would take about 38 years. So JPMorgan is cheaper.') +
+                     years(38) +
+                     ZONES_HTML,
+               },
+               guess: {
+                  emo: '🔮',
+                  title: both('Gamit ang hula sa next year', "Using next year's guess"),
+                  body:
+                     p('Pinag-aaralan ng mga expert ang bawat company at hinuhulaan nila ang kita nito next year.', "Experts study each company and guess next year's profit.") +
+                     p('Halimbawa, General Motors: maliit ang kita last year, kaya 39 taon. Pero malaki ang hula para next year, kaya 6 taon lang!', 'Example, General Motors: small profit last year, so 39 years. But experts guess big profit next year, so only 6 years!') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">⚠️</span><span>' +
+                     both('Kung mali ang hula, 39 taon pa rin ang GM.', 'If the guess is wrong, GM is still 39 years.') +
+                     '</span></p>',
+               },
+               cashhead: {
+                  emo: '💵',
+                  title: both('Ilang taon ng totoong cash', 'Years of real cash'),
+                  body:
+                     p('Parehong bilang ng taon, pero gamit ang totoong cash na natira sa kaha, hindi ang kita sa papel.', 'The same count of years, but using the real cash left in the drawer instead of profit on paper.') +
+                     p('Halimbawa, PayPal: mga 7 taon lang ng totoong cash para umabot sa presyo nito.', 'Example, PayPal: only about 7 years of real cash to add up to its price.') +
+                     years(7) +
+                     ZONES_HTML,
+               },
+               scale: {
+                  emo: '📏',
+                  title: both('Paano basahin ang chart', 'How to read the chart'),
+                  body:
+                     '<ul class="steps">' +
+                     '<li>' + both('Ang haba ng bar = bilang ng taon. <strong>Mas maikli = mas mura.</strong>', 'Bar length = number of years. <strong>Shorter = cheaper.</strong>') + '</li>' +
+                     '<li>' + both('Berde sa likod = below 20 taon. Dilaw = 20–30. Pula = above 30.', 'Green behind = under 20 years. Yellow = 20–30. Red = over 30.') + '</li>' +
+                     '<li>' + both('Ang guhit-guhit na bar ay lampas sa 40 taon, gaya ng Tesla (385 taon!).', 'A striped bar goes past 40 years, like Tesla (385 years!).') + '</li>' +
+                     '<li>' + both('I-tap ang company para makita ang lahat ng numero nito.', 'Tap a company to see all its numbers.') + '</li>' +
+                     '</ul>' +
+                     ZONES_HTML,
+               },
+               pandesal: {
+                  emo: '🥯',
+                  title: both('Paano ang pandesal score?', 'How the pandesal score works'),
+                  body:
+                     p('1 pandesal para sa bawat check na below 20 taon:', '1 pandesal for each check under 20 years:') +
+                     '<ul class="steps"><li>' +
+                     both('Check 1: taon ng kita', 'Check 1: years of profit') +
+                     '</li><li>' +
+                     both('Check 2: taon ng hulang kita next year', "Check 2: years of next year's guessed profit") +
+                     '</li><li>' +
+                     both('Check 3: taon ng totoong cash', 'Check 3: years of real cash') +
+                     '</li></ul>' +
+                     p('3 pandesal = mura sa lahat. 0 = mahal sa lahat.', '3 pandesal = cheap on everything. 0 = pricey on everything.') +
+                     '<p class="warn"><span class="ic" aria-hidden="true">🥖</span><span>' +
+                     both('Tandaan: hindi laging maganda ang mura!', "Remember: cheap isn't always good!") +
+                     '</span></p>',
+               },
+            };
+
+            // ---------- Company sheet ----------
+            function ratio(info, ic, name, sub, value, body) {
+               return (
+                  '<div class="ratio"><button type="button" class="ratio-top" data-info="' +
+                  info +
+                  '"><span class="ic" aria-hidden="true">' +
+                  ic +
+                  '</span><span class="ratio-name">' +
+                  name +
+                  '<small>' +
+                  sub +
+                  '</small></span><span class="co-val">' +
+                  value +
+                  '</span>' +
+                  I +
+                  '</button>' +
+                  body +
+                  '</div>'
+               );
+            }
+            function pill(price) {
+               if (price === undefined) return '<span class="pill na">' + both('Walang data', 'No data') + '</span>';
+               var vd = verdict(price);
+               return '<span class="pill ' + vd.cls + '">' + vd.label + '</span>';
+            }
+            function sheetHead(emo, title, sub) {
+               return (
+                  '<div class="grab" aria-hidden="true"></div><div class="sheet-head"><span class="co-emo" aria-hidden="true">' +
+                  emo +
+                  '</span><h2 id="sheet-title">' +
+                  title +
+                  (sub ? '<small>' + sub + '</small>' : '') +
+                  '</h2><button type="button" class="x" data-close aria-label="Close">✕</button></div>'
+               );
+            }
+
+            function companyHtml(t) {
+               var s = CO[t];
+               var html = sheetHead(s.emo, s.name + ' ' + tk(t), s.basket ? term('sp500', both(s.fil, s.en)) : both(s.fil, s.en));
+               html += '<a class="yahoo" href="' + yahoo(t) + '" target="_blank" rel="noopener noreferrer">📈 ' + both('Tingnan ang ' + t + ' sa Yahoo Finance', 'View ' + t + ' on Yahoo Finance') + ' ↗</a>';
+
+               // Price and EPS, with the P/E worked out
+               html += ratio(
+                  'eps',
+                  '🧾',
+                  both('Presyo at kita kada share', 'Price and profit per share'),
+                  'Price · EPS',
+                  usd(s.price),
+                  s.eps
+                     ? '<p>' +
+                          both(
+                             'Ang 1 share ay ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Last year, kumita ito ng <strong>' + usd(s.eps) + '</strong> kada share. Tawag dito ay EPS.',
+                             '1 share costs ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Last year, the company made <strong>' + usd(s.eps) + '</strong> of profit per share. That is called EPS.'
+                          ) +
+                          '</p><p class="big-math" style="font-size:17px">' +
+                          usd(s.price) +
+                          ' ÷ ' +
+                          usd(s.eps) +
+                          ' = ' +
+                          yrs(s.pe) +
+                          '<small>' +
+                          both('presyo ÷ kita ng bawat share = taon ng kita (P/E)', 'price ÷ profit per share = years of profit (P/E)') +
+                          '</small></p>'
+                     : '<p>' +
+                          both(
+                             'Ang 1 share ay ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). Hindi ito isang company, kaya ang P/E ay galing sa kita ng lahat ng 500.',
+                             '1 share costs ' + usd(s.price) + ' (≈' + pesoPrice(s.price) + '). It is not one company, so its P/E comes from the profit of all 500.'
+                          ) +
+                          '</p>'
+               );
+
+               html += ratio(
+                  'pe',
+                  '🏷️',
+                  'P/E',
+                  both('Ilang taon ng kita', 'Years of profit'),
+                  yrs(s.pe),
+                  '<p>' +
+                     both('Kung pareho ang kita kada taon, mga <strong>' + yrs(s.pe) + '</strong> bago umabot ang kita sa presyo.', 'If profit stayed the same each year, it would take about <strong>' + yrs(s.pe) + '</strong> to add up to the price.') +
+                     '</p>' +
+                     bar(s.pe) +
+                     pill(s.pe)
+               );
+
+               html += ratio(
+                  'fpe',
+                  '🔮',
+                  'Forward P/E',
+                  both('Gamit ang hula sa next year', "Using next year's guess"),
+                  yrs(s.fpe),
+                  '<p>' +
+                     both(
+                        'Kung tama ang hula: <strong>' + yrs(s.fpe) + '</strong>. ' + (s.fpe < s.pe ? 'Mas kaunting taon kasi inaasahang lalaki ang kita.' : 'Mas maraming taon kasi inaasahang liliit ang kita.'),
+                        'If the guess is right: <strong>' + yrs(s.fpe) + '</strong>. ' + (s.fpe < s.pe ? 'Fewer years, because profit should grow.' : 'More years, because profit should shrink.')
+                     ) +
+                     '</p>' +
+                     bar(s.fpe) +
+                     pill(s.fpe)
+               );
+
+               var cp = s.cash == null ? undefined : cashPrice(s.cash);
+               var noCash = s.bank
+                  ? both('Bangko ito, kaya walang normal na cash number.', 'It is a bank, so it has no normal cash number.')
+                  : both('Basket ito, kaya walang sariling cash number.', 'It is a basket, so there is no single cash number.');
+               html += ratio(
+                  'cash',
+                  '💵',
+                  'FCF yield',
+                  both('Ilang taon ng totoong cash', 'Years of real cash'),
+                  cp == null ? '—' : yrs(cp),
+                  s.cash == null
+                     ? '<p>' + noCash + '</p>' + pill(undefined)
+                     : '<p>' +
+                          (cp == null
+                             ? both('Mas malaki ang ginastos kaysa pumasok: <strong>−$' + Math.abs(s.cashB).toFixed(1) + 'B</strong>. Walang natirang cash.', 'It spent more than came in: <strong>−$' + Math.abs(s.cashB).toFixed(1) + 'B</strong>. No cash left over.')
+                             : both(
+                                  'Natirang cash last year: <strong>$' + s.cashB.toFixed(1) + 'B</strong>. Mga <strong>' + yrs(cp) + '</strong> ng ganyang cash para umabot sa presyo.',
+                                  'Real cash left last year: <strong>$' + s.cashB.toFixed(1) + 'B</strong>. About <strong>' + yrs(cp) + '</strong> of that cash to add up to the price.'
+                               )) +
+                          '</p>' +
+                          bar(cp) +
+                          pill(cp)
+               );
+
+               var pegPill =
+                  s.peg == null
+                     ? '<span class="pill na">' + both('Walang data', 'No data') + '</span>'
+                     : s.peg < 1
+                       ? '<span class="pill win">' + both('✅ Sapat ang bilis ng paglaki para sa presyo', '✅ Growing fast enough for its price') + '</span>'
+                       : s.peg <= 2
+                         ? '<span class="pill mid">' + both('🟡 Pwede na', '🟡 So-so') + '</span>'
+                         : '<span class="pill lose">' + both('❌ Masyadong mabagal para sa presyo', '❌ Too slow for its price') + '</span>';
+               html += ratio(
+                  'peg',
+                  '⚡',
+                  'PEG',
+                  both('Sulit ba ang mabilis na paglaki?', 'Is fast growth worth it?'),
+                  s.peg == null ? '—' : s.peg.toFixed(2),
+                  '<p>' +
+                     both('Lumalaki ba ang kita nang sapat na bilis para sulit ang ' + yrs(s.pe) + '? (Parang Tindahan C: i-tap ang "PEG" sa itaas.)', 'Is profit growing fast enough to be worth ' + yrs(s.pe) + '? (Like Store C: tap "PEG" above.)') +
+                     '</p>' +
+                     pegPill
+               );
+
+               html +=
+                  '<div class="one-line">' +
+                  both('In one line: ', 'In one line: ') +
+                  s.line +
+                  '<button type="button" class="pand-btn" data-info="pandesal">' +
+                  pandesals(score(s)) +
+                  I +
+                  '</button></div>';
+               html += '<p class="small">' + both('Para sa pag-aaral lang, hindi payo. Numbers: StockAnalysis, Oct 2, 2026.', 'For learning only, not advice. Numbers: StockAnalysis, Oct 2, 2026.') + '</p>';
+               return html;
+            }
+
+            function infoHtml(key, backTo) {
+               var it = INFO[key];
+               var back = backTo
+                  ? '<button type="button" class="back" data-open="' + backTo + '">‹ ' + both('Balik sa ', 'Back to ') + CO[backTo].name + ' (' + backTo + ')</button>'
+                  : '';
+               return sheetHead(it.emo, it.title) + back + '<div class="info-body">' + it.body + '</div>';
+            }
+
+            // ---------- Sheet wiring: any [data-open] or [data-info] anywhere opens the sheet ----------
+            var dlg = document.querySelector('[data-sheet]');
+            var dlgBody = document.querySelector('[data-sheet-body]');
+            var currentCo = null;
+            function show(html) {
+               dlgBody.innerHTML = html;
+               if (!dlg.open) {
+                  if (dlg.showModal) dlg.showModal();
+                  else dlg.setAttribute('open', '');
+               }
+               dlg.scrollTop = 0;
+            }
+            document.addEventListener('click', function (e) {
+               var openBtn = e.target.closest('[data-open]');
+               var infoBtn = e.target.closest('[data-info]');
+               if (openBtn) {
+                  currentCo = openBtn.getAttribute('data-open');
+                  show(companyHtml(currentCo));
+               } else if (infoBtn) {
+                  var fromSheet = dlg.open && dlg.contains(infoBtn) ? currentCo : null;
+                  if (!fromSheet) currentCo = null;
+                  show(infoHtml(infoBtn.getAttribute('data-info'), fromSheet));
+               } else if (e.target === dlg || e.target.closest('[data-close]')) {
+                  dlg.close();
+               }
+            });
+
+            document.querySelector('[data-inside]').innerHTML = INSIDE.map(function (t) {
+               var s = CO[t];
+               return (
+                  '<button type="button" class="inside-card" data-open="' +
+                  t +
+                  '"><span class="co-emo" aria-hidden="true">' +
+                  s.emo +
+                  '</span><b>' +
+                  s.name +
+                  ' ' +
+                  tk(t) +
+                  '</b><span class="small">' +
+                  both(s.fil, s.en) +
+                  '</span><span class="go">' +
+                  both('Silipin ›', 'Check inside ›') +
+                  '</span></button>'
+               );
+            }).join('');
+
+            // Language: ?lang=en|fil wins (shareable), then the viewer's saved choice, then Taglish.
+            var TITLES = { fil: "Mura ba 'tong stock? | Moodeng Credit", en: 'Is this stock cheap? | Moodeng Credit' };
+            function setLang(next, save) {
+               var lang = TITLES[next] ? next : 'fil';
+               document.documentElement.setAttribute('data-lang', lang);
+               document.documentElement.lang = lang === 'en' ? 'en' : 'fil';
+               document.title = TITLES[lang];
+               document.querySelector('.hero-hippo').alt = lang === 'en' ? 'Moodeng the hippo eating pandesal' : 'Si Moodeng, kumakain ng pandesal';
+               document.querySelectorAll('button[data-lang]').forEach(function (b) {
+                  b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang ? 'true' : 'false');
+               });
+               if (save) {
+                  try {
+                     localStorage.setItem(LANG_KEY, lang);
+                  } catch (e) {}
+               }
+            }
+            document.querySelectorAll('button[data-lang]').forEach(function (b) {
+               b.addEventListener('click', function () {
+                  setLang(b.getAttribute('data-lang'), true);
+               });
+            });
+            var initialLang = new URLSearchParams(location.search).get('lang');
+            if (!TITLES[initialLang]) {
+               try {
+                  initialLang = localStorage.getItem(LANG_KEY);
+               } catch (e) {
+                  initialLang = null;
+               }
+            }
+            setLang(initialLang, false);
+
+            // Bottom nav highlights the step on screen. Old links (#top3, #peg) land on the results.
+            var navLinks = Array.from(document.querySelectorAll('[data-go]'));
+            function markNav(id) {
+               navLinks.forEach(function (a) {
+                  a.setAttribute('aria-current', a.getAttribute('data-go') === id ? 'true' : 'false');
+               });
+            }
+            if (location.hash === '#top3') document.getElementById('results').scrollIntoView();
+            if ('IntersectionObserver' in window) {
+               var io = new IntersectionObserver(
+                  function (entries) {
+                     entries.forEach(function (e) {
+                        if (e.isIntersecting) markNav(e.target.id === 'inside' ? 'results' : e.target.id);
+                     });
+                  },
+                  { rootMargin: '-35% 0px -55% 0px' }
+               );
+               navLinks.forEach(function (a) {
+                  var target = document.getElementById(a.getAttribute('data-go'));
+                  if (target) io.observe(target);
+               });
+               io.observe(document.getElementById('inside'));
+               var deal = document.querySelector('.stores');
+               if (deal && !reduceMotion) {
+                  var playIo = new IntersectionObserver(
+                     function (entries) {
+                        entries.forEach(function (e) {
+                           if (e.isIntersecting) {
+                              deal.classList.add('play');
+                              playIo.disconnect();
+                           }
+                        });
+                     },
+                     { threshold: 0.4 }
+                  );
+                  playIo.observe(deal);
+               } else if (deal) deal.classList.add('play');
+            } else {
+               var d0 = document.querySelector('.stores');
+               if (d0) d0.classList.add('play');
+            }
+         })();
+      </script>
+   </body>
+</html>
