@@ -1,18 +1,12 @@
 <!doctype html>
-<html lang="fil">
+<html lang="fil" data-lang="fil">
    <head>
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       <title>Mura ba 'tong stock? | Moodeng Credit</title>
-      <meta
-         name="description"
-         content="P/E, forward P/E, FCF yield at PEG, explained in Taglish with real stocks and peso prices. Lahat sinusukat laban sa 5.24% US Treasury bond."
-      />
-      <meta property="og:title" content="Mura ba 'tong stock? 4 na numero, explained in Taglish | Moodeng Credit" />
-      <meta
-         property="og:description"
-         content="P/E, forward P/E, FCF yield at PEG para sa 18 kilalang stocks, plus ang top 3 na pasado sa aming pandesal scorecard."
-      />
+      <meta name="description" content="A 5-minute money lesson for beginners: what a stock is, and 3 easy checks to see if it's cheap. Taglish or English." />
+      <meta property="og:title" content="Mura ba 'tong stock? A 5-minute money lesson | Moodeng Credit" />
+      <meta property="og:description" content="Ano ang stock, at 3 madaling checks para malaman kung mura ito. Walang mahirap na math!" />
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://moodeng.app/stocks" />
       <meta property="og:image" content="https://moodeng.app/dashboard-v2/moodeng-rookie-2.png" />
@@ -33,16 +27,15 @@
             --n-100: #fdfcfd;
             --n-200: #f9f8fa;
             --n-300: #f2f0f5;
-            --n-500: #c0b9c8;
-            --n-700: #6d6d6d;
             --n-1000: #877897;
             --n-1400: #594d65;
             --green-100: #d6f8e6;
             --green-700: #1aa45b;
             --green-900: #116b3c;
-            --blue-600: #0076eb;
             --yellow-100: #fff8e1;
             --yellow-700: #d3aa00;
+            --coin: #f6c445;
+            --coin-dark: #c98f00;
             --red-100: #fed7da;
             --red-300: #fb3748;
             --red-800: #b60413;
@@ -50,6 +43,10 @@
             --shadow-nav: 0 4px 40.8px rgba(0, 0, 0, 0.08);
             --font: 'SF Pro Display', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --col: 520px;
+         }
+         html[data-lang='en'] [data-l='fil'],
+         html[data-lang='fil'] [data-l='en'] {
+            display: none !important;
          }
          *,
          *::before,
@@ -66,8 +63,8 @@
             background: var(--n-300);
             color: var(--heading);
             font-family: var(--font);
-            font-size: 15px;
-            line-height: 1.45;
+            font-size: 17px;
+            line-height: 1.5;
             letter-spacing: -0.01em;
             -webkit-font-smoothing: antialiased;
             padding-bottom: calc(104px + env(safe-area-inset-bottom));
@@ -96,6 +93,9 @@
             font: inherit;
             color: inherit;
          }
+         strong {
+            font-weight: 700;
+         }
          .skip-link {
             position: fixed;
             top: 8px;
@@ -114,6 +114,10 @@
             width: min(100% - 32px, var(--col));
             margin-inline: auto;
          }
+         :focus-visible {
+            outline: 3px solid var(--primary-300);
+            outline-offset: 2px;
+         }
 
          /* Hero: the dashboard's landscape */
          .hero {
@@ -129,8 +133,8 @@
             padding-top: 16px;
          }
          .avatar {
-            width: 56px;
-            height: 56px;
+            width: 52px;
+            height: 52px;
             flex: none;
             border-radius: 50%;
             background: var(--primary-500);
@@ -150,14 +154,13 @@
          .hello b {
             display: block;
             font-size: 18px;
-            white-space: nowrap;
             font-weight: 700;
             letter-spacing: -0.03em;
+            white-space: nowrap;
          }
          .hello span {
             color: var(--n-1400);
             font-size: 12.5px;
-            white-space: nowrap;
          }
          .top-pills {
             margin-left: auto;
@@ -186,13 +189,13 @@
          }
          .hero-stage {
             position: relative;
-            height: 250px;
+            height: 240px;
          }
          .hero-hippo {
             position: absolute;
             left: 34%;
             bottom: 34px;
-            width: 180px;
+            width: 176px;
             translate: -50% 0;
             filter: drop-shadow(0 10px 14px rgb(40 60 30 / 0.25));
             animation: bob 3.2s ease-in-out infinite;
@@ -201,20 +204,21 @@
             position: absolute;
             z-index: 2;
             right: 0;
-            top: 36px;
-            max-width: 42%;
+            top: 34px;
+            max-width: 44%;
             border-radius: 18px 18px 4px 18px;
             padding: 10px 12px;
             background: #fff;
             box-shadow: var(--shadow-nav);
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 15px;
+            font-weight: 700;
             line-height: 1.3;
             rotate: 2deg;
          }
          .bubble small {
             display: block;
             color: var(--n-1000);
+            font-size: 13px;
             font-weight: 500;
          }
          @keyframes bob {
@@ -223,226 +227,485 @@
             }
          }
 
-         /* Sheet that overlaps the hero, like the Credit Level card */
+         /* Cards */
          .sheet {
             position: relative;
             margin-top: -30px;
             border-radius: 28px 28px 0 0;
             background: var(--n-300);
-            padding-top: 22px;
+            padding-top: 20px;
          }
-         .title-card {
-            border-radius: 20px;
-            padding: 20px;
+         .stack {
+            display: grid;
+            gap: 16px;
+         }
+         .card {
+            border-radius: 22px;
             background: var(--n-100);
             box-shadow: var(--shadow-card);
+            padding: 20px;
+            scroll-margin-top: 12px;
+         }
+         .card > * + * {
+            margin-top: 14px;
+         }
+         .title-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
          }
          .kicker {
             color: var(--primary-900);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
-            letter-spacing: 0.02em;
+            white-space: nowrap;
          }
-         .title-card h1 {
-            margin-top: 6px;
-            font-size: clamp(30px, 8.5vw, 38px);
+         .lang {
+            display: inline-flex;
+            flex: none;
+            border-radius: 999px;
+            padding: 3px;
+            background: var(--n-300);
+         }
+         .lang button {
+            min-height: 32px;
+            border: 0;
+            border-radius: 999px;
+            padding: 4px 12px;
+            background: transparent;
+            color: var(--n-1400);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+         }
+         .lang button[aria-pressed='true'] {
+            background: #fff;
+            color: var(--primary-1200);
+            box-shadow: 0 1px 3px rgb(27 28 29 / 0.12);
+         }
+         h1 {
+            font-size: clamp(34px, 9.5vw, 42px);
             font-style: italic;
             font-weight: 800;
             line-height: 1.05;
             letter-spacing: -0.04em;
          }
-         .title-card h1 em {
+         h1 em,
+         .h2 em {
             color: var(--primary-900);
-         }
-         .title-card p {
-            margin-top: 10px;
-            color: var(--n-1400);
-         }
-         .bond-row {
-            margin-top: 16px;
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 10px;
-         }
-         .bond-row .lv {
-            color: var(--primary-900);
-            font-size: 30px;
-            font-style: italic;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-         }
-         .bond-row .lv small {
-            margin-left: 6px;
-            color: var(--n-1000);
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-         }
-         .bond-row span:last-child b {
-            color: var(--heading);
-            font-weight: 700;
-         }
-         .bond-row span:last-child {
-            color: var(--n-700);
-            line-height: 1.3;
-            font-size: 13px;
-            text-align: right;
-         }
-         .track {
-            height: 10px;
-            margin-top: 8px;
-            border-radius: 999px;
-            background: var(--n-300);
-            overflow: hidden;
-         }
-         .fill {
-            height: 100%;
-            border-radius: 999px;
-            background: linear-gradient(90deg, var(--primary-500), var(--primary-1200));
-            transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
-         }
-         .bond-note {
-            margin-top: 10px;
-            color: var(--n-1000);
-            font-size: 13px;
-         }
-
-         /* Cards + headings */
-         .stack {
-            display: grid;
-            gap: 16px;
-            margin-top: 16px;
-         }
-         .card {
-            border-radius: 20px;
-            background: var(--n-100);
-            box-shadow: var(--shadow-card);
-            padding: 18px;
          }
          .h2 {
-            font-size: 22px;
+            font-size: 26px;
             font-style: italic;
             font-weight: 800;
+            line-height: 1.1;
             letter-spacing: -0.04em;
-            line-height: 1.15;
          }
-         .lead {
-            margin-top: 6px;
+         .muted {
             color: var(--n-1400);
+         }
+         .small {
+            font-size: 13px;
+            color: var(--n-1000);
+         }
+         .step-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 4px 12px 4px 4px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 13px;
+            font-weight: 700;
+         }
+         .step-tag b {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
             font-size: 14px;
          }
+         .step-tag small {
+            font-weight: 500;
+            opacity: 0.75;
+         }
 
-         /* Sari-sari store analogy */
-         .store {
+         /* "3 checks" list */
+         .learn {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 92px;
-            gap: 12px;
+            gap: 8px;
+         }
+         .learn li {
+            display: flex;
             align-items: center;
+            gap: 12px;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: var(--n-200);
             border: 1px solid var(--primary-100);
-            background: linear-gradient(135deg, #fffdf4, var(--yellow-100));
+            font-weight: 700;
          }
-         .store > img {
-            width: 92px;
-         }
-         .store .full {
-            grid-column: 1 / -1;
-         }
-         .math {
+         .learn .emo {
+            width: 42px;
+            height: 42px;
+            flex: none;
             display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--primary-100);
+            font-size: 22px;
+         }
+
+         /* Store grid: 100 pieces */
+         .grid100 {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 3px;
+            max-width: 240px;
+            margin-inline: auto;
+         }
+         .grid100 span {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            background: var(--primary-100);
+         }
+         .grid100 span.you {
+            background: var(--primary-900);
+            box-shadow: 0 0 0 3px var(--primary-300);
+         }
+         .grid-cap {
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-1200);
+         }
+         .say {
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: var(--yellow-100);
+            font-weight: 600;
+         }
+
+         /* ₱100 → coins */
+         .exchange {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-radius: 16px;
+            padding: 18px 12px;
+            background: var(--n-200);
+         }
+         .bill {
+            display: grid;
+            place-items: center;
+            width: 92px;
+            height: 50px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #7b6fd6, #5a4fb8);
+            color: #fff;
+            font-size: 20px;
+            font-weight: 800;
+            box-shadow: inset 0 0 0 3px rgb(255 255 255 / 0.35);
+         }
+         .arrow {
+            font-size: 22px;
+            color: var(--n-1000);
+         }
+         .exchange .lbl {
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--n-1400);
+         }
+         .key {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--n-1400);
+         }
+         .key span {
+            display: inline-flex;
+            align-items: center;
             gap: 6px;
          }
-         .math div {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            border-radius: 12px;
-            padding: 8px 12px;
-            background: rgb(255 255 255 / 0.85);
-            font-size: 14px;
-         }
-         .math b {
-            white-space: nowrap;
-         }
-         .math .result {
-            background: var(--primary-100);
-            color: var(--primary-1500);
+         .key .dash {
+            width: 0;
+            height: 18px;
+            border-left: 2px dashed var(--primary-900);
          }
 
-         /* Top 3: Reputation Milestones look */
-         .milestones {
-            overflow: hidden;
-            border-radius: 20px;
-            background: var(--n-100);
-            box-shadow: var(--shadow-card);
-            scroll-margin-top: 12px;
+         /* Coins */
+         .coins {
+            position: relative;
+            display: flex;
+            gap: 2px;
+            min-height: 18px;
+            align-items: center;
          }
-         .ms-head {
+         .coin {
+            width: 14px;
+            height: 14px;
+            flex: none;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #ffe9a3, var(--coin) 55%, var(--coin-dark));
+            box-shadow: inset 0 0 0 1.5px rgb(150 100 0 / 0.35);
+         }
+         .coin.part {
+            clip-path: inset(0 calc(100% - var(--p)) 0 0);
+         }
+         .coin.big {
+            width: 26px;
+            height: 26px;
+         }
+         .coins .more {
+            margin-left: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--coin-dark);
+         }
+         .coins .none {
+            font-size: 13px;
+            color: var(--red-800);
+            font-weight: 600;
+         }
+         .bondmark {
+            position: absolute;
+            top: -6px;
+            bottom: -6px;
+            width: 0;
+            border-left: 2px dashed var(--primary-900);
+         }
+
+         /* Year blocks */
+         .years {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 4px;
+         }
+         .years span {
+            display: grid;
+            place-items: center;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            background: var(--primary-100);
+            color: var(--primary-1200);
+            font-size: 11px;
+            font-weight: 700;
+         }
+         .big-math {
+            border-radius: 16px;
+            padding: 14px;
+            background: var(--primary-100);
+            color: var(--primary-1500);
+            text-align: center;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.25;
+         }
+         .big-math small {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+         }
+         .rule {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: var(--green-100);
+            color: var(--green-900);
+            font-size: 18px;
+            font-weight: 700;
+         }
+         .warn {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-radius: 16px;
+            padding: 12px 14px;
+            background: #fff4d6;
+            color: #5c4500;
+            font-weight: 600;
+         }
+         .ic {
+            font-size: 24px;
+            line-height: 1;
+         }
+
+         /* Company rows */
+         .board {
+            border-radius: 18px;
+            border: 1px solid var(--primary-100);
+            background: #fff;
+            padding: 4px 14px;
+         }
+         .board-head {
+            padding: 10px 0 6px;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--n-1400);
+         }
+         .co {
+            padding: 12px 0;
+            border-top: 1px solid var(--n-300);
+         }
+         .co-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+         }
+         .co-emo {
+            width: 38px;
+            height: 38px;
+            flex: none;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--n-300);
+            font-size: 20px;
+         }
+         .co-name {
+            min-width: 0;
+            font-weight: 700;
+            line-height: 1.2;
+         }
+         .co-name small {
+            display: block;
+            color: var(--n-1000);
+            font-size: 13px;
+            font-weight: 500;
+         }
+         .co-val {
+            margin-left: auto;
+            text-align: right;
+            font-size: 19px;
+            font-weight: 800;
+            white-space: nowrap;
+            line-height: 1.15;
+         }
+         .co-val small {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+         }
+         .co-val.win small {
+            color: var(--green-700);
+         }
+         .co-val.lose small {
+            color: var(--red-800);
+         }
+         .co .coins,
+         .co-sub,
+         .co-note {
+            margin-left: 0;
+         }
+         .co .coins {
+            margin-top: 8px;
+         }
+         .co-sub {
+            margin-top: 4px;
+            font-size: 13px;
+            color: var(--n-1000);
+         }
+         .co-note {
+            margin-top: 6px;
+            font-size: 14px;
+            color: var(--n-1400);
+         }
+
+         /* Quiz */
+         .quiz {
+            border-radius: 18px;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-100), #f8f3ff);
+            border: 1px solid var(--primary-300);
+         }
+         .quiz-q {
+            font-weight: 700;
+         }
+         .quiz-opts {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+         }
+         .quiz-opts button {
+            min-height: 48px;
+            border: 1.5px solid var(--primary-300);
+            border-radius: 14px;
+            padding: 10px 14px;
+            background: #fff;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+         }
+         .quiz-opts button[data-state='right'] {
+            border-color: var(--green-700);
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .quiz-opts button[data-state='wrong'] {
+            border-color: var(--red-300);
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+         .quiz-fb {
+            margin-top: 10px;
+            font-size: 15px;
+            font-weight: 600;
+         }
+         .quiz-fb:empty {
+            display: none;
+         }
+
+         /* Results */
+         .results-head {
             position: relative;
             overflow: hidden;
-            padding: 18px 18px 20px;
+            border-radius: 22px;
+            padding: 20px;
             background: linear-gradient(135deg, var(--primary-900), var(--primary-1200));
             color: #fff;
+            scroll-margin-top: 12px;
          }
-         .ms-head h2 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.04em;
+         .results-head .h2 {
+            max-width: 66%;
          }
-         .ms-head p {
-            margin-top: 4px;
-            max-width: 64%;
+         .results-head p {
+            margin-top: 8px;
+            max-width: 62%;
             color: var(--primary-100);
-            font-size: 13px;
-            line-height: 1.4;
+            font-size: 15px;
          }
-         .ms-hippo {
+         .results-head img {
             position: absolute;
             right: -6px;
             bottom: -10px;
-            width: 112px;
+            width: 116px;
          }
-         .tests {
-            position: relative;
-            margin-top: 12px;
-            max-width: 68%;
-            display: grid;
-            gap: 4px;
-            font-size: 12px;
-         }
-         .tests li {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-         }
-         .tests img {
-            width: 16px;
-            flex: none;
-         }
-         .ms-body {
-            display: grid;
-            gap: 10px;
-            padding: 14px;
-         }
-         .pick {
-            border: 1px solid var(--primary-100);
-            border-radius: 14px;
-            background: var(--n-200);
-         }
-         .pick + .pick {
-            margin-top: 8px;
-         }
-         .pick summary {
+         .winner {
             display: grid;
             grid-template-columns: 46px minmax(0, 1fr) auto;
             gap: 12px;
             align-items: center;
+            border: 1px solid var(--primary-100);
+            border-radius: 16px;
             padding: 12px;
-            cursor: pointer;
-            list-style: none;
+            background: var(--n-200);
          }
-         .pick summary::-webkit-details-marker {
-            display: none;
+         .winner + .winner {
+            margin-top: 8px;
          }
          .rank {
             width: 46px;
@@ -451,436 +714,91 @@
             place-items: center;
             border-radius: 13px;
             background: var(--primary-100);
-            color: var(--primary-1200);
-            font-size: 20px;
-            font-style: italic;
-            font-weight: 800;
+            font-size: 22px;
          }
-         .pick:first-child .rank {
+         .winner:first-child .rank {
             background: linear-gradient(135deg, #ffe680, var(--yellow-700));
-            color: #5a4300;
          }
-         .pick-name {
-            min-width: 0;
-         }
-         .pick-name b {
-            display: block;
-            font-size: 16px;
-            font-weight: 600;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-         }
-         .pick-name span {
-            display: block;
-            color: var(--n-700);
-            font-size: 12px;
+         .winner .co-name small + small {
+            margin-top: 4px;
+            color: #6b5200;
          }
          .pandesals {
             display: flex;
-            align-items: center;
             gap: 1px;
          }
          .pandesals img {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
          }
          .pandesals img.off {
-            opacity: 0.35;
+            opacity: 0.3;
             filter: grayscale(1);
          }
-         .pick-more {
+         .famous {
             display: grid;
-            gap: 10px;
-            padding: 0 12px 14px;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 8px;
          }
-         .checks {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-         }
-         .checks li {
-            border-radius: 10px;
-            padding: 7px 9px;
-            font-size: 11.5px;
-            line-height: 1.25;
-         }
-         .checks li b {
-            display: block;
-            font-size: 15px;
-         }
-         .checks .pass {
-            background: var(--green-100);
-            color: var(--green-900);
-         }
-         .checks .fail {
-            background: var(--red-100);
-            color: var(--red-800);
-         }
-         .pick-more p {
-            font-size: 13.5px;
-            color: var(--n-1400);
-         }
-         .pick-more .catch {
-            border-radius: 10px;
-            padding: 8px 10px;
-            background: var(--yellow-100);
-         }
-         .tap-hint {
-            text-align: center;
-            color: var(--blue-600);
-            font-size: 13px;
-            font-weight: 500;
-         }
-         .close-calls {
-            display: grid;
-            grid-template-columns: 52px minmax(0, 1fr);
-            gap: 12px;
-            align-items: start;
-            border-radius: 20px;
-            padding: 14px 16px;
-            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
-            color: #4a3a00;
-            font-size: 13.5px;
-         }
-         .close-calls img {
-            width: 52px;
-         }
-         .close-calls b {
-            display: block;
-            font-size: 15px;
-            font-style: italic;
-            font-weight: 800;
-            color: #2d2300;
-         }
-
-         /* Full scorecard */
-         .all summary {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            list-style: none;
-            font-weight: 600;
-         }
-         .all summary::-webkit-details-marker {
-            display: none;
-         }
-         .all summary span {
-            color: var(--blue-600);
-            font-size: 13px;
-            font-weight: 500;
-         }
-         .table-wrap {
-            margin-top: 12px;
-            overflow-x: auto;
-         }
-         table {
-            width: 100%;
-            min-width: 470px;
-            border-collapse: collapse;
-            font-size: 12.5px;
-            font-variant-numeric: tabular-nums;
-         }
-         th,
-         td {
-            padding: 8px 6px;
-            border-bottom: 1px solid var(--n-300);
-            text-align: right;
-            white-space: nowrap;
-         }
-         th:first-child,
-         td:first-child {
-            text-align: left;
-         }
-         th {
-            color: var(--n-1000);
-            font-size: 10.5px;
-            font-weight: 600;
-         }
-         td.pass {
-            color: var(--green-700);
-            font-weight: 700;
-         }
-         td.fail {
-            color: var(--n-500);
-         }
-         tr.top td:first-child {
-            font-weight: 700;
-            color: var(--primary-1200);
-         }
-
-         /* Ratio tabs */
-         #ratios {
-            scroll-margin-top: 12px;
-         }
-         .seg {
-            position: sticky;
-            top: 8px;
-            z-index: 10;
-            margin-top: 14px;
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 2px;
-            border-radius: 999px;
-            padding: 4px;
-            background: rgb(253 252 253 / 0.92);
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow-nav);
-         }
-         .seg button {
-            min-height: 40px;
-            border: 0;
-            border-radius: 999px;
-            padding: 6px 4px;
-            background: transparent;
-            color: var(--n-1400);
-            font-size: 13px;
-            font-weight: 600;
-            line-height: 1.1;
-            cursor: pointer;
-         }
-         .seg button[aria-selected='true'] {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
-            color: #fff;
-         }
-         .seg button:focus-visible,
-         .nav a:focus-visible,
-         .pick summary:focus-visible,
-         .all summary:focus-visible {
-            outline: 3px solid var(--primary-300);
-            outline-offset: 2px;
-         }
-         .panel[hidden] {
-            display: none;
-         }
-         .panel {
-            margin-top: 14px;
-            display: grid;
-            gap: 14px;
-         }
-         .note {
-            position: relative;
-            border-radius: 20px;
-            padding: 18px;
-            background: var(--yellow-100);
-            border: 1px dashed #ecd27a;
-         }
-         .note .formula {
-            margin-top: 0;
-            padding-right: 54px;
-            color: var(--heading);
-            font-size: 20px;
-            font-style: italic;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.15;
-         }
-         .note img {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 44px;
-         }
-         .note p {
-            margin-top: 8px;
-            color: var(--n-1400);
-            font-size: 14px;
-         }
-         .note .ex {
-            margin-top: 10px;
-            border-radius: 12px;
-            padding: 10px 12px;
-            background: #fff;
-            color: var(--heading);
-            font-weight: 600;
-         }
-         .chips {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-         }
-         .chips li {
-            border-radius: 999px;
-            padding: 4px 10px;
-            background: #fff;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--n-1400);
-         }
-         .board-head {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 10px;
-         }
-         .board-head h3 {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.03em;
-         }
-         .board-head span {
-            color: var(--n-1000);
-            font-size: 12px;
-            text-align: right;
-         }
-         .rows {
-            margin-top: 6px;
-         }
-         .rows li {
-            padding: 12px 0;
-            border-bottom: 1px solid var(--n-300);
-         }
-         .rows li:last-child {
-            border-bottom: 0;
-         }
-         .row-top {
+         .famous li {
             display: flex;
             align-items: center;
             gap: 8px;
-         }
-         .row-top .val {
-            font-size: 18px;
+            border-radius: 14px;
+            padding: 10px;
+            background: var(--n-200);
+            border: 1px solid var(--n-300);
             font-weight: 700;
-            letter-spacing: -0.03em;
-            font-variant-numeric: tabular-nums;
-            white-space: nowrap;
+            font-size: 15px;
          }
-         .tag {
-            border-radius: 999px;
-            padding: 2px 9px;
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-         }
-         .tag.good {
-            background: var(--green-100);
-            color: var(--green-900);
-         }
-         .tag.bad {
-            background: var(--red-100);
-            color: var(--red-800);
-         }
-         .row-name {
+         .famous .pandesals {
             margin-left: auto;
-            min-width: 0;
-            text-align: right;
-            font-size: 14px;
-            font-weight: 600;
          }
-         .row-name small {
+         .famous .pandesals img {
+            width: 14px;
+            height: 14px;
+         }
+         .bread {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: 14px;
+            align-items: center;
+            border-radius: 22px;
+            padding: 16px;
+            background: linear-gradient(135deg, #fff6c9, #ffe9a6);
+            color: #4a3a00;
+         }
+         .bread img {
+            width: 64px;
+         }
+         .bread b {
             display: block;
-            color: var(--n-1000);
-            font-size: 11px;
-            font-weight: 500;
-         }
-         .bar-track {
-            position: relative;
-            height: 8px;
-            margin-top: 8px;
-            border-radius: 999px;
-            background: var(--n-300);
-         }
-         .bar {
-            position: relative;
-            height: 100%;
-            width: 0;
-            border-radius: 999px;
-            transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
-         }
-         .bar.good {
-            background: var(--green-700);
-         }
-         .bar.bad {
-            background: var(--red-300);
-         }
-         .bar.over {
-            background: repeating-linear-gradient(-45deg, var(--red-300) 0 7px, #ff8a95 7px 14px);
-         }
-         .ghost {
-            position: absolute;
-            inset: 0 auto 0 0;
-            border-radius: 999px;
-            background: var(--primary-300);
-            opacity: 0.6;
-         }
-         .line {
-            position: absolute;
-            top: -4px;
-            bottom: -4px;
-            width: 2px;
-            border-radius: 2px;
-            background: var(--yellow-700);
-         }
-         .row-note {
-            margin-top: 6px;
-            color: var(--n-700);
-            font-size: 13px;
-         }
-         .legend {
-            margin-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px 12px;
-            color: var(--n-1000);
-            font-size: 11.5px;
-         }
-         .legend i {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            margin-right: 5px;
-            border-radius: 3px;
-            vertical-align: -1px;
-         }
-         .ingat {
-            border-radius: 16px;
-            padding: 12px 14px;
-            background: var(--primary-100);
-            color: var(--primary-1500);
-            font-size: 13.5px;
+            font-size: 19px;
+            font-style: italic;
+            font-weight: 800;
+            color: #2d2300;
+            line-height: 1.2;
          }
 
-         /* Fine print + CTA */
-         .fine {
-            display: grid;
-            gap: 10px;
-            color: var(--n-1400);
-            font-size: 13px;
-         }
-         .fine b {
-            color: var(--heading);
-         }
-         .fine ul {
-            display: grid;
-            gap: 4px;
-            padding-left: 16px;
-            list-style: disc;
-         }
-         .cta {
+         /* Finish + fine print */
+         .finish {
             position: relative;
             overflow: hidden;
-            border-radius: 20px;
+            border-radius: 22px;
             padding: 20px;
             background: linear-gradient(135deg, var(--primary-900), var(--primary-1500));
             color: #fff;
          }
-         .cta h2 {
-            max-width: 62%;
-            font-size: 22px;
-            font-style: italic;
-            font-weight: 800;
-            letter-spacing: -0.04em;
-            line-height: 1.1;
+         .finish .h2 {
+            max-width: 64%;
          }
-         .cta p {
-            margin-top: 6px;
-            max-width: 62%;
+         .finish p {
+            margin-top: 8px;
+            max-width: 60%;
             color: var(--primary-100);
-            font-size: 13.5px;
+            font-size: 15px;
          }
-         .cta img {
+         .finish img {
             position: absolute;
             right: -4px;
             bottom: -6px;
@@ -892,14 +810,18 @@
             margin-top: 14px;
             display: inline-flex;
             align-items: center;
-            min-height: 40px;
+            min-height: 44px;
             border-radius: 999px;
-            padding: 8px 16px;
+            padding: 8px 18px;
             background: #fff;
             color: var(--primary-1200);
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
             text-decoration: none;
+         }
+         .fine {
+            font-size: 15px;
+            color: var(--n-1400);
          }
          .footer {
             margin-top: 18px;
@@ -930,27 +852,26 @@
          .nav a {
             display: grid;
             justify-items: center;
-            gap: 3px;
+            gap: 2px;
             border-radius: 18px;
             padding: 6px 2px;
             color: var(--n-1000);
-            font-size: 10.5px;
+            font-size: 11px;
             font-weight: 500;
             text-decoration: none;
          }
-         .nav svg {
-            width: 24px;
-            height: 24px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 1.6;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+         .nav .ni {
+            font-size: 20px;
+            line-height: 1.2;
+            filter: grayscale(0.6);
          }
          .nav a[aria-current='true'] {
             color: var(--primary-900);
             background: var(--primary-100);
             font-weight: 700;
+         }
+         .nav a[aria-current='true'] .ni {
+            filter: none;
          }
 
          @media (prefers-reduced-motion: reduce) {
@@ -960,63 +881,19 @@
             .hero-hippo {
                animation: none;
             }
-            .bar,
-            .fill {
-               transition: none;
-            }
-         }
-         /* Language toggle */
-         .title-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-         }
-         .title-top .kicker {
-            white-space: nowrap;
-         }
-         .lang {
-            display: inline-flex;
-            flex: none;
-            border-radius: 999px;
-            padding: 3px;
-            background: var(--n-300);
-         }
-         .lang button {
-            min-height: 30px;
-            border: 0;
-            border-radius: 999px;
-            padding: 4px 11px;
-            background: transparent;
-            color: var(--n-1400);
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-         }
-         .lang button[aria-pressed='true'] {
-            background: #fff;
-            color: var(--primary-1200);
-            box-shadow: 0 1px 3px rgb(27 28 29 / 0.12);
-         }
-         .all summary .all-title {
-            color: inherit;
-            font-size: inherit;
-            font-weight: 600;
-         }
-         .lang button:focus-visible {
-            outline: 3px solid var(--primary-300);
-            outline-offset: 1px;
          }
       </style>
    </head>
    <body>
-      <a class="skip-link" href="#main" data-t="skip">Skip to content</a>
+      <a class="skip-link" href="#main">Skip to content</a>
 
       <header class="hero">
          <div class="col">
             <div class="topbar">
-               <span class="avatar"><img src="/dashboard-v2/moodeng-rookie-1.png" alt="" width="56" height="56" /></span>
-               <div class="hello"><b data-t="hello">Hi, ka-Moodeng! 👋</b><span>Money Basics</span></div>
+               <span class="avatar"><img src="/dashboard-v2/moodeng-rookie-1.png" alt="" width="52" height="52" /></span>
+               <div class="hello">
+                  <b><span data-l="fil">Hi, ka-Moodeng! 👋</span><span data-l="en">Hi there! 👋</span></b><span>Money Basics</span>
+               </div>
                <nav class="top-pills" aria-label="Moodeng links">
                   <a class="top-pill" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer"
                      ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
@@ -1038,109 +915,189 @@
                </nav>
             </div>
             <div class="hero-stage">
-               <p class="bubble" data-t="bubble">Mura ba 'tong stock? 🤔<small>Tara, i-check natin!</small></p>
-               <img class="hero-hippo" src="/dashboard-v2/moodeng-rookie-2.png" alt="" width="190" height="190" />
+               <p class="bubble">
+                  <span data-l="fil">Mura ba 'tong stock? 🤔<small>Alamin natin!</small></span
+                  ><span data-l="en">Is this stock cheap? 🤔<small>Let's find out!</small></span>
+               </p>
+               <img class="hero-hippo" src="/dashboard-v2/moodeng-rookie-2.png" alt="" width="176" height="176" />
             </div>
          </div>
       </header>
 
       <main id="main" class="sheet">
-         <div class="col">
-            <section class="title-card" aria-labelledby="title">
+         <div class="col stack">
+            <!-- Start -->
+            <section class="card" id="start" aria-labelledby="title">
                <div class="title-top">
-                  <p class="kicker">Oct 2, 2026</p>
+                  <p class="kicker">5-minute money lesson</p>
                   <div class="lang" role="group" aria-label="Language">
                      <button type="button" data-lang="fil" aria-pressed="true">Taglish</button
                      ><button type="button" data-lang="en" aria-pressed="false">English</button>
                   </div>
                </div>
-               <h1 id="title" data-t="h1">Mura ba <em>'tong stock?</em></h1>
-               <p data-t="intro"></p>
-               <div class="bond-row">
-                  <span class="lv">5.24%</span><span><b data-t="beat"></b><br />10-year US Treasury</span>
-               </div>
-               <div class="track" aria-hidden="true"><div class="fill" data-fill="52.4" style="width: 0"></div></div>
-               <p class="bond-note" data-t="bondNote"></p>
+               <h1 id="title">
+                  <span data-l="fil">Mura ba <em>'tong stock?</em></span><span data-l="en">Is this <em>stock cheap?</em></span>
+               </h1>
+               <p class="muted">
+                  <span data-l="fil">3 madaling checks. Totoong companies. Walang mahirap na math!</span>
+                  <span data-l="en">3 easy checks. Real companies. No hard math!</span>
+               </p>
+               <ul class="learn">
+                  <li><span class="emo" aria-hidden="true">📅</span><span data-l="fil">Ilang taon bago mabawi?</span><span data-l="en">Years to earn it back</span></li>
+                  <li><span class="emo" aria-hidden="true">🔮</span><span data-l="fil">Hula para sa next year</span><span data-l="en">Next year's guess</span></li>
+                  <li><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Totoong cash sa kaha</span><span data-l="en">Real cash in the drawer</span></li>
+               </ul>
             </section>
 
-            <div class="stack">
-               <section class="card store" aria-labelledby="store-title">
-                  <div>
-                     <h2 class="h2" id="store-title" data-t="storeTitle"></h2>
-                     <p class="lead" data-t="storeLead"></p>
-                  </div>
-                  <img src="/hippos/thinking.png" alt="" width="92" height="112" />
-                  <div class="math full">
-                     <div><span data-t="storePrice"></span><b>₱1,000,000</b></div>
-                     <div><span data-t="storeProfit"></span><b>₱50,000</b></div>
-                     <div class="result"><span>₱1,000,000 ÷ ₱50,000</span><b>P/E = 20</b></div>
-                     <div class="result"><span data-t="storeFlip"></span><b data-t="storeYield"></b></div>
-                  </div>
-                  <p class="lead full" data-t="storeEnd"></p>
-               </section>
+            <!-- What is a stock -->
+            <section class="card" aria-labelledby="what-title">
+               <h2 class="h2" id="what-title"><span data-l="fil">Ano ang <em>stock?</em></span><span data-l="en">What's a <em>stock?</em></span></h2>
+               <p>
+                  <span data-l="fil">Hatiin ang tindahan ni Aling Nena sa <strong>100 piraso</strong>. Bumili ka ng 1. May-ari ka na ng konting parte!</span>
+                  <span data-l="en">Cut Aling Nena's store into <strong>100 pieces</strong>. Buy 1. Now you own a tiny part of it!</span>
+               </p>
+               <div class="grid100" data-grid100 aria-hidden="true"></div>
+               <p class="grid-cap"><span data-l="fil">■ = ikaw!</span><span data-l="en">■ = you!</span></p>
+               <p class="say">
+                  <span data-l="fil">🎉 Ang pirasong 'yan ay <strong>stock</strong>. Pag kumita ang tindahan, may konti ka rin!</span>
+                  <span data-l="en">🎉 That piece is a <strong>stock</strong>. When the store makes money, you get a little too!</span>
+               </p>
+            </section>
 
-               <section class="milestones" id="top3" aria-labelledby="top3-title">
-                  <div class="ms-head">
-                     <h2 id="top3-title">Top 3 by the numbers</h2>
-                     <p data-t="top3Lead"></p>
-                     <ol class="tests" data-tests></ol>
-                     <img class="ms-hippo" src="/hippos/party.png" alt="" width="112" height="112" />
-                  </div>
-                  <div class="ms-body">
-                     <div data-picks></div>
-                     <p class="tap-hint" data-t="tapHint"></p>
-                  </div>
-               </section>
+            <!-- Safe bond -->
+            <section class="card" aria-labelledby="bond-title">
+               <h2 class="h2" id="bond-title"><span data-l="fil">Ang <em>safe</em> na choice</span><span data-l="en">The <em>safe</em> choice</span></h2>
+               <p>
+                  <span data-l="fil">Ipahiram ang ₱100 sa gobyerno ng US. Kada taon, babalikan ka ng <strong>₱5.24</strong>. Sobrang safe!</span>
+                  <span data-l="en">Lend ₱100 to the US government. Every year, you get <strong>₱5.24</strong> back. Super safe!</span>
+               </p>
+               <div class="exchange" aria-hidden="true">
+                  <span class="bill">₱100</span><span class="arrow">→</span><span class="coins" data-big></span>
+                  <span class="lbl"><span data-l="fil">₱5.24 kada taon</span><span data-l="en">₱5.24 every year</span></span>
+               </div>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">🎯</span
+                  ><span><span data-l="fil">Dapat talunin ng stock ang ₱5.24.</span><span data-l="en">A good stock should beat ₱5.24.</span></span>
+               </p>
+               <p class="key">
+                  <span><span class="coin"></span>= ₱1</span
+                  ><span><span class="dash"></span><span data-l="fil">= ang ₱5.24 ng bond</span><span data-l="en">= the bond's ₱5.24</span></span>
+               </p>
+            </section>
 
-               <section class="close-calls" data-t-label="closeTitle">
-                  <img src="/dashboard-v2/moodeng-prime-2.png" alt="" width="52" height="52" />
-                  <div data-t="closeCalls"></div>
-               </section>
+            <!-- Check 1 -->
+            <section class="card" id="pe" aria-labelledby="pe-title">
+               <span class="step-tag"><b>1</b><span>Check 1 <small>· P/E</small></span></span>
+               <h2 class="h2" id="pe-title">
+                  <span data-l="fil">Ilang taon bago <em>mabawi?</em></span><span data-l="en">How many years to <em>earn it back?</em></span>
+               </h2>
+               <p>
+                  <span data-l="fil">Ang tindahan ay ₱1,000. Kumikita ito ng ₱50 kada taon.</span>
+                  <span data-l="en">The store costs ₱1,000. It makes ₱50 a year.</span>
+               </p>
+               <p class="big-math">
+                  ₱1,000 ÷ ₱50 = <span data-l="fil">20 taon</span><span data-l="en">20 years</span>
+                  <small><span data-l="fil">bago mabawi ang pera mo</span><span data-l="en">to get your money back</span></small>
+               </p>
+               <div class="years" data-years aria-hidden="true"></div>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">👍</span
+                  ><span><span data-l="fil">Mas kaunting taon = mas mura.</span><span data-l="en">Fewer years = cheaper.</span></span>
+               </p>
+               <div class="board" data-board="pe"></div>
+               <div class="quiz" data-quiz="pe"></div>
+            </section>
 
-               <details class="card all">
-                  <summary><span class="all-title" data-t="allTitle"></span> <span data-t="allMore"></span></summary>
-                  <div class="table-wrap">
-                     <table data-scorecard>
-                        <thead>
-                           <tr>
-                              <th scope="col">Stock</th>
-                              <th scope="col" data-t="thPrice"></th>
-                              <th scope="col" data-t="thEy"></th>
-                              <th scope="col">Fwd yield</th>
-                              <th scope="col">FCF yield</th>
-                              <th scope="col">PEG</th>
-                              <th scope="col">Pandesal</th>
-                           </tr>
-                        </thead>
-                        <tbody></tbody>
-                     </table>
-                  </div>
-               </details>
+            <!-- Check 2 -->
+            <section class="card" id="forward-pe" aria-labelledby="fpe-title">
+               <span class="step-tag"><b>2</b><span>Check 2 <small>· Forward P/E</small></span></span>
+               <h2 class="h2" id="fpe-title"><span data-l="fil">Hula para sa <em>next year</em></span><span data-l="en">Next year's <em>guess</em></span></h2>
+               <p>
+                  <span data-l="fil">Hinuhulaan ng mga expert kung magkano ang kikitain ng company next year. Gamitin ang hula imbes na last year.</span>
+                  <span data-l="en">Experts guess how much a company will make next year. Use that guess instead of last year.</span>
+               </p>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">📈</span
+                  ><span><span data-l="fil">Mas malaking hula = mukhang mas mura.</span><span data-l="en">Bigger guess = looks cheaper.</span></span>
+               </p>
+               <div class="board" data-board="fpe"></div>
+               <p class="warn">
+                  <span class="ic" aria-hidden="true">⚠️</span
+                  ><span><span data-l="fil">Hula lang 'yan. Pwedeng mali!</span><span data-l="en">It's just a guess. Guesses can be wrong!</span></span>
+               </p>
+               <div class="quiz" data-quiz="fpe"></div>
+            </section>
 
-               <section id="ratios" aria-labelledby="ratios-title">
-                  <h2 class="h2" id="ratios-title" data-t="ratiosTitle"></h2>
-                  <p class="lead" data-t="ratiosLead"></p>
-                  <div class="seg" role="tablist" aria-label="Valuation ratios" data-tablist></div>
-                  <div data-panels></div>
-               </section>
+            <!-- Check 3 -->
+            <section class="card" id="fcf" aria-labelledby="fcf-title">
+               <span class="step-tag"><b>3</b><span>Check 3 <small>· Cash yield</small></span></span>
+               <h2 class="h2" id="fcf-title"><span data-l="fil">Totoong <em>cash</em> sa kaha</span><span data-l="en">Real <em>cash</em> in the drawer</span></h2>
+               <p>
+                  <span data-l="fil">Pagkatapos bayaran ang lahat ng gastos, magkano ang totoong cash na natira sa kaha?</span>
+                  <span data-l="en">After paying all the bills, how much real cash is left in the drawer?</span>
+               </p>
+               <p class="big-math">
+                  <span data-l="fil">₱60 na natira</span><span data-l="en">₱60 left over</span> ÷ ₱1,000 = ₱6
+                  <small><span data-l="fil">kada ₱100. Talo ang bond! 🎉</span><span data-l="en">per ₱100. Beats the bond! 🎉</span></small>
+               </p>
+               <div class="board" data-board="fcf"></div>
+               <div class="quiz" data-quiz="fcf"></div>
+            </section>
 
-               <section class="card fine" aria-labelledby="fine-title">
-                  <h2 class="h2" id="fine-title" data-t="fineTitle"></h2>
-                  <p data-t="fine1"></p>
-                  <p data-t="fine2"></p>
-                  <div>
-                     <b>Sources</b>
-                     <ul data-t="sources"></ul>
-                  </div>
-               </section>
+            <!-- Results -->
+            <section class="results-head" id="results" aria-labelledby="results-title">
+               <h2 class="h2" id="results-title"><span data-l="fil">Sino ang pumasa? 🥯</span><span data-l="en">Who passed? 🥯</span></h2>
+               <p>
+                  <span data-l="fil">Bawat check na talo ang ₱5.24 = 1 pandesal.</span>
+                  <span data-l="en">Every check that beats ₱5.24 = 1 pandesal.</span>
+               </p>
+               <img src="/hippos/party.png" alt="" width="116" height="116" />
+            </section>
 
-               <section class="cta" aria-labelledby="cta-title">
-                  <h2 id="cta-title" data-t="ctaTitle"></h2>
-                  <p data-t="ctaText"></p>
-                  <a class="btn" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer">Follow @moodeng.credit ›</a>
-                  <img src="/hippos/sitting-down-pointing-hippo.png" alt="" width="128" height="128" />
-               </section>
-            </div>
+            <section class="card" aria-labelledby="passed-title">
+               <h3 class="h2" id="passed-title" style="font-size: 21px">
+                  <span data-l="fil">Ang top 3 sa 18 companies</span><span data-l="en">Top 3 out of 18 companies</span>
+               </h3>
+               <div data-winners></div>
+               <h3 class="h2" style="font-size: 21px"><span data-l="fil">Sikat, pero mahal 😮</span><span data-l="en">Famous, but pricey 😮</span></h3>
+               <ul class="famous" data-famous></ul>
+               <p class="say">
+                  <span data-l="fil">Magaling na company ≠ murang stock!</span><span data-l="en">Great company ≠ cheap stock!</span>
+               </p>
+            </section>
+
+            <section class="bread" aria-labelledby="bread-title">
+               <img src="/dashboard-v2/pandesal-large.png" alt="" width="64" height="64" />
+               <div>
+                  <b id="bread-title"><span data-l="fil">Ang mura, hindi laging maganda!</span><span data-l="en">Cheap isn't always good!</span></b>
+                  <span data-l="fil">Parang pandesal na kahapon pa: mura, pero alamin muna kung bakit.</span>
+                  <span data-l="en">Like day-old pandesal: cheap, but find out why first.</span>
+               </div>
+            </section>
+
+            <section class="finish" aria-labelledby="finish-title">
+               <h2 class="h2" id="finish-title"><span data-l="fil">Tapos ka na! 🎓</span><span data-l="en">You did it! 🎓</span></h2>
+               <p>
+                  <span data-l="fil">Isang money lesson kada video sa TikTok!</span>
+                  <span data-l="en">One money lesson per video on TikTok!</span>
+               </p>
+               <a class="btn" href="https://www.tiktok.com/@moodeng.credit" target="_blank" rel="noreferrer">Follow @moodeng.credit ›</a>
+               <img src="/hippos/sitting-down-pointing-hippo.png" alt="" width="128" height="128" />
+            </section>
+
+            <section class="card fine" aria-labelledby="fine-title">
+               <h2 class="h2" id="fine-title" style="font-size: 19px">
+                  <span data-l="fil">Para sa pag-aaral lang 🙏</span><span data-l="en">Just for learning 🙏</span>
+               </h2>
+               <p>
+                  <span data-l="fil">Hindi ito payo kung ano ang bibilhin. Pwedeng bumaba ang presyo ng stocks. Magtanong muna sa magulang o pinagkakatiwalaang adult bago mag-invest.</span>
+                  <span data-l="en">This isn't advice on what to buy. Stock prices can go down. Talk to a parent or trusted adult before investing.</span>
+               </p>
+               <p class="small">
+                  <span data-l="fil">Mga numero: StockAnalysis.com at FRED, Oct 2, 2026. "₱ kada ₱100" = percent.</span>
+                  <span data-l="en">Numbers: StockAnalysis.com and FRED, Oct 2, 2026. "₱ per ₱100" = percent.</span>
+               </p>
+            </section>
 
             <p class="footer">
                © 2026 Moodeng Credit · Educational content only, not investment advice<br />
@@ -1149,760 +1106,292 @@
          </div>
       </main>
 
-      <nav class="nav" aria-label="Sections">
-         <a href="#top3" data-go="top3"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-               <path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4" /></svg
-            >Top 3</a
-         ><a href="#pe" data-go="pe"
-            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5l8-8H20v8.5l-8 8z" /><circle cx="16" cy="8" r="1.4" /></svg>P/E</a
-         ><a href="#forward-pe" data-go="forward-pe"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-               <rect x="4" y="5" width="16" height="15" rx="2" />
-               <path d="M4 10h16M9 3v4M15 3v4M10 15h5M13 13l2 2-2 2" /></svg
-            >Forward</a
-         ><a href="#fcf" data-go="fcf"
-            ><svg viewBox="0 0 24 24" aria-hidden="true">
-               <rect x="3" y="6" width="18" height="12" rx="2" />
-               <path d="M10 9.5v5M10 9.5h2.5a1.5 1.5 0 0 1 0 3H10M8.5 11h6M8.5 12.2h6" /></svg
-            >FCF</a
-         ><a href="#peg" data-go="peg"
-            ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18a8 8 0 1 1 16 0M12 18l4-5" /><circle cx="12" cy="18" r="1.2" /></svg>PEG</a
-         >
+      <nav class="nav" aria-label="Lesson steps">
+         <a href="#start" data-go="start"><span class="ni" aria-hidden="true">🏁</span><span data-l="fil">Simula</span><span data-l="en">Start</span></a
+         ><a href="#pe" data-go="pe"><span class="ni" aria-hidden="true">📅</span>Check 1</a
+         ><a href="#forward-pe" data-go="forward-pe"><span class="ni" aria-hidden="true">🔮</span>Check 2</a
+         ><a href="#fcf" data-go="fcf"><span class="ni" aria-hidden="true">💵</span>Check 3</a
+         ><a href="#results" data-go="results"><span class="ni" aria-hidden="true">🏆</span><span data-l="fil">Resulta</span><span data-l="en">Results</span></a>
       </nav>
 
       <script>
          (function () {
             var BOND = 5.24;
-            var PHP = 62.6; // ECB reference rate, Oct 2, 2026
+            var MAX_COINS = 15;
             var LANG_KEY = 'moodeng-stocks-lang';
 
-            // Page copy. Values are our own HTML, so they are set with innerHTML.
-            var T = {
-               fil: {
-                  docTitle: "Mura ba 'tong stock? | Moodeng Credit",
-                  skip: 'Skip to content',
-                  hello: 'Hi, ka-Moodeng! 👋',
-                  bubble: "Mura ba 'tong stock? 🤔<small>Tara, i-check natin!</small>",
-                  hippoAlt: 'Si Moodeng, kumakain ng pandesal',
-                  h1: "Mura ba <em>'tong stock?</em>",
-                  intro: "4 na numero lang 'yan, promise. Explained in Taglish with 18 stocks na kilala mo, at presyo in pesos. Lahat sinusukat laban sa pinaka-safe na investment sa mundo: ang US government bond.",
-                  beat: 'Ang dapat talunin',
-                  bondNote: 'Parang time deposit sa gobyerno ng US: halos walang risk. Kung hindi ito matalo ng stock, dapat may magandang dahilan para maghintay.',
-                  storeTitle: 'Ang Sari-Sari Store Test 🏪',
-                  storeLead: 'Bibilhin mo ang tindahan ni Aling Nena. Sulit ba?',
-                  storePrice: 'Presyo ng tindahan',
-                  storeProfit: 'Kita kada taon',
-                  storeFlip: 'Baliktarin: ₱50,000 ÷ ₱1,000,000',
-                  storeYield: '5% kada taon',
-                  storeEnd: '20 taon bago mo mabawi ang puhunan, at 5% lang kada taon. Kulang pa sa 5.24% ng bond! Ganyan din mag-isip tungkol sa stocks.',
-                  top3Lead: 'Pinatakbo namin ang 18 stocks sa 4 na tests. Bawat pasado = 1 pandesal.',
-                  tests: ['Kita last year ÷ presyo &gt; 5.24%', 'Expected kita next year ÷ presyo &gt; 5.24%', 'Cash na naiuwi ÷ value &gt; 5.24%', 'PEG &lt; 1.5: sulit para sa growth'],
-                  testsLabel: 'Ang 4 na tests',
-                  tapHint: 'I-tap ang stock para makita ang detalye ›',
-                  closeTitle: 'Muntik na',
-                  closeCalls:
-                     '<b>Muntik na!</b>General Motors: 3 pandesal din, pero kailangan halos 7x lumaki ang kita next year para totoo ang "mura." Pinili namin ang hindi masyadong umaasa sa hula. JPMorgan: pasado sa lahat ng kaya naming i-test, pero walang useful na FCF number ang mga bangko.',
-                  allTitle: 'Buong scorecard, 18 stocks',
-                  allMore: 'Tingnan ›',
-                  thPrice: 'Presyo',
-                  thEy: 'Kita yield',
-                  ratiosTitle: 'Ang 4 na numero',
-                  ratiosLead: 'Pumili ng numero. 5 totoong stocks, mula pinakamura hanggang pinakamahal.',
-                  fineTitle: 'Mura sa papel, hindi laging mura 🙏',
-                  fine1: 'Ang mababang numero ay pwedeng bargain, o business na inaasahang hihina. Ikumpara ang stock sa ibang company sa parehong industriya, at alamin kung bakit ito mura.',
-                  fine2: '<b>Education lang ito, hindi payo para bumili o magbenta.</b> Hindi investment adviser ang Moodeng Credit, at teaching tool lang ang scorecard namin, hindi recommendation para sa sitwasyon mo. Pwedeng bumaba ang presyo ng stocks. I-check mo mismo ang mga numero, at huwag mag-invest ng perang inutang o kailangan mo agad.',
-                  sources:
-                     '<li>Stocks: StockAnalysis.com statistics pages, closing prices Oct 2, 2026.</li><li>10-year Treasury: FRED (DGS10), 5.24% noong Oct 1, 2026.</li><li>S&amp;P 500 forward P/E 19.0: FactSet Earnings Insight, Oct 2, 2026.</li><li>Peso: ₱62.60 kada $1, ECB reference rate Oct 2, 2026. Approximate lang ang peso prices.</li><li>Earnings yield = 1 ÷ P/E (sarili naming compute). Hula ng analysts ang forward numbers at nagbabago ito.</li>',
-                  ctaTitle: 'Matuto ng pera in 60 seconds.',
-                  ctaText: 'Isang money idea kada video: stocks, credit, ipon. Follow na!',
-                  checkLabels: ['Kita yield', 'Fwd kita yield', 'FCF yield', 'PEG'],
-                  catchLabel: 'Ang catch:',
-                  pandesalOf: function (n) {
-                     return n + ' sa 4 na pandesal';
-                  },
-               },
-               en: {
-                  docTitle: 'Is this stock cheap? | Moodeng Credit',
-                  skip: 'Skip to content',
-                  hello: 'Hi there! 👋',
-                  bubble: "Is this stock cheap? 🤔<small>Let's check!</small>",
-                  hippoAlt: 'Moodeng the hippo eating pandesal',
-                  h1: 'Is this <em>stock cheap?</em>',
-                  intro: 'Just 4 numbers, promise. Explained in plain English with 18 stocks you know, and prices in pesos. Every stock is measured against the safest investment in the world: a US government bond.',
-                  beat: 'The number to beat',
-                  bondNote: "Like a time deposit with the US government: almost no risk. If a stock can't beat this, it needs a good reason for you to wait.",
-                  storeTitle: 'The Sari-Sari Store Test 🏪',
-                  storeLead: "You're buying Aling Nena's corner store. Is it worth it?",
-                  storePrice: 'Price of the store',
-                  storeProfit: 'Profit per year',
-                  storeFlip: 'Flip it: ₱50,000 ÷ ₱1,000,000',
-                  storeYield: '5% a year',
-                  storeEnd: "20 years to earn your money back, and only 5% a year. That's less than the bond's 5.24%! Think about stocks the same way.",
-                  top3Lead: 'We ran 18 stocks through 4 tests. Each pass = 1 pandesal.',
-                  tests: ["Last year's profit ÷ price &gt; 5.24%", "Next year's expected profit ÷ price &gt; 5.24%", 'Cash generated ÷ company value &gt; 5.24%', 'PEG &lt; 1.5: fair price for the growth'],
-                  testsLabel: 'The 4 tests',
-                  tapHint: 'Tap a stock to see the details ›',
-                  closeTitle: 'So close',
-                  closeCalls:
-                     '<b>So close!</b>General Motors: also 3 pandesal, but profit has to grow almost 7x next year for the "cheap" to be real. We picked the stock that relies less on forecasts. JPMorgan: passes every test we can run, but banks don\'t report a useful FCF number.',
-                  allTitle: 'Full scorecard, 18 stocks',
-                  allMore: 'See all ›',
-                  thPrice: 'Price',
-                  thEy: 'Earnings yield',
-                  ratiosTitle: 'The 4 numbers',
-                  ratiosLead: 'Pick a number. 5 real stocks, from cheapest to most expensive.',
-                  fineTitle: "Cheap on paper isn't always cheap 🙏",
-                  fine1: "A low number can mean a bargain, or a business the market expects to shrink. Compare a stock with others in the same industry, and find out why it's cheap.",
-                  fine2: "<b>This is education, not advice to buy or sell.</b> Moodeng Credit is not an investment adviser, and our scorecard is a teaching tool, not a recommendation for your situation. Stocks can lose value. Check the numbers yourself, and never invest money you've borrowed or need soon.",
-                  sources:
-                     '<li>Stocks: StockAnalysis.com statistics pages, closing prices Oct 2, 2026.</li><li>10-year Treasury: FRED (DGS10), 5.24% on Oct 1, 2026.</li><li>S&amp;P 500 forward P/E 19.0: FactSet Earnings Insight, Oct 2, 2026.</li><li>Pesos: ₱62.60 per $1, ECB reference rate Oct 2, 2026. Peso prices are approximate.</li><li>Earnings yield = 1 ÷ P/E (our calculation). Forward numbers are analyst estimates and change.</li>',
-                  ctaTitle: 'Learn money in 60 seconds.',
-                  ctaText: 'One money idea per video: stocks, credit, saving. Follow us!',
-                  checkLabels: ['Earnings yield', 'Fwd earnings yield', 'FCF yield', 'PEG'],
-                  catchLabel: 'The catch:',
-                  pandesalOf: function (n) {
-                     return n + ' of 4 pandesal';
-                  },
-               },
+            // StockAnalysis statistics pages, Oct 2, 2026 close. pe/fpe = P/E and forward P/E, cash = FCF yield %.
+            var CO = {
+               JPM: { name: 'JPMorgan', emo: '🏦', pe: 14.27, fpe: 13.72, cash: null, fil: 'Bangko', en: 'Bank' },
+               LMT: { name: 'Lockheed Martin', emo: '✈️', pe: 18.62, fpe: 16.39, cash: 7.48, fil: 'Gumagawa ng eroplano', en: 'Makes jets' },
+               KO: { name: 'Coca-Cola', emo: '🥤', pe: 25.74, fpe: 25.2, cash: 3.88, fil: 'Gumagawa ng Coke', en: 'Makes Coke' },
+               AAPL: { name: 'Apple', emo: '🍎', pe: 38.28, fpe: 36.26, cash: 2.81, fil: 'Gumagawa ng iPhone', en: 'Makes iPhones' },
+               TSLA: { name: 'Tesla', emo: '🚗', pe: 384.57, fpe: 201.25, cash: 0.39, fil: 'Electric cars', en: 'Electric cars' },
+               NVDA: { name: 'Nvidia', emo: '🎮', pe: 29.58, fpe: 19.41, cash: 2.25, fil: 'Chips para sa games at AI', en: 'Chips for games and AI' },
+               GM: { name: 'General Motors', emo: '🚙', pe: 39.42, fpe: 5.61, cash: 20.96, fil: 'Gumagawa ng kotse', en: 'Makes cars' },
+               MSFT: { name: 'Microsoft', emo: '💻', pe: 28.83, fpe: 26.21, cash: 1.74, fil: 'Windows at Xbox', en: 'Windows and Xbox' },
+               PYPL: { name: 'PayPal', emo: '💳', pe: 9.95, fpe: 9.51, cash: 14.58, fil: 'Online na bayad', en: 'Online payments' },
+               UNH: { name: 'UnitedHealth', emo: '🏥', pe: 23.94, fpe: 17.48, cash: 7.07, fil: 'Health insurance', en: 'Health insurance' },
+               AMZN: { name: 'Amazon', emo: '📦', pe: 20.23, fpe: 26.81, cash: -0.43, fil: 'Online shopping', en: 'Online shopping' },
+               XOM: { name: 'ExxonMobil', emo: '⛽', pe: 21.15, fpe: 12.66, cash: 4.53, fil: 'Gasolina', en: 'Gas and oil' },
             };
 
-            // StockAnalysis statistics pages, Oct 2, 2026 close. fcf/peg null = not reported.
-            var STOCKS = {
-               AAPL: { name: 'Apple', price: 333.69, pe: 38.28, fpe: 36.26, fcf: 2.81, peg: 3.27 },
-               MSFT: { name: 'Microsoft', price: 517.53, pe: 28.83, fpe: 26.21, fcf: 1.74, peg: 1.63 },
-               GOOGL: { name: 'Alphabet (Google)', price: 343.5, pe: 17.23, fpe: 25.58, fcf: 1.27, peg: 2.0 },
-               AMZN: { name: 'Amazon', price: 251.52, pe: 20.23, fpe: 26.81, fcf: -0.43, peg: 1.29 },
-               META: { name: 'Meta (Facebook)', price: 728.08, pe: 27.44, fpe: 22.64, fcf: 2.21, peg: 1.15 },
-               NVDA: { name: 'Nvidia', price: 233.95, pe: 29.58, fpe: 19.41, fcf: 2.25, peg: 0.37 },
-               AVGO: { name: 'Broadcom', price: 355.14, pe: 45.33, fpe: 20.49, fcf: 2.32, peg: 0.37 },
-               TSLA: { name: 'Tesla', price: 370.59, pe: 384.57, fpe: 201.25, fcf: 0.39, peg: 9.08 },
-               LMT: { name: 'Lockheed Martin', price: 505.41, pe: 18.62, fpe: 16.39, fcf: 7.48, peg: 0.85 },
-               JPM: { name: 'JPMorgan Chase', price: 332.38, pe: 14.27, fpe: 13.72, fcf: null, peg: 1.37 },
-               'BRK.B': { name: 'Berkshire Hathaway', price: 502.65, pe: 12.55, fpe: 22.88, fcf: 2.25, peg: null },
-               XOM: { name: 'ExxonMobil', price: 164.01, pe: 21.15, fpe: 12.66, fcf: 4.53, peg: 1.18 },
-               KO: { name: 'Coca-Cola', price: 85.65, pe: 25.74, fpe: 25.2, fcf: 3.88, peg: 3.41 },
-               COST: { name: 'Costco', price: 920.65, pe: 44.35, fpe: 40.41, fcf: 2.3, peg: 3.68 },
-               UNH: { name: 'UnitedHealth', price: 371.9, pe: 23.94, fpe: 17.48, fcf: 7.07, peg: 1.2 },
-               PYPL: { name: 'PayPal', price: 52.8, pe: 9.95, fpe: 9.51, fcf: 14.58, peg: 1.35 },
-               GM: { name: 'General Motors', price: 78.27, pe: 39.42, fpe: 5.61, fcf: 20.96, peg: 0.34 },
-               MRK: { name: 'Merck', price: 144.3, pe: 113.37, fpe: 16.9, fcf: 4.51, peg: 3.08 },
+            function per100(pe) {
+               return 100 / pe;
+            }
+            function peso(v) {
+               if (v < 0) return '−₱' + Math.abs(v).toFixed(1);
+               return '₱' + (v < 1 ? v.toFixed(2) : v.toFixed(1));
+            }
+            function both(fil, en) {
+               return '<span data-l="fil">' + fil + '</span><span data-l="en">' + en + '</span>';
+            }
+
+            // 1 coin = ₱1 back per ₱100. Dashed line = the bond's ₱5.24.
+            function coins(v, big) {
+               var step = big ? 28 : 16;
+               var cls = big ? 'coin big' : 'coin';
+               var html = '';
+               if (v <= 0) return '<span class="none">' + both('Walang cash 😬', 'No cash 😬') + '</span><span class="bondmark" style="left:' + (BOND * step - 1) + 'px"></span>';
+               var shown = Math.min(v, MAX_COINS);
+               for (var i = 0; i < Math.floor(shown); i++) html += '<span class="' + cls + '"></span>';
+               var part = shown - Math.floor(shown);
+               if (part > 0.05) html += '<span class="' + cls + ' part" style="--p:' + Math.round(part * 100) + '%"></span>';
+               if (v > MAX_COINS) html += '<span class="more">+' + Math.round(v - MAX_COINS) + '</span>';
+               if (!big) html += '<span class="bondmark" style="left:' + (BOND * step - 1) + 'px"></span>';
+               return html;
+            }
+
+            function row(t, value, sub, note) {
+               var c = CO[t];
+               var win = value > BOND;
+               return (
+                  '<div class="co"><div class="co-top"><span class="co-emo" aria-hidden="true">' +
+                  c.emo +
+                  '</span><span class="co-name">' +
+                  c.name +
+                  '<small>' +
+                  both(c.fil, c.en) +
+                  '</small></span><span class="co-val ' +
+                  (win ? 'win' : 'lose') +
+                  '">' +
+                  peso(value) +
+                  '<small>' +
+                  (win ? both('✅ Talo ang bond', '✅ Beats bond') : both('❌ Bond wins', '❌ Bond wins')) +
+                  '</small></span></div><div class="coins" role="img" aria-label="' +
+                  peso(value) +
+                  '">' +
+                  coins(value) +
+                  '</div>' +
+                  (sub ? '<p class="co-sub">' + sub + '</p>' : '') +
+                  (note ? '<p class="co-note">' + note + '</p>' : '') +
+                  '</div>'
+               );
+            }
+
+            function board(head, rows) {
+               return '<p class="board-head">' + head + '</p>' + rows.join('');
+            }
+
+            // Check 1: years to earn it back, shown as ₱ back per ₱100
+            document.querySelector('[data-board="pe"]').innerHTML = board(
+               both('Kita kada taon, sa bawat ₱100', 'Money back each year, per ₱100'),
+               ['JPM', 'LMT', 'KO', 'AAPL', 'TSLA'].map(function (t) {
+                  var yrs = Math.round(CO[t].pe);
+                  var note = t === 'TSLA' ? both('385 taon?! Umaasa ang mga tao na lalaki ito nang sobra.', '385 years?! People hope it grows a LOT.') : '';
+                  return row(t, per100(CO[t].pe), both(yrs + ' taon bago mabawi', yrs + ' years to earn it back'), note);
+               })
+            );
+
+            // Check 2: next year's guess
+            document.querySelector('[data-board="fpe"]').innerHTML = board(
+               both('Hula para sa next year, sa bawat ₱100', "Next year's guess, per ₱100"),
+               ['GM', 'XOM', 'NVDA', 'MSFT', 'AMZN'].map(function (t) {
+                  var c = CO[t];
+                  var sub = both('Last year ', 'Last year ') + peso(per100(c.pe)) + ' → ' + both('next year ', 'next year ') + peso(per100(c.fpe));
+                  var note = '';
+                  if (t === 'GM') note = both('Malaking talon! Pero kung magkatotoo lang ang hula.', 'Huge jump! But only if the guess comes true.');
+                  if (t === 'NVDA') note = both('₱5.15: kulang lang nang konti sa ₱5.24!', '₱5.15: just a tiny bit under ₱5.24!');
+                  if (t === 'AMZN') note = both('Mas maliit ang hula, kaya mukhang mas mahal.', 'The guess is smaller, so it looks pricier.');
+                  return row(t, per100(c.fpe), sub, note);
+               })
+            );
+
+            // Check 3: real cash
+            document.querySelector('[data-board="fcf"]').innerHTML = board(
+               both('Totoong cash kada taon, sa bawat ₱100', 'Real cash each year, per ₱100'),
+               ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN'].map(function (t) {
+                  var note = '';
+                  if (t === 'AMZN') note = both('Gumagastos nang malaki sa bagong computer centers. Parang tindahang nagbubukas ng bagong branch.', 'Spending a lot on new computer centers. Like a store opening a new branch.');
+                  return row(t, CO[t].cash, '', note);
+               })
+            );
+
+            // Results: 3 checks, each one that beats the bond = 1 pandesal
+            function score(c) {
+               return [per100(c.pe) > BOND, per100(c.fpe) > BOND, c.cash != null && c.cash > BOND];
+            }
+            function pandesals(r) {
+               var n = r.filter(Boolean).length;
+               return (
+                  '<span class="pandesals" role="img" aria-label="' +
+                  n +
+                  '/3">' +
+                  r
+                     .map(function (ok) {
+                        return '<img src="/dashboard-v2/pandesal-small.png" alt=""' + (ok ? '' : ' class="off"') + ' />';
+                     })
+                     .join('') +
+                  '</span>'
+               );
+            }
+            var WINNERS = [
+               { t: 'LMT', but: both('Pero: mabagal lumaki.', 'But: grows slowly.') },
+               { t: 'PYPL', but: both('Pero: baka mabagal na itong lumaki.', 'But: it may grow slowly.') },
+               { t: 'UNH', but: both('Pero: tumataas ang gastos sa ospital.', 'But: hospital costs keep rising.') },
+            ];
+            document.querySelector('[data-winners]').innerHTML = WINNERS.map(function (w) {
+               var c = CO[w.t];
+               return (
+                  '<div class="winner"><span class="rank" aria-hidden="true">' +
+                  c.emo +
+                  '</span><span class="co-name">' +
+                  c.name +
+                  '<small>' +
+                  both(c.fil, c.en) +
+                  '</small><small>' +
+                  w.but +
+                  '</small></span>' +
+                  pandesals(score(c)) +
+                  '</div>'
+               );
+            }).join('');
+            document.querySelector('[data-famous]').innerHTML = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
+               .map(function (t) {
+                  var c = CO[t];
+                  return '<li><span aria-hidden="true">' + c.emo + '</span>' + c.name + pandesals(score(c)) + '</li>';
+               })
+               .join('');
+
+            // Pictures: 100-piece store, 20 years, ₱5.24 in coins
+            var grid = '';
+            for (var g = 0; g < 100; g++) grid += '<span' + (g === 44 ? ' class="you"' : '') + '></span>';
+            document.querySelector('[data-grid100]').innerHTML = grid;
+            var yrs = '';
+            for (var y = 1; y <= 20; y++) yrs += '<span>' + y + '</span>';
+            document.querySelector('[data-years]').innerHTML = yrs;
+            document.querySelector('[data-big]').innerHTML = coins(BOND, true);
+
+            // Quizzes
+            var QUIZ = {
+               pe: {
+                  q: both('🧠 Alin ang mas mura?', '🧠 Which one is cheaper?'),
+                  opts: [
+                     { a: both('🍎 Apple: 38 taon bago mabawi', '🍎 Apple: 38 years to earn it back'), ok: false },
+                     { a: both('🏦 JPMorgan: 14 taon bago mabawi', '🏦 JPMorgan: 14 years to earn it back'), ok: true },
+                  ],
+                  right: both('Tama! Mas kaunting taon = mas mura.', 'Correct! Fewer years = cheaper.'),
+                  wrong: both('Hindi pa. Mas kaunting taon = mas mura. Subukan ulit!', 'Not quite. Fewer years = cheaper. Try again!'),
+               },
+               fpe: {
+                  q: both('🧠 Sigurado bang tama ang hula?', '🧠 Is the guess always right?'),
+                  opts: [
+                     { a: both('Oo, laging tama', 'Yes, always'), ok: false },
+                     { a: both('Hindi, pwedeng mali', 'No, it can be wrong'), ok: true },
+                  ],
+                  right: both('Tama! Hula lang ito, kaya mag-ingat.', "Correct! It's only a guess, so be careful."),
+                  wrong: both('Hindi pa. Kahit expert, nagkakamali. Subukan ulit!', 'Not quite. Even experts get it wrong. Try again!'),
+               },
+               fcf: {
+                  q: both('🧠 Alin ang talo ang bond (₱5.24)?', '🧠 Which one beats the bond (₱5.24)?'),
+                  opts: [
+                     { a: both('🥤 Coca-Cola: ₱3.9', '🥤 Coca-Cola: ₱3.9'), ok: false },
+                     { a: both('💳 PayPal: ₱14.6', '💳 PayPal: ₱14.6'), ok: true },
+                  ],
+                  right: both('Tama! ₱14.6 ay mas malaki sa ₱5.24.', 'Correct! ₱14.6 is more than ₱5.24.'),
+                  wrong: both('Hindi pa. ₱3.9 ay mas maliit sa ₱5.24. Subukan ulit!', 'Not quite. ₱3.9 is less than ₱5.24. Try again!'),
+               },
             };
-
-            var PICKS = [
-               {
-                  t: 'LMT',
-                  why: {
-                     fil: 'Talo ang bond sa lahat: 5.4% sa kita, 6.1% sa expected na kita next year, at 7.5% sa cash. PEG 0.85 pa, kaya mura ang growth.',
-                     en: "Beats the bond on all of them: 5.4% on profit, 6.1% on next year's expected profit and 7.5% on cash. PEG 0.85, so the growth is cheap too.",
-                  },
-                  catch: {
-                     fil: 'Mabagal lumago. Defense company ito na umaasa sa budget ng gobyerno, walang AI hype dito.',
-                     en: 'Slow growth. A defence contractor that depends on government budgets, with no AI hype here.',
-                  },
-               },
-               {
-                  t: 'PYPL',
-                  why: {
-                     fil: 'Wala pang $10 ang bayad mo sa bawat $1 na kita. $6.6B na cash kada taon sa $45B na company: 14.6% cash yield!',
-                     en: 'Under $10 for every $1 of profit. $6.6B of cash a year on a $45B company: a 14.6% cash yield!',
-                  },
-                  catch: {
-                     fil: 'Mura kasi duda ang market sa growth (mga 6% lang kada taon ang expected) dahil sa dami ng kalaban sa payments.',
-                     en: "It's cheap because the market doubts its growth (only about 6% a year expected) with so many payment rivals.",
-                  },
-               },
-               {
-                  t: 'UNH',
-                  why: {
-                     fil: '7.1% cash yield at 5.7% sa expected na kita next year. PEG 1.2, kaya fair ang presyo.',
-                     en: "A 7.1% cash yield and 5.7% on next year's expected profit. PEG 1.2, so the price is fair.",
-                  },
-                  catch: {
-                     fil: 'Bagsak sa kita last year (4.2%). Tumataas ang medical costs at mahigpit ang gobyerno sa health insurers.',
-                     en: "Fails on last year's profit (4.2%). Medical costs are rising and governments watch health insurers closely.",
-                  },
-               },
-            ];
-
-            var TABS = [
-               {
-                  id: 'pe',
-                  label: 'P/E',
-                  icon: '/dashboard-v2/coupon.png',
-                  value: function (s) {
-                     return s.pe;
-                  },
-                  fmt: function (v) {
-                     return v.toFixed(1);
-                  },
-                  max: 50,
-                  good: function (v) {
-                     return 100 / v > BOND;
-                  },
-                  rows: ['JPM', 'LMT', 'MSFT', 'AAPL', 'TSLA'],
-                  fil: {
-                     formula: 'P/E = Presyo ÷ Kita kada share',
-                     plain: 'Ilang dolyar ang binabayad mo para sa $1 na kita ng company kada taon. Mas mababa, usually mas mura.',
-                     example: '$100 na stock na kumikita ng $5 kada share: P/E 20. $20 ang bayad mo sa bawat $1 na kita.',
-                     read: ['Below 15: mukhang mura', '15–25: normal lang', 'Above 30: bayad ka para sa growth'],
-                     title: 'P/E, last 12 months',
-                     sub: 'Buong market (S&P 500): 27.1',
-                     notes: [
-                        '$14 sa bawat $1 na kita. Normal sa bangko ang mababang P/E.',
-                        'Mas mababa sa market. Steady pero mabagal lumago.',
-                        'EPS $17.95 × 28.8 ≈ $517 na presyo. Premium para sa quality.',
-                        '$38 sa bawat $1 na kita. Binabayaran mo ang brand.',
-                        '$385 sa bawat $1 na kita! Taya ito sa mas malaking kita in the future.',
-                     ],
-                     tags: ['Talo ang bond', 'Panalo ang bond'],
-                     legend: ['Talo ang bond (P/E below 19.1)', 'Mas malaki ang bigay ng bond'],
-                     ingat: '<b>Baliktarin para ikumpara sa bond:</b> 1 ÷ P/E = earnings yield. P/E na 20 = 5%, kulang pa sa 5.24%. <b>Pero ingat:</b> pwedeng mababa ang P/E kasi humihina ang business, o may one-time na kita. Alphabet: 17.2 sa kita last year pero 25.6 sa next year.',
-                  },
-                  en: {
-                     formula: 'P/E = Price ÷ Earnings per share',
-                     plain: "How many dollars you pay for $1 of the company's yearly profit. Lower usually means cheaper.",
-                     example: 'A $100 stock earning $5 a share has a P/E of 20: you pay $20 for every $1 of profit.',
-                     read: ['Under 15: cheap-looking', '15–25: about normal', 'Over 30: priced for growth'],
-                     title: 'P/E, last 12 months',
-                     sub: 'Whole market (S&P 500): 27.1',
-                     notes: [
-                        '$14 for $1 of profit. Banks usually trade on lower P/Es.',
-                        'Below the market. Steady, but slower growth.',
-                        'EPS $17.95 × 28.8 ≈ its $517 price. A premium for quality.',
-                        '$38 for $1 of profit. You are paying for the brand.',
-                        '$385 for $1 of profit! A bet on much bigger future profit.',
-                     ],
-                     tags: ['Beats the bond', 'Bond wins'],
-                     legend: ['Beats the bond (P/E under 19.1)', 'Bond pays more'],
-                     ingat: '<b>Flip it to compare with the bond:</b> 1 ÷ P/E = earnings yield. A P/E of 20 is 5%, just under 5.24%. <b>The catch:</b> a low P/E can mean a business in decline, or a one-off gain. Alphabet shows 17.2 on last year’s profit but 25.6 on next year’s.',
-                  },
-               },
-               {
-                  id: 'forward-pe',
-                  label: 'Forward P/E',
-                  icon: '/icons/streak-3d.png',
-                  value: function (s) {
-                     return s.fpe;
-                  },
-                  ghost: function (s) {
-                     return s.pe;
-                  },
-                  fmt: function (v) {
-                     return v.toFixed(1);
-                  },
-                  max: 50,
-                  good: function (v) {
-                     return 100 / v > BOND;
-                  },
-                  rows: ['GM', 'XOM', 'NVDA', 'MSFT', 'COST'],
-                  fil: {
-                     formula: 'Forward P/E = Presyo ÷ EXPECTED na kita next year',
-                     plain: 'Parehong P/E, pero gamit ang hula ng analysts sa kita next year. Kung bumaba nang malaki, inaasahang lalaki ang kita.',
-                     example: 'Nvidia: 29.6 sa kita last year, 19.4 sa next year. Expected na lalaki ang kita ng mga 50%.',
-                     read: ['Mas mababa sa P/E: may growth', 'Mas mataas: baka bumaba ang kita'],
-                     title: 'Forward P/E',
-                     sub: 'Lilac = P/E last year · S&P 500: 19.0',
-                     notes: [
-                        '39.4 → 5.6. Sobrang baba ng kita last year; malaking rebound ang inaasahan.',
-                        '21.2 → 12.7. Mga 67% na mas mataas na kita. Presyo ng langis ang magdedesisyon.',
-                        '29.6 → 19.4. Mahal sa nakaraan, presyong-market sa future.',
-                        '28.8 → 26.2. Maliit ang gap: steady at predictable.',
-                        '44.4 → 40.4. Kahit sa kita next year, $40 sa bawat $1.',
-                     ],
-                     tags: ['Talo ang bond', 'Panalo ang bond'],
-                     legend: ['Talo ang bond next year (below 19.1)', 'Panalo ang bond', 'P/E last year'],
-                     ingat: '<b>Pero ingat:</b> hula lang ang forward P/E. Madalas magkamali ang analysts, lalo na sa kotse at langis na sumasabay sa ekonomiya. Mura lang ang GM kung darating talaga ang rebound.',
-                  },
-                  en: {
-                     formula: 'Forward P/E = Price ÷ NEXT year’s expected earnings',
-                     plain: 'The same idea as P/E, but using the profit analysts expect next year. A big drop from P/E means profit is expected to jump.',
-                     example: 'Nvidia: 29.6 on last year’s profit, 19.4 on next year’s. Analysts expect profit to grow about 50%.',
-                     read: ['Lower than P/E: growth expected', 'Higher: profit may fall'],
-                     title: 'Forward P/E',
-                     sub: 'Lilac = last year’s P/E · S&P 500: 19.0',
-                     notes: [
-                        '39.4 → 5.6. Last year’s profit was unusually low; analysts expect a huge rebound.',
-                        '21.2 → 12.7. Implies profit about 67% higher. Oil prices decide if it happens.',
-                        '29.6 → 19.4. Pricey on the past, about market price on the future.',
-                        '28.8 → 26.2. Small gap: steady, predictable growth.',
-                        '44.4 → 40.4. Even on next year’s profit, $40 for every $1.',
-                     ],
-                     tags: ['Beats the bond', 'Bond wins'],
-                     legend: ['Beats the bond next year (under 19.1)', 'Bond wins', 'Last year’s P/E'],
-                     ingat: '<b>The catch:</b> forward P/E is only as good as the forecast. Analysts are often wrong, especially for carmakers and oil companies whose profits swing with the economy. GM is only cheap if that rebound really arrives.',
-                  },
-               },
-               {
-                  id: 'fcf',
-                  label: 'FCF yield',
-                  icon: '/icons/balance-coin-3d.png',
-                  value: function (s) {
-                     return s.fcf;
-                  },
-                  fmt: function (v) {
-                     return v.toFixed(1) + '%';
-                  },
-                  max: 16,
-                  line: BOND,
-                  good: function (v) {
-                     return v > BOND;
-                  },
-                  rows: ['PYPL', 'LMT', 'UNH', 'KO', 'AMZN'],
-                  fil: {
-                     formula: 'FCF yield = Free cash flow ÷ Value ng company',
-                     plain: 'Ang totoong cash na natira matapos bayaran ang gamit at pasilidad, hinati sa presyo ng buong company. Ito ang "interest rate" ng isang stock.',
-                     example: 'Sa sari-sari store: ₱60,000 na cash ang naiuwi mo after restock sa ₱1,000,000 na tindahan? 6% FCF yield. Talo ang bond!',
-                     read: ['Above 5.24%: talo ang bond', 'Below 0%: nauubos ang cash'],
-                     title: 'FCF yield vs bond',
-                     sub: 'Gold line = 5.24% bond',
-                     notes: [
-                        '$6.6B na cash sa $45B na company. Mura kasi mabagal ang growth.',
-                        '$8.7B na cash sa $117B na company.',
-                        '$23.6B na cash sa $334B na company.',
-                        '$14.3B na cash sa $369B na company. Malaking parte napupunta sa 2.5% dividend.',
-                        '−$11.6B. Malaki ang gastos sa AI data centers. Nag-iinvest, hindi sira.',
-                     ],
-                     tags: ['Talo ang bond', 'Panalo ang bond'],
-                     legend: ['Talo ang bond', 'Panalo ang bond', '5.24% bond'],
-                     ingat: '<b>Pero ingat:</b> pag sobrang taas ng FCF yield, baka duda ang market na tatagal ang cash. Hindi rin agad masama ang negative: gumagastos ang Amazon ngayon para kumita later. Ang mga bangko gaya ng JPMorgan, walang useful na FCF number.',
-                  },
-                  en: {
-                     formula: 'FCF yield = Free cash flow ÷ Company value',
-                     plain: 'The real cash left after the company pays for its equipment, divided by what the whole company costs. The closest thing a stock has to an "interest rate".',
-                     example: 'At the sari-sari store: ₱60,000 of cash left after restocking a ₱1,000,000 store? That’s a 6% FCF yield. Beats the bond!',
-                     read: ['Over 5.24%: beats the bond', 'Under 0%: burning cash'],
-                     title: 'FCF yield vs bond',
-                     sub: 'Gold line = 5.24% bond',
-                     notes: [
-                        '$6.6B of cash on a $45B company. Cheap because growth is slow.',
-                        '$8.7B of cash on a $117B company.',
-                        '$23.6B of cash on a $334B company.',
-                        '$14.3B of cash on a $369B company. Much of it goes out as a 2.5% dividend.',
-                        '−$11.6B. Spending heavily on AI data centres. Investing, not broken.',
-                     ],
-                     tags: ['Beats the bond', 'Bond wins'],
-                     legend: ['Beats the bond', 'Bond wins', '5.24% bond'],
-                     ingat: '<b>The catch:</b> a very high FCF yield can mean the market doubts the cash will last. A negative one isn’t automatically bad: Amazon is spending now to earn later. Banks like JPMorgan don’t report a useful FCF number.',
-                  },
-               },
-               {
-                  id: 'peg',
-                  label: 'PEG',
-                  icon: '/icons/borrower-patterns-3d.png',
-                  value: function (s) {
-                     return s.peg;
-                  },
-                  fmt: function (v) {
-                     return v.toFixed(2);
-                  },
-                  max: 4,
-                  line: 1,
-                  good: function (v) {
-                     return v < 1.5;
-                  },
-                  rows: ['NVDA', 'LMT', 'META', 'MSFT', 'KO'],
-                  fil: {
-                     formula: 'PEG = P/E ÷ Growth ng kita kada taon (%)',
-                     plain: 'Sa P/E lang, laging mukhang mahal ang mabilis lumago. Tanong ng PEG: sulit ba ang presyo para sa bilis ng paglago?',
-                     example: 'P/E 20 at lumalaki ang kita ng 20% kada taon: 20 ÷ 20 = PEG 1.0.',
-                     read: ['Below 1: mura ang growth', '1–2: sakto', 'Above 2: mahal na'],
-                     title: 'PEG ratio',
-                     sub: 'Gold line = PEG 1.0',
-                     notes: [
-                        'Mataas ang P/E, pero mas mabilis pa ang expected na paglago.',
-                        'Katamtamang P/E, katamtamang growth. Below 1 pa rin.',
-                        'Halos sabay ang growth ng kita at ang presyo.',
-                        'Sakto hanggang medyo mahal, para sa steady na growth.',
-                        '25× ang kita para sa mabagal na growth. Bayad ka para sa stability at dividend.',
-                     ],
-                     tags: ['Sulit', 'Mahal'],
-                     legend: ['Below 1.5 (pasado)', '1.5 pataas', 'PEG 1.0'],
-                     ingat: '<b>Pero ingat:</b> nakadepende ang PEG sa hula ng growth, at iba-iba ang computation ng bawat website. Baka ibang PEG ang makita mo para sa Microsoft sa ibang site. Ikumpara lang ang stocks sa iisang site.',
-                  },
-                  en: {
-                     formula: 'PEG = P/E ÷ Yearly profit growth (%)',
-                     plain: 'P/E alone makes fast growers look expensive. PEG asks: is the price fair for how fast profit is growing?',
-                     example: 'P/E of 20 with profit growing 20% a year: 20 ÷ 20 = PEG of 1.0.',
-                     read: ['Under 1: growth looks cheap', '1–2: fair', 'Over 2: paying up'],
-                     title: 'PEG ratio',
-                     sub: 'Gold line = PEG 1.0',
-                     notes: [
-                        'High P/E, but profit is expected to grow even faster.',
-                        'Modest P/E and modest growth. Still under 1.',
-                        'Profit growth roughly keeps up with the price.',
-                        'A fair-to-full price for steady growth.',
-                        '25× profit for slow growth. You pay for stability and the dividend.',
-                     ],
-                     tags: ['Fair price', 'Pricey'],
-                     legend: ['Under 1.5 (passes)', '1.5 or more', 'PEG 1.0'],
-                     ingat: '<b>The catch:</b> PEG depends on a growth guess, and every website calculates it differently. You may see a very different PEG for Microsoft elsewhere. Only compare stocks on the same site.',
-                  },
-               },
-            ];
-            var LEGEND_COLORS = ['var(--green-700)', 'var(--red-300)'];
-
-            function ey(pe) {
-               return pe > 0 ? 100 / pe : null;
-            }
-            function tests(s) {
-               return [ey(s.pe) > BOND, ey(s.fpe) > BOND, s.fcf == null ? null : s.fcf > BOND, s.peg == null ? null : s.peg < 1.5];
-            }
-            function peso(usd) {
-               return '₱' + (Math.round((usd * PHP) / 10) * 10).toLocaleString('en-US');
-            }
-            function esc(str) {
-               return String(str).replace(/[&<>"]/g, function (c) {
-                  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+            Object.keys(QUIZ).forEach(function (id) {
+               var q = QUIZ[id];
+               var el = document.querySelector('[data-quiz="' + id + '"]');
+               el.innerHTML =
+                  '<p class="quiz-q">' +
+                  q.q +
+                  '</p><div class="quiz-opts">' +
+                  q.opts
+                     .map(function (o, i) {
+                        return '<button type="button" data-i="' + i + '">' + o.a + '</button>';
+                     })
+                     .join('') +
+                  '</div><p class="quiz-fb" aria-live="polite"></p>';
+               var fb = el.querySelector('.quiz-fb');
+               el.querySelectorAll('button').forEach(function (b) {
+                  b.addEventListener('click', function () {
+                     var o = q.opts[+b.getAttribute('data-i')];
+                     el.querySelectorAll('button').forEach(function (x) {
+                        x.removeAttribute('data-state');
+                     });
+                     b.setAttribute('data-state', o.ok ? 'right' : 'wrong');
+                     fb.innerHTML = (o.ok ? '🎉 ' : '🤔 ') + (o.ok ? q.right : q.wrong);
+                  });
                });
-            }
-
-            var lang = 'fil';
-            var current = 'pe';
-            var tablist = document.querySelector('[data-tablist]');
-            var panels = document.querySelector('[data-panels]');
-            var tabIds = TABS.map(function (t) {
-               return t.id;
             });
-            var navLinks = Array.from(document.querySelectorAll('[data-go]'));
 
-            function renderStatic() {
-               var t = T[lang];
+            // Language: ?lang=en|fil wins (shareable), then the viewer's saved choice, then Taglish.
+            var TITLES = { fil: "Mura ba 'tong stock? | Moodeng Credit", en: 'Is this stock cheap? | Moodeng Credit' };
+            function setLang(next, save) {
+               var lang = TITLES[next] ? next : 'fil';
+               document.documentElement.setAttribute('data-lang', lang);
                document.documentElement.lang = lang === 'en' ? 'en' : 'fil';
-               document.title = t.docTitle;
-               document.querySelectorAll('[data-t]').forEach(function (el) {
-                  el.innerHTML = t[el.getAttribute('data-t')];
-               });
-               document.querySelectorAll('[data-t-label]').forEach(function (el) {
-                  el.setAttribute('aria-label', t[el.getAttribute('data-t-label')]);
-               });
-               document.querySelector('.hero-hippo').alt = t.hippoAlt;
-               var testsEl = document.querySelector('[data-tests]');
-               testsEl.setAttribute('aria-label', t.testsLabel);
-               testsEl.innerHTML = t.tests
-                  .map(function (line) {
-                     return '<li><img src="/dashboard-v2/pandesal-small.png" alt="" />' + line + '</li>';
-                  })
-                  .join('');
-               document.querySelectorAll('[data-lang]').forEach(function (b) {
+               document.title = TITLES[lang];
+               document.querySelector('.hero-hippo').alt = lang === 'en' ? 'Moodeng the hippo eating pandesal' : 'Si Moodeng, kumakain ng pandesal';
+               document.querySelectorAll('button[data-lang]').forEach(function (b) {
                   b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang ? 'true' : 'false');
                });
-            }
-
-            function pandesals(r) {
-               var imgs = r
-                  .map(function (ok) {
-                     return '<img src="/dashboard-v2/pandesal-small.png" alt=""' + (ok ? '' : ' class="off"') + ' />';
-                  })
-                  .join('');
-               return '<span class="pandesals" role="img" aria-label="' + T[lang].pandesalOf(r.filter(Boolean).length) + '">' + imgs + '</span>';
-            }
-
-            function renderPicks() {
-               var t = T[lang];
-               var picksEl = document.querySelector('[data-picks]');
-               var open = Array.from(picksEl.querySelectorAll('details')).map(function (d) {
-                  return d.open;
-               });
-               picksEl.innerHTML = PICKS.map(function (p, i) {
-                  var s = STOCKS[p.t];
-                  var r = tests(s);
-                  var vals = [ey(s.pe).toFixed(1) + '%', ey(s.fpe).toFixed(1) + '%', s.fcf.toFixed(1) + '%', s.peg.toFixed(2)];
-                  var checks = r
-                     .map(function (ok, j) {
-                        return '<li class="' + (ok ? 'pass' : 'fail') + '"><b>' + (ok ? '✓ ' : '✗ ') + vals[j] + '</b>' + t.checkLabels[j] + '</li>';
-                     })
-                     .join('');
-                  var isOpen = open.length ? open[i] : i === 0;
-                  return (
-                     '<details class="pick"' +
-                     (isOpen ? ' open' : '') +
-                     '><summary><span class="rank">' +
-                     (i + 1) +
-                     '</span><span class="pick-name"><b>' +
-                     esc(s.name) +
-                     '</b><span>' +
-                     p.t +
-                     ' · $' +
-                     s.price.toFixed(2) +
-                     ' ≈ ' +
-                     peso(s.price) +
-                     '</span></span>' +
-                     pandesals(r) +
-                     '</summary><div class="pick-more"><ul class="checks">' +
-                     checks +
-                     '</ul><p>' +
-                     esc(p.why[lang]) +
-                     '</p><p class="catch"><b>' +
-                     t.catchLabel +
-                     '</b> ' +
-                     esc(p.catch[lang]) +
-                     '</p></div></details>'
-                  );
-               }).join('');
-            }
-
-            function renderScorecard() {
-               var picked = PICKS.map(function (p) {
-                  return p.t;
-               });
-               document.querySelector('[data-scorecard] tbody').innerHTML = Object.keys(STOCKS)
-                  .map(function (t) {
-                     var r = tests(STOCKS[t]);
-                     return {
-                        t: t,
-                        s: STOCKS[t],
-                        r: r,
-                        passed: r.filter(Boolean).length,
-                        run: r.filter(function (x) {
-                           return x !== null;
-                        }).length,
-                     };
-                  })
-                  .sort(function (a, b) {
-                     return b.passed - a.passed || a.s.pe - b.s.pe;
-                  })
-                  .map(function (row) {
-                     var s = row.s;
-                     var cells = [
-                        [ey(s.pe), '%'],
-                        [ey(s.fpe), '%'],
-                        [s.fcf, '%'],
-                        [s.peg, ''],
-                     ]
-                        .map(function (c, j) {
-                           if (c[0] == null) return '<td class="fail">n/a</td>';
-                           return '<td class="' + (row.r[j] ? 'pass' : 'fail') + '">' + c[0].toFixed(2) + c[1] + '</td>';
-                        })
-                        .join('');
-                     return (
-                        '<tr class="' +
-                        (picked.indexOf(row.t) > -1 ? 'top' : '') +
-                        '"><td>' +
-                        row.t +
-                        '</td><td>' +
-                        peso(s.price) +
-                        '</td>' +
-                        cells +
-                        '<td>' +
-                        row.passed +
-                        '/' +
-                        row.run +
-                        '</td></tr>'
-                     );
-                  })
-                  .join('');
-            }
-
-            function renderPanels() {
-               panels.innerHTML = '';
-               TABS.forEach(function (tab) {
-                  var c = tab[lang];
-                  var rows = tab.rows
-                     .map(function (ticker, k) {
-                        var s = STOCKS[ticker];
-                        var v = tab.value(s);
-                        var over = v > tab.max;
-                        var ok = tab.good(v);
-                        var w = Math.max(0, Math.min(100, (v / tab.max) * 100));
-                        var ghost = tab.ghost
-                           ? '<span class="ghost" style="width:' + Math.min(100, (tab.ghost(s) / tab.max) * 100) + '%"></span>'
-                           : '';
-                        var line = tab.line != null ? '<span class="line" style="left:' + (tab.line / tab.max) * 100 + '%"></span>' : '';
-                        return (
-                           '<li><div class="row-top"><span class="val">' +
-                           tab.fmt(v) +
-                           (over ? ' ↗' : '') +
-                           '</span><span class="tag ' +
-                           (ok ? 'good' : 'bad') +
-                           '">' +
-                           esc(c.tags[ok ? 0 : 1]) +
-                           '</span><span class="row-name">' +
-                           esc(s.name) +
-                           '<small>' +
-                           ticker +
-                           ' · ' +
-                           peso(s.price) +
-                           '</small></span></div><div class="bar-track">' +
-                           ghost +
-                           '<div class="bar ' +
-                           (over ? 'over' : ok ? 'good' : 'bad') +
-                           '" data-w="' +
-                           w +
-                           '"></div>' +
-                           line +
-                           '</div><p class="row-note">' +
-                           esc(c.notes[k]) +
-                           '</p></li>'
-                        );
-                     })
-                     .join('');
-
-                  var thirdColor = tab.ghost ? 'var(--primary-300)' : 'var(--yellow-700)';
-                  var legend = c.legend
-                     .map(function (label, k) {
-                        return '<span><i style="background:' + (LEGEND_COLORS[k] || thirdColor) + '"></i>' + esc(label) + '</span>';
-                     })
-                     .join('');
-
-                  var panel = document.createElement('div');
-                  panel.className = 'panel';
-                  panel.id = 'panel-' + tab.id;
-                  panel.setAttribute('role', 'tabpanel');
-                  panel.setAttribute('aria-labelledby', 'tab-' + tab.id);
-                  panel.tabIndex = 0;
-                  panel.hidden = true;
-                  panel.innerHTML =
-                     '<div class="note"><img src="' +
-                     tab.icon +
-                     '" alt="" width="44" height="44" /><p class="formula">' +
-                     esc(c.formula) +
-                     '</p><p>' +
-                     esc(c.plain) +
-                     '</p><p class="ex">' +
-                     esc(c.example) +
-                     '</p><ul class="chips">' +
-                     c.read
-                        .map(function (r) {
-                           return '<li>' + esc(r) + '</li>';
-                        })
-                        .join('') +
-                     '</ul></div><div class="card"><div class="board-head"><h3>' +
-                     esc(c.title) +
-                     '</h3><span>' +
-                     esc(c.sub) +
-                     '</span></div><ol class="rows">' +
-                     rows +
-                     '</ol><div class="legend">' +
-                     legend +
-                     '</div></div><p class="ingat">' +
-                     c.ingat +
-                     '</p>';
-                  panels.appendChild(panel);
-               });
-            }
-
-            TABS.forEach(function (tab) {
-               var btn = document.createElement('button');
-               btn.type = 'button';
-               btn.id = 'tab-' + tab.id;
-               btn.setAttribute('role', 'tab');
-               btn.setAttribute('aria-controls', 'panel-' + tab.id);
-               btn.textContent = tab.label;
-               btn.addEventListener('click', function () {
-                  select(tab.id, true);
-               });
-               tablist.appendChild(btn);
-            });
-
-            function markNav(id) {
-               navLinks.forEach(function (a) {
-                  a.setAttribute('aria-current', a.getAttribute('data-go') === id ? 'true' : 'false');
-               });
-            }
-
-            function select(id, focus) {
-               current = id;
-               TABS.forEach(function (tab) {
-                  var on = tab.id === id;
-                  var btn = document.getElementById('tab-' + tab.id);
-                  var panel = document.getElementById('panel-' + tab.id);
-                  btn.setAttribute('aria-selected', on ? 'true' : 'false');
-                  btn.tabIndex = on ? 0 : -1;
-                  panel.hidden = !on;
-                  if (on) {
-                     requestAnimationFrame(function () {
-                        panel.querySelectorAll('.bar[data-w]').forEach(function (bar) {
-                           bar.style.width = bar.getAttribute('data-w') + '%';
-                        });
-                     });
-                     if (focus) btn.focus({ preventScroll: true });
-                  }
-               });
-               markNav(id);
-               if (focus && history.replaceState) history.replaceState(null, '', location.search + '#' + id);
-            }
-
-            function render() {
-               renderStatic();
-               renderPicks();
-               renderScorecard();
-               renderPanels();
-               select(current, false);
-            }
-
-            function setLang(next, save) {
-               lang = T[next] ? next : 'fil';
                if (save) {
                   try {
                      localStorage.setItem(LANG_KEY, lang);
                   } catch (e) {}
                }
-               render();
             }
-
-            document.querySelectorAll('[data-lang]').forEach(function (b) {
+            document.querySelectorAll('button[data-lang]').forEach(function (b) {
                b.addEventListener('click', function () {
                   setLang(b.getAttribute('data-lang'), true);
                });
             });
-
-            tablist.addEventListener('keydown', function (e) {
-               var i = tabIds.indexOf(document.activeElement.id.replace('tab-', ''));
-               if (i < 0) return;
-               var next = null;
-               if (e.key === 'ArrowRight') next = (i + 1) % tabIds.length;
-               if (e.key === 'ArrowLeft') next = (i - 1 + tabIds.length) % tabIds.length;
-               if (e.key === 'Home') next = 0;
-               if (e.key === 'End') next = tabIds.length - 1;
-               if (next === null) return;
-               e.preventDefault();
-               select(tabIds[next], true);
-            });
-
-            // Bottom nav + deep links for TikTok captions: /stocks#top3, #pe, #forward-pe, #fcf, #peg
-            function go(id, smooth) {
-               var behavior = smooth ? 'smooth' : 'auto';
-               if (tabIds.indexOf(id) > -1) {
-                  select(id, false);
-                  document.getElementById('ratios').scrollIntoView({ behavior: behavior });
-               } else if (id === 'top3') {
-                  markNav('top3');
-                  document.getElementById('top3').scrollIntoView({ behavior: behavior });
-               }
-            }
-            navLinks.forEach(function (a) {
-               a.addEventListener('click', function (e) {
-                  e.preventDefault();
-                  var id = a.getAttribute('data-go');
-                  if (history.replaceState) history.replaceState(null, '', location.search + '#' + id);
-                  go(id, true);
-               });
-            });
-
-            // Language: ?lang=en or ?lang=fil wins (shareable), then the viewer's saved choice, then Taglish.
-            var params = new URLSearchParams(location.search);
-            var initialLang = params.get('lang');
-            if (!T[initialLang]) {
+            var initialLang = new URLSearchParams(location.search).get('lang');
+            if (!TITLES[initialLang]) {
                try {
                   initialLang = localStorage.getItem(LANG_KEY);
                } catch (e) {
                   initialLang = null;
                }
             }
-            var initial = location.hash.slice(1);
-            if (tabIds.indexOf(initial) > -1) current = initial;
             setLang(initialLang, false);
-            markNav(initial === 'top3' || tabIds.indexOf(initial) > -1 ? initial : '');
-            if (initial) go(initial, false);
-            window.addEventListener('hashchange', function () {
-               go(location.hash.slice(1), true);
-            });
 
-            requestAnimationFrame(function () {
-               var fill = document.querySelector('[data-fill]');
-               fill.style.width = fill.getAttribute('data-fill') + '%';
-            });
+            // Bottom nav highlights the step on screen. Old links (#top3, #peg) land on the results.
+            var navLinks = Array.from(document.querySelectorAll('[data-go]'));
+            function markNav(id) {
+               navLinks.forEach(function (a) {
+                  a.setAttribute('aria-current', a.getAttribute('data-go') === id ? 'true' : 'false');
+               });
+            }
+            if (location.hash === '#top3' || location.hash === '#peg') document.getElementById('results').scrollIntoView();
+            if ('IntersectionObserver' in window) {
+               var io = new IntersectionObserver(
+                  function (entries) {
+                     entries.forEach(function (e) {
+                        if (e.isIntersecting) markNav(e.target.id);
+                     });
+                  },
+                  { rootMargin: '-35% 0px -55% 0px' }
+               );
+               navLinks.forEach(function (a) {
+                  var target = document.getElementById(a.getAttribute('data-go'));
+                  if (target) io.observe(target);
+               });
+            }
          })();
       </script>
    </body>
