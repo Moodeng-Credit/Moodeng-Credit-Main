@@ -20,7 +20,8 @@ import type { DashboardV2Milestone } from '@/views/dashboard-v2/types';
 import { useDashboardV2Preview } from '@/views/dashboard-v2/useDashboardV2Preview';
 
 const PRIMARY_GRADIENT = 'linear-gradient(77.58deg, #9584ff 0.5%, #6b55f7 98.16%)';
-const HIGHLIGHT_GRADIENT = 'linear-gradient(90deg, rgba(255,206,27,0.36) 10.88%, rgba(255,255,255,0) 108.81%)';
+const HIGHLIGHT_ROW =
+   'bg-gradient-to-r from-[rgba(255,206,27,0.36)] from-[10.88%] to-transparent to-[108.81%] dark:from-[rgba(255,206,27,0.16)]';
 
 function MilestoneRowAction({
    milestone,
@@ -57,7 +58,7 @@ function MilestoneRowAction({
 
    if (milestone.status === 'unlocked') {
       return (
-         <span className="flex w-[82px] shrink-0 items-center justify-center gap-1 text-[14px] font-semibold text-[#6b55f7]">
+         <span className="flex w-[82px] shrink-0 items-center justify-center gap-1 text-[14px] font-semibold text-[#6b55f7] dark:text-[#b3a6ff]">
             <DesignImage src={DASHBOARD_V2_ASSETS.verified} className="h-4 w-4" />
             Done
          </span>
@@ -86,8 +87,10 @@ function MilestoneRow({
 
    return (
       <div
-         className={clsx('flex min-h-[70px] items-center justify-between gap-2 py-3.5', isHighlighted ? '-mx-1.5 px-1.5' : '')}
-         style={isHighlighted ? { backgroundImage: HIGHLIGHT_GRADIENT } : undefined}
+         className={clsx(
+            'flex min-h-[70px] items-center justify-between gap-2 py-3.5',
+            isHighlighted && clsx('-mx-1.5 px-1.5', HIGHLIGHT_ROW)
+         )}
       >
          <div className="flex min-w-0 items-center gap-1">
             <DesignImage
@@ -95,7 +98,12 @@ function MilestoneRow({
                className="h-10 w-10 shrink-0 object-contain"
             />
             <div className="min-w-0">
-               <p className={clsx('text-[18px] font-medium leading-6', isHighlighted ? 'text-[#833000]' : 'text-[#0f172b]')}>
+               <p
+                  className={clsx(
+                     'text-[18px] font-medium leading-6',
+                     isHighlighted ? 'text-[#833000] dark:text-[#ffc46b]' : 'text-[#0f172b]'
+                  )}
+               >
                   {milestone.title}
                </p>
                <p className="flex flex-wrap items-center gap-1.5 text-[16px] leading-[18px]">
@@ -125,21 +133,27 @@ export default function DashboardV2Milestones() {
    const goalProgress = goal ? Math.min(model.pandesal / goal, 1) : 1;
 
    return (
-      <div className="min-h-screen bg-[#f7f7f7]">
+      <div className="min-h-screen bg-dv2-page">
          <div className="mx-auto max-w-[440px] pb-28">
             {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 
             <header className="relative flex h-16 items-end justify-center px-5 pb-1">
-               <Link to={`/dashboard${previewSearch}`} className="absolute bottom-1 left-5 text-[#594d65]" aria-label="Back to dashboard">
+               <Link
+                  to={`/dashboard${previewSearch}`}
+                  className="absolute bottom-1 left-5 text-[#594d65] dark:text-[#d9cfe6]"
+                  aria-label="Back to dashboard"
+               >
                   <ChevronLeft className="h-6 w-6" strokeWidth={2} />
                </Link>
-               <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65]">All Milestones</h1>
+               <h1 className="text-[24px] font-semibold leading-[1.1] tracking-[-0.48px] text-[#594d65] dark:text-[#e6def2]">
+                  All Milestones
+               </h1>
             </header>
 
             {isReal && !isReady ? (
                <div className="mx-5 mt-[58px] flex flex-col gap-3" aria-busy="true" aria-label="Loading milestones">
                   {['m1', 'm2', 'm3', 'm4'].map((id) => (
-                     <div key={id} className="h-[70px] animate-pulse rounded-[8px] bg-[#ece9f1]" />
+                     <div key={id} className="h-[70px] animate-pulse rounded-[8px] bg-[#ece9f1] dark:bg-dv2-card" />
                   ))}
                </div>
             ) : !model.isVerified ? (
@@ -166,34 +180,37 @@ export default function DashboardV2Milestones() {
             ) : (
                <section className="relative mx-5 mt-[58px]" aria-label="Reputation milestones">
                   <div
-                     className="absolute right-0 top-0 h-10 w-[37%] rounded-t-[12px] bg-gradient-to-b from-[#efeaff] to-white"
+                     className="absolute right-0 top-0 h-10 w-[37%] rounded-t-[12px] bg-gradient-to-b from-dv2-tab to-dv2-card"
                      aria-hidden="true"
                   />
                   <div className="relative flex w-[257px] max-w-[60%] flex-col gap-[3px]">
                      <div className="flex items-center justify-between">
-                        <p className="flex items-center gap-px text-[16px] font-medium leading-[14px] text-[#7b6b8c]">
+                        <p className="flex items-center gap-px text-[16px] font-medium leading-[14px] text-[#7b6b8c] dark:text-[#cfc4dd]">
                            <DesignImage src={DASHBOARD_V2_ASSETS.pandesalSmall} className="h-5 w-5 object-contain" />
                            Grow Trust with feeding
                         </p>
                         <p className="text-[16px] font-semibold leading-[1.2] text-[#877897]">
-                           <span className="text-[#7e6afa]">{model.pandesal}</span>
+                           <span className="text-[#7e6afa] dark:text-[#b3a6ff]">{model.pandesal}</span>
                            {goal ? `/${goal}` : ''}
                         </p>
                      </div>
                      <div
-                        className="h-[7px] w-full rounded-full bg-[#e0dbff]"
+                        className="h-[7px] w-full rounded-full bg-[#e0dbff] dark:bg-[#2a2235]"
                         role="progressbar"
                         aria-valuenow={Math.round(goalProgress * 100)}
                         aria-valuemin={0}
                         aria-valuemax={100}
                      >
-                        <div className="h-full rounded-full bg-[#7e6afa]" style={{ width: `${Math.max(goalProgress * 100, 4)}%` }} />
+                        <div
+                           className="h-full rounded-full bg-[#7e6afa] dark:bg-[#9b8bff]"
+                           style={{ width: `${Math.max(goalProgress * 100, 4)}%` }}
+                        />
                      </div>
                   </div>
-                  <div className="relative mt-3 rounded-[8px] rounded-tr-none bg-white px-1.5 pb-6 pt-2">
+                  <div className="relative mt-3 rounded-[8px] rounded-tr-none bg-dv2-card px-1.5 pb-6 pt-2">
                      {model.allMilestones.map((milestone, index) => (
                         <Fragment key={milestone.id}>
-                           {index > 0 ? <div className="h-px bg-[#ece9f1]" aria-hidden="true" /> : null}
+                           {index > 0 ? <div className="h-px bg-[#ece9f1] dark:bg-[#2c2439]" aria-hidden="true" /> : null}
                            <MilestoneRow
                               milestone={milestone}
                               onGet={() => setOpenMilestone(milestone)}
@@ -205,29 +222,33 @@ export default function DashboardV2Milestones() {
                   </div>
 
                   {/* A GrabFood voucher for each Moodeng tier (Rising / Prime / Apex). */}
-                  <h2 className="mt-8 text-[20px] font-bold italic leading-6 text-[#594d65]">Grow Moodeng, eat on us</h2>
-                  <div className="mt-3 rounded-[8px] bg-white px-1.5 py-2">
+                  <h2 className="mt-8 text-[20px] font-bold italic leading-6 text-[#594d65] dark:text-[#d9cfe6]">
+                     Grow Moodeng, eat on us
+                  </h2>
+                  <div className="mt-3 rounded-[8px] bg-dv2-card px-1.5 py-2">
                      {TIER_VOUCHERS.map((tier, index) => {
                         const tierVoucher = getVoucherState(model.rewards, [tier.reward], model.referralLoading);
                         const isReached = model.pandesal >= tier.minPandesal;
                         return (
                            <Fragment key={tier.reward}>
-                              {index > 0 ? <div className="h-px bg-[#ece9f1]" aria-hidden="true" /> : null}
+                              {index > 0 ? <div className="h-px bg-[#ece9f1] dark:bg-[#2c2439]" aria-hidden="true" /> : null}
                               <div
                                  className={clsx(
                                     '-mx-1.5 flex items-center gap-3 px-3 py-3',
-                                    isReached && 'bg-gradient-to-r from-[#fff3c4] to-[#fffdf5]'
+                                    isReached && 'bg-gradient-to-r from-[#fff3c4] to-[#fffdf5] dark:from-[#3a3216] dark:to-dv2-card'
                                  )}
                               >
                                  <DesignImage src={DASHBOARD_V2_ASSETS.coupon} className="h-10 w-10 shrink-0 object-contain" />
                                  <div className="min-w-0 flex-1">
-                                    <p className="text-[18px] font-medium leading-6 text-[#833000]">Grow Moodeng to {tier.label}</p>
+                                    <p className="text-[18px] font-medium leading-6 text-[#833000] dark:text-[#ffc46b]">
+                                       Grow Moodeng to {tier.label}
+                                    </p>
                                     <p className="text-[16px] leading-[18px] text-[#f90]">Reward: ₱{tier.amountPhp} GrabFood voucher</p>
                                  </div>
                                  {tierVoucher.state !== 'none' ? (
                                     <VoucherStatusPill state={tierVoucher.state} onClaim={() => setClaimingVoucher(tierVoucher.voucher)} />
                                  ) : (
-                                    <span className="flex shrink-0 flex-col items-center text-[12px] font-semibold text-[#c0b9c8]">
+                                    <span className="flex shrink-0 flex-col items-center text-[12px] font-semibold text-[#c0b9c8] dark:text-[#75688a]">
                                        <DesignImage src={DASHBOARD_V2_ASSETS.lock} className="h-5 w-5 object-contain" />
                                        {tier.minPandesal}
                                     </span>

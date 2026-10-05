@@ -32,10 +32,12 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
          {/* The exported banner has a white card baked in, so dark mode re-sets it in code. */}
          <span className="mx-5 my-0.5 hidden h-[60px] items-center justify-between gap-2 rounded-[8px] border-2 border-dv2-tab bg-dv2-card px-2.5 text-left dark:flex">
             <span className="flex min-w-0 flex-col">
-               <span className="truncate text-[clamp(20px,6vw,24px)] font-black italic leading-6 text-[#d9cfe6]">Connect Wallet</span>
-               <span className="truncate text-[14px] leading-[18px] text-[#8f819e]">Receive USDC loans</span>
+               <span className="truncate text-[clamp(17px,5.6vw,24px)] font-black italic leading-6 text-[#d9cfe6]">Connect Wallet</span>
+               <span className="truncate text-[clamp(12px,3.7vw,14px)] leading-[18px] text-[#8f819e]">Receive USDC loans</span>
             </span>
-            <span className="shrink-0 rounded-full bg-[#6b55f7] px-4 py-1.5 text-[16px] font-bold leading-5 text-white">+10Pandesal</span>
+            <span className="shrink-0 rounded-full bg-[#6b55f7] px-[clamp(10px,3.7vw,16px)] py-1.5 text-[clamp(13px,4.2vw,16px)] font-bold leading-5 text-white">
+               +10Pandesal
+            </span>
          </span>
       </button>
    );
