@@ -1376,6 +1376,224 @@
          .co-chip b {
             color: var(--primary-1200);
          }
+
+         /* Transitions: next cards + level hippo */
+         .next-card {
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            gap: 4px 12px;
+            align-items: center;
+            margin-top: 18px !important;
+            border-radius: 20px;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary-100), #f8f3ff);
+            border: 1px solid var(--primary-300);
+         }
+         .next-card img {
+            width: 64px;
+            height: 64px;
+            filter: drop-shadow(0 6px 8px rgb(60 30 120 / 0.2));
+         }
+         .bridge {
+            display: grid;
+            gap: 2px;
+            font-size: 15px;
+            color: var(--n-1400);
+            line-height: 1.35;
+         }
+         .bridge b {
+            color: var(--heading);
+            font-size: 17px;
+         }
+         .lvl {
+            justify-self: start;
+            border-radius: 999px;
+            padding: 1px 8px;
+            background: var(--primary-900);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+         }
+         .next {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            min-height: 52px;
+            margin-top: 8px;
+            border-radius: 16px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font-size: 16px;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 6px 16px rgb(96 16 210 / 0.28);
+            animation: nudge 2.4s ease-in-out infinite;
+         }
+         .next .arr {
+            font-size: 26px;
+            line-height: 1;
+         }
+         .next:active {
+            scale: 0.98;
+         }
+         @keyframes nudge {
+            0%, 70%, 100% { translate: 0 0; }
+            80% { translate: 4px 0; }
+            90% { translate: 0 0; }
+         }
+         .small-label {
+            font-size: 14px;
+            font-weight: 700;
+         }
+         .learn .n {
+            width: 26px;
+            height: 26px;
+            flex: none;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-1200));
+            color: #fff;
+            font-size: 13px;
+         }
+         .learn .n.star {
+            background: linear-gradient(135deg, #ffe680, var(--yellow-700));
+            font-size: 14px;
+         }
+
+         /* Interactive bits */
+         .try,
+         .grow {
+            border-radius: 18px;
+            padding: 14px;
+            background: #fff;
+            border: 2px dashed var(--primary-300);
+            display: grid;
+            gap: 10px;
+         }
+         .try-title,
+         .grow-year {
+            font-weight: 800;
+            font-size: 15px;
+            color: var(--primary-1200);
+         }
+         .try input[type='range'] {
+            width: 100%;
+            height: 36px;
+            accent-color: var(--primary-900);
+         }
+         .try-out,
+         .grow-line {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 700;
+         }
+         .try-out strong,
+         .grow-line strong {
+            font-size: 22px;
+            color: var(--primary-1200);
+         }
+         .try .years,
+         .grow .years {
+            grid-template-columns: repeat(10, 1fr);
+         }
+         .years.win span {
+            background: var(--green-100);
+            color: var(--green-900);
+         }
+         .years.mid span {
+            background: #fff3c4;
+            color: #6b5200;
+         }
+         .years.lose span {
+            background: var(--red-100);
+            color: var(--red-800);
+         }
+         .try-verdict {
+            text-align: center;
+            font-weight: 700;
+         }
+         .grow-btn {
+            min-height: 48px;
+            border: 0;
+            border-radius: 14px;
+            background: var(--heading);
+            color: #fff;
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+         }
+         .grow-btn:active {
+            scale: 0.98;
+         }
+         .track.peg {
+            background: linear-gradient(90deg, #e3f7ec 0 25%, #fff6d6 25% 50%, #ffe4e6 50% 100%);
+         }
+         .stores .mini-years i {
+            opacity: 0;
+            scale: 0.4;
+         }
+         .stores.play .mini-years i {
+            animation: popin 0.35s ease-out forwards;
+            animation-delay: calc(var(--i) * 45ms);
+         }
+         @keyframes popin {
+            to {
+               opacity: 1;
+               scale: 1;
+            }
+         }
+         .score-chip {
+            position: fixed;
+            top: calc(10px + env(safe-area-inset-top));
+            left: 50%;
+            z-index: 40;
+            translate: -50% 0;
+            border-radius: 999px;
+            padding: 6px 14px;
+            background: var(--heading);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+            box-shadow: var(--shadow-nav);
+            animation: chipin 0.3s ease-out;
+         }
+         .score-chip[hidden] {
+            display: none;
+         }
+         @keyframes chipin {
+            from {
+               translate: -50% -20px;
+               opacity: 0;
+            }
+         }
+         .burst {
+            position: fixed;
+            z-index: 60;
+            pointer-events: none;
+            font-size: 20px;
+            animation: rise 0.9s ease-out forwards;
+         }
+         @keyframes rise {
+            to {
+               transform: translate(var(--dx), -80px) rotate(20deg);
+               opacity: 0;
+            }
+         }
+         @media (prefers-reduced-motion: reduce) {
+            .next {
+               animation: none;
+            }
+            .stores .mini-years i {
+               opacity: 1;
+               scale: 1;
+               animation: none !important;
+            }
+         }
       </style>
    </head>
    <body>
@@ -1433,13 +1651,15 @@
                   <span data-l="fil">Mura ba <em>'tong stock?</em></span><span data-l="en">Is this <em>stock cheap?</em></span>
                </h1>
                <p class="muted">
-                  <span data-l="fil">3 madaling checks. Totoong companies. Walang mahirap na math!</span>
-                  <span data-l="en">3 easy checks. Real companies. No hard math!</span>
+                  <span data-l="fil">3 madaling checks + 1 bonus. Totoong companies. Walang mahirap na math!</span>
+                  <span data-l="en">3 easy checks + 1 bonus. Real companies. No hard math!</span>
                </p>
+               <p class="muted small-label"><span data-l="fil">Ang mapa natin:</span><span data-l="en">Our map:</span></p>
                <ul class="learn">
-                  <li><a href="#pe"><span class="emo" aria-hidden="true">🏷️</span><span data-l="fil">Ilang taon ng kita?</span><span data-l="en">How many years of profit?</span><span class="chev" aria-hidden="true">›</span></a></li>
-                  <li><a href="#forward-pe"><span class="emo" aria-hidden="true">🔮</span><span data-l="fil">Gamit ang hula sa next year</span><span data-l="en">Using next year's guess</span><span class="chev" aria-hidden="true">›</span></a></li>
-                  <li><a href="#fcf"><span class="emo" aria-hidden="true">💵</span><span data-l="fil">Ilang taon ng totoong cash?</span><span data-l="en">How many years of real cash?</span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#pe"><b class="n">1</b><span class="emo" aria-hidden="true">📅</span><span><span data-l="fil">Ilang taon ng kita?</span><span data-l="en">How many years of profit?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#forward-pe"><b class="n">2</b><span class="emo" aria-hidden="true">🔮</span><span><span data-l="fil">Paano ang next year?</span><span data-l="en">What about next year?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#fcf"><b class="n">3</b><span class="emo" aria-hidden="true">💵</span><span><span data-l="fil">Totoong cash ba?</span><span data-l="en">Is the cash real?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
+                  <li><a href="#peg"><b class="n star">⭐</b><span class="emo" aria-hidden="true">⚡</span><span><span data-l="fil">Bonus: sulit ba ang mabilis lumaki?</span><span data-l="en">Bonus: is fast growth worth it?</span></span><span class="chev" aria-hidden="true">›</span></a></li>
                </ul>
                <p class="tip">
                   <span class="i" aria-hidden="true">i</span
@@ -1448,10 +1668,15 @@
                      ><span data-l="en">Tip: tap anything with a <u>dotted underline</u> or an "i" to learn more.</span></span
                   >
                </p>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rookie-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV1 Rookie</span><span data-l="en">LV1 Rookie</span></span><b><span data-l="fil">Handa ka na ba? 🚀</span><span data-l="en">Ready? 🚀</span></b><span><span data-l="fil">Simulan natin sa pinaka-basic: ano ba ang stock?</span><span data-l="en">Let's start with the basics: what even is a stock?</span></span></div>
+                  <a class="next" href="#what"><span><span data-l="fil">Simulan ang lesson</span><span data-l="en">Start the lesson</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
             </section>
 
             <!-- What is a stock -->
-            <section class="card" aria-labelledby="what-title">
+            <section class="card" id="what" aria-labelledby="what-title">
                <h2 class="h2" id="what-title"><span data-l="fil">Ano ang <em>stock?</em></span><span data-l="en">What's a <em>stock?</em></span></h2>
                <p>
                   <span data-l="fil">Hatiin ang tindahan ni Aling Nena sa <strong>100 piraso</strong>. Bumili ka ng 1. May-ari ka na ng konting parte!</span>
@@ -1463,10 +1688,16 @@
                   <span data-l="fil">🎉 Ang pirasong 'yan ay <button type="button" class="term" data-info="stock">stock</button>. Ang tanong: <strong>sulit ba ang presyo nito?</strong></span>
                   <span data-l="en">🎉 That piece is a <button type="button" class="term" data-info="stock">stock</button>. The big question: <strong>is it worth its price?</strong></span>
                </p>
+            
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rookie-2.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV1 Rookie</span><span data-l="en">LV1 Rookie</span></span><b><span data-l="fil">Alam mo na ang stock! 🧩</span><span data-l="en">You know what a stock is! 🧩</span></b><span><span data-l="fil">Ngayon: paano malalaman kung sulit ang presyo? Ikumpara natin ang dalawang tindahan.</span><span data-l="en">Now: how do you know if the price is fair? Let's compare two stores.</span></span></div>
+                  <a class="next" href="#deal"><span><span data-l="fil">Dalawang tindahan</span><span data-l="en">Two stores</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
             </section>
 
             <!-- Two stores: years of profit -->
-            <section class="card" aria-labelledby="kilo-title">
+            <section class="card" id="deal" aria-labelledby="kilo-title">
                <h2 class="h2" id="kilo-title">
                   <span data-l="fil">Aling tindahan ang mas <em>sulit?</em></span><span data-l="en">Which store is the better <em>deal?</em></span>
                </h2>
@@ -1499,11 +1730,17 @@
                   <span class="ic" aria-hidden="true">💡</span
                   ><span><span data-l="fil">Mas kaunting taon = mas sulit. Ganito rin sa stocks!</span><span data-l="en">Fewer years = better deal. Stocks work the same way!</span></span>
                </p>
+            
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rookie-3.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV1 Rookie</span><span data-l="en">LV1 Rookie</span></span><b><span data-l="fil">Mas kaunting taon = mas sulit ✅</span><span data-l="en">Fewer years = better deal ✅</span></b><span><span data-l="fil">Gawin natin ito sa totoong math at totoong companies.</span><span data-l="en">Let's do this with real math and real companies.</span></span></div>
+                  <a class="next" href="#pe"><span><span data-l="fil">Check 1 · Ilang taon ng kita</span><span data-l="en">Check 1 · Years of profit</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
             </section>
 
             <!-- Check 1 -->
             <section class="card" id="pe" aria-labelledby="pe-title">
-               <button type="button" class="step-tag" data-info="pe"><b>1</b><span>Check 1 <small>· P/E</small></span><span class="i" aria-hidden="true">i</span></button>
+               <button type="button" class="step-tag" data-info="pe"><b>1</b><span>Check 1 <small>of 3 · P/E</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="pe-title">
                   <span data-l="fil">Ilang taon ng <em>kita?</em></span><span data-l="en">How many years of <em>profit?</em></span>
                </h2>
@@ -1519,6 +1756,13 @@
                   <span data-l="fil">Ang bilang ng taon na 'yan ay tinatawag na <button type="button" class="term" data-info="pe">P/E</button>. P/E 20 = 20 taon.</span>
                   <span data-l="en">That number of years is called the <button type="button" class="term" data-info="pe">P/E</button>. A P/E of 20 = 20 years.</span>
                </p>
+               <div class="try">
+                  <p class="try-title">🎛️ <span data-l="fil">Subukan mo! I-drag ang kita ng tindahan ni Aling Nena (presyo: ₱1,000)</span><span data-l="en">Try it! Drag Aling Nena's yearly profit (price: ₱1,000)</span></p>
+                  <input type="range" min="20" max="200" step="10" value="50" data-slider aria-label="Yearly profit" />
+                  <p class="try-out"><span data-sp>₱50</span> <span data-l="fil">kada taon</span><span data-l="en">a year</span> → <strong data-sy>20</strong></p>
+                  <div class="years" data-sbox aria-hidden="true"></div>
+                  <p class="try-verdict" data-sv aria-live="polite"></p>
+               </div>
                <p class="rule">
                   <span class="ic" aria-hidden="true">👍</span
                   ><span><span data-l="fil">Mas kaunting taon = mas mura.</span><span data-l="en">Fewer years = cheaper.</span></span>
@@ -1531,11 +1775,16 @@
                </div>
                <div class="board" data-board="pe"></div>
                <div class="quiz" data-quiz="pe"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-rising-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV2 Rising</span><span data-l="en">LV2 Rising</span></span><b><span data-l="fil">Tapos na ang Check 1! ✅</span><span data-l="en">Check 1 done! ✅</span></b><span><span data-l="fil">Gumamit tayo ng kita ngayong taon. Pero nagbabago ang kita, kaya paano ang next year?</span><span data-l="en">That used this year's profit. But profit changes, so what about next year?</span></span></div>
+                  <a class="next" href="#forward-pe"><span><span data-l="fil">Check 2 · Hula sa next year</span><span data-l="en">Check 2 · Next year's guess</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
             </section>
 
             <!-- Check 2 -->
             <section class="card" id="forward-pe" aria-labelledby="fpe-title">
-               <button type="button" class="step-tag" data-info="fpe"><b>2</b><span>Check 2 <small>· Forward P/E</small></span><span class="i" aria-hidden="true">i</span></button>
+               <button type="button" class="step-tag" data-info="fpe"><b>2</b><span>Check 2 <small>of 3 · Forward P/E</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="fpe-title"><span data-l="fil">Gamit ang <em>hula</em> sa next year</span><span data-l="en">Using next year's <em>guess</em></span></h2>
                <p>
                   <span data-l="fil">Hinuhulaan ng mga expert ang kita ng tindahan next year. Kung ₱100 ang hula imbes na ₱50:</span>
@@ -1555,11 +1804,16 @@
                   ><span><span data-l="fil">Hula lang 'yan. Pwedeng mali!</span><span data-l="en">It's just a guess. Guesses can be wrong!</span></span>
                </p>
                <div class="quiz" data-quiz="fpe"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-prime-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV3 Prime</span><span data-l="en">LV3 Prime</span></span><b><span data-l="fil">Tapos na ang Check 2! ✅</span><span data-l="en">Check 2 done! ✅</span></b><span><span data-l="fil">Ang kita sa papel ay hindi laging pera na mahahawakan mo. Bilangin natin ang totoong cash.</span><span data-l="en">Profit on paper isn't always cash you can touch. Let's count the real cash.</span></span></div>
+                  <a class="next" href="#fcf"><span><span data-l="fil">Check 3 · Totoong cash</span><span data-l="en">Check 3 · Real cash</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
             </section>
 
             <!-- Check 3 -->
             <section class="card" id="fcf" aria-labelledby="fcf-title">
-               <button type="button" class="step-tag" data-info="cash"><b>3</b><span>Check 3 <small>· FCF yield</small></span><span class="i" aria-hidden="true">i</span></button>
+               <button type="button" class="step-tag" data-info="cash"><b>3</b><span>Check 3 <small>of 3 · Real cash</small></span><span class="i" aria-hidden="true">i</span></button>
                <h2 class="h2" id="fcf-title">
                   <span data-l="fil">Ilang taon ng <em>totoong cash?</em></span><span data-l="en">How many years of <em>real cash?</em></span>
                </h2>
@@ -1579,6 +1833,43 @@
                </p>
                <div class="board" data-board="fcf"></div>
                <div class="quiz" data-quiz="fcf"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-apex-1.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV4 Apex</span><span data-l="en">LV4 Apex</span></span><b><span data-l="fil">Tapos na ang 3 checks! 🎉</span><span data-l="en">All 3 checks done! 🎉</span></b><span><span data-l="fil">Bonus round: may stocks na mukhang mahal pero sobrang bilis lumaki. Sulit ba sila?</span><span data-l="en">Bonus round: some stocks look pricey but grow super fast. Are they worth it?</span></span></div>
+                  <a class="next" href="#peg"><span><span data-l="fil">⭐ Bonus · PEG</span><span data-l="en">⭐ Bonus · PEG</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
+            </section>
+
+            <!-- Bonus: PEG -->
+            <section class="card" id="peg" aria-labelledby="peg-title">
+               <button type="button" class="step-tag bonus" data-info="peg"><b>⭐</b><span>Bonus <small>· PEG</small></span><span class="i" aria-hidden="true">i</span></button>
+               <h2 class="h2" id="peg-title">
+                  <span data-l="fil">Sulit ba ang <em>mabilis lumaki?</em></span><span data-l="en">Is fast growth <em>worth it?</em></span>
+               </h2>
+               <p>
+                  <span data-l="fil">Ang <strong>Tindahan C</strong> ay ₱1,000, pero ₱25 lang ang kita: <strong>40 taon</strong>! Mukhang sobrang mahal. Pero dumodoble ang kita nito kada taon. I-tap ang button:</span><span data-l="en"><strong>Store C</strong> costs ₱1,000 but makes only ₱25 a year: <strong>40 years</strong>! Looks super pricey. But its profit doubles every year. Tap the button:</span>
+               </p>
+               <div class="grow" data-grow>
+                  <p class="grow-year" data-gyear></p>
+                  <p class="grow-line"><span data-gprofit></span> → <strong data-gyears></strong></p>
+                  <div class="years" data-gboxes aria-hidden="true"></div>
+                  <button type="button" class="grow-btn" data-gbtn></button>
+               </div>
+               <p class="rule">
+                  <span class="ic" aria-hidden="true">⚡</span
+                  ><span><span data-l="fil">Pag mabilis lumaki ang kita, bumababa ang taon. Ang <button type="button" class="term" data-info="peg">PEG</button> ang nagche-check nito.</span><span data-l="en">When profit grows fast, the years shrink. <button type="button" class="term" data-info="peg">PEG</button> checks this for real companies.</span></span>
+               </p>
+               <div class="board" data-board="peg"></div>
+               <p class="warn">
+                  <span class="ic" aria-hidden="true">⚠️</span
+                  ><span><span data-l="fil">Hula pa rin ng mga expert ang bilis ng paglaki. Pwedeng mali!</span><span data-l="en">Growth speed is still an expert guess. It can be wrong!</span></span>
+               </p>
+               <div class="quiz" data-quiz="peg"></div>
+               <div class="next-card">
+                  <img src="/dashboard-v2/moodeng-apex-2.png" alt="" width="64" height="64" />
+                  <div class="bridge"><span class="lvl"><span data-l="fil">LV4 Apex ⭐</span><span data-l="en">LV4 Apex ⭐</span></span><b><span data-l="fil">Tapos na ang bonus! 🏆</span><span data-l="en">Bonus done! 🏆</span></b><span><span data-l="fil">Oras na para makita kung aling companies ang pumasa sa lahat.</span><span data-l="en">Time to see which companies passed the checks.</span></span></div>
+                  <a class="next" href="#results"><span><span data-l="fil">Tingnan ang resulta</span><span data-l="en">See the results</span></span><span class="arr" aria-hidden="true">›</span></a>
+               </div>
             </section>
 
             <!-- Results -->
@@ -1663,12 +1954,13 @@
 
       <nav class="nav" aria-label="Lesson steps">
          <a href="#start" data-go="start"><span class="ni" aria-hidden="true">🏁</span><span data-l="fil">Simula</span><span data-l="en">Start</span></a
-         ><a href="#pe" data-go="pe"><span class="ni" aria-hidden="true">🏷️</span>Check 1</a
-         ><a href="#forward-pe" data-go="forward-pe"><span class="ni" aria-hidden="true">🔮</span>Check 2</a
-         ><a href="#fcf" data-go="fcf"><span class="ni" aria-hidden="true">💵</span>Check 3</a
-         ><a href="#results" data-go="results"><span class="ni" aria-hidden="true">🏆</span><span data-l="fil">Resulta</span><span data-l="en">Results</span></a
-         ><a href="#inside" data-go="inside"><span class="ni" aria-hidden="true">🔍</span><span data-l="fil">Silipin</span><span data-l="en">Look</span></a>
+         ><a href="#pe" data-go="pe"><span class="ni" aria-hidden="true">📅</span><span data-l="fil">Taon</span><span data-l="en">Years</span></a
+         ><a href="#forward-pe" data-go="forward-pe"><span class="ni" aria-hidden="true">🔮</span><span data-l="fil">Hula</span><span data-l="en">Guess</span></a
+         ><a href="#fcf" data-go="fcf"><span class="ni" aria-hidden="true">💵</span>Cash</a
+         ><a href="#peg" data-go="peg"><span class="ni" aria-hidden="true">⚡</span><span data-l="fil">Bonus</span><span data-l="en">Bonus</span></a
+         ><a href="#results" data-go="results"><span class="ni" aria-hidden="true">🏆</span><span data-l="fil">Resulta</span><span data-l="en">Results</span></a>
       </nav>
+      <div class="score-chip" data-score hidden aria-live="polite"></div>
 
       <script>
          (function () {
@@ -1773,9 +2065,19 @@
             }
 
             // One company row in a chart. The whole row opens the company's sheet.
-            function row(t, price, note) {
+            function pegVerdict(v) {
+               if (v < 1) return { cls: 'win', label: both('✅ Sapat ang bilis', '✅ Fast enough') };
+               if (v <= 2) return { cls: 'mid', label: both('🟡 Pwede na', '🟡 So-so') };
+               return { cls: 'lose', label: both('❌ Masyadong mabagal', '❌ Too slow') };
+            }
+            function barPeg(v) {
+               var cls = v < 1 ? 'win' : v <= 2 ? 'mid' : 'lose';
+               return '<div class="track peg"><div class="bar ' + cls + '" style="width:' + Math.min(100, (v / 4) * 100) + '%"></div></div>';
+            }
+            function row(t, price, note, kind) {
                var c = CO[t];
-               var vd = verdict(price);
+               var peg = kind === 'peg';
+               var vd = peg ? pegVerdict(price) : verdict(price);
                return (
                   '<button type="button" class="co" data-open="' +
                   t +
@@ -1788,11 +2090,11 @@
                   '</small></span><span class="co-val ' +
                   vd.cls +
                   '">' +
-                  (price == null ? '—' : yrs(price) + (price > BAR_MAX ? ' ↗' : '')) +
+                  (price == null ? '—' : peg ? price.toFixed(2) : yrs(price) + (price > BAR_MAX ? ' ↗' : '')) +
                   '<small>' +
                   vd.label +
                   '</small></span><span class="chev" aria-hidden="true">›</span></span>' +
-                  bar(price) +
+                  (peg ? barPeg(price) : bar(price)) +
                   (note ? '<span class="co-note">' + note + '</span>' : '') +
                   '</button>'
                );
@@ -1856,6 +2158,83 @@
                KEY +
                TAP;
 
+            // Bonus: PEG board. Bar 0–4, green under 1, yellow 1–2, red over 2.
+            var SCALE_PEG =
+               '<button type="button" class="scale-btn" data-info="peg" aria-label="PEG"><span class="scale" aria-hidden="true"><span style="left:0">0</span><span style="left:25%">1</span><span style="left:50%">2</span><span style="left:100%">4+</span></span></button>';
+            var KEY_PEG =
+               '<button type="button" class="key" data-info="peg"><span>' +
+               both('Mas maikli = sulit ang paglaki', 'Shorter bar = growth is worth it') +
+               '</span><span>' +
+               both('✅ &lt;1 · 🟡 1–2 · ❌ &gt;2', '✅ &lt;1 · 🟡 1–2 · ❌ &gt;2') +
+               '</span>' +
+               I +
+               '</button>';
+            var PEG_NOTES = {
+               NVDA: both('Pinakamabilis lumaki ang kita nito, kaya sulit kahit mataas ang taon.', 'Its profit is expected to grow the fastest, so the years are worth it.'),
+               LMT: both('Mabagal lumaki pero mura, kaya okay.', "Grows slowly, but it's cheap, so it's fine."),
+               META: both('Sakto ang bilis ng paglaki para sa presyo.', 'Growing about as fast as its price asks.'),
+               MSFT: both('Okay ang paglaki, medyo mahal ang presyo.', 'Decent growth, but the price is a bit full.'),
+               KO: both('Mabagal lumaki pero mataas ang presyo.', 'Slow growth for a high price.'),
+            };
+            document.querySelector('[data-board="peg"]').innerHTML =
+               head('peg', 'Sapat ba ang bilis ng paglaki para sa presyo?', 'Is growth fast enough for the price?') +
+               SCALE_PEG +
+               ['NVDA', 'LMT', 'META', 'MSFT', 'KO']
+                  .map(function (t) {
+                     return row(t, CO[t].peg, PEG_NOTES[t], 'peg');
+                  })
+                  .join('') +
+               KEY_PEG +
+               TAP;
+
+            // Store C: profit doubles each year, years shrink 40 → 20 → 10
+            var GROW = [{ p: 25, y: 40 }, { p: 50, y: 20 }, { p: 100, y: 10 }];
+            var gi = 0;
+            var growEl = document.querySelector('[data-grow]');
+            function renderGrow() {
+               var g = GROW[gi];
+               var boxes = '';
+               for (var k = 1; k <= g.y; k++) boxes += '<span>' + k + '</span>';
+               growEl.querySelector('[data-gyear]').innerHTML = both('Taon ' + (gi + 1) + (gi === 0 ? ' · Ngayon' : ''), 'Year ' + (gi + 1) + (gi === 0 ? ' · Now' : ''));
+               growEl.querySelector('[data-gprofit]').innerHTML = both('Kita: ₱' + g.p, 'Profit: ₱' + g.p);
+               growEl.querySelector('[data-gyears]').innerHTML = g.y + ' ' + both('taon', 'years') + ' ' + { win: '🟢', mid: '🟡', lose: '🔴' }[zone(g.y)];
+               var box = growEl.querySelector('[data-gboxes]');
+               box.className = 'years ' + zone(g.y);
+               box.innerHTML = boxes;
+               growEl.querySelector('[data-gbtn]').innerHTML = gi < 2 ? both('Next year ▶', 'Next year ▶') : both('Ulitin ↺', 'Start again ↺');
+            }
+            growEl.querySelector('[data-gbtn]').addEventListener('click', function () {
+               gi = (gi + 1) % GROW.length;
+               renderGrow();
+            });
+            renderGrow();
+
+            // Check 1 slider: drag the store's profit, watch the years
+            var slider = document.querySelector('[data-slider]');
+            function renderTry() {
+               var pr = +slider.value;
+               var y = 1000 / pr;
+               var z = zone(y);
+               document.querySelector('[data-sp]').textContent = '₱' + pr;
+               document.querySelector('[data-sy]').innerHTML = Math.round(y * 10) / 10 + ' ' + both('taon', 'years');
+               var h = '';
+               for (var k = 1; k <= Math.round(y); k++) h += '<span>' + k + '</span>';
+               var box = document.querySelector('[data-sbox]');
+               box.className = 'years ' + z;
+               box.innerHTML = h;
+               document.querySelector('[data-sv]').innerHTML =
+                  z === 'win'
+                     ? both('🟢 Mura! Mabilis umabot ang kita sa presyo.', '🟢 Cheap! The profit adds up to the price fast.')
+                     : z === 'mid'
+                       ? both('🟡 Okay lang. Katamtamang tagal.', '🟡 Okay. A middle amount of time.')
+                       : both('🔴 Mahal! Matagal bago umabot ang kita.', '🔴 Pricey! It takes a long time.');
+            }
+            slider.addEventListener('input', renderTry);
+            renderTry();
+
+            // Two-store boxes animate in when scrolled into view
+            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
             // Results: each check under 20 years = 1 pandesal
             var WINNERS = [
                { t: 'LMT', but: both('Pero: mabagal lumaki.', 'But: grows slowly.') },
@@ -1889,7 +2268,10 @@
 
             // Pictures: year boxes for the two stores
             document.querySelectorAll('[data-yrs]').forEach(function (el) {
-               el.innerHTML = new Array(+el.getAttribute('data-yrs') + 1).join('<i></i>');
+               var n = +el.getAttribute('data-yrs');
+               var h = '';
+               for (var q = 0; q < n; q++) h += '<i style="--i:' + q + '"></i>';
+               el.innerHTML = h;
             });
 
             // Picture: the 100-piece store
@@ -1926,7 +2308,40 @@
                   right: both('Tama! 6.9 taon ay below 20.', 'Correct! 6.9 years is under 20.'),
                   wrong: both('Hindi pa. 25.8 taon ay above 20. Subukan ulit!', 'Not quite. 25.8 years is over 20. Try again!'),
                },
+               peg: {
+                  q: both('🧠 Tindahan C: 40 taon ngayon, pero dumodoble ang kita kada taon. Pangit ba agad itong deal?', '🧠 Store C: 40 years now, but profit doubles every year. Is it automatically a bad deal?'),
+                  opts: [
+                     { a: both('Oo, 40 taon ay 40 taon', 'Yes, 40 years is 40 years'), ok: false },
+                     { a: both('Hindi, pwedeng sulit kasi mabilis lumaki', 'No, it can be worth it because it grows fast'), ok: true },
+                  ],
+                  right: both('Tama! 40 → 20 → 10 taon. Mabilis lumaki = bumababa ang taon.', 'Correct! 40 → 20 → 10 years. Fast growth = fewer years.'),
+                  wrong: both('Hindi pa. Tingnan ulit ang Tindahan C: 40 → 20 → 10 taon!', 'Not quite. Look at Store C again: 40 → 20 → 10 years!'),
+               },
             };
+            var quizGot = {};
+            var QUIZ_TOTAL = Object.keys(QUIZ).length;
+            var scoreChip = document.querySelector('[data-score]');
+            function burst(btn) {
+               if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+               var r = btn.getBoundingClientRect();
+               for (var b = 0; b < 6; b++) {
+                  var sp = document.createElement('span');
+                  sp.className = 'burst';
+                  sp.textContent = '🥯';
+                  sp.style.left = r.left + r.width / 2 + (b - 2.5) * 12 + 'px';
+                  sp.style.top = r.top + 'px';
+                  sp.style.setProperty('--dx', (b - 2.5) * 16 + 'px');
+                  document.body.appendChild(sp);
+                  setTimeout(function (el) {
+                     el.remove();
+                  }, 900, sp);
+               }
+            }
+            function updateScore() {
+               var n = Object.keys(quizGot).length;
+               scoreChip.hidden = n === 0;
+               scoreChip.innerHTML = n === QUIZ_TOTAL ? both('🎉 ' + n + '/' + n + ' quiz hero!', '🎉 ' + n + '/' + n + ' quiz hero!') : both('🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz', '🥯 ' + n + '/' + QUIZ_TOTAL + ' quiz');
+            }
             Object.keys(QUIZ).forEach(function (id) {
                var q = QUIZ[id];
                var el = document.querySelector('[data-quiz="' + id + '"]');
@@ -1949,6 +2364,11 @@
                      });
                      b.setAttribute('data-state', o.ok ? 'right' : 'wrong');
                      fb.innerHTML = (o.ok ? '🎉 ' : '🤔 ') + (o.ok ? q.right : q.wrong);
+                     if (o.ok && !quizGot[id]) {
+                        quizGot[id] = true;
+                        updateScore();
+                        burst(b);
+                     }
                   });
                });
             });
@@ -2472,12 +2892,12 @@
                   a.setAttribute('aria-current', a.getAttribute('data-go') === id ? 'true' : 'false');
                });
             }
-            if (location.hash === '#top3' || location.hash === '#peg') document.getElementById('results').scrollIntoView();
+            if (location.hash === '#top3') document.getElementById('results').scrollIntoView();
             if ('IntersectionObserver' in window) {
                var io = new IntersectionObserver(
                   function (entries) {
                      entries.forEach(function (e) {
-                        if (e.isIntersecting) markNav(e.target.id);
+                        if (e.isIntersecting) markNav(e.target.id === 'inside' ? 'results' : e.target.id);
                      });
                   },
                   { rootMargin: '-35% 0px -55% 0px' }
@@ -2486,6 +2906,25 @@
                   var target = document.getElementById(a.getAttribute('data-go'));
                   if (target) io.observe(target);
                });
+               io.observe(document.getElementById('inside'));
+               var deal = document.querySelector('.stores');
+               if (deal && !reduceMotion) {
+                  var playIo = new IntersectionObserver(
+                     function (entries) {
+                        entries.forEach(function (e) {
+                           if (e.isIntersecting) {
+                              deal.classList.add('play');
+                              playIo.disconnect();
+                           }
+                        });
+                     },
+                     { threshold: 0.4 }
+                  );
+                  playIo.observe(deal);
+               } else if (deal) deal.classList.add('play');
+            } else {
+               var d0 = document.querySelector('.stores');
+               if (d0) d0.classList.add('play');
             }
          })();
       </script>
