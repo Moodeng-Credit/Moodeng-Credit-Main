@@ -97,7 +97,7 @@ function DashboardV2Skeleton() {
    return (
       <div className="mt-[30px] flex flex-col gap-[30px] px-5" aria-busy="true" aria-label="Loading your dashboard">
          {SKELETON_BLOCKS.map(({ id, height }) => (
-            <div key={id} className="animate-pulse rounded-[8px] bg-[#ece9f1]" style={{ height }} />
+            <div key={id} className="animate-pulse rounded-[8px] bg-[#ece9f1] dark:bg-dv2-card" style={{ height }} />
          ))}
       </div>
    );
@@ -191,7 +191,7 @@ export default function DashboardV2() {
    );
 
    return (
-      <div className="min-h-screen bg-[#f7f7f7]">
+      <div className="min-h-screen bg-dv2-page">
          <div className="mx-auto max-w-[440px] pb-28">
             {isPreviewHost() ? <DashboardV2PreviewBar previewState={previewState} isSignedIn={isSignedIn} language={language} /> : null}
 

@@ -68,10 +68,13 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
    return (
       <section className="relative h-[408px] w-full" aria-label="Your Moodeng">
          <div className="absolute inset-x-0 top-0 h-[360px] overflow-hidden">
-            <DesignImage src={DASHBOARD_V2_ASSETS.heroBackground} className="absolute left-0 top-[-54px] h-[414px] w-full object-cover" />
+            <DesignImage
+               src={DASHBOARD_V2_ASSETS.heroBackground}
+               className="absolute left-0 top-[-54px] h-[414px] w-full object-cover dark:brightness-[0.85]"
+            />
          </div>
          <div
-            className="absolute inset-x-0 top-[338px] h-[70px] rounded-t-[28px] bg-gradient-to-b from-[#efeaff] to-[#f7f7f7]"
+            className="absolute inset-x-0 top-[338px] h-[70px] rounded-t-[28px] bg-gradient-to-b from-dv2-tab to-dv2-page"
             aria-hidden="true"
          />
 
@@ -90,7 +93,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                </span>
             </div>
             <div className="flex min-w-0 flex-col">
-               <p className="truncate text-[clamp(18px,5.4vw,22px)] font-semibold leading-[1.2] text-[#1c053d]">Hi {model.firstName}!</p>
+               <p className="truncate text-[clamp(18px,5.4vw,22px)] font-semibold leading-[1.2] text-dv2-scene">Hi {model.firstName}!</p>
                <p className="whitespace-nowrap text-[clamp(13px,4vw,16px)] leading-[18px] text-[#594d65]">
                   Live for {model.daysLive} {model.daysLive === 1 ? 'day' : 'days'}
                </p>
@@ -210,7 +213,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          {/* Credit level */}
          <div className="absolute inset-x-5 top-[347px] flex items-end justify-between gap-2" data-tour-target="dashboard-credit-level">
             <div className="flex shrink-0 items-baseline gap-0.5">
-               <span className="text-[clamp(28px,7.7vw,34px)] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa]">
+               <span className="text-[clamp(28px,7.7vw,34px)] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa] dark:text-[#9d8cff]">
                   LV{model.creditLevel}
                </span>
                <span className="bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[clamp(16px,4.6vw,20px)] font-semibold leading-9 text-transparent">
@@ -231,20 +234,20 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
                    (unverified) it falls back to the "Verify to unlock LV.1" hint. */}
                {model.creditLimit > 0 ? (
                   <>
-                     <span className="text-[#4f36ef]">{formatUsd(creditAvailable)}</span>
-                     <span className="text-[#c0b9c8]"> of {formatUsd(model.creditLimit)} left</span>
+                     <span className="text-[#4f36ef] dark:text-[#b3a6ff]">{formatUsd(creditAvailable)}</span>
+                     <span className="text-[#c0b9c8] dark:text-[#8f819e]"> of {formatUsd(model.creditLimit)} left</span>
                   </>
                ) : (
                   <>
-                     <span className="text-[#4f36ef]">{model.creditHint.highlight}</span>
-                     <span className="text-[#c0b9c8]">{model.creditHint.rest}</span>
+                     <span className="text-[#4f36ef] dark:text-[#b3a6ff]">{model.creditHint.highlight}</span>
+                     <span className="text-[#c0b9c8] dark:text-[#8f819e]">{model.creditHint.rest}</span>
                   </>
                )}
             </p>
          </div>
          {/* Credit limit gauge: how much of the limit is free to borrow right now. */}
          <div
-            className="absolute inset-x-5 top-[391px] h-[17px] rounded-full border-[3px] border-white bg-[#eee]"
+            className="absolute inset-x-5 top-[391px] h-[17px] rounded-full border-[3px] border-dv2-card bg-[#eee] dark:bg-[#2a2235]"
             role="meter"
             aria-label="Credit available to borrow"
             aria-valuemin={0}
@@ -253,7 +256,7 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
             aria-valuetext={`${formatUsd(creditAvailable)} of ${formatUsd(model.creditLimit)} available`}
          >
             <div
-               className="h-[11px] max-w-full rounded-full bg-gradient-to-r from-[#ebddff] to-[#4f36f0] transition-[width] duration-500"
+               className="h-[11px] max-w-full rounded-full bg-gradient-to-r from-[#ebddff] to-[#4f36f0] transition-[width] dark:from-[#3d2f86] dark:to-[#9b8bff] duration-500"
                style={{ width: `${fillPercent}%` }}
             />
          </div>

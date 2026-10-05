@@ -81,6 +81,16 @@ export default {
                   border: '#B4B2A9',
                   text: '#888780'
                }
+            },
+            // Borrower dashboard (dashboard-v2) surfaces. Light/dark values live in globals.css; these class
+            // names aren't matched by the global dark-mode remap there, so the dashboard themes on its own.
+            dv2: {
+               page: 'var(--dv2-page)',
+               card: 'var(--dv2-card)',
+               'card-tint': 'var(--dv2-card-tint)',
+               tab: 'var(--dv2-tab)',
+               // Text drawn on the illustrated hero scene, which isn't themed: stays dark in both modes.
+               scene: '#1c053d'
             }
          },
          spacing: {

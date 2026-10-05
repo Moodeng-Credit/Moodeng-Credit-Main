@@ -39,7 +39,7 @@ function PopupShell({
          {/* m-auto centres the popup when it fits and lets it scroll on short screens (small or landscape phones). */}
          <div className="m-auto flex w-full max-w-[400px] flex-col items-center" onClick={(event) => event.stopPropagation()}>
             {title}
-            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white shadow-[0_-1px_0_0_#fff]">
+            <div className="w-full rounded-[26px] bg-gradient-to-b from-[#f3ecff] via-white via-40% to-white shadow-[0_-1px_0_0_#fff] dark:from-dv2-tab dark:via-dv2-card dark:to-dv2-card">
                {children}
             </div>
             <button type="button" onClick={onClose} className="mt-14 h-[50px] w-[50px]" aria-label="Close">
@@ -59,7 +59,7 @@ function MilestoneTitle({ milestone }: { milestone: DashboardV2Milestone }) {
    }
 
    return (
-      <p className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8">
+      <p className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#4c239f] underline dark:text-[#c4b8ff] decoration-[#7e6afa] decoration-4 underline-offset-8">
          {milestone.title}
       </p>
    );
@@ -99,7 +99,7 @@ export function MilestonePopup({
    return (
       <PopupShell title={<MilestoneTitle milestone={milestone} />} onClose={onClose} labelledBy="dv2-milestone-popup-title">
          <div className="flex flex-col items-center gap-[9px] px-5 pb-6 pt-[18px] text-center">
-            <div className="text-[#594d65]">
+            <div className="text-[#594d65] dark:text-[#d9cfe6]">
                <p id="dv2-milestone-popup-title" className="text-[24px] font-bold leading-6">
                   {milestone.isVoucher ? 'Repay on time, eat on us.' : 'Feed Moodeng to level up.'}
                </p>
@@ -112,7 +112,7 @@ export function MilestonePopup({
                   src={milestone.isVoucher ? DASHBOARD_V2_ASSETS.coupon : DASHBOARD_V2_ASSETS.pandesalLarge}
                   className={milestone.isVoucher ? 'h-20 w-20 object-contain' : 'h-[94px] w-[94px] object-contain'}
                />
-               <p className="font-black leading-6 text-[#5d4ccc]">
+               <p className="font-black leading-6 text-[#5d4ccc] dark:text-[#b3a6ff]">
                   {milestone.isVoucher ? (
                      <span className="text-[30px]">₱50</span>
                   ) : (
@@ -186,7 +186,7 @@ export function MilestoneStreakPopup({
    return (
       <PopupShell
          title={
-            <p className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#4c239f] underline decoration-[#7e6afa] decoration-4 underline-offset-8">
+            <p className="mb-2 max-w-[350px] text-center text-[26px] font-black italic leading-7 text-[#4c239f] underline dark:text-[#c4b8ff] decoration-[#7e6afa] decoration-4 underline-offset-8">
                {copy.title}
             </p>
          }
@@ -205,7 +205,7 @@ export function MilestoneStreakPopup({
                >
                   {milestones.length}
                </span>
-               <span className="text-[22px] font-bold leading-6 text-[#594d65]">{copy.unit(milestones.length)}</span>
+               <span className="text-[22px] font-bold leading-6 text-[#594d65] dark:text-[#d9cfe6]">{copy.unit(milestones.length)}</span>
             </p>
 
             <ol className="mt-4 flex w-full justify-between px-1" aria-label="This week">
@@ -213,14 +213,20 @@ export function MilestoneStreakPopup({
                   const isHit = hitDays.has(day.key);
                   return (
                      <li key={day.key} className="flex flex-col items-center gap-1">
-                        <span className={day.isToday ? 'text-[12px] font-bold text-[#4f36ef]' : 'text-[12px] font-medium text-[#c0b9c8]'}>
+                        <span
+                           className={
+                              day.isToday
+                                 ? 'text-[12px] font-bold text-[#4f36ef] dark:text-[#b3a6ff]'
+                                 : 'text-[12px] font-medium text-[#c0b9c8] dark:text-[#75688a]'
+                           }
+                        >
                            {day.letter}
                         </span>
                         <span
                            className={
                               isHit
                                  ? 'flex h-7 w-7 items-center justify-center rounded-full text-white shadow-[0_2px_6px_rgba(79,54,239,0.35)]'
-                                 : 'flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#e0dbff] bg-white'
+                                 : 'flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#e0dbff] bg-dv2-card dark:border-[#3a2f55]'
                            }
                            style={isHit ? { backgroundImage: PRIMARY_GRADIENT } : undefined}
                         >
@@ -244,16 +250,16 @@ export function MilestoneStreakPopup({
 
             <ul className="mt-5 flex w-full flex-col gap-2 text-left">
                {milestones.map((milestone) => (
-                  <li key={milestone.id} className="flex items-center gap-2.5 rounded-[12px] bg-[#f6f3ff] px-3 py-2.5">
+                  <li key={milestone.id} className="flex items-center gap-2.5 rounded-[12px] bg-[#f6f3ff] px-3 dark:bg-[#251d36] py-2.5">
                      <DesignImage src={DASHBOARD_V2_ASSETS.pandesalSmall} className="h-6 w-6 shrink-0 object-contain" />
                      <span className="min-w-0 flex-1 text-[16px] font-medium leading-5 text-[#0f172b]">{milestone.title}</span>
-                     <span className="shrink-0 text-[16px] font-bold text-[#7e6afa]">+{milestone.points}</span>
+                     <span className="shrink-0 text-[16px] font-bold text-[#7e6afa] dark:text-[#b3a6ff]">+{milestone.points}</span>
                   </li>
                ))}
             </ul>
 
-            <p className="mt-4 text-[18px] font-bold text-[#594d65]">
-               <span className="text-[#4f36ef]">+{totalPandesal}</span> {copy.fed}
+            <p className="mt-4 text-[18px] font-bold text-[#594d65] dark:text-[#d9cfe6]">
+               <span className="text-[#4f36ef] dark:text-[#b3a6ff]">+{totalPandesal}</span> {copy.fed}
             </p>
             <p className="mt-1 text-[15px] leading-5 text-[#877897]">{copy.nudge}</p>
 
