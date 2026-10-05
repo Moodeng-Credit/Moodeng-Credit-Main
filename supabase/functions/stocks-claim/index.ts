@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
 
@@ -10,9 +11,11 @@ import { postDiscord } from '../_shared/discord.ts';
 // follow up on TikTok. Public endpoint (no JWT) — the wheel runs in the browser, so the numbers are
 // only sanity-checked against what the wheel can actually produce, never trusted for a payout.
 //
-// Routing: DISCORD_PRIZES_WEBHOOK_URL (own channel) — falls back to DISCORD_TEAM_WEBHOOK_URL.
-// With neither set we answer 503 so the page never tells someone their claim was received when it
-// was not.
+// Storage first: every valid claim is saved in public.stocks_prize_claims (one row per handle,
+// case-insensitive), so a claim is never lost. That row is the source of truth; the Discord ping is
+// a best-effort heads-up (DISCORD_PRIZES_WEBHOOK_URL, falling back to DISCORD_TEAM_WEBHOOK_URL) and
+// is skipped silently when no webhook is configured. A repeat claim for the same handle is answered
+// OK without a second row or ping.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -70,8 +73,23 @@ serve(async (req) => {
    const claim = parseClaim(body);
    if (!claim) return json({ error: 'invalid_claim' }, 400);
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   const { error } = await supabase.from('stocks_prize_claims').insert({
+      tiktok_handle: claim.handle,
+      spins: claim.spins,
+      points: claim.points,
+      tickets: claim.tickets,
+      lang: claim.lang
+   });
+   if (error) {
+      // 23505 = this handle already claimed. Say OK so the page shows "claimed" and nothing is re-sent.
+      if (error.code === '23505') return json({ ok: true, duplicate: true });
+      console.error('[stocks-claim] insert failed:', error.code, error.message);
+      return json({ error: 'store_failed' }, 500);
+   }
+
    const grab = claim.tickets >= TICKETS_NEEDED;
-   const ok = await postDiscord(
+   await postDiscord(
       {
          embeds: [
             {
@@ -90,8 +108,5 @@ serve(async (req) => {
       },
       { prefer: ['DISCORD_PRIZES_WEBHOOK_URL'] }
    );
-
-   // Never confirm a claim nobody can see.
-   if (!ok) return json({ error: 'not_delivered' }, 503);
    return json({ ok: true });
 });
