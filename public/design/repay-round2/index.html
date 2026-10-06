@@ -1,0 +1,2098 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.ico">
+<style>
+html { background: #eeecf4; }
+body { margin: 0; font-size: 14px; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+.site-bar { background: #ffffff; border-bottom: 1px solid #e3dff2; }
+.site-bar-in { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.site-logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: #15122b; font: 800 20px/1 "Bricolage Grotesque", system-ui, sans-serif; letter-spacing: -0.02em; }
+.site-logo img { width: 34px; height: auto; }
+.site-tag { font: 700 11px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: #4f36ef; background: #ece8ff; padding: 7px 10px; border-radius: 8px; }
+.site-bar-in .grow { flex: 1; }
+.site-link { font: 600 14px/1 Figtree, system-ui, sans-serif; color: #4f36ef; text-decoration: none; }
+.site-link:hover { text-decoration: underline; }
+.site-foot { border-top: 1px solid #e3dff2; background: #ffffff; }
+.site-foot-in { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 22px; display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: space-between; font: 500 13px/1.5 Figtree, system-ui, sans-serif; color: #5b5772; }
+</style>
+<title>Moodeng Repay Redesign · Round 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Light only, by request. Layout: one row per screen, three lanes side by side (Anna's Figma | live app | what we need); lanes stack on phones. */
+:root {
+  color-scheme: light;
+  --bg: #eeecf4;
+  --navh: 58px;
+  --surface: #ffffff;
+  --surface-2: #faf9fe;
+  --ink: #15122b;
+  --muted: #5b5772;
+  --line: #e3dff2;
+  --accent: #6b55f7;
+  --accent-ink: #4f36ef;
+  --accent-soft: #ece8ff;
+  --grad: linear-gradient(80deg, #9584ff 0%, #6b55f7 100%);
+  --ok: #137a44; --ok-soft: #e2f5ea;
+  --warn: #8a5a00; --warn-soft: #fff4d6;
+  --bad: #c8182a; --bad-soft: #fdeaec;
+  --hole: repeating-linear-gradient(135deg, #f1eef9 0 10px, #e9e5f6 10px 20px);
+  --shadow: 0 10px 30px rgba(60, 40, 160, 0.10);
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--body); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 80px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.wrap > * { min-width: 0; }
+section.block > * { min-width: 0; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: -0.02em; }
+h1 { font-size: clamp(32px, 5.5vw, 54px); font-weight: 800; line-height: 1.03; }
+h2 { font-size: clamp(25px, 3.6vw, 34px); font-weight: 800; line-height: 1.1; }
+h3 { font-size: 20px; font-weight: 700; line-height: 1.2; }
+p { margin: 0; }
+a { color: var(--accent-ink); }
+.eyebrow { font: 700 12px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-ink); }
+.muted { color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+.top { display: grid; gap: 18px; padding-block: 12px 26px; }
+.lede { font-size: 18px; max-width: 66ch; }
+.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 10px; background: rgba(255, 255, 255, .94); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 6px 18px rgba(40, 30, 110, .08); }
+.toc::-webkit-scrollbar { display: none; }
+.toc a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; text-decoration: none; padding: 7px 12px; border-radius: 999px; color: var(--ink); background: transparent; }
+.toc a i { width: 10px; height: 10px; border-radius: 50%; background: var(--dot); flex: 0 0 auto; }
+.toc a:hover { background: var(--surface-2); }
+.toc a.on { background: var(--ink); color: #fff; }
+
+/* Scoreboard */
+.score { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.score > div { background: var(--surface); border: 1px solid #dcd7ec; box-shadow: 0 4px 14px rgba(40, 30, 110, .06); border-radius: 16px; padding: 18px; display: grid; gap: 8px; align-content: start; }
+.score b { font: 800 30px/1 var(--display); font-variant-numeric: tabular-nums; }
+.score .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.score .bar i { display: block; height: 100%; background: var(--grad); }
+
+/* Callout */
+.callout { border-radius: 20px; padding: 22px; display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--tint-line); }
+.callout ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.callout .pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.callout .pair > div { min-width: 0; display: grid; gap: 6px; align-content: start; }
+
+section.block { --tint: #f1eefc; --tint-line: #ddd5f7; --tint-ink: #4f36ef; background: var(--tint); border: 1px solid var(--tint-line); border-radius: 28px; padding-inline: clamp(14px, 3vw, 32px); padding-block: 30px 32px; display: grid; gap: 18px; margin-top: 26px; scroll-margin-top: calc(var(--navh) + 16px); }
+section.block .eyebrow { justify-self: start; display: inline-block; padding: 7px 11px; border-radius: 8px; background: var(--surface); color: var(--tint-ink); border: 1px solid var(--tint-line); }
+section.block .block-head h2 { color: var(--ink); }
+#problems { --tint: #fdeef0; --tint-line: #f3c6cf; --tint-ink: #b0142c; }
+#wallet { --tint: #ece7ff; --tint-line: #cfc4fb; --tint-ink: #4f36ef; }
+#repay { --tint: #e8e6fb; --tint-line: #cfcaf3; --tint-ink: #3f2fc7; }
+#cashout { --tint: #e1f3e9; --tint-line: #b9e1cb; --tint-ink: #0f6b3b; }
+#walletcard { --tint: #e2eefa; --tint-line: #bcd6f1; --tint-ink: #1d5a96; }
+#next { --tint: #fdeee2; --tint-line: #f1cdb2; --tint-ink: #9a4a14; }
+.toc a[href="#problems"] { --dot: #e0435a; }
+.toc a[href="#wallet"] { --dot: #8c75ff; }
+.toc a[href="#repay"] { --dot: #5a48e6; }
+.toc a[href="#cashout"] { --dot: #2fa868; }
+.toc a[href="#walletcard"] { --dot: #3b82c9; }
+.toc a[href="#next"] { --dot: #e07a36; }
+.block-head { display: grid; gap: 10px; max-width: 74ch; }
+
+/* Lane header */
+.lanes { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 18px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + var(--navh)); z-index: 2; background: var(--tint); padding-block: 10px; border-bottom: 1px solid var(--tint-line); }
+.lanes span { font: 700 12px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* Rows */
+.row { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 20px; padding: 20px; display: grid; gap: 16px; scroll-margin-top: calc(var(--navh) + 60px); box-shadow: 0 4px 14px rgba(40, 30, 110, .06); }
+.row + .row { margin-top: 2px; }
+.row-head { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.row-head h3 { flex: 1 1 auto; min-width: 0; }
+.cols { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 18px; align-items: start; }
+.col { min-width: 0; display: grid; gap: 8px; justify-items: start; align-content: start; }
+.col .lane-label { display: none; font: 700 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.shots { display: flex; flex-wrap: wrap; gap: 10px; }
+.shot { padding: 0; border: 1px solid var(--line); background: var(--surface-2); border-radius: 14px; overflow: hidden; cursor: zoom-in; width: 150px; max-width: 100%; box-shadow: var(--shadow); }
+.shot.one { width: 200px; }
+.shot img { display: block; width: 100%; height: auto; max-height: 430px; object-fit: cover; object-position: top; }
+.cap { font-size: 12.5px; color: var(--muted); max-width: 210px; }
+.hole { width: 200px; max-width: 100%; aspect-ratio: 9 / 16; border-radius: 14px; background: var(--hole); border: 1px dashed var(--line); display: grid; place-items: center; text-align: center; padding: 14px; font: 700 12px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.need { display: grid; gap: 8px; }
+.need ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; font-size: 15px; }
+.need li::marker { color: var(--accent); }
+.need .rule { font-size: 13.5px; background: var(--warn-soft); color: var(--ink); border-radius: 10px; padding: 8px 10px; }
+.need .rule b { color: var(--warn); }
+
+.pill { font: 700 11.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 7px 10px; border-radius: 8px; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.fix { background: var(--warn-soft); color: var(--warn); }
+.pill.miss { background: var(--bad-soft); color: var(--bad); }
+.pill.new { background: var(--accent-soft); color: var(--accent-ink); }
+
+/* Problems */
+.probs { display: grid; gap: 14px; }
+.prob { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 18px; padding: 20px; display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 4px 16px; }
+.prob .num { font: 800 26px/1 var(--display); color: var(--accent); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.prob .body { min-width: 0; display: grid; gap: 10px; }
+.prob .top-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.prob h3 { flex: 1 1 260px; min-width: 0; }
+.prob dl { margin: 0; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 14px; font-size: 15px; }
+.prob dt { font: 700 11px/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.prob dd { margin: 0; min-width: 0; }
+.prob .shots { gap: 8px; }
+.prob .shot { width: 96px; box-shadow: none; }
+.prob .shot img { max-height: 200px; }
+.sev { font: 700 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 9px; border-radius: 7px; white-space: nowrap; }
+.sev.big { background: var(--bad-soft); color: var(--bad); }
+.sev.med { background: var(--warn-soft); color: var(--warn); }
+.sev.small { background: var(--accent-soft); color: var(--accent-ink); }
+.group-title { font: 700 13px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--tint-ink); padding-top: 18px; padding-bottom: 6px; border-bottom: 1px solid var(--tint-line); }
+.probs > .group-title:first-child { padding-top: 0; }
+@media (max-width: 560px) {
+  .prob { grid-template-columns: 1fr; }
+  .prob dl { grid-template-columns: 1fr; gap: 2px; }
+  .prob dd { margin-bottom: 8px; }
+}
+
+.good { background: var(--surface); border: 1px solid #b9e1cb; border-radius: 18px; padding: 20px 22px; }
+.good ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.good li::marker { color: var(--ok); }
+
+/* Sketch: clickable loan page */
+.sketch-intro { max-width: 70ch; font-size: 15px; }
+.sketch { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 32px; align-items: start; }
+.phone-wrap { display: grid; gap: 12px; justify-items: center; }
+.phone { --p-ink: #15122b; --p-muted: #6d6884; --p-line: #ebe8f5; --p-purple: #4f1fd1; --p-soft: #f3f0ff;
+  width: 300px; max-width: 100%; background: #fff; color: var(--p-ink); border: 1px solid #d9d4ec; border-radius: 36px; overflow: hidden;
+  box-shadow: 0 18px 40px rgba(40, 30, 110, .16); display: grid; font-size: 14px; }
+.ph-status { display: flex; justify-content: space-between; padding: 12px 22px 4px; font-weight: 600; font-size: 13px; }
+.ph-dots { letter-spacing: 1px; font-size: 9px; }
+.ph-top { display: flex; align-items: center; gap: 10px; padding: 6px 18px 2px; }
+.ph-back { font-size: 26px; line-height: 1; color: var(--p-ink); }
+.ph-title { font: 700 16px/1.2 var(--display); flex: 1; }
+.ph-link { font-size: 13px; font-weight: 600; color: var(--p-purple); }
+.ph-label { font: 700 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--p-muted); }
+.ph-owe { padding: 16px 20px 14px; display: grid; gap: 6px; }
+.ph-big { font: 800 30px/1.05 var(--display); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ph-bar { height: 6px; border-radius: 99px; background: var(--p-line); overflow: hidden; }
+.ph-bar i { display: block; height: 100%; background: #2fa868; }
+.ph-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--p-muted); align-items: center; }
+.ph-due { font-weight: 700; color: #8a5a00; background: #fff4d6; padding: 4px 8px; border-radius: 99px; white-space: nowrap; }
+.ph-pay { margin: 0 12px; padding: 16px 10px 12px; border-top: 1px solid var(--p-line); display: grid; gap: 10px; justify-items: center; text-align: center; }
+.ph-amount { font: 800 44px/1 var(--display); letter-spacing: -0.03em; color: var(--p-purple); font-variant-numeric: tabular-nums; }
+.ph-seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--p-soft); border-radius: 14px; padding: 4px; width: 100%; }
+.ph-seg button { border: 0; background: transparent; border-radius: 10px; padding: 9px 0; font: 700 14px/1 var(--body); color: var(--p-ink); cursor: pointer; }
+.ph-seg button.on { background: #fff; color: var(--p-purple); box-shadow: 0 2px 6px rgba(40, 30, 110, .14); }
+.ph-other { font-size: 13px; font-weight: 600; color: var(--p-purple); background: none; border: 0; cursor: pointer; padding: 2px 6px; }
+.ph-seg[hidden] { display: none; }
+.ph-reward { margin: 4px 12px 0; padding: 10px 12px; border-radius: 18px; background: linear-gradient(120deg, #fff6e0, #f3edff); display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; font-size: 13px; line-height: 1.35; }
+.ph-reward > img { width: 64px; height: auto; transition: transform .25s ease; }
+.ph-reward div { display: grid; gap: 4px; }
+.ph-tier { display: block; height: 6px; border-radius: 99px; background: rgba(79, 31, 209, .15); overflow: hidden; }
+.ph-tier i { display: block; height: 100%; background: linear-gradient(90deg, #f3a712, #4f1fd1); transition: width .3s ease; }
+.ph-tier-label { font: 600 11px/1.2 var(--mono); color: #6d6884; }
+.ph-reward-top { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.ph-reward-top img { width: 22px; height: auto; }
+.ph-wallet { margin: 10px 14px 0; display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--p-muted); }
+.ph-ok { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: #e2f5ea; color: #137a44; flex: 0 0 auto; }
+.ph-wallet.short .ph-ok { background: #fdeaec; color: #c8182a; }
+.ph-wallet.short b { color: #c8182a; }
+.ph-foot { margin-top: 14px; padding: 12px 14px 12px; border-top: 1px solid var(--p-line); display: grid; gap: 8px; background: #fff; }
+.ph-after { font-size: 12.5px; text-align: center; color: var(--p-muted); }
+.ph-btn { border: 0; border-radius: 16px; padding: 15px; font: 700 16px/1 var(--body); color: #fff; background: var(--p-purple); cursor: pointer; }
+.ph-btn.add { background: #15122b; }
+.ph-nav { display: flex; justify-content: space-around; padding: 8px 6px 14px; font-size: 10.5px; color: var(--p-muted); border-top: 1px solid var(--p-line); }
+.ph-nav .on { color: var(--p-purple); font-weight: 700; }
+.sk-toggle { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; font-size: 13px; color: var(--muted); }
+.sk-toggle button { border: 1px solid var(--tint-line); background: var(--surface); border-radius: 99px; padding: 6px 11px; font: 600 13px/1 var(--body); color: var(--ink); cursor: pointer; }
+.sk-toggle button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.sketch-notes { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.sketch-notes ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; font-size: 15px; max-width: 62ch; }
+@media (max-width: 760px) { .sketch { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .ph-reward > img { transition: none; } }
+
+/* Marked-up screens */
+#marked { --tint: #f7ecf7; --tint-line: #e8cbe6; --tint-ink: #9b1f76; }
+.toc a[href="#marked"] { --dot: #d1408f; }
+.mk-list { display: grid; gap: 18px; }
+.mk { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 22px; padding: 20px; display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 28px; align-items: start; scroll-margin-top: calc(var(--navh) + 16px); }
+.mk-shot { position: relative; border-radius: 22px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 10px 26px rgba(40, 30, 110, .12); }
+.mk-shot img { display: block; width: 100%; height: auto; }
+.mk-box { position: absolute; border: 2.5px solid #ff2e55; background: rgba(255, 46, 85, .10); border-radius: 8px; cursor: pointer; transition: background .15s ease, box-shadow .15s ease; }
+.mk-box b { position: absolute; left: -9px; top: -9px; width: 20px; height: 20px; border-radius: 50%; background: #ff2e55; color: #fff; font: 700 11px/20px var(--mono); text-align: center; box-shadow: 0 0 0 2px #fff; }
+.mk-box.hot { background: rgba(255, 46, 85, .26); box-shadow: 0 0 0 4px rgba(255, 46, 85, .28); z-index: 2; }
+.mk-shot.dim .mk-box:not(.hot) { opacity: .35; }
+.mk-side { min-width: 0; display: grid; gap: 12px; align-content: start; }
+.mk-side h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.mk-count { font: 700 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 8px; border-radius: 7px; background: #ffe3e9; color: #b0142c; }
+.mk-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mk-notes li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; padding: 9px 10px; border-radius: 12px; cursor: pointer; font-size: 15px; line-height: 1.45; }
+.mk-notes li:hover, .mk-notes li.hot { background: #fff0f3; }
+.mk-n { width: 24px; height: 24px; border-radius: 50%; background: #ff2e55; color: #fff; font: 700 12px/24px var(--mono); text-align: center; }
+.mk-t { display: grid; gap: 3px; }
+.mk-fix { color: var(--ok); font-weight: 600; font-size: 14px; }
+.mk-missing { font-size: 14.5px; background: #fff4d6; border-radius: 10px; padding: 9px 12px; }
+@media (max-width: 760px) { .mk { grid-template-columns: 1fr; } .mk-shot { max-width: 340px; } }
+@media (prefers-reduced-motion: reduce) { .mk-box { transition: none; } }
+
+/* Direction sections */
+#how { --tint: #e2f3f0; --tint-line: #b9e0d9; --tint-ink: #0d6b60; }
+#flow { --tint: #e9ecfb; --tint-line: #cbd2f2; --tint-ink: #2f3fb0; }
+#simple { --tint: #eef4e0; --tint-line: #d3e2ae; --tint-ink: #4a6812; }
+#game { --tint: #fff2d6; --tint-line: #efd59a; --tint-ink: #8a5a00; }
+.toc a[href="#how"] { --dot: #1a9e8f; }
+.toc a[href="#flow"] { --dot: #4a5ad6; }
+.toc a[href="#simple"] { --dot: #7aa02a; }
+.toc a[href="#game"] { --dot: #e0a21a; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.fact { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; }
+.fact ul { margin: 0; padding-left: 18px; display: grid; gap: 7px; font-size: 15px; }
+.fact li::marker { color: var(--tint-ink); }
+.game-fact { grid-column: 1 / -1; }
+.tiers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 520px; }
+.tiers figure { margin: 0; display: grid; justify-items: center; gap: 2px; text-align: center; }
+.tiers img { width: 72px; height: auto; }
+.tiers figcaption { font-weight: 700; font-size: 14px; line-height: 1.25; }
+.tiers figcaption span { font: 600 12px/1.3 var(--mono); color: var(--muted); }
+.flow-title { padding-top: 6px; }
+.chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; }
+.step { flex: 1 1 145px; min-width: 145px; background: var(--surface); border: 1px solid var(--tint-line); border-radius: 16px; padding: 14px; display: grid; gap: 6px; align-content: start; font-size: 14px; line-height: 1.45; position: relative; }
+.step h4 { margin: 0; font: 700 16px/1.2 var(--display); }
+.step p { margin: 0; }
+.step .job { font-weight: 700; color: var(--tint-ink); }
+.step .moment { font-size: 12.5px; font-weight: 600; color: #8a5a00; background: #fff4d6; border-radius: 8px; padding: 5px 8px; }
+.step.key { border: 2px solid var(--tint-ink); }
+.step.branch { border-style: dashed; background: var(--surface-2); }
+.step.split { flex-basis: 190px; }
+.step-n { width: 24px; height: 24px; border-radius: 50%; background: var(--tint-ink); color: #fff; font: 700 12px/24px var(--mono); text-align: center; }
+.only { justify-self: start; font: 700 10.5px/1 var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--bg); border-radius: 6px; padding: 5px 7px; }
+.arrow { flex: 0 0 auto; align-self: center; font-size: 22px; color: var(--tint-ink); }
+.flow-note { font-size: 15px; background: var(--surface); border: 1px solid var(--tint-line); border-radius: 14px; padding: 12px 16px; max-width: 80ch; }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.rule-card { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 16px; padding: 16px 18px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 4px 12px; align-content: start; }
+.rule-card > b { grid-row: span 2; font: 800 26px/1 var(--display); color: var(--tint-ink); }
+.rule-card p { font-size: 15px; }
+.cut { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 12px; }
+.cut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px 22px; font-size: 15px; }
+.cut s { color: var(--bad); text-decoration-thickness: 2px; }
+.loop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.loop div { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 14px; padding: 10px 14px; display: grid; gap: 2px; }
+.loop b { font: 700 15px/1.2 var(--display); }
+.loop span { font-size: 12.5px; color: var(--muted); }
+.loop i { font-style: normal; font-size: 20px; color: var(--tint-ink); }
+.moments { display: grid; gap: 12px; }
+.moments table { min-width: 620px; }
+.moments td:first-child { white-space: nowrap; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--tint-line); border-radius: 16px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font: 700 11.5px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+td:first-child { font-weight: 700; }
+
+.decision { background: var(--surface); border: 2px solid var(--ok); border-radius: 18px; padding: 16px 20px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.decision > div { display: grid; gap: 6px; }
+.decision p { font-size: 15px; max-width: 80ch; }
+@media (max-width: 560px) { .decision { grid-template-columns: 1fr; } }
+
+/* Sketch: foolproof top-up */
+.ss-goal { padding: 14px 20px 10px; display: grid; gap: 4px; }
+.ss-amt { font: 800 34px/1.05 var(--display); color: var(--p-purple); letter-spacing: -0.02em; }
+.ss-sub { font-size: 12px; color: var(--p-muted); }
+.ss-steps { list-style: none; margin: 4px 10px 0; padding: 0; display: grid; gap: 4px; }
+.ss-steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 9px 10px; border-radius: 14px; border: 1.5px solid transparent; transition: opacity .2s ease, background .2s ease; font-size: 13.5px; }
+.ss-steps li > div { display: grid; gap: 5px; }
+.ss-steps li.later { opacity: .4; }
+.ss-wait[hidden] { display: none; }
+.ss-steps li.cur { background: var(--p-soft); border-color: #cbbdfc; }
+.ss-steps li.done .ss-dot { background: #2fa868; color: #fff; }
+.ss-steps li.done b { color: var(--p-muted); }
+.ss-dot { width: 26px; height: 26px; border-radius: 50%; background: #e7e2fb; color: var(--p-purple); font: 700 12px/26px var(--mono); text-align: center; }
+.ss-steps li.cur .ss-dot { background: var(--p-purple); color: #fff; }
+.ss-addr { font: 600 13px/1.2 var(--mono); color: var(--p-ink); }
+.ss-addr strong { font-size: 15px; color: var(--p-purple); }
+.ss-addr em { font: 700 11.5px/1 var(--body); font-style: normal; color: #137a44; margin-left: 6px; }
+.ss-path { display: flex; flex-wrap: wrap; gap: 4px; }
+.ss-path i { font-style: normal; font-size: 11.5px; font-weight: 600; background: #fff; border: 1px solid var(--p-line); border-radius: 7px; padding: 3px 6px; }
+.ss-path i + i::before { content: "→ "; color: var(--p-muted); }
+.ss-base { display: grid; grid-template-columns: 20px auto; gap: 2px 8px; align-items: center; background: #e8f0ff; border-radius: 10px; padding: 7px 9px; }
+.ss-base > b { color: #0b4fd6; }
+.ss-base > span:last-child { grid-column: 1 / -1; font-size: 11.5px; color: #33507f; }
+.ss-base-logo { width: 20px; height: 20px; border-radius: 50%; background: #0052ff; box-shadow: inset 0 0 0 6px #0052ff, inset 0 0 0 20px #fff; }
+.ss-small { font-size: 12px; color: var(--p-muted); }
+.ss-small strong { color: var(--p-purple); font-size: 13px; }
+.ss-wait { margin: 8px 12px 0; padding: 10px 12px; border-radius: 18px; background: linear-gradient(120deg, #f3edff, #fff6e0); display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: center; font-size: 13px; line-height: 1.35; }
+.ss-wait img { width: 64px; height: auto; }
+.ss-wait div { display: grid; gap: 4px; }
+.ss-wait .ph-tier i { transition: width .25s linear; }
+.ph-btn:disabled { background: #d9d3f3; color: #6d6884; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .ss-steps li, .ss-wait .ph-tier i { transition: none; } }
+
+/* Evidence */
+#evidence { --tint: #e6eef8; --tint-line: #c3d3ea; --tint-ink: #1f4f8f; }
+.toc a[href="#evidence"] { --dot: #2f6fc4; }
+.ev-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.ev-stat { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 16px; padding: 16px; display: grid; gap: 6px; align-content: start; }
+.ev-stat b { font: 800 30px/1 var(--display); color: var(--tint-ink); font-variant-numeric: tabular-nums; }
+.ev-stat span { font-size: 14.5px; line-height: 1.45; }
+.ev-stat.hot { border: 2px solid var(--bad); }
+.ev-stat.hot b { color: var(--bad); }
+.ev-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.ev-card { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; font-size: 15px; }
+.ev-tag { justify-self: start; font: 700 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 8px; border-radius: 7px; background: var(--accent-soft); color: var(--accent-ink); }
+.ev-tag.big { background: var(--bad-soft); color: var(--bad); }
+.ev-src { font: 500 12px/1.4 var(--mono); color: var(--muted); }
+.ev-timeline { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 7px; border-left: 2px solid var(--tint-line); }
+.ev-timeline li { padding-left: 12px; position: relative; }
+.ev-timeline li::before { content: ""; position: absolute; left: -6px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--tint-ink); }
+.ev-timeline b { font-family: var(--mono); font-size: 13px; }
+.ev-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.ev-table td { padding: 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.ev-table td:last-child { text-align: right; white-space: nowrap; padding-left: 12px; font-variant-numeric: tabular-nums; }
+.ev-table tr:last-child td { border-bottom: 0; }
+.ev-table td:first-child { font-weight: 400; white-space: normal; }
+.ev-implications { background: var(--surface); border: 2px solid var(--tint-ink); border-radius: 18px; padding: 18px 22px; display: grid; gap: 10px; }
+.ev-implications ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; font-size: 15px; max-width: 90ch; }
+
+/* Scenarios */
+#scenarios { --tint: #f0eafb; --tint-line: #d8cbf3; --tint-ink: #5b33c4; }
+.toc a[href="#scenarios"] { --dot: #7a4ee0; }
+.first-steps { background: var(--surface); border: 2px solid var(--tint-ink); border-radius: 18px; padding: 18px 22px; display: grid; gap: 10px; }
+.first-steps ol { margin: 0; padding-left: 22px; display: grid; gap: 8px; font-size: 15px; max-width: 90ch; }
+.first-steps code { font: 600 13px/1 var(--mono); background: var(--surface-2); padding: 2px 5px; border-radius: 5px; }
+.scn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 14px; }
+.scn { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; font-size: 15px; }
+.scn.hot { border: 2px solid var(--bad); }
+.scn-head { display: flex; align-items: center; gap: 10px; }
+.scn-n { width: 28px; height: 28px; flex: 0 0 auto; border-radius: 50%; background: var(--tint-ink); color: #fff; font: 700 13px/28px var(--mono); text-align: center; }
+.scn.hot .scn-n { background: var(--bad); }
+.gwt { margin: 0; display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 6px 10px; background: var(--surface-2); border-radius: 12px; padding: 12px 14px; }
+.gwt dt { font: 700 12px/1.6 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--tint-ink); }
+.gwt dd { margin: 0; line-height: 1.45; }
+.scn-why { font-size: 14px; }
+.scn-screens { justify-self: start; font: 600 12px/1.3 var(--mono); color: var(--muted); }
+.scn-screens::before { content: "Screens: "; color: var(--tint-ink); }
+.scn-measure { font-size: 13.5px; color: var(--ok); }
+
+/* Start here */
+#start { --tint: #fff; --tint-line: #d9d4ec; --tint-ink: #4f36ef; border: 2px solid var(--accent); box-shadow: 0 10px 30px rgba(60, 40, 160, .10); }
+.toc a[href="#start"] { --dot: #15122b; }
+.goal { font-size: 18px; max-width: 70ch; }
+.start-steps { margin: 0; padding-left: 22px; display: grid; gap: 8px; font-size: 15.5px; max-width: 95ch; }
+.start-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.start-card { background: var(--surface-2); border: 1px solid var(--tint-line); border-radius: 18px; padding: 18px 20px; display: grid; gap: 10px; align-content: start; font-size: 15px; }
+.start-card.wide { grid-column: 1 / -1; }
+.start-card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.deliver { min-width: 640px; }
+.deliver td:nth-child(2) { font-weight: 700; white-space: nowrap; }
+.deliver td:first-child { width: 70px; }
+.deliver td:last-child { white-space: nowrap; color: var(--muted); font-size: 14px; }
+.pri { display: inline-block; font: 700 11px/1 var(--mono); padding: 6px 8px; border-radius: 7px; }
+.pri.p1 { background: var(--bad-soft); color: var(--bad); }
+.pri.p2 { background: var(--warn-soft); color: var(--warn); }
+.pri.p1::before { content: "P"; } .pri.p2::before { content: "P"; }
+.sample { background: #fff8e8; border-color: #efd59a; }
+.sample-dl { margin: 0; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; }
+.sample-dl dt { font: 700 11.5px/1.6 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: #8a5a00; }
+.sample-dl dd { margin: 0; }
+.start-map { font-size: 14px; color: var(--muted); }
+@media (max-width: 560px) { .sample-dl { grid-template-columns: 1fr; gap: 0 0; } .sample-dl dd { margin-bottom: 8px; } }
+
+/* Checklist */
+.todo { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.todo > div { background: var(--surface); border: 1px solid var(--tint-line); border-radius: 16px; padding: 20px; display: grid; gap: 10px; align-content: start; }
+.todo ol { margin: 0; padding-left: 20px; display: grid; gap: 7px; }
+.foot { font-size: 14px; color: var(--muted); padding-top: 30px; }
+
+/* Lightbox */
+dialog { border: 0; padding: 0; background: transparent; max-width: min(94vw, 520px); max-height: 94vh; }
+dialog::backdrop { background: rgba(10, 8, 24, .78); }
+dialog img { display: block; max-width: 100%; max-height: 86vh; border-radius: 16px; margin-inline: auto; }
+dialog p { color: #fff; text-align: center; font-size: 14px; padding-top: 10px; }
+dialog button { position: fixed; top: 14px; right: 14px; border: 0; border-radius: 999px; width: 40px; height: 40px; font-size: 22px; cursor: pointer; background: #fff; color: #15122b; }
+
+@media (max-width: 860px) {
+  .lanes { display: none; }
+  .cols { grid-template-columns: 1fr; }
+  .col .lane-label { display: block; }
+}
+@media (prefers-reduced-motion: no-preference) { .shot { transition: transform .15s ease; } .shot:hover { transform: translateY(-2px); } }
+</style>
+</head>
+<body>
+<div class="site-bar"><div class="site-bar-in">
+  <a class="site-logo" href="https://moodeng.app/"><img src="/moodenglogo.webp" alt="" width="34" height="39">Moodeng</a>
+  <span class="site-tag">Design brief · Round 2</span>
+  <span class="grow"></span>
+  <a class="site-link" href="/repay-design-brief">Round 1 brief →</a>
+</div></div>
+
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">Design brief · Round 2 · For Anna · Oct 7, 2026</span>
+    <h1>Repay redesign, round 2</h1>
+    <p class="lede">Hi Anna. Start with the box below: it says exactly what to design and hand back. The rest of the page explains why: what borrowers actually do (from our analytics), how Moodeng works, the flow and moments to design for, how to make it simpler and more fun, and a review of your first round next to the live app.</p>
+  </header>
+
+  <nav class="toc" aria-label="Sections">
+    <a href="#start"><i></i>Start here</a>
+    <a href="#evidence"><i></i>What users do</a>
+    <a href="#how"><i></i>How Moodeng works</a>
+    <a href="#wallet"><i></i>Instant Wallet</a>
+    <a href="#flow"><i></i>The flow</a>
+    <a href="#scenarios"><i></i>Scenarios</a>
+    <a href="#simple"><i></i>Simpler</a>
+    <a href="#game"><i></i>Game</a>
+    <a href="#problems"><i></i>Design review</a>
+    <a href="#marked"><i></i>Marked up</a>
+    <a href="#repay"><i></i>Repay</a>
+    <a href="#cashout"><i></i>Cash out</a>
+    <a href="#walletcard"><i></i>Wallet card</a>
+    <a href="#next"><i></i>What we need back</a>
+  </nav>
+
+  <section class="block" id="start">
+    <div class="block-head">
+      <span class="eyebrow">Start here</span>
+      <h2>Round 2: what to do</h2>
+      <p class="goal">Redesign repay on <b>Option 3</b> so a borrower paying at night on their last day can <b>pay in one tap</b>, <b>never misreads the deadline</b>, and <b>feels rewarded</b> for paying on time. Then refresh cash out to match.</p>
+    </div>
+
+    <ol class="start-steps">
+      <li><b>Use the product.</b> Browse the new dashboard (<a href="https://moodeng.app/dashboard-v2-preview?state=rewarded" target="_blank" rel="noopener">sample data here</a>) and go through one real test loan on your phone. Details in Part 3.</li>
+      <li><b>Read Part 0 and Part 1</b>: what borrowers actually do, and the product rules. About 5 minutes.</li>
+      <li><b>Design the screens below</b> using the sample borrower, so every screen shows the same numbers.</li>
+      <li><b>Check every scenario in Part 3.</b> Each "Then" should be true in your design.</li>
+      <li><b>Hand off</b> the way described at the bottom of this box.</li>
+    </ol>
+
+    <div class="start-grid">
+      <div class="start-card wide">
+        <h3>Screens to deliver</h3>
+        <div class="table-scroll">
+          <table class="deliver">
+            <thead><tr><th>Priority</th><th>Screen</th><th>States to draw</th><th>Done when</th></tr></thead>
+            <tbody>
+              <tr><td><span class="pri p1">1</span></td><td>Repay tab</td><td>One loan (opens the loan page) · several loans · nothing to pay ("You're all set") · overdue</td><td>Scenarios 1, 2, 4</td></tr>
+              <tr><td><span class="pri p1">1</span></td><td>Loan page</td><td>Wallet has enough · wallet short · "Pay part" open · due today · overdue</td><td>Scenarios 1, 2, 3, 6, 7, 8</td></tr>
+              <tr><td><span class="pri p1">1</span></td><td>Top-up (send + waiting in one screen)</td><td>Copy address · steps in Coins.ph · waiting · part arrived · arrived</td><td>Scenarios 5, 6, 7</td></tr>
+              <tr><td><span class="pri p1">1</span></td><td>Confirm and paying</td><td>Confirm sheet · sending · slow ("you can leave") · failed</td><td>Scenario 1</td></tr>
+              <tr><td><span class="pri p1">1</span></td><td>Done</td><td>Paid it all (plus tier-up, voucher, level-up versions) · paid part · paid late ("account unlocked")</td><td>Scenarios 8, 9</td></tr>
+              <tr><td><span class="pri p2">2</span></td><td>Cash out refresh</td><td>Loan arrived · choose app (Coins.ph preselected) · face check · send · sent / slow / failed · sell for pesos</td><td>Scenarios 6, 10, 11</td></tr>
+              <tr><td><span class="pri p2">2</span></td><td>Wallet card (Account)</td><td>With money · empty · money arrived · wallet details</td><td>Scenario 6</td></tr>
+              <tr><td><span class="pri p2">2</span></td><td>Moodeng moods</td><td>Eating · worried · relieved · helping (in the dashboard's 3D style)</td><td>Scenario 8</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="start-card sample">
+        <h3>Sample borrower: use on every screen</h3>
+        <dl class="sample-dl">
+          <dt>Loan</dt><dd>"Medical appointment", $121.00 total</dd>
+          <dt>Paid so far</dt><dd>$40.00 · <b>$81.00 left</b></dd>
+          <dt>Due</dt><dd><b>Oct 12, 8:00 AM</b> (6 days left)</dd>
+          <dt>Second loan</dt><dd>"Vaccination bills", $40.00 left, due Nov 3, 8:00 AM</dd>
+          <dt>Wallet</dt><dd>$121.00 (enough) or <b>$18.00</b> (short: needs <b>$63.00</b>)</dd>
+          <dt>Pay part</dt><dd>$40.50 paid → $40.50 left</dd>
+          <dt>Moodeng</dt><dd>Rookie, 45 Pandesal (Rising at 60)</dd>
+          <dt>Streak</dt><dd>2 on-time loans in a row</dd>
+          <dt>Paying in full on time</dt><dd>+10 on time, +15 streak bonus → 70 Pandesal → Rising + ₱50 GrabFood voucher</dd>
+        </dl>
+      </div>
+
+      <div class="start-card">
+        <h3>How to hand off</h3>
+        <ul>
+          <li>A new Figma page, <b>"Round 2"</b>, built on Option 3.</li>
+          <li>Frames named <b>Flow / Screen / State</b>, e.g. "Repay / Loan page / Wallet short".</li>
+          <li>A clickable prototype of the main path: wallet short → top up → pay it all → celebrate.</li>
+          <li>English only, with room for text about 30% longer.</li>
+          <li>Check the main screens at <b>360 × 640</b>; the button must be visible without scrolling.</li>
+          <li>Mark any new reward idea as <b>"Proposal"</b>.</li>
+        </ul>
+      </div>
+
+      <div class="start-card">
+        <h3>Leave these to us</h3>
+        <ul>
+          <li>Which exchanges and apps appear, and their notes or fees.</li>
+          <li>Exact legal or disclaimer wording.</li>
+          <li>Translations.</li>
+          <li>Reminder timing and the due-time rule.</li>
+        </ul>
+        <p class="muted">Use placeholder text where needed; we'll fill it in.</p>
+      </div>
+    </div>
+
+    <p class="start-map"><b>The rest of this page:</b> Part 0 what borrowers do · Part 1 how Moodeng works · Part 2 the flow · Part 3 scenarios · Part 4 simpler · Part 5 game · Design review · Marked-up screens · Screen-by-screen comparison · Two clickable sketches (loan page and top-up) inside the comparison.</p>
+  </section>
+
+  <div class="score" aria-label="Coverage summary">
+    <div>
+      <span class="eyebrow">Repay</span>
+      <b>4 of 13 good</b>
+      <div class="bar"><i style="width:31%"></i></div>
+      <p class="muted">Add funds, overdue, money arrived and loan repaid are good as they are. 8 need changes. The paying screen isn't drawn yet.</p>
+    </div>
+    <div>
+      <span class="eyebrow">Cash out</span>
+      <b>Live, needs a refresh</b>
+      <div class="bar"><i style="width:0%"></i></div>
+      <p class="muted">Not in the brief, so nothing designed yet. This is how borrowers get their loan as pesos.</p>
+    </div>
+    <div>
+      <span class="eyebrow">Wallet card</span>
+      <b>Not started</b>
+      <div class="bar"><i style="width:0%"></i></div>
+      <p class="muted">Balance, Add money and Cash out on the Account page.</p>
+    </div>
+  </div>
+
+  <section class="block" id="evidence">
+    <div class="block-head">
+      <span class="eyebrow">Part 0 · The evidence</span>
+      <h2>What borrowers actually do</h2>
+      <p>Before deciding what the screens should look like, we looked at how people use them today: PostHog (clicks, rage and dead clicks, page views, last 90 days) and our loans database. The numbers are small, 30 funded loans from 14 borrowers and 35 people who opened Repay, so read them as strong signals, not statistics.</p>
+    </div>
+
+    <div class="ev-stats">
+      <div class="ev-stat hot"><b>4 of 5</b><span>late repayments were paid <strong>on the due date itself</strong>, in the evening in Manila. The cut-off was 8:00 AM.</span></div>
+      <div class="ev-stat"><b>11 of 20</b><span>loans were repaid on the last day. 13 of 20 between 5 PM and midnight.</span></div>
+      <div class="ev-stat"><b>2 of 20</b><span>loans were paid in more than one go. Almost everyone pays it all at once.</span></div>
+      <div class="ev-stat"><b>11 of 35</b><span>people opened Repay 10+ times. One borrower opened it 30 times in a single day.</span></div>
+      <div class="ev-stat"><b>11 of 22</b><span>people who opened cash out tapped "I'll do this later".</span></div>
+    </div>
+
+    <div class="ev-grid">
+      <article class="ev-card">
+        <span class="ev-tag big">Biggest issue</span>
+        <h3>People don't know when their loan is due</h3>
+        <p>18 of 20 repaid loans were due at <b>8:00 AM Manila</b> (stored as midnight UTC). The app says "Due Sep 20", so people treat the whole day as theirs. All 4 same-day "late" payments came that evening: 6:05 PM, 8:24 PM, 10:03 PM and 11:30 PM. Late means no Pandesal and a broken streak, for paying on the day they thought was fine.</p>
+        <p class="ev-src">Source: loans table, due vs repaid time in Asia/Manila</p>
+      </article>
+
+      <article class="ev-card">
+        <span class="ev-tag">One borrower's day</span>
+        <h3>Sept 20: seven hours to repay $15</h3>
+        <ol class="ev-timeline">
+          <li><b>8:00 AM</b> Loan due. The app just says "Sep 20".</li>
+          <li><b>11:18 AM</b> Opens Repay. Taps "$15.00" (nothing happens), then "Other options" and "Small fee".</li>
+          <li><b>12:37 PM</b> Taps the "Add funds to repay" card three times, then "Get the free 1.1.1.1 app": their internet provider was blocking the outside wallet.</li>
+          <li><b>6:05 PM</b> Payment finally lands. Counted late: no Pandesal, streak broken.</li>
+          <li><b>8:15 PM</b> Still fighting the wallet block: "I've turned it on — Retry" tapped six times.</li>
+        </ol>
+        <p>They opened Repay 30 times that day. The Instant Wallet removes the blocked-wallet part; the deadline confusion is still there.</p>
+        <p class="ev-src">Source: PostHog events for that borrower on /repay, loans table</p>
+      </article>
+
+      <article class="ev-card">
+        <span class="ev-tag">Clicks on /repay</span>
+        <h3>More people leave than act</h3>
+        <table class="ev-table">
+          <tr><td>Tap "Request Board" in the menu</td><td><b>15</b> people</td></tr>
+          <tr><td>Tap "Dashboard"</td><td><b>13</b></td></tr>
+          <tr><td>Tap "Account"</td><td><b>10</b></td></tr>
+          <tr><td>Tap "Open Coins.ph"</td><td><b>6</b></td></tr>
+          <tr><td>Tap "Full"</td><td><b>2</b></td></tr>
+          <tr><td>Dead clicks (tapped something that does nothing)</td><td><b>76</b> by 15 people</td></tr>
+          <tr><td>Rage clicks on "Open Coins.ph"</td><td><b>2</b> by 1 person</td></tr>
+        </table>
+        <p>Dead clicks land on amounts and labels: "$25.00", "$15.00", "Binance · Small fee", "Recommended · lowest fees…". People tap what looks important, and it isn't a button.</p>
+        <p class="ev-src">Source: PostHog $autocapture, $dead_click, $rageclick on /repay, last 90 days</p>
+      </article>
+
+      <article class="ev-card">
+        <span class="ev-tag">Who opens Repay</span>
+        <h3>Repay is also a status page</h3>
+        <p>Of the 21 people who opened Repay most often, <b>9 had no loan at all</b>; two of them opened it 42 and 28 times. 8 people came back on 3 or more different days, and borrowers reload it while waiting for a top-up or checking what they owe. Some use the app in Indonesian ("Papan Permintaan", "Riwayat").</p>
+        <p class="ev-src">Source: PostHog page views joined to our users and loans</p>
+      </article>
+
+      <article class="ev-card">
+        <span class="ev-tag">Cash out</span>
+        <h3>Coins.ph works; the rest stalls</h3>
+        <table class="ev-table">
+          <tr><td>Opened cash out</td><td><b>22</b> people</td></tr>
+          <tr><td>Picked an app</td><td><b>14</b></td></tr>
+          <tr><td>Started a send</td><td><b>11</b></td></tr>
+          <tr><td>Confirmed</td><td><b>10</b></td></tr>
+        </table>
+        <p>Coins.ph is 18 of 24 withdrawals, usually about 10 hours after the loan lands. GCrypto: 7 people picked it, only 2 sent, one person had 9 rejected sends. 53 dead clicks by 11 people on instructions like "Move the pesos to your main GCash balance" and "Base".</p>
+        <p class="ev-src">Source: PostHog withdraw_* events, withdrawals table</p>
+      </article>
+
+      <article class="ev-card">
+        <span class="ev-tag">Support</span>
+        <h3>People struggle in silence</h3>
+        <p>In 90 days, one support chat mentioned a loan problem. Nobody asked how to repay. When the screen confuses them, they keep tapping, leave, or pay late. They don't ask.</p>
+        <p class="ev-src">Source: support chat conversations</p>
+      </article>
+    </div>
+
+    <div class="ev-implications">
+      <h3>What this means for the design</h3>
+      <ol>
+        <li><b>Make the deadline impossible to misread.</b> "Due today, 8:00 AM" in local time with a countdown, red on the last day, and a reminder the evening before. Product call for us: move the due time to 11:59 PM Manila, which matches how people actually behave.</li>
+        <li><b>Design for the last-minute, evening payer.</b> Most people pay at night on the final day. From opening the app to paid should take one screen and one tap when the wallet has enough.</li>
+        <li><b>Make "Pay it all" the default.</b> 18 of 20 paid in one go. Paying part is a small secondary option, not four equal chips.</li>
+        <li><b>Repay doubles as a status page.</b> At a glance: what's due, by when, whether a top-up has arrived, and "You're all set" for people with nothing to pay.</li>
+        <li><b>Only make tappable things look tappable.</b> Amounts and labels that people keep tapping should either do something or stop looking like buttons.</li>
+        <li><b>Cash out: lead with Coins.ph</b> and Max pre-filled, and give "I'll do this later" a reminder instead of a dead end.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="block-head">
+      <span class="eyebrow">Part 1 · The product</span>
+      <h2>How Moodeng works</h2>
+      <p>Everything the screens have to get right. These are the real rules in the app today.</p>
+    </div>
+    <div class="facts">
+      <div class="fact">
+        <h3>Who borrows</h3>
+        <ul>
+          <li>People in the Philippines, on their phones, often inside the Facebook or Messenger browser.</li>
+          <li>Most are new to crypto. The loan is in <b>USDC</b>, a digital dollar.</li>
+          <li>Loans are small: from <b>$15</b> up to <b>$140</b> as trust grows.</li>
+          <li>Built in English first. Filipino comes later and runs about 30% longer.</li>
+        </ul>
+      </div>
+      <div class="fact">
+        <h3>The loan</h3>
+        <ul>
+          <li>The borrower picks their own due date, often payday, up to 120 days out.</li>
+          <li><b>One due date. No monthly installments.</b></li>
+          <li>They can pay part of it any time before the due date. Never more than they owe.</li>
+          <li><b>Late:</b> the account is restricted until the loan is fully paid.</li>
+        </ul>
+      </div>
+      <div class="fact">
+        <h3>The wallet</h3>
+        <ul>
+          <li>New borrowers get a <b>Moodeng Instant Wallet</b> built into the app automatically. Some earlier borrowers still use an outside wallet (Base Account by Coinbase); new users won't.</li>
+          <li><b>Money in:</b> the loan lands here. To repay, they top it up by buying USDC in Coins.ph, GCrypto, PDAX or Binance and sending it on the Base network (Binance only outside the Philippines).</li>
+          <li><b>Money out:</b> cash out to one of those apps (or Moneybees), then sell for pesos. The first cash-out needs a quick face check.</li>
+        </ul>
+      </div>
+      <div class="fact game-fact">
+        <h3>The game</h3>
+        <ul>
+          <li><b>+10 Pandesal</b> for every loan fully repaid on time. Paying part earns nothing until the loan is done.</li>
+          <li><b>Streak bonus</b> for on-time loans in a row: 3 → +15, 5 → +25, 10 → +50. A late loan resets the streak; nothing is taken away.</li>
+          <li><b>Moodeng grows</b> with Pandesal: Rookie → Rising (60) → Prime (200) → Apex (400). Each new tier unlocks a GrabFood voucher: ₱50, ₱100, ₱150. The first on-time repayment also gets ₱50.</li>
+          <li><b>Credit Level:</b> borrow your full limit and repay it in full, and your limit goes up: $15 → $20 → $40 → $60 … $140. Paying late doesn't block this.</li>
+        </ul>
+        <div class="tiers" aria-label="Moodeng tiers">
+          <figure><img src="/design/repay-round2/img/tier-rookie.png" alt=""><figcaption>Rookie<br><span>0</span></figcaption></figure>
+          <figure><img src="/design/repay-round2/img/tier-rising.png" alt=""><figcaption>Rising<br><span>60 · ₱50</span></figcaption></figure>
+          <figure><img src="/design/repay-round2/img/tier-prime.png" alt=""><figcaption>Prime<br><span>200 · ₱100</span></figcaption></figure>
+          <figure><img src="/design/repay-round2/img/tier-apex.png" alt=""><figcaption>Apex<br><span>400 · ₱150</span></figcaption></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="flow">
+    <div class="block-head">
+      <span class="eyebrow">Part 2 · The journey</span>
+      <h2>The flow we need</h2>
+      <p>Each screen has one job. If something on a screen doesn't help with that job, it goes. Steps marked "only if" are skipped for most people.</p>
+    </div>
+    <div class="decision">
+      <span class="pill ok">Decision</span>
+      <div>
+        <h3>We're going with Option 3</h3>
+        <p>The Repay tab lists your loans. Tap one and it opens its own page, where you choose an amount and pay. Two changes to Anna's version: with only one loan, skip the list and open its page straight away; and when the wallet is short, bring over Option 1's "Add funds to repay" card. Option 1 and Option 2 are dropped.</p>
+      </div>
+    </div>
+
+    <h3 class="flow-title">Pay back a loan</h3>
+    <div class="chain" role="list">
+      <div class="step" role="listitem"><span class="step-n">1</span><h4>Repay tab</h4><p class="job">See what you owe, and by when.</p><p>One loan: open it straight away. Several: a short list, each with "left to pay" and a due time in local time. No loan: "You're all set".</p><p class="moment">Moodeng with tier bar and streak count</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step key" role="listitem"><span class="step-n">2</span><h4>Loan page</h4><p class="job">Choose how much and pay.</p><p>Left to pay, the amount you're paying, what you'll win, a wallet check, one pinned button.</p><p class="moment">Reward preview: Pandesal, streak, next tier</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step branch" role="listitem"><span class="step-n">3</span><span class="only">Only if wallet is short</span><h4>Top up</h4><p class="job">Get the missing dollars in.</p><p>Choose app → copy your address and send (with the taps for that app) → waiting, which notices the money by itself.</p><p class="moment">Hippo helps, then waits with you</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step" role="listitem"><span class="step-n">4</span><h4>Confirm</h4><p class="job">Last check.</p><p>Amount, "from your Moodeng wallet", what's left after. Calm note that it can't be undone.</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step" role="listitem"><span class="step-n">5</span><h4>Paying</h4><p class="job">Wait a few seconds.</p><p>Sending → confirming. If slow: "you can leave, we'll finish it". If failed: nothing left your wallet, try again.</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step split" role="listitem"><span class="step-n">6</span><h4>Done</h4>
+        <p><b>Paid it all:</b> celebration. The hippo eats the Pandesal, the tier bar fills, streak bonus, voucher or level-up if earned, Share.</p>
+        <p><b>Paid part:</b> "$40.50 paid. $40.50 left, due Oct 12." Main button: Done.</p>
+        <p class="moment">The big moment of the whole app</p></div>
+    </div>
+    <p class="flow-note"><b>Overdue version:</b> same steps, plus a calm "your account is paused until this is paid" banner and a worried Moodeng. No Pandesal for a late loan and the streak restarts, but repaying a full-limit loan still raises the limit, and the celebration says "account unlocked".</p>
+
+    <h3 class="flow-title">Get the loan money out (cash out)</h3>
+    <div class="chain" role="list">
+      <div class="step key" role="listitem"><span class="step-n">1</span><h4>Loan arrived</h4><p class="job">Celebrate.</p><p>"Your $40 is here!" plus the repay date, so they plan for it.</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step" role="listitem"><span class="step-n">2</span><h4>Choose app</h4><p class="job">Pick where pesos go.</p><p>Coins.ph (recommended), GCrypto, PDAX, Binance, Moneybees. Each shows payout and time.</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step branch" role="listitem"><span class="step-n">3</span><span class="only">Only the first time</span><h4>Face check</h4><p class="job">Prove it's you.</p><p>One line on why, then hand off to the check, then back.</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step" role="listitem"><span class="step-n">4</span><h4>Send</h4><p class="job">Paste the app's address.</p><p>"You send 40 USDC · you get about ₱2,500". Paste, Max, send. Base note.</p></div>
+      <span class="arrow" aria-hidden="true">→</span>
+      <div class="step split" role="listitem"><span class="step-n">5</span><h4>Sent</h4><p class="job">Turn it into pesos.</p><p>"On its way to Coins.ph", then the 3 taps to sell and withdraw to bank or GCash.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="scenarios">
+    <div class="block-head">
+      <span class="eyebrow">Part 3 · Behavior-driven design</span>
+      <h2>Design for these moments</h2>
+      <p>Each scenario comes from something real borrowers did (Part 0). Design so every "Then" is true, and we'll check it in PostHog after launch. If a screen doesn't help one of these moments, it probably isn't needed.</p>
+    </div>
+
+    <div class="first-steps">
+      <h3>Before designing: use the product</h3>
+      <ol>
+        <li><b>Open the new dashboard.</b> It's live for every borrower and is the style to match. To see it with sample data, without a loan: <a href="https://moodeng.app/dashboard-v2-preview?state=rewarded" target="_blank" rel="noopener">moodeng.app/dashboard-v2-preview?state=rewarded</a> (also <code>?state=verified</code>, <code>?state=unverified</code>, <code>?state=defaulted</code>). Look at how it shows the Moodeng tiers, Pandesal, milestones and vouchers.</li>
+        <li><b>Go through a real loan once.</b> We'll set up a small test loan on your account so you can cash it out, top up and repay it, on your phone, inside the Facebook browser, in the evening, the way our borrowers do.</li>
+        <li><b>Then design</b> against the scenarios below.</li>
+      </ol>
+    </div>
+
+    <div class="scn-grid">
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">1</span><h3>Paying on the last evening</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>my loan is due tomorrow at 8:00 AM and my wallet has enough</dd>
+          <dt>When</dt><dd>I open the app at 9 PM</dd>
+          <dt>Then</dt><dd>I see "Due tomorrow, 8:00 AM · 11 hours left" without looking for it</dd>
+          <dt>And</dt><dd>I can pay from one screen with one tap, without scrolling</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> 11 of 20 repaid on the last day, 13 of 20 between 5 PM and midnight.</p>
+        <p class="scn-screens">Repay tab · Loan page</p>
+        <p class="scn-measure"><b>Measure:</b> time and taps from opening Repay to paid.</p>
+      </article>
+
+      <article class="scn hot">
+        <div class="scn-head"><span class="scn-n">2</span><h3>Thinking "today" means all day</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>my loan is due today at 8:00 AM</dd>
+          <dt>When</dt><dd>I open the app after 8 AM</dd>
+          <dt>Then</dt><dd>I see clearly that it's now late, since when, and what that means (no Pandesal this time, account paused until paid)</dd>
+          <dt>And</dt><dd>the day before, every screen and reminder said the hour, not just the date</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> 4 of 5 late payments were made on the due date, in the evening.</p>
+        <p class="scn-screens">Repay tab · Loan page · Overdue · Reminders</p>
+        <p class="scn-measure"><b>Measure:</b> same-day "late" repayments should drop to zero.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">3</span><h3>Paying it all</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I owe $23.00</dd>
+          <dt>When</dt><dd>I open my loan</dd>
+          <dt>Then</dt><dd>the amount is already $23.00 and the button says "Pay $23.00"</dd>
+          <dt>And</dt><dd>paying part is a small "Pay part instead" link</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> 18 of 20 loans were paid in one go.</p>
+        <p class="scn-screens">Loan page</p>
+        <p class="scn-measure"><b>Measure:</b> share of payments that are partial; taps before Pay.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">4</span><h3>Just checking</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I have no loan, or I've already paid</dd>
+          <dt>When</dt><dd>I tap Repay in the menu</dd>
+          <dt>Then</dt><dd>I see "You're all set" and my next step (my Moodeng, request a loan), not a "$00.00" card</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> 9 of the 21 people who open Repay most have no loan; two opened it 42 and 28 times.</p>
+        <p class="scn-screens">Repay tab (empty and paid states)</p>
+        <p class="scn-measure"><b>Measure:</b> taps on the next step from the empty state.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">5</span><h3>Waiting for a top-up</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I sent USDC from Coins.ph a minute ago</dd>
+          <dt>When</dt><dd>I come back to Moodeng</dd>
+          <dt>Then</dt><dd>I see where my money is ("On its way · usually 1–3 min" or "Arrived") without reloading</dd>
+          <dt>And</dt><dd>when it arrives, the next button is "Pay $81.00"</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> one borrower opened Repay 30 times in a day waiting for money to show up.</p>
+        <p class="scn-screens">Top-up (send + waiting)</p>
+        <p class="scn-measure"><b>Measure:</b> Repay page loads per top-up; time from copying the address to arrival.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">6</span><h3>Tapping what looks important</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I see an amount, a fee label or an app's card</dd>
+          <dt>When</dt><dd>I tap it</dd>
+          <dt>Then</dt><dd>something happens (the amount opens to edit, the card opens that app's steps)</dd>
+          <dt>Or</dt><dd>it doesn't look tappable in the first place</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> 76 dead clicks by 15 people on Repay ("$25.00", "Binance · Small fee") and 53 on cash out.</p>
+        <p class="scn-screens">Every screen</p>
+        <p class="scn-measure"><b>Measure:</b> dead clicks on /repay and /withdraw near zero.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">7</span><h3>Short of money</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I owe $81 and my wallet has $18</dd>
+          <dt>When</dt><dd>I open my loan</dd>
+          <dt>Then</dt><dd>the button says "Add $63 to pay" and takes me straight into the guided top-up</dd>
+          <dt>And</dt><dd>I never see a Pay button that can't work</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> the "Add funds to repay" card was tapped again and again before people found what to do.</p>
+        <p class="scn-screens">Loan page · Top-up</p>
+        <p class="scn-measure"><b>Measure:</b> share of short-wallet visits that finish a top-up.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">8</span><h3>Paying on time feels like winning</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I pay my whole loan before the deadline</dd>
+          <dt>When</dt><dd>it confirms</dd>
+          <dt>Then</dt><dd>my Moodeng eats the Pandesal, my streak goes up, and I see how close the next tier and voucher are</dd>
+          <dt>And</dt><dd>before paying, the loan page already showed me that prize</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> repaying is the moment people earn the dashboard's rewards, and today it shows a small chip.</p>
+        <p class="scn-screens">Loan page · Paid it all</p>
+        <p class="scn-measure"><b>Measure:</b> on-time rate; how many borrow again within 30 days.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">9</span><h3>Paying part</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>I pay $40.50 of $81</dd>
+          <dt>When</dt><dd>it confirms</dd>
+          <dt>Then</dt><dd>I see "$40.50 paid. $40.50 left, due Oct 12, 8:00 AM" and the main button is Done</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> "Continue repayment" right after "Payment successful" reads like it didn't work.</p>
+        <p class="scn-screens">Paid part</p>
+        <p class="scn-measure"><b>Measure:</b> people who reopen Repay within 5 minutes of a partial payment.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">10</span><h3>"I'll do this later"</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>my loan money just arrived</dd>
+          <dt>When</dt><dd>I tap "I'll do this later"</dd>
+          <dt>Then</dt><dd>cash out stays one tap away on the dashboard, and I get a reminder</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> 11 of 22 people who opened cash out tapped it.</p>
+        <p class="scn-screens">Loan arrived · Dashboard · Wallet card</p>
+        <p class="scn-measure"><b>Measure:</b> share who cash out within 24 hours.</p>
+      </article>
+
+      <article class="scn">
+        <div class="scn-head"><span class="scn-n">11</span><h3>Cashing out to Coins.ph</h3></div>
+        <dl class="gwt">
+          <dt>Given</dt><dd>my loan has arrived</dd>
+          <dt>When</dt><dd>I start cash out</dd>
+          <dt>Then</dt><dd>Coins.ph is already chosen and the full amount is filled in</dd>
+          <dt>And</dt><dd>the other apps are one tap away</dd>
+        </dl>
+        <p class="scn-why"><b>Why:</b> Coins.ph is 18 of 24 withdrawals; 9 people tapped "Max" by hand.</p>
+        <p class="scn-screens">Choose app · Send</p>
+        <p class="scn-measure"><b>Measure:</b> drop-off between choosing an app and sending.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="block" id="simple">
+    <div class="block-head">
+      <span class="eyebrow">Part 4 · Simplify</span>
+      <h2>How to make it simpler</h2>
+      <p>Simple doesn't mean empty. It means each screen answers one question, loud and clear, and everything else steps back.</p>
+    </div>
+    <div class="rules">
+      <div class="rule-card"><b>1</b><h3>One job per screen</h3><p>Use the flow above. If something doesn't help with this step's job, remove it or make it a small link.</p></div>
+      <div class="rule-card"><b>2</b><h3>One number, in words</h3><p>"Left to pay $81" at the top, once. Never the same amount five times with no label.</p></div>
+      <div class="rule-card"><b>3</b><h3>Pay it all is the default</h3><p>18 of 20 loans were paid in one go. "Pay $81.00" is the main action; paying part is a small link, not four equal chips.</p></div>
+      <div class="rule-card"><b>4</b><h3>The button is always visible</h3><p>Pinned above the bottom menu, solid purple, saying exactly what happens: "Pay $81.00".</p></div>
+      <div class="rule-card"><b>5</b><h3>Space instead of boxes</h3><p>Group with spacing and type size. Use a card only for something you tap.</p></div>
+      <div class="rule-card"><b>6</b><h3>Crypto words only where needed</h3><p>"USDC" and "Base" belong on the send step. Everywhere else: dollars, your wallet, your loan.</p></div>
+    </div>
+    <div class="cut">
+      <h3>Cut list from the current designs</h3>
+      <div class="cut-grid">
+        <p><s>Payment schedule button and sheet</s> → a small History link</p>
+        <p><s>"Watch how to repay" and "Need help?" cards</s> → two text links</p>
+        <p><s>Wallet card</s> → one line above the button: "Enough to pay ✓" or "$63 short"</p>
+        <p><s>Input box inside a card inside the page</s> → one big editable amount</p>
+        <p><s>Four equal chips (25 / 50 / 75 / Full)</s> → "Pay it all" by default, "Pay part" as a link</p>
+        <p><s>Red warning boxes</s> → calm notes; red only when something went wrong</p>
+        <p><s>"Check again" button</s> → the app checks by itself</p>
+        <p><s>GrabFood banner while paying</s> → show it after, on the celebration</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="game">
+    <div class="block-head">
+      <span class="eyebrow">Part 5 · Gamify</span>
+      <h2>How to make it a game</h2>
+      <p>The game already exists on the dashboard. Repaying is where people actually earn it, so that's where it should feel the most alive. Use only the real rewards from Part 1; new reward ideas are welcome as clearly labeled proposals.</p>
+    </div>
+    <div class="loop" aria-label="The repay loop">
+      <div><b>Repay on time</b><span>the action</span></div>
+      <i aria-hidden="true">→</i>
+      <div><b>+10 Pandesal</b><span>plus streak bonus</span></div>
+      <i aria-hidden="true">→</i>
+      <div><b>Moodeng grows</b><span>Rising, Prime, Apex</span></div>
+      <i aria-hidden="true">→</i>
+      <div><b>GrabFood voucher</b><span>₱50 to ₱150</span></div>
+      <i aria-hidden="true">→</i>
+      <div><b>Bigger limit</b><span>if it was a full-limit loan</span></div>
+      <i aria-hidden="true">↺</i>
+      <div><b>Next loan</b><span>and the loop repeats</span></div>
+    </div>
+    <div class="moments">
+      <h3>A game moment on every step</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Step</th><th>Game moment</th><th>Moodeng</th></tr></thead>
+          <tbody>
+            <tr><td>Repay tab</td><td>Tier bar ("45 of 60 to Rising") and streak count ("2 on time in a row").</td><td>Current tier, "has a loan" mood</td></tr>
+            <tr><td>Loan page</td><td>Before paying, show the prize: "+10 on time, +15 for 3 in a row, unlocks Rising and a ₱50 GrabFood voucher." Paying part shows what they'll get once the rest is paid.</td><td>Next-tier hippo as a preview</td></tr>
+            <tr><td>Due soon</td><td>"Pay by Oct 12 to keep your streak."</td><td>Gently nudging</td></tr>
+            <tr><td>Top up</td><td>No rewards here; just make it painless.</td><td>Helpful, then waiting</td></tr>
+            <tr><td>Paid it all</td><td>Pandesal flies into the hippo, the tier bar fills, streak bonus pops, voucher or level-up revealed, Share to Facebook or WhatsApp.</td><td>Eating, then celebrating; new tier if reached</td></tr>
+            <tr><td>Paid part</td><td>Progress, not points: "Half done. Pay $40.50 by Oct 12 for +25 and Rising."</td><td>Happy, still hungry</td></tr>
+            <tr><td>Overdue</td><td>No guilt trip. "Pay to unlock your account." After: "Account unlocked. New streak starts now."</td><td>Worried, then relieved</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Moodeng art that exists today: each tier in three moods (waiting, has a loan, repaid). New moods to draw: eating, worried, relieved, helping.</p>
+    </div>
+  </section>
+
+  <section class="block" id="wallet">
+    <div class="callout">
+      <span class="eyebrow">Part 1 · What changed</span>
+      <h2>New users now get a Moodeng Instant Wallet</h2>
+      <p>The first brief was written around outside crypto wallets (Base Account by Coinbase). Since then, every new user gets an <b>Instant Wallet</b> built into Moodeng, and that's the path from now on. Some existing borrowers still use an outside wallet (Base Account), so the screens should still work for them, but design for the Instant Wallet first.</p>
+      <div class="pair">
+        <div>
+          <h3>What this changes in the designs</h3>
+          <ul>
+            <li>New users never connect a wallet; it's created for them. Show the wallet a person has instead of a "Connect Wallet" card.</li>
+            <li>No approval pop-up when paying from the Instant Wallet. Tapping Pay sends the money straight away, so the confirm step is the last chance to stop.</li>
+            <li>"Pay with" should name the wallet they use: <b>Moodeng wallet</b> for most, not "USDC (Base)".</li>
+            <li>The first cash-out asks for a quick face check (anti-fraud). It needs screens.</li>
+            <li>Instant Wallet users can't disconnect or switch the wallet themselves.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What stays the same</h3>
+          <ul>
+            <li>The wallet still holds USDC on the Base network.</li>
+            <li>Topping up still means sending USDC from Coins.ph, GCrypto, PDAX and similar apps to the wallet address. The Base network warning stays.</li>
+            <li>It works inside the Facebook and Messenger browser.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="problems">
+    <div class="block-head">
+      <span class="eyebrow">Design review</span>
+      <h2>What's better, and what still needs work</h2>
+      <p>A lot of this is better than the live app. Each problem below is checked against what borrowers actually do (Part 0). Simple is the right direction for people new to crypto using the app inside Facebook. But a simple screen has to look more finished, because there's less on it to hide behind. Too many screens still read as the old app restyled with dashboard cards: not fun, not cute, not a game like the dashboard, and with a lot of small mistakes.</p>
+      <p class="muted">Severity: <span class="sev big">Big</span> breaks the main goal of the brief · <span class="sev med">Medium</span> confuses people or contradicts the product · <span class="sev small">Small</span> polish.</p>
+    </div>
+
+    <div class="probs">
+      <p class="group-title">Better than before</p>
+      <div class="good">
+        <ul>
+          <li><b>The Pay button sits next to the amount.</b> It's no longer a circle hidden in the bottom menu, the #1 problem in the brief.</li>
+          <li><b>Loan repaid is a real celebration:</b> the hippo, points and the Credit Level bar. This is the bar for every other screen.</li>
+          <li><b>Overdue is clear without being scary:</b> red card, a worried hippo and one message.</li>
+          <li><b>Topping up is split into steps</b> (Add funds → Send → Checking) instead of one long page.</li>
+          <li><b>A confirm step before paying,</b> which matters now that the Instant Wallet has no approval pop-up.</li>
+          <li><b>The slider is gone.</b> Chips plus an editable amount is enough.</li>
+          <li><b>The empty screen</b> turns "no loan" into a clear next step. It only needs the wallet card updated.</li>
+          <li><b>Her notes</b> next to each frame explain the trade-offs, which makes reviewing easy.</li>
+        </ul>
+      </div>
+
+      <p class="group-title">Still needs work: the overall approach</p>
+      <article class="prob">
+        <span class="num">01</span>
+        <div class="body">
+          <div class="top-line"><h3>It isn't fun, cute or gamified</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>The brief asked for "cute and warm: Moodeng the hippo, rewards, a real celebration at the end." The dashboard is already a game: your Moodeng grows from Rookie to Rising, Prime and Apex as you feed it Pandesal, and there are weekly streaks and GrabFood vouchers. Repaying is where borrowers earn most of that. In the new screens it shrinks to a small yellow "+10Pandesal" chip and a thin progress bar. Nothing reacts when you pick an amount, nothing shows what paying will unlock, and the only joy comes after it's over. Paying off a loan is the best thing a borrower can do in Moodeng, and right now it feels like a bank form in purple.</dd>
+            <dt>Where</dt><dd>Every repay screen, most of all the loan page, the confirm sheet and the success screens.</dd>
+            <dt>Ideas</dt><dd>
+              <ul>
+                <li><b>Show the prize before they pay.</b> On the loan page: "+10 on time, +15 streak bonus, unlocks Rising and a ₱50 GrabFood voucher", with the next-tier hippo next to the button. If this loan was for their full limit, also show the new limit they'll get.</li>
+                <li><b>Make the amount react.</b> Paying it all shows the full prize. Paying part shows what's still to win, since Pandesal only comes when the loan is fully repaid on time.</li>
+                <li><b>Feed the hippo.</b> On success, the Pandesal flies into the hippo and the tier bar fills, using the dashboard's own "feeding" idea, instead of a static "+10" card.</li>
+                <li><b>A real celebration.</b> Motion on the repaid screen (coins, confetti, the tier or level reveal) and a share card ("I paid off my loan on time") using the dashboard's existing Facebook and WhatsApp share.</li>
+                <li><b>Show the streak.</b> "2 on time in a row. One more for +15." The streak bonuses (3, 5, 10 in a row) already exist and nobody sees them.</li>
+                <li><b>Emotion instead of alarms.</b> On an overdue loan, a worried hippo that cheers up as they pay, instead of red boxes.</li>
+              </ul>
+            </dd>
+          </dl>
+          <p class="rule"><b>Must keep:</b> only show rewards we actually give (see "The game" in Part 1). New reward ideas are welcome, but label them as proposals so we can decide.</p>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Rewards shown as one small chip"><img src="/design/repay-round2/img/fig-loan-page.jpg" alt="Figma loan page with a small Pandesal chip as the only reward" loading="lazy"></button>
+            <button class="shot" data-cap="Figma · Partial success: static points card"><img src="/design/repay-round2/img/fig-partial.jpg" alt="Figma partial payment success with static points card" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+
+      <article class="prob">
+        <span class="num">02</span>
+        <div class="body">
+          <div class="top-line"><h3>It still looks AI-made, and there's too much on each screen</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>We asked for a redesign because the old repay screens were made by AI and felt generic. The new ones have the same tells:
+              <ul>
+                <li>Every element sits in a rounded white card with the same soft shadow.</li>
+                <li>Soft purple gradient buttons on white, under a pale lavender gradient header.</li>
+                <li>Icon-in-a-circle rows with a chevron ("Watch how to repay", "Need help?").</li>
+                <li>Two-tone money ("$102.<span class="muted">60</span>") and a red alert box with a warning triangle.</li>
+              </ul>
+              On top of that, there's too much on each screen. The Option 3 loan page shows a loan card, a schedule button, a question, an amount box inside a card, four chips, a button, a date row, a wallet card and the bottom menu, all at once.</dd>
+            <dt>Our part</dt><dd>The first brief told her to reuse the dashboard's purple gradient buttons and card style, so some of this came from us. She can change those if it makes the screens feel more like Moodeng.</dd>
+            <dt>Fix</dt><dd>Cut each screen to what that step needs, about 3 or 4 things. Use spacing and type size for hierarchy instead of a card around everything. Swap generic patterns for Moodeng's own (the hippo, Pandesal, the tiers). The Loan repaid screen already gets this right.</dd>
+          </dl>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Option 3 loan page"><img src="/design/repay-round2/img/fig-loan-page.jpg" alt="Figma Option 3 loan page with many stacked blocks" loading="lazy"></button>
+            <button class="shot" data-cap="Figma · Option 3 Repay screen"><img src="/design/repay-round2/img/fig-o3-home.jpg" alt="Figma Option 3 Repay screen made of stacked cards" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">03</span>
+        <div class="body">
+          <div class="top-line"><h3>It's a restyle, not a redesign</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>Option 1 is today's Repay screen with the dashboard's card style on top. The three options are small layout changes to the same screen, not three different ideas: Option 2 is Option 1 plus one button. Option 3, a separate page for each loan, is the one real change in structure, and it\'s the one we\'re going with. We asked for repaying to feel like the dashboard, meaning simpler, cuter and friendlier, not only matching colors.</dd>
+            <dt>Where</dt><dd>Repay start, all three options.</dd>
+            <dt>Fix</dt><dd>Start from what the person is trying to do on each screen and design for that. Show at least one option that changes the structure, not just the cards.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">04</span>
+        <div class="body">
+          <div class="top-line"><h3>Every screen is a stack of equal white cards</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>Loans, wallet, amount, help links and banners all get the same white rounded card with the same shadow. Nothing stands out, so the eye has no starting point. The brief's main ask was <b>one clear thing to do on each screen</b>.</dd>
+            <dt>Where</dt><dd>Repay start, loan page, money arrived.</dd>
+            <dt>Fix</dt><dd>One focal point per screen: the amount owed, big, near the top. Make secondary items (help, video, banner) lighter: plain rows or links, not cards.</dd>
+          </dl>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Option 3 Repay screen"><img src="/design/repay-round2/img/fig-o3-home.jpg" alt="Figma Repay screen made of equal white cards" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">05</span>
+        <div class="body">
+          <div class="top-line"><h3>The Repay button is still below the fold</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>"The Pay button is in the wrong place" was the #1 problem in the brief. Now it sits next to the amount, which is good, but it's 695 px down on the loan page. In Facebook's browser on an ordinary phone, the browser bar and our bottom menu leave roughly 600 px of visible page, so people still have to scroll to find it. On the overdue screen it's 820 px down.</dd>
+            <dt>Where</dt><dd>Loan page and overdue.</dd>
+            <dt>Fix</dt><dd>Keep the main action in a fixed bar just above the bottom menu, or put the amount and button at the top of the loan page. Design at a 360 × 640 viewport, not only 393 × 852.</dd>
+          </dl>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Loan page, Repay button 695 px down"><img src="/design/repay-round2/img/fig-loan-page.jpg" alt="Figma loan page with Repay button low on the screen" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">06</span>
+        <div class="body">
+          <div class="top-line"><h3>The hippo only shows up when nothing is happening</h3><span class="sev med">Medium</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>Moodeng appears on waiting, success, empty and overdue screens. The screens where people decide and act (choose amount, choose a source, send, confirm) have no personality at all. The brief asked for ideas on the hippo's moods across the whole repay journey.</dd>
+            <dt>Fix</dt><dd>Map one hippo mood to each step: curious (choose amount), helpful (send USDC), waiting, celebrating. Small is fine; it doesn't need a full illustration on every screen.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <p class="group-title">Still needs work: wrong or conflicting information</p>
+
+      <article class="prob">
+        <span class="num">07</span>
+        <div class="body">
+          <div class="top-line"><h3>One loan, four different due dates</h3><span class="sev med">Medium</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>The "Medical appointment" loan is "Due Aug 18." on its card, "Due Oct 12, 2026 · 12 days left" on its page and in the confirm sheet, and "Due Sep 29, 2026 · 2:21 PM UTC" with "1d 12h left" at the bottom of the same page. Sample data is fine. It needs to be the same sample data everywhere, or reviewers can't tell what the design is supposed to say.</dd>
+            <dt>Fix</dt><dd>Pick one sample loan and use it on every screen. One date format everywhere.</dd>
+          </dl>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Loan page: Oct 12 at top, Sep 29 at bottom"><img src="/design/repay-round2/img/fig-loan-page.jpg" alt="Figma loan page with two different due dates" loading="lazy"></button>
+            <button class="shot" data-cap="Figma · Repay screen: Aug 18 on the card"><img src="/design/repay-round2/img/fig-o3-home.jpg" alt="Figma Repay screen showing Aug 18 due date" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">08</span>
+        <div class="body">
+          <div class="top-line"><h3>The amounts don't add up</h3><span class="sev med">Medium</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>The card shows <b>$121.00</b> and "33% paid", and the Full chip pays $121.00. If a third is already paid, $121 can't be both the loan and what's left. After paying $60.50 the success screen shows 50% progress, which doesn't follow from 33% plus $60.50 either. Borrowers will ask "how much do I actually owe?" That's the one question this screen has to answer.</dd>
+            <dt>Fix</dt><dd>Label it: "Left to pay $81.00 of $121.00". Make the chips, button and progress bar use that number.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">09</span>
+        <div class="body">
+          <div class="top-line"><h3>"Payment successful!" and then "Continue repayment"</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>After paying part of a loan, the screen celebrates "Payment successful! $60.50 paid", and then the big main button says <b>Continue repayment</b>. It reads like the payment didn't finish, or like they have to pay more right now. They don't. The rest is due later.</dd>
+            <dt>Fix</dt><dd>Say what happened and what's left: "$60.50 paid. $60.50 left, due Oct 12." Make <b>Done</b> or <b>Back to dashboard</b> the main button. "Pay the rest now" can be a small secondary link.</dd>
+          </dl>
+          <div class="shots"><button class="shot" data-cap="Figma · Partial payment success"><img src="/design/repay-round2/img/fig-partial.jpg" alt="Figma partial payment success with Continue repayment as the main button" loading="lazy"></button></div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">10</span>
+        <div class="body">
+          <div class="top-line"><h3>The payment schedule invents installments</h3><span class="sev med">Medium</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>"7 more payments" with a $60 payment every month. Moodeng loans have one due date, and people can pay part early. The list also numbers two rows "05".</dd>
+            <dt>Fix</dt><dd>Turn it into payment history: payments made with dates, amount left, due date.</dd>
+          </dl>
+          <div class="shots"><button class="shot" data-cap="Figma · Payment schedule"><img src="/design/repay-round2/img/fig-schedule.jpg" alt="Figma payment schedule with monthly installments" loading="lazy"></button></div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">11</span>
+        <div class="body">
+          <div class="top-line"><h3>Still built for the old wallet setup</h3><span class="sev small">Small</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>"Connect Wallet" on the empty screen and "Pay with USDC (Base)" on the confirm sheet. New users all get a Moodeng Instant Wallet now, and only some earlier borrowers still use an outside one. This one is our fault: the first brief didn't say so clearly. It also matters less over time as more people are on the Instant Wallet.</dd>
+            <dt>Fix</dt><dd>See the Instant Wallet section below.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <p class="group-title">Still needs work: brief requests not done</p>
+
+      <article class="prob">
+        <span class="num">12</span>
+        <div class="body">
+          <div class="top-line"><h3>The network warning still looks like an error</h3><span class="sev med">Medium</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>The brief said the old warning "looks like an error" and asked for something friendlier but just as visible. The new one is still a red box with a warning triangle. The confirm sheet adds a second red box ("This action cannot be undone"). Two red alarms in a payment flow make people nervous right before they pay.</dd>
+            <dt>Fix</dt><dd>A calm, high-contrast note with the Base logo: "Send on Base only. Other networks lose the money." Keep red for things that actually went wrong.</dd>
+          </dl>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Send USDC warning"><img src="/design/repay-round2/img/fig-send-usdc.jpg" alt="Figma red network warning" loading="lazy"></button>
+            <button class="shot" data-cap="Figma · Confirm sheet warning"><img src="/design/repay-round2/img/fig-confirm.jpg" alt="Figma confirm sheet with red cannot be undone box" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">13</span>
+        <div class="body">
+          <div class="top-line"><h3>The step counter stops before paying</h3><span class="sev med">Medium</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>"Step 1 of 3 … 3 of 3" covers Add funds, Send and Checking. Then the person lands back on Repay to choose an amount and pay, with no step shown. "People don't know which step they are on" was in the brief, and it's only half solved.</dd>
+            <dt>Fix</dt><dd>Count the whole journey (Add funds → Send → Arrived → Pay), or drop the counter once the money arrives and switch to "Ready to pay".</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">14</span>
+        <div class="body">
+          <div class="top-line"><h3>The main button on the waiting screen does nothing useful</h3><span class="sev small">Small</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>"Check again" is the big purple button, but the app already watches the wallet by itself. The primary spot should go to something people need, like "Copy address again" or "How to send".</dd>
+          </dl>
+        </div>
+      </article>
+
+      <article class="prob">
+        <span class="num">15</span>
+        <div class="body">
+          <div class="top-line"><h3>The deadline is unclear, and it's costing people their rewards</h3><span class="sev big">Big</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>"2:21 PM UTC" was on the list of current problems; it's copied into the new design, and "1d 12h left" is 10 px light grey. Our data shows why this matters most: loans are due at <b>8:00 AM Manila</b>, and <b>4 of the 5 late repayments were paid that same evening</b>. People think they have the whole day. Late means no Pandesal and a broken streak.</dd>
+            <dt>Fix</dt><dd>Local time with the hour: "Due Oct 12, 8:00 AM". A countdown chip near the amount, red on the last day ("Due today, 8:00 AM"). We'll also look at moving the due time to 11:59 PM.</dd>
+          </dl>
+        </div>
+      </article>
+
+      <p class="group-title">Still needs work: polish</p>
+
+      <article class="prob">
+        <span class="num">16</span>
+        <div class="body">
+          <div class="top-line"><h3>Three different main-button styles</h3><span class="sev small">Small</span></div>
+          <dl>
+            <dt>What's wrong</dt><dd>Light purple gradient (Add funds, Repay, Confirm, Check again), solid dark purple (Back to dashboard, Continue repayment) and black (Let's get started!). The light gradient with white text has the weakest contrast and looks disabled next to the dark one.</dd>
+            <dt>Fix</dt><dd>The solid dark purple on the Loan repaid screen reads best. Use it as the one primary style, with one secondary style, the same way on every screen.</dd>
+          </dl>
+          <div class="shots">
+            <button class="shot" data-cap="Figma · Light gradient button"><img src="/design/repay-round2/img/fig-confirm.jpg" alt="Figma light gradient Confirm button" loading="lazy"></button>
+            <button class="shot" data-cap="Figma · Solid dark button: use this one"><img src="/design/repay-round2/img/fig-repaid.jpg" alt="Figma solid dark Back to dashboard button" loading="lazy"></button>
+            <button class="shot" data-cap="Figma · Black button"><img src="/design/repay-round2/img/fig-empty.jpg" alt="Figma black Let's get started button" loading="lazy"></button>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="block" id="marked">
+    <div class="block-head">
+      <span class="eyebrow">Marked up</span>
+      <h2>Where exactly it looks wrong</h2>
+      <p>Anna's screens with the problem areas boxed in red. Each number matches a note on the right: what's wrong, and the fix. Tap a note or a box to highlight it. Loan repaid, Overdue and Money arrived aren't here because they're good.</p>
+    </div>
+    <div class="mk-list">
+      <article class="mk" id="mk-o3-home">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-o3-home.jpg" alt="Anna's Repay start (Option 3) screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:4%;top:19.00%;width:44%;height:20.50%"><b>1</b></span><span class="mk-box" data-n="2" style="left:4%;top:44.50%;width:92%;height:10.50%"><b>2</b></span><span class="mk-box" data-n="3" style="left:4%;top:58.00%;width:92%;height:16.00%"><b>3</b></span><span class="mk-box" data-n="4" style="left:4%;top:76.50%;width:92%;height:10.00%"><b>4</b></span></div>
+        <div class="mk-side">
+          <h3>Repay start (Option 3) <span class="mk-count">4 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">The card shows <b>$121.00</b> with no label. Is that the loan or what's left? "33% paid" is 9 px grey and says it can't be both.<span class="mk-fix">Fix: Label it: "Left to pay $81 · due Oct 12".</span></span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">The biggest number on the screen is your <b>wallet balance</b>, not your debt. The faded ".00" looks broken, and it doesn't say whether it's enough.<span class="mk-fix">Fix: Make the debt the hero. Wallet becomes one line: "Enough to pay ✓".</span></span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">Two full-width cards for "Watch how to repay" and "Need help?", the same weight as the loan itself.<span class="mk-fix">Fix: Small text links at the bottom.</span></span></li><li data-n="4"><span class="mk-n">4</span><span class="mk-t">Loud red promo competing with paying, and it switches to Taglish.<span class="mk-fix">Fix: Smaller, and hidden when the loan is overdue or the wallet is short.</span></span></li></ol><p class="mk-missing"><b>Also:</b> Nothing on the screen says "tap a loan to pay". There's no main action.</p>
+        </div>
+      </article>
+      <article class="mk" id="mk-loan-page">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-loan-page.jpg" alt="Anna's Loan page (Option 3) screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:5%;top:14.00%;width:90%;height:19.00%"><b>1</b></span><span class="mk-box" data-n="2" style="left:7%;top:27.00%;width:86%;height:4.50%"><b>2</b></span><span class="mk-box" data-n="3" style="left:7%;top:35.00%;width:72%;height:7.00%"><b>3</b></span><span class="mk-box" data-n="4" style="left:8%;top:43.00%;width:84%;height:12.50%"><b>4</b></span><span class="mk-box" data-n="5" style="left:12%;top:52.00%;width:33%;height:3.00%"><b>5</b></span><span class="mk-box" data-n="6" style="left:8%;top:57.00%;width:84%;height:8.00%"><b>6</b></span><span class="mk-box" data-n="7" style="left:8%;top:65.00%;width:84%;height:5.00%"><b>7</b></span><span class="mk-box" data-n="8" style="left:8%;top:73.00%;width:86%;height:2.50%"><b>8</b></span><span class="mk-box" data-n="9" style="left:4%;top:79.00%;width:92%;height:8.50%"><b>9</b></span></div>
+        <div class="mk-side">
+          <h3>Loan page (Option 3) <span class="mk-count">9 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t"><b>$121.00</b> next to "33% paid". It can't be both the loan and what's left.<span class="mk-fix">Fix: "Left to pay $81.00 of $121.00".</span></span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">A grey full-width "Payment schedule" button that looks disabled, for a secondary thing.<span class="mk-fix">Fix: A small "History" link in the header.</span></span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">The question is the biggest text on the screen, bigger than the money.<span class="mk-fix">Fix: A small "Pay now" label.</span></span></li><li data-n="4"><span class="mk-n">4</span><span class="mk-t">An input box inside a card inside the page. The tiny pencil is the only sign you can type.<span class="mk-fix">Fix: One big editable amount, no box.</span></span></li><li data-n="5"><span class="mk-n">5</span><span class="mk-t">The reward is squeezed into a sticker ("+10Pandesal", no space).<span class="mk-fix">Fix: Show what you win next to the button, with the hippo.</span></span></li><li data-n="6"><span class="mk-n">6</span><span class="mk-t">Four outlined chips, each with yet another dollar amount.<span class="mk-fix">Fix: One segmented control. The big amount already shows the dollars.</span></span></li><li data-n="7"><span class="mk-n">7</span><span class="mk-t">Pale gradient button that looks disabled, and it sits 695 px down, below the fold inside Facebook.<span class="mk-fix">Fix: Solid purple, pinned above the bottom menu.</span></span></li><li data-n="8"><span class="mk-n">8</span><span class="mk-t">10 px grey text: "1d 12h left" against "12 days left" above, a third due date, and UTC.<span class="mk-fix">Fix: One due date, local time, as a chip near the amount.</span></span></li><li data-n="9"><span class="mk-n">9</span><span class="mk-t">The wallet is under the button, so you find out if you can afford it after deciding. And it's the fifth "$121.00" on the screen.<span class="mk-fix">Fix: Wallet check right above the button.</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-schedule">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-schedule.jpg" alt="Anna's Payment schedule screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:8%;top:11.00%;width:65%;height:6.00%"><b>1</b></span><span class="mk-box" data-n="2" style="left:8%;top:20.00%;width:85%;height:4.00%"><b>2</b></span><span class="mk-box" data-n="3" style="left:77%;top:55.00%;width:14%;height:3.50%"><b>3</b></span></div>
+        <div class="mk-side">
+          <h3>Payment schedule <span class="mk-count">3 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">"7 more payments": Moodeng loans don't have installments, and only 3 rows are unpaid anyway.<span class="mk-fix">Fix: Payment history: what you paid, what's left, one due date.</span></span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">"48% paid", a third progress number (33% on the card, 50% after paying).<span class="mk-fix">Fix: One sample loan, one set of numbers.</span></span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">A tiny pill is the only way to pay from here.<span class="mk-fix">Fix: Pay from the loan page only.</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-add-funds">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-add-funds.jpg" alt="Anna's Add funds, step 1 screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:25%;top:54.00%;width:62%;height:2.20%"><b>1</b></span></div>
+        <div class="mk-side">
+          <h3>Add funds, step 1 <span class="mk-count">1 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">The same sentence three times: "Buy USDC with PHP via…".<span class="mk-fix">Fix: Say what's different: fees, speed, GCash or bank.</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-send-usdc">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-send-usdc-clean.jpg" alt="Anna's Send USDC, step 2 screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:8%;top:53.35%;width:84%;height:9.75%"><b>1</b></span><span class="mk-box" data-n="2" style="left:8%;top:64.64%;width:84%;height:6.67%"><b>2</b></span><span class="mk-box" data-n="3" style="left:4%;top:75.92%;width:92%;height:6.16%"><b>3</b></span><span class="mk-box" data-n="4" style="left:40%;top:87.21%;width:56%;height:8.72%"><b>4</b></span></div>
+        <div class="mk-side">
+          <h3>Send USDC, step 2 <span class="mk-count">4 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">A red error box before anything went wrong. It says "Base network" twice and misses a space ("network.Other").<span class="mk-fix">Fix: Calm, high-contrast note with the Base logo.</span></span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">The main button is pale and sits mid-card, so it looks secondary.</span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">The step-by-step help, which people need most, is a small row near the bottom.<span class="mk-fix">Fix: Show the taps in Coins.ph right on this screen.</span></span></li><li data-n="4"><span class="mk-n">4</span><span class="mk-t">The key instruction, "come back here", is tiny purple text on purple.<span class="mk-fix">Fix: Bigger, darker text.</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-checking">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-checking.jpg" alt="Anna's Checking funds, step 3 screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:5%;top:18.00%;width:90%;height:1.60%"><b>1</b></span><span class="mk-box" data-n="2" style="left:10%;top:57.00%;width:80%;height:10.50%"><b>2</b></span><span class="mk-box" data-n="3" style="left:4%;top:72.00%;width:92%;height:10.50%"><b>3</b></span><span class="mk-box" data-n="4" style="left:4%;top:84.50%;width:92%;height:6.50%"><b>4</b></span></div>
+        <div class="mk-side">
+          <h3>Checking funds, step 3 <span class="mk-count">4 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">A full black bar says "3 of 3, done", but they're still waiting and haven't paid yet.</span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">Doesn't say how much it's waiting for, or show what has arrived so far.<span class="mk-fix">Fix: "$30.00 of $63.00 arrived".</span></span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">The most useful tip (did you send on Base?) is 10 px grey text in a side card.</span></li><li data-n="4"><span class="mk-n">4</span><span class="mk-t">"Check again" is the big button, but the app already checks by itself.<span class="mk-fix">Fix: Main button: "Copy address again" or "How to send".</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-confirm">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-confirm.jpg" alt="Anna's Confirm repayment screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:10%;top:38.00%;width:80%;height:13.50%"><b>1</b></span><span class="mk-box" data-n="2" style="left:10%;top:54.50%;width:80%;height:3.00%"><b>2</b></span><span class="mk-box" data-n="3" style="left:10%;top:71.50%;width:80%;height:5.00%"><b>3</b></span><span class="mk-box" data-n="4" style="left:10%;top:79.00%;width:80%;height:14.50%"><b>4</b></span></div>
+        <div class="mk-side">
+          <h3>Confirm repayment <span class="mk-count">4 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">Repeats the loan card with its own border, and says Oct 12 while the card behind it says Aug 18.<span class="mk-fix">Fix: Just the amount and the loan name.</span></span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">"Pay with USDC (Base)". Most people now pay from their Moodeng wallet. Grey labels are hard to read.<span class="mk-fix">Fix: Name the wallet they actually use: "From your Moodeng wallet" for most.</span></span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">A red "cannot be undone" alarm right before paying.<span class="mk-fix">Fix: Say it calmly in grey under the button.</span></span></li><li data-n="4"><span class="mk-n">4</span><span class="mk-t">Confirm and Cancel look almost the same weight.<span class="mk-fix">Fix: Solid main button, plain text Cancel.</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-partial">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-partial.jpg" alt="Anna's Paid part of the loan screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:25%;top:56.00%;width:50%;height:6.00%"><b>1</b></span><span class="mk-box" data-n="2" style="left:4%;top:64.00%;width:92%;height:9.50%"><b>2</b></span><span class="mk-box" data-n="3" style="left:4%;top:75.00%;width:92%;height:5.00%"><b>3</b></span><span class="mk-box" data-n="4" style="left:4%;top:82.50%;width:92%;height:6.50%"><b>4</b></span></div>
+        <div class="mk-side">
+          <h3>Paid part of the loan <span class="mk-count">4 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">Says what you paid, never what's left or when it's due.<span class="mk-fix">Fix: "$60.50 left, due Oct 12".</span></span></li><li data-n="2"><span class="mk-n">2</span><span class="mk-t">"+2 Pandesal" for paying part doesn't exist. Pandesal only comes when the whole loan is repaid on time (+10).<span class="mk-fix">Fix: Show progress instead: "Pay the rest by Oct 12 for +10 and your streak bonus."</span></span></li><li data-n="3"><span class="mk-n">3</span><span class="mk-t">"50%" doesn't follow from the 33% shown before plus $60.50.</span></li><li data-n="4"><span class="mk-n">4</span><span class="mk-t">"Continue repayment" right after "Payment successful!" reads like it didn't finish.<span class="mk-fix">Fix: "Done" as the main button; "Pay the rest now" as a link.</span></span></li></ol>
+        </div>
+      </article>
+      <article class="mk" id="mk-empty">
+        <div class="mk-shot"><img src="/design/repay-round2/img/fig-empty.jpg" alt="Anna's No loan yet screen with problem areas marked" loading="lazy"><span class="mk-box" data-n="1" style="left:4%;top:73.50%;width:92%;height:10.50%"><b>1</b></span></div>
+        <div class="mk-side">
+          <h3>No loan yet <span class="mk-count">1 issues</span></h3>
+          <ol class="mk-notes"><li data-n="1"><span class="mk-n">1</span><span class="mk-t">"Connect Wallet": new users get an Instant Wallet automatically, so most will never need this. The grey text also looks disabled.<span class="mk-fix">Fix: Show the wallet they have, with Add money. Only someone with no wallet yet sees "Set up your wallet".</span></span></li></ol>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="block" id="repay">
+    <div class="block-head">
+      <span class="eyebrow">Flow 1</span>
+      <h2>Repay a loan</h2>
+      <p class="muted">Anna drew three options for the main Repay screen. We're going with <b>Option 3</b>: the Repay screen lists the loans, and tapping a loan opens its own page where you pick an amount and pay. The screens after that (Add funds, Send, Checking, Confirm, Success) are shared by all three options. Live screenshots are from Sept 28.</p>
+    </div>
+    <div class="lanes" aria-hidden="true"><span>Anna's Figma</span><span>Live app today</span><span>What we need</span></div>
+
+    <article class="row" id="r-start">
+      <div class="row-head"><h3>Repay start: your loans</h3><span class="pill fix">Needs changes</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots">
+            <button class="shot" data-cap="Option 3 · Repay screen"><img src="/design/repay-round2/img/fig-o3-home.jpg" alt="Figma Option 3 Repay screen with loan cards, wallet, help links and GrabFood banner" loading="lazy"></button>
+            <button class="shot" data-cap="Option 1 · only for its Add funds card"><img src="/design/repay-round2/img/fig-repay-several.jpg" alt="Figma Option 1 Repay screen with loan radio cards and Add funds button" loading="lazy"></button>
+          </div>
+          <p class="cap">Option 3, the one we're building (left). Option 1 (right) only for the Add funds card we're bringing over.</p>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Repay first view"><img src="/design/repay-round2/img/app-02-repay-first-view.jpg" alt="Live Repay screen today" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li><b>One loan (most people):</b> skip the list and open that loan's page directly.</li>
+            <li><b>Wallet short of funds:</b> Option 3 has no Add funds button on this screen. Keep Option 1's "Add funds to repay" card here.</li>
+            <li>GrabFood banner: hide it when the loan is overdue or the wallet is short, so it doesn't compete with paying.</li>
+            <li>Card amount: say whether $121 is the loan or what's left ("Left to pay $81 of $121"). See problem 08.</li>
+            <li>Every block is the same white card. Give the amount owed the focus and make help links lighter (problem 04).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-amount">
+      <div class="row-head"><h3>Loan page: choose amount and pay</h3><span class="pill miss">Needs a rethink</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots">
+            <button class="shot" data-cap="Option 3 · Loan page"><img src="/design/repay-round2/img/fig-loan-page.jpg" alt="Figma loan page with due date, amount input, percentage chips and Repay button" loading="lazy"></button>
+          </div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots">
+            <button class="shot" data-cap="Live · Ready to pay"><img src="/design/repay-round2/img/app-06-ready-to-pay.jpg" alt="Live ready-to-pay screen" loading="lazy"></button>
+            <button class="shot" data-cap="Live · 50% chosen"><img src="/design/repay-round2/img/app-07-partial-amount.jpg" alt="Live screen after picking 50%" loading="lazy"></button>
+          </div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li><b>It's confusing:</b> $121.00 appears five times (card, input, Full chip, button, wallet), so you can't tell what you owe from what you're paying from what you have. Show "Left to pay" once, at the top.</li>
+            <li><b>It looks heavy:</b> an input box inside a card inside the page, four outlined chips, a grey button that looks disabled, and 10 px grey text next to 28 px numbers. Six outlined boxes in one section.</li>
+            <li><b>The wallet is below the button.</b> You find out whether you can afford it after deciding to pay.</li>
+            <li>Show what paying unlocks right here, next to the button: +10 on time, streak bonus, next tier and voucher (problem 01).</li>
+            <li>See our clickable sketch just below.</li>
+            <li>Pay button next to the amount: done. But it's 695 px down, below the fold in Facebook's browser. Pin it above the bottom menu (problem 05).</li>
+            <li>Same loan shows Oct 12 at the top and Sep 29 at the bottom. Use one due date (problem 07).</li>
+            <li>Due time is still shown in <b>UTC</b> ("2:21 PM UTC"). Show the person's local time.</li>
+            <li>Error state when someone types more than they owe.</li>
+            <li>The keyboard / typing state for a custom amount.</li>
+            <li>Time left as a clear chip, red when under 24 hours, not 10 px grey text (problem 15).</li>
+          </ul>
+          <p class="rule"><b>Must keep:</b> people can never pay more than they owe. Pandesal points shown for paying on time.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="row sketch-row" id="r-sketch">
+      <div class="row-head"><h3>A clearer loan page: our sketch</h3><span class="pill new">Try it</span></div>
+      <p class="muted sketch-intro">A rough direction to explain the feedback, not a final design. Tap "Pay part instead" and switch the wallet to see how the screen should react. Rewards follow the real rules. The sample borrower has 45 Pandesal (Rookie) and 2 on-time loans in a row, so paying this one in full on time is their 3rd.</p>
+      <div class="sketch">
+        <div class="phone-wrap">
+          <div class="phone" id="sk">
+            <div class="ph-status"><span>9:41</span><span class="ph-dots">●●● ▮</span></div>
+            <div class="ph-top">
+              <span class="ph-back" aria-hidden="true">‹</span>
+              <span class="ph-title">Medical appointment</span>
+              <span class="ph-link">History</span>
+            </div>
+
+            <div class="ph-owe">
+              <span class="ph-label">Left to pay</span>
+              <span class="ph-big">$81.00</span>
+              <div class="ph-bar"><i style="width:33%"></i></div>
+              <div class="ph-meta"><span>$40.00 of $121.00 paid</span><span class="ph-due">Due Oct 12, 8:00 AM · 6 days</span></div>
+            </div>
+
+            <div class="ph-pay">
+              <span class="ph-label">Pay now</span>
+              <span class="ph-amount" id="sk-amt">$81.00</span>
+              <button type="button" class="ph-other" id="sk-part">Pay part instead</button>
+              <div class="ph-seg" role="group" aria-label="Amount to pay" id="sk-seg" hidden>
+                <button type="button" data-p="0.25">25%</button>
+                <button type="button" data-p="0.5">Half</button>
+                <button type="button" data-p="0.75">75%</button>
+                <button type="button" data-p="1" class="on">All</button>
+              </div>
+            </div>
+
+            <div class="ph-reward" id="sk-reward">
+              <img id="sk-hippo" src="/design/repay-round2/img/hippo-rising-happy.png" alt="">
+              <div>
+                <span class="ph-reward-top"><img src="/design/repay-round2/img/pandesal.png" alt=""> <b id="sk-pts">+25 Pandesal</b></span>
+                <span id="sk-reward-text">On time +10, 3 in a row +15. Your Moodeng grows to <b>Rising</b> and you unlock a ₱50 GrabFood voucher.</span>
+                <span class="ph-tier"><i id="sk-tier" style="width:100%"></i></span>
+                <span class="ph-tier-label" id="sk-tier-label">45 → 70 Pandesal · Rising at 60</span>
+              </div>
+            </div>
+
+            <div class="ph-wallet" id="sk-wallet">
+              <span class="ph-ok" id="sk-wallet-icon">✓</span>
+              <span id="sk-wallet-text">From your Moodeng wallet · <b>$121.00</b> available</span>
+            </div>
+
+            <div class="ph-foot">
+              <span class="ph-after" id="sk-after">After this, the loan is closed.</span>
+              <button type="button" class="ph-btn" id="sk-btn">Pay $81.00</button>
+            </div>
+            <div class="ph-nav"><span>Board</span><span class="on">Repay</span><span>Home</span><span>History</span><span>Account</span></div>
+          </div>
+          <div class="sk-toggle" role="group" aria-label="Sample wallet balance">
+            <span>Sample wallet:</span>
+            <button type="button" data-w="121" class="on">Has enough ($121)</button>
+            <button type="button" data-w="18">Short ($18)</button>
+          </div>
+        </div>
+
+        <div class="sketch-notes">
+          <h3>Why this reads better</h3>
+          <ol>
+            <li><b>One number answers "how much do I owe?"</b> "Left to pay $81.00" sits at the top, once. Anna's page shows <b>$121.00 five times</b> (card, input, Full chip, button, wallet), so you can't tell the debt from the payment from your balance.</li>
+            <li><b>Paying it all is the default</b>, because 18 of 20 loans were paid in one go. "Pay part instead" opens the smaller options. No input box inside a card inside a card.</li>
+            <li><b>Paying shows what you win, using the real rules.</b> Paying it all on time: +10, plus +15 for a 3rd on-time loan in a row, which pushes this borrower past 60 Pandesal to Rising and a ₱50 voucher. Paying part shows what's still to win, because Pandesal only comes when the loan is done.</li>
+            <li><b>Wallet check before you tap, not after.</b> Anna's page puts the wallet below the button. Here a green check, or "you're $63 short", sits right above it. When you're short, the button becomes Add funds.</li>
+            <li><b>"After this" tells you the result</b> before you pay: loan closed, or what's left and when it's due.</li>
+            <li><b>The button is pinned above the menu</b>, so it's visible on any phone, and uses the solid purple from the Loan repaid screen.</li>
+            <li><b>No boxes around everything.</b> Spacing and type size do the grouping. The grey "Payment schedule" button becomes a small History link.</li>
+          </ol>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-schedule">
+      <div class="row-head"><h3>Payment schedule</h3><span class="pill fix">Doesn't match the product</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · 7 more payments"><img src="/design/repay-round2/img/fig-schedule.jpg" alt="Figma payment schedule sheet showing monthly installments" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="hole">No schedule. Each loan has one due date.</div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Moodeng loans aren't monthly installments. A loan has <b>one due date</b>, and people can pay part of it any time before then.</li>
+            <li>Turn this sheet into <b>payment history</b>: what was paid and when, how much is left, and the due date.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-source">
+      <div class="row-head"><h3>Add funds: choose where to buy USDC</h3><span class="pill ok">Good</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Add funds, step 1 of 3"><img src="/design/repay-round2/img/fig-add-funds.jpg" alt="Figma Add funds screen listing Coins.ph, Moneybees, GCrypto and Other options" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Choose a source"><img src="/design/repay-round2/img/app-c1-choose-source.jpg" alt="Live list of sources to buy USDC" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>The layout is fine. Which apps show up, and any notes for them, we'll handle in the app.</li>
+            <li>Small idea: instead of the same line under each app, say what's different (speed, GCash or bank).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-send">
+      <div class="row-head"><h3>Send USDC to your Moodeng wallet</h3><span class="pill fix">Needs changes</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Send USDC, step 2 of 3"><img src="/design/repay-round2/img/fig-send-usdc.jpg" alt="Figma Send USDC screen with wallet address, Base warning and Open Coins.ph button" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots">
+            <button class="shot" data-cap="Live · Address copied"><img src="/design/repay-round2/img/app-c2-copy-address.jpg" alt="Live copied address card" loading="lazy"></button>
+            <button class="shot" data-cap="Live · Open the other app"><img src="/design/repay-round2/img/app-c3-open-app.jpg" alt="Live instructions to open Coins.ph" loading="lazy"></button>
+          </div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>The <b>"Copied"</b> state after tapping the address.</li>
+            <li>The step-by-step taps inside each app. "How to send with Coins.ph?" hides the most important help at the bottom.</li>
+            <li>See our foolproof sketch just below: one step at a time, Coins.ph's own words, and the waiting built in.</li>
+            <li>Make the warning friendlier but keep it just as visible. It's still a red error box (problem 12). Anna's own comment #1 says the same.</li>
+          </ul>
+          <p class="rule"><b>Must keep:</b> Base network warning at the moment of copying. Address shown short with one-tap copy.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="row sketch-row" id="r-send-sketch">
+      <div class="row-head"><h3>A foolproof top-up: our sketch</h3><span class="pill new">Try it</span></div>
+      <p class="muted sketch-intro">Send and Waiting combined into one guided screen. Tap the big button to walk through it: it only ever shows the next thing to do. A rough direction, not a final design.</p>
+      <div class="sketch">
+        <div class="phone-wrap">
+          <div class="phone" id="ss">
+            <div class="ph-status"><span>9:41</span><span class="ph-dots">●●● ▮</span></div>
+            <div class="ph-top">
+              <span class="ph-back" aria-hidden="true">‹</span>
+              <span class="ph-title">Top up your wallet</span>
+              <span class="ph-link">Help</span>
+            </div>
+            <div class="ss-goal">
+              <span class="ph-label">Send from Coins.ph</span>
+              <span class="ss-amt">63 USDC</span>
+              <span class="ss-sub">$81.00 to pay − $18.00 in your wallet. We round up if there are cents.</span>
+            </div>
+
+            <ol class="ss-steps">
+              <li data-s="0">
+                <span class="ss-dot">1</span>
+                <div><b>Copy your Moodeng address</b>
+                  <span class="ss-addr">0xA3f2…<strong>9D4e</strong> <em id="ss-copied"></em></span>
+                </div>
+              </li>
+              <li data-s="1">
+                <span class="ss-dot">2</span>
+                <div><b>Open Coins.ph and tap:</b>
+                  <span class="ss-path"><i>Transfer</i><i>Send Crypto</i><i>USDC</i><i>External Wallet</i><i>Paste address</i></span>
+                </div>
+              </li>
+              <li data-s="2">
+                <span class="ss-dot">3</span>
+                <div><b>Pick the network</b>
+                  <span class="ss-base"><span class="ss-base-logo" aria-hidden="true"></span><b>Base</b> <span>Only Base. Other networks lose the money.</span></span>
+                </div>
+              </li>
+              <li data-s="3">
+                <span class="ss-dot">4</span>
+                <div><b>Type 63 and send</b>
+                  <span class="ss-small">Check the address ends in <strong>9D4e</strong>.</span>
+                </div>
+              </li>
+            </ol>
+
+            <div class="ss-wait" id="ss-wait" hidden>
+              <img id="ss-hippo" src="/design/repay-round2/img/hippo-rookie-wait.png" alt="">
+              <div>
+                <b id="ss-wait-title">Waiting for your 63 USDC…</b>
+                <span id="ss-wait-sub">Usually 1–3 minutes. You can close the app; we'll let you know.</span>
+                <span class="ph-tier"><i id="ss-bar" style="width:8%"></i></span>
+              </div>
+            </div>
+
+            <div class="ph-foot">
+              <span class="ph-after" id="ss-hint">Step 1 of 4</span>
+              <button type="button" class="ph-btn" id="ss-btn">Copy my address</button>
+            </div>
+            <div class="ph-nav"><span>Board</span><span class="on">Repay</span><span>Home</span><span>History</span><span>Account</span></div>
+          </div>
+          <div class="sk-toggle"><button type="button" id="ss-reset">Start over</button></div>
+        </div>
+
+        <div class="sketch-notes">
+          <h3>Why it's hard to get wrong</h3>
+          <ol>
+            <li><b>One thing at a time.</b> The big button is always the next step, and steps unlock in order. You can't open Coins.ph before copying your address.</li>
+            <li><b>It uses Coins.ph's words, not ours.</b> "Transfer → Send Crypto → USDC" is what they'll actually see on the other app's screens.</li>
+            <li><b>The network is a step, not a warning.</b> "Pick Base", with the Base logo, at the exact moment Coins.ph asks. Calm blue instead of a red error box.</li>
+            <li><b>A whole number to type: 63.</b> If the amount has cents, we round up, so nobody has to remember cents or ends up a few cents short.</li>
+            <li><b>A simple address check:</b> "ends in 9D4e", big and bold, instead of a 42-character address.</li>
+            <li><b>Waiting happens right here.</b> Anna's waiting hippo moves onto this screen, with a live status that moves on by itself when the money lands. No separate page and no "Check again" button.</li>
+            <li><b>Done means paying.</b> When the money arrives, the button becomes "Pay $81.00".</li>
+          </ol>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-wait">
+      <div class="row-head"><h3>Waiting for the top-up to arrive</h3><span class="pill ok">Good, small fixes</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Checking your wallet"><img src="/design/repay-round2/img/fig-checking.jpg" alt="Figma Checking your wallet screen with waiting hippo" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Watching for the transfer"><img src="/design/repay-round2/img/app-c4-watching.jpg" alt="Live progress of USDC received versus needed" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li><b>What it's for:</b> the last step of topping up. After sending USDC from Coins.ph, the person waits here until it lands in their Moodeng wallet. It isn't the loading screen for paying the loan; that's "Paying and confirming", which isn't drawn yet.</li>
+            <li>The waiting hippo is lovely. Keep it. In our sketch above it moves onto the send screen so there's one less page.</li>
+            <li><b>Part arrived:</b> "$30.00 of $63.00 received". Let them pay what arrived or wait for the rest.</li>
+            <li>The app watches the wallet by itself and usually sees the money within a minute. "Check again" can be a small link, not the main button (problem 14).</li>
+            <li>The "Step 3 of 3" counter ends here, before paying (problem 13).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-arrived">
+      <div class="row-head"><h3>Money arrived</h3><span class="pill ok">Covered</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Funds received banner"><img src="/design/repay-round2/img/fig-banner.jpg" alt="Figma Repay screen with green Funds received banner" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Funds arrived"><img src="/design/repay-round2/img/app-05-funds-arrived.jpg" alt="Live funds arrived card" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul><li>Good. It's drawn on the Option 1 layout; in Option 3 the banner appears on the loan page with the amount already filled in.</li></ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-confirm">
+      <div class="row-head"><h3>Confirm repayment</h3><span class="pill fix">Needs changes</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Confirm repayment"><img src="/design/repay-round2/img/fig-confirm.jpg" alt="Figma Confirm repayment sheet" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="hole">No confirm step today</div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Keep it. It's drawn over the Option 1 screen; in Option 3 it opens from the loan page's Pay button. With the Instant Wallet there's no pop-up after this, so it's the last chance to stop.</li>
+            <li>"Pay with" → <b>Moodeng wallet</b>.</li>
+            <li>The red "cannot be undone" box is a second alarm right before paying. Say it calmly (problem 12).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-paying">
+      <div class="row-head"><h3>Paying and confirming</h3><span class="pill miss">Missing</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="hole">Not designed</div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Sending payment"><img src="/design/repay-round2/img/app-08-paying.jpg" alt="Live sending payment overlay" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Sending → Confirming → done. Usually takes a few seconds.</li>
+            <li><b>Cancel</b> only while sending hasn't started.</li>
+            <li><b>Slow:</b> "Still confirming. You can leave; we'll finish it and let you know."</li>
+            <li><b>Failed:</b> what happened, that no money left the wallet, and Try again.</li>
+          </ul>
+          <p class="rule"><b>Must keep:</b> once sent, a payment can't be cancelled.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-partial">
+      <div class="row-head"><h3>Paid part of the loan</h3><span class="pill fix">Needs changes</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Payment successful, 50%"><img src="/design/repay-round2/img/fig-partial.jpg" alt="Figma partial payment success screen" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Part paid"><img src="/design/repay-round2/img/app-09-partial-paid.jpg" alt="Live part-paid screen" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>The main button says <b>Continue repayment</b> right after "Payment successful", so it feels unfinished. Make <b>Done</b> the main button and show "$60.50 left, due Oct 12" (problem 09).</li>
+            <li>An <b>overdue version</b>: "Your account stays restricted until this loan is fully paid."</li>
+            <li>50% progress doesn't follow from 33% already paid plus $60.50 (problem 08).</li>
+            <li>"+2 Pandesal" for paying part doesn't exist. Pandesal only comes when the whole loan is repaid on time.</li>
+          </ul>
+          <p class="rule"><b>Must keep:</b> the restricted message for overdue loans.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-repaid">
+      <div class="row-head"><h3>Loan fully repaid</h3><span class="pill ok">Good</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Loan repaid"><img src="/design/repay-round2/img/fig-repaid.jpg" alt="Figma loan repaid celebration with points and credit level" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Loan repaid"><img src="/design/repay-round2/img/app-10-loan-repaid.jpg" alt="Live loan repaid screen" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Good. The best screen in the file; use it as the bar for the rest.</li>
+            <li>One condition: the level-up only happens when the loan was for the <b>full limit</b>. Draw a version without the level-up card too.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-overdue">
+      <div class="row-head"><h3>Overdue loan</h3><span class="pill ok">Good</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Overdue loan"><img src="/design/repay-round2/img/fig-overdue.jpg" alt="Figma overdue loan screen with red card and overdue banner" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Overdue loan"><img src="/design/repay-round2/img/app-11-overdue-loan.jpg" alt="Live overdue loan screen" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Good. Keep this look when moving to the Option 3 layout.</li>
+            <li>One check: on a small phone the Repay button ends up below the fold (problem 05).</li>
+            <li>The <b>Account restricted</b> page people land on from the dashboard.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="r-empty">
+      <div class="row-head"><h3>No loan yet and setup states</h3><span class="pill fix">Good, one fix</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span>
+          <div class="shots"><button class="shot one" data-cap="Figma · Repay, no loan"><img src="/design/repay-round2/img/fig-empty.jpg" alt="Figma empty Repay screen with Get a loan banner and Connect Wallet card" loading="lazy"></button></div>
+        </div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="hole">Not captured</div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Good. The one fix: replace <b>Connect Wallet</b> with the wallet the person has (for new users, their Instant Wallet), showing its balance ($0.00) and an Add money link.</li>
+            <li>Add: <b>Finish setup</b>, <b>Verify your identity</b>, and <b>Set up your wallet</b> (Instant Wallet not created yet).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+  <section class="block" id="cashout">
+    <div class="block-head">
+      <span class="eyebrow">Flow 2</span>
+      <h2>Cash out the loan</h2>
+      <p class="muted">When a lender funds the loan, the USDC lands in the borrower's Moodeng wallet. Cash out is how they turn it into pesos: send it to an app like Coins.ph, then sell it there. This flow was designed in June as a Figma Make prototype (<code>prototypes/withdrawal-flow</code>) and the live screens were built from it. It isn't in Anna's repay file. It doesn't need designing from scratch; it needs a refresh so it matches the new repay screens, plus screens for the face check that was added later. It's the first thing a new borrower does, so it matters as much as repay.</p>
+    </div>
+    <div class="lanes" aria-hidden="true"><span>Design</span><span>Live app today</span><span>What we need</span></div>
+
+    <article class="row" id="c-choose">
+      <div class="row-head"><h3>Loan funded: choose where to cash out</h3><span class="pill fix">Refresh</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Design</span><div class="hole">Not in this file. Designed earlier as a prototype, now live →</div></div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Withdraw your USDC"><img src="/design/repay-round2/img/live-w01-choose.jpg" alt="Live cash-out screen listing Coins.ph, GCrypto, PDAX and Binance" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Start with a celebration: "Your loan is here!" with the amount, then the choice.</li>
+            <li>Options: Coins.ph (recommended), GCrypto, PDAX, Binance, Moneybees. Each shows payout (bank / GCash / Maya) and rough time.</li>
+            <li>Show the repay amount and due date so they don't spend it all.</li>
+            <li>"I'll do this later" stays.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="c-send">
+      <div class="row-head"><h3>Send to the exchange</h3><span class="pill fix">Refresh</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Design</span><div class="hole">Not in this file. Designed earlier as a prototype, now live →</div></div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots">
+            <button class="shot" data-cap="Live · Send to Coins.ph"><img src="/design/repay-round2/img/live-w02-coinsph.jpg" alt="Live send to Coins.ph screen" loading="lazy"></button>
+            <button class="shot" data-cap="Live · Send to Binance"><img src="/design/repay-round2/img/live-w02-binance.jpg" alt="Live send to Binance screen" loading="lazy"></button>
+            <button class="shot" data-cap="Live · Send to GCrypto"><img src="/design/repay-round2/img/live-w02-gcrypto.jpg" alt="Live send to GCrypto screen" loading="lazy"></button>
+            <button class="shot" data-cap="Live · Send to PDAX"><img src="/design/repay-round2/img/live-w02-pdax.jpg" alt="Live send to PDAX screen" loading="lazy"></button>
+          </div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>This is the reverse of repay: copy the address <b>from</b> Coins.ph and paste it <b>into</b> Moodeng.</li>
+            <li>"You send 50 USDC · you get about ₱3,142" at the top.</li>
+            <li>Paste field with a check that the address looks right, amount with <b>Max</b>.</li>
+            <li>After it arrives: the steps to sell for pesos and withdraw to bank or GCash.</li>
+          </ul>
+          <p class="rule"><b>Must keep:</b> Base network warning. Amount can't go above what's actually in the wallet.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="c-face">
+      <div class="row-head"><h3>Face check before cash out</h3><span class="pill new">New</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Design</span><div class="hole">Not designed yet (added after the prototype)</div></div>
+        <div class="col"><span class="lane-label">Live app today</span><div class="hole">Live, needs a login to capture</div></div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Before their <b>first</b> cash-out, Instant Wallet users in the Philippines do a quick face check (run by Didit). It stops someone else from taking their money.</li>
+            <li>Screens around it: why we ask (one line), then hand-off to Didit, then waiting for the result, passed, and didn't pass (try again or get help).</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="c-sending">
+      <div class="row-head"><h3>Cashing out…</h3><span class="pill fix">Refresh</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Design</span><div class="hole">Not in this file. Designed earlier as a prototype, now live →</div></div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Cashing out progress"><img src="/design/repay-round2/img/live-w03-sending.jpg" alt="Live cashing out progress with three steps" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Three steps: Preparing your wallet → Sending → Confirming on Base. The first one can take a couple of minutes.</li>
+            <li>A waiting hippo would fit here.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+
+    <article class="row" id="c-done">
+      <div class="row-head"><h3>Sent, slow or failed</h3><span class="pill fix">Refresh</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Design</span><div class="hole">Not in this file. Designed earlier as a prototype, now live →</div></div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Sent!"><img src="/design/repay-round2/img/live-w04-result.jpg" alt="Live sent confirmation with Done button" loading="lazy"></button></div>
+          <p class="cap">Slow and failed states exist in code but can't be shown in preview.</p>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li><b>Sent:</b> celebrate, then "Next: sell it for pesos in Coins.ph" with the steps.</li>
+            <li><b>Slow:</b> "Taking longer than usual. Your money is safe."</li>
+            <li><b>Failed:</b> nothing left the wallet, Try again, Get help.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="block" id="walletcard">
+    <div class="block-head">
+      <span class="eyebrow">Flow 3</span>
+      <h2>Wallet card on the Account page</h2>
+      <p class="muted">The home for the Instant Wallet: balance, Add money, Cash out and recent activity.</p>
+    </div>
+    <div class="lanes" aria-hidden="true"><span>Anna's Figma</span><span>Live app today</span><span>What we need</span></div>
+    <article class="row" id="w-card">
+      <div class="row-head"><h3>Balance, Add money, Cash out</h3><span class="pill new">New</span></div>
+      <div class="cols">
+        <div class="col"><span class="lane-label">Anna's Figma</span><div class="hole">Not designed</div></div>
+        <div class="col"><span class="lane-label">Live app today</span>
+          <div class="shots"><button class="shot one" data-cap="Live · Wallet card, with and without money"><img src="/design/repay-round2/img/live-a01-account-wallet.jpg" alt="Live wallet card with balance, Add money and Cash out buttons" loading="lazy"></button></div>
+        </div>
+        <div class="col need"><span class="lane-label">What we need</span>
+          <ul>
+            <li>Card in the dashboard style, with and without money.</li>
+            <li><b>Add money</b> sheet: buy USDC in GCrypto or Coins.ph, send to this address on Base, shows up in about a minute.</li>
+            <li><b>Money arrived</b> moment.</li>
+            <li><b>Wallet details</b>: address, copy, wallet type.</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="block" id="next">
+    <div class="block-head">
+      <span class="eyebrow">Next round</span>
+      <h2>What we need back from Anna</h2>
+      <p class="muted">In English for now. Filipino comes later, so leave room for text about 30% longer.</p>
+    </div>
+    <div class="todo">
+      <div>
+        <h3>1 · Fix in the repay designs</h3>
+        <ol>
+          <li>Option 3 as the base, opening straight to the loan when there's only one</li>
+          <li>Add funds card on Repay when the wallet is short</li>
+          <li>Payment schedule → payment history (one due date)</li>
+          <li>Remove Connect Wallet; "Pay with: Moodeng wallet"</li>
+          <li>Local time instead of UTC</li>
+          <li>Level-up card only for full-limit loans</li>
+        </ol>
+      </div>
+      <div>
+        <h3>2 · Add to repay</h3>
+        <ol>
+          <li>Paying and confirming, with Cancel</li>
+          <li>Payment slow and payment failed</li>
+          <li>Part of the top-up arrived</li>
+          <li>Overdue: partial-paid version and the Account restricted page</li>
+          <li>Finish setup, verify and set up wallet states</li>
+        </ol>
+      </div>
+      <div>
+        <h3>3 · Design new</h3>
+        <ol>
+          <li>Cash out: refresh the June prototype screens in the new style (loan arrived → choose app → send → sent / slow / failed → sell for pesos)</li>
+          <li>Face check screens for the first cash-out (new)</li>
+          <li>Wallet card: balance, Add money, Cash out, money arrived, details</li>
+        </ol>
+      </div>
+      <div>
+        <h3>4 · Raise the quality bar</h3>
+        <ol>
+          <li>First, use the product: the new dashboard preview and one real test loan (Part 3)</li>
+          <li>Follow the flow in Part 2: one job per screen</li>
+          <li>Make every scenario in Part 3 true</li>
+          <li>Make repaying part of the game with the real rules from Part 1: prize preview, streak, feed the hippo, a real celebration</li>
+          <li>One focal point and one main action per screen</li>
+          <li>Main action visible without scrolling at 360 × 640</li>
+          <li>One sample loan, same numbers on every screen</li>
+          <li>One button style for primary, one for secondary</li>
+          <li>Hippo moods on the action screens, not only the endings</li>
+          <li>The clickable prototype from the first brief: short on funds → top up → pay in full → celebrate</li>
+        </ol>
+      </div>
+    </div>
+    <p class="foot">Figma screens captured Oct 6, 2026 from Anna's "Ready" page. Live repay screens from Sept 28 (see the first brief); cash-out and wallet screens captured Oct 6 from the app's preview mode with sample data.</p>
+  </section>
+</div>
+
+<dialog id="lb" aria-label="Screen preview">
+  <button type="button" id="lb-close" aria-label="Close">×</button>
+  <img id="lb-img" alt="">
+  <p id="lb-cap"></p>
+</dialog>
+
+<script>
+(() => {
+  const lb = document.getElementById('lb');
+  const img = document.getElementById('lb-img');
+  const cap = document.getElementById('lb-cap');
+  document.querySelectorAll('.shot').forEach((b) => {
+    b.addEventListener('click', () => {
+      const i = b.querySelector('img');
+      img.src = i.src; img.alt = i.alt;
+      cap.textContent = b.dataset.cap || '';
+      lb.showModal();
+    });
+  });
+  const links = [...document.querySelectorAll('.toc a')];
+  const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        links.forEach((a) => a.classList.remove('on'));
+        const a = byId.get(e.target.id);
+        if (a) {
+          a.classList.add('on');
+          const nav = a.parentElement;
+          if (nav.scrollWidth > nav.clientWidth) nav.scrollTo({ left: a.offsetLeft - 12, behavior: 'smooth' });
+        }
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    byId.forEach((_, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+  }
+  // Sketch: loan page reacts to amount and wallet
+  const sk = document.getElementById('sk');
+  if (sk) {
+    const LEFT = 81, money = (n) => '$' + n.toFixed(2);
+    let pct = 1, wallet = 121;
+    const $ = (id) => document.getElementById(id);
+    const render = () => {
+      const amt = Math.round(LEFT * pct * 100) / 100;
+      const full = pct === 1;
+      const short = Math.max(0, Math.round((amt - wallet) * 100) / 100);
+      $('sk-amt').textContent = money(amt);
+      $('sk-hippo').src = full ? '/design/repay-round2/img/hippo-rising-happy.png' : '/design/repay-round2/img/hippo-rookie-wait.png';
+      $('sk-hippo').style.transform = full ? 'scale(1.08)' : 'scale(.94)';
+      $('sk-pts').textContent = full ? '+25 Pandesal' : 'Pandesal comes when it\'s all paid';
+      $('sk-reward-text').innerHTML = full
+        ? 'On time +10, 3 in a row +15. Your Moodeng grows to <b>Rising</b> and you unlock a ₱50 GrabFood voucher.'
+        : 'Pay the remaining ' + money(LEFT - amt) + ' by Oct 12 for <b>+25</b> and <b>Rising</b>.';
+      $('sk-tier').style.width = full ? '100%' : '75%';
+      $('sk-tier-label').textContent = full ? '45 → 70 Pandesal · Rising at 60' : '45 of 60 Pandesal to Rising';
+      $('sk-after').textContent = full ? 'After this, the loan is closed.' : 'After this: ' + money(LEFT - amt) + ' left, due Oct 12.';
+      const w = $('sk-wallet');
+      w.classList.toggle('short', short > 0);
+      $('sk-wallet-icon').textContent = short > 0 ? '!' : '✓';
+      $('sk-wallet-text').innerHTML = short > 0
+        ? 'Moodeng wallet has ' + money(wallet) + '. You\'re <b>' + money(short) + ' short</b>.'
+        : 'From your Moodeng wallet · <b>' + money(wallet) + '</b> available';
+      const b = $('sk-btn');
+      b.textContent = short > 0 ? 'Add ' + money(short) + ' to pay' : 'Pay ' + money(amt);
+      b.classList.toggle('add', short > 0);
+    };
+    sk.querySelectorAll('.ph-seg button').forEach((btn) => btn.addEventListener('click', () => {
+      sk.querySelectorAll('.ph-seg button').forEach((x) => x.classList.toggle('on', x === btn));
+      pct = Number(btn.dataset.p); render();
+    }));
+    $('sk-part').addEventListener('click', () => {
+      const seg = $('sk-seg'); seg.hidden = !seg.hidden;
+      $('sk-part').textContent = seg.hidden ? 'Pay part instead' : 'Hide';
+    });
+    document.querySelectorAll('.sk-toggle[aria-label="Sample wallet balance"] button').forEach((btn) => btn.addEventListener('click', () => {
+      document.querySelectorAll('.sk-toggle[aria-label="Sample wallet balance"] button').forEach((x) => x.classList.toggle('on', x === btn));
+      wallet = Number(btn.dataset.w); render();
+    }));
+    render();
+  }
+  // Marked-up screens: link notes and boxes
+  document.querySelectorAll('.mk').forEach((card) => {
+    const shot = card.querySelector('.mk-shot');
+    const set = (n) => {
+      card.querySelectorAll('[data-n]').forEach((el) => el.classList.toggle('hot', el.dataset.n === n));
+      shot.classList.toggle('dim', Boolean(n));
+    };
+    card.querySelectorAll('.mk-notes li, .mk-box').forEach((el) => {
+      el.addEventListener('mouseenter', () => set(el.dataset.n));
+      el.addEventListener('mouseleave', () => set(null));
+      el.addEventListener('click', () => {
+        set(el.dataset.n);
+        if (el.classList.contains('mk-box')) {
+          const li = card.querySelector('.mk-notes li[data-n="' + el.dataset.n + '"]');
+          if (li) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    });
+  });
+  // Sketch: guided top-up
+  const ss = document.getElementById('ss');
+  if (ss) {
+    const $ = (id) => document.getElementById(id);
+    const steps = [...ss.querySelectorAll('.ss-steps li')];
+    let state = 0, timer = null;
+    const mark = (cur) => steps.forEach((li, i) => {
+      li.classList.toggle('done', i < cur[0]);
+      li.classList.toggle('cur', i >= cur[0] && i <= cur[1]);
+      li.classList.toggle('later', i > cur[1]);
+      li.querySelector('.ss-dot').textContent = i < cur[0] ? '✓' : String(i + 1);
+    });
+    const render = () => {
+      const btn = $('ss-btn'), hint = $('ss-hint'), wait = $('ss-wait');
+      btn.disabled = false; wait.hidden = state < 3;
+      if (state === 0) { mark([0, 0]); $('ss-copied').textContent = ''; btn.textContent = 'Copy my address'; hint.textContent = 'Step 1 of 4'; }
+      if (state === 1) { mark([1, 1]); $('ss-copied').textContent = 'Copied ✓'; btn.textContent = 'Open Coins.ph ↗'; hint.textContent = 'Address copied. Now open Coins.ph.'; }
+      if (state === 2) { mark([1, 3]); btn.textContent = "I've sent it"; hint.textContent = 'Do steps 2 to 4 in Coins.ph, then come back.'; }
+      if (state === 3) {
+        mark([4, 3]); btn.textContent = 'Waiting for your money…'; btn.disabled = true; hint.textContent = 'This moves on by itself.';
+        $('ss-hippo').src = '/design/repay-round2/img/hippo-rookie-wait.png'; $('ss-wait-title').textContent = 'Waiting for your 63 USDC…';
+        $('ss-wait-sub').textContent = 'Usually 1–3 minutes. You can close the app; we\'ll let you know.';
+        let w = 8; $('ss-bar').style.width = w + '%';
+        clearInterval(timer);
+        timer = setInterval(() => { w += 4; $('ss-bar').style.width = Math.min(w, 100) + '%'; if (w >= 100) { clearInterval(timer); state = 4; render(); } }, 200);
+      }
+      if (state === 4) {
+        mark([4, 3]); $('ss-hippo').src = '/design/repay-round2/img/hippo-rising-happy.png'; $('ss-bar').style.width = '100%';
+        $('ss-wait-title').textContent = '63 USDC arrived!'; $('ss-wait-sub').textContent = 'Your wallet has enough to pay the loan.';
+        btn.textContent = 'Pay $81.00'; hint.textContent = 'All set.';
+      }
+    };
+    $('ss-btn').addEventListener('click', () => { if (state < 3) { state += 1; render(); } });
+    $('ss-reset').addEventListener('click', () => { clearInterval(timer); state = 0; render(); });
+    render();
+  }
+  document.getElementById('lb-close').addEventListener('click', () => lb.close());
+  lb.addEventListener('click', (e) => { if (e.target === lb) lb.close(); });
+})();
+</script>
+
+<footer class="site-foot"><div class="site-foot-in">
+  <span>Moodeng Credit · Repay redesign, round 2 · For Anna</span>
+  <span>Questions: message George</span>
+</div></footer>
+
+</body>
+</html>
