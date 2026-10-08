@@ -233,7 +233,7 @@ serve(async (req) => {
 
       const { data: prof } = await svc
          .from('users')
-         .select('email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_scheduled_at')
+         .select('email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_scheduled_at, video_call_outcome')
          .eq('id', user.id)
          .maybeSingle();
       // One booking per person: a quick double-book is refused, and booking again replaces the old
@@ -286,12 +286,12 @@ serve(async (req) => {
                   video_call_meeting_id: meetingIdFromJoinUrl(result.joinUrl),
                   ...ATTENDANCE_RESET,
                   // Fresh booking → restart the reminder ladder (see video-call-reminders) and
-                  // clear the last call's confirm/attendance.
+                  // clear the last call's confirm/attendance. "Attended" is never cleared: the call
+                  // is a one-time thing, so a borrower who already showed up keeps that for good.
                   video_call_reminder_stage: 0,
                   video_call_confirm_token: confirmToken,
                   video_call_confirmed_at: null,
-                  video_call_outcome: null,
-                  video_call_outcome_at: null
+                  ...(prof?.video_call_outcome === 'attended' ? {} : { video_call_outcome: null, video_call_outcome_at: null })
                })
                .eq('id', user.id)
                .select(
