@@ -25,19 +25,23 @@ export const CONTACT_STEP_EXEMPT_USER_IDS: ReadonlySet<string> = new Set([
 // Which end-of-request steps a borrower gets:
 //   * brand-new borrower   → Facebook card + video call (unless they applied a referral code);
 //   * existing borrower    → Facebook card only (had a funded loan before — no call needed);
+//   * already had the call → Facebook card only (an admin marked them Showed up once; deleting a
+//                            request and making a new one never asks for another call);
 //   * exempt (Belle)       → neither.
 // ContactsStep skips itself with a checkmark when Facebook is already verified.
 export const requestContactSteps = ({
    userId,
    isExistingBorrower,
-   hasAppliedReferral
+   hasAppliedReferral,
+   hasAttendedCall = false
 }: {
    userId: string;
    isExistingBorrower: boolean;
    hasAppliedReferral: boolean;
+   hasAttendedCall?: boolean;
 }): { contacts: boolean; videoCall: boolean } => {
    if (CONTACT_STEP_EXEMPT_USER_IDS.has(userId)) return { contacts: false, videoCall: false };
-   return { contacts: true, videoCall: !isExistingBorrower && !hasAppliedReferral };
+   return { contacts: true, videoCall: !isExistingBorrower && !hasAppliedReferral && !hasAttendedCall };
 };
 
 // Cal.com replaces Calendly for the video-call gate: its free plan has signed webhooks, so the

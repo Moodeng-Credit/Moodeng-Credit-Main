@@ -18,6 +18,12 @@ describe('end-of-request steps: who gets the Facebook card and who gets the vide
       expect(requestContactSteps({ userId: 'old', isExistingBorrower: true, hasAppliedReferral: false })).toEqual({ contacts: true, videoCall: false });
    });
 
+   it('already marked Showed up (e.g. deleted a request and made a new one): Facebook card, no second call', () => {
+      expect(
+         requestContactSteps({ userId: 'new', isExistingBorrower: false, hasAppliedReferral: false, hasAttendedCall: true })
+      ).toEqual({ contacts: true, videoCall: false });
+   });
+
    it('both of Belle’s accounts skip everything', () => {
       expect(BELLE).toHaveLength(2);
       for (const userId of BELLE) {

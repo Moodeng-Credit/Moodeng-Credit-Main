@@ -1152,7 +1152,12 @@ export default function LoanRequestModal({
       void dispatch(fetchUser());
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isOpen]);
-   const contactSteps = requestContactSteps({ userId: user.id, isExistingBorrower, hasAppliedReferral: hasReferral });
+   const contactSteps = requestContactSteps({
+      userId: user.id,
+      isExistingBorrower,
+      hasAppliedReferral: hasReferral,
+      hasAttendedCall: Boolean(user.attendedCall)
+   });
    const needsContactsStep = contactSteps.contacts && !user.hasVerifiedContact;
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot

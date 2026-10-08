@@ -71,7 +71,7 @@ serve(async (req) => {
       // ladder and clears the old "I'll be there" / attendance; an echo must not re-send reminders.
       const { data: current } = await supabase
          .from('users')
-         .select('video_call_starts_at, video_call_booking_uid')
+         .select('video_call_starts_at, video_call_booking_uid, video_call_outcome')
          .eq('id', booking.userId)
          .maybeSingle();
       // moodeng_user_id comes from the booking link, which anyone could forge (an email isn't a
@@ -99,8 +99,10 @@ serve(async (req) => {
                     video_call_scheduled_at: new Date().toISOString(),
                     video_call_reminder_stage: 0,
                     video_call_confirmed_at: null,
-                    video_call_outcome: null,
-                    video_call_outcome_at: null,
+                    // "Attended" sticks: one call is all a borrower ever needs (see calcom-round-robin).
+                    ...((current as { video_call_outcome?: string | null } | null)?.video_call_outcome === 'attended'
+                       ? {}
+                       : { video_call_outcome: null, video_call_outcome_at: null }),
                     ...ATTENDANCE_RESET
                  }
                : {}),
