@@ -2,10 +2,11 @@ import { useCallback, useEffect } from 'react';
 
 import { FileText } from 'lucide-react';
 import { useSelector } from 'react-redux';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { WorldIdOrb } from '@/components/verification/VerifyYourselfModal';
+import { PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
 import { isUserVerified } from '@/lib/isUserVerified';
 import type { RootState } from '@/store/store';
 
@@ -14,6 +15,7 @@ export default function WorldIdVerification() {
    const location = useLocation();
    const user = useSelector((state: RootState) => state.auth.user);
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
+   const preKycGate = usePreKycGate();
    const returnTo =
       (location.state as { returnTo?: string } | null)?.returnTo || new URLSearchParams(location.search).get('returnTo') || undefined;
 
@@ -58,6 +60,9 @@ export default function WorldIdVerification() {
       },
       [handleVerified, isPreview, navigate, returnTo]
    );
+
+   // Not met the team yet → Messenger + intro call first (every KYC entry point lands here or /verify).
+   if (!isPreview && preKycGate.isGated) return <Navigate replace state={{ returnTo }} to={PRE_KYC_CONNECT_PATH} />;
 
    return (
       <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col items-center justify-center max-w-modal mx-auto w-full px-md-4 py-md-5">

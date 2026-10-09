@@ -22,6 +22,8 @@ import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 //   4. call mode only: book the video call (the request unlocks only after they actually show up),
 //   5. booking (or "Send" in approval mode) → loan-access edge function flips them to pending and
 //      pings admins, who decide from Telegram. The borrower then gets a push (+ Telegram/Messenger).
+// The same steps also run BEFORE KYC (context='kyc', /onboarding/connect — the pre-KYC gate, see
+// src/lib/preKycGate.ts): there the call unlocks ID verification rather than the loan application.
 // Visual language follows the Milestone_9.23 Figma (see connectKit): hippo hero, step trail, big
 // option cards, gradient CTA — one short line per idea instead of paragraphs.
 
@@ -51,6 +53,7 @@ export default function ConnectStep({
    withEmma = false,
    needsAbout = false,
    renderAbout,
+   context = 'loan',
    onBack,
    onSubmitted
 }: {
@@ -66,6 +69,8 @@ export default function ConnectStep({
    // Bio not saved yet → show the "about you" page (rendered by the modal, which owns the bio state).
    needsAbout?: boolean;
    renderAbout?: (nav: { onBack: () => void; onDone: () => void }) => ReactNode;
+   // 'kyc': the pre-KYC gate — approval after the call unlocks ID verification, not the loan.
+   context?: 'loan' | 'kyc';
    onBack: () => void;
    onSubmitted: (status: LoanAccessStatus) => void | Promise<void>;
 }) {
@@ -140,7 +145,9 @@ export default function ConnectStep({
                           ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
                           : withEmma
                           ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
-                          : mode === 'call'
+                          : context === 'kyc'
+                            ? 'Before you verify your ID, we meet every borrower on a quick 15-min video call.'
+                            : mode === 'call'
                             ? 'We meet every borrower on a quick 15-min video call before their first loan.'
                             : 'Before your first loan, we like to meet every borrower — we approve within a day.'
                   }
@@ -188,7 +195,9 @@ export default function ConnectStep({
                            <>
                               <PerkRow icon={<MessagesSquare aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Meet the team, ask anything</PerkRow>
                               <PerkRow icon={<ShieldCheck aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Quick ID check — have it ready</PerkRow>
-                              <PerkRow icon={<Unlock aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Apply right after the call</PerkRow>
+                              <PerkRow icon={<Unlock aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                 {context === 'kyc' ? 'Verify your ID right after the call' : 'Apply right after the call'}
+                              </PerkRow>
                            </>
                         )}
                      </ul>
@@ -267,9 +276,14 @@ export function LoanAccessPendingCard({
    onClose,
    mode = 'approval',
    withEmma = false,
-   userId
+   userId,
+   context = 'loan',
+   closeLabel = 'Got it'
 }: {
    onClose: () => void;
+   // 'kyc': waiting before ID verification (pre-KYC gate), not before the loan application.
+   context?: 'loan' | 'kyc';
+   closeLabel?: string;
    mode?: 'approval' | 'call';
    withEmma?: boolean;
    // When given (call mode), the card shows the booked time and this meeting's own join link.
@@ -328,11 +342,17 @@ export function LoanAccessPendingCard({
             image={CONNECT_HIPPOS.waiting}
             subtitle={
                callOver
-                  ? 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
+                  ? context === 'kyc'
+                     ? 'The team is unlocking your ID verification — we’ll message you the moment it’s ready.'
+                     : 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
                   : mode === 'call'
                     ? meeting?.confirmToken && !meeting.confirmed
-                       ? 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
-                       : 'Thank you for confirming! You can apply right after the call.'
+                       ? context === 'kyc'
+                          ? 'You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.'
+                          : 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
+                       : context === 'kyc'
+                         ? 'Thank you for confirming! You can verify your ID right after the call.'
+                         : 'Thank you for confirming! You can apply right after the call.'
                     : 'Thanks for reaching out! We usually reply within a day on Messenger.'
             }
             title={
@@ -404,7 +424,7 @@ export function LoanAccessPendingCard({
          ) : null}
 
          <div className="mt-auto pt-1">
-            <PrimaryButton onClick={onClose}>Got it</PrimaryButton>
+            <PrimaryButton onClick={onClose}>{closeLabel}</PrimaryButton>
          </div>
       </div>
    );

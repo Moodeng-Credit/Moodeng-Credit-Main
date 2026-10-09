@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
+import { needsPreKycGate } from '../_shared/preKycGate.ts';
 
 // Creates a Didit verification session for the authenticated caller and returns
 // the hosted verification URL to redirect them to.
@@ -251,6 +252,12 @@ serve(async (req) => {
          if ((profile as { liveness_status?: string } | null)?.liveness_status !== 'APPROVED') {
             return jsonResponse({ error: 'Liveness check required', code: 'LIVENESS_REQUIRED' }, 409);
          }
+      }
+
+      // Pre-KYC gate: a new borrower meets the team (Messenger + intro call, approved after it)
+      // before we pay Didit for their KYC. Checked before the session is created.
+      if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await needsPreKycGate(supabase, user.id))) {
+         return jsonResponse({ error: 'Please meet the team before verifying your ID.', code: 'APPROVAL_REQUIRED' }, 409);
       }
 
       // A face scan is only worth paying Didit for when the caller could actually use it.

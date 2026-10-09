@@ -9,6 +9,7 @@ import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
 import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
+import { KycDeclinedNotifier } from '@/components/verification/KycDeclinedNotifier';
 import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
 import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
@@ -59,6 +60,7 @@ import Login from '@/app/login/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
+import ConnectBeforeKycPage from '@/app/onboarding/connect/page';
 import WalletBlocked from '@/app/onboarding/wallet/blocked/page';
 import WalletConnected from '@/app/onboarding/wallet/connected/page';
 import WalletFaceCheckPage from '@/app/onboarding/wallet/face-check/page';
@@ -240,6 +242,7 @@ export default function App() {
          <ExpiredLoanRequestNotifier />
          <SocialContactRequiredNotifier />
          <VerifiedCelebrationNotifier />
+         <KycDeclinedNotifier />
          <LenderFundingPrompt />
          {/* iPhone lenders who followed the Add to Home Screen guide: one tap to turn push on. */}
          {shouldCheckDefaultedBorrower && user.userRole === 'lender' ? <LenderHomeScreenPushPrompt userId={user.id} /> : null}
@@ -295,6 +298,16 @@ export default function App() {
                }
             />
             <Route
+               path="/onboarding/connect"
+               element={
+                  <ProtectedRoute>
+                     <RoleGuard>
+                        <ConnectBeforeKycPage />
+                     </RoleGuard>
+                  </ProtectedRoute>
+               }
+            />
+            <Route
                path="/onboarding/congratulations"
                element={
                   <ProtectedRoute>
@@ -307,6 +320,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-connected-preview" element={<WalletConnected />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/wallet-blocked-preview" element={<WalletBlocked />} /> : null}
             {import.meta.env.DEV ? <Route path="/onboarding/congratulations-preview" element={<CongratulationsPage />} /> : null}
+            {import.meta.env.DEV ? <Route path="/onboarding/connect-preview" element={<ConnectBeforeKycPage />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-wallet-preview" element={<AccountWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/account-settings-preview" element={<SettingsStylePreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/fund-wallet-preview" element={<FundWalletPreview />} /> : null}

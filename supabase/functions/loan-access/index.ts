@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
+import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
@@ -15,7 +16,9 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //                                   booked video call, decided by Showed up / No-show after it.
 //                                   Referred borrowers are always 'call' requests — a setup call
 //                                   with Emma (local exchange) — whichever gated flow is on.
-//                                   In 'open' there's no gate, so submit is refused.
+//                                   In 'open' there's no gate, so submit is refused — except for
+//                                   the pre-KYC gate (new, unverified borrowers meet the team before
+//                                   KYC; _shared/preKycGate.ts), which is always a 'call' request.
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
@@ -70,11 +73,13 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
       return json({ ok: true, status: borrower.loan_access_status });
    }
 
+   // Pre-KYC gate: a new borrower meets the team before KYC, whatever the loan flow — always a call.
+   const preKyc = await needsPreKycGate(svc, userId);
    const { data: flowData } = await svc.rpc('get_loan_flow');
    const flow = typeof flowData === 'string' ? flowData : 'open';
-   if (flow === 'open') return json({ ok: false, error: 'gate_off' }, 409);
+   if (flow === 'open' && !preKyc) return json({ ok: false, error: 'gate_off' }, 409);
    // Referred → Emma's setup call, even in the approval flow.
-   const isCallRequest = flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
+   const isCallRequest = preKyc || flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
 
    // Call request: the reach-out IS the booked call, so there must be one coming up.
    if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {

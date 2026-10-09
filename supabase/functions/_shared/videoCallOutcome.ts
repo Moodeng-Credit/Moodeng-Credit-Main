@@ -26,6 +26,7 @@ import {
    type RequestRow,
    who
 } from './loanAccess.ts';
+import { needsPreKycGate } from './preKycGate.ts';
 import { sendTelegramMessage } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 
@@ -83,10 +84,11 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
 
    const request = await findPendingCallRequest(svc, userId);
    const { data: flowData } = await svc.rpc('get_loan_flow');
-   const gateOn = typeof flowData === 'string' && flowData !== 'open';
+   const preKyc = await needsPreKycGate(svc, userId);
+   const gateOn = preKyc || (typeof flowData === 'string' && flowData !== 'open');
    const noRequestNote =
       gateOn && user.loan_access_status !== 'approved'
-         ? 'Their request never reached us (app closed after booking?) — Showed up still approves them.'
+         ? `Their request never reached us (app closed after booking?) — Showed up still approves them${preKyc ? ' (unlocks ID verification)' : ''}.`
          : 'Their loan request is already on the board (open flow).';
    const zoomActive = await zoomActiveForHost(svc, user.video_call_host);
    const evidence = describeAttendance(user, zoomActive);
@@ -100,7 +102,9 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
       `Call was: ${formatCallTimeForTeam(user.video_call_starts_at, user.video_call_timezone)}`,
       evidence,
       user.video_call_confirmed_at ? "They'd tapped ✅ I'll be there." : 'They never confirmed.',
-      request ? 'Showed up = they can apply for a loan now. No-show = they have to book again.' : noRequestNote,
+      request
+         ? `Showed up = ${preKyc ? 'they can verify their ID now' : 'they can apply for a loan now'}. No-show = they have to book again.`
+         : noRequestNote,
       zoomActive && !user.video_call_arrived_at && user.video_call_meeting_id
          ? `No tap by ${autoAt} (Bangkok) → I'll mark them a no-show automatically.`
          : null
@@ -136,6 +140,8 @@ export const recordCallOutcome = async (
          return { ok: false, summary: "This card is for an earlier call — they've rebooked since, so nothing was changed." };
       }
    }
+   // Read before the outcome is written: the pre-KYC gate makes this tap the approval too.
+   const preKyc = await needsPreKycGate(svc, userId);
    // A "Showed up" that corrects a no-show tells the borrower: they were told to rebook.
    const correctingNoShow = outcome === 'attended' && (await loadUser(svc, userId))?.video_call_outcome === 'no_show';
    const update = svc
@@ -161,8 +167,9 @@ export const recordCallOutcome = async (
    // Gated flows (call/approval): a borrower who isn't approved yet but booked and attended — e.g.
    // they closed the app before their request reached us — is approved by this same tap, so
    // "Showed up" always unlocks the application. A no-show stays locked and is asked to rebook.
+   // Same for the pre-KYC gate in any flow: Showed up unlocks ID verification.
    const { data: flowData } = await svc.rpc('get_loan_flow');
-   const gateOn = typeof flowData === 'string' && flowData !== 'open';
+   const gateOn = preKyc || (typeof flowData === 'string' && flowData !== 'open');
    const unapproved = (updated as BorrowerRow).loan_access_status !== 'approved';
    let approvedNow = false;
    if (gateOn && unapproved && outcome === 'attended') {

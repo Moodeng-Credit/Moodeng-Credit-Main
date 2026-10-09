@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import WorldIDVerification from '@/components/worldId/WorldIDVerification';
 import { isAndroidDevice, isIOSDevice } from '@/components/worldId/worldIdLaunch';
 
+import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import {
@@ -25,6 +26,15 @@ const STATUS_REFRESH_RETRIES = 40;
 const STATUS_REFRESH_DELAY_MS = 3000;
 // Sync against Didit's API every Nth poll attempt (~30s at 3s per attempt).
 const SYNC_EVERY_N_ATTEMPTS = 10;
+
+// create-didit-session refuses a borrower who hasn't met the team yet (pre-KYC gate) with
+// 409 { code: 'APPROVAL_REQUIRED' } — before any paid session is created.
+const isApprovalRequired = async (error: unknown): Promise<boolean> => {
+   const ctx = (error as { context?: Response } | null)?.context;
+   if (!ctx || typeof ctx.clone !== 'function') return false;
+   const body = (await ctx.clone().json().catch(() => null)) as { code?: string } | null;
+   return body?.code === 'APPROVAL_REQUIRED';
+};
 
 const wait = (ms: number) => new Promise<void>((resolve) => { window.setTimeout(resolve, ms); });
 
@@ -158,8 +168,13 @@ export default function VerifyFlow() {
    // leave and come back unconnected, and the Facebook step is what they land on again.
    const [contactsGate, setContactsGate] = useState<'unknown' | 'show' | 'done'>('unknown');
    const hasVerifiedContact = Boolean(user?.hasVerifiedContact);
+   // Same for a declined ID check: the borrower can't fix it alone, so Messenger comes first —
+   // that's the line the team uses to talk them through it (the admin alert flags the decline).
    const showContactsFirst =
-      step === 'id-review' && Boolean(user) && contactsGate !== 'done' && (contactsGate === 'show' || !hasVerifiedContact);
+      (step === 'id-review' || step === 'id-declined') &&
+      Boolean(user) &&
+      contactsGate !== 'done' &&
+      (contactsGate === 'show' || !hasVerifiedContact);
    useEffect(() => {
       if (showContactsFirst && contactsGate === 'unknown') setContactsGate('show');
    }, [showContactsFirst, contactsGate]);
@@ -244,6 +259,10 @@ export default function VerifyFlow() {
          const { data, error } = await supabase.functions.invoke('create-didit-session', {
             body: { kind: 'liveness', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
          });
+         if (error && (await isApprovalRequired(error))) {
+            navigate(PRE_KYC_CONNECT_PATH, { replace: true, state: { returnTo: flow.returnTo } });
+            return;
+         }
          const url = (data as { url?: string; sessionId?: string } | null)?.url;
          const sessionId = (data as { sessionId?: string } | null)?.sessionId;
          if (error || !url) {
@@ -255,7 +274,7 @@ export default function VerifyFlow() {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
       }
-   }, []);
+   }, [navigate]);
 
    const pollLiveness = useCallback(
       async (flow: FlowState, promptIfUnfinished = false) => {
@@ -348,6 +367,10 @@ export default function VerifyFlow() {
          const { data, error } = await supabase.functions.invoke('create-didit-session', {
             body: { kind: 'combined', ...(flow.returnTo ? { returnTo: flow.returnTo } : {}) }
          });
+         if (error && (await isApprovalRequired(error))) {
+            navigate(PRE_KYC_CONNECT_PATH, { replace: true, state: { returnTo: flow.returnTo } });
+            return;
+         }
          const url = (data as { url?: string } | null)?.url;
          if (error || !url) {
             throw new Error('Could not start verification. Please try again.');
@@ -357,7 +380,7 @@ export default function VerifyFlow() {
          setErrorMessage(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
          setStep('error');
       }
-   }, []);
+   }, [navigate]);
 
    const pollDidit = useCallback(async (retries: number = STATUS_REFRESH_RETRIES, syncFirst = false) => {
       const runId = (pollRunRef.current += 1);
@@ -844,25 +867,34 @@ export default function VerifyFlow() {
       // always leads on to the review screen, so a borrower who can't finish is never
       // trapped here. Both refresh the user so the review screen knows whether the line
       // is connected (it may be even when they skip: confirmed Facebook but no push).
+      const isDeclined = step === 'id-declined';
       const leaveContacts = () => {
          setContactsGate('done');
-         setStep('id-review');
+         setStep(isDeclined ? 'id-declined' : 'id-review');
          void dispatch(fetchUser());
       };
       return (
          <div className="min-h-screen bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f] flex flex-col max-w-modal mx-auto w-full">
             <ContactsStep
                userId={user.id}
-               source="verify_review"
+               source={isDeclined ? 'verify_declined' : 'verify_review'}
                backLabel={showContactsFirst ? 'Skip for now' : 'Back'}
                onBack={leaveContacts}
                onContinue={leaveContacts}
                intro={
-                  <ConnectHero
-                     image={CONNECT_HIPPOS.hello}
-                     subtitle="Your ID is in. Add your Facebook and turn on notifications so we can message you the moment your verification is complete."
-                     title="Almost done 💜"
-                  />
+                  isDeclined ? (
+                     <ConnectHero
+                        image={CONNECT_HIPPOS.missed}
+                        subtitle="That happens — let's sort it out together. Connect Messenger and the team will message you to help."
+                        title="Your ID check didn't go through"
+                     />
+                  ) : (
+                     <ConnectHero
+                        image={CONNECT_HIPPOS.hello}
+                        subtitle="Your ID is in. Add your Facebook and turn on notifications so we can message you the moment your verification is complete."
+                        title="Almost done 💜"
+                     />
+                  )
                }
             />
          </div>

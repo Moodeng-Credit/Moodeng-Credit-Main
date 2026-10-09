@@ -18,6 +18,8 @@ import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from 
 import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
+import { sendEmail } from './email.ts';
+import { isKycVerified } from './preKycGate.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -30,6 +32,10 @@ export type LoanAccessDecision = 'approved' | 'rejected' | 'no_show';
 export const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 // Opens the loan-request flow straight away (RequestBoard reads ?applyLoan=1).
 export const APPLY_URL = `${SITE_URL}/request-board?applyLoan=1`;
+// Pre-KYC gate (preKycGate.ts): where an unverified borrower books / rebooks, and where approval
+// sends them next (ID verification).
+export const CONNECT_URL = `${SITE_URL}/onboarding/connect`;
+export const VERIFY_URL = `${SITE_URL}/verify-world-id`;
 // Where admins actually talk to the borrower: the Moodeng Credit Page inbox (SendPulse mirrors it).
 export const PAGE_INBOX_URL = 'https://business.facebook.com/latest/inbox/messenger?asset_id=1148756028310286';
 
@@ -98,13 +104,14 @@ export type BorrowerRow = {
    messenger_verified_at: string | null;
    whatsapp_verified_at: string | null;
    loan_access_status: string | null;
+   is_world_id?: string | null;
    video_call_starts_at?: string | null;
    video_call_timezone?: string | null;
    video_call_confirmed_at?: string | null;
 };
 
 export const BORROWER_COLUMNS =
-   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at';
+   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at';
 export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referral_code, channel, status, created_at';
 
 export const shortId = (id: string) => id.slice(0, 8);
@@ -148,12 +155,15 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
    const referral = refCode?.code ?? request.referral_code ?? null;
 
    const isCall = request.kind === 'call';
+   // Not KYC'd yet → this is the pre-KYC gate: Showed up unlocks ID verification, not the loan.
+   const preKyc = !isKycVerified(borrower);
    const lines = [
       isCall
          ? referral
             ? '📞 Referred borrower booked their setup call with Emma'
             : '📞 New borrower booked their intro call'
          : '🤝 New borrower wants to connect',
+      preKyc ? '🪪 Not ID-verified yet — they verify their ID after you approve them.' : null,
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
       `Line: ${line}`,
@@ -164,7 +174,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       `Why: ${request.reason?.trim() || '—'}`,
       '',
       isCall
-         ? `After the call, tap Showed up (they can then apply) or No-show. Or type /approve ${shortId(request.id)} · /noshow ${shortId(request.id)}`
+         ? `After the call, tap Showed up (${preKyc ? 'unlocks ID verification' : 'they can then apply'}) or No-show. Or type /approve ${shortId(request.id)} · /noshow ${shortId(request.id)}`
          : `Chat with them in the Page inbox, then decide. Or type /approve ${shortId(request.id)} · /reject ${shortId(request.id)}`
    ].filter((l) => l !== null) as string[];
    const text = lines.join('\n');
@@ -252,8 +262,53 @@ const BORROWER_MESSAGES = {
    }
 } as const;
 
-export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: keyof typeof BORROWER_MESSAGES) => {
-   const msg = BORROWER_MESSAGES[kind];
+type BorrowerMessageKind = keyof typeof BORROWER_MESSAGES;
+type BorrowerMessage = { title: string; body: string; url: string };
+
+// Pre-KYC gate: the borrower isn't ID-verified yet, so approval unlocks ID verification (not the
+// loan), and anything that sends them back sends them to book again on /onboarding/connect.
+const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = {
+   approved: {
+      title: "You're approved 🎉 Next: verify your ID",
+      body: "Great meeting you! Tap to verify your ID — it takes about 2 minutes. Once you're verified you can post your loan request. IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.",
+      url: VERIFY_URL
+   },
+   no_show: {
+      title: 'We missed you on the call',
+      body: "We're sorry we missed you — we need to meet you before you can verify your ID and borrow. Tap to book a new time, or message us on Messenger.",
+      url: CONNECT_URL
+   },
+   call_cancelled: {
+      title: 'Your Moodeng call was cancelled',
+      body: 'No problem — tap to pick a new time for your 15-minute call. You can verify your ID right after it.',
+      url: CONNECT_URL
+   },
+   spot_released: {
+      title: 'We freed up your call time',
+      body: "You didn't confirm your call, so we gave the slot to someone else. No problem — tap to pick a new time that works for you.",
+      url: CONNECT_URL
+   },
+   expired: {
+      title: 'Still want to borrow with Moodeng?',
+      body: "We didn't get to meet yet. Tap to book a 15-minute call with the team — it's the first step to your loan.",
+      url: CONNECT_URL
+   }
+};
+
+// The pre-KYC messages that matter enough to also email (Messenger only lands inside Meta's 24h
+// window, and the call can be days after they connected).
+const PRE_KYC_EMAIL: ReadonlySet<BorrowerMessageKind> = new Set(['approved', 'no_show']);
+
+export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
+   const preKycMsg = isKycVerified(borrower) ? undefined : PRE_KYC_MESSAGES[kind];
+   const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
+   if (preKycMsg && PRE_KYC_EMAIL.has(kind) && borrower.email) {
+      try {
+         await sendEmail(borrower.email, msg.title, `${msg.body}\n\n${msg.url}`);
+      } catch (err) {
+         console.error('loanAccess: email failed for', borrower.id, err instanceof Error ? err.message : err);
+      }
+   }
    try {
       const buildPayload = (_locale: PushLocale): PushPayload => ({
          type: 'loan_access_decision',
@@ -275,7 +330,23 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    if (borrower.chat_id && borrower.notif_account_activity !== false) {
       try {
          await sendTelegramMessage(borrower.chat_id, `${msg.title}\n\n${msg.body}`, {
-            inlineKeyboard: [[{ text: msg.url === APPLY_URL ? (kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released' ? 'Book a new time' : 'Apply for a loan') : 'Open Moodeng', url: msg.url }]]
+            inlineKeyboard: [
+               [
+                  {
+                     text:
+                        msg.url === VERIFY_URL
+                           ? 'Verify my ID'
+                           : msg.url === CONNECT_URL
+                             ? 'Book a call'
+                             : msg.url === APPLY_URL
+                               ? kind === 'no_show' || kind === 'call_cancelled' || kind === 'spot_released'
+                                  ? 'Book a new time'
+                                  : 'Apply for a loan'
+                               : 'Open Moodeng',
+                     url: msg.url
+                  }
+               ]
+            ]
          });
       } catch (err) {
          console.error('loanAccess: telegram failed for', borrower.id, err instanceof Error ? err.message : err);

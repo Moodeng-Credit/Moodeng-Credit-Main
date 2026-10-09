@@ -99,13 +99,36 @@ const CONNECT_FACEBOOK_COPY = {
    }
 } as const;
 
+// A declined ID check: they can't fix it alone, so the card asks for the line we'll help them on.
+const DECLINED_CONNECT_COPY = {
+   en: {
+      title: "Your ID check didn't go through",
+      body: "Let's sort it out together. Connect Messenger and the team will message you to help.",
+      cta: 'Connect'
+   },
+   fil: {
+      title: 'Hindi pumasa ang ID check mo',
+      body: 'Ayusin natin nang magkasama. I-connect ang Messenger at imemessage ka ng team para tumulong.',
+      cta: 'I-connect'
+   }
+} as const;
+
 /**
- * Shown while a borrower's ID is in manual review and they haven't connected Facebook yet, so they
- * don't drift off to the request board without the line we'll tell them on. Opens /verify, which
- * lands on the Facebook step.
+ * Shown while a borrower's ID is in manual review — or was declined — and they haven't connected
+ * Facebook yet, so we have a line to tell them on (review) or talk them through it (declined).
+ * Opens /verify, which lands on the Facebook step.
  */
-export function ConnectFacebookBanner({ language, onConnect }: { language: DashboardV2Language; onConnect: () => void }) {
-   const copy = CONNECT_FACEBOOK_COPY[language];
+export function ConnectFacebookBanner({
+   language,
+   onConnect,
+   declined = false
+}: {
+   language: DashboardV2Language;
+   onConnect: () => void;
+   // ID check declined (not in review): "let's talk" copy instead of "almost done".
+   declined?: boolean;
+}) {
+   const copy = (declined ? DECLINED_CONNECT_COPY : CONNECT_FACEBOOK_COPY)[language];
    return (
       <button
          type="button"
