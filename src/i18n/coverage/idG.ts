@@ -603,5 +603,6 @@ export const indonesianCoverageG: Record<string, string> = {
    "Right after it, you can verify your ID and borrow.": "Setelahnya, kamu bisa langsung verifikasi ID dan meminjam.",
    "Book": "Pesan",
    "View": "Lihat",
-   "Connect": "Hubungkan"
+   "Connect": "Hubungkan",
+   "Meet the team >": "Kenalan dengan tim >"
 };

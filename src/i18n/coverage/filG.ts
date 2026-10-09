@@ -1023,5 +1023,6 @@ export const filipinoCoverageG: Record<string, string> = {
    "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Tatlong beses nang hindi pumasa ang ID check mo, kaya direkta ka nang tutulungan ng team. Mag-message sa amin sa Messenger at aayusin natin ito nang magkasama.",
    "Message us on Messenger": "Mag-message sa amin sa Messenger",
    "1 of 3 tries left": "1 sa 3 subok na lang",
-   "2 of 3 tries left": "2 sa 3 subok na lang"
+   "2 of 3 tries left": "2 sa 3 subok na lang",
+   "Meet the team >": "Kilalanin ang team >"
 };

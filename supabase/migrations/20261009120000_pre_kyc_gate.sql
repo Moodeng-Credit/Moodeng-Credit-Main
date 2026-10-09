@@ -146,3 +146,31 @@ $$;
 
 REVOKE ALL ON FUNCTION public.my_kyc_tries_left() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.my_kyc_tries_left() TO authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- Daily onboarding check-in to the admin Telegram, 09:00 Manila (01:00 UTC): calls waiting on a
+-- ✅ / ❌, and people who connected Messenger but never booked. loan-access sends it at most once a
+-- day (telegram_bot_settings.gate_digest_date) and nothing on a quiet day.
+-- ---------------------------------------------------------------------------------------------
+DO $$
+BEGIN
+  PERFORM cron.unschedule('loan-access-gate-digest-daily');
+EXCEPTION
+  WHEN OTHERS THEN
+    NULL;
+END $$;
+
+SELECT cron.schedule(
+  'loan-access-gate-digest-daily',
+  '0 1 * * *',
+  $$
+  SELECT net.http_post(
+    url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'SUPABASE_PROJECT_URL' LIMIT 1) || '/functions/v1/loan-access',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'SUPABASE_SECRET_KEY' LIMIT 1)
+    ),
+    body := '{"action":"gate_digest"}'::jsonb
+  )
+  $$
+);

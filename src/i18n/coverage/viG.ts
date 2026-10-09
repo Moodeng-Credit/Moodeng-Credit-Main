@@ -497,5 +497,6 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Right after it, you can verify your ID and borrow.": "Ngay sau đó, bạn có thể xác minh danh tính và vay.",
    "Book": "Đặt lịch",
    "View": "Xem",
-   "Connect": "Kết nối"
+   "Connect": "Kết nối",
+   "Meet the team >": "Gặp đội ngũ >"
 };

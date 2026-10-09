@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
+import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -22,6 +23,9 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
+//   action=gate_digest (daily cron) — the admin check-in: calls waiting on a ✅ / ❌, and people who
+//                                   connected Messenger but never booked. Sent at most once a day
+//                                   (claimed in telegram_bot_settings), so an extra call is harmless.
 //   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
 //                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
 //                                   so it can only ever fire once per real redemption.
@@ -173,7 +177,9 @@ const referralAlert = async (svc: any, body: Record<string, unknown>) => {
       `🎟️ Referral code ${redemption.code ?? '?'} just used`,
       `By: ${borrower ? who(borrower) : userId}`,
       count ? `Times this code has been used: ${count}` : null,
-      'Referred borrowers skip the call and apply straight away.'
+      // New (not yet ID-verified) referred borrowers meet Emma on a setup call before KYC (pre-KYC
+      // gate); verified ones still apply straight away in the open flow.
+      'If they\'re new: setup call with Emma first, then ID verification and their loan.'
    ]
       .filter(Boolean)
       .join('\n');
@@ -188,6 +194,30 @@ const referralAlert = async (svc: any, body: Record<string, unknown>) => {
    }
    await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return json({ ok: true, alerted: true });
+};
+
+// deno-lint-ignore no-explicit-any
+const gateDigest = async (svc: any) => {
+   // Claim today's digest first (Manila date): a repeat call the same day sends nothing.
+   const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+   const { data: last } = await svc.from('telegram_bot_settings').select('value').eq('key', 'gate_digest_date').maybeSingle();
+   if (last?.value === today) return json({ ok: true, sent: false, reason: 'already_sent' });
+   const { error: claimError } = await svc.from('telegram_bot_settings').upsert({ key: 'gate_digest_date', value: today }, { onConflict: 'key' });
+   if (claimError) throw new Error(claimError.message);
+
+   const { waiting, unbooked } = await collectGateDigest(svc);
+   const text = formatGateDigest(waiting, unbooked);
+   if (!text) return json({ ok: true, sent: false, reason: 'nothing_to_report' });
+   const chat = await getAdminChatId(svc);
+   if (chat) {
+      try {
+         await sendTelegramMessage(chat, text);
+      } catch (err) {
+         console.error('loan-access: gate digest telegram failed', err instanceof Error ? err.message : err);
+      }
+   }
+   await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return json({ ok: true, sent: true, waiting: waiting.length, unbooked: unbooked.length });
 };
 
 serve(async (req) => {
@@ -205,6 +235,7 @@ serve(async (req) => {
       if (body.action === 'submit') return await submit(req, svc, body);
       if (body.action === 'expire') return await expire(svc);
       if (body.action === 'referral_alert') return await referralAlert(svc, body);
+      if (body.action === 'gate_digest') return await gateDigest(svc);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

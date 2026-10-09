@@ -633,5 +633,6 @@ export const thaiCoverageG: Record<string, string> = {
    "Right after it, you can verify your ID and borrow.": "หลังจากนั้นคุณยืนยันตัวตนและกู้ได้ทันที",
    "Book": "จอง",
    "View": "ดู",
-   "Connect": "เชื่อมต่อ"
+   "Connect": "เชื่อมต่อ",
+   "Meet the team >": "พบกับทีม >"
 };
