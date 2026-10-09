@@ -24,7 +24,9 @@ export type PushNotificationType =
    | 'request_expired'
    | 'video_call_reminder'
    | 'loan_access_decision'
-   | 'verification_decision';
+   | 'verification_decision'
+   // Admin → Campaigns re-engagement message.
+   | 'campaign';
 
 export type PushLocale = 'en' | 'fil' | 'id';
 

@@ -2543,6 +2543,131 @@ export async function sendAdminEmail(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Campaigns — re-engagement messages to ready-made audiences (admin-campaigns edge function).
+// Messenger when their 24h window is open, otherwise email (unless unsubscribed) + app push.
+// ---------------------------------------------------------------------------
+
+export type CampaignAudience = 'past_idle' | 'fb_not_borrowing';
+export type CampaignChannel = 'messenger' | 'email' | 'push';
+
+export interface CampaignPerson {
+   userId: string;
+   firstName: string;
+   displayName: string | null;
+   username: string | null;
+   email: string | null;
+   hasMessenger: boolean;
+   messengerOpen: boolean;
+   unsubscribed: boolean;
+   channels: CampaignChannel[];
+   fundedLoans: number;
+   lastFundedAt: string | null;
+   lastRepaidAt: string | null;
+   lastContactedAt: string | null;
+}
+
+export interface CampaignSendResult {
+   campaignId: string;
+   reached: number;
+   messenger: number;
+   email: number;
+   push: number;
+   failed: number;
+   outcomes: Array<{ userId: string; channel: CampaignChannel | null; status: 'sent' | 'failed' | 'skipped'; detail?: string }>;
+}
+
+export interface CampaignSummary {
+   id: string;
+   name: string;
+   audience: CampaignAudience;
+   audience_params: { idleDays?: number } | null;
+   subject: string;
+   created_at: string;
+   reached: number;
+   messenger: number;
+   email: number;
+   push: number;
+   failed: number;
+}
+
+export interface CampaignRecipient {
+   user_id: string;
+   channel: CampaignChannel;
+   status: 'pending' | 'sent' | 'failed' | 'skipped';
+   detail: string | null;
+   created_at: string;
+   users: { username: string | null; email: string | null; display_name: string | null } | null;
+}
+
+async function invokeCampaigns<T>(body: Record<string, unknown>, fallback: string): Promise<T> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-campaigns', { body });
+   if (error) throw new Error((await readFunctionError(error)) || error.message || fallback);
+   return data as T;
+}
+
+export const getCampaignAudience = (audience: CampaignAudience, idleDays: number) =>
+   invokeCampaigns<{ people: CampaignPerson[] }>({ action: 'audience', audience, idleDays }, 'Could not load the audience.');
+
+export const sendCampaign = (input: {
+   campaignId: string;
+   name: string;
+   audience: CampaignAudience;
+   idleDays: number;
+   subject: string;
+   message: string;
+   userIds: string[];
+}) => invokeCampaigns<CampaignSendResult>({ action: 'send', ...input }, 'Could not send the campaign.');
+
+export const listCampaigns = () => invokeCampaigns<{ campaigns: CampaignSummary[] }>({ action: 'history' }, 'Could not load campaigns.');
+
+export const listCampaignRecipients = (campaignId: string) =>
+   invokeCampaigns<{ sends: CampaignRecipient[] }>({ action: 'recipients', campaignId }, 'Could not load recipients.');
+
+// Automatic journeys (campaign-automations runs them daily; admin-campaigns shows and edits them).
+export interface AutomationStep {
+   step: number;
+   delay_days: number;
+   subject: string;
+   message: string;
+}
+
+export interface AutomationPersonDue {
+   userId: string;
+   name: string;
+   step: number;
+   daysSinceRepaid: number;
+}
+
+export interface Automation {
+   id: string;
+   name: string;
+   enabled: boolean;
+   updated_at: string;
+   stepWindowDays: number;
+   capDays: number;
+   steps: AutomationStep[];
+   dueToday: AutomationPersonDue[];
+   waitingForLimit: AutomationPersonDue[];
+   recentSends: Array<{
+      user_id: string;
+      step: number;
+      channel: CampaignChannel;
+      status: 'pending' | 'sent' | 'failed' | 'skipped';
+      detail: string | null;
+      created_at: string;
+      users: { username: string | null; email: string | null; display_name: string | null } | null;
+   }>;
+}
+
+export const listAutomations = () => invokeCampaigns<{ automations: Automation[] }>({ action: 'automations' }, 'Could not load automations.');
+
+export const saveAutomation = (input: {
+   id: string;
+   enabled?: boolean;
+   steps?: Array<{ step: number; delayDays: number; subject: string; message: string }>;
+}) => invokeCampaigns<{ automations: Automation[] }>({ action: 'save_automation', ...input }, 'Could not save the automation.');
+
+// ---------------------------------------------------------------------------
 // Calendar — the team's Cal.com availability and bookings (admin-calendar edge function).
 // ---------------------------------------------------------------------------
 

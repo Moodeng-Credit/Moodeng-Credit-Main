@@ -41,6 +41,7 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import BorrowerContactsSection from './BorrowerContactsSection';
+import CampaignsSection from './CampaignsSection';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
 import DemoB2CSection from './DemoB2CSection';
@@ -1676,6 +1677,19 @@ export default function AdminPanel() {
                   </p>
                </div>
                <EmailUsersSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'campaigns' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Campaigns</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Bring borrowers back — automatically after they repay, or with a one-off message to an audience. Each person
+                     gets it on Messenger if they&apos;ve messaged us in the last day, otherwise by email and app notification.
+                  </p>
+               </div>
+               <CampaignsSection />
             </section>
          ) : null}
 
