@@ -2623,6 +2623,50 @@ export const listCampaigns = () => invokeCampaigns<{ campaigns: CampaignSummary[
 export const listCampaignRecipients = (campaignId: string) =>
    invokeCampaigns<{ sends: CampaignRecipient[] }>({ action: 'recipients', campaignId }, 'Could not load recipients.');
 
+// Automatic journeys (campaign-automations runs them daily; admin-campaigns shows and edits them).
+export interface AutomationStep {
+   step: number;
+   delay_days: number;
+   subject: string;
+   message: string;
+}
+
+export interface AutomationPersonDue {
+   userId: string;
+   name: string;
+   step: number;
+   daysSinceRepaid: number;
+}
+
+export interface Automation {
+   id: string;
+   name: string;
+   enabled: boolean;
+   updated_at: string;
+   stepWindowDays: number;
+   capDays: number;
+   steps: AutomationStep[];
+   dueToday: AutomationPersonDue[];
+   waitingForLimit: AutomationPersonDue[];
+   recentSends: Array<{
+      user_id: string;
+      step: number;
+      channel: CampaignChannel;
+      status: 'pending' | 'sent' | 'failed' | 'skipped';
+      detail: string | null;
+      created_at: string;
+      users: { username: string | null; email: string | null; display_name: string | null } | null;
+   }>;
+}
+
+export const listAutomations = () => invokeCampaigns<{ automations: Automation[] }>({ action: 'automations' }, 'Could not load automations.');
+
+export const saveAutomation = (input: {
+   id: string;
+   enabled?: boolean;
+   steps?: Array<{ step: number; delayDays: number; subject: string; message: string }>;
+}) => invokeCampaigns<{ automations: Automation[] }>({ action: 'save_automation', ...input }, 'Could not save the automation.');
+
 // ---------------------------------------------------------------------------
 // Calendar — the team's Cal.com availability and bookings (admin-calendar edge function).
 // ---------------------------------------------------------------------------

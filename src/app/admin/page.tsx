@@ -1685,8 +1685,8 @@ export default function AdminPanel() {
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">Campaigns</h2>
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-                     Bring borrowers back. Pick an audience, write one message — each person gets it on Messenger if they&apos;ve
-                     messaged us in the last day, otherwise by email and app notification.
+                     Bring borrowers back — automatically after they repay, or with a one-off message to an audience. Each person
+                     gets it on Messenger if they&apos;ve messaged us in the last day, otherwise by email and app notification.
                   </p>
                </div>
                <CampaignsSection />

@@ -1,18 +1,20 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendEmail } from '../_shared/email.ts';
-import { SITE_URL } from '../_shared/loanAccess.ts';
-import { sendPushToUser } from '../_shared/pushDelivery.ts';
-import { getMessengerContact, isInsideMessagingWindow, isSendPulseConfigured, sendMessengerMessage } from '../_shared/sendpulse.ts';
-import { unsubscribeUrl } from '../_shared/unsubscribe.ts';
+import {
+   type Channel,
+   deliverToPerson,
+   EMAIL_GAP_MS,
+   loadFirstNames,
+   messengerOpen,
+   type Outcome,
+   planFor
+} from '../_shared/campaignDelivery.ts';
+import { AUTOMATION_ID, CAP_DAYS, loadJourney, planComeback, STEP_WINDOW_DAYS } from '../_shared/comebackJourney.ts';
 
 // Admin → Campaigns: one re-engagement message to a ready-made audience, each person reached on the
-// best channel they can actually receive (migration 20261010090000_admin_campaigns.sql):
-//   * Messenger — when Meta's 24h window is open (they messaged the Page in the last day). Outside
-//     it Meta refuses free-form messages (message tags were retired), so instead:
-//   * email (unless they unsubscribed; every email carries an unsubscribe link + one-click header)
-//     and an app push to any device they've turned notifications on for.
+// best channel they can actually receive (see _shared/campaignDelivery.ts; migration
+// 20261010090000_admin_campaigns.sql). The automatic journeys live in campaign-automations.
 //
 //   { action: 'audience', audience: 'past_idle' | 'fb_not_borrowing', idleDays? }
 //        → who's in it right now, and the channel each would get
@@ -20,6 +22,8 @@ import { unsubscribeUrl } from '../_shared/unsubscribe.ts';
 //        → sends; a retry with the same campaignId skips whoever already got it (unique per channel)
 //   { action: 'history' }                → recent campaigns with per-channel counts
 //   { action: 'recipients', campaignId } → who got what
+//   { action: 'automations' }            → the automatic journeys, their steps and recent sends
+//   { action: 'save_automation', id, enabled, steps: [{ step, delayDays, subject, message }] }
 //
 // Callers: an active owner/admin/support session only.
 
@@ -37,28 +41,9 @@ const MAX_PER_SEND = 100;
 const MAX_NAME = 120;
 const MAX_SUBJECT = 200;
 const MAX_MESSAGE = 2000; // Messenger's text limit.
-const EMAIL_GAP_MS = 600;
-const PUSH_BODY_MAX = 180;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const UUID = /^[0-9a-f-]{36}$/i;
-
-// KYC names come off the document, often in capitals ("JOAN MAE") — show them the way people write them.
-const titleCase = (value: string) =>
-   value
-      .toLowerCase()
-      .replace(/(^|[\s'-])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase())
-      .trim();
-const fill = (template: string, firstName: string) => template.replace(/\{\s*first_name\s*\}/gi, firstName);
-const escapeHtml = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const emailHtml = (text: string, unsubscribe: string) =>
-   `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.55;color:#1a1a1a;max-width:560px">${text
-      .split(/\n{2,}/)
-      .map((para) => `<p style="margin:0 0 14px">${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
-      .join('')}<p style="margin:28px 0 0;font-size:12px;color:#8a8a8a">You're getting this because you have a Moodeng Credit account. <a href="${escapeHtml(unsubscribe)}" style="color:#8a8a8a">Unsubscribe from updates</a> — loan and account emails still come through.</p></div>`;
-const emailText = (text: string, unsubscribe: string) =>
-   `${text}\n\n—\nYou're getting this because you have a Moodeng Credit account. Unsubscribe from updates: ${unsubscribe}`;
 
 type AudienceRow = {
    user_id: string;
@@ -72,7 +57,6 @@ type AudienceRow = {
    last_funded_at: string | null;
    last_repaid_at: string | null;
 };
-type Channel = 'messenger' | 'email' | 'push';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -81,34 +65,6 @@ const loadAudience = async (svc: Svc, audience: string, idleDays: number): Promi
    const { data, error } = await svc.rpc('admin_campaign_audience', { p_audience: audience, p_idle_days: idleDays });
    if (error) throw new Error(error.message);
    return (data ?? []) as AudienceRow[];
-};
-
-const loadFirstNames = async (svc: Svc, ids: string[]) => {
-   const names = new Map<string, string>();
-   if (!ids.length) return names;
-   const { data } = await svc
-      .from('kyc_identities')
-      .select('user_id, first_name, session_created_at')
-      .in('user_id', ids)
-      .order('session_created_at', { ascending: false });
-   for (const row of (data ?? []) as Array<{ user_id: string; first_name: string | null }>) {
-      if (row.first_name?.trim() && !names.has(row.user_id)) names.set(row.user_id, titleCase(row.first_name.trim()));
-   }
-   return names;
-};
-
-// Is their Messenger window open right now? (They messaged the Page in the last ~day.)
-const messengerOpen = async (psid: string | null) => {
-   if (!psid || !isSendPulseConfigured()) return false;
-   return isInsideMessagingWindow(await getMessengerContact(psid));
-};
-
-const planFor = (row: AudienceRow, open: boolean): Channel[] => {
-   if (open) return ['messenger'];
-   const channels: Channel[] = [];
-   if (row.email && !row.email_unsubscribed_at) channels.push('email');
-   channels.push('push');
-   return channels;
 };
 
 const audienceAction = async (svc: Svc, body: Record<string, unknown>) => {
@@ -206,86 +162,18 @@ const sendAction = async (svc: Svc, body: Record<string, unknown>, actorId: stri
          .eq('user_id', userId)
          .eq('channel', channel);
 
-   type Outcome = { userId: string; channel: Channel | null; status: 'sent' | 'failed' | 'skipped'; detail?: string };
    const outcomes: Outcome[] = [];
-   let emailSent = false;
-
+   let first = true;
    for (const userId of userIds) {
       const row = inAudience.get(userId);
       if (!row) {
          outcomes.push({ userId, channel: null, status: 'skipped', detail: 'no_longer_in_audience' });
          continue;
       }
+      if (!first) await sleep(EMAIL_GAP_MS);
+      first = false;
       const firstName = names.get(userId) || row.display_name?.trim() || 'there';
-      const text = fill(message, firstName);
-      const title = fill(subject, firstName);
-
-      // 1) Messenger, when the window is open. If it fails, fall through to email + push.
-      if (await messengerOpen(row.messenger_psid)) {
-         if (await claim(userId, 'messenger')) {
-            const res = await sendMessengerMessage(row.messenger_psid, { text });
-            if (res.ok) {
-               await finish(userId, 'messenger', 'sent');
-               outcomes.push({ userId, channel: 'messenger', status: 'sent' });
-               continue;
-            }
-            await finish(userId, 'messenger', 'failed', res.reason);
-         } else {
-            outcomes.push({ userId, channel: 'messenger', status: 'skipped', detail: 'already_sent' });
-            continue;
-         }
-      }
-
-      // 2) Email (unless unsubscribed / no address).
-      if (row.email && !row.email_unsubscribed_at) {
-         if (await claim(userId, 'email')) {
-            if (emailSent) await sleep(EMAIL_GAP_MS);
-            emailSent = true;
-            try {
-               const unsubscribe = await unsubscribeUrl(userId);
-               await sendEmail(row.email, title, emailText(text, unsubscribe), emailHtml(text, unsubscribe), undefined, {
-                  'List-Unsubscribe': `<${unsubscribe}>`,
-                  'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
-               });
-               await finish(userId, 'email', 'sent');
-               outcomes.push({ userId, channel: 'email', status: 'sent' });
-            } catch (err) {
-               const detail = err instanceof Error ? err.message.slice(0, 300) : 'send_failed';
-               await finish(userId, 'email', 'failed', detail);
-               outcomes.push({ userId, channel: 'email', status: 'failed', detail });
-            }
-         } else {
-            outcomes.push({ userId, channel: 'email', status: 'skipped', detail: 'already_sent' });
-         }
-      } else {
-         outcomes.push({ userId, channel: 'email', status: 'skipped', detail: row.email_unsubscribed_at ? 'unsubscribed' : 'no_email' });
-      }
-
-      // 3) Push, to any device they turned notifications on for.
-      if (await claim(userId, 'push')) {
-         try {
-            const res = await sendPushToUser(
-               svc,
-               userId,
-               () => ({
-                  type: 'campaign',
-                  title,
-                  body: text.length > PUSH_BODY_MAX ? `${text.slice(0, PUSH_BODY_MAX - 1)}…` : text,
-                  url: `${SITE_URL}/request-board`,
-                  tag: `campaign-${campaignId}`
-               }),
-               { urgency: 'normal' }
-            );
-            const status = res.sent > 0 ? 'sent' : 'skipped';
-            const detail = res.sent > 0 ? undefined : res.failed > 0 ? 'push_failed' : 'no_device';
-            await finish(userId, 'push', status, detail);
-            outcomes.push({ userId, channel: 'push', status, detail });
-         } catch (err) {
-            const detail = err instanceof Error ? err.message.slice(0, 300) : 'push_failed';
-            await finish(userId, 'push', 'failed', detail);
-            outcomes.push({ userId, channel: 'push', status: 'failed', detail });
-         }
-      }
+      outcomes.push(...(await deliverToPerson(svc, row, firstName, { subject, message, pushTag: `campaign-${campaignId}` }, { claim, finish })));
    }
 
    const count = (channel: Channel) => outcomes.filter((o) => o.channel === channel && o.status === 'sent').length;
@@ -341,6 +229,73 @@ const recipientsAction = async (svc: Svc, body: Record<string, unknown>) => {
    return json({ sends: data ?? [] });
 };
 
+// The automatic journey: its steps, who's due today (and who the weekly limit is holding back), and
+// the last 30 days of sends.
+const automationsAction = async (svc: Svc) => {
+   const { automation, steps } = await loadJourney(svc);
+   if (!automation) return json({ automations: [] });
+   const { due, capped } = await planComeback(svc, steps);
+   const since = new Date(Date.now() - 30 * 86400000).toISOString();
+   const { data: sends, error } = await svc
+      .from('admin_automation_sends')
+      .select('user_id, step, channel, status, detail, created_at, users(username, email, display_name)')
+      .eq('automation_id', AUTOMATION_ID)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(300);
+   if (error) throw new Error(error.message);
+   const brief = (d: (typeof due)[number]) => ({
+      userId: d.person.user_id,
+      name: d.person.display_name || d.person.username || d.person.email || d.person.user_id,
+      step: d.step.step,
+      daysSinceRepaid: d.person.days_since
+   });
+   return json({
+      automations: [
+         {
+            ...automation,
+            stepWindowDays: STEP_WINDOW_DAYS,
+            capDays: CAP_DAYS,
+            steps,
+            dueToday: due.map(brief),
+            waitingForLimit: capped.map(brief),
+            recentSends: sends ?? []
+         }
+      ]
+   });
+};
+
+const saveAutomationAction = async (svc: Svc, body: Record<string, unknown>, actorId: string) => {
+   if (body.id !== AUTOMATION_ID) return json({ error: 'Unknown automation' }, 400);
+   const steps = (Array.isArray(body.steps) ? body.steps : []) as Array<Record<string, unknown>>;
+   const clean = steps.map((s) => ({
+      automation_id: AUTOMATION_ID,
+      step: Number(s.step),
+      delay_days: Math.round(Number(s.delayDays)),
+      subject: String(s.subject ?? '').trim(),
+      message: String(s.message ?? '').trim()
+   }));
+   for (const s of clean) {
+      if (!Number.isInteger(s.step) || s.step < 1) return json({ error: 'Bad step' }, 400);
+      if (!Number.isInteger(s.delay_days) || s.delay_days < 1 || s.delay_days > 365) return json({ error: 'Days must be 1–365' }, 400);
+      if (!s.subject || s.subject.length > MAX_SUBJECT) return json({ error: `Step ${s.step}: subject is required (max ${MAX_SUBJECT})` }, 400);
+      if (!s.message || s.message.length > MAX_MESSAGE) return json({ error: `Step ${s.step}: message is required (max ${MAX_MESSAGE})` }, 400);
+   }
+   if (new Set(clean.map((s) => s.delay_days)).size !== clean.length) return json({ error: 'Each step needs a different day' }, 400);
+   if (clean.length) {
+      const { error } = await svc.from('admin_automation_steps').upsert(clean, { onConflict: 'automation_id,step' });
+      if (error) throw new Error(error.message);
+   }
+   if (typeof body.enabled === 'boolean') {
+      const { error } = await svc
+         .from('admin_automations')
+         .update({ enabled: body.enabled, updated_at: new Date().toISOString(), updated_by: actorId })
+         .eq('id', AUTOMATION_ID);
+      if (error) throw new Error(error.message);
+   }
+   return automationsAction(svc);
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -369,6 +324,8 @@ serve(async (req) => {
       if (body.action === 'send') return await sendAction(svc, body, callerId);
       if (body.action === 'history') return await historyAction(svc);
       if (body.action === 'recipients') return await recipientsAction(svc, body);
+      if (body.action === 'automations') return await automationsAction(svc);
+      if (body.action === 'save_automation') return await saveAutomationAction(svc, body, callerId);
       return json({ error: 'Unknown action' }, 400);
    } catch (err) {
       console.error('admin-campaigns failed:', err instanceof Error ? err.message : err);

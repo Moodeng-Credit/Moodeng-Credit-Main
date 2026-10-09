@@ -14,6 +14,7 @@ import {
    listCampaigns,
    sendCampaign
 } from '@/app/admin/adminSupabase';
+import AutomationsPanel from '@/app/admin/AutomationsPanel';
 
 // Admin → Campaigns (admin-campaigns edge function). Pick a ready-made audience — always computed from
 // live data — write one message, send. Each person gets it on the best channel they can receive:
@@ -210,6 +211,9 @@ export default function CampaignsSection() {
 
    return (
       <div className="space-y-6">
+         {/* Automatic journeys */}
+         <AutomationsPanel />
+
          {/* 1. Audience */}
          <div className="space-y-3 rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
             <p className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">1 · Audience</p>

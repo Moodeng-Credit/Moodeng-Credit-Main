@@ -6,7 +6,7 @@
 --   past_idle         repaid borrowers with nothing open, whose last funded loan is older than N days
 --   fb_not_borrowing  borrowers with a confirmed Messenger line and nothing open right now
 -- Both: active accounts only (no blocked / banned), no test accounts.
--- "Open" = a request waiting for a lender, or a funded loan not yet closed (repaid / refunded /
+-- "Open" = a request waiting for a lender (under 7 days old — older ones have expired), or a funded loan not yet closed (repaid / refunded /
 -- settled off-platform) — the same rule the admin borrower-contacts view uses.
 
 -- 1) Email unsubscribe (marketing only — loan and account emails still go out) ---------------------
@@ -76,7 +76,8 @@ AS $$
            max(l.funded_at) AS last_funded_at,
            max(l.repaid_at) AS last_repaid_at,
            bool_or(
-             (l.funded_at IS NULL AND l.loan_status = 'Requested')
+             -- A request expires after 7 days unfunded (REQUEST_EXPIRATION_DAYS) but keeps its status.
+             (l.funded_at IS NULL AND l.loan_status = 'Requested' AND l.created_at > now() - interval '7 days')
              OR (l.funded_at IS NOT NULL AND l.repaid_at IS NULL AND l.refunded_at IS NULL AND l.offplatform_settled_at IS NULL)
            ) AS has_open
     FROM borrowers b
