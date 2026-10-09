@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { SITE_URL } from '../_shared/loanAccess.ts';
 import { isValidUnsubscribeToken } from '../_shared/unsubscribe.ts';
 
 // Unsubscribe from Admin → Campaigns emails (marketing only; loan and account emails still go out).
@@ -22,6 +21,8 @@ const json = (body: unknown, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 const UUID = /^[0-9a-f-]{36}$/i;
+// The borrower app (same fallback chain as _shared/loanAccess.ts SITE_URL, without pulling that module in).
+const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });

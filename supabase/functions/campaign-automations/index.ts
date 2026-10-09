@@ -5,7 +5,6 @@ import { type Channel, deliverToPerson, EMAIL_GAP_MS, loadFirstNames, type Outco
 import { postDiscord } from '../_shared/discord.ts';
 import { AUTOMATION_ID, loadJourney, planComeback } from '../_shared/comebackJourney.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
-import { getAdminChatId } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // The automatic journeys (Admin → Campaigns → Automations). pg_cron calls { action: 'run' } daily at
@@ -20,6 +19,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 // One run stays well inside the function time limit (email is ~0.6 s per person).
 const MAX_PER_RUN = 100;
+
+// The admins-only KYC channel, falling back to the team channel (same as _shared/loanAccess.ts).
+// deno-lint-ignore no-explicit-any
+const getAdminChatId = async (svc: any): Promise<string | null> => {
+   const { data } = await svc.from('telegram_bot_settings').select('key, value').in('key', ['kyc_alert_chat_id', 'team_group_chat_id']);
+   const byKey = new Map<string, string>(((data ?? []) as Array<{ key: string; value: string }>).map((row) => [row.key, row.value]));
+   return byKey.get('kyc_alert_chat_id') || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || byKey.get('team_group_chat_id') || null;
+};
 
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);

@@ -8,13 +8,15 @@
 // done, skip), `finish` records the outcome. That's what makes a retry never double-send.
 
 import { sendEmail } from './email.ts';
-import { SITE_URL } from './loanAccess.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { getMessengerContact, isInsideMessagingWindow, isSendPulseConfigured, sendMessengerMessage } from './sendpulse.ts';
 import { unsubscribeUrl } from './unsubscribe.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
+
+// The borrower app (same fallback chain as _shared/loanAccess.ts SITE_URL, without pulling that module in).
+const SITE_URL = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
 
 export type Channel = 'messenger' | 'email' | 'push';
 export type SendStatus = 'sent' | 'failed' | 'skipped';
