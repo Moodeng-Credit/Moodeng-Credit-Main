@@ -3,7 +3,9 @@ export const sendEmail = async (
    subject: string,
    message: string,
    html?: string,
-   cc?: string | string[]
+   cc?: string | string[],
+   // Extra MIME headers, e.g. List-Unsubscribe on campaign emails.
+   headers?: Record<string, string>
 ) => {
    const resendApiKey = Deno.env.get('RESEND_API_KEY');
    const configuredFrom = Deno.env.get('RESEND_FROM')?.trim() || 'support@moodeng.app';
@@ -30,7 +32,8 @@ export const sendEmail = async (
          subject: subject,
          text: message,
          ...(html ? { html } : {}),
-         ...(ccList.length ? { cc: ccList } : {})
+         ...(ccList.length ? { cc: ccList } : {}),
+         ...(headers && Object.keys(headers).length ? { headers } : {})
       })
    });
 

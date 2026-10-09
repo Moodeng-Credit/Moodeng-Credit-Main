@@ -84,6 +84,7 @@ import SupportUpdateDetailPage from '@/app/support/updates/[slug]/page';
 import SupportUpdatesPage from '@/app/support/updates/page';
 import TeamPage from '@/app/team/page';
 import TermsPage from '@/app/terms/page';
+import UnsubscribePage from '@/app/unsubscribe/page';
 import Test from '@/app/test/page';
 import UserLenderDiversityPage from '@/app/user/[username]/lender-diversity/page';
 import UserProfile from '@/app/user/[username]/page';
@@ -644,6 +645,7 @@ export default function App() {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/data-deletion" element={<DataDeletionPage />} />
+            <Route path="/unsubscribe" element={<UnsubscribePage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route
                path="/academy"

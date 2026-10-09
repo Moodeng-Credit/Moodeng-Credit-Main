@@ -34,6 +34,11 @@ verify_jwt = false
 [functions.zoom-webhook]
 verify_jwt = false
 
+# Unsubscribe link in Admin → Campaigns emails (and the one-click List-Unsubscribe POST from mail
+# apps) — opened with no Supabase session. Gated by an HMAC of the user id (_shared/unsubscribe.ts).
+[functions.email-unsubscribe]
+verify_jwt = false
+
 [functions.check-loan-input]
 verify_jwt = true
 
