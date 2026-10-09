@@ -37,6 +37,8 @@ export function usePreKycGate(): { isGated: boolean; isLoading: boolean } {
       isUserVerified(user) ||
       uiState === 'review' ||
       uiState === 'processing' ||
+      // Face already on another account: blocked regardless — no call slot for them.
+      uiState === 'duplicate' ||
       user.loanAccessStatus === 'approved' ||
       user.userRole === 'lender';
    const { data, isLoading } = useQuery({

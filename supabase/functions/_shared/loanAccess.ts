@@ -19,7 +19,7 @@ import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
-import { loadKycVerified } from './preKycGate.ts';
+import { loadNeedsIdCheck } from './preKycGate.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -156,7 +156,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
 
    const isCall = request.kind === 'call';
    // Not KYC'd yet → this is the pre-KYC gate: Showed up unlocks ID verification, not the loan.
-   const preKyc = !(await loadKycVerified(svc, borrower.id, borrower));
+   const preKyc = await loadNeedsIdCheck(svc, borrower.id, borrower);
    const lines = [
       isCall
          ? referral
@@ -300,7 +300,7 @@ const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = 
 const PRE_KYC_EMAIL: ReadonlySet<BorrowerMessageKind> = new Set(['approved', 'no_show']);
 
 export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
-   const preKycMsg = PRE_KYC_MESSAGES[kind] && !(await loadKycVerified(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
+   const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
    if (preKycMsg && PRE_KYC_EMAIL.has(kind) && borrower.email) {
       try {

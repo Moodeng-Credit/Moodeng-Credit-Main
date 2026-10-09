@@ -165,6 +165,19 @@ export const recordCallOutcome = async (
 
    if (!updated) {
       const current = await loadUser(svc, userId);
+      // Attended an earlier call (open flow, never approved) and now held by the pre-KYC gate: the
+      // outcome is already 'attended', but this ✅ must still approve them, or nothing can.
+      if (outcome === 'attended' && preKyc && current?.video_call_outcome === 'attended' && current.loan_access_status !== 'approved') {
+         const { error: approveError } = await svc
+            .from('users')
+            .update({ loan_access_status: 'approved', loan_access_approved_at: new Date().toISOString(), loan_access_seen_at: null })
+            .eq('id', userId);
+         if (approveError) throw new Error(approveError.message);
+         await notifyBorrower(svc, current, 'approved');
+         const summary = `✅ Showed up → approved: ${who(current)} — by ${decidedBy}`;
+         await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+         return { ok: true, summary };
+      }
       return {
          ok: false,
          summary: current?.video_call_outcome ? `Already marked ${current.video_call_outcome.replace('_', '-')} — nothing changed.` : 'Borrower not found.'
@@ -243,7 +256,10 @@ export const autoMarkNoShow = async (svc: SupabaseClient, userId: string): Promi
    }
    const result = request ? await decideLoanAccess(svc, request.id, 'no_show', decidedBy) : await recordCallOutcome(svc, userId, 'no_show', decidedBy);
    if (!result.ok) return null;
-   const text = request
+   // With a request, or held by the pre-KYC gate, /showed approves them; otherwise (open flow) it
+   // puts their loan request back on the board.
+   const approves = Boolean(request) || (await needsPreKycGate(svc, userId));
+   const text = approves
       ? `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed ${userId} and they'll be approved.`
       : `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed ${userId} and their request goes back on the board.`;
    try {

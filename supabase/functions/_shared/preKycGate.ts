@@ -22,15 +22,29 @@ export const needsPreKycGate = async (svc: SupabaseClient, userId: string): Prom
 export const isKycVerified = (u: { is_didit?: string | null; is_world_id?: string | null; is_world_id_passport?: string | null }) =>
    u.is_didit === 'ACTIVE' || u.is_world_id === 'ACTIVE' || u.is_world_id_passport === 'ACTIVE';
 
-// isKycVerified for a user id, from the whole row: is_world_id_passport isn't on every database,
-// so it can't be named in a select list. On a failed read, the row passed in decides.
-export const loadKycVerified = async (
-   svc: SupabaseClient,
-   userId: string,
-   fallback: { is_didit?: string | null; is_world_id?: string | null }
-): Promise<boolean> => {
+type KycRow = {
+   is_didit?: string | null;
+   is_world_id?: string | null;
+   is_world_id_passport?: string | null;
+   didit_id_status?: string | null;
+   didit_submitted_at?: string | null;
+};
+
+// Their ID check is already with Didit, no verdict yet (in review / processing) — same rule as
+// getVerificationUiState in the app and the exemption in needs_pre_kyc_gate.
+export const isKycWithDidit = (u: KycRow) => {
+   const raw = (u.didit_id_status ?? '').toLowerCase();
+   if (raw.includes('review')) return true;
+   return Boolean(u.didit_submitted_at) && !['duplicate', 'declined', 'abandoned', 'expired', 'not started', 'in progress'].includes(raw);
+};
+
+// Whether the borrower still has an ID check to do — picks "next: verify your ID" copy over loan
+// copy. Read from the whole row: is_world_id_passport isn't on every database, so it can't be named
+// in a select list. On a failed read, the row passed in decides.
+export const loadNeedsIdCheck = async (svc: SupabaseClient, userId: string, fallback: KycRow): Promise<boolean> => {
    const { data } = await svc.from('users').select('*').eq('id', userId).maybeSingle();
-   return isKycVerified((data as Record<string, string | null> | null) ?? fallback);
+   const row = (data as KycRow | null) ?? fallback;
+   return !isKycVerified(row) && !isKycWithDidit(row);
 };
 
 // ---- KYC tries (kyc_declines; 3 declines, then they message us — admin /kycretry gives 3 more) ----
@@ -41,6 +55,10 @@ export const KYC_TRIES = 3;
 // trg_record_kyc_decline trigger instead. One row per session, so webhook + sync never double-count.
 export const recordLivenessDecline = async (svc: SupabaseClient, userId: string, sessionId: string | null) => {
    if (!sessionId) return;
+   // Only the borrower's current liveness attempt counts — not a stale session, nor a wallet face
+   // scan (same workflow) whose webhook strayed into the liveness branch.
+   const { data: current } = await svc.from('users').select('liveness_session_id').eq('id', userId).maybeSingle();
+   if ((current as { liveness_session_id?: string | null } | null)?.liveness_session_id !== sessionId) return;
    const { error } = await svc
       .from('kyc_declines')
       .upsert({ user_id: userId, didit_session_id: sessionId, kind: 'liveness' }, { onConflict: 'didit_session_id', ignoreDuplicates: true });

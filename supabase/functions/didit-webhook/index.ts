@@ -740,11 +740,17 @@ serve(async (req) => {
             })
             .eq('id', vendorData);
          if (sessionId) statusQuery = statusQuery.eq('didit_session_id', sessionId);
-         const { error: statusError } = await statusQuery;
+         const { data: statusRows, error: statusError } = await statusQuery.select('id');
 
          if (statusError) {
             console.error('[didit-webhook] Failed to write didit_id_status:', statusError.message);
             return jsonResponse({ success: false, error: 'Database error' }, 500);
+         }
+         // An event for an older session (they've started a new one since): nothing to record, and
+         // telling them "declined" / "in review" now would describe the wrong attempt.
+         if (!statusRows?.length) {
+            console.log(`[didit-webhook] Ignored ID status="${status}" for stale session ${sessionId} (user ${vendorData})`);
+            return jsonResponse({ success: true });
          }
 
          console.log(`[didit-webhook] ID status="${status}" for user ${vendorData} (${kind}, session ${sessionId ?? 'unknown'})`);

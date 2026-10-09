@@ -47,6 +47,8 @@ AS $$
      AND NOT EXISTS (SELECT 1 FROM public.loans l WHERE l.borrower_user_id = u.id AND l.funded_at IS NOT NULL)
      -- ID already with Didit, no verdict yet (processing / in review): already paid for, so not
      -- gated — same as the app's usePreKycGate (getVerificationUiState review / processing).
+     -- A duplicate face is blocked anyway — booking a call can't change that.
+     AND lower(coalesce(u.didit_id_status, '')) IS DISTINCT FROM 'duplicate'
      AND NOT (lower(coalesce(u.didit_id_status, '')) LIKE '%review%'
               OR (u.didit_submitted_at IS NOT NULL
                   AND lower(coalesce(u.didit_id_status, '')) NOT IN

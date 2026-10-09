@@ -96,7 +96,8 @@ export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): 
       if (!(await needsPreKycGate(svc, u.id))) continue;
       // Booked, the call time has passed, and nobody recorded an outcome: their request never reached
       // us, so it needs a tap like any other — /showed approves them.
-      if (u.video_call_starts_at && !u.video_call_outcome && Date.parse(u.video_call_starts_at) + CALL_DONE_AFTER_MS < now) {
+      // ('attended' too: someone who met us under the open flow is still unapproved — ✅ approves them.)
+      if (u.video_call_starts_at && (!u.video_call_outcome || u.video_call_outcome === 'attended') && Date.parse(u.video_call_starts_at) + CALL_DONE_AFTER_MS < now) {
          waiting.push({ ref: u.username ? `@${u.username}` : u.id, name: nameOf(u), callAt: u.video_call_starts_at, callTimezone: u.video_call_timezone });
          continue;
       }
