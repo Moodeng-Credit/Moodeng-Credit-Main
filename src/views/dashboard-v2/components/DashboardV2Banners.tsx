@@ -1,11 +1,7 @@
 import clsx from 'clsx';
 import { ArrowUpRight, Bell, BellOff, Facebook, Share, Video, Wallet } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
-import { PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
-import { useLocalization } from '@/i18n/LocalizationProvider';
-import type { RootState } from '@/store/store';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
@@ -15,60 +11,41 @@ import type { DashboardV2Language } from '@/views/dashboard-v2/types';
 // so each renders full width at its native aspect ratio.
 const BANNER_BUTTON = 'block w-full transition active:scale-[0.99]';
 
-// Pre-KYC gate (src/hooks/usePreKycGate.ts): until they've met the team, "Verify My Identity" would
-// only lead to booking the call — so the banner says that instead.
-const MEET_TEAM_COPY = {
-   en: {
-      title: 'Meet the team',
-      body: 'A quick 15-min call, then you can verify your ID and borrow.',
-      bookedTitle: 'See you on the call',
-      bookedBody: 'Right after it, you can verify your ID and borrow.',
-      cta: 'Book',
-      bookedCta: 'View'
-   },
-   fil: {
-      title: 'Kilalanin ang team',
-      body: 'Mabilis na 15-min call, tapos puwede mo nang i-verify ang ID mo at humiram.',
-      bookedTitle: 'Kita tayo sa call',
-      bookedBody: 'Pagkatapos nito, puwede mo nang i-verify ang ID mo at humiram.',
-      cta: 'Mag-book',
-      bookedCta: 'Tingnan'
-   }
-} as const;
-
+// Not verified yet: the banner shows their actual next step on the way to a first loan (wallet →
+// Messenger → bio → call → apply, with the ID check at the end of the request — see
+// src/lib/verificationJourney.ts). The wallet step has its own ConnectWalletBanner, so it's skipped
+// here; only an ID check already with Didit keeps the old "Verify My Identity" banner (it shows status).
 export function VerifyIdentityBanner({ onVerify }: { onVerify: () => void }) {
-   const preKycGate = usePreKycGate();
-   if (preKycGate.isGated) return <MeetTeamBanner />;
-   return (
-      <button type="button" onClick={onVerify} className={BANNER_BUTTON}>
-         <DesignImage
-            src={DASHBOARD_V2_ASSETS.verifyBanner}
-            alt="Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal."
-            className="aspect-[880/128] h-auto w-full"
-         />
-      </button>
-   );
-}
-
-function MeetTeamBanner() {
-   const navigate = useNavigate();
-   const { locale } = useLocalization();
-   const isBooked = useSelector((state: RootState) => state.auth.user?.loanAccessStatus === 'pending');
-   const copy = MEET_TEAM_COPY[locale === 'fil' ? 'fil' : 'en'];
+   const journey = useVerificationJourney();
+   if (journey.isLoading || journey.stage === 'wallet' || journey.stage === 'verified') return null;
+   if (journey.stage === 'id_with_didit') {
+      return (
+         <button type="button" onClick={onVerify} className={BANNER_BUTTON}>
+            <DesignImage
+               src={DASHBOARD_V2_ASSETS.verifyBanner}
+               alt="Verify My Identity: +10 Pandesal. Unlock borrowing and feeding Moodeng pandesal."
+               className="aspect-[880/128] h-auto w-full"
+            />
+         </button>
+      );
+   }
    return (
       <button
          type="button"
-         onClick={() => navigate(PRE_KYC_CONNECT_PATH)}
+         onClick={journey.go}
          className="mx-5 flex w-[calc(100%-40px)] items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99] dark:bg-dv2-card"
       >
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
             <Video className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
          </span>
          <span className="min-w-0 flex-1">
-            <span className="block text-[18px] font-medium leading-6 text-[#0f172b] dark:text-[#d9cfe6]">{isBooked ? copy.bookedTitle : copy.title}</span>
-            <span className="block text-[14px] leading-[18px] text-[#45556c] dark:text-[#8f819e]">{isBooked ? copy.bookedBody : copy.body}</span>
+            {journey.onboarding && journey.step ? (
+               <span className="block text-[12px] font-semibold uppercase tracking-wide text-[#6b55f7]">{`Step ${journey.step} of 3 to your first loan`}</span>
+            ) : null}
+            <span className="block text-[18px] font-medium leading-6 text-[#0f172b] dark:text-[#d9cfe6]">{journey.title}</span>
+            <span className="block text-[14px] leading-[18px] text-[#45556c] dark:text-[#8f819e]">{journey.body}</span>
          </span>
-         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">{isBooked ? copy.bookedCta : copy.cta}</span>
+         <span className="shrink-0 rounded-full bg-[#6b55f7] px-3 py-1.5 text-[13px] font-bold text-white">{journey.cta}</span>
       </button>
    );
 }

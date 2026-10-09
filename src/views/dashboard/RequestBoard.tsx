@@ -29,7 +29,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
-import { usePreKycGate } from '@/hooks/usePreKycGate';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -521,8 +521,6 @@ function RequestBoard$() {
    const hasSelectedRole = Boolean(effectiveUser?.userRole);
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
    const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
-   // Not met the team yet (pre-KYC gate): the verify link leads to the intro call, so it says so.
-   const preKycGate = usePreKycGate();
    const showVerify = !isWorldIdVerified;
    const isPending = isVerificationPending(effectiveUser);
    const verifyUiState = getVerificationUiState(effectiveUser);
@@ -543,7 +541,11 @@ function RequestBoard$() {
          clearVerifyFlow();
       }
    }, [isRealUserAuthenticated, user]);
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   const { modal: verifyModal } = useVerifyYourself();
+   // Their next step on the way to a first loan (wallet → Messenger → bio → call → ✅ → apply): the
+   // header link and the apply card follow it. "Apply" here opens this board's own loan form.
+   const openLoanFormFromJourney = useCallback(() => setShowModal(true), []);
+   const journey = useVerificationJourney(openLoanFormFromJourney);
    // Keep the verification badge honest: pull the real Didit status for pending users.
    useVerificationStatusSync();
    const storeIsBorrower = useIsBorrower();
@@ -731,10 +733,12 @@ function RequestBoard$() {
       if (draftIsResumable(draft)) saveLoanRequestDraft(effectiveUser.id, draft);
    }, [showModal, effectiveUser?.id, loanRequestFlowState, loanAmount, totalRepaymentAmount, reason, days]);
 
+   // Straight to wallet setup, not Welcome: these borrowers already signed up and saw Welcome, and its
+   // "Explore Moodeng" sent them right back here — a loop that let people skip setup entirely.
    const goToBorrowerOnboardingStart = useCallback(
       (returnTo?: string) => {
          setShowModal(false);
-         navigate('/onboarding/welcome', returnTo ? { state: { returnTo } } : undefined);
+         navigate('/onboarding/wallet', returnTo ? { state: { returnTo } } : undefined);
       },
       [navigate]
    );
@@ -857,13 +861,8 @@ function RequestBoard$() {
       setLoanRequestFlowState(null);
    }, []);
    const handleVerifyHeaderClick = useCallback(() => {
-      if (!hasBorrowerBaseWallet) {
-         goToBorrowerOnboardingStart();
-         return;
-      }
-
-      openVerify();
-   }, [goToBorrowerOnboardingStart, hasBorrowerBaseWallet, openVerify]);
+      journey.go();
+   }, [journey]);
    const handleRequestBoardTourStepChange = useCallback(
       (index: number) => {
          if (!isAuthenticated) {
@@ -1949,7 +1948,7 @@ function RequestBoard$() {
                                              <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                           </span>
                                           <span className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                             {preKycGate.isGated ? 'Meet the team >' : 'Verify Yourself >'}
+                                             <>{journey.cta}<span aria-hidden="true"> &gt;</span></>
                                           </span>
                                        </button>
                                     )
@@ -2070,7 +2069,15 @@ function RequestBoard$() {
                      >
                         <div className="flex flex-col gap-4 relative z-10">
                            <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
-                              {isFreshlyApproved ? (
+                              {journey.onboarding && journey.step ? (
+                                 <>
+                                    <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">
+                                       {`Step ${journey.step} of 3 to your first loan`}
+                                    </p>
+                                    <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">{journey.title}</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-700">{journey.body}</p>
+                                 </>
+                              ) : isFreshlyApproved ? (
                                  <>
                                     <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">You&apos;re approved 🎉</p>
                                     <p className="text-md-b2 font-medium text-md-neutral-700">The team approved you — apply for your loan now.</p>
@@ -2101,7 +2108,7 @@ function RequestBoard$() {
                               )}
                            </div>
                            <button
-                              onClick={handleApplyLoanClick}
+                              onClick={journey.onboarding ? (e) => { e.preventDefault(); journey.go(); } : handleApplyLoanClick}
                               disabled={isOpeningLoanRequest}
                               aria-busy={isOpeningLoanRequest}
                               data-tour-target="request-apply-button"
@@ -2114,6 +2121,8 @@ function RequestBoard$() {
                                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden="true" />
                                     Opening...
                                  </>
+                              ) : journey.onboarding ? (
+                                 <>{journey.cta}<span aria-hidden="true"> →</span></>
                               ) : (
                                  'Apply For A Loan'
                               )}

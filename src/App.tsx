@@ -8,6 +8,7 @@ import { AdminGuard } from '@/components/AdminGuard';
 import BottomNav from '@/components/BottomNav';
 import { BottomNavActionProvider } from '@/components/BottomNavActionContext';
 import { ExpiredLoanRequestNotifier } from '@/components/ExpiredLoanRequestNotifier';
+import { JourneyNudge } from '@/components/onboarding/JourneyNudge';
 import { SocialContactRequiredNotifier } from '@/components/SocialContactRequiredNotifier';
 import { KycDeclinedNotifier } from '@/components/verification/KycDeclinedNotifier';
 import { VerifiedCelebrationNotifier } from '@/components/verification/VerifiedCelebrationNotifier';
@@ -795,6 +796,7 @@ export default function App() {
             {/* Fallback */}
             <Route path="*" element={<Navigate to={user?.id && username ? '/' : '/request-board'} replace />} />
          </Routes>
+         <JourneyNudge bottomNavVisible={showBottomNav} />
          {showBottomNav ? <BottomNav /> : null}
       </BottomNavActionProvider>
    );

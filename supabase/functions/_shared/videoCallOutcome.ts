@@ -88,7 +88,7 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
    const gateOn = preKyc || (typeof flowData === 'string' && flowData !== 'open');
    const noRequestNote =
       gateOn && user.loan_access_status !== 'approved'
-         ? `Their request never reached us (app closed after booking?) — Showed up still approves them${preKyc ? ' (unlocks ID verification)' : ''}.`
+         ? `Their request never reached us (app closed after booking?) — Showed up still approves them${preKyc ? ' (they can then apply)' : ''}.`
          : 'Their loan request is already on the board (open flow).';
    const zoomActive = await zoomActiveForHost(svc, user.video_call_host);
    const evidence = describeAttendance(user, zoomActive);
@@ -103,7 +103,7 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
       evidence,
       user.video_call_confirmed_at ? "They'd tapped ✅ I'll be there." : 'They never confirmed.',
       request
-         ? `Showed up = ${preKyc ? 'they can verify their ID now' : 'they can apply for a loan now'}. No-show = they have to book again.`
+         ? 'Showed up = they can apply for a loan now. No-show = they have to book again.'
          : noRequestNote,
       zoomActive && !user.video_call_arrived_at && user.video_call_meeting_id
          ? `No tap by ${autoAt} (Bangkok) → I'll mark them a no-show automatically.`
