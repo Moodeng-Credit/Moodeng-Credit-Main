@@ -168,11 +168,15 @@ export const recordCallOutcome = async (
       // Attended an earlier call (open flow, never approved) and now held by the pre-KYC gate: the
       // outcome is already 'attended', but this ✅ must still approve them, or nothing can.
       if (outcome === 'attended' && preKyc && current?.video_call_outcome === 'attended' && current.loan_access_status !== 'approved') {
-         const { error: approveError } = await svc
+         // Conditional, so two admins tapping at once approve (and message the borrower) only once.
+         const { data: approvedRows, error: approveError } = await svc
             .from('users')
             .update({ loan_access_status: 'approved', loan_access_approved_at: new Date().toISOString(), loan_access_seen_at: null })
-            .eq('id', userId);
+            .eq('id', userId)
+            .neq('loan_access_status', 'approved')
+            .select('id');
          if (approveError) throw new Error(approveError.message);
+         if (!approvedRows?.length) return { ok: false, summary: 'Already approved — nothing changed.' };
          await notifyBorrower(svc, current, 'approved');
          const summary = `✅ Showed up → approved: ${who(current)} — by ${decidedBy}`;
          await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
@@ -193,13 +197,16 @@ export const recordCallOutcome = async (
    const unapproved = (updated as BorrowerRow).loan_access_status !== 'approved';
    let approvedNow = false;
    if (gateOn && unapproved && outcome === 'attended') {
-      const { error: approveError } = await svc
+      // Conditional, so a concurrent tap that also got here approves (and messages) only once.
+      const { data: approvedRows, error: approveError } = await svc
          .from('users')
          .update({ loan_access_status: 'approved', loan_access_approved_at: new Date().toISOString(), loan_access_seen_at: null })
-         .eq('id', userId);
+         .eq('id', userId)
+         .neq('loan_access_status', 'approved')
+         .select('id');
       if (approveError) throw new Error(approveError.message);
-      approvedNow = true;
-      await notifyBorrower(svc, updated as BorrowerRow, 'approved');
+      approvedNow = Boolean(approvedRows?.length);
+      if (approvedNow) await notifyBorrower(svc, updated as BorrowerRow, 'approved');
    }
    // A no-show parks their open request (database trigger); say which one, to them and the team.
    const held = outcome === 'no_show' ? await describeHeldRequests(svc, userId) : '';

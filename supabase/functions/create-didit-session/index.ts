@@ -429,7 +429,8 @@ serve(async (req) => {
       // verification" on /verify), and clear any stale verdict from a previous attempt so
       // an old Declined/Abandoned status can't mask this fresh session.
       if (kind === 'id' || kind === 'combined') {
-         await supabase
+         // didit-webhook matches ID results to this session id, so a failed write is worth a log line.
+         const { error: pinError } = await supabase
             .from('users')
             .update({
                didit_submitted_at: new Date().toISOString(),
@@ -438,6 +439,7 @@ serve(async (req) => {
                didit_id_status: null
             })
             .eq('id', user.id);
+         if (pinError) console.error('[create-didit-session] Failed to pin the ID session:', pinError.message);
       }
 
       // The cash-out gate has no `users` column to pin to (a scan is per-attempt, bound to one
