@@ -2,6 +2,9 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
+import { getAdminChatId } from '../_shared/loanAccess.ts';
+import { KYC_TRIES, kycTriesLeft, needsPreKycGate } from '../_shared/preKycGate.ts';
+import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Creates a Didit verification session for the authenticated caller and returns
 // the hosted verification URL to redirect them to.
@@ -151,6 +154,36 @@ const alertStartFailure = async (supabase: any, userId: string | null, kind: str
    }
 };
 
+// Out of KYC tries: tell the admins once (per run of 3), so they can reach out and /kycretry.
+// deno-lint-ignore no-explicit-any
+const alertTriesUsed = async (supabase: any, userId: string) => {
+   try {
+      const { data: claimed } = await supabase
+         .from('kyc_declines')
+         .update({ cap_alerted_at: new Date().toISOString() })
+         .eq('user_id', userId)
+         .is('voided_at', null)
+         .is('cap_alerted_at', null)
+         .select('id');
+      if (!claimed?.length) return;
+      const { data: u } = await supabase.from('users').select('username, email, display_name, didit_decline_reason').eq('id', userId).maybeSingle();
+      const handle = u?.username ? `@${u.username}` : userId;
+      const text = [
+         `🪪 Out of KYC tries — ${u?.display_name || handle}`,
+         [u?.username ? `@${u.username}` : null, u?.email].filter(Boolean).join(' · ') || null,
+         u?.didit_decline_reason ? `Last decline: ${u.didit_decline_reason}` : null,
+         `They've been declined ${KYC_TRIES} times and were asked to message us. Talk to them, then /kycretry ${handle} gives ${KYC_TRIES} more tries.`
+      ]
+         .filter(Boolean)
+         .join('\n');
+      const chat = await getAdminChatId(supabase);
+      if (chat) await sendTelegramMessage(chat, text);
+      await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   } catch (err) {
+      console.error('[create-didit-session] tries-used alert failed', err instanceof Error ? err.message : err);
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
@@ -251,6 +284,18 @@ serve(async (req) => {
          if ((profile as { liveness_status?: string } | null)?.liveness_status !== 'APPROVED') {
             return jsonResponse({ error: 'Liveness check required', code: 'LIVENESS_REQUIRED' }, 409);
          }
+      }
+
+      // Pre-KYC gate: a new borrower meets the team (Messenger + intro call, approved after it)
+      // before we pay Didit for their KYC. Checked before the session is created.
+      if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await needsPreKycGate(supabase, user.id))) {
+         return jsonResponse({ error: 'Please meet the team before verifying your ID.', code: 'APPROVAL_REQUIRED' }, 409);
+      }
+
+      // 3 declined KYC attempts, then they talk to us first (admin /kycretry gives 3 more).
+      if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await kycTriesLeft(supabase, user.id)) <= 0) {
+         await alertTriesUsed(supabase, user.id);
+         return jsonResponse({ error: 'Please message us before trying again.', code: 'KYC_TRIES_USED' }, 409);
       }
 
       // A face scan is only worth paying Didit for when the caller could actually use it.
@@ -384,7 +429,8 @@ serve(async (req) => {
       // verification" on /verify), and clear any stale verdict from a previous attempt so
       // an old Declined/Abandoned status can't mask this fresh session.
       if (kind === 'id' || kind === 'combined') {
-         await supabase
+         // didit-webhook matches ID results to this session id, so a failed write is worth a log line.
+         const { error: pinError } = await supabase
             .from('users')
             .update({
                didit_submitted_at: new Date().toISOString(),
@@ -393,6 +439,7 @@ serve(async (req) => {
                didit_id_status: null
             })
             .eq('id', user.id);
+         if (pinError) console.error('[create-didit-session] Failed to pin the ID session:', pinError.message);
       }
 
       // The cash-out gate has no `users` column to pin to (a scan is per-attempt, bound to one

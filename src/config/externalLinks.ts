@@ -22,7 +22,8 @@ export const EXTERNAL_LINKS = {
    },
    support: {
       messenger: 'https://m.me/61589106561061?ref=blocked_account',
-      messengerDefaulted: 'https://m.me/61589106561061?ref=defaulted_loan'
+      messengerDefaulted: 'https://m.me/61589106561061?ref=defaulted_loan',
+      messengerKycTries: 'https://m.me/61589106561061?ref=kyc_tries_used'
    },
    fund: {
       coinbaseOnramp: 'https://pay.coinbase.com/buy/select-asset',

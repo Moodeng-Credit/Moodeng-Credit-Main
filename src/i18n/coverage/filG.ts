@@ -998,5 +998,31 @@ export const filipinoCoverageG: Record<string, string> = {
       '. Ngayong bukas na ang chat namin, karaniwang gumagana na ang pangalawang subok.',
    'Or send this code to': 'O ipadala ang code na ito sa',
    "Still stuck? We'll email you, and our team will help you finish.":
-      'Naiipit pa rin? Iee-email ka namin, at tutulungan ka ng team namin na matapos ito.'
+      'Naiipit pa rin? Iee-email ka namin, at tutulungan ka ng team namin na matapos ito.',
+   // Pre-KYC gate: src/views/dashboard/components/ConnectStep.tsx (context='kyc'),
+   // src/views/onboarding/ConnectBeforeKyc.tsx, src/components/verification/KycDeclinedNotifier.tsx,
+   // src/app/verify/page.tsx (declined → Messenger first)
+   'Before you verify your ID, we meet every borrower on a quick 15-min video call.':
+      'Bago mo i-verify ang ID mo, kinakausap muna namin ang bawat borrower sa mabilis na 15-min video call.',
+   'Verify your ID right after the call': 'I-verify ang ID mo kaagad pagkatapos ng call',
+   'The team is unlocking your ID verification — we’ll message you the moment it’s ready.':
+      'Binubuksan na ng team ang ID verification mo — imemessage ka namin agad kapag handa na.',
+   'You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.':
+      'Naka-book ka na! I-tap ang “I’ll be there” para maitabi namin ang slot mo — puwede mong i-verify ang ID mo pagkatapos agad ng call.',
+   'Thank you for confirming! You can verify your ID right after the call.':
+      'Salamat sa pagkumpirma! Puwede mong i-verify ang ID mo pagkatapos agad ng call.',
+   'Look around meanwhile': 'Mag-ikot-ikot muna',
+   "Your ID check didn't go through": 'Hindi pumasa ang ID check mo',
+   "That happens — let's sort it out together. Connect Messenger and the team will message you to help.":
+      'Nangyayari talaga ’yan — ayusin natin nang magkasama. I-connect ang Messenger at imemessage ka ng team para tumulong.',
+   'Connect Messenger': 'I-connect ang Messenger',
+   Later: 'Mamaya na',
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Let's verify you together": "Sabay nating i-verify ka",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Tatlong beses nang hindi pumasa ang ID check mo, kaya direkta ka nang tutulungan ng team. Mag-message sa amin sa Messenger at aayusin natin ito nang magkasama.",
+   "Message us on Messenger": "Mag-message sa amin sa Messenger",
+   "1 of 3 tries left": "1 sa 3 subok na lang",
+   "2 of 3 tries left": "2 sa 3 subok na lang",
+   "Meet the team >": "Kilalanin ang team >"
 };

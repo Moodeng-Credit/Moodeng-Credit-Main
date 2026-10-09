@@ -425,6 +425,74 @@ const handleLoanFlowCommand = async (supabase: SupabaseClient, message: Telegram
    return true;
 };
 
+// Pre-KYC gate (migration 20261009120000): new borrowers connect Messenger + book a call and are
+// approved after it before they can verify their ID.
+//   /kycgate          show whether it's on
+//   /kycgate on|off   switch — off = the old flow (KYC right after the wallet)
+const KYC_GATE_STATES: Record<string, string> = {
+   on: 'ON — new borrowers meet the team (Messenger + call, ✅ Showed up) before ID verification',
+   off: 'OFF — new borrowers verify their ID right after setting up their wallet (the old flow)'
+};
+
+const handleKycGateCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/kycgate(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const wanted = (match[1] ?? '').trim().toLowerCase();
+
+   if (!wanted) {
+      const current = (await getSetting(supabase, 'kyc_gate')) === 'off' ? 'off' : 'on';
+      await sendTelegramMessage(chatId, `Pre-KYC gate: ${KYC_GATE_STATES[current]}\n\nSwitch with /kycgate on · /kycgate off`);
+      return true;
+   }
+   if (!KYC_GATE_STATES[wanted]) {
+      await sendTelegramMessage(chatId, 'Usage: /kycgate on | off');
+      return true;
+   }
+
+   const { error } = await supabase
+      .from('telegram_bot_settings')
+      .upsert({ key: 'kyc_gate', value: wanted }, { onConflict: 'key' });
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(chatId, `✅ Pre-KYC gate switched ${KYC_GATE_STATES[wanted]} — by ${adminHandle(message.from)}`);
+   return true;
+};
+
+// KYC tries (kyc_declines): after 3 declines a borrower must message us before trying again.
+//   /kycretry @username   gives them 3 fresh tries (voids their counted declines)
+const handleKycRetryCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/kycretry(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const arg = (match[1] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(chatId, 'Usage: /kycretry @username — gives them 3 more ID verification tries');
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id, username').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id, username').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const by = adminHandle(message.from);
+   const { data: voided, error } = await supabase
+      .from('kyc_declines')
+      .update({ voided_at: new Date().toISOString(), voided_by: by })
+      .eq('user_id', user.id)
+      .is('voided_at', null)
+      .select('id');
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(
+      chatId,
+      voided?.length
+         ? `✅ @${user.username ?? user.id} has 3 fresh ID verification tries — by ${by}`
+         : `@${user.username ?? user.id} wasn't out of tries — nothing to reset.`
+   );
+   return true;
+};
+
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
@@ -709,6 +777,18 @@ serve(async (req) => {
       if (isAdminChannel && /^\/loanflow\b/i.test(message.text ?? '')) {
          await handleLoanFlowCommand(supabase, message);
          return jsonResponse({ message: 'Loan flow command handled' });
+      }
+
+      // KYC tries reset — either admin channel.
+      if (isAdminChannel && /^\/kycretry\b/i.test(message.text ?? '')) {
+         await handleKycRetryCommand(supabase, message);
+         return jsonResponse({ message: 'KYC retry command handled' });
+      }
+
+      // Pre-KYC gate switch — either admin channel.
+      if (isAdminChannel && /^\/kycgate\b/i.test(message.text ?? '')) {
+         await handleKycGateCommand(supabase, message);
+         return jsonResponse({ message: 'KYC gate command handled' });
       }
 
       await handleSupportAgentMessage(supabase, message);

@@ -29,6 +29,7 @@ import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { useLoanFlow } from '@/hooks/useLoanFlow';
+import { usePreKycGate } from '@/hooks/usePreKycGate';
 import { usePagination } from '@/hooks/usePagination';
 import { useVerificationStatusSync } from '@/hooks/useVerificationStatusSync';
 
@@ -520,6 +521,8 @@ function RequestBoard$() {
    const hasSelectedRole = Boolean(effectiveUser?.userRole);
    const needsRoleSelection = isAuthenticated && !hasSelectedRole;
    const isWorldIdVerified = isUserVerified(effectiveUser) || hasWorldIdJustVerified;
+   // Not met the team yet (pre-KYC gate): the verify link leads to the intro call, so it says so.
+   const preKycGate = usePreKycGate();
    const showVerify = !isWorldIdVerified;
    const isPending = isVerificationPending(effectiveUser);
    const verifyUiState = getVerificationUiState(effectiveUser);
@@ -1946,7 +1949,7 @@ function RequestBoard$() {
                                              <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                           </span>
                                           <span className="text-md-b3 font-semibold text-md-primary-900 underline">
-                                             {'Verify Yourself >'}
+                                             {preKycGate.isGated ? 'Meet the team >' : 'Verify Yourself >'}
                                           </span>
                                        </button>
                                     )

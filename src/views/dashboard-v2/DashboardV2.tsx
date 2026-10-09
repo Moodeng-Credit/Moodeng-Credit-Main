@@ -119,8 +119,10 @@ export default function DashboardV2() {
    const isBorrower = useIsBorrower();
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // In manual review without a confirmed Facebook/WhatsApp line: point them back to the Facebook step.
-   const showConnectFacebook = isReal && getVerificationUiState(authUser) === 'review' && !authUser?.hasVerifiedContact;
+   // In manual review — or declined — without a confirmed Facebook/WhatsApp line: point them to the
+   // Facebook step, so the team can tell them the result (review) or talk them through it (declined).
+   const verificationState = getVerificationUiState(authUser);
+   const showConnectFacebook = isReal && (verificationState === 'review' || verificationState === 'declined') && !authUser?.hasVerifiedContact;
    const push = usePushNotifications(isReal ? userId : null);
    // Borrowers with something to repay who haven't allowed push. Only permission is checked (not the
    // subscription, which resolves asynchronously) so the card never flashes for someone who has it on.
@@ -212,7 +214,7 @@ export default function DashboardV2() {
                      </div>
                   ) : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
-                  {showConnectFacebook ? <ConnectFacebookBanner language={language} onConnect={() => navigate('/verify')} /> : null}
+                  {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
                   {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
                   {showRemindersBanner ? (

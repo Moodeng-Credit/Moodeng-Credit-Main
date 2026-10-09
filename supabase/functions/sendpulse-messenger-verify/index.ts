@@ -43,7 +43,11 @@ type Svc = any;
 const announceConnected = async (svc: Svc, userId: string, contactId: string | null, flowName: string | null) => {
    try {
       const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }] = await Promise.all([
-         svc.from('users').select('username, display_name, email').eq('id', userId).maybeSingle(),
+         svc
+            .from('users')
+            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason')
+            .eq('id', userId)
+            .maybeSingle(),
          svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
          svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle(),
          contactId ? getMessengerContact(contactId) : Promise.resolve(null),

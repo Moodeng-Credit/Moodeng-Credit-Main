@@ -579,5 +579,30 @@ export const indonesianCoverageG: Record<string, string> = {
    "Coins.ph (temporarily paused)": "Coins.ph (dijeda sementara)",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu Send Crypto → External Wallet → jaringan Base.",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Setor USDC, tukar ke PHP, lalu tarik ke rekening bank atau GCash kamu.",
-   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu gunakan Send Crypto → External Wallet → jaringan Base."
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Dihentikan sementara oleh pemerintah Filipina — gunakan PDAX atau GCrypto dulu. Beli USDC dengan PHP, lalu gunakan Send Crypto → External Wallet → jaringan Base.",
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Before you verify your ID, we meet every borrower on a quick 15-min video call.": "Sebelum verifikasi ID, kami bertemu setiap peminjam lewat video call singkat 15 menit.",
+   "Verify your ID right after the call": "Verifikasi ID kamu tepat setelah panggilan",
+   "The team is unlocking your ID verification — we’ll message you the moment it’s ready.": "Tim sedang membuka verifikasi ID kamu — kami akan mengabari kamu begitu siap.",
+   "You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.": "Jadwal kamu sudah dipesan! Ketuk “I’ll be there” agar slot kamu aman — kamu bisa verifikasi ID tepat setelah panggilan.",
+   "Thank you for confirming! You can verify your ID right after the call.": "Terima kasih sudah konfirmasi! Kamu bisa verifikasi ID tepat setelah panggilan.",
+   "Look around meanwhile": "Lihat-lihat dulu",
+   "Your ID check didn't go through": "Pemeriksaan ID kamu tidak lolos",
+   "That happens — let's sort it out together. Connect Messenger and the team will message you to help.": "Itu bisa terjadi — ayo selesaikan bersama. Hubungkan Messenger dan tim akan mengirim pesan untuk membantu.",
+   "Let's sort it out together. Connect Messenger and the team will message you to help.": "Ayo selesaikan bersama. Hubungkan Messenger dan tim akan mengirim pesan untuk membantu.",
+   "Connect Messenger": "Hubungkan Messenger",
+   "Later": "Nanti",
+   "Let's verify you together": "Ayo verifikasi bersama",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Pemeriksaan ID kamu tidak lolos 3 kali, jadi tim akan membantu langsung. Kirim pesan ke kami di Messenger dan kami akan menyelesaikannya bersama kamu.",
+   "Message us on Messenger": "Kirim pesan di Messenger",
+   "1 of 3 tries left": "Sisa 1 dari 3 percobaan",
+   "2 of 3 tries left": "Sisa 2 dari 3 percobaan",
+   "Meet the team": "Kenalan dengan tim",
+   "A quick 15-min call, then you can verify your ID and borrow.": "Panggilan singkat 15 menit, lalu kamu bisa verifikasi ID dan meminjam.",
+   "Right after it, you can verify your ID and borrow.": "Setelahnya, kamu bisa langsung verifikasi ID dan meminjam.",
+   "Book": "Pesan",
+   "View": "Lihat",
+   "Connect": "Hubungkan",
+   "Meet the team >": "Kenalan dengan tim >"
 };

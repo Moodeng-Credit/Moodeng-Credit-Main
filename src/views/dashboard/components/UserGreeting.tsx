@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import BorrowerVerificationBadge from '@/components/BorrowerVerificationBadge';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { usePreKycGate } from '@/hooks/usePreKycGate';
 import { getMemberSinceText } from '@/utils/dateFormatters';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -19,6 +20,8 @@ export default function UserGreeting({ user }: UserGreetingProps) {
    const isVerified = isUserVerified(user);
    const uiState = getVerificationUiState(user);
    const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   // Not met the team yet (pre-KYC gate): "Verify" leads to the intro call, so it says so.
+   const preKycGate = usePreKycGate();
    const memberSince = user.createdAt ? getMemberSinceText(user.createdAt) : '';
    const accountEditPath = (edit: 'avatar' | 'name') => {
       const params = new URLSearchParams(location.search);
@@ -58,7 +61,7 @@ export default function UserGreeting({ user }: UserGreetingProps) {
                      </button>
                   ) : (
                      <button type="button" onClick={openVerify} className="text-md-b4 font-medium text-md-primary-900">
-                        Verify Yourself &gt;
+                        {preKycGate.isGated ? 'Meet the team >' : 'Verify Yourself >'}
                      </button>
                   )
                ) : null}

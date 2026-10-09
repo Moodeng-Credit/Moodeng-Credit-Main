@@ -2,7 +2,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
+import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Connect → Approve → Apply (docs/HANDOFF_BORROWER_VERIFICATION.md §13).
@@ -15,10 +18,15 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //                                   booked video call, decided by Showed up / No-show after it.
 //                                   Referred borrowers are always 'call' requests — a setup call
 //                                   with Emma (local exchange) — whichever gated flow is on.
-//                                   In 'open' there's no gate, so submit is refused.
+//                                   In 'open' there's no gate, so submit is refused — except for
+//                                   the pre-KYC gate (new, unverified borrowers meet the team before
+//                                   KYC; _shared/preKycGate.ts), which is always a 'call' request.
 //   action=expire  (hourly cron)   — pending requests older than 7 days go back to none, with a
 //                                   nudge to reach out again. Idempotent and only touches rows
 //                                   already past expires_at, so an extra call is harmless.
+//   action=gate_digest (daily cron) — the admin check-in: calls waiting on a ✅ / ❌, and people who
+//                                   connected Messenger but never booked. Sent at most once a day
+//                                   (claimed in telegram_bot_settings), so an extra call is harmless.
 //   action=referral_alert (DB trigger on redeem) — posts "🎟️ code X used by …" to the admin
 //                                   Telegram + Discord. Deduped by referral_redemptions.alerted_at,
 //                                   so it can only ever fire once per real redemption.
@@ -70,11 +78,13 @@ const submit = async (req: Request, svc: any, body: Record<string, unknown>) => 
       return json({ ok: true, status: borrower.loan_access_status });
    }
 
+   // Pre-KYC gate: a new borrower meets the team before KYC, whatever the loan flow — always a call.
+   const preKyc = await needsPreKycGate(svc, userId);
    const { data: flowData } = await svc.rpc('get_loan_flow');
    const flow = typeof flowData === 'string' ? flowData : 'open';
-   if (flow === 'open') return json({ ok: false, error: 'gate_off' }, 409);
+   if (flow === 'open' && !preKyc) return json({ ok: false, error: 'gate_off' }, 409);
    // Referred → Emma's setup call, even in the approval flow.
-   const isCallRequest = flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
+   const isCallRequest = preKyc || flow === 'call' || Boolean(borrower.redeemed_referral_code_id);
 
    // Call request: the reach-out IS the booked call, so there must be one coming up.
    if (isCallRequest && !(borrower.video_call_starts_at && Date.parse(borrower.video_call_starts_at) > Date.now())) {
@@ -168,7 +178,9 @@ const referralAlert = async (svc: any, body: Record<string, unknown>) => {
       `🎟️ Referral code ${redemption.code ?? '?'} just used`,
       `By: ${borrower ? who(borrower) : userId}`,
       count ? `Times this code has been used: ${count}` : null,
-      'Referred borrowers skip the call and apply straight away.'
+      // New (not yet ID-verified) referred borrowers meet Emma on a setup call before KYC (pre-KYC
+      // gate); verified ones still apply straight away in the open flow.
+      'If they\'re new: setup call with Emma first, then ID verification and their loan.'
    ]
       .filter(Boolean)
       .join('\n');
@@ -183,6 +195,29 @@ const referralAlert = async (svc: any, body: Record<string, unknown>) => {
    }
    await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return json({ ok: true, alerted: true });
+};
+
+// deno-lint-ignore no-explicit-any
+const gateDigest = async (req: Request, svc: any) => {
+   // Scheduler only: the public anon key is a valid project JWT, so the gateway check isn't enough.
+   if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+
+   // Once a day (Manila date); the day is only marked done after a successful send, so a failed
+   // run can simply be retried.
+   const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
+   const { data: last } = await svc.from('telegram_bot_settings').select('value').eq('key', 'gate_digest_date').maybeSingle();
+   if (last?.value === today) return json({ ok: true, sent: false, reason: 'already_sent' });
+
+   const { waiting, unbooked } = await collectGateDigest(svc);
+   const text = formatGateDigest(waiting, unbooked);
+   if (!text) return json({ ok: true, sent: false, reason: 'nothing_to_report' });
+   const chat = await getAdminChatId(svc);
+   if (!chat) return json({ ok: false, error: 'no_admin_chat' }, 500);
+   await sendTelegramMessage(chat, text);
+   const { error: markError } = await svc.from('telegram_bot_settings').upsert({ key: 'gate_digest_date', value: today }, { onConflict: 'key' });
+   if (markError) console.error('loan-access: marking gate digest sent failed', markError.message);
+   await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   return json({ ok: true, sent: true, waiting: waiting.length, unbooked: unbooked.length });
 };
 
 serve(async (req) => {
@@ -200,6 +235,7 @@ serve(async (req) => {
       if (body.action === 'submit') return await submit(req, svc, body);
       if (body.action === 'expire') return await expire(svc);
       if (body.action === 'referral_alert') return await referralAlert(svc, body);
+      if (body.action === 'gate_digest') return await gateDigest(req, svc);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

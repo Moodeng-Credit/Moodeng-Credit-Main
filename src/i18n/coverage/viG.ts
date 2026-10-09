@@ -473,5 +473,30 @@ export const vietnameseCoverageG: Record<string, string> = {
    "Coins.ph (temporarily paused)": "Coins.ph (tạm ngưng)",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Mua USDC bằng PHP, rồi chọn Send Crypto → External Wallet → mạng Base.",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Nạp USDC, đổi sang PHP, rồi rút về tài khoản ngân hàng hoặc GCash của bạn.",
-   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Mua USDC bằng PHP, rồi dùng Send Crypto → External Wallet → mạng Base."
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "Đã bị chính phủ Philippines tạm đình chỉ — tạm thời hãy dùng PDAX hoặc GCrypto. Mua USDC bằng PHP, rồi dùng Send Crypto → External Wallet → mạng Base.",
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Before you verify your ID, we meet every borrower on a quick 15-min video call.": "Trước khi xác minh danh tính, chúng tôi gặp mọi người vay qua một cuộc gọi video ngắn 15 phút.",
+   "Verify your ID right after the call": "Xác minh danh tính ngay sau cuộc gọi",
+   "The team is unlocking your ID verification — we’ll message you the moment it’s ready.": "Đội ngũ đang mở khóa bước xác minh danh tính cho bạn — chúng tôi sẽ nhắn bạn ngay khi sẵn sàng.",
+   "You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.": "Bạn đã đặt lịch! Nhấn “I’ll be there” để giữ chỗ — bạn có thể xác minh danh tính ngay sau cuộc gọi.",
+   "Thank you for confirming! You can verify your ID right after the call.": "Cảm ơn bạn đã xác nhận! Bạn có thể xác minh danh tính ngay sau cuộc gọi.",
+   "Look around meanwhile": "Xem qua trong lúc chờ",
+   "Your ID check didn't go through": "Kiểm tra giấy tờ của bạn chưa đạt",
+   "That happens — let's sort it out together. Connect Messenger and the team will message you to help.": "Chuyện này vẫn xảy ra — hãy cùng giải quyết. Kết nối Messenger và đội ngũ sẽ nhắn tin hỗ trợ bạn.",
+   "Let's sort it out together. Connect Messenger and the team will message you to help.": "Hãy cùng giải quyết. Kết nối Messenger và đội ngũ sẽ nhắn tin hỗ trợ bạn.",
+   "Connect Messenger": "Kết nối Messenger",
+   "Later": "Để sau",
+   "Let's verify you together": "Cùng xác minh nhé",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Kiểm tra giấy tờ của bạn chưa đạt 3 lần, vì vậy đội ngũ sẽ hỗ trợ trực tiếp. Nhắn cho chúng tôi trên Messenger và chúng tôi sẽ cùng bạn giải quyết.",
+   "Message us on Messenger": "Nhắn cho chúng tôi trên Messenger",
+   "1 of 3 tries left": "Còn 1/3 lượt thử",
+   "2 of 3 tries left": "Còn 2/3 lượt thử",
+   "Meet the team": "Gặp đội ngũ",
+   "A quick 15-min call, then you can verify your ID and borrow.": "Một cuộc gọi ngắn 15 phút, sau đó bạn có thể xác minh danh tính và vay.",
+   "Right after it, you can verify your ID and borrow.": "Ngay sau đó, bạn có thể xác minh danh tính và vay.",
+   "Book": "Đặt lịch",
+   "View": "Xem",
+   "Connect": "Kết nối",
+   "Meet the team >": "Gặp đội ngũ >"
 };

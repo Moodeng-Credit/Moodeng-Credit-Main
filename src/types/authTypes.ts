@@ -92,7 +92,7 @@ export interface User {
    attendedCall?: boolean;
    /** True once the borrower has proven a contact line (Messenger or WhatsApp verification). */
    hasVerifiedContact?: boolean;
-   /** True once the borrower redeemed a referral code — referred borrowers skip the Connect gate. */
+   /** True once the borrower redeemed a referral code — their intro call is Emma's setup call. */
    hasReferral?: boolean;
    incomeType?: string;
    paydayType?: string;

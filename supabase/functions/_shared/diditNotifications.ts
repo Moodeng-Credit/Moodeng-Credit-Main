@@ -84,12 +84,33 @@ export const notifyAdmins = async (
       const p = profile as { email?: string; username?: string } | null;
       const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
 
+      // A decline uses one of their 3 KYC tries (kyc_declines, counted by the time this runs).
+      // Out of tries → they're asked to message us; claim the "out of tries" alert so
+      // create-didit-session doesn't repeat it.
+      let triesLine = '';
+      if (/declined/i.test(outcome)) {
+         const { data: left } = await adminSupabase.rpc('kyc_tries_left', { p_user_id: userId });
+         if (typeof left === 'number') {
+            if (left <= 0) {
+               await adminSupabase
+                  .from('kyc_declines')
+                  .update({ cap_alerted_at: new Date().toISOString() })
+                  .eq('user_id', userId)
+                  .is('voided_at', null)
+                  .is('cap_alerted_at', null);
+               triesLine = `\n⚠️ Out of KYC tries — they're asked to message us. Talk to them, then /kycretry ${p?.username ? `@${p.username}` : userId}`;
+            } else {
+               triesLine = `\nKYC tries left: ${left} of 3`;
+            }
+         }
+      }
+
       // Telegram (kyc_alert_chat_id) and Discord are independent best-effort channels: a missing
       // chat id or a failed Telegram send must not stop the Discord alert, and vice-versa.
       if (chatId) {
          await sendTelegramMessage(
             chatId,
-            `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}`
+            `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}${triesLine}`
          ).catch((err: unknown) => console.error('[diditNotifications] Telegram admin alert failed:', err instanceof Error ? err.message : err));
       }
 
@@ -109,7 +130,8 @@ export const notifyAdmins = async (
                   fields: [
                      { name: 'User', value: who, inline: true },
                      { name: 'User ID', value: userId, inline: true },
-                     ...(sessionId ? [{ name: 'Session', value: sessionId, inline: false }] : [])
+                     ...(sessionId ? [{ name: 'Session', value: sessionId, inline: false }] : []),
+                     ...(triesLine ? [{ name: 'KYC tries', value: triesLine.trim(), inline: false }] : [])
                   ],
                   timestamp: new Date().toISOString()
                }
