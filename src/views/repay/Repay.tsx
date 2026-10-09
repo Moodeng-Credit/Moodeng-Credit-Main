@@ -28,6 +28,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
 import { useLoanData } from '@/hooks/useLoanData';
@@ -693,23 +694,19 @@ export default function Repay() {
       isProcessing || connectStatus === 'pending' || !repaymentAmount || Boolean(amountError) || parsedRepaymentAmount <= 0;
    const baseWalletLock = getBaseWalletLockStatus(user);
    const isWorldIdVerified = isUserVerified(user);
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself('repay');
+   const { modal: verifyModal } = useVerifyYourself('repay');
+   const journey = useVerificationJourney();
    const hasCompletedBaseWalletSetup = baseWalletLock.isConfirmedBorrowerWallet;
    const emptyRepayState = !selectedLoan
-      ? !isWorldIdVerified && !hasCompletedBaseWalletSetup
-         ? {
-              actionLabel: 'Start Setup',
-              body: 'Verify yourself and set up your wallet (an Instant Wallet, or a Base Account if you prefer) before requesting loans. Repayments will show here after a lender funds your first loan.',
-              onAction: () => navigate('/onboarding/welcome', { state: { returnTo: 'repay' } }),
-              title: 'Finish setup to start borrowing'
+      ? !isWorldIdVerified
+         ? // Not verified: their next step on the way to a first loan (wallet → Messenger → bio → call →
+           // apply, with the ID check at the end of the request) — same as everywhere else.
+           {
+              actionLabel: journey.cta,
+              body: `${journey.body} Repayments will show here after a lender funds your first loan.`,
+              onAction: journey.go,
+              title: journey.onboarding && journey.step ? `Step ${journey.step} of 3: ${journey.title}` : journey.title
            }
-         : !isWorldIdVerified
-           ? {
-                actionLabel: 'Verify Yourself',
-                body: 'Your wallet is added. Complete verification before requesting loans. Repayments will show here after funding.',
-                onAction: openVerify,
-                title: 'Verify yourself to borrow'
-             }
            : !hasCompletedBaseWalletSetup
              ? {
                   actionLabel: 'Add Wallet',

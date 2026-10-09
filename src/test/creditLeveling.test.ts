@@ -14,6 +14,12 @@ import { buildCreditLevels } from '@/views/profile/components/tabs/useDashboardD
 import { buildBorrowerTimelineEvents } from '@/views/user-profile/ProgressHistory';
 
 // Push reminders need a real browser; in tests the device "can't do push", so the step doesn't require it.
+// The pre-KYC gate reads its RPC through react-query; these tests cover borrowers it doesn't hold.
+vi.mock('@/hooks/usePreKycGate', () => ({
+   PRE_KYC_CONNECT_PATH: '/onboarding/connect',
+   usePreKycGate: () => ({ isGated: false, isLoading: false })
+}));
+
 vi.mock('@/hooks/usePushNotifications', () => ({
    usePushNotifications: () => ({
       isSupported: false,
@@ -234,7 +240,7 @@ describe('LoanRequestModal borrowing gate', () => {
       availableCreditLimit: 0
    };
 
-   it('shows verification-required state for unverified users', () => {
+   it('locks the form for a borrower who hasn\'t finished onboarding (no wallet yet)', () => {
       const markup = renderToStaticMarkup(
          createElement(LoanRequestModal, {
             ...sharedProps,
@@ -243,14 +249,29 @@ describe('LoanRequestModal borrowing gate', () => {
          })
       );
 
-      expect(markup).toContain('One quick step to request a loan');
-      expect(markup).toContain('Verify Yourself');
-      // The submit button is deliberately NOT disabled while unverified — a dead button
-      // swallows the tap. It stays live so it can answer with the reason, which sits in the
-      // blocker note it points at.
-      expect(markup).toContain('You&#x27;re not verified yet.');
+      // Their next onboarding step (step 1 of 3: wallet) on the card, and the fields shown locked.
+      expect(markup).toContain('Step 1 of 3');
+      expect(markup).toContain('Set up your wallet<span aria-hidden="true"> →</span>');
+      expect(markup).toContain('inert=""');
+      expect(markup).toContain('aria-label="Finish setting up first to request a loan"');
+      // The submit button is deliberately NOT disabled — a dead button swallows the tap. It stays
+      // live so it can answer with the reason, which sits in the blocker note it points at.
       expect(markup).toContain('aria-describedby="loan-verify-blocker"');
-      expect(markup).not.toContain('disabled');
+      expect(markup).not.toMatch(/type="submit"[^>]*disabled=""/);
+   });
+
+   it('lets a borrower through onboarding fill in the form, with the ID check as the last step', () => {
+      const markup = renderToStaticMarkup(
+         createElement(LoanRequestModal, {
+            ...sharedProps,
+            showVerify: true,
+            user: { ...baseUser, isWorldId: 'INACTIVE', walletAddress: '0x1111111111111111111111111111111111111111', loanAccessStatus: 'approved' }
+         })
+      );
+
+      expect(markup).toContain('Last step: verify your ID');
+      expect(markup).toContain('Verify ID &amp; send request');
+      expect(markup).not.toContain('inert=""');
    });
 
    describe('borrower flow split (call/approval gate)', () => {

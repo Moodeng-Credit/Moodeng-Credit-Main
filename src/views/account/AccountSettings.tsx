@@ -14,6 +14,7 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
@@ -1363,6 +1364,9 @@ function ChangeWalletModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 
 export default function AccountSettings() {
    const navigate = useNavigate();
+   // "Verify" here used to open /verify with nothing to show for someone who hadn't started, which
+   // bounced them to the dashboard. The journey sends them to their actual next step.
+   const journey = useVerificationJourney();
    const location = useLocation();
    const [searchParams, setSearchParams] = useSearchParams();
    const { t, locale, locales } = useLocalization();
@@ -1976,10 +1980,10 @@ export default function AccountSettings() {
                                  {verificationState === 'verified' ? null : (
                                     <button
                                        type="button"
-                                       onClick={() => navigate('/verify')}
+                                       onClick={verificationState === 'unverified' ? journey.go : () => navigate('/verify')}
                                        className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
                                     >
-                                       {verificationState === 'unverified' ? 'Verify' : 'View'}
+                                       {verificationState === 'unverified' ? journey.cta : 'View'}
                                     </button>
                                  )}
                               </div>

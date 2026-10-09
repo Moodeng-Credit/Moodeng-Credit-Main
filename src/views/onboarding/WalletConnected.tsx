@@ -89,8 +89,10 @@ export default function WalletConnected() {
          navigate('/account/settings', { replace: true });
          return;
       }
-      if (needsVerification) {
-         navigate(preKycGate.isGated ? PRE_KYC_CONNECT_PATH : '/verify-world-id', { replace: true, state: { returnTo } });
+      // Next: meet the team (Messenger, bio, call). Anyone already through it carries on to wherever
+      // they were headed — the ID check is part of sending their first loan request, not onboarding.
+      if (needsVerification && preKycGate.isGated) {
+         navigate(PRE_KYC_CONNECT_PATH, { replace: true, state: { returnTo } });
          return;
       }
       if (returnTo === 'loan-request') {

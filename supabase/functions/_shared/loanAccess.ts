@@ -163,7 +163,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
             ? '📞 Referred borrower booked their setup call with Emma'
             : '📞 New borrower booked their intro call'
          : '🤝 New borrower wants to connect',
-      preKyc ? '🪪 Not ID-verified yet — they verify their ID after you approve them.' : null,
+      preKyc ? '🪪 Not ID-verified yet — after you approve them they apply, and verify their ID as the last step.' : null,
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
       `Line: ${line}`,
@@ -174,7 +174,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       `Why: ${request.reason?.trim() || '—'}`,
       '',
       isCall
-         ? `After the call, tap Showed up (${preKyc ? 'unlocks ID verification' : 'they can then apply'}) or No-show. Or type /approve ${shortId(request.id)} · /noshow ${shortId(request.id)}`
+         ? `After the call, tap Showed up (they can then apply) or No-show. Or type /approve ${shortId(request.id)} · /noshow ${shortId(request.id)}`
          : `Chat with them in the Page inbox, then decide. Or type /approve ${shortId(request.id)} · /reject ${shortId(request.id)}`
    ].filter((l) => l !== null) as string[];
    const text = lines.join('\n');
@@ -269,18 +269,18 @@ type BorrowerMessage = { title: string; body: string; url: string };
 // loan), and anything that sends them back sends them to book again on /onboarding/connect.
 const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = {
    approved: {
-      title: "You're approved 🎉 Next: verify your ID",
-      body: "Great meeting you! Tap to verify your ID — it takes about 2 minutes. Once you're verified you can post your loan request. IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.",
-      url: VERIFY_URL
+      title: "You're approved 🎉 Apply for your loan",
+      body: "Great meeting you! Tap to fill in your loan request — the last step is a quick ID check (about 2 minutes). IMPORTANT: keeping your account active requires sticking to our repayment terms — loan defaults are flagged immediately and permanently banned across all affiliated platforms.",
+      url: APPLY_URL
    },
    no_show: {
       title: 'We missed you on the call',
-      body: "We're sorry we missed you — we need to meet you before you can verify your ID and borrow. Tap to book a new time, or message us on Messenger.",
+      body: "We're sorry we missed you — we need to meet you before you can borrow. Tap to book a new time, or message us on Messenger.",
       url: CONNECT_URL
    },
    call_cancelled: {
       title: 'Your Moodeng call was cancelled',
-      body: 'No problem — tap to pick a new time for your 15-minute call. You can verify your ID right after it.',
+      body: 'No problem — tap to pick a new time for your 15-minute call. You can apply right after it.',
       url: CONNECT_URL
    },
    spot_released: {

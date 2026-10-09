@@ -23,7 +23,8 @@ import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 //   5. booking (or "Send" in approval mode) → loan-access edge function flips them to pending and
 //      pings admins, who decide from Telegram. The borrower then gets a push (+ Telegram/Messenger).
 // The same steps also run BEFORE KYC (context='kyc', /onboarding/connect — the pre-KYC gate, see
-// src/lib/preKycGate.ts): there the call unlocks ID verification rather than the loan application.
+// src/hooks/usePreKycGate.ts): the same steps as onboarding; after the call they apply for their loan,
+// with the ID check as the last step of sending it.
 // Visual language follows the Milestone_9.23 Figma (see connectKit): hippo hero, step trail, big
 // option cards, gradient CTA — one short line per idea instead of paragraphs.
 
@@ -43,6 +44,8 @@ const ERROR_COPY: Record<string, string> = {
    account_inactive: "Your account can't apply right now. Message us on Messenger for help."
 };
 
+export type ConnectPage = 'contact' | 'about' | 'intro' | 'call';
+
 export default function ConnectStep({
    userId,
    displayName,
@@ -54,6 +57,8 @@ export default function ConnectStep({
    needsAbout = false,
    renderAbout,
    context = 'loan',
+   page: controlledPage,
+   onPageChange,
    onBack,
    onSubmitted
 }: {
@@ -69,12 +74,18 @@ export default function ConnectStep({
    // Bio not saved yet → show the "about you" page (rendered by the modal, which owns the bio state).
    needsAbout?: boolean;
    renderAbout?: (nav: { onBack: () => void; onDone: () => void }) => ReactNode;
-   // 'kyc': the pre-KYC gate — approval after the call unlocks ID verification, not the loan.
+   // 'kyc': onboarding (pre-KYC gate) — approval after the call leads to the loan form, ID check last.
    context?: 'loan' | 'kyc';
+   // Optional controlled page — onboarding keeps it in the URL (?step=) so the phone's back button
+   // steps back through Messenger / About you / Goal / Book call instead of leaving onboarding.
+   page?: ConnectPage;
+   onPageChange?: (page: ConnectPage) => void;
    onBack: () => void;
    onSubmitted: (status: LoanAccessStatus) => void | Promise<void>;
 }) {
-   const [page, setPage] = useState<'contact' | 'about' | 'intro' | 'call'>('contact');
+   const [localPage, setLocalPage] = useState<ConnectPage>('contact');
+   const page = controlledPage ?? localPage;
+   const setPage = (next: ConnectPage) => (onPageChange ? onPageChange(next) : setLocalPage(next));
    const showAbout = needsAbout && Boolean(renderAbout);
    const [reason, setReason] = useState('');
    const [isSending, setIsSending] = useState(false);
@@ -130,6 +141,9 @@ export default function ConnectStep({
          <ContactsStep
             userId={userId}
             source="connect"
+            // Onboarding (pre-KYC): there's no earlier card to go back to (the wallet's done), so this
+            // is an explicit, low-key way out — "Get verified" on every screen brings them back here.
+            backLabel={context === 'kyc' ? 'Look around first' : undefined}
             onBack={onBack}
             onContinue={() => {
                setError('');
@@ -146,12 +160,20 @@ export default function ConnectStep({
                           : withEmma
                           ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
                           : context === 'kyc'
-                            ? 'Before you verify your ID, we meet every borrower on a quick 15-min video call.'
+                            ? "We only use it to message you about your loan — we never post, and we can't see your friends or messages."
                             : mode === 'call'
                             ? 'We meet every borrower on a quick 15-min video call before their first loan.'
                             : 'Before your first loan, we like to meet every borrower — we approve within a day.'
                   }
-                  title={wasRejected ? 'Welcome back' : missedCall ? 'We missed you!' : "Glad you're here!"}
+                  title={
+                     wasRejected
+                        ? 'Welcome back'
+                        : missedCall
+                          ? 'We missed you!'
+                          : context === 'kyc'
+                            ? 'Connect Facebook so we can reach you'
+                            : "Glad you're here!"
+                  }
                   trail={trail('contact')}
                />
             }
@@ -196,7 +218,7 @@ export default function ConnectStep({
                               <PerkRow icon={<MessagesSquare aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Meet the team, ask anything</PerkRow>
                               <PerkRow icon={<ShieldCheck aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Quick ID check — have it ready</PerkRow>
                               <PerkRow icon={<Unlock aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
-                                 {context === 'kyc' ? 'Verify your ID right after the call' : 'Apply right after the call'}
+                                 Apply right after the call
                               </PerkRow>
                            </>
                         )}
@@ -281,7 +303,7 @@ export function LoanAccessPendingCard({
    closeLabel = 'Got it'
 }: {
    onClose: () => void;
-   // 'kyc': waiting before ID verification (pre-KYC gate), not before the loan application.
+   // 'kyc': waiting in onboarding (pre-KYC gate) — they apply right after the call.
    context?: 'loan' | 'kyc';
    closeLabel?: string;
    mode?: 'approval' | 'call';
@@ -343,15 +365,15 @@ export function LoanAccessPendingCard({
             subtitle={
                callOver
                   ? context === 'kyc'
-                     ? 'The team is unlocking your ID verification — we’ll message you the moment it’s ready.'
+                     ? 'The team is approving you — we’ll message you the moment you can apply.'
                      : 'The team is unlocking your loan request — we’ll message you the moment it’s ready.'
                   : mode === 'call'
                     ? meeting?.confirmToken && !meeting.confirmed
                        ? context === 'kyc'
-                          ? 'You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.'
+                          ? 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
                           : 'You’re booked! Tap “I’ll be there” so we keep your spot — you can apply right after the call.'
                        : context === 'kyc'
-                         ? 'Thank you for confirming! You can verify your ID right after the call.'
+                         ? 'Thank you for confirming! You can apply right after the call.'
                          : 'Thank you for confirming! You can apply right after the call.'
                     : 'Thanks for reaching out! We usually reply within a day on Messenger.'
             }

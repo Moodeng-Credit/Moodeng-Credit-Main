@@ -42,12 +42,13 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar, { PLACEHOLDER_AVATAR } from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import type { LoanFlow } from '@/hooks/useLoanFlow';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
-import { suggestedReturnRange } from '@/lib/loanPricing';
+import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
@@ -994,7 +995,15 @@ export default function LoanRequestModal({
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToast } = useToast();
-   const { open: openVerify, modal: verifyModal } = useVerifyYourself();
+   // After the ID check, come back to this form (the draft keeps what they typed — loanRequestDraft).
+   const { open: openVerify, modal: verifyModal } = useVerifyYourself('loan-request');
+   // Where they are on the way to their first loan (wallet → Messenger → bio → call → ✅, then apply
+   // with the ID check as the last step of sending) and what their next button does.
+   const journey = useVerificationJourney(openVerify, user);
+   // Still onboarding: the form is shown locked. Through onboarding but not ID-verified: the form is
+   // open and "Make your request" leads into the ID check.
+   const formLocked = !isPending && journey.onboarding;
+   const verifyAtSubmit = !isPending && !journey.onboarding && journey.stage === 'apply';
    const formRef = useRef<HTMLFormElement | null>(null);
    const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -1055,6 +1064,25 @@ export default function LoanRequestModal({
    const [isSavingBorrowerAvatar, setIsSavingBorrowerAvatar] = useState(false);
    // Momentary — drives the shake when an unverified borrower taps "Make Your Request".
    const [verifyNudge, setVerifyNudge] = useState(false);
+   // Not verified: the form is shown greyed out and locked. A tap on it answers with the card that
+   // says why and what's next, instead of letting them fill in a request they can't send.
+   // 10%-a-month check on the repayment (a suggestion, not a rule): "borrow $15, repay $16 in three
+   // months" never gets funded. On send, a too-low offer opens a popup with a one-tap fix; "Keep mine"
+   // goes ahead. Remembered per amount/repayment/date, so it asks once.
+   const [returnNudge, setReturnNudge] = useState<{ amount: number; months: number; key: string } | null>(null);
+   const returnAckRef = useRef('');
+   const lowRepaymentCheck = () => {
+      const min = minimumRepayment(Number(loanAmount), days);
+      const repay = Number(totalRepaymentAmount);
+      if (!min || !Number.isFinite(repay) || repay >= min.amount) return null;
+      const key = `${loanAmount}|${totalRepaymentAmount}|${days}`;
+      return returnAckRef.current === key ? null : { ...min, key };
+   };
+   const nudgeLockedForm = () => {
+      setVerifyNudge(true);
+      window.setTimeout(() => setVerifyNudge(false), 1200);
+      document.getElementById('loan-verify-top')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   };
    // Live verdict from the DeepSeek effort check on the reason field. 'idle' = nothing worth
    // checking yet, 'checking' = call in flight, 'weak' = it came back with a hint,
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
@@ -1764,6 +1792,18 @@ export default function LoanRequestModal({
       // straight on top of the "Verify Yourself" button we're sending them to.
       if (!isVerified) {
          event.preventDefault();
+         // Through onboarding: the ID check is the last step of sending. Check the terms first so
+         // what comes back after the check is a complete request.
+         if (verifyAtSubmit) {
+            if (!showBorrowerContextStep && !validateTerms()) return;
+            const low = !showBorrowerContextStep ? lowRepaymentCheck() : null;
+            if (low) {
+               setReturnNudge(low);
+               return;
+            }
+            openVerify();
+            return;
+         }
          setVerifyNudge(true);
          window.setTimeout(() => setVerifyNudge(false), 1200);
          document.getElementById('loan-verify-blocker')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1775,6 +1815,15 @@ export default function LoanRequestModal({
       if (!showBorrowerContextStep && !validateTerms()) {
          event.preventDefault();
          return;
+      }
+
+      if (!showBorrowerContextStep) {
+         const low = lowRepaymentCheck();
+         if (low) {
+            event.preventDefault();
+            setReturnNudge(low);
+            return;
+         }
       }
 
       // Borrowers who already saved their bio context (income/payday/etc.) shouldn't be
@@ -2347,27 +2396,39 @@ export default function LoanRequestModal({
                      <>
                         {showVerify ? (
                            <div
-                              className="flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2"
+                              className={`flex items-center gap-md-2 overflow-hidden rounded-md-lg border border-md-neutral-400 bg-[#fff6d0] px-md-3 py-md-2 ${
+                                 verifyNudge ? 'blocked-tap-attention' : ''
+                              }`}
                               data-tour-target="loan-verification-card"
+                              id="loan-verify-top"
                            >
                               <div className="flex min-w-0 max-w-[220px] flex-1 flex-col gap-md-1">
                                  <div className="flex flex-col gap-md-0">
-                                    <p className="whitespace-nowrap text-md-b2 font-medium text-md-primary-2000">
-                                       {isPending ? verifyPendingTitle : 'One quick step to request a loan'}
+                                    {formLocked && journey.step ? (
+                                       <p className="text-md-b3 font-semibold uppercase tracking-wide text-[#92400e]">
+                                          {`Finish setting up · Step ${journey.step} of 3`}
+                                       </p>
+                                    ) : null}
+                                    <p className="text-md-b2 font-medium text-md-primary-2000">
+                                       {isPending ? verifyPendingTitle : verifyAtSubmit ? 'Last step: verify your ID' : journey.title}
                                     </p>
                                     <p className="text-md-b3 font-normal text-md-neutral-1400">
                                        {isPending
                                           ? verifyPendingBody
-                                          : 'Complete a one-time verification to start building trust with lenders.'}
+                                          : verifyAtSubmit
+                                            ? "Fill in your request below. When you send it, you'll verify your ID — about 2 minutes, one time only."
+                                            : journey.body}
                                     </p>
                                  </div>
+                                 {verifyAtSubmit ? null : (
                                  <button
-                                    onClick={isPending ? () => navigate('/verify') : openVerify}
+                                    onClick={isPending ? () => navigate('/verify') : journey.go}
                                     className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                                     type="button"
                                  >
-                                    {isPending ? verifyPendingCta : 'Verify Yourself'}
+                                    {isPending ? verifyPendingCta : <>{journey.cta}<span aria-hidden="true"> →</span></>}
                                  </button>
+                                 )}
                               </div>
                               <img
                                  alt=""
@@ -2379,6 +2440,14 @@ export default function LoanRequestModal({
                         ) : null}
                         {!isPending && verifyModal}
 
+                        {/* Locked until verified: visible (so they see what they're working toward) but
+                            greyed out; a tap anywhere on it points them at the card above. */}
+                        <div className="relative">
+                        <div
+                           aria-disabled={formLocked || undefined}
+                           className={formLocked ? 'pointer-events-none flex select-none flex-col gap-5 opacity-50 grayscale' : 'flex flex-col gap-5'}
+                           inert={formLocked || undefined}
+                        >
                         <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                            <div className="flex items-center justify-between gap-md-2">
                               <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
@@ -2496,6 +2565,18 @@ export default function LoanRequestModal({
                                  offer >= 1 &&
                                  range !== null &&
                                  offer < range.lo;
+                              const min = minimumRepayment(borrowNum, days);
+                              if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
+                                 return (
+                                    <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
+                                       <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
+                                       <span>
+                                          For this date, lenders usually look for at least{' '}
+                                          <span className="font-semibold">${min.amount.toFixed(2)}</span> back (about 10% a month).
+                                       </span>
+                                    </div>
+                                 );
+                              }
                               return show && range ? <ReturnHint lo={range.lo} hi={range.hi} /> : null;
                            })()}
                         </div>
@@ -2747,6 +2828,17 @@ export default function LoanRequestModal({
                            </div>
                         </div>
 
+                        </div>
+                        {formLocked ? (
+                           <button
+                              aria-label="Finish setting up first to request a loan"
+                              className="absolute inset-0 z-10 cursor-not-allowed rounded-md-lg"
+                              onClick={nudgeLockedForm}
+                              type="button"
+                           />
+                        ) : null}
+                        </div>
+
                         {/* Unverified borrowers used to meet a grey button that did nothing when
                             tapped — the only explanation was the yellow card scrolled far above.
                             Say it here, where the tap happens, with the way out attached. */}
@@ -2762,16 +2854,20 @@ export default function LoanRequestModal({
                                  <span>
                                     {isPending
                                        ? 'Your verification is still being checked — you can send this request once it clears.'
-                                       : "You're not verified yet. Verification is the last step before you can send this request."}
+                                       : verifyAtSubmit
+                                         ? "When you send this, you'll verify your ID (about 2 minutes). What you typed is kept."
+                                         : `Finish setting up first to send a request — you're on step ${journey.step} of 3.`}
                                  </span>
                               </div>
+                              {verifyAtSubmit ? null : (
                               <button
                                  className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                 onClick={isPending ? () => navigate('/verify') : openVerify}
+                                 onClick={isPending ? () => navigate('/verify') : journey.go}
                                  type="button"
                               >
-                                 {isPending ? verifyPendingCta : 'Verify Yourself'}
+                                 {isPending ? verifyPendingCta : <>{journey.cta}<span aria-hidden="true"> →</span></>}
                               </button>
+                              )}
                            </div>
                         ) : null}
                         {/* Deliberately not aria-disabled: the button *does* act — it explains why it
@@ -2779,14 +2875,14 @@ export default function LoanRequestModal({
                         <button
                            aria-describedby={isVerified ? undefined : 'loan-verify-blocker'}
                            className={`w-full rounded-md-lg px-md-4 py-md-3 text-md-b1 font-medium text-md-neutral-100 ${
-                              isVerified && !isSubmitting
+                              (isVerified || verifyAtSubmit) && !isSubmitting
                                  ? 'bg-md-primary-1200 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2'
                                  : 'bg-md-neutral-600'
                            } ${verifyNudge ? 'blocked-tap-shake' : ''}`}
                            type="submit"
                            disabled={isSubmitting}
                         >
-                           {isSubmitting ? 'Submitting...' : 'Make Your Request'}
+                           {isSubmitting ? 'Submitting...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
                         </button>
                      </>
                   )}
@@ -2860,6 +2956,48 @@ export default function LoanRequestModal({
                         disabled: '[&>button]:cursor-not-allowed [&>button]:text-md-neutral-600 [&>button]:opacity-40'
                      }}
                   />
+               </div>
+            </div>
+         ) : null}
+         {returnNudge ? (
+            <div
+               aria-modal="true"
+               className="fixed inset-0 z-[70] flex items-center justify-center bg-[#12071f]/50 px-5 backdrop-blur-[2px]"
+               onClick={() => setReturnNudge(null)}
+               role="dialog"
+            >
+               <div className="flex w-full max-w-[380px] flex-col gap-4 rounded-[20px] bg-white p-5 text-center" onClick={(e) => e.stopPropagation()}>
+                  <img alt="" aria-hidden="true" className="mx-auto size-20 object-contain" src="/hippos/thumb-up-right.png" />
+                  <div className="flex flex-col gap-2">
+                     <p className="text-[19px] font-bold text-[#2d2438]">A little low for lenders</p>
+                     <p className="text-[15px] leading-[21px] text-[#594d65]">
+                        For ${Number(loanAmount).toFixed(2)} over{' '}
+                        {returnNudge.months <= 1 ? 'a month or less' : `about ${Math.round(returnNudge.months * 10) / 10} months`}, lenders usually look for
+                        at least <b>${returnNudge.amount.toFixed(2)}</b> back — about 10% a month. Requests below that rarely get funded.
+                     </p>
+                  </div>
+                  <button
+                     className="w-full rounded-full bg-[#6b55f7] px-4 py-3 text-[16px] font-semibold text-white"
+                     onClick={() => {
+                        setTotalRepaymentAmount(String(returnNudge.amount));
+                        setReturnNudge(null);
+                     }}
+                     type="button"
+                  >
+                     Use ${returnNudge.amount.toFixed(2)}
+                  </button>
+                  <button
+                     className="w-full rounded-full px-4 py-2 text-[15px] font-semibold text-[#6b55f7]"
+                     onClick={() => {
+                        returnAckRef.current = returnNudge.key;
+                        setReturnNudge(null);
+                        if (verifyAtSubmit) openVerify();
+                        else handleLoanFormSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>);
+                     }}
+                     type="button"
+                  >
+                     Keep ${Number(totalRepaymentAmount).toFixed(2)} and send
+                  </button>
                </div>
             </div>
          ) : null}

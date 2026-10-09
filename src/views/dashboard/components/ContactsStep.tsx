@@ -420,6 +420,7 @@ export default function ContactsStep({
                      <p className="mt-2">
                         <b>2.</b> Or send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you
                         automatically.
+                        {' '}No Messenger app? Open our Facebook page below in your browser, tap <b>Message</b> and paste the code.
                      </p>
                      <div className="mt-2 flex items-center gap-2">
                         <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[16px] font-bold tracking-wide text-md-heading">
@@ -458,14 +459,21 @@ export default function ContactsStep({
                doneLabel="Verified"
                icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
                onClick={() => handleVerify('messenger')}
-               subtitle={startingChannel === 'messenger' ? 'Opening Messenger…' : 'Confirms you automatically — nothing to type'}
-               title="Messenger"
+               subtitle={
+                  startingChannel === 'messenger'
+                     ? 'Opening Messenger…'
+                     : source === 'connect'
+                       ? 'Opens Messenger — tap Get Started there. Confirms you automatically.'
+                       : 'Confirms you automatically — nothing to type'
+               }
+               title={source === 'connect' ? 'Connect Messenger' : 'Messenger'}
             />
          )}
 
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
-         {pushRequired ? (
+         {/* Onboarding: one thing at a time — reminders only once Messenger is confirmed. */}
+         {pushRequired && (contactVerified || source !== 'connect') ? (
             <OptionCard
                badge="Required"
                disabled={push.isBusy}
