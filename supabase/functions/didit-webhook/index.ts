@@ -624,6 +624,9 @@ serve(async (req) => {
 
          // Only resolve the attempt this webhook belongs to, so a late event from a previous
          // session can't overwrite a newer PENDING attempt.
+         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries. Recorded
+         // before the status write, so the app's "tries left" is current once it sees DECLINED.
+         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(adminSupabase, vendorData, sessionId ?? null);
          let query = adminSupabase.from('users').update({ liveness_status: livenessStatus }).eq('id', vendorData);
          if (sessionId) query = query.eq('liveness_session_id', sessionId);
          const { error: livenessError } = await query;
@@ -633,8 +636,6 @@ serve(async (req) => {
          }
 
          console.log(`[didit-webhook] Liveness ${livenessStatus} for user ${vendorData} (session ${sessionId ?? 'unknown'})`);
-         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries.
-         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(adminSupabase, vendorData, sessionId ?? null);
          return jsonResponse({ success: true });
       }
 
@@ -728,13 +729,18 @@ serve(async (req) => {
             declineReason = extractDeclineReason(decision);
          }
 
-         const { error: statusError } = await adminSupabase
+         // Scoped to the session this webhook is about (like check-didit-status): a late or retried
+         // event for an old session must not overwrite a newer attempt — nor, via
+         // trg_record_kyc_decline, count one decline as two KYC tries.
+         let statusQuery = adminSupabase
             .from('users')
             .update({
                didit_id_status: status,
                ...(normalized === 'declined' ? { didit_decline_reason: declineReason ?? null } : {})
             })
             .eq('id', vendorData);
+         if (sessionId) statusQuery = statusQuery.eq('didit_session_id', sessionId);
+         const { error: statusError } = await statusQuery;
 
          if (statusError) {
             console.error('[didit-webhook] Failed to write didit_id_status:', statusError.message);

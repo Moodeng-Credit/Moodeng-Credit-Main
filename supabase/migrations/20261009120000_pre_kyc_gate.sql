@@ -4,7 +4,8 @@
 -- front of KYC now, independent of telegram_bot_settings.loan_flow.
 --
 -- Who is gated (one rule, used by create-didit-session, loan-access, videoCallOutcome and the app):
---   kyc_gate switch on  AND  not a lender  AND  not KYC-verified  AND  not approved  AND  never had a loan.
+--   kyc_gate switch on  AND  not a lender  AND  not KYC-verified  AND  not approved  AND  never had a loan
+--   AND  no ID check already waiting on Didit (processing / in review).
 -- So grandfathered (approved) accounts, verified accounts and anyone who has borrowed are never gated.
 --
 -- Switch: telegram_bot_settings.kyc_gate = 'on' | 'off' (Telegram /kycgate on|off). 'off' = old flow.
@@ -41,12 +42,21 @@ AS $$
      AND u.is_world_id IS DISTINCT FROM 'ACTIVE'
      AND (to_jsonb(u) ->> 'is_world_id_passport') IS DISTINCT FROM 'ACTIVE'
      AND u.loan_access_status IS DISTINCT FROM 'approved'
-     AND NOT EXISTS (SELECT 1 FROM public.loans l WHERE l.borrower_user_id = u.id)
+     -- A past borrower (a funded loan) is never gated; an unfunded request alone doesn't count, or
+     -- inserting a request would be a way around the gate.
+     AND NOT EXISTS (SELECT 1 FROM public.loans l WHERE l.borrower_user_id = u.id AND l.funded_at IS NOT NULL)
+     -- ID already with Didit, no verdict yet (processing / in review): already paid for, so not
+     -- gated — same as the app's usePreKycGate (getVerificationUiState review / processing).
+     AND NOT (lower(coalesce(u.didit_id_status, '')) LIKE '%review%'
+              OR (u.didit_submitted_at IS NOT NULL
+                  AND lower(coalesce(u.didit_id_status, '')) NOT IN
+                      ('duplicate', 'declined', 'abandoned', 'expired', 'not started', 'in progress')))
   FROM public.users u
   WHERE u.id = p_user_id;
 $$;
 
-REVOKE ALL ON FUNCTION public.needs_pre_kyc_gate(UUID) FROM PUBLIC;
+-- Supabase grants new functions to anon/authenticated by default; revoking PUBLIC alone leaves those.
+REVOKE ALL ON FUNCTION public.needs_pre_kyc_gate(UUID) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.needs_pre_kyc_gate(UUID) TO service_role;
 
 -- The app's view of the same rule, for the signed-in user only.
@@ -60,7 +70,7 @@ AS $$
   SELECT coalesce(public.needs_pre_kyc_gate(auth.uid()), false);
 $$;
 
-REVOKE ALL ON FUNCTION public.my_pre_kyc_gate() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.my_pre_kyc_gate() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.my_pre_kyc_gate() TO authenticated;
 
 -- ---------------------------------------------------------------------------------------------
@@ -89,6 +99,7 @@ CREATE INDEX IF NOT EXISTS kyc_declines_user_idx ON public.kyc_declines (user_id
 
 -- Service role only (edge functions + the trigger below).
 ALTER TABLE public.kyc_declines ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.kyc_declines FROM anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.record_kyc_decline()
 RETURNS TRIGGER
@@ -106,6 +117,8 @@ BEGIN
   RETURN new;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.record_kyc_decline() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS trg_record_kyc_decline ON public.users;
 CREATE TRIGGER trg_record_kyc_decline
@@ -131,7 +144,7 @@ AS $$
   SELECT greatest(0, 3 - count(*)::int) FROM public.kyc_declines WHERE user_id = p_user_id AND voided_at IS NULL;
 $$;
 
-REVOKE ALL ON FUNCTION public.kyc_tries_left(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.kyc_tries_left(UUID) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.kyc_tries_left(UUID) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.my_kyc_tries_left()
@@ -144,13 +157,14 @@ AS $$
   SELECT public.kyc_tries_left(auth.uid());
 $$;
 
-REVOKE ALL ON FUNCTION public.my_kyc_tries_left() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.my_kyc_tries_left() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.my_kyc_tries_left() TO authenticated;
 
 -- ---------------------------------------------------------------------------------------------
 -- Daily onboarding check-in to the admin Telegram, 09:00 Manila (01:00 UTC): calls waiting on a
--- ✅ / ❌, and people who connected Messenger but never booked. loan-access sends it at most once a
--- day (telegram_bot_settings.gate_digest_date) and nothing on a quiet day.
+-- ✅ / ❌, and people who connected Messenger but have no call booked. Runs hourly until 12:00
+-- Manila so a failed send is retried; loan-access sends it at most once a day
+-- (telegram_bot_settings.gate_digest_date, set only after a successful send).
 -- ---------------------------------------------------------------------------------------------
 DO $$
 BEGIN
@@ -162,7 +176,7 @@ END $$;
 
 SELECT cron.schedule(
   'loan-access-gate-digest-daily',
-  '0 1 * * *',
+  '0 1-4 * * *',
   $$
   SELECT net.http_post(
     url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'SUPABASE_PROJECT_URL' LIMIT 1) || '/functions/v1/loan-access',

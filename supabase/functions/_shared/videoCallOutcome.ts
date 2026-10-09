@@ -140,6 +140,13 @@ export const recordCallOutcome = async (
          return { ok: false, summary: "This card is for an earlier call — they've rebooked since, so nothing was changed." };
       }
    }
+   // A pending call request (e.g. /showed <user id>, which findPendingRequest can't resolve) is
+   // decided the normal way, so the request closes with the outcome instead of staying pending.
+   const pendingRequest = await findPendingCallRequest(svc, userId);
+   if (pendingRequest) {
+      const decided = await decideLoanAccess(svc, pendingRequest.id, outcome === 'attended' ? 'approved' : 'no_show', decidedBy);
+      return { ok: decided.ok, summary: decided.summary };
+   }
    // Read before the outcome is written: the pre-KYC gate makes this tap the approval too.
    const preKyc = await needsPreKycGate(svc, userId);
    // A "Showed up" that corrects a no-show tells the borrower: they were told to rebook.

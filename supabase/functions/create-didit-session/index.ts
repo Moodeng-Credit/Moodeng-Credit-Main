@@ -293,7 +293,7 @@ serve(async (req) => {
       }
 
       // 3 declined KYC attempts, then they talk to us first (admin /kycretry gives 3 more).
-      if ((kind === 'liveness' || kind === 'combined') && (await kycTriesLeft(supabase, user.id)) <= 0) {
+      if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await kycTriesLeft(supabase, user.id)) <= 0) {
          await alertTriesUsed(supabase, user.id);
          return jsonResponse({ error: 'Please message us before trying again.', code: 'KYC_TRIES_USED' }, 409);
       }

@@ -22,6 +22,17 @@ export const needsPreKycGate = async (svc: SupabaseClient, userId: string): Prom
 export const isKycVerified = (u: { is_didit?: string | null; is_world_id?: string | null; is_world_id_passport?: string | null }) =>
    u.is_didit === 'ACTIVE' || u.is_world_id === 'ACTIVE' || u.is_world_id_passport === 'ACTIVE';
 
+// isKycVerified for a user id, from the whole row: is_world_id_passport isn't on every database,
+// so it can't be named in a select list. On a failed read, the row passed in decides.
+export const loadKycVerified = async (
+   svc: SupabaseClient,
+   userId: string,
+   fallback: { is_didit?: string | null; is_world_id?: string | null }
+): Promise<boolean> => {
+   const { data } = await svc.from('users').select('*').eq('id', userId).maybeSingle();
+   return isKycVerified((data as Record<string, string | null> | null) ?? fallback);
+};
+
 // ---- KYC tries (kyc_declines; 3 declines, then they message us — admin /kycretry gives 3 more) ----
 
 export const KYC_TRIES = 3;

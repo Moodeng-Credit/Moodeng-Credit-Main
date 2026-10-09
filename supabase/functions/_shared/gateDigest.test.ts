@@ -10,13 +10,13 @@ Deno.test('a quiet day sends nothing', () => {
 
 Deno.test('lists calls waiting on a tap with ready-to-send commands, and unbooked connections', () => {
    const text = formatGateDigest(
-      [{ id: 'abcdef12-0000-0000-0000-000000000000', name: 'Rae @rae', callAt: '2026-10-09T06:00:00Z', callTimezone: 'Asia/Manila' }],
+      [{ ref: 'abcdef12', name: 'Rae @rae', callAt: '2026-10-09T06:00:00Z', callTimezone: 'Asia/Manila' }],
       [{ name: 'Jo @jo', connectedAt: '2026-10-08T03:00:00Z' }],
       NOW
    ) as string;
    assert(text.includes('⏳ Call done, waiting on your ✅ / ❌ (1):'));
    assert(text.includes('/showed abcdef12 · /noshow abcdef12'));
-   assert(text.includes('📭 Connected Messenger, never booked a call (1):'));
+   assert(text.includes('📭 Connected Messenger, no call booked (1):'));
    assert(text.includes('1. Jo @jo · connected yesterday'));
 });
 

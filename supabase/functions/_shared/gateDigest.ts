@@ -1,7 +1,8 @@
 // Daily admin digest for the pre-KYC gate (loan-access action=gate_digest, pg_cron 09:00 Manila):
 //   ⏳ call happened, still waiting on a ✅ / ❌  — without a tap they sit on "Thanks for joining"
 //      until the request expires a week after the call;
-//   📭 connected Messenger but never booked     — the biggest drop-off, and we can now message them.
+//   📭 connected Messenger, no call coming up    — never booked, cancelled, or missed it and never
+//      rebooked: the biggest drop-off, and we can now message them.
 // Nothing is sent on a day with nothing to report.
 
 import { needsPreKycGate } from './preKycGate.ts';
@@ -10,7 +11,9 @@ import { formatCallTimeForTeam } from './videoCall.ts';
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
 
-export type WaitingRow = { id: string; name: string; callAt: string; callTimezone: string | null };
+// ref: what /showed and /noshow take — a request-id prefix, or the borrower's @username / user id
+// when they booked but their request never reached us (app closed after booking).
+export type WaitingRow = { ref: string; name: string; callAt: string; callTimezone: string | null };
 export type UnbookedRow = { name: string; connectedAt: string };
 
 // The call is 15 min; a request still pending this long after the start needs a tap.
@@ -39,13 +42,13 @@ export const formatGateDigest = (waiting: WaitingRow[], unbooked: UnbookedRow[],
          ? [
               '',
               `⏳ Call done, waiting on your ✅ / ❌ (${waiting.length}):`,
-              ...list(waiting, (r, i) => `${i + 1}. ${r.name} · call ${formatCallTimeForTeam(r.callAt, r.callTimezone)} — /showed ${r.id.slice(0, 8)} · /noshow ${r.id.slice(0, 8)}`)
+              ...list(waiting, (r, i) => `${i + 1}. ${r.name} · call ${formatCallTimeForTeam(r.callAt, r.callTimezone)} — /showed ${r.ref} · /noshow ${r.ref}`)
            ]
          : []),
       ...(unbooked.length
          ? [
               '',
-              `📭 Connected Messenger, never booked a call (${unbooked.length}):`,
+              `📭 Connected Messenger, no call booked (${unbooked.length}):`,
               ...list(unbooked, (r, i) => `${i + 1}. ${r.name} · connected ${daysAgo(r.connectedAt, now)}`),
               'Give them a nudge from the Page inbox.'
            ]
@@ -67,21 +70,37 @@ export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): 
       users: { id: string; username: string | null; email: string | null; display_name: string | null; video_call_starts_at: string | null; video_call_timezone: string | null };
    }>)
       .filter((r) => r.users?.video_call_starts_at && Date.parse(r.users.video_call_starts_at) + CALL_DONE_AFTER_MS < now)
-      .map((r) => ({ id: r.id, name: nameOf(r.users, r.display_name), callAt: r.users.video_call_starts_at as string, callTimezone: r.users.video_call_timezone }));
+      .map((r) => ({ ref: r.id.slice(0, 8), name: nameOf(r.users, r.display_name), callAt: r.users.video_call_starts_at as string, callTimezone: r.users.video_call_timezone }));
 
    const { data: candidates, error: candidateError } = await svc
       .from('users')
-      .select('id, username, email, display_name, messenger_verified_at')
+      .select('id, username, email, display_name, messenger_verified_at, video_call_starts_at, video_call_timezone, video_call_outcome')
       .not('messenger_verified_at', 'is', null)
-      .is('video_call_starts_at', null)
+      .or(`video_call_starts_at.is.null,video_call_starts_at.lt.${new Date(now).toISOString()}`)
       .in('loan_access_status', ['none', 'rejected'])
       .gte('messenger_verified_at', new Date(now - UNBOOKED_WINDOW_DAYS * 86400000).toISOString())
       .order('messenger_verified_at', { ascending: false });
    if (candidateError) throw new Error(candidateError.message);
    const unbooked: UnbookedRow[] = [];
-   for (const u of (candidates ?? []) as Array<{ id: string; username: string | null; email: string | null; display_name: string | null; messenger_verified_at: string }>) {
+   for (const u of (candidates ?? []) as Array<{
+      id: string;
+      username: string | null;
+      email: string | null;
+      display_name: string | null;
+      messenger_verified_at: string;
+      video_call_starts_at: string | null;
+      video_call_timezone: string | null;
+      video_call_outcome: string | null;
+   }>) {
       // Only people the gate is actually holding (not verified, not approved, never borrowed).
-      if (await needsPreKycGate(svc, u.id)) unbooked.push({ name: nameOf(u), connectedAt: u.messenger_verified_at });
+      if (!(await needsPreKycGate(svc, u.id))) continue;
+      // Booked, the call time has passed, and nobody recorded an outcome: their request never reached
+      // us, so it needs a tap like any other — /showed approves them.
+      if (u.video_call_starts_at && !u.video_call_outcome && Date.parse(u.video_call_starts_at) + CALL_DONE_AFTER_MS < now) {
+         waiting.push({ ref: u.username ? `@${u.username}` : u.id, name: nameOf(u), callAt: u.video_call_starts_at, callTimezone: u.video_call_timezone });
+         continue;
+      }
+      unbooked.push({ name: nameOf(u), connectedAt: u.messenger_verified_at });
    }
    return { waiting, unbooked };
 };

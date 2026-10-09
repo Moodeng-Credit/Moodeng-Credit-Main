@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { postDiscord } from '../_shared/discord.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
@@ -197,25 +198,24 @@ const referralAlert = async (svc: any, body: Record<string, unknown>) => {
 };
 
 // deno-lint-ignore no-explicit-any
-const gateDigest = async (svc: any) => {
-   // Claim today's digest first (Manila date): a repeat call the same day sends nothing.
+const gateDigest = async (req: Request, svc: any) => {
+   // Scheduler only: the public anon key is a valid project JWT, so the gateway check isn't enough.
+   if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+
+   // Once a day (Manila date); the day is only marked done after a successful send, so a failed
+   // run can simply be retried.
    const today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
    const { data: last } = await svc.from('telegram_bot_settings').select('value').eq('key', 'gate_digest_date').maybeSingle();
    if (last?.value === today) return json({ ok: true, sent: false, reason: 'already_sent' });
-   const { error: claimError } = await svc.from('telegram_bot_settings').upsert({ key: 'gate_digest_date', value: today }, { onConflict: 'key' });
-   if (claimError) throw new Error(claimError.message);
 
    const { waiting, unbooked } = await collectGateDigest(svc);
    const text = formatGateDigest(waiting, unbooked);
    if (!text) return json({ ok: true, sent: false, reason: 'nothing_to_report' });
    const chat = await getAdminChatId(svc);
-   if (chat) {
-      try {
-         await sendTelegramMessage(chat, text);
-      } catch (err) {
-         console.error('loan-access: gate digest telegram failed', err instanceof Error ? err.message : err);
-      }
-   }
+   if (!chat) return json({ ok: false, error: 'no_admin_chat' }, 500);
+   await sendTelegramMessage(chat, text);
+   const { error: markError } = await svc.from('telegram_bot_settings').upsert({ key: 'gate_digest_date', value: today }, { onConflict: 'key' });
+   if (markError) console.error('loan-access: marking gate digest sent failed', markError.message);
    await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    return json({ ok: true, sent: true, waiting: waiting.length, unbooked: unbooked.length });
 };
@@ -235,7 +235,7 @@ serve(async (req) => {
       if (body.action === 'submit') return await submit(req, svc, body);
       if (body.action === 'expire') return await expire(svc);
       if (body.action === 'referral_alert') return await referralAlert(svc, body);
-      if (body.action === 'gate_digest') return await gateDigest(svc);
+      if (body.action === 'gate_digest') return await gateDigest(req, svc);
       return json({ error: 'unknown_action' }, 400);
    } catch (err) {
       console.error('loan-access failed:', err instanceof Error ? err.message : err);

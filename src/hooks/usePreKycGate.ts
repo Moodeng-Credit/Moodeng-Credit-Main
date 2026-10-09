@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getVerificationUiState } from '@/lib/verificationUiState';
 import type { RootState } from '@/store/store';
 
 /**
@@ -27,8 +28,17 @@ export const fetchPreKycGate = async (): Promise<boolean> => {
 
 export function usePreKycGate(): { isGated: boolean; isLoading: boolean } {
    const user = useSelector((state: RootState) => state.auth.user);
-   // Verified or approved users are never gated — no round trip needed.
-   const cleared = !user || isUserVerified(user) || user.loanAccessStatus === 'approved' || user.userRole === 'lender';
+   // Verified or approved users are never gated — no round trip needed. Nor is anyone whose ID is
+   // already with Didit (in review / processing): that check is paid for, so there's nothing to save
+   // by sending them to book a call first.
+   const uiState = getVerificationUiState(user);
+   const cleared =
+      !user ||
+      isUserVerified(user) ||
+      uiState === 'review' ||
+      uiState === 'processing' ||
+      user.loanAccessStatus === 'approved' ||
+      user.userRole === 'lender';
    const { data, isLoading } = useQuery({
       // Keyed on what can change the answer, so an approval or a verification refetches it.
       queryKey: ['pre-kyc-gate', user?.id, user?.loanAccessStatus],

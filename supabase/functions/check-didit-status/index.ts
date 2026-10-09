@@ -465,6 +465,9 @@ serve(async (req) => {
             livenessStatus = 'DECLINED';
          }
 
+         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries — recorded
+         // before the status write (idempotent per session).
+         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(supabase, user.id, sessionId ?? null);
          if (livenessStatus && row.liveness_status !== livenessStatus) {
             // Guard on the session id so a sync for an old attempt can't overwrite a newer one.
             const { error: updateError } = await supabase
@@ -477,8 +480,6 @@ serve(async (req) => {
                return jsonResponse({ error: 'Database error' }, 500);
             }
             console.log(`[check-didit-status] Liveness ${livenessStatus} for user ${user.id} (session ${sessionId})`);
-         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries.
-         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(supabase, user.id, sessionId ?? null);
          }
 
          return jsonResponse({ synced: true, status });
