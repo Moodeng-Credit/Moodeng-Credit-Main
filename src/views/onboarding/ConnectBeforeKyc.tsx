@@ -6,11 +6,14 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { usePreKycGate } from '@/hooks/usePreKycGate';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import type { User } from '@/types/authTypes';
 import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 // /onboarding/connect — the pre-KYC gate (src/hooks/usePreKycGate.ts). After the wallet, a new
-// borrower connects Messenger, says what the loan is for and books the 15-min intro call; an admin
+// borrower connects Messenger, fills in their bio (work, payday, income — shown to the team on the
+// Telegram card), says what the loan is for and books the 15-min intro call; an admin
 // taps ✅ Showed up after it, which approves them (loan_access_status = 'approved') and unlocks ID
 // verification. Same ConnectStep + loan-access machinery as the gated loan flows, just before KYC.
 //
@@ -28,14 +31,14 @@ const PREVIEW_USER = {
    loanAccessStatus: 'none',
    hasReferral: false,
    missedLastCall: false
-} as const;
+} as unknown as User;
 
 export default function ConnectBeforeKyc() {
    const navigate = useNavigate();
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|about): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
@@ -67,7 +70,9 @@ export default function ConnectBeforeKyc() {
    return (
       <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#08040f]">
          <OnboardingHeader hideBack />
-         {isPending ? (
+         {isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
+            <OnboardingBio onBack={() => undefined} onDone={() => undefined} user={user} />
+         ) : isPending ? (
             <LoanAccessPendingCard
                closeLabel="Look around meanwhile"
                context="kyc"
@@ -82,7 +87,9 @@ export default function ConnectBeforeKyc() {
                displayName={user.displayName ?? user.username ?? ''}
                missedCall={Boolean(user.missedLastCall)}
                mode="call"
+               needsAbout={!user.incomeType}
                onBack={() => navigate('/request-board')}
+               renderAbout={({ onBack, onDone }) => <OnboardingBio onBack={onBack} onDone={onDone} user={user} />}
                onSubmitted={async () => {
                   await dispatch(fetchUser());
                }}

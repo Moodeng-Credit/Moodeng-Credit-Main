@@ -62,3 +62,87 @@ $$;
 
 REVOKE ALL ON FUNCTION public.my_pre_kyc_gate() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.my_pre_kyc_gate() TO authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- KYC tries: 3 declined attempts, then the borrower has to message us (an admin gives 3 more with
+-- Telegram /kycretry @username). Counts DECLINED RESULTS, not sessions: /verify creates a Didit
+-- session in the background while the borrower reads the prep screen, so counting sessions would
+-- burn tries on people who only looked. One row per Didit session.
+--   * ID / combined declines: this trigger on users.didit_id_status (webhook and sync both write it).
+--   * Liveness declines (World ID path): written by didit-webhook / check-didit-status only when
+--     Didit says "Declined" — liveness_status also reads DECLINED for an abandoned or expired scan,
+--     which must not cost a try.
+-- ---------------------------------------------------------------------------------------------
+
+CREATE TABLE IF NOT EXISTS public.kyc_declines (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  didit_session_id  TEXT NOT NULL UNIQUE,
+  kind              TEXT NOT NULL,            -- 'id' (didit_id_status) | 'liveness' (liveness_status)
+  declined_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  voided_at         TIMESTAMPTZ,              -- set by /kycretry: no longer counts
+  voided_by         TEXT,
+  cap_alerted_at    TIMESTAMPTZ               -- admins told this user is out of tries (once)
+);
+
+CREATE INDEX IF NOT EXISTS kyc_declines_user_idx ON public.kyc_declines (user_id) WHERE voided_at IS NULL;
+
+-- Service role only (edge functions + the trigger below).
+ALTER TABLE public.kyc_declines ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.record_kyc_decline()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF lower(coalesce(new.didit_id_status, '')) = 'declined'
+     AND lower(coalesce(old.didit_id_status, '')) IS DISTINCT FROM 'declined' THEN
+    INSERT INTO public.kyc_declines (user_id, didit_session_id, kind)
+    VALUES (new.id, coalesce(new.didit_session_id, 'id-' || gen_random_uuid()::text), 'id')
+    ON CONFLICT (didit_session_id) DO NOTHING;
+  END IF;
+  RETURN new;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_record_kyc_decline ON public.users;
+CREATE TRIGGER trg_record_kyc_decline
+  AFTER UPDATE OF didit_id_status ON public.users
+  FOR EACH ROW EXECUTE FUNCTION public.record_kyc_decline();
+
+-- Whoever is declined right now has used one try (their earlier history isn't recorded anywhere).
+INSERT INTO public.kyc_declines (user_id, didit_session_id, kind)
+SELECT id, 'backfill-' || id::text, 'id'
+FROM public.users
+WHERE lower(coalesce(didit_id_status, '')) = 'declined'
+  AND is_didit IS DISTINCT FROM 'ACTIVE'
+  AND is_world_id IS DISTINCT FROM 'ACTIVE'
+ON CONFLICT (didit_session_id) DO NOTHING;
+
+CREATE OR REPLACE FUNCTION public.kyc_tries_left(p_user_id UUID)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT greatest(0, 3 - count(*)::int) FROM public.kyc_declines WHERE user_id = p_user_id AND voided_at IS NULL;
+$$;
+
+REVOKE ALL ON FUNCTION public.kyc_tries_left(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.kyc_tries_left(UUID) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.my_kyc_tries_left()
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT public.kyc_tries_left(auth.uid());
+$$;
+
+REVOKE ALL ON FUNCTION public.my_kyc_tries_left() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.my_kyc_tries_left() TO authenticated;

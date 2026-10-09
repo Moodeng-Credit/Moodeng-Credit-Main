@@ -458,6 +458,41 @@ const handleKycGateCommand = async (supabase: SupabaseClient, message: TelegramM
    return true;
 };
 
+// KYC tries (kyc_declines): after 3 declines a borrower must message us before trying again.
+//   /kycretry @username   gives them 3 fresh tries (voids their counted declines)
+const handleKycRetryCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/kycretry(?:@\w+)?(?:\s+(\S+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const arg = (match[1] ?? '').trim().replace(/^@/, '');
+   if (!arg) {
+      await sendTelegramMessage(chatId, 'Usage: /kycretry @username — gives them 3 more ID verification tries');
+      return true;
+   }
+   const { data: user } = /^[0-9a-f-]{36}$/i.test(arg)
+      ? await supabase.from('users').select('id, username').eq('id', arg).maybeSingle()
+      : await supabase.from('users').select('id, username').ilike('username', escapeLike(arg)).maybeSingle();
+   if (!user) {
+      await sendTelegramMessage(chatId, `No user found for ${arg}.`);
+      return true;
+   }
+   const by = adminHandle(message.from);
+   const { data: voided, error } = await supabase
+      .from('kyc_declines')
+      .update({ voided_at: new Date().toISOString(), voided_by: by })
+      .eq('user_id', user.id)
+      .is('voided_at', null)
+      .select('id');
+   if (error) throw new Error(error.message);
+   await sendTelegramMessage(
+      chatId,
+      voided?.length
+         ? `✅ @${user.username ?? user.id} has 3 fresh ID verification tries — by ${by}`
+         : `@${user.username ?? user.id} wasn't out of tries — nothing to reset.`
+   );
+   return true;
+};
+
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
@@ -742,6 +777,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/loanflow\b/i.test(message.text ?? '')) {
          await handleLoanFlowCommand(supabase, message);
          return jsonResponse({ message: 'Loan flow command handled' });
+      }
+
+      // KYC tries reset — either admin channel.
+      if (isAdminChannel && /^\/kycretry\b/i.test(message.text ?? '')) {
+         await handleKycRetryCommand(supabase, message);
+         return jsonResponse({ message: 'KYC retry command handled' });
       }
 
       // Pre-KYC gate switch — either admin channel.

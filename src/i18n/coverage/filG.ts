@@ -1016,5 +1016,12 @@ export const filipinoCoverageG: Record<string, string> = {
    "That happens — let's sort it out together. Connect Messenger and the team will message you to help.":
       'Nangyayari talaga ’yan — ayusin natin nang magkasama. I-connect ang Messenger at imemessage ka ng team para tumulong.',
    'Connect Messenger': 'I-connect ang Messenger',
-   Later: 'Mamaya na'
+   Later: 'Mamaya na',
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Let's verify you together": "Sabay nating i-verify ka",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "Tatlong beses nang hindi pumasa ang ID check mo, kaya direkta ka nang tutulungan ng team. Mag-message sa amin sa Messenger at aayusin natin ito nang magkasama.",
+   "Message us on Messenger": "Mag-message sa amin sa Messenger",
+   "1 of 3 tries left": "1 sa 3 subok na lang",
+   "2 of 3 tries left": "2 sa 3 subok na lang"
 };

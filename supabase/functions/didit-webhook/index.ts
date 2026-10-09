@@ -8,6 +8,7 @@ import { claimDiditNotification, notifyAdmins, notifyUser } from '../_shared/did
 // The wallet face verdict is shared with check-didit-status so the push and pull paths can
 // never disagree. It is deliberately NOT hasDuplicateFace() — see that module's header.
 import { extractPortraitUrl, resolveCashoutFaceOutcome, resolveWalletFaceOutcome } from '../_shared/diditFaceSearch.ts';
+import { recordLivenessDecline } from '../_shared/preKycGate.ts';
 
 // Didit webhook receiver.
 // Verifies the HMAC-SHA256 signature over the raw request body (X-Signature),
@@ -632,6 +633,8 @@ serve(async (req) => {
          }
 
          console.log(`[didit-webhook] Liveness ${livenessStatus} for user ${vendorData} (session ${sessionId ?? 'unknown'})`);
+         // A real decline (not abandoned / expired) uses one of the borrower's 3 KYC tries.
+         if (status === 'Declined' && livenessStatus === 'DECLINED') await recordLivenessDecline(adminSupabase, vendorData, sessionId ?? null);
          return jsonResponse({ success: true });
       }
 

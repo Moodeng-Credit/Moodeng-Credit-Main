@@ -418,7 +418,7 @@ const UsdcIcon = () => (
    </svg>
 );
 
-function BorrowerContextLoanStep({
+export function BorrowerContextLoanStep({
    page,
    context,
    currentAvatarBackground,

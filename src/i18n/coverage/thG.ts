@@ -609,5 +609,29 @@ export const thaiCoverageG: Record<string, string> = {
    "Coins.ph (temporarily paused)": "Coins.ph (ระงับชั่วคราว)",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then Send Crypto → External Wallet → Base network.": "ถูกรัฐบาลฟิลิปปินส์ระงับชั่วคราว ระหว่างนี้ใช้ PDAX หรือ GCrypto ไปก่อน ซื้อ USDC ด้วย PHP แล้วไปที่ Send Crypto → External Wallet → เครือข่าย Base",
    "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Deposit USDC, convert to PHP, and cash out to your bank or GCash.": "ถูกรัฐบาลฟิลิปปินส์ระงับชั่วคราว ระหว่างนี้ใช้ PDAX หรือ GCrypto ไปก่อน ฝาก USDC แปลงเป็น PHP แล้วถอนเข้าบัญชีธนาคารหรือ GCash ของคุณ",
-   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "ถูกรัฐบาลฟิลิปปินส์ระงับชั่วคราว ระหว่างนี้ใช้ PDAX หรือ GCrypto ไปก่อน ซื้อ USDC ด้วย PHP แล้วใช้ Send Crypto → External Wallet → เครือข่าย Base"
+   "Temporarily suspended by the Philippine government — use PDAX or GCrypto for now. Buy USDC with PHP, then use Send Crypto → External Wallet → Base network.": "ถูกรัฐบาลฟิลิปปินส์ระงับชั่วคราว ระหว่างนี้ใช้ PDAX หรือ GCrypto ไปก่อน ซื้อ USDC ด้วย PHP แล้วใช้ Send Crypto → External Wallet → เครือข่าย Base",
+
+   // Pre-KYC gate + KYC tries (ConnectStep kyc copy, KycDeclinedNotifier, /verify, dashboard banners)
+   "Before you verify your ID, we meet every borrower on a quick 15-min video call.": "ก่อนยืนยันตัวตน เราจะคุยกับผู้กู้ทุกคนผ่านวิดีโอคอลสั้น ๆ 15 นาที",
+   "Verify your ID right after the call": "ยืนยันตัวตนได้ทันทีหลังคอล",
+   "The team is unlocking your ID verification — we’ll message you the moment it’s ready.": "ทีมกำลังเปิดการยืนยันตัวตนให้คุณ — เราจะส่งข้อความหาคุณทันทีที่พร้อม",
+   "You’re booked! Tap “I’ll be there” so we keep your spot — you can verify your ID right after the call.": "จองแล้ว! แตะ “I’ll be there” เพื่อให้เราเก็บที่ไว้ให้ — คุณยืนยันตัวตนได้ทันทีหลังคอล",
+   "Thank you for confirming! You can verify your ID right after the call.": "ขอบคุณที่ยืนยัน! คุณยืนยันตัวตนได้ทันทีหลังคอล",
+   "Look around meanwhile": "ระหว่างนี้ลองดูรอบ ๆ ก่อน",
+   "Your ID check didn't go through": "การตรวจสอบบัตรของคุณไม่ผ่าน",
+   "That happens — let's sort it out together. Connect Messenger and the team will message you to help.": "เกิดขึ้นได้ — มาแก้ไขด้วยกัน เชื่อมต่อ Messenger แล้วทีมจะส่งข้อความไปช่วยคุณ",
+   "Let's sort it out together. Connect Messenger and the team will message you to help.": "มาแก้ไขด้วยกัน เชื่อมต่อ Messenger แล้วทีมจะส่งข้อความไปช่วยคุณ",
+   "Connect Messenger": "เชื่อมต่อ Messenger",
+   "Later": "ไว้ทีหลัง",
+   "Let's verify you together": "มายืนยันตัวตนด้วยกัน",
+   "Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you.": "การตรวจสอบบัตรของคุณไม่ผ่าน 3 ครั้ง ทีมจึงจะช่วยคุณโดยตรง ส่งข้อความหาเราทาง Messenger แล้วเราจะช่วยแก้ไขให้",
+   "Message us on Messenger": "ส่งข้อความหาเราทาง Messenger",
+   "1 of 3 tries left": "เหลือ 1 จาก 3 ครั้ง",
+   "2 of 3 tries left": "เหลือ 2 จาก 3 ครั้ง",
+   "Meet the team": "พบกับทีม",
+   "A quick 15-min call, then you can verify your ID and borrow.": "คอลสั้น ๆ 15 นาที แล้วคุณยืนยันตัวตนและกู้ได้",
+   "Right after it, you can verify your ID and borrow.": "หลังจากนั้นคุณยืนยันตัวตนและกู้ได้ทันที",
+   "Book": "จอง",
+   "View": "ดู",
+   "Connect": "เชื่อมต่อ"
 };
