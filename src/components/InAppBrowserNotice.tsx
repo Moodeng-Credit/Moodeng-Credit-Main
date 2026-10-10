@@ -2,7 +2,7 @@ import { type JSX, useEffect, useState } from 'react';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
 
-import { detectInAppBrowser, openInSystemBrowser, type InAppBrowserInfo } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, openInSafari, openInSystemBrowser, type InAppBrowserInfo } from '@/lib/inAppBrowser';
 
 const DISMISS_KEY = 'moodeng_inapp_notice_dismissed';
 
@@ -93,8 +93,9 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                      <>Sign-in and wallet payments don&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
                   ) : (
                      <>
-                        Sign-in and wallet payments don&apos;t work inside {appLabel}. Tap <span className="font-semibold">•••</span> at
-                        the top, choose <span className="font-semibold">Open in Browser</span>, or copy the link below.
+                        Sign-in doesn&apos;t stay saved and wallet payments don&apos;t work inside {appLabel}. Tap{' '}
+                        <span className="font-semibold">•••</span> at the top, choose <span className="font-semibold">Open in Browser</span>
+                        , or use a button below.
                      </>
                   )}
                </p>
@@ -106,6 +107,15 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                   >
                      {primaryLabel}
                   </button>
+                  {info.os === 'ios' ? (
+                     <button
+                        type="button"
+                        onClick={() => openInSafari(window.location.href, info)}
+                        className="rounded-xl border border-[#d9cff0] px-3 py-2 text-sm font-semibold text-[#6c3fe0] dark:border-[#40354F] dark:text-[#C9B6FF]"
+                     >
+                        Open in Safari
+                     </button>
+                  ) : null}
                   <button
                      type="button"
                      onClick={handleDismiss}

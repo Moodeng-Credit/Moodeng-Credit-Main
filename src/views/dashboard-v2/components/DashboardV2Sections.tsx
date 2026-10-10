@@ -205,7 +205,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                <span className={clsx(STAT_NUMBER, 'text-[clamp(22px,6.4vw,28px)] text-[#594d65] dark:text-[#e6def2]')}>
                   {formatCurrency(summary.pending)}
                </span>
-               <span className="text-[14px] leading-[18px] text-[#45556c]">Pending Loans($)</span>
+               <span className="text-[14px] leading-[18px] text-[#45556c]">Pending Request($)</span>
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
                <span

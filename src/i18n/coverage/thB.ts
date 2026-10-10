@@ -325,7 +325,7 @@ export const thaiCoverageB: Record<string, string> = {
 
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'Active Loans($)': 'เงินกู้ที่กำลังดำเนินอยู่ ($)',
-   'Pending Loans($)': 'เงินกู้ที่รอดำเนินการ ($)',
+   'Pending Request($)': 'คำขอที่รอดำเนินการ ($)',
    'Defaulted($)': 'ผิดนัดชำระ ($)',
    'Due today': 'ครบกำหนดวันนี้',
    'Pay Now': 'ชำระเลย',

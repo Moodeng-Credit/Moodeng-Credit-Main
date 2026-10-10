@@ -17,7 +17,7 @@ const STAT_CARDS = [
    },
    {
       key: 'pending' as const,
-      label: 'Pending Loans',
+      label: 'Pending Request',
       cardClass: 'loan-summary-card-pending',
       iconBg: 'bg-[#c28800]'
    },

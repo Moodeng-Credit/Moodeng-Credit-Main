@@ -16,6 +16,8 @@ export type { ShowToast, Toast, ToastConfigKey, ToastData, ToastOverrides };
 
 export const TOAST_SETTINGS = {
    DEFAULT_DURATION: 5000,
+   // Errors usually carry a next step (and sometimes a button); 5s was too short to read on a phone.
+   ERROR_DURATION: 8000,
    MAX_TOASTS: 5,
    POSITION: 'bottom-right'
 } as const;

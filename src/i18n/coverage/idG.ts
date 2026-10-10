@@ -646,5 +646,11 @@ export const indonesianCoverageG: Record<string, string> = {
    "Thank you for confirming! You can apply right after the call.": "Terima kasih sudah konfirmasi! Kamu bisa mengajukan tepat setelah panggilan.",
    "Look around first": "Lihat-lihat dulu",
    "A little low for lenders": "Sedikit rendah untuk pemberi pinjaman",
-   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "Ada pertanyaan? Kirim pesan ke Moodeng Credit di Facebook atau email support@moodeng.app — biasanya kami balas dalam sehari."
+   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "Ada pertanyaan? Kirim pesan ke Moodeng Credit di Facebook atau email support@moodeng.app — biasanya kami balas dalam sehari.",
+
+   // src/hooks/useWallet.ts (Instant Wallet send failures)
+   "Your Instant Wallet needs to reconnect": "Instant Wallet Anda perlu dihubungkan ulang",
+   "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Tidak ada yang terkirim. Keluar lalu masuk lagi, atau buka Moodeng di browser lain seperti Chrome, lalu coba lagi.",
+   "Your payment didn't go through": "Pembayaran Anda tidak berhasil",
+   "My Instant Wallet payment failed": "Pembayaran dari Instant Wallet saya gagal"
 };

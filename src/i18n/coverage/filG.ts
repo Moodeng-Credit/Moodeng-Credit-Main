@@ -1063,5 +1063,11 @@ export const filipinoCoverageG: Record<string, string> = {
    "The team is approving you — we’ll message you the moment you can apply.": "Ina-approve ka na ng team — imemessage ka namin agad kapag puwede ka nang mag-apply.",
    "Look around first": "Mag-ikot-ikot muna",
    "A little low for lenders": "Medyo mababa para sa mga lender",
-   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "May tanong? I-message ang Moodeng Credit sa Facebook o mag-email sa support@moodeng.app — karaniwang sumasagot kami sa loob ng isang araw."
+   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "May tanong? I-message ang Moodeng Credit sa Facebook o mag-email sa support@moodeng.app — karaniwang sumasagot kami sa loob ng isang araw.",
+
+   // src/hooks/useWallet.ts (Instant Wallet send failures)
+   "Your Instant Wallet needs to reconnect": "Kailangang ikonekta ulit ang Instant Wallet mo",
+   "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "Walang naipadala. Mag-sign out at mag-sign in ulit, o buksan ang Moodeng sa ibang browser tulad ng Chrome, saka subukan ulit.",
+   "Your payment didn't go through": "Hindi natuloy ang bayad mo",
+   "My Instant Wallet payment failed": "Pumalya ang bayad mula sa Instant Wallet ko"
 };

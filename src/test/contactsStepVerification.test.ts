@@ -71,6 +71,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
 
    beforeEach(() => {
       vi.useFakeTimers();
+      window.sessionStorage.clear();
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
       supa.rpc.mockClear();
@@ -172,15 +173,18 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          await Promise.resolve();
       });
 
-      // A focus/visibility blip without actually leaving for Messenger doesn't count.
+      // A focus/visibility blip while Messenger is opening doesn't count as a trip.
       await setVisibility('visible');
       await act(async () => {
-         await vi.advanceTimersByTimeAsync(5_000);
+         await vi.advanceTimersByTimeAsync(1_000);
       });
       expect(container.textContent).not.toContain('Not confirmed yet?');
 
-      // Off to Messenger and back, still unconfirmed → backups after the short grace.
+      // Off to Messenger for a real visit and back, still unconfirmed → backups after the short grace.
       await setVisibility('hidden');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(5_000);
+      });
       await setVisibility('visible');
       expect(container.textContent).not.toContain('Not confirmed yet?');
       await act(async () => {
@@ -199,6 +203,79 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       });
       expect(openSpy.mock.calls[0][0]).toContain('__mdng_code=MDNG-ABC123');
       Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+   });
+
+   const setVisibilityState = async (state: 'hidden' | 'visible') => {
+      Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+      await act(async () => {
+         document.dispatchEvent(new Event('visibilitychange'));
+         await Promise.resolve();
+      });
+   };
+   const tapMessengerCard = async () => {
+      await act(async () => {
+         channelCard(container, 'Messenger')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+         await Promise.resolve();
+      });
+   };
+
+   it('shows the backups right away when Messenger never opens (the page never leaves)', async () => {
+      await render();
+      await tapMessengerCard();
+      expect(container.textContent).not.toContain('Not confirmed yet?');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(3_100);
+      });
+      expect(container.textContent).toContain('Not confirmed yet?');
+      expect(container.textContent).toContain('MDNG-ABC123');
+   });
+
+   it('shows the backups right away when Messenger flashes open and shut (the Android failure)', async () => {
+      await render();
+      await tapMessengerCard();
+      await setVisibilityState('hidden');
+      await act(async () => {
+         await vi.advanceTimersByTimeAsync(300);
+      });
+      await setVisibilityState('visible');
+      expect(container.textContent).toContain('Not confirmed yet?');
+      Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+   });
+
+   it('on Android, opens the Messenger app through an intent instead of a new tab', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36',
+         configurable: true
+      });
+      const hrefSetter = vi.fn();
+      const originalLocation = window.location;
+      Object.defineProperty(window, 'location', {
+         value: { ...originalLocation, set href(value: string) { hrefSetter(value); } },
+         configurable: true
+      });
+      try {
+         await render();
+         await tapMessengerCard();
+         expect(openSpy).not.toHaveBeenCalled();
+         expect(hrefSetter).toHaveBeenCalledTimes(1);
+         const intent = hrefSetter.mock.calls[0][0] as string;
+         expect(intent.startsWith('intent://m.me/')).toBe(true);
+         expect(intent).toContain('__mdng_code=MDNG-ABC123');
+         expect(intent).toContain('package=com.facebook.orca');
+         expect(intent).toContain(`S.browser_fallback_url=${encodeURIComponent(buildMessengerVerifyLink('MDNG-ABC123'))}`);
+      } finally {
+         Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });
+      }
+   });
+
+   it('picks the attempt back up, with the code showing, after an Android fallback left the page', async () => {
+      window.sessionStorage.setItem(
+         'moodeng.messengerVerifyPending',
+         JSON.stringify({ userId: 'user-1', code: 'MDNG-ABC123', link: buildMessengerVerifyLink('MDNG-ABC123'), at: Date.now() })
+      );
+      await render();
+      expect(container.textContent).toContain('Not confirmed yet?');
+      expect(container.textContent).toContain('MDNG-ABC123');
    });
 
    it('does not show the backups when the bot confirms them while they were away', async () => {

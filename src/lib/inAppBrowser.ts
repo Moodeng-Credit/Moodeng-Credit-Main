@@ -22,6 +22,17 @@ export interface InAppBrowserInfo {
    canBreakOut: boolean;
 }
 
+// The Home Screen web app (iOS `navigator.standalone`, or display-mode standalone elsewhere).
+function isStandaloneDisplay(): boolean {
+   if (typeof window === 'undefined') return false;
+   try {
+      if ((window.navigator as Navigator & { standalone?: boolean }).standalone === true) return true;
+      return window.matchMedia?.('(display-mode: standalone)').matches ?? false;
+   } catch {
+      return false;
+   }
+}
+
 function detectOs(ua: string): MobileOs {
    if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
    if (/Android/i.test(ua)) return 'android';
@@ -46,7 +57,7 @@ function detectAppName(ua: string): string | null {
  * Inspect a user-agent string and decide whether we're in an in-app browser.
  * Accepts an explicit `userAgent` for testing; defaults to `navigator.userAgent`.
  */
-export function detectInAppBrowser(userAgent?: string): InAppBrowserInfo {
+export function detectInAppBrowser(userAgent?: string, options: { standalone?: boolean } = {}): InAppBrowserInfo {
    const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
    const os = detectOs(ua);
    const appName = detectAppName(ua);
@@ -54,7 +65,15 @@ export function detectInAppBrowser(userAgent?: string): InAppBrowserInfo {
    // A named social app is a definite in-app browser. As a fallback, the Android WebView
    // marker "; wv" also indicates an embedded browser even when the host app isn't named.
    const isAndroidWebView = os === 'android' && /;\s*wv\b/i.test(ua);
-   const isInApp = appName !== null || isAndroidWebView;
+   // iOS equivalent: a WebKit view with no "Safari/" token and no other browser's marker is an
+   // app's embedded browser — typically an email app opening a sign-in link. Those don't keep you
+   // signed in, so a borrower who always signed in from email links (Lo Rraine, 8 email-link logins
+   // on 2026-09-22/24) had to log in again on every visit. The Home Screen app (standalone) has the
+   // same UA shape, so it is excluded.
+   const isStandalone = options.standalone ?? isStandaloneDisplay();
+   const isIosWebView =
+      os === 'ios' && /AppleWebKit/i.test(ua) && !/Safari\//i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua) && !isStandalone;
+   const isInApp = appName !== null || isAndroidWebView || isIosWebView;
 
    return {
       isInApp,

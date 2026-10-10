@@ -4,8 +4,8 @@
 // these events line up with the account.
 import posthog from 'posthog-js';
 
-/** `create`: the mint/provision step failed. `link`: the wallet exists but saving it to the account failed. */
-export type InstantWalletFailureStage = 'create' | 'link';
+/** `create`: the mint/provision step failed. `link`: the wallet exists but saving it to the account failed. `send`: a repayment/withdrawal from it failed. */
+export type InstantWalletFailureStage = 'create' | 'link' | 'send';
 
 export const reportInstantWalletFailure = (stage: InstantWalletFailureStage, err: unknown): void => {
    if (!import.meta.env.PROD) return;

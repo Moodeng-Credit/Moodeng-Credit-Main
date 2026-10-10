@@ -11,6 +11,7 @@ import { base, baseSepolia } from 'viem/chains';
 
 import { getOpenfortClient } from '@/lib/web3/openfort/client';
 import { OPENFORT_CHAIN_ID, OPENFORT_POLICY_ID, getOpenfortUsdcAddress } from '@/lib/web3/openfort/config';
+import { InstantWalletReconnectError, isLostSignerError } from '@/lib/web3/openfort/sendErrors';
 import { createShieldEncryptionSession } from '@/lib/web3/openfort/shieldSession';
 
 // The viem chain the embedded wallet transacts on, resolved from config so test mode (Base
@@ -88,16 +89,44 @@ export const getEmbeddedProvider = async (): Promise<Provider> => {
    const openfort = getOpenfortClient();
    return openfort.embeddedWallet.getEthereumProvider({
       feeSponsorship: OPENFORT_POLICY_ID || undefined,
-      chains: openfortChains
+      chains: openfortChains,
+      // The SDK announces this provider over EIP-6963 by default, so wagmi picked it up as an
+      // injected "Openfort" wallet and auto-connected it mid-send. useWalletSync then saw a
+      // borrower on a non-Base wallet, toasted "Use your Instant Wallet or a Base Account" at
+      // someone already paying from their Instant Wallet, and disconnected it. We only ever use
+      // this provider directly, so keep it out of wagmi entirely.
+      announceProvider: false
    });
 };
 
+// The SDK's logout tears the signer iframe down in the background (its ON_LOGOUT handler isn't
+// awaited) and can spend up to its 10s logout RPC flushing the iframe. Rebuilding before that
+// finishes would configure against the iframe being destroyed, so wait for it to leave the DOM.
+const SIGNER_TEARDOWN_TIMEOUT_MS = 12_000;
+const SIGNER_TEARDOWN_POLL_MS = 100;
+
+const waitForSignerTeardown = async (): Promise<void> => {
+   if (typeof document === 'undefined') return;
+   const deadline = Date.now() + SIGNER_TEARDOWN_TIMEOUT_MS;
+   while (document.getElementById('openfort-iframe') && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, SIGNER_TEARDOWN_POLL_MS));
+   }
+};
+
 /**
- * Send USDC from the embedded smart account as a gasless, sponsored userOp.
- * Returns the transaction/userOp hash to store as the loan/withdrawal `hash`, matching
- * the shape the wagmi and Base Pay paths return.
+ * Throw away this tab's Openfort session — the stored account, the third-party login it cached,
+ * and the signer iframe with its persisted state — so the next provision starts as clean as a
+ * fresh login. That's what got the stuck Safari borrower paid; doing it here means they don't
+ * have to find it themselves. Does not touch the wallet itself or the Moodeng session.
  */
-export const sendUsdcFromEmbeddedWallet = async ({ to, usdAmount }: { to: string; usdAmount: string }): Promise<`0x${string}`> => {
+const resetEmbeddedSigner = async (): Promise<void> => {
+   await getOpenfortClient()
+      .auth.logout()
+      .catch(() => undefined);
+   await waitForSignerTeardown();
+};
+
+const sendUsdcOnce = async ({ to, usdAmount }: { to: string; usdAmount: string }): Promise<`0x${string}`> => {
    const usdc = getOpenfortUsdcAddress();
    if (!usdc) throw new Error('USDC is not configured for the active chain.');
 
@@ -117,6 +146,31 @@ export const sendUsdcFromEmbeddedWallet = async ({ to, usdAmount }: { to: string
       functionName: 'transfer',
       args: [to as `0x${string}`, parseUnits(usdAmount, 6)]
    });
+};
+
+/**
+ * Send USDC from the embedded smart account as a gasless, sponsored userOp.
+ * Returns the transaction/userOp hash to store as the loan/withdrawal `hash`, matching
+ * the shape the wagmi and Base Pay paths return.
+ *
+ * If the tab has lost its signer (see sendErrors.ts) the session is reset and the send retried
+ * once — safe, because that failure happens before anything is signed or submitted. Still lost
+ * after the reset → {@link InstantWalletReconnectError}, so the caller can say what actually helps.
+ */
+export const sendUsdcFromEmbeddedWallet = async (args: { to: string; usdAmount: string }): Promise<`0x${string}`> => {
+   try {
+      return await sendUsdcOnce(args);
+   } catch (err) {
+      if (!isLostSignerError(err)) throw err;
+      console.warn('[openfort] signer lost before sending; resetting the wallet session and retrying once', err);
+   }
+
+   await resetEmbeddedSigner();
+   try {
+      return await sendUsdcOnce(args);
+   } catch (err) {
+      throw isLostSignerError(err) ? new InstantWalletReconnectError(err) : err;
+   }
 };
 
 /**
