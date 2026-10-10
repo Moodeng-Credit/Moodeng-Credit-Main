@@ -16,7 +16,7 @@ import { ALLOWED_CHAIN_DISPLAY_NAME } from '@/config/wagmiConfig';
 import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { areWalletAddressesEqual, getBaseWalletLockStatus } from '@/lib/walletProvider';
-import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -131,7 +131,7 @@ function UserPay({ loan }: { loan: Loan }) {
                   showToastByConfig('repayment_success');
                   setRepaidAmountToAdd('');
                } catch (updateError: unknown) {
-                  if (updateError instanceof PaymentNotConfirmedError) {
+                  if ((updateError as { name?: string } | null)?.name === 'PaymentNotConfirmedError') {
                      // Sent but not yet confirmed on-chain — reconciler finishes it. Not a failure.
                      showToast(
                         TOAST_TYPES.INFO,

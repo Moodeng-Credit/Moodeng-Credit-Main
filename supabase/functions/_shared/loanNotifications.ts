@@ -989,9 +989,8 @@ ${actionUrl}`);
 
    if (type === 'final_reminder') {
       const actionUrl = buildRepayLink();
-      const dueLabel = aggregate?.dueLabel ?? '24 hours';
       const text = normalizeNotificationText(`Amount coming due
-Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due within ${dueLabel}.
+Hi ${name}, you have ${formatLoanCount(aggregate?.count ?? 0)} due tomorrow.
 Amount due: ${formatUsdcAmount(aggregate?.totalAmount ?? 0)}
 Please make sure your wallet has the stablecoins ready so your Moodeng history stays on track.
 ${actionUrl}`);

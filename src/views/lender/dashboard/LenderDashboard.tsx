@@ -21,6 +21,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { isOffPlatformSettledRefund, type Loan } from '@/types/loanTypes';
 import { isLoanPastDue } from '@/utils/loanOverdue';
 import { currentDateLocale } from '@/utils/dateFormatters';
+import { getLoanInterestEarned, sumInterestEarned } from '@/utils/lenderEarnings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,21 +82,18 @@ function computeEarningsChange(loans: Loan[]): { total: number; changePercent: n
    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-   // Earnings are the gross total_repayment of repaid loans (unchanged), EXCEPT refunded loans are
-   // excluded — a refund only returns the lender's principal, so it isn't earnings.
-   const repaidLoans = loans.filter((l) => l.repaymentStatus === 'Paid' && !l.refundedAt);
-   const total = repaidLoans.reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
+   // Earnings = interest earned (totalRepayment - principal) on fully repaid, non-refunded loans.
+   const repaidLoans = loans.filter((l) => getLoanInterestEarned(l) > 0);
+   const total = sumInterestEarned(repaidLoans);
 
-   const currentPeriod = repaidLoans
-      .filter((l) => new Date(l.updatedAt ?? l.createdAt) >= thirtyDaysAgo)
-      .reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
+   const currentPeriod = sumInterestEarned(repaidLoans.filter((l) => new Date(l.updatedAt ?? l.createdAt) >= thirtyDaysAgo));
 
-   const previousPeriod = repaidLoans
-      .filter((l) => {
+   const previousPeriod = sumInterestEarned(
+      repaidLoans.filter((l) => {
          const d = new Date(l.updatedAt ?? l.createdAt);
          return d >= sixtyDaysAgo && d < thirtyDaysAgo;
       })
-      .reduce((sum, l) => sum + l.totalRepaymentAmount, 0);
+   );
 
    const changePercent = previousPeriod > 0 ? ((currentPeriod - previousPeriod) / previousPeriod) * 100 : 0;
    return { total, changePercent };
