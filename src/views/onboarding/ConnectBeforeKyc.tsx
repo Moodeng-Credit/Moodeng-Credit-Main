@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -20,8 +20,8 @@ import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 // Anyone not gated (approved, verified, gate switched off) goes straight on to the loan form, where
 // verifying their ID is the last step of sending the request.
 
-// While they wait on the team, look for the approval this often (plus on every return to the tab).
-const PENDING_REFRESH_MS = 15_000;
+// While they wait on the team, JourneyNudge (mounted app-wide) watches for the approval, so this
+// screen moves them on to the loan form without a reload.
 
 const PREVIEW_USER = {
    id: '00000000-0000-0000-0000-000000000000',
@@ -45,27 +45,11 @@ export default function ConnectBeforeKyc() {
    const { isGated, isLoading } = isPreview ? { isGated: true, isLoading: false } : gate;
    const isPending = isPreview ? new URLSearchParams(location.search).get('view') === 'pending' : user?.loanAccessStatus === 'pending';
 
-   const refresh = useCallback(() => void dispatch(fetchUser()), [dispatch]);
-
    // The sub-step lives in the URL, so the phone's back button moves between steps.
    const [searchParams] = useSearchParams();
    const stepParam = searchParams.get('step');
    const page: ConnectPage = stepParam === 'about' || stepParam === 'intro' || stepParam === 'call' ? stepParam : 'contact';
    const setPage = useCallback((next: ConnectPage) => navigate(next === 'contact' ? '?' : `?step=${next}`), [navigate]);
-
-   // Waiting on the call / the admin's ✅: refresh so the approval moves them on without a reload.
-   useEffect(() => {
-      if (!isPending || isPreview) return undefined;
-      const timer = window.setInterval(refresh, PENDING_REFRESH_MS);
-      const onVisible = () => {
-         if (document.visibilityState === 'visible') refresh();
-      };
-      document.addEventListener('visibilitychange', onVisible);
-      return () => {
-         window.clearInterval(timer);
-         document.removeEventListener('visibilitychange', onVisible);
-      };
-   }, [isPending, isPreview, refresh]);
 
    if (!user) return null;
    if (!user.userRole) return <Navigate replace to="/onboarding/role" />;

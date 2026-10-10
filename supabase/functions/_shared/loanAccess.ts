@@ -15,7 +15,7 @@ import { postDiscord } from './discord.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
-import { callTelegramApi, sendTelegramMessage } from './telegram.ts';
+import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
@@ -451,6 +451,16 @@ export const answerCallback = async (callbackQueryId: string, text: string) => {
       await callTelegramApi('answerCallbackQuery', { callback_query_id: callbackQueryId, text: text.slice(0, 190) });
    } catch (err) {
       console.error('loanAccess: answerCallbackQuery failed', err instanceof Error ? err.message : err);
+   }
+};
+
+// Swap just the card's buttons — "⏳ Saving…" the moment one is tapped, or the original buttons back
+// if the decision failed — so the tap is visibly acknowledged before the slow work runs.
+export const setCardButtons = async (chatId: number | string, messageId: number, keyboard: TelegramInlineKeyboard) => {
+   try {
+      await callTelegramApi('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: keyboard } });
+   } catch (err) {
+      console.error('loanAccess: editMessageReplyMarkup failed', err instanceof Error ? err.message : err);
    }
 };
 
