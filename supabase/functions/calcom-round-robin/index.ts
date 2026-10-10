@@ -6,6 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
 import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
+import { needsPreKycGate } from '../_shared/preKycGate.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
 // ourselves on the free API. The borrower sees one anonymous "Moodeng team" time list; we read each
@@ -282,6 +283,10 @@ serve(async (req) => {
             // Source of truth: we made the booking, so stamp the gate directly (the signed webhook
             // will also fire and land on the same values).
             const confirmToken = newConfirmToken();
+            // "Attended" normally sticks (one call is all a borrower needs) — except for someone the
+            // pre-KYC gate is holding: they must attend this new call, and a kept 'attended' skipped
+            // its reminders, the team's call cards and the admin panel's buttons.
+            const keepAttended = prof?.video_call_outcome === 'attended' && !(await needsPreKycGate(svc, user.id));
             const { data: booked } = await svc
                .from('users')
                .update({
@@ -300,7 +305,7 @@ serve(async (req) => {
                   video_call_reminder_stage: 0,
                   video_call_confirm_token: confirmToken,
                   video_call_confirmed_at: null,
-                  ...(prof?.video_call_outcome === 'attended' ? {} : { video_call_outcome: null, video_call_outcome_at: null })
+                  ...(keepAttended ? {} : { video_call_outcome: null, video_call_outcome_at: null })
                })
                .eq('id', user.id)
                .select(

@@ -1131,7 +1131,9 @@ export default function LoanRequestModal({
            ? 'Verification not finished'
            : verifyUiState === 'declined'
              ? "Verification didn't pass"
-             : 'Verification in progress';
+             : verifyUiState === 'duplicate'
+               ? 'This ID is on another account'
+               : 'Verification in progress';
    const verifyPendingBody =
       verifyUiState === 'review'
          ? 'A human reviewer is double-checking your documents — this can take up to 1 business day.'
@@ -1139,7 +1141,9 @@ export default function LoanRequestModal({
            ? 'You left before finishing all the steps. Tap below to continue or start over.'
            : verifyUiState === 'declined'
              ? "We couldn't verify your identity. Tap below to try again or contact us."
-             : "Your documents are being reviewed. We'll notify you once confirmed.";
+             : verifyUiState === 'duplicate'
+               ? 'Your ID check matched a Moodeng account that already exists. Message us and we’ll help you sort it out.'
+               : "Your documents are being reviewed. We'll notify you once confirmed.";
    const verifyPendingCta = `${VERIFICATION_STATE_CTA[verifyUiState]} →`;
    // The note by the send button, worded by where the ID check actually is — "still being checked"
    // was shown to people whose check was declined or never finished, too.
@@ -1148,7 +1152,9 @@ export default function LoanRequestModal({
          ? "Your ID check didn't pass — try again to send this request. What you typed is kept."
          : verifyUiState === 'unfinished'
            ? 'Finish your ID check to send this request. What you typed is kept.'
-           : 'Your verification is still being checked — you can send this request once it clears.';
+           : verifyUiState === 'duplicate'
+             ? 'This ID is already on another Moodeng account — message us to sort it out.'
+             : 'Your verification is still being checked — you can send this request once it clears.';
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
    const selectedCalendarDate = parseIsoDate(selectedDate);
@@ -1338,6 +1344,9 @@ export default function LoanRequestModal({
    // submit path as a tap (so every check — limit, reason, bio, location — still runs and can stop it
    // on screen). Once per open; waits a frame so the restored terms are on the form first.
    const autoSubmittedRef = useRef(false);
+   // Always the newest submit handler: the one captured by the effect's render can carry stale
+   // derived state (the typed date is synced from `days` by an effect, one render later).
+   const submitHandlerRef = useRef<((event: FormEvent<HTMLFormElement>) => void) | null>(null);
    useEffect(() => {
       if (!isOpen) {
          autoSubmittedRef.current = false;
@@ -1345,14 +1354,16 @@ export default function LoanRequestModal({
       }
       if (!autoSubmit || !isVerified || autoSubmittedRef.current) return;
       if (!loanAmount || !totalRepaymentAmount || !reason) return;
+      // Wait until the restored date is on the form, or validation says "Choose when you will repay."
+      if (!isRepaymentDateFilled) return;
       autoSubmittedRef.current = true;
       onAutoSubmitStarted?.();
       // They answered the "a little low" question before the ID check (or weren't asked) — don't
       // ask again. And call the submit handler directly: requestSubmit() isn't on older iOS Safari.
       returnAckRef.current = `${loanAmount}|${totalRepaymentAmount}|${days}`;
-      window.requestAnimationFrame(() => handleLoanFormSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>));
+      window.requestAnimationFrame(() => submitHandlerRef.current?.({ preventDefault: () => {} } as FormEvent<HTMLFormElement>));
       // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, [autoSubmit, isOpen, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
+   }, [autoSubmit, isOpen, isRepaymentDateFilled, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
 
    // Before leaving for the ID check, get a real verdict on the reason. The live check may still be
    // running (or have failed) — then the request went to Didit and the automatic send afterwards
@@ -1943,6 +1954,7 @@ export default function LoanRequestModal({
       // video-call steps come after it, so by submit time the bio step is no longer on screen.
       handleSubmit(event, showBorrowerContextStep || borrowerContextPromptSeen ? borrowerContext : undefined);
    };
+   submitHandlerRef.current = handleLoanFormSubmit;
 
    // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
    // before isSavingProfile state has a chance to re-render and disable the button.

@@ -2,6 +2,7 @@ import { postDiscord } from './discord.ts';
 import { sendEmail } from './email.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildVerificationDecisionPushPayload, type PushLocale } from './pushMessages.ts';
+import { kycTriesLeft } from './preKycGate.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -182,6 +183,15 @@ export const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body
    }
 };
 
+// The decline that used their last try: another attempt is refused (create-didit-session →
+// KYC_TRIES_USED) until an admin gives more with /kycretry, so "try again any time" was wrong.
+const DECLINED_NO_TRIES_COPY = {
+   subject: 'Your Moodeng verification didn’t pass',
+   body: (reason?: string) =>
+      `We couldn’t verify your identity this time.${reason ? ` Reason: ${reason}.` : ''} You’ve used all your tries, so please message our team and we’ll help you sort it out.`,
+   cta: 'See next steps'
+};
+
 // Lenders verify too, but have no loan request to send.
 const LENDER_APPROVED_COPY = {
    subject: 'You’re verified on Moodeng! 🎉',
@@ -211,7 +221,12 @@ export const notifyUser = async (
       } | null;
       if (!user || user.notif_account_activity === false) return;
 
-      const copy = outcome === 'approved' && user.user_role === 'lender' ? LENDER_APPROVED_COPY : USER_NOTIFY_COPY[outcome];
+      const copy =
+         outcome === 'approved' && user.user_role === 'lender'
+            ? LENDER_APPROVED_COPY
+            : outcome === 'declined' && (await kycTriesLeft(adminSupabase, userId)) <= 0
+              ? DECLINED_NO_TRIES_COPY
+              : USER_NOTIFY_COPY[outcome];
       const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
       const verifyUrl = `${siteUrl}/verify`;
       const text = `${copy.body(reason)}\n\n${copy.cta}: ${verifyUrl}`;

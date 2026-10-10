@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
+import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 
@@ -88,6 +89,11 @@ serve(async (req) => {
       }
       const currentMs = Date.parse((current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? '');
       const timeMoved = !booking.startsAt || currentMs !== Date.parse(booking.startsAt);
+      // "Attended" sticks, except for a borrower the pre-KYC gate is holding — they have to attend
+      // this call (see calcom-round-robin).
+      const keepAttended =
+         (current as { video_call_outcome?: string | null } | null)?.video_call_outcome === 'attended' &&
+         !(timeMoved && (await needsPreKycGate(supabase, booking.userId)));
       const { error } = await supabase
          .from('users')
          .update({
@@ -100,9 +106,7 @@ serve(async (req) => {
                     video_call_reminder_stage: 0,
                     video_call_confirmed_at: null,
                     // "Attended" sticks: one call is all a borrower ever needs (see calcom-round-robin).
-                    ...((current as { video_call_outcome?: string | null } | null)?.video_call_outcome === 'attended'
-                       ? {}
-                       : { video_call_outcome: null, video_call_outcome_at: null }),
+                    ...(keepAttended ? {} : { video_call_outcome: null, video_call_outcome_at: null }),
                     ...ATTENDANCE_RESET
                  }
                : {}),

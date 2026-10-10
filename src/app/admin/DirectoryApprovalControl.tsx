@@ -30,13 +30,17 @@ export default function DirectoryApprovalControl({ user }: { user: ApprovalUser 
       ? `Call ${new Date(user.video_call_starts_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`
       : null;
 
-   const run = async (action: () => Promise<{ ok: boolean; summary: string }>, after: () => void, confirmText?: string) => {
+   const run = async (
+      action: () => Promise<{ ok: boolean; summary: string }>,
+      after: (result: { ok: boolean; summary: string }) => void,
+      confirmText?: string
+   ) => {
       if (confirmText && !window.confirm(confirmText)) return;
       setBusy(true);
       setMessage(null);
       try {
          const result = await action();
-         if (result.ok) after();
+         if (result.ok) after(result);
          setMessage({ ok: result.ok, text: result.summary });
       } catch (err) {
          setMessage({ ok: false, text: err instanceof Error ? err.message : 'Could not save.' });
@@ -61,9 +65,12 @@ export default function DirectoryApprovalControl({ user }: { user: ApprovalUser 
                   onClick={() =>
                      run(
                         () => decideAdminCall({ userId: user.id, decision: 'attended' }),
-                        () => {
+                        (result) => {
                            setOutcome('attended');
-                           setStatus('approved');
+                           // "Showed up" approves only a borrower still waiting on access; for others
+                           // (e.g. verified, open flow) it just records attendance — the server's
+                           // summary says which, so don't claim "Approved" when nothing was.
+                           if (/approved/i.test(result.summary)) setStatus('approved');
                         }
                      )
                   }
