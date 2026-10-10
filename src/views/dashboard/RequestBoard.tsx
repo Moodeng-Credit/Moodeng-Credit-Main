@@ -611,6 +611,8 @@ function RequestBoard$() {
    const [loanRequestResume, setLoanRequestResume] = useState<LoanRequestResume | null>(null);
    const [loanRequestFlowState, setLoanRequestFlowState] = useState<LoanRequestResume | null>(null);
    const didAttemptLoanRequestResumeRef = useRef(false);
+   // Back from "Verify ID & send request" and now verified: the modal sends the saved request itself.
+   const [autoSendLoanRequest, setAutoSendLoanRequest] = useState(false);
    const handleLoanRequestFlowStateChange = useCallback((state: LoanRequestResume) => {
       setLoanRequestFlowState(state);
    }, []);
@@ -722,8 +724,44 @@ function RequestBoard$() {
          borrowerContext: draft.borrowerContext,
          profileName: draft.profileName
       });
+      if (draft.sendAfterVerify && isUserVerified(effectiveUser)) setAutoSendLoanRequest(true);
       setShowModal(true);
+      // Resume once per load, against the profile as it is now.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [isAuthenticated, isBorrower, effectiveUser?.id]);
+
+   // "Verify ID & send request" leaves for /verify and Didit, which unmounts this page and the form.
+   // Save the terms now (the regular snapshot skips the terms screen) and mark them to be sent once
+   // the borrower is back verified — the form promises "What you typed is kept".
+   const handleVerifyToSend = useCallback(() => {
+      if (!effectiveUser?.id) return;
+      saveLoanRequestDraft(effectiveUser.id, {
+         terms: { loanAmount, totalRepaymentAmount, reason, days },
+         referral: loanRequestFlowState?.referral ?? appliedReferral,
+         flow: loanRequestFlowState?.flow ?? {
+            showReferralStep: false,
+            showBorrowerContextStep: false,
+            bioPage: 1,
+            showContactsStep: false,
+            showVideoCallStep: false,
+            contactsStepDone: false,
+            videoCallStepDone: false,
+            borrowerContextPromptSeen: false
+         },
+         borrowerContext: loanRequestFlowState?.borrowerContext ?? { incomeSetup: '', paydayWindow: '', cashGaps: [] },
+         profileName: loanRequestFlowState?.profileName ?? '',
+         sendAfterVerify: true
+      });
+   }, [appliedReferral, days, effectiveUser?.id, loanAmount, loanRequestFlowState, reason, totalRepaymentAmount]);
+
+   // The auto-send fired: drop the "send after verify" mark so a failed send (reason check, cooldown)
+   // can't re-fire on every reload. The terms stay on the open form for them to fix and send.
+   const handleAutoSubmitStarted = useCallback(() => {
+      setAutoSendLoanRequest(false);
+      if (!effectiveUser?.id) return;
+      const draft = loadLoanRequestDraft(effectiveUser.id);
+      if (draft?.sendAfterVerify) saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false });
+   }, [effectiveUser?.id]);
 
    // Snapshot the in-progress request whenever the terms or the modal's step change, so a reload
    // mid-flow can resume. Only while the modal is open and only once the borrower is past the first
@@ -866,6 +904,7 @@ function RequestBoard$() {
       clearLoanRequestDraft();
       setLoanRequestResume(null);
       setLoanRequestFlowState(null);
+      setAutoSendLoanRequest(false);
    }, []);
    const handleVerifyHeaderClick = useCallback(() => {
       journey.go();
@@ -2409,6 +2448,9 @@ function RequestBoard$() {
                   onBioSave={handleBioSave}
                   resume={loanRequestResume}
                   onFlowStateChange={handleLoanRequestFlowStateChange}
+                  onVerifyToSend={handleVerifyToSend}
+                  autoSubmit={autoSendLoanRequest}
+                  onAutoSubmitStarted={handleAutoSubmitStarted}
                   clickOutsideRef={loanRequestModalRef}
                />
                {/* No tap-outside dismiss: a stray tap where the borrower just tapped "Make Your

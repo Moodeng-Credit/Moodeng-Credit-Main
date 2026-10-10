@@ -240,6 +240,7 @@ export default function VerifyFlow() {
       return () => window.clearInterval(id);
    }, [step, dispatch]);
 
+   const isLender = user?.userRole === 'lender';
    const navigateAfterVerified = useCallback(
       (returnTo?: string) => {
          clearFlow();
@@ -264,10 +265,14 @@ export default function VerifyFlow() {
                   navigate(returnTo, { replace: true });
                   return;
                }
-               navigate('/onboarding/congratulations', { replace: true });
+               // The ID check is the last step of sending a loan request now, so a borrower with no
+               // known destination goes to the loan form (it reopens any request they'd saved) —
+               // the onboarding "Congratulations" page was a dead end. Lenders keep it.
+               if (isLender) navigate('/onboarding/congratulations', { replace: true });
+               else navigate('/request-board', { replace: true, state: { openLoanRequest: true } });
          }
       },
-      [navigate]
+      [isLender, navigate]
    );
 
    // --- Liveness ----------------------------------------------------------------
@@ -605,7 +610,10 @@ export default function VerifyFlow() {
       startedRef.current = true;
 
       if (isUserVerified(user)) {
-         const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+         // Already verified — e.g. opened from the "You're verified" Messenger/email/push link, or
+         // back from Didit after the approval landed. Honour where they came from: the route state,
+         // or the saved flow when Didit's redirect dropped the route state.
+         const returnTo = (location.state as { returnTo?: string } | null)?.returnTo ?? readFlow()?.returnTo;
          navigateAfterVerified(returnTo);
          return;
       }

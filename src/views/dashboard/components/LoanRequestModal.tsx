@@ -105,6 +105,15 @@ interface LoanRequestModalProps {
     * resumable draft. Should be a stable callback so it doesn't re-fire on every parent render.
     */
    onFlowStateChange?: (state: LoanRequestResume) => void;
+   /**
+    * Called right before "Verify ID & send request" leaves for the ID check, so the parent can save
+    * the terms and send them once the borrower comes back verified.
+    */
+   onVerifyToSend?: () => void;
+   /** Back from the ID check, verified, with saved terms: send the request without another tap. */
+   autoSubmit?: boolean;
+   /** Fired once when the auto-submit is triggered, so the parent can stop asking for it. */
+   onAutoSubmitStarted?: () => void;
 }
 
 // Everything the modal owns that a resume needs: which screen the borrower is on, the referral they
@@ -990,13 +999,21 @@ export default function LoanRequestModal({
    startOnReferralStep = true,
    loanFlow = 'open',
    resume = null,
-   onFlowStateChange
+   onFlowStateChange,
+   onVerifyToSend,
+   autoSubmit = false,
+   onAutoSubmitStarted
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
    const { showToast } = useToast();
    // After the ID check, come back to this form (the draft keeps what they typed — loanRequestDraft).
    const { open: openVerify, modal: verifyModal } = useVerifyYourself('loan-request');
+   // "Verify ID & send request": save what they typed first — the ID check leaves this page.
+   const verifyToSend = () => {
+      onVerifyToSend?.();
+      openVerify();
+   };
    // Where they are on the way to their first loan (wallet → Messenger → bio → call → ✅, then apply
    // with the ID check as the last step of sending) and what their next button does.
    const journey = useVerificationJourney(openVerify, user);
@@ -1294,6 +1311,22 @@ export default function LoanRequestModal({
       loanFlow,
       user.loanAccessStatus
    ]);
+
+   // Back from the ID check with the terms they'd already sent off: send them now, through the same
+   // submit path as a tap (so every check — limit, reason, bio, location — still runs and can stop it
+   // on screen). Once per open; waits a frame so the restored terms are on the form first.
+   const autoSubmittedRef = useRef(false);
+   useEffect(() => {
+      if (!isOpen) {
+         autoSubmittedRef.current = false;
+         return;
+      }
+      if (!autoSubmit || !isVerified || autoSubmittedRef.current) return;
+      if (!loanAmount || !totalRepaymentAmount || !reason) return;
+      autoSubmittedRef.current = true;
+      onAutoSubmitStarted?.();
+      window.requestAnimationFrame(() => formRef.current?.requestSubmit());
+   }, [autoSubmit, isOpen, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
 
    // Report the live step + bio + referral up so RequestBoard can snapshot a resumable draft. Runs
    // only while open; the parent decides whether the snapshot is far enough along to keep.
@@ -1801,7 +1834,7 @@ export default function LoanRequestModal({
                setReturnNudge(low);
                return;
             }
-            openVerify();
+            verifyToSend();
             return;
          }
          setVerifyNudge(true);
@@ -2630,7 +2663,7 @@ export default function LoanRequestModal({
                                Each fills a valid future date via the same handler the calendar uses. */}
                            <div className="mt-md-0 flex flex-wrap gap-md-1">
                               {[
-                                 { label: '4 weeks', days: 28 },
+                                 { label: '2 weeks', days: 14 },
                                  { label: '1 month', days: 30 },
                                  { label: '2 months', days: 60 }
                               ].map(({ label, days: offset }) => {
@@ -2991,7 +3024,7 @@ export default function LoanRequestModal({
                      onClick={() => {
                         returnAckRef.current = returnNudge.key;
                         setReturnNudge(null);
-                        if (verifyAtSubmit) openVerify();
+                        if (verifyAtSubmit) verifyToSend();
                         else handleLoanFormSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>);
                      }}
                      type="button"
