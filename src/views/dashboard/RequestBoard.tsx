@@ -616,7 +616,14 @@ function RequestBoard$() {
    }, []);
    const [searchLoan, setSearchLoan] = useState('');
    const [appliedReferral, setAppliedReferral] = useState<AppliedReferralCode | null>(null);
-   const effectiveCreditLimit = isAuthenticated ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser)) : 0;
+   // Through onboarding but not ID-checked yet ('apply'): they fill in the loan form first and verify
+   // as the last step of sending (verifyAtSubmit in LoanRequestModal). Size the form by the limit
+   // they'll have once verified — reading 0 here said "above your current limit of $0" and blocked
+   // every request. Creating the loan itself still requires verification.
+   const isApplyingBeforeIdCheck = !journey.onboarding && journey.stage === 'apply';
+   const effectiveCreditLimit = isAuthenticated
+      ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser) || isApplyingBeforeIdCheck)
+      : 0;
    const borrowerCreditLoans = useMemo(() => {
       if (!borrowerUserId) return [];
 
@@ -1265,18 +1272,6 @@ function RequestBoard$() {
       if (!isFreshlyApproved) return;
       document.querySelector('[data-tour-target="request-apply-card"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
    }, [isFreshlyApproved]);
-
-   // An admin can approve verification straight in the DB (is_didit = 'ACTIVE') while the borrower
-   // is already on the loan form. Nothing pushes that to the client, so the form kept reading the
-   // stale "unverified" profile and showed "above your current limit of $0". Re-read the profile
-   // when the form opens and every 20s while it stays open, until they show as verified.
-   const isEffectiveUserVerified = isUserVerified(effectiveUser);
-   useEffect(() => {
-      if (!showModal || !isAuthenticated || isEffectiveUserVerified) return undefined;
-      void dispatch(fetchUser());
-      const interval = window.setInterval(() => void dispatch(fetchUser()), 20_000);
-      return () => window.clearInterval(interval);
-   }, [dispatch, isAuthenticated, isEffectiveUserVerified, showModal]);
 
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
    // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
