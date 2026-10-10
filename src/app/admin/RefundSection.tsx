@@ -36,9 +36,17 @@ function fullRepayment(loan: ComingDueLoan): number {
    return Number(loan.total_repayment_amount ?? 0);
 }
 
-// Amount to send for a given mode.
+// Amount to send for a given mode, less what the borrower already repaid the lender (the server
+// checks the same amount).
 function settleAmount(loan: ComingDueLoan, mode: SettlementMode): number {
-   return mode === 'platform_settlement' ? fullRepayment(loan) : principal(loan);
+   const target = mode === 'platform_settlement' ? fullRepayment(loan) : principal(loan);
+   return Math.max(0, Math.round((target - Number(loan.repaid_amount ?? 0)) * 1e6) / 1e6);
+}
+
+// Where the refund goes: the wallet the loan was funded from. The server only accepts a payment to
+// this wallet, so never fall back to the lender's profile wallet (it can differ).
+function payToWallet(loan: ComingDueLoan): string | null {
+   return loan.lender_wallet || null;
 }
 
 // A settlement USDC transfer that already landed but whose server-side recording failed. We keep the
@@ -69,6 +77,8 @@ export default function RefundSection() {
    // no second send can ever fire for it — belt-and-braces on top of the disabled buttons and the
    // server-side refunded_at check. A ref (not state) so it's synchronous within a click handler.
    const sendInitiated = useRef<Set<string>>(new Set());
+   // Loans whose payment hash/id we already got back from the wallet, even if payUsdc then failed.
+   const submittedHash = useRef<Set<string>>(new Set());
 
    const method = useActivePaymentMethod();
    const { payUsdc } = useWallet();
@@ -175,7 +185,7 @@ export default function RefundSection() {
          return;
       }
 
-      const lenderWallet = loan.lender?.wallet_address;
+      const lenderWallet = payToWallet(loan);
       if (!lenderWallet) {
          setError('This lender has no wallet on file — cannot send a payment.');
          return;
@@ -217,14 +227,40 @@ export default function RefundSection() {
       setStep('sending');
       let outcome: { hash: string } | null = null;
       try {
-         outcome = await payUsdc({ method, to: lenderWallet, usdAmount: String(amount), loanId: loan.id, coin: loan.coin ?? 'USDC' });
+         // A hash we learn before payUsdc returns (Base Pay approved but still confirming, or a wallet
+         // that answered after the timeout) is kept as pending, so the button stays on "Finish
+         // recording" instead of offering a second send.
+         const keepPending = (hash: string, sentWith: 'wallet' | 'base') => {
+            submittedHash.current.add(loan.id);
+            setPending((prev) => ({ ...prev, [loan.id]: { hash, method: sentWith, reason: trimmedReason, mode } }));
+         };
+         outcome = await payUsdc({
+            method,
+            to: lenderWallet,
+            usdAmount: String(amount),
+            loanId: loan.id,
+            coin: loan.coin ?? 'USDC',
+            onSubmitted: (id) => keepPending(id, 'base'),
+            onLateWalletHash: (hash) => keepPending(hash, 'wallet')
+         });
       } catch (err) {
+         if (submittedHash.current.has(loan.id)) {
+            setError(`${err instanceof Error ? err.message : 'The wallet transfer failed.'} A payment may already be on its way — use “Finish recording”.`);
+            setStep('idle');
+            return;
+         }
          sendInitiated.current.delete(loan.id); // send never happened → allow a retry
          setError(err instanceof Error ? err.message : 'The wallet transfer failed.');
          setStep('idle');
          return;
       }
       if (!outcome) {
+         if (submittedHash.current.has(loan.id)) {
+            // Approved but not confirmed in time: the money may still land. Keep it locked to "Finish recording".
+            setError('The payment was approved but is still confirming. Wait a minute, then use “Finish recording” — do not send again.');
+            setStep('idle');
+            return;
+         }
          // payUsdc self-toasts on rejection/failure and returns null → no money moved.
          sendInitiated.current.delete(loan.id);
          setStep('idle');
@@ -318,13 +354,13 @@ export default function RefundSection() {
                      {shown.map((l) => {
                         const isPending = Boolean(pending[l.id]);
                         const isSent = sendInitiated.current.has(l.id) && !isPending;
-                        const noWallet = !l.lender?.wallet_address;
+                        const noWallet = !payToWallet(l);
                         return (
                            <tr key={l.id} className="border-t border-[#241044] bg-[#150730] align-top">
                               <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.lender?.username ?? '—'}</td>
-                              <td className="px-4 py-3 font-mono text-xs font-medium text-[#a89bb8]" title={l.lender?.wallet_address ?? ''}>
-                                 {shortWallet(l.lender?.wallet_address)}
+                              <td className="px-4 py-3 font-mono text-xs font-medium text-[#a89bb8]" title={payToWallet(l) ?? ''}>
+                                 {shortWallet(payToWallet(l))}
                               </td>
                               <td className="px-4 py-3 text-right text-sm font-black text-white">
                                  {money(principal(l))} {l.coin ?? 'USDC'}
@@ -431,16 +467,17 @@ export default function RefundSection() {
                         <span className="text-[#a89bb8]">{pending[target.id] ? 'Amount (already sent)' : 'Send'}</span>
                         <span className="text-white">
                            {money(modalAmount)} {target.coin ?? 'USDC'}
-                           <span className="ml-2 text-xs font-bold text-[#a89bb8]">{isPlatform ? '(full repayment)' : '(principal)'}</span>
+                           <span className="ml-2 text-xs font-bold text-[#a89bb8]">{isPlatform ? '(full repayment' : '(principal'}
+                              {Number(target.repaid_amount ?? 0) > 0 ? `, less ${money(target.repaid_amount)} already repaid)` : ')'}</span>
                         </span>
                      </div>
                      <div className="flex justify-between gap-4">
                         <span className="text-[#a89bb8]">To lender</span>
-                        <span className="text-white">{target.lender?.username ?? shortWallet(target.lender?.wallet_address)}</span>
+                        <span className="text-white">{target.lender?.username ?? shortWallet(payToWallet(target))}</span>
                      </div>
                      <div className="flex justify-between gap-4">
                         <span className="text-[#a89bb8]">Wallet</span>
-                        <span className="break-all font-mono text-xs text-white">{target.lender?.wallet_address}</span>
+                        <span className="break-all font-mono text-xs text-white">{payToWallet(target)}</span>
                      </div>
                      <div className="flex justify-between gap-4">
                         <span className="text-[#a89bb8]">Loan</span>
@@ -475,7 +512,7 @@ export default function RefundSection() {
                      <button
                         type="button"
                         onClick={handleSettle}
-                        disabled={step !== 'idle' || !target.lender?.wallet_address}
+                        disabled={step !== 'idle' || !payToWallet(target)}
                         className="rounded-full bg-[#8336f0] px-5 py-2 text-sm font-black text-white disabled:opacity-50"
                      >
                         {step === 'checking'

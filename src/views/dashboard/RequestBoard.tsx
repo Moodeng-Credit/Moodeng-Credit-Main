@@ -1939,7 +1939,9 @@ function RequestBoard$() {
    // focused on that exact request: highlight it, scroll it into view, and open it fully (the
    // card mounts expanded via openByDefault) so they land on the ready-to-fund request.
    useEffect(() => {
-      const target = new URLSearchParams(location.search).get('highlight');
+      const params = new URLSearchParams(location.search);
+      // ?loan= is the older spelling, still in Telegram / team posts already sent.
+      const target = params.get('highlight') ?? params.get('loan');
       if (!target || highlightParamRef.current === target) return;
       if (!visibleLoans.some((loan) => loan.id === target)) return;
 
@@ -1953,7 +1955,9 @@ function RequestBoard$() {
    // the public board yet, so it survives a delayed or empty first load.
    useEffect(() => {
       if (isAuthenticated) return;
-      const target = new URLSearchParams(location.search).get('highlight');
+      const params = new URLSearchParams(location.search);
+      // ?loan= is the older spelling, still in Telegram / team posts already sent.
+      const target = params.get('highlight') ?? params.get('loan');
       if (target) setPendingSharedRequestId(target);
    }, [isAuthenticated, location.search]);
 

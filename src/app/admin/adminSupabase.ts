@@ -762,6 +762,8 @@ export interface ComingDueLoan {
    is_test: boolean;
    borrower: ComingDueParty | null;
    lender: ComingDueParty | null;
+   /** The wallet the loan was funded from: where a refund must go (what admin-refund-loan checks). */
+   lender_wallet: string | null;
 }
 
 // Whole calendar days between today and the due date ON THE BORROWER'S CALENDAR, so a loan due later
@@ -787,7 +789,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
    let query = supabase
       .from('loans')
       .select(
-         'id,tracking_id,borrower_user_id,lender_user_id,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
+         'id,tracking_id,borrower_user_id,lender_user_id,lender_wallet,loan_amount,total_repayment_amount,repaid_amount,due_date,due_timezone,funded_at,created_at,reason,coin,repayment_status,is_test'
       )
       .eq('loan_status', 'Lent')
       .in('repayment_status', ['Unpaid', 'Partial'])
@@ -838,6 +840,7 @@ export async function listComingDueLoans({ includeTest = false, limit = 500 }: {
          repayment_status: row.repayment_status ?? null,
          is_test: Boolean(row.is_test),
          borrower: row.borrower_user_id ? (contactsById.get(row.borrower_user_id) ?? null) : null,
+         lender_wallet: row.lender_wallet ?? null,
          lender: row.lender_user_id ? (contactsById.get(row.lender_user_id) ?? null) : null
       };
    });

@@ -176,8 +176,11 @@ export default function App() {
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';
-   const canRepayWhileDefaulted =
-      isDefaultedBorrower && (location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname)));
+   const isOnRepayRoute = location.pathname === '/repay' || (repayReturnTo && REPAY_CONTINUATION_ROUTES.includes(location.pathname));
+   const canRepayWhileDefaulted = isDefaultedBorrower && isOnRepayRoute;
+   // A watchlisted (blocked) borrower still owes their lender: let them reach /repay for any open loan.
+   const canRepayWhileBlocked =
+      user?.accountStatus === 'blocked' && (defaultedBorrower.support.openAmount ?? 0) > 0 && isOnRepayRoute;
    const shouldShowAccountSupport = isAccountRestricted || isDefaultedBorrower;
    const isUserDetailRoute = location.pathname.includes('/progress-history') || location.pathname.includes('/lender-diversity');
    const accountSettingsParams = new URLSearchParams(location.search);
@@ -187,7 +190,7 @@ export default function App() {
    const showBottomNav =
       Boolean(user?.id) &&
       !isAccountSettingsDetail &&
-      (!shouldShowAccountSupport || canRepayWhileDefaulted) &&
+      (!shouldShowAccountSupport || canRepayWhileDefaulted || canRepayWhileBlocked) &&
       (BOTTOM_NAV_ROUTES.includes(location.pathname) ||
          (location.pathname.startsWith('/user/') && !isUserDetailRoute) ||
          location.pathname.startsWith('/support') ||
@@ -229,11 +232,11 @@ export default function App() {
       posthog.reset();
    }, [isPosthogEnabled, user?.email, user?.id, user?.username, username]);
 
-   if (isAccountRestricted && location.pathname !== '/account-restricted') {
+   if (isAccountRestricted && !canRepayWhileBlocked && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
 
-   if (shouldShowAccountSupport && !canRepayWhileDefaulted && location.pathname !== '/account-restricted') {
+   if (shouldShowAccountSupport && !canRepayWhileDefaulted && !canRepayWhileBlocked && location.pathname !== '/account-restricted') {
       return <Navigate to="/account-restricted" replace />;
    }
 

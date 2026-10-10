@@ -21,7 +21,7 @@ describe('calculateDefaultedBorrowerSupport', () => {
          new Date('2026-05-07T00:00:00.000Z')
       );
 
-      expect(support).toEqual({ count: 2, overdueAmount: 70 });
+      expect(support).toEqual({ count: 2, overdueAmount: 70, openAmount: 70 });
    });
 
    it('ignores paid, pending, future, and fully repaid loans', () => {
@@ -35,6 +35,13 @@ describe('calculateDefaultedBorrowerSupport', () => {
          new Date('2026-05-07T00:00:00.000Z')
       );
 
-      expect(support).toEqual({ count: 0, overdueAmount: 0 });
+      // The future-due loan isn't overdue, but it's still open (a blocked borrower can repay it).
+      expect(support).toEqual({ count: 0, overdueAmount: 0, openAmount: 50 });
+   });
+
+   it('reports no open amount when nothing is owed', () => {
+      const support = calculateDefaultedBorrowerSupport([makeLoan({ repayment_status: 'Paid', repaid_amount: 50 })]);
+
+      expect(support.openAmount ?? 0).toBe(0);
    });
 });

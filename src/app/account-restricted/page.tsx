@@ -42,6 +42,8 @@ export default function AccountRestrictedPage() {
    const isRestricted = status === 'blocked' || status === 'banned';
    const defaultedBorrower = useDefaultedBorrowerSupport(!mockStatus && isAuthChecked ? user?.id : null, userLoansFetchedAt);
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
+   // A blocked (watchlisted) borrower can still repay any open loan.
+   const canRepay = isDefaultedBorrower || (status === 'blocked' && (defaultedBorrower.support.openAmount ?? 0) > 0);
    const hasProfileSession = Boolean(user?.id && username);
    const isCheckingAuth = !mockStatus && (!isAuthChecked || isRecoveringSession);
    const isMissingSession = !mockStatus && isAuthChecked && !isRecoveringSession && !hasProfileSession;
@@ -159,7 +161,7 @@ export default function AccountRestrictedPage() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3">
-               {isDefaultedBorrower && (
+               {canRepay && (
                   <Link
                      to="/repay"
                      className="inline-flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#16A34A] px-4 text-base font-semibold tracking-[-0.02em] text-white transition-opacity hover:opacity-95"

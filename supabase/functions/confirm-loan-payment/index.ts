@@ -352,6 +352,17 @@ const applyCreditProgression = async (
    return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: evaluation.nextLimit } };
 };
 
+// True when `wallet` is one the borrower is known to use: their profile wallet, or a wallet one of
+// their loans was paid out to. There is no record of past repayment senders to check against.
+const isKnownBorrowerWallet = async (admin: Admin, borrowerId: string | null, wallet: string): Promise<boolean> => {
+   if (!borrowerId) return false;
+   const target = wallet.toLowerCase();
+   const { data: user } = await admin.from('users').select('wallet_address').eq('id', borrowerId).maybeSingle();
+   if ((user?.wallet_address ?? '').toLowerCase() === target) return true;
+   const { data: loans } = await admin.from('loans').select('borrower_wallet').eq('borrower_user_id', borrowerId);
+   return ((loans ?? []) as { borrower_wallet: string | null }[]).some((row) => (row.borrower_wallet ?? '').toLowerCase() === target);
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
@@ -394,16 +405,35 @@ serve(async (req) => {
 
    const admin = createClient(supabaseUrl, serviceRoleKey);
 
-   const { data: loan, error: loanError } = await admin.from('loans').select('*').eq('id', loanId).single();
-   if (loanError || !loan) {
-      return jsonResponse({ error: 'Loan not found' }, 404);
-   }
-
    // Every hash may only ever fund/repay ONE loan, ever — otherwise a single real payment could
    // be replayed across many loans to fake-fund/repay all of them.
    const { data: existingHash } = await admin.from('used_payment_hashes').select('hash').eq('hash', normalizedHash).maybeSingle();
    if (existingHash) {
       return jsonResponse({ error: 'This transaction has already been used to update a loan' }, 409);
+   }
+
+   const { data: loan, error: loanError } = await admin.from('loans').select('*').eq('id', loanId).maybeSingle();
+   if (loanError) {
+      return jsonResponse({ error: 'Failed to load loan' }, 500);
+   }
+   if (!loan) {
+      // The request was deleted (or never existed) but a lender may already have sent the USDC: if the
+      // payment verifies, tell the team so it can be refunded. Nothing is recorded.
+      if (action === 'fund') {
+         try {
+            const orphan = await verifyPayment(method, hash);
+            await postDiscord(
+               {
+                  content: `⚠️ Loan ${loanId} no longer exists, but a verified ${(Number(orphan.micros) / 1e6).toFixed(2)} USDC funding payment (${(orphan.txHash ?? hash).toLowerCase()}, from ${orphan.from} to ${orphan.to}, lender user ${callerId}) was sent for it. It was NOT recorded and needs refunding.`
+               },
+               { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+            );
+            return jsonResponse({ error: 'This request no longer exists. Contact support for a refund.' }, 409);
+         } catch (err) {
+            if (err instanceof PaymentNotConfirmedError) return jsonResponse({ error: err.message, retry: true }, 202);
+         }
+      }
+      return jsonResponse({ error: 'Loan not found' }, 404);
    }
 
    let expectedRecipient: string | null;
@@ -558,12 +588,28 @@ serve(async (req) => {
       await alertUnrecorded(why);
       return jsonResponse({ error: `This payment couldn't be applied because ${why}. Contact support for a refund.` }, 409);
    }
-   // Paid more than was owed: the loan is closed at its total; the extra goes back to the payer.
-   const overpaidMicros = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
-   if (overpaidMicros > 5000) {
+   // A repayment from a wallet we don't know for this borrower is still recorded (borrowers often pay
+   // from an exchange), but the team should check it really came from them.
+   const senderIsKnown = action === 'repay' ? await isKnownBorrowerWallet(admin, loan.borrower_user_id, transfer.from) : true;
+   if (!senderIsKnown) {
       await postDiscord(
          {
-            content: `⚠️ ${loan.tracking_id}: the borrower paid ${(overpaidMicros / 1e6).toFixed(2)} USDC more than was left (${recordHash}). The loan is closed; the extra needs sending back to ${transfer.from}.`
+            content: `⚠️ ${loan.tracking_id}: repayment from unknown sender — check. ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC (${recordHash}) came from ${transfer.from}, which isn't a wallet on file for this borrower. It was recorded.`
+         },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+      );
+   }
+   // Paid more than was owed: the loan is closed at its total; the extra goes back to the borrower.
+   const overpaidMicros = Number((recorded as { overpaid_micros?: number } | null)?.overpaid_micros ?? 0);
+   if (overpaidMicros > 5000) {
+      // Only name the sender as the refund address when it's one of the borrower's own wallets: an
+      // exchange hot wallet (or someone else's) is not where the borrower's money should go back to.
+      const refundTo = senderIsKnown
+         ? `the extra needs sending back to ${transfer.from}`
+         : `it came from an unknown sender (${transfer.from}), so confirm the borrower's own wallet before refunding the extra`;
+      await postDiscord(
+         {
+            content: `⚠️ ${loan.tracking_id}: the borrower paid ${(overpaidMicros / 1e6).toFixed(2)} USDC more than was left (${recordHash}). The loan is closed; ${refundTo}.`
          },
          { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
       );

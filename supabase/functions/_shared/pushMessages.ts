@@ -185,7 +185,7 @@ const buildRepeatBorrowerPush = (context: RepeatBorrowerPushContext, locale: Pus
       type: 'repeat_borrower_request',
       title: copy[locale].title,
       body: copy[locale].body,
-      url: buildAppUrl(`/lend/loan/${context.loanId}`),
+      url: buildAppUrl(`/request-board?highlight=${context.loanId}`),
       // One notification per request per lender; a re-fire replaces it.
       tag: `repeat-borrower:${context.loanId}`
    };

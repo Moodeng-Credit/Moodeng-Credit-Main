@@ -5,6 +5,7 @@ import {
    getBorrowerTelegramNotificationsEnabled,
    sendBorrowerLoanNotification
 } from '../_shared/borrowerNotificationDelivery.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { LoanNotificationType } from '../_shared/loanNotifications.ts';
 import { postLoanFundedToTeam } from '../_shared/teamLoanFeed.ts';
 import {
@@ -88,17 +89,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
    }
 
+   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+
+   // Server only: confirm-loan-payment / admin-fund-loan call this with the service-role key. Any
+   // signed-in user's JWT passes the gateway, so without this anyone could fire the "funded" message.
+   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+   const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+   const isServiceRole = Boolean(serviceRoleKey) && (bearer === serviceRoleKey || req.headers.get('apikey') === serviceRoleKey);
+   if (!isServiceRole && !(await isInternalRequest(supabase, req))) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+   }
+
    const { loanId } = await req.json().catch(() => ({}));
 
    if (!loanId) {
       return new Response(JSON.stringify({ error: 'loanId is required' }), { status: 400, headers: corsHeaders });
    }
 
-   const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-
    const { data: loan, error: loanError } = await supabase
       .from('loans')
-      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id')
+      .select('id, tracking_id, borrower_user_id, loan_amount, total_repayment_amount, repaid_amount, due_date, funded_at, lender_user_id, loan_status')
       .eq('id', loanId)
       .maybeSingle();
 
@@ -108,6 +118,11 @@ serve(async (req) => {
 
    if (!loan) {
       return new Response(JSON.stringify({ error: 'Loan not found' }), { status: 404, headers: corsHeaders });
+   }
+
+   // Only a loan that really is funded: never announce a request that's still open.
+   if (loan.loan_status !== 'Lent' || !loan.funded_at) {
+      return new Response(JSON.stringify({ error: 'Loan is not funded' }), { status: 409, headers: corsHeaders });
    }
 
    if (!loan.borrower_user_id) {
