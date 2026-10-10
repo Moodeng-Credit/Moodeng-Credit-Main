@@ -342,7 +342,9 @@ export const sendWebPush = async (
       // A 403 VAPID mismatch means the subscription was made under an earlier key pair (keys were
       // rotated on 2026-09-25). It can never receive anything again; the device resubscribes under
       // the current key next time the app opens, so drop the dead row too.
-      const vapidMismatch = response.status === 403 && /do not correspond|vapid/i.test(error);
+      // Firefox's push service answers the same condition with 401 "VAPID public key mismatch"
+      // (errno 109), so match both statuses — otherwise those rows were retried forever.
+      const vapidMismatch = (response.status === 403 || response.status === 401) && /do not correspond|vapid/i.test(error);
       const expired = response.status === 404 || response.status === 410 || vapidMismatch;
 
       return { ok: false, status: response.status, expired, error: error.slice(0, 300) };
