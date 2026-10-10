@@ -7,9 +7,10 @@
 //   KEEP_SPOT    ≤ 2h before    unconfirmed only: "Still coming? Tap to keep your spot"
 //   HOUR         ≤ ~1h before   unconfirmed + asked above → slot released; otherwise "starts in
 //                               under an hour"
-//   STARTING     ≤ 5 min before "Starting now 👋 tap to join" (skipped if Zoom already saw them)
+//   STARTING     ≤ 5 min before "Starting now 👋 tap to join" (skipped if Zoom already saw them);
+//                               admins get the Showed up / No-show card now, to decide right after
 //   WAITING      ≥ 3 min after  Zoom wired up and hasn't seen them: "We're ready for you!"
-//   PROMPT       ≥ 20 min after admins: "Did Maria show up?" with the Zoom evidence
+//   PROMPT       ≥ 20 min after still undecided: admins re-asked "Did Maria show up?" + Zoom evidence
 //   AUTO_NO_SHOW ≥ 60 min after Zoom wired up, never saw them, nobody tapped → no-show recorded
 //
 // A tick only acts on the highest rung a booking has reached, so a late first tick (deploy, cron

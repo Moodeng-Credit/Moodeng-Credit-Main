@@ -12,6 +12,7 @@ import AdminSearch from '@/app/admin/AdminSearch';
 import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
+import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
@@ -302,6 +303,8 @@ export default function AdminPanel() {
    const setActiveTab = (tab: AdminTab) => navigate(tab === 'users' ? '/admin' : `/admin/${tab}`);
    // When the team clicks "Extend" on a coming-due loan, jump to the extensions tab with it preselected.
    const [extensionLoanId, setExtensionLoanId] = useState<string | null>(null);
+   // People waiting on a call decision — reported by the Call approvals tab once it has loaded.
+   const [callApprovalCount, setCallApprovalCount] = useState(0);
    const [admin, setAdmin] = useState<AdminUser | null>(null);
    const [overview, setOverview] = useState<AdminOverview | null>(null);
    const [integrityRun, setIntegrityRun] = useState<AdminIntegrityRun | null>(null);
@@ -672,6 +675,7 @@ export default function AdminPanel() {
          adminInitial={adminInitial}
          groups={visibleNavGroups}
          counts={{
+            calls: callApprovalCount,
             requests: overview?.loanRequestReviewCount ?? 0,
             defaults: overview?.defaultedLoanCount ?? 0,
             risk: overview?.highRiskProfileCount ?? 0
@@ -1692,6 +1696,8 @@ export default function AdminPanel() {
                <CampaignsSection />
             </section>
          ) : null}
+
+         {activeTab === 'calls' ? <CallApprovalsSection onCountChange={setCallApprovalCount} /> : null}
 
          {activeTab === 'calendar' ? <CalendarSection /> : null}
 

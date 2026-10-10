@@ -2716,3 +2716,44 @@ export async function updateAdminCalendarSchedule(input: {
    const result = await invokeAdminCalendar<{ schedule: CalSchedule | null }>({ action: 'update_schedule', ...input });
    return result.schedule;
 }
+
+// ---- Call approvals (admin-call-approvals edge function) ------------------------------------------
+
+export interface AdminCallApprovalRow {
+   userId: string;
+   name: string;
+   username: string | null;
+   loanAccessStatus: string | null;
+   callStartsAt: string | null;
+   host: string | null;
+   joinUrl: string | null;
+   attendance: string | null;
+   outcome: 'attended' | 'no_show' | null;
+   outcomeAt: string | null;
+   request: { id: string; kind: string; reason: string | null; createdAt: string } | null;
+}
+
+export type AdminCallDecision =
+   | { userId: string; decision: 'attended' | 'no_show' }
+   | { requestId: string; decision: 'approved' | 'rejected' };
+
+async function invokeAdminCallApprovals<T>(body: Record<string, unknown>): Promise<T> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-call-approvals', { body });
+   if (error) {
+      const ctx = (error as { context?: Response }).context;
+      const payload = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null;
+      throw new Error((payload as { error?: string } | null)?.error ?? error.message ?? 'Call approvals request failed.');
+   }
+   const result = data as T & { error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result;
+}
+
+export async function getAdminCallApprovals(): Promise<AdminCallApprovalRow[]> {
+   const result = await invokeAdminCallApprovals<{ rows: AdminCallApprovalRow[] }>({ action: 'list' });
+   return result.rows ?? [];
+}
+
+export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: boolean; summary: string }> {
+   return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'decide', ...input });
+}

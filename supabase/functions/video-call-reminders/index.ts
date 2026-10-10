@@ -176,7 +176,12 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
          return 'hour';
       }
       case RUNG.STARTING: {
-         if (u.video_call_arrived_at) return null;
+         // The admins' Showed up / No-show card goes out now, not 20 min in, so a borrower can be
+         // approved the moment the call ends. Best-effort: it must never block the borrower's ping.
+         await promptAdminsForAttendance(svc, u.id, { starting: true }).catch((err) =>
+            console.error('video-call-reminders: early attendance card failed for', u.id, err instanceof Error ? err.message : err)
+         );
+         if (u.video_call_arrived_at) return 'starting';
          const body = `Your call is starting now — ${at}. Tap to join.`;
          await push(svc, u, 'Your Moodeng call is starting now 👋', body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
          await telegram(u, `Your Moodeng call is starting now 👋\n\n${body}`, joinButton(u));
