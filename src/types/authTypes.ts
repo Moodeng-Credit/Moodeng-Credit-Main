@@ -111,6 +111,8 @@ export interface User {
    notifTransactionActivity: boolean;
    /** Whether the user wants blog/news/weekly digest notifications */
    notifBlogs: boolean;
+   /** Account-level push switch (per-device opt-out lives in localStorage) */
+   notifPush?: boolean;
    createdAt: string;
    updatedAt: string;
 }

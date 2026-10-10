@@ -106,6 +106,30 @@ const removeStoredSubscription = async (endpoint: string) => {
    }
 };
 
+// Per-device opt-out. Set when the user taps "Turn off" so the silent re-sync on the next page load
+// can never bring the subscription back; cleared only by a deliberate "Turn on".
+const OPT_OUT_STORAGE_KEY = 'moodeng-push-opted-out';
+
+export const isPushOptedOut = (): boolean => {
+   try {
+      return window.localStorage.getItem(OPT_OUT_STORAGE_KEY) === '1';
+   } catch {
+      return false;
+   }
+};
+
+const setPushOptedOut = (optedOut: boolean) => {
+   try {
+      if (optedOut) {
+         window.localStorage.setItem(OPT_OUT_STORAGE_KEY, '1');
+      } else {
+         window.localStorage.removeItem(OPT_OUT_STORAGE_KEY);
+      }
+   } catch {
+      // Storage blocked: the silent sync below still never creates a new subscription.
+   }
+};
+
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
 export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
@@ -200,6 +224,13 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
       return 'not-configured';
    }
 
+   if (promptIfNeeded) {
+      // A deliberate "Turn on" overrides any earlier opt-out on this device.
+      setPushOptedOut(false);
+   } else if (isPushOptedOut()) {
+      return 'permission-dismissed';
+   }
+
    if (Notification.permission === 'denied') {
       return 'permission-denied';
    }
@@ -228,6 +259,12 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
          // may be missing (new account on this device) or hold a stale locale.
          const stored = await persistSubscription(existing, locale);
          return stored ? 'already-subscribed' : 'failed';
+      }
+
+      if (!promptIfNeeded && !existing) {
+         // Silent sync only re-saves (or re-keys) a subscription that already exists. Creating one
+         // here would undo a "Turn off" behind the user's back.
+         return 'permission-dismissed';
       }
 
       if (existing) {
@@ -265,6 +302,8 @@ export const unsubscribeFromPush = async (): Promise<boolean> => {
       return false;
    }
 
+   setPushOptedOut(true);
+
    const registration = await registerPushServiceWorker();
    const subscription = await registration?.pushManager.getSubscription();
 
@@ -275,6 +314,23 @@ export const unsubscribeFromPush = async (): Promise<boolean> => {
    await removeStoredSubscription(subscription.endpoint);
 
    return subscription.unsubscribe();
+};
+
+/**
+ * Detaches this device from the signed-in account (call before sign-out, while the session can
+ * still delete its own row). The browser subscription itself is kept, so whoever signs in next on
+ * this device is re-attached by the silent sync without a new permission prompt.
+ */
+export const detachPushSubscriptionForSignOut = async (): Promise<void> => {
+   if (!isPushSupported() || Notification.permission !== 'granted') {
+      return;
+   }
+
+   const registration = await registerPushServiceWorker();
+   const subscription = await registration?.pushManager.getSubscription();
+   if (subscription) {
+      await removeStoredSubscription(subscription.endpoint);
+   }
 };
 
 /** True when this device currently holds a live push subscription. */

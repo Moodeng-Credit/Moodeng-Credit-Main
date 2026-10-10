@@ -87,12 +87,15 @@ serve(async (req) => {
       subject?: string;
       message?: string;
       dedupeKey?: string;
+      // Account/loan notices that must reach the person even if they unsubscribed from marketing.
+      transactional?: boolean;
    } | null;
    if (!body || body.action !== 'send') return json({ error: 'Unknown action' }, 400);
 
    const subject = (body.subject ?? '').trim();
    const message = (body.message ?? '').trim();
    const dedupeKey = (body.dedupeKey ?? '').trim() || null;
+   const transactional = body.transactional === true;
    const recipients = (Array.isArray(body.recipients) ? body.recipients : []).filter(
       (r): r is Recipient => typeof r?.userId === 'string' && r.userId.length > 0
    );
@@ -103,7 +106,7 @@ serve(async (req) => {
 
    const ids = [...new Set(recipients.map((r) => r.userId))];
    const [{ data: users, error: usersError }, { data: kyc }] = await Promise.all([
-      svc.from('users').select('id, email, display_name').in('id', ids),
+      svc.from('users').select('id, email, display_name, email_unsubscribed_at').in('id', ids),
       svc
          .from('kyc_identities')
          .select('user_id, first_name, session_created_at')
@@ -117,7 +120,9 @@ serve(async (req) => {
       if (row.first_name?.trim() && !kycFirstName.has(row.user_id)) kycFirstName.set(row.user_id, row.first_name.trim());
    }
    const userById = new Map(
-      ((users ?? []) as Array<{ id: string; email: string | null; display_name: string | null }>).map((u) => [u.id, u])
+      (
+         (users ?? []) as Array<{ id: string; email: string | null; display_name: string | null; email_unsubscribed_at: string | null }>
+      ).map((u) => [u.id, u])
    );
 
    let alreadySent = new Set<string>();
@@ -145,6 +150,10 @@ serve(async (req) => {
       }
       if (!email) {
          results.push({ userId: recipient.userId, email, name, status: 'failed', reason: 'no_email' });
+         continue;
+      }
+      if (user.email_unsubscribed_at && !transactional) {
+         results.push({ userId: recipient.userId, email, name, status: 'skipped', reason: 'unsubscribed' });
          continue;
       }
       if (alreadySent.has(recipient.userId)) {

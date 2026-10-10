@@ -1,15 +1,20 @@
 import { type JSX, useEffect, useRef, useState } from 'react';
 
+import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { consumeAuthReturnTo } from '@/lib/authReturn';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
+import { getPostSignInPath } from '@/lib/postSignInPath';
 import { consumeLineState, getLineRedirectUri } from '@/lib/lineAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { fetchUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 
 export default function LineCallbackPage(): JSX.Element {
    const navigate = useNavigate();
+   const dispatch = useDispatch<AppDispatch>();
    const [error, setError] = useState<string | null>(null);
    // The auth code is single-use; guard against the effect running twice
    // (StrictMode / remount) which would consume the state then fail the rerun.
@@ -72,27 +77,22 @@ export default function LineCallbackPage(): JSX.Element {
          const { data: sessionData } = await supabase.auth.getSession();
          const userId = sessionData?.session?.user?.id;
 
-         if (userId) {
-            const { data: profile } = await supabase
-               .from('users')
-               .select('username')
-               .eq('id', userId)
-               .maybeSingle();
-
-            if (profile?.username) {
-               navigate('/dashboard', { replace: true });
-            } else {
-               navigate('/onboarding/role', { replace: true });
-            }
-         } else {
-            navigate('/onboarding/role', { replace: true });
+         if (!userId) {
+            navigate('/sign-in', { replace: true });
+            return;
          }
+
+         // Load (and, for a first sign-in, create) the profile row before routing, then apply the
+         // same restricted / defaulted-borrower checks as every other sign-in method.
+         const user = await dispatch(fetchUser()).unwrap();
+         const nextPath = await getPostSignInPath(user);
+         navigate(nextPath === '/dashboard' && !user.userRole ? '/onboarding/role' : nextPath, { replace: true });
       };
 
       run().catch((err: unknown) => {
          setError(err instanceof Error ? err.message : 'Unexpected error during LINE login.');
       });
-   }, [navigate]);
+   }, [dispatch, navigate]);
 
    if (error) {
       return (

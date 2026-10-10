@@ -11,32 +11,12 @@ import {
    SocialAuthButtons
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
-import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
+import { getPostSignInPath } from '@/lib/postSignInPath';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
-
-const getPostSignInPath = async (user: { id: string; accountStatus?: string }) => {
-   if (user.accountStatus === 'blocked' || user.accountStatus === 'banned') {
-      return '/account-restricted';
-   }
-
-   const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
-   if (defaultedBorrower.overdueAmount > 0) return '/account-restricted';
-
-   // If they arrived via a shared request link before signing in, return them to that exact
-   // request (opened on the board) instead of the generic dashboard.
-   const sharedRequestId = getPendingSharedRequestId();
-   if (sharedRequestId) {
-      clearPendingSharedRequestId();
-      return `/request-board?highlight=${encodeURIComponent(sharedRequestId)}`;
-   }
-
-   return '/dashboard';
-};
 
 // Supabase Auth refuses banned accounts with "User is banned" (code user_banned); the Google and
 // Telegram edge functions pass that through. Show it plainly instead of a credentials error.

@@ -161,11 +161,15 @@ export const deliverToPerson = async (
 };
 
 // Did anything (a manual campaign or an automation) reach them in the last `days`? The weekly cap.
-export const contactedWithin = async (svc: Svc, userIds: string[], days: number): Promise<Set<string>> => {
+// `excludeCampaignId`: ignore that campaign's own sends, so retrying a half-failed send isn't capped
+// by the parts of it that already went out.
+export const contactedWithin = async (svc: Svc, userIds: string[], days: number, excludeCampaignId?: string): Promise<Set<string>> => {
    if (!userIds.length) return new Set();
    const since = new Date(Date.now() - days * 86400000).toISOString();
+   let manualQuery = svc.from('admin_campaign_sends').select('user_id').in('user_id', userIds).eq('status', 'sent').gte('created_at', since);
+   if (excludeCampaignId) manualQuery = manualQuery.neq('campaign_id', excludeCampaignId);
    const [{ data: manual }, { data: auto }] = await Promise.all([
-      svc.from('admin_campaign_sends').select('user_id').in('user_id', userIds).eq('status', 'sent').gte('created_at', since),
+      manualQuery,
       svc.from('admin_automation_sends').select('user_id').in('user_id', userIds).eq('status', 'sent').gte('created_at', since)
    ]);
    return new Set([...((manual ?? []) as Array<{ user_id: string }>), ...((auto ?? []) as Array<{ user_id: string }>)].map((r) => r.user_id));
