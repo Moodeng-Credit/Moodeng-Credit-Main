@@ -413,5 +413,12 @@ export const thaiCoverageE: Record<string, string> = {
       'ไม่มีแอป Messenger? เปิด Facebook ค้นหา Moodeng Credit แตะส่งข้อความ แล้วส่งรหัสที่นั่น',
    '1 min': '1 นาที',
    'Getting your code…': 'กำลังรับรหัสของคุณ…',
-   'We give you a short code to send us on Messenger': 'เราจะให้รหัสสั้นๆ ให้คุณส่งหาเราทาง Messenger'
+   'We give you a short code to send us on Messenger': 'เราจะให้รหัสสั้นๆ ให้คุณส่งหาเราทาง Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'เชื่อมต่อทาง Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'แตะปุ่มสีน้ำเงิน แชทของเราจะเปิดใน Messenger',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'แตะ Get Started (เริ่มต้นใช้งาน) หรือส่งข้อความหาเรา เราจะเชื่อมต่อให้อัตโนมัติ',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'ผ่านไปหนึ่งนาทียังไม่เป็นสีเขียว? วางรหัส (คัดลอกไว้แล้ว) แล้วกดส่ง'
 };

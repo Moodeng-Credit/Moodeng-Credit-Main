@@ -654,5 +654,12 @@ export const indonesianCoverageE: Record<string, string> = {
       'Tidak punya aplikasi Messenger? Buka Facebook, cari Moodeng Credit, ketuk Kirim Pesan, lalu kirim kodenya di sana.',
    '1 min': '1 menit',
    'Getting your code…': 'Mengambil kode kamu…',
-   'We give you a short code to send us on Messenger': 'Kami beri kode singkat untuk kamu kirim ke kami lewat Messenger'
+   'We give you a short code to send us on Messenger': 'Kami beri kode singkat untuk kamu kirim ke kami lewat Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'Hubungkan di Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'Ketuk tombol biru. Chat kami terbuka di Messenger.',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'Ketuk Get Started (Mulai), atau kirim pesan ke kami. Kami hubungkan kamu otomatis.',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'Belum hijau setelah satu menit? Tempel kodenya (sudah tersalin) lalu kirim.'
 };

@@ -86,5 +86,12 @@ export const filipinoCoverageE: Record<string, string> = {
       'Walang Messenger app? Buksan ang Facebook, i-search ang Moodeng Credit, i-tap ang Message, at doon i-send ang code.',
    '1 min': '1 minuto',
    'Getting your code…': 'Kinukuha ang code mo…',
-   'We give you a short code to send us on Messenger': 'Bibigyan ka namin ng maikling code na ise-send mo sa amin sa Messenger'
+   'We give you a short code to send us on Messenger': 'Bibigyan ka namin ng maikling code na ise-send mo sa amin sa Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'Mag-connect sa Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'I-tap ang blue na button. Magbubukas ang chat namin sa Messenger.',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'I-tap ang Get Started, o mag-send ng message sa amin. Awtomatiko ka naming iko-connect.',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'Hindi pa green pagkalipas ng isang minuto? I-paste ang code (nakakopya na) at i-send.'
 };
