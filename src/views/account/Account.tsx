@@ -311,7 +311,7 @@ export default function Account() {
       <div className="min-h-screen bg-md-neutral-200">
          <div className="max-w-[440px] mx-auto pb-28 flex flex-col">
             {/* User header */}
-            <div className="flex items-center justify-between gap-3 px-md-5 py-md-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-md-5 py-md-3">
                <div className="flex min-w-0 flex-1 gap-4 items-center">
                   <button
                      type="button"
@@ -351,34 +351,17 @@ export default function Account() {
                            <span className="text-md-b3 font-semibold text-md-green-900">{copy.verified}</span>
                         </span>
                      ) : (
-                        <span className="inline-flex w-fit items-center gap-1 rounded-md-sm bg-md-red-100 px-md-1 py-md-0">
-                           <span className="flex h-3 w-3 items-center justify-center rounded-full bg-md-red-800">
-                              <span className="text-[8px] font-bold text-white">!</span>
-                           </span>
-                           <span className="text-md-b3 font-semibold text-md-red-800">{copy.notVerified}</span>
+                        // Soft amber pill on one line: the old red box wrapped "Not / Verified" onto two
+                        // lines next to the header buttons and read like an error.
+                        <span className="inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full bg-[#fff4e0] px-2.5 py-0.5">
+                           <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-[#e08a00]" />
+                           <span className="text-[13px] font-semibold text-[#9a5b00]">{copy.notVerified}</span>
                         </span>
                      )}
                   </div>
                </div>
 
                <div className="flex shrink-0 items-center gap-2">
-                  {!hasWallet ? (
-                     <button
-                        type="button"
-                        onClick={() => navigate('/onboarding/wallet')}
-                        className="flex items-center gap-2.5 border border-md-blue-400 rounded-md-pill px-4 py-3 bg-white shrink-0"
-                     >
-                        <div
-                           className="w-5 h-5 shrink-0 bg-md-blue-400"
-                           style={{
-                              ...ICON_MASK_BASE,
-                              WebkitMaskImage: "url('/icons/wallet.png')",
-                              maskImage: "url('/icons/wallet.png')"
-                           }}
-                        />
-                        <span className="text-md-b2 font-semibold text-md-blue-400">{walletSetupLabel}</span>
-                     </button>
-                  ) : null}
                   {/* Help lives here now, not on the nav bar. */}
                   <button
                      type="button"
@@ -396,6 +379,24 @@ export default function Account() {
                      <span className="text-md-b2 font-semibold text-md-neutral-1200">{copy.helpLabel}</span>
                   </button>
                </div>
+               {/* Its own full-width row: next to Help it squeezed the name and badge on phones. */}
+               {!hasWallet ? (
+                  <button
+                     type="button"
+                     onClick={() => navigate('/onboarding/wallet')}
+                     className="flex w-full items-center justify-center gap-2.5 rounded-md-pill border border-md-blue-400 bg-white px-4 py-3"
+                  >
+                     <div
+                        className="w-5 h-5 shrink-0 bg-md-blue-400"
+                        style={{
+                           ...ICON_MASK_BASE,
+                           WebkitMaskImage: "url('/icons/wallet.png')",
+                           maskImage: "url('/icons/wallet.png')"
+                        }}
+                     />
+                     <span className="text-md-b2 font-semibold text-md-blue-400">{walletSetupLabel}</span>
+                  </button>
+               ) : null}
             </div>
 
             {/* Content */}
