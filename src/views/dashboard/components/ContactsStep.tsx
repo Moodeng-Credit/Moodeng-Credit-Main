@@ -9,7 +9,7 @@ import {
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
-   MESSENGER_PAGE_CHAT_LINK,
+   MESSENGER_APP_CHAT_LINK,
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
@@ -27,7 +27,7 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 //   * Messenger — the m.me link launches SendPulse's "Confirm Facebook" flow with the code attached;
 //     the flow calls sendpulse-messenger-verify, which matches it. Just opening the link is enough
 //     (first-time chatters tap Facebook's own "Get Started" once). Not on Android: Chrome there never
-//     opens m.me in Messenger (see MESSENGER_PAGE_CHAT_LINK), so Android borrowers get the code on
+//     opens m.me in Messenger (see MESSENGER_APP_CHAT_LINK), so Android borrowers get the code on
 //     screen, one tap copies it and opens our chat, and they paste and send it.
 // Both stamp the verified-at column plus an id we can message them on. This component polls those
 // columns rather than trusting anything the client says — the point is a line we can prove works.
@@ -405,7 +405,7 @@ export default function ContactsStep({
          });
       leftAtRef.current = null;
       awaitingMessengerRef.current = true;
-      writePending({ userId, code: messengerCode, link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
+      writePending({ userId, code: messengerCode, link: MESSENGER_APP_CHAT_LINK, at: Date.now() });
       armNotOpenedCheck();
    };
 
@@ -440,11 +440,11 @@ export default function ContactsStep({
          });
          if (channel === 'messenger' && androidMessenger) {
             // Nothing opens yet: the card now shows the code and the button that opens our chat.
-            setMessengerLink(MESSENGER_PAGE_CHAT_LINK);
+            setMessengerLink(MESSENGER_APP_CHAT_LINK);
             setMessengerCode(String(code));
             leftForMessengerRef.current = false;
             awaitingMessengerRef.current = true;
-            writePending({ userId, code: String(code), link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
+            writePending({ userId, code: String(code), link: MESSENGER_APP_CHAT_LINK, at: Date.now() });
             startPolling(channel);
             return;
          }
@@ -518,7 +518,7 @@ export default function ContactsStep({
                {/* A plain link the borrower taps, as in the Android test: opened from script after the
                    code request, or as m.me, Messenger never comes up. */}
                <a
-                  href={MESSENGER_PAGE_CHAT_LINK}
+                  href={MESSENGER_APP_CHAT_LINK}
                   onClick={openMessengerChat}
                   className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
                >
