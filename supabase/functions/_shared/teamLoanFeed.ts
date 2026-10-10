@@ -84,7 +84,7 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
       const zone = loanTimezone(loan, zones.get(loan.borrower_user_id) ?? 'Asia/Manila');
       const due = loan.due_date ? formatDeadlineForTeam(loan.due_date, zone, await getTeamTimezone(svc)) : '—';
       const tx = buildTxExplorerLink(loan.hash?.[0]);
-      const url = `${siteUrl()}/request-board?loan=${loan.id}`;
+      const url = `${siteUrl()}/request-board?highlight=${loan.id}`;
 
       const lines = [
          `💰 ${handle(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,

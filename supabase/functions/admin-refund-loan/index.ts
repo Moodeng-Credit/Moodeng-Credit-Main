@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { postDiscord } from '../_shared/discord.ts';
+
 // Admin refund flow.
 //
 // An active admin repays a LENDER out of the admin's own wallet for an outstanding loan, and this
@@ -244,8 +246,12 @@ serve(async (req) => {
    if (loan.repayment_status === 'Paid') return json({ error: 'This loan is already fully repaid — nothing to refund' }, 409);
    if (!loan.lender_wallet) return json({ error: 'Loan is missing a lender wallet to refund to' }, 409);
 
-   // Refund = principal only; platform settlement = the full repayment the lender was promised.
-   const settleAmount = settlementMode === 'platform_settlement' ? Number(loan.total_repayment_amount) : Number(loan.loan_amount);
+   // Refund = principal only; platform settlement = the full repayment the lender was promised. Either
+   // way, less whatever the borrower already repaid to the lender (they already have that part).
+   const alreadyRepaid = Math.max(0, Number(loan.repaid_amount ?? 0));
+   const settleTarget = settlementMode === 'platform_settlement' ? Number(loan.total_repayment_amount) : Number(loan.loan_amount);
+   const settleAmount = Math.max(0, Math.round((settleTarget - alreadyRepaid) * 1e6) / 1e6);
+   if (!(settleAmount > 0)) return json({ error: 'The lender has already been repaid at least this much — nothing to send' }, 409);
    const requiredMicros = BigInt(Math.round(settleAmount * 1e6));
    const expectedRecipient = loan.lender_wallet.toLowerCase();
 
@@ -313,9 +319,20 @@ serve(async (req) => {
          hash: [...(loan.hash ?? []), recordHash]
       })
       .eq('id', loanId)
+      // Conditional: two refund payments recorded at once (or a second hash later) can't both close it.
+      .is('refunded_at', null)
       .select()
-      .single();
-   if (updateError || !updatedLoan) return json({ error: updateError?.message || 'Failed to cancel the loan' }, 500);
+      .maybeSingle();
+   if (updateError) return json({ error: updateError.message || 'Failed to cancel the loan' }, 500);
+   if (!updatedLoan) {
+      await postDiscord(
+         {
+            content: `⚠️ ${loan.tracking_id}: a second verified refund payment (${recordHash}, ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC to ${transfer.to}) arrived after the loan was already refunded. The lender was paid twice; recover the extra.`
+         },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+      );
+      return json({ error: 'This loan has already been refunded' }, 409);
+   }
 
    // --- (3) Ledger ---
    const { error: ledgerError } = await admin.from('loan_refunds').insert({

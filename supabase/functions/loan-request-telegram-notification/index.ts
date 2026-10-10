@@ -50,7 +50,7 @@ const authorizeInternalRequest = async (supabase: SupabaseClient, req: Request) 
 
 const buildLoanUrl = (loanId: string) => {
    const siteUrl = Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app';
-   return `${siteUrl.replace(/\/$/, '')}/request-board?loan=${loanId}`;
+   return `${siteUrl.replace(/\/$/, '')}/request-board?highlight=${loanId}`;
 };
 
 serve(async (req) => {

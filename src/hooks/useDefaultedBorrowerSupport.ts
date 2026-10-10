@@ -6,7 +6,6 @@ import {
    type DefaultedBorrowerSupport
 } from '@/lib/defaultedBorrowerSupport';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
-import { LOAN_OVERDUE_GRACE_HOURS } from '@/utils/loanOverdue';
 
 type DefaultedBorrowerSupportState = {
    support: DefaultedBorrowerSupport;
@@ -20,20 +19,17 @@ export async function fetchDefaultedBorrowerSupport(userId: string): Promise<Def
       return EMPTY_DEFAULTED_BORROWER_SUPPORT;
    }
 
-   // Only loans past the 24h grace window count as defaulted — a loan due today (within grace) must
-   // not flag the borrower, or they get bounced to /account-restricted and can't reach /repay to pay
-   // it off. Mirrors the lender-side grace (PR #872/#873) and the loan-overdue-notifications job.
-   // That 24h prefilter is safe: a loan is never past due sooner than due_date + 24h.
-   // calculateDefaultedBorrowerSupport then applies the end-of-their-day rule (due_timezone).
-   const graceThreshold = new Date(Date.now() - LOAN_OVERDUE_GRACE_HOURS * 60 * 60 * 1000).toISOString();
+   // Only loans past their due day count as defaulted — a loan due today must not flag the borrower,
+   // or they get bounced to /account-restricted and can't reach /repay to pay it off. All open loans
+   // are fetched (not just overdue ones) so a blocked borrower with any open loan can still repay;
+   // calculateDefaultedBorrowerSupport applies the end-of-their-day rule (due_timezone).
    const supabase = getSupabaseBrowserClient();
    const { data, error } = await supabase
       .from('loans')
       .select('due_date, due_timezone, loan_status, repayment_status, repaid_amount, total_repayment_amount')
       .eq('borrower_user_id', userId)
       .eq('loan_status', 'Lent')
-      .neq('repayment_status', 'Paid')
-      .lt('due_date', graceThreshold);
+      .neq('repayment_status', 'Paid');
 
    if (error) {
       throw new Error(error.message);

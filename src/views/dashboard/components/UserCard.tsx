@@ -293,11 +293,18 @@ export default function UserCard(loan: UserCardProps) {
             showToast(TOAST_TYPES.INFO, 'Payment still confirming', 'Your last payment for this loan is still confirming. It will update here shortly. Please don’t pay again.');
             return;
          }
-         const { data: liveLoan } = await getSupabaseBrowserClient()
+         const { data: liveLoan, error: liveLoanError } = await getSupabaseBrowserClient()
             .from('loans')
             .select('loan_status, lender_user_id, on_hold_since, created_at, due_date, due_timezone')
             .eq('id', loanData.id)
             .maybeSingle();
+         // The read worked but returned nothing: lenders can't see a request once someone else funded
+         // it (or the borrower deleted it), so it's gone. Stop here rather than skip every check and pay.
+         if (!liveLoanError && !liveLoan) {
+            showToast(TOAST_TYPES.WARNING, 'No longer available', 'This request was just funded or removed.');
+            void dispatch(fetchLoans());
+            return;
+         }
          // Requests expire after 7 days; the board only refreshes every minute, so check right now.
          if (liveLoan?.created_at && isExpiredUnfundedRequest({ createdAt: liveLoan.created_at, loanStatus: liveLoan.loan_status })) {
             showToast(TOAST_TYPES.WARNING, 'This request has expired', 'The borrower needs to post a new request.');
