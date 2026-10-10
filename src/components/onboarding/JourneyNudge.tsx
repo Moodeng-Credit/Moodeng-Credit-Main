@@ -1,13 +1,15 @@
 import { type PointerEvent, useEffect, useRef, useState } from 'react';
 
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+
 import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
+
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
@@ -32,6 +34,15 @@ const RESUME_PAGES = new Set(['/', '/dashboard', '/request-board']);
 // this visit only.
 const DRAG_THRESHOLD_PX = 6;
 const OFFSET_KEY = 'moodeng-journey-nudge-offset';
+// The little ✕ hides the bar for this visit; it's back after a sign-out or the next app open.
+const HIDDEN_KEY = 'moodeng-journey-nudge-hidden';
+const readHidden = () => {
+   try {
+      return window.sessionStorage.getItem(HIDDEN_KEY) === '1';
+   } catch {
+      return false;
+   }
+};
 const readOffset = () => {
    try {
       return Number(window.sessionStorage.getItem(OFFSET_KEY)) || 0;
@@ -77,6 +88,7 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
    const journey = useVerificationJourney();
    const checkedRef = useRef(false);
    const [offset, setOffset] = useState(readOffset);
+   const [hidden, setHidden] = useState(readHidden);
    const dragRef = useRef<{ startY: number; startOffset: number; moved: boolean } | null>(null);
    const suppressClickRef = useRef(false);
 
@@ -164,26 +176,58 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
       journey.go();
    };
 
-   if (!active || !bottomNavVisible || location.pathname === '/request-board' || !journey.step) return null;
+   // Signing out brings the bar back for the next sign-in.
+   useEffect(() => {
+      if (user) return;
+      setHidden(false);
+      try {
+         window.sessionStorage.removeItem(HIDDEN_KEY);
+      } catch {
+         // ignore
+      }
+   }, [user]);
+
+   const hide = () => {
+      setHidden(true);
+      try {
+         window.sessionStorage.setItem(HIDDEN_KEY, '1');
+      } catch {
+         // ignore
+      }
+   };
+
+   if (hidden || !active || !bottomNavVisible || location.pathname === '/request-board' || !journey.step) return null;
 
    return (
-      <button
-         className="fixed left-1/2 z-40 flex w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 touch-none select-none items-center gap-3 rounded-[18px] bg-[#6b55f7] px-4 py-3 text-left text-white shadow-[0_6px_18px_rgba(107,85,247,0.35)] active:scale-[0.99]"
-         onClick={onClick}
-         onPointerCancel={onPointerUp}
-         onPointerDown={onPointerDown}
-         onPointerMove={onPointerMove}
-         onPointerUp={onPointerUp}
+      <div
+         className="fixed left-1/2 z-40 w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2"
          style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${118 - offset}px)` }}
-         title="Drag to move"
-         type="button"
       >
-         <span aria-hidden="true" className="absolute left-1/2 top-1 h-1 w-8 -translate-x-1/2 rounded-full bg-white/40" />
-         <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[12px] font-semibold uppercase tracking-wide text-white/80">{`Step ${journey.step} of 3 to your first loan`}</span>
-            <span className="truncate text-[16px] font-bold">{journey.cta}</span>
-         </span>
-         <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
-      </button>
+         <button
+            className="relative flex w-full touch-none select-none items-center gap-3 rounded-[18px] bg-[#6b55f7] py-3 pl-9 pr-4 text-left text-white shadow-[0_6px_18px_rgba(107,85,247,0.35)] active:scale-[0.99]"
+            onClick={onClick}
+            onPointerCancel={onPointerUp}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            title="Drag to move"
+            type="button"
+         >
+            <span aria-hidden="true" className="absolute left-1/2 top-1 h-1 w-8 -translate-x-1/2 rounded-full bg-white/40" />
+            <span className="flex min-w-0 flex-1 flex-col">
+               <span className="text-[12px] font-semibold uppercase tracking-wide text-white/80">{`Step ${journey.step} of 3 to your first loan`}</span>
+               <span className="truncate text-[16px] font-bold">{journey.cta}</span>
+            </span>
+            <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
+         </button>
+         <button
+            aria-label="Hide"
+            className="absolute left-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-white/80 hover:bg-white/15"
+            onClick={hide}
+            type="button"
+         >
+            <X aria-hidden="true" className="size-4" strokeWidth={2.5} />
+         </button>
+      </div>
    );
 }
