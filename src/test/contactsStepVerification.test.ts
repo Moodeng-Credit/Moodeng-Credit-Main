@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildMessengerVerifyLink, buildWhatsAppVerifyLink } from '@/config/contactVerification';
+import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, MESSENGER_PAGE_CHAT_LINK } from '@/config/contactVerification';
 
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
@@ -242,29 +242,46 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
    });
 
-   it('on Android, opens the Messenger app through an intent instead of a new tab', async () => {
+   it('on Android, shows the code and a direct link to our chat instead of opening m.me', async () => {
       Object.defineProperty(navigator, 'userAgent', {
          value: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36',
          configurable: true
       });
-      const hrefSetter = vi.fn();
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-         value: { ...originalLocation, set href(value: string) { hrefSetter(value); } },
-         configurable: true
-      });
+      const writeText = vi.fn(async () => undefined);
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText } }));
+      // jsdom can't navigate; the real link opens Messenger by itself.
+      const blockNavigation = (e: Event) => e.preventDefault();
+      document.addEventListener('click', blockNavigation, true);
       try {
          await render();
          await tapMessengerCard();
+         // Nothing opens on the first tap: m.me never reaches Messenger from Android Chrome.
          expect(openSpy).not.toHaveBeenCalled();
-         expect(hrefSetter).toHaveBeenCalledTimes(1);
-         const intent = hrefSetter.mock.calls[0][0] as string;
-         expect(intent.startsWith('intent://m.me/')).toBe(true);
-         expect(intent).toContain('__mdng_code=MDNG-ABC123');
-         expect(intent).toContain('package=com.facebook.orca');
-         expect(intent).toContain(`S.browser_fallback_url=${encodeURIComponent(buildMessengerVerifyLink('MDNG-ABC123'))}`);
+         expect(container.textContent).toContain('MDNG-ABC123');
+         const chatLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
+         expect(chatLink?.getAttribute('href')).toBe(MESSENGER_PAGE_CHAT_LINK);
+         expect(chatLink?.getAttribute('target')).toBeNull();
+         expect(container.textContent).not.toContain('Open Messenger again');
+
+         await act(async () => {
+            chatLink?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+            await Promise.resolve();
+         });
+         expect(writeText).toHaveBeenCalledWith('MDNG-ABC123');
+         expect(JSON.parse(window.sessionStorage.getItem('moodeng.messengerVerifyPending') ?? '{}')).toMatchObject({
+            code: 'MDNG-ABC123',
+            link: MESSENGER_PAGE_CHAT_LINK
+         });
+
+         // The bot confirms the pasted code → the card flips to Verified.
+         supa.state.usersRow.messenger_verified_at = '2026-10-11T03:00:00Z';
+         await act(async () => {
+            await vi.advanceTimersByTimeAsync(3_100);
+         });
+         expect(container.textContent).not.toContain('Copy code & open Messenger');
+         expect(continueButton(container).disabled).toBe(false);
       } finally {
-         Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });
+         document.removeEventListener('click', blockNavigation, true);
       }
    });
 

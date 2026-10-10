@@ -73,5 +73,18 @@ export const filipinoCoverageE: Record<string, string> = {
    'Try this:': 'Subukan ito:',
    'Use this': 'Gamitin ito',
    'Message us to help write this in English': 'Mag-message sa amin para tulungan kang isulat ito sa English',
-   'Message us for help wording this': 'Mag-message sa amin para tulungan kang isulat ito'
+   'Message us for help wording this': 'Mag-message sa amin para tulungan kang isulat ito',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'I-send sa amin ang code mo sa Messenger',
+   'Copy code & open Messenger': 'I-copy ang code at buksan ang Messenger',
+   'Tap the blue button. It copies your code and opens our chat.':
+      'I-tap ang blue na button. Kokopyahin nito ang code mo at bubuksan ang chat namin.',
+   'Tap Get Started if Messenger asks.': 'I-tap ang Get Started kung hihingin ng Messenger.',
+   'Paste the code and send it.': 'I-paste ang code at i-send.',
+   'Waiting for your message. This turns green on its own.': 'Hinihintay ang message mo. Kusa itong magiging green.',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'Walang Messenger app? Buksan ang Facebook, i-search ang Moodeng Credit, i-tap ang Message, at doon i-send ang code.',
+   '1 min': '1 minuto',
+   'Getting your code…': 'Kinukuha ang code mo…',
+   'We give you a short code to send us on Messenger': 'Bibigyan ka namin ng maikling code na ise-send mo sa amin sa Messenger'
 };
