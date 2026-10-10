@@ -364,7 +364,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'Loading voucher': 'Đang tải phiếu quà tặng',
    'Active Loans($)': 'Đang vay ($)',
-   'Pending Loans($)': 'Đang chờ ($)',
+   'Pending Request($)': 'Yêu cầu đang chờ ($)',
    'Defaulted($)': 'Vỡ nợ ($)',
    'Due today': 'Đến hạn hôm nay',
    'Upcoming Loan Dues': 'Khoản vay sắp đến hạn',

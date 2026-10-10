@@ -23,6 +23,27 @@ const UA = {
 };
 
 describe('detectInAppBrowser', () => {
+   // An iOS email app opening a sign-in link (captured from a borrower's logins, 2026-09-22).
+   const iosAppWebView =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+
+   it('treats an unnamed iOS app webview (e.g. an email app) as in-app', () => {
+      const info = detectInAppBrowser(iosAppWebView, { standalone: false });
+      expect(info.isInApp).toBe(true);
+      expect(info.appName).toBeNull();
+      expect(info.canBreakOut).toBe(false);
+   });
+
+   it('does not flag the Home Screen web app, which has the same user agent', () => {
+      expect(detectInAppBrowser(iosAppWebView, { standalone: true }).isInApp).toBe(false);
+   });
+
+   it('does not flag Chrome on iOS', () => {
+      const chromeIos =
+         'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/155.0.8059.37 Mobile/15E148 Safari/604.1';
+      expect(detectInAppBrowser(chromeIos, { standalone: false }).isInApp).toBe(false);
+   });
+
    it('names Messenger on iOS and cannot force a break-out', () => {
       const info = detectInAppBrowser(UA.messengerIos);
       expect(info.isInApp).toBe(true);

@@ -33,6 +33,18 @@ export default function ForgotPasswordPage(): JSX.Element {
       }
 
       const supabase = getSupabaseBrowserClient();
+
+      // Supabase answers "OK" and sends nothing for an email with no account (enumeration-safe),
+      // so a mistyped address left people waiting on a code that was never coming: a borrower
+      // on 2026-10-10 waited ~4 minutes through two silent requests before a resend to the right
+      // address worked. Sign-in already tells people when an email has no account (email_exists),
+      // so say so here too. A failed check never blocks the send.
+      const { data: exists, error: existsError } = await supabase.rpc('email_exists', { p_email: targetEmail });
+      if (!existsError && exists === false) {
+         setError(`No Moodeng account uses ${targetEmail}. Check the spelling, or use the email you signed up with.`);
+         return false;
+      }
+
       // redirectTo is kept as a fallback so any link in the email still works;
       // the primary flow is the 8-digit code from the email template.
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(targetEmail, {
@@ -52,7 +64,8 @@ export default function ForgotPasswordPage(): JSX.Element {
       setMessage('');
       setError('');
 
-      const trimmedEmail = email.trim();
+      // Accounts are stored with lowercase emails, and email_exists compares exactly.
+      const trimmedEmail = email.trim().toLowerCase();
       if (!trimmedEmail) {
          setError('Enter the email address on your Moodeng account.');
          return;
@@ -78,7 +91,7 @@ export default function ForgotPasswordPage(): JSX.Element {
             startCooldown();
             // Enumeration-safe: Supabase sends nothing for an unregistered email, so we
             // can't promise a code was sent without leaking which emails have accounts.
-            setMessage('If an account exists for that email, an 8-digit code is on its way. Enter it below to continue.');
+            setMessage(`An 8-digit code is on its way to ${trimmedEmail}. It usually arrives within a minute — check Spam too.`);
          }
       } catch (sendError) {
          setError(sendError instanceof Error ? sendError.message : 'Could not send a reset code. Try again in a moment.');
@@ -107,7 +120,7 @@ export default function ForgotPasswordPage(): JSX.Element {
       try {
          const supabase = getSupabaseBrowserClient();
          const { error: verifyError } = await supabase.auth.verifyOtp({
-            email: email.trim(),
+            email: email.trim().toLowerCase(),
             token: trimmedCode,
             type: 'recovery'
          });
@@ -134,7 +147,7 @@ export default function ForgotPasswordPage(): JSX.Element {
       setError('');
       setLoading(true);
       try {
-         if (await sendCode(email.trim())) {
+         if (await sendCode(email.trim().toLowerCase())) {
             startCooldown();
             setMessage('A new code is on its way. Use the latest email from Moodeng.');
          }
@@ -199,6 +212,15 @@ export default function ForgotPasswordPage(): JSX.Element {
                            ? `Enter the ${CODE_LENGTH}-digit code we sent to ${email}.`
                            : 'Enter your email and Moodeng will send an 8-digit code to reset your password.'}
                      </p>
+                     {isCodeStep ? (
+                        <button
+                           type="button"
+                           onClick={handleBackToEmail}
+                           className="mt-2 text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                        >
+                           Wrong email? Change it
+                        </button>
+                     ) : null}
                   </div>
 
                   {isCodeStep ? (
@@ -275,6 +297,9 @@ export default function ForgotPasswordPage(): JSX.Element {
                                  }}
                                  placeholder="you@example.com"
                                  autoComplete="email"
+                                 autoCapitalize="none"
+                                 autoCorrect="off"
+                                 spellCheck={false}
                                  className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
                                  required
                               />

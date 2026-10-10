@@ -292,7 +292,7 @@ export const indonesianCoverageB: Record<string, string> = {
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'Loading voucher': 'Memuat voucher',
    'Active Loans($)': 'Pinjaman aktif($)',
-   'Pending Loans($)': 'Pinjaman menunggu($)',
+   'Pending Request($)': 'Pengajuan menunggu($)',
    'Defaulted($)': 'Gagal bayar($)',
    'Due today': 'Jatuh tempo hari ini',
    'Pay Now': 'Bayar sekarang',
