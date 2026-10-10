@@ -76,7 +76,9 @@ export const findPendingCallRequest = async (svc: SupabaseClient, userId: string
    return (data as RequestRow | null) ?? null;
 };
 
-export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: string) => {
+// Posted when the call starts (starting: true) so the host can tap ✅ the moment they hang up, and
+// again ~20 min in only if nobody has decided yet (the reminders cron skips decided calls).
+export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: string, opts: { starting?: boolean } = {}) => {
    const user = await loadUser(svc, userId);
    if (!user?.video_call_starts_at || user.loan_access_status === 'rejected') return;
    const chat = await getAdminChatId(svc);
@@ -98,7 +100,9 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
       minute: '2-digit'
    });
    const lines = [
-      `📞 Did ${who(user, request?.display_name)} show up?`,
+      opts.starting
+         ? `📞 ${who(user, request?.display_name)}'s call is starting — tap below as soon as you're done (or in the admin panel → Call approvals).`
+         : `📞 Did ${who(user, request?.display_name)} show up?`,
       `Call was: ${formatCallTimeForTeam(user.video_call_starts_at, user.video_call_timezone)}`,
       evidence,
       user.video_call_confirmed_at ? "They'd tapped ✅ I'll be there." : 'They never confirmed.',
