@@ -422,6 +422,31 @@ serve(async (req) => {
       if (action === 'fund') {
          try {
             const orphan = await verifyPayment(method, hash);
+            const from = (orphan.from ?? '').toLowerCase();
+            const to = (orphan.to ?? '').toLowerCase();
+            // Only alert for a payment the caller actually sent (from one of their wallets) to a Moodeng
+            // user's wallet; anything else is someone replaying an unrelated tx hash.
+            const [ownUser, ownUsage, ownGrants, toUsers, toUsage] = await Promise.all([
+               admin.from('users').select('wallet_address').eq('id', callerId).maybeSingle(),
+               admin.from('wallet_usage_log').select('wallet_address').eq('user_id', callerId),
+               admin.from('embedded_wallet_grants').select('wallet_address').eq('user_id', callerId),
+               admin.from('users').select('id').ilike('wallet_address', to).limit(1),
+               admin.from('wallet_usage_log').select('user_id').ilike('wallet_address', to).limit(1)
+            ]);
+            const callerWallets = new Set(
+               [ownUser.data?.wallet_address, ...(ownUsage.data ?? []).map((r) => r.wallet_address), ...(ownGrants.data ?? []).map((r) => r.wallet_address)]
+                  .filter((w): w is string => typeof w === 'string' && w.length > 0)
+                  .map((w) => w.toLowerCase())
+            );
+            const toIsMoodengUser = (toUsers.data?.length ?? 0) > 0 || (toUsage.data?.length ?? 0) > 0;
+            if (!/^0x[0-9a-f]{40}$/.test(to) || !callerWallets.has(from) || !toIsMoodengUser) {
+               return jsonResponse({ error: 'Loan not found' }, 404);
+            }
+            // Alert once per tx hash: the primary key rejects repeats.
+            const { error: dedupeError } = await admin.from('orphan_payment_alerts').insert({ tx_hash: normalizedHash });
+            if (dedupeError) {
+               return jsonResponse({ error: 'This request no longer exists. Contact support for a refund.' }, 409);
+            }
             await postDiscord(
                {
                   content: `⚠️ Loan ${loanId} no longer exists, but a verified ${(Number(orphan.micros) / 1e6).toFixed(2)} USDC funding payment (${(orphan.txHash ?? hash).toLowerCase()}, from ${orphan.from} to ${orphan.to}, lender user ${callerId}) was sent for it. It was NOT recorded and needs refunding.`
