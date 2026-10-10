@@ -17,9 +17,13 @@ const formatCallTime = (iso: string | null) =>
 interface CallApprovalsSectionProps {
    // How many people are waiting on a decision, for the tab badge.
    onCountChange?: (count: number) => void;
+   // 'waiting' is the short version on Loans → Requests: only the people waiting on a decision.
+   variant?: 'full' | 'waiting';
+   // Shown as "All calls →" in the waiting variant.
+   onOpenCalls?: () => void;
 }
 
-export default function CallApprovalsSection({ onCountChange }: CallApprovalsSectionProps) {
+export default function CallApprovalsSection({ onCountChange, variant = 'full', onOpenCalls }: CallApprovalsSectionProps) {
    const [rows, setRows] = useState<AdminCallApprovalRow[] | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [busyId, setBusyId] = useState<string | null>(null);
@@ -176,15 +180,8 @@ export default function CallApprovalsSection({ onCountChange }: CallApprovalsSec
       </div>
    );
 
-   return (
-      <section className="space-y-6">
-         <div>
-            <h2 className="break-words text-2xl font-black sm:text-3xl">Call approvals</h2>
-            <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
-               Approve borrowers as soon as their video call ends. Showed up lets them continue (ID check or loan application);
-               No-show asks them to book again. Same as the Telegram buttons — whichever you use, the other stays in sync.
-            </p>
-         </div>
+   const banners = (
+      <>
          {notice ? (
             <p
                className={`rounded-2xl border p-4 text-base font-bold ${notice.ok ? 'border-emerald-900 bg-emerald-950/60 text-emerald-300' : 'border-amber-900 bg-amber-950/60 text-amber-300'}`}
@@ -194,6 +191,49 @@ export default function CallApprovalsSection({ onCountChange }: CallApprovalsSec
          ) : null}
          {error ? <p className="rounded-2xl border border-red-900 bg-red-950/60 p-4 text-base font-bold text-red-300">{error}</p> : null}
          {!rows && !error ? <p className="text-lg text-[#a89bb8]">Loading calls…</p> : null}
+      </>
+   );
+
+   if (variant === 'waiting') {
+      return (
+         <section className="space-y-4">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">
+                     Waiting for approval {rows ? <span className="text-[#a89bb8]">{groups.needsDecision.length}</span> : null}
+                  </h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     New borrowers who had their call (or asked for access) and need your ✅ before they can apply.
+                  </p>
+               </div>
+               {onOpenCalls ? (
+                  <button type="button" onClick={onOpenCalls} className="text-sm font-black text-[#c9a7ff] hover:text-white">
+                     All calls →
+                  </button>
+               ) : null}
+            </div>
+            {banners}
+            {rows ? (
+               groups.needsDecision.length ? (
+                  <ul className="space-y-3">{groups.needsDecision.map(renderRow)}</ul>
+               ) : (
+                  <p className="text-base text-[#a89bb8]">Nobody is waiting. 🎉</p>
+               )
+            ) : null}
+         </section>
+      );
+   }
+
+   return (
+      <section className="space-y-6">
+         <div>
+            <h2 className="break-words text-2xl font-black sm:text-3xl">Call approvals</h2>
+            <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+               Approve borrowers as soon as their video call ends. Showed up lets them continue (ID check or loan application);
+               No-show asks them to book again. Same as the Telegram buttons — whichever you use, the other stays in sync.
+            </p>
+         </div>
+         {banners}
          {rows ? (
             <>
                {renderGroup('Needs a decision', groups.needsDecision, 'Nobody is waiting. 🎉')}
