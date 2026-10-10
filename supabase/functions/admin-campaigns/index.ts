@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import {
    type Channel,
+   contactedWithin,
    deliverToPerson,
    EMAIL_GAP_MS,
    loadFirstNames,
@@ -75,14 +76,22 @@ const audienceAction = async (svc: Svc, body: Record<string, unknown>) => {
    const ids = rows.map((r) => r.user_id);
    const names = await loadFirstNames(svc, ids);
 
-   // When we last reached each of them, so nobody gets campaigns back to back.
-   const { data: lastSends } = ids.length
-      ? await svc.from('admin_campaign_sends').select('user_id, created_at').in('user_id', ids).eq('status', 'sent').order('created_at', { ascending: false })
-      : { data: [] };
+   // When we last reached each of them (manual campaigns and the automatic journey), so nobody gets
+   // messages back to back. Sends inside the weekly cap are skipped by `send` anyway.
+   const [{ data: lastSends }, { data: lastAutoSends }] = ids.length
+      ? await Promise.all([
+           svc.from('admin_campaign_sends').select('user_id, created_at').in('user_id', ids).eq('status', 'sent'),
+           svc.from('admin_automation_sends').select('user_id, created_at').in('user_id', ids).eq('status', 'sent')
+        ])
+      : [{ data: [] }, { data: [] }];
    const lastContacted = new Map<string, string>();
-   for (const s of (lastSends ?? []) as Array<{ user_id: string; created_at: string }>) {
-      if (!lastContacted.has(s.user_id)) lastContacted.set(s.user_id, s.created_at);
+   for (const s of [...(lastSends ?? []), ...(lastAutoSends ?? [])] as Array<{ user_id: string; created_at: string }>) {
+      const prev = lastContacted.get(s.user_id);
+      if (!prev || s.created_at > prev) lastContacted.set(s.user_id, s.created_at);
    }
+
+   const capSince = Date.now() - CAP_DAYS * 86400000;
+   const isRecent = (at: string | undefined) => Boolean(at && new Date(at).getTime() >= capSince);
 
    const people = await Promise.all(
       rows.map(async (r) => {
@@ -100,7 +109,8 @@ const audienceAction = async (svc: Svc, body: Record<string, unknown>) => {
             fundedLoans: r.funded_loans,
             lastFundedAt: r.last_funded_at,
             lastRepaidAt: r.last_repaid_at,
-            lastContactedAt: lastContacted.get(r.user_id) ?? null
+            lastContactedAt: lastContacted.get(r.user_id) ?? null,
+            contactedRecently: isRecent(lastContacted.get(r.user_id))
          };
       })
    );
@@ -127,6 +137,8 @@ const sendAction = async (svc: Svc, body: Record<string, unknown>, actorId: stri
    const rows = await loadAudience(svc, audience, idleDays);
    const inAudience = new Map(rows.map((r) => [r.user_id, r]));
    const names = await loadFirstNames(svc, userIds);
+   // Same weekly cap as the automatic journey: nobody gets a second message within CAP_DAYS.
+   const recentlyContacted = await contactedWithin(svc, userIds, CAP_DAYS, campaignId);
 
    const { error: campaignError } = await svc
       .from('admin_campaigns')
@@ -168,6 +180,10 @@ const sendAction = async (svc: Svc, body: Record<string, unknown>, actorId: stri
       const row = inAudience.get(userId);
       if (!row) {
          outcomes.push({ userId, channel: null, status: 'skipped', detail: 'no_longer_in_audience' });
+         continue;
+      }
+      if (recentlyContacted.has(userId)) {
+         outcomes.push({ userId, channel: null, status: 'skipped', detail: 'contacted_recently' });
          continue;
       }
       if (!first) await sleep(EMAIL_GAP_MS);

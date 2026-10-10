@@ -87,7 +87,23 @@ export default function ConnectStep({
    const page = controlledPage ?? localPage;
    const setPage = (next: ConnectPage) => (onPageChange ? onPageChange(next) : setLocalPage(next));
    const showAbout = needsAbout && Boolean(renderAbout);
-   const [reason, setReason] = useState('');
+   // Kept in sessionStorage so a reload on ?step=call doesn't lose what they wrote on the goal page.
+   const reasonStorageKey = `md_connect_reason:${userId}`;
+   const [reason, setReason] = useState(() => {
+      try {
+         return window.sessionStorage.getItem(reasonStorageKey) ?? '';
+      } catch {
+         return '';
+      }
+   });
+   useEffect(() => {
+      try {
+         if (reason) window.sessionStorage.setItem(reasonStorageKey, reason);
+         else window.sessionStorage.removeItem(reasonStorageKey);
+      } catch {
+         // Storage blocked — the reason just won't survive a reload.
+      }
+   }, [reason, reasonStorageKey]);
    const [isSending, setIsSending] = useState(false);
    const [error, setError] = useState('');
 
@@ -101,7 +117,13 @@ export default function ConnectStep({
    const trail = (key: 'contact' | 'about' | 'intro' | 'call') => <StepTrail current={stepIndex(key)} steps={steps} />;
 
    const handleSend = async () => {
-      if (!canSend) return;
+      if (isSending) return;
+      if (trimmedReason.length < MIN_REASON) {
+         // e.g. a reload on the call page: never fail silently — send them back to write it.
+         setError(ERROR_COPY.reason_required);
+         setPage('intro');
+         return;
+      }
       setError('');
       setIsSending(true);
       try {
@@ -119,6 +141,11 @@ export default function ConnectStep({
             if (payload?.error === 'contact_not_verified') setPage('contact');
             if (payload?.error === 'call_not_booked') setPage('call');
             return;
+         }
+         try {
+            window.sessionStorage.removeItem(reasonStorageKey);
+         } catch {
+            // ignore
          }
          await onSubmitted(payload.status);
       } catch (err) {

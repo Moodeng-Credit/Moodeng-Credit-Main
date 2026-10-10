@@ -14,6 +14,8 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
+import { useNotificationPrefs } from '@/hooks/useNotificationPrefs';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import type { WalletConnectorKey } from '@/config/wagmiConfig';
@@ -51,43 +53,6 @@ const ICON_MASK: React.CSSProperties = {
    WebkitMaskPosition: 'center',
    maskPosition: 'center'
 };
-
-const NOTIFICATION_STORAGE_KEY = 'md_notification_prefs';
-
-interface NotificationPrefs {
-   accountActivity: boolean;
-   transactionActivity: boolean;
-   moodengBlogs: boolean;
-}
-
-const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
-   accountActivity: true,
-   transactionActivity: true,
-   moodengBlogs: false
-};
-
-function loadNotificationPrefs(): NotificationPrefs {
-   try {
-      const stored = window.localStorage?.getItem(NOTIFICATION_STORAGE_KEY);
-      if (stored) {
-         const parsed = JSON.parse(stored) as Partial<NotificationPrefs> | null;
-         if (parsed && typeof parsed === 'object') {
-            return {
-               accountActivity:
-                  typeof parsed.accountActivity === 'boolean' ? parsed.accountActivity : DEFAULT_NOTIFICATION_PREFS.accountActivity,
-               transactionActivity:
-                  typeof parsed.transactionActivity === 'boolean'
-                     ? parsed.transactionActivity
-                     : DEFAULT_NOTIFICATION_PREFS.transactionActivity,
-               moodengBlogs: typeof parsed.moodengBlogs === 'boolean' ? parsed.moodengBlogs : DEFAULT_NOTIFICATION_PREFS.moodengBlogs
-            };
-         }
-      }
-   } catch {
-      return DEFAULT_NOTIFICATION_PREFS;
-   }
-   return DEFAULT_NOTIFICATION_PREFS;
-}
 
 function isTelegramPlaceholderEmail(email?: string | null) {
    return /^telegram_\d+@moodeng\.(app|credit)$/i.test(email ?? '');
@@ -1403,7 +1368,9 @@ export default function AccountSettings() {
    // Set when a borrower with an outstanding loan tries to change/disconnect their wallet — the
    // action is refused (not just warned), because that wallet is their loan/repayment anchor.
    const [walletBlockedReason, setWalletBlockedReason] = useState('');
-   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(loadNotificationPrefs);
+   const { prefs: notifPrefs, toggle: toggleNotif, error: notifError, savingKey: notifSavingKey } = useNotificationPrefs();
+   const push = usePushNotifications(user?.id ?? null, { autoPrompt: false });
+   const [pushError, setPushError] = useState('');
 
    const instantWallet = useCreateInstantWallet('account-settings');
    const hasWallet = Boolean(user?.walletAddress);
@@ -1435,14 +1402,6 @@ export default function AccountSettings() {
          ? `@${user.telegramUsername}`
          : 'Connected'
       : user?.telegramUsername || 'Not Connected';
-
-   useEffect(() => {
-      try {
-         window.localStorage?.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifPrefs));
-      } catch {
-         // Some embedded previews disable localStorage; notification toggles can still render.
-      }
-   }, [notifPrefs]);
 
    useEffect(() => {
       if (!editTarget) {
@@ -1710,7 +1669,7 @@ export default function AccountSettings() {
    // them — it only confused lenders who thought they had to verify before they could lend.
    const showIdentityVerification = isBorrower;
    const securitySectionTitle = showIdentityVerification ? 'Security & verification' : 'Security';
-   const activeNotificationCount = Object.values(notifPrefs).filter(Boolean).length;
+   const activeNotificationCount = [notifPrefs.accountActivity, notifPrefs.transactionActivity, notifPrefs.moodengBlogs].filter(Boolean).length;
    const currentLanguage = locales.find((supportedLocale) => supportedLocale.code === locale)?.label ?? 'English';
    const sectionSummaries: Record<SettingsSectionKey, string> = {
       profile: hasTelegramPlaceholderEmail
@@ -1730,8 +1689,22 @@ export default function AccountSettings() {
       notifications: `${activeNotificationCount} of 3 preferences enabled`
    };
 
-   const toggleNotif = (key: keyof NotificationPrefs) => {
-      setNotifPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
+   const handlePushToggle = async () => {
+      setPushError('');
+      if (push.isSubscribed) {
+         await push.disable();
+         return;
+      }
+      const outcome = await push.enable();
+      if (outcome === 'subscribed' || outcome === 'already-subscribed') {
+         if (!notifPrefs.push) {
+            void toggleNotif('push');
+         }
+      } else if (outcome === 'permission-denied') {
+         setPushError('Notifications are blocked in your browser settings. Allow them there, then try again.');
+      } else if (outcome === 'failed') {
+         setPushError('Could not turn on notifications. Please try again.');
+      }
    };
 
    const openSettingsSection = (section: SettingsSectionKey) => {
@@ -2324,7 +2297,8 @@ export default function AccountSettings() {
                               </div>
                               <Toggle
                                  checked={notifPrefs.accountActivity}
-                                 onChange={() => toggleNotif('accountActivity')}
+                                 disabled={notifSavingKey === 'accountActivity'}
+                                 onChange={() => void toggleNotif('accountActivity')}
                                  label="Account activity notifications"
                               />
                            </div>
@@ -2336,7 +2310,8 @@ export default function AccountSettings() {
                               </div>
                               <Toggle
                                  checked={notifPrefs.transactionActivity}
-                                 onChange={() => toggleNotif('transactionActivity')}
+                                 disabled={notifSavingKey === 'transactionActivity'}
+                                 onChange={() => void toggleNotif('transactionActivity')}
                                  label="Loan activity notifications"
                               />
                            </div>
@@ -2348,11 +2323,47 @@ export default function AccountSettings() {
                               </div>
                               <Toggle
                                  checked={notifPrefs.moodengBlogs}
-                                 onChange={() => toggleNotif('moodengBlogs')}
+                                 disabled={notifSavingKey === 'moodengBlogs'}
+                                 onChange={() => void toggleNotif('moodengBlogs')}
                                  label="Moodeng news notifications"
                               />
                            </div>
                         </SettingsGroup>
+
+                        {notifError ? (
+                           <p role="alert" className="px-1 text-md-b2 font-medium leading-5 text-md-red-500">
+                              {notifError}
+                           </p>
+                        ) : null}
+
+                        <SettingsGroup label="This device">
+                           <div className="flex min-h-[72px] items-center justify-between gap-md-3 px-md-3 py-md-2">
+                              <div className="min-w-0">
+                                 <p className="text-md-b1 font-semibold text-md-heading">Push notifications</p>
+                                 <p className="text-md-b2 font-medium text-md-neutral-1200">
+                                    {!push.isSupported
+                                       ? 'Not available in this browser. Try Chrome, or add Moodeng to your home screen.'
+                                       : push.permission === 'denied'
+                                         ? 'Blocked in your browser settings. Allow notifications there, then come back.'
+                                         : 'Alerts on this phone or computer only'}
+                                 </p>
+                              </div>
+                              {push.isSupported && push.permission !== 'denied' ? (
+                                 <Toggle
+                                    checked={push.isSubscribed}
+                                    disabled={push.isBusy}
+                                    onChange={() => void handlePushToggle()}
+                                    label="Push notifications on this device"
+                                 />
+                              ) : null}
+                           </div>
+                        </SettingsGroup>
+
+                        {pushError ? (
+                           <p role="alert" className="px-1 text-md-b2 font-medium leading-5 text-md-red-500">
+                              {pushError}
+                           </p>
+                        ) : null}
                      </div>
                   ) : null}
                </main>

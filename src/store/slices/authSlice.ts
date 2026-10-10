@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
@@ -171,11 +172,33 @@ const ensureUserProfileRow = async (
 
    const { data, error } = await supabase.from('users').insert(payload).select('*').single();
 
-   if (error || !data) {
-      throw error ?? new Error('Failed to ensure user profile');
+   if (!error && data) {
+      return data;
    }
 
-   return data;
+   // 23505 = unique violation. Either the row was created concurrently (another tab / the auth
+   // listener) or the chosen username is taken. Without a retry the user is left with no profile row.
+   if (error?.code === '23505') {
+      const { data: raced } = await supabase.from('users').select('*').eq('id', authUser.id).maybeSingle();
+      if (raced) {
+         return raced;
+      }
+
+      const base = payload.username.replace(new RegExp(`-${authUser.id.slice(0, 6)}$`), '');
+      const { data: retried, error: retryError } = await supabase
+         .from('users')
+         .insert({ ...payload, username: `${base}-${authUser.id.slice(0, 6)}` })
+         .select('*')
+         .single();
+
+      if (!retryError && retried) {
+         return retried;
+      }
+
+      throw retryError ?? new Error('Failed to ensure user profile');
+   }
+
+   throw error ?? new Error('Failed to ensure user profile');
 };
 
 const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: string, avatarBackground?: string): User => ({
@@ -235,6 +258,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    notifAccountActivity: (row as UserRow & { notif_account_activity?: boolean | null }).notif_account_activity ?? true,
    notifTransactionActivity: (row as UserRow & { notif_transaction_activity?: boolean | null }).notif_transaction_activity ?? true,
    notifBlogs: (row as UserRow & { notif_blogs?: boolean | null }).notif_blogs ?? false,
+   notifPush: (row as UserRow & { notif_push?: boolean | null }).notif_push ?? true,
    createdAt: row.created_at,
    updatedAt: row.updated_at
 });
@@ -273,7 +297,9 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       return mapSupabaseRowToUser(ensuredProfile, avatarUrl, displayName, avatarBackground);
    }
 
-   if (displayName && profile.display_name !== displayName) {
+   // Seed the display name from the sign-in provider only when the user has none; never overwrite a
+   // name they chose with whatever Google/Telegram reports on each login.
+   if (displayName && !profile.display_name?.trim()) {
       const { data: syncedProfile, error: syncError } = await supabase
          .from('users')
          .update({ display_name: displayName })
@@ -286,7 +312,7 @@ const fetchCurrentUserProfile = async (): Promise<User> => {
       }
    }
 
-   return mapSupabaseRowToUser(profile, avatarUrl, displayName, avatarBackground);
+   return mapSupabaseRowToUser(profile, avatarUrl, profile.display_name?.trim() || displayName, avatarBackground);
 };
 
 const fetchUserProfileByUsername = async (username: string): Promise<User> => {
@@ -766,6 +792,9 @@ export const updateUserRole = createAsyncThunk('auth/updateUserRole', async (rol
 
 export const logoutUser = createAsyncThunk('auth/logout', async () => {
    const supabase = supabaseClient();
+   // Detach this device's push row while the session can still delete it, so a signed-out phone
+   // stops receiving the previous account's loan alerts. Never blocks sign-out.
+   await detachPushSubscriptionForSignOut().catch((error) => console.warn('Push detach on sign-out failed', error));
    const { error } = await supabase.auth.signOut();
 
    if (error) {

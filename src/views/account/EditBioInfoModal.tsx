@@ -51,7 +51,9 @@ function buildContextFromUser(user: User | null | undefined): BorrowerContextSta
       monthlyIncome: user.monthlyIncome ?? '',
       monthlyExpenses: user.monthlyExpenses ?? '',
       otherIncome: user.otherIncome ?? '',
-      profession: user.profession ?? ''
+      profession: user.profession ?? '',
+      // Not editable here, but must round-trip: the save writes income_description and would null it.
+      incomeDescription: user.incomeDescription ?? ''
    };
 }
 
