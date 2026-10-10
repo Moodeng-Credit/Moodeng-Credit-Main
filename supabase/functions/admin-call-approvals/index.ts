@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { ATTENDANCE_COLUMNS, describeAttendance, zoomActiveForHost } from '../_shared/attendance.ts';
-import { BORROWER_COLUMNS, decideLoanAccess, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
+import { postDiscord } from '../_shared/discord.ts';
+import { BORROWER_COLUMNS, type BorrowerRow, decideLoanAccess, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 
 // Call approvals in the admin panel — the same decisions as the Telegram card's buttons and
@@ -15,6 +16,8 @@ import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 //   { action: 'list' }                                        → { rows }
 //   { action: 'decide', userId, decision: 'attended' | 'no_show' }      (video call)
 //   { action: 'decide', requestId, decision: 'approved' | 'rejected' } (no-call approval request)
+//   { action: 'approve_user', userId }  approve from the Directory, call or not: decides their pending
+//                                       request if they have one, else approves them directly
 //                                                             → { ok, summary }
 // verify_jwt is on; the caller must also be an active admin.
 
@@ -134,6 +137,36 @@ serve(async (req) => {
             return json({ ok: result.ok, summary: result.summary });
          }
          return json({ error: 'Invalid decision' }, 400);
+      }
+
+      if (body.action === 'approve_user' && typeof body.userId === 'string') {
+         const { data: pendingRequest } = await svc
+            .from('loan_access_requests')
+            .select('id')
+            .eq('user_id', body.userId)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+         if (pendingRequest) {
+            const result = await decideLoanAccess(svc, (pendingRequest as { id: string }).id, 'approved', decidedBy);
+            return json({ ok: result.ok, summary: result.summary });
+         }
+         // No request to decide: approve directly. Conditional, so a double tap approves (and
+         // messages the borrower) only once.
+         const { data: approved, error: approveError } = await svc
+            .from('users')
+            .update({ loan_access_status: 'approved', loan_access_approved_at: new Date().toISOString(), loan_access_seen_at: null })
+            .eq('id', body.userId)
+            .or('loan_access_status.is.null,loan_access_status.neq.approved')
+            .select(BORROWER_COLUMNS)
+            .maybeSingle();
+         if (approveError) throw new Error(approveError.message);
+         if (!approved) return json({ ok: false, summary: 'Already approved — nothing changed.' });
+         await notifyBorrower(svc, approved as BorrowerRow, 'approved');
+         const summary = `✅ Approved: ${who(approved as BorrowerRow)} — by ${decidedBy}`;
+         await postDiscord({ content: `🔓 Loan access ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+         return json({ ok: true, summary });
       }
 
       return json({ error: 'Unknown action' }, 400);
