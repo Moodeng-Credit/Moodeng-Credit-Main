@@ -84,3 +84,18 @@ export const SENDPULSE_CONFIRM_FB_FLOW_ID = import.meta.env.VITE_SENDPULSE_CONFI
 
 export const buildMessengerVerifyLink = (code: string) =>
    `https://m.me/${MESSENGER_PAGE_ID}?ref=${SENDPULSE_CONFIRM_FB_FLOW_ID}__mdng_code=${code}`;
+
+// Android: hand the same m.me link straight to the Messenger app (com.facebook.orca) instead of
+// opening it in a new Chrome tab. From a tab, Chrome on Android never got our borrowers into the
+// Messenger chat: every Android attempt from 2026-10-06 to 2026-10-10 (3 borrowers, 6 tries) left
+// the page for under a second and SendPulse never heard from them, while every iPhone attempt
+// confirmed. An intent with an explicit package opens Messenger itself, which reads the ref exactly
+// as it does when Android routes an m.me link to it. No Messenger app (Facebook Lite users) → Chrome
+// follows the fallback to the plain m.me page, which can still message the Page.
+export const buildMessengerAndroidIntent = (link: string) => {
+   const url = new URL(link);
+   return `intent://${url.host}${url.pathname}${url.search}#Intent;scheme=https;package=com.facebook.orca;S.browser_fallback_url=${encodeURIComponent(link)};end`;
+};
+
+export const isAndroidBrowser = (userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '') =>
+   /android/i.test(userAgent);

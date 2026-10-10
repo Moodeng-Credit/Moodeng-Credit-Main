@@ -6,8 +6,10 @@ import posthog from 'posthog-js';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
+   buildMessengerAndroidIntent,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
+   isAndroidBrowser,
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
@@ -50,7 +52,47 @@ const SHOW_TYPED_CODE_AFTER_MS = 60_000;
 // code arrives (a first-time "Get Started", some Android Messenger versions), and Aya on 2026-09-29
 // left without ever seeing the backups.
 const RETURN_GRACE_MS = 4_000;
+// Messenger didn't really open: the page was hidden for less than this (a tab or app flashing open
+// and shut — every failed Android attempt looked like this, 0.2–0.5s), or never hidden at all within
+// NOT_OPENED_AFTER_MS of the tap. Either way, go straight to the backups instead of "keep waiting".
+const BOUNCE_MS = 1_500;
+const NOT_OPENED_AFTER_MS = 3_000;
 const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
+
+// On Android without the Messenger app, the intent falls back to the m.me page in this same tab, so
+// the borrower leaves the app. Remember the open attempt so coming back lands on the code + backups
+// instead of a fresh card (whose next tap would bounce them out again). Codes live 30 minutes.
+const PENDING_KEY = 'moodeng.messengerVerifyPending';
+const PENDING_TTL_MS = 25 * 60 * 1000;
+type PendingMessenger = { userId: string; code: string; link: string; at: number };
+
+const readPending = (userId: string): PendingMessenger | null => {
+   try {
+      const raw = window.sessionStorage.getItem(PENDING_KEY);
+      const pending = raw ? (JSON.parse(raw) as PendingMessenger) : null;
+      return pending && pending.userId === userId && Date.now() - pending.at < PENDING_TTL_MS ? pending : null;
+   } catch {
+      return null;
+   }
+};
+const writePending = (pending: PendingMessenger | null) => {
+   try {
+      if (pending) window.sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
+      else window.sessionStorage.removeItem(PENDING_KEY);
+   } catch {
+      // Storage blocked: they just get a fresh card if they leave and come back.
+   }
+};
+
+// Opens the verification chat. Messenger on Android goes through an intent to the Messenger app (see
+// buildMessengerAndroidIntent); everything else keeps the original new-tab open.
+const openVerifyLink = (channel: Channel, link: string) => {
+   if (channel === 'messenger' && isAndroidBrowser()) {
+      window.location.href = buildMessengerAndroidIntent(link);
+      return;
+   }
+   window.open(link, '_blank', 'noopener,noreferrer');
+};
 
 export default function ContactsStep({
    userId,
@@ -103,6 +145,8 @@ export default function ContactsStep({
    const firstStartedAtRef = useRef<number | null>(null);
    const lastStartedAtRef = useRef<number | null>(null);
    const leftAtRef = useRef<number | null>(null);
+   const openedAtRef = useRef<number | null>(null);
+   const lastHiddenAtRef = useRef<number | null>(null);
    const lastChannelRef = useRef<Channel | null>(null);
    const confirmedTrackedRef = useRef(false);
    const backupTrackedRef = useRef(false);
@@ -155,6 +199,7 @@ export default function ContactsStep({
    useEffect(() => {
       const onHide = () => {
          if (document.visibilityState !== 'hidden' || !awaitingMessengerRef.current) return;
+         lastHiddenAtRef.current = Date.now();
          leftForMessengerRef.current = true;
          if (leftAtRef.current === null) {
             leftAtRef.current = Date.now();
@@ -202,7 +247,7 @@ export default function ContactsStep({
    }, [messengerVerified, whatsappVerified, source]);
 
    const showBackup = useCallback(
-      (reason: 'timeout' | 'returned_unconfirmed') => {
+      (reason: 'timeout' | 'returned_unconfirmed' | 'bounced' | 'not_opened' | 'resumed') => {
          setShowTypedCode(true);
          if (backupTrackedRef.current) return;
          backupTrackedRef.current = true;
@@ -218,6 +263,53 @@ export default function ContactsStep({
       }
    };
    useEffect(() => stopPolling, []);
+
+   // Poll rather than wait for a page-visibility event — the borrower may switch apps for a while
+   // before coming back, and we want the checkmark to appear the moment they do.
+   const startPolling = useCallback((channel: Channel) => {
+      stopPolling();
+      pollRef.current = window.setInterval(async () => {
+         const { data } = await getSupabaseBrowserClient()
+            .from('users')
+            .select('whatsapp_verified_at, messenger_verified_at')
+            .eq('id', userId)
+            .maybeSingle();
+         if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         if (data?.messenger_verified_at) setMessengerVerified(true);
+         const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
+         if (done) stopPolling();
+      }, 3000);
+   }, [userId]);
+
+   // Back from the m.me page an Android fallback sent them to (this tab navigated away and reloaded):
+   // pick the attempt back up with the code and backups showing, rather than a fresh card.
+   useEffect(() => {
+      const pending = readPending(userId);
+      if (!pending) return;
+      setMessengerLink(pending.link);
+      setMessengerCode(pending.code);
+      awaitingMessengerRef.current = true;
+      track('contact_verify_resumed', { source, channel: 'messenger', seconds_since_open: secondsSince(pending.at) });
+      showBackup('resumed');
+      startPolling('messenger');
+   }, [userId, source, showBackup, startPolling]);
+
+   // Verified (now or on an earlier application): nothing left to resume.
+   useEffect(() => {
+      if (messengerVerified) writePending(null);
+   }, [messengerVerified]);
+
+   // Tapped, but the page never went to the background: Messenger didn't open at all.
+   const armNotOpenedCheck = useCallback(() => {
+      const openedAt = Date.now();
+      openedAtRef.current = openedAt;
+      window.setTimeout(() => {
+         if (openedAtRef.current !== openedAt || document.visibilityState !== 'visible') return;
+         if (lastHiddenAtRef.current !== null && lastHiddenAtRef.current >= openedAt) return;
+         track('contact_verify_not_opened', { source, channel: 'messenger', attempt: attemptsRef.current, android: isAndroidBrowser() });
+         showBackup('not_opened');
+      }, NOT_OPENED_AFTER_MS);
+   }, [source, showBackup]);
 
    useEffect(() => {
       if (!messengerLink || messengerVerified) return;
@@ -242,18 +334,28 @@ export default function ContactsStep({
             .eq('id', userId)
             .maybeSingle();
          if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+         let bounced = false;
          if (leftAtRef.current !== null) {
+            const awayMs = Date.now() - leftAtRef.current;
+            bounced = awayMs < BOUNCE_MS;
             track('contact_verify_returned', {
                source,
                channel: 'messenger',
                attempt: attemptsRef.current,
                seconds_away: secondsSince(leftAtRef.current),
+               away_ms: awayMs,
+               bounced,
+               android: isAndroidBrowser(),
                confirmed: Boolean(data?.messenger_verified_at)
             });
             leftAtRef.current = null;
          }
          if (data?.messenger_verified_at) {
             setMessengerVerified(true);
+            return;
+         }
+         if (bounced) {
+            showBackup('bounced');
             return;
          }
          if (leftForMessengerRef.current && graceTimer === null) {
@@ -272,7 +374,10 @@ export default function ContactsStep({
    const reopenMessenger = (location: 'card' | 'backup') => {
       if (!messengerLink) return;
       track('contact_verify_reopen_tapped', { source, channel: 'messenger', location, attempts: attemptsRef.current });
-      window.open(messengerLink, '_blank', 'noopener,noreferrer');
+      leftAtRef.current = null;
+      if (messengerCode) writePending({ userId, code: messengerCode, link: messengerLink, at: Date.now() });
+      armNotOpenedCheck();
+      openVerifyLink('messenger', messengerLink);
    };
 
    const copyMessengerCode = async () => {
@@ -320,23 +425,11 @@ export default function ContactsStep({
             setMessengerCode(String(code));
             leftForMessengerRef.current = false;
             awaitingMessengerRef.current = true;
+            writePending({ userId, code: String(code), link, at: Date.now() });
+            armNotOpenedCheck();
          }
-         window.open(link, '_blank', 'noopener,noreferrer');
-
-         // Poll rather than wait for a page-visibility event — the borrower may switch apps for a
-         // while before coming back, and we want the checkmark to appear the moment they do.
-         stopPolling();
-         pollRef.current = window.setInterval(async () => {
-            const { data } = await getSupabaseBrowserClient()
-               .from('users')
-               .select('whatsapp_verified_at, messenger_verified_at')
-               .eq('id', userId)
-               .maybeSingle();
-            if (data?.whatsapp_verified_at) setWhatsappVerified(true);
-            if (data?.messenger_verified_at) setMessengerVerified(true);
-            const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
-            if (done) stopPolling();
-         }, 3000);
+         openVerifyLink(channel, link);
+         startPolling(channel);
       } catch (err) {
          console.error(`start verification failed (${channel})`, err);
          track('contact_verify_start_failed', { source, channel });
