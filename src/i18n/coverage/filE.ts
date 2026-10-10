@@ -93,5 +93,9 @@ export const filipinoCoverageE: Record<string, string> = {
    'Tap Get Started, or send us a message. We connect you automatically.':
       'I-tap ang Get Started, o mag-send ng message sa amin. Awtomatiko ka naming iko-connect.',
    'Not green after a minute? Paste the code (already copied) and send it.':
-      'Hindi pa green pagkalipas ng isang minuto? I-paste ang code (nakakopya na) at i-send.'
+      'Hindi pa green pagkalipas ng isang minuto? I-paste ang code (nakakopya na) at i-send.',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Hindi bumukas ang Messenger? Buksan ang Facebook, i-search ang Moodeng Credit, i-tap ang Message, at mag-hi.',
+   'Opens our chat. Say hi and you’re connected.': 'Bubuksan ang chat namin. Mag-hi at connected ka na.'
 };

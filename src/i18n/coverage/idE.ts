@@ -661,5 +661,9 @@ export const indonesianCoverageE: Record<string, string> = {
    'Tap Get Started, or send us a message. We connect you automatically.':
       'Ketuk Get Started (Mulai), atau kirim pesan ke kami. Kami hubungkan kamu otomatis.',
    'Not green after a minute? Paste the code (already copied) and send it.':
-      'Belum hijau setelah satu menit? Tempel kodenya (sudah tersalin) lalu kirim.'
+      'Belum hijau setelah satu menit? Tempel kodenya (sudah tersalin) lalu kirim.',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Messenger tidak terbuka? Buka Facebook, cari Moodeng Credit, ketuk Kirim Pesan, lalu sapa kami.',
+   'Opens our chat. Say hi and you’re connected.': 'Membuka chat kami. Sapa kami dan kamu langsung terhubung.'
 };

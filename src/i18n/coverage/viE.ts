@@ -1559,5 +1559,9 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Tap Get Started, or send us a message. We connect you automatically.':
       'Nhấn Get Started (Bắt đầu) hoặc gửi tin nhắn cho chúng tôi. Chúng tôi sẽ tự động kết nối bạn.',
    'Not green after a minute? Paste the code (already copied) and send it.':
-      'Sau một phút vẫn chưa chuyển xanh? Dán mã (đã sao chép sẵn) và gửi đi.'
+      'Sau một phút vẫn chưa chuyển xanh? Dán mã (đã sao chép sẵn) và gửi đi.',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Messenger không mở? Mở Facebook, tìm Moodeng Credit, nhấn Nhắn tin và chào chúng tôi.',
+   'Opens our chat. Say hi and you’re connected.': 'Mở cuộc trò chuyện với chúng tôi. Gửi lời chào là bạn đã được kết nối.'
 };

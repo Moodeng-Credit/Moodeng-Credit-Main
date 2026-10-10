@@ -19,6 +19,7 @@ import {
 } from '@/lib/verifyFlow';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
+import { openMessengerSupport } from '@/config/contactVerification';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
@@ -976,7 +977,7 @@ export default function VerifyFlow() {
          <StatusScreen
             title="Let's verify you together"
             body="Your ID check didn't pass 3 times, so the team will help you directly. Message us on Messenger and we'll sort it out with you."
-            action={{ label: 'Message us on Messenger', onClick: () => window.open(EXTERNAL_LINKS.support.messengerKycTries, '_blank', 'noopener') }}
+            action={{ label: 'Message us on Messenger', onClick: () => openMessengerSupport(EXTERNAL_LINKS.support.messengerKycTries) }}
             secondaryAction={{ label: 'Go to dashboard', onClick: () => navigate('/dashboard') }}
             supportLink
          />

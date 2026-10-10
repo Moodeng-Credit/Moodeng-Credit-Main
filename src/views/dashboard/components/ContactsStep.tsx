@@ -132,6 +132,8 @@ export default function ContactsStep({
    const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
+   // Android: the app link did nothing (no Messenger app, or Messenger stuck) — say what to do instead.
+   const [messengerDidntOpen, setMessengerDidntOpen] = useState(false);
    // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
    const androidMessenger = isAndroidBrowser();
    // Set once the tab is hidden after we open Messenger — i.e. they actually went there. Tracked by a
@@ -305,6 +307,7 @@ export default function ContactsStep({
          if (openedAtRef.current !== openedAt || document.visibilityState !== 'visible') return;
          if (lastHiddenAtRef.current !== null && lastHiddenAtRef.current >= openedAt) return;
          track('contact_verify_not_opened', { source, channel: 'messenger', attempt: attemptsRef.current, android: isAndroidBrowser() });
+         setMessengerDidntOpen(true);
          showBackup('not_opened');
       }, NOT_OPENED_AFTER_MS);
    }, [source, showBackup]);
@@ -395,6 +398,7 @@ export default function ContactsStep({
    const openMessengerChat = () => {
       if (!messengerCode) return;
       track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current });
+      setMessengerDidntOpen(false);
       void copyMessengerCode('open_chat');
       // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
       // without sending the code. Best-effort: the code still works if this never lands.
@@ -525,6 +529,11 @@ export default function ContactsStep({
                   <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
                   Copy code & open Messenger
                </a>
+               {messengerDidntOpen ? (
+                  <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                     Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
+                  </p>
+               ) : null}
                <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
                   <li className="flex gap-2">
                      <b>1.</b>
@@ -639,7 +648,7 @@ export default function ContactsStep({
                         ? 'Getting your code…'
                         : 'Opening Messenger…'
                      : androidMessenger
-                       ? 'We give you a short code to send us on Messenger'
+                       ? 'Opens our chat. Say hi and you’re connected.'
                        : source === 'connect'
                          ? 'Opens Messenger — tap Get Started there. Confirms you automatically.'
                          : 'Confirms you automatically — nothing to type'
