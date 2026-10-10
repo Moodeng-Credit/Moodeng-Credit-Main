@@ -84,6 +84,11 @@ const fetchAccountEmail = async (apiKey: string): Promise<string | null> => {
 
 type Attendee = { name: string; email: string; timeZone: string; language: string };
 
+// Every call should be on Zoom, so ask for it explicitly rather than trusting each host's event
+// default (Emma's kept handing out Cal Video links). Cal.com only accepts a location that's on the
+// event type, so if a host's event has no Zoom we fall back to their default instead of failing.
+const ZOOM_LOCATION = { type: 'integration', integration: 'zoom' };
+
 // Returns the created booking uid, or an error tag. 'taken' means the slot was no longer free.
 const createBooking = async (
    apiKey: string,
@@ -93,20 +98,24 @@ const createBooking = async (
    metadata: Record<string, string>,
    guests: string[] = []
 ): Promise<{ uid: string; joinUrl: string | null } | { error: 'taken' | 'other' }> => {
-   const res = await fetch(`${CAL_BASE}/bookings`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-08-13', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ start, eventTypeId, attendee, metadata, ...(guests.length ? { guests } : {}) })
-   });
-   const body = await res.json().catch(() => ({}));
-   if (res.ok && body?.data?.uid) {
-      // The meeting's join link: `location` when it's a URL (Zoom / Cal Video), else the older meetingUrl.
-      const location = typeof body.data.location === 'string' && /^https?:\/\//.test(body.data.location) ? body.data.location : null;
-      const meetingUrl = typeof body.data.meetingUrl === 'string' && /^https?:\/\//.test(body.data.meetingUrl) ? body.data.meetingUrl : null;
-      return { uid: body.data.uid as string, joinUrl: location ?? meetingUrl };
+   for (const location of [ZOOM_LOCATION, null]) {
+      const res = await fetch(`${CAL_BASE}/bookings`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-08-13', 'Content-Type': 'application/json' },
+         body: JSON.stringify({ start, eventTypeId, attendee, metadata, ...(guests.length ? { guests } : {}), ...(location ? { location } : {}) })
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.data?.uid) {
+         // The meeting's join link: `location` when it's a URL (Zoom / Cal Video), else the older meetingUrl.
+         const joinLocation = typeof body.data.location === 'string' && /^https?:\/\//.test(body.data.location) ? body.data.location : null;
+         const meetingUrl = typeof body.data.meetingUrl === 'string' && /^https?:\/\//.test(body.data.meetingUrl) ? body.data.meetingUrl : null;
+         return { uid: body.data.uid as string, joinUrl: joinLocation ?? meetingUrl };
+      }
+      const msg = String(body?.message ?? body?.error?.message ?? '').toLowerCase();
+      if (msg.includes('no longer available') || msg.includes('already') || msg.includes('busy')) return { error: 'taken' };
+      if (location) console.error(`calcom-round-robin: Zoom location refused (${msg || res.status}) — booking with the host's default location`);
    }
-   const msg = String(body?.message ?? body?.error?.message ?? '').toLowerCase();
-   return { error: msg.includes('no longer available') || msg.includes('already') || msg.includes('busy') ? 'taken' : 'other' };
+   return { error: 'other' };
 };
 
 // Best-effort team alert when a call is booked — on top of the Cal.com calendar invite the hosts
