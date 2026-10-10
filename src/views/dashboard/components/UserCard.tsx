@@ -37,7 +37,7 @@ import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
-import { computePointsDelta, computeYearOneIouPointsDelta, formatPointsMajor, getYearOneIouBorrowerBonusPoints } from '@/shared/points';
+import { computePointsDelta, formatPointsMajor } from '@/shared/points';
 import { confirmLoanPayment, fetchLoans, type LoanSideEffectError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -64,7 +64,9 @@ type UserCardProps = Loan & {
 
 const getSafeProfileText = (value: unknown) => (typeof value === 'string' && value.trim() ? value : undefined);
 
-type LenderIouInfo = { loanAmount: number; borrowerFundedLoanCount: number };
+// The borrower's prior-loan count isn't available to lenders (their loan list is RLS-limited to
+// their own loans), so the first/2nd/3rd-loan bonus can't be known here — show only the base.
+type LenderIouInfo = { loanAmount: number };
 
 function BorrowerContextPanel({
    context,
@@ -77,19 +79,8 @@ function BorrowerContextPanel({
 }) {
    const iouData = lenderIouInfo
       ? (() => {
-           const prior = lenderIouInfo.borrowerFundedLoanCount;
-           const bonus = getYearOneIouBorrowerBonusPoints(prior);
-           const total = formatPointsMajor(computeYearOneIouPointsDelta(lenderIouInfo.loanAmount, prior));
            const base = formatPointsMajor(computePointsDelta(lenderIouInfo.loanAmount));
-           const bonusLabel =
-              prior === 0
-                 ? '1st-time borrower bonus'
-                 : prior === 1
-                   ? '2nd-loan borrower bonus'
-                   : prior === 2
-                     ? '3rd-loan borrower bonus'
-                     : '4th+ loan borrower bonus';
-           return { total, base, bonus, bonusLabel };
+           return { base };
         })()
       : null;
    const [profileSummary = context.paragraphText, trustSummary = ''] = context.paragraphText.split(/\n+/);
@@ -142,10 +133,10 @@ function BorrowerContextPanel({
                <div className="min-w-0">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#8a5a00] dark:text-[#f5cb69]">Lender reward</p>
                   <p className="text-[16px] font-[590] leading-6 tracking-[-0.32px] text-md-heading dark:text-md-neutral-100">
-                     {iouData.total} IOU Points
+                     {iouData.base} IOU Points
                   </p>
                   <p className="mt-0.5 text-[12px] font-normal leading-[18px] text-md-neutral-1200 dark:text-md-neutral-400">
-                     {iouData.base} for funding, plus {iouData.bonus} for the {iouData.bonusLabel}.
+                     For funding this loan. Newer borrowers can add a bonus on top.
                   </p>
                </div>
             </div>
@@ -221,14 +212,11 @@ export default function UserCard(loan: UserCardProps) {
       Boolean(savedWalletAddress) && !isBaseWalletProvider(savedWalletProvider) && !isOpenfortWalletProvider(savedWalletProvider);
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
-   const allLoans = useSelector((state: RootState) => state.loans.loans.floans);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
-   const borrowerFundedLoanCount = borrowerUserId
-      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.loanStatus === 'Lent').length
-      : undefined;
-   const borrowerRepaidLoanCount = borrowerUserId
-      ? allLoans.filter((l) => l.borrowerUser === borrowerUserId && l.repaymentStatus === 'Paid' && !l.refundedAt).length
-      : undefined;
+   // Unknown on the lender side: the loan list here is RLS-limited to the viewer's own loans, so
+   // counting it made repeat borrowers look like first-timers. No server source exposes these yet.
+   const borrowerFundedLoanCount: number | undefined = undefined;
+   const borrowerRepaidLoanCount: number | undefined = undefined;
    const borrowerGoodStanding = borrowerProfile ? (borrowerProfile.cs ?? 0) > 0 : undefined;
    const borrowerIsVerified = borrowerProfile ? isUserVerified(borrowerProfile) : undefined;
    const borrowerUsername = getSafeProfileText(borrowerProfile?.username) ?? getSafeProfileText(tourBorrowerUsername) ?? '';
@@ -792,7 +780,7 @@ export default function UserCard(loan: UserCardProps) {
                   context={borrowerContext}
                   lenderIouInfo={
                      !isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest)
-                        ? { loanAmount: loanData.loanAmount, borrowerFundedLoanCount: borrowerFundedLoanCount ?? 0 }
+                        ? { loanAmount: loanData.loanAmount }
                         : undefined
                   }
                   boardExpiry={!isBorrower && !isOwnLoan && !isLent && (showDetails || isPreviewRequest) ? boardExpiry : undefined}

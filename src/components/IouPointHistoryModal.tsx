@@ -36,16 +36,21 @@ export default function IouPointHistoryModal({ userId, isOpen, onClose }: IouPoi
       queryKey: ['iou-point-event-borrowers', loanSourceIds],
       queryFn: async () => {
          const supabase = getSupabaseBrowserClient();
-         const { data, error } = await supabase
-            .from('loan_requests')
-            .select('id,borrower_user_id,users!loan_requests_borrower_user_id_fkey(display_name,username)')
-            .in('id', loanSourceIds);
+         // Loans live in `loans`; borrower names come from the public profile view (users is RLS-locked).
+         const { data: loans, error } = await supabase.from('loans').select('id,borrower_user_id').in('id', loanSourceIds);
          if (error) throw error;
+         const borrowerIds = [...new Set((loans ?? []).map((l) => l.borrower_user_id).filter((id): id is string => Boolean(id)))];
          const map: Record<string, string> = {};
-         for (const row of data ?? []) {
-            const u = Array.isArray(row.users) ? row.users[0] : row.users;
-            const name = u?.display_name || u?.username || null;
-            if (name) map[row.id] = name;
+         if (borrowerIds.length === 0) return map;
+         const { data: profiles, error: profileError } = await supabase
+            .from('public_user_profiles')
+            .select('id,display_name,username')
+            .in('id', borrowerIds);
+         if (profileError) throw profileError;
+         const nameById = new Map((profiles ?? []).map((p) => [p.id, p.display_name || p.username || null]));
+         for (const loan of loans ?? []) {
+            const name = loan.borrower_user_id ? nameById.get(loan.borrower_user_id) : null;
+            if (name) map[loan.id] = name;
          }
          return map;
       },

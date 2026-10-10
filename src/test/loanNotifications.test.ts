@@ -282,7 +282,7 @@ describe('buildLoanNotificationTelegram', () => {
       expect(urgent.text).toContain('Amount coming due');
       expect(urgent.text).toContain('2 loans due in 3 days');
       expect(urgent.text).toContain('Amount due: $525.00 USDC');
-      expect(final.text).toContain('1 loan due within 24 hours');
+      expect(final.text).toContain('1 loan due tomorrow');
       expect(final.text).toContain('stablecoins ready');
    });
 

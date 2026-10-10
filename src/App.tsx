@@ -172,7 +172,7 @@ export default function App() {
    // Registers this device for push and keeps the stored subscription current.
    // No-ops on every browser that can't do push, and while signed out.
    // Lenders skip the on-load prompt: they're asked right after funding instead (RepaidPushCard).
-   usePushNotifications(shouldCheckDefaultedBorrower ? user.id : null, { autoPrompt: user?.userRole !== 'lender' });
+   usePushNotifications(shouldCheckDefaultedBorrower ? user.id : null, { autoPrompt: user?.userRole === 'borrower' });
    const isAccountRestricted = user?.accountStatus === 'blocked' || user?.accountStatus === 'banned';
    const isDefaultedBorrower = defaultedBorrower.support.overdueAmount > 0;
    const repayReturnTo = (location.state as { returnTo?: string } | null)?.returnTo === 'repay';

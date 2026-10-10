@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { format, isValid, parseISO } from 'date-fns';
+import { isValid, parseISO } from 'date-fns';
 
 import AddToHomeScreenSteps from '@/components/funding/AddToHomeScreenSteps';
 import LenderPopupShell, { LenderPopupButton, TurnOnButton } from '@/components/funding/LenderPopupShell';
@@ -12,6 +12,9 @@ import { formatCurrency } from '@/utils/decimalHelpers';
 
 import { type LocaleCode, useLocalization } from '@/i18n';
 import { getPushPermission, isPushConfigured, isPushSupported, needsHomeScreenForPush } from '@/lib/push/webPushClient';
+
+const formatDueDayUtc = (date: Date): string =>
+   new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(date);
 
 // This popup's own wording, for all 5 app languages. `repaysLine` takes the borrower's name, the
 // already-formatted amount, and an optional already-formatted due date (kept in its existing
@@ -148,8 +151,10 @@ export default function LenderFundedPopup({ userId, borrowerName, totalRepayment
       if (pushAsk) markAskSeen();
    }, [pushAsk]);
 
-   const due = dueDate ? parseISO(dueDate) : null;
-   const repaysLine = copy.repaysLine(borrowerName, formatCurrency(totalRepayment), due && isValid(due) ? format(due, 'MMM d') : null);
+   // Due dates are stored as midnight UTC of the due day, so read the calendar day in UTC: the
+   // device timezone shows the day before west of UTC. A bare YYYY-MM-DD is taken as that UTC day.
+   const due = dueDate ? parseISO(/^\d{4}-\d{2}-\d{2}$/.test(dueDate) ? `${dueDate}T00:00:00Z` : dueDate) : null;
+   const repaysLine = copy.repaysLine(borrowerName, formatCurrency(totalRepayment), due && isValid(due) ? formatDueDayUtc(due) : null);
 
    // Moodeng hugging a paid coin, not the bell: the bell belongs to the Home Screen Turn On popup, and
    // reusing it here made the two steps look like the same screen. iPhone gets the same ask as everyone

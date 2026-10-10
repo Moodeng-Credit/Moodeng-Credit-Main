@@ -47,7 +47,7 @@ import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inApp
 import { isUserVerified } from '@/lib/isUserVerified';
 import { getDueDayEnd, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 import { areWalletAddressesEqual, formatWalletAddressShort, getBaseWalletLockStatus, isBaseWalletProvider } from '@/lib/walletProvider';
-import { confirmLoanPayment, getUserLoans, PaymentNotConfirmedError } from '@/store/slices/loanSlice';
+import { confirmLoanPayment, getUserLoans } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -331,13 +331,20 @@ const isLoanDueSoon = (loan: Loan): boolean => {
    return totalHours > 0 && totalHours < 24;
 };
 
+// Round down to whole cents (with a tiny epsilon so 5.00 stays 5.00 despite float noise).
+const floorToCents = (value: number): number => Math.floor(value * 100 + 1e-6) / 100;
+
 const getEstimatedTrustPoints = (loan: Loan, repaymentAmount: number): number => {
    if (repaymentAmount <= 0) return 0;
 
    const remainingAmount = getRemainingAmount(loan);
    if (remainingAmount <= 0) return 0;
 
-   return Math.max(1, Math.round((Math.min(repaymentAmount, remainingAmount) / remainingAmount) * 10));
+   // Mirrors private.award_repayment_pandesal: only a full, on-time payoff earns points
+   // (10). Partial payments and late payoffs earn nothing, so never promise them.
+   if (repaymentAmount < remainingAmount - 0.005) return 0;
+   if (isLoanOverdue(loan)) return 0;
+   return 10;
 };
 
 const createPreviewLoan = (overrides: Partial<Loan>): Loan => ({
@@ -881,9 +888,10 @@ export default function Repay() {
    useEffect(() => {
       if (!showAddFunds || repaymentAmount) return;
       if (hasEnoughToRepay) {
-         setRepaymentAmount(formatCurrency(selectedRemaining));
+         setRepaymentAmount(formatCurrency(floorToCents(selectedRemaining)));
       } else if (hasPartialFunds && usdcBalance !== null) {
-         setRepaymentAmount(formatCurrency(usdcBalance));
+         // Round down: toFixed(2) can round a 4.996 balance up to 5.00, which exceeds it.
+         setRepaymentAmount(formatCurrency(floorToCents(usdcBalance)));
       }
    }, [showAddFunds, hasEnoughToRepay, hasPartialFunds, usdcBalance, repaymentAmount, selectedRemaining]);
 
@@ -1113,7 +1121,7 @@ export default function Repay() {
       } catch (error) {
          // A 202 = payment sent but not yet confirmed on-chain. Don't cry failure: the reconciler
          // (armed in onSubmitted / after the wagmi hash) will finish the DB write once it settles.
-         if (error instanceof PaymentNotConfirmedError) {
+         if ((error as { name?: string } | null)?.name === 'PaymentNotConfirmedError') {
             showToast(
                TOAST_TYPES.INFO,
                'Still confirming',

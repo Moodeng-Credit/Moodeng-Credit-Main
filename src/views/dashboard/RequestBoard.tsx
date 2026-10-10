@@ -1729,8 +1729,14 @@ function RequestBoard$() {
          setDays('');
          return;
       }
-      const date = new Date(e.target.value);
-      const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
+      // Parse YYYY-MM-DD as calendar parts: new Date('YYYY-MM-DD') is UTC midnight, and reading
+      // its local fields shifts the day back by one west of UTC.
+      const [year, month, day] = e.target.value.split('-').map(Number);
+      if (!year || !month || !day) {
+         setDays('');
+         return;
+      }
+      const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
       setDays(utcDate.toISOString());
    };
 
