@@ -114,6 +114,8 @@ interface LoanRequestModalProps {
    autoSubmit?: boolean;
    /** Fired once when the auto-submit is triggered, so the parent can stop asking for it. */
    onAutoSubmitStarted?: () => void;
+   /** A tap on the dimmed backdrop itself (not the form, its popups, toasts or other dialogs). */
+   onBackdropPress?: () => void;
 }
 
 // Everything the modal owns that a resume needs: which screen the borrower is on, the referral they
@@ -1002,7 +1004,8 @@ export default function LoanRequestModal({
    onFlowStateChange,
    onVerifyToSend,
    autoSubmit = false,
-   onAutoSubmitStarted
+   onAutoSubmitStarted,
+   onBackdropPress
 }: LoanRequestModalProps) {
    const dispatch = useDispatch<AppDispatch>();
    const navigate = useNavigate();
@@ -1013,6 +1016,12 @@ export default function LoanRequestModal({
    const verifyToSend = () => {
       onVerifyToSend?.();
       openVerify();
+   };
+   // "Continue verification" / "Try again" / "View status": keep what they typed (including edits
+   // since the first tap) for when they come back verified.
+   const goToVerifyStatus = () => {
+      onVerifyToSend?.();
+      navigate('/verify');
    };
    // Where they are on the way to their first loan (wallet → Messenger → bio → call → ✅, then apply
    // with the ID check as the last step of sending) and what their next button does.
@@ -1132,6 +1141,14 @@ export default function LoanRequestModal({
              ? "We couldn't verify your identity. Tap below to try again or contact us."
              : "Your documents are being reviewed. We'll notify you once confirmed.";
    const verifyPendingCta = `${VERIFICATION_STATE_CTA[verifyUiState]} →`;
+   // The note by the send button, worded by where the ID check actually is — "still being checked"
+   // was shown to people whose check was declined or never finished, too.
+   const verifyPendingNote =
+      verifyUiState === 'declined'
+         ? "Your ID check didn't pass — try again to send this request. What you typed is kept."
+         : verifyUiState === 'unfinished'
+           ? 'Finish your ID check to send this request. What you typed is kept.'
+           : 'Your verification is still being checked — you can send this request once it clears.';
    const limitAmount = Math.max(availableCreditLimit, 0);
    const selectedDate = days ? days.slice(0, 10) : '';
    const selectedCalendarDate = parseIsoDate(selectedDate);
@@ -1158,7 +1175,9 @@ export default function LoanRequestModal({
          : 'Continue to application';
    const referralPrimaryActionText =
       hasAppliedReferralCode || !hasReferralCode ? referralContinueText : hasReferralCodeError ? 'Try again' : 'Apply code';
-   const shouldShowReferralStep = showReferralStep && isVerified && canUseReferralBoost;
+   // Before the ID check too (verifyAtSubmit): the referral card is where a code gets entered.
+   const canOfferReferral = (isVerified || verifyAtSubmit) && canUseReferralBoost;
+   const shouldShowReferralStep = showReferralStep && canOfferReferral;
    const canContinueBorrowerContext = Boolean(
       borrowerContext.incomeSetup &&
       borrowerContext.paydayWindow &&
@@ -1254,6 +1273,8 @@ export default function LoanRequestModal({
       }
       if (wasOpenRef.current) return;
       wasOpenRef.current = true;
+      // A popup left up when the form last closed must not greet them on the next open.
+      setReturnNudge(null);
 
       // Resuming after a reload (typically back from the Messenger hop, which reloaded our app in
       // the same tab): drop the borrower exactly where they were instead of resetting to step 1.
@@ -1284,7 +1305,7 @@ export default function LoanRequestModal({
       // A borrower already waiting on the team (gated flows) goes straight to their "reviewing"
       // card — not back through the referral card first.
       const isWaitingOnTeam = loanFlow !== 'open' && user.loanAccessStatus === 'pending';
-      setShowReferralStep(startOnReferralStep && isVerified && canUseReferralBoost && !isWaitingOnTeam);
+      setShowReferralStep(startOnReferralStep && canOfferReferral && !isWaitingOnTeam);
       setShowBorrowerContextStep(startOnBorrowerContextStep);
       setBioPage(1);
       setTermErrors({});
@@ -1299,6 +1320,7 @@ export default function LoanRequestModal({
       setIsApplyingReferralCode(false);
       onReferralApplied?.(null);
    }, [
+      canOfferReferral,
       canUseReferralBoost,
       isOpen,
       isVerified,
@@ -1325,8 +1347,33 @@ export default function LoanRequestModal({
       if (!loanAmount || !totalRepaymentAmount || !reason) return;
       autoSubmittedRef.current = true;
       onAutoSubmitStarted?.();
-      window.requestAnimationFrame(() => formRef.current?.requestSubmit());
+      // They answered the "a little low" question before the ID check (or weren't asked) — don't
+      // ask again. And call the submit handler directly: requestSubmit() isn't on older iOS Safari.
+      returnAckRef.current = `${loanAmount}|${totalRepaymentAmount}|${days}`;
+      window.requestAnimationFrame(() => handleLoanFormSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, [autoSubmit, isOpen, isVerified, loanAmount, onAutoSubmitStarted, reason, totalRepaymentAmount]);
+
+   // Before leaving for the ID check, get a real verdict on the reason. The live check may still be
+   // running (or have failed) — then the request went to Didit and the automatic send afterwards
+   // stopped on "Improve your reason". Capped so a slow check never strands them; fails open.
+   const [isCheckingBeforeVerify, setIsCheckingBeforeVerify] = useState(false);
+   const verifyToSendAfterChecks = async () => {
+      if (isCheckingBeforeVerify) return;
+      setIsCheckingBeforeVerify(true);
+      const verdict = await Promise.race([
+         checkLoanReason(reason.trim()),
+         new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
+      ]);
+      setIsCheckingBeforeVerify(false);
+      if (verdict?.checked && !verdict.ok) {
+         setLiveReasonCheck({ status: 'weak', hint: verdict.hint, suggestion: verdict.suggestion, category: verdict.category });
+         setTermErrors((prev) => ({ ...prev, reason: verdict.hint || 'Tell lenders what the money will be used for.' }));
+         document.getElementById('reason')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         return;
+      }
+      verifyToSend();
+   };
 
    // Report the live step + bio + referral up so RequestBoard can snapshot a resumable draft. Runs
    // only while open; the parent decides whether the snapshot is far enough along to keep.
@@ -1834,7 +1881,7 @@ export default function LoanRequestModal({
                setReturnNudge(low);
                return;
             }
-            verifyToSend();
+            void verifyToSendAfterChecks();
             return;
          }
          setVerifyNudge(true);
@@ -2082,7 +2129,7 @@ export default function LoanRequestModal({
 
    // Back from the Connect step returns to the referral card when there is one, else closes.
    const handleConnectBack = () => {
-      if (isVerified && canUseReferralBoost) {
+      if (canOfferReferral) {
          setShowReferralStep(true);
          return;
       }
@@ -2202,7 +2249,16 @@ export default function LoanRequestModal({
    };
 
    return (
-      <div className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden overscroll-contain bg-[#1f1b29]/32 sm:items-center sm:px-5 sm:py-6">
+      <div
+         className="fixed inset-0 z-[70] flex items-end justify-center overflow-hidden overscroll-contain bg-[#1f1b29]/32 sm:items-center sm:px-5 sm:py-6"
+         // Close only on a tap on the dimmed backdrop itself. A document-wide "outside the form"
+         // listener also fired on the form's own popups ("A little low for lenders"), toasts and the
+         // location question — phones send a mousedown on every tap, so their buttons closed the
+         // whole form instead of doing what they say.
+         onMouseDown={(event) => {
+            if (event.target === event.currentTarget) onBackdropPress?.();
+         }}
+      >
          <section
             ref={clickOutsideRef}
             className="relative mx-auto flex max-h-[94dvh] w-full max-w-[440px] flex-col overflow-hidden rounded-t-[28px] border border-[#e7e0ec] bg-[#fdfcfd] shadow-[0_24px_80px_rgba(44,19,82,0.18)] transition-transform duration-150 ease-out sm:max-h-[calc(100dvh-48px)] sm:rounded-[24px]"
@@ -2455,7 +2511,7 @@ export default function LoanRequestModal({
                                  </div>
                                  {verifyAtSubmit ? null : (
                                  <button
-                                    onClick={isPending ? () => navigate('/verify') : journey.go}
+                                    onClick={isPending ? goToVerifyStatus : journey.go}
                                     className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
                                     type="button"
                                  >
@@ -2886,7 +2942,7 @@ export default function LoanRequestModal({
                                  <TriangleAlert className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
                                  <span>
                                     {isPending
-                                       ? 'Your verification is still being checked — you can send this request once it clears.'
+                                       ? verifyPendingNote
                                        : verifyAtSubmit
                                          ? "When you send this, you'll verify your ID (about 2 minutes). What you typed is kept."
                                          : `Finish setting up first to send a request — you're on step ${journey.step} of 3.`}
@@ -2895,7 +2951,7 @@ export default function LoanRequestModal({
                               {verifyAtSubmit ? null : (
                               <button
                                  className="w-fit rounded-[12px] bg-md-primary-1200 px-md-2 py-md-1 text-md-b2 font-semibold text-md-neutral-100 transition duration-150 ease-out hover:bg-[#5200c8] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                                 onClick={isPending ? () => navigate('/verify') : journey.go}
+                                 onClick={isPending ? goToVerifyStatus : journey.go}
                                  type="button"
                               >
                                  {isPending ? verifyPendingCta : <>{journey.cta}<span aria-hidden="true"> →</span></>}
@@ -2915,7 +2971,7 @@ export default function LoanRequestModal({
                            type="submit"
                            disabled={isSubmitting}
                         >
-                           {isSubmitting ? 'Submitting...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
+                           {isSubmitting ? 'Submitting...' : isCheckingBeforeVerify ? 'Checking...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
                         </button>
                      </>
                   )}
@@ -3024,7 +3080,7 @@ export default function LoanRequestModal({
                      onClick={() => {
                         returnAckRef.current = returnNudge.key;
                         setReturnNudge(null);
-                        if (verifyAtSubmit) verifyToSend();
+                        if (verifyAtSubmit) void verifyToSendAfterChecks();
                         else handleLoanFormSubmit({ preventDefault: () => {} } as FormEvent<HTMLFormElement>);
                      }}
                      type="button"

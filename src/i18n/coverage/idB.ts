@@ -1292,5 +1292,13 @@ export const indonesianCoverageB: Record<string, string> = {
    // src/views/support/FAQ.tsx
    'Frequently Asked Questions | Moodeng Credit': 'Pertanyaan yang Sering Diajukan | Moodeng Credit',
    'Answers about how Moodeng Credit works — borrowing in USDC, Pandesal points, Credit Levels, the Instant Wallet (and Base Accounts), fees, and staying safe from loan sharks.':
-      'Jawaban tentang cara kerja Moodeng Credit — meminjam dalam USDC, poin Pandesal, Level Kredit, Instant Wallet (dan Base Account), biaya, dan cara tetap aman dari rentenir.'
+      'Jawaban tentang cara kerja Moodeng Credit — meminjam dalam USDC, poin Pandesal, Level Kredit, Instant Wallet (dan Base Account), biaya, dan cara tetap aman dari rentenir.',
+   // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
+   'Meet the team, then apply': 'Kenalan dengan tim, lalu ajukan',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.':
+      'Peminjam menyiapkan dompet, menghubungkan Messenger, dan melakukan panggilan singkat dengan tim. ID mereka dicek saat mengirim permintaan pertama, agar pemberi pinjaman tahu mereka mendanai orang sungguhan.',
+   'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
+      'Di sini peminjam mengatur jumlah, pembayaran kembali, tanggal, dan alasan. Saat dikirim, ID mereka akan dicek.',
+   'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
+      'Peminjam baru menyiapkan akun, melakukan panggilan singkat dengan tim, lalu mengisi permintaan. Cek ID singkat adalah langkah terakhir saat mengirimnya.'
 };

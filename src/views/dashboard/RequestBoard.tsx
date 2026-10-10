@@ -641,7 +641,9 @@ function RequestBoard$() {
       isReferralTestMode ||
       (isAuthenticated &&
          isBorrower &&
-         isUserVerified(effectiveUser) &&
+         // Approved borrowers fill in the form before their ID check, so they get the referral card
+         // there too — it was the only place to enter a code, and they never saw it.
+         (isUserVerified(effectiveUser) || isApplyingBeforeIdCheck) &&
          effectiveCreditLimit <= STARTING_CREDIT_LIMIT &&
          borrowerCreditLoans.length === 0);
    const hasBorrowerBaseWallet = !IS_BORROWER_BASE_WALLET_GATE_ENABLED || hasWalletAddressOnAccount(effectiveUser);
@@ -654,7 +656,9 @@ function RequestBoard$() {
       (location.state as { openLoanRequest?: boolean } | null)?.openLoanRequest === true ||
       new URLSearchParams(location.search).get('applyLoan') === '1';
 
-   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), showModal) as RefObject<HTMLDivElement>;
+   // Never active: the loan form closes from its own backdrop (onBackdropPress). A document-wide
+   // outside-click also caught taps on the form's popups, toasts and the location question.
+   const loanRequestModalRef = useClickOutside<HTMLDivElement>(() => setShowModal(false), false) as RefObject<HTMLDivElement>;
    const publicQuestionsRef = useClickOutside<HTMLDivElement>(
       () => setShowPublicQuestions(false),
       showPublicQuestions
@@ -724,7 +728,13 @@ function RequestBoard$() {
          borrowerContext: draft.borrowerContext,
          profileName: draft.profileName
       });
-      if (draft.sendAfterVerify && isUserVerified(effectiveUser)) setAutoSendLoanRequest(true);
+      const isWaitingOnIdCheck = Boolean(draft.sendAfterVerify || draft.prefillOnly);
+      if (isWaitingOnIdCheck && !isUserVerified(effectiveUser)) {
+         // ID still with Didit (e.g. manual review): keep the terms ready for when they tap Apply,
+         // but don't pop the form open on every visit — there's nothing they can do until it clears.
+         return;
+      }
+      if (draft.sendAfterVerify) setAutoSendLoanRequest(true);
       setShowModal(true);
       // Resume once per load, against the profile as it is now.
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -734,7 +744,8 @@ function RequestBoard$() {
    // Save the terms now (the regular snapshot skips the terms screen) and mark them to be sent once
    // the borrower is back verified — the form promises "What you typed is kept".
    const handleVerifyToSend = useCallback(() => {
-      if (!effectiveUser?.id) return;
+      // Nothing typed yet (e.g. "View status" on an empty form): nothing to keep or send.
+      if (!effectiveUser?.id || (!loanAmount && !reason)) return;
       saveLoanRequestDraft(effectiveUser.id, {
          terms: { loanAmount, totalRepaymentAmount, reason, days },
          referral: loanRequestFlowState?.referral ?? appliedReferral,
@@ -896,16 +907,24 @@ function RequestBoard$() {
       }
    };
 
+   const handleLoanModalBackdropPress = useCallback(() => setShowModal(false), []);
    const handleCloseModal = useCallback(() => {
       setShowModal(false);
       setShowBioStep(false);
       pendingLoanDataRef.current = null;
-      // Closing is a deliberate abandon — drop the resumable snapshot so it can't reopen later.
-      clearLoanRequestDraft();
       setLoanRequestResume(null);
       setLoanRequestFlowState(null);
       setAutoSendLoanRequest(false);
-   }, []);
+      // Terms already sent off to the ID check, closed while the ID is still being checked: keep
+      // them so the form comes back filled in once verified — but no longer send it by itself.
+      const draft = effectiveUser?.id ? loadLoanRequestDraft(effectiveUser.id) : null;
+      if (draft && (draft.sendAfterVerify || draft.prefillOnly) && !isUserVerified(effectiveUser)) {
+         saveLoanRequestDraft(effectiveUser.id, { ...draft, sendAfterVerify: false, prefillOnly: true });
+         return;
+      }
+      // Otherwise closing is a deliberate abandon — drop the resumable snapshot so it can't reopen later.
+      clearLoanRequestDraft();
+   }, [effectiveUser]);
    const handleVerifyHeaderClick = useCallback(() => {
       journey.go();
    }, [journey]);
@@ -1160,15 +1179,15 @@ function RequestBoard$() {
             },
             {
                target: '[data-tour-target="guest-world-id-preview"]',
-               title: 'Verify first',
-               body: 'Borrowers complete a one-time identity check before requesting a loan. It helps lenders know they are funding a real person.',
+               title: 'Meet the team, then apply',
+               body: 'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.',
                cardPlacement: 'top',
                durationMs: 6500
             },
             {
                target: '[data-tour-target="loan-borrow-amount"]',
                title: 'Set your terms',
-               body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+               body: 'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.',
                durationMs: 6000
             },
             {
@@ -1216,14 +1235,14 @@ function RequestBoard$() {
               },
               {
                  target: '[data-tour-target="request-verify-world-id-link"]',
-                 title: 'Verify first',
-                 body: 'Before an unverified borrower can request a loan, Moodeng sends them through a quick identity verification screen.',
+                 title: 'Meet the team, then apply',
+                 body: 'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.',
                  durationMs: 6500
               },
               {
                  target: '[data-tour-target="loan-borrow-amount"]',
                  title: 'Loan terms preview',
-                 body: 'After verification, this is where the borrower sets the amount, repayment, date, and reason for the request.',
+                 body: 'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.',
                  durationMs: 6000
               }
            ].map(slowTourStep)
@@ -2451,6 +2470,7 @@ function RequestBoard$() {
                   onVerifyToSend={handleVerifyToSend}
                   autoSubmit={autoSendLoanRequest}
                   onAutoSubmitStarted={handleAutoSubmitStarted}
+                  onBackdropPress={handleLoanModalBackdropPress}
                   clickOutsideRef={loanRequestModalRef}
                />
                {/* No tap-outside dismiss: a stray tap where the borrower just tapped "Make Your
@@ -2627,7 +2647,7 @@ function GuestWorldIdTourPreview() {
             <div className="flex flex-col items-center gap-1 text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Verify Yourself</h2>
                <p className="text-md-b2 text-md-neutral-1200">
-                  Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.
+                  A one-time ID check so lenders know you're a real person — it takes about 3 minutes.
                </p>
             </div>
             <div className="w-full rounded-md-lg border-2 border-md-primary-1200 bg-md-primary-100 p-4 flex items-center gap-3">

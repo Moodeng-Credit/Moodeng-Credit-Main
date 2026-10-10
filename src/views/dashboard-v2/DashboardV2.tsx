@@ -8,6 +8,7 @@ import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
 
 import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -112,6 +113,13 @@ export default function DashboardV2() {
    const { model, previewState, isReal, isSignedIn, isReady, language, previewSearch } = useDashboardV2Preview();
    const [openMilestone, setOpenMilestone] = useState<DashboardV2Milestone | null>(null);
    const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+   // An ID already with Didit (in review, processing, unfinished, declined) goes to its status page:
+   // the chooser starts a new paid Didit session, which also wipes the "in review" status.
+   const verifyJourney = useVerificationJourney();
+   const handleVerify = () => {
+      if (verifyJourney.stage === 'id_with_didit') verifyJourney.go();
+      else setIsVerifyOpen(true);
+   };
    // Snapshot of the voucher being claimed: the rewards refetch after submitting removes it from `claimable`,
    // and the popup must stay open to show its thank-you screen.
    const [claimingVoucher, setClaimingVoucher] = useState<ClaimableVoucher | null>(null);
@@ -215,7 +223,7 @@ export default function DashboardV2() {
                   ) : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
-                  {!model.isVerified ? <VerifyIdentityBanner onVerify={() => setIsVerifyOpen(true)} /> : null}
+                  {!model.isVerified ? <VerifyIdentityBanner onVerify={handleVerify} /> : null}
                   {model.showConnectWallet ? <ConnectWalletBanner onConnect={() => navigate('/onboarding/wallet')} /> : null}
                   {showRemindersBanner ? (
                      <TurnOnRemindersBanner
@@ -245,7 +253,7 @@ export default function DashboardV2() {
                milestone={openMilestone}
                isVerified={model.isVerified}
                onClose={() => setOpenMilestone(null)}
-               onVerify={() => setIsVerifyOpen(true)}
+               onVerify={handleVerify}
             />
          ) : null}
          {/* Same "Verify Yourself" chooser as onboarding, Milestones, the loan form and Repay. */}

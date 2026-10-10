@@ -260,18 +260,39 @@ describe('LoanRequestModal borrowing gate', () => {
       expect(markup).not.toMatch(/type="submit"[^>]*disabled=""/);
    });
 
+   const approvedUnverifiedUser = {
+      ...baseUser,
+      isWorldId: 'INACTIVE',
+      walletAddress: '0x1111111111111111111111111111111111111111',
+      loanAccessStatus: 'approved'
+   } as User;
+
    it('lets a borrower through onboarding fill in the form, with the ID check as the last step', () => {
       const markup = renderToStaticMarkup(
          createElement(LoanRequestModal, {
             ...sharedProps,
             showVerify: true,
-            user: { ...baseUser, isWorldId: 'INACTIVE', walletAddress: '0x1111111111111111111111111111111111111111', loanAccessStatus: 'approved' }
+            canUseReferralBoost: false,
+            user: approvedUnverifiedUser
          })
       );
 
       expect(markup).toContain('Last step: verify your ID');
       expect(markup).toContain('Verify ID &amp; send request');
       expect(markup).not.toContain('inert=""');
+   });
+
+   it('offers the referral card before the ID check — the only place a new borrower can enter a code', () => {
+      const markup = renderToStaticMarkup(
+         createElement(LoanRequestModal, {
+            ...sharedProps,
+            showVerify: true,
+            canUseReferralBoost: true,
+            user: approvedUnverifiedUser
+         })
+      );
+
+      expect(markup).toContain('Have a referral code?');
    });
 
    describe('borrower flow split (call/approval gate)', () => {

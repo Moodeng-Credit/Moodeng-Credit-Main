@@ -292,7 +292,7 @@ function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfMo
             <div className="flex flex-col gap-2 items-center text-center">
                <h2 className="text-md-h4 font-semibold text-md-heading">Verify Yourself</h2>
                <p className="text-md-b1 text-md-neutral-1200">
-                  Confirm your identity to unlock your account — a one-time check that takes about 3 minutes.
+                  A one-time ID check so lenders know you're a real person — it takes about 3 minutes.
                </p>
             </div>
 

@@ -1198,5 +1198,8 @@ export const vietnameseCoverageA: Record<string, string> = {
    'How can we reach you?': 'Chúng tôi có thể liên hệ với bạn qua đâu?',
    'Open Messenger again': 'Mở lại Messenger',
    Required: 'Bắt buộc',
-   'Turn on reminders': 'Bật nhắc nhở'
+   'Turn on reminders': 'Bật nhắc nhở',
+   // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
+   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
+      'Kiểm tra giấy tờ tùy thân một lần để người cho vay biết bạn là người thật — mất khoảng 3 phút.'
 };

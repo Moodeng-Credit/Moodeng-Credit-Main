@@ -30,7 +30,8 @@ const SYNC_EVERY_N_ATTEMPTS = 10;
 
 // create-didit-session refuses, before any paid session is created, a borrower who hasn't met the
 // team yet (409 APPROVAL_REQUIRED — pre-KYC gate) or who has used their 3 KYC tries (409
-// KYC_TRIES_USED — they message us; an admin gives more with /kycretry).
+// KYC_TRIES_USED — they message us; an admin gives more with /kycretry), or whose ID is already in
+// manual review (409 ID_IN_REVIEW — shown the review screen; a new session would cost another check).
 const refusalCode = async (error: unknown): Promise<string | null> => {
    const ctx = (error as { context?: Response } | null)?.context;
    if (!ctx || typeof ctx.clone !== 'function') return null;
@@ -409,6 +410,10 @@ export default function VerifyFlow() {
          }
          if (refusal === 'KYC_TRIES_USED') {
             setStep('tries-used');
+            return;
+         }
+         if (refusal === 'ID_IN_REVIEW') {
+            setStep('id-review');
             return;
          }
          const url = (data as { url?: string } | null)?.url;

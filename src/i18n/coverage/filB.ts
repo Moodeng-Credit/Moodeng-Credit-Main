@@ -722,5 +722,13 @@ export const filipinoCoverageB: Record<string, string> = {
    'Borrower owes': 'Utang ng borrower',
    'Released to you': 'Nailabas na sa iyo',
    'Held in contract': 'Nakahawak sa contract',
-   'Repayment destination': 'Saan mapupunta ang bayad'
+   'Repayment destination': 'Saan mapupunta ang bayad',
+   // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
+   'Meet the team, then apply': 'Kilalanin ang team, tapos mag-apply',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.':
+      'Mag-se-set up ng wallet ang borrower, iko-connect ang Messenger, at may maikling call sa team. Iche-check ang ID nila pagpadala ng unang request, para alam ng lenders na totoong tao ang pinapahiram nila.',
+   'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
+      'Dito ilalagay ng borrower ang amount, bayad, petsa, at dahilan. Pagpadala nito, saka iche-check ang ID nila.',
+   'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
+      'Ang bagong borrower ay mag-se-set up, may maikling call sa team, tapos magfi-fill in ng request. Ang mabilis na ID check ang huling hakbang bago ito maipadala.'
 };

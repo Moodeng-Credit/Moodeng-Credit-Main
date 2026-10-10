@@ -153,10 +153,19 @@ serve(async (req) => {
             return json({ ok: result.ok, summary: result.summary });
          }
          // No request to decide: approve directly. Conditional, so a double tap approves (and
-         // messages the borrower) only once.
+         // messages the borrower) only once. Approving here means the team has cleared them, so it
+         // also counts as the intro call: without video_call_outcome = 'attended' the loan form asked
+         // them to book a second call and hold_request_until_first_call hid their request from lenders.
+         const approvedAt = new Date().toISOString();
          const { data: approved, error: approveError } = await svc
             .from('users')
-            .update({ loan_access_status: 'approved', loan_access_approved_at: new Date().toISOString(), loan_access_seen_at: null })
+            .update({
+               loan_access_status: 'approved',
+               loan_access_approved_at: approvedAt,
+               loan_access_seen_at: null,
+               video_call_outcome: 'attended',
+               video_call_outcome_at: approvedAt
+            })
             .eq('id', body.userId)
             .or('loan_access_status.is.null,loan_access_status.neq.approved')
             .select(BORROWER_COLUMNS)

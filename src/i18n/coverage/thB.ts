@@ -1512,5 +1512,13 @@ export const thaiCoverageB: Record<string, string> = {
       'แต้ม Pandesal ใช้ปลดล็อกรางวัลโปรไฟล์ แต่ไม่ได้รับประกันว่าจะได้รับการปล่อยกู้',
    'How rewards work': 'รางวัลทำงานอย่างไร',
    'Next reward': 'รางวัลถัดไป',
-   Collectibles: 'ของสะสม'
+   Collectibles: 'ของสะสม',
+   // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
+   'Meet the team, then apply': 'พบทีมงาน แล้วค่อยสมัคร',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.':
+      'ผู้ยืมตั้งค่ากระเป๋าเงิน เชื่อมต่อ Messenger และคุยสั้นๆ กับทีมงาน บัตรประจำตัวจะถูกตรวจสอบเมื่อส่งคำขอแรก เพื่อให้ผู้ให้กู้รู้ว่ากำลังให้คนจริงยืม',
+   'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
+      'ตรงนี้ผู้ยืมกำหนดจำนวนเงิน ยอดชำระคืน วันที่ และเหตุผล เมื่อส่งคำขอ บัตรประจำตัวจะถูกตรวจสอบ',
+   'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
+      'ผู้ยืมใหม่ตั้งค่า คุยสั้นๆ กับทีมงาน แล้วกรอกคำขอ การตรวจสอบบัตรประจำตัวอย่างรวดเร็วคือขั้นตอนสุดท้ายของการส่ง'
 };

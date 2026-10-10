@@ -988,5 +988,13 @@ export const vietnameseCoverageB: Record<string, string> = {
    'You paid': 'Bạn đã trả',
    'Expected repayment': 'Khoản trả nợ dự kiến',
    'IOU points earned': 'Điểm IOU đã nhận',
-   'Fund this loan': 'Cấp vốn cho khoản vay này'
+   'Fund this loan': 'Cấp vốn cho khoản vay này',
+   // src/views/dashboard/RequestBoard.tsx tour (apply, then ID check last)
+   'Meet the team, then apply': 'Gặp đội ngũ, rồi nộp đơn',
+   'Borrowers set up a wallet, connect Messenger and have a short call with the team. Their ID is checked when they send their first request, so lenders know they are funding a real person.':
+      'Người vay thiết lập ví, kết nối Messenger và có một cuộc gọi ngắn với đội ngũ. Giấy tờ tùy thân được kiểm tra khi họ gửi yêu cầu đầu tiên, để người cho vay biết họ đang cho một người thật vay.',
+   'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
+      'Đây là nơi người vay đặt số tiền, khoản hoàn trả, ngày và lý do. Khi gửi yêu cầu, giấy tờ tùy thân của họ sẽ được kiểm tra.',
+   'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
+      'Người vay mới thiết lập tài khoản, gọi ngắn với đội ngũ, rồi điền yêu cầu. Kiểm tra giấy tờ tùy thân nhanh là bước cuối cùng khi gửi.'
 };
