@@ -6,6 +6,7 @@ import {
    LOAN_REQUEST_DRAFT_TTL_MS,
    loadLoanRequestDraft,
    saveLoanRequestDraft,
+   SEND_AFTER_VERIFY_TTL_MS,
    type LoanRequestDraft
 } from '@/lib/loanRequestDraft';
 
@@ -62,6 +63,14 @@ describe('loanRequestDraft store', () => {
       expect(loadLoanRequestDraft('user-1')).toBeNull();
       // And it was cleared, not just hidden.
       expect(window.localStorage.getItem(STORAGE_KEY)).toBeNull();
+   });
+
+   it('keeps a request sent off to the ID check through a long review, then drops it after a day', () => {
+      saveLoanRequestDraft('user-1', makeDraft({ sendAfterVerify: true }));
+      vi.advanceTimersByTime(LOAN_REQUEST_DRAFT_TTL_MS * 4);
+      expect(loadLoanRequestDraft('user-1')?.sendAfterVerify).toBe(true);
+      vi.advanceTimersByTime(SEND_AFTER_VERIFY_TTL_MS);
+      expect(loadLoanRequestDraft('user-1')).toBeNull();
    });
 
    it('keeps a draft that is still within the TTL', () => {
@@ -128,6 +137,23 @@ describe('loanRequestDraft store', () => {
             }
          });
          expect(draftIsResumable(draft)).toBe(false);
+      });
+
+      it('is true for terms sent off to the ID check, even from the terms screen', () => {
+         const termsOnly = makeDraft({
+            flow: {
+               showReferralStep: false,
+               showBorrowerContextStep: false,
+               bioPage: 1,
+               showContactsStep: false,
+               showVideoCallStep: false,
+               contactsStepDone: false,
+               videoCallStepDone: false,
+               borrowerContextPromptSeen: false
+            }
+         });
+         expect(draftIsResumable({ ...termsOnly, sendAfterVerify: true })).toBe(true);
+         expect(draftIsResumable({ ...termsOnly, sendAfterVerify: false })).toBe(false);
       });
 
       it('is true on the contacts step (the Messenger-hop case)', () => {

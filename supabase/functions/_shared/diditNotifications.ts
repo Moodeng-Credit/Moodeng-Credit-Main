@@ -156,9 +156,11 @@ export type UserNotifyOutcome = 'approved' | 'review' | 'declined' | 'abandoned'
 export const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body: (reason?: string) => string; cta: string }> = {
    approved: {
       subject: 'You’re verified on Moodeng! 🎉',
+      // The ID check is the last step of sending a loan request, so point them at finishing it — the
+      // link (/verify) takes a verified borrower straight to the loan form.
       body: () =>
-         'Great news — your identity verification is complete and your Moodeng account is fully unlocked. You can now request loans and start building trust with lenders.',
-      cta: 'Open Moodeng'
+         'Your ID check is complete. Tap below to send your loan request. If it already went out, you’ll see it on the Request Board.',
+      cta: 'Send my loan request'
    },
    review: {
       subject: 'Your Moodeng verification is in manual review',
@@ -180,6 +182,13 @@ export const USER_NOTIFY_COPY: Record<UserNotifyOutcome, { subject: string; body
    }
 };
 
+// Lenders verify too, but have no loan request to send.
+const LENDER_APPROVED_COPY = {
+   subject: 'You’re verified on Moodeng! 🎉',
+   body: () => 'Your ID check is complete and your Moodeng account is fully unlocked.',
+   cta: 'Open Moodeng'
+};
+
 export const notifyUser = async (
    adminSupabase: AdminSupabase,
    userId: string,
@@ -189,7 +198,7 @@ export const notifyUser = async (
    try {
       const { data } = await adminSupabase
          .from('users')
-         .select('email, chat_id, messenger_psid, notif_account_activity, notif_push')
+         .select('email, chat_id, messenger_psid, notif_account_activity, notif_push, user_role')
          .eq('id', userId)
          .maybeSingle();
       const user = data as {
@@ -198,10 +207,11 @@ export const notifyUser = async (
          messenger_psid?: string | null;
          notif_account_activity?: boolean | null;
          notif_push?: boolean | null;
+         user_role?: string | null;
       } | null;
       if (!user || user.notif_account_activity === false) return;
 
-      const copy = USER_NOTIFY_COPY[outcome];
+      const copy = outcome === 'approved' && user.user_role === 'lender' ? LENDER_APPROVED_COPY : USER_NOTIFY_COPY[outcome];
       const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
       const verifyUrl = `${siteUrl}/verify`;
       const text = `${copy.body(reason)}\n\n${copy.cta}: ${verifyUrl}`;
