@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type PointerEvent, useEffect, useRef, useState } from 'react';
 
 import { ChevronRight } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,6 +27,28 @@ const APPROVAL_POLL_MS = 15_000;
 
 const RESUME_PAGES = new Set(['/', '/dashboard', '/request-board']);
 
+// The bar can sit on top of buttons near the bottom of a page (Log out on Account, 2026-10-11), so
+// it can be dragged up or down out of the way. A drag doesn't count as a tap. The spot is kept for
+// this visit only.
+const DRAG_THRESHOLD_PX = 6;
+const OFFSET_KEY = 'moodeng-journey-nudge-offset';
+const readOffset = () => {
+   try {
+      return Number(window.sessionStorage.getItem(OFFSET_KEY)) || 0;
+   } catch {
+      return 0;
+   }
+};
+const saveOffset = (offset: number) => {
+   try {
+      window.sessionStorage.setItem(OFFSET_KEY, String(offset));
+   } catch {
+      // ignore
+   }
+};
+// Up to near the top of the screen, or down over the bottom menu.
+const clampOffset = (offset: number) => Math.min(80, Math.max(-(window.innerHeight - 260), offset));
+
 const resumeKey = (userId: string) => `moodeng-journey-resume:${userId}`;
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -54,6 +76,9 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
    const { showToast } = useToast();
    const journey = useVerificationJourney();
    const checkedRef = useRef(false);
+   const [offset, setOffset] = useState(readOffset);
+   const dragRef = useRef<{ startY: number; startOffset: number; moved: boolean } | null>(null);
+   const suppressClickRef = useRef(false);
 
    const isBorrower = user?.userRole === 'borrower';
    const loanAccessStatus = user?.loanAccessStatus;
@@ -106,15 +131,54 @@ export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }
       if (location.pathname === PRE_KYC_CONNECT_PATH || location.pathname.startsWith('/onboarding/wallet')) markResumed(user.id);
    }, [location.pathname, user?.id]);
 
+   const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+      dragRef.current = { startY: e.clientY, startOffset: offset, moved: false };
+      suppressClickRef.current = false;
+   };
+   const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      const dy = e.clientY - drag.startY;
+      if (!drag.moved && Math.abs(dy) < DRAG_THRESHOLD_PX) return;
+      if (!drag.moved) {
+         drag.moved = true;
+         e.currentTarget.setPointerCapture(e.pointerId);
+      }
+      setOffset(clampOffset(drag.startOffset + dy));
+   };
+   const onPointerUp = () => {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      if (!drag?.moved) return;
+      suppressClickRef.current = true;
+      setOffset((current) => {
+         saveOffset(current);
+         return current;
+      });
+   };
+   const onClick = () => {
+      if (suppressClickRef.current) {
+         suppressClickRef.current = false;
+         return;
+      }
+      journey.go();
+   };
+
    if (!active || !bottomNavVisible || location.pathname === '/request-board' || !journey.step) return null;
 
    return (
       <button
-         className="fixed left-1/2 z-40 flex w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 items-center gap-3 rounded-[18px] bg-[#6b55f7] px-4 py-3 text-left text-white shadow-[0_6px_18px_rgba(107,85,247,0.35)] active:scale-[0.99]"
-         onClick={journey.go}
-         style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 118px)' }}
+         className="fixed left-1/2 z-40 flex w-[calc(100%-40px)] max-w-[400px] -translate-x-1/2 touch-none select-none items-center gap-3 rounded-[18px] bg-[#6b55f7] px-4 py-3 text-left text-white shadow-[0_6px_18px_rgba(107,85,247,0.35)] active:scale-[0.99]"
+         onClick={onClick}
+         onPointerCancel={onPointerUp}
+         onPointerDown={onPointerDown}
+         onPointerMove={onPointerMove}
+         onPointerUp={onPointerUp}
+         style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${118 - offset}px)` }}
+         title="Drag to move"
          type="button"
       >
+         <span aria-hidden="true" className="absolute left-1/2 top-1 h-1 w-8 -translate-x-1/2 rounded-full bg-white/40" />
          <span className="flex min-w-0 flex-1 flex-col">
             <span className="text-[12px] font-semibold uppercase tracking-wide text-white/80">{`Step ${journey.step} of 3 to your first loan`}</span>
             <span className="truncate text-[16px] font-bold">{journey.cta}</span>
