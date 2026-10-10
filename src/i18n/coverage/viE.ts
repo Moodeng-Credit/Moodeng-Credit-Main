@@ -1552,5 +1552,12 @@ export const vietnameseCoverageE: Record<string, string> = {
       'Không có ứng dụng Messenger? Mở Facebook, tìm Moodeng Credit, nhấn Nhắn tin và gửi mã ở đó.',
    '1 min': '1 phút',
    'Getting your code…': 'Đang lấy mã của bạn…',
-   'We give you a short code to send us on Messenger': 'Chúng tôi gửi bạn một mã ngắn để gửi cho chúng tôi qua Messenger'
+   'We give you a short code to send us on Messenger': 'Chúng tôi gửi bạn một mã ngắn để gửi cho chúng tôi qua Messenger',
+   // ContactsStep Android Messenger timing match
+   'Connect on Messenger': 'Kết nối qua Messenger',
+   'Tap the blue button. Our chat opens in Messenger.': 'Nhấn nút màu xanh. Cuộc trò chuyện với chúng tôi sẽ mở trong Messenger.',
+   'Tap Get Started, or send us a message. We connect you automatically.':
+      'Nhấn Get Started (Bắt đầu) hoặc gửi tin nhắn cho chúng tôi. Chúng tôi sẽ tự động kết nối bạn.',
+   'Not green after a minute? Paste the code (already copied) and send it.':
+      'Sau một phút vẫn chưa chuyển xanh? Dán mã (đã sao chép sẵn) và gửi đi.'
 };

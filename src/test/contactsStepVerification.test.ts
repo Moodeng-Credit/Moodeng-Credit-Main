@@ -268,6 +268,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             await Promise.resolve();
          });
          expect(writeText).toHaveBeenCalledWith('MDNG-ABC123');
+         // The tap time is recorded so the bot can connect them by timing.
+         expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
          expect(JSON.parse(window.sessionStorage.getItem('moodeng.messengerVerifyPending') ?? '{}')).toMatchObject({
             code: 'MDNG-ABC123',
             link: MESSENGER_PAGE_CHAT_LINK

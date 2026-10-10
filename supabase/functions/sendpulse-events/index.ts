@@ -5,6 +5,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
+import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
    getMessengerContact,
    MESSENGER_PAGE_ID,
@@ -31,7 +32,9 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   1. It carries an MDNG code (typed in any form, or the mdng_code their link set) → hand it to
 //      sendpulse-messenger-verify, exactly as the SendPulse flows do. Catches typed codes the
 //      keyword trigger missed ("mdng 3d66ad"). Idempotent with the flows: whichever lands first wins.
-//   2. No code → compare the Facebook name (read back from SendPulse's API, never trusted from the
+//   2. No code, and exactly one borrower tapped "Open Messenger" on Android in the last minute →
+//      connect them by timing (_shared/messengerTimingMatch.ts): Android Messenger won't take our code.
+//   3. Otherwise compare the Facebook name (read back from SendPulse's API, never trusted from the
 //      payload) with borrowers who tapped "Verify via Messenger" in the last 30 minutes
 //      (_shared/messengerAutoMatch.ts). One strong match → confirm through the same endpoint and tell
 //      the person in Messenger; anything less certain → an "Is this them?" card for the team.
@@ -86,6 +89,59 @@ type Borrower = {
 type Kyc = { user_id: string; full_name: string | null; first_name: string | null; last_name: string | null };
 type OpenCode = { id: string; code: string; user_id: string; created_at: string; suggested_contact_id: string | null };
 
+// Android: the borrower tapped "Open Messenger" (stamping chat_opened_at) and this chat opened within
+// the minute. Returns true when it connected someone.
+const matchByTiming = async (svc: Svc, event: SendPulseEvent, contactId: string, facebookName: string | null): Promise<boolean> => {
+   const since = new Date(event.at - TIMING_WINDOW_MS - 60 * 1000).toISOString();
+   const { data: rows } = await svc
+      .from('contact_verification_codes')
+      .select('code, user_id, chat_opened_at, expires_at')
+      .eq('channel', 'messenger')
+      .is('verified_at', null)
+      .gt('chat_opened_at', since);
+   const live = ((rows ?? []) as Array<TimingAttempt & { expires_at: string }>).filter((r) => Date.parse(r.expires_at) > Date.now());
+   if (!live.length) return false;
+
+   // Only borrowers who can still be connected (same rules as name matching).
+   const { data: users } = await svc
+      .from('users')
+      .select('id, username, display_name, email, user_role, account_status, messenger_verified_at')
+      .in('id', [...new Set(live.map((r) => r.user_id))]);
+   const eligible = new Map(
+      ((users ?? []) as Borrower[])
+         .filter((u) => !u.messenger_verified_at && u.user_role !== 'lender' && (!u.account_status || u.account_status === 'active'))
+         .map((u) => [u.id, u])
+   );
+   const decision = decideTimingMatch(
+      event.at,
+      live.filter((r) => eligible.has(r.user_id))
+   );
+   if (decision.kind === 'ambiguous') {
+      console.log(`sendpulse-events: timing match skipped, ${decision.userIds.length} borrowers tapped in the same minute`);
+      return false;
+   }
+   if (decision.kind !== 'auto') return false;
+
+   const borrower = eligible.get(decision.attempt.user_id)!;
+   const result = await confirmCode(decision.attempt.code, contactId, facebookName);
+   if (!result.ok || result.already) {
+      if (!result.ok) console.error('sendpulse-events: timing confirm refused', decision.attempt.code, result.error);
+      return Boolean(result.already);
+   }
+   const seconds = Math.max(0, Math.round((event.at - Date.parse(decision.attempt.chat_opened_at)) / 1000));
+   const who = `${borrower.display_name || borrower.username || 'borrower'}${borrower.username ? ` (@${borrower.username})` : ''}`;
+   const note =
+      `⏱️ Matched by timing: Facebook "${facebookName ?? 'unknown name'}" opened our chat ${seconds}s after ${who} tapped ` +
+      `Open Messenger (Android, no code). If the name doesn't fit, ask tech to reset their Facebook link.`;
+   const chat = await kycChat(svc);
+   if (chat) await sendTelegramMessage(chat, note).catch((err: unknown) => console.error('sendpulse-events: telegram note failed', err));
+   await postDiscord({ content: note }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+   await sendMessengerMessage(contactId, {
+      text: "✅ You're connected! Go back to the Moodeng app to continue — it's already updated."
+   });
+   return true;
+};
+
 const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) => {
    // Already someone's Messenger line → a known borrower chatting, not a lost confirmation.
    const { data: known } = await svc.from('users').select('id').eq('messenger_psid', contactId).limit(1);
@@ -94,6 +150,8 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
    // The name comes from SendPulse's API, so a forged webhook can't pick whose name to match.
    const contact = await getMessengerContact(contactId);
    const facebookName = messengerDisplayName(contact);
+
+   if (await matchByTiming(svc, event, contactId, facebookName)) return;
    if (!facebookName) return;
 
    const since = new Date(event.at - MATCH_WINDOW_MS - 5 * 60 * 1000).toISOString();

@@ -396,6 +396,13 @@ export default function ContactsStep({
       if (!messengerCode) return;
       track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current });
       void copyMessengerCode('open_chat');
+      // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
+      // without sending the code. Best-effort: the code still works if this never lands.
+      void getSupabaseBrowserClient()
+         .rpc('mark_messenger_chat_opened')
+         .then(({ error }) => {
+            if (error) console.error('mark_messenger_chat_opened failed', error.message);
+         });
       leftAtRef.current = null;
       awaitingMessengerRef.current = true;
       writePending({ userId, code: messengerCode, link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
@@ -495,7 +502,7 @@ export default function ContactsStep({
                aria-live="polite"
                className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-4 text-left"
             >
-               <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Send us your code on Messenger</span>
+               <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Connect on Messenger</span>
                <div className="flex items-center gap-2">
                   <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
                      {messengerCode}
@@ -521,15 +528,15 @@ export default function ContactsStep({
                <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
                   <li className="flex gap-2">
                      <b>1.</b>
-                     <span>Tap the blue button. It copies your code and opens our chat.</span>
+                     <span>Tap the blue button. Our chat opens in Messenger.</span>
                   </li>
                   <li className="flex gap-2">
                      <b>2.</b>
-                     <span>Tap Get Started if Messenger asks.</span>
+                     <span>Tap Get Started, or send us a message. We connect you automatically.</span>
                   </li>
                   <li className="flex gap-2">
                      <b>3.</b>
-                     <span>Paste the code and send it.</span>
+                     <span>Not green after a minute? Paste the code (already copied) and send it.</span>
                   </li>
                </ol>
                <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
