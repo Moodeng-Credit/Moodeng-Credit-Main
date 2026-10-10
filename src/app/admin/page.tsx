@@ -13,6 +13,7 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
@@ -833,6 +834,7 @@ export default function AdminPanel() {
                                                ? ` · ${countryLabel(user.countryIso)}${user.city ? ` (${user.city})` : ''}`
                                                : ''}
                                          </p>
+                                         <DirectoryApprovalControl user={user} />
                                       </div>
                                    </div>
                                    <button
