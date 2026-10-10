@@ -48,12 +48,12 @@
   <div class="steps">
     <b>How to test (2 minutes):</b>
     <ol>
-      <li>Tap a button (A first, then B, C…).</li>
+      <li>Tap a button. <b>Round 2: just try G to K.</b></li>
       <li>Watch what the phone does. If Messenger opens on the <b>Moodeng Credit</b> chat, wait ~5 seconds to see if the bot replies.</li>
       <li>Come back to this Chrome tab (Back button or app switcher). If the tab changed to another page, press Back.</li>
       <li>Answer "What happened?" under that button, then do the next one.</li>
     </ol>
-    <p class="muted">The A–D links carry a fake code. A bot reply saying the code or link <b>didn't work</b> is a <b>success</b> here: it means the code reached the bot. Nobody gets confirmed.</p>
+    <p class="muted">The A–D and G–K links carry a fake code. A bot reply saying the code or link <b>didn't work</b> is a <b>success</b> here: it means the code reached the bot. Nobody gets confirmed.</p>
   </div>
 
   <div id="variants"></div>
@@ -92,7 +92,19 @@
     { id: 'E', title: 'Messenger app link (fb-messenger://)', note: 'Opens our chat directly in the app. Carries no code, so the bot won’t reply. Success = the chat opens.',
       href: 'fb-messenger://user-thread/' + PAGE_ID },
     { id: 'F', title: 'messenger.com link', note: 'A different web address for the same chat. Carries no code. Success = the chat opens.',
-      href: 'https://www.messenger.com/t/' + PAGE_ID }
+      href: 'https://www.messenger.com/t/' + PAGE_ID },
+    // Round 2 (2026-10-11): E and F open the chat but drop the code. These try to open Messenger AND
+    // keep the code, so the bot confirms with nothing to paste. Bot reply = the code arrived.
+    { id: 'G', title: 'messenger.com link + code', tag: 'round 2', note: 'Like F, with the code attached. Success = the bot replies.',
+      href: 'https://www.messenger.com/t/' + PAGE_ID + '?ref=' + FLOW_ID + '__mdng_code=MDNG-0000E1' },
+    { id: 'H', title: 'Messenger app link + code', tag: 'round 2', note: 'Like E, with the code attached. Success = the bot replies.',
+      href: 'fb-messenger://user-thread/' + PAGE_ID + '?ref=' + FLOW_ID + '__mdng_code=MDNG-0000E2' },
+    { id: 'I', title: 'Messenger app intent + code', tag: 'round 2', note: 'E\u2019s app link sent straight to Messenger, with the code. Success = the bot replies.',
+      href: 'intent://user-thread/' + PAGE_ID + '?ref=' + FLOW_ID + '__mdng_code=MDNG-0000E3#Intent;scheme=fb-messenger;package=com.facebook.orca;end' },
+    { id: 'J', title: 'm.me through the Facebook app', tag: 'round 2', note: 'Hands the m.me link to the Facebook app instead of Messenger. Success = the bot replies.',
+      href: intentFor(mme('MDNG-0000E4'), { pkg: 'com.facebook.katana', fallback: false }) },
+    { id: 'K', title: 'facebook.com chat link + code', tag: 'round 2', note: 'The address m.me itself forwards to. Success = the bot replies.',
+      href: 'https://www.facebook.com/msg/' + PAGE_ID + '/?ref=' + FLOW_ID + '__mdng_code=MDNG-0000E5' }
   ];
 
   var ANSWERS = [
