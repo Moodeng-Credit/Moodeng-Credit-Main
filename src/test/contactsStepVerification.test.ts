@@ -242,33 +242,22 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
    });
 
-   it('on Android, opens the Messenger app through an intent instead of a new tab', async () => {
+   it('on Android, leads with the code: shows it, copies it, then opens Messenger', async () => {
       Object.defineProperty(navigator, 'userAgent', {
          value: 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36',
          configurable: true
       });
-      const hrefSetter = vi.fn();
-      const originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-         value: { ...originalLocation, set href(value: string) { hrefSetter(value); } },
-         configurable: true
-      });
-      try {
-         await render();
-         await tapMessengerCard();
-         expect(openSpy).not.toHaveBeenCalled();
-         expect(hrefSetter).toHaveBeenCalledTimes(1);
-         const intent = hrefSetter.mock.calls[0][0] as string;
-         expect(intent.startsWith('intent://m.me/')).toBe(true);
-         expect(intent).toContain('__mdng_code=MDNG-ABC123');
-         expect(intent).toContain('package=com.facebook.orca');
-         expect(intent).toContain(`S.browser_fallback_url=${encodeURIComponent(buildMessengerVerifyLink('MDNG-ABC123'))}`);
-      } finally {
-         Object.defineProperty(window, 'location', { value: originalLocation, configurable: true });
-      }
+      const writeText = vi.fn(async () => undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      await render();
+      await tapMessengerCard();
+      expect(writeText).toHaveBeenCalledWith('MDNG-ABC123');
+      expect(openSpy).toHaveBeenCalledWith(buildMessengerVerifyLink('MDNG-ABC123'), '_blank', 'noopener,noreferrer');
+      expect(container.textContent).toContain('Send us this code on Messenger');
+      expect(container.textContent).toContain('MDNG-ABC123');
    });
 
-   it('picks the attempt back up, with the code showing, after an Android fallback left the page', async () => {
+   it('picks the attempt back up, with the code showing, after they left the page', async () => {
       window.sessionStorage.setItem(
          'moodeng.messengerVerifyPending',
          JSON.stringify({ userId: 'user-1', code: 'MDNG-ABC123', link: buildMessengerVerifyLink('MDNG-ABC123'), at: Date.now() })
@@ -336,7 +325,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
    });
 
    it('does not block an iPhone-Safari borrower, and shows no Home Screen instructions', async () => {
-      const ua = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+      const ua =
+         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
       Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
       await render();

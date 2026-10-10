@@ -1,6 +1,6 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 
 import Loading from '@/components/Loading';
 import {
@@ -16,7 +16,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { Icons } from '@/views/login/components/Icons';
 import { loginUser, loginWithGoogle, loginWithTelegram } from '@/store/slices/authSlice';
-import type { AppDispatch } from '@/store/store';
+import type { AppDispatch, RootState } from '@/store/store';
 import '@/views/signup/styles/signup.css';
 
 const getPostSignInPath = async (user: { id: string; accountStatus?: string }) => {
@@ -62,6 +62,26 @@ export default function SignInPage() {
    const [errorProvider, setErrorProvider] = useState<string | null>(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
+
+   // Already signed in → skip the form. The static landing page (and the "head back to Moodeng"
+   // link at the end of the Messenger confirm flow) links here unconditionally, so a borrower who
+   // had just connected Messenger on 2026-10-10 was asked to sign in again — and failed once —
+   // although her session was still valid.
+   const authUser = useSelector((state: RootState) => state.auth.user);
+   const authUsername = useSelector((state: RootState) => state.auth.username);
+   const isAuthChecked = useSelector((state: RootState) => state.auth.isAuthChecked);
+   useEffect(() => {
+      if (!isAuthChecked || !authUsername || !authUser?.id || isLoading) return;
+      let cancelled = false;
+      void getPostSignInPath(authUser).then((nextPath) => {
+         if (!cancelled) navigate(nextPath, { replace: true });
+      });
+      return () => {
+         cancelled = true;
+      };
+      // Only when the signed-in state settles; the form's own submit navigates on success.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [isAuthChecked, authUsername, authUser?.id]);
 
    const getEmailHasProfile = async (value: string) => {
       const supabase = getSupabaseBrowserClient();
