@@ -184,6 +184,54 @@ const alertTriesUsed = async (supabase: any, userId: string) => {
    }
 };
 
+type PinnedIdSession = {
+   didit_id_status?: string | null;
+   didit_session_id?: string | null;
+   didit_session_url?: string | null;
+   didit_submitted_at?: string | null;
+};
+
+// How long a stored, unfinished ID session is offered again. Didit doesn't document a fixed link
+// lifetime we rely on; an hour covers a borrower who steps away mid-flow, and Didit's own
+// status check below catches an earlier expiry.
+const ID_SESSION_REUSE_MS = 60 * 60 * 1000;
+const REUSABLE_DIDIT_STATUSES = new Set(['not started', 'in progress']);
+
+// Returns the stored ID session when it's safe to send the borrower back into it: recent, no
+// verdict yet on our side, and Didit still reports it Not Started / In Progress for the same
+// workflow. Anything else (declined, abandoned, expired, finished, unreachable) → null, so a
+// new session is created as before.
+const reusableIdSession = async (
+   pinned: PinnedIdSession,
+   workflowId: string,
+   apiKey: string
+): Promise<{ url: string; sessionId: string } | null> => {
+   const sessionId = pinned.didit_session_id;
+   const url = pinned.didit_session_url;
+   if (!sessionId || !url || !pinned.didit_submitted_at) return null;
+   const startedAt = Date.parse(pinned.didit_submitted_at);
+   if (!Number.isFinite(startedAt) || Date.now() - startedAt > ID_SESSION_REUSE_MS) return null;
+   const ourStatus = String(pinned.didit_id_status ?? '').toLowerCase();
+   if (ourStatus && !REUSABLE_DIDIT_STATUSES.has(ourStatus)) return null;
+
+   const apiBase = (Deno.env.get('DIDIT_API_BASE')?.trim() || 'https://verification.didit.me/v3').replace(/\/$/, '');
+   try {
+      const res = await fetch(`${apiBase}/session/${encodeURIComponent(sessionId)}/decision/`, {
+         method: 'GET',
+         headers: { 'x-api-key': apiKey, Accept: 'application/json' }
+      });
+      if (!res.ok) return null;
+      const body = (await res.json().catch(() => null)) as { status?: string; workflow_id?: string } | null;
+      if (!REUSABLE_DIDIT_STATUSES.has(String(body?.status ?? '').toLowerCase())) return null;
+      // The borrower may have switched flows (combined <-> id); only reuse the same workflow.
+      if (body?.workflow_id && body.workflow_id !== workflowId) return null;
+      return { url, sessionId };
+   } catch (error) {
+      console.error('[create-didit-session] Could not check the stored ID session:', error instanceof Error ? error.message : error);
+      return null;
+   }
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
@@ -295,9 +343,15 @@ serve(async (req) => {
       // An ID already in Didit's manual review: a new session would cost another check and reset
       // didit_id_status, wiping the "in review" state the borrower and the team rely on. Refuse;
       // /verify shows the review screen instead.
+      let pinnedIdSession: PinnedIdSession | null = null;
       if (kind === 'combined' || kind === 'id') {
-         const { data: idRow } = await supabase.from('users').select('didit_id_status').eq('id', user.id).maybeSingle();
-         const idStatus = String((idRow as { didit_id_status?: string | null } | null)?.didit_id_status ?? '').toLowerCase();
+         const { data: idRow } = await supabase
+            .from('users')
+            .select('didit_id_status, didit_session_id, didit_session_url, didit_submitted_at')
+            .eq('id', user.id)
+            .maybeSingle();
+         pinnedIdSession = (idRow as PinnedIdSession | null) ?? null;
+         const idStatus = String(pinnedIdSession?.didit_id_status ?? '').toLowerCase();
          if (idStatus.includes('review')) {
             return jsonResponse({ error: 'Your ID is already being reviewed.', code: 'ID_IN_REVIEW' }, 409);
          }
@@ -307,6 +361,15 @@ serve(async (req) => {
       if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await kycTriesLeft(supabase, user.id)) <= 0) {
          await alertTriesUsed(supabase, user.id);
          return jsonResponse({ error: 'Please message us before trying again.', code: 'KYC_TRIES_USED' }, 409);
+      }
+
+      // Reuse the borrower's unfinished ID session instead of paying for a new one. Every Verify
+      // tap used to create a fresh session and re-pin didit_session_id, so a finished-but-still-
+      // processing session's In Review / Declined verdict was then dropped by didit-webhook as
+      // stale. Runs after the gate / in-review / tries checks above, so those still apply.
+      if ((kind === 'combined' || kind === 'id') && pinnedIdSession) {
+         const reusable = await reusableIdSession(pinnedIdSession, workflowId, apiKey);
+         if (reusable) return jsonResponse({ url: reusable.url, sessionId: reusable.sessionId });
       }
 
       // A face scan is only worth paying Didit for when the caller could actually use it.
