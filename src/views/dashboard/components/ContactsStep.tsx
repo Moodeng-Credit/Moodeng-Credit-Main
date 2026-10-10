@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -6,7 +6,6 @@ import posthog from 'posthog-js';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
-   buildMessengerAndroidIntent,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
@@ -84,13 +83,8 @@ const writePending = (pending: PendingMessenger | null) => {
    }
 };
 
-// Opens the verification chat. Messenger on Android goes through an intent to the Messenger app (see
-// buildMessengerAndroidIntent); everything else keeps the original new-tab open.
-const openVerifyLink = (channel: Channel, link: string) => {
-   if (channel === 'messenger' && isAndroidBrowser()) {
-      window.location.href = buildMessengerAndroidIntent(link);
-      return;
-   }
+// Opens the verification chat in a new tab (on phones, the Messenger/WhatsApp app takes it over).
+const openVerifyLink = (link: string) => {
    window.open(link, '_blank', 'noopener,noreferrer');
 };
 
@@ -136,6 +130,7 @@ export default function ContactsStep({
    const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
+   const isAndroid = useMemo(() => isAndroidBrowser(), []);
    // Set once the tab is hidden after we open Messenger — i.e. they actually went there. Tracked by a
    // listener that exists from mount: the tab can hide before React re-renders after the tap.
    const leftForMessengerRef = useRef(false);
@@ -247,7 +242,7 @@ export default function ContactsStep({
    }, [messengerVerified, whatsappVerified, source]);
 
    const showBackup = useCallback(
-      (reason: 'timeout' | 'returned_unconfirmed' | 'bounced' | 'not_opened' | 'resumed') => {
+      (reason: 'timeout' | 'returned_unconfirmed' | 'bounced' | 'not_opened' | 'resumed' | 'android') => {
          setShowTypedCode(true);
          if (backupTrackedRef.current) return;
          backupTrackedRef.current = true;
@@ -266,22 +261,25 @@ export default function ContactsStep({
 
    // Poll rather than wait for a page-visibility event — the borrower may switch apps for a while
    // before coming back, and we want the checkmark to appear the moment they do.
-   const startPolling = useCallback((channel: Channel) => {
-      stopPolling();
-      pollRef.current = window.setInterval(async () => {
-         const { data } = await getSupabaseBrowserClient()
-            .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at')
-            .eq('id', userId)
-            .maybeSingle();
-         if (data?.whatsapp_verified_at) setWhatsappVerified(true);
-         if (data?.messenger_verified_at) setMessengerVerified(true);
-         const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
-         if (done) stopPolling();
-      }, 3000);
-   }, [userId]);
+   const startPolling = useCallback(
+      (channel: Channel) => {
+         stopPolling();
+         pollRef.current = window.setInterval(async () => {
+            const { data } = await getSupabaseBrowserClient()
+               .from('users')
+               .select('whatsapp_verified_at, messenger_verified_at')
+               .eq('id', userId)
+               .maybeSingle();
+            if (data?.whatsapp_verified_at) setWhatsappVerified(true);
+            if (data?.messenger_verified_at) setMessengerVerified(true);
+            const done = channel === 'whatsapp' ? data?.whatsapp_verified_at : data?.messenger_verified_at;
+            if (done) stopPolling();
+         }, 3000);
+      },
+      [userId]
+   );
 
-   // Back from the m.me page an Android fallback sent them to (this tab navigated away and reloaded):
+   // Back after the tab was reloaded or navigated away mid-attempt:
    // pick the attempt back up with the code and backups showing, rather than a fresh card.
    useEffect(() => {
       const pending = readPending(userId);
@@ -377,14 +375,16 @@ export default function ContactsStep({
       leftAtRef.current = null;
       if (messengerCode) writePending({ userId, code: messengerCode, link: messengerLink, at: Date.now() });
       armNotOpenedCheck();
-      openVerifyLink('messenger', messengerLink);
+      openVerifyLink(messengerLink);
    };
 
-   const copyMessengerCode = async () => {
-      if (!messengerCode) return;
-      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current });
+   // `auto`: the Android start copies the code on their behalf, so it's already on the clipboard when
+   // Messenger opens. Best-effort — the code stays on screen either way.
+   const copyMessengerCode = async (code: string | null = messengerCode, auto = false) => {
+      if (!code) return;
       try {
-         await navigator.clipboard.writeText(messengerCode);
+         await navigator.clipboard.writeText(code);
+         track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current, auto });
          setCodeCopied(true);
          window.setTimeout(() => setCodeCopied(false), 2000);
       } catch {
@@ -427,8 +427,14 @@ export default function ContactsStep({
             awaitingMessengerRef.current = true;
             writePending({ userId, code: String(code), link, at: Date.now() });
             armNotOpenedCheck();
+            // Android never carries the link's ref into Messenger (see contactVerification.ts), so the
+            // code is how they get confirmed there: show it now and put it on the clipboard first.
+            if (isAndroid) {
+               showBackup('android');
+               await copyMessengerCode(String(code), true);
+            }
          }
-         openVerifyLink(channel, link);
+         openVerifyLink(link);
          startPolling(channel);
       } catch (err) {
          console.error(`start verification failed (${channel})`, err);
@@ -498,23 +504,36 @@ export default function ContactsStep({
                </div>
                {showTypedCode && messengerCode ? (
                   <div className="rounded-[18px] border border-[#d9d2f7] bg-[#faf8ff] px-4 py-3 text-md-b3 text-[#594d65]">
-                     <p className="font-semibold text-[#4c239f]">Not confirmed yet?</p>
-                     <p className="mt-1">
-                        <b>1.</b> Tap{' '}
-                        <button
-                           type="button"
-                           onClick={() => reopenMessenger('backup')}
-                           className="font-semibold text-md-primary-1200 underline underline-offset-4"
-                        >
-                           Open Messenger again
-                        </button>
-                        . Now that our chat is open, the second try usually works.
-                     </p>
-                     <p className="mt-2">
-                        <b>2.</b> Or send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm you
-                        automatically.
-                        {' '}No Messenger app? Open our Facebook page below in your browser, tap <b>Message</b> and paste the code.
-                     </p>
+                     {isAndroid ? (
+                        <>
+                           <p className="font-semibold text-[#4c239f]">Send us this code on Messenger</p>
+                           <p className="mt-1">
+                              Paste it in your chat with <b>Moodeng Credit</b> and tap send. We confirm you automatically.
+                           </p>
+                        </>
+                     ) : (
+                        <p className="font-semibold text-[#4c239f]">Not confirmed yet?</p>
+                     )}
+                     {isAndroid ? null : (
+                        <p className="mt-1">
+                           <b>1.</b> Tap{' '}
+                           <button
+                              type="button"
+                              onClick={() => reopenMessenger('backup')}
+                              className="font-semibold text-md-primary-1200 underline underline-offset-4"
+                           >
+                              Open Messenger again
+                           </button>
+                           . Now that our chat is open, the second try usually works.
+                        </p>
+                     )}
+                     {isAndroid ? null : (
+                        <p className="mt-2">
+                           <b>2.</b> Or send this code to <b>Moodeng Credit</b> on Facebook Messenger, from any app or device. We confirm
+                           you automatically. No Messenger app? Open our Facebook page below in your browser, tap <b>Message</b> and paste
+                           the code.
+                        </p>
+                     )}
                      <div className="mt-2 flex items-center gap-2">
                         <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[16px] font-bold tracking-wide text-md-heading">
                            {messengerCode}
@@ -527,6 +546,15 @@ export default function ContactsStep({
                            {codeCopied ? 'Copied' : 'Copy'}
                         </button>
                      </div>
+                     {isAndroid ? (
+                        <button
+                           type="button"
+                           onClick={() => reopenMessenger('backup')}
+                           className="mt-2 w-full rounded-lg bg-[#0866FF] px-3 py-2.5 text-[15px] font-bold text-white"
+                        >
+                           Open Messenger
+                        </button>
+                     ) : null}
                      <a
                         href={MOODENG_FACEBOOK_PAGE_URL}
                         target="_blank"
