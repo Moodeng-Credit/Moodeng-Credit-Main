@@ -13,6 +13,7 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
@@ -26,6 +27,7 @@ import {
    type AdminOverview,
    type AdminUser,
    banUser,
+   getAdminCallApprovals,
    getAdminOverview,
    getCurrentAdmin,
    getLatestAdminIntegrityRun,
@@ -431,6 +433,10 @@ export default function AdminPanel() {
          setAdminDataLoaded(true);
          setSelectedDefaultCaseId((current) => current || nextDefaults[0]?.id || '');
          setSelectedRequestId((current) => current || nextLoanRequests[0]?.id || '');
+         // Badge count for people waiting on a call decision, before either tab that lists them is opened.
+         void getAdminCallApprovals()
+            .then((rows) => setCallApprovalCount(groupCallApprovals(rows, Date.now()).needsDecision.length))
+            .catch(() => undefined);
       } catch (caught) {
          setError(caught instanceof Error ? caught.message : 'Could not load live admin data.');
       } finally {
@@ -676,7 +682,7 @@ export default function AdminPanel() {
          groups={visibleNavGroups}
          counts={{
             calls: callApprovalCount,
-            requests: overview?.loanRequestReviewCount ?? 0,
+            requests: (overview?.loanRequestReviewCount ?? 0) + callApprovalCount,
             defaults: overview?.defaultedLoanCount ?? 0,
             risk: overview?.highRiskProfileCount ?? 0
          }}
@@ -1434,7 +1440,11 @@ export default function AdminPanel() {
          ) : null}
 
          {activeTab === 'requests' ? (
-            <section className="space-y-6">
+            <CallApprovalsSection variant="waiting" onCountChange={setCallApprovalCount} onOpenCalls={() => setActiveTab('calls')} />
+         ) : null}
+
+         {activeTab === 'requests' ? (
+            <section className="mt-10 space-y-6">
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">Loan request review</h2>
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
