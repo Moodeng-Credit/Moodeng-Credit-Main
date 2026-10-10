@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Messenger link test</title>
+<!--
+  Team-only diagnostic (2026-10-10). On Android, tapping "Connect Messenger" has never landed a borrower
+  in our Messenger chat, while iPhones work. Each button below opens our Page's chat a different way so a
+  teammate can tap them on a real Android phone and see which one works. Taps and the tester's "what
+  happened?" answers go to PostHog as `messenger_link_test`.
+
+  The m.me buttons carry dummy codes (MDNG-0000A1…D4): they match no borrower, so the bot can only answer
+  that the code didn't work. That reply still proves the code reached the bot. Nobody gets confirmed.
+-->
+<style>
+  :root { --bg:#f7f5fb; --card:#fff; --ink:#2a2234; --muted:#6b5b86; --line:#e3ddef; --brand:#6b55f7; --ok:#16a34a; --bad:#dc2626; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:20px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 6px; }
+  p { margin:6px 0; }
+  .muted { color:var(--muted); font-size:14px; }
+  .steps { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin:14px 0; font-size:15px; }
+  .steps ol { margin:6px 0 0; padding-left:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0; }
+  .card h2 { font-size:17px; margin:0 0 2px; }
+  .tag { display:inline-block; font-size:12px; font-weight:700; padding:1px 8px; border-radius:99px; background:#efeafe; color:var(--brand); margin-left:6px; vertical-align:2px; }
+  a.go { display:block; text-align:center; margin-top:10px; padding:14px; border-radius:12px; background:var(--brand); color:#fff; font-weight:700; text-decoration:none; font-size:17px; }
+  .ask { display:none; margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .ask.show { display:block; }
+  .ask p { font-weight:600; font-size:15px; }
+  .opts { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .opts button { flex:1 1 46%; min-height:44px; border:1px solid var(--line); background:#faf9fd; border-radius:10px; font:inherit; font-size:14px; color:var(--ink); padding:8px; }
+  .opts button.picked { background:var(--brand); border-color:var(--brand); color:#fff; }
+  .auto { font-size:13px; color:var(--muted); margin-top:8px; }
+  .done { color:var(--ok); font-weight:700; }
+  #summary { white-space:pre-wrap; font:13px/1.4 ui-monospace,Menlo,monospace; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; }
+  button.copy { margin-top:8px; min-height:44px; width:100%; border:0; border-radius:12px; background:var(--ink); color:#fff; font:inherit; font-weight:700; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Messenger link test</h1>
+  <p class="muted">For the Moodeng team only. Use an <b>Android phone in Chrome</b>, logged in to Facebook/Messenger like a normal borrower.</p>
+
+  <div class="steps">
+    <b>How to test (2 minutes):</b>
+    <ol>
+      <li>Tap a button (A first, then B, C…).</li>
+      <li>Watch what the phone does. If Messenger opens on the <b>Moodeng Credit</b> chat, wait ~5 seconds to see if the bot replies.</li>
+      <li>Come back to this Chrome tab (Back button or app switcher). If the tab changed to another page, press Back.</li>
+      <li>Answer "What happened?" under that button, then do the next one.</li>
+    </ol>
+    <p class="muted">The A–D links carry a fake code. A bot reply saying the code or link <b>didn't work</b> is a <b>success</b> here: it means the code reached the bot. Nobody gets confirmed.</p>
+  </div>
+
+  <div id="variants"></div>
+
+  <h2 style="font-size:17px;margin:22px 0 6px">Results</h2>
+  <div id="summary">No taps yet.</div>
+  <button class="copy" id="copy" type="button">Copy results</button>
+  <p class="muted">Results are also sent to the team automatically. Copying is just a backup.</p>
+</main>
+
+<script>
+(function () {
+  var PAGE_ID = '1148756028310286';
+  var FLOW_ID = '3598d58c-7ade-4b7c-9f12-7ed39350fe41';
+  var POSTHOG_KEY = 'phc_qjr9yzwxKTun5ofaWE5z6QWrpY9dV9TsRMMRmX2rooEV';
+  var POSTHOG_URL = 'https://us.i.posthog.com/i/v0/e/';
+  var STORE = 'moodeng.messengerLinkTest';
+
+  var mme = function (code) { return 'https://m.me/' + PAGE_ID + '?ref=' + FLOW_ID + '__mdng_code=' + code; };
+  var intentFor = function (link, opts) {
+    var u = new URL(link);
+    return 'intent://' + u.host + u.pathname + u.search + '#Intent;scheme=https;' +
+      (opts.pkg ? 'package=' + opts.pkg + ';' : '') +
+      (opts.fallback ? 'S.browser_fallback_url=' + encodeURIComponent(link) + ';' : '') + 'end';
+  };
+
+  var VARIANTS = [
+    { id: 'A', title: 'Plain m.me link, same tab', note: 'A normal link. Android decides which app opens it.',
+      href: mme('MDNG-0000A1') },
+    { id: 'B', title: 'Plain m.me link, new tab', tag: 'old method', note: 'What the app did before Oct 10.',
+      href: mme('MDNG-0000B2'), target: '_blank' },
+    { id: 'C', title: 'Intent to Messenger app, with fallback', tag: 'live now', note: 'What the app does today on Android.',
+      href: intentFor(mme('MDNG-0000C3'), { pkg: 'com.facebook.orca', fallback: true }) },
+    { id: 'D', title: 'Intent to Messenger app, no fallback', note: 'If Messenger isn’t installed, this should open the Play Store instead.',
+      href: intentFor(mme('MDNG-0000D4'), { pkg: 'com.facebook.orca', fallback: false }) },
+    { id: 'E', title: 'Messenger app link (fb-messenger://)', note: 'Opens our chat directly in the app. Carries no code, so the bot won’t reply. Success = the chat opens.',
+      href: 'fb-messenger://user-thread/' + PAGE_ID },
+    { id: 'F', title: 'messenger.com link', note: 'A different web address for the same chat. Carries no code. Success = the chat opens.',
+      href: 'https://www.messenger.com/t/' + PAGE_ID }
+  ];
+
+  var ANSWERS = [
+    ['chat_bot_replied', 'Moodeng chat opened + bot replied'],
+    ['chat_no_reply', 'Moodeng chat opened, no bot reply'],
+    ['messenger_elsewhere', 'Messenger opened, but not our chat'],
+    ['facebook_app', 'Facebook app opened'],
+    ['web_page', 'A web page opened'],
+    ['play_store', 'Play Store opened'],
+    ['prompt', 'A popup/question appeared'],
+    ['nothing', 'Nothing happened']
+  ];
+
+  var load = function () { try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { return {}; } };
+  var save = function (s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} };
+  var state = load();
+  if (!state.deviceId) { state.deviceId = 'mlt-' + Math.random().toString(36).slice(2, 10); save(state); }
+  state.results = state.results || {};
+  var who = new URLSearchParams(location.search).get('who') || '';
+
+  var send = function (event, props) {
+    var body = JSON.stringify({
+      api_key: POSTHOG_KEY, event: event, distinct_id: state.deviceId,
+      properties: Object.assign({ tester: who, $current_url: location.href, user_agent: navigator.userAgent, $lib: 'messenger-test-page' }, props)
+    });
+    try { fetch(POSTHOG_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }); } catch (e) {}
+  };
+
+  // Automatic signal: did this tab go to the background (another app opened) or navigate away (a web page)?
+  var pending = null;
+  var hiddenAt = null;
+  document.addEventListener('visibilitychange', function () {
+    if (!pending) return;
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    if (hiddenAt) {
+      var r = state.results[pending.id] || {};
+      r.awayMs = Date.now() - hiddenAt; r.auto = 'left_tab'; state.results[pending.id] = r; save(state);
+      send('messenger_link_test', { variant: pending.id, phase: 'returned', away_ms: r.awayMs, since_tap_ms: Date.now() - pending.at });
+      hiddenAt = null; render();
+    }
+  });
+  window.addEventListener('pagehide', function () {
+    if (!pending) return;
+    state.navigated = { id: pending.id, at: Date.now() }; save(state);
+  });
+  // Back from a web page that replaced this tab (e.g. the C fallback or A/F loading in Chrome).
+  if (state.navigated && Date.now() - state.navigated.at < 10 * 60 * 1000) {
+    var nid = state.navigated.id;
+    var nr = state.results[nid] || {};
+    if (!nr.auto) { nr.auto = 'tab_navigated'; state.results[nid] = nr; }
+    send('messenger_link_test', { variant: nid, phase: 'came_back_after_navigation' });
+    delete state.navigated; save(state);
+  }
+
+  var root = document.getElementById('variants');
+  var render = function () {
+    root.innerHTML = '';
+    VARIANTS.forEach(function (v) {
+      var r = state.results[v.id] || {};
+      var card = document.createElement('div'); card.className = 'card';
+      card.innerHTML = '<h2>' + v.id + '. ' + v.title + (v.tag ? '<span class="tag">' + v.tag + '</span>' : '') +
+        (r.answer ? ' <span class="done">✓</span>' : '') + '</h2><p class="muted">' + v.note + '</p>';
+      var a = document.createElement('a'); a.className = 'go'; a.href = v.href; a.textContent = 'Try ' + v.id;
+      if (v.target) { a.target = v.target; a.rel = 'noopener'; }
+      a.addEventListener('click', function () {
+        pending = { id: v.id, at: Date.now() }; hiddenAt = null;
+        var cur = state.results[v.id] || {}; cur.tapped = (cur.tapped || 0) + 1; cur.auto = null; cur.awayMs = null; state.results[v.id] = cur; save(state);
+        send('messenger_link_test', { variant: v.id, phase: 'tapped', href_kind: v.href.split(':')[0] });
+        // If the tab never leaves within 3s, nothing visibly opened.
+        setTimeout(function () {
+          if (pending && pending.id === v.id && document.visibilityState === 'visible' && !hiddenAt && !(state.results[v.id] || {}).awayMs) {
+            var x = state.results[v.id] || {}; if (!x.auto) { x.auto = 'tab_stayed'; state.results[v.id] = x; save(state); }
+            send('messenger_link_test', { variant: v.id, phase: 'tab_stayed_3s' });
+            render();
+          }
+        }, 3000);
+        setTimeout(render, 50);
+      });
+      card.appendChild(a);
+
+      var ask = document.createElement('div'); ask.className = 'ask' + (r.tapped ? ' show' : '');
+      ask.innerHTML = '<p>What happened?</p>';
+      var opts = document.createElement('div'); opts.className = 'opts';
+      ANSWERS.forEach(function (ans) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = ans[1];
+        if (r.answer === ans[0]) b.className = 'picked';
+        b.addEventListener('click', function () {
+          var cur = state.results[v.id] || {}; cur.answer = ans[0]; state.results[v.id] = cur; save(state);
+          send('messenger_link_test', { variant: v.id, phase: 'answer', answer: ans[0], auto: cur.auto || null, away_ms: cur.awayMs || null, taps: cur.tapped || 0 });
+          render();
+        });
+        opts.appendChild(b);
+      });
+      ask.appendChild(opts);
+      if (r.auto) {
+        var auto = document.createElement('div'); auto.className = 'auto';
+        auto.textContent = 'Auto-check: ' + ({ left_tab: 'this tab went to the background' + (r.awayMs ? ' for ' + (r.awayMs / 1000).toFixed(1) + 's' : ''),
+          tab_navigated: 'this tab was replaced by another page', tab_stayed: 'this tab never left' })[r.auto];
+        ask.appendChild(auto);
+      }
+      card.appendChild(ask);
+      root.appendChild(card);
+    });
+
+    var lines = ['Device: ' + navigator.userAgent, 'Tester: ' + (who || '-'), ''];
+    VARIANTS.forEach(function (v) {
+      var r = state.results[v.id];
+      if (!r || !r.tapped) return;
+      var label = (ANSWERS.filter(function (x) { return x[0] === r.answer; })[0] || [null, 'no answer yet'])[1];
+      lines.push(v.id + ': ' + label + ' | auto: ' + (r.auto || '-') + (r.awayMs ? ' (' + (r.awayMs / 1000).toFixed(1) + 's away)' : ''));
+    });
+    document.getElementById('summary').textContent = lines.length > 3 ? lines.join('\n') : 'No taps yet.';
+  };
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var t = document.getElementById('summary').textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { document.getElementById('copy').textContent = 'Copied'; });
+  });
+
+  send('messenger_link_test', { phase: 'opened' });
+  render();
+})();
+</script>
+</body>
+</html>
