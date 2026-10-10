@@ -676,5 +676,11 @@ export const thaiCoverageG: Record<string, string> = {
    "Thank you for confirming! You can apply right after the call.": "ขอบคุณที่ยืนยัน! คุณขอกู้ได้ทันทีหลังคอล",
    "Look around first": "ลองดูรอบ ๆ ก่อน",
    "A little low for lenders": "ต่ำไปนิดสำหรับผู้ให้กู้",
-   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "มีคำถาม? ส่งข้อความหา Moodeng Credit ทาง Facebook หรืออีเมล support@moodeng.app — ปกติเราตอบภายในหนึ่งวัน"
+   "Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day.": "มีคำถาม? ส่งข้อความหา Moodeng Credit ทาง Facebook หรืออีเมล support@moodeng.app — ปกติเราตอบภายในหนึ่งวัน",
+
+   // src/hooks/useWallet.ts (Instant Wallet send failures)
+   "Your Instant Wallet needs to reconnect": "Instant Wallet ของคุณต้องเชื่อมต่อใหม่",
+   "Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.": "ยังไม่มีการส่งเงิน ออกจากระบบแล้วเข้าสู่ระบบใหม่ หรือเปิด Moodeng ในเบราว์เซอร์อื่น เช่น Chrome แล้วลองอีกครั้ง",
+   "Your payment didn't go through": "การชำระเงินของคุณไม่สำเร็จ",
+   "My Instant Wallet payment failed": "การชำระเงินจาก Instant Wallet ของฉันไม่สำเร็จ"
 };

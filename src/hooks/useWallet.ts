@@ -10,7 +10,9 @@ import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/ba
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
 import { openSupportChat } from '@/lib/support/liveChat';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
-import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet } from '@/lib/web3/openfort';
+import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet, WalletGateError } from '@/lib/web3/openfort';
+import { reportInstantWalletFailure } from '@/lib/web3/openfort/reportFailure';
+import { InstantWalletReconnectError } from '@/lib/web3/openfort/sendErrors';
 import type { RootState } from '@/store/store';
 import { ERROR_CODES, type ErrorCode } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
@@ -35,6 +37,15 @@ export interface PaymentOutcome {
    payer?: string;
 }
 
+// Opening questions for the support chat after a failed send. The bot answers from its knowledge
+// base by keyword, so these must keep matching the "payment or wallet problem" entry there.
+const WALLET_SUPPORT_TOPIC = 'I had a problem with a wallet transaction';
+const INSTANT_WALLET_SUPPORT_TOPIC = 'My Instant Wallet payment failed';
+
+// A USDC (ERC-20) balance shortfall. Unlike running out of ETH for gas, viem has no typed error
+// for it — the token contract's revert reason is all there is.
+const TOKEN_BALANCE_SHORTFALL = /transfer amount exceeds balance/i;
+
 // Inspects the (often deeply-wrapped) wagmi/viem error to route to a toast the
 // user can act on, instead of a generic "transaction failed" they can't self-correct.
 const classifyTransferError = (err: unknown): ErrorCode => {
@@ -54,6 +65,10 @@ const classifyTransferError = (err: unknown): ErrorCode => {
       if (err.walk((cause) => cause instanceof InsufficientFundsError)) {
          return ERROR_CODES.INSUFFICIENT_FUNDS;
       }
+   }
+
+   if (err instanceof Error && TOKEN_BALANCE_SHORTFALL.test(err.message)) {
+      return ERROR_CODES.INSUFFICIENT_FUNDS;
    }
 
    return ERROR_CODES.TRANSACTION_FAILED;
@@ -110,9 +125,9 @@ const useWallet = () => {
    // Show the failure toast and, when it's a genuine failure (not a user-cancelled
    // transaction), proactively open support with context — a stuck payment,
    // repayment, or withdrawal is then one step from a human instead of a dead end.
-   const toastTransferFailure = (code: ErrorCode) => {
+   const toastTransferFailure = (code: ErrorCode, supportTopic = WALLET_SUPPORT_TOPIC) => {
       showToastByConfig(getToastKeyFromErrorCode(code));
-      if (code !== ERROR_CODES.TRANSACTION_REJECTED) openSupportChat('I had a problem with a wallet transaction');
+      if (code !== ERROR_CODES.TRANSACTION_REJECTED) openSupportChat(supportTopic);
    };
 
    const Transfer = async (
@@ -262,7 +277,24 @@ const useWallet = () => {
                return null;
             }
             console.error('[payUsdc:openfort] send failed', err);
-            toastTransferFailure(classifyTransferError(err));
+            reportInstantWalletFailure('send', err);
+            // The signer is still gone after an automatic reset (embeddedWallet.ts). Retrying in
+            // this tab can't fix it, so say what does instead of the generic "Try again?".
+            if (err instanceof InstantWalletReconnectError) {
+               showToast(
+                  TOAST_TYPES.ERROR,
+                  'Your Instant Wallet needs to reconnect',
+                  'Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.'
+               );
+               openSupportChat(INSTANT_WALLET_SUPPORT_TOPIC);
+               return null;
+            }
+            // A server-side wallet hold: its message already says what to do.
+            if (err instanceof WalletGateError) {
+               showToast(TOAST_TYPES.ERROR, "Your payment didn't go through", err.message);
+               return null;
+            }
+            toastTransferFailure(classifyTransferError(err), INSTANT_WALLET_SUPPORT_TOPIC);
             return null;
          }
       }
