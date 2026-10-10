@@ -1004,5 +1004,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Loading USDC balance': 'Memuat saldo USDC',
    'Recent activity': 'Aktivitas terbaru',
    'Loading recent wallet activity': 'Memuat aktivitas dompet terbaru',
-   'Wallet history': 'Riwayat dompet'
+   'Wallet history': 'Riwayat dompet',
+   // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
+   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
+      'Cek ID satu kali agar pemberi pinjaman tahu kamu orang sungguhan — hanya sekitar 3 menit.'
 };

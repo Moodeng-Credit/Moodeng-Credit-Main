@@ -963,5 +963,8 @@ export const thaiCoverageA: Record<string, string> = {
    'Alert types': 'ประเภทการแจ้งเตือน',
    'Account activity notifications': 'การแจ้งเตือนกิจกรรมบัญชี',
    'Loan activity notifications': 'การแจ้งเตือนกิจกรรมเงินกู้',
-   'Moodeng news notifications': 'การแจ้งเตือนข่าวสาร Moodeng'
+   'Moodeng news notifications': 'การแจ้งเตือนข่าวสาร Moodeng',
+   // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
+   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
+      'ตรวจสอบบัตรประจำตัวครั้งเดียว เพื่อให้ผู้ให้กู้รู้ว่าคุณเป็นคนจริง — ใช้เวลาประมาณ 3 นาที'
 };

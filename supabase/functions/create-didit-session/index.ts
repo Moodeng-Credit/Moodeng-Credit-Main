@@ -292,6 +292,17 @@ serve(async (req) => {
          return jsonResponse({ error: 'Please meet the team before verifying your ID.', code: 'APPROVAL_REQUIRED' }, 409);
       }
 
+      // An ID already in Didit's manual review: a new session would cost another check and reset
+      // didit_id_status, wiping the "in review" state the borrower and the team rely on. Refuse;
+      // /verify shows the review screen instead.
+      if (kind === 'combined' || kind === 'id') {
+         const { data: idRow } = await supabase.from('users').select('didit_id_status').eq('id', user.id).maybeSingle();
+         const idStatus = String((idRow as { didit_id_status?: string | null } | null)?.didit_id_status ?? '').toLowerCase();
+         if (idStatus.includes('review')) {
+            return jsonResponse({ error: 'Your ID is already being reviewed.', code: 'ID_IN_REVIEW' }, 409);
+         }
+      }
+
       // 3 declined KYC attempts, then they talk to us first (admin /kycretry gives 3 more).
       if ((kind === 'liveness' || kind === 'combined' || kind === 'id') && (await kycTriesLeft(supabase, user.id)) <= 0) {
          await alertTriesUsed(supabase, user.id);

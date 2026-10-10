@@ -73,6 +73,14 @@ describe('loanRequestDraft store', () => {
       expect(loadLoanRequestDraft('user-1')).toBeNull();
    });
 
+   it('keeps terms the borrower closed the form on while their ID is checked, without arming the auto-send', () => {
+      saveLoanRequestDraft('user-1', makeDraft({ prefillOnly: true }));
+      vi.advanceTimersByTime(LOAN_REQUEST_DRAFT_TTL_MS * 4);
+      const draft = loadLoanRequestDraft('user-1');
+      expect(draft?.prefillOnly).toBe(true);
+      expect(draft?.sendAfterVerify).toBeUndefined();
+   });
+
    it('keeps a draft that is still within the TTL', () => {
       saveLoanRequestDraft('user-1', makeDraft());
       vi.advanceTimersByTime(LOAN_REQUEST_DRAFT_TTL_MS - 1000);

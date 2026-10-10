@@ -881,5 +881,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Helps lenders understand your financial commitments.':
       'Nakakatulong ito sa mga lender na maintindihan ang mga financial commitment mo.',
    'Pick all that apply.': 'Piliin ang lahat ng naaangkop.',
-   'What do you usually need short-term help with?': 'Saan ka karaniwang nangangailangan ng short-term na tulong?'
+   'What do you usually need short-term help with?': 'Saan ka karaniwang nangangailangan ng short-term na tulong?',
+   // src/components/verification/VerifyYourselfModal.tsx (ID check is the last step of a request)
+   "A one-time ID check so lenders know you're a real person — it takes about 3 minutes.":
+      'Isang beses lang na ID check para malaman ng lenders na totoong tao ka — mga 3 minuto lang.'
 };
