@@ -89,7 +89,13 @@ export const getEmbeddedProvider = async (): Promise<Provider> => {
    const openfort = getOpenfortClient();
    return openfort.embeddedWallet.getEthereumProvider({
       feeSponsorship: OPENFORT_POLICY_ID || undefined,
-      chains: openfortChains
+      chains: openfortChains,
+      // The SDK announces this provider over EIP-6963 by default, so wagmi picked it up as an
+      // injected "Openfort" wallet and auto-connected it mid-send. useWalletSync then saw a
+      // borrower on a non-Base wallet, toasted "Use your Instant Wallet or a Base Account" at
+      // someone already paying from their Instant Wallet, and disconnected it. We only ever use
+      // this provider directly, so keep it out of wagmi entirely.
+      announceProvider: false
    });
 };
 

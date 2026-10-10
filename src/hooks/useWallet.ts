@@ -8,7 +8,6 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { ALLOWED_CHAIN_DISPLAY_NAME, getAllowedChainTokenConfig } from '@/config/wagmiConfig';
 import { BasePaymentError, startBasePayment, waitForBasePayment } from '@/lib/basePay';
 import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkReload';
-import { openSupportChat } from '@/lib/support/liveChat';
 import { WALLET_RESPONSE_TIMEOUT_MS, WalletTimeoutError, withTimeout } from '@/lib/withTimeout';
 import { OPENFORT_WALLET_PROVIDER, sendUsdcFromEmbeddedWallet, WalletGateError } from '@/lib/web3/openfort';
 import { reportInstantWalletFailure } from '@/lib/web3/openfort/reportFailure';
@@ -122,12 +121,17 @@ const useWallet = () => {
    const { writeContractAsync } = useWriteContract();
    const { showToast, showToastByConfig } = useToast();
 
-   // Show the failure toast and, when it's a genuine failure (not a user-cancelled
-   // transaction), proactively open support with context — a stuck payment,
-   // repayment, or withdrawal is then one step from a human instead of a dead end.
+   // Show the failure toast and, when it's a genuine failure (not a user-cancelled transaction),
+   // give it a "Get help" button that opens support with context — a stuck payment, repayment, or
+   // withdrawal is then one tap from a human instead of a dead end. It used to open the chat by
+   // itself, which covered the toast so the borrower never read the error (and the config's own
+   // "Try again?" button did nothing). The error toast already brings the chat launcher on screen.
    const toastTransferFailure = (code: ErrorCode, supportTopic = WALLET_SUPPORT_TOPIC) => {
-      showToastByConfig(getToastKeyFromErrorCode(code));
-      if (code !== ERROR_CODES.TRANSACTION_REJECTED) openSupportChat(supportTopic);
+      if (code === ERROR_CODES.TRANSACTION_REJECTED) {
+         showToastByConfig(getToastKeyFromErrorCode(code));
+         return;
+      }
+      showToastByConfig(getToastKeyFromErrorCode(code), { supportTopic }, { buttonText: 'Get help', buttonAction: 'open_support_chat' });
    };
 
    const Transfer = async (
@@ -284,9 +288,11 @@ const useWallet = () => {
                showToast(
                   TOAST_TYPES.ERROR,
                   'Your Instant Wallet needs to reconnect',
-                  'Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.'
+                  'Nothing was sent. Sign out and sign back in, or open Moodeng in another browser like Chrome, then try again.',
+                  'Get help',
+                  'open_support_chat',
+                  { supportTopic: INSTANT_WALLET_SUPPORT_TOPIC }
                );
-               openSupportChat(INSTANT_WALLET_SUPPORT_TOPIC);
                return null;
             }
             // A server-side wallet hold: its message already says what to do.

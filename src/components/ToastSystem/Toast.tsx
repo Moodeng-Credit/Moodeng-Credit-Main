@@ -76,7 +76,7 @@ const Toast: FC<ToastProps> = ({
    return (
       <div
          className={`
-        relative flex shadow-lg rounded border border-gray-200 dark:border-[#2e203d] bg-white dark:bg-[#21162c] max-w-[320px] mb-4
+        pointer-events-auto relative flex shadow-lg rounded border border-gray-200 dark:border-[#2e203d] bg-white dark:bg-[#21162c] max-w-[320px] mb-4
         transform transition-all duration-300 ease-in-out
         ${isVisible && !isLeaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
         ${isLeaving ? 'translate-x-full opacity-0' : ''}
