@@ -1268,6 +1268,18 @@ function RequestBoard$() {
       return () => window.removeEventListener('focus', onFocus);
    }, [dispatch, isLoanAccessPending]);
 
+   // An admin can approve verification straight in the DB (is_didit = 'ACTIVE') while the borrower
+   // is already on the loan form. Nothing pushes that to the client, so the form kept reading the
+   // stale "unverified" profile and showed "above your current limit of $0". Re-read the profile
+   // when the form opens and every 20s while it stays open, until they show as verified.
+   const isEffectiveUserVerified = isUserVerified(effectiveUser);
+   useEffect(() => {
+      if (!showModal || !isAuthenticated || isEffectiveUserVerified) return undefined;
+      void dispatch(fetchUser());
+      const interval = window.setInterval(() => void dispatch(fetchUser()), 20_000);
+      return () => window.clearInterval(interval);
+   }, [dispatch, isAuthenticated, isEffectiveUserVerified, showModal]);
+
    // Landing here from the "✅ I'll be there" button in a Messenger call reminder
    // (video-call-confirm redirects to ?callConfirmed=yes|expired). Say thanks once, then tidy the URL.
    const callConfirmedParam = new URLSearchParams(location.search).get('callConfirmed');
