@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
 
 import { ChevronRight } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
+import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { PRE_KYC_CONNECT_PATH } from '@/hooks/usePreKycGate';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
-import type { RootState } from '@/store/store';
+import { fetchUser } from '@/store/slices/authSlice';
+import type { AppDispatch, RootState } from '@/store/store';
 
 // Keeps an unfinished borrower on track (onboarding: wallet → Messenger → bio → book call → ✅,
 // src/lib/verificationJourney.ts). Real users were leaving onboarding within seconds and wandering
@@ -15,6 +18,12 @@ import type { RootState } from '@/store/store';
 //      has it (except the request board, whose own card says the same thing).
 //   2. Once a day, opening the app on the dashboard / request board takes them to their next step.
 //      They can still leave from there ("Look around first"); it just doesn't happen by accident.
+//   3. While they wait on the team's ✅ after the call, it watches for the approval on every screen
+//      and, the moment it lands, takes them to the request board's glowing "You're approved 🎉"
+//      Apply card — so nobody sits on "See you on the call" after being approved.
+
+// How often to look for the approval while waiting (plus whenever the app comes back into view).
+const APPROVAL_POLL_MS = 15_000;
 
 const RESUME_PAGES = new Set(['/', '/dashboard', '/request-board']);
 
@@ -39,12 +48,46 @@ const markResumed = (userId: string) => {
 
 export function JourneyNudge({ bottomNavVisible }: { bottomNavVisible: boolean }) {
    const user = useSelector((state: RootState) => state.auth.user);
+   const dispatch = useDispatch<AppDispatch>();
    const location = useLocation();
    const navigate = useNavigate();
+   const { showToast } = useToast();
    const journey = useVerificationJourney();
    const checkedRef = useRef(false);
 
    const isBorrower = user?.userRole === 'borrower';
+   const loanAccessStatus = user?.loanAccessStatus;
+   const isWaitingOnApproval = isBorrower && loanAccessStatus === 'pending';
+
+   // iPhone Safari rarely fires window focus on an app switch, so also listen for visibility and
+   // pageshow (back-forward cache), and poll while the screen stays open.
+   useEffect(() => {
+      if (!isWaitingOnApproval) return undefined;
+      const refresh = () => {
+         if (document.visibilityState === 'visible') void dispatch(fetchUser());
+      };
+      const timer = window.setInterval(refresh, APPROVAL_POLL_MS);
+      document.addEventListener('visibilitychange', refresh);
+      window.addEventListener('pageshow', refresh);
+      window.addEventListener('focus', refresh);
+      return () => {
+         window.clearInterval(timer);
+         document.removeEventListener('visibilitychange', refresh);
+         window.removeEventListener('pageshow', refresh);
+         window.removeEventListener('focus', refresh);
+      };
+   }, [dispatch, isWaitingOnApproval]);
+
+   const previousStatusRef = useRef(loanAccessStatus);
+   useEffect(() => {
+      const previous = previousStatusRef.current;
+      previousStatusRef.current = loanAccessStatus;
+      if (!isBorrower || previous !== 'pending' || loanAccessStatus !== 'approved') return;
+      showToast(TOAST_TYPES.SUCCESS, 'You’re approved 🎉', 'The team approved you — apply for your loan now.');
+      // The onboarding screen sends them on to the loan form itself (ConnectBeforeKyc).
+      if (location.pathname === PRE_KYC_CONNECT_PATH) return;
+      navigate('/request-board', { state: { justApproved: true } });
+   }, [isBorrower, loanAccessStatus, location.pathname, navigate, showToast]);
    const active = isBorrower && !journey.isLoading && journey.onboarding;
 
    // 1x a day: a plain app open (no deep-link state / query) on a home screen → their next step.

@@ -10,6 +10,7 @@ import {
    escapeLike,
    findPendingRequest,
    parseDecisionCallback,
+   setCardButtons,
    shortId,
    stampAdminCard
 } from '../_shared/loanAccess.ts';
@@ -20,7 +21,8 @@ import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClai
 import {
    closeTelegramForumTopic,
    createTelegramForumTopic,
-   sendTelegramMessage
+   sendTelegramMessage,
+   type TelegramInlineKeyboard
 } from '../_shared/telegram.ts';
 
 const corsHeaders = {
@@ -53,6 +55,7 @@ type TelegramMessage = {
    text?: string;
    chat: TelegramChat;
    from?: TelegramUser;
+   reply_markup?: { inline_keyboard?: TelegramInlineKeyboard };
 };
 
 type TelegramCallbackQuery = {
@@ -332,7 +335,13 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 // vc: (open-flow call attendance), vo: (GrabFood voucher claim Mark sent / Reject) and mv: (stuck
 // Facebook confirmation → Mark Facebook verified). Honored only when the card sits in an admin
 // channel, so a forwarded card can't be tapped from anywhere else.
+const SAVING_CALLBACK = 'busy';
+
 const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCallbackQuery, adminChatIds: string[]) => {
+   if (query.data === SAVING_CALLBACK) {
+      await answerCallback(query.id, '⏳ Still saving — one moment…');
+      return;
+   }
    const parsed = parseDecisionCallback(query.data);
    const outcome = parsed ? null : parseOutcomeCallback(query.data);
    const voucher = parsed || outcome ? null : parseVoucherCallback(query.data);
@@ -347,15 +356,30 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
       return;
    }
 
-   const result = parsed
-      ? await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from))
-      : outcome
-        ? await recordCallOutcome(supabase, outcome.userId, outcome.outcome, adminHandle(query.from), outcome.callKey)
-        : voucher
-          ? await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, adminHandle(query.from))
-          : await markMessengerVerified(supabase, messenger!.userId, adminHandle(query.from));
-   await answerCallback(query.id, result.summary);
-   if (query.message) await stampAdminCard(cardChatId, query.message.message_id, query.message.text ?? '', result.summary);
+   // Acknowledge the tap right away — the decision (database + Messenger / email / push to the
+   // borrower + Discord) takes a few seconds, and a silent button reads as "nothing happened".
+   const card = query.message;
+   await Promise.all([
+      answerCallback(query.id, '⏳ Saving…'),
+      card ? setCardButtons(cardChatId, card.message_id, [[{ text: '⏳ Saving…', callback_data: SAVING_CALLBACK }]]) : null
+   ]);
+
+   try {
+      const result = parsed
+         ? await decideLoanAccess(supabase, parsed.requestId, parsed.decision, adminHandle(query.from))
+         : outcome
+           ? await recordCallOutcome(supabase, outcome.userId, outcome.outcome, adminHandle(query.from), outcome.callKey)
+           : voucher
+             ? await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, adminHandle(query.from))
+             : await markMessengerVerified(supabase, messenger!.userId, adminHandle(query.from));
+      if (card) await stampAdminCard(cardChatId, card.message_id, card.text ?? '', result.summary);
+   } catch (error) {
+      // Put the buttons back so it can be tapped again, and say why it didn't save.
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error('telegram-webhook: admin button failed', reason);
+      if (card?.reply_markup?.inline_keyboard) await setCardButtons(cardChatId, card.message_id, card.reply_markup.inline_keyboard);
+      await sendTelegramMessage(cardChatId, `⚠️ That didn't save — tap the button again. (${reason.slice(0, 200)})`);
+   }
 };
 
 // /pending — everyone waiting on a decision, oldest first, with the id for /approve etc. A safety
@@ -499,7 +523,10 @@ const verifyTelegramSecret = (req: Request) => {
       return true;
    }
 
-   return req.headers.get('x-telegram-bot-api-secret-token') === expectedSecret;
+   // setWebhook only accepts A–Z a–z 0–9 _ - in secret_token, so the webhook is registered with the
+   // secret stripped to those characters (telegram-webhook-audit). Accept either form.
+   const header = req.headers.get('x-telegram-bot-api-secret-token');
+   return header === expectedSecret || header === expectedSecret.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 256);
 };
 
 const connectTelegramAlerts = async (supabase: SupabaseClient, message: TelegramMessage, userId: string) => {

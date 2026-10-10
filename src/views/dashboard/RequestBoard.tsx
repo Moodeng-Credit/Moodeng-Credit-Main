@@ -1259,14 +1259,12 @@ function RequestBoard$() {
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
    const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
 
-   // While waiting for approval, re-check whenever they come back to the tab (after the call, or
-   // after tapping the approval notification in another app) so the "You're approved" glow appears.
+   // JourneyNudge (app-wide) watches for the approval while they wait and brings them here the moment
+   // it lands. Put the glowing "You're approved 🎉" Apply card in view so it's the first thing they see.
    useEffect(() => {
-      if (!isLoanAccessPending) return undefined;
-      const onFocus = () => void dispatch(fetchUser());
-      window.addEventListener('focus', onFocus);
-      return () => window.removeEventListener('focus', onFocus);
-   }, [dispatch, isLoanAccessPending]);
+      if (!isFreshlyApproved) return;
+      document.querySelector('[data-tour-target="request-apply-card"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   }, [isFreshlyApproved]);
 
    // An admin can approve verification straight in the DB (is_didit = 'ACTIVE') while the borrower
    // is already on the loan form. Nothing pushes that to the client, so the form kept reading the
