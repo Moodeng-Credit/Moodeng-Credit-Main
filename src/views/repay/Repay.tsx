@@ -888,7 +888,7 @@ export default function Repay() {
    useEffect(() => {
       if (!showAddFunds || repaymentAmount) return;
       if (hasEnoughToRepay) {
-         setRepaymentAmount(formatCurrency(floorToCents(selectedRemaining)));
+         setRepaymentAmount(formatCurrency(selectedRemaining));
       } else if (hasPartialFunds && usdcBalance !== null) {
          // Round down: toFixed(2) can round a 4.996 balance up to 5.00, which exceeds it.
          setRepaymentAmount(formatCurrency(floorToCents(usdcBalance)));
