@@ -286,7 +286,7 @@ export const filipinoCoverageB: Record<string, string> = {
    // src/views/dashboard-v2/components/DashboardV2Sections.tsx
    'View All Milestones': 'Tingnan ang lahat ng milestone',
    'Active Loans($)': 'Mga aktibong loan ($)',
-   'Pending Loans($)': 'Mga pending na loan ($)',
+   'Pending Request($)': 'Pending na request ($)',
    'My insights': 'Mga insight ko',
    'Loading voucher': 'Naglo-load ang voucher',
    'Defaulted($)': 'Nag-default ($)',
