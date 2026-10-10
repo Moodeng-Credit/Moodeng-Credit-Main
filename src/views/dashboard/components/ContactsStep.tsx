@@ -6,10 +6,10 @@ import posthog from 'posthog-js';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
-   buildMessengerAndroidIntent,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
+   MESSENGER_PAGE_CHAT_LINK,
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
@@ -26,7 +26,9 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 //   * WhatsApp — wa.me pre-fills the code; whatsapp-webhook matches it when they hit send.
 //   * Messenger — the m.me link launches SendPulse's "Confirm Facebook" flow with the code attached;
 //     the flow calls sendpulse-messenger-verify, which matches it. Just opening the link is enough
-//     (first-time chatters tap Facebook's own "Get Started" once).
+//     (first-time chatters tap Facebook's own "Get Started" once). Not on Android: Chrome there never
+//     opens m.me in Messenger (see MESSENGER_PAGE_CHAT_LINK), so Android borrowers get the code on
+//     screen, one tap copies it and opens our chat, and they paste and send it.
 // Both stamp the verified-at column plus an id we can message them on. This component polls those
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
@@ -59,9 +61,9 @@ const BOUNCE_MS = 1_500;
 const NOT_OPENED_AFTER_MS = 3_000;
 const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
 
-// On Android without the Messenger app, the intent falls back to the m.me page in this same tab, so
-// the borrower leaves the app. Remember the open attempt so coming back lands on the code + backups
-// instead of a fresh card (whose next tap would bounce them out again). Codes live 30 minutes.
+// On Android without the Messenger app, the chat link opens Facebook's messages page in this same tab,
+// so the borrower leaves the app. Remember the attempt so coming back lands on the same code instead
+// of a fresh card (and a new code they haven't sent). Codes live 30 minutes.
 const PENDING_KEY = 'moodeng.messengerVerifyPending';
 const PENDING_TTL_MS = 25 * 60 * 1000;
 type PendingMessenger = { userId: string; code: string; link: string; at: number };
@@ -84,13 +86,7 @@ const writePending = (pending: PendingMessenger | null) => {
    }
 };
 
-// Opens the verification chat. Messenger on Android goes through an intent to the Messenger app (see
-// buildMessengerAndroidIntent); everything else keeps the original new-tab open.
-const openVerifyLink = (channel: Channel, link: string) => {
-   if (channel === 'messenger' && isAndroidBrowser()) {
-      window.location.href = buildMessengerAndroidIntent(link);
-      return;
-   }
+const openVerifyLink = (link: string) => {
    window.open(link, '_blank', 'noopener,noreferrer');
 };
 
@@ -136,6 +132,8 @@ export default function ContactsStep({
    const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
+   // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
+   const androidMessenger = isAndroidBrowser();
    // Set once the tab is hidden after we open Messenger — i.e. they actually went there. Tracked by a
    // listener that exists from mount: the tab can hide before React re-renders after the tap.
    const leftForMessengerRef = useRef(false);
@@ -281,8 +279,8 @@ export default function ContactsStep({
       }, 3000);
    }, [userId]);
 
-   // Back from the m.me page an Android fallback sent them to (this tab navigated away and reloaded):
-   // pick the attempt back up with the code and backups showing, rather than a fresh card.
+   // Back from a page that replaced this tab (Android without the Messenger app lands on Facebook's
+   // messages page): pick the attempt back up with the same code showing, rather than a fresh card.
    useEffect(() => {
       const pending = readPending(userId);
       if (!pending) return;
@@ -377,12 +375,12 @@ export default function ContactsStep({
       leftAtRef.current = null;
       if (messengerCode) writePending({ userId, code: messengerCode, link: messengerLink, at: Date.now() });
       armNotOpenedCheck();
-      openVerifyLink('messenger', messengerLink);
+      openVerifyLink(messengerLink);
    };
 
-   const copyMessengerCode = async () => {
+   const copyMessengerCode = async (via: 'copy_button' | 'open_chat') => {
       if (!messengerCode) return;
-      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current });
+      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current, via });
       try {
          await navigator.clipboard.writeText(messengerCode);
          setCodeCopied(true);
@@ -390,6 +388,18 @@ export default function ContactsStep({
       } catch {
          // Clipboard blocked: the code is on screen to type by hand.
       }
+   };
+
+   // Android: the borrower's own tap on the chat link, so copying is allowed and Messenger opens. The
+   // link navigates by itself; this only copies the code and keeps the attempt for when they're back.
+   const openMessengerChat = () => {
+      if (!messengerCode) return;
+      track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current });
+      void copyMessengerCode('open_chat');
+      leftAtRef.current = null;
+      awaitingMessengerRef.current = true;
+      writePending({ userId, code: messengerCode, link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
+      armNotOpenedCheck();
    };
 
    const handleVerify = async (channel: Channel) => {
@@ -418,8 +428,19 @@ export default function ContactsStep({
             attempt: attemptsRef.current,
             is_android: /android/i.test(navigator.userAgent),
             is_ios: /iphone|ipad|ipod/i.test(navigator.userAgent),
-            in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent)
+            in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
+            flow: channel === 'messenger' && androidMessenger ? 'paste_code' : 'link'
          });
+         if (channel === 'messenger' && androidMessenger) {
+            // Nothing opens yet: the card now shows the code and the button that opens our chat.
+            setMessengerLink(MESSENGER_PAGE_CHAT_LINK);
+            setMessengerCode(String(code));
+            leftForMessengerRef.current = false;
+            awaitingMessengerRef.current = true;
+            writePending({ userId, code: String(code), link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
+            startPolling(channel);
+            return;
+         }
          if (channel === 'messenger') {
             setMessengerLink(link);
             setMessengerCode(String(code));
@@ -428,7 +449,7 @@ export default function ContactsStep({
             writePending({ userId, code: String(code), link, at: Date.now() });
             armNotOpenedCheck();
          }
-         openVerifyLink(channel, link);
+         openVerifyLink(link);
          startPolling(channel);
       } catch (err) {
          console.error(`start verification failed (${channel})`, err);
@@ -469,7 +490,60 @@ export default function ContactsStep({
             />
          ) : null}
 
-         {messengerLink && !messengerVerified ? (
+         {messengerLink && !messengerVerified && androidMessenger && messengerCode ? (
+            <div
+               aria-live="polite"
+               className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-4 text-left"
+            >
+               <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Send us your code on Messenger</span>
+               <div className="flex items-center gap-2">
+                  <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
+                     {messengerCode}
+                  </code>
+                  <button
+                     type="button"
+                     onClick={() => void copyMessengerCode('copy_button')}
+                     className="rounded-lg border border-[#c9bdf5] bg-white px-3 py-2 text-[13px] font-bold text-[#6b55f7]"
+                  >
+                     {codeCopied ? 'Copied' : 'Copy'}
+                  </button>
+               </div>
+               {/* A plain link the borrower taps, as in the Android test: opened from script after the
+                   code request, or as m.me, Messenger never comes up. */}
+               <a
+                  href={MESSENGER_PAGE_CHAT_LINK}
+                  onClick={openMessengerChat}
+                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+               >
+                  <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                  Copy code & open Messenger
+               </a>
+               <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
+                  <li className="flex gap-2">
+                     <b>1.</b>
+                     <span>Tap the blue button. It copies your code and opens our chat.</span>
+                  </li>
+                  <li className="flex gap-2">
+                     <b>2.</b>
+                     <span>Tap Get Started if Messenger asks.</span>
+                  </li>
+                  <li className="flex gap-2">
+                     <b>3.</b>
+                     <span>Paste the code and send it.</span>
+                  </li>
+               </ol>
+               <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
+                  <Loader2 aria-hidden="true" className="size-5 shrink-0 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
+                  <span>Waiting for your message. This turns green on its own.</span>
+               </div>
+               <p className="text-[13px] leading-[17px] text-[#877897]">
+                  No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.
+               </p>
+               <p className="text-[13px] leading-[17px] text-[#877897]">
+                  Still stuck? We&apos;ll email you, and our team will help you finish.
+               </p>
+            </div>
+         ) : messengerLink && !messengerVerified ? (
             <>
                {/* A live "we're checking" state, like the wallet-creation step — a spinner + a "keep
                    this open, it'll turn green on its own" reassurance so the wait doesn't look frozen.
@@ -521,7 +595,7 @@ export default function ContactsStep({
                         </code>
                         <button
                            type="button"
-                           onClick={() => void copyMessengerCode()}
+                           onClick={() => void copyMessengerCode('copy_button')}
                            className="rounded-lg bg-[#6b55f7] px-3 py-2 text-[13px] font-bold text-white"
                         >
                            {codeCopied ? 'Copied' : 'Copy'}
@@ -546,7 +620,7 @@ export default function ContactsStep({
             </>
          ) : (
             <OptionCard
-               badge="1 tap"
+               badge={androidMessenger ? '1 min' : '1 tap'}
                disabled={startingChannel !== null}
                done={messengerVerified}
                doneLabel="Verified"
@@ -554,10 +628,14 @@ export default function ContactsStep({
                onClick={() => handleVerify('messenger')}
                subtitle={
                   startingChannel === 'messenger'
-                     ? 'Opening Messenger…'
-                     : source === 'connect'
-                       ? 'Opens Messenger — tap Get Started there. Confirms you automatically.'
-                       : 'Confirms you automatically — nothing to type'
+                     ? androidMessenger
+                        ? 'Getting your code…'
+                        : 'Opening Messenger…'
+                     : androidMessenger
+                       ? 'We give you a short code to send us on Messenger'
+                       : source === 'connect'
+                         ? 'Opens Messenger — tap Get Started there. Confirms you automatically.'
+                         : 'Confirms you automatically — nothing to type'
                }
                title={source === 'connect' ? 'Connect Messenger' : 'Messenger'}
             />

@@ -1539,5 +1539,18 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Try this:': 'Thử cách này:',
    'Use this': 'Dùng câu này',
    'Message us to help write this in English': 'Nhắn tin cho chúng tôi để được giúp viết bằng tiếng Anh',
-   'Message us for help wording this': 'Nhắn tin cho chúng tôi để được giúp diễn đạt'
+   'Message us for help wording this': 'Nhắn tin cho chúng tôi để được giúp diễn đạt',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'Gửi mã của bạn cho chúng tôi qua Messenger',
+   'Copy code & open Messenger': 'Sao chép mã và mở Messenger',
+   'Tap the blue button. It copies your code and opens our chat.':
+      'Nhấn nút màu xanh. Mã của bạn sẽ được sao chép và cuộc trò chuyện với chúng tôi sẽ mở ra.',
+   'Tap Get Started if Messenger asks.': 'Nhấn Get Started (Bắt đầu) nếu Messenger yêu cầu.',
+   'Paste the code and send it.': 'Dán mã và gửi đi.',
+   'Waiting for your message. This turns green on its own.': 'Đang chờ tin nhắn của bạn. Mục này sẽ tự chuyển sang màu xanh.',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'Không có ứng dụng Messenger? Mở Facebook, tìm Moodeng Credit, nhấn Nhắn tin và gửi mã ở đó.',
+   '1 min': '1 phút',
+   'Getting your code…': 'Đang lấy mã của bạn…',
+   'We give you a short code to send us on Messenger': 'Chúng tôi gửi bạn một mã ngắn để gửi cho chúng tôi qua Messenger'
 };

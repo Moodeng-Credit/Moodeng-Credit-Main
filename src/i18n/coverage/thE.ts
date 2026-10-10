@@ -401,5 +401,17 @@ export const thaiCoverageE: Record<string, string> = {
    'Try this:': 'ลองแบบนี้:',
    'Use this': 'ใช้ข้อความนี้',
    'Message us to help write this in English': 'ส่งข้อความหาเราเพื่อให้ช่วยเขียนเป็นภาษาอังกฤษ',
-   'Message us for help wording this': 'ส่งข้อความหาเราเพื่อให้ช่วยเรียบเรียง'
+   'Message us for help wording this': 'ส่งข้อความหาเราเพื่อให้ช่วยเรียบเรียง',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'ส่งรหัสของคุณให้เราทาง Messenger',
+   'Copy code & open Messenger': 'คัดลอกรหัสและเปิด Messenger',
+   'Tap the blue button. It copies your code and opens our chat.': 'แตะปุ่มสีน้ำเงิน ระบบจะคัดลอกรหัสและเปิดแชทของเรา',
+   'Tap Get Started if Messenger asks.': 'แตะ Get Started (เริ่มต้นใช้งาน) หาก Messenger ถาม',
+   'Paste the code and send it.': 'วางรหัสแล้วกดส่ง',
+   'Waiting for your message. This turns green on its own.': 'กำลังรอข้อความของคุณ จะเปลี่ยนเป็นสีเขียวเอง',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'ไม่มีแอป Messenger? เปิด Facebook ค้นหา Moodeng Credit แตะส่งข้อความ แล้วส่งรหัสที่นั่น',
+   '1 min': '1 นาที',
+   'Getting your code…': 'กำลังรับรหัสของคุณ…',
+   'We give you a short code to send us on Messenger': 'เราจะให้รหัสสั้นๆ ให้คุณส่งหาเราทาง Messenger'
 };

@@ -642,5 +642,17 @@ export const indonesianCoverageE: Record<string, string> = {
    'Try this:': 'Coba ini:',
    'Use this': 'Pakai ini',
    'Message us to help write this in English': 'Kirim pesan ke kami untuk bantuan menulis ini dalam bahasa Inggris',
-   'Message us for help wording this': 'Kirim pesan ke kami untuk bantuan menyusun kalimatnya'
+   'Message us for help wording this': 'Kirim pesan ke kami untuk bantuan menyusun kalimatnya',
+   // ContactsStep Android Messenger flow (copy code & open chat)
+   'Send us your code on Messenger': 'Kirim kode kamu ke kami lewat Messenger',
+   'Copy code & open Messenger': 'Salin kode & buka Messenger',
+   'Tap the blue button. It copies your code and opens our chat.': 'Ketuk tombol biru. Kode kamu akan tersalin dan chat kami terbuka.',
+   'Tap Get Started if Messenger asks.': 'Ketuk Get Started (Mulai) jika Messenger memintanya.',
+   'Paste the code and send it.': 'Tempel kodenya lalu kirim.',
+   'Waiting for your message. This turns green on its own.': 'Menunggu pesan kamu. Ini akan berubah hijau dengan sendirinya.',
+   'No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.':
+      'Tidak punya aplikasi Messenger? Buka Facebook, cari Moodeng Credit, ketuk Kirim Pesan, lalu kirim kodenya di sana.',
+   '1 min': '1 menit',
+   'Getting your code…': 'Mengambil kode kamu…',
+   'We give you a short code to send us on Messenger': 'Kami beri kode singkat untuk kamu kirim ke kami lewat Messenger'
 };
