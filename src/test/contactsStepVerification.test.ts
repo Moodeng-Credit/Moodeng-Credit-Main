@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, MESSENGER_PAGE_CHAT_LINK } from '@/config/contactVerification';
+import { buildMessengerVerifyLink, buildWhatsAppVerifyLink, MESSENGER_APP_CHAT_LINK } from '@/config/contactVerification';
 
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
@@ -259,7 +259,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          expect(openSpy).not.toHaveBeenCalled();
          expect(container.textContent).toContain('MDNG-ABC123');
          const chatLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
-         expect(chatLink?.getAttribute('href')).toBe(MESSENGER_PAGE_CHAT_LINK);
+         expect(chatLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
          expect(chatLink?.getAttribute('target')).toBeNull();
          expect(container.textContent).not.toContain('Open Messenger again');
 
@@ -272,7 +272,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
          expect(JSON.parse(window.sessionStorage.getItem('moodeng.messengerVerifyPending') ?? '{}')).toMatchObject({
             code: 'MDNG-ABC123',
-            link: MESSENGER_PAGE_CHAT_LINK
+            link: MESSENGER_APP_CHAT_LINK
          });
 
          // The bot confirms the pasted code → the card flips to Verified.
