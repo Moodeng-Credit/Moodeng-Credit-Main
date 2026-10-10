@@ -19,9 +19,12 @@ interface LocationPrimingModalProps {
 export default function LocationPrimingModal({ open, onShare, onSkip }: LocationPrimingModalProps) {
    if (!open) return null;
 
+   // Shown mid-submit while the loan form (z-[70], its own popups up to z-[90]) is still open, so it
+   // must sit above all of it. At z-[60] it rendered behind the form: the borrower never saw the
+   // question and the request hung on "Submitting..." waiting for an answer.
    return (
       <div
-         className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
+         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
          role="dialog"
          aria-modal="true"
          aria-labelledby="location-priming-title"
