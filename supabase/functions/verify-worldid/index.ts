@@ -4,6 +4,7 @@ import { hmac } from "https://esm.sh/@noble/hashes@1.8.0/hmac?target=deno"
 import { sha256 } from "https://esm.sh/@noble/hashes@1.8.0/sha2?target=deno"
 import { keccak_256 } from "https://esm.sh/@noble/hashes@1.8.0/sha3?target=deno"
 import { etc, sign } from "https://esm.sh/@noble/secp256k1@2.3.0?target=deno"
+import { needsPreKycGate } from "../_shared/preKycGate.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -241,6 +242,11 @@ serve(async (req) => {
       if (!faceChecked) {
         return errorResponse('Complete the face check on the Verify page first', 400, 'LIVENESS_REQUIRED')
       }
+      // Pre-KYC gate: a new borrower meets the team (Messenger + intro call, approved after it) before
+      // verifying — World ID too, not only Didit (create-didit-session enforces the same rule).
+      if (await needsPreKycGate(faceClient, user.id)) {
+        return errorResponse('Please meet the team before verifying.', 409, 'APPROVAL_REQUIRED')
+      }
 
       const signingKey = getEnvForWorldId('WORLD_ID_SIGNING_KEY') || Deno.env.get('RP_SIGNING_KEY')
       if (!signingKey) {
@@ -350,6 +356,9 @@ serve(async (req) => {
       String(faceRow?.liveness_status ?? '').toUpperCase() === 'APPROVED' || String(faceRow?.is_didit ?? '').toUpperCase() === 'ACTIVE'
     if (!faceChecked) {
       return errorResponse('Complete the face check on the Verify page first', 400, 'LIVENESS_REQUIRED')
+    }
+    if (await needsPreKycGate(adminSupabase, user.id)) {
+      return errorResponse('Please meet the team before verifying.', 409, 'APPROVAL_REQUIRED')
     }
 
     const { error: updateError } = await adminSupabase

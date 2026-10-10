@@ -622,7 +622,11 @@ function RequestBoard$() {
    // as the last step of sending (verifyAtSubmit in LoanRequestModal). Size the form by the limit
    // they'll have once verified — reading 0 here said "above your current limit of $0" and blocked
    // every request. Creating the loan itself still requires verification.
-   const isApplyingBeforeIdCheck = !journey.onboarding && journey.stage === 'apply';
+   // Also once they've opened the ID check and come back unverified (left Didit early, declined, in
+   // review — stage 'id_with_didit'): the form comes back with their saved terms and must still show
+   // their real limit, not $0. Not for a duplicate face: that account is blocked.
+   const isApplyingBeforeIdCheck =
+      !journey.onboarding && (journey.stage === 'apply' || (journey.stage === 'id_with_didit' && verifyUiState !== 'duplicate'));
    const effectiveCreditLimit = isAuthenticated
       ? getEffectiveCreditLimit(effectiveUser.cs, isUserVerified(effectiveUser) || isApplyingBeforeIdCheck)
       : 0;
@@ -735,6 +739,10 @@ function RequestBoard$() {
          return;
       }
       if (draft.sendAfterVerify) setAutoSendLoanRequest(true);
+      // Verified and shown the filled-in form once: that's what the kept terms were for. Use them up
+      // now, so dismissing the form any way (backdrop, leaving the page) doesn't reopen it on every
+      // visit for the next 3 days.
+      if (draft.prefillOnly) saveLoanRequestDraft(effectiveUser.id, { ...draft, prefillOnly: false });
       setShowModal(true);
       // Resume once per load, against the profile as it is now.
       // eslint-disable-next-line react-hooks/exhaustive-deps

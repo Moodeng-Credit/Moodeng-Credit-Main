@@ -39,7 +39,9 @@ export default function ForgotPasswordPage(): JSX.Element {
       // on 2026-10-10 waited ~4 minutes through two silent requests before a resend to the right
       // address worked. Sign-in already tells people when an email has no account (email_exists),
       // so say so here too. A failed check never blocks the send.
-      const { data: exists, error: existsError } = await supabase.rpc('email_exists', { p_email: targetEmail });
+      // auth_email_exists checks the login itself: email_exists only sees profile rows, and a few real
+      // sign-ins have none — they were told they had no account and couldn't reset.
+      const { data: exists, error: existsError } = await supabase.rpc('auth_email_exists', { p_email: targetEmail });
       if (!existsError && exists === false) {
          setError(`No Moodeng account uses ${targetEmail}. Check the spelling, or use the email you signed up with.`);
          return false;

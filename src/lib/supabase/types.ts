@@ -852,6 +852,10 @@ export type Database = {
             Args: { p_email: string };
             Returns: boolean;
          };
+         auth_email_exists: {
+            Args: { p_email: string };
+            Returns: boolean;
+         };
          get_user_id_by_username: {
             Args: { p_username: string };
             Returns: string;
