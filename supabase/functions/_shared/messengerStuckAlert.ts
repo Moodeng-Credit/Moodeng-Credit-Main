@@ -102,20 +102,22 @@ export const buildStuckEmail = (
 ) => {
    const first = borrower.display_name?.trim().split(/\s+/)[0] || 'there';
    const subject = 'Finish connecting your Facebook to Moodeng';
+   // Code first: it works on every phone. The m.me one-tap link never opens Messenger from Android
+   // Chrome (2026-10-10 tests), and most stuck borrowers are on Android, so it's only an extra.
    const text = [
       `Hi ${first},`,
       '',
-      "Your Facebook isn't connected to Moodeng yet. It usually takes one tap:",
+      "Your Facebook isn't connected to Moodeng yet. Two quick steps:",
       '',
-      `1. On your phone, open this link: ${links.messenger}`,
-      '   Messenger opens our chat and confirms you automatically. If it shows "Get Started", tap it.',
+      `1. Open Messenger or Facebook, search for Moodeng Credit and open our chat: ${links.page}`,
+      `2. Send us this code: ${code}`,
+      '   We confirm you automatically. If the chat shows "Get Started", tap it first.',
       '',
-      `2. If that doesn't work, send this code to Moodeng Credit on Messenger: ${code}`,
-      `   Our Facebook page: ${links.page}`,
+      `On an iPhone or a computer you can also just open this link: ${links.messenger}`,
       '',
       `Then continue your loan application: ${links.apply}`,
       '',
-      'The link and the code work for 24 hours. Stuck? Just reply to this email and we will help.',
+      'The code works for 24 hours. Stuck? Just reply to this email and we will help.',
       '',
       'The Moodeng Credit team'
    ].join('\n');
@@ -123,14 +125,15 @@ export const buildStuckEmail = (
       `<a href="${escapeHtml(href)}" style="display:inline-block;background:#6b55f7;color:#fff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:10px">${label}</a>`;
    const html = `<div style="font-family:Arial,sans-serif;font-size:16px;line-height:1.5;color:#2d2340;max-width:520px">
 <p>Hi ${escapeHtml(first)},</p>
-<p>Your Facebook isn't connected to Moodeng yet. It usually takes one tap:</p>
-<p><b>1.</b> On your phone, tap the button. Messenger opens our chat and confirms you automatically. If it shows <b>Get Started</b>, tap it.</p>
-<p>${button(links.messenger, 'Connect Facebook')}</p>
-<p><b>2.</b> If that doesn't work, send this code to <a href="${escapeHtml(links.page)}">Moodeng Credit</a> on Messenger:</p>
+<p>Your Facebook isn't connected to Moodeng yet. Two quick steps:</p>
+<p><b>1.</b> Open Messenger or Facebook, search for <b>Moodeng Credit</b> and open our chat.</p>
+<p>${button(links.page, 'Open Moodeng Credit')}</p>
+<p><b>2.</b> Send us this code. We confirm you automatically. If the chat shows <b>Get Started</b>, tap it first.</p>
 <p style="font-size:22px;font-weight:bold;letter-spacing:2px">${escapeHtml(code)}</p>
+<p style="color:#6b5b86">On an iPhone or a computer you can also just <a href="${escapeHtml(links.messenger)}">tap here</a> instead.</p>
 <p>Then continue your loan application:</p>
 <p>${button(links.apply, 'Continue my application')}</p>
-<p style="color:#6b5b86">The link and the code work for 24 hours. Stuck? Just reply to this email and we will help.</p>
+<p style="color:#6b5b86">The code works for 24 hours. Stuck? Just reply to this email and we will help.</p>
 <p>The Moodeng Credit team</p>
 </div>`;
    return { subject, text, html };

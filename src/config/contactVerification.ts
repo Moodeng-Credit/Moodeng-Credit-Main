@@ -103,3 +103,14 @@ export const MESSENGER_APP_CHAT_LINK = `fb-messenger://user-thread/${MESSENGER_P
 
 export const isAndroidBrowser = (userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '') =>
    /android/i.test(userAgent);
+
+// Support "Message us" links (EXTERNAL_LINKS.support) are m.me links too, so on Android they never
+// opened Messenger either. Android gets the app link to the Page's chat (the ref tag only rides along
+// elsewhere); custom schemes open in place, not in a new tab.
+export const messengerSupportLink = (link: string) => (isAndroidBrowser() ? MESSENGER_APP_CHAT_LINK : link);
+export const externalLinkTarget = (href: string) => (href.startsWith('https:') ? '_blank' : undefined);
+export const openMessengerSupport = (link: string) => {
+   const href = messengerSupportLink(link);
+   if (externalLinkTarget(href)) window.open(href, '_blank', 'noopener');
+   else window.location.href = href;
+};

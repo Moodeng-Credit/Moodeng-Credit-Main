@@ -420,5 +420,9 @@ export const thaiCoverageE: Record<string, string> = {
    'Tap Get Started, or send us a message. We connect you automatically.':
       'แตะ Get Started (เริ่มต้นใช้งาน) หรือส่งข้อความหาเรา เราจะเชื่อมต่อให้อัตโนมัติ',
    'Not green after a minute? Paste the code (already copied) and send it.':
-      'ผ่านไปหนึ่งนาทียังไม่เป็นสีเขียว? วางรหัส (คัดลอกไว้แล้ว) แล้วกดส่ง'
+      'ผ่านไปหนึ่งนาทียังไม่เป็นสีเขียว? วางรหัส (คัดลอกไว้แล้ว) แล้วกดส่ง',
+   // ContactsStep Android Messenger hints
+   "Messenger didn't open? Open Facebook, search Moodeng Credit, tap Message, and say hi.":
+      'Messenger ไม่เปิดใช่ไหม? เปิด Facebook ค้นหา Moodeng Credit แตะส่งข้อความ แล้วทักทายเรา',
+   'Opens our chat. Say hi and you’re connected.': 'เปิดแชทของเรา ทักทายแล้วคุณจะเชื่อมต่อทันที'
 };
