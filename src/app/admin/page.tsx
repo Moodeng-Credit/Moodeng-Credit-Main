@@ -457,7 +457,20 @@ export default function AdminPanel() {
             setAdmin(currentAdmin);
             setLoading(false);
             if (currentAdmin) {
-               await refresh('', { showLoading: true });
+               // Deep links from the Telegram admin cards ("👤 Open in admin"): ?q= searches the
+               // directory for them, ?user= opens their card and scrolls to it.
+               const params = new URLSearchParams(window.location.search);
+               const linkedQuery = params.get('q')?.trim() ?? '';
+               const linkedUserId = params.get('user');
+               if (linkedQuery) setSearch(linkedQuery);
+               await refresh(linkedQuery, { showLoading: true });
+               if (alive && linkedUserId) {
+                  setSelectedUserId(linkedUserId);
+                  window.setTimeout(
+                     () => document.getElementById(`admin-user-${linkedUserId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                     80
+                  );
+               }
             }
          } catch (caught) {
             if (alive) setError(caught instanceof Error ? caught.message : 'Could not load admin panel.');

@@ -3,6 +3,10 @@
 // Borrowers claim a voucher in the app (public.submit_voucher_claim → voucher_claims, status 'pending').
 // A trigger posts each new claim to the admin channel; the team buys the voucher (e.g. Gifted.PH,
 // uDialPinoy) and taps ✅ Mark sent, which flips the claim to 'sent' so the borrower sees "Sent".
+// Deciding in the admin panel instead fires notify_voucher_claim_decided, which stamps the card
+// the same way (voucher-claim-telegram-notification, event 'decided').
+
+import { type CardStamp, stampDecisionCards } from './adminCards.ts';
 
 // Telegram callback_data for the card buttons: "vo:<s|r>:<claim uuid>" (≤64 bytes).
 export type VoucherDecision = 'sent' | 'rejected';
@@ -57,8 +61,25 @@ export const buildVoucherClaimCard = (claim: VoucherClaimRow) =>
 
 type SupabaseClient = any;
 
-/** Flip a pending claim to sent/rejected. Returns a one-line summary for the admin card. */
-export const decideVoucherClaim = async (supabase: SupabaseClient, claimId: string, decision: VoucherDecision, admin: string) => {
+// The after-state header of a decided claim's card.
+export const voucherStampHeader = (decision: VoucherDecision, claim: { full_name?: string | null; amount_php?: number | string | null }) => {
+   const name = claim.full_name?.trim() || 'They';
+   return decision === 'sent'
+      ? `🎟 VOUCHER SENT — ${name} got their ₱${Number(claim.amount_php ?? 0)} GrabFood voucher`
+      : `🚫 VOUCHER REJECTED — ${name}'s claim is closed (they can submit a new one)`;
+};
+
+// Who decided, from what's on the claim: "sent by @george via Telegram" → "@george".
+export const voucherDecidedBy = (adminNote: string | null | undefined) =>
+   adminNote?.match(/^(?:sent|rejected) by (.+?) via Telegram$/)?.[1] ?? null;
+
+/** Flip a pending claim to sent/rejected, and stamp its admin card. Returns a one-line summary. */
+export const decideVoucherClaim = async (
+   supabase: SupabaseClient,
+   claimId: string,
+   decision: VoucherDecision,
+   admin: string
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp }> => {
    const { data, error } = await supabase
       .from('voucher_claims')
       .update({
@@ -71,10 +92,18 @@ export const decideVoucherClaim = async (supabase: SupabaseClient, claimId: stri
       .eq('status', 'pending')
       .select('id, full_name, amount_php')
       .maybeSingle();
-   if (error) return { ok: false, summary: `Couldn't update: ${error.message}` };
-   if (!data) return { ok: false, summary: 'Already handled (not pending any more).' };
+   if (error) throw new Error(`Couldn't update: ${error.message}`);
+   if (!data) {
+      const { data: current } = await supabase.from('voucher_claims').select('status, admin_note').eq('id', claimId).maybeSingle();
+      if (!current) return { ok: false, summary: 'That claim no longer exists.' };
+      const by = voucherDecidedBy(current.admin_note);
+      return { ok: false, summary: `Already ${current.status}${by ? ` by ${by}` : ' in the admin panel'} — nothing changed.` };
+   }
+   const stamp: CardStamp = { header: voucherStampHeader(decision, data), by: admin };
+   await stampDecisionCards(supabase, 'voucher', claimId, stamp);
    return {
       ok: true,
-      summary: decision === 'sent' ? `✅ Marked sent by ${admin}` : `❌ Rejected by ${admin}`
+      summary: decision === 'sent' ? `✅ Marked sent by ${admin}` : `❌ Rejected by ${admin}`,
+      stamp
    };
 };

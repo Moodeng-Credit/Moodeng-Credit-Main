@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
@@ -221,10 +222,13 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
          .update({ suggested_contact_id: contactId, suggested_contact_name: facebookName, suggested_at: new Date().toISOString() })
          .eq('id', attempt.row.id)
          .is('verified_at', null);
-      const text = buildMatchSuggestionCard(attempt.user, attempt.names.slice(0, 3), facebookName, attempt, event.at);
+      const text = buildMatchSuggestionCard(attempt.user, attempt.names.slice(0, 3).filter((n): n is string => Boolean(n)), facebookName, attempt, event.at);
       if (chat) {
-         await sendTelegramMessage(chat, text, {
-            inlineKeyboard: messengerStuckKeyboard(attempt.user.id, PAGE_INBOX_URL, "✅ Yes, it's them")
+         await sendAdminCard(svc, chat, {
+            kind: 'messenger',
+            refId: attempt.user.id,
+            text,
+            keyboard: messengerStuckKeyboard(attempt.user.id, PAGE_INBOX_URL, "✅ Yes, it's them", attempt.user.username)
          }).catch((err: unknown) => console.error('sendpulse-events: telegram card failed', err));
       }
       await postDiscord({ content: `${text}\n(Answer on the card in the Telegram KYC group.)` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });

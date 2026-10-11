@@ -1,9 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
+import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
 import { verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
 import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName, sendMessengerMessage } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -54,6 +56,13 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
          contactId ? svc.from('users').select('username').eq('messenger_psid', contactId).neq('id', userId) : Promise.resolve({ data: [] })
       ]);
       if (!borrower) return;
+      // Any "Facebook not confirmed" / "Is this them?" card about them is resolved now.
+      await stampDecisionCards(
+         svc,
+         'messenger',
+         userId,
+         messengerVerifiedStamp(personName(borrower), 'auto (their code reached the bot)', messengerDisplayName(contact) ?? flowName)
+      );
       const alsoLinkedTo = ((sharing ?? []) as Array<{ username: string | null }>).map((u) =>
          u.username ? `@${u.username}` : 'another account'
       );
