@@ -158,7 +158,9 @@ const fakeDb = (updated: unknown, existing: unknown, openCode: unknown = null) =
 Deno.test('markMessengerVerified: stamps an unverified borrower', async () => {
    const db = fakeDb({ username: 'aya-b5e3f9', display_name: 'Aya' }, null);
    const result = await markMessengerVerified(db, USER_ID, '@george');
-   assertEquals(result, { ok: true, summary: '✅ Facebook marked verified for Aya — by @george' });
+   assertEquals(result.ok, true);
+   assertEquals(result.summary, '✅ Facebook marked verified for Aya — by @george');
+   assertEquals(result.stamp?.header, '✔️ MESSENGER VERIFIED — Aya can continue their application');
    assertEquals(db.writes.length, 1);
    assertEquals('messenger_psid' in (db.writes[0] as Record<string, unknown>), false);
 });
@@ -176,7 +178,10 @@ Deno.test('markMessengerVerified: saves the suggested Facebook chat so reminders
 Deno.test('markMessengerVerified: already verified is a friendly no-op', async () => {
    const db = fakeDb(null, { username: 'aya-b5e3f9', display_name: 'Aya' });
    const result = await markMessengerVerified(db, USER_ID, '@george');
-   assertEquals(result, { ok: true, summary: 'Facebook already verified for Aya. Nothing to do.' });
+   assertEquals(result.ok, true);
+   assertEquals(result.summary, 'Facebook already verified for Aya. Nothing to do.');
+   // The tapped card closes as "already decided", not as an error.
+   assertEquals(result.stamp?.header, 'ℹ️ Already decided — Facebook already verified for Aya');
 });
 
 Deno.test('markMessengerVerified: unknown borrower', async () => {

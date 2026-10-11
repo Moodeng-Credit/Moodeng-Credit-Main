@@ -1,4 +1,6 @@
+import { openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
+import { classifyKycOutcome, diditConsoleButton, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
 import { sendEmail } from './email.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { buildVerificationDecisionPushPayload, type PushLocale } from './pushMessages.ts';
@@ -79,20 +81,22 @@ export const notifyAdmins = async (
 
       const { data: profile } = await adminSupabase
          .from('users')
-         .select('email, username')
+         .select('email, username, display_name')
          .eq('id', userId)
          .maybeSingle();
-      const p = profile as { email?: string; username?: string } | null;
+      const p = profile as { email?: string; username?: string; display_name?: string | null } | null;
       const who = [p?.username, p?.email].filter(Boolean).join(' · ') || userId;
 
       // A decline uses one of their 3 KYC tries (kyc_declines, counted by the time this runs).
       // Out of tries → they're asked to message us; claim the "out of tries" alert so
       // create-didit-session doesn't repeat it.
       let triesLine = '';
+      let outOfTries = false;
       if (/declined/i.test(outcome)) {
          const { data: left } = await adminSupabase.rpc('kyc_tries_left', { p_user_id: userId });
          if (typeof left === 'number') {
             if (left <= 0) {
+               outOfTries = true;
                await adminSupabase
                   .from('kyc_declines')
                   .update({ cap_alerted_at: new Date().toISOString() })
@@ -108,10 +112,24 @@ export const notifyAdmins = async (
 
       // Telegram (kyc_alert_chat_id) and Discord are independent best-effort channels: a missing
       // chat id or a failed Telegram send must not stop the Discord alert, and vice-versa.
+      // A verdict resolves any open "in manual review" card for them (adminCards.ts).
+      const verdictStamp = kycVerdictStamp(outcome, personName(p));
+      if (verdictStamp) await stampDecisionCards(adminSupabase, 'kyc_review', userId, verdictStamp);
+
       if (chatId) {
-         await sendTelegramMessage(
-            chatId,
-            `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}${triesLine}`
+         const text = `🪪 Didit KYC — ${outcome}\nUser: ${who}\nUser ID: ${userId}${sessionId ? `\nSession: ${sessionId}` : ''}${triesLine}`;
+         const links = [diditConsoleButton(sessionId), openInAdminButton(userId, p?.username)];
+         // Manual review waits on the Didit verdict; out of tries waits on 🔁 / /kycretry — both are
+         // remembered so they get stamped. Other outcomes are news, not a to-do.
+         const kind = outOfTries ? 'kyc_tries' : classifyKycOutcome(outcome) === 'review' ? 'kyc_review' : null;
+         await (kind
+            ? sendAdminCard(adminSupabase, chatId, {
+                 kind,
+                 refId: userId,
+                 text,
+                 keyboard: kind === 'kyc_tries' ? kycTriesKeyboard(userId, p?.username, sessionId) : [links]
+              })
+            : sendTelegramMessage(chatId, text, { inlineKeyboard: [links] })
          ).catch((err: unknown) => console.error('[diditNotifications] Telegram admin alert failed:', err instanceof Error ? err.message : err));
       }
 

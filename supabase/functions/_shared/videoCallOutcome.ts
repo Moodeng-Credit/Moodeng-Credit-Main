@@ -12,6 +12,7 @@
 // if nobody has tapped by then (autoMarkNoShow). Showing up still needs a human ✅ — the call is
 // where the host judges they're ready to borrow.
 
+import { type CardStamp, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { ATTENDANCE_COLUMNS, type AttendanceFields, describeAttendance, zoomActiveForHost } from './attendance.ts';
 import { postDiscord } from './discord.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
@@ -21,7 +22,9 @@ import {
    decideLoanAccess,
    decisionKeyboard,
    getAdminChatId,
+   loanAccessStampHeader,
    notifyBorrower,
+   PAGE_INBOX_URL,
    REQUEST_COLUMNS,
    type RequestRow,
    who
@@ -114,15 +117,23 @@ export const promptAdminsForAttendance = async (svc: SupabaseClient, userId: str
          : null
    ].filter(Boolean);
 
-   await sendTelegramMessage(chat, lines.join('\n'), {
-      inlineKeyboard: request
-         ? decisionKeyboard(request)
-         : [
-              [
-                 { text: '✅ Showed up', callback_data: buildOutcomeCallback('attended', userId, user.video_call_starts_at) },
-                 { text: '❌ No-show', callback_data: buildOutcomeCallback('no_show', userId, user.video_call_starts_at) }
-              ]
-           ]
+   // Remembered with the borrower's other loan_access cards, so the call-start card and the 20-min
+   // card both get stamped however the outcome is recorded.
+   await sendAdminCard(svc, chat, {
+      kind: 'loan_access',
+      refId: userId,
+      text: lines.join('\n'),
+      keyboard: [
+         ...(request
+            ? decisionKeyboard(request)
+            : [
+                 [
+                    { text: '✅ Showed up', callback_data: buildOutcomeCallback('attended', userId, user.video_call_starts_at) },
+                    { text: '❌ No-show', callback_data: buildOutcomeCallback('no_show', userId, user.video_call_starts_at) }
+                 ]
+              ]),
+         [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(userId, user.username)]
+      ]
    });
 };
 
@@ -137,11 +148,15 @@ export const recordCallOutcome = async (
    decidedBy: string,
    // From a card's button: the call it was sent for. A mismatch means they've rebooked since.
    expectedCallKey?: string | null
-): Promise<{ ok: boolean; summary: string }> => {
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp }> => {
    if (expectedCallKey) {
       const current = await loadUser(svc, userId);
       if (callKeyFor(current?.video_call_starts_at) !== expectedCallKey) {
-         return { ok: false, summary: "This card is for an earlier call — they've rebooked since, so nothing was changed." };
+         return {
+            ok: false,
+            summary: "This card is for an earlier call — they've rebooked since, so nothing was changed.",
+            stamp: { header: "ℹ️ OLD CARD — they've rebooked since, so nothing was changed", verb: 'Tapped by', by: decidedBy }
+         };
       }
    }
    // A pending call request (e.g. /showed <user id>, which findPendingRequest can't resolve) is
@@ -149,7 +164,7 @@ export const recordCallOutcome = async (
    const pendingRequest = await findPendingCallRequest(svc, userId);
    if (pendingRequest) {
       const decided = await decideLoanAccess(svc, pendingRequest.id, outcome === 'attended' ? 'approved' : 'no_show', decidedBy);
-      return { ok: decided.ok, summary: decided.summary };
+      return { ok: decided.ok, summary: decided.summary, stamp: decided.stamp };
    }
    // Read before the outcome is written: the pre-KYC gate makes this tap the approval too.
    const preKyc = await needsPreKycGate(svc, userId);
@@ -181,10 +196,12 @@ export const recordCallOutcome = async (
             .select('id');
          if (approveError) throw new Error(approveError.message);
          if (!approvedRows?.length) return { ok: false, summary: 'Already approved — nothing changed.' };
+         const stamp: CardStamp = { header: loanAccessStampHeader('approved', personName(current), { call: true }), by: decidedBy };
+         await stampDecisionCards(svc, 'loan_access', userId, stamp);
          await notifyBorrower(svc, current, 'approved');
          const summary = `✅ Showed up → approved: ${who(current)} — by ${decidedBy}`;
          await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
-         return { ok: true, summary };
+         return { ok: true, summary, stamp };
       }
       return {
          ok: false,
@@ -250,9 +267,22 @@ export const recordCallOutcome = async (
       await notifyBorrower(svc, updated as BorrowerRow, gateOn && unapproved ? 'no_show' : held.includes('until they attend') ? 'missed_call_request_waiting' : held ? 'missed_call_request_paused' : 'missed_call');
    }
 
+   const name = personName(updated as BorrowerRow);
+   const stamp: CardStamp = {
+      header:
+         outcome === 'no_show'
+            ? loanAccessStampHeader('no_show', name)
+            : approvedNow
+              ? loanAccessStampHeader('approved', name, { call: true })
+              : loanAccessStampHeader(correctingNoShow ? 'corrected' : 'attended', name),
+      detail: held || null,
+      by: decidedBy
+   };
+   await stampDecisionCards(svc, 'loan_access', userId, stamp);
+
    const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
-   return { ok: true, summary };
+   return { ok: true, summary, stamp };
 };
 
 // An hour in, Zoom never saw them and nobody tapped: record the no-show exactly as the ❌ button
@@ -297,6 +327,10 @@ export const closeReleasedCall = async (svc: SupabaseClient, userId: string, whe
    }
    const { data: borrower } = await svc.from('users').select(BORROWER_COLUMNS).eq('id', userId).maybeSingle();
    if (!borrower) return;
+   await stampDecisionCards(svc, 'loan_access', userId, {
+      header: `🗓️ SLOT FREED — ${personName(borrower as BorrowerRow)} never confirmed and was asked to pick a new time`,
+      by: 'auto (never confirmed)'
+   });
    await notifyBorrower(svc, borrower as BorrowerRow, 'spot_released');
 
    const text = `🗓️ Freed ${who(borrower as BorrowerRow)}'s slot (${whenForTeam}) — they never confirmed after two asks. They've been asked to pick a new time.`;

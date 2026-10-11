@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { sendEmail } from '../_shared/email.ts';
 import { APPLY_URL, PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
@@ -19,7 +20,6 @@ import {
    type StuckCode
 } from '../_shared/messengerStuckAlert.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 
 // Cron-driven (every 5 min): borrowers who tapped "Verify via Messenger" 10+ minutes ago and still
@@ -128,9 +128,12 @@ serve(async (req) => {
 
       const text = buildMessengerStuckAlert(borrower, code, now, email);
       if (kycChatId) {
-         await sendTelegramMessage(kycChatId, text, { inlineKeyboard: messengerStuckKeyboard(borrower.id, PAGE_INBOX_URL) }).catch(
-            (err: unknown) => console.error('messenger-stuck-alerts: telegram send failed', err instanceof Error ? err.message : err)
-         );
+         await sendAdminCard(svc, kycChatId, {
+            kind: 'messenger',
+            refId: borrower.id,
+            text,
+            keyboard: messengerStuckKeyboard(borrower.id, PAGE_INBOX_URL, undefined, borrower.username)
+         }).catch((err: unknown) => console.error('messenger-stuck-alerts: telegram send failed', err instanceof Error ? err.message : err));
       }
       await postDiscord(
          { content: `${text}\n(The button is on the card in the Telegram KYC group.)` },

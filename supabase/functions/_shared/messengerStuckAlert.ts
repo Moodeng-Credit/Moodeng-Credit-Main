@@ -1,3 +1,4 @@
+import { type CardStamp, openInAdminButton, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 
@@ -6,6 +7,8 @@ import type { TelegramInlineKeyboard } from './telegram.ts';
 //     a card to the KYC Telegram group (with a "Mark Facebook verified" button) and Discord #kyc;
 //   * sendpulse-events posts an "Is this them?" card when a Facebook chat arrives without a code but
 //     with a name close to a borrower who just tapped Verify.
+// Both are remembered as the borrower's 'messenger' cards (adminCards.ts): the ✅ button, /confirm,
+// or the bot getting their code after all stamps them "✔️ MESSENGER VERIFIED".
 //
 // Why: Meta doesn't guarantee the m.me ref reaches the bot (first-time "Get Started", some Android
 // Messenger versions, Facebook Lite, no Messenger app). The borrower is stuck on the contact step
@@ -150,11 +153,19 @@ export const parseMessengerVerifyCallback = (data?: string | null): { userId: st
 export const messengerStuckKeyboard = (
    userId: string,
    pageInboxUrl: string,
-   label = '✅ Mark Facebook verified'
+   label = '✅ Mark Facebook verified',
+   username?: string | null
 ): TelegramInlineKeyboard => [
    [{ text: label, callback_data: buildMessengerVerifyCallback(userId) }],
-   [{ text: '💬 Open Page inbox', url: pageInboxUrl }]
+   [{ text: '💬 Open Page inbox', url: pageInboxUrl }, openInAdminButton(userId, username)]
 ];
+
+// The after-state of a borrower's Messenger cards, whoever verified them.
+export const messengerVerifiedStamp = (name: string, by: string, facebookName?: string | null): CardStamp => ({
+   header: `✔️ MESSENGER VERIFIED — ${name} can continue their application`,
+   detail: facebookName ? `Facebook: ${facebookName}` : null,
+   by
+});
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -165,7 +176,11 @@ type SupabaseClient = any;
  * id is saved too, so reminders can reach them. Their open code is left alone on purpose — if the
  * bot does get through before it expires, sendpulse-messenger-verify still stores the contact id.
  */
-export const markMessengerVerified = async (supabase: SupabaseClient, userId: string, admin: string) => {
+export const markMessengerVerified = async (
+   supabase: SupabaseClient,
+   userId: string,
+   admin: string
+): Promise<{ ok: boolean; summary: string; stamp?: CardStamp }> => {
    const { data: openCode } = await supabase
       .from('contact_verification_codes')
       .select('suggested_contact_id, suggested_contact_name')
@@ -187,11 +202,15 @@ export const markMessengerVerified = async (supabase: SupabaseClient, userId: st
    if (!updated) {
       const { data: existing } = await supabase.from('users').select('username, display_name').eq('id', userId).maybeSingle();
       if (!existing) return { ok: false, summary: 'Borrower not found.' };
-      return { ok: true, summary: `Facebook already verified for ${borrowerName(existing)}. Nothing to do.` };
+      // Verified meanwhile (the bot got their code, /confirm, another card): close this card as such.
+      const summary = `Facebook already verified for ${borrowerName(existing)}. Nothing to do.`;
+      return { ok: true, summary, stamp: { header: `ℹ️ Already decided — Facebook already verified for ${borrowerName(existing)}`, by: admin, verb: 'Tapped by' } };
    }
 
    const matched = (openCode as { suggested_contact_name?: string | null } | null)?.suggested_contact_name;
+   const stamp = messengerVerifiedStamp(borrowerName(updated), admin, matched);
+   await stampDecisionCards(supabase, 'messenger', userId, stamp);
    const summary = `✅ Facebook marked verified for ${borrowerName(updated)}${matched ? ` (Facebook: ${matched})` : ''} — by ${admin}`;
    await postDiscord({ content: summary }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   return { ok: true, summary };
+   return { ok: true, summary, stamp };
 };

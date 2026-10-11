@@ -1,10 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, getAdminChatId, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, REQUEST_COLUMNS, SITE_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -148,6 +149,13 @@ const expire = async (svc: any) => {
          .select(BORROWER_COLUMNS)
          .maybeSingle();
       if (!borrower) continue;
+      await stampDecisionCards(
+         svc,
+         'loan_access',
+         row.user_id,
+         `⌛ EXPIRED — nobody decided in time; ${personName(borrower)} was asked if they still want to borrow`,
+         { by: 'auto (request expired)' }
+      );
       await notifyBorrower(svc, borrower, 'expired');
       nudged++;
    }
@@ -213,7 +221,15 @@ const gateDigest = async (req: Request, svc: any) => {
    if (!text) return json({ ok: true, sent: false, reason: 'nothing_to_report' });
    const chat = await getAdminChatId(svc);
    if (!chat) return json({ ok: false, error: 'no_admin_chat' }, 500);
-   await sendTelegramMessage(chat, text);
+   // A list, not one decision — so links, not buttons: the panel and the inbox to act from.
+   await sendTelegramMessage(chat, text, {
+      inlineKeyboard: [
+         [
+            { text: '📞 Call approvals', url: `${SITE_URL}/admin/calls` },
+            { text: '💬 Open Page inbox', url: PAGE_INBOX_URL }
+         ]
+      ]
+   });
    const { error: markError } = await svc.from('telegram_bot_settings').upsert({ key: 'gate_digest_date', value: today }, { onConflict: 'key' });
    if (markError) console.error('loan-access: marking gate digest sent failed', markError.message);
    await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });

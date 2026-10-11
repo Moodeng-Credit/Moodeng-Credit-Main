@@ -1,10 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { kycTriesKeyboard } from '../_shared/kycCards.ts';
 import { getAdminChatId } from '../_shared/loanAccess.ts';
 import { KYC_TRIES, kycTriesLeft, needsPreKycGate } from '../_shared/preKycGate.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // Creates a Didit verification session for the authenticated caller and returns
 // the hosted verification URL to redirect them to.
@@ -172,12 +173,12 @@ const alertTriesUsed = async (supabase: any, userId: string) => {
          `🪪 Out of KYC tries — ${u?.display_name || handle}`,
          [u?.username ? `@${u.username}` : null, u?.email].filter(Boolean).join(' · ') || null,
          u?.didit_decline_reason ? `Last decline: ${u.didit_decline_reason}` : null,
-         `They've been declined ${KYC_TRIES} times and were asked to message us. Talk to them, then /kycretry ${handle} gives ${KYC_TRIES} more tries.`
+         `They've been declined ${KYC_TRIES} times and were asked to message us. Talk to them, then tap 🔁 (or /kycretry ${handle}) for ${KYC_TRIES} more tries.`
       ]
          .filter(Boolean)
          .join('\n');
       const chat = await getAdminChatId(supabase);
-      if (chat) await sendTelegramMessage(chat, text);
+      if (chat) await sendAdminCard(supabase, chat, { kind: 'kyc_tries', refId: userId, text, keyboard: kycTriesKeyboard(userId, u?.username) });
       await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
    } catch (err) {
       console.error('[create-didit-session] tries-used alert failed', err instanceof Error ? err.message : err);

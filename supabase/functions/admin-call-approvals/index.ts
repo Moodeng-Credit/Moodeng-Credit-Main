@@ -1,16 +1,26 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_COLUMNS, describeAttendance, zoomActiveForHost } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { BORROWER_COLUMNS, type BorrowerRow, decideLoanAccess, notifyBorrower, REQUEST_COLUMNS, who } from '../_shared/loanAccess.ts';
+import {
+   BORROWER_COLUMNS,
+   type BorrowerRow,
+   decideLoanAccess,
+   loanAccessStampHeader,
+   notifyBorrower,
+   REQUEST_COLUMNS,
+   who
+} from '../_shared/loanAccess.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 
 // Call approvals in the admin panel — the same decisions as the Telegram card's buttons and
 // /showed · /noshow · /approve · /reject, so the host can approve a borrower the moment the call
 // ends instead of waiting for the "Did they show up?" card. Every decision goes through the same
 // shared functions as Telegram (recordCallOutcome / decideLoanAccess), so the borrower gets the
-// same message and a second tap from Telegram is a no-op.
+// same message, a second tap from Telegram is a no-op, and the person's Telegram cards are stamped
+// with the decision (adminCards.ts).
 //
 // Two actions (POST JSON):
 //   { action: 'list' }                                        → { rows }
@@ -172,6 +182,9 @@ serve(async (req) => {
             .maybeSingle();
          if (approveError) throw new Error(approveError.message);
          if (!approved) return json({ ok: false, summary: 'Already approved — nothing changed.' });
+         await stampDecisionCards(svc, 'loan_access', body.userId, loanAccessStampHeader('approved', personName(approved as BorrowerRow)), {
+            by: decidedBy
+         });
          await notifyBorrower(svc, approved as BorrowerRow, 'approved');
          const summary = `✅ Approved: ${who(approved as BorrowerRow)} — by ${decidedBy}`;
          await postDiscord({ content: `🔓 Loan access ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
