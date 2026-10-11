@@ -5,6 +5,7 @@ import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
+import { claimContactRows } from '../_shared/messengerContactLog.ts';
 import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
 import { verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
 import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName, sendMessengerMessage } from '../_shared/sendpulse.ts';
@@ -195,10 +196,19 @@ serve(async (req) => {
       if (!claimed) return json({ ok: true, already: true });
 
       const { data: before } = await svc.from('users').select('messenger_verified_at').eq('id', pending.user_id).maybeSingle();
+      // Their Facebook name, from SendPulse's API (the flow's {{full_name}} is only a fallback).
+      const facebookName =
+         (contactId ? messengerDisplayName(await getMessengerContact(contactId)) : null) ??
+         (body.name ? String(body.name).trim() || null : null);
       const { error: userError } = await svc
          .from('users')
-         .update({ messenger_verified_at: nowIso, ...(contactId ? { messenger_psid: contactId } : {}) })
+         .update({
+            messenger_verified_at: nowIso,
+            ...(contactId ? { messenger_psid: contactId } : {}),
+            ...(facebookName ? { facebook_name: facebookName } : {})
+         })
          .eq('id', pending.user_id);
+      if (contactId) await claimContactRows(svc, pending.user_id, contactId);
       if (userError) {
          console.error('sendpulse-messenger-verify: user update failed', userError.message);
       } else if (!(before as { messenger_verified_at?: string | null } | null)?.messenger_verified_at) {

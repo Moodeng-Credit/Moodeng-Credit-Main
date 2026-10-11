@@ -2350,6 +2350,10 @@ export interface BorrowerContactRow {
    kycName: string | null;
    email: string | null;
    messengerVerifiedAt: string | null;
+   // Facebook profile name SendPulse reported (users.facebook_name).
+   facebookName: string | null;
+   // Every time they messaged the Page, newest first (messenger_contact_events).
+   messengerContactDates: string[];
    facebookContact: string | null;
    whatsappNumber: string | null;
    whatsappVerifiedAt: string | null;
@@ -2394,6 +2398,8 @@ export function buildBorrowerContactRows(users: AnyRow[], loans: AnyRow[], kyc: 
          kycName: kycName.get(u.id) ?? null,
          email: clean(u.email),
          messengerVerifiedAt: u.messenger_verified_at ?? null,
+         facebookName: clean(u.facebook_name),
+         messengerContactDates: [],
          facebookContact: clean(u.facebook_contact),
          whatsappNumber: clean(u.whatsapp_number),
          whatsappVerifiedAt: u.whatsapp_verified_at ?? null,
@@ -2414,7 +2420,7 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
       supabase
          .from('users')
          .select(
-            'id,username,display_name,email,messenger_verified_at,facebook_contact,whatsapp_number,whatsapp_verified_at,telegram_username,line_id,created_at,account_status,is_test'
+            'id,username,display_name,email,messenger_verified_at,facebook_name,facebook_contact,whatsapp_number,whatsapp_verified_at,telegram_username,line_id,created_at,account_status,is_test'
          )
          .eq('user_role', 'borrower')
          .order('created_at', { ascending: false })
@@ -2422,7 +2428,7 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
    );
    const borrowers = users.filter((u) => !u.is_test);
    const ids = borrowers.map((u) => u.id);
-   const [loans, kyc] = await Promise.all([
+   const [loans, kyc, contacts] = await Promise.all([
       queryByIdChunks(ids, (chunk) =>
          requireOk<AnyRow[]>(
             supabase
@@ -2433,9 +2439,22 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
       ),
       queryByIdChunks(ids, (chunk) =>
          optionalOk<AnyRow[]>(supabase.from('kyc_identities').select('user_id,full_name,first_name,last_name').in('user_id', chunk), [])
+      ),
+      queryByIdChunks(ids, (chunk) =>
+         optionalOk<AnyRow[]>(
+            supabase
+               .from('messenger_contact_events')
+               .select('user_id,occurred_at')
+               .in('user_id', chunk)
+               .order('occurred_at', { ascending: false })
+               .limit(5000),
+            []
+         )
       )
    ]);
-   return buildBorrowerContactRows(borrowers, loans, kyc);
+   const datesByUser = new Map<string, string[]>();
+   for (const c of contacts) datesByUser.set(c.user_id, [...(datesByUser.get(c.user_id) ?? []), c.occurred_at]);
+   return buildBorrowerContactRows(borrowers, loans, kyc).map((r) => ({ ...r, messengerContactDates: datesByUser.get(r.id) ?? [] }));
 }
 
 export interface MessengerProfile {
