@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import {
    type AdminVoucherClaim,
    type AdminVoucherClaimStatus,
@@ -50,6 +52,7 @@ export default function VoucherClaimsSection() {
    useEffect(() => {
       void refresh();
    }, [refresh]);
+   useAdminLiveReload(['voucher_claims'], refresh);
 
    const visible = useMemo(() => (filter === 'all' ? claims : claims.filter((claim) => claim.status === filter)), [claims, filter]);
    const pendingCount = claims.filter((claim) => claim.status === 'pending').length;
@@ -100,7 +103,7 @@ export default function VoucherClaimsSection() {
          {!isLoading && visible.length === 0 ? <p className="text-[#6f6385]">No {filter === 'all' ? '' : filter} claims.</p> : null}
 
          {visible.map((claim) => (
-            <div key={claim.id} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+            <AdminLiveRow key={claim.id} ids={[claim.id]} className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
                <div className="flex flex-wrap items-center gap-3">
                   <span className="text-2xl font-black">₱{claim.amount_php}</span>
                   <span className="font-bold text-[#a89bb8]">{REWARD_LABEL[claim.reward]}</span>
@@ -153,7 +156,7 @@ export default function VoucherClaimsSection() {
                      </button>
                   </div>
                ) : null}
-            </div>
+            </AdminLiveRow>
          ))}
       </div>
    );

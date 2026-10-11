@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import useWallet, { toSettlementMethod, useActivePaymentMethod } from '@/hooks/useWallet';
 
 import {
@@ -98,6 +100,7 @@ export default function RefundSection() {
    useEffect(() => {
       void load(!hideTest);
    }, [hideTest, load]);
+   useAdminLiveReload(['loans', 'loan_refunds'], () => load(!hideTest));
 
    const shown = useMemo(() => {
       const q = search.trim().toLowerCase();
@@ -357,7 +360,9 @@ export default function RefundSection() {
                         const noWallet = !payToWallet(l);
                         return (
                            <tr key={l.id} className="border-t border-[#241044] bg-[#150730] align-top">
-                              <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
+                              <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">
+                                 <AdminLiveRow ids={[l.id]}>{l.tracking_id}</AdminLiveRow>
+                              </td>
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.lender?.username ?? '—'}</td>
                               <td className="px-4 py-3 font-mono text-xs font-medium text-[#a89bb8]" title={payToWallet(l) ?? ''}>
                                  {shortWallet(payToWallet(l))}

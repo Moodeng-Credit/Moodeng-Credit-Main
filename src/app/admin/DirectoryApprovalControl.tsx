@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { type AdminDirectoryUser, approveAdminUser, decideAdminCall } from '@/app/admin/adminSupabase';
+import { useAdminLive } from '@/app/admin/useAdminLive';
 
 // Approve a borrower straight from their Directory card — the same decisions as Call approvals and
 // the Telegram buttons. With a booked, undecided call: Showed up / No-show. Otherwise: Approve
@@ -22,6 +23,11 @@ export default function DirectoryApprovalControl({ user }: { user: ApprovalUser 
    const [outcome, setOutcome] = useState(user.video_call_outcome);
    const [busy, setBusy] = useState(false);
    const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+   const live = useAdminLive();
+
+   // Follow live reloads (another admin, Telegram, the call card) instead of the first-render value.
+   useEffect(() => setStatus(user.loan_access_status ?? 'none'), [user.loan_access_status]);
+   useEffect(() => setOutcome(user.video_call_outcome), [user.video_call_outcome]);
 
    if (user.user_role === 'lender') return null;
 
@@ -40,7 +46,11 @@ export default function DirectoryApprovalControl({ user }: { user: ApprovalUser 
       setMessage(null);
       try {
          const result = await action();
-         if (result.ok) after(result);
+         if (result.ok) {
+            after(result);
+            // Own action: flash the card now rather than waiting for the realtime echo.
+            live?.markChanged(user.id, result.summary.split(/[.\n]/)[0] || 'Updated');
+         }
          setMessage({ ok: result.ok, text: result.summary });
       } catch (err) {
          setMessage({ ok: false, text: err instanceof Error ? err.message : 'Could not save.' });

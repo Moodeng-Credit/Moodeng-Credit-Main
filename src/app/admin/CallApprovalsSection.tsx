@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import { type AdminCallApprovalRow, type AdminCallDecision, decideAdminCall, getAdminCallApprovals } from '@/app/admin/adminSupabase';
 import { groupCallApprovals, isApprovalRequest, relativeStart } from '@/app/admin/callApprovalsModel';
 
@@ -45,6 +47,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       const timer = window.setInterval(() => void load(), REFRESH_MS);
       return () => window.clearInterval(timer);
    }, [load]);
+   useAdminLiveReload(['users', 'loan_access_requests'], load);
 
    const groups = useMemo(() => groupCallApprovals(rows ?? [], now), [rows, now]);
 

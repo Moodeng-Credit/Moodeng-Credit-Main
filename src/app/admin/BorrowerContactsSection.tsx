@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import { CONTACT_STEP_EXEMPT_USER_IDS } from '../../config/contactVerification';
 import {
    type BorrowerContactRow,
@@ -136,6 +138,7 @@ export default function BorrowerContactsSection() {
    useEffect(() => {
       void load();
    }, [load]);
+   useAdminLiveReload(['users'], load);
 
    const visible = useMemo(() => {
       const q = search.trim().toLowerCase();
@@ -228,6 +231,7 @@ export default function BorrowerContactsSection() {
          <ul className="space-y-3">
             {visible.map((r) => (
                <li className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4" key={r.id}>
+                  <AdminLiveRow ids={[r.id]} />
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                      <div className="min-w-0">
                         <p className="break-words text-xl font-black">{r.kycName ?? r.displayName ?? r.username}</p>

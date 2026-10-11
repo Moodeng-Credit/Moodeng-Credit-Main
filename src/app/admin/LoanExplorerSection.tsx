@@ -2,8 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { deriveLoanStatus } from '@/app/admin/adminStatus';
+import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
+import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import AdminDeadline from './AdminDeadline';
-import { type AdminLoanRecord, isAdminLoanOverdue, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
+import { type AdminLoanRecord, listAdminLoans, type LoanExplorerStatus, setEntityTest } from './adminSupabase';
 import RemoveLoanRequestDialog from './RemoveLoanRequestDialog';
 
 const FILTERS: Array<{ id: LoanExplorerStatus; label: string }> = [
@@ -13,25 +17,6 @@ const FILTERS: Array<{ id: LoanExplorerStatus; label: string }> = [
    { id: 'overdue', label: 'Not paid back' },
    { id: 'repaid', label: 'Paid back' }
 ];
-
-type DerivedStatus = 'Requested' | 'Active' | 'Not paid back' | 'Paid back' | 'Unknown';
-
-function deriveStatus(loan: AdminLoanRecord): DerivedStatus {
-   if (loan.loan_status === 'Requested') return 'Requested';
-   if (loan.loan_status === 'Lent') {
-      if (loan.repayment_status === 'Paid') return 'Paid back';
-      return isAdminLoanOverdue(loan) ? 'Not paid back' : 'Active';
-   }
-   return 'Unknown';
-}
-
-function statusClass(s: DerivedStatus): string {
-   if (s === 'Paid back') return 'bg-emerald-900/50 text-emerald-300';
-   if (s === 'Active') return 'bg-blue-900/50 text-blue-300';
-   if (s === 'Not paid back') return 'bg-red-900/50 text-red-300';
-   if (s === 'Requested') return 'bg-purple-900/50 text-purple-300';
-   return 'bg-[#241044] text-[#a89bb8]';
-}
 
 function money(value: number | null | undefined): string {
    return Number(value ?? 0).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
@@ -69,6 +54,7 @@ export default function LoanExplorerSection() {
    useEffect(() => {
       void load(filter, !hideTest);
    }, [filter, hideTest, load]);
+   useAdminLiveReload(['loans', 'loan_refunds'], () => load(filter, !hideTest));
 
    const toggleTest = useCallback(async (loan: AdminLoanRecord) => {
       setBusy(loan.id);
@@ -182,13 +168,13 @@ export default function LoanExplorerSection() {
                   </thead>
                   <tbody>
                      {shown.map((l) => {
-                        const status = deriveStatus(l);
+                        const status = deriveLoanStatus(l);
                         return (
                            <tr key={l.id} className="border-t border-[#241044] bg-[#150730] align-top">
                               <td className="px-4 py-3">
-                                 <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black uppercase ${statusClass(status)}`}>
-                                    {status}
-                                 </span>
+                                 <AdminLiveRow ids={[l.id]} className="rounded-xl">
+                                    <AdminStatusBadge status={status} />
+                                 </AdminLiveRow>
                               </td>
                               <td className="px-4 py-3 font-mono text-sm font-bold text-[#cfc6dd]">{l.tracking_id}</td>
                               <td className="px-4 py-3 text-sm font-bold text-white">{l.borrower?.username ?? '—'}</td>
@@ -217,7 +203,7 @@ export default function LoanExplorerSection() {
                                  </button>
                               </td>
                               <td className="px-4 py-3 text-right">
-                                 {status === 'Requested' ? (
+                                 {status === 'requested' ? (
                                     <button
                                        type="button"
                                        onClick={() => setRemoving(l)}
