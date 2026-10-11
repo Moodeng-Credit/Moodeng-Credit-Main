@@ -11,7 +11,15 @@
 // Every notification here is best-effort: the decision is persisted first, and a failed push,
 // Telegram or Discord ping is logged, never thrown.
 
-import { type CardStamp, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
+import {
+   adminUserUrl,
+   type CardStamp,
+   OPEN_IN_ADMIN_TEXT,
+   openInAdminButton,
+   personName,
+   sendAdminCard,
+   stampDecisionCards
+} from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
@@ -199,10 +207,13 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
       }
    }
 
-   // Discord webhooks can't carry working buttons, so Discord is notify-only.
+   // Discord webhooks can't carry working buttons, so Discord is notify-only — remembered under the
+   // same loan_access ref, so the decision (from anywhere) edits it to APPROVED / REJECTED / NO-SHOW.
    await postDiscord(
-      { content: `${lines.slice(0, -2).join('\n')}\nDecide in the Telegram admin channel.` },
-      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+      {
+         content: `${lines.slice(0, -2).join('\n')}\nDecide in the Telegram admin channel.\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(borrower.id, borrower.username)}>`
+      },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL'], ref: { svc, kind: 'loan_access', refId: borrower.id } }
    );
 };
 

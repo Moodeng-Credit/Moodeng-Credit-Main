@@ -1,4 +1,4 @@
-import { openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
+import { adminUserUrl, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { classifyKycOutcome, diditConsoleButton, kycTriesKeyboard, kycVerdictStamp } from './kycCards.ts';
 import { sendEmail } from './email.ts';
@@ -145,6 +145,7 @@ export const notifyAdmins = async (
             embeds: [
                {
                   title: `🪪 Didit KYC — ${outcome}`,
+                  url: adminUserUrl(userId, p?.username),
                   color: outcomeColor[outcome.toLowerCase()] ?? 0x5865f2,
                   fields: [
                      { name: 'User', value: who, inline: true },
@@ -156,7 +157,11 @@ export const notifyAdmins = async (
                }
             ]
          },
-         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         {
+            prefer: ['DISCORD_KYC_WEBHOOK_URL'],
+            // Manual review is remembered (kyc_review): the Didit verdict edits it to APPROVED / DECLINED.
+            ...(classifyKycOutcome(outcome) === 'review' ? { ref: { svc: adminSupabase, kind: 'kyc_review', refId: userId } } : {})
+         }
       );
    } catch (err) {
       console.error('[diditNotifications] Admin alert failed:', err instanceof Error ? err.message : err);

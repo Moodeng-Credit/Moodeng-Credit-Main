@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { adminUserUrl } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildTelegramLoanRequestMessage } from '../_shared/telegramLoanNotifications.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -184,12 +185,15 @@ serve(async (req) => {
                {
                   title: '💸 New loan request',
                   description: message,
+                  // Title links to the borrower in the admin panel (👤 Open in admin).
+                  ...(loan.borrower_user_id ? { url: adminUserUrl(loan.borrower_user_id, borrower?.username) } : {}),
                   color: 0x5865f2,
                   timestamp: new Date().toISOString()
                }
             ]
          },
-         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
+         // Remembered: edited to FUNDED / OVERDUE / REPAID / DELETED / EXPIRED (state-events-dispatch).
+         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'], ref: { svc: supabase, kind: 'loan', refId: loan.id } }
       );
 
       if (holdNote) {
