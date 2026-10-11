@@ -103,8 +103,17 @@ const KNOWN_BENIGN_EXCEPTION_PATTERNS = [
    // to fix, and they fire on ordinary page loads — they were flooding #ui-ux-alerts.
    /Failed to connect to MetaMask/i,
    /MetaMask extension not found/i,
-   /Cannot (redefine|set) property:? ethereum/i
+   /Cannot (redefine|set) property:? ethereum/i,
+   // A tab still on the previous build asks for a chunk that's gone after a deploy; the server sends
+   // index.html instead. staleChunkReload.ts already reloads the page onto the new build, so the
+   // report only adds noise to #ui-ux-alerts after every deploy.
+   /dynamically imported module|is not a valid javascript mime type|importing a module script failed/i
 ];
+
+// A request that died on the network with nothing to point at — Safari's "Load failed", Chrome's
+// "Failed to fetch", Firefox's NetworkError — usually the phone switching apps or losing signal
+// mid-request. Only dropped when there's no stack; with a stack it's still reported.
+const NETWORK_DROP_EXCEPTION = /^(TypeError: )?(Load failed|Failed to fetch|NetworkError when attempting to fetch resource\.?)$/i;
 
 // Frames from browser-extension code (chrome-extension://, moz-extension://, safari-web-extension://).
 const EXTENSION_FRAME = /^(chrome|moz|safari(-web)?)-extension:\/\//i;
@@ -119,6 +128,7 @@ const isNonActionableException = (value?: string | null, type?: string | null, h
    const text = value ?? '';
    if (KNOWN_BENIGN_EXCEPTION_PATTERNS.some((pattern) => pattern.test(text))) return true;
    if (hasStack) return false;
+   if (NETWORK_DROP_EXCEPTION.test(text.trim())) return true;
    if (type) return false;
    return /captured as exception with keys/i.test(text) || /^\s*\[?object \w+\]?\s*$/i.test(text);
 };
