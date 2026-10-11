@@ -784,6 +784,7 @@ export const thaiCoverageB: Record<string, string> = {
    'Referral code incorrect. If you have issues, contact support.': 'โค้ดแนะนำไม่ถูกต้อง หากพบปัญหา โปรดติดต่อฝ่ายช่วยเหลือ',
    "We couldn't check that code. Please try again.": 'เราตรวจสอบโค้ดนั้นไม่ได้ โปรดลองอีกครั้ง',
    'Failed to save profile name.': 'บันทึกชื่อโปรไฟล์ไม่สำเร็จ',
+   'Failed to save your name.': 'บันทึกชื่อของคุณไม่สำเร็จ',
    'Failed to update profile image.': 'อัปเดตรูปโปรไฟล์ไม่สำเร็จ',
    'Enter how much you want to borrow.': 'ระบุจำนวนเงินที่คุณต้องการยืม',
    "That's above your current limit of $15.": 'จำนวนนี้เกินวงเงินปัจจุบันของคุณที่ $15',

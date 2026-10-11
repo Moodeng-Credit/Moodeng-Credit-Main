@@ -1,5 +1,8 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
+const RECORD_ATTEMPTS = 6;
+const RECORD_RETRY_DELAY_MS = 5000;
+
 /**
  * Record a completed withdrawal and fire its notification. Non-critical (the money has already
  * left the user's wallet) and fire-and-forget by design — it logs and swallows errors rather
@@ -21,25 +24,20 @@ export async function recordWithdrawal(args: {
 }) {
    try {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-         .from('withdrawals')
-         .insert({
-            borrower_user_id: args.userId,
-            amount: args.amount,
-            exchange: args.exchange,
-            destination_address: args.address,
-            tx_hash: args.txHash
-         })
-         .select('id')
-         .single();
-      if (error) {
-         console.error('[withdraw] record failed:', error.message);
-         return;
+      // Recorded server-side: record-withdrawal verifies the transfer on Base (from one of this
+      // user's wallets), stores the on-chain amount/destination and sends the notification.
+      // A just-broadcast transfer may not be mined yet (202 + retry): poll a few times.
+      for (let attempt = 0; attempt < RECORD_ATTEMPTS; attempt++) {
+         const { data, error } = await supabase.functions.invoke<{ retry?: boolean }>('record-withdrawal', {
+            body: { txHash: args.txHash, exchange: args.exchange }
+         });
+         if (error) {
+            console.error('[withdraw] record failed:', error.message);
+            break;
+         }
+         if (!data?.retry) break;
+         await new Promise((resolve) => setTimeout(resolve, RECORD_RETRY_DELAY_MS));
       }
-      const { error: notifyError } = await supabase.functions.invoke('withdrawal-notification', {
-         body: { withdrawalId: data.id }
-      });
-      if (notifyError) console.error('[withdraw] notification failed:', notifyError.message);
 
       if (args.consumeCashoutFaceCheck) {
          const { data: latest } = await supabase

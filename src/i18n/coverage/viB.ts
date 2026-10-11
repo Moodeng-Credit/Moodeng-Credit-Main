@@ -612,6 +612,7 @@ export const vietnameseCoverageB: Record<string, string> = {
    'Emergency costs': 'Chi phí khẩn cấp',
    'Work supplies': 'Dụng cụ làm việc',
    'Failed to save profile name.': 'Lưu tên hồ sơ không thành công.',
+   'Failed to save your name.': 'Không thể lưu tên của bạn.',
    'Swipe right to close loan form': 'Vuốt sang phải để đóng biểu mẫu vay',
    'Explain setting loan terms': 'Giải thích cách đặt điều khoản vay',
    'Close loan form': 'Đóng biểu mẫu vay',
