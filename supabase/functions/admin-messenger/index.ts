@@ -121,7 +121,11 @@ serve(async (req) => {
    if (body.action === 'sync_history') {
       // Backfill Facebook names + every message each borrower sent us, from SendPulse's chat log.
       // userIds omitted → every borrower with a Messenger contact. Safe to re-run: logged messages are skipped.
-      let query = svc.from('users').select('id, messenger_psid, facebook_name').not('messenger_psid', 'is', null);
+      // Verified without a stored contact id too: resolveContact finds them by their verification code.
+      let query = svc
+         .from('users')
+         .select('id, messenger_psid, facebook_name')
+         .or('messenger_psid.not.is.null,messenger_verified_at.not.is.null');
       if (Array.isArray(body.userIds) && body.userIds.length) {
          query = query.in('id', body.userIds.filter((id: unknown) => typeof id === 'string').slice(0, MAX_PROFILES));
       }
