@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
@@ -114,7 +115,7 @@ serve(async (req) => {
          embeds: [
             {
                title: `🎁 GrabFood voucher claim — ${amount}`,
-               description: `Send the voucher, then mark it sent in [admin → Referrals](${adminUrl()}).`,
+               description: `Send the voucher, then mark it sent in [admin → Referrals](${adminUrl()}).\n[${OPEN_IN_ADMIN_TEXT}](${adminUserUrl(claim.user_id as string, user?.username)})`,
                color: 0xffce1b,
                fields: [
                   { name: 'Reward', value: reward },
@@ -126,7 +127,8 @@ serve(async (req) => {
             }
          ]
       },
-      { prefer: ['DISCORD_REWARDS_WEBHOOK_URL', 'DISCORD_REPAY_WEBHOOK_URL'] }
+      // Remembered: edited to VOUCHER SENT / REJECTED however it's decided.
+      { prefer: ['DISCORD_REWARDS_WEBHOOK_URL', 'DISCORD_REPAY_WEBHOOK_URL'], ref: { svc: supabase, kind: 'voucher', refId: claim.id as string } }
    );
 
    return json({ ok: true, ...results });

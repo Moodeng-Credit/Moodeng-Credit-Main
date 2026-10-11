@@ -119,7 +119,7 @@ Deno.test('stampDecisionCards claims every remembered card for the decision and 
          ['eq', 'kind', 'loan_access'],
          ['eq', 'ref_id', USER_ID]
       ]);
-      // Both Telegram cards edited; the Discord ref is a no-op hook for now.
+      // Both Telegram cards edited; the Discord ref's webhook env ('kyc') isn't set, so it's skipped.
       assertEquals(edits.map((e) => e.message_id).sort(), [11, 12]);
       assertEquals(String(edits[0].text).startsWith('❌ NO-SHOW — Irish was asked to book a new call'), true);
       assertEquals('reply_markup' in edits[0], false); // no links → keyboard removed

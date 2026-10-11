@@ -93,6 +93,9 @@ verify_jwt = false
 [functions.voucher-claim-telegram-notification]
 verify_jwt = false
 
+[functions.state-events-dispatch]
+verify_jwt = false
+
 [functions.loan-request-lender-suggestions]
 verify_jwt = false
 

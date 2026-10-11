@@ -3,6 +3,7 @@
 // the loan_notifications row is claimed first (unique per loan + type), so the two callers of
 // loan-funded-notification (confirm-loan-payment and the app) can't both post it.
 
+import { adminUserUrl } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { dueDayBounds, formatDeadlineForTeam, localHour, loanTimezone } from './loanDeadline.ts';
 import { describeOwed, getTeamTimezone, loadBorrowerTimezones } from './loanDueTeamFeed.ts';
@@ -115,12 +116,14 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
                {
                   title: '💰 Loan funded',
                   description: [...lines, url].join('\n'),
+                  url: adminUserUrl(loan.borrower_user_id, borrower?.username),
                   color: 0x57f287,
                   timestamp: new Date().toISOString()
                }
             ]
          },
-         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'] }
+         // Remembered: edited to OVERDUE / REPAID / REFUNDED (state-events-dispatch).
+         { prefer: ['DISCORD_REQUESTS_WEBHOOK_URL'], ref: { svc, kind: 'loan', refId: loan.id } }
       );
 
       let telegramOk = false;

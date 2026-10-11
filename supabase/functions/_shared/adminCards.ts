@@ -27,12 +27,15 @@
 //
 // Everything here is best-effort: a failed edit or a missing table is logged, never thrown — the
 // decision itself has already been saved.
+import { type DiscordPayload, editDiscordMessage, renderDiscordStamped } from './discord.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
 
-export type AdminCardKind = 'loan_access' | 'voucher' | 'messenger' | 'kyc_review' | 'kyc_tries';
+//    loan         ref = loan id   (Discord) new request / funded / unknown-sender + needs-refund alerts —
+//                                 multi-step: funded → overdue → repaid, stamped by state-events-dispatch
+export type AdminCardKind = 'loan_access' | 'voucher' | 'messenger' | 'kyc_review' | 'kyc_tries' | 'loan';
 
 export type CardLink = { text: string; url: string };
 
@@ -183,20 +186,31 @@ export type MessageRef = {
    webhook_key: string | null;
    message_id: string;
    original_text: string | null;
-   original_payload: { links?: CardLink[][] } | null;
+   // Telegram: { links }. Discord: the posted payload ({ content?, embeds? }).
+   original_payload: ({ links?: CardLink[][] } & DiscordPayload) | null;
 };
 
 const linksOf = (ref: Pick<MessageRef, 'original_payload'>) => ref.original_payload?.links ?? [];
 
-// One remembered message → its after-state, per channel.
+export const stampFooter = (stamp: CardStamp) =>
+   `${stamp.verb ?? 'Decided by'} ${stamp.by?.trim() || 'the team'} · ${formatDecidedAt(stamp.at ?? new Date())}`;
+
+// One remembered message → its after-state, per channel. Always rendered from the original, so
+// re-stamping a multi-step message replaces its header instead of stacking another one.
 const stampRef = async (ref: MessageRef, stamp: CardStamp) => {
    if (ref.channel === 'telegram') {
       if (!ref.chat_id) return false;
       return await stampCard(ref.chat_id, Number(ref.message_id), ref.original_text ?? '', linksOf(ref), stamp);
    }
-   // 'discord': the hook for editing webhook messages (PATCH /webhooks/<id>/<token>/messages/<message_id>,
-   // webhook resolved from webhook_key). Not wired yet — nothing remembers Discord messages today.
-   return false;
+   if (!ref.webhook_key) return false;
+   const original: DiscordPayload = ref.original_payload?.embeds?.length
+      ? { content: ref.original_payload.content, embeds: ref.original_payload.embeds }
+      : { content: ref.original_payload?.content ?? ref.original_text ?? '' };
+   return await editDiscordMessage(
+      ref.webhook_key,
+      ref.message_id,
+      renderDiscordStamped(original, { header: stamp.header, detail: stamp.detail, footer: stampFooter(stamp) })
+   );
 };
 
 /**
@@ -205,23 +219,27 @@ const stampRef = async (ref: MessageRef, stamp: CardStamp) => {
  * the decision itself, so every path — Telegram, the admin panel, automatic — updates the cards.
  * The refs are claimed by deleting them, so a card is only ever stamped once. Returns how many
  * messages were stamped.
+ *
+ * `final: false` (multi-step kinds, e.g. a loan that is funded, then overdue, then repaid) edits the
+ * messages but KEEPS the refs, so the next state can re-stamp them; the edit is re-rendered from the
+ * original each time. Only the terminal state (final, the default) claims and deletes them.
  */
 export const stampDecisionCards = async (
    svc: SupabaseClient,
    kind: AdminCardKind,
    refId: string,
    header: string | CardStamp,
-   detail: Omit<CardStamp, 'header'> = {}
+   detail: Omit<CardStamp, 'header'> & { final?: boolean } = {}
 ): Promise<number> => {
-   const stamp: CardStamp = typeof header === 'string' ? { ...detail, header } : { ...header, ...detail };
+   const { final = true, ...rest } = detail;
+   const stamp: CardStamp = typeof header === 'string' ? { ...rest, header } : { ...header, ...rest };
    try {
       const at = stamp.at ?? new Date();
-      const { data, error } = await svc
-         .from('admin_message_refs')
-         .delete()
-         .eq('kind', kind)
-         .eq('ref_id', refId)
-         .select('channel, chat_id, webhook_key, message_id, original_text, original_payload');
+      const columns = 'channel, chat_id, webhook_key, message_id, original_text, original_payload';
+      const query = svc.from('admin_message_refs');
+      const { data, error } = final
+         ? await query.delete().eq('kind', kind).eq('ref_id', refId).select(columns)
+         : await query.select(columns).eq('kind', kind).eq('ref_id', refId);
       if (error) {
          console.error('adminCards: claiming cards failed', kind, refId, error.message);
          return 0;

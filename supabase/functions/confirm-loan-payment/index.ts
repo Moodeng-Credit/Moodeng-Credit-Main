@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import {
    computeYearOneIouPointsDelta,
@@ -437,13 +438,15 @@ serve(async (req) => {
    }
 
    const recordHash = (transfer.txHash ?? hash).toLowerCase();
+   const adminLine = loan.borrower_user_id ? `\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(loan.borrower_user_id)}>` : '';
    const alertUnrecorded = async (what: string) => {
       console.error(`confirm-loan-payment: ${loan.tracking_id} unrecorded payment ${recordHash} from ${transfer.from}: ${what}`);
       await postDiscord(
          {
-            content: `⚠️ ${loan.tracking_id}: a verified ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC payment (${recordHash}, from ${transfer.from}) was NOT recorded because ${what}. It needs refunding.`
+            content: `⚠️ ${loan.tracking_id}: a verified ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC payment (${recordHash}, from ${transfer.from}) was NOT recorded because ${what}. It needs refunding.${adminLine}`
          },
-         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         // Remembered under the loan: edited when the loan is refunded / repaid / deleted.
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'], ref: { svc: admin, kind: 'loan', refId: loan.id } }
       );
    };
 
@@ -503,9 +506,9 @@ serve(async (req) => {
    if (!senderIsKnown) {
       await postDiscord(
          {
-            content: `⚠️ ${loan.tracking_id}: repayment from unknown sender — check. ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC (${recordHash}) came from ${transfer.from}, which isn't a wallet on file for this borrower. It was recorded.`
+            content: `⚠️ ${loan.tracking_id}: repayment from unknown sender — check. ${(Number(transfer.micros) / 1e6).toFixed(2)} USDC (${recordHash}) came from ${transfer.from}, which isn't a wallet on file for this borrower. It was recorded.${adminLine}`
          },
-         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'], ref: { svc: admin, kind: 'loan', refId: loan.id } }
       );
    }
    // Paid more than was owed: the loan is closed at its total; the extra goes back to the borrower.

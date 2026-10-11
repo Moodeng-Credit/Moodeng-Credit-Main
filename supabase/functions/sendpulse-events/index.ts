@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendAdminCard } from '../_shared/adminCards.ts';
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
@@ -231,7 +231,11 @@ const matchByName = async (svc: Svc, event: SendPulseEvent, contactId: string) =
             keyboard: messengerStuckKeyboard(attempt.user.id, PAGE_INBOX_URL, "✅ Yes, it's them", attempt.user.username)
          }).catch((err: unknown) => console.error('sendpulse-events: telegram card failed', err));
       }
-      await postDiscord({ content: `${text}\n(Answer on the card in the Telegram KYC group.)` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
+      await postDiscord(
+         { content: `${text}\n(Answer on the card in the Telegram KYC group.)\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(attempt.user.id, attempt.user.username)}>` },
+         // Remembered: edited to MESSENGER VERIFIED once they're verified, from any path.
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'], ref: { svc, kind: 'messenger', refId: attempt.user.id } }
+      );
    }
 };
 

@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { sendAdminCard } from '../_shared/adminCards.ts';
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { sendEmail } from '../_shared/email.ts';
 import { APPLY_URL, PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
@@ -136,8 +136,11 @@ serve(async (req) => {
          }).catch((err: unknown) => console.error('messenger-stuck-alerts: telegram send failed', err instanceof Error ? err.message : err));
       }
       await postDiscord(
-         { content: `${text}\n(The button is on the card in the Telegram KYC group.)` },
-         { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+         {
+            content: `${text}\n(The button is on the card in the Telegram KYC group.)\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(borrower.id, borrower.username)}>`
+         },
+         // Remembered: edited to MESSENGER VERIFIED once they're verified, from any path.
+         { prefer: ['DISCORD_KYC_WEBHOOK_URL'], ref: { svc, kind: 'messenger', refId: borrower.id } }
       );
       alerted += 1;
    }

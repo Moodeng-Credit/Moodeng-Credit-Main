@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
 import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
@@ -127,7 +128,9 @@ const notifyTeamBooking = async (
    start: string,
    attendee: { name: string; email: string; timeZone: string },
    joinUrl: string | null,
-   tgChat: string
+   tgChat: string,
+   // deno-lint-ignore no-explicit-any
+   borrower?: { svc: any; id: string; username?: string | null }
 ) => {
    const text =
       `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}` +
@@ -149,7 +152,14 @@ const notifyTeamBooking = async (
    }
 
    // Prefers a dedicated bookings channel, falls back to the shared team channel (DISCORD_TEAM_WEBHOOK_URL).
-   await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+   // Remembered under the borrower's loan_access ref: edited to SHOWED UP / NO-SHOW / APPROVED.
+   await postDiscord(
+      { content: borrower ? `${text}\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(borrower.id, borrower.username)}>` : text },
+      {
+         prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'],
+         ...(borrower ? { ref: { svc: borrower.svc, kind: 'loan_access', refId: borrower.id } } : {})
+      }
+   );
 };
 
 serve(async (req) => {
@@ -322,7 +332,7 @@ serve(async (req) => {
                const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
                teamChat = ((setting as { value?: string } | null)?.value) ?? '';
             }
-            await notifyTeamBooking(hostId, start, attendee, result.joinUrl, teamChat);
+            await notifyTeamBooking(hostId, start, attendee, result.joinUrl, teamChat, { svc, id: user.id, username: prof?.username });
             // Free the slot they had before. Our row already points at the new booking, so the cancel
             // webhook for the old uid matches nothing and sends no "your call was cancelled".
             if (previousBooking && previousBooking.uid !== result.uid) {
