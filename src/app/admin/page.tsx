@@ -49,6 +49,8 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import BorrowerContactsSection from './BorrowerContactsSection';
+import CreditLineSection from './CreditLineSection';
+import MarketingSection from './MarketingSection';
 import CampaignsSection from './CampaignsSection';
 import ComingDueSection from './ComingDueSection';
 import DemoB2BSection from './DemoB2BSection';
@@ -1697,6 +1699,30 @@ function AdminPanel() {
                </div>
                <ReferralCodesSection />
                <VoucherClaimsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'credit-line' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Credit line</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Balances, interest owed, every loan with its transactions and approval reason, and the money trail, for the lender&apos;s monthly report.
+                  </p>
+               </div>
+               <CreditLineSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'marketing' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Marketing</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     How close we are to this month&apos;s lending goal, what each week needs, what marketing costs per real borrower, and who to contact.
+                  </p>
+               </div>
+               <MarketingSection />
             </section>
          ) : null}
 
