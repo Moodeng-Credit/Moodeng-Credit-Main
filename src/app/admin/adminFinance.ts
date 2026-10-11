@@ -107,7 +107,9 @@ export async function loadCreditLine(facilityId?: string): Promise<CreditLineDat
       : [[], [], []];
    const userById = new Map(users.map((u) => [u.id as string, u]));
    const kycByUser = new Map<string, AnyRow>();
+   // A borrower can have several Didit sessions; keep the newest one that carries document details.
    for (const k of kyc) {
+      if (!k.document_type) continue;
       const seen = kycByUser.get(k.user_id);
       if (!seen || String(k.fetched_at ?? '') > String(seen.fetched_at ?? '')) kycByUser.set(k.user_id, k);
    }

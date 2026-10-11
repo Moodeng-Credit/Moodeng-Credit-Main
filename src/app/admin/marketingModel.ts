@@ -241,13 +241,13 @@ export function retention(loans: MarketingLoan[]) {
       }));
 }
 
-// Average cost to the borrower (repayable / principal − 1) over loans funded in the window.
+// Interest earned per $ lent over loans funded in the window (principal-weighted, so a few tiny loans with
+// high rates don't skew it).
 export function averageYield(loans: MarketingLoan[], from: string) {
    const recent = funded(loans).filter((l) => manilaDate(l.funded_at as string) >= from && Number(l.loan_amount) > 0);
-   if (!recent.length) return 0;
-   return (
-      recent.reduce((s, l) => s + (Number(l.total_repayment_amount) - Number(l.loan_amount)) / Number(l.loan_amount), 0) / recent.length
-   );
+   const principal = recent.reduce((s, l) => s + Number(l.loan_amount), 0);
+   if (!principal) return 0;
+   return recent.reduce((s, l) => s + Number(l.total_repayment_amount) - Number(l.loan_amount), 0) / principal;
 }
 
 // Spend vs budget, and cost per new borrower (first loan funded this month) and per new borrower who repaid,
@@ -281,8 +281,8 @@ export function cacReport(
             spend: channelSpend,
             newBorrowers: newBorrowers.length,
             repaying,
-            cacPerBorrower: newBorrowers.length ? channelSpend / newBorrowers.length : null,
-            cacPerRepaying: repaying ? channelSpend / repaying : null
+            cacPerBorrower: newBorrowers.length && channelSpend > 0 ? channelSpend / newBorrowers.length : null,
+            cacPerRepaying: repaying && channelSpend > 0 ? channelSpend / repaying : null
          };
       })
       .filter((row) => row.spend > 0 || row.newBorrowers > 0);
@@ -295,8 +295,8 @@ export function cacReport(
       cacTarget: goals.cac_target_usd,
       newBorrowers,
       repaying,
-      cacPerBorrower: newBorrowers ? spent / newBorrowers : null,
-      cacPerRepaying: repaying ? spent / repaying : null,
+      cacPerBorrower: newBorrowers && spent > 0 ? spent / newBorrowers : null,
+      cacPerRepaying: repaying && spent > 0 ? spent / repaying : null,
       byChannel
    };
 }

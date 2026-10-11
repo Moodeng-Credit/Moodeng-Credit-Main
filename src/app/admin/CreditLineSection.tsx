@@ -27,7 +27,8 @@ import {
 // live from our records — balances, interest owed, every loan with its txs and rationale, the fund-flow ledger,
 // and what doesn't match the agreement. Exports use private borrower IDs only.
 
-const usd = (n: number, digits = 2) => `$${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+const usd = (n: number, digits = 2) =>
+   `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
 const shortTx = (tx: string) => `${tx.slice(0, 8)}…${tx.slice(-4)}`;
 const SCAN = 'https://basescan.org/tx/';

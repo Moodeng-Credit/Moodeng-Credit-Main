@@ -33,7 +33,8 @@ import {
 // Admin → Growth → Marketing: are we on track for the month's lending goal, what each week still needs, what
 // marketing costs per real borrower (vs the CAC target), and who to contact today. Spend is logged here.
 
-const usd = (n: number, digits = 0) => `$${n.toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+const usd = (n: number, digits = 0) =>
+   `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const pct = (n: number | null) => (n === null ? '—' : `${Math.round(n * 100)}%`);
 const name = (u: { username: string | null; display_name: string | null; facebook_name: string | null } | null) =>
    u ? `${u.display_name || u.username || '?'}${u.facebook_name ? ` (FB ${u.facebook_name})` : ''}` : '?';
@@ -305,13 +306,13 @@ export default function MarketingSection() {
                <Tile label="Left in budget" tone={cac.left < 0 ? 'bad' : undefined} value={usd(cac.left, 2)} />
                <Tile
                   label="Cost per new borrower"
-                  sub={`${cac.newBorrowers} new borrowers this month`}
+                  sub={`${cac.newBorrowers} new borrowers this month${cac.spent ? '' : ' · log spend to see cost'}`}
                   tone={cac.cacPerBorrower === null ? undefined : cac.cacPerBorrower <= cac.cacTarget ? 'good' : 'bad'}
                   value={cac.cacPerBorrower === null ? '—' : usd(cac.cacPerBorrower, 2)}
                />
                <Tile
                   label="Cost per repaying borrower"
-                  sub={`Target ${usd(cac.cacTarget, 2)} · ${cac.repaying} repaid so far`}
+                  sub={`Target ${usd(cac.cacTarget, 2)} · ${cac.repaying} repaid so far${cac.spent ? '' : ' · log spend to see cost'}`}
                   tone={cac.cacPerRepaying === null ? undefined : cac.cacPerRepaying <= cac.cacTarget ? 'good' : 'bad'}
                   value={cac.cacPerRepaying === null ? '—' : usd(cac.cacPerRepaying, 2)}
                />
