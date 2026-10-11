@@ -72,6 +72,40 @@ export const getMessengerContact = async (contactId: string): Promise<SendPulseC
    }
 };
 
+// One message in a contact's chat log. direction 1 = from the person, 2 = from us (bot or operator).
+export type SendPulseChatMessage = { id?: string; direction?: number; created_at?: string };
+
+const CHAT_PAGE_SIZE = 100;
+const MAX_CHAT_PAGES = 20;
+
+// The contact's whole chat log, oldest first. null when SendPulse can't be reached (vs [] for no messages).
+export const getMessengerChatMessages = async (contactId: string): Promise<SendPulseChatMessage[] | null> => {
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const all: SendPulseChatMessage[] = [];
+      for (let page = 0; page < MAX_CHAT_PAGES; page++) {
+         const url =
+            `${API}/messenger/chats/messages?contact_id=${encodeURIComponent(contactId)}` +
+            `&order=asc&size=${CHAT_PAGE_SIZE}&skip=${page * CHAT_PAGE_SIZE}`;
+         const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+         const body = await res.json().catch(() => null);
+         if (!res.ok) {
+            console.error('[sendpulse] chats/messages failed', res.status, JSON.stringify(body)?.slice(0, 300));
+            return null;
+         }
+         const data = body?.data;
+         const batch = (Array.isArray(data) ? data : data ? [data] : []) as SendPulseChatMessage[];
+         all.push(...batch);
+         if (batch.length < CHAT_PAGE_SIZE) break;
+      }
+      return all;
+   } catch (err) {
+      console.error('[sendpulse] chats/messages threw', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
 // The bot behind the "Confirm Facebook" flow (Moodeng Credit Page).
 export const SENDPULSE_BOT_ID = Deno.env.get('SENDPULSE_BOT_ID')?.trim() || '81acb48b-e32c-4c85-b29f-0efae2ca2716';
 

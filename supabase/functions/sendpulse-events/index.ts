@@ -5,6 +5,7 @@ import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/admi
 import { postDiscord } from '../_shared/discord.ts';
 import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
+import { logMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
 import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
@@ -30,6 +31,7 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 // Fail-closed: no secret configured → nothing is accepted.
 //
 // For each subscribe / message FROM a person:
+//   0. Log it to messenger_contact_events (and fill in a known borrower's missing Facebook name).
 //   1. It carries an MDNG code (typed in any form, or the mdng_code their link set) → hand it to
 //      sendpulse-messenger-verify, exactly as the SendPulse flows do. Catches typed codes the
 //      keyword trigger missed ("mdng 3d66ad"). Idempotent with the flows: whichever lands first wins.
@@ -270,6 +272,12 @@ serve(async (req) => {
          if (!ours) {
             console.warn('sendpulse-events: skipped an event from another bot', event.botId, event.pageId);
             continue;
+         }
+
+         // Every time someone contacts us, whoever they turn out to be (messenger_contact_events).
+         const known = await logMessengerContact(svc, event.contactId, /subscri/i.test(event.title) ? 'subscribe' : 'message', event.at);
+         if (known && !known.facebookName) {
+            await saveFacebookName(svc, known.userId, messengerDisplayName(await getMessengerContact(event.contactId)));
          }
 
          if (event.codes.length) {

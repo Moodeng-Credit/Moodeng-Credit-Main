@@ -36,6 +36,9 @@ const isLatePayer = (r: BorrowerContactRow) => r.repaidLateCount > 0 || r.overdu
 const shortDate = (iso: string | null) =>
    iso ? new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 
+const shortDateTime = (iso: string) =>
+   new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+
 const csvCell = (value: string | number | null) => {
    const text = value === null ? '' : String(value);
    return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
@@ -49,6 +52,8 @@ function downloadCsv(rows: BorrowerContactRow[], fbNames: Map<string, string>) {
       'email',
       'facebook name',
       'facebook messenger verified',
+      'last messaged us',
+      'times messaged us',
       'facebook (profile)',
       'whatsapp',
       'whatsapp verified',
@@ -66,6 +71,8 @@ function downloadCsv(rows: BorrowerContactRow[], fbNames: Map<string, string>) {
          r.email,
          fbNames.get(r.id) ?? null,
          shortDate(r.messengerVerifiedAt),
+         shortDate(r.messengerContactDates[0] ?? null),
+         r.messengerContactDates.length,
          r.facebookContact,
          r.whatsappNumber,
          shortDate(r.whatsappVerifiedAt),
@@ -113,9 +120,10 @@ export default function BorrowerContactsSection() {
 
    const fbNames = useMemo(() => {
       const names = new Map<string, string>();
+      for (const r of rows) if (r.facebookName) names.set(r.id, r.facebookName);
       for (const [id, p] of profiles) if (p.name) names.set(id, p.name);
       return names;
-   }, [profiles]);
+   }, [profiles, rows]);
 
    const load = useCallback(async () => {
       setLoading(true);
@@ -280,6 +288,15 @@ export default function BorrowerContactsSection() {
                      ) : null}
                      {r.lineId ? <Chip>LINE {r.lineId}</Chip> : null}
                   </div>
+
+                  {r.messengerContactDates.length ? (
+                     <details className="mt-2 text-sm text-[#b9a9d0]">
+                        <summary className="cursor-pointer">
+                           Messaged us {r.messengerContactDates.length}× · last {shortDateTime(r.messengerContactDates[0])}
+                        </summary>
+                        <p className="mt-1">{r.messengerContactDates.map(shortDateTime).join(' · ')}</p>
+                     </details>
+                  ) : null}
 
                   {r.messengerVerifiedAt ? (
                      <div className="mt-3 space-y-2">
