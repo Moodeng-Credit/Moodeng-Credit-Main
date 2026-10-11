@@ -77,6 +77,9 @@ export interface AdminDirectoryUser {
    loan_access_status: 'none' | 'pending' | 'approved' | 'rejected' | null;
    video_call_starts_at: string | null;
    video_call_outcome: 'attended' | 'no_show' | null;
+   // Didit session state, for the shared status badge (see adminStatus.ts).
+   didit_id_status: string | null;
+   didit_submitted_at: string | null;
    cs: number | null;
    mal: number | null;
    nal: number | null;
@@ -369,7 +372,7 @@ async function fetchUsersByIds(userIds: string[]): Promise<Map<string, AdminDire
       getSupabaseBrowserClient()
          .from('users')
          .select(
-            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,cs,mal,nal,created_at,updated_at'
+            'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,didit_id_status,didit_submitted_at,cs,mal,nal,created_at,updated_at'
          )
          .in('id', uniqueIds)
    );
@@ -456,6 +459,8 @@ async function buildDirectoryRows(
          loan_access_status: row.loan_access_status ?? null,
          video_call_starts_at: row.video_call_starts_at ?? null,
          video_call_outcome: row.video_call_outcome ?? null,
+         didit_id_status: row.didit_id_status ?? null,
+         didit_submitted_at: row.didit_submitted_at ?? null,
          cs: row.cs ?? null,
          mal: row.mal ?? null,
          nal: row.nal ?? null,
@@ -596,7 +601,7 @@ export async function listAdminDirectoryUsers(search?: string): Promise<AdminDir
    let query = supabase
       .from('users')
       .select(
-         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,cs,mal,nal,created_at,updated_at'
+         'id,username,email,wallet_address,wallet_provider,wallet_connector_name,wallet_chain_id,user_role,account_status,is_world_id,is_didit,messenger_verified_at,messenger_psid,whatsapp_verified_at,loan_access_status,video_call_starts_at,video_call_outcome,didit_id_status,didit_submitted_at,cs,mal,nal,created_at,updated_at'
       )
       .order('created_at', { ascending: false })
       .limit(2000);

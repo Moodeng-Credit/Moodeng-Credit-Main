@@ -17,6 +17,10 @@ import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
+import { BorrowerTimeline, RecentChangesFeed } from '@/app/admin/AdminHistory';
+import { deriveBorrowerStatus } from '@/app/admin/adminStatus';
+import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
+import { AdminLiveProvider, AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
 import { formatPointsMajor, iouPointsAwardRules, loanFundingPointsPerUsdc, pointsAwardRules, trustPointsAwardRules } from '@/shared/points';
 import type { RootState } from '@/store/store';
 
@@ -291,7 +295,15 @@ function legacyQueryTab(): AdminTab {
    return 'users';
 }
 
-export default function AdminPanel() {
+export default function AdminPanelPage() {
+   return (
+      <AdminLiveProvider>
+         <AdminPanel />
+      </AdminLiveProvider>
+   );
+}
+
+function AdminPanel() {
    const reduxUser = useSelector((state: RootState) => state.auth.user);
    // The Liquidity Relay share panel is gated to the two Moodeng funding admins (George/Emma).
    const isFundingAdmin = useIsFundingAdmin();
@@ -484,6 +496,11 @@ export default function AdminPanel() {
          alive = false;
       };
    }, [reduxUser?.id]);
+
+   // Directory / Requests / overview counts are page state — reload them quietly on live changes.
+   useAdminLiveReload(['users', 'loans', 'loan_access_requests', 'admin_account_restrictions', 'account_status_audit_logs'], () =>
+      admin ? refresh(search) : undefined
+   );
 
    async function handleSearch(event: FormEvent<HTMLFormElement>) {
       event.preventDefault();
@@ -726,6 +743,7 @@ export default function AdminPanel() {
 
          {activeTab === 'users' ? (
             <section className="space-y-6">
+               <RecentChangesFeed />
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">User directory</h2>
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
@@ -815,7 +833,7 @@ export default function AdminPanel() {
                   {adminDataLoaded
                      ? filteredDirectory.map((user) => (
                           <article key={user.id} id={`admin-user-${user.id}`} className="scroll-mt-32 border-b border-[#2a1453] last:border-b-0">
-                             <div className="grid gap-5 p-6">
+                             <AdminLiveRow ids={[user.id]} className="grid gap-5 p-6">
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                    <div className="flex min-w-0 gap-4">
                                       <button
@@ -837,9 +855,7 @@ export default function AdminPanel() {
                                             <Badge tone={user.user_role}>{roleLabel(user.user_role)}</Badge>
                                             <Badge tone={user.account_status}>{user.account_status}</Badge>
                                             <Badge tone={riskTone(user)}>{riskTone(user)} risk</Badge>
-                                            <Badge tone={isUserVerified(user) ? 'ACTIVE' : 'INACTIVE'}>
-                                               {isUserVerified(user) ? 'verified' : 'not verified'}
-                                            </Badge>
+                                            <AdminStatusBadge status={deriveBorrowerStatus(user)} />
                                             <Badge tone={user.messenger_verified_at ? 'ACTIVE' : 'INACTIVE'}>
                                                {user.messenger_verified_at ? 'facebook linked' : 'no facebook'}
                                             </Badge>
@@ -915,7 +931,7 @@ export default function AdminPanel() {
                                       value={formatDate(user.lastLoanAt ?? user.updated_at)}
                                    />
                                 </div>
-                             </div>
+                             </AdminLiveRow>
                              {selectedUser?.id === user.id ? (
                                 <div className="border-t border-[#2a1453] bg-[#241044] p-6">
                                    <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1036,6 +1052,7 @@ export default function AdminPanel() {
                                       Ban is the one-step ban: account, Didit block, KYC blacklist, open requests deleted, and a message to the user. Flag ban review does not ban anyone. It records an admin review item only. Reset 2FA removes
                                       every authenticator/passkey factor this user has enrolled — use it when they're locked out.
                                    </p>
+                                   <BorrowerTimeline userId={user.id} />
                                 </div>
                              ) : null}
                           </article>
@@ -1488,9 +1505,7 @@ export default function AdminPanel() {
                                     {request.borrower?.user_role ?? 'borrower'}
                                  </Badge>
                                  <Badge tone={requestStatus(request)}>{requestStatus(request).replace('_', ' ')}</Badge>
-                                 <Badge tone={isUserVerified(request.borrower) ? 'ACTIVE' : 'INACTIVE'}>
-                                    {isUserVerified(request.borrower) ? 'verified' : 'not verified'}
-                                 </Badge>
+                                 <AdminStatusBadge status={deriveBorrowerStatus(request.borrower ?? {})} />
                               </div>
                               <p className="mt-3 text-xl text-[#a89bb8]">{request.reason}</p>
                            </button>

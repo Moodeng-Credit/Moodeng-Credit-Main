@@ -2,6 +2,8 @@
 
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAdminLiveReload } from '@/app/admin/useAdminLive';
+
 import AdminDeadline, { formatAdminDeadline } from './AdminDeadline';
 import {
    type ComingDueLoan,
@@ -83,6 +85,7 @@ export default function LoanExtensionSection({
       if (initialLoans) return; // preview/tests inject data and skip the live fetch
       void load();
    }, [load, initialLoans]);
+   useAdminLiveReload(['loans'], () => (initialLoans ? undefined : load()));
 
    useEffect(() => {
       if (initialLoanId) setSelectedId(initialLoanId);
