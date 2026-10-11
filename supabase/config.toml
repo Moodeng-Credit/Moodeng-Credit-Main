@@ -174,3 +174,6 @@ verify_jwt = false
 # TikTok Login Kit callback exchange (public: called from the browser before a session exists).
 [functions.tiktok-login]
 verify_jwt = false
+
+[functions.record-withdrawal]
+verify_jwt = true

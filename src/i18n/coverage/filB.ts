@@ -499,6 +499,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Emergency costs': 'Gastos sa emergency',
    'Work supplies': 'Kagamitan sa trabaho',
    'Failed to save profile name.': 'Hindi na-save ang profile name.',
+   'Failed to save your name.': 'Hindi na-save ang pangalan mo.',
    'Swipe right to close loan form': 'I-swipe pakanan para isara ang loan form',
    'Explain setting loan terms': 'Ipaliwanag ang pagtakda ng loan terms',
    'Close loan form': 'Isara ang loan form',

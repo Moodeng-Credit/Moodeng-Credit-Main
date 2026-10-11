@@ -325,6 +325,24 @@ serve(async (req) => {
 
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
+   // --- Idempotency: a retried webhook for the same Message-ID must not create a second
+   // ticket / Discord post. Claim the id first; a unique violation means it was already handled.
+   // Any other error (e.g. table not migrated yet) fails open so mail is never dropped.
+   let claimedMessageId: string | null = null;
+   if (email.messageId) {
+      const { error: claimErr } = await supabase.from('email_inbound_processed').insert({ message_id: email.messageId });
+      if (claimErr?.code === '23505') {
+         console.log('[email-inbound] duplicate delivery ignored for', email.messageId);
+         return jsonResponse({ ok: true, ignored: 'duplicate' });
+      }
+      if (claimErr) console.error('[email-inbound] could not record message id:', claimErr.message);
+      else claimedMessageId = email.messageId;
+   }
+   // Release the claim when we fail before doing anything visible, so the provider's retry can succeed.
+   const releaseClaim = async () => {
+      if (claimedMessageId) await supabase.from('email_inbound_processed').delete().eq('message_id', claimedMessageId);
+   };
+
    // --- Resolve the conversation this email belongs to -------------------------------------
    // 1) reply+<token>@ address (most reliable), 2) In-Reply-To / References message-ids.
    let conversation: Conversation | null = null;
@@ -344,12 +362,17 @@ serve(async (req) => {
       if (refIds.length > 0) {
          const { data } = await supabase
             .from('widget_conversations')
-            .select('id, discord_thread_id, reply_token, status')
+            .select('id, discord_thread_id, reply_token, status, visitor_email')
             .in('email_last_message_id', refIds)
             .order('last_message_at', { ascending: false })
             .limit(1)
             .maybeSingle();
-         conversation = (data as Conversation | null) ?? null;
+         // Message-ids are not secret (they travel in every quoted reply), so a header-only match
+         // must come from the ticket's own visitor; anyone else opens a new ticket.
+         const match = data as (Conversation & { visitor_email: string | null }) | null;
+         if (match && (match.visitor_email ?? '').trim().toLowerCase() === email.fromEmail.trim().toLowerCase()) {
+            conversation = match;
+         }
       }
    }
 
@@ -375,6 +398,7 @@ serve(async (req) => {
 
       if (insertErr || !inserted) {
          console.error('[email-inbound] failed to create conversation:', insertErr?.message);
+         await releaseClaim();
          return jsonResponse({ error: 'db_insert_failed' }, 500);
       }
 

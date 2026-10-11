@@ -726,6 +726,7 @@ export const indonesianCoverageB: Record<string, string> = {
    'Referral code': 'Kode referal',
    "We couldn't check that code. Please try again.": 'Kami tidak bisa mengecek kode itu. Silakan coba lagi.',
    'Failed to save profile name.': 'Gagal menyimpan nama profil.',
+   'Failed to save your name.': 'Gagal menyimpan nama Anda.',
    'Failed to update profile image.': 'Gagal memperbarui foto profil.',
    'Enter how much you want to borrow.': 'Masukkan jumlah yang ingin kamu pinjam.',
    'Enter the amount you will repay.': 'Masukkan jumlah yang akan kamu bayar kembali.',
