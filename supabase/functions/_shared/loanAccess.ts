@@ -11,6 +11,7 @@
 // Every notification here is best-effort: the decision is persisted first, and a failed push,
 // Telegram or Discord ping is logged, never thrown.
 
+import { type CardStamp, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
@@ -182,8 +183,16 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
    const adminChat = await getAdminChatId(svc);
    if (adminChat) {
       try {
-         await sendTelegramMessage(adminChat, text, {
-            inlineKeyboard: [...decisionKeyboard(request), [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]]
+         // Remembered as the borrower's loan_access card: whoever decides (here, /approve, the admin
+         // panel, the call cards, auto no-show) stamps its after-state.
+         await sendAdminCard(svc, adminChat, {
+            kind: 'loan_access',
+            refId: borrower.id,
+            text,
+            keyboard: [
+               ...decisionKeyboard(request),
+               [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)]
+            ]
          });
       } catch (err) {
          console.error('loanAccess: admin telegram ping failed', err instanceof Error ? err.message : err);
@@ -356,9 +365,26 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
 
 // ---- Decide (admin Approve / Reject) ----------------------------------------------------------
 
+// `stamp` is the after-state written on the person's admin cards (adminCards.ts).
 export type DecideResult =
-   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string }
-   | { ok: false; summary: string };
+   | { ok: true; request: RequestRow; borrower: BorrowerRow; summary: string; stamp: CardStamp }
+   | { ok: false; summary: string; stamp?: CardStamp };
+
+// The header of a decided loan-access / call card: the decision, then what it means for the person.
+export const loanAccessStampHeader = (
+   decision: LoanAccessDecision | 'attended' | 'corrected',
+   name: string,
+   opts: { call?: boolean } = {}
+) =>
+   decision === 'approved'
+      ? `${opts.call ? '✅ SHOWED UP → APPROVED' : '✅ APPROVED'} — ${name} can now apply for a loan`
+      : decision === 'rejected'
+        ? `🚫 REJECTED — ${name}'s application is closed`
+        : decision === 'no_show'
+          ? `❌ NO-SHOW — ${name} was asked to book a new call`
+          : decision === 'corrected'
+            ? `✅ SHOWED UP — no-show corrected; ${name} was told to ignore the rebook message`
+            : `✅ SHOWED UP — ${name}'s attendance is recorded`;
 
 // Resolves "/approve <arg>" arguments: a request-id prefix (from the card) or the borrower's
 // @username. Only pending requests are considered.
@@ -427,6 +453,18 @@ export const decideLoanAccess = async (
    if (userError) throw new Error(userError.message);
    if (!borrower) return { ok: false, summary: 'Borrower account not found.' };
 
+   // A no-show parks any open request they have (database trigger); say which one.
+   const held = decision === 'no_show' ? await describeHeldRequests(svc, request.user_id) : '';
+
+   // Flip every card about this person (request card, call-start and "Did they show up?" cards) to
+   // its after-state before the slower borrower messages go out.
+   const stamp: CardStamp = {
+      header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
+      detail: held || null,
+      by: decidedBy
+   };
+   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp);
+
    await notifyBorrower(svc, borrower, decision);
 
    const verb =
@@ -437,11 +475,9 @@ export const decideLoanAccess = async (
          : decision === 'no_show'
            ? '❌ No-show:'
            : '🚫 Rejected';
-   // A no-show parks any open request they have (database trigger); say which one.
-   const held = decision === 'no_show' ? await describeHeldRequests(svc, request.user_id) : '';
    const summary = `${verb} ${who(borrower, request.display_name)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `🤝 Loan access ${summary}` }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   return { ok: true, request, borrower, summary };
+   return { ok: true, request, borrower, summary, stamp };
 };
 
 // ---- Telegram plumbing for the admin card -----------------------------------------------------
@@ -461,19 +497,5 @@ export const setCardButtons = async (chatId: number | string, messageId: number,
       await callTelegramApi('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: keyboard } });
    } catch (err) {
       console.error('loanAccess: editMessageReplyMarkup failed', err instanceof Error ? err.message : err);
-   }
-};
-
-// Replace the card's buttons with the outcome so nobody taps a decided request again.
-export const stampAdminCard = async (chatId: number | string, messageId: number, originalText: string, summary: string) => {
-   try {
-      await callTelegramApi('editMessageText', {
-         chat_id: chatId,
-         message_id: messageId,
-         text: `${originalText}\n\n${summary}`,
-         disable_web_page_preview: true
-      });
-   } catch (err) {
-      console.error('loanAccess: editMessageText failed', err instanceof Error ? err.message : err);
    }
 };

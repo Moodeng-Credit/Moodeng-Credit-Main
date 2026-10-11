@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
@@ -172,6 +173,9 @@ serve(async (req) => {
             .select(BORROWER_COLUMNS)
             .maybeSingle();
          if (!borrower) continue;
+         await stampDecisionCards(supabase, 'loan_access', row.id, `🗓️ CALL CANCELLED — ${personName(borrower)} was asked to book a new time`, {
+            by: 'the borrower (cancelled on Cal.com)'
+         });
          await notifyBorrower(supabase, borrower, 'call_cancelled');
          const text = `🗓️ ${who(borrower)} cancelled their call — their request is closed and they've been asked to rebook.`;
          try {
