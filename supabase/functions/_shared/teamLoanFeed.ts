@@ -7,6 +7,7 @@ import { postDiscord } from './discord.ts';
 import { dueDayBounds, formatDeadlineForTeam, localHour, loanTimezone } from './loanDeadline.ts';
 import { describeOwed, getTeamTimezone, loadBorrowerTimezones } from './loanDueTeamFeed.ts';
 import { buildTxExplorerLink, getLoanOutstandingAmount } from './loanNotifications.ts';
+import { getMessengerContact, messengerDisplayName } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -43,6 +44,20 @@ const handle = (u?: { username?: string | null; telegram_username?: string | nul
    return u?.username?.trim() || 'someone';
 };
 
+type FeedPerson = { id: string; username: string | null; telegram_username: string | null; messenger_psid?: string | null };
+const PEOPLE_COLUMNS = 'id, username, telegram_username, messenger_psid';
+
+// Borrower handle plus who they are on Facebook, so the team knows whom to message:
+// "kiddo.lepalam-c01c66 (FB: Kiddo Lepalam)", or "(no Facebook)" when Messenger isn't connected.
+// The name is the one SendPulse holds for their Messenger contact; a failed lookup says "FB connected".
+const facebookLabel = async (person: FeedPerson | null | undefined): Promise<string> => {
+   if (!person?.messenger_psid) return '(no Facebook)';
+   const name = messengerDisplayName(await getMessengerContact(person.messenger_psid).catch(() => null));
+   return name ? `(FB: ${name})` : '(FB connected)';
+};
+
+const borrowerLabel = async (person: FeedPerson | null | undefined) => `${handle(person)} ${await facebookLabel(person)}`;
+
 /** Claims the one post for this loan + type. False when it was already claimed (or claiming failed). */
 const claim = async (svc: SupabaseClient, loanId: string, userId: string, type: TeamFeedType): Promise<boolean> => {
    const { error } = await svc.from('loan_notifications').insert({ loan_id: loanId, user_id: userId, notification_type: type });
@@ -58,8 +73,8 @@ const unclaim = async (svc: SupabaseClient, loanId: string, type: TeamFeedType) 
 
 const loadPeople = async (svc: SupabaseClient, loan: TeamFeedLoan) => {
    const ids = [loan.borrower_user_id, loan.lender_user_id].filter(Boolean) as string[];
-   const { data } = await svc.from('users').select('id, username, telegram_username').in('id', ids);
-   const rows = (data ?? []) as Array<{ id: string; username: string | null; telegram_username: string | null }>;
+   const { data } = await svc.from('users').select(PEOPLE_COLUMNS).in('id', ids);
+   const rows = (data ?? []) as FeedPerson[];
    return {
       borrower: rows.find((row) => row.id === loan.borrower_user_id) ?? null,
       lender: rows.find((row) => row.id === loan.lender_user_id) ?? null
@@ -87,7 +102,7 @@ export const postLoanFundedToTeam = async (svc: SupabaseClient, loanId: string):
       const url = `${siteUrl()}/request-board?highlight=${loan.id}`;
 
       const lines = [
-         `💰 ${handle(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,
+         `💰 ${await borrowerLabel(borrower)} was funded ${usdc(loan.loan_amount)} by ${handle(lender)}`,
          `${loan.tracking_id ?? loan.id}`,
          `↩️ Repays ${usdc(loan.total_repayment_amount)}`,
          `⏳ Due ${due}`,
@@ -142,7 +157,7 @@ export const postLoanRepaidToTeam = async (svc: SupabaseClient, loanId: string):
       const hashes = loan.hash ?? [];
       const tx = buildTxExplorerLink(hashes.at(-1));
       const description = [
-         `✅ ${handle(borrower)} repaid ${usdc(loan.repaid_amount ?? loan.total_repayment_amount)} to ${handle(lender)}`,
+         `✅ ${await borrowerLabel(borrower)} repaid ${usdc(loan.repaid_amount ?? loan.total_repayment_amount)} to ${handle(lender)}`,
          `${loan.tracking_id ?? loan.id}`,
          tx ? `🔗 ${tx}` : ''
       ]
@@ -229,14 +244,14 @@ export const postUpcomingDueDigest = async (svc: SupabaseClient, now: Date = new
       if (!upcoming.length) return 0;
 
       const ids = Array.from(new Set(upcoming.flatMap(({ loan }) => [loan.borrower_user_id, loan.lender_user_id]).filter(Boolean))) as string[];
-      const { data: people } = await svc.from('users').select('id, username, telegram_username').in('id', ids);
-      const byId = new Map(((people ?? []) as Array<{ id: string; username: string | null; telegram_username: string | null }>).map((u) => [u.id, u]));
+      const { data: people } = await svc.from('users').select(PEOPLE_COLUMNS).in('id', ids);
+      const byId = new Map(((people ?? []) as FeedPerson[]).map((u) => [u.id, u]));
 
-      const lines = upcoming.slice(0, MAX_DIGEST_LINES).map(({ loan, zone, days }) => {
+      const lines = await Promise.all(upcoming.slice(0, MAX_DIGEST_LINES).map(async ({ loan, zone, days }) => {
          const owed = describeOwed(loan);
          const lender = loan.lender_user_id ? handle(byId.get(loan.lender_user_id)) : 'unknown';
-         return `• **${whenLabel(days)}**: ${handle(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
-      });
+         return `• **${whenLabel(days)}**: ${await borrowerLabel(byId.get(loan.borrower_user_id as string))} owes ${owed} (lender ${lender}, ${loan.tracking_id})\n   due by ${formatDeadlineForTeam(loan.due_date as string, zone, teamZone)}`;
+      }));
       if (upcoming.length > MAX_DIGEST_LINES) lines.push(`…and ${upcoming.length - MAX_DIGEST_LINES} more`);
 
       const posted = await postDiscord(
