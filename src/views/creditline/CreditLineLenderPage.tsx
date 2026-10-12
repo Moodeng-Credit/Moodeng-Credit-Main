@@ -1,0 +1,253 @@
+import { type FormEvent, useMemo, useState } from 'react';
+
+import { downloadCreditLineExcel } from '@/lib/creditLineExcel';
+import { buildPeriodReport, type LenderReportData, loadLenderReport, periodsFor } from '@/lib/creditLineReport';
+
+// moodeng.app/creditline — the facility lender (BitRepo) sees the live monthly report and downloads it as
+// Excel. Password-checked on the server (credit_line_lender_report); the password is kept for this tab only.
+
+const SESSION_KEY = 'md_creditline_pw';
+const usd = (n: number, digits = 2) => `$${n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+// Ledger timestamps are stored in UTC; show them in Philippine time like every other date here.
+const phTime = (iso: string) => new Date(Date.parse(iso) + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 16);
+
+const readSaved = () => {
+   try {
+      return window.sessionStorage.getItem(SESSION_KEY) ?? '';
+   } catch {
+      return '';
+   }
+};
+
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+   return (
+      <div className="rounded-2xl border border-[#e7e0ec] bg-white p-4">
+         <p className="text-[12px] font-semibold uppercase tracking-wide text-[#8a7c9c]">{label}</p>
+         <p className="mt-1 text-[22px] font-extrabold text-[#26143f]">{value}</p>
+         {sub ? <p className="mt-0.5 text-[12px] text-[#695b7b]">{sub}</p> : null}
+      </div>
+   );
+}
+
+export default function CreditLineLenderPage() {
+   const [password, setPassword] = useState(readSaved);
+   const [data, setData] = useState<LenderReportData | null>(null);
+   const [error, setError] = useState('');
+   const [loading, setLoading] = useState(false);
+   const [periodIndex, setPeriodIndex] = useState(0);
+   const [downloading, setDownloading] = useState(false);
+
+   const unlock = async (pw: string) => {
+      setLoading(true);
+      setError('');
+      const result = await loadLenderReport(pw);
+      setLoading(false);
+      if ('error' in result) {
+         setError(
+            result.error === 'wrong_password'
+               ? 'That password isn’t right.'
+               : result.error === 'locked'
+                 ? 'Too many tries — please wait 15 minutes and try again.'
+                 : 'Couldn’t load the report. Please try again in a moment.'
+         );
+         return;
+      }
+      try {
+         window.sessionStorage.setItem(SESSION_KEY, pw);
+      } catch {
+         // Storage blocked — they'll just enter it again after a reload.
+      }
+      setData(result.data);
+   };
+
+   const periods = useMemo(() => (data ? periodsFor(data.facility) : []), [data]);
+   const report = useMemo(() => (data && periods[periodIndex] ? buildPeriodReport(data, periods[periodIndex]) : null), [data, periods, periodIndex]);
+
+   if (!data || !report) {
+      const submit = (e: FormEvent) => {
+         e.preventDefault();
+         if (password.trim()) void unlock(password.trim());
+      };
+      return (
+         <div className="flex min-h-screen items-center justify-center bg-[#f7f4fb] px-5">
+            <form className="w-full max-w-[380px] rounded-3xl bg-white p-6 shadow-[0_10px_30px_rgba(38,20,63,0.08)]" onSubmit={submit}>
+               <img alt="" className="mx-auto h-20 w-auto" src="/hippos/wallet-grow/wallet-4-grown.webp" />
+               <h1 className="mt-3 text-center text-[22px] font-extrabold text-[#26143f]">Moodeng credit line</h1>
+               <p className="mt-1 text-center text-[14px] text-[#695b7b]">Lender report. Enter the password you were given.</p>
+               <input
+                  autoComplete="current-password"
+                  className="mt-5 min-h-[48px] w-full rounded-2xl border-2 border-[#e5ddf0] px-4 text-[16px] focus:border-[#6b55f7] focus:outline-none"
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  type="password"
+                  value={password}
+               />
+               {error ? <p className="mt-2 text-[13px] font-semibold text-red-600">{error}</p> : null}
+               <button
+                  className="mt-4 min-h-[52px] w-full rounded-2xl bg-[#6b55f7] font-bold text-white shadow-[0_4px_0_#4a35c9] active:translate-y-[4px] active:shadow-none disabled:opacity-60"
+                  disabled={loading || !password.trim()}
+                  type="submit"
+               >
+                  {loading ? 'Checking…' : 'View report'}
+               </button>
+            </form>
+         </div>
+      );
+   }
+
+   const f = data.facility;
+   const m = report.medians;
+   return (
+      <div className="min-h-screen bg-[#f7f4fb] px-4 pb-16 pt-6">
+         <div className="mx-auto flex max-w-[1100px] flex-col gap-5">
+            <header className="flex flex-wrap items-end justify-between gap-3">
+               <div>
+                  <p className="text-[13px] font-semibold text-[#6b55f7]">{f.lender_name}</p>
+                  <h1 className="text-[26px] font-extrabold text-[#26143f]">{f.name} — monthly report</h1>
+                  <p className="text-[14px] text-[#695b7b]">
+                     Live data · as of {report.asOf} (Philippine time) · report due {report.period.due}
+                  </p>
+               </div>
+               <div className="flex flex-wrap items-center gap-2">
+                  <select
+                     className="min-h-[44px] rounded-xl border-2 border-[#e5ddf0] bg-white px-3 text-[14px] font-semibold"
+                     onChange={(e) => setPeriodIndex(Number(e.target.value))}
+                     value={periodIndex}
+                  >
+                     {periods.map((p, i) => (
+                        <option key={p.start} value={i}>
+                           {p.start} → {p.end}
+                           {i === 0 ? ' (current)' : ''}
+                        </option>
+                     ))}
+                  </select>
+                  <button
+                     className="min-h-[44px] rounded-xl bg-[#6b55f7] px-4 font-bold text-white shadow-[0_3px_0_#4a35c9] active:translate-y-[3px] active:shadow-none disabled:opacity-60"
+                     disabled={downloading}
+                     onClick={async () => {
+                        setDownloading(true);
+                        try {
+                           await downloadCreditLineExcel(data, report);
+                        } finally {
+                           setDownloading(false);
+                        }
+                     }}
+                     type="button"
+                  >
+                     {downloading ? 'Preparing…' : 'Download Excel'}
+                  </button>
+               </div>
+            </header>
+
+            <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+               <Stat label="Deployed now" sub={`${pct(report.utilization)} of ${usd(Number(f.commitment_usd), 0)}`} value={usd(report.deployed)} />
+               <Stat label="Available" value={usd(report.available)} />
+               <Stat label="Interest accrued" sub={`Projected for the period: ${usd(report.interestProjected)}`} value={usd(report.interestAccrued)} />
+               <Stat
+                  label="Loans"
+                  sub={`${report.counts.active} active · ${report.counts.repaid} repaid · ${report.counts.overdue} overdue`}
+                  value={String(report.counts.funded)}
+               />
+               <Stat label="Median loan" sub={`All loans: ${usd(m.loan)}`} value={usd(m.loanStandard)} />
+               <Stat label="Median term" sub={`All loans: ${m.term} days`} value={`${m.termStandard} days`} />
+               <Stat label="Median fee" sub={`All loans: ${pct(m.fee)}`} value={pct(m.feeStandard)} />
+               <Stat label="Lent / repaid" sub={`Fees collected: ${usd(report.feesCollected)}`} value={`${usd(report.lent, 0)} / ${usd(report.principalRepaid, 0)}`} />
+            </section>
+            <p className="-mt-2 text-[12px] text-[#8a7c9c]">
+               Medians use standard pricing (restructures such as a 0% bridge are excluded). Interest: {(Number(f.annual_rate) * 100).toFixed(0)}% simple,
+               actual/365, on principal deployed each day. Advanced {usd(report.advanced)} · drawn to the lending wallet {usd(report.drawn)} · at Binance{' '}
+               {usd(report.atBinance)}.
+            </p>
+
+            <section className="overflow-hidden rounded-2xl border border-[#e7e0ec] bg-white">
+               <h2 className="border-b border-[#f0ecf5] px-4 py-3 text-[16px] font-bold text-[#26143f]">Loans (Schedule B)</h2>
+               <div className="overflow-x-auto">
+                  <table className="w-full min-w-[980px] text-left text-[13px]">
+                     <thead className="bg-[#f8f4fc] text-[12px] uppercase text-[#695b7b]">
+                        <tr>
+                           {['Loan', 'Borrower', 'Funded', 'Due', 'Principal', 'Total due', 'Status', 'KYC', 'Facebook', 'Call', 'Disbursement tx', 'Why approved'].map((h) => (
+                              <th className="px-3 py-2 font-semibold" key={h}>
+                                 {h}
+                              </th>
+                           ))}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {report.loans.map((loan) => {
+                           const repaid = loan.repaidDate && loan.repaidDate <= report.asOf;
+                           const overdue = !repaid && loan.dueDate && loan.dueDate < report.asOf;
+                           return (
+                              <tr className="border-t border-[#f0ecf5] align-top" key={loan.id}>
+                                 <td className="px-3 py-2 font-mono text-[11px]">{loan.tracking_id}</td>
+                                 <td className="px-3 py-2">
+                                    <span className="font-semibold">{loan.privateId}</span>
+                                    <br />
+                                    <span className="text-[#695b7b]">{loan.borrower.username}</span>
+                                 </td>
+                                 <td className="px-3 py-2">{loan.fundedDate}</td>
+                                 <td className="px-3 py-2">{loan.dueDate}</td>
+                                 <td className="px-3 py-2">{usd(Number(loan.loan_amount))}</td>
+                                 <td className="px-3 py-2">{usd(Number(loan.total_repayment_amount))}</td>
+                                 <td className="px-3 py-2 font-semibold">
+                                    {repaid ? <span className="text-green-700">Repaid {loan.repaidDate}</span> : overdue ? <span className="text-red-600">Overdue</span> : 'Active'}
+                                    {loan.restructured ? <span className="block text-[11px] font-normal text-[#8a7c9c]">Restructure</span> : null}
+                                 </td>
+                                 <td className="px-3 py-2">{loan.borrower.kyc_passed ? `✓ ${loan.kycProvider ?? ''}` : '—'}</td>
+                                 <td className="px-3 py-2">{loan.borrower.facebook_verified ? '✓' : '—'}</td>
+                                 <td className="px-3 py-2">{loan.borrower.video_call_attended ? '✓' : '—'}</td>
+                                 <td className="max-w-[160px] px-3 py-2 font-mono text-[11px]">
+                                    {loan.disbursementTxs.map((tx) => (
+                                       <a className="block truncate text-[#6b55f7] underline" href={`https://basescan.org/tx/${tx}`} key={tx} rel="noreferrer" target="_blank">
+                                          {tx}
+                                       </a>
+                                    ))}
+                                 </td>
+                                 <td className="max-w-[320px] px-3 py-2 text-[12px] text-[#45556c]">{loan.rationale}</td>
+                              </tr>
+                           );
+                        })}
+                     </tbody>
+                  </table>
+               </div>
+            </section>
+
+            <section className="overflow-hidden rounded-2xl border border-[#e7e0ec] bg-white">
+               <h2 className="border-b border-[#f0ecf5] px-4 py-3 text-[16px] font-bold text-[#26143f]">Money movements</h2>
+               <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-left text-[13px]">
+                     <thead className="bg-[#f8f4fc] text-[12px] uppercase text-[#695b7b]">
+                        <tr>
+                           {['When (PH)', 'Type', 'Description', 'Amount', 'Transaction'].map((h) => (
+                              <th className="px-3 py-2 font-semibold" key={h}>
+                                 {h}
+                              </th>
+                           ))}
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {data.ledger
+                           .filter((row) => row.occurred_at.slice(0, 10) <= report.period.end)
+                           .map((row) => (
+                              <tr className="border-t border-[#f0ecf5]" key={row.id}>
+                                 <td className="px-3 py-2">{phTime(row.occurred_at)}</td>
+                                 <td className="px-3 py-2 capitalize">{row.kind}</td>
+                                 <td className="px-3 py-2">{row.description}</td>
+                                 <td className="px-3 py-2">{usd(Number(row.amount_usd))}</td>
+                                 <td className="max-w-[220px] px-3 py-2 font-mono text-[11px]">
+                                    {row.tx_hash ? (
+                                       <a className="block truncate text-[#6b55f7] underline" href={`https://basescan.org/tx/${row.tx_hash}`} rel="noreferrer" target="_blank">
+                                          {row.tx_hash}
+                                       </a>
+                                    ) : null}
+                                 </td>
+                              </tr>
+                           ))}
+                     </tbody>
+                  </table>
+               </div>
+            </section>
+         </div>
+      </div>
+   );
+}
