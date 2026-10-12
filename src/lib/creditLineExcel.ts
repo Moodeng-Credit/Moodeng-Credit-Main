@@ -1,5 +1,5 @@
-// Excel download for the lender page: the same five tabs as the monthly report (Summary, Loans (Schedule B),
-// Repayments, Ledger, Daily interest), built from the live numbers. exceljs is loaded only when someone taps
+// Excel download for the lender page: the monthly report's tabs (Summary, Loans (Schedule B), Repayments,
+// Daily interest), built from the live numbers. exceljs is loaded only when someone taps
 // Download, so it never weighs on the rest of the app.
 
 import type { LenderReportData, PeriodReport } from '@/lib/creditLineReport';
@@ -54,8 +54,6 @@ export async function downloadCreditLineExcel(data: LenderReportData, report: Pe
    line('Interest basis', 'Actual/365, only on funds deployed in loans; none on unused funds. Paid monthly.');
    section('Balances');
    line('Advanced by lender ($)', report.advanced, USD);
-   line('Drawn to the lending wallet ($)', report.drawn, USD);
-   line('Held at Binance, not yet drawn ($)', report.atBinance, USD);
    line('Principal lent to borrowers ($)', report.lent, USD);
    line('Principal repaid by borrowers ($)', report.principalRepaid, USD);
    line('Principal deployed (outstanding) ($)', report.deployed, USD);
@@ -117,19 +115,6 @@ export async function downloadCreditLineExcel(data: LenderReportData, report: Pe
       [4, 5].forEach((c) => (row.getCell(c).numFmt = USD));
    });
    r.columns.forEach((col, i) => (col.width = [12, 30, 12, 18, 10, 70][i]));
-
-   // ---- Ledger
-   const g = wb.addWorksheet('Ledger');
-   title(g, 'Facility money movements', 'Signed from the facility’s point of view: money coming in to Moodeng is positive.');
-   headerRow(g, ['Date & time (PH)', 'Type', 'Description', 'From', 'To', 'Amount ($)', 'Transaction hash']);
-   data.ledger
-      .filter((row) => row.occurred_at.slice(0, 10) <= report.period.end)
-      .forEach((row) => {
-         const added = g.addRow([new Date(Date.parse(row.occurred_at) + 8 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 16), row.kind, row.description, row.from_label ?? '', row.to_label ?? '', Number(row.amount_usd), row.tx_hash ?? '']);
-         added.font = font;
-         added.getCell(6).numFmt = USD;
-      });
-   g.columns.forEach((col, i) => (col.width = [17, 13, 30, 26, 26, 12, 70][i]));
 
    // ---- Daily interest
    const d = wb.addWorksheet('Daily interest');

@@ -9,8 +9,6 @@ import { buildPeriodReport, type LenderReportData, loadLenderReport, periodsFor 
 const SESSION_KEY = 'md_creditline_pw';
 const usd = (n: number, digits = 2) => `$${n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
-// Ledger timestamps are stored in UTC; show them in Philippine time like every other date here.
-const phTime = (iso: string) => new Date(Date.parse(iso) + 8 * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 16);
 
 const readSaved = () => {
    try {
@@ -158,8 +156,7 @@ export default function CreditLineLenderPage() {
             <p className="-mt-2 text-[12px] text-[#8a7c9c]">
                Borrower fees are a one-time flat fee on each loan, paid back with the principal — not a monthly or annual rate. Medians use
                standard pricing (the 0% bridge loan is excluded; including it, the median fee is {pct(m.fee)}). Interest: {(Number(f.annual_rate) * 100).toFixed(0)}% simple,
-               actual/365, on principal deployed each day. Advanced {usd(report.advanced)} · drawn to the lending wallet {usd(report.drawn)} · at Binance{' '}
-               {usd(report.atBinance)}.
+               actual/365, on principal deployed each day. Advanced to Moodeng: {usd(report.advanced)}.
             </p>
 
             <section className="overflow-hidden rounded-2xl border border-[#e7e0ec] bg-white">
@@ -220,41 +217,6 @@ export default function CreditLineLenderPage() {
                </div>
             </section>
 
-            <section className="overflow-hidden rounded-2xl border border-[#e7e0ec] bg-white">
-               <h2 className="border-b border-[#f0ecf5] px-4 py-3 text-[16px] font-bold text-[#26143f]">Money movements</h2>
-               <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-[13px]">
-                     <thead className="bg-[#f8f4fc] text-[12px] uppercase text-[#695b7b]">
-                        <tr>
-                           {['When (PH)', 'Type', 'Description', 'Amount', 'Transaction'].map((h) => (
-                              <th className="px-3 py-2 font-semibold" key={h}>
-                                 {h}
-                              </th>
-                           ))}
-                        </tr>
-                     </thead>
-                     <tbody>
-                        {data.ledger
-                           .filter((row) => row.occurred_at.slice(0, 10) <= report.period.end)
-                           .map((row) => (
-                              <tr className="border-t border-[#f0ecf5]" key={row.id}>
-                                 <td className="px-3 py-2">{phTime(row.occurred_at)}</td>
-                                 <td className="px-3 py-2 capitalize">{row.kind}</td>
-                                 <td className="px-3 py-2">{row.description}</td>
-                                 <td className="px-3 py-2">{usd(Number(row.amount_usd))}</td>
-                                 <td className="max-w-[220px] px-3 py-2 font-mono text-[11px]">
-                                    {row.tx_hash ? (
-                                       <a className="block truncate text-[#6b55f7] underline" href={`https://basescan.org/tx/${row.tx_hash}`} rel="noreferrer" target="_blank">
-                                          {row.tx_hash}
-                                       </a>
-                                    ) : null}
-                                 </td>
-                              </tr>
-                           ))}
-                     </tbody>
-                  </table>
-               </div>
-            </section>
          </div>
       </div>
    );
