@@ -651,6 +651,80 @@ html.dark .team-page .team-blue-panel {
    animation: connectStepInBack 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
+/* Step trail fills in order: circle (pop + purple), its check, then the line to the next circle,
+   ending on the current step's ring. "backwards" holds the grey start until each one's turn. */
+@keyframes connectTrailFill {
+   0% {
+      background-color: #efedf1;
+      transform: scale(0.85);
+   }
+
+   60% {
+      background-color: #6b55f7;
+      transform: scale(1.18);
+   }
+
+   100% {
+      background-color: #6b55f7;
+      transform: scale(1);
+   }
+}
+
+@keyframes connectTrailCheck {
+   0% {
+      opacity: 0;
+      transform: scale(0.3) rotate(-20deg);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes connectTrailLine {
+   0% {
+      transform: scaleX(0);
+   }
+
+   100% {
+      transform: scaleX(1);
+   }
+}
+
+@keyframes connectTrailCurrent {
+   0% {
+      transform: scale(0.85);
+      box-shadow: 0 0 0 0 rgba(107, 85, 247, 0.45);
+   }
+
+   55% {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 9px rgba(107, 85, 247, 0.12);
+   }
+
+   100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 4px rgba(107, 85, 247, 0.15);
+   }
+}
+
+.connect-trail-fill {
+   animation: connectTrailFill 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-trail-check {
+   animation: connectTrailCheck 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-trail-line {
+   animation: connectTrailLine 0.26s ease-out backwards;
+}
+
+.connect-trail-current {
+   animation: connectTrailCurrent 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
 /* The hippo's speech bubble pops in each time a step opens. */
 @keyframes connectBubbleIn {
    0% {
@@ -721,7 +795,11 @@ html.dark .team-page .team-blue-panel {
    .connect-celebrate-in,
    .connect-celebrate-pop,
    .connect-stat-in,
-   .connect-bubble-in {
+   .connect-bubble-in,
+   .connect-trail-fill,
+   .connect-trail-check,
+   .connect-trail-line,
+   .connect-trail-current {
       animation: none !important;
    }
 

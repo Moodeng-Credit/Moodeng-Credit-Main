@@ -68,29 +68,56 @@ export function ConnectHero({
    );
 }
 
-// "1 Messenger — 2 About you — 3 Your goal — 4 Book call": done steps turn into purple checks,
-// the current one glows, upcoming ones stay grey. Gamified progress in one glance, no prose.
+// "1 Messenger — 2 About you — 3 Your goal — 4 Book call", joined by a line. Each time a step opens it
+// plays forward: the first circle fills with a check, the line draws to the next, that one fills…
+// until it reaches the current step, which lights up. Done = purple check, current = glowing ring,
+// upcoming = grey. All CSS (connect-trail-* in globals.css), off for reduced motion.
+const TRAIL_START_S = 0.15;
+const TRAIL_STEP_S = 0.42;
+
 export function StepTrail({ steps, current }: { steps: string[]; current: number }) {
+   const at = (index: number) => `${(TRAIL_START_S + index * TRAIL_STEP_S).toFixed(2)}s`;
    return (
-      <ol
-         aria-label={`Step ${current + 1} of ${steps.length}: ${steps[current]}`}
-         className="flex w-full items-start justify-between gap-1"
-      >
+      <ol aria-label={`Step ${current + 1} of ${steps.length}: ${steps[current]}`} className="flex w-full items-start justify-between">
          {steps.map((label, index) => {
             const done = index < current;
             const now = index === current;
+            const isLast = index === steps.length - 1;
             return (
-               <li className="flex min-w-0 flex-1 flex-col items-center gap-1" key={label}>
+               <li className="relative flex min-w-0 flex-1 flex-col items-center gap-1" key={label}>
+                  {isLast ? null : (
+                     <span
+                        aria-hidden="true"
+                        className="absolute left-[calc(50%+18px)] right-[calc(-50%+18px)] top-[12.5px] h-[3px] overflow-hidden rounded-full bg-[#e7e2ee]"
+                     >
+                        {done ? (
+                           <span
+                              className="connect-trail-line block h-full w-full origin-left rounded-full bg-[#6b55f7]"
+                              style={{ animationDelay: `calc(${at(index)} + 0.2s)` }}
+                           />
+                        ) : null}
+                     </span>
+                  )}
                   <span
-                     className={`grid size-7 place-items-center rounded-full text-[12px] font-bold transition ${
+                     className={`relative grid size-7 place-items-center rounded-full text-[12px] font-bold ${
                         done
-                           ? 'bg-[#6b55f7] text-white'
+                           ? 'connect-trail-fill bg-[#6b55f7] text-white'
                            : now
-                             ? 'bg-white text-[#6b55f7] ring-2 ring-[#6b55f7] shadow-[0_0_0_4px_rgba(107,85,247,0.15)]'
+                             ? 'connect-trail-current bg-white text-[#6b55f7] shadow-[0_0_0_4px_rgba(107,85,247,0.15)] ring-2 ring-[#6b55f7]'
                              : 'bg-[#efedf1] text-[#b3a9bf]'
                      }`}
+                     style={done || now ? { animationDelay: at(index) } : undefined}
                   >
-                     {done ? <Check aria-hidden="true" className="size-4" strokeWidth={3} /> : index + 1}
+                     {done ? (
+                        <Check
+                           aria-hidden="true"
+                           className="connect-trail-check size-4"
+                           strokeWidth={3}
+                           style={{ animationDelay: `calc(${at(index)} + 0.08s)` }}
+                        />
+                     ) : (
+                        index + 1
+                     )}
                   </span>
                   <span
                      className={`truncate text-[11px] font-semibold leading-[14px] ${now ? 'text-[#6b55f7]' : done ? 'text-[#594d65]' : 'text-[#b3a9bf]'}`}
