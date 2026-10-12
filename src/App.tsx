@@ -95,6 +95,7 @@ import DiditVerification from '@/app/verify-didit/page';
 import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
+import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
 import { identifyClarity } from '@/lib/analytics/clarity';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -256,6 +257,8 @@ export default function App() {
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
+            {/* Facility lender's report (BitRepo): password-protected, no account needed. */}
+            <Route path="/creditline" element={<CreditLineLenderPage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
             <Route path="/mfa-challenge" element={<MfaChallengePage />} />
