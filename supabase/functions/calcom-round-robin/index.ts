@@ -36,6 +36,31 @@ const HOSTS = [
 
 const CAL_BASE = 'https://api.cal.com/v2';
 
+// Times the team doesn't take calls, whatever Cal.com says (George, 2026-10-12: no 2–3 pm, for both
+// hosts). Local wall-clock time in BLOCKED_TIME_ZONE; a slot is dropped if any part of the call falls
+// inside a window, so 15-minute calls can't start between 14:00 and 14:45.
+const CALL_MINUTES = 15;
+const BLOCKED_TIME_ZONE = 'Asia/Bangkok';
+const BLOCKED_WINDOWS: Array<{ from: string; to: string }> = [{ from: '14:00', to: '15:00' }];
+
+const toMinutes = (hhmm: string) => {
+   const [h, m] = hhmm.split(':').map(Number);
+   return h * 60 + m;
+};
+const localMinutes = (iso: string) => {
+   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: BLOCKED_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(
+      new Date(iso)
+   );
+   const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
+   const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
+   return hour * 60 + minute;
+};
+export const isBlockedSlot = (iso: string) => {
+   const start = localMinutes(iso);
+   const end = start + CALL_MINUTES;
+   return BLOCKED_WINDOWS.some((w) => start < toMinutes(w.to) && end > toMinutes(w.from));
+};
+
 const CORS = {
    'Access-Control-Allow-Origin': '*',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
@@ -67,7 +92,7 @@ const fetchSlots = async (apiKey: string, eventTypeId: number, start: string, en
    const days = body?.data ?? {};
    const out: string[] = [];
    for (const list of Object.values(days) as Array<Array<{ start?: string }>>) {
-      for (const slot of list) if (slot?.start) out.push(slot.start);
+      for (const slot of list) if (slot?.start && !isBlockedSlot(slot.start)) out.push(slot.start);
    }
    return out;
 };
