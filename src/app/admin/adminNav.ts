@@ -3,6 +3,8 @@
 
 export type AdminTab =
    | 'users'
+   | 'credit-line'
+   | 'marketing'
    | 'calls'
    | 'calendar'
    | 'analytics'
@@ -37,7 +39,7 @@ export type AdminTab =
 
 export type NavGroup = { id: string; label: string; items: Array<{ id: AdminTab; label: string }> };
 
-// Six areas in the sidebar; each area's tools are sub-tabs along the top of the page (Stripe-style).
+// Seven areas in the sidebar; each area's tools are sub-tabs along the top of the page (Stripe-style).
 // Tab ids — and so /admin/:tab URLs — are unchanged, so old links still land on the right tool.
 export const navGroups: NavGroup[] = [
    {
@@ -65,6 +67,11 @@ export const navGroups: NavGroup[] = [
       ]
    },
    {
+      id: 'finance',
+      label: 'Finance',
+      items: [{ id: 'credit-line', label: 'Credit line' }]
+   },
+   {
       id: 'risk',
       label: 'Risk',
       items: [
@@ -77,6 +84,7 @@ export const navGroups: NavGroup[] = [
       id: 'growth',
       label: 'Growth',
       items: [
+         { id: 'marketing', label: 'Marketing' },
          { id: 'analytics', label: 'Analytics' },
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
@@ -112,6 +120,8 @@ export const navGroups: NavGroup[] = [
 
 export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'users',
+   'credit-line',
+   'marketing',
    'calls',
    'calendar',
    'analytics',
