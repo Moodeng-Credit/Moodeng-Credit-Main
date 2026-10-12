@@ -484,10 +484,49 @@ export function BorrowerContextLoanStep({
    profileSaveError: string;
 }) {
    const [hasOtherIncome, setHasOtherIncome] = useState<boolean>(Boolean(context.otherIncome));
-   // Page 1 needs the "how do you work?" choice; page 2 needs payday + at least one help reason.
+   // Page 1 needs the "how do you work?" choice; page 2 needs payday, income, expenses + at least one help reason.
    const page1Complete = Boolean(context.incomeSetup);
-   const page2Complete = Boolean(context.paydayWindow && monthlyIncome && monthlyExpenses && context.cashGaps.length > 0);
    const isBusy = isSubmitting || isSavingProfile;
+   const rootRef = useRef<HTMLDivElement | null>(null);
+   // The unanswered questions on this page, in screen order (data-bio-field marks each section).
+   const missing = (
+      page === 1
+         ? [!page1Complete ? { field: 'incomeSetup', label: 'how you describe your work' } : null]
+         : [
+              !context.paydayWindow ? { field: 'paydayWindow', label: 'when you get paid' } : null,
+              !monthlyIncome ? { field: 'monthlyIncome', label: 'your monthly income' } : null,
+              !monthlyExpenses ? { field: 'monthlyExpenses', label: 'your monthly expenses' } : null,
+              context.cashGaps.length === 0 ? { field: 'cashGaps', label: 'what you need help with' } : null
+           ]
+   ).filter((item): item is { field: string; label: string } => item !== null);
+   // Continue stays tappable: a tap with something unanswered marks those questions in red and
+   // scrolls to the first, instead of a disabled button that silently does nothing (Oct 2026 replay).
+   const [showMissing, setShowMissing] = useState(false);
+   const isMissing = (field: string) => showMissing && missing.some((item) => item.field === field);
+
+   // A new page starts at its top, not wherever the last one was scrolled to.
+   const isFirstPageRenderRef = useRef(true);
+   useEffect(() => {
+      if (isFirstPageRenderRef.current) {
+         isFirstPageRenderRef.current = false;
+         return;
+      }
+      setShowMissing(false);
+      rootRef.current?.scrollIntoView({ block: 'start' });
+   }, [page]);
+
+   const handlePrimary = () => {
+      if (isBusy) return;
+      if (missing.length > 0) {
+         setShowMissing(true);
+         rootRef.current
+            ?.querySelector(`[data-bio-field="${missing[0].field}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         return;
+      }
+      if (page === 1) onNextPage();
+      else onContinue();
+   };
 
    const backButton = (
       <button
@@ -500,9 +539,53 @@ export function BorrowerContextLoanStep({
       </button>
    );
 
+   // Pinned to the bottom of the screen (onboarding) or the sheet (loan form), so Continue is always
+   // in view — on page 2 it used to sit below the fold on phones and borrowers never found it.
+   const footer = (
+      <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-auto flex flex-col gap-2 border-t border-[#f0ecf5] bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+         {missing.length > 0 ? (
+            <p
+               aria-live="polite"
+               className={`text-md-b3 font-medium leading-[18px] ${showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}`}
+            >
+               Still needed: {missing.map((item) => item.label).join(', ')}.
+            </p>
+         ) : null}
+         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
+            {backButton}
+            <button
+               aria-disabled={missing.length > 0}
+               className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                  missing.length > 0 ? 'bg-md-neutral-600' : 'bg-md-primary-1200 hover:bg-[#5200c8]'
+               }`}
+               disabled={isBusy}
+               onClick={handlePrimary}
+               type="button"
+            >
+               {page === 1 ? (
+                  isBusy ? (
+                     'Checking…'
+                  ) : (
+                     <>
+                        Continue
+                        <ChevronRight className="size-5" strokeWidth={2} />
+                     </>
+                  )
+               ) : isSavingProfile ? (
+                  'Saving profile...'
+               ) : isSubmitting ? (
+                  'Submitting...'
+               ) : (
+                  submitLabel
+               )}
+            </button>
+         </div>
+      </div>
+   );
+
    if (page === 1) {
       return (
-         <div className="flex min-h-0 flex-col gap-5">
+         <div ref={rootRef} className="flex min-h-0 flex-col gap-5">
             <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
                <div className="mb-3">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
@@ -553,7 +636,9 @@ export function BorrowerContextLoanStep({
             </section>
 
             <BorrowerContextRadioSection
+               fieldId="incomeSetup"
                label="How would you describe your work?"
+               missing={isMissing('incomeSetup')}
                onSelect={onIncomeSelect}
                options={incomeSetupOptions}
                selectedValue={context.incomeSetup}
@@ -592,53 +677,38 @@ export function BorrowerContextLoanStep({
                />
             </div>
 
-            {!page1Complete ? (
-               <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">Still needed: how you describe your work.</p>
-            ) : null}
-
-            <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
-               {backButton}
-               <button
-                  className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-                  disabled={!page1Complete || isBusy}
-                  onClick={onNextPage}
-                  type="button"
-               >
-                  {isBusy ? (
-                     'Checking…'
-                  ) : (
-                     <>
-                        Continue
-                        <ChevronRight className="size-5" strokeWidth={2} />
-                     </>
-                  )}
-               </button>
-            </div>
+            {footer}
          </div>
       );
    }
 
    return (
-      <div className="flex min-h-0 flex-col gap-5">
+      <div ref={rootRef} className="flex min-h-0 flex-col gap-5">
          <BorrowerContextChipSection
+            fieldId="paydayWindow"
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
+            missing={isMissing('paydayWindow')}
             onSelect={onPaydaySelect}
             options={paydayWindowOptions}
             selectedValues={[context.paydayWindow]}
          />
 
          <BorrowerContextChipSection
+            fieldId="monthlyIncome"
             label="What is your approximate monthly income?"
             helper="Helps lenders gauge repayment capacity."
+            missing={isMissing('monthlyIncome')}
             onSelect={onMonthlyIncomeSelect}
             options={monthlyIncomeOptions}
             selectedValues={[monthlyIncome]}
          />
 
          <BorrowerContextChipSection
+            fieldId="monthlyExpenses"
             label="What do your recurring expenses cost per month?"
             helper="Helps lenders understand your financial commitments."
+            missing={isMissing('monthlyExpenses')}
             onSelect={onMonthlyExpensesSelect}
             options={monthlyExpensesOptions}
             selectedValues={[monthlyExpenses]}
@@ -688,39 +758,16 @@ export function BorrowerContextLoanStep({
 
          <BorrowerContextChipSection
             caption="Pick all that apply."
+            fieldId="cashGaps"
             label="What do you usually need short-term help with?"
+            missing={isMissing('cashGaps')}
             multi
             onSelect={onCashGapToggle}
             options={cashGapOptions}
             selectedValues={context.cashGaps}
          />
 
-         {!page2Complete ? (
-            <p className="text-md-b3 font-medium leading-[18px] text-md-primary-1200">
-               Still needed:{' '}
-               {[
-                  !context.paydayWindow ? 'when you get paid' : null,
-                  !monthlyIncome ? 'your monthly income' : null,
-                  !monthlyExpenses ? 'your monthly expenses' : null,
-                  context.cashGaps.length === 0 ? 'what you need help with' : null
-               ]
-                  .filter(Boolean)
-                  .join(', ')}
-               .
-            </p>
-         ) : null}
-
-         <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
-            {backButton}
-            <button
-               className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] bg-md-primary-1200 px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition hover:bg-[#5200c8] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-md-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
-               disabled={!page2Complete || isBusy}
-               onClick={onContinue}
-               type="button"
-            >
-               {isSavingProfile ? 'Saving profile...' : isSubmitting ? 'Submitting...' : submitLabel}
-            </button>
-         </div>
+         {footer}
       </div>
    );
 }
@@ -839,19 +886,25 @@ function StepDots({ steps, current }: { steps: RequestStepKey[]; current: number
 }
 
 export function BorrowerContextRadioSection({
+   fieldId,
    label,
+   missing = false,
    onSelect,
    options,
    selectedValue
 }: {
+   // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
+   fieldId?: string;
    label: string;
+   missing?: boolean;
    onSelect: (value: string) => void;
    options: BorrowerContextOption[];
    selectedValue: string;
 }) {
    return (
-      <fieldset className="flex flex-col gap-3">
-         <legend className="text-[15px] font-[590] leading-5 text-md-heading">{label}</legend>
+      <fieldset className="flex scroll-mt-24 flex-col gap-3" data-bio-field={fieldId}>
+         <legend className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</legend>
+         {missing ? <span className="-mt-1 text-[12px] font-[590] leading-[18px] text-md-red-500">Choose one to continue.</span> : null}
          <div className="grid grid-cols-1 gap-2">
             {options.map((option) => (
                <BorrowerContextRadioCard
@@ -907,26 +960,36 @@ function BorrowerContextRadioCard({
 
 export function BorrowerContextChipSection({
    caption,
+   fieldId,
    helper,
    label,
+   missing = false,
    multi = false,
    onSelect,
    options,
    selectedValues
 }: {
    caption?: string;
+   // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
+   fieldId?: string;
    helper?: string;
    label: string;
+   missing?: boolean;
    multi?: boolean;
    onSelect: (value: string) => void;
    options: BorrowerContextOption[];
    selectedValues: string[];
 }) {
    return (
-      <fieldset className="flex flex-col gap-3 border-t border-[#e7e0ec] pt-4">
+      <fieldset className="flex scroll-mt-24 flex-col gap-3 border-t border-[#e7e0ec] pt-4" data-bio-field={fieldId}>
          <legend className="sr-only">{label}</legend>
          <div className="flex flex-col gap-0.5">
-            <span className="text-[15px] font-[590] leading-5 text-md-heading">{label}</span>
+            <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+            {missing ? (
+               <span className="text-[12px] font-[590] leading-[18px] text-md-red-500">
+                  {multi ? 'Pick at least one to continue.' : 'Choose one to continue.'}
+               </span>
+            ) : null}
             {caption ? <span className="text-[12px] font-normal leading-[18px] text-md-neutral-1200">{caption}</span> : null}
             {helper ? <span className="text-[12px] font-normal leading-[18px] text-md-neutral-1200">{helper}</span> : null}
          </div>
