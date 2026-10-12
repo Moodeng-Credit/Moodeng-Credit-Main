@@ -247,7 +247,7 @@ export default function ConnectStep({
    }
 
    return (
-      <div className={`flex min-h-0 flex-1 flex-col ${stepAnimationClass(direction)}`} key={page}>
+      <div className={`connect-ui flex min-h-0 flex-1 flex-col ${stepAnimationClass(direction)}`} key={page}>
          {renderPage()}
       </div>
    );
@@ -531,7 +531,7 @@ export function LoanAccessPendingCard({
    const callOver = mode === 'call' && !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
 
    return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
+      <div className="connect-ui flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
          {justBooked ? <ConfettiRain /> : null}
          <ConnectHero
             image={justBooked ? CONNECT_HIPPOS.approved : CONNECT_HIPPOS.waiting}

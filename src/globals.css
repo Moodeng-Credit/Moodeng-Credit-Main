@@ -245,6 +245,78 @@ html.dark [class*='bg-[#e2f7f5'] {
    background-color: #102a3f;
 }
 
+/* ── Dark mode for the onboarding / Connect screens (.connect-ui) ──
+   Those screens use hand-picked light colors (bubble text, chips, cards, the bio) that the global
+   remap above doesn't know, so in dark mode they came out half light, half dark. This maps each one
+   to a dark-mode counterpart, only inside .connect-ui. */
+html.dark .connect-ui [class*='text-[#26143f]'],
+html.dark .connect-ui [class*='text-[#3b2f4a]'],
+html.dark .connect-ui [class*='text-[#594d65]'] {
+   color: #ece5f7;
+}
+html.dark .connect-ui [class*='text-[#695b7b]'],
+html.dark .connect-ui [class*='text-[#7b6b8c]'],
+html.dark .connect-ui [class*='text-[#6b5b86]'],
+html.dark .connect-ui [class*='text-[#877897]'],
+html.dark .connect-ui [class*='text-[#8a7c9c]'] {
+   color: #b4a7c6;
+}
+html.dark .connect-ui [class*='text-[#b3a9bf]'],
+html.dark .connect-ui [class*='text-[#a99fb6]'] {
+   color: #6f6280;
+}
+html.dark .connect-ui [class*='text-[#4c239f]'],
+html.dark .connect-ui [class*='text-[#4b36d6]'],
+html.dark .connect-ui [class*='text-[#5d16c9]'],
+html.dark .connect-ui [class*='text-[#6b55f7]'] {
+   color: #b4a6ff;
+}
+html.dark .connect-ui [class*='text-[#1f7a3d]'],
+html.dark .connect-ui [class*='text-[#2f7a3a]'],
+html.dark .connect-ui [class*='text-[#3c8248]'] {
+   color: #7ee2a0;
+}
+html.dark .connect-ui [class*='text-[#704518]'],
+html.dark .connect-ui [class*='text-[#9a5b00]'] {
+   color: #f4c26b;
+}
+html.dark .connect-ui [class*='bg-[#f8f4fc]'],
+html.dark .connect-ui [class*='bg-[#f6f2ff]'],
+html.dark .connect-ui [class*='bg-[#faf8ff]'],
+html.dark .connect-ui [class*='bg-[#faf8fd]'],
+html.dark .connect-ui [class*='bg-[#f8f1ff]'] {
+   background-color: #1f182b;
+}
+html.dark .connect-ui [class*='bg-[#efeaff]'],
+html.dark .connect-ui [class*='bg-[#f3ecff]'] {
+   background-color: #2a1740;
+}
+html.dark .connect-ui [class*='bg-[#e8e3ef]'],
+html.dark .connect-ui [class*='bg-[#ede8f3]'] {
+   background-color: #2a2235;
+}
+html.dark .connect-ui [class*='bg-[#eefbf2]'] {
+   background-color: #123222;
+}
+html.dark .connect-ui [class*='bg-[#fff6d6]'],
+html.dark .connect-ui [class*='bg-[#fff4e0]'] {
+   background-color: #3d2d12;
+}
+html.dark .connect-ui [class*='border-[#e2dcee]'],
+html.dark .connect-ui [class*='border-[#d8d0e2]'],
+html.dark .connect-ui [class*='border-[#e5ddf0]'],
+html.dark .connect-ui [class*='border-[#e7d8ff]'],
+html.dark .connect-ui [class*='border-[#c9bdf5]'],
+html.dark .connect-ui [class*='border-[#d9d2f7]'],
+html.dark .connect-ui [class*='border-[#e7e0ec]'],
+html.dark .connect-ui [class*='border-[#f0ecf5]'],
+html.dark .connect-ui [class*='border-[#ded6e8]'] {
+   border-color: #3a2d4f;
+}
+html.dark .connect-ui [class*='shadow-[0_4px_0_#d6cfe0]'] {
+   box-shadow: 0 4px 0 #1c1626;
+}
+
 /* ── Dark mode — interaction states (hover / active / focus) ──
    The remap above only rewrites RESTING bg-* classes. Tailwind's
    hover:/active:/focus: variants compile to their own class names
