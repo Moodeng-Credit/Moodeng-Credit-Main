@@ -2060,9 +2060,10 @@ function RequestBoard$() {
                                              <span className="w-3 h-3 rounded-full bg-md-red-800 flex items-center justify-center">
                                                 <span className="text-white text-[8px] font-bold">!</span>
                                              </span>
-                                             <span className="text-md-b3 font-semibold text-md-red-800">Not Verified</span>
+                                             <span className="whitespace-nowrap text-md-b3 font-semibold text-md-red-800">Not Verified</span>
                                           </span>
-                                          <span className="text-md-b3 font-semibold text-md-primary-900 underline">
+                                          {/* Narrow phones: the journey card right below has the same action as a big button. */}
+                                          <span className="text-md-b3 font-semibold text-md-primary-900 underline max-[400px]:hidden">
                                              <>{journey.cta}<span aria-hidden="true"> &gt;</span></>
                                           </span>
                                        </button>
@@ -2183,7 +2184,7 @@ function RequestBoard$() {
                         data-tour-target="request-apply-card"
                      >
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
                               {journey.onboarding && journey.step ? (
                                  <>
                                     <p className="text-md-b3 font-semibold uppercase tracking-wide text-md-primary-1200">
@@ -2246,7 +2247,7 @@ function RequestBoard$() {
                         <img
                            src={isFreshlyApproved ? CONNECT_HIPPOS.approved : '/hippos/thumb-up-right.png'}
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
                   ) : !isAuthenticated ? (
@@ -2255,7 +2256,7 @@ function RequestBoard$() {
                         data-tour-target="request-apply-card"
                      >
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
                               <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need short-term support?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
                                  <span className="max-[374px]:hidden">
@@ -2276,7 +2277,7 @@ function RequestBoard$() {
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
                   ) : null}
@@ -2285,7 +2286,7 @@ function RequestBoard$() {
                   {isAuthenticated && !isBorrower && (
                      <div className="bg-md-primary-100 border border-[#f0f0f0] rounded-md-lg p-4 relative overflow-hidden max-[374px]:p-3">
                         <div className="flex flex-col gap-4 relative z-10">
-                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-[184px]">
+                           <div className="flex flex-col gap-1 max-w-[232px] max-[374px]:max-w-none max-[374px]:pr-[76px]">
                               <p className="text-md-h5 font-semibold text-md-heading max-[374px]:text-[22px]">Need USDC on Base?</p>
                               <p className="text-md-b2 font-medium text-md-neutral-700">
                                  <span className="max-[374px]:hidden">
@@ -2306,7 +2307,7 @@ function RequestBoard$() {
                         <img
                            src="/hippos/thumb-up-right.png"
                            alt=""
-                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:bottom-0 max-[374px]:right-[-42px] max-[374px]:top-auto max-[374px]:h-[76%]"
+                           className="absolute right-0 top-0 h-full object-contain pointer-events-none max-[374px]:right-1 max-[374px]:top-2 max-[374px]:h-[92px]"
                         />
                      </div>
                   )}
