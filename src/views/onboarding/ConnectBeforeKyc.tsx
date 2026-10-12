@@ -63,7 +63,7 @@ export default function ConnectBeforeKyc() {
    if (!isGated) return <Navigate replace state={{ openLoanRequest: true }} to="/request-board" />;
 
    return (
-      <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#08040f]">
+      <div className="connect-ui mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#100d17]">
          <OnboardingHeader
             hideBack
             soundToggle

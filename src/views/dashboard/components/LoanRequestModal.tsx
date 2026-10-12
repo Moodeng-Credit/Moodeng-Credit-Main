@@ -701,7 +701,7 @@ export function BorrowerContextLoanStep({
 
    if (page === 1) {
       return (
-         <div key="bio-1" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
+         <div key="bio-1" ref={rootRef} className={`connect-ui flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
             <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
                <div className="mb-3">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
@@ -800,7 +800,7 @@ export function BorrowerContextLoanStep({
    }
 
    return (
-      <div key="bio-2" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
+      <div key="bio-2" ref={rootRef} className={`connect-ui flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
          <BorrowerContextChipSection
             answered={Boolean(context.paydayWindow)}
             fieldId="paydayWindow"
