@@ -870,6 +870,30 @@ html.dark .team-page .team-blue-panel {
    animation: connectHippoJump 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Sprinkles raining down from the top of the screen (call booked, success cards). */
+@keyframes connectSprinkleFall {
+   0% {
+      opacity: 1;
+      transform: translate(0, -24px) rotate(0deg);
+   }
+
+   85% {
+      opacity: 1;
+   }
+
+   100% {
+      opacity: 0;
+      transform: translate(var(--sprinkle-drift), 105vh) rotate(var(--sprinkle-spin));
+   }
+}
+
+.connect-sprinkle {
+   opacity: 0;
+   animation-name: connectSprinkleFall;
+   animation-timing-function: cubic-bezier(0.35, 0.1, 0.6, 1);
+   animation-fill-mode: both;
+}
+
 /* The hippo's speech bubble pops in each time a step opens. */
 @keyframes connectBubbleIn {
    0% {
@@ -954,7 +978,8 @@ html.dark .team-page .team-blue-panel {
       animation: none !important;
    }
 
-   .connect-confetti {
+   .connect-confetti,
+   .connect-sprinkle {
       display: none;
    }
 }

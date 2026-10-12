@@ -299,6 +299,42 @@ const CONFETTI: [number, number, string, number][] = [
    [70, -90, '#22a35a', 0.18]
 ];
 
+// Sprinkles falling from the top of the screen over everything — the "you did it!" moment (call
+// booked, step done). Positions are fixed per piece (no randomness in render); plays once.
+const SPRINKLE_COLORS = ['#6b55f7', '#f2a516', '#ff6b9a', '#22a35a', '#3fb6ff', '#b18cff'];
+const SPRINKLES = Array.from({ length: 46 }, (_, index) => ({
+   left: (index * 37) % 100,
+   delay: ((index * 13) % 9) / 10,
+   duration: 1.9 + ((index * 7) % 10) / 10,
+   drift: ((index * 29) % 60) - 30,
+   spin: (index % 2 ? 1 : -1) * (300 + ((index * 41) % 360)),
+   color: SPRINKLE_COLORS[index % SPRINKLE_COLORS.length],
+   long: index % 3 !== 0
+}));
+
+export function ConfettiRain() {
+   return (
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+         {SPRINKLES.map((piece, index) => (
+            <span
+               className={`connect-sprinkle absolute top-0 rounded-full ${piece.long ? 'h-3.5 w-1.5' : 'size-2'}`}
+               key={index}
+               style={
+                  {
+                     left: `${piece.left}%`,
+                     backgroundColor: piece.color,
+                     animationDelay: `${piece.delay}s`,
+                     animationDuration: `${piece.duration}s`,
+                     '--sprinkle-drift': `${piece.drift}px`,
+                     '--sprinkle-spin': `${piece.spin}deg`
+                  } as CSSProperties
+               }
+            />
+         ))}
+      </div>
+   );
+}
+
 // Between steps, full screen: confetti burst, the cheering hippo with a popping check, a big
 // headline, stat tiles (done / next up / steps left), the step trail ticked, and a big Continue
 // pinned at the bottom — the borrower moves on when they're ready.
@@ -337,6 +373,7 @@ export function StepCelebration({
          className="connect-celebrate-in flex min-h-[600px] flex-1 flex-col bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6"
          data-celebration=""
       >
+         <ConfettiRain />
          <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
             <span className="relative mt-2 grid place-items-center">
                <span aria-hidden="true" className="absolute size-[220px] rounded-full bg-white/70 blur-2xl" />

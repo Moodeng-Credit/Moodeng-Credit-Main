@@ -14,6 +14,7 @@ import {
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
@@ -353,6 +354,7 @@ export default function ContactsStep({
          }
          if (data?.messenger_verified_at) {
             setMessengerVerified(true);
+            playSuccess();
             return;
          }
          if (bounced) {

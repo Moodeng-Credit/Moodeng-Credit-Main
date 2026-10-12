@@ -54,7 +54,7 @@ import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
-import { playDing, playSuccess, setSoundsEnabled, soundsEnabled } from '@/lib/uiSounds';
+import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -521,12 +521,10 @@ export function BorrowerContextLoanStep({
       );
    }
    // Answer chimes (off until they tap the speaker): a ding per answer, a little fanfare when done.
-   const [soundOn, setSoundOn] = useState(soundsEnabled);
+   const soundOn = useSoundsEnabled();
    const toggleSound = () => {
-      const next = !soundOn;
-      setSoundOn(next);
-      setSoundsEnabled(next);
-      if (next) playDing(true);
+      setSoundsEnabled(!soundOn);
+      if (!soundOn) playDing(true);
    };
    useEffect(() => {
       if (!praise) return undefined;

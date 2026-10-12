@@ -1,8 +1,12 @@
 // Soft Duolingo-style chimes for onboarding answers, synthesized with Web Audio (no sound files).
 // Off by default — a money app making noise in public would surprise people — and the borrower
-// turns them on with the speaker button in the bio footer. The choice is kept on the device.
+// turns them on with a speaker button (onboarding header or bio footer). Kept on the device.
+
+import { useSyncExternalStore } from 'react';
 
 const STORAGE_KEY = 'md_ui_sounds';
+// Every speaker button (onboarding header, bio footer) listens, so they always agree.
+const listeners = new Set<() => void>();
 
 export const soundsEnabled = (): boolean => {
    try {
@@ -19,7 +23,18 @@ export const setSoundsEnabled = (on: boolean) => {
    } catch {
       // Storage blocked — sounds just stay off next time.
    }
+   listeners.forEach((listener) => listener());
 };
+
+export const useSoundsEnabled = (): boolean =>
+   useSyncExternalStore(
+      (listener) => {
+         listeners.add(listener);
+         return () => listeners.delete(listener);
+      },
+      soundsEnabled,
+      () => false
+   );
 
 let audioContext: AudioContext | null = null;
 

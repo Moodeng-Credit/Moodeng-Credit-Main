@@ -1,11 +1,13 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
 
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { LoanAccessStatus } from '@/types/authTypes';
+import { playDing, playSuccess } from '@/lib/uiSounds';
 import {
+   ConfettiRain,
    CONNECT_HIPPOS,
    ConnectHero,
    GhostButton,
@@ -59,6 +61,30 @@ const ERROR_COPY: Record<string, string> = {
 export type ConnectPage = 'contact' | 'about' | 'intro' | 'call';
 
 const PAGE_ORDER: Record<ConnectPage, number> = { contact: 0, about: 1, intro: 2, call: 3 };
+
+// "Just booked" hand-off from the booking step to the waiting card ("Yeahh!" + sprinkles), per tab.
+const justBookedKey = (userId: string) => `md_just_booked:${userId}`;
+const markJustBooked = (userId: string) => {
+   try {
+      window.sessionStorage.setItem(justBookedKey(userId), '1');
+   } catch {
+      // Storage blocked — they just don't get the confetti.
+   }
+};
+const readJustBooked = (userId: string) => {
+   try {
+      return window.sessionStorage.getItem(justBookedKey(userId)) === '1';
+   } catch {
+      return false;
+   }
+};
+const clearJustBooked = (userId: string) => {
+   try {
+      window.sessionStorage.removeItem(justBookedKey(userId));
+   } catch {
+      // ignore
+   }
+};
 
 export default function ConnectStep({
    userId,
@@ -170,7 +196,8 @@ export default function ConnectStep({
       }
    };
 
-   const addGoal = (chip: string) =>
+   const addGoal = (chip: string) => {
+      playDing();
       setReason((current) => {
          if (!current.trim()) return `${chip} — `;
          if (current.toLowerCase().includes(chip.toLowerCase())) return current;
@@ -179,6 +206,7 @@ export default function ConnectStep({
             .replace(/[—-]\s*$/, '')
             .trim()}, ${chip.toLowerCase()} — `;
       });
+   };
 
    // A short "nice job" card after a real accomplishment (Facebook confirmed, bio saved), once per
    // step per borrower, so each step gives feedback instead of silently swapping screens.
@@ -344,7 +372,10 @@ export default function ConnectStep({
                      </>
                   }
                   onBack={() => setPage('intro')}
-                  onBooked={() => void handleSend()}
+                  onBooked={() => {
+                  markJustBooked(userId);
+                  void handleSend();
+               }}
                   onContinue={() => void handleSend()}
                   requireUpcoming
                   userId={userId}
@@ -439,6 +470,15 @@ export function LoanAccessPendingCard({
    // When given (call mode), the card shows the booked time and this meeting's own join link.
    userId?: string;
 }) {
+   // First time they land here after booking: "Yeahh!", sprinkles raining down and a little fanfare.
+   // Only right after they booked in this tab (set by the booking step), never for an older booking.
+   // Read once per card (useMemo) so clearing the flag below doesn't flip it back mid-visit.
+   const justBooked = useMemo(() => mode === 'call' && Boolean(userId) && readJustBooked(userId ?? ''), [mode, userId]);
+   useEffect(() => {
+      if (!justBooked || !userId) return;
+      clearJustBooked(userId);
+      playSuccess();
+   }, [justBooked, userId]);
    const [meeting, setMeeting] = useState<{
       startsAt: string | null;
       joinUrl: string | null;
@@ -492,8 +532,9 @@ export function LoanAccessPendingCard({
 
    return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
+         {justBooked ? <ConfettiRain /> : null}
          <ConnectHero
-            image={CONNECT_HIPPOS.waiting}
+            image={justBooked ? CONNECT_HIPPOS.approved : CONNECT_HIPPOS.waiting}
             subtitle={
                callOver
                   ? context === 'kyc'
@@ -512,7 +553,9 @@ export function LoanAccessPendingCard({
             title={
                callOver
                   ? 'Thanks for joining!'
-                  : mode === 'call'
+                  : justBooked
+                    ? 'Yeahh! You’re booked 🎉'
+                    : mode === 'call'
                     ? withEmma
                        ? 'See you on the call with Emma'
                        : 'See you on the call'

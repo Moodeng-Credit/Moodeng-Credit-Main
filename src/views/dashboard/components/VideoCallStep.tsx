@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { playDing } from '@/lib/uiSounds';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // The no-referral-code gate: a borrower with nobody at Moodeng to vouch for them has to SCHEDULE a
@@ -142,6 +143,7 @@ export default function VideoCallStep({
       }
       setBookedStartsAt(result.start ?? start);
       setPhase('scheduled');
+      playDing();
       onBooked?.();
    };
 

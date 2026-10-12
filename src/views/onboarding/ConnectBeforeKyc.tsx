@@ -64,6 +64,7 @@ export default function ConnectBeforeKyc() {
       <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#08040f]">
          <OnboardingHeader
             hideBack
+            soundToggle
             tooltip="Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day."
          />
          {isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
