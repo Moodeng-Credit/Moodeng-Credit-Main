@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -91,6 +91,16 @@ const openVerifyLink = (link: string) => {
    window.open(link, '_blank', 'noopener,noreferrer');
 };
 
+// iPhone/iPad. Opening m.me from script (after the code request) puts it in a NEW Safari tab: Messenger
+// opens, but coming back to Safari lands on that leftover tab, and borrowers had to go "one step back"
+// to find Moodeng again (Emma, 2026-10-12). So on iOS the code is fetched as soon as the card shows and
+// the button is a real m.me link they tap: iOS hands it straight to Messenger and leaves this page as it
+// was. Without Messenger installed it opens m.me in this tab, and coming back resumes the same code.
+const isIOSBrowser = () =>
+   /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// Codes live 30 minutes; a prepared one older than this is fetched fresh on the tap instead.
+const PREPARED_CODE_TTL_MS = 20 * 60 * 1000;
+
 export default function ContactsStep({
    userId,
    onBack,
@@ -137,6 +147,10 @@ export default function ContactsStep({
    const [messengerDidntOpen, setMessengerDidntOpen] = useState(false);
    // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
    const androidMessenger = isAndroidBrowser();
+   const iosMessenger = !androidMessenger && isIOSBrowser();
+   // iOS: a code + m.me link ready before the tap (see isIOSBrowser above).
+   const [preparedMessenger, setPreparedMessenger] = useState<{ code: string; link: string; at: number } | null>(null);
+   const [tapAgain, setTapAgain] = useState(false);
    // Set once the tab is hidden after we open Messenger — i.e. they actually went there. Tracked by a
    // listener that exists from mount: the tab can hide before React re-renders after the tap.
    const leftForMessengerRef = useRef(false);
@@ -190,12 +204,19 @@ export default function ContactsStep({
             .maybeSingle();
          if (cancelled || !data) return;
          if (data.whatsapp_verified_at) setWhatsappVerified(true);
-         if (data.messenger_verified_at) setMessengerVerified(true);
+         if (data.messenger_verified_at) {
+            setMessengerVerified(true);
+            return;
+         }
+         if (!iosMessenger) return;
+         const { data: code, error } = await getSupabaseBrowserClient().rpc('start_contact_verification', { p_channel: 'messenger' });
+         if (cancelled || error || !code) return;
+         setPreparedMessenger({ code: String(code), link: buildMessengerVerifyLink(String(code)), at: Date.now() });
       })();
       return () => {
          cancelled = true;
       };
-   }, [userId]);
+   }, [userId, iosMessenger]);
 
    useEffect(() => {
       const onHide = () => {
@@ -380,7 +401,8 @@ export default function ContactsStep({
       leftAtRef.current = null;
       if (messengerCode) writePending({ userId, code: messengerCode, link: messengerLink, at: Date.now() });
       armNotOpenedCheck();
-      openVerifyLink(messengerLink);
+      // iOS: rendered as a real link, which opens Messenger by itself (see isIOSBrowser).
+      if (!iosMessenger) openVerifyLink(messengerLink);
    };
 
    const copyMessengerCode = async (via: 'copy_button' | 'open_chat') => {
@@ -415,6 +437,46 @@ export default function ContactsStep({
       armNotOpenedCheck();
    };
 
+   // Messenger is opening (or about to): remember the attempt and start watching for the bot.
+   const beginMessengerWait = (code: string, link: string, flow: 'link' | 'link_tap') => {
+      attemptsRef.current += 1;
+      lastStartedAtRef.current = Date.now();
+      firstStartedAtRef.current ??= lastStartedAtRef.current;
+      lastChannelRef.current = 'messenger';
+      leftAtRef.current = null;
+      track('contact_verify_started', {
+         source,
+         channel: 'messenger',
+         attempt: attemptsRef.current,
+         is_android: false,
+         is_ios: iosMessenger,
+         in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
+         flow
+      });
+      setMessengerLink(link);
+      setMessengerCode(code);
+      leftForMessengerRef.current = false;
+      awaitingMessengerRef.current = true;
+      writePending({ userId, code, link, at: Date.now() });
+      armNotOpenedCheck();
+      startPolling('messenger');
+   };
+
+   // iOS: the tap on the prepared m.me link. The browser follows the link itself (straight into
+   // Messenger); a stale code falls back to the normal start.
+   const tapPreparedMessenger = (event: MouseEvent<HTMLElement>) => {
+      if (!preparedMessenger || Date.now() - preparedMessenger.at > PREPARED_CODE_TTL_MS) {
+         event.preventDefault();
+         void handleVerify('messenger');
+         return;
+      }
+      track('contact_verify_tapped', { source, channel: 'messenger', attempt: attemptsRef.current + 1 });
+      setVerifyError('');
+      beginMessengerWait(preparedMessenger.code, preparedMessenger.link, 'link_tap');
+      setPreparedMessenger(null);
+      setTapAgain(false);
+   };
+
    const handleVerify = async (channel: Channel) => {
       // The tap itself, before the code request: a slow or failed start would otherwise leave no trace.
       track('contact_verify_tapped', { source, channel, attempt: attemptsRef.current + 1 });
@@ -430,6 +492,13 @@ export default function ContactsStep({
          if (error || !code) throw error ?? new Error('No code returned');
 
          const link = channel === 'whatsapp' ? buildWhatsAppVerifyLink(code) : buildMessengerVerifyLink(String(code));
+         if (channel === 'messenger' && iosMessenger) {
+            // iOS without a prepared code (it failed or went stale): opening now, from script, would land
+            // in a new tab. Make the card the real link instead and ask for one more tap.
+            setPreparedMessenger({ code: String(code), link, at: Date.now() });
+            setTapAgain(true);
+            return;
+         }
          attemptsRef.current += 1;
          lastStartedAtRef.current = Date.now();
          firstStartedAtRef.current ??= lastStartedAtRef.current;
@@ -579,13 +648,11 @@ export default function ContactsStep({
                      <span className="text-[14px] leading-[18px] text-[#6b5b86]">
                         Keep this screen open — it turns green on its own. Tap <b>Get Started</b> in Messenger if it asks.
                      </span>
-                     <button
-                        type="button"
-                        onClick={() => reopenMessenger('card')}
+                     <ReopenMessengerLink
                         className="mt-1 w-fit text-[14px] font-semibold text-md-primary-1200 underline underline-offset-4"
-                     >
-                        Open Messenger again
-                     </button>
+                        href={iosMessenger ? messengerLink : undefined}
+                        onClick={() => reopenMessenger('card')}
+                     />
                   </div>
                </div>
                {showTypedCode && messengerCode ? (
@@ -593,13 +660,11 @@ export default function ContactsStep({
                      <p className="font-semibold text-[#4c239f]">Not confirmed yet?</p>
                      <p className="mt-1">
                         <b>1.</b> Tap{' '}
-                        <button
-                           type="button"
-                           onClick={() => reopenMessenger('backup')}
+                        <ReopenMessengerLink
                            className="font-semibold text-md-primary-1200 underline underline-offset-4"
-                        >
-                           Open Messenger again
-                        </button>
+                           href={iosMessenger ? messengerLink : undefined}
+                           onClick={() => reopenMessenger('backup')}
+                        />
                         . Now that our chat is open, the second try usually works.
                      </p>
                      <p className="mt-2">
@@ -642,10 +707,13 @@ export default function ContactsStep({
                disabled={startingChannel !== null}
                done={messengerVerified}
                doneLabel="Verified"
+               href={iosMessenger && preparedMessenger ? preparedMessenger.link : undefined}
                icon={<Facebook aria-hidden="true" className="size-9 text-[#0866FF]" strokeWidth={2} />}
-               onClick={() => handleVerify('messenger')}
+               onClick={iosMessenger && preparedMessenger ? tapPreparedMessenger : () => void handleVerify('messenger')}
                subtitle={
-                  startingChannel === 'messenger'
+                  tapAgain && preparedMessenger
+                     ? 'Ready — tap again to open Messenger.'
+                     : startingChannel === 'messenger'
                      ? androidMessenger
                         ? 'Getting your code…'
                         : 'Opening Messenger…'
@@ -698,5 +766,21 @@ export default function ContactsStep({
             <GhostButton onClick={handleBack}>{backLabel}</GhostButton>
          </div>
       </div>
+   );
+}
+
+// "Open Messenger again": a real link on iPhone (opens Messenger in place), a button elsewhere.
+function ReopenMessengerLink({ href, onClick, className }: { href?: string; onClick: () => void; className: string }) {
+   if (href) {
+      return (
+         <a className={className} href={href} onClick={onClick}>
+            Open Messenger again
+         </a>
+      );
+   }
+   return (
+      <button className={className} onClick={onClick} type="button">
+         Open Messenger again
+      </button>
    );
 }
