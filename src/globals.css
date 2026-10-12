@@ -819,6 +819,57 @@ html.dark .team-page .team-blue-panel {
    animation: connectBarGlow 0.7s ease-out;
 }
 
+/* Bio race: the hippo bobs as it runs to its new spot, and hops at the finish flag. */
+@keyframes connectHippoRun {
+   0%,
+   100% {
+      translate: 0 0;
+      rotate: 0deg;
+   }
+
+   25% {
+      translate: 0 -4px;
+      rotate: -4deg;
+   }
+
+   50% {
+      translate: 0 0;
+      rotate: 0deg;
+   }
+
+   75% {
+      translate: 0 -4px;
+      rotate: 4deg;
+   }
+}
+
+.connect-hippo-run {
+   animation: connectHippoRun 0.25s ease-in-out 2;
+}
+
+@keyframes connectHippoJump {
+   0%,
+   100% {
+      translate: 0 0;
+   }
+
+   30% {
+      translate: 0 -14px;
+   }
+
+   55% {
+      translate: 0 0;
+   }
+
+   75% {
+      translate: 0 -6px;
+   }
+}
+
+.connect-hippo-jump {
+   animation: connectHippoJump 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* The hippo's speech bubble pops in each time a step opens. */
 @keyframes connectBubbleIn {
    0% {
@@ -897,7 +948,9 @@ html.dark .team-page .team-blue-panel {
    .connect-shake,
    .connect-pick,
    .connect-praise,
-   .connect-bar-glow {
+   .connect-bar-glow,
+   .connect-hippo-run,
+   .connect-hippo-jump {
       animation: none !important;
    }
 

@@ -507,6 +507,8 @@ export function BorrowerContextLoanStep({
    ).filter((item): item is { field: string; label: string } => item !== null);
    const requiredCount = page === 1 ? 1 : 4;
    const answeredCount = requiredCount - missing.length;
+   const progress = answeredCount / requiredCount;
+   const hippoPose = progress >= 1 ? 'finish' : missing.length === 1 && answeredCount > 0 ? 'sprint' : 'jog';
    // Duolingo-style reward for each answer: a word of praise in the footer for a moment, a tiny
    // buzz (Android), and a glow on the progress bar. Only when the count goes UP.
    const [lastAnswered, setLastAnswered] = useState({ page, count: answeredCount });
@@ -633,12 +635,35 @@ export function BorrowerContextLoanStep({
                   </button>
                </span>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-[#ede8f3]">
-               <div
-                  className={`h-full rounded-full bg-[#22a35a] transition-[width] duration-300 ease-out ${praise ? 'connect-bar-glow' : ''}`}
-                  key={praise?.id ?? 'bar'}
-                  style={{ width: `${(answeredCount / requiredCount) * 100}%` }}
+            {/* The race: the hippo runs along the bar toward the finish flag as answers come in —
+                jogging, sprinting on the last one, jumping when it reaches the flag. */}
+            <div className="relative h-[46px]">
+               <div className="absolute inset-x-0 bottom-0 h-2.5 overflow-hidden rounded-full bg-[#ede8f3]">
+                  <div
+                     className={`h-full rounded-full bg-[#22a35a] transition-[width] duration-500 ease-out ${praise ? 'connect-bar-glow' : ''}`}
+                     key={praise?.id ?? 'bar'}
+                     style={{ width: `${progress * 100}%` }}
+                  />
+               </div>
+               <img
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute bottom-[6px] right-0 h-8 w-auto select-none"
+                  draggable={false}
+                  src="/hippos/progress/finish-flag.png"
                />
+               <div className="absolute bottom-[6px] left-0 right-[24px] top-0">
+                  <img
+                     alt=""
+                     aria-hidden="true"
+                     className={`absolute bottom-0 h-10 w-auto select-none transition-[left,transform] duration-500 ease-out ${
+                        progress >= 1 ? (praise ? 'connect-hippo-jump' : '') : praise ? 'connect-hippo-run' : ''
+                     }`}
+                     draggable={false}
+                     src={`/hippos/progress/hippo-${hippoPose}.png`}
+                     style={{ left: `${progress * 100}%`, transform: `translateX(-${progress * 100}%)` }}
+                  />
+               </div>
             </div>
          </div>
          <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
