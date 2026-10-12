@@ -60,7 +60,7 @@ import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
-import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, ConnectHero, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -488,6 +488,7 @@ export function BorrowerContextLoanStep({
    const page1Complete = Boolean(context.incomeSetup);
    const isBusy = isSubmitting || isSavingProfile;
    const rootRef = useRef<HTMLDivElement | null>(null);
+   const pageDirection = useStepDirection(page);
    // The unanswered questions on this page, in screen order (data-bio-field marks each section).
    const missing = (
       page === 1
@@ -585,7 +586,7 @@ export function BorrowerContextLoanStep({
 
    if (page === 1) {
       return (
-         <div ref={rootRef} className="flex min-h-0 flex-col gap-5">
+         <div key="bio-1" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
             <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
                <div className="mb-3">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
@@ -683,7 +684,7 @@ export function BorrowerContextLoanStep({
    }
 
    return (
-      <div ref={rootRef} className="flex min-h-0 flex-col gap-5">
+      <div key="bio-2" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
          <BorrowerContextChipSection
             fieldId="paydayWindow"
             helper="Helps lenders see that repayment timing makes sense."

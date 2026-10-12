@@ -8,6 +8,7 @@ import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import ConnectStep, { type ConnectPage, LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
@@ -38,7 +39,7 @@ export default function ConnectBeforeKyc() {
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending|about): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
@@ -64,7 +65,15 @@ export default function ConnectBeforeKyc() {
             hideBack
             tooltip="Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day."
          />
-         {isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
+         {isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
+            <StepCelebration
+               image={CONNECT_HIPPOS.approved}
+               onDone={() => undefined}
+               subtitle="Nice job — that's 1 of 4 done."
+               title="Facebook connected!"
+               trail={<StepTrail current={1} steps={['Messenger', 'About you', 'Your goal', 'Book call']} />}
+            />
+         ) : isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
             <OnboardingBio onBack={() => undefined} onDone={() => undefined} user={user} />
          ) : isPending ? (
             <LoanAccessPendingCard

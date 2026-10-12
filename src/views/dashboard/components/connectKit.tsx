@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Check } from 'lucide-react';
 
@@ -38,7 +38,13 @@ export function ConnectHero({
 }) {
    return (
       <div className="-mx-5 -mt-5 flex flex-col items-center gap-2 bg-gradient-to-b from-[#f3ecff] via-white to-white px-5 pb-1 pt-4 text-center">
-         <img alt="" aria-hidden="true" className="h-[112px] w-auto select-none object-contain drop-shadow-[0_8px_12px_rgba(89,77,101,0.18)]" draggable={false} src={image} />
+         <img
+            alt=""
+            aria-hidden="true"
+            className="h-[112px] w-auto select-none object-contain drop-shadow-[0_8px_12px_rgba(89,77,101,0.18)]"
+            draggable={false}
+            src={image}
+         />
          <h3 className="text-[24px] font-bold leading-[28px] tracking-[-0.02em]" style={{ color: FIGMA.heading }}>
             {title}
          </h3>
@@ -56,7 +62,10 @@ export function ConnectHero({
 // the current one glows, upcoming ones stay grey. Gamified progress in one glance, no prose.
 export function StepTrail({ steps, current }: { steps: string[]; current: number }) {
    return (
-      <ol aria-label={`Step ${current + 1} of ${steps.length}: ${steps[current]}`} className="flex w-full items-start justify-between gap-1">
+      <ol
+         aria-label={`Step ${current + 1} of ${steps.length}: ${steps[current]}`}
+         className="flex w-full items-start justify-between gap-1"
+      >
          {steps.map((label, index) => {
             const done = index < current;
             const now = index === current;
@@ -73,7 +82,9 @@ export function StepTrail({ steps, current }: { steps: string[]; current: number
                   >
                      {done ? <Check aria-hidden="true" className="size-4" strokeWidth={3} /> : index + 1}
                   </span>
-                  <span className={`truncate text-[11px] font-semibold leading-[14px] ${now ? 'text-[#6b55f7]' : done ? 'text-[#594d65]' : 'text-[#b3a9bf]'}`}>
+                  <span
+                     className={`truncate text-[11px] font-semibold leading-[14px] ${now ? 'text-[#6b55f7]' : done ? 'text-[#594d65]' : 'text-[#b3a9bf]'}`}
+                  >
                      {label}
                   </span>
                </li>
@@ -131,7 +142,10 @@ export function OptionCard({
                   {title}
                </span>
                {badge ? (
-                  <span className="rounded-br-[12px] rounded-tl-[12px] rounded-tr-[12px] px-2 py-0.5 text-[12px] font-semibold leading-[16px] text-white" style={{ background: FIGMA.purple }}>
+                  <span
+                     className="rounded-br-[12px] rounded-tl-[12px] rounded-tr-[12px] px-2 py-0.5 text-[12px] font-semibold leading-[16px] text-white"
+                     style={{ background: FIGMA.purple }}
+                  >
                      {badge}
                   </span>
                ) : null}
@@ -182,5 +196,105 @@ export function PerkRow({ icon, children }: { icon: ReactNode; children: ReactNo
          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#f3ecff] text-[#6b55f7]">{icon}</span>
          <span className="min-w-0">{children}</span>
       </li>
+   );
+}
+
+// Which way the screen moved: a new step slides in from the right, going back slides in from the
+// left. Pass the current step's position; null on the first render (no animation on arrival).
+export function useStepDirection(index: number): 'forward' | 'back' | null {
+   const [state, setState] = useState<{ index: number; direction: 'forward' | 'back' | null }>({ index, direction: null });
+   if (state.index !== index) {
+      const direction = index > state.index ? 'forward' : 'back';
+      setState({ index, direction });
+      return direction;
+   }
+   return state.direction;
+}
+
+// Classes live in globals.css (connect-step-in-*), reduced-motion aware.
+export const stepAnimationClass = (direction: 'forward' | 'back' | null) =>
+   direction === 'forward' ? 'connect-step-in-forward' : direction === 'back' ? 'connect-step-in-back' : '';
+
+// "Nice job" moments are shown once per step per borrower (not again after a back-and-forth).
+const celebratedKey = (userId: string, step: string) => `md_celebrated:${userId}:${step}`;
+export const wasCelebrated = (userId: string, step: string) => {
+   try {
+      return window.localStorage.getItem(celebratedKey(userId, step)) === '1';
+   } catch {
+      return false;
+   }
+};
+export const markCelebrated = (userId: string, step: string) => {
+   try {
+      window.localStorage.setItem(celebratedKey(userId, step), '1');
+   } catch {
+      // Storage blocked — they may just see it again.
+   }
+};
+
+const CELEBRATION_MS = 2200;
+
+// Between steps: the confetti hippo with a popping check, what they just did, and the step trail
+// with that step now ticked. Moves on by itself after ~2s, or on a tap.
+export function StepCelebration({
+   image,
+   title,
+   subtitle,
+   trail,
+   onDone
+}: {
+   image: string;
+   title: ReactNode;
+   subtitle?: ReactNode;
+   trail?: ReactNode;
+   onDone: () => void;
+}) {
+   const onDoneRef = useRef(onDone);
+   useEffect(() => {
+      onDoneRef.current = onDone;
+   }, [onDone]);
+   const finishedRef = useRef(false);
+   const finish = () => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      onDoneRef.current();
+   };
+   useEffect(() => {
+      const timer = window.setTimeout(finish, CELEBRATION_MS);
+      return () => window.clearTimeout(timer);
+   }, []);
+
+   return (
+      <button
+         aria-live="polite"
+         className="connect-celebrate-in flex min-h-[70vh] w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#f3ecff] via-white to-white px-6 py-10 text-center focus:outline-none"
+         onClick={finish}
+         type="button"
+      >
+         <span className="relative">
+            <img
+               alt=""
+               aria-hidden="true"
+               className="h-[128px] w-auto select-none object-contain drop-shadow-[0_8px_12px_rgba(89,77,101,0.18)]"
+               draggable={false}
+               src={image}
+            />
+            <span className="connect-celebrate-pop absolute -bottom-1 -right-2 grid size-11 place-items-center rounded-full bg-[#22a35a] text-white shadow-[0_6px_14px_rgba(34,163,90,0.35)] ring-4 ring-white">
+               <Check aria-hidden="true" className="size-6" strokeWidth={3} />
+            </span>
+         </span>
+         <h3 className="mt-2 text-[24px] font-bold leading-[28px] tracking-[-0.02em]" style={{ color: FIGMA.heading }}>
+            {title}
+         </h3>
+         {subtitle ? (
+            <p className="max-w-[300px] text-[15px] font-normal leading-[20px]" style={{ color: FIGMA.muted }}>
+               {subtitle}
+            </p>
+         ) : null}
+         {trail ? <div className="mt-3 w-full max-w-[360px]">{trail}</div> : null}
+         <span className="mt-2 text-[12px] font-semibold" style={{ color: FIGMA.purple }}>
+            Tap to continue
+         </span>
+      </button>
    );
 }

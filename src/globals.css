@@ -616,6 +616,58 @@ html.dark .team-page .team-blue-panel {
    }
 }
 
+/* Onboarding / Connect steps: the new card slides in from the side it comes from. "backwards"
+   fill only holds the start frame before it runs — no transform lingers afterwards, which would trap
+   the bio's sticky footer and any fixed modal (e.g. the photo picker) inside the card. */
+@keyframes connectStepInForward {
+   0% {
+      opacity: 0;
+      transform: translateX(28px);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes connectStepInBack {
+   0% {
+      opacity: 0;
+      transform: translateX(-28px);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-step-in-forward {
+   animation: connectStepInForward 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-step-in-back {
+   animation: connectStepInBack 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-celebrate-in {
+   animation: repaySuccessIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-celebrate-pop {
+   animation: repaySuccessPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .connect-step-in-forward,
+   .connect-step-in-back,
+   .connect-celebrate-in,
+   .connect-celebrate-pop {
+      animation: none !important;
+   }
+}
+
 /* Motion-safe: reduced-motion users get the final state instantly, no animation. */
 @media (prefers-reduced-motion: reduce) {
    .repay-success-section,
