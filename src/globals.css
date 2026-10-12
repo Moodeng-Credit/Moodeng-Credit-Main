@@ -757,6 +757,68 @@ html.dark .team-page .team-blue-panel {
    animation: connectShake 0.45s ease-in-out;
 }
 
+/* Bio rewards: a picked chip/card bounces, the praise line pops, the progress bar glows. */
+@keyframes connectPick {
+   0% {
+      transform: scale(1);
+   }
+
+   40% {
+      transform: scale(1.07);
+   }
+
+   70% {
+      transform: scale(0.97);
+   }
+
+   100% {
+      transform: scale(1);
+   }
+}
+
+.connect-pick {
+   animation: connectPick 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes connectPraise {
+   0% {
+      opacity: 0;
+      transform: translateY(6px) scale(0.9);
+   }
+
+   60% {
+      opacity: 1;
+      transform: translateY(-1px) scale(1.04);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-praise {
+   display: inline-block;
+   transform-origin: left center;
+   animation: connectPraise 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes connectBarGlow {
+   0% {
+      box-shadow: 0 0 0 0 rgba(34, 163, 90, 0.55);
+      filter: brightness(1.25);
+   }
+
+   100% {
+      box-shadow: 0 0 0 6px rgba(34, 163, 90, 0);
+      filter: none;
+   }
+}
+
+.connect-bar-glow {
+   animation: connectBarGlow 0.7s ease-out;
+}
+
 /* The hippo's speech bubble pops in each time a step opens. */
 @keyframes connectBubbleIn {
    0% {
@@ -832,7 +894,10 @@ html.dark .team-page .team-blue-panel {
    .connect-trail-check,
    .connect-trail-line,
    .connect-trail-current,
-   .connect-shake {
+   .connect-shake,
+   .connect-pick,
+   .connect-praise,
+   .connect-bar-glow {
       animation: none !important;
    }
 

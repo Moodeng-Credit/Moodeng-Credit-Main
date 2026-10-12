@@ -430,6 +430,8 @@ const UsdcIcon = () => (
    </svg>
 );
 
+const PRAISE_WORDS = ['Nice!', 'Great pick!', 'Awesome!', "You're on a roll!", 'Looking good!'];
+
 export function BorrowerContextLoanStep({
    page,
    context,
@@ -501,6 +503,26 @@ export function BorrowerContextLoanStep({
            ]
    ).filter((item): item is { field: string; label: string } => item !== null);
    const requiredCount = page === 1 ? 1 : 4;
+   const answeredCount = requiredCount - missing.length;
+   // Duolingo-style reward for each answer: a word of praise in the footer for a moment, a tiny
+   // buzz (Android), and a glow on the progress bar. Only when the count goes UP.
+   const [lastAnswered, setLastAnswered] = useState({ page, count: answeredCount });
+   const [praise, setPraise] = useState<{ id: number; word: string } | null>(null);
+   if (lastAnswered.page !== page || lastAnswered.count !== answeredCount) {
+      const wentUp = lastAnswered.page === page && answeredCount > lastAnswered.count;
+      setLastAnswered({ page, count: answeredCount });
+      setPraise(wentUp ? { id: Date.now(), word: PRAISE_WORDS[answeredCount % PRAISE_WORDS.length] } : null);
+   }
+   useEffect(() => {
+      if (!praise) return undefined;
+      try {
+         navigator.vibrate?.(12);
+      } catch {
+         // ignore
+      }
+      const timer = window.setTimeout(() => setPraise(null), 1800);
+      return () => window.clearTimeout(timer);
+   }, [praise]);
    // Continue stays tappable: a tap with something unanswered marks those questions in red and
    // scrolls to the first, instead of a disabled button that silently does nothing (Oct 2026 replay).
    const [showMissing, setShowMissing] = useState(false);
@@ -571,7 +593,12 @@ export function BorrowerContextLoanStep({
          {/* Where they are, always: "2 of 4 answered" + a bar, then a green "all done". */}
          <div aria-live="polite" className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2 text-md-b3 font-bold leading-[18px]">
-               {missing.length > 0 ? (
+               {praise && !showMissing ? (
+                  <span className="connect-praise text-[15px] text-[#1f7a3d]" key={praise.id}>
+                     {praise.word}{' '}
+                     {missing.length > 0 ? `${missing.length} to go.` : `All done ✓ Tap ${page === 1 ? 'Continue' : submitLabel}.`}
+                  </span>
+               ) : missing.length > 0 ? (
                   <span className={showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}>
                      Still needed: {missing.map((item) => item.label).join(', ')}.
                   </span>
@@ -579,13 +606,14 @@ export function BorrowerContextLoanStep({
                   <span className="text-[#1f7a3d]">All done ✓ Tap {page === 1 ? 'Continue' : submitLabel}.</span>
                )}
                <span className="shrink-0 text-[#8a7c9c]">
-                  {requiredCount - missing.length} of {requiredCount}
+                  {answeredCount} of {requiredCount}
                </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[#ede8f3]">
+            <div className="h-2.5 overflow-hidden rounded-full bg-[#ede8f3]">
                <div
-                  className="h-full rounded-full bg-[#22a35a] transition-[width] duration-300 ease-out"
-                  style={{ width: `${((requiredCount - missing.length) / requiredCount) * 100}%` }}
+                  className={`h-full rounded-full bg-[#22a35a] transition-[width] duration-300 ease-out ${praise ? 'connect-bar-glow' : ''}`}
+                  key={praise?.id ?? 'bar'}
+                  style={{ width: `${(answeredCount / requiredCount) * 100}%` }}
                />
             </div>
          </div>
@@ -998,7 +1026,7 @@ function BorrowerContextRadioCard({
          aria-pressed={isSelected}
          className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border-2 border-b-4 px-4 py-3 text-left transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               ? 'connect-pick border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
                : 'border-[#e5ddf0] bg-white text-md-neutral-1200 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
@@ -1095,7 +1123,7 @@ function BorrowerContextChoiceChip({
          aria-pressed={isSelected}
          className={`inline-flex min-h-[42px] items-center justify-center gap-[6px] rounded-[14px] border-2 border-b-4 px-3 py-2 text-[14px] font-bold leading-[18px] transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               ? 'connect-pick border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
                : 'border-[#e5ddf0] bg-white text-md-neutral-1400 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
