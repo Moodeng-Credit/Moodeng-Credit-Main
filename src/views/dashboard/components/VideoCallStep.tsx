@@ -183,7 +183,7 @@ export default function VideoCallStep({
    const isScheduled = phase === 'scheduled';
 
    return (
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          {typeof intro === 'string' ? <p className="text-[14px] font-normal leading-[20px] text-[#7b6b8c]">{intro}</p> : intro}
 
          {isScheduled ? (

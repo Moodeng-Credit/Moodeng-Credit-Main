@@ -36,24 +36,34 @@ export function ConnectHero({
    subtitle?: ReactNode;
    trail?: ReactNode;
 }) {
+   // Duolingo-style: the step trail on top as the progress bar, then the hippo "saying" the step in
+   // a speech bubble — one compact header, so the step's content and its button get the screen.
    return (
-      <div className="-mx-5 -mt-5 flex flex-col items-center gap-2 bg-gradient-to-b from-[#f3ecff] via-white to-white px-5 pb-1 pt-4 text-center">
-         <img
-            alt=""
-            aria-hidden="true"
-            className="h-[112px] w-auto select-none object-contain drop-shadow-[0_8px_12px_rgba(89,77,101,0.18)]"
-            draggable={false}
-            src={image}
-         />
-         <h3 className="text-[24px] font-bold leading-[28px] tracking-[-0.02em]" style={{ color: FIGMA.heading }}>
-            {title}
-         </h3>
-         {subtitle ? (
-            <p className="max-w-[320px] text-[15px] font-normal leading-[20px]" style={{ color: FIGMA.muted }}>
-               {subtitle}
-            </p>
-         ) : null}
-         {trail ? <div className="mt-2 w-full">{trail}</div> : null}
+      <div className="-mx-5 -mt-5 flex flex-col gap-3 bg-gradient-to-b from-[#f3ecff] via-[#faf7ff] to-white px-5 pb-1 pt-4">
+         {trail ? <div className="w-full">{trail}</div> : null}
+         <div className="flex items-end gap-1">
+            <img
+               alt=""
+               aria-hidden="true"
+               className="h-[112px] w-[96px] shrink-0 select-none object-contain drop-shadow-[0_8px_12px_rgba(89,77,101,0.18)]"
+               draggable={false}
+               src={image}
+            />
+            <div className="connect-bubble-in relative mb-5 min-w-0 flex-1 rounded-[18px] border-2 border-[#e5ddf0] bg-white px-4 py-3 text-left shadow-[0_3px_0_#e5ddf0]">
+               <span
+                  aria-hidden="true"
+                  className="absolute -left-[9px] bottom-4 size-4 rotate-45 border-b-2 border-l-2 border-[#e5ddf0] bg-white"
+               />
+               <h3 className="relative text-[20px] font-extrabold leading-[24px] tracking-[-0.01em]" style={{ color: '#3b2f4a' }}>
+                  {title}
+               </h3>
+               {subtitle ? (
+                  <p className="relative mt-1 text-[14px] font-normal leading-[19px]" style={{ color: FIGMA.muted }}>
+                     {subtitle}
+                  </p>
+               ) : null}
+            </div>
+         </div>
       </div>
    );
 }
@@ -116,7 +126,7 @@ export function OptionCard({
 }) {
    if (done) {
       return (
-         <div className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-[#4aa256] bg-[#eefbf2] px-4 py-3">
+         <div className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-b-[5px] border-[#4aa256] border-b-[#3a8a45] bg-[#eefbf2] px-4 py-3">
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#4aa256] text-white">
                <Check aria-hidden="true" className="size-6" strokeWidth={3} />
             </span>
@@ -129,10 +139,10 @@ export function OptionCard({
    }
    return (
       <button
-         className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 px-4 py-3 text-left transition duration-150 ease-out hover:brightness-[0.98] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+         className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-b-[5px] px-4 py-3 text-left transition duration-100 ease-out hover:brightness-[0.98] active:translate-y-[3px] active:border-b-2 disabled:cursor-not-allowed disabled:opacity-60"
          disabled={disabled}
          onClick={onClick}
-         style={{ background: FIGMA.cardFill, borderColor: FIGMA.cardBorder }}
+         style={{ background: FIGMA.cardFill, borderColor: FIGMA.cardBorder, borderBottomColor: '#4a35c9' }}
          type="button"
       >
          <span className="grid size-11 shrink-0 place-items-center">{icon}</span>
@@ -160,15 +170,16 @@ export function OptionCard({
    );
 }
 
-// Purple gradient pill CTA (Figma "Get" button), full width.
+// Full-width CTA, Duolingo-style "pressable": a darker bottom edge that squashes down on tap.
 export function PrimaryButton({ children, className = '', disabled, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
    return (
       <button
-         className={`min-h-[52px] w-full rounded-full px-5 text-[17px] font-semibold text-white transition duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed ${
-            disabled ? 'bg-[#d9d3e3] shadow-none' : 'shadow-[0_6px_16px_rgba(107,85,247,0.35)] hover:brightness-110'
+         className={`min-h-[54px] w-full rounded-[16px] px-5 text-[17px] font-bold tracking-[0.01em] transition duration-100 ease-out disabled:cursor-not-allowed ${
+            disabled
+               ? 'bg-[#e8e3ef] text-[#a99fb6] shadow-[0_4px_0_#d6cfe0]'
+               : 'bg-[#6b55f7] text-white shadow-[0_4px_0_#4a35c9] hover:brightness-110 active:translate-y-[4px] active:shadow-none'
          } ${className}`}
          disabled={disabled}
-         style={disabled ? undefined : { backgroundImage: 'linear-gradient(85deg, #9584ff 0%, #6b55f7 98%)' }}
          type="button"
          {...rest}
       >
@@ -180,7 +191,7 @@ export function PrimaryButton({ children, className = '', disabled, ...rest }: B
 export function GhostButton({ children, className = '', ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
    return (
       <button
-         className={`min-h-[44px] w-full rounded-full text-[15px] font-medium text-[#877897] transition duration-150 ease-out hover:text-[#594d65] ${className}`}
+         className={`min-h-[44px] w-full rounded-[16px] text-[15px] font-bold text-[#8a7c9c] transition duration-150 ease-out hover:text-[#594d65] ${className}`}
          type="button"
          {...rest}
       >

@@ -651,6 +651,24 @@ html.dark .team-page .team-blue-panel {
    animation: connectStepInBack 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
+/* The hippo's speech bubble pops in each time a step opens. */
+@keyframes connectBubbleIn {
+   0% {
+      opacity: 0;
+      transform: translateX(-6px) scale(0.92);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-bubble-in {
+   transform-origin: left bottom;
+   animation: connectBubbleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards;
+}
+
 .connect-celebrate-in {
    animation: repaySuccessIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
@@ -702,7 +720,8 @@ html.dark .team-page .team-blue-panel {
    .connect-step-in-back,
    .connect-celebrate-in,
    .connect-celebrate-pop,
-   .connect-stat-in {
+   .connect-stat-in,
+   .connect-bubble-in {
       animation: none !important;
    }
 

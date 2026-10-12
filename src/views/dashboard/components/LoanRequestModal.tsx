@@ -531,7 +531,7 @@ export function BorrowerContextLoanStep({
 
    const backButton = (
       <button
-         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border border-[#ded6e8] bg-[#f8f4fc] text-md-b1 font-[590] text-md-heading transition hover:bg-[#f3ecfa] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border-2 border-b-4 border-[#e5ddf0] bg-white text-md-b1 font-bold text-md-heading transition duration-100 hover:bg-[#faf8fd] active:translate-y-[2px] active:border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
          onClick={onBack}
          type="button"
       >
@@ -556,8 +556,10 @@ export function BorrowerContextLoanStep({
             {backButton}
             <button
                aria-disabled={missing.length > 0}
-               className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                  missing.length > 0 ? 'bg-md-neutral-600' : 'bg-md-primary-1200 hover:bg-[#5200c8]'
+               className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-bold transition duration-100 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                  missing.length > 0
+                     ? 'bg-[#e8e3ef] text-[#a99fb6] shadow-[0_4px_0_#d6cfe0]'
+                     : 'bg-[#6b55f7] text-white shadow-[0_4px_0_#4a35c9] hover:brightness-110 active:translate-y-[4px] active:shadow-none'
                }`}
                disabled={isBusy}
                onClick={handlePrimary}
@@ -932,10 +934,10 @@ function BorrowerContextRadioCard({
    return (
       <button
          aria-pressed={isSelected}
-         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border-2 border-b-4 px-4 py-3 text-left transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_6px_16px_rgba(96,16,210,0.08)]'
-               : 'border-[#ded6e8] bg-white text-md-neutral-1200 hover:border-[#cbbce0]'
+               ? 'border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               : 'border-[#e5ddf0] bg-white text-md-neutral-1200 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
          type="button"
@@ -1023,10 +1025,10 @@ function BorrowerContextChoiceChip({
    return (
       <button
          aria-pressed={isSelected}
-         className={`inline-flex min-h-[38px] items-center justify-center gap-[6px] rounded-md-pill border px-3 py-2 text-[13px] font-[590] leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`inline-flex min-h-[42px] items-center justify-center gap-[6px] rounded-[14px] border-2 border-b-4 px-3 py-2 text-[14px] font-bold leading-[18px] transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_4px_10px_rgba(96,16,210,0.08)]'
-               : 'border-[#d8d0e2] bg-white text-md-neutral-1400 hover:border-[#bfaed5]'
+               ? 'border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               : 'border-[#e5ddf0] bg-white text-md-neutral-1400 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
          type="button"

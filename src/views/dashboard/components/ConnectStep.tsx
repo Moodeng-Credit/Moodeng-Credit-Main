@@ -219,7 +219,7 @@ export default function ConnectStep({
    }
 
    return (
-      <div className={`flex min-h-0 flex-col ${stepAnimationClass(direction)}`} key={page}>
+      <div className={`flex min-h-0 flex-1 flex-col ${stepAnimationClass(direction)}`} key={page}>
          {renderPage()}
       </div>
    );
@@ -277,8 +277,15 @@ export default function ConnectStep({
 
       if (page === 'about' && renderAbout) {
          return (
-            <div className="flex min-h-0 flex-col">
-               <div className="border-b border-[#f0ecf5] bg-gradient-to-b from-[#f3ecff] to-white px-5 py-3">{trail('about')}</div>
+            <div className="flex min-h-0 flex-1 flex-col">
+               <div className="px-5 pt-5">
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.hello}
+                     subtitle="A few quick questions about your work and payday — about a minute."
+                     title="Tell us about you"
+                     trail={trail('about')}
+                  />
+               </div>
                {renderAbout({
                   onBack: () => setPage('contact'),
                   onDone: () =>
@@ -295,7 +302,7 @@ export default function ConnectStep({
 
       if (page === 'call') {
          return (
-            <div className="flex min-h-0 flex-col">
+            <div className="flex min-h-0 flex-1 flex-col">
                <VideoCallStep
                   continueLabel={isSending ? 'Sending…' : 'Send to the team'}
                   host={withEmma ? 'emma' : undefined}
@@ -348,7 +355,7 @@ export default function ConnectStep({
       }
 
       return (
-         <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
             <ConnectHero
                image={CONNECT_HIPPOS.cashout}
                subtitle="A quick note so the team knows how to help."
@@ -361,10 +368,10 @@ export default function ConnectStep({
                   const picked = reason.toLowerCase().includes(chip.toLowerCase());
                   return (
                      <button
-                        className={`min-h-[40px] rounded-full border px-4 text-[14px] font-semibold transition active:scale-[0.97] ${
+                        className={`min-h-[44px] rounded-[14px] border-2 border-b-4 px-4 text-[15px] font-bold transition active:translate-y-[2px] active:border-b-2 ${
                            picked
-                              ? 'border-[#6b55f7] bg-[#6b55f7] text-white'
-                              : 'border-[#e2dcee] bg-white text-[#594d65] hover:border-[#7661f9]'
+                              ? 'border-[#6b55f7] border-b-[#4a35c9] bg-[#efeaff] text-[#4b36d6]'
+                              : 'border-[#e5ddf0] bg-white text-[#594d65] hover:bg-[#faf8fd]'
                         }`}
                         key={chip}
                         onClick={() => addGoal(chip)}
@@ -484,7 +491,7 @@ export function LoanAccessPendingCard({
    const callOver = mode === 'call' && !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
 
    return (
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
          <ConnectHero
             image={CONNECT_HIPPOS.waiting}
             subtitle={
