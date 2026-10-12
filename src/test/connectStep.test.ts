@@ -54,6 +54,9 @@ const { default: ConnectStep, LoanAccessPendingCard } = await import('@/views/da
 const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text) as HTMLButtonElement | undefined;
 
+// The "nice job" card between steps (shown once per step per borrower): its Continue moves on.
+const celebrationCard = (container: HTMLElement) => container.querySelector('[data-celebration] button') as HTMLButtonElement | undefined;
+
 const click = async (el?: HTMLElement) => {
    await act(async () => {
       el?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -75,6 +78,7 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
    let onSubmitted: ReturnType<typeof vi.fn>;
 
    beforeEach(() => {
+      window.localStorage.clear();
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-24T00:00:00Z' };
       supa.state.invokeResult = { data: { ok: true, status: 'pending' }, error: null };
       supa.invoke.mockClear();
@@ -100,6 +104,7 @@ describe('ConnectStep — PART 1 of Connect → Approve → Apply', () => {
 
    const goToIntro = async () => {
       await click(buttonByText(container, 'Continue'));
+      await click(celebrationCard(container));
       expect(container.textContent).toContain("What's the loan for?");
    };
 
@@ -170,6 +175,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
    let onSubmitted: ReturnType<typeof vi.fn>;
 
    beforeEach(() => {
+      window.localStorage.clear();
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-24T00:00:00Z' };
       supa.state.invokeResult = { data: { ok: true, status: 'pending' }, error: null };
       supa.invoke.mockClear();
@@ -194,6 +200,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(container.textContent).toContain('15-min video call');
 
       await click(buttonByText(container, 'Continue'));
+      await click(celebrationCard(container));
       await typeInto(container.querySelector('textarea') as HTMLTextAreaElement, 'Rent is due before payday');
       await click(buttonByText(container, 'Next: book your call'));
       expect(supa.invoke).not.toHaveBeenCalledWith('loan-access', expect.anything());
@@ -240,9 +247,18 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       });
 
       await click(buttonByText(container, 'Continue'));
+      expect(container.textContent).toContain('Facebook connected!');
+      await click(celebrationCard(container));
       expect(renderAbout).toHaveBeenCalled();
       expect(container.textContent).not.toContain("What's the loan for?");
 
+      await click(buttonByText(container, 'Bio done'));
+      expect(container.textContent).toContain('Saved to your profile!');
+      await click(celebrationCard(container));
+      expect(container.textContent).toContain("What's the loan for?");
+
+      // Going back and forward again doesn't repeat the celebration.
+      await click(buttonByText(container, 'Back'));
       await click(buttonByText(container, 'Bio done'));
       expect(container.textContent).toContain("What's the loan for?");
    });
@@ -266,6 +282,7 @@ describe('ConnectStep — call mode (request unlocks only after the call)', () =
       expect(container.textContent).toContain('call with Emma');
 
       await click(buttonByText(container, 'Continue'));
+      await click(celebrationCard(container));
       await typeInto(container.querySelector('textarea') as HTMLTextAreaElement, 'Rent is due before payday');
       await click(buttonByText(container, 'Next: book your call'));
       await act(async () => {

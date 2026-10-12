@@ -14,6 +14,7 @@ import {
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
@@ -353,6 +354,7 @@ export default function ContactsStep({
          }
          if (data?.messenger_verified_at) {
             setMessengerVerified(true);
+            playSuccess();
             return;
          }
          if (bounced) {
@@ -483,7 +485,7 @@ export default function ContactsStep({
    };
 
    return (
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
          {intro ?? (
             <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
          )}

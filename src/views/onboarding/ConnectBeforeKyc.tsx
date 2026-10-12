@@ -4,9 +4,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { usePreKycGate } from '@/hooks/usePreKycGate';
+
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
+import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
 import ConnectStep, { type ConnectPage, LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -38,7 +40,7 @@ export default function ConnectBeforeKyc() {
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending|about): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
@@ -62,9 +64,23 @@ export default function ConnectBeforeKyc() {
       <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col bg-white dark:bg-[#08040f]">
          <OnboardingHeader
             hideBack
+            soundToggle
             tooltip="Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day."
          />
-         {isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
+         {isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
+            <StepCelebration
+               image={CONNECT_HIPPOS.approved}
+               onDone={() => undefined}
+               stats={[
+                  { label: 'Done', value: 'Facebook ✓', tone: 'green' },
+                  { label: 'Next up', value: 'About you', tone: 'purple' },
+                  { label: 'Steps left', value: 3, tone: 'amber' }
+               ]}
+               subtitle="Nice job — now we can message you about your loan."
+               title="Facebook connected!"
+               trail={<StepTrail current={1} steps={['Messenger', 'About you', 'Your goal', 'Book call']} />}
+            />
+         ) : isPreview && new URLSearchParams(location.search).get('view') === 'about' ? (
             <OnboardingBio onBack={() => undefined} onDone={() => undefined} user={user} />
          ) : isPending ? (
             <LoanAccessPendingCard

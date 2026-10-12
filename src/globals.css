@@ -616,6 +616,374 @@ html.dark .team-page .team-blue-panel {
    }
 }
 
+/* Onboarding / Connect steps: the new card slides in from the side it comes from. "backwards"
+   fill only holds the start frame before it runs — no transform lingers afterwards, which would trap
+   the bio's sticky footer and any fixed modal (e.g. the photo picker) inside the card. */
+@keyframes connectStepInForward {
+   0% {
+      opacity: 0;
+      transform: translateX(28px);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes connectStepInBack {
+   0% {
+      opacity: 0;
+      transform: translateX(-28px);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-step-in-forward {
+   animation: connectStepInForward 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-step-in-back {
+   animation: connectStepInBack 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Step trail fills in order: circle (pop + purple), its check, then the line to the next circle,
+   ending on the current step's ring. "backwards" holds the grey start until each one's turn. */
+@keyframes connectTrailFill {
+   0% {
+      background-color: #efedf1;
+      transform: scale(0.85);
+   }
+
+   60% {
+      background-color: #6b55f7;
+      transform: scale(1.18);
+   }
+
+   100% {
+      background-color: #6b55f7;
+      transform: scale(1);
+   }
+}
+
+@keyframes connectTrailCheck {
+   0% {
+      opacity: 0;
+      transform: scale(0.3) rotate(-20deg);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+@keyframes connectTrailLine {
+   0% {
+      transform: scaleX(0);
+   }
+
+   100% {
+      transform: scaleX(1);
+   }
+}
+
+@keyframes connectTrailCurrent {
+   0% {
+      transform: scale(0.85);
+      box-shadow: 0 0 0 0 rgba(107, 85, 247, 0.45);
+   }
+
+   55% {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 9px rgba(107, 85, 247, 0.12);
+   }
+
+   100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 4px rgba(107, 85, 247, 0.15);
+   }
+}
+
+.connect-trail-fill {
+   animation: connectTrailFill 0.32s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-trail-check {
+   animation: connectTrailCheck 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-trail-line {
+   animation: connectTrailLine 0.26s ease-out backwards;
+}
+
+.connect-trail-current {
+   animation: connectTrailCurrent 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Bio "not yet": Continue and the first unanswered question shake side to side. */
+@keyframes connectShake {
+   0%,
+   100% {
+      transform: none;
+   }
+
+   15% {
+      transform: translateX(-9px);
+   }
+
+   30% {
+      transform: translateX(8px);
+   }
+
+   45% {
+      transform: translateX(-6px);
+   }
+
+   60% {
+      transform: translateX(5px);
+   }
+
+   75% {
+      transform: translateX(-2px);
+   }
+}
+
+.connect-shake {
+   animation: connectShake 0.45s ease-in-out;
+}
+
+/* Bio rewards: a picked chip/card bounces, the praise line pops, the progress bar glows. */
+@keyframes connectPick {
+   0% {
+      transform: scale(1);
+   }
+
+   40% {
+      transform: scale(1.07);
+   }
+
+   70% {
+      transform: scale(0.97);
+   }
+
+   100% {
+      transform: scale(1);
+   }
+}
+
+.connect-pick {
+   animation: connectPick 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes connectPraise {
+   0% {
+      opacity: 0;
+      transform: translateY(6px) scale(0.9);
+   }
+
+   60% {
+      opacity: 1;
+      transform: translateY(-1px) scale(1.04);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-praise {
+   display: inline-block;
+   transform-origin: left center;
+   animation: connectPraise 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes connectBarGlow {
+   0% {
+      box-shadow: 0 0 0 0 rgba(34, 163, 90, 0.55);
+      filter: brightness(1.25);
+   }
+
+   100% {
+      box-shadow: 0 0 0 6px rgba(34, 163, 90, 0);
+      filter: none;
+   }
+}
+
+.connect-bar-glow {
+   animation: connectBarGlow 0.7s ease-out;
+}
+
+/* Bio race: the hippo bobs as it runs to its new spot, and hops at the finish flag. */
+@keyframes connectHippoRun {
+   0%,
+   100% {
+      translate: 0 0;
+      rotate: 0deg;
+   }
+
+   25% {
+      translate: 0 -4px;
+      rotate: -4deg;
+   }
+
+   50% {
+      translate: 0 0;
+      rotate: 0deg;
+   }
+
+   75% {
+      translate: 0 -4px;
+      rotate: 4deg;
+   }
+}
+
+.connect-hippo-run {
+   animation: connectHippoRun 0.25s ease-in-out 2;
+}
+
+@keyframes connectHippoJump {
+   0%,
+   100% {
+      translate: 0 0;
+   }
+
+   30% {
+      translate: 0 -14px;
+   }
+
+   55% {
+      translate: 0 0;
+   }
+
+   75% {
+      translate: 0 -6px;
+   }
+}
+
+.connect-hippo-jump {
+   animation: connectHippoJump 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sprinkles raining down from the top of the screen (call booked, success cards). */
+@keyframes connectSprinkleFall {
+   0% {
+      opacity: 1;
+      transform: translate(0, -24px) rotate(0deg);
+   }
+
+   85% {
+      opacity: 1;
+   }
+
+   100% {
+      opacity: 0;
+      transform: translate(var(--sprinkle-drift), 105vh) rotate(var(--sprinkle-spin));
+   }
+}
+
+.connect-sprinkle {
+   opacity: 0;
+   animation-name: connectSprinkleFall;
+   animation-timing-function: cubic-bezier(0.35, 0.1, 0.6, 1);
+   animation-fill-mode: both;
+}
+
+/* The hippo's speech bubble pops in each time a step opens. */
+@keyframes connectBubbleIn {
+   0% {
+      opacity: 0;
+      transform: translateX(-6px) scale(0.92);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-bubble-in {
+   transform-origin: left bottom;
+   animation: connectBubbleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards;
+}
+
+.connect-celebrate-in {
+   animation: repaySuccessIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.connect-celebrate-pop {
+   animation: repaySuccessPop 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s backwards;
+}
+
+/* Success card: confetti bursts out from behind the hippo, then the stat tiles rise in. */
+@keyframes connectConfetti {
+   0% {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+   }
+
+   70% {
+      opacity: 1;
+   }
+
+   100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--confetti-x)), calc(-50% + var(--confetti-y) + 40px)) scale(1) rotate(var(--confetti-r));
+   }
+}
+
+.connect-confetti {
+   opacity: 0;
+   animation: connectConfetti 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes connectStatIn {
+   0% {
+      opacity: 0;
+      transform: translateY(10px);
+   }
+
+   100% {
+      opacity: 1;
+      transform: none;
+   }
+}
+
+.connect-stat-in {
+   animation: connectStatIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .connect-step-in-forward,
+   .connect-step-in-back,
+   .connect-celebrate-in,
+   .connect-celebrate-pop,
+   .connect-stat-in,
+   .connect-bubble-in,
+   .connect-trail-fill,
+   .connect-trail-check,
+   .connect-trail-line,
+   .connect-trail-current,
+   .connect-shake,
+   .connect-pick,
+   .connect-praise,
+   .connect-bar-glow,
+   .connect-hippo-run,
+   .connect-hippo-jump {
+      animation: none !important;
+   }
+
+   .connect-confetti,
+   .connect-sprinkle {
+      display: none;
+   }
+}
+
 /* Motion-safe: reduced-motion users get the final state instantly, no animation. */
 @media (prefers-reduced-motion: reduce) {
    .repay-success-section,

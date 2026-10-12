@@ -1,11 +1,25 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { Camera, Gift, IdCard, MessagesSquare, ShieldCheck, Sparkles, Unlock, Video, Wallet } from 'lucide-react';
 
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { LoanAccessStatus } from '@/types/authTypes';
-import { CONNECT_HIPPOS, ConnectHero, GhostButton, PerkRow, PrimaryButton, StepTrail } from '@/views/dashboard/components/connectKit';
+import { playDing, playSuccess } from '@/lib/uiSounds';
+import {
+   ConfettiRain,
+   CONNECT_HIPPOS,
+   ConnectHero,
+   GhostButton,
+   markCelebrated,
+   PerkRow,
+   PrimaryButton,
+   stepAnimationClass,
+   StepCelebration,
+   StepTrail,
+   useStepDirection,
+   wasCelebrated
+} from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -45,6 +59,32 @@ const ERROR_COPY: Record<string, string> = {
 };
 
 export type ConnectPage = 'contact' | 'about' | 'intro' | 'call';
+
+const PAGE_ORDER: Record<ConnectPage, number> = { contact: 0, about: 1, intro: 2, call: 3 };
+
+// "Just booked" hand-off from the booking step to the waiting card ("Yeahh!" + sprinkles), per tab.
+const justBookedKey = (userId: string) => `md_just_booked:${userId}`;
+const markJustBooked = (userId: string) => {
+   try {
+      window.sessionStorage.setItem(justBookedKey(userId), '1');
+   } catch {
+      // Storage blocked — they just don't get the confetti.
+   }
+};
+const readJustBooked = (userId: string) => {
+   try {
+      return window.sessionStorage.getItem(justBookedKey(userId)) === '1';
+   } catch {
+      return false;
+   }
+};
+const clearJustBooked = (userId: string) => {
+   try {
+      window.sessionStorage.removeItem(justBookedKey(userId));
+   } catch {
+      // ignore
+   }
+};
 
 export default function ConnectStep({
    userId,
@@ -156,167 +196,259 @@ export default function ConnectStep({
       }
    };
 
-   const addGoal = (chip: string) =>
+   const addGoal = (chip: string) => {
+      playDing();
       setReason((current) => {
          if (!current.trim()) return `${chip} — `;
          if (current.toLowerCase().includes(chip.toLowerCase())) return current;
-         return `${current.trim().replace(/[—-]\s*$/, '').trim()}, ${chip.toLowerCase()} — `;
+         return `${current
+            .trim()
+            .replace(/[—-]\s*$/, '')
+            .trim()}, ${chip.toLowerCase()} — `;
       });
+   };
 
-   if (page === 'contact') {
+   // A short "nice job" card after a real accomplishment (Facebook confirmed, bio saved), once per
+   // step per borrower, so each step gives feedback instead of silently swapping screens.
+   type Celebration = { key: 'contact' | 'about'; title: string; subtitle: string; done: string };
+   const [celebration, setCelebration] = useState<(Celebration & { next: ConnectPage }) | null>(null);
+   const advance = (next: ConnectPage, celebrate?: Celebration) => {
+      if (celebrate && !wasCelebrated(userId, celebrate.key)) {
+         markCelebrated(userId, celebrate.key);
+         setCelebration({ ...celebrate, next });
+         return;
+      }
+      setPage(next);
+   };
+   const finishCelebration = () => {
+      if (!celebration) return;
+      setCelebration(null);
+      setPage(celebration.next);
+   };
+
+   const direction = useStepDirection(celebration ? -1 : PAGE_ORDER[page]);
+
+   if (celebration) {
+      const nextIndex = stepIndex(celebration.next);
       return (
-         <ContactsStep
-            userId={userId}
-            source="connect"
-            // Onboarding (pre-KYC): there's no earlier card to go back to (the wallet's done), so this
-            // is an explicit, low-key way out — "Get verified" on every screen brings them back here.
-            backLabel={context === 'kyc' ? 'Look around first' : undefined}
-            onBack={onBack}
-            onContinue={() => {
-               setError('');
-               setPage(showAbout ? 'about' : 'intro');
-            }}
-            intro={
-               <ConnectHero
-                  image={wasRejected || missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
-                  subtitle={
-                     wasRejected
-                        ? "Want us to take another look? Reach out again and tell us what's changed."
-                        : missedCall
-                          ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
-                          : withEmma
-                          ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
-                          : context === 'kyc'
-                            ? "We only use it to message you about your loan — we never post, and we can't see your friends or messages."
-                            : mode === 'call'
-                            ? 'We meet every borrower on a quick 15-min video call before their first loan.'
-                            : 'Before your first loan, we like to meet every borrower — we approve within a day.'
-                  }
-                  title={
-                     wasRejected
-                        ? 'Welcome back'
-                        : missedCall
-                          ? 'We missed you!'
-                          : context === 'kyc'
-                            ? 'Connect Facebook so we can reach you'
-                            : "Glad you're here!"
-                  }
-                  trail={trail('contact')}
-               />
-            }
+         <StepCelebration
+            image={CONNECT_HIPPOS.approved}
+            onDone={finishCelebration}
+            stats={[
+               { label: 'Done', value: celebration.done, tone: 'green' },
+               { label: 'Next up', value: steps[nextIndex], tone: 'purple' },
+               { label: 'Steps left', value: steps.length - nextIndex, tone: 'amber' }
+            ]}
+            subtitle={celebration.subtitle}
+            title={celebration.title}
+            trail={trail(celebration.next)}
          />
       );
    }
 
-   if (page === 'about' && renderAbout) {
-      return (
-         <div className="flex min-h-0 flex-col">
-            <div className="border-b border-[#f0ecf5] bg-gradient-to-b from-[#f3ecff] to-white px-5 py-3">{trail('about')}</div>
-            {renderAbout({ onBack: () => setPage('contact'), onDone: () => setPage('intro') })}
-         </div>
-      );
-   }
-
-   if (page === 'call') {
-      return (
-         <div className="flex min-h-0 flex-col">
-            <VideoCallStep
-               continueLabel={isSending ? 'Sending…' : 'Send to the team'}
-               host={withEmma ? 'emma' : undefined}
-               intro={
-                  <>
-                     <ConnectHero
-                        image={CONNECT_HIPPOS.call}
-                        subtitle="15 minutes · on Zoom · you pick the time"
-                        title={withEmma ? 'Book your call with Emma' : 'Book your 15-min call'}
-                        trail={trail('call')}
-                     />
-                     <ul className="flex flex-col gap-2.5">
-                        {withEmma ? (
-                           <>
-                              <PerkRow icon={<Wallet aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Set up cash-out to your local currency</PerkRow>
-                              <PerkRow icon={<ShieldCheck aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Quick ID check — have it ready</PerkRow>
-                              <PerkRow icon={<Gift aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
-                                 <b className="text-[#6b55f7]">$10 cash</b> for every friend you refer
-                              </PerkRow>
-                           </>
-                        ) : (
-                           <>
-                              <PerkRow icon={<MessagesSquare aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Meet the team, ask anything</PerkRow>
-                              <PerkRow icon={<ShieldCheck aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Quick ID check — have it ready</PerkRow>
-                              <PerkRow icon={<Unlock aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
-                                 Apply right after the call
-                              </PerkRow>
-                           </>
-                        )}
-                     </ul>
-                  </>
-               }
-               onBack={() => setPage('intro')}
-               onBooked={() => void handleSend()}
-               onContinue={() => void handleSend()}
-               requireUpcoming
-               userId={userId}
-            />
-            {error ? <p className="px-5 pb-4 text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
-         </div>
-      );
-   }
-
    return (
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         <ConnectHero image={CONNECT_HIPPOS.cashout} subtitle="A quick note so the team knows how to help." title="What's the loan for?" trail={trail('intro')} />
-
-         <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Quick picks">
-            {GOAL_CHIPS.map((chip) => {
-               const picked = reason.toLowerCase().includes(chip.toLowerCase());
-               return (
-                  <button
-                     className={`min-h-[40px] rounded-full border px-4 text-[14px] font-semibold transition active:scale-[0.97] ${
-                        picked ? 'border-[#6b55f7] bg-[#6b55f7] text-white' : 'border-[#e2dcee] bg-white text-[#594d65] hover:border-[#7661f9]'
-                     }`}
-                     key={chip}
-                     onClick={() => addGoal(chip)}
-                     type="button"
-                  >
-                     {chip}
-                  </button>
-               );
-            })}
-         </div>
-
-         <label className="flex flex-col gap-1.5" htmlFor="connect-reason">
-            <span className="sr-only">What do you need a loan for?</span>
-            <textarea
-               className="min-h-[104px] w-full resize-none rounded-[18px] border-2 border-[#e2dcee] bg-white px-4 py-3 text-[15px] font-normal leading-[21px] text-[#594d65] placeholder:text-[#b3a9bf] focus:border-[#7661f9] focus:outline-none focus:ring-4 focus:ring-[#6b55f7]/15"
-               id="connect-reason"
-               maxLength={MAX_REASON}
-               onChange={(event) => setReason(event.target.value)}
-               placeholder="e.g. Rent is due before payday on the 15th"
-               value={reason}
-            />
-            <span className={`self-end text-[12px] font-medium ${trimmedReason.length < MIN_REASON ? 'text-[#b3a9bf]' : 'text-[#4aa256]'}`}>
-               {trimmedReason.length < MIN_REASON ? <MoreCharactersLabel count={MIN_REASON - trimmedReason.length} /> : '✓ Looks good'}
-            </span>
-         </label>
-
-         {referralCode ? (
-            <p className="mx-auto flex w-fit items-center gap-1.5 rounded-full bg-[#fff6d6] px-3 py-1 text-[13px] font-semibold text-[#704518]">
-               <Sparkles aria-hidden="true" className="size-4" strokeWidth={2} />
-               Referral {referralCode} applied
-            </p>
-         ) : null}
-
-         {error ? <p className="text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
-
-         <div className="mt-auto flex flex-col gap-1 pt-1">
-            <PrimaryButton disabled={!canSend} onClick={() => (mode === 'call' ? setPage('call') : void handleSend())}>
-               {mode === 'call' ? 'Next: book your call' : isSending ? 'Sending…' : 'Send to the team'}
-            </PrimaryButton>
-            <GhostButton onClick={() => setPage(showAbout ? 'about' : 'contact')}>Back</GhostButton>
-         </div>
+      <div className={`flex min-h-0 flex-1 flex-col ${stepAnimationClass(direction)}`} key={page}>
+         {renderPage()}
       </div>
    );
+
+   function renderPage(): ReactNode {
+      if (page === 'contact') {
+         return (
+            <ContactsStep
+               userId={userId}
+               source="connect"
+               // Onboarding (pre-KYC): there's no earlier card to go back to (the wallet's done), so this
+               // is an explicit, low-key way out — "Get verified" on every screen brings them back here.
+               backLabel={context === 'kyc' ? 'Look around first' : undefined}
+               onBack={onBack}
+               onContinue={() => {
+                  setError('');
+                  advance(showAbout ? 'about' : 'intro', {
+                     key: 'contact',
+                     title: 'Facebook connected!',
+                     subtitle: 'Nice job — now we can message you about your loan.',
+                     done: 'Facebook ✓'
+                  });
+               }}
+               intro={
+                  <ConnectHero
+                     image={wasRejected || missedCall ? CONNECT_HIPPOS.missed : CONNECT_HIPPOS.hello}
+                     subtitle={
+                        wasRejected
+                           ? "Want us to take another look? Reach out again and tell us what's changed."
+                           : missedCall
+                             ? `No worries — life happens. Pick a new time for your 15-min call${withEmma ? ' with Emma' : ''}.`
+                             : withEmma
+                               ? 'A quick 15-min call with Emma sets you up to cash out and repay easily.'
+                               : context === 'kyc'
+                                 ? "We only use it to message you about your loan — we never post, and we can't see your friends or messages."
+                                 : mode === 'call'
+                                   ? 'We meet every borrower on a quick 15-min video call before their first loan.'
+                                   : 'Before your first loan, we like to meet every borrower — we approve within a day.'
+                     }
+                     title={
+                        wasRejected
+                           ? 'Welcome back'
+                           : missedCall
+                             ? 'We missed you!'
+                             : context === 'kyc'
+                               ? 'Connect Facebook so we can reach you'
+                               : "Glad you're here!"
+                     }
+                     trail={trail('contact')}
+                  />
+               }
+            />
+         );
+      }
+
+      if (page === 'about' && renderAbout) {
+         return (
+            <div className="flex min-h-0 flex-1 flex-col">
+               <div className="px-5 pt-5">
+                  <ConnectHero
+                     image={CONNECT_HIPPOS.hello}
+                     subtitle="A few quick questions about your work and payday — about a minute."
+                     title="Tell us about you"
+                     trail={trail('about')}
+                  />
+               </div>
+               {renderAbout({
+                  onBack: () => setPage('contact'),
+                  onDone: () =>
+                     advance('intro', {
+                        key: 'about',
+                        title: 'Saved to your profile!',
+                        subtitle: 'Great work — lenders will see it beside your request.',
+                        done: 'Profile ✓'
+                     })
+               })}
+            </div>
+         );
+      }
+
+      if (page === 'call') {
+         return (
+            <div className="flex min-h-0 flex-1 flex-col">
+               <VideoCallStep
+                  continueLabel={isSending ? 'Sending…' : 'Send to the team'}
+                  host={withEmma ? 'emma' : undefined}
+                  intro={
+                     <>
+                        <ConnectHero
+                           image={CONNECT_HIPPOS.call}
+                           subtitle="15 minutes · on Zoom · you pick the time"
+                           title={withEmma ? 'Book your call with Emma' : 'Book your 15-min call'}
+                           trail={trail('call')}
+                        />
+                        <ul className="flex flex-col gap-2.5">
+                           {withEmma ? (
+                              <>
+                                 <PerkRow icon={<Wallet aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                    Set up cash-out to your local currency
+                                 </PerkRow>
+                                 <PerkRow icon={<ShieldCheck aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                    Quick ID check — have it ready
+                                 </PerkRow>
+                                 <PerkRow icon={<Gift aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                    <b className="text-[#6b55f7]">$10 cash</b> for every friend you refer
+                                 </PerkRow>
+                              </>
+                           ) : (
+                              <>
+                                 <PerkRow icon={<MessagesSquare aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                    Meet the team, ask anything
+                                 </PerkRow>
+                                 <PerkRow icon={<ShieldCheck aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                    Quick ID check — have it ready
+                                 </PerkRow>
+                                 <PerkRow icon={<Unlock aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                                    Apply right after the call
+                                 </PerkRow>
+                              </>
+                           )}
+                        </ul>
+                     </>
+                  }
+                  onBack={() => setPage('intro')}
+                  onBooked={() => {
+                  markJustBooked(userId);
+                  void handleSend();
+               }}
+                  onContinue={() => void handleSend()}
+                  requireUpcoming
+                  userId={userId}
+               />
+               {error ? <p className="px-5 pb-4 text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
+            </div>
+         );
+      }
+
+      return (
+         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+            <ConnectHero
+               image={CONNECT_HIPPOS.cashout}
+               subtitle="A quick note so the team knows how to help."
+               title="What's the loan for?"
+               trail={trail('intro')}
+            />
+
+            <div className="flex flex-wrap justify-center gap-2" role="group" aria-label="Quick picks">
+               {GOAL_CHIPS.map((chip) => {
+                  const picked = reason.toLowerCase().includes(chip.toLowerCase());
+                  return (
+                     <button
+                        className={`min-h-[44px] rounded-[14px] border-2 border-b-4 px-4 text-[15px] font-bold transition active:translate-y-[2px] active:border-b-2 ${
+                           picked
+                              ? 'border-[#6b55f7] border-b-[#4a35c9] bg-[#efeaff] text-[#4b36d6]'
+                              : 'border-[#e5ddf0] bg-white text-[#594d65] hover:bg-[#faf8fd]'
+                        }`}
+                        key={chip}
+                        onClick={() => addGoal(chip)}
+                        type="button"
+                     >
+                        {chip}
+                     </button>
+                  );
+               })}
+            </div>
+
+            <label className="flex flex-col gap-1.5" htmlFor="connect-reason">
+               <span className="sr-only">What do you need a loan for?</span>
+               <textarea
+                  className="min-h-[104px] w-full resize-none rounded-[18px] border-2 border-[#e2dcee] bg-white px-4 py-3 text-[15px] font-normal leading-[21px] text-[#594d65] placeholder:text-[#b3a9bf] focus:border-[#7661f9] focus:outline-none focus:ring-4 focus:ring-[#6b55f7]/15"
+                  id="connect-reason"
+                  maxLength={MAX_REASON}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder="e.g. Rent is due before payday on the 15th"
+                  value={reason}
+               />
+               <span
+                  className={`self-end text-[12px] font-medium ${trimmedReason.length < MIN_REASON ? 'text-[#b3a9bf]' : 'text-[#4aa256]'}`}
+               >
+                  {trimmedReason.length < MIN_REASON ? <MoreCharactersLabel count={MIN_REASON - trimmedReason.length} /> : '✓ Looks good'}
+               </span>
+            </label>
+
+            {referralCode ? (
+               <p className="mx-auto flex w-fit items-center gap-1.5 rounded-full bg-[#fff6d6] px-3 py-1 text-[13px] font-semibold text-[#704518]">
+                  <Sparkles aria-hidden="true" className="size-4" strokeWidth={2} />
+                  Referral {referralCode} applied
+               </p>
+            ) : null}
+
+            {error ? <p className="text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
+
+            <div className="mt-auto flex flex-col gap-1 pt-1">
+               <PrimaryButton disabled={!canSend} onClick={() => (mode === 'call' ? setPage('call') : void handleSend())}>
+                  {mode === 'call' ? 'Next: book your call' : isSending ? 'Sending…' : 'Send to the team'}
+               </PrimaryButton>
+               <GhostButton onClick={() => setPage(showAbout ? 'about' : 'contact')}>Back</GhostButton>
+            </div>
+         </div>
+      );
+   }
 }
 
 // Shown instead of the application while an admin decides (or, in call mode, until the call has
@@ -338,6 +470,15 @@ export function LoanAccessPendingCard({
    // When given (call mode), the card shows the booked time and this meeting's own join link.
    userId?: string;
 }) {
+   // First time they land here after booking: "Yeahh!", sprinkles raining down and a little fanfare.
+   // Only right after they booked in this tab (set by the booking step), never for an older booking.
+   // Read once per card (useMemo) so clearing the flag below doesn't flip it back mid-visit.
+   const justBooked = useMemo(() => mode === 'call' && Boolean(userId) && readJustBooked(userId ?? ''), [mode, userId]);
+   useEffect(() => {
+      if (!justBooked || !userId) return;
+      clearJustBooked(userId);
+      playSuccess();
+   }, [justBooked, userId]);
    const [meeting, setMeeting] = useState<{
       startsAt: string | null;
       joinUrl: string | null;
@@ -372,8 +513,12 @@ export function LoanAccessPendingCard({
       };
    }, [mode, userId]);
    // Shown in the device's own time zone ("your local time"), like Calendly.
-   const meetingDay = meeting?.startsAt ? new Date(meeting.startsAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }) : null;
-   const meetingTime = meeting?.startsAt ? new Date(meeting.startsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : null;
+   const meetingDay = meeting?.startsAt
+      ? new Date(meeting.startsAt).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
+      : null;
+   const meetingTime = meeting?.startsAt
+      ? new Date(meeting.startsAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : null;
 
    // Re-evaluated every minute so an open screen flips to "thanks for joining" once the call is over
    // (15-min call + grace) instead of still saying "see you" with a Join button.
@@ -386,9 +531,10 @@ export function LoanAccessPendingCard({
    const callOver = mode === 'call' && !Number.isNaN(startsMs) && now > startsMs + CALL_OVER_AFTER_MS;
 
    return (
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-center text-md-b2 text-md-heading">
+         {justBooked ? <ConfettiRain /> : null}
          <ConnectHero
-            image={CONNECT_HIPPOS.waiting}
+            image={justBooked ? CONNECT_HIPPOS.approved : CONNECT_HIPPOS.waiting}
             subtitle={
                callOver
                   ? context === 'kyc'
@@ -407,7 +553,9 @@ export function LoanAccessPendingCard({
             title={
                callOver
                   ? 'Thanks for joining!'
-                  : mode === 'call'
+                  : justBooked
+                    ? 'Yeahh! You’re booked 🎉'
+                    : mode === 'call'
                     ? withEmma
                        ? 'See you on the call with Emma'
                        : 'See you on the call'
@@ -460,13 +608,22 @@ export function LoanAccessPendingCard({
                   <div className="text-left">
                      <p className="mb-2 text-[13px] font-bold uppercase tracking-[0.06em] text-[#877897]">Have ready</p>
                      <ul className="flex flex-col gap-2.5">
-                        <PerkRow icon={<IdCard aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Your original ID or passport</PerkRow>
-                        <PerkRow icon={<Camera aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>Camera on, good light, phone nearby</PerkRow>
+                        <PerkRow icon={<IdCard aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                           Your original ID or passport
+                        </PerkRow>
+                        <PerkRow icon={<Camera aria-hidden="true" className="size-[18px]" strokeWidth={2} />}>
+                           Camera on, good light, phone nearby
+                        </PerkRow>
                      </ul>
                   </div>
                )}
 
-               <a className="text-[15px] font-semibold text-[#4492f1]" href="https://www.facebook.com/emmamoodengcredit" rel="noreferrer" target="_blank">
+               <a
+                  className="text-[15px] font-semibold text-[#4492f1]"
+                  href="https://www.facebook.com/emmamoodengcredit"
+                  rel="noreferrer"
+                  target="_blank"
+               >
                   Say hi to Emma on Facebook ›
                </a>
             </>

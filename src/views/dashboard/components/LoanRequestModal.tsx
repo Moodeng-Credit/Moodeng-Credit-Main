@@ -29,6 +29,8 @@ import {
    Ticket,
    TriangleAlert,
    Users,
+   Volume2,
+   VolumeX,
    WalletCards,
    X
 } from 'lucide-react';
@@ -52,6 +54,7 @@ import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
+import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -60,7 +63,7 @@ import type { AppDispatch } from '@/store/store';
 import { type User } from '@/types/authTypes';
 import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
-import { CONNECT_HIPPOS, ConnectHero } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, ConnectHero, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
 
@@ -430,6 +433,8 @@ const UsdcIcon = () => (
    </svg>
 );
 
+const PRAISE_WORDS = ['Nice!', 'Great pick!', 'Awesome!', "You're on a roll!", 'Looking good!'];
+
 export function BorrowerContextLoanStep({
    page,
    context,
@@ -488,6 +493,7 @@ export function BorrowerContextLoanStep({
    const page1Complete = Boolean(context.incomeSetup);
    const isBusy = isSubmitting || isSavingProfile;
    const rootRef = useRef<HTMLDivElement | null>(null);
+   const pageDirection = useStepDirection(page);
    // The unanswered questions on this page, in screen order (data-bio-field marks each section).
    const missing = (
       page === 1
@@ -499,6 +505,39 @@ export function BorrowerContextLoanStep({
               context.cashGaps.length === 0 ? { field: 'cashGaps', label: 'what you need help with' } : null
            ]
    ).filter((item): item is { field: string; label: string } => item !== null);
+   const requiredCount = page === 1 ? 1 : 4;
+   const answeredCount = requiredCount - missing.length;
+   const progress = answeredCount / requiredCount;
+   const hippoPose = progress >= 1 ? 'finish' : missing.length === 1 && answeredCount > 0 ? 'sprint' : 'jog';
+   // Duolingo-style reward for each answer: a word of praise in the footer for a moment, a tiny
+   // buzz (Android), and a glow on the progress bar. Only when the count goes UP.
+   const [lastAnswered, setLastAnswered] = useState({ page, count: answeredCount });
+   const [praise, setPraise] = useState<{ id: number; word: string; done: boolean } | null>(null);
+   if (lastAnswered.page !== page || lastAnswered.count !== answeredCount) {
+      const wentUp = lastAnswered.page === page && answeredCount > lastAnswered.count;
+      setLastAnswered({ page, count: answeredCount });
+      setPraise(
+         wentUp ? { id: Date.now(), word: PRAISE_WORDS[answeredCount % PRAISE_WORDS.length], done: answeredCount === requiredCount } : null
+      );
+   }
+   // Answer chimes (off until they tap the speaker): a ding per answer, a little fanfare when done.
+   const soundOn = useSoundsEnabled();
+   const toggleSound = () => {
+      setSoundsEnabled(!soundOn);
+      if (!soundOn) playDing(true);
+   };
+   useEffect(() => {
+      if (!praise) return undefined;
+      try {
+         navigator.vibrate?.(12);
+      } catch {
+         // ignore
+      }
+      if (praise.done) playSuccess();
+      else playDing();
+      const timer = window.setTimeout(() => setPraise(null), 1800);
+      return () => window.clearTimeout(timer);
+   }, [praise]);
    // Continue stays tappable: a tap with something unanswered marks those questions in red and
    // scrolls to the first, instead of a disabled button that silently does nothing (Oct 2026 replay).
    const [showMissing, setShowMissing] = useState(false);
@@ -515,13 +554,36 @@ export function BorrowerContextLoanStep({
       rootRef.current?.scrollIntoView({ block: 'start' });
    }, [page]);
 
+   const primaryRef = useRef<HTMLButtonElement | null>(null);
+   // Restart the shake on every tap (removing and re-adding the class replays the animation).
+   const shake = (el: Element | null | undefined) => {
+      if (!el) return;
+      el.classList.remove('connect-shake');
+      void (el as HTMLElement).offsetWidth;
+      el.classList.add('connect-shake');
+   };
+
    const handlePrimary = () => {
       if (isBusy) return;
       if (missing.length > 0) {
          setShowMissing(true);
-         rootRef.current
-            ?.querySelector(`[data-bio-field="${missing[0].field}"]`)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         // "Not yet": the button shakes and the phone buzzes (Android — iPhone browsers can't vibrate),
+         // then we scroll to the first unanswered question and shake it once it's in view.
+         shake(primaryRef.current);
+         try {
+            navigator.vibrate?.([40, 40, 40]);
+         } catch {
+            // Vibration blocked — the shake is enough.
+         }
+         const firstMissing = rootRef.current?.querySelector(`[data-bio-field="${missing[0].field}"]`);
+         firstMissing?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         window.setTimeout(() => {
+            // Some browsers skip smooth scrolling (power saving, reduced motion): if it's still hidden
+            // (off screen or under the pinned footer), jump there.
+            const box = firstMissing?.getBoundingClientRect();
+            if (box && (box.top < 0 || box.bottom > window.innerHeight - 150)) firstMissing?.scrollIntoView({ block: 'center' });
+            shake(firstMissing);
+         }, 380);
          return;
       }
       if (page === 1) onNextPage();
@@ -530,7 +592,7 @@ export function BorrowerContextLoanStep({
 
    const backButton = (
       <button
-         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border border-[#ded6e8] bg-[#f8f4fc] text-md-b1 font-[590] text-md-heading transition hover:bg-[#f3ecfa] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
+         className="inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] border-2 border-b-4 border-[#e5ddf0] bg-white text-md-b1 font-bold text-md-heading transition duration-100 hover:bg-[#faf8fd] active:translate-y-[2px] active:border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2"
          onClick={onBack}
          type="button"
       >
@@ -543,20 +605,74 @@ export function BorrowerContextLoanStep({
    // in view — on page 2 it used to sit below the fold on phones and borrowers never found it.
    const footer = (
       <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-auto flex flex-col gap-2 border-t border-[#f0ecf5] bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-         {missing.length > 0 ? (
-            <p
-               aria-live="polite"
-               className={`text-md-b3 font-medium leading-[18px] ${showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}`}
-            >
-               Still needed: {missing.map((item) => item.label).join(', ')}.
-            </p>
-         ) : null}
+         {/* Where they are, always: "2 of 4 answered" + a bar, then a green "all done". */}
+         <div aria-live="polite" className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2 text-md-b3 font-bold leading-[18px]">
+               {praise && !showMissing ? (
+                  <span className="connect-praise text-[15px] text-[#1f7a3d]" key={praise.id}>
+                     {praise.word}{' '}
+                     {missing.length > 0 ? `${missing.length} to go.` : `All done ✓ Tap ${page === 1 ? 'Continue' : submitLabel}.`}
+                  </span>
+               ) : missing.length > 0 ? (
+                  <span className={showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}>
+                     Still needed: {missing.map((item) => item.label).join(', ')}.
+                  </span>
+               ) : (
+                  <span className="text-[#1f7a3d]">All done ✓ Tap {page === 1 ? 'Continue' : submitLabel}.</span>
+               )}
+               <span className="flex shrink-0 items-center gap-1.5 text-[#8a7c9c]">
+                  {answeredCount} of {requiredCount}
+                  <button
+                     aria-label={soundOn ? 'Turn sounds off' : 'Turn sounds on'}
+                     aria-pressed={soundOn}
+                     className="grid size-7 place-items-center rounded-full text-[#8a7c9c] transition hover:bg-[#f3ecff] hover:text-[#6b55f7]"
+                     onClick={toggleSound}
+                     type="button"
+                  >
+                     {soundOn ? <Volume2 className="size-4" strokeWidth={2.4} /> : <VolumeX className="size-4" strokeWidth={2.4} />}
+                  </button>
+               </span>
+            </div>
+            {/* The race: the hippo runs along the bar toward the finish flag as answers come in —
+                jogging, sprinting on the last one, jumping when it reaches the flag. */}
+            <div className="relative h-[46px]">
+               <div className="absolute inset-x-0 bottom-0 h-2.5 overflow-hidden rounded-full bg-[#ede8f3]">
+                  <div
+                     className={`h-full rounded-full bg-[#22a35a] transition-[width] duration-500 ease-out ${praise ? 'connect-bar-glow' : ''}`}
+                     key={praise?.id ?? 'bar'}
+                     style={{ width: `${progress * 100}%` }}
+                  />
+               </div>
+               <img
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute bottom-[6px] right-0 h-8 w-auto select-none"
+                  draggable={false}
+                  src="/hippos/progress/finish-flag.png"
+               />
+               <div className="absolute bottom-[6px] left-0 right-[24px] top-0">
+                  <img
+                     alt=""
+                     aria-hidden="true"
+                     className={`absolute bottom-0 h-10 w-auto select-none transition-[left,transform] duration-500 ease-out ${
+                        progress >= 1 ? (praise ? 'connect-hippo-jump' : '') : praise ? 'connect-hippo-run' : ''
+                     }`}
+                     draggable={false}
+                     src={`/hippos/progress/hippo-${hippoPose}.png`}
+                     style={{ left: `${progress * 100}%`, transform: `translateX(-${progress * 100}%)` }}
+                  />
+               </div>
+            </div>
+         </div>
          <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
             {backButton}
             <button
+               ref={primaryRef}
                aria-disabled={missing.length > 0}
-               className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-[590] text-md-neutral-100 transition active:scale-[0.98] disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                  missing.length > 0 ? 'bg-md-neutral-600' : 'bg-md-primary-1200 hover:bg-[#5200c8]'
+               className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-bold transition duration-100 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
+                  missing.length > 0
+                     ? 'bg-[#e8e3ef] text-[#a99fb6] shadow-[0_4px_0_#d6cfe0]'
+                     : 'bg-[#6b55f7] text-white shadow-[0_4px_0_#4a35c9] hover:brightness-110 active:translate-y-[4px] active:shadow-none'
                }`}
                disabled={isBusy}
                onClick={handlePrimary}
@@ -585,7 +701,7 @@ export function BorrowerContextLoanStep({
 
    if (page === 1) {
       return (
-         <div ref={rootRef} className="flex min-h-0 flex-col gap-5">
+         <div key="bio-1" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
             <section className="rounded-[20px] border border-[#e7d8ff] bg-[#f8f4fc] p-4">
                <div className="mb-3">
                   <p className="text-[12px] font-[590] leading-[18px] text-[#5d16c9]">Public borrower profile</p>
@@ -636,6 +752,7 @@ export function BorrowerContextLoanStep({
             </section>
 
             <BorrowerContextRadioSection
+               answered={Boolean(context.incomeSetup)}
                fieldId="incomeSetup"
                label="How would you describe your work?"
                missing={isMissing('incomeSetup')}
@@ -683,8 +800,9 @@ export function BorrowerContextLoanStep({
    }
 
    return (
-      <div ref={rootRef} className="flex min-h-0 flex-col gap-5">
+      <div key="bio-2" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
          <BorrowerContextChipSection
+            answered={Boolean(context.paydayWindow)}
             fieldId="paydayWindow"
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
@@ -695,6 +813,7 @@ export function BorrowerContextLoanStep({
          />
 
          <BorrowerContextChipSection
+            answered={Boolean(monthlyIncome)}
             fieldId="monthlyIncome"
             label="What is your approximate monthly income?"
             helper="Helps lenders gauge repayment capacity."
@@ -705,6 +824,7 @@ export function BorrowerContextLoanStep({
          />
 
          <BorrowerContextChipSection
+            answered={Boolean(monthlyExpenses)}
             fieldId="monthlyExpenses"
             label="What do your recurring expenses cost per month?"
             helper="Helps lenders understand your financial commitments."
@@ -758,6 +878,7 @@ export function BorrowerContextLoanStep({
 
          <BorrowerContextChipSection
             caption="Pick all that apply."
+            answered={context.cashGaps.length > 0}
             fieldId="cashGaps"
             label="What do you usually need short-term help with?"
             missing={isMissing('cashGaps')}
@@ -885,7 +1006,21 @@ function StepDots({ steps, current }: { steps: RequestStepKey[]; current: number
    );
 }
 
+// Green check that pops in beside a bio question once it's answered — instant "that one's done".
+function AnsweredCheck() {
+   return (
+      <span
+         aria-label="Answered"
+         className="connect-celebrate-pop grid size-6 shrink-0 place-items-center rounded-full bg-[#22a35a] text-white shadow-[0_2px_0_#1a7f45]"
+         role="img"
+      >
+         <Check aria-hidden="true" className="size-4" strokeWidth={3} />
+      </span>
+   );
+}
+
 export function BorrowerContextRadioSection({
+   answered = false,
    fieldId,
    label,
    missing = false,
@@ -893,6 +1028,8 @@ export function BorrowerContextRadioSection({
    options,
    selectedValue
 }: {
+   // The bio shows a green check beside the question once it's answered.
+   answered?: boolean;
    // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
    fieldId?: string;
    label: string;
@@ -903,7 +1040,10 @@ export function BorrowerContextRadioSection({
 }) {
    return (
       <fieldset className="flex scroll-mt-24 flex-col gap-3" data-bio-field={fieldId}>
-         <legend className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</legend>
+         <legend className="flex w-full items-center justify-between gap-2">
+            <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+            {answered ? <AnsweredCheck /> : null}
+         </legend>
          {missing ? <span className="-mt-1 text-[12px] font-[590] leading-[18px] text-md-red-500">Choose one to continue.</span> : null}
          <div className="grid grid-cols-1 gap-2">
             {options.map((option) => (
@@ -931,10 +1071,10 @@ function BorrowerContextRadioCard({
    return (
       <button
          aria-pressed={isSelected}
-         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border px-4 py-3 text-left transition active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_22px] items-center gap-3 rounded-[16px] border-2 border-b-4 px-4 py-3 text-left transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_6px_16px_rgba(96,16,210,0.08)]'
-               : 'border-[#ded6e8] bg-white text-md-neutral-1200 hover:border-[#cbbce0]'
+               ? 'connect-pick border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               : 'border-[#e5ddf0] bg-white text-md-neutral-1200 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
          type="button"
@@ -959,6 +1099,7 @@ function BorrowerContextRadioCard({
 }
 
 export function BorrowerContextChipSection({
+   answered = false,
    caption,
    fieldId,
    helper,
@@ -969,6 +1110,8 @@ export function BorrowerContextChipSection({
    options,
    selectedValues
 }: {
+   // The bio shows a green check beside the question once it's answered.
+   answered?: boolean;
    caption?: string;
    // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
    fieldId?: string;
@@ -984,7 +1127,10 @@ export function BorrowerContextChipSection({
       <fieldset className="flex scroll-mt-24 flex-col gap-3 border-t border-[#e7e0ec] pt-4" data-bio-field={fieldId}>
          <legend className="sr-only">{label}</legend>
          <div className="flex flex-col gap-0.5">
-            <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+            <span className="flex items-center justify-between gap-2">
+               <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+               {answered ? <AnsweredCheck /> : null}
+            </span>
             {missing ? (
                <span className="text-[12px] font-[590] leading-[18px] text-md-red-500">
                   {multi ? 'Pick at least one to continue.' : 'Choose one to continue.'}
@@ -1022,10 +1168,10 @@ function BorrowerContextChoiceChip({
    return (
       <button
          aria-pressed={isSelected}
-         className={`inline-flex min-h-[38px] items-center justify-center gap-[6px] rounded-md-pill border px-3 py-2 text-[13px] font-[590] leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
+         className={`inline-flex min-h-[42px] items-center justify-center gap-[6px] rounded-[14px] border-2 border-b-4 px-3 py-2 text-[14px] font-bold leading-[18px] transition duration-100 active:translate-y-[2px] active:border-b-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
             isSelected
-               ? 'border-md-primary-900 bg-[#f3e8ff] text-md-primary-1200 shadow-[0_4px_10px_rgba(96,16,210,0.08)]'
-               : 'border-[#d8d0e2] bg-white text-md-neutral-1400 hover:border-[#bfaed5]'
+               ? 'connect-pick border-md-primary-900 border-b-[#4a35c9] bg-[#f3e8ff] text-md-primary-1200'
+               : 'border-[#e5ddf0] bg-white text-md-neutral-1400 hover:bg-[#faf8fd]'
          }`}
          onClick={onClick}
          type="button"
