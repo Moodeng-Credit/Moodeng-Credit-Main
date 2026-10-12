@@ -45,7 +45,17 @@ vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
       rpc: vi.fn(),
-      functions: { invoke: supa.invoke }
+      functions: { invoke: supa.invoke },
+      // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
+      channel: () => ({
+         on(this: object) {
+            return this;
+         },
+         subscribe(this: object) {
+            return this;
+         }
+      }),
+      removeChannel: vi.fn(async () => 'ok')
    })
 }));
 

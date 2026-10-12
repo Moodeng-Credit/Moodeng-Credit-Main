@@ -42,7 +42,17 @@ vi.mock('@/hooks/usePushNotifications', () => ({
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
-      rpc: supa.rpc
+      rpc: supa.rpc,
+      // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
+      channel: () => ({
+         on(this: object) {
+            return this;
+         },
+         subscribe(this: object) {
+            return this;
+         }
+      }),
+      removeChannel: vi.fn(async () => 'ok')
    })
 }));
 
