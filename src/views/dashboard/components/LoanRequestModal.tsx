@@ -500,6 +500,7 @@ export function BorrowerContextLoanStep({
               context.cashGaps.length === 0 ? { field: 'cashGaps', label: 'what you need help with' } : null
            ]
    ).filter((item): item is { field: string; label: string } => item !== null);
+   const requiredCount = page === 1 ? 1 : 4;
    // Continue stays tappable: a tap with something unanswered marks those questions in red and
    // scrolls to the first, instead of a disabled button that silently does nothing (Oct 2026 replay).
    const [showMissing, setShowMissing] = useState(false);
@@ -567,14 +568,27 @@ export function BorrowerContextLoanStep({
    // in view — on page 2 it used to sit below the fold on phones and borrowers never found it.
    const footer = (
       <div className="sticky bottom-0 z-10 -mx-5 -mb-5 mt-auto flex flex-col gap-2 border-t border-[#f0ecf5] bg-white px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-         {missing.length > 0 ? (
-            <p
-               aria-live="polite"
-               className={`text-md-b3 font-medium leading-[18px] ${showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}`}
-            >
-               Still needed: {missing.map((item) => item.label).join(', ')}.
-            </p>
-         ) : null}
+         {/* Where they are, always: "2 of 4 answered" + a bar, then a green "all done". */}
+         <div aria-live="polite" className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between gap-2 text-md-b3 font-bold leading-[18px]">
+               {missing.length > 0 ? (
+                  <span className={showMissing ? 'text-md-red-500' : 'text-md-primary-1200'}>
+                     Still needed: {missing.map((item) => item.label).join(', ')}.
+                  </span>
+               ) : (
+                  <span className="text-[#1f7a3d]">All done ✓ Tap {page === 1 ? 'Continue' : submitLabel}.</span>
+               )}
+               <span className="shrink-0 text-[#8a7c9c]">
+                  {requiredCount - missing.length} of {requiredCount}
+               </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-[#ede8f3]">
+               <div
+                  className="h-full rounded-full bg-[#22a35a] transition-[width] duration-300 ease-out"
+                  style={{ width: `${((requiredCount - missing.length) / requiredCount) * 100}%` }}
+               />
+            </div>
+         </div>
          <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
             {backButton}
             <button
@@ -663,6 +677,7 @@ export function BorrowerContextLoanStep({
             </section>
 
             <BorrowerContextRadioSection
+               answered={Boolean(context.incomeSetup)}
                fieldId="incomeSetup"
                label="How would you describe your work?"
                missing={isMissing('incomeSetup')}
@@ -712,6 +727,7 @@ export function BorrowerContextLoanStep({
    return (
       <div key="bio-2" ref={rootRef} className={`flex min-h-0 flex-col gap-5 ${stepAnimationClass(pageDirection)}`}>
          <BorrowerContextChipSection
+            answered={Boolean(context.paydayWindow)}
             fieldId="paydayWindow"
             helper="Helps lenders see that repayment timing makes sense."
             label="When do you usually get paid?"
@@ -722,6 +738,7 @@ export function BorrowerContextLoanStep({
          />
 
          <BorrowerContextChipSection
+            answered={Boolean(monthlyIncome)}
             fieldId="monthlyIncome"
             label="What is your approximate monthly income?"
             helper="Helps lenders gauge repayment capacity."
@@ -732,6 +749,7 @@ export function BorrowerContextLoanStep({
          />
 
          <BorrowerContextChipSection
+            answered={Boolean(monthlyExpenses)}
             fieldId="monthlyExpenses"
             label="What do your recurring expenses cost per month?"
             helper="Helps lenders understand your financial commitments."
@@ -785,6 +803,7 @@ export function BorrowerContextLoanStep({
 
          <BorrowerContextChipSection
             caption="Pick all that apply."
+            answered={context.cashGaps.length > 0}
             fieldId="cashGaps"
             label="What do you usually need short-term help with?"
             missing={isMissing('cashGaps')}
@@ -912,7 +931,21 @@ function StepDots({ steps, current }: { steps: RequestStepKey[]; current: number
    );
 }
 
+// Green check that pops in beside a bio question once it's answered — instant "that one's done".
+function AnsweredCheck() {
+   return (
+      <span
+         aria-label="Answered"
+         className="connect-celebrate-pop grid size-6 shrink-0 place-items-center rounded-full bg-[#22a35a] text-white shadow-[0_2px_0_#1a7f45]"
+         role="img"
+      >
+         <Check aria-hidden="true" className="size-4" strokeWidth={3} />
+      </span>
+   );
+}
+
 export function BorrowerContextRadioSection({
+   answered = false,
    fieldId,
    label,
    missing = false,
@@ -920,6 +953,8 @@ export function BorrowerContextRadioSection({
    options,
    selectedValue
 }: {
+   // The bio shows a green check beside the question once it's answered.
+   answered?: boolean;
    // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
    fieldId?: string;
    label: string;
@@ -930,7 +965,10 @@ export function BorrowerContextRadioSection({
 }) {
    return (
       <fieldset className="flex scroll-mt-24 flex-col gap-3" data-bio-field={fieldId}>
-         <legend className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</legend>
+         <legend className="flex w-full items-center justify-between gap-2">
+            <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+            {answered ? <AnsweredCheck /> : null}
+         </legend>
          {missing ? <span className="-mt-1 text-[12px] font-[590] leading-[18px] text-md-red-500">Choose one to continue.</span> : null}
          <div className="grid grid-cols-1 gap-2">
             {options.map((option) => (
@@ -986,6 +1024,7 @@ function BorrowerContextRadioCard({
 }
 
 export function BorrowerContextChipSection({
+   answered = false,
    caption,
    fieldId,
    helper,
@@ -996,6 +1035,8 @@ export function BorrowerContextChipSection({
    options,
    selectedValues
 }: {
+   // The bio shows a green check beside the question once it's answered.
+   answered?: boolean;
    caption?: string;
    // data-bio-field, so the bio's Continue can scroll to it when it's unanswered.
    fieldId?: string;
@@ -1011,7 +1052,10 @@ export function BorrowerContextChipSection({
       <fieldset className="flex scroll-mt-24 flex-col gap-3 border-t border-[#e7e0ec] pt-4" data-bio-field={fieldId}>
          <legend className="sr-only">{label}</legend>
          <div className="flex flex-col gap-0.5">
-            <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+            <span className="flex items-center justify-between gap-2">
+               <span className={`text-[15px] font-[590] leading-5 ${missing ? 'text-md-red-500' : 'text-md-heading'}`}>{label}</span>
+               {answered ? <AnsweredCheck /> : null}
+            </span>
             {missing ? (
                <span className="text-[12px] font-[590] leading-[18px] text-md-red-500">
                   {multi ? 'Pick at least one to continue.' : 'Choose one to continue.'}
