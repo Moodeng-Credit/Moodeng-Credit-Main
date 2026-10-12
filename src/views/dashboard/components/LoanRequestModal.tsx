@@ -516,13 +516,36 @@ export function BorrowerContextLoanStep({
       rootRef.current?.scrollIntoView({ block: 'start' });
    }, [page]);
 
+   const primaryRef = useRef<HTMLButtonElement | null>(null);
+   // Restart the shake on every tap (removing and re-adding the class replays the animation).
+   const shake = (el: Element | null | undefined) => {
+      if (!el) return;
+      el.classList.remove('connect-shake');
+      void (el as HTMLElement).offsetWidth;
+      el.classList.add('connect-shake');
+   };
+
    const handlePrimary = () => {
       if (isBusy) return;
       if (missing.length > 0) {
          setShowMissing(true);
-         rootRef.current
-            ?.querySelector(`[data-bio-field="${missing[0].field}"]`)
-            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         // "Not yet": the button shakes and the phone buzzes (Android — iPhone browsers can't vibrate),
+         // then we scroll to the first unanswered question and shake it once it's in view.
+         shake(primaryRef.current);
+         try {
+            navigator.vibrate?.([40, 40, 40]);
+         } catch {
+            // Vibration blocked — the shake is enough.
+         }
+         const firstMissing = rootRef.current?.querySelector(`[data-bio-field="${missing[0].field}"]`);
+         firstMissing?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+         window.setTimeout(() => {
+            // Some browsers skip smooth scrolling (power saving, reduced motion): if it's still hidden
+            // (off screen or under the pinned footer), jump there.
+            const box = firstMissing?.getBoundingClientRect();
+            if (box && (box.top < 0 || box.bottom > window.innerHeight - 150)) firstMissing?.scrollIntoView({ block: 'center' });
+            shake(firstMissing);
+         }, 380);
          return;
       }
       if (page === 1) onNextPage();
@@ -555,6 +578,7 @@ export function BorrowerContextLoanStep({
          <div className="grid grid-cols-[104px_minmax(0,1fr)] gap-3">
             {backButton}
             <button
+               ref={primaryRef}
                aria-disabled={missing.length > 0}
                className={`inline-flex min-h-[52px] items-center justify-center gap-md-1 rounded-[16px] px-md-4 py-md-3 text-md-b1 font-bold transition duration-100 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
                   missing.length > 0

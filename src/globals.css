@@ -725,6 +725,38 @@ html.dark .team-page .team-blue-panel {
    animation: connectTrailCurrent 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
+/* Bio "not yet": Continue and the first unanswered question shake side to side. */
+@keyframes connectShake {
+   0%,
+   100% {
+      transform: none;
+   }
+
+   15% {
+      transform: translateX(-9px);
+   }
+
+   30% {
+      transform: translateX(8px);
+   }
+
+   45% {
+      transform: translateX(-6px);
+   }
+
+   60% {
+      transform: translateX(5px);
+   }
+
+   75% {
+      transform: translateX(-2px);
+   }
+}
+
+.connect-shake {
+   animation: connectShake 0.45s ease-in-out;
+}
+
 /* The hippo's speech bubble pops in each time a step opens. */
 @keyframes connectBubbleIn {
    0% {
@@ -799,7 +831,8 @@ html.dark .team-page .team-blue-panel {
    .connect-trail-fill,
    .connect-trail-check,
    .connect-trail-line,
-   .connect-trail-current {
+   .connect-trail-current,
+   .connect-shake {
       animation: none !important;
    }
 
