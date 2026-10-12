@@ -80,7 +80,10 @@ const TRAIL_STEP_S = 0.42;
 export function StepTrail({ steps, current }: { steps: string[]; current: number }) {
    const at = (index: number) => `${(TRAIL_START_S + index * TRAIL_STEP_S).toFixed(2)}s`;
    return (
-      <ol aria-label={`Step ${current + 1} of ${steps.length}: ${steps[current]}`} className="flex w-full items-start justify-between">
+      <ol
+         aria-label={current >= steps.length ? `All ${steps.length} steps done` : `Step ${current + 1} of ${steps.length}: ${steps[current]}`}
+         className="flex w-full items-start justify-between"
+      >
          {steps.map((label, index) => {
             const done = index < current;
             const now = index === current;
