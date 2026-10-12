@@ -71,10 +71,11 @@ export async function downloadCreditLineExcel(data: LenderReportData, report: Pe
    line('Overdue', report.counts.overdue);
    line('Median loan ($)', m.loan, USD);
    line('Median term (days)', m.term);
-   line('Median fee (% of principal)', m.fee, PCT);
+   line('Median borrower fee, all loans (flat, per loan)', m.fee, PCT);
    line('Median loan, standard pricing only ($)', m.loanStandard, USD);
    line('Median term, standard pricing only (days)', m.termStandard);
-   line('Median fee, standard pricing only', m.feeStandard, PCT);
+   line('Typical borrower fee (flat fee per loan, standard pricing)', m.feeStandard, PCT);
+   line('What the fee means', 'A one-time flat fee on each loan for its whole term (usually 30 days), e.g. $2 on a $15 loan. Not a monthly or annual rate.');
    line('Borrower fees collected ($)', report.feesCollected, USD);
    s.addRow([]);
    s.addRow(['Medians are used because a few larger loans and restructures (0% bridge) skew averages. Standard pricing excludes restructures. Amounts in USDC (1 USDC = $1). Dates are Philippine time.']).font = { ...font, italic: true, size: 9 };
@@ -83,7 +84,7 @@ export async function downloadCreditLineExcel(data: LenderReportData, report: Pe
    const l = wb.addWorksheet('Loans (Schedule B)');
    title(l, 'Schedule B — loans funded from the facility', 'Borrower identity: Moodeng username and private reference; full KYC records are held by Moodeng.');
    headerRow(l, [
-      '#', 'Loan ID', 'Borrower ref', 'Username', 'Funded', 'Due', 'Term (days)', 'Principal ($)', 'Total due ($)', 'Fee (%)',
+      '#', 'Loan ID', 'Borrower ref', 'Username', 'Funded', 'Due', 'Term (days)', 'Principal ($)', 'Total due ($)', 'Flat fee (% of loan, whole term)',
       'Repaid on', 'Outstanding ($)', 'Status', 'Pricing', 'KYC', 'KYC date', 'Liveness', 'Facebook verified', 'Video call',
       'Borrower wallet', 'Disbursement tx', 'Repayment tx', 'Approval rationale'
    ]);

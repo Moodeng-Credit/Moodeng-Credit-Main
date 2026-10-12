@@ -143,7 +143,7 @@ export default function CreditLineLenderPage() {
             <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
                <Stat label="Deployed now" sub={`${pct(report.utilization)} of ${usd(Number(f.commitment_usd), 0)}`} value={usd(report.deployed)} />
                <Stat label="Available" value={usd(report.available)} />
-               <Stat label="Interest accrued" sub={`Projected for the period: ${usd(report.interestProjected)}`} value={usd(report.interestAccrued)} />
+               <Stat label="Interest owed to you" sub={`So far this period (15%/yr on deployed funds) · projected ${usd(report.interestProjected)}`} value={usd(report.interestAccrued)} />
                <Stat
                   label="Loans"
                   sub={`${report.counts.active} active · ${report.counts.repaid} repaid · ${report.counts.overdue} overdue`}
@@ -151,11 +151,13 @@ export default function CreditLineLenderPage() {
                />
                <Stat label="Median loan" sub={`All loans: ${usd(m.loan)}`} value={usd(m.loanStandard)} />
                <Stat label="Median term" sub={`All loans: ${m.term} days`} value={`${m.termStandard} days`} />
-               <Stat label="Median fee" sub={`All loans: ${pct(m.fee)}`} value={pct(m.feeStandard)} />
+               {/* A flat fee for the whole loan, not a monthly rate — said in words so nobody reads it as one. */}
+               <Stat label="Typical borrower fee" sub="Flat fee for the whole loan (usually 30 days), e.g. $2 on $15" value={`${pct(m.feeStandard)} per loan`} />
                <Stat label="Lent / repaid" sub={`Fees collected: ${usd(report.feesCollected)}`} value={`${usd(report.lent, 0)} / ${usd(report.principalRepaid, 0)}`} />
             </section>
             <p className="-mt-2 text-[12px] text-[#8a7c9c]">
-               Medians use standard pricing (restructures such as a 0% bridge are excluded). Interest: {(Number(f.annual_rate) * 100).toFixed(0)}% simple,
+               Borrower fees are a one-time flat fee on each loan, paid back with the principal — not a monthly or annual rate. Medians use
+               standard pricing (the 0% bridge loan is excluded; including it, the median fee is {pct(m.fee)}). Interest: {(Number(f.annual_rate) * 100).toFixed(0)}% simple,
                actual/365, on principal deployed each day. Advanced {usd(report.advanced)} · drawn to the lending wallet {usd(report.drawn)} · at Binance{' '}
                {usd(report.atBinance)}.
             </p>
