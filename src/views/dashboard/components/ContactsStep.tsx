@@ -100,6 +100,8 @@ const isIOSBrowser = () =>
    /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 // Codes live 30 minutes; a prepared one older than this is fetched fresh on the tap instead.
 const PREPARED_CODE_TTL_MS = 20 * 60 * 1000;
+// Onboarding: how long the green "Verified" shows before moving on to the success screen.
+const AUTO_CONTINUE_MS = 900;
 
 export default function ContactsStep({
    userId,
@@ -164,6 +166,8 @@ export default function ContactsStep({
    const lastHiddenAtRef = useRef<number | null>(null);
    const lastChannelRef = useRef<Channel | null>(null);
    const confirmedTrackedRef = useRef(false);
+   // Confirmed while they're on this screen (not a line verified earlier): onboarding moves on by itself.
+   const [confirmedNow, setConfirmedNow] = useState(false);
    const backupTrackedRef = useRef(false);
 
    // Due-date reminders by push are required too, wherever the browser can do push. Some can't (an
@@ -243,6 +247,7 @@ export default function ContactsStep({
       const channel = messengerVerified ? 'messenger' : whatsappVerified ? 'whatsapp' : null;
       if (!channel) return;
       confirmedTrackedRef.current = true;
+      setConfirmedNow(true);
       // Done waiting: a later app switch (e.g. to Settings for notifications) isn't a Messenger trip.
       awaitingMessengerRef.current = false;
       // Confirmed while they were still away (desktop tabs keep polling): log the return here, since
@@ -267,6 +272,47 @@ export default function ContactsStep({
          left_app: leftForMessengerRef.current
       });
    }, [messengerVerified, whatsappVerified, source]);
+
+   // Live push from the database the moment the bot confirms (users is in the realtime publication,
+   // and RLS limits it to their own row). The 3s poll and the on-return re-check stay as backups.
+   useEffect(() => {
+      if (contactVerified) return undefined;
+      const client = getSupabaseBrowserClient();
+      const channel = client
+         .channel(`contact-verify:${userId}`)
+         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
+            const row = payload.new as { messenger_verified_at?: string | null; whatsapp_verified_at?: string | null };
+            if (row.messenger_verified_at) setMessengerVerified(true);
+            if (row.whatsapp_verified_at) setWhatsappVerified(true);
+         })
+         .subscribe();
+      return () => {
+         void client.removeChannel(channel);
+      };
+   }, [userId, contactVerified]);
+
+   // Onboarding: confirmed while they're here → a beat to see the green check, then straight on to the
+   // "Facebook connected!" screen, no extra tap. If reminders are still required, the reminders card
+   // asks for that one tap first and this fires as soon as they're on.
+   const onContinueRef = useRef(onContinue);
+   useEffect(() => {
+      onContinueRef.current = onContinue;
+   }, [onContinue]);
+   const autoContinueTimerRef = useRef<number | null>(null);
+   useEffect(() => {
+      if (source !== 'connect' || !confirmedNow || !canContinue || autoContinueTimerRef.current !== null) return;
+      autoContinueTimerRef.current = window.setTimeout(() => {
+         track('contact_verify_auto_continue', { source, attempts: attemptsRef.current, push_on: pushOn });
+         onContinueRef.current();
+      }, AUTO_CONTINUE_MS);
+   }, [source, confirmedNow, canContinue, pushOn]);
+   useEffect(
+      () => () => {
+         if (autoContinueTimerRef.current !== null) window.clearTimeout(autoContinueTimerRef.current);
+      },
+      []
+   );
+   const nudgeReminders = source === 'connect' && confirmedNow && pushRequired && !pushOn;
 
    const showBackup = useCallback(
       (reason: 'timeout' | 'returned_unconfirmed' | 'bounced' | 'not_opened' | 'resumed') => {
@@ -731,16 +777,25 @@ export default function ContactsStep({
 
          {/* Onboarding: one thing at a time — reminders only once Messenger is confirmed. */}
          {pushRequired && (contactVerified || source !== 'connect') ? (
-            <OptionCard
-               badge="Required"
-               disabled={push.isBusy}
-               done={pushOn}
-               doneLabel="On"
-               icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
-               onClick={() => void handleEnablePush()}
-               subtitle={push.isBusy ? 'Turning on…' : 'We remind you before your due date'}
-               title="Turn on reminders"
-            />
+            // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
+            <div className={nudgeReminders ? 'connect-shake' : undefined}>
+               <OptionCard
+                  badge="Required"
+                  disabled={push.isBusy}
+                  done={pushOn}
+                  doneLabel="On"
+                  icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
+                  onClick={() => void handleEnablePush()}
+                  subtitle={
+                     push.isBusy
+                        ? 'Turning on…'
+                        : nudgeReminders
+                          ? 'One more tap — turn on reminders and you’re through.'
+                          : 'We remind you before your due date'
+                  }
+                  title="Turn on reminders"
+               />
+            </div>
          ) : null}
          {/* Where push can't run (iPhone not on the Home Screen, Facebook's in-app browser) we used
              to show "In Safari, tap Share → Add to Home Screen…" here. It read like a scam and
