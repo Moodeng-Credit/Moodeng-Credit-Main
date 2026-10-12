@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ButtonHTMLAttributes, type CSSProperties, type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Check } from 'lucide-react';
 
@@ -140,6 +140,7 @@ export function OptionCard({
    badge,
    subtitle,
    onClick,
+   href,
    disabled,
    done,
    doneLabel = 'Confirmed'
@@ -148,7 +149,10 @@ export function OptionCard({
    title: string;
    badge?: string;
    subtitle?: ReactNode;
-   onClick?: () => void;
+   onClick?: (event: MouseEvent<HTMLElement>) => void;
+   // Render as a real link the person taps (iPhone: a tapped m.me link opens Messenger and leaves
+   // this page where it is; opened from script it lands in a new Safari tab instead).
+   href?: string;
    disabled?: boolean;
    done?: boolean;
    doneLabel?: string;
@@ -166,14 +170,11 @@ export function OptionCard({
          </div>
       );
    }
-   return (
-      <button
-         className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-b-[5px] px-4 py-3 text-left transition duration-100 ease-out hover:brightness-[0.98] active:translate-y-[3px] active:border-b-2 disabled:cursor-not-allowed disabled:opacity-60"
-         disabled={disabled}
-         onClick={onClick}
-         style={{ background: FIGMA.cardFill, borderColor: FIGMA.cardBorder, borderBottomColor: '#4a35c9' }}
-         type="button"
-      >
+   const cardClass =
+      'flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-b-[5px] px-4 py-3 text-left transition duration-100 ease-out hover:brightness-[0.98] active:translate-y-[3px] active:border-b-2 disabled:cursor-not-allowed disabled:opacity-60';
+   const cardStyle = { background: FIGMA.cardFill, borderColor: FIGMA.cardBorder, borderBottomColor: '#4a35c9' };
+   const body = (
+      <>
          <span className="grid size-11 shrink-0 place-items-center">{icon}</span>
          <span className="flex min-w-0 flex-col gap-0.5">
             <span className="flex flex-wrap items-center gap-2">
@@ -195,6 +196,18 @@ export function OptionCard({
                </span>
             ) : null}
          </span>
+      </>
+   );
+   if (href && !disabled) {
+      return (
+         <a className={cardClass} href={href} onClick={onClick} style={cardStyle}>
+            {body}
+         </a>
+      );
+   }
+   return (
+      <button className={cardClass} disabled={disabled} onClick={onClick} style={cardStyle} type="button">
+         {body}
       </button>
    );
 }
