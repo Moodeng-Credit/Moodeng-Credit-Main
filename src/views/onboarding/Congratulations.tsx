@@ -1,7 +1,13 @@
+import { useEffect } from 'react';
+
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { useLocalization } from '@/i18n/LocalizationProvider';
 import type { LocaleCode } from '@/i18n/translations';
+import { playSuccess } from '@/lib/uiSounds';
+import type { RootState } from '@/store/store';
+import { ConfettiRain } from '@/views/dashboard/components/connectKit';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 const TELEGRAM_URL =
@@ -15,6 +21,8 @@ const CONGRATULATIONS_COPY = {
       headerTitle: "You're all set",
       title: 'Congratulations! 🎉',
       body: "Your Moodeng account is fully set up and you're ready to go!",
+      lenderTitle: "You're now a Moo-lender! 🎉",
+      lenderBody: 'Welcome to the community.',
       nextTitle: "What's Next?",
       rows: {
          guides: {
@@ -44,6 +52,8 @@ const CONGRATULATIONS_COPY = {
       headerTitle: 'Handa ka na!',
       title: 'Binabati ka namin! 🎉',
       body: 'Naka-set up na ang Moodeng account mo at handa ka nang magsimula!',
+      lenderTitle: 'Moo-lender ka na! 🎉',
+      lenderBody: 'Maligayang pagdating sa komunidad.',
       nextTitle: 'Ano ang susunod?',
       rows: {
          guides: {
@@ -73,6 +83,8 @@ const CONGRATULATIONS_COPY = {
       headerTitle: 'Semua sudah siap!',
       title: 'Selamat! 🎉',
       body: 'Akun Moodeng kamu sudah siap dan kamu bisa mulai sekarang!',
+      lenderTitle: 'Kamu sekarang Moo-lender! 🎉',
+      lenderBody: 'Selamat datang di komunitas.',
       nextTitle: 'Apa selanjutnya?',
       rows: {
          guides: {
@@ -102,6 +114,8 @@ const CONGRATULATIONS_COPY = {
       headerTitle: 'คุณพร้อมแล้ว',
       title: 'ยินดีด้วย! 🎉',
       body: 'บัญชี Moodeng ของคุณตั้งค่าเสร็จแล้ว และพร้อมให้คุณเริ่มใช้งานได้เลย!',
+      lenderTitle: 'ตอนนี้คุณเป็น Moo-lender แล้ว! 🎉',
+      lenderBody: 'ยินดีต้อนรับสู่ชุมชน',
       nextTitle: 'ขั้นตอนต่อไป',
       rows: {
          guides: {
@@ -131,6 +145,8 @@ const CONGRATULATIONS_COPY = {
       headerTitle: 'Đã sẵn sàng!',
       title: 'Chúc mừng! 🎉',
       body: 'Tài khoản Moodeng của bạn đã được thiết lập và sẵn sàng sử dụng!',
+      lenderTitle: 'Bạn đã là Moo-lender! 🎉',
+      lenderBody: 'Chào mừng bạn đến với cộng đồng.',
       nextTitle: 'Tiếp theo là gì?',
       rows: {
          guides: {
@@ -162,6 +178,9 @@ const CONGRATULATIONS_COPY = {
       headerTitle: string;
       title: string;
       body: string;
+      // Lenders finish here: "You're now a Moo-lender!" (George, 2026-10-12).
+      lenderTitle: string;
+      lenderBody: string;
       nextTitle: string;
       rows: {
          guides: { title: string; subtitle: string };
@@ -247,6 +266,10 @@ export default function Congratulations() {
    const navigate = useNavigate();
    const { locale } = useLocalization();
    const copy = CONGRATULATIONS_COPY[locale] ?? CONGRATULATIONS_COPY.en;
+   const isLender = useSelector((state: RootState) => state.auth.user?.userRole) === 'lender';
+   useEffect(() => {
+      if (isLender) playSuccess();
+   }, [isLender]);
    const openExternal = (url: string) => window.open(url, '_blank', 'noopener,noreferrer');
    const requestBoardTourPath = import.meta.env.DEV ? '/request-board?referralTest=1&tourPreview=1' : '/request-board?tour=1';
 
@@ -254,12 +277,15 @@ export default function Congratulations() {
       <div className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col overflow-hidden rounded-[20px] bg-gradient-to-b from-[#fbfafd] to-white dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f]">
          <OnboardingHeader title={copy.headerTitle} />
 
+         {isLender ? <ConfettiRain /> : null}
          <main className="flex flex-1 flex-col gap-5 px-5 pb-5 pt-3">
             <img src="/hippos/party.png" alt="Moodeng celebrating" className="h-24 w-[110px] object-contain" />
 
             <div className="flex flex-col gap-1">
-               <h1 className="text-[34px] font-[590] leading-[1.2] tracking-[-0.04em] text-[#040033]">{copy.title}</h1>
-               <p className="text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#45556c]">{copy.body}</p>
+               <h1 className="text-[34px] font-[590] leading-[1.2] tracking-[-0.04em] text-[#040033]">
+                  {isLender ? copy.lenderTitle : copy.title}
+               </h1>
+               <p className="text-[16px] font-[510] leading-6 tracking-[-0.02em] text-[#45556c]">{isLender ? copy.lenderBody : copy.body}</p>
             </div>
 
             <section className="flex flex-col gap-1">

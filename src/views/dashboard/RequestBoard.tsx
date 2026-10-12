@@ -82,7 +82,7 @@ import LoanRequestModal, {
    type LoanRequestResume,
    mapBorrowerContextForSave
 } from '@/views/dashboard/components/LoanRequestModal';
-import { CONNECT_HIPPOS } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, markCelebrated, StepCelebration, StepTrail, wasCelebrated } from '@/views/dashboard/components/connectKit';
 import LocationPrimingModal from '@/views/dashboard/components/LocationPrimingModal';
 import { RequestBoardFilterContextProvider } from '@/views/dashboard/components/RequestBoardFilterContext';
 import SuccessModal from '@/views/dashboard/components/SuccessModal';
@@ -1331,6 +1331,21 @@ function RequestBoard$() {
    const loanAccessStatus = effectiveUser?.loanAccessStatus;
    const isFreshlyApproved = isBorrower && loanAccessStatus === 'approved' && !effectiveUser?.loanAccessSeenAt;
    const isLoanAccessPending = isBorrower && loanFlow !== 'open' && loanAccessStatus === 'pending';
+   // The finish line of onboarding: the first time a freshly approved borrower opens the app, a
+   // full-screen "You're now a Moo-borrower!" before the loan form. Once per borrower (this device).
+   const mooBorrowerDue = useMemo(
+      () => isFreshlyApproved && Boolean(effectiveUser?.id) && !wasCelebrated(effectiveUser?.id ?? '', 'moo-borrower'),
+      [isFreshlyApproved, effectiveUser?.id]
+   );
+   const [mooBorrowerDone, setMooBorrowerDone] = useState(false);
+   // Latched: opening the loan form stamps the approval as seen, which must not pull this away mid-view.
+   const [mooBorrowerShowing, setMooBorrowerShowing] = useState(false);
+   if (mooBorrowerDue && !mooBorrowerShowing && !mooBorrowerDone) setMooBorrowerShowing(true);
+   const finishMooBorrower = () => {
+      if (effectiveUser?.id) markCelebrated(effectiveUser.id, 'moo-borrower');
+      setMooBorrowerDone(true);
+      setShowModal(true);
+   };
 
    // JourneyNudge (app-wide) watches for the approval while they wait and brings them here the moment
    // it lands. Put the glowing "You're approved 🎉" Apply card in view so it's the first thing they see.
@@ -1969,6 +1984,25 @@ function RequestBoard$() {
 
    return (
       <>
+         {mooBorrowerShowing && !mooBorrowerDone ? (
+            <div className="fixed inset-0 z-[100] overflow-y-auto bg-white">
+               <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col">
+                  <StepCelebration
+                     continueLabel="Apply for my first loan"
+                     image={CONNECT_HIPPOS.approved}
+                     onDone={finishMooBorrower}
+                     stats={[
+                        { label: 'Facebook', value: 'Done ✓', tone: 'green' },
+                        { label: 'Profile', value: 'Done ✓', tone: 'purple' },
+                        { label: 'Call', value: 'Done ✓', tone: 'amber' }
+                     ]}
+                     subtitle="Welcome to the herd! You're all set — apply for your first loan now."
+                     title="You’re now a Moo-borrower! 🎉"
+                     trail={<StepTrail current={4} steps={['Messenger', 'About you', 'Your goal', 'Book call']} />}
+                  />
+               </div>
+            </div>
+         ) : null}
          <div id="top" className="min-h-screen bg-md-neutral-200">
             <div className="max-w-[440px] mx-auto pb-28">
                {/* Header — authenticated vs public */}
