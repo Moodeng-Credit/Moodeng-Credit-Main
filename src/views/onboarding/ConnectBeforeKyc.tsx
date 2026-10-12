@@ -1,15 +1,17 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useDispatch, useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { usePreKycGate } from '@/hooks/usePreKycGate';
+import type { WalletSetupPhase } from '@/lib/web3/openfort';
 
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
 import ConnectStep, { type ConnectPage, LoanAccessPendingCard } from '@/views/dashboard/components/ConnectStep';
+import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
@@ -40,7 +42,7 @@ export default function ConnectBeforeKyc() {
    const location = useLocation();
    const dispatch = useDispatch<AppDispatch>();
    const authUser = useSelector((state: RootState) => state.auth.user);
-   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate): the screens without an account.
+   // Dev-only /onboarding/connect-preview(?view=pending|about|celebrate|wallet-grow): the screens without an account.
    const isPreview = import.meta.env.DEV && location.pathname.includes('preview');
    const user = isPreview ? PREVIEW_USER : authUser;
    const gate = usePreKycGate();
@@ -67,7 +69,9 @@ export default function ConnectBeforeKyc() {
             soundToggle
             tooltip="Questions? Message Moodeng Credit on Facebook or email support@moodeng.app — we usually reply within a day."
          />
-         {isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
+         {isPreview && new URLSearchParams(location.search).get('view') === 'wallet-grow' ? (
+            <WalletGrowPreview />
+         ) : isPreview && new URLSearchParams(location.search).get('view') === 'celebrate' ? (
             <StepCelebration
                image={CONNECT_HIPPOS.approved}
                onDone={() => undefined}
@@ -110,6 +114,22 @@ export default function ConnectBeforeKyc() {
                withEmma={Boolean(user.hasReferral)}
             />
          )}
+      </div>
+   );
+}
+
+// Dev preview: the Instant Wallet hippo growing through the setup phases on a loop.
+const PREVIEW_PHASES: (WalletSetupPhase | null)[] = [null, 'securing', 'creating', 'saving', 'done', 'done', 'done'];
+function WalletGrowPreview() {
+   const [index, setIndex] = useState(0);
+   useEffect(() => {
+      const timer = window.setInterval(() => setIndex((i) => (i + 1) % PREVIEW_PHASES.length), 1200);
+      return () => window.clearInterval(timer);
+   }, []);
+   return (
+      <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
+         <GrowingWalletHippo idleSrc="/hippos/hippo-wallet.png" phase={PREVIEW_PHASES[index]} />
+         <p className="text-md-b2 text-md-neutral-700">phase: {PREVIEW_PHASES[index] ?? 'idle'}</p>
       </div>
    );
 }

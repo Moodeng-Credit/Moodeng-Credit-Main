@@ -20,6 +20,7 @@ import { isStaleChunkError, reloadOnceForStaleChunk } from '@/lib/staleChunkRelo
 import { getBaseAccountConnector, getBaseWalletLockStatus } from '@/lib/walletProvider';
 import { useCreateInstantWallet, useOpenfort, type WalletSetupPhase } from '@/lib/web3/openfort';
 import type { RootState } from '@/store/store';
+import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 import WalletConnectHelp from '@/views/onboarding/WalletConnectHelp';
 import { LENDER_WALLET_OPTIONS } from '@/views/onboarding/walletPickerOptions';
@@ -278,11 +279,8 @@ function BorrowerConnectView({
                {/* Moodeng hippo holding a card — this screen creates the app's own embedded
                    wallet, so the brand mascot (never the Base logo) makes clear it's a Moodeng
                    wallet you're creating, not an external one you're connecting. */}
-               <img
-                  src="/hippos/hippo-wallet.png"
-                  alt="Moodeng wallet"
-                  className="mb-md-3 h-28 w-auto max-w-[200px] object-contain drop-shadow-[0_18px_40px_rgba(96,16,210,0.22)]"
-               />
+               {/* While it's created, the hippo grows up one stage per setup step (GrowingWalletHippo). */}
+               <GrowingWalletHippo idleSrc="/hippos/hippo-wallet.png" phase={isCreatingInstantWallet && !instantWalletError ? instantWalletPhase : null} />
                <div className="mb-md-5 flex max-w-[320px] flex-col items-center gap-md-2">
                   <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading dark:text-md-neutral-100">
                      Create your Instant Wallet
