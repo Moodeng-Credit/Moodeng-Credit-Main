@@ -29,6 +29,8 @@ import {
    Ticket,
    TriangleAlert,
    Users,
+   Volume2,
+   VolumeX,
    WalletCards,
    X
 } from 'lucide-react';
@@ -52,6 +54,7 @@ import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
+import { playDing, playSuccess, setSoundsEnabled, soundsEnabled } from '@/lib/uiSounds';
 import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
@@ -507,12 +510,22 @@ export function BorrowerContextLoanStep({
    // Duolingo-style reward for each answer: a word of praise in the footer for a moment, a tiny
    // buzz (Android), and a glow on the progress bar. Only when the count goes UP.
    const [lastAnswered, setLastAnswered] = useState({ page, count: answeredCount });
-   const [praise, setPraise] = useState<{ id: number; word: string } | null>(null);
+   const [praise, setPraise] = useState<{ id: number; word: string; done: boolean } | null>(null);
    if (lastAnswered.page !== page || lastAnswered.count !== answeredCount) {
       const wentUp = lastAnswered.page === page && answeredCount > lastAnswered.count;
       setLastAnswered({ page, count: answeredCount });
-      setPraise(wentUp ? { id: Date.now(), word: PRAISE_WORDS[answeredCount % PRAISE_WORDS.length] } : null);
+      setPraise(
+         wentUp ? { id: Date.now(), word: PRAISE_WORDS[answeredCount % PRAISE_WORDS.length], done: answeredCount === requiredCount } : null
+      );
    }
+   // Answer chimes (off until they tap the speaker): a ding per answer, a little fanfare when done.
+   const [soundOn, setSoundOn] = useState(soundsEnabled);
+   const toggleSound = () => {
+      const next = !soundOn;
+      setSoundOn(next);
+      setSoundsEnabled(next);
+      if (next) playDing(true);
+   };
    useEffect(() => {
       if (!praise) return undefined;
       try {
@@ -520,6 +533,8 @@ export function BorrowerContextLoanStep({
       } catch {
          // ignore
       }
+      if (praise.done) playSuccess();
+      else playDing();
       const timer = window.setTimeout(() => setPraise(null), 1800);
       return () => window.clearTimeout(timer);
    }, [praise]);
@@ -605,8 +620,17 @@ export function BorrowerContextLoanStep({
                ) : (
                   <span className="text-[#1f7a3d]">All done ✓ Tap {page === 1 ? 'Continue' : submitLabel}.</span>
                )}
-               <span className="shrink-0 text-[#8a7c9c]">
+               <span className="flex shrink-0 items-center gap-1.5 text-[#8a7c9c]">
                   {answeredCount} of {requiredCount}
+                  <button
+                     aria-label={soundOn ? 'Turn sounds off' : 'Turn sounds on'}
+                     aria-pressed={soundOn}
+                     className="grid size-7 place-items-center rounded-full text-[#8a7c9c] transition hover:bg-[#f3ecff] hover:text-[#6b55f7]"
+                     onClick={toggleSound}
+                     type="button"
+                  >
+                     {soundOn ? <Volume2 className="size-4" strokeWidth={2.4} /> : <VolumeX className="size-4" strokeWidth={2.4} />}
+                  </button>
                </span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-[#ede8f3]">

@@ -1,6 +1,8 @@
-import { type ButtonHTMLAttributes, type CSSProperties, type ReactNode, useRef, useState } from 'react';
+import { type ButtonHTMLAttributes, type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { Check } from 'lucide-react';
+
+import { playSuccess } from '@/lib/uiSounds';
 
 // Visual kit for the Connect → Approve → Apply screens, taken from the Milestone_9.23 Figma
 // (verify_popup / milestones): a lavender-to-white hero with a 3D hippo, a short bold title, a
@@ -317,6 +319,10 @@ export function StepCelebration({
    continueLabel?: ReactNode;
    onDone: () => void;
 }) {
+   // A little fanfare if they turned sounds on in the bio.
+   useEffect(() => {
+      playSuccess();
+   }, []);
    // Guards a double tap from running onDone twice (it routes to the next step).
    const finishedRef = useRef(false);
    const finish = () => {
