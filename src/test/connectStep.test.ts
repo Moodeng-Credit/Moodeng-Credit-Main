@@ -54,9 +54,8 @@ const { default: ConnectStep, LoanAccessPendingCard } = await import('@/views/da
 const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text) as HTMLButtonElement | undefined;
 
-// The "nice job" card between steps (shown once per step per borrower): tap through it.
-const celebrationCard = (container: HTMLElement) =>
-   Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Tap to continue')) as HTMLButtonElement | undefined;
+// The "nice job" card between steps (shown once per step per borrower): its Continue moves on.
+const celebrationCard = (container: HTMLElement) => container.querySelector('[data-celebration] button') as HTMLButtonElement | undefined;
 
 const click = async (el?: HTMLElement) => {
    await act(async () => {

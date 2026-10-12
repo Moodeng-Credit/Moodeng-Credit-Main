@@ -1,4 +1,4 @@
-import { type ButtonHTMLAttributes, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ButtonHTMLAttributes, type CSSProperties, type ReactNode, useRef, useState } from 'react';
 
 import { Check } from 'lucide-react';
 
@@ -232,69 +232,146 @@ export const markCelebrated = (userId: string, step: string) => {
    }
 };
 
-const CELEBRATION_MS = 2200;
+// A Duolingo-style stat tile: coloured label band on top, the value underneath.
+export type CelebrationStat = { label: string; value: ReactNode; tone: 'green' | 'purple' | 'amber' };
 
-// Between steps: the confetti hippo with a popping check, what they just did, and the step trail
-// with that step now ticked. Moves on by itself after ~2s, or on a tap.
+const STAT_TONES: Record<CelebrationStat['tone'], { band: string; border: string; text: string }> = {
+   green: { band: '#22a35a', border: '#22a35a', text: '#1f7a3d' },
+   purple: { band: '#6b55f7', border: '#6b55f7', text: '#4b36d6' },
+   amber: { band: '#f2a516', border: '#f2a516', text: '#9a5b00' }
+};
+
+const NO_STATS: CelebrationStat[] = [];
+
+// Confetti pieces bursting out from behind the hippo: [x, y, colour, delay(s)].
+const CONFETTI: [number, number, string, number][] = [
+   [-120, -70, '#6b55f7', 0],
+   [-90, -130, '#f2a516', 0.05],
+   [-30, -150, '#22a35a', 0.1],
+   [40, -145, '#ff6b9a', 0.02],
+   [100, -120, '#6b55f7', 0.08],
+   [130, -60, '#f2a516', 0.12],
+   [-140, 0, '#ff6b9a', 0.06],
+   [140, 10, '#22a35a', 0.04],
+   [-100, 60, '#f2a516', 0.1],
+   [110, 70, '#6b55f7', 0.14],
+   [-50, -110, '#ff6b9a', 0.16],
+   [70, -90, '#22a35a', 0.18]
+];
+
+// Between steps, full screen: confetti burst, the cheering hippo with a popping check, a big
+// headline, stat tiles (done / next up / steps left), the step trail ticked, and a big Continue
+// pinned at the bottom — the borrower moves on when they're ready.
 export function StepCelebration({
    image,
    title,
    subtitle,
+   stats = NO_STATS,
    trail,
+   continueLabel = 'Continue',
    onDone
 }: {
    image: string;
    title: ReactNode;
    subtitle?: ReactNode;
+   stats?: CelebrationStat[];
    trail?: ReactNode;
+   continueLabel?: ReactNode;
    onDone: () => void;
 }) {
-   const onDoneRef = useRef(onDone);
-   useEffect(() => {
-      onDoneRef.current = onDone;
-   }, [onDone]);
+   // Guards a double tap from running onDone twice (it routes to the next step).
    const finishedRef = useRef(false);
    const finish = () => {
       if (finishedRef.current) return;
       finishedRef.current = true;
-      onDoneRef.current();
+      onDone();
    };
-   useEffect(() => {
-      const timer = window.setTimeout(finish, CELEBRATION_MS);
-      return () => window.clearTimeout(timer);
-   }, []);
 
    return (
-      <button
+      <div
          aria-live="polite"
-         className="connect-celebrate-in flex min-h-[70vh] w-full flex-col items-center justify-center gap-3 bg-gradient-to-b from-[#f3ecff] via-white to-white px-6 py-10 text-center focus:outline-none"
-         onClick={finish}
-         type="button"
+         className="connect-celebrate-in flex min-h-[600px] flex-1 flex-col bg-gradient-to-b from-[#efe6ff] via-[#faf7ff] to-white px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6"
+         data-celebration=""
       >
-         <span className="relative">
-            <img
-               alt=""
-               aria-hidden="true"
-               className="h-[128px] w-auto select-none object-contain drop-shadow-[0_8px_12px_rgba(89,77,101,0.18)]"
-               draggable={false}
-               src={image}
-            />
-            <span className="connect-celebrate-pop absolute -bottom-1 -right-2 grid size-11 place-items-center rounded-full bg-[#22a35a] text-white shadow-[0_6px_14px_rgba(34,163,90,0.35)] ring-4 ring-white">
-               <Check aria-hidden="true" className="size-6" strokeWidth={3} />
+         <div className="flex flex-1 flex-col items-center justify-center gap-5 text-center">
+            <span className="relative mt-2 grid place-items-center">
+               <span aria-hidden="true" className="absolute size-[220px] rounded-full bg-white/70 blur-2xl" />
+               {CONFETTI.map(([x, y, color, delay], index) => (
+                  <span
+                     aria-hidden="true"
+                     className="connect-confetti absolute left-1/2 top-1/2 h-3 w-2 rounded-[2px]"
+                     key={index}
+                     style={
+                        {
+                           backgroundColor: color,
+                           animationDelay: `${delay}s`,
+                           '--confetti-x': `${x}px`,
+                           '--confetti-y': `${y}px`,
+                           '--confetti-r': `${(index % 2 ? 1 : -1) * (180 + index * 25)}deg`
+                        } as CSSProperties
+                     }
+                  />
+               ))}
+               <img
+                  alt=""
+                  aria-hidden="true"
+                  className="relative h-[180px] w-auto select-none object-contain drop-shadow-[0_12px_18px_rgba(89,77,101,0.22)]"
+                  draggable={false}
+                  src={image}
+               />
+               <span className="connect-celebrate-pop absolute -bottom-2 right-0 grid size-14 place-items-center rounded-full bg-[#22a35a] text-white shadow-[0_8px_18px_rgba(34,163,90,0.4)] ring-[5px] ring-white">
+                  <Check aria-hidden="true" className="size-8" strokeWidth={3} />
+               </span>
             </span>
-         </span>
-         <h3 className="mt-2 text-[24px] font-bold leading-[28px] tracking-[-0.02em]" style={{ color: FIGMA.heading }}>
-            {title}
-         </h3>
-         {subtitle ? (
-            <p className="max-w-[300px] text-[15px] font-normal leading-[20px]" style={{ color: FIGMA.muted }}>
-               {subtitle}
-            </p>
-         ) : null}
-         {trail ? <div className="mt-3 w-full max-w-[360px]">{trail}</div> : null}
-         <span className="mt-2 text-[12px] font-semibold" style={{ color: FIGMA.purple }}>
-            Tap to continue
-         </span>
-      </button>
+
+            <div className="flex flex-col gap-2">
+               <h3 className="text-[30px] font-extrabold leading-[34px] tracking-[-0.02em]" style={{ color: '#3b2f4a' }}>
+                  {title}
+               </h3>
+               {subtitle ? (
+                  <p className="mx-auto max-w-[310px] text-[16px] font-normal leading-[22px]" style={{ color: FIGMA.muted }}>
+                     {subtitle}
+                  </p>
+               ) : null}
+            </div>
+
+            {stats.length > 0 ? (
+               <div
+                  className="grid w-full max-w-[380px] gap-2.5"
+                  style={{ gridTemplateColumns: `repeat(${stats.length}, minmax(0, 1fr))` }}
+               >
+                  {stats.map((stat, index) => {
+                     const tone = STAT_TONES[stat.tone];
+                     return (
+                        <div
+                           className="connect-stat-in overflow-hidden rounded-[16px] border-2 bg-white"
+                           key={stat.label}
+                           style={{ borderColor: tone.border, animationDelay: `${0.25 + index * 0.08}s` }}
+                        >
+                           <p
+                              className="px-1 py-1 text-[11px] font-extrabold uppercase tracking-[0.06em] text-white"
+                              style={{ backgroundColor: tone.band }}
+                           >
+                              {stat.label}
+                           </p>
+                           <p
+                              className="flex min-h-[48px] items-center justify-center px-1.5 py-2 text-[15px] font-bold leading-[18px]"
+                              style={{ color: tone.text }}
+                           >
+                              {stat.value}
+                           </p>
+                        </div>
+                     );
+                  })}
+               </div>
+            ) : null}
+
+            {trail ? <div className="w-full max-w-[380px] pt-1">{trail}</div> : null}
+         </div>
+
+         <PrimaryButton className="mt-6 min-h-[56px]" onClick={finish}>
+            {continueLabel}
+         </PrimaryButton>
+      </div>
    );
 }

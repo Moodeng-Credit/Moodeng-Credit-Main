@@ -182,11 +182,12 @@ export default function ConnectStep({
 
    // A short "nice job" card after a real accomplishment (Facebook confirmed, bio saved), once per
    // step per borrower, so each step gives feedback instead of silently swapping screens.
-   const [celebration, setCelebration] = useState<{ title: string; subtitle: string; next: ConnectPage } | null>(null);
-   const advance = (next: ConnectPage, celebrate?: { key: 'contact' | 'about'; title: string; subtitle: string }) => {
+   type Celebration = { key: 'contact' | 'about'; title: string; subtitle: string; done: string };
+   const [celebration, setCelebration] = useState<(Celebration & { next: ConnectPage }) | null>(null);
+   const advance = (next: ConnectPage, celebrate?: Celebration) => {
       if (celebrate && !wasCelebrated(userId, celebrate.key)) {
          markCelebrated(userId, celebrate.key);
-         setCelebration({ title: celebrate.title, subtitle: celebrate.subtitle, next });
+         setCelebration({ ...celebrate, next });
          return;
       }
       setPage(next);
@@ -196,15 +197,20 @@ export default function ConnectStep({
       setCelebration(null);
       setPage(celebration.next);
    };
-   const doneLabel = (count: number) => `Nice job — that's ${count} of ${steps.length} done.`;
 
    const direction = useStepDirection(celebration ? -1 : PAGE_ORDER[page]);
 
    if (celebration) {
+      const nextIndex = stepIndex(celebration.next);
       return (
          <StepCelebration
             image={CONNECT_HIPPOS.approved}
             onDone={finishCelebration}
+            stats={[
+               { label: 'Done', value: celebration.done, tone: 'green' },
+               { label: 'Next up', value: steps[nextIndex], tone: 'purple' },
+               { label: 'Steps left', value: steps.length - nextIndex, tone: 'amber' }
+            ]}
             subtitle={celebration.subtitle}
             title={celebration.title}
             trail={trail(celebration.next)}
@@ -233,7 +239,8 @@ export default function ConnectStep({
                   advance(showAbout ? 'about' : 'intro', {
                      key: 'contact',
                      title: 'Facebook connected!',
-                     subtitle: doneLabel(1)
+                     subtitle: 'Nice job — now we can message you about your loan.',
+                     done: 'Facebook ✓'
                   });
                }}
                intro={
@@ -278,7 +285,8 @@ export default function ConnectStep({
                      advance('intro', {
                         key: 'about',
                         title: 'Saved to your profile!',
-                        subtitle: `Lenders will see it beside your request. ${doneLabel(2)}`
+                        subtitle: 'Great work — lenders will see it beside your request.',
+                        done: 'Profile ✓'
                      })
                })}
             </div>
