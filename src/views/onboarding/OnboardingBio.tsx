@@ -1,6 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { Check } from 'lucide-react';
 import { useDispatch } from 'react-redux';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
@@ -15,6 +17,29 @@ import { BorrowerContextLoanStep, emptyBorrowerContext, mapBorrowerContextForSav
 // pre-KYC gate (/onboarding/connect), so the team sees it on the Telegram card before the intro call.
 // Saved straight to the profile; the loan application then skips it (it asks only while
 // user.incomeType is empty).
+//
+// Answers are kept as a draft on the device until saved, and page 2 lives in the URL (&bio=2): an
+// Android back swipe on page 2 used to drop them on the Messenger step with every answer wiped, and
+// one borrower refilled the bio three times before giving up (Oct 2026 replay).
+
+type BioDraft = { context: BorrowerContextState; profileName: string };
+
+const draftKey = (userId: string) => `md_onboarding_bio:${userId}`;
+
+const readDraft = (userId: string): BioDraft | null => {
+   try {
+      const raw = window.localStorage.getItem(draftKey(userId));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Partial<BioDraft>;
+      if (!parsed.context) return null;
+      return {
+         context: { ...emptyBorrowerContext, ...parsed.context, cashGaps: parsed.context.cashGaps ?? [] },
+         profileName: parsed.profileName ?? ''
+      };
+   } catch {
+      return null;
+   }
+};
 
 const recordProfileMilestone = async (userId: string, milestoneId: 'profile-name-added' | 'profile-image-added') => {
    try {
@@ -30,9 +55,37 @@ const recordProfileMilestone = async (userId: string, milestoneId: 'profile-name
 
 export default function OnboardingBio({ user, onBack, onDone }: { user: User; onBack: () => void; onDone: () => void }) {
    const dispatch = useDispatch<AppDispatch>();
-   const [page, setPage] = useState<1 | 2>(1);
-   const [context, setContext] = useState<BorrowerContextState>(emptyBorrowerContext);
-   const [profileName, setProfileName] = useState(user.displayName ?? user.username ?? '');
+   const navigate = useNavigate();
+   const location = useLocation();
+   const [searchParams, setSearchParams] = useSearchParams();
+   const draft = useMemo(() => readDraft(user.id), [user.id]);
+   const [context, setContext] = useState<BorrowerContextState>(draft?.context ?? emptyBorrowerContext);
+   const [profileName, setProfileName] = useState(draft?.profileName || user.displayName || user.username || '');
+   // Page 2 needs page 1's answer — a reload or shared link on &bio=2 without it starts at page 1.
+   const page: 1 | 2 = searchParams.get('bio') === '2' && context.incomeSetup ? 2 : 1;
+   const goToPage2 = () => {
+      const next = new URLSearchParams(searchParams);
+      next.set('bio', '2');
+      setSearchParams(next, { state: { bioPage2: true } });
+   };
+   const backToPage1 = () => {
+      // Pop our own history entry so the phone's back button doesn't land on page 2 again.
+      if ((location.state as { bioPage2?: boolean } | null)?.bioPage2) {
+         navigate(-1);
+         return;
+      }
+      const next = new URLSearchParams(searchParams);
+      next.delete('bio');
+      setSearchParams(next, { replace: true });
+   };
+
+   useEffect(() => {
+      try {
+         window.localStorage.setItem(draftKey(user.id), JSON.stringify({ context, profileName } satisfies BioDraft));
+      } catch {
+         // Storage blocked — the answers just won't survive leaving the page.
+      }
+   }, [context, profileName, user.id]);
    const [error, setError] = useState('');
    const [isSaving, setIsSaving] = useState(false);
    const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -58,6 +111,11 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
          }
          const mapped = mapBorrowerContextForSave(context);
          await dispatch(updateBorrowerContext(mapped)).unwrap();
+         try {
+            window.localStorage.removeItem(draftKey(user.id));
+         } catch {
+            // ignore
+         }
          onDone();
       } catch (err) {
          console.error('Failed to save onboarding bio:', err);
@@ -83,7 +141,12 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
    };
 
    return (
-      <div className="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
+      // No inner scroll box: the page itself scrolls, so the bio's sticky Continue pins to the screen.
+      <div className="flex flex-col gap-5 px-5 py-5 text-md-b2 text-md-heading">
+         <p className="-mb-2 flex items-center gap-1.5 text-[12px] font-[590] leading-[18px] text-[#1f7a3d]">
+            <Check aria-hidden="true" className="size-3.5" strokeWidth={2.6} />
+            Saved on this phone as you go — you can leave and finish later.
+         </p>
          <BorrowerContextLoanStep
             context={context}
             currentAvatarBackground={user.avatarBackground}
@@ -92,7 +155,7 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
             isSubmitting={false}
             monthlyExpenses={context.monthlyExpenses ?? ''}
             monthlyIncome={context.monthlyIncome ?? ''}
-            onBack={() => (page === 2 ? setPage(1) : onBack())}
+            onBack={() => (page === 2 ? backToPage1() : onBack())}
             onCashGapToggle={(value) =>
                setContext((current) => ({
                   ...current,
@@ -112,7 +175,7 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
             onMonthlyExpensesSelect={(v) => setContext((prev) => ({ ...prev, monthlyExpenses: v }))}
             onMonthlyIncomeSelect={(v) => setContext((prev) => ({ ...prev, monthlyIncome: v }))}
             onNextPage={() => {
-               if (context.incomeSetup) setPage(2);
+               if (context.incomeSetup) goToPage2();
             }}
             onOtherIncomeChange={(v) => setContext((prev) => ({ ...prev, otherIncome: v }))}
             onPaydaySelect={(value) => setContext((current) => ({ ...current, paydayWindow: value }))}

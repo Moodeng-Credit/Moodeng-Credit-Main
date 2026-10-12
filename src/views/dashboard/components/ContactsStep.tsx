@@ -680,6 +680,13 @@ export default function ContactsStep({
          {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
 
          <div className="mt-auto flex flex-col gap-1 pt-2">
+            {/* Onboarding: someone who comes back here (e.g. the phone's back button from About you)
+                should see at a glance that this step is done, not think they have to connect again. */}
+            {source === 'connect' && canContinue ? (
+               <p className="mb-1 text-center text-md-b2 font-[590] text-[#1f7a3d]">
+                  You&apos;re connected ✓ Tap Continue for the next step.
+               </p>
+            ) : null}
             <PrimaryButton disabled={!canContinue || isSubmitting} onClick={handleContinue}>
                {isSubmitting ? 'Submitting…' : 'Continue'}
             </PrimaryButton>
