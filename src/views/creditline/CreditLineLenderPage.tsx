@@ -166,7 +166,7 @@ export default function CreditLineLenderPage() {
                   <table className="w-full min-w-[980px] text-left text-[13px]">
                      <thead className="bg-[#f8f4fc] text-[12px] uppercase text-[#695b7b]">
                         <tr>
-                           {['Loan', 'Borrower', 'Funded', 'Due', 'Principal', 'Total due', 'Status', 'KYC', 'Facebook', 'Call', 'Disbursement tx', 'Why approved'].map((h) => (
+                           {['Loan', 'Borrower', 'Funded', 'Due', 'Principal', 'Total due', 'Status', 'KYC', 'Facebook', 'Call', 'Disbursement tx'].map((h) => (
                               <th className="px-3 py-2 font-semibold" key={h}>
                                  {h}
                               </th>
@@ -177,7 +177,7 @@ export default function CreditLineLenderPage() {
                         {report.loans.map((loan) => {
                            const repaid = loan.repaidDate && loan.repaidDate <= report.asOf;
                            const overdue = !repaid && loan.dueDate && loan.dueDate < report.asOf;
-                           return (
+                           return [
                               <tr className="border-t border-[#f0ecf5] align-top" key={loan.id}>
                                  <td className="px-3 py-2 font-mono text-[11px]">{loan.tracking_id}</td>
                                  <td className="px-3 py-2">
@@ -203,9 +203,15 @@ export default function CreditLineLenderPage() {
                                        </a>
                                     ))}
                                  </td>
-                                 <td className="max-w-[320px] px-3 py-2 text-[12px] text-[#45556c]">{loan.rationale}</td>
+                              </tr>,
+                              // Why it was approved: a full-width line under the loan, so rows stay short.
+                              <tr key={`${loan.id}-why`}>
+                                 <td className="px-3 pb-3 text-[12px] leading-[17px] text-[#45556c]" colSpan={11}>
+                                    <span className="font-semibold text-[#6b55f7]">Why approved: </span>
+                                    {loan.rationale ?? '—'}
+                                 </td>
                               </tr>
-                           );
+                           ];
                         })}
                      </tbody>
                   </table>
