@@ -21,7 +21,8 @@ import { isCashoutHoldCode } from '@/lib/web3/openfort/walletFaceGate';
  */
 export type InstantWalletReturnTo = string;
 
-const DONE_PAUSE_MS = 700;
+// Long enough to see the grown-up hippo land with its new wallet (GrowingWalletHippo) before moving on.
+const DONE_PAUSE_MS = 1600;
 
 export const useCreateInstantWallet = (returnTo?: InstantWalletReturnTo) => {
    const navigate = useNavigate();

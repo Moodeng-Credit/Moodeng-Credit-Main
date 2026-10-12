@@ -894,6 +894,29 @@ html.dark .team-page .team-blue-panel {
    animation-fill-mode: both;
 }
 
+/* Instant Wallet: each growth stage pops in (uses the separate "scale" property, so it stacks on the
+   inline transform that makes the hippo bigger each stage). */
+@keyframes walletGrowPop {
+   0% {
+      opacity: 0;
+      scale: 0.7;
+   }
+
+   60% {
+      opacity: 1;
+      scale: 1.08;
+   }
+
+   100% {
+      opacity: 1;
+      scale: 1;
+   }
+}
+
+.wallet-grow-pop {
+   animation: walletGrowPop 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* The hippo's speech bubble pops in each time a step opens. */
 @keyframes connectBubbleIn {
    0% {
@@ -974,7 +997,8 @@ html.dark .team-page .team-blue-panel {
    .connect-praise,
    .connect-bar-glow,
    .connect-hippo-run,
-   .connect-hippo-jump {
+   .connect-hippo-jump,
+   .wallet-grow-pop {
       animation: none !important;
    }
 

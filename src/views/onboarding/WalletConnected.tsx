@@ -181,7 +181,16 @@ export default function WalletConnected() {
          <OnboardingHeader hideBack />
 
          <div className="flex flex-1 flex-col items-center justify-center px-md-4 text-center">
-            <img src="/icons/check-3d.png" alt="Success" className="mb-md-3 size-[104px]" />
+            {/* Instant Wallet: the grown-up hippo it just "grew" on the create screen, now holding the wallet. */}
+            {baseWalletLock.isConfirmedOpenfort ? (
+               <img
+                  src="/hippos/wallet-grow/wallet-4-grown.webp"
+                  alt="Hippo holding its new wallet"
+                  className="mb-md-3 h-36 w-auto object-contain drop-shadow-[0_18px_40px_rgba(96,16,210,0.22)]"
+               />
+            ) : (
+               <img src="/icons/check-3d.png" alt="Success" className="mb-md-3 size-[104px]" />
+            )}
             <div className="mb-md-4 flex max-w-[360px] flex-col items-center gap-md-2">
                {/* Instant-wallet borrowers get instant-wallet words — "connected" is Base language. */}
                <h2 className="text-[32px] font-semibold leading-[1.12] text-md-heading">
