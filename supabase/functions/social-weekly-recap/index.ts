@@ -285,8 +285,10 @@ serve(async (req) => {
       const { data: posted } = await supabase.from('telegram_bot_settings').select('value').eq('key', WEEK_KEY).maybeSingle();
       if (posted?.value === weekId) return json({ message: 'Already posted this week.' });
    }
-   const { data: chat } = await supabase.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
-   const chatId = (chat?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   // The social media group (social_group_chat_id, set with /chatid there) if there is one, else the team group.
+   const { data: chats } = await supabase.from('telegram_bot_settings').select('key, value').in('key', ['social_group_chat_id', 'team_group_chat_id']);
+   const setting = (k: string) => (chats ?? []).find((c: any) => c.key === k)?.value as string | undefined;
+   const chatId = setting('social_group_chat_id') ?? setting('team_group_chat_id') ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
    const telegramOk = chatId
       ? await sendTelegramMessage(chatId, text)
            .then(() => true)
