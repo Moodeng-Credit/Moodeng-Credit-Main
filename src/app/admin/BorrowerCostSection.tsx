@@ -44,7 +44,6 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const WINDOW_DAYS = 40;
 const CHART_DAYS = 90;
-const COSTS_KEY = 'md_admin_exchange_costs';
 const CURRENCIES: LocalCurrency[] = ['PHP', 'IDR'];
 const SYMBOL: Record<LocalCurrency, string> = { PHP: '₱', IDR: 'Rp' };
 
@@ -61,14 +60,20 @@ const pct = (n: number | null) => (n === null ? '—' : `${(n * 100).toFixed(1)}
 const local = (n: number, c: LocalCurrency) =>
    `${n < 0 ? '-' : ''}${SYMBOL[c]}${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: c === 'IDR' ? 0 : 2 })}`;
 
-const readCosts = (): Record<LocalCurrency, ExchangeCosts> => {
-   try {
-      const saved = JSON.parse(window.localStorage.getItem(COSTS_KEY) ?? 'null') as Partial<Record<LocalCurrency, ExchangeCosts>> | null;
-      return { PHP: { ...DEFAULT_COSTS.PHP, ...saved?.PHP }, IDR: { ...DEFAULT_COSTS.IDR, ...saved?.IDR } };
-   } catch {
-      return DEFAULT_COSTS;
-   }
+// The live spread measured by fx-daily from an exchange's order book (Coins.ph for PHP, PDAX has no
+// public prices; Tokocrypto for IDR). Half of it is paid on each trip, on top of the exchange's fee.
+type LiveSpread = { pct: number; venue: string; date: string };
+const SPREAD_VENUE: Record<LocalCurrency, { venue: string; name: string }> = {
+   PHP: { venue: 'coins_ph', name: 'Coins.ph' },
+   IDR: { venue: 'tokocrypto', name: 'Tokocrypto' }
 };
+const withSpread = (costs: Record<LocalCurrency, ExchangeCosts>, spreads: Partial<Record<LocalCurrency, LiveSpread>>) =>
+   Object.fromEntries(
+      CURRENCIES.map((c) => {
+         const half = (spreads[c]?.pct ?? 0) / 2;
+         return [c, { ...costs[c], sellPct: costs[c].sellPct + half, buyPct: costs[c].buyPct + half }];
+      })
+   ) as Record<LocalCurrency, ExchangeCosts>;
 
 type AnyRow = Record<string, any>;
 
@@ -77,6 +82,8 @@ interface Loaded {
    rates: Record<LocalCurrency, RateSeries>;
    live: Partial<Record<LocalCurrency, number>>;
    forecast: Record<LocalCurrency, MonthForecast[]>;
+   savedCosts: Record<LocalCurrency, ExchangeCosts>;
+   spreads: Partial<Record<LocalCurrency, LiveSpread>>;
 }
 
 async function loadData(): Promise<Loaded> {
@@ -140,9 +147,32 @@ async function loadData(): Promise<Loaded> {
          rates[c].set(ymd(new Date()), value); // today = live
       }
    }
+   // The team's shared exchange costs, and the latest measured spreads (fx-daily, once a day).
+   const [settingsRes, snapshotRes] = await Promise.all([
+      supabase.from('exchange_cost_settings').select('currency,settings'),
+      supabase
+         .from('fx_daily_snapshots')
+         .select('snapshot_date,currency,venue,bid,ask,mid')
+         .in('venue', ['coins_ph', 'tokocrypto'])
+         .order('snapshot_date', { ascending: false })
+         .limit(20)
+   ]);
+   const savedRows = (settingsRes.data ?? []) as AnyRow[];
+   const savedCosts = Object.fromEntries(
+      CURRENCIES.map((c) => [c, { ...DEFAULT_COSTS[c], ...(savedRows.find((r) => r.currency === c)?.settings ?? {}) }])
+   ) as Record<LocalCurrency, ExchangeCosts>;
+   const spreads: Partial<Record<LocalCurrency, LiveSpread>> = {};
+   for (const c of CURRENCIES) {
+      const row = ((snapshotRes.data ?? []) as AnyRow[]).find(
+         (r) => r.currency === c && r.venue === SPREAD_VENUE[c].venue && r.bid && r.ask && r.mid
+      );
+      if (row)
+         spreads[c] = { pct: (Number(row.ask) - Number(row.bid)) / Number(row.mid), venue: SPREAD_VENUE[c].name, date: row.snapshot_date };
+   }
+
    const long = parseFrankfurter(longHistory);
    const forecast = { PHP: seasonalForecast(long.PHP), IDR: seasonalForecast(long.IDR) };
-   return { loans, rates, live, forecast };
+   return { loans, rates, live, forecast, savedCosts, spreads };
 }
 
 function Card({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'good' | 'bad' }) {
@@ -196,18 +226,20 @@ function RateCard({ currency, series, live }: { currency: LocalCurrency; series:
 
 const COST_FIELDS: Array<{ key: keyof Omit<ExchangeCosts, 'label'>; label: string; unit: 'usdc' | 'pct' | 'local' }> = [
    { key: 'sendToExchangeUsdc', label: 'Send from Moodeng wallet to exchange', unit: 'usdc' },
-   { key: 'sellPct', label: 'Sell USDC (fee/spread)', unit: 'pct' },
+   { key: 'sellPct', label: 'Sell USDC (exchange fee)', unit: 'pct' },
    { key: 'cashOutLocal', label: 'Cash out to bank / e-wallet', unit: 'local' },
    { key: 'cashInLocal', label: 'Cash in from bank / e-wallet', unit: 'local' },
-   { key: 'buyPct', label: 'Buy USDC (fee/spread)', unit: 'pct' },
+   { key: 'buyPct', label: 'Buy USDC (exchange fee)', unit: 'pct' },
    { key: 'withdrawToWalletUsdc', label: 'Send USDC on Base to Moodeng wallet', unit: 'usdc' }
 ];
 
 function CostEditor({
    costs,
+   spreads,
    onChange
 }: {
    costs: Record<LocalCurrency, ExchangeCosts>;
+   spreads: Partial<Record<LocalCurrency, LiveSpread>>;
    onChange: (next: Record<LocalCurrency, ExchangeCosts>) => void;
 }) {
    return (
@@ -216,6 +248,11 @@ function CostEditor({
             <div className="rounded-2xl border border-[#2a1453] bg-[#1a0838] p-4" key={c}>
                <p className="font-black text-white">
                   {c} · {costs[c].label}
+               </p>
+               <p className="mt-0.5 text-xs text-[#a89bb8]">
+                  {spreads[c]
+                     ? `+ live spread ${(spreads[c]!.pct * 100).toFixed(3)}% (${spreads[c]!.venue} book, ${spreads[c]!.date}), half on each trip — updated daily`
+                     : 'Live spread: none saved yet (fx-daily runs every morning)'}
                </p>
                <div className="mt-2 space-y-1.5">
                   {COST_FIELDS.map((f) => {
@@ -608,7 +645,9 @@ function LoanTable({ rows, forecast }: { rows: LoanRealCost[]; forecast: Record<
 export default function BorrowerCostSection() {
    const [data, setData] = useState<Loaded | null>(null);
    const [error, setError] = useState('');
-   const [costs, setCosts] = useState(readCosts);
+   // The team's shared costs (exchange_cost_settings); edits stay local until "Save for the team".
+   const [draftCosts, setDraftCosts] = useState<Record<LocalCurrency, ExchangeCosts> | null>(null);
+   const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
    const [baseFeeInput, setBaseFeeInput] = useState<number | null>(null);
 
    const load = useCallback(async () => {
@@ -623,23 +662,34 @@ export default function BorrowerCostSection() {
       void load();
    }, [load]);
 
+   const costs = draftCosts ?? data?.savedCosts ?? DEFAULT_COSTS;
+   const effective = useMemo(() => withSpread(costs, data?.spreads ?? {}), [costs, data?.spreads]);
    const updateCosts = (next: Record<LocalCurrency, ExchangeCosts>) => {
-      setCosts(next);
-      try {
-         window.localStorage.setItem(COSTS_KEY, JSON.stringify(next));
-      } catch {
-         // Storage blocked: edits last for this visit.
+      setDraftCosts(next);
+      setSaving('idle');
+   };
+   const saveCosts = async () => {
+      setSaving('saving');
+      const { error: saveError } = await getSupabaseBrowserClient()
+         .from('exchange_cost_settings')
+         .upsert(CURRENCIES.map((c) => ({ currency: c, settings: costs[c], updated_at: new Date().toISOString() })));
+      if (saveError) {
+         setSaving('failed');
+         return;
       }
+      setSaving('saved');
+      setData((d) => (d ? { ...d, savedCosts: costs } : d));
+      setDraftCosts(null);
    };
 
    const rows = useMemo(() => {
       if (!data) return [];
       const today = ymd(new Date());
       return data.loans
-         .map((loan) => realCost(loan, data.rates, costs, today))
+         .map((loan) => realCost(loan, data.rates, effective, today))
          .filter((r): r is LoanRealCost => r !== null)
          .sort((a, b) => b.loan.fundedDate.localeCompare(a.loan.fundedDate));
-   }, [data, costs]);
+   }, [data, effective]);
    const repaid = rows.filter((r) => !r.projected);
    const open = rows.filter((r) => r.projected);
    const medianFee = summarize(rows).medianOurFeePct;
@@ -672,7 +722,7 @@ export default function BorrowerCostSection() {
 
          <ForecastBlock
             baseFee={baseFee}
-            costs={costs}
+            costs={effective}
             forecast={data.forecast}
             live={data.live}
             medianFee={medianFee}
@@ -680,24 +730,37 @@ export default function BorrowerCostSection() {
             rates={data.rates}
          />
 
-         <SizeBlock baseFee={baseFee} costs={costs} forecast={data.forecast} live={data.live} loans={rows} rates={data.rates} />
+         <SizeBlock baseFee={baseFee} costs={effective} forecast={data.forecast} live={data.live} loans={rows} rates={data.rates} />
 
          <div className="space-y-3">
             <div>
                <h3 className="text-lg font-black text-white">Expected exchange costs</h3>
                <p className="text-xs text-[#a89bb8]">
-                  Per trip, used above. Edit to match what the apps charge; saved on this browser. Rates are mid-market (ECB daily via
-                  Frankfurter; live from Coinbase), so a real exchange&apos;s spread belongs in the buy/sell %.
+                  Per trip, used above, shared by the whole team. Rates are mid-market (ECB daily via Frankfurter; live from Coinbase); the
+                  exchange&apos;s own buy/sell spread is measured every morning and added on top of the fees here.
                </p>
             </div>
-            <CostEditor costs={costs} onChange={updateCosts} />
-            <button
-               className="rounded-full border border-[#8336f0] px-4 py-2 text-sm font-bold text-white"
-               onClick={() => updateCosts(DEFAULT_COSTS)}
-               type="button"
-            >
-               Reset to defaults
-            </button>
+            <CostEditor costs={costs} onChange={updateCosts} spreads={data.spreads} />
+            <div className="flex flex-wrap items-center gap-2">
+               <button
+                  className="rounded-full bg-[#8336f0] px-4 py-2 text-sm font-black text-white disabled:opacity-40"
+                  disabled={!draftCosts || saving === 'saving'}
+                  onClick={() => void saveCosts()}
+                  type="button"
+               >
+                  {saving === 'saving' ? 'Saving…' : 'Save for the team'}
+               </button>
+               <button
+                  className="rounded-full border border-[#8336f0] px-4 py-2 text-sm font-bold text-white"
+                  onClick={() => updateCosts(DEFAULT_COSTS)}
+                  type="button"
+               >
+                  Reset to defaults
+               </button>
+               {saving === 'saved' ? <span className="text-sm text-emerald-300">Saved</span> : null}
+               {saving === 'failed' ? <span className="text-sm text-red-300">Couldn&apos;t save — try again</span> : null}
+               {draftCosts ? <span className="text-xs text-[#a89bb8]">Unsaved changes (shown above already)</span> : null}
+            </div>
          </div>
       </div>
    );
