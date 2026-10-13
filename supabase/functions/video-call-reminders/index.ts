@@ -18,6 +18,7 @@ import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '..
 import { RUNG, type Rung, shouldReleaseSlot, skipsDayBeforeReminder, skipsKeepSpot, targetRung } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { postDiscord } from '../_shared/discord.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
 // keep-your-spot, hour-before / slot release, starting now, we're waiting, admin prompt, auto
@@ -266,5 +267,68 @@ serve(async (req) => {
       }
    }
 
+   tally.sheet_alerts = await alertCallSheets(svc, now);
    return json({ ok: true, scanned: users.length, ...tally });
 });
+
+// ~15 minutes before each onboarding call: "open the call sheet" to Alerts Moodeng HQ (the Telegram team
+// group, telegram_bot_settings.team_group_chat_id) and Discord #bookings, with buttons to the call
+// sheet (admin → Call approvals, opened on this borrower) and the Zoom. Once per booked start time
+// (users.video_call_sheet_alerted_for), so a rebooked call gets a fresh one.
+const SHEET_ALERT_BEFORE_MIN = 20;
+// deno-lint-ignore no-explicit-any
+const alertCallSheets = async (svc: any, now: number): Promise<number> => {
+   const { data } = await svc
+      .from('users')
+      .select('id, username, display_name, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_sheet_alerted_for')
+      .gt('video_call_starts_at', new Date(now - 10 * 60 * 1000).toISOString())
+      .lt('video_call_starts_at', new Date(now + SHEET_ALERT_BEFORE_MIN * 60 * 1000).toISOString())
+      .is('video_call_outcome', null)
+      .neq('loan_access_status', 'rejected');
+   const rows = (data ?? []) as Array<{
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      video_call_host: string | null;
+      video_call_starts_at: string;
+      video_call_timezone: string | null;
+      video_call_join_url: string | null;
+      video_call_sheet_alerted_for: string | null;
+   }>;
+   const { data: chatRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
+   const chatId = (chatRow?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
+   let sent = 0;
+   for (const u of rows) {
+      if (u.video_call_sheet_alerted_for && Date.parse(u.video_call_sheet_alerted_for) === Date.parse(u.video_call_starts_at)) continue;
+      // Claim it first so two overlapping ticks can't both post.
+      const { data: claimed } = await svc
+         .from('users')
+         .update({ video_call_sheet_alerted_for: u.video_call_starts_at, video_call_sheet_alerted_at: new Date().toISOString() })
+         .eq('id', u.id)
+         .or(`video_call_sheet_alerted_for.is.null,video_call_sheet_alerted_for.neq.${u.video_call_starts_at}`)
+         .select('id')
+         .maybeSingle();
+      if (!claimed) continue;
+
+      const name = [u.display_name, u.username ? `@${u.username}` : null].filter(Boolean).join(' · ') || 'a borrower';
+      const minutes = Math.max(0, Math.round((Date.parse(u.video_call_starts_at) - now) / 60000));
+      const host = u.video_call_host ? ` · with ${u.video_call_host[0].toUpperCase()}${u.video_call_host.slice(1)}` : '';
+      const sheetUrl = `${SITE_URL}/admin/calls?sheet=${u.id}`;
+      const text = `📋 Call ${minutes > 0 ? `in ${minutes} min` : 'starting now'} — ${name}\n${formatCallTimeForTeam(u.video_call_starts_at, u.video_call_timezone)}${host}\n\nOpen the call sheet before you join and fill it in during the call.`;
+      const keyboard: TelegramInlineKeyboard = [
+         [{ text: '📋 Open call sheet', url: sheetUrl }],
+         ...(u.video_call_join_url ? [[{ text: '🎥 Join Zoom', url: u.video_call_join_url }]] : [])
+      ];
+      if (chatId) {
+         await sendTelegramMessage(chatId, text, { inlineKeyboard: keyboard }).catch((err) =>
+            console.error('video-call-reminders: sheet alert Telegram failed', err instanceof Error ? err.message : err)
+         );
+      }
+      await postDiscord(
+         { content: `${text}\n📋 Call sheet: <${sheetUrl}>${u.video_call_join_url ? `\n🎥 Zoom: <${u.video_call_join_url}>` : ''}` },
+         { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] }
+      );
+      sent += 1;
+   }
+   return sent;
+};

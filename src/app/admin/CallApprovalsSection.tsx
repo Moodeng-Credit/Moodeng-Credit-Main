@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
@@ -54,6 +54,31 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    useAdminLiveReload(['users', 'loan_access_requests'], load);
 
    const groups = useMemo(() => groupCallApprovals(rows ?? [], now), [rows, now]);
+
+   // Opened from the pre-call Telegram / Discord alert: /admin/calls?sheet=<userId> opens that borrower's
+   // call sheet. A call outside this tab's window still opens, with what we know from the link.
+   const sheetParamHandled = useRef(false);
+   useEffect(() => {
+      if (sheetParamHandled.current || !rows) return;
+      const userId = new URLSearchParams(window.location.search).get('sheet');
+      if (!userId) return;
+      sheetParamHandled.current = true;
+      setSheetRow(
+         rows.find((r) => r.userId === userId) ?? {
+            userId,
+            name: 'Borrower',
+            username: null,
+            loanAccessStatus: null,
+            callStartsAt: null,
+            host: null,
+            joinUrl: null,
+            attendance: null,
+            outcome: null,
+            outcomeAt: null,
+            request: null
+         }
+      );
+   }, [rows]);
 
    useEffect(() => {
       if (rows) onCountChange?.(groups.needsDecision.length);
