@@ -9,13 +9,16 @@ import {
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
+   isDesktopBrowser,
    MESSENGER_APP_CHAT_LINK,
+   MESSENGER_PAGE_CHAT_LINK,
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
+import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
 // Messenger line — either one is enough, since not everyone uses WhatsApp. Both are platform-only
@@ -30,6 +33,8 @@ import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } f
 //     (first-time chatters tap Facebook's own "Get Started" once). Not on Android: Chrome there never
 //     opens m.me in Messenger (see MESSENGER_APP_CHAT_LINK), so Android borrowers get the code on
 //     screen, one tap copies it and opens our chat, and they paste and send it.
+//     Not on computers either (the code gets lost on the way to facebook.com/messages): they scan a QR
+//     with their phone (MessengerHandoff) or paste the code into our chat here (DesktopMessengerCard).
 // Both stamp the verified-at column plus an id we can message them on. This component polls those
 // columns rather than trusting anything the client says — the point is a line we can prove works.
 type Channel = 'whatsapp' | 'messenger';
@@ -150,6 +155,8 @@ export default function ContactsStep({
    // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
    const androidMessenger = isAndroidBrowser();
    const iosMessenger = !androidMessenger && isIOSBrowser();
+   // Computers: a QR for the phone plus copy-and-paste here (see isDesktopBrowser, DesktopMessengerCard).
+   const desktopMessenger = !androidMessenger && !iosMessenger && isDesktopBrowser();
    // iOS: a code + m.me link ready before the tap (see isIOSBrowser above).
    const [preparedMessenger, setPreparedMessenger] = useState<{ code: string; link: string; at: number } | null>(null);
    const [tapAgain, setTapAgain] = useState(false);
@@ -465,9 +472,9 @@ export default function ContactsStep({
 
    // Android: the borrower's own tap on the chat link, so copying is allowed and Messenger opens. The
    // link navigates by itself; this only copies the code and keeps the attempt for when they're back.
-   const openMessengerChat = () => {
+   const openMessengerChat = (link: string = MESSENGER_APP_CHAT_LINK) => {
       if (!messengerCode) return;
-      track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current });
+      track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: desktopMessenger });
       setMessengerDidntOpen(false);
       void copyMessengerCode('open_chat');
       // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
@@ -479,7 +486,7 @@ export default function ContactsStep({
          });
       leftAtRef.current = null;
       awaitingMessengerRef.current = true;
-      writePending({ userId, code: messengerCode, link: MESSENGER_APP_CHAT_LINK, at: Date.now() });
+      writePending({ userId, code: messengerCode, link, at: Date.now() });
       armNotOpenedCheck();
    };
 
@@ -557,8 +564,20 @@ export default function ContactsStep({
             is_android: /android/i.test(navigator.userAgent),
             is_ios: /iphone|ipad|ipod/i.test(navigator.userAgent),
             in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
-            flow: channel === 'messenger' && androidMessenger ? 'paste_code' : 'link'
+            is_desktop: desktopMessenger,
+            flow: channel === 'messenger' && androidMessenger ? 'paste_code' : channel === 'messenger' && desktopMessenger ? 'qr' : 'link'
          });
+         if (channel === 'messenger' && desktopMessenger) {
+            // Nothing opens: the card shows the QR (for their phone) and the code to paste here.
+            setMessengerLink(MESSENGER_PAGE_CHAT_LINK);
+            setMessengerCode(String(code));
+            leftForMessengerRef.current = false;
+            awaitingMessengerRef.current = true;
+            writePending({ userId, code: String(code), link: MESSENGER_PAGE_CHAT_LINK, at: Date.now() });
+            track('contact_verify_qr_shown', { source, channel: 'messenger', attempt: attemptsRef.current });
+            startPolling(channel);
+            return;
+         }
          if (channel === 'messenger' && androidMessenger) {
             // Nothing opens yet: the card now shows the code and the button that opens our chat.
             setMessengerLink(MESSENGER_APP_CHAT_LINK);
@@ -640,7 +659,7 @@ export default function ContactsStep({
                    code request, or as m.me, Messenger never comes up. */}
                <a
                   href={MESSENGER_APP_CHAT_LINK}
-                  onClick={openMessengerChat}
+                  onClick={() => openMessengerChat()}
                   className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
                >
                   <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
@@ -676,6 +695,14 @@ export default function ContactsStep({
                   Still stuck? We&apos;ll email you, and our team will help you finish.
                </p>
             </div>
+         ) : messengerLink && !messengerVerified && desktopMessenger && messengerCode ? (
+            <DesktopMessengerCard
+               code={messengerCode}
+               codeCopied={codeCopied}
+               onCopy={() => void copyMessengerCode('copy_button')}
+               onOpenChat={() => openMessengerChat(MESSENGER_PAGE_CHAT_LINK)}
+               onPageLink={() => track('contact_verify_page_link_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: true })}
+            />
          ) : messengerLink && !messengerVerified ? (
             <>
                {/* A live "we're checking" state, like the wallet-creation step — a spinner + a "keep
@@ -749,7 +776,7 @@ export default function ContactsStep({
             </>
          ) : (
             <OptionCard
-               badge={androidMessenger ? '1 min' : '1 tap'}
+               badge={androidMessenger || desktopMessenger ? '1 min' : '1 tap'}
                disabled={startingChannel !== null}
                done={messengerVerified}
                doneLabel="Verified"
@@ -760,11 +787,13 @@ export default function ContactsStep({
                   tapAgain && preparedMessenger
                      ? 'Ready — tap again to open Messenger.'
                      : startingChannel === 'messenger'
-                     ? androidMessenger
+                     ? androidMessenger || desktopMessenger
                         ? 'Getting your code…'
                         : 'Opening Messenger…'
                      : androidMessenger
                        ? 'Opens our chat. Say hi and you’re connected.'
+                       : desktopMessenger
+                         ? 'Scan a code with your phone, or chat with us here.'
                        : source === 'connect'
                          ? 'Opens Messenger — tap Get Started there. Confirms you automatically.'
                          : 'Confirms you automatically — nothing to type'

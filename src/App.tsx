@@ -96,6 +96,7 @@ import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
+import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { identifyClarity } from '@/lib/analytics/clarity';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
@@ -259,6 +260,8 @@ export default function App() {
             <Route path="/sign-in" element={<Login />} />
             {/* Facility lender's report (BitRepo): password-protected, no account needed. */}
             <Route path="/creditline" element={<CreditLineLenderPage />} />
+            {/* Desktop Messenger QR lands here on the phone (no sign-in; the code is the key). */}
+            <Route path="/fb/:code" element={<MessengerHandoff />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
             <Route path="/mfa-challenge" element={<MfaChallengePage />} />
