@@ -206,13 +206,15 @@ export interface MarketingData {
    spend: MarketingSpendRow[];
    codes: ReferralCodeRow[];
    goals: MonthlyGoals;
+   // Borrowers left out of the month's goal plan (set aside or no longer lent to).
+   excluded: Set<string>;
 }
 
 export const DEFAULT_GOALS: MonthlyGoals = { lent_usd: 500, marketing_budget_usd: 50, cac_target_usd: 5 };
 
 export async function loadMarketing(month: string): Promise<MarketingData> {
    const supabase = getSupabaseBrowserClient();
-   const [loans, users, spend, codes, goals] = await Promise.all([
+   const [loans, users, spend, codes, goals, excluded] = await Promise.all([
       requireOk<AnyRow[]>(
          supabase
             .from('loans')
@@ -227,14 +229,14 @@ export async function loadMarketing(month: string): Promise<MarketingData> {
          supabase
             .from('users')
             .select(
-               'id,username,display_name,facebook_name,created_at,is_didit,is_world_id,messenger_verified_at,redeemed_referral_code_id,cs,user_role,is_test'
+               'id,username,display_name,facebook_name,created_at,is_didit,is_world_id,messenger_verified_at,redeemed_referral_code_id,cs,user_role,is_test,account_status,loan_access_status'
             )
-            .eq('is_test', false)
             .limit(20000)
       ),
       optionalOk<AnyRow[]>(supabase.from('marketing_spend').select('*').order('spent_on', { ascending: false }), []),
       optionalOk<AnyRow[]>(supabase.from('referral_codes').select('id,code,channel,label'), []),
-      optionalOk<AnyRow[]>(supabase.from('monthly_goals').select('metric,target').eq('month', `${month}-01`), [])
+      optionalOk<AnyRow[]>(supabase.from('monthly_goals').select('metric,target').eq('month', `${month}-01`), []),
+      optionalOk<AnyRow[]>(supabase.from('goal_excluded_users').select('user_id'), [])
    ]);
    const goalMap = Object.fromEntries(goals.map((g) => [g.metric, num(g.target)]));
    return {
@@ -252,12 +254,21 @@ export async function loadMarketing(month: string): Promise<MarketingData> {
             verified: u.is_didit === 'ACTIVE' || u.is_world_id === 'ACTIVE',
             messenger_verified_at: u.messenger_verified_at,
             redeemed_referral_code_id: u.redeemed_referral_code_id,
-            credit_limit: u.cs ?? null
+            credit_limit: u.cs ?? null,
+            is_test: Boolean(u.is_test),
+            account_status: u.account_status ?? null,
+            loan_access_status: u.loan_access_status ?? null
          })),
       spend: spend.map((s) => ({ ...s, amount_usd: num(s.amount_usd) }) as MarketingSpendRow),
       codes: codes.map((c) => ({ id: c.id, code: c.code, channel: c.channel ?? 'person', label: c.label ?? null })),
-      goals: { ...DEFAULT_GOALS, ...goalMap }
+      goals: { ...DEFAULT_GOALS, ...goalMap },
+      excluded: new Set(excluded.map((e) => e.user_id as string))
    };
+}
+
+export async function setGoalExcluded(userId: string, excluded: boolean, reason?: string) {
+   const table = getSupabaseBrowserClient().from('goal_excluded_users');
+   await requireOk(excluded ? table.upsert({ user_id: userId, reason: reason ?? null }) : table.delete().eq('user_id', userId));
 }
 
 export async function saveGoal(month: string, metric: keyof MonthlyGoals, target: number) {
