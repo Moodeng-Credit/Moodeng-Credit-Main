@@ -17,6 +17,7 @@ import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 
 import App from './App.tsx';
 import './globals.css';
+import { captureFirstTouch } from '@/lib/attribution';
 
 applyThemeMode(getStoredThemeMode());
 setupStaleChunkReload();
@@ -194,6 +195,9 @@ const appTree = (
       </BrowserRouter>
    </LocalizationProvider>
 );
+
+// Remember where this visitor came from (?src= tag or referrer) for sign-up attribution.
+captureFirstTouch();
 
 createRoot(document.getElementById('root')!).render(
    <StrictMode>

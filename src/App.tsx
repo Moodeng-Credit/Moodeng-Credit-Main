@@ -98,6 +98,7 @@ import WhyLend from '@/app/whylend/page';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { identifyClarity } from '@/lib/analytics/clarity';
+import { recordSignupSource } from '@/lib/attribution';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
 import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
@@ -208,6 +209,11 @@ export default function App() {
          $current_url: window.location.href
       });
    }, [isPosthogEnabled, location]);
+
+   // A brand-new account: save where they came from (once; see lib/attribution).
+   useEffect(() => {
+      if (user?.id) recordSignupSource(user.id);
+   }, [user?.id]);
 
    useEffect(() => {
       if (!isPosthogEnabled) {
