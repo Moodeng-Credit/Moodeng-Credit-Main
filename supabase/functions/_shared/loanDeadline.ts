@@ -178,6 +178,12 @@ const clockIn = (instant: Date, zone: string, withDay: boolean) =>
       minute: '2-digit'
    });
 
+/** For the team: a moment on the team's clock, e.g. "Tue, Oct 13, 2:21 PM Bangkok time". */
+export const formatInstantForTeam = (instant: string | Date, teamZone: string): string => {
+   const zone = isValidTimezone(teamZone) ? teamZone : 'Asia/Bangkok';
+   return `${clockIn(new Date(instant), zone, true)} ${cityOf(zone)} time`;
+};
+
 /**
  * For the team (Telegram / Discord): the deadline on the borrower's clock, then on the team's.
  * "Wed, Sep 30, 11:59 PM their time (Manila) · 10:59 PM Bangkok time". Says it once when both
