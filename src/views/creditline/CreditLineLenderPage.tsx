@@ -1,5 +1,7 @@
 import { type FormEvent, useMemo, useState } from 'react';
 
+import { Eye, EyeOff } from 'lucide-react';
+
 import { downloadCreditLineExcel } from '@/lib/creditLineExcel';
 import { buildPeriodReport, type LenderLoan, type LenderReportData, loadLenderReport, periodsFor } from '@/lib/creditLineReport';
 
@@ -54,6 +56,7 @@ export default function CreditLineLenderPage() {
    const [fundedFrom, setFundedFrom] = useState('');
    const [fundedTo, setFundedTo] = useState('');
    const [search, setSearch] = useState('');
+   const [showPassword, setShowPassword] = useState(false);
 
    const unlock = async (pw: string) => {
       setLoading(true);
@@ -108,14 +111,25 @@ export default function CreditLineLenderPage() {
                <img alt="" className="mx-auto h-20 w-auto" src="/hippos/wallet-grow/wallet-4-grown.webp" />
                <h1 className="mt-3 text-center text-[22px] font-extrabold text-[#26143f]">Moodeng credit line</h1>
                <p className="mt-1 text-center text-[14px] text-[#695b7b]">Lender report. Enter the password you were given.</p>
-               <input
-                  autoComplete="current-password"
-                  className="mt-5 min-h-[48px] w-full rounded-2xl border-2 border-[#e5ddf0] px-4 text-[16px] focus:border-[#6b55f7] focus:outline-none"
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  type="password"
-                  value={password}
-               />
+               <div className="relative mt-5">
+                  <input
+                     autoComplete="current-password"
+                     className="min-h-[48px] w-full rounded-2xl border-2 border-[#e5ddf0] py-2 pl-4 pr-12 text-[16px] focus:border-[#6b55f7] focus:outline-none"
+                     onChange={(e) => setPassword(e.target.value)}
+                     placeholder="Password"
+                     type={showPassword ? 'text' : 'password'}
+                     value={password}
+                  />
+                  <button
+                     aria-label={showPassword ? 'Hide password' : 'Show password'}
+                     aria-pressed={showPassword}
+                     className="absolute inset-y-0 right-1 grid w-11 place-items-center rounded-xl text-[#8a7c9c] hover:text-[#6b55f7]"
+                     onClick={() => setShowPassword((v) => !v)}
+                     type="button"
+                  >
+                     {showPassword ? <EyeOff aria-hidden="true" className="size-5" /> : <Eye aria-hidden="true" className="size-5" />}
+                  </button>
+               </div>
                {error ? <p className="mt-2 text-[13px] font-semibold text-red-600">{error}</p> : null}
                <button
                   className="mt-4 min-h-[52px] w-full rounded-2xl bg-[#6b55f7] font-bold text-white shadow-[0_4px_0_#4a35c9] active:translate-y-[4px] active:shadow-none disabled:opacity-60"
