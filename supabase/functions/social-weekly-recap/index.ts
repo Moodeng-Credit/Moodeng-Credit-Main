@@ -1,6 +1,7 @@
 // Weekly social recap for the team: how the Facebook Page and its posts (our posters) did last week,
 // and how many people came to moodeng.app from Facebook / TikTok and signed up. Posted Monday morning
-// to the Telegram team group (Alerts Moodeng HQ, telegram_bot_settings.team_group_chat_id) and Discord.
+// to the Telegram team group (Alerts Moodeng HQ, telegram_bot_settings.team_group_chat_id) and Discord
+// #social-media (DISCORD_SOCIAL_WEBHOOK_URL), ending with a short to-do for Emma (tag links, CTA, poster QRs).
 //
 // Facebook: FACEBOOK_PAGE_TOKEN (a Page token for FACEBOOK_PAGE_ID that doesn't expire, made from
 // George's login on the Moodeng Messaging app, 2026-10-14) — read-only use. Metrics Meta still returns
@@ -163,6 +164,32 @@ serve(async (req) => {
       supabase.from('loans').select('id', { count: 'exact', head: true }).eq('loan_status', 'Lent').eq('is_test', false).gte('funded_at', since)
    ]);
    lines.push('', `🦛 Moodeng: ${fmt(signups ?? 0)} new sign-ups · ${fmt(funded ?? 0)} loans funded`);
+
+   // New sign-ups by where they came from (users.signup_source from ?src= links; else the referring site).
+   const { data: sources } = await supabase.from('users').select('signup_source, signup_referrer').gte('created_at', since);
+   const bySource = new Map<string, number>();
+   for (const u of (sources ?? []) as Array<{ signup_source: string | null; signup_referrer: string | null }>) {
+      const ref = u.signup_referrer ?? '';
+      const label =
+         u.signup_source ??
+         (/facebook|fb\.|messenger/.test(ref) ? 'facebook (untagged)' : /tiktok/.test(ref) ? 'tiktok (untagged)' : ref ? `${ref} (untagged)` : 'unknown');
+      bySource.set(label, (bySource.get(label) ?? 0) + 1);
+   }
+   if (bySource.size) {
+      lines.push('🧭 Sign-ups by source:');
+      [...bySource.entries()]
+         .sort((a, b) => b[1] - a[1])
+         .forEach(([label, n]) => lines.push(`   ${label}: ${n}`));
+   }
+
+   // The weekly to-do for whoever posts (Emma), so every post and poster can be counted next week.
+   lines.push(
+      '',
+      '✅ For Emma, this week:',
+      '1. Tag every link you post: moodeng.app/?src=fb-TOPIC-DATE (e.g. ?src=fb-bonds-oct20). TikTok bio/links: ?src=tt-…',
+      '2. End each post with a clear "Apply at moodeng.app" (with the tagged link).',
+      '3. Printed posters: one QR per poster/location, e.g. moodeng.app/?src=poster-qc-mall, so we see which spot works.'
+   );
    if (problems.length) lines.push('', `⚠️ ${problems.join(' · ')}`);
    const text = lines.join('\n');
 
@@ -180,7 +207,11 @@ serve(async (req) => {
            .then(() => true)
            .catch((err) => (console.error('social-weekly-recap: Telegram failed', err instanceof Error ? err.message : err), false))
       : false;
-   const discordOk = await postDiscord({ embeds: [{ title: '📣 Weekly social recap', description: text.slice(0, 4000), color: 0x1877f2, timestamp: new Date(now).toISOString() }] });
+   const discordOk = await postDiscord(
+      { embeds: [{ title: '📣 Weekly social recap', description: text.slice(0, 4000), color: 0x1877f2, timestamp: new Date(now).toISOString() }] },
+      // #social-media; falls back to the team channel.
+      { prefer: ['DISCORD_SOCIAL_WEBHOOK_URL'] }
+   );
    if (telegramOk || discordOk) {
       await supabase
          .from('telegram_bot_settings')
