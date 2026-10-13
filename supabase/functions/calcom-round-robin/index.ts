@@ -36,29 +36,50 @@ const HOSTS = [
 
 const CAL_BASE = 'https://api.cal.com/v2';
 
-// Times the team doesn't take calls, whatever Cal.com says (George, 2026-10-12: no 2–3 pm, for both
-// hosts). Local wall-clock time in BLOCKED_TIME_ZONE; a slot is dropped if any part of the call falls
-// inside a window, so 15-minute calls can't start between 14:00 and 14:45.
+// When the team takes calls, whatever Cal.com says (George, 2026-10-13, both hosts). Local wall-clock time
+// in CALL_TIME_ZONE, by weekday (0 = Sunday). A slot is offered only if the whole call fits inside a
+// window, so a 15-minute call can start at 11:45 but not 12:00, and the last one of the night is 22:45.
 const CALL_MINUTES = 15;
-const BLOCKED_TIME_ZONE = 'Asia/Bangkok';
-const BLOCKED_WINDOWS: Array<{ from: string; to: string }> = [{ from: '14:00', to: '15:00' }];
+const CALL_TIME_ZONE = 'Asia/Bangkok';
+type Window = { from: string; to: string };
+const WEEKDAY_HOURS: Window[] = [
+   { from: '10:00', to: '12:00' },
+   { from: '16:00', to: '23:00' }
+];
+const OPEN_HOURS: Record<number, Window[]> = {
+   0: [{ from: '13:00', to: '23:00' }],
+   1: WEEKDAY_HOURS,
+   2: WEEKDAY_HOURS,
+   3: WEEKDAY_HOURS,
+   4: WEEKDAY_HOURS,
+   5: WEEKDAY_HOURS,
+   6: [
+      { from: '09:00', to: '12:00' },
+      { from: '13:00', to: '18:00' },
+      { from: '21:00', to: '23:00' }
+   ]
+};
 
 const toMinutes = (hhmm: string) => {
    const [h, m] = hhmm.split(':').map(Number);
    return h * 60 + m;
 };
-const localMinutes = (iso: string) => {
-   const parts = new Intl.DateTimeFormat('en-GB', { timeZone: BLOCKED_TIME_ZONE, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(
-      new Date(iso)
-   );
-   const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? 0);
-   const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? 0);
-   return hour * 60 + minute;
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const localTime = (iso: string) => {
+   const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: CALL_TIME_ZONE,
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+   }).formatToParts(new Date(iso));
+   const value = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+   return { weekday: WEEKDAYS.indexOf(value('weekday')), minutes: Number(value('hour')) * 60 + Number(value('minute')) };
 };
-export const isBlockedSlot = (iso: string) => {
-   const start = localMinutes(iso);
-   const end = start + CALL_MINUTES;
-   return BLOCKED_WINDOWS.some((w) => start < toMinutes(w.to) && end > toMinutes(w.from));
+export const isOpenSlot = (iso: string) => {
+   const { weekday, minutes } = localTime(iso);
+   const end = minutes + CALL_MINUTES;
+   return (OPEN_HOURS[weekday] ?? []).some((w) => minutes >= toMinutes(w.from) && end <= toMinutes(w.to));
 };
 
 const CORS = {
@@ -92,7 +113,7 @@ const fetchSlots = async (apiKey: string, eventTypeId: number, start: string, en
    const days = body?.data ?? {};
    const out: string[] = [];
    for (const list of Object.values(days) as Array<Array<{ start?: string }>>) {
-      for (const slot of list) if (slot?.start && !isBlockedSlot(slot.start)) out.push(slot.start);
+      for (const slot of list) if (slot?.start && isOpenSlot(slot.start)) out.push(slot.start);
    }
    return out;
 };
