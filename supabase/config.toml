@@ -96,6 +96,10 @@ verify_jwt = false
 [functions.state-events-dispatch]
 verify_jwt = false
 
+# Scheduler-only (pg_cron with the secret key); fx-daily checks isInternalRequest itself.
+[functions.fx-daily]
+verify_jwt = false
+
 [functions.loan-request-lender-suggestions]
 verify_jwt = false
 
