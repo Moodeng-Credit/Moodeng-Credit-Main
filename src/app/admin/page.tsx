@@ -1715,6 +1715,19 @@ function AdminPanel() {
             </section>
          ) : null}
 
+         {activeTab === 'credit-line-cost' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Credit line real cost</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Team only. The same real-cost analytics for the loans funded from the credit line (BitRepo) only, since it started: our fee, the
+                     exchange-rate move and exchange fees.
+                  </p>
+               </div>
+               <BorrowerCostSection scope="credit_line" />
+            </section>
+         ) : null}
+
          {activeTab === 'real-cost' ? (
             <section className="space-y-6">
                <div>

@@ -86,17 +86,31 @@ interface Loaded {
    spreads: Partial<Record<LocalCurrency, LiveSpread>>;
 }
 
-async function loadData(): Promise<Loaded> {
+// 'all': every loan funded in the last 40 days. 'credit_line': every loan on a credit facility (BitRepo)
+// since it started, so the numbers line up with the lender's report.
+export type CostScope = 'all' | 'credit_line';
+
+async function loadData(scope: CostScope): Promise<Loaded> {
    const supabase = getSupabaseBrowserClient();
    const since = new Date(Date.now() - WINDOW_DAYS * 86_400_000).toISOString();
-   const { data: loanRows, error } = await supabase
+   let query = supabase
       .from('loans')
       .select(
          'id,tracking_id,borrower_user_id,loan_amount,total_repayment_amount,funded_at,repaid_at,repayment_status,due_timezone,is_test,loan_status'
       )
       .eq('loan_status', 'Lent')
-      .eq('is_test', false)
-      .gte('funded_at', since);
+      .eq('is_test', false);
+   if (scope === 'credit_line') {
+      const { data: links, error: linksError } = await supabase.from('credit_facility_loans').select('loan_id');
+      if (linksError) throw linksError;
+      query = query.in(
+         'id',
+         ((links ?? []) as AnyRow[]).map((l) => l.loan_id as string)
+      );
+   } else {
+      query = query.gte('funded_at', since);
+   }
+   const { data: loanRows, error } = await query;
    if (error) throw error;
    const rows = (loanRows ?? []) as AnyRow[];
    const borrowerIds = [...new Set(rows.map((r) => r.borrower_user_id).filter(Boolean))] as string[];
@@ -642,7 +656,7 @@ function LoanTable({ rows, forecast }: { rows: LoanRealCost[]; forecast: Record<
    );
 }
 
-export default function BorrowerCostSection() {
+export default function BorrowerCostSection({ scope = 'all' }: { scope?: CostScope }) {
    const [data, setData] = useState<Loaded | null>(null);
    const [error, setError] = useState('');
    // The team's shared costs (exchange_cost_settings); edits stay local until "Save for the team".
@@ -653,11 +667,11 @@ export default function BorrowerCostSection() {
    const load = useCallback(async () => {
       setError('');
       try {
-         setData(await loadData());
+         setData(await loadData(scope));
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load');
       }
-   }, []);
+   }, [scope]);
    useEffect(() => {
       void load();
    }, [load]);
@@ -707,7 +721,11 @@ export default function BorrowerCostSection() {
          </div>
 
          <SummaryBlock
-            note={`Funded in the last ${WINDOW_DAYS} days. Cash-out on the funding day, buy-back on the repay day.`}
+            note={`${
+               scope === 'credit_line'
+                  ? 'Every credit-line (BitRepo) loan since the facility started.'
+                  : `Funded in the last ${WINDOW_DAYS} days.`
+            } Cash-out on the funding day, buy-back on the repay day.`}
             rows={repaid}
             title="Repaid loans"
          />
