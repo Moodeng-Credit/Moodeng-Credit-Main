@@ -3,7 +3,7 @@
 import type { goalSlots } from '@/app/admin/marketingModel';
 
 // The month's lending goal as one bar filled by name: loans already made (solid), people who can borrow
-// again this month (dashed, click to leave someone out), and empty slots for the new borrowers still needed.
+// again this month (dashed; click if someone shouldn't count toward the goal), and empty slots for the new borrowers still needed.
 
 type Slots = ReturnType<typeof goalSlots>;
 
@@ -66,7 +66,7 @@ export default function GoalSlotsBoard({
                   key={c.userId}
                   onClick={() => onExclude(c.userId, c.name)}
                   style={{ width: width(c.amount) }}
-                  title={`${c.name}: next loan ${usd(c.amount)}, ${c.when ? `after repaying ${shortDate(c.when)}` : 'now'}. Click to leave out.`}
+                  title={`${c.name}: next loan ${usd(c.amount)}, ${c.when ? `after repaying ${shortDate(c.when)}` : 'now'}. Click if they shouldn't count toward the goal.`}
                   type="button"
                >
                   <b className="w-full truncate text-xs">{c.name.split(' ')[0]}</b>
@@ -93,7 +93,7 @@ export default function GoalSlotsBoard({
                <>
                   <span>
                      <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm bg-emerald-900/60 align-middle outline-dashed outline-1 outline-emerald-400" />
-                     Can borrow again this month (click to leave out)
+                     Can borrow again this month (click one to stop counting them)
                   </span>
                   <span>
                      <span className="mr-1 inline-block h-2.5 w-2.5 rounded-sm align-middle outline-dashed outline-1 outline-[#4a3a66]" />
@@ -146,7 +146,7 @@ export default function GoalSlotsBoard({
                      </ul>
                      {leftOut.length ? (
                         <p className="mt-2 text-xs text-[#a89bb8]">
-                           Left out:{' '}
+                           Not counted toward the goal:{' '}
                            {leftOut.map((l, i) => (
                               <span key={l.userId}>
                                  {i ? ', ' : ''}

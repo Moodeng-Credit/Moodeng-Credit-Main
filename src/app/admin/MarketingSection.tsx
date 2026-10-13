@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
    addSpend,
@@ -27,6 +27,7 @@ import {
    unitEconomics,
    whoToContact
 } from '@/app/admin/marketingModel';
+import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
 // Admin → Growth → Marketing: are we on track for the month's lending goal, what each week still needs, what
 // marketing costs per real borrower (vs the CAC target), and who to contact today. Spend is logged here.
@@ -90,13 +91,18 @@ export default function MarketingSection() {
    });
    const [defaults, setDefaults] = useState({ first: 8, later: 3 });
 
+   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+   const draftMonth = useRef<string | null>(null);
    const load = useCallback(async () => {
       setError(null);
       try {
          const [m, c] = await Promise.all([loadMarketing(month), loadCreditLine().catch(() => null)]);
          setData(m);
          setCredit(c);
-         setGoalDraft(m.goals);
+         // Live reloads keep targets being edited; a new month starts from its saved targets.
+         setGoalDraft((draft) => (draft && draftMonth.current === month ? draft : m.goals));
+         draftMonth.current = month;
+         setUpdatedAt(new Date());
       } catch (err) {
          setError((err as { message?: string })?.message ?? 'Could not load marketing data.');
       }
@@ -105,6 +111,9 @@ export default function MarketingSection() {
    useEffect(() => {
       void load();
    }, [load]);
+
+   // Live: a loan funded or repaid, or a borrower's limit or status changing, refreshes the page.
+   useAdminLiveReload(['loans', 'users'], load);
 
    const run = async (fn: () => Promise<void>) => {
       setBusy(true);
@@ -184,6 +193,12 @@ export default function MarketingSection() {
                   value={month}
                />
             </label>
+            {updatedAt ? (
+               <span className="pb-2 text-xs text-[#a89bb8]">
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400 align-middle" />
+                  Live · updated {updatedAt.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}
+               </span>
+            ) : null}
             {error ? <p className="text-red-300">{error}</p> : null}
          </div>
 
@@ -195,7 +210,8 @@ export default function MarketingSection() {
                cacTarget={data.goals.cac_target_usd}
                isCurrentMonth={month === today.slice(0, 7)}
                onExclude={(userId, who) => {
-                  if (window.confirm(`Leave ${who} out of this month's plan?`)) void run(() => setGoalExcluded(userId, true));
+                  if (window.confirm(`Stop counting ${who} toward this month's goal? They can still borrow as normal.`))
+                     void run(() => setGoalExcluded(userId, true));
                }}
                onRestore={(userId) => void run(() => setGoalExcluded(userId, false))}
                slots={m.slots}
