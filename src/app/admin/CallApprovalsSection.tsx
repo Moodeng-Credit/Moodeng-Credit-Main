@@ -6,12 +6,14 @@ import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
 import { type AdminCallApprovalRow, type AdminCallDecision, decideAdminCall, getAdminCallApprovals } from '@/app/admin/adminSupabase';
 import { groupCallApprovals, isApprovalRequest, relativeStart } from '@/app/admin/callApprovalsModel';
+import CallSheet from '@/app/admin/CallSheet';
 
 // Call approvals — approve a borrower the moment their video call ends, without waiting for the
 // Telegram "Did they show up?" card. Same decisions as the card's buttons (admin-call-approvals
 // runs the same code), so the borrower gets the usual message and Telegram stays in sync.
 
 const REFRESH_MS = 30000;
+
 
 const formatCallTime = (iso: string | null) =>
    iso ? new Date(iso).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
@@ -31,6 +33,8 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [busyId, setBusyId] = useState<string | null>(null);
    const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
    const [now, setNow] = useState(() => Date.now());
+   // The call sheet open on top (profile + screening questions + notes for this borrower's call).
+   const [sheetRow, setSheetRow] = useState<AdminCallApprovalRow | null>(null);
 
    const load = useCallback(async () => {
       try {
@@ -154,6 +158,13 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
+               <button
+                  type="button"
+                  onClick={() => setSheetRow(row)}
+                  className="rounded-xl border border-[#8336f0] px-4 py-2 text-sm font-black text-white hover:bg-[#2a1453]"
+               >
+                  📋 Call sheet
+               </button>
                {row.joinUrl && !row.outcome ? (
                   <a
                      href={row.joinUrl}
@@ -197,9 +208,12 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       </>
    );
 
+   const sheet = sheetRow ? <CallSheet onClose={() => setSheetRow(null)} row={sheetRow} /> : null;
+
    if (variant === 'waiting') {
       return (
          <section className="space-y-4">
+            {sheet}
             <div className="flex flex-wrap items-end justify-between gap-3">
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">
@@ -229,6 +243,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
 
    return (
       <section className="space-y-6">
+         {sheet}
          <div>
             <h2 className="break-words text-2xl font-black sm:text-3xl">Call approvals</h2>
             <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
