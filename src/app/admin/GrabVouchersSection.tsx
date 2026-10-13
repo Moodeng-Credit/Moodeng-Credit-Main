@@ -414,8 +414,17 @@ export default function GrabVouchersSection() {
 
          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="We owe now" value={php(sum(pending))} note={`${pending.length} claimed, not sent yet`} tone="owe" />
-            <Stat label="Sent" value={php(sum(sent))} note={`${sent.length} vouchers delivered`} tone="done" />
-            <Stat label="Earned, not claimed" value={php(sum(unclaimed))} note={`${unclaimed.length} vouchers could still be claimed`} />
+            <Stat
+               label="Sent"
+               value={php(sum(sent))}
+               note={`${sent.length} ${sent.length === 1 ? 'voucher' : 'vouchers'} delivered`}
+               tone="done"
+            />
+            <Stat
+               label="Earned, not claimed"
+               value={php(sum(unclaimed))}
+               note={`${unclaimed.length} ${unclaimed.length === 1 ? 'voucher' : 'vouchers'} could still be claimed`}
+            />
             <Stat label="Total if all claimed" value={php(sum(pending) + sum(unclaimed))} note="Owed now + earned, not claimed" />
          </div>
 
