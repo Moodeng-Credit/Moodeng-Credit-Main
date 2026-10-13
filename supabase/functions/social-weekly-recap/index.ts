@@ -141,6 +141,8 @@ serve(async (req) => {
    const weekLabel = `${manilaDate(now - 7 * DAY_MS)} – ${manilaDate(now - DAY_MS)}`;
    const lines = [`📣 Weekly social recap · ${weekLabel}`];
    const problems: string[] = [];
+   // What the 💡 takeaways compare: views per platform, visits each sent to the site, best post per platform.
+   const stat: { fbViews?: number; ttViews?: number; visits?: Record<string, { visitors: number }>; ttTop?: { text: string; views: number; likes: number; comments: number } } = {};
 
    const pageId = Deno.env.get('FACEBOOK_PAGE_ID');
    const token = Deno.env.get('FACEBOOK_PAGE_TOKEN');
@@ -158,6 +160,7 @@ serve(async (req) => {
          );
          if (fb.posts.length) {
             const totals = fb.posts.reduce((t, p) => ({ views: t.views + p.views, clicks: t.clicks + p.clicks, reactions: t.reactions + p.reactions }), { views: 0, clicks: 0, reactions: 0 });
+            stat.fbViews = totals.views;
             lines.push('', `🖼 ${fb.posts.length} posts: ${fmt(totals.views)} views · ${fmt(totals.reactions)} reactions · ${fmt(totals.clicks)} clicks`);
             const top = [...fb.posts].sort((a, b) => b.views - a.views).slice(0, 3);
             top.forEach((p, i) => {
@@ -179,6 +182,9 @@ serve(async (req) => {
          const tt = await tiktokVideos(apifyToken);
          const week = tt.videos.filter((v) => v.created >= now - 7 * DAY_MS);
          const sum = (k: 'views' | 'likes' | 'comments' | 'shares') => week.reduce((t, v) => t + v[k], 0);
+         stat.ttViews = sum('views');
+         const best = [...week].sort((a, b) => b.views - a.views)[0];
+         if (best) stat.ttTop = best;
          lines.push('', `🎵 TikTok @${TIKTOK_HANDLE}${tt.followers != null ? ` · ${fmt(tt.followers)} followers` : ''}`);
          if (week.length) {
             lines.push(`${week.length} videos: ${fmt(sum('views'))} views · ${fmt(sum('likes'))} likes · ${fmt(sum('comments'))} comments · ${fmt(sum('shares'))} shares`);
@@ -203,6 +209,7 @@ serve(async (req) => {
    if (posthogKey) {
       try {
          const visits = await siteVisits(posthogKey);
+         stat.visits = visits;
          const line = (label: string, key: string) => {
             const v = visits[key];
             return v ? `${label}: ${fmt(v.visitors)} visitors · ${fmt(v.withAccount)} have an account` : `${label}: none`;
@@ -236,6 +243,29 @@ serve(async (req) => {
          .sort((a, b) => b[1] - a[1])
          .forEach(([label, n]) => lines.push(`   ${label}: ${n}`));
    }
+
+   // 💡 Plain-language takeaways from the numbers above (simple rules, no AI).
+   const tips: string[] = [];
+   const fbV = stat.fbViews ?? 0;
+   const ttV = stat.ttViews ?? 0;
+   if (stat.fbViews != null && stat.ttViews != null && fbV + ttV > 0) {
+      const [hi, lo, hiN, loN] = ttV >= fbV ? ['TikTok', 'Facebook', ttV, fbV] : ['Facebook', 'TikTok', fbV, ttV];
+      tips.push(loN > 0 && hiN / loN >= 1.5 ? `${hi} got ${(hiN / loN).toFixed(1)}× the views of ${lo} (${fmt(hiN)} vs ${fmt(loN)}).` : `${hi} ${fmt(hiN)} views vs ${lo} ${fmt(loN)}.`);
+   }
+   if (stat.visits) {
+      const site = (k: string) => stat.visits?.[k]?.visitors ?? 0;
+      for (const [name, key, views, tag] of [['TikTok', 'tiktok', ttV, 'tt-bio'], ['Facebook', 'facebook', fbV, 'fb-…']] as const) {
+         if (views >= 100 && site(key) === 0) tips.push(`${name} had ${fmt(views)} views but sent nobody to moodeng.app: put a tagged link in the bio/caption (moodeng.app/?src=${tag}).`);
+         else if (views >= 100 && site(key) > 0) tips.push(`${name} sent ${fmt(site(key))} site visitors (${((site(key) / views) * 100).toFixed(1)}% of views).`);
+      }
+   }
+   if (stat.ttTop && stat.ttTop.comments + stat.ttTop.likes > 0) {
+      const t = stat.ttTop.text.slice(0, 40);
+      tips.push(`Best TikTok: "${t}${stat.ttTop.text.length > 40 ? '…' : ''}" (${fmt(stat.ttTop.views)} views). Make more like it.`);
+   }
+   const unknown = (bySource.get('unknown') ?? 0) + [...bySource.entries()].filter(([k]) => k.endsWith('(untagged)')).reduce((t, [, n]) => t + n, 0);
+   if (signups && unknown / signups >= 0.5) tips.push(`${unknown} of ${signups} sign-ups had no ?src tag, so we can't tell which post brought them. Tag every link.`);
+   if (tips.length) lines.push('', '💡 Takeaways', ...tips.map((t) => `• ${t}`));
 
    // The weekly to-do for whoever posts (Emma), so every post and poster can be counted next week.
    lines.push(
