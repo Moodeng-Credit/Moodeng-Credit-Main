@@ -25,6 +25,7 @@ export type AdminTab =
    | 'self-lending'
    | 'mule-risk'
    | 'referrals'
+   | 'grab-vouchers'
    | 'borrower-contacts'
    | 'email'
    | 'campaigns'
@@ -95,6 +96,7 @@ export const navGroups: NavGroup[] = [
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
          { id: 'referrals', label: 'Referrals' },
+         { id: 'grab-vouchers', label: 'GrabFood vouchers' },
          { id: 'notifications', label: 'Notifications' },
          { id: 'points', label: 'IOU points' },
          { id: 'trust-points', label: 'Pandesal points' }
@@ -148,6 +150,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'self-lending',
    'mule-risk',
    'referrals',
+   'grab-vouchers',
    'borrower-contacts',
    'email',
    'campaigns',

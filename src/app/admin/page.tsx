@@ -16,7 +16,7 @@ import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
-import VoucherClaimsSection from '@/app/admin/VoucherClaimsSection';
+import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
 import { BorrowerTimeline, RecentChangesFeed } from '@/app/admin/AdminHistory';
 import { deriveBorrowerStatus } from '@/app/admin/adminStatus';
 import AdminStatusBadge from '@/app/admin/AdminStatusBadge';
@@ -1699,9 +1699,10 @@ function AdminPanel() {
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Create codes, deactivate old ones, and track redemptions.</p>
                </div>
                <ReferralCodesSection />
-               <VoucherClaimsSection />
             </section>
          ) : null}
+
+         {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
 
          {activeTab === 'credit-line' ? (
             <section className="space-y-6">
