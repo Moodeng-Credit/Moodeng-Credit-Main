@@ -1,7 +1,7 @@
 import { type FormEvent, useMemo, useState } from 'react';
 
 import { downloadCreditLineExcel } from '@/lib/creditLineExcel';
-import { buildPeriodReport, type LenderReportData, loadLenderReport, periodsFor } from '@/lib/creditLineReport';
+import { buildPeriodReport, type LenderLoan, type LenderReportData, loadLenderReport, periodsFor } from '@/lib/creditLineReport';
 
 // moodeng.app/creditline — the facility lender (BitRepo) sees the live monthly report and downloads it as
 // Excel. Password-checked on the server (credit_line_lender_report); the password is kept for this tab only.
@@ -9,6 +9,19 @@ import { buildPeriodReport, type LenderReportData, loadLenderReport, periodsFor 
 const SESSION_KEY = 'md_creditline_pw';
 const usd = (n: number, digits = 2) => `$${n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
 const pct = (n: number) => `${(n * 100).toFixed(1)}%`;
+
+// Loans table filters (the Excel download always has every loan).
+type SortKey = 'funded' | 'due' | 'principal' | 'repaid';
+type StatusFilter = 'all' | 'active' | 'repaid' | 'overdue';
+const loanStatus = (loan: LenderLoan, asOf: string): Exclude<StatusFilter, 'all'> =>
+   loan.repaidDate && loan.repaidDate <= asOf ? 'repaid' : loan.dueDate && loan.dueDate < asOf ? 'overdue' : 'active';
+const SORT_VALUE: Record<SortKey, (loan: LenderLoan) => string | number> = {
+   funded: (l) => l.fundedDate ?? '',
+   due: (l) => l.dueDate ?? '',
+   principal: (l) => Number(l.loan_amount),
+   repaid: (l) => l.repaidDate ?? ''
+};
+const control = 'min-h-[40px] rounded-xl border-2 border-[#e5ddf0] bg-white px-3 text-[13px] font-semibold text-[#26143f]';
 
 const readSaved = () => {
    try {
@@ -35,6 +48,12 @@ export default function CreditLineLenderPage() {
    const [loading, setLoading] = useState(false);
    const [periodIndex, setPeriodIndex] = useState(0);
    const [downloading, setDownloading] = useState(false);
+   const [sortKey, setSortKey] = useState<SortKey>('funded');
+   const [ascending, setAscending] = useState(true);
+   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+   const [fundedFrom, setFundedFrom] = useState('');
+   const [fundedTo, setFundedTo] = useState('');
+   const [search, setSearch] = useState('');
 
    const unlock = async (pw: string) => {
       setLoading(true);
@@ -61,6 +80,22 @@ export default function CreditLineLenderPage() {
 
    const periods = useMemo(() => (data ? periodsFor(data.facility) : []), [data]);
    const report = useMemo(() => (data && periods[periodIndex] ? buildPeriodReport(data, periods[periodIndex]) : null), [data, periods, periodIndex]);
+   const shownLoans = useMemo(() => {
+      if (!report) return [];
+      const q = search.trim().toLowerCase();
+      const value = SORT_VALUE[sortKey];
+      return report.loans
+         .filter((l) => statusFilter === 'all' || loanStatus(l, report.asOf) === statusFilter)
+         .filter((l) => (!fundedFrom || l.fundedDate >= fundedFrom) && (!fundedTo || l.fundedDate <= fundedTo))
+         .filter((l) => !q || [l.tracking_id, l.privateId, l.borrower.username].some((v) => String(v ?? '').toLowerCase().includes(q)))
+         .sort((a, b) => {
+            const x = value(a);
+            const y = value(b);
+            const cmp = typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y));
+            return ascending ? cmp : -cmp;
+         });
+   }, [report, sortKey, ascending, statusFilter, fundedFrom, fundedTo, search]);
+   const filtered = shownLoans.length !== (report?.loans.length ?? 0);
 
    if (!data || !report) {
       const submit = (e: FormEvent) => {
@@ -160,7 +195,58 @@ export default function CreditLineLenderPage() {
             </p>
 
             <section className="overflow-hidden rounded-2xl border border-[#e7e0ec] bg-white">
-               <h2 className="border-b border-[#f0ecf5] px-4 py-3 text-[16px] font-bold text-[#26143f]">Loans (Schedule B)</h2>
+               <div className="flex flex-wrap items-center gap-2 border-b border-[#f0ecf5] px-4 py-3">
+                  <h2 className="mr-auto text-[16px] font-bold text-[#26143f]">
+                     Loans (Schedule B){' '}
+                     <span className="font-semibold text-[#8a7c9c]">
+                        {filtered ? `${shownLoans.length} of ${report.loans.length}` : report.loans.length}
+                     </span>
+                  </h2>
+                  <input
+                     aria-label="Search loans"
+                     className={`${control} w-[170px]`}
+                     onChange={(e) => setSearch(e.target.value)}
+                     placeholder="Search borrower or loan"
+                     value={search}
+                  />
+                  <select aria-label="Status" className={control} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)} value={statusFilter}>
+                     <option value="all">All statuses</option>
+                     <option value="active">Active</option>
+                     <option value="repaid">Repaid</option>
+                     <option value="overdue">Overdue</option>
+                  </select>
+                  <label className="flex items-center gap-1 text-[12px] font-semibold text-[#695b7b]">
+                     Funded
+                     <input aria-label="Funded from" className={control} onChange={(e) => setFundedFrom(e.target.value)} type="date" value={fundedFrom} />
+                     –
+                     <input aria-label="Funded to" className={control} onChange={(e) => setFundedTo(e.target.value)} type="date" value={fundedTo} />
+                  </label>
+                  <select aria-label="Sort by" className={control} onChange={(e) => setSortKey(e.target.value as SortKey)} value={sortKey}>
+                     <option value="funded">Sort: funded date</option>
+                     <option value="due">Sort: due date</option>
+                     <option value="repaid">Sort: repaid date</option>
+                     <option value="principal">Sort: principal</option>
+                  </select>
+                  <button className={control} onClick={() => setAscending((a) => !a)} type="button">
+                     {ascending ? '↑ Oldest / smallest first' : '↓ Newest / largest first'}
+                  </button>
+                  {filtered || sortKey !== 'funded' || !ascending ? (
+                     <button
+                        className="text-[13px] font-bold text-[#6b55f7] underline"
+                        onClick={() => {
+                           setSearch('');
+                           setStatusFilter('all');
+                           setFundedFrom('');
+                           setFundedTo('');
+                           setSortKey('funded');
+                           setAscending(true);
+                        }}
+                        type="button"
+                     >
+                        Reset
+                     </button>
+                  ) : null}
+               </div>
                <div className="overflow-x-auto">
                   <table className="w-full min-w-[980px] text-left text-[13px]">
                      <thead className="bg-[#f8f4fc] text-[12px] uppercase text-[#695b7b]">
@@ -173,7 +259,14 @@ export default function CreditLineLenderPage() {
                         </tr>
                      </thead>
                      <tbody>
-                        {report.loans.map((loan) => {
+                        {shownLoans.length === 0 ? (
+                           <tr>
+                              <td className="px-3 py-6 text-center text-[#8a7c9c]" colSpan={11}>
+                                 No loans match these filters.
+                              </td>
+                           </tr>
+                        ) : null}
+                        {shownLoans.map((loan) => {
                            const repaid = loan.repaidDate && loan.repaidDate <= report.asOf;
                            const overdue = !repaid && loan.dueDate && loan.dueDate < report.asOf;
                            return [
