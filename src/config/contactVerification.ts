@@ -104,6 +104,24 @@ export const MESSENGER_APP_CHAT_LINK = `fb-messenger://user-thread/${MESSENGER_P
 export const isAndroidBrowser = (userAgent: string = typeof navigator !== 'undefined' ? navigator.userAgent : '') =>
    /android/i.test(userAgent);
 
+// A computer (laptop/desktop), not a phone or tablet: no Android/iPhone/iPad user agent (iPads report
+// as Macs, so a touch Mac counts as an iPad) and a mouse or trackpad as the main pointer. On computers
+// the m.me code never reached our bot (0 of 4 attempts, Sep–Oct 2026: m.me bounces through
+// messenger.com to facebook.com/messages and loses it), so ContactsStep shows a QR for the phone
+// instead, plus copy-and-paste on the computer itself. Anything unsure stays on the phone flows.
+export const isDesktopBrowser = () => {
+   if (typeof navigator === 'undefined' || typeof window === 'undefined') return false;
+   const ua = navigator.userAgent;
+   if (/android|iphone|ipad|ipod|mobile/i.test(ua)) return false;
+   if (/macintosh|mac os x/i.test(ua) && navigator.maxTouchPoints > 1) return false;
+   return Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches);
+};
+
+// What the desktop QR opens on the phone: our own page (MessengerHandoff), which gives each phone the
+// way into Messenger that works there — m.me with the code on iPhone, copy-and-paste on Android.
+export const MESSENGER_CODE_PATTERN = /^MDNG-[A-Z0-9]{4,12}$/;
+export const buildMessengerHandoffLink = (code: string, origin: string = window.location.origin) => `${origin}/fb/${code}`;
+
 // Support "Message us" links (EXTERNAL_LINKS.support) are m.me links too, so on Android they never
 // opened Messenger either. Android gets the app link to the Page's chat (the ref tag only rides along
 // elsewhere); custom schemes open in place, not in a new tab.
