@@ -38,16 +38,34 @@ const formatUsdcAmount = (value: number | string | null | undefined) =>
 const formatDueDate = (value: string | null | undefined) =>
    value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null;
 
+// The "Welcome to the community, Moo-borrower!" poster, sent with a borrower's FIRST funded loan (George,
+// 2026-10-13). Served from the app's public folder; square so Messenger's card doesn't crop it.
+export const MOO_BORROWER_POSTER_URL = `${(Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '')}/messenger/moo-borrower-welcome.jpg`;
+
 /** What goes to Messenger for this notification type, or null for the types we don't send there. */
 export const buildMessengerContent = (
    type: LoanNotificationType,
    loan: LoanNotificationLoan | null,
-   aggregate: LoanNotificationAggregate | undefined
+   aggregate: LoanNotificationAggregate | undefined,
+   { firstLoan = false }: { firstLoan?: boolean } = {}
 ): { text: string; card?: MessengerCard } | null => {
    if (type === 'funded' && loan) {
       const dashboardUrl = buildPushPayloadForType('funded', loan, aggregate, 'en')?.url;
       const due = formatDueDate(loan.due_date);
       const repay = toNumber(loan.total_repayment_amount) > 0 ? `Repay ${formatUsdcAmount(loan.total_repayment_amount)} USDC` : 'Repay on time';
+      if (firstLoan) {
+         return {
+            text:
+               `🎉 Welcome to the community, Moo-borrower! Your first loan is funded: ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
+               `${repay}${due ? ` by ${due}` : ''} to build your record and level up to bigger loans. We're cheering for you! 🦛`,
+            card: {
+               title: 'Welcome, Moo-borrower! 🎉',
+               subtitle: 'Your first loan is funded. Repay on time to level up.',
+               imageUrl: MOO_BORROWER_POSTER_URL,
+               button: { title: 'Open Moodeng', url: dashboardUrl ?? 'https://moodeng.app' }
+            }
+         };
+      }
       return {
          text:
             `🎉 Great news, your loan is funded! ${formatUsdcAmount(loan.loan_amount)} USDC has been sent to your wallet.\n\n` +
@@ -64,6 +82,20 @@ export const buildMessengerContent = (
    }
 
    return null;
+};
+
+/** True when no earlier funded (non-test) loan exists for this borrower. */
+export const isFirstFundedLoan = async (supabase: any, loan: LoanNotificationLoan): Promise<boolean> => {
+   if (!loan.borrower_user_id || !loan.funded_at) return false;
+   const { count, error } = await supabase
+      .from('loans')
+      .select('id', { count: 'exact', head: true })
+      .eq('borrower_user_id', loan.borrower_user_id)
+      .eq('loan_status', 'Lent')
+      .eq('is_test', false)
+      .lt('funded_at', loan.funded_at);
+   if (error) throw error;
+   return (count ?? 0) === 0;
 };
 
 const toNumber = (value: number | string | null | undefined) => {
@@ -233,7 +265,12 @@ export const sendBorrowerLoanNotification = async (
    // free-form messages within 24h of the borrower's last message to the Page, so this lands only
    // for someone who wrote to us recently (sendMessengerMessage checks and skips otherwise). Like
    // push, it's additive and never fails the other channels.
-   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate) : null;
+   // First funded loan → the Moo-borrower welcome (poster card) instead of the plain funded message.
+   const firstLoan =
+      type === 'funded' && recipient.messenger_psid && options.push?.supabase && loan
+         ? await isFirstFundedLoan(options.push.supabase, loan).catch(() => false)
+         : false;
+   const messengerContent = recipient.messenger_psid ? buildMessengerContent(type, loan, aggregate, { firstLoan }) : null;
    if (recipient.messenger_psid && messengerContent) {
       const result = await sendMessengerMessage(recipient.messenger_psid, messengerContent);
       messengerSent = result.ok;

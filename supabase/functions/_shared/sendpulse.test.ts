@@ -50,3 +50,16 @@ Deno.test('sending is a quiet no-op without credentials or a contact', async () 
    assertEquals(await sendMessengerMessage(null, { text: 'hi' }), { ok: false, reason: 'no_contact' });
    assertEquals(await sendMessengerMessage('contact-1', { text: 'hi' }), { ok: false, reason: 'not_configured' });
 });
+
+Deno.test('buildCardPayload: an image card is square with image_url', () => {
+   const payload = buildCardPayload('c1', {
+      title: 'Welcome, Moo-borrower! 🎉',
+      imageUrl: 'https://moodeng.app/messenger/moo-borrower-welcome.jpg',
+      button: { title: 'Open Moodeng', url: 'https://moodeng.app' }
+   }) as any;
+   const tpl = payload.message.data.attachment.payload;
+   assertEquals(tpl.image_aspect_ratio, 'square');
+   assertEquals(tpl.elements[0].image_url, 'https://moodeng.app/messenger/moo-borrower-welcome.jpg');
+   const plain = buildCardPayload('c1', { title: 't', button: { title: 'b', url: 'u' } }) as any;
+   assertEquals(plain.message.data.attachment.payload.image_aspect_ratio, undefined);
+});
