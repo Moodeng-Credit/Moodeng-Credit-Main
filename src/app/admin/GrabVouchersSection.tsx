@@ -6,9 +6,11 @@ import {
    type AdminUnclaimedVoucher,
    type AdminVoucherClaim,
    type AdminVoucherClaimStatus,
+   type AdminVoucherContact,
    type AdminVoucherReward,
    listUnclaimedVouchers,
    listVoucherClaims,
+   listVoucherContacts,
    logAdminAction,
    updateVoucherClaimStatus
 } from '@/app/admin/adminSupabase';
@@ -34,6 +36,116 @@ const claimEmail = (claim: AdminVoucherClaim) => claim.email ?? claim.account_em
 function formatDate(value: string | null) {
    if (!value) return '—';
    return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+// KYC returns ISO-3 issuing countries; logins return ISO-2.
+const ISO3_TO_ISO2: Record<string, string> = {
+   PHL: 'PH',
+   IDN: 'ID',
+   MYS: 'MY',
+   SGP: 'SG',
+   THA: 'TH',
+   VNM: 'VN',
+   QAT: 'QA',
+   ARE: 'AE',
+   SAU: 'SA',
+   KWT: 'KW',
+   JPN: 'JP',
+   HKG: 'HK',
+   MAC: 'MO',
+   TWN: 'TW',
+   KOR: 'KR',
+   USA: 'US',
+   CAN: 'CA',
+   GBR: 'GB',
+   AUS: 'AU'
+};
+
+const regionNames = typeof Intl.DisplayNames === 'function' ? new Intl.DisplayNames(['en'], { type: 'region' }) : null;
+const countryName = (iso2: string) => regionNames?.of(iso2) ?? iso2;
+const flag = (iso2: string) =>
+   /^[A-Z]{2}$/.test(iso2) ? String.fromCodePoint(...[...iso2].map((char) => 127397 + char.charCodeAt(0))) : '';
+
+type Whereabouts = { tone: 'ph' | 'abroad' | 'unknown'; country: string | null; kycCountry: string | null };
+
+// Where the borrower is now: latest real (non-VPN) login, falling back to their ID's country.
+function whereabouts(contact: AdminVoucherContact | undefined): Whereabouts {
+   const kycCountry = contact?.kyc_country ? (ISO3_TO_ISO2[contact.kyc_country] ?? contact.kyc_country) : null;
+   const country = contact?.login_country ?? kycCountry;
+   if (!country) return { tone: 'unknown', country: null, kycCountry };
+   return { tone: country === 'PH' ? 'ph' : 'abroad', country, kycCountry };
+}
+
+const locationText = (contact: AdminVoucherContact | undefined) => {
+   const where = whereabouts(contact);
+   if (!where.country) return '';
+   const city = contact?.login_country ? contact.login_city : null;
+   return [city, countryName(where.country)].filter(Boolean).join(', ');
+};
+
+function LocationBadge({ contact }: { contact: AdminVoucherContact | undefined }) {
+   const where = whereabouts(contact);
+   if (where.tone === 'unknown') {
+      return <span className="rounded-full bg-[#241044] px-3 py-1 text-sm font-black text-[#a89bb8]">📍 Location unknown</span>;
+   }
+   if (where.tone === 'ph') {
+      return <span className="rounded-full bg-[#123d2a] px-3 py-1 text-sm font-black text-[#6ee7a8]">{flag('PH')} In the Philippines</span>;
+   }
+   return (
+      <span className="rounded-full bg-[#3d2d12] px-3 py-1 text-sm font-black text-[#facc6b]">
+         ⚠ {flag(where.country!)} In {countryName(where.country!)} — Grab PH may not work
+      </span>
+   );
+}
+
+function LocationDetails({ contact }: { contact: AdminVoucherContact | undefined }) {
+   if (!contact) return <span className="text-[#6f6385]">—</span>;
+   const where = whereabouts(contact);
+   const others = contact.login_countries.filter((iso2) => iso2 !== contact.login_country);
+   return (
+      <span className="block space-y-0.5">
+         {contact.login_country ? (
+            <span className="block">
+               Logs in from {flag(contact.login_country)} {locationText(contact)}
+               {contact.login_at ? <span className="text-[#6f6385]"> · last {formatDate(contact.login_at)}</span> : null}
+            </span>
+         ) : (
+            <span className="block text-[#6f6385]">No login location yet</span>
+         )}
+         {where.kycCountry ? (
+            <span className="block text-sm text-[#a89bb8]">
+               ID: {flag(where.kycCountry)} {countryName(where.kycCountry)}
+               {contact.kyc_area ? ` · address in ${contact.kyc_area}` : ''}
+            </span>
+         ) : null}
+         {others.length > 0 ? (
+            <span className="block text-sm text-[#a89bb8]">
+               Also seen in: {others.map((iso2) => `${flag(iso2)} ${countryName(iso2)}`).join(', ')}
+            </span>
+         ) : null}
+      </span>
+   );
+}
+
+function FacebookDetails({ contact }: { contact: AdminVoucherContact | undefined }) {
+   const link = contact?.facebook_contact && /^https?:\/\//i.test(contact.facebook_contact) ? contact.facebook_contact : null;
+   if (!contact?.facebook_name && !contact?.facebook_contact && !contact?.messenger_verified) {
+      return <span className="text-[#6f6385]">Not connected</span>;
+   }
+   return (
+      <span className="inline-flex flex-wrap items-center gap-2">
+         {link ? (
+            <a className="font-bold text-[#c4a2ff] underline" href={link} target="_blank" rel="noreferrer">
+               {contact.facebook_name ?? 'Profile'}
+            </a>
+         ) : (
+            <span>{contact.facebook_name ?? contact.facebook_contact ?? 'Name not saved'}</span>
+         )}
+         {contact.messenger_verified ? (
+            <span className="rounded-lg bg-[#123d2a] px-2 py-0.5 text-xs font-black text-[#6ee7a8]">Messenger ✓</span>
+         ) : null}
+      </span>
+   );
 }
 
 function downloadCsv(filename: string, header: string[], rows: Array<Array<string | number | null>>) {
@@ -81,6 +193,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 export default function GrabVouchersSection() {
    const [claims, setClaims] = useState<AdminVoucherClaim[]>([]);
    const [unclaimed, setUnclaimed] = useState<AdminUnclaimedVoucher[]>([]);
+   const [contacts, setContacts] = useState<Record<string, AdminVoucherContact>>({});
    const [view, setView] = useState<View>('to-send');
    const [isLoading, setIsLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
@@ -93,6 +206,10 @@ export default function GrabVouchersSection() {
          const [claimRows, unclaimedRows] = await Promise.all([listVoucherClaims(), listUnclaimedVouchers()]);
          setClaims(claimRows);
          setUnclaimed(unclaimedRows);
+         const userIds = [...new Set([...claimRows, ...unclaimedRows].map((row) => row.user_id))];
+         // Location/Facebook are extras: if they fail to load, the voucher list still works.
+         const contactRows = await listVoucherContacts(userIds).catch(() => []);
+         setContacts(Object.fromEntries(contactRows.map((row) => [row.user_id, row])));
       } catch (err) {
          setError(err instanceof Error ? err.message : 'Could not load vouchers.');
       } finally {
@@ -113,6 +230,8 @@ export default function GrabVouchersSection() {
    const rejected = useMemo(() => claims.filter((claim) => claim.status === 'rejected'), [claims]);
    // Oldest first, so whoever has waited longest is at the top.
    const toSend = useMemo(() => [...pending].reverse(), [pending]);
+   const waitingPeople = useMemo(() => [...new Map(pending.map((claim) => [claim.user_id, claim.full_name])).entries()], [pending]);
+   const waitingAbroad = waitingPeople.filter(([userId]) => whereabouts(contacts[userId]).tone === 'abroad');
 
    const copy = async (key: string, text: string) => {
       await navigator.clipboard.writeText(text);
@@ -153,12 +272,29 @@ export default function GrabVouchersSection() {
    const exportClaims = () =>
       downloadCsv(
          `grab-vouchers-${new Date().toISOString().slice(0, 10)}.csv`,
-         ['Status', 'Name', 'Email', 'Mobile', 'Username', 'Reward', 'Amount PHP', 'Claimed', 'Sent', 'Note'],
+         [
+            'Status',
+            'Name',
+            'Email',
+            'Mobile',
+            'Location now',
+            'ID country',
+            'Facebook',
+            'Username',
+            'Reward',
+            'Amount PHP',
+            'Claimed',
+            'Sent',
+            'Note'
+         ],
          claims.map((claim) => [
             claim.status,
             claim.full_name,
             claimEmail(claim),
             claim.mobile,
+            locationText(contacts[claim.user_id]),
+            whereabouts(contacts[claim.user_id]).kycCountry,
+            contacts[claim.user_id]?.facebook_name ?? contacts[claim.user_id]?.facebook_contact ?? null,
             claim.username,
             REWARD_LABEL[claim.reward] ?? claim.reward,
             claim.amount_php,
@@ -183,6 +319,7 @@ export default function GrabVouchersSection() {
                <span className="text-2xl font-black">{php(claim.amount_php)}</span>
                <span className="text-lg font-black">{claim.full_name}</span>
                <span className="font-bold text-[#a89bb8]">{REWARD_LABEL[claim.reward] ?? claim.reward}</span>
+               <LocationBadge contact={contacts[claim.user_id]} />
                {claim.status === 'sent' ? (
                   <span className="ml-auto rounded-full bg-[#123d2a] px-3 py-1 text-sm font-black text-[#6ee7a8]">
                      ✓ Sent {formatDate(claim.sent_at)}
@@ -216,6 +353,14 @@ export default function GrabVouchersSection() {
                </Field>
                <Field label="Mobile (GCash)">{claim.mobile}</Field>
                <Field label="User">{claim.username ? `@${claim.username}` : claim.user_id}</Field>
+               <div className="sm:col-span-2">
+                  <Field label="Location">
+                     <LocationDetails contact={contacts[claim.user_id]} />
+                  </Field>
+               </div>
+               <Field label="Facebook">
+                  <FacebookDetails contact={contacts[claim.user_id]} />
+               </Field>
                {claim.admin_note ? <Field label="Note">{claim.admin_note}</Field> : null}
             </dl>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -274,6 +419,14 @@ export default function GrabVouchersSection() {
             <Stat label="Total if all claimed" value={php(sum(pending) + sum(unclaimed))} note="Owed now + earned, not claimed" />
          </div>
 
+         {waitingAbroad.length > 0 ? (
+            <p className="rounded-xl border border-[#8a6a1f] bg-[#2a2010] px-4 py-3 font-bold text-[#facc6b]">
+               ⚠ {waitingAbroad.length} of {waitingPeople.length} people waiting are outside the Philippines right now (
+               {waitingAbroad.map(([userId, name]) => `${name} — ${countryName(whereabouts(contacts[userId]).country!)}`).join(', ')}). A
+               GrabFood PH voucher may not work for them — check before buying.
+            </p>
+         ) : null}
+
          <div className="flex flex-wrap items-center gap-2">
             {views.map((item) => (
                <button
@@ -328,11 +481,13 @@ export default function GrabVouchersSection() {
                   <p className="text-[#6f6385]">Everyone who earned a voucher has claimed it.</p>
                ) : (
                   <div className="overflow-x-auto rounded-2xl border border-[#2a1453]">
-                     <table className="w-full min-w-[640px] text-left">
+                     <table className="w-full min-w-[960px] text-left">
                         <thead className="bg-[#1c0a3a] text-xs font-black uppercase tracking-wide text-[#a89bb8]">
                            <tr>
                               <th className="px-4 py-3">Borrower</th>
                               <th className="px-4 py-3">Email</th>
+                              <th className="px-4 py-3">Location</th>
+                              <th className="px-4 py-3">Facebook</th>
                               <th className="px-4 py-3">Earned for</th>
                               <th className="px-4 py-3 text-right">Amount</th>
                            </tr>
@@ -354,6 +509,19 @@ export default function GrabVouchersSection() {
                                     ) : (
                                        <span className="text-[#6f6385]">—</span>
                                     )}
+                                 </td>
+                                 <td className="px-4 py-3">
+                                    <span className="block">
+                                       {whereabouts(contacts[row.user_id]).country
+                                          ? `${flag(whereabouts(contacts[row.user_id]).country!)} ${locationText(contacts[row.user_id])}`
+                                          : '—'}
+                                    </span>
+                                    {whereabouts(contacts[row.user_id]).tone === 'abroad' ? (
+                                       <span className="text-xs font-black text-[#facc6b]">⚠ Outside the Philippines</span>
+                                    ) : null}
+                                 </td>
+                                 <td className="px-4 py-3 text-sm">
+                                    <FacebookDetails contact={contacts[row.user_id]} />
                                  </td>
                                  <td className="px-4 py-3 text-[#a89bb8]">{REWARD_LABEL[row.reward] ?? row.reward}</td>
                                  <td className="px-4 py-3 text-right font-black">{php(row.amount_php)}</td>
