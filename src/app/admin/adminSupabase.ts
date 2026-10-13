@@ -1976,15 +1976,25 @@ export async function deleteReferralCode(id: string): Promise<void> {
 
 export type AdminVoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 
+export type AdminVoucherReward =
+   | 'first_on_time_repayment'
+   | 'referral_inviter'
+   | 'referral_invitee'
+   | 'tier_rising'
+   | 'tier_prime'
+   | 'tier_apex';
+
 export interface AdminVoucherClaim {
    id: string;
    user_id: string;
    username: string | null;
-   reward: 'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee';
+   reward: AdminVoucherReward;
    amount_php: number;
    full_name: string;
    mobile: string;
    email: string | null;
+   // The borrower's account email — a fallback when they left the claim's email blank.
+   account_email: string | null;
    status: AdminVoucherClaimStatus;
    admin_note: string | null;
    sent_at: string | null;
@@ -1996,14 +2006,32 @@ export async function listVoucherClaims(): Promise<AdminVoucherClaim[]> {
    const data = (await requireOk(
       supabase
          .from('voucher_claims')
-         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username)')
+         .select('id, user_id, reward, amount_php, full_name, mobile, email, status, admin_note, sent_at, created_at, users(username, email)')
          .order('created_at', { ascending: false })
    )) as AnyRow[] | null;
    return (data ?? []).map((row) => ({
       ...row,
       amount_php: toNumber(row.amount_php),
-      username: (Array.isArray(row.users) ? row.users[0]?.username : row.users?.username) ?? null
+      username: (Array.isArray(row.users) ? row.users[0]?.username : row.users?.username) ?? null,
+      account_email: (Array.isArray(row.users) ? row.users[0]?.email : row.users?.email) ?? null
    })) as AdminVoucherClaim[];
+}
+
+// Vouchers a borrower has earned but not claimed yet (admin_unclaimed_vouchers RPC).
+export interface AdminUnclaimedVoucher {
+   user_id: string;
+   username: string | null;
+   display_name: string | null;
+   email: string | null;
+   reward: AdminVoucherReward;
+   friend_referral_id: string | null;
+   amount_php: number;
+}
+
+export async function listUnclaimedVouchers(): Promise<AdminUnclaimedVoucher[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = (await requireOk(supabase.rpc('admin_unclaimed_vouchers'))) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ ...row, amount_php: toNumber(row.amount_php) })) as AdminUnclaimedVoucher[];
 }
 
 export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {
