@@ -24,7 +24,7 @@ import {
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 // Admin → Finance → Borrower real cost (team-only; never shown to borrowers or lenders). Live USDC→PHP
-// and USDC→IDR, then for every loan funded or repaid in the last 40 days what it really cost the
+// and USDC→IDR, then for every loan funded in the last 40 days what it really cost the
 // borrower in their own money: our fee + the exchange-rate move + exchange fees. See borrowerCostModel.
 
 const WINDOW_DAYS = 40;
@@ -74,7 +74,7 @@ async function loadData(): Promise<Loaded> {
       )
       .eq('loan_status', 'Lent')
       .eq('is_test', false)
-      .or(`funded_at.gte.${since},repaid_at.gte.${since}`);
+      .gte('funded_at', since);
    if (error) throw error;
    const rows = (loanRows ?? []) as AnyRow[];
    const borrowerIds = [...new Set(rows.map((r) => r.borrower_user_id).filter(Boolean))] as string[];
@@ -88,7 +88,9 @@ async function loadData(): Promise<Loaded> {
    const stateById = new Map(((kyc.data ?? []) as AnyRow[]).map((k) => [k.user_id as string, k.issuing_state as string | null]));
 
    const loans: CostLoan[] = rows
-      .filter((r) => r.funded_at)
+      // Paid but no repayment date recorded (some older loans): we can't price the buy-back, so skip it
+      // rather than treat it as still open.
+      .filter((r) => r.funded_at && !(r.repayment_status === 'Paid' && !r.repaid_at))
       .map((r) => ({
          id: r.id,
          trackingId: r.tracking_id ?? r.id,
@@ -509,7 +511,7 @@ export default function BorrowerCostSection() {
          </div>
 
          <SummaryBlock
-            note={`Funded or repaid in the last ${WINDOW_DAYS} days. Cash-out on the funding day, buy-back on the repay day.`}
+            note={`Funded in the last ${WINDOW_DAYS} days. Cash-out on the funding day, buy-back on the repay day.`}
             rows={repaid}
             title="Repaid loans"
          />
