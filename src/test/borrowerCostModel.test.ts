@@ -110,3 +110,15 @@ describe('suggestedFee', () => {
       expect(suggestedFee(0.1, forecast, 3)).toBeCloseTo(0.1);
    });
 });
+
+describe('sizeCurve', () => {
+   it('flat fees fade as the loan grows, toward the spreads + FX floor', async () => {
+      const { sizeCurve, sizeFloor, DEFAULT_COSTS } = await import('@/app/admin/borrowerCostModel');
+      const curve = sizeCurve(DEFAULT_COSTS.PHP, 62.8, 0.005, 0.1);
+      expect(curve[0].exchangePct).toBeGreaterThan(curve.at(-1)!.exchangePct);
+      for (let i = 1; i < curve.length; i += 1) expect(curve[i].extraPct).toBeLessThan(curve[i - 1].extraPct);
+      const floor = sizeFloor(DEFAULT_COSTS.PHP, 0.005, 0.1);
+      expect(curve.at(-1)!.extraPct).toBeGreaterThan(floor);
+      expect(curve.at(-1)!.extraPct - floor).toBeLessThan(0.01);
+   });
+});

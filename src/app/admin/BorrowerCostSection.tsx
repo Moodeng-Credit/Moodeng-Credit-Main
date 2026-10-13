@@ -2,10 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+   CartesianGrid,
+   ComposedChart,
+   Legend,
+   Line,
+   LineChart,
+   ReferenceLine,
+   ResponsiveContainer,
+   Scatter,
+   Tooltip,
+   XAxis,
+   YAxis
+} from 'recharts';
 
 import {
    borrowerCurrency,
+   breakEvenSize,
    type CostLoan,
    DEFAULT_COSTS,
    type ExchangeCosts,
@@ -18,6 +31,8 @@ import {
    type RateSeries,
    realCost,
    seasonalForecast,
+   sizeCurve,
+   sizeFloor,
    suggestedFee,
    summarize
 } from '@/app/admin/borrowerCostModel';
@@ -386,6 +401,137 @@ function ForecastBlock({
 
 // The same loan's fee, moved by how much more (or less) than usual its currency was expected to shift
 // over a loan funded that month — what we'd charge it with the dynamic fee.
+const SIZE_ROWS = [15, 30, 50, 100, 200, 500];
+
+// How the extra cost (exchange fees + expected rate move) shrinks as loans get bigger, with our real
+// loans plotted on the same axes so the curve can be checked against them.
+function SizeBlock({
+   costs,
+   forecast,
+   rates,
+   live,
+   baseFee,
+   loans
+}: {
+   costs: Record<LocalCurrency, ExchangeCosts>;
+   forecast: Record<LocalCurrency, MonthForecast[]>;
+   rates: Record<LocalCurrency, RateSeries>;
+   live: Partial<Record<LocalCurrency, number>>;
+   baseFee: number;
+   loans: LoanRealCost[];
+}) {
+   const thisMonth = new Date().getMonth();
+   return (
+      <div className="space-y-3">
+         <div>
+            <h3 className="text-lg font-black text-white">Loan size: the extra cost shrinks as loans grow</h3>
+            <p className="max-w-3xl text-xs text-[#a89bb8]">
+               Most exchange fees are flat (send fees, the cash-out), so on a bigger loan they are a smaller share. The extra cost on top of
+               our fee settles toward a floor: the two spreads plus the expected rate move for a loan funded this month. Dots are our real
+               loans (extra cost actually paid; open loans at today&apos;s rate).
+            </p>
+         </div>
+         <div className="grid gap-3 md:grid-cols-2">
+            {CURRENCIES.map((c) => {
+               const rate = live[c] ?? [...rates[c].values()].at(-1) ?? 0;
+               const fx = forecast[c][thisMonth]?.estimate ?? 0;
+               const curve = rate ? sizeCurve(costs[c], rate, fx, baseFee) : [];
+               const floor = sizeFloor(costs[c], fx, baseFee);
+               const under2 = breakEvenSize(curve, 0.02);
+               const dots = loans
+                  .filter((r) => r.loan.currency === c && r.received > 0)
+                  .map((r) => ({ principal: r.loan.principal, actual: ((r.exchangeLocal + r.fxLocal) / r.received) * 100 }));
+               const data = curve.map((p) => ({ principal: p.principal, extra: p.extraPct * 100, exchange: p.exchangePct * 100 }));
+               return (
+                  <div className="rounded-2xl border border-[#2a1453] bg-[#1a0838] p-4" key={c}>
+                     <p className="font-black text-white">
+                        {c} · {costs[c].label}
+                     </p>
+                     <p className="mt-1 text-xs text-[#a89bb8]">
+                        Floor for big loans: {pct(floor)} · exchange fees fall under 2% from about{' '}
+                        {under2 ? `$${under2}` : 'more than $500'}
+                     </p>
+                     <div className="mt-3 h-56">
+                        <ResponsiveContainer height="100%" width="100%">
+                           <ComposedChart margin={{ left: -10, right: 8, top: 4 }}>
+                              <CartesianGrid stroke="#2a1453" />
+                              <XAxis
+                                 dataKey="principal"
+                                 domain={[5, 500]}
+                                 scale="log"
+                                 stroke="#a89bb8"
+                                 tickFormatter={(v) => `$${v}`}
+                                 ticks={[5, 15, 30, 50, 100, 200, 500]}
+                                 type="number"
+                              />
+                              <YAxis stroke="#a89bb8" tickFormatter={(v) => `${v}%`} />
+                              <Tooltip
+                                 contentStyle={{ background: '#12052a', border: '1px solid #2a1453' }}
+                                 formatter={(v) => `${Number(v).toFixed(2)}%`}
+                                 labelFormatter={(v) => `$${v} loan`}
+                              />
+                              <Legend wrapperStyle={{ fontSize: 12 }} />
+                              <ReferenceLine
+                                 label={{ value: 'floor', fill: '#a89bb8', fontSize: 11 }}
+                                 stroke="#a89bb8"
+                                 strokeDasharray="4 4"
+                                 y={floor * 100}
+                              />
+                              <Line
+                                 data={data}
+                                 dataKey="extra"
+                                 dot={false}
+                                 name="Extra cost (fees + FX)"
+                                 stroke="#f472b6"
+                                 strokeWidth={2}
+                                 type="monotone"
+                              />
+                              <Line
+                                 data={data}
+                                 dataKey="exchange"
+                                 dot={false}
+                                 name="Exchange fees only"
+                                 stroke="#a78bfa"
+                                 strokeWidth={2}
+                                 type="monotone"
+                              />
+                              <Scatter data={dots} dataKey="actual" fill="#34d399" name="Our loans" />
+                           </ComposedChart>
+                        </ResponsiveContainer>
+                     </div>
+                     <table className="mt-3 w-full text-left text-xs">
+                        <thead className="text-[#a89bb8]">
+                           <tr>
+                              <th className="p-1">Loan</th>
+                              <th className="p-1 text-right">Exchange fees</th>
+                              <th className="p-1 text-right">+ rate move</th>
+                              <th className="p-1 text-right">+ our fee</th>
+                              <th className="p-1 text-right">= real cost</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           {SIZE_ROWS.map((size) => {
+                              const point = rate ? sizeCurve(costs[c], rate, fx, baseFee, [size])[0] : null;
+                              return (
+                                 <tr className="border-t border-[#2a1453] text-[#d8cfe6]" key={size}>
+                                    <td className="p-1">${size}</td>
+                                    <td className="p-1 text-right">{point ? pct(point.exchangePct) : '—'}</td>
+                                    <td className="p-1 text-right">{point ? signedPct(point.fxPct) : '—'}</td>
+                                    <td className="p-1 text-right">{pct(baseFee)}</td>
+                                    <td className="p-1 text-right font-bold text-white">{point ? pct(baseFee + point.extraPct) : '—'}</td>
+                                 </tr>
+                              );
+                           })}
+                        </tbody>
+                     </table>
+                  </div>
+               );
+            })}
+         </div>
+      </div>
+   );
+}
+
 function LoanTable({ rows, forecast }: { rows: LoanRealCost[]; forecast: Record<LocalCurrency, MonthForecast[]> }) {
    if (!rows.length) return <p className="text-sm text-[#a89bb8]">No loans.</p>;
    return (
@@ -533,6 +679,8 @@ export default function BorrowerCostSection() {
             onBaseFee={setBaseFeeInput}
             rates={data.rates}
          />
+
+         <SizeBlock baseFee={baseFee} costs={costs} forecast={data.forecast} live={data.live} loans={rows} rates={data.rates} />
 
          <div className="space-y-3">
             <div>

@@ -253,3 +253,38 @@ export const fxAdjustment = (forecast: MonthForecast[], month: number): number =
 
 export const suggestedFee = (baseFee: number, forecast: MonthForecast[], month: number): number =>
    Math.max(0, baseFee - fxAdjustment(forecast, month));
+
+// ---- Loan size: flat fees fade as loans grow --------------------------------------------------
+//
+// Most exchange costs are flat (send fees in USDC, the ₱15 cash-out), so as a share of the loan they
+// shrink as loans get bigger, and the extra cost settles toward a floor: the two spreads plus the
+// expected exchange-rate move. extra(P) ≈ flat / P + sell% + buy% + FX.
+
+export interface SizePoint {
+   principal: number;
+   exchangePct: number; // exchange fees as a share of what they receive
+   fxPct: number; // expected rate move for a loan funded this month
+   extraPct: number; // exchange + FX: on top of our fee
+}
+
+export const sizeCurve = (
+   costs: ExchangeCosts,
+   rate: number,
+   fxEstimate: number,
+   feePct: number,
+   sizes: number[] = [5, 10, 15, 20, 25, 30, 40, 50, 60, 75, 100, 150, 200, 300, 500]
+): SizePoint[] =>
+   sizes.map((principal) => {
+      const exchangePct = exchangeCostShare(principal, principal * (1 + feePct), rate, costs);
+      // The rate move applies to the whole repayment, as a share of what they received.
+      const fxPct = fxEstimate * (1 + feePct);
+      return { principal, exchangePct, fxPct, extraPct: exchangePct + fxPct };
+   });
+
+/** Where the extra cost settles for very large loans: both spreads plus the expected rate move. */
+export const sizeFloor = (costs: ExchangeCosts, fxEstimate: number, feePct: number) =>
+   costs.sellPct + costs.buyPct * (1 + feePct) + fxEstimate * (1 + feePct);
+
+/** The smallest loan (in the curve's steps) whose exchange fees are at or under `targetPct`. */
+export const breakEvenSize = (curve: SizePoint[], targetPct: number): number | null =>
+   curve.find((p) => p.exchangePct <= targetPct)?.principal ?? null;
