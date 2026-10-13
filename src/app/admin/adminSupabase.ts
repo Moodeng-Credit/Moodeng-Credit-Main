@@ -2034,6 +2034,28 @@ export async function listUnclaimedVouchers(): Promise<AdminUnclaimedVoucher[]> 
    return (data ?? []).map((row) => ({ ...row, amount_php: toNumber(row.amount_php) })) as AdminUnclaimedVoucher[];
 }
 
+// Where a voucher borrower is (KYC + recent logins) and their Facebook (admin_voucher_contacts RPC).
+// A GrabFood PH voucher is useless outside the Philippines, so the tab flags anyone logging in abroad.
+export interface AdminVoucherContact {
+   user_id: string;
+   kyc_country: string | null;
+   kyc_area: string | null;
+   login_city: string | null;
+   login_country: string | null;
+   login_at: string | null;
+   login_countries: string[];
+   facebook_name: string | null;
+   facebook_contact: string | null;
+   messenger_verified: boolean;
+}
+
+export async function listVoucherContacts(userIds: string[]): Promise<AdminVoucherContact[]> {
+   if (userIds.length === 0) return [];
+   const supabase = getSupabaseBrowserClient();
+   const data = (await requireOk(supabase.rpc('admin_voucher_contacts', { p_user_ids: userIds }))) as AnyRow[] | null;
+   return (data ?? []).map((row) => ({ ...row, login_countries: row.login_countries ?? [] })) as AdminVoucherContact[];
+}
+
 export async function updateVoucherClaimStatus(id: string, status: AdminVoucherClaimStatus, adminNote?: string | null): Promise<void> {
    const supabase = getSupabaseBrowserClient();
    const { data, error } = await supabase
