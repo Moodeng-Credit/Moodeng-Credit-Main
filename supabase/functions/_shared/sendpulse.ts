@@ -156,7 +156,8 @@ export const isInsideMessagingWindow = (contact: SendPulseContact | null, now = 
    return now - last < WINDOW_MS;
 };
 
-export type MessengerCard = { title: string; subtitle?: string; button: { title: string; url: string } };
+// imageUrl: a public JPG/PNG (≤5 MB) shown on top of the card, square so a poster isn't cropped.
+export type MessengerCard = { title: string; subtitle?: string; imageUrl?: string; button: { title: string; url: string } };
 
 // /contacts/send bodies: a plain text message, or a one-card template carrying a link button.
 // Messenger caps card titles and subtitles at 80 chars and button titles at 20.
@@ -175,9 +176,11 @@ export const buildCardPayload = (contactId: string, card: MessengerCard) => ({
             type: 'template',
             payload: {
                template_type: 'generic',
+               ...(card.imageUrl ? { image_aspect_ratio: 'square' } : {}),
                elements: [
                   {
                      title: card.title.slice(0, 80),
+                     ...(card.imageUrl ? { image_url: card.imageUrl } : {}),
                      ...(card.subtitle ? { subtitle: card.subtitle.slice(0, 80) } : {}),
                      buttons: [{ type: 'web_url', title: card.button.title.slice(0, 20), url: card.button.url }]
                   }
