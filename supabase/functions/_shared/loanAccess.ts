@@ -319,6 +319,14 @@ const PRE_KYC_MESSAGES: Partial<Record<BorrowerMessageKind, BorrowerMessage>> = 
 // window, and the call can be days after they connected).
 const PRE_KYC_EMAIL: ReadonlySet<BorrowerMessageKind> = new Set(['approved', 'no_show']);
 
+// Sent on Messenger after the approval message. Titles from Moodeng Credit's YouTube channel.
+export const APPROVED_VIDEOS_TEXT =
+   '📺 3 quick videos before your first loan:\n\n' +
+   '1️⃣ How to get started on Moodeng (6 simple steps)\nhttps://www.youtube.com/shorts/G4hibvp-T9g\n\n' +
+   '2️⃣ How to cash out your loan via Coins.ph\nhttps://www.youtube.com/watch?v=SMasdjEpDkg\n\n' +
+   '3️⃣ How to repay your loan in 1 minute (Coins.ph)\nhttps://www.youtube.com/watch?v=Eu9JzDMOSmw\n\n' +
+   'Questions? Just reply here 🦛';
+
 export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow, kind: BorrowerMessageKind) => {
    const preKycMsg = PRE_KYC_MESSAGES[kind] && (await loadNeedsIdCheck(svc, borrower.id, borrower)) ? PRE_KYC_MESSAGES[kind] : undefined;
    const msg: BorrowerMessage = preKycMsg ?? BORROWER_MESSAGES[kind];
@@ -346,6 +354,12 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
    // Messenger too (lands only inside Meta's 24h window — e.g. they chatted around the call).
    const messenger = await sendMessengerMessage(borrower.messenger_psid, { text: `${msg.title}\n\n${msg.body}\n\n${msg.url}` });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
+   // Approved: the how-to videos right after, so they know how to get started, cash out and repay
+   // before their first loan (George, 2026-10-13).
+   if (kind === 'approved' && messenger.ok) {
+      const videos = await sendMessengerMessage(borrower.messenger_psid, { text: APPROVED_VIDEOS_TEXT });
+      if (!videos.ok) console.log('loanAccess: approval videos skipped for', borrower.id, videos.reason);
+   }
 
    if (borrower.chat_id && borrower.notif_account_activity !== false) {
       try {
