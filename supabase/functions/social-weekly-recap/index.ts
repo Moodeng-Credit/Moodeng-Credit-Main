@@ -7,6 +7,8 @@
 // George's login on the Moodeng Messaging app, 2026-10-14) — read-only use. Metrics Meta still returns
 // for a Page token: Page views / engagements / Page visits / new follows (period=week), and per post
 // views, unique viewers, clicks, reactions. Comments, shares and live stats need extra app review.
+// TikTok (@moodeng.credit): Apify's clockworks/tiktok-profile-scraper (~$0.003 per video, free plan);
+// the token is in the DB vault (APIFY_TOKEN) and the cron passes it in the body as apifyToken.
 // Site visits: PostHog page views referred from Facebook / TikTok (POSTHOG_PERSONAL_API_KEY).
 //
 // pg_cron social-weekly-recap: Mondays 09:00 Manila (01:00 UTC), retried hourly to noon; posts once a
@@ -101,11 +103,39 @@ const siteVisits = async (apiKey: string) => {
    return out;
 };
 
+const TIKTOK_HANDLE = 'moodeng.credit';
+
+type TikTokVideo = { created: number; text: string; views: number; likes: number; comments: number; shares: number; saves: number; link: string };
+
+/** The account's latest videos with their lifetime stats, plus follower count (public data via Apify). */
+const tiktokVideos = async (apifyToken: string) => {
+   const res = await fetch(`https://api.apify.com/v2/acts/clockworks~tiktok-profile-scraper/run-sync-get-dataset-items?timeout=120`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apifyToken}` },
+      body: JSON.stringify({ profiles: [TIKTOK_HANDLE], resultsPerPage: 20, shouldDownloadVideos: false, shouldDownloadCovers: false }),
+      signal: AbortSignal.timeout(150_000)
+   });
+   if (!res.ok) throw new Error(`Apify ${res.status}`);
+   const items = (await res.json()) as any[];
+   if (items[0]?.error) throw new Error(items[0].error);
+   const videos: TikTokVideo[] = items.map((v) => ({
+      created: Date.parse(v.createTimeISO),
+      text: String(v.text ?? '').replace(/\s+/g, ' ').trim(),
+      views: v.playCount ?? 0,
+      likes: v.diggCount ?? 0,
+      comments: v.commentCount ?? 0,
+      shares: v.shareCount ?? 0,
+      saves: v.collectCount ?? 0,
+      link: v.webVideoUrl ?? ''
+   }));
+   return { videos, followers: items[0]?.authorMeta?.fans as number | undefined };
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
    if (!(await isInternalRequest(supabase, req))) return json({ error: 'Unauthorized' }, 401);
-   const { dryRun = false, force = false } = await req.json().catch(() => ({}));
+   const { dryRun = false, force = false, apifyToken = Deno.env.get('APIFY_TOKEN') } = await req.json().catch(() => ({}));
 
    const now = Date.now();
    const weekLabel = `${manilaDate(now - 7 * DAY_MS)} – ${manilaDate(now - DAY_MS)}`;
@@ -142,6 +172,31 @@ serve(async (req) => {
       }
    } else {
       problems.push('Facebook: FACEBOOK_PAGE_ID / FACEBOOK_PAGE_TOKEN not set');
+   }
+
+   if (apifyToken) {
+      try {
+         const tt = await tiktokVideos(apifyToken);
+         const week = tt.videos.filter((v) => v.created >= now - 7 * DAY_MS);
+         const sum = (k: 'views' | 'likes' | 'comments' | 'shares') => week.reduce((t, v) => t + v[k], 0);
+         lines.push('', `🎵 TikTok @${TIKTOK_HANDLE}${tt.followers != null ? ` · ${fmt(tt.followers)} followers` : ''}`);
+         if (week.length) {
+            lines.push(`${week.length} videos: ${fmt(sum('views'))} views · ${fmt(sum('likes'))} likes · ${fmt(sum('comments'))} comments · ${fmt(sum('shares'))} shares`);
+            [...week]
+               .sort((a, b) => b.views - a.views)
+               .slice(0, 3)
+               .forEach((v, i) => {
+                  const title = v.text ? `${v.text.slice(0, 60)}${v.text.length > 60 ? '…' : ''}` : '(video)';
+                  lines.push(`${['🥇', '🥈', '🥉'][i]} ${manilaDate(v.created)} ${title}`, `   ${fmt(v.views)} views · ${v.likes} likes · ${v.comments} comments · ${v.shares} shares\n   ${v.link}`);
+               });
+         } else {
+            lines.push('No TikTok videos this week.');
+         }
+      } catch (err) {
+         problems.push(`TikTok: ${err instanceof Error ? err.message : err}`);
+      }
+   } else {
+      problems.push('TikTok: APIFY_TOKEN not set');
    }
 
    const posthogKey = Deno.env.get('POSTHOG_PERSONAL_API_KEY');
