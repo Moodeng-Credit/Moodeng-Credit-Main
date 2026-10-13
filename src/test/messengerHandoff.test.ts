@@ -9,6 +9,9 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
+const rpc = vi.hoisted(() => vi.fn<(fn: string, args?: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({ data: null, error: null })));
+vi.mock('@/lib/supabase/client', () => ({ getSupabaseBrowserClient: () => ({ rpc }) }));
+
 // moodeng.app/fb/<code>: the phone page the desktop QR opens. iPhone gets the m.me link with the code;
 // Android gets copy-and-paste into the app chat (m.me never reaches Messenger from Android Chrome).
 const IPHONE_UA =
@@ -52,11 +55,30 @@ describe('MessengerHandoff', () => {
       expect(link?.getAttribute('href')).toContain('mdng_code=MDNG-ABC123');
    });
 
-   it('Android: the code to copy and the Messenger app chat link', async () => {
+   it('Android: opens our chat and stamps the tap by code for the timing match, code as backup', async () => {
       await renderAt('/fb/mdng-abc123', ANDROID_UA);
       expect(container.textContent).toContain('MDNG-ABC123');
-      const link = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
+      const link = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open Messenger'));
       expect(link?.getAttribute('href')).toMatch(/^fb-messenger:\/\/user-thread\//);
+      await act(async () => {
+         link?.addEventListener('click', (e) => e.preventDefault(), { once: true });
+         link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+         await Promise.resolve();
+      });
+      expect(rpc).toHaveBeenCalledWith('mark_messenger_chat_opened_by_code', { p_code: 'MDNG-ABC123' });
+   });
+
+   it('shows Connected on the phone once the code is verified', async () => {
+      rpc.mockImplementation(async (fn: string) => ({ data: fn === 'messenger_code_verified' ? true : null, error: null }));
+      await renderAt('/fb/MDNG-ABC123', IPHONE_UA);
+      await act(async () => {
+         await Promise.resolve();
+         await Promise.resolve();
+      });
+      expect(rpc).toHaveBeenCalledWith('messenger_code_verified', { p_code: 'MDNG-ABC123' });
+      expect(container.textContent).toContain('Connected!');
+      expect(container.querySelector('a')).toBeNull();
+      rpc.mockImplementation(async () => ({ data: null, error: null }));
    });
 
    it('rejects a malformed code instead of building a link from it', async () => {
