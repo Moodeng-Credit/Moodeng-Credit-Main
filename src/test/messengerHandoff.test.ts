@@ -9,7 +9,7 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
-const rpc = vi.hoisted(() => vi.fn(async () => ({ data: null, error: null })));
+const rpc = vi.hoisted(() => vi.fn<(fn: string, args?: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({ data: null, error: null })));
 vi.mock('@/lib/supabase/client', () => ({ getSupabaseBrowserClient: () => ({ rpc }) }));
 
 // moodeng.app/fb/<code>: the phone page the desktop QR opens. iPhone gets the m.me link with the code;
@@ -66,6 +66,19 @@ describe('MessengerHandoff', () => {
          await Promise.resolve();
       });
       expect(rpc).toHaveBeenCalledWith('mark_messenger_chat_opened_by_code', { p_code: 'MDNG-ABC123' });
+   });
+
+   it('shows Connected on the phone once the code is verified', async () => {
+      rpc.mockImplementation(async (fn: string) => ({ data: fn === 'messenger_code_verified' ? true : null, error: null }));
+      await renderAt('/fb/MDNG-ABC123', IPHONE_UA);
+      await act(async () => {
+         await Promise.resolve();
+         await Promise.resolve();
+      });
+      expect(rpc).toHaveBeenCalledWith('messenger_code_verified', { p_code: 'MDNG-ABC123' });
+      expect(container.textContent).toContain('Connected!');
+      expect(container.querySelector('a')).toBeNull();
+      rpc.mockImplementation(async () => ({ data: null, error: null }));
    });
 
    it('rejects a malformed code instead of building a link from it', async () => {

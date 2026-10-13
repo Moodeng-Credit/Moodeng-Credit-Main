@@ -25,6 +25,9 @@ const detectPhone = (): Phone => {
    return 'other';
 };
 
+const POLL_EVERY_MS = 3000;
+const POLL_FOR_MS = 30 * 60 * 1000;
+
 const track = (event: string, properties: Record<string, unknown>) => {
    try {
       posthog.capture(event, properties);
@@ -39,11 +42,39 @@ export default function MessengerHandoff() {
    const valid = MESSENGER_CODE_PATTERN.test(code);
    const phone = useMemo(detectPhone, []);
    const [copied, setCopied] = useState(false);
+   const [connected, setConnected] = useState(false);
 
    useEffect(() => {
       // Never the code itself: it's a one-time key.
       track('messenger_handoff_opened', { phone, valid });
    }, [phone, valid]);
+
+   // "✓ Connected" right here once the bot confirms, so they don't have to check the laptop. Asks every
+   // few seconds while this page is showing (phones pause it while they're in Messenger) and the moment
+   // they come back to it. Stops after half an hour, when the code would have expired anyway.
+   useEffect(() => {
+      if (!valid || connected) return undefined;
+      let stopped = false;
+      const startedAt = Date.now();
+      const check = async () => {
+         if (stopped || document.visibilityState !== 'visible' || Date.now() - startedAt > POLL_FOR_MS) return;
+         const { data } = await getSupabaseBrowserClient().rpc('messenger_code_verified', { p_code: code });
+         if (!stopped && data === true) {
+            setConnected(true);
+            track('messenger_handoff_connected', { phone, seconds_on_page: Math.round((Date.now() - startedAt) / 1000) });
+         }
+      };
+      void check();
+      const timer = window.setInterval(() => void check(), POLL_EVERY_MS);
+      document.addEventListener('visibilitychange', check);
+      window.addEventListener('focus', check);
+      return () => {
+         stopped = true;
+         window.clearInterval(timer);
+         document.removeEventListener('visibilitychange', check);
+         window.removeEventListener('focus', check);
+      };
+   }, [valid, connected, code, phone]);
 
    const copy = async () => {
       try {
@@ -70,8 +101,15 @@ export default function MessengerHandoff() {
    return (
       <div className="connect-ui flex min-h-screen items-start justify-center bg-gradient-to-b from-[#fbfafd] to-white px-4 pt-10 dark:from-[#08040f] dark:via-[#12091f] dark:to-[#08040f]">
          <div className="flex w-full max-w-[400px] flex-col items-center gap-4 text-center">
-            <img alt="" className="h-28 w-auto" src="/hippos/connect/hello.png" />
-            {!valid ? (
+            <img alt="" className="h-28 w-auto" src={connected ? '/hippos/connect/approved.png' : '/hippos/connect/hello.png'} />
+            {connected ? (
+               <>
+                  <h1 className="text-[26px] font-extrabold leading-[32px] text-[#1f7a3d]">✓ Connected!</h1>
+                  <p className="text-[16px] leading-[22px] text-[#594d65]">
+                     Your Messenger is linked. Go back to Moodeng on your computer to continue.
+                  </p>
+               </>
+            ) : !valid ? (
                <>
                   <h1 className="text-[24px] font-extrabold leading-[30px] text-[#26143f]">This link doesn&apos;t look right</h1>
                   <p className="text-[16px] leading-[22px] text-[#594d65]">
