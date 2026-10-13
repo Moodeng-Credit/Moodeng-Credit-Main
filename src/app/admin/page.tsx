@@ -49,6 +49,7 @@ import {
    upsertLoanRequestReview
 } from './adminSupabase';
 import BorrowerContactsSection from './BorrowerContactsSection';
+import BorrowerCostSection from './BorrowerCostSection';
 import CreditLineSection from './CreditLineSection';
 import MarketingSection from './MarketingSection';
 import CampaignsSection from './CampaignsSection';
@@ -1711,6 +1712,18 @@ function AdminPanel() {
                   </p>
                </div>
                <CreditLineSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'real-cost' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Borrower real cost</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Team only. What loans really cost borrowers in pesos and rupiah: our fee, plus the exchange-rate move between cashing out and buying USDC back, plus exchange fees.
+                  </p>
+               </div>
+               <BorrowerCostSection />
             </section>
          ) : null}
 
