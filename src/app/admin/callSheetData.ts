@@ -1,6 +1,7 @@
 // Data for the admin call sheet (CallSheet.tsx): the borrower's profile as the host sees it on their
 // onboarding call, and the call_screenings row the host fills in. Reads and writes go straight to
 // tables the admin's RLS allows.
+import type { FormCheck } from '@/app/admin/callFormCheck';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type AnyRow = Record<string, any>;
@@ -205,13 +206,16 @@ export interface CallTranscript {
    } | null;
    summarizedAt: string | null;
    summaryError: string | null;
+   formCheck: FormCheck | null;
+   formCheckedAt: string | null;
+   formCheckError: string | null;
 }
 
 /** The borrower's latest recorded call (zoom-webhook saves it with its AI summary), or null. */
 export async function loadCallTranscript(userId: string): Promise<CallTranscript | null> {
    const { data, error } = await getSupabaseBrowserClient()
       .from('call_transcripts')
-      .select('id,call_started_at,transcript,risk_level,summary,summarized_at,summary_error')
+      .select('id,call_started_at,transcript,risk_level,summary,summarized_at,summary_error,form_check,form_checked_at,form_check_error')
       .eq('user_id', userId)
       .order('call_started_at', { ascending: false, nullsFirst: false })
       .limit(1)
@@ -225,6 +229,9 @@ export async function loadCallTranscript(userId: string): Promise<CallTranscript
       riskLevel: r.risk_level ?? null,
       summary: r.summary ?? null,
       summarizedAt: r.summarized_at ?? null,
-      summaryError: r.summary_error ?? null
+      summaryError: r.summary_error ?? null,
+      formCheck: r.form_check ?? null,
+      formCheckedAt: r.form_checked_at ?? null,
+      formCheckError: r.form_check_error ?? null
    };
 }

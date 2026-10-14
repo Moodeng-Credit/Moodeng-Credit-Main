@@ -13,6 +13,7 @@ import {
    REQUEST_COLUMNS,
    who
 } from '../_shared/loanAccess.ts';
+import { checkCallForm } from '../_shared/callFormCheck.ts';
 import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 
 // Call approvals in the admin panel — the same decisions as the Telegram card's buttons and
@@ -29,6 +30,8 @@ import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 //   { action: 'approve_user', userId }  approve from the Directory, call or not: decides their pending
 //                                       request if they have one, else approves them directly
 //                                                             → { ok, summary }
+//   { action: 'check_form', userId }    re-run the AI form check on their latest call transcript
+//                                       (after the host edits the sheet)  → { ok, check }
 // verify_jwt is on; the caller must also be an active admin.
 
 const CORS = {
@@ -189,6 +192,20 @@ serve(async (req) => {
          const summary = `✅ Approved: ${who(approved as BorrowerRow)} — by ${decidedBy}`;
          await postDiscord({ content: `🔓 Loan access ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
          return json({ ok: true, summary });
+      }
+
+      if (body.action === 'check_form' && typeof body.userId === 'string') {
+         const { data: latest } = await svc
+            .from('call_transcripts')
+            .select('id')
+            .eq('user_id', body.userId)
+            .order('call_started_at', { ascending: false, nullsFirst: false })
+            .limit(1)
+            .maybeSingle();
+         if (!latest) return json({ ok: false, error: 'No call transcript for this borrower yet.' }, 404);
+         const check = await checkCallForm(svc, (latest as { id: string }).id);
+         if (!check) return json({ ok: false, error: 'The form check failed. Try again in a minute.' }, 502);
+         return json({ ok: true, check });
       }
 
       return json({ error: 'Unknown action' }, 400);
