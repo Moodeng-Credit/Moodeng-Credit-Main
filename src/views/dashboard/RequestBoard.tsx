@@ -55,7 +55,7 @@ import {
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { isTransientNetworkError } from '@/lib/isTransientNetworkError';
 import { isUserVerified, isVerificationPending } from '@/lib/isUserVerified';
-import { checkLoanReason } from '@/lib/loanReasonCheck';
+import { checkLoanReason, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { getLoanRequestCooldownMessage, type LoanRequestRepostStatus } from '@/lib/loanRequestRepostStatus';
 import { setPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 import { captureApplicationSignals, type CapturedSignals, sendApplicationSignals } from '@/lib/recordApplicationSignals';
@@ -1527,7 +1527,7 @@ function RequestBoard$() {
          // field knocked on while they were typing, so the verdict is usually cached. Fails open
          // only when the check itself can't run.
          setIsCheckingReason(true);
-         const { ok: reasonOk, hint: reasonHint, category: reasonCategory } = await checkLoanReason(trimmedReason);
+         const { ok: reasonOk, hint: reasonHint, category: reasonCategory } = await checkLoanReason(trimmedReason, locale as ReasonCheckLocale);
          setIsCheckingReason(false);
 
          if (!reasonOk) {

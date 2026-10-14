@@ -6,6 +6,7 @@ import {
    type KeyboardEvent,
    type PointerEvent,
    type RefObject,
+   useCallback,
    useEffect,
    useRef,
    useState
@@ -35,11 +36,13 @@ import {
    X
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import { FlipFace, useTapFlip } from '@/components/motion/TapDelight';
 import AskSupportButton from '@/components/support/AskSupportButton';
+import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -52,7 +55,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
@@ -435,6 +438,28 @@ const UsdcIcon = () => (
       />
    </svg>
 );
+
+// Words a sentence doesn't end on. The reason check used to fire 0.9s after the 40th character, so
+// "I am building a good credit history and I" came back "vague — what is the money for?" while the
+// borrower was still typing it (most "vague" verdicts in Oct 2026 were cut off like that).
+const DANGLING_WORDS = new Set([
+   'a', 'an', 'the', 'and', 'or', 'but', 'so', 'for', 'to', 'of', 'in', 'on', 'at', 'by', 'from', 'with', 'as',
+   'because', 'that', 'which', 'my', 'our', 'your', 'his', 'her', 'their', 'i', 'im', "i'm", 'is', 'am', 'are',
+   'was', 'will', 'have', 'has', 'need', 'buy', 'pay', 'use', 'some'
+]);
+
+const looksUnfinished = (text: string) => {
+   const trimmed = text.trim();
+   if (/[.!?…)"']$/.test(trimmed)) return false;
+   const lastWord = trimmed.split(/\s+/).pop()?.toLowerCase().replace(/[^a-z']/g, '') ?? '';
+   return DANGLING_WORDS.has(lastWord);
+};
+
+/** Which loan-form rule stopped a submit, so PostHog shows what trips borrowers (8 of 16 needed 3+ taps). */
+const trackLoanFormRule = (event: string, properties: Record<string, unknown>) => {
+   if (!import.meta.env.PROD) return;
+   posthog.capture(event, properties);
+};
 
 /**
  * The USDC chip on the amount field. 5 people tapped it expecting something; now it flips in place
@@ -1359,13 +1384,30 @@ export default function LoanRequestModal({
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
    // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
+   const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
-      status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable';
+      // 'pending' = waiting for typing to settle before asking; nothing judged yet.
+      // 'reviewing' = the second opinion is thinking it over (see isStuck).
+      status: 'idle' | 'pending' | 'checking' | 'reviewing' | 'ok' | 'weak' | 'unavailable';
       hint: string;
       suggestion: string;
       category: ReasonCategory | '';
+      escalated?: boolean;
    }>({ status: 'idle', hint: '', suggestion: '', category: '' });
    const liveChecksUsedRef = useRef(0);
+   // Second opinion. Once a borrower is stuck — two different reasons flagged, or stopped on submit by
+   // the reason twice — the check goes to the slower reasoning reviewer with their earlier attempts. It
+   // lets a reason through that really is fine, or explains exactly what's still missing.
+   const flaggedAttemptsRef = useRef<ReasonAttempt[]>([]);
+   const blockedReasonSubmitsRef = useRef(0);
+   const currentReasonRef = useRef('');
+   const noteFlagged = useCallback((text: string, hint: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || flaggedAttemptsRef.current.some((a) => a.text === trimmed)) return;
+      flaggedAttemptsRef.current = [...flaggedAttemptsRef.current, { text: trimmed, hint }].slice(-5);
+   }, []);
+   const isStuck = useCallback(() => flaggedAttemptsRef.current.length >= 2 || blockedReasonSubmitsRef.current >= 2, []);
+   const historyExcluding = useCallback((text: string) => flaggedAttemptsRef.current.filter((a) => a.text !== text.trim()), []);
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -1618,7 +1660,7 @@ export default function LoanRequestModal({
       if (isCheckingBeforeVerify) return;
       setIsCheckingBeforeVerify(true);
       const verdict = await Promise.race([
-         checkLoanReason(reason.trim()),
+         checkLoanReason(reason.trim(), reasonLocale),
          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
       ]);
       setIsCheckingBeforeVerify(false);
@@ -2004,6 +2046,17 @@ export default function LoanRequestModal({
    //   2. check-loan-input (DeepSeek) — the same judge that runs on submit, pulled forward so
    //      the tick means what it says instead of appearing and then being contradicted.
    // Both only withhold the tick; neither blocks. The submit gate stays the enforcement point.
+   // What to put in the empty repayment field: the typical return for this size (and at least the
+   // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
+   // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
+   const suggestedRepayment = (() => {
+      const borrow = Number(loanAmount);
+      if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
+      const range = suggestedReturnRange(borrow);
+      const typical = borrow + Math.max(range?.lo ?? 1, 1);
+      const min = minimumRepayment(borrow, days)?.amount ?? 0;
+      return Math.ceil(Math.max(typical, min) * 2) / 2;
+   })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
    const reasonShapeOk = reasonMeetsLength && reasonQuality.ok;
@@ -2022,13 +2075,15 @@ export default function LoanRequestModal({
          return;
       }
 
-      const cached = getCachedReasonVerdict(trimmed);
-      if (cached) {
+      const cached = getCachedReasonVerdict(trimmed, reasonLocale);
+      // A quick "weak" verdict isn't the last word for a stuck borrower: ask for the second opinion.
+      if (cached && (cached.ok || cached.escalated || !isStuck())) {
          setLiveReasonCheck({
             status: cached.ok ? 'ok' : 'weak',
             hint: cached.hint,
             suggestion: cached.suggestion,
-            category: cached.category
+            category: cached.category,
+            escalated: cached.escalated
          });
          return;
       }
@@ -2041,65 +2096,129 @@ export default function LoanRequestModal({
       }
 
       let cancelled = false;
-      setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
+      setLiveReasonCheck({ status: 'pending', hint: '', suggestion: '', category: '' });
+      // Give a half-written sentence time to be finished before judging it.
+      const settleMs = looksUnfinished(trimmed) ? 4000 : 1500;
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
-         const verdict = await checkLoanReason(trimmed);
+         const stuck = isStuck();
+         setLiveReasonCheck({ status: stuck ? 'reviewing' : 'checking', hint: '', suggestion: '', category: '' });
+         const verdict = await checkLoanReason(trimmed, reasonLocale, stuck ? { history: historyExcluding(trimmed) } : undefined);
          if (cancelled) return;
          if (!verdict.checked) {
             setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
             return;
          }
+         if (!verdict.ok) noteFlagged(trimmed, verdict.hint);
+         if (verdict.escalated) {
+            trackLoanFormRule('loan_reason_second_opinion', {
+               passed: verdict.ok,
+               category: verdict.category,
+               attempts: flaggedAttemptsRef.current.length,
+               from: 'typing'
+            });
+         }
          setLiveReasonCheck({
             status: verdict.ok ? 'ok' : 'weak',
             hint: verdict.hint,
             suggestion: verdict.suggestion,
-            category: verdict.category
+            category: verdict.category,
+            escalated: verdict.escalated
          });
-      }, 900);
+      }, settleMs);
 
       return () => {
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale, isStuck, historyExcluding, noteFlagged]);
+   currentReasonRef.current = reason.trim();
+
+   // Stopped on submit again by the reason: get the second opinion on this same text right away.
+   const runSecondOpinion = async (text: string) => {
+      setLiveReasonCheck((prev) => ({ ...prev, status: 'reviewing' }));
+      const verdict = await checkLoanReason(text, reasonLocale, { history: historyExcluding(text) });
+      if (currentReasonRef.current !== text) return; // they've edited it since; the live check takes over
+      if (!verdict.checked) {
+         setLiveReasonCheck((prev) => ({ ...prev, status: 'weak' }));
+         return;
+      }
+      trackLoanFormRule('loan_reason_second_opinion', {
+         passed: verdict.ok,
+         category: verdict.category,
+         attempts: flaggedAttemptsRef.current.length,
+         from: 'submit'
+      });
+      setLiveReasonCheck({
+         status: verdict.ok ? 'ok' : 'weak',
+         hint: verdict.hint,
+         suggestion: verdict.suggestion,
+         category: verdict.category,
+         escalated: verdict.escalated
+      });
+      // Passed: clear the red message so the next tap goes through. Still weak: show the clearer hint.
+      setTermErrors((prev) => ({ ...prev, reason: verdict.ok ? undefined : verdict.hint || prev.reason }));
+   };
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
+      const rules: Record<string, string> = {};
 
       const amount = Number(loanAmount);
       if (!loanAmount || Number.isNaN(amount) || amount <= 0) {
          errors.amount = 'Enter how much you want to borrow.';
+         rules.amount = 'missing';
       } else if (amount > limitAmount) {
          errors.amount = `That's above your current limit of $${limitAmount}.`;
+         rules.amount = 'over_limit';
       }
 
       const repayment = Number(totalRepaymentAmount);
       if (!totalRepaymentAmount || Number.isNaN(repayment)) {
          errors.repayment = 'Enter the amount you will repay.';
+         rules.repayment = 'missing';
       } else if (!Number.isNaN(amount) && repayment < amount + 1) {
          errors.repayment = 'Repayment must be at least $1 more than you borrow.';
+         rules.repayment = 'below_borrow_plus_1';
       }
 
       if (!isRepaymentDateFilled) {
          errors.date = 'Choose when you will repay.';
+         rules.date = 'missing';
       }
 
       const trimmedReason = reason.trim();
       if (!trimmedReason) {
          errors.reason = 'Please add a reason so lenders know what the loan is for.';
+         rules.reason = 'missing';
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
+         rules.reason = 'too_short';
       } else if (reasonQuality.code === 'not-english') {
-         // Lenders are in the US/EU: a request they can't read can't be funded.
-         errors.reason = 'Please write your reason in English so lenders can read it.';
+         // Lenders are in the US/EU: a request they can't read can't be funded. The AI's hint says it in
+         // the borrower's language when it came back in time.
+         errors.reason =
+            (liveReasonCheck.status === 'weak' && liveReasonCheck.hint) || 'Please write your reason in English so lenders can read it.';
+         rules.reason = 'not_english_offline';
+      } else if (liveReasonCheck.status === 'reviewing') {
+         errors.reason = 'One moment, taking a closer look at your reason.';
+         rules.reason = 'reviewing';
       } else if (liveReasonCheck.status === 'weak') {
          // The check that ran while they typed already said this reason doesn't tell lenders what
          // the money is for. Stop here, on the step where they can fix it, not after the bio,
          // contacts and call steps. The hint and a ready rewrite show under the field.
          errors.reason = liveReasonCheck.hint || 'Tell lenders what the money will be used for.';
+         rules.reason = `ai_${liveReasonCheck.category || 'weak'}`;
       }
 
       setTermErrors(errors);
+      if (rules.reason && rules.reason !== 'reviewing' && rules.reason !== 'missing' && rules.reason !== 'too_short') {
+         blockedReasonSubmitsRef.current += 1;
+         noteFlagged(trimmedReason, errors.reason ?? '');
+         if (isStuck() && !liveReasonCheck.escalated) void runSecondOpinion(trimmedReason);
+      }
+      if (Object.keys(rules).length > 0) {
+         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules), locale: reasonLocale });
+      }
 
       // Make sure the first problem is actually seen: if the borrower tapped submit from the
       // bottom of the form, scroll the first invalid field into view (the error is inline, not
@@ -2134,6 +2253,7 @@ export default function LoanRequestModal({
             if (!showBorrowerContextStep && !validateTerms()) return;
             const low = !showBorrowerContextStep ? lowRepaymentCheck() : null;
             if (low) {
+               trackLoanFormRule('loan_form_low_return_nudge', { amount: Number(loanAmount), repay: Number(totalRepaymentAmount) });
                setReturnNudge(low);
                return;
             }
@@ -2157,6 +2277,7 @@ export default function LoanRequestModal({
          const low = lowRepaymentCheck();
          if (low) {
             event.preventDefault();
+            trackLoanFormRule('loan_form_low_return_nudge', { amount: Number(loanAmount), repay: Number(totalRepaymentAmount) });
             setReturnNudge(low);
             return;
          }
@@ -2827,6 +2948,18 @@ export default function LoanRequestModal({
                                     if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
                                  }}
                                  onFocus={scrollFieldIntoView}
+                                 onBlur={() => {
+                                    // Say it when they leave the field, not after they tap Make Your Request.
+                                    // Deferred: blur fires before the tap that caused it lands, and the
+                                    // message pushing the form down would make that tap miss its button.
+                                    const value = Number(loanAmount);
+                                    if (loanAmount && Number.isFinite(value) && value > limitAmount) {
+                                       window.setTimeout(
+                                          () => setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` })),
+                                          250
+                                       );
+                                    }
+                                 }}
                                  className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="borrow-amount"
                                  inputMode="decimal"
@@ -2862,12 +2995,27 @@ export default function LoanRequestModal({
                                  if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
                               }}
                               onFocus={scrollFieldIntoView}
+                              onBlur={() => {
+                                 const borrow = Number(loanAmount);
+                                 const repay = Number(totalRepaymentAmount);
+                                 if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
+                                    // Deferred so the tap that left the field still lands where it was aimed.
+                                    window.setTimeout(
+                                       () => setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' })),
+                                       250
+                                    );
+                                 }
+                              }}
                               className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
                                  termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
                               }`}
                               id="repayment-amount"
                               inputMode="decimal"
-                              placeholder="Must be more than the borrowed amount"
+                              placeholder={
+                                 suggestedRepayment
+                                    ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
+                                    : 'Must be more than the borrowed amount'
+                              }
                               type="text"
                               value={totalRepaymentAmount}
                            />
@@ -3042,11 +3190,16 @@ export default function LoanRequestModal({
                                        // Offline shape check first (instant), then whatever the
                                        // effort check came back with. The tick only appears once
                                        // both have actually passed it.
-                                       const weakHint = !reasonQuality.ok
-                                          ? reasonQuality.hint
-                                          : liveReasonCheck.status === 'weak'
-                                            ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
-                                            : '';
+                                       // The AI's hint, when it has one, explains in the borrower's app
+                                       // language; prefer it over the offline check's English line.
+                                       const weakHint =
+                                          liveReasonCheck.status === 'weak' && liveReasonCheck.hint
+                                             ? liveReasonCheck.hint
+                                             : !reasonQuality.ok
+                                               ? reasonQuality.hint
+                                               : liveReasonCheck.status === 'weak'
+                                                 ? 'Add a bit more detail so lenders understand the need.'
+                                                 : '';
                                        if (weakHint) {
                                           return (
                                              <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">
@@ -3058,8 +3211,11 @@ export default function LoanRequestModal({
                                        // Couldn't reach the check — say nothing rather than tick
                                        // text nobody judged. Submit still works; the gate there
                                        // fails open too.
-                                       if (liveReasonCheck.status === 'unavailable') {
+                                       if (liveReasonCheck.status === 'unavailable' || liveReasonCheck.status === 'pending') {
                                           return <span>Short and specific helps lenders trust it.</span>;
+                                       }
+                                       if (liveReasonCheck.status === 'reviewing') {
+                                          return <span className="font-medium text-md-neutral-1200">Taking a closer look…</span>;
                                        }
                                        if (liveReasonCheck.status !== 'ok') {
                                           return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
@@ -3087,18 +3243,20 @@ export default function LoanRequestModal({
                                  </div>
                               ) : null}
                               {(() => {
-                                 // A ready-to-post rewrite built from their own words (the English
-                                 // translation when they wrote in another language). One tap uses it.
+                                 // A ready-to-post rewrite built from their own words. One tap uses it.
+                                 // Never the English translation of a non-English reason: writing it in
+                                 // English themselves is part of the screening (lenders only read English),
+                                 // and a one-tap translation let someone who can't write English through.
                                  const suggestion =
-                                    liveReasonCheck.suggestion && liveReasonCheck.suggestion.trim() !== reason.trim()
+                                    liveReasonCheck.category !== 'not_english' &&
+                                    liveReasonCheck.suggestion &&
+                                    liveReasonCheck.suggestion.trim() !== reason.trim()
                                        ? liveReasonCheck.suggestion
                                        : '';
                                  const suggestionRow = suggestion ? (
                                     <div className="mt-1.5 flex items-start justify-between gap-md-2 rounded-md-md bg-md-primary-100 px-md-2 py-md-1 dark:bg-[#281b35]">
                                        <p className="min-w-0 text-md-b3 leading-[18px] text-md-heading">
-                                          <span className="font-semibold text-md-primary-1200">
-                                             {liveReasonCheck.category === 'not_english' ? 'In English: ' : 'Try this: '}
-                                          </span>
+                                          <span className="font-semibold text-md-primary-1200">Try this: </span>
                                           {suggestion}
                                        </p>
                                        <button
