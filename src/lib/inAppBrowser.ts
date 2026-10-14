@@ -158,6 +158,38 @@ export function openInChrome(url: string, info?: InAppBrowserInfo): boolean {
    }
 }
 
+/**
+ * Call `onStillHere` if the page is still on screen `delayMs` after a hand-off attempt, i.e. the
+ * other browser never opened. Facebook's Android in-app browser silently ignores our `intent://`
+ * link: in Sept–Oct 2026, 11 of 30 Android Facebook visitors tapped "Open in Chrome" and only
+ * 1 ever reached a real browser. When the hand-off works the page is hidden (or blurred) almost
+ * immediately, so "still visible after 1.5s" means it failed. Returns a cleanup function.
+ */
+export function watchForFailedHandOff(onStillHere: () => void, delayMs = 1500): () => void {
+   if (typeof window === 'undefined' || typeof document === 'undefined') return () => {};
+   let left = false;
+   const markLeft = () => {
+      left = true;
+   };
+   const onVisibility = () => {
+      if (document.visibilityState === 'hidden') left = true;
+   };
+   const cleanup = () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', markLeft);
+      window.removeEventListener('blur', markLeft);
+   };
+   document.addEventListener('visibilitychange', onVisibility);
+   window.addEventListener('pagehide', markLeft);
+   window.addEventListener('blur', markLeft);
+   const timer = window.setTimeout(() => {
+      cleanup();
+      if (!left && document.visibilityState === 'visible') onStillHere();
+   }, delayMs);
+   return cleanup;
+}
+
 /** Attempt to open `url` in Safari (iOS best-effort). Returns true when a hand-off was attempted. */
 export function openInSafari(url: string, info?: InAppBrowserInfo): boolean {
    if (typeof window === 'undefined') return false;
