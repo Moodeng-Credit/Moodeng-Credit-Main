@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { AdminCallApprovalRow } from '@/app/admin/adminSupabase';
+import { type AdminCallApprovalRow, recheckAdminCallForm } from '@/app/admin/adminSupabase';
+import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
    type CallScreening,
    type CallSheetProfile,
@@ -158,6 +159,117 @@ function TranscriptBlock({ transcript }: { transcript: CallTranscript | null }) 
    );
 }
 
+// Under each question once the call's transcript is in: what the AI heard on the call next to the host's
+// answer (callFormCheck.ts). "Use this" copies the call's answer onto the sheet.
+const showValue = (v: FormCheck['fields'][CheckField] extends infer T ? (T extends { ai: infer A } ? A : never) : never) =>
+   Array.isArray(v) ? v.join(', ') : typeof v === 'string' ? v : '';
+
+function CheckLine({
+   field,
+   check,
+   answers,
+   onUse
+}: {
+   field: CheckField;
+   check: FormCheck | null;
+   answers: ScreeningAnswers;
+   onUse: () => void;
+}) {
+   if (!check) return null;
+   const fc = check.fields[field];
+   const verdict = currentVerdict(field, fc, answers);
+   const said = fc ? showValue(fc.ai) : '';
+   const quote = fc?.evidence ? `“${fc.evidence}”` : undefined;
+   const use = (
+      <button className="ml-1.5 font-semibold text-[#6b55f7] underline" onClick={onUse} type="button">
+         Use this
+      </button>
+   );
+   const line = (tone: string, children: React.ReactNode) => (
+      <p className={`mt-1 text-[12px] leading-[16px] ${tone}`} title={quote}>
+         {children}
+      </p>
+   );
+   switch (verdict) {
+      case 'match':
+         return line('text-[#1f7a3d]', '✓ Matches the call');
+      case 'differs':
+         return line(
+            'text-[#9a5b00]',
+            <>
+               ⚠ The call says “{said}”{use}
+            </>
+         );
+      case 'ai_only':
+         return line(
+            'text-[#5b47d6]',
+            <>
+               ➕ Heard on the call{said ? `: “${said}”` : ''}
+               {use}
+            </>
+         );
+      case 'not_in_call':
+         return line('font-semibold text-[#b42318]', '⚠ Ticked, but not heard on the call');
+      case 'stale':
+         return line('text-[#9a9a9a]', 'Changed since the check — press Re-check');
+      default:
+         return null;
+   }
+}
+
+function FormCheckBar({
+   transcript,
+   answers,
+   busy,
+   onRecheck
+}: {
+   transcript: CallTranscript | null;
+   answers: ScreeningAnswers;
+   busy: boolean;
+   onRecheck: () => void;
+}) {
+   if (!transcript) return null;
+   const check = transcript.formCheck;
+   const recheck = (
+      <button
+         className="rounded-md border border-[#e3e3e3] bg-white px-2.5 py-1 text-[12px] font-semibold text-[#37352f] disabled:opacity-50"
+         disabled={busy}
+         onClick={onRecheck}
+         type="button"
+      >
+         {busy ? 'Checking…' : 'Re-check'}
+      </button>
+   );
+   if (!check) {
+      return (
+         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-[#e3e3e3] px-3 py-2 text-[13px] text-[#7a7a7a]">
+            <span>
+               <b className="text-[#1f1f1f]">Call check</b> ·{' '}
+               {transcript.formCheckError ? `didn't run: ${transcript.formCheckError}` : 'comparing the form with the call…'}
+            </span>
+            {recheck}
+         </div>
+      );
+   }
+   const t = tallyCheck(check, answers);
+   const at = transcript.formCheckedAt
+      ? new Date(transcript.formCheckedAt).toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit' })
+      : null;
+   const tone = t.mismatch ? 'border-[#f5c99b] bg-[#fff8ef]' : 'border-[#cdebd7] bg-[#f3fbf6]';
+   return (
+      <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border px-3 py-2 text-[13px] text-[#37352f] ${tone}`}>
+         <b className="text-[#1f1f1f]">{t.mismatch ? `⚠ ${t.mismatch} don't match the call` : '✓ Form matches the call'}</b>
+         <span>
+            {t.match} match{t.aiOnly ? ` · ${t.aiOnly} heard on the call but blank here` : ''}
+            {t.stale ? ` · ${t.stale} changed since the check` : ''}
+         </span>
+         {check.summary ? <span className="text-[#7a7a7a]">{check.summary}</span> : null}
+         <span className="ml-auto text-[12px] text-[#9a9a9a]">{at ? `checked ${at}` : ''}</span>
+         {recheck}
+      </div>
+   );
+}
+
 function ProfileCard({ profile }: { profile: CallSheetProfile }) {
    const funded = profile.loans.filter((l) => l.status === 'Lent');
    const repaid = funded.filter((l) => l.repayment === 'Paid').length;
@@ -213,6 +325,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    const [error, setError] = useState('');
    const [status, setStatus] = useState<'idle' | 'dirty' | 'saving' | 'saved'>('idle');
    const [transcript, setTranscript] = useState<CallTranscript | null>(null);
+   const [rechecking, setRechecking] = useState(false);
    const savingRef = useRef(false);
    const idRef = useRef<string | null>(null);
 
@@ -287,6 +400,43 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
       const timer = window.setTimeout(() => void save(), AUTOSAVE_MS);
       return () => window.clearTimeout(timer);
    }, [status, save]);
+
+   // Save the sheet first so the check compares against what's on screen.
+   const recheck = async () => {
+      setRechecking(true);
+      setError('');
+      try {
+         if (status === 'dirty') await save();
+         const check = await recheckAdminCallForm(row.userId);
+         setTranscript((t) => (t ? { ...t, formCheck: check, formCheckedAt: new Date().toISOString(), formCheckError: null } : t));
+      } catch (err) {
+         setError(err instanceof Error ? err.message : 'Could not re-check the form.');
+      } finally {
+         setRechecking(false);
+      }
+   };
+   const formCheck = transcript?.formCheck ?? null;
+   const aiText = (field: CheckField) => {
+      const v = formCheck?.fields[field]?.ai;
+      return typeof v === 'string' ? v : '';
+   };
+   const checkLine = (field: CheckField) => (
+      <CheckLine
+         answers={answers}
+         check={formCheck}
+         field={field}
+         onUse={() => {
+            if (field === 'exchanges') {
+               const ai = formCheck?.fields.exchanges?.ai;
+               set('exchanges', [...new Set([...(answers.exchanges ?? []), ...(Array.isArray(ai) ? ai : [])])]);
+            } else if (field === 'showedCashInOut' || field === 'informedTerms' || field === 'addedEmma') {
+               set(field, true);
+            } else {
+               set(field, aiText(field));
+            }
+         }}
+      />
+   );
 
    const name = profile?.displayName || profile?.username || row.name;
    const checks = [
@@ -370,6 +520,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             {profile ? (
                <div className="space-y-3">
                   <ProfileCard profile={profile} />
+                  <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
 
                   <div className="grid gap-x-6 gap-y-3 lg:grid-cols-2">
                      <div className="space-y-2.5">
@@ -381,6 +532,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                  placeholder="Their name"
                                  value={answers.fullName ?? ''}
                               />
+                              {checkLine('fullName')}
                            </Question>
                            <Question n={2} title="What do they do?">
                               <input
@@ -389,6 +541,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                  placeholder="Role / specialty"
                                  value={answers.role ?? ''}
                               />
+                              {checkLine('role')}
                            </Question>
                            <Question n={3} title="Facebook">
                               <input
@@ -397,6 +550,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                  placeholder="facebook.com/…"
                                  value={answers.facebookUrl ?? ''}
                               />
+                              {checkLine('facebookUrl')}
                            </Question>
                            <Question n={4} title="TikTok">
                               <input
@@ -405,6 +559,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                  placeholder="tiktok.com/@…"
                                  value={answers.tiktokUrl ?? ''}
                               />
+                              {checkLine('tiktokUrl')}
                            </Question>
                         </div>
                         <Question n={5} title="How do they know us?" hint="referred by / where they saw us">
@@ -414,6 +569,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               placeholder="e.g. Saw a Facebook poster"
                               value={answers.referral ?? ''}
                            />
+                           {checkLine('referral')}
                         </Question>
                         <Question n={6} title="Loan today: how would they use it for an immediate win?">
                            <textarea
@@ -422,6 +578,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                               placeholder="Their words"
                               value={answers.loanUse ?? ''}
                            />
+                           {checkLine('loanUse')}
                         </Question>
                         <Question n={7} title="Local exchange they use">
                            <div className="flex flex-wrap gap-1.5">
@@ -441,6 +598,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                  );
                               })}
                            </div>
+                           {checkLine('exchanges')}
                         </Question>
                      </div>
 
@@ -466,6 +624,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                     </a>
                                  ))}
                               </Choice>
+                              {checkLine('showedCashInOut')}
                               <Choice
                                  letter="B"
                                  onClick={() => set('informedTerms', !answers.informedTerms)}
@@ -474,9 +633,11 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                                  Explained the repayment terms: a default is flagged right away and means a permanent ban across all
                                  affiliated platforms
                               </Choice>
+                              {checkLine('informedTerms')}
                               <Choice letter="C" onClick={() => set('addedEmma', !answers.addedEmma)} selected={Boolean(answers.addedEmma)}>
                                  Added Emma Moodeng and Voices Against Unfair Loan on Facebook
                               </Choice>
+                              {checkLine('addedEmma')}
                            </div>
                         </Question>
                         <div className="grid grid-cols-2 gap-x-3">

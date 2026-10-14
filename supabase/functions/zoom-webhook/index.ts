@@ -6,6 +6,7 @@ import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getAdminChatId, who } from '../_shared/loanAccess.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { formatCallTimeForTeam } from '../_shared/videoCall.ts';
+import { alertCallCheck, checkCallForm } from '../_shared/callFormCheck.ts';
 import { summarizeCallTranscript } from '../_shared/callRiskSummary.ts';
 import {
    classifyParticipant,
@@ -102,7 +103,11 @@ const saveTranscript = async (svc: any, host: string, event: TranscriptEvent) =>
       return;
    }
    console.log(`zoom-webhook: transcript saved for meeting ${event.meetingId} → ${booking ? `borrower ${booking.id.slice(0, 8)}` : 'no matching booking'}`);
-   if (saved?.id) await summarizeCallTranscript(svc, saved.id);
+   if (!saved?.id) return;
+   // Both AI passes at once (each can take a minute, and this runs on the edge function's clock), then one
+   // team alert with the form check and the risk level.
+   await Promise.all([checkCallForm(svc, saved.id), summarizeCallTranscript(svc, saved.id)]);
+   await alertCallCheck(svc, saved.id);
 };
 
 serve(async (req) => {

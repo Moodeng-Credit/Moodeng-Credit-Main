@@ -1,4 +1,5 @@
 import type { CalAvailability, CalOverride, CalSchedule } from '@/app/admin/calendarModel';
+import type { FormCheck } from '@/app/admin/callFormCheck';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { DEFAULT_LOAN_TIMEZONE, getDaysUntilDueDay, getLoanTimezone, isPastDueDay } from '@/lib/loanDeadline';
 
@@ -2905,4 +2906,10 @@ export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: b
 // Approve from the Directory, with or without a call (decides a pending request if there is one).
 export async function approveAdminUser(userId: string): Promise<{ ok: boolean; summary: string }> {
    return invokeAdminCallApprovals<{ ok: boolean; summary: string }>({ action: 'approve_user', userId });
+}
+
+// Re-run the AI form check on the borrower's latest call transcript (after the host edits the sheet).
+export async function recheckAdminCallForm(userId: string): Promise<FormCheck> {
+   const result = await invokeAdminCallApprovals<{ ok: boolean; check: FormCheck }>({ action: 'check_form', userId });
+   return result.check;
 }
