@@ -2852,9 +2852,14 @@ export default function LoanRequestModal({
                                  onFocus={scrollFieldIntoView}
                                  onBlur={() => {
                                     // Say it when they leave the field, not after they tap Make Your Request.
+                                    // Deferred: blur fires before the tap that caused it lands, and the
+                                    // message pushing the form down would make that tap miss its button.
                                     const value = Number(loanAmount);
                                     if (loanAmount && Number.isFinite(value) && value > limitAmount) {
-                                       setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` }));
+                                       window.setTimeout(
+                                          () => setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` })),
+                                          250
+                                       );
                                     }
                                  }}
                                  className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
@@ -2896,7 +2901,11 @@ export default function LoanRequestModal({
                                  const borrow = Number(loanAmount);
                                  const repay = Number(totalRepaymentAmount);
                                  if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
-                                    setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' }));
+                                    // Deferred so the tap that left the field still lands where it was aimed.
+                                    window.setTimeout(
+                                       () => setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' })),
+                                       250
+                                    );
                                  }
                               }}
                               className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
