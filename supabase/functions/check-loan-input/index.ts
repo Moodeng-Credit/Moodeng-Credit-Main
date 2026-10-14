@@ -69,16 +69,42 @@ Reply with ONLY a JSON object, no other text:
 
 type Kind = 'reason' | 'profession' | 'situation';
 
-// The hint stays in simple English on purpose: lenders only read English and writing it is part of
-// the screening, so the borrower must write the reason themselves. What changed is how useful a
-// "vague" hint is: it used to be a bare question with nothing to go on.
-const hintNote = (kind: Kind) =>
-   kind === 'reason'
-      ? `
-HINT STYLE: Write "hint" in simple English (8th-grade level), one or two short sentences, friendly, never blaming.
-- For "vague" and "placeholder": make the hint useful, not just a question. Pick up what they started to say and give 2-3 short examples of the detail lenders want (which bill, whose medicine, what they're buying), e.g. "Which bills? Electricity, water, or rent?".
-- If the text looks cut off mid-sentence, kindly ask them to finish the sentence and say what the money is for.`
+// The hint must make the problem understood, so it explains in the language the borrower picked in
+// the app. But writing the reason in English is part of the screening (lenders only read English),
+// so example words are given in English and every flagged hint ends by asking for an English answer.
+// Before: every hint was English, often a bare question, and people who couldn't tell what was wrong
+// kept resubmitting (8 of 16 borrowers needed 3+ tries).
+const HINT_LANGUAGES: Record<string, { name: string; answerInEnglish: string }> = {
+   en: { name: 'simple English (8th-grade level)', answerInEnglish: '' },
+   fil: {
+      name: 'natural, simple Taglish — everyday Tagalog mixed with English, like a friendly ate or kuya (8th-grade level)',
+      answerInEnglish: 'Sagutin sa English.'
+   },
+   id: { name: 'simple, friendly Bahasa Indonesia', answerInEnglish: 'Jawab dalam bahasa Inggris.' },
+   th: { name: 'simple, friendly Thai', answerInEnglish: 'ตอบเป็นภาษาอังกฤษ' },
+   vi: { name: 'simple, friendly Vietnamese', answerInEnglish: 'Hãy trả lời bằng tiếng Anh.' }
+};
+
+const hintLanguageNote = (locale: string, kind: Kind) => {
+   const language = HINT_LANGUAGES[locale] ?? HINT_LANGUAGES.en;
+   const endWith = language.answerInEnglish
+      ? `\n- End every non-empty hint with exactly: "${language.answerInEnglish}"`
       : '';
+   const reasonRules =
+      kind === 'reason'
+         ? `
+- Explain WHAT is wrong and WHY lenders need it, then show how to fix it. Assume they don't know what "vague" means.
+- For "vague": say lenders need to know exactly what the money is for, ask about what they started to say, and give 2–3 example details as short ENGLISH phrases in quotes, e.g. Which bills? "electricity bill", "water bill", "rent".
+- For "placeholder": say it looks like random or test text and lenders need their real reason; give 2 English example phrases.
+- If the text looks cut off mid-sentence: kindly say to finish the sentence and say what the money is for.
+- For "not_english": say lenders only read English, so the reason must be written in English; give a short English sentence starter in quotes, e.g. "I need this loan to pay for ...". Do NOT translate their text.
+- For "not_allowed": say kindly which purpose we can't fund and why, in one sentence.
+- For "tip": one short optional tip.
+- "suggestion" stays in English, and is empty for "not_english".`
+         : '';
+   return `
+HINT LANGUAGE AND STYLE: Write "hint" in ${language.name}. At most 2 short sentences plus the examples, friendly, never blaming, no jargon. Keep example phrases in English.${reasonRules}${endWith}`;
+};
 
 // Each field the borrower types gets its own rubric. The shared goal: is the input
 // specific and understandable enough for a lender, or is it low-effort filler?
@@ -175,12 +201,14 @@ serve(async (req) => {
          return jsonResponse({ ok: true, skipped: 'no_api_key' });
       }
 
-      const body = (await req.json().catch(() => ({}))) as { text?: string; reason?: string; kind?: Kind };
+      const body = (await req.json().catch(() => ({}))) as { text?: string; reason?: string; kind?: Kind; locale?: string };
       // Accept `text` (new) or `reason` (back-compat); default to the reason rubric.
       const text = (body.text ?? body.reason ?? '').trim();
       const kind: Kind = body.kind && KINDS.has(body.kind) ? body.kind : 'reason';
+      // Older app versions send no locale: they get English hints, as before.
+      const locale = typeof body.locale === 'string' && body.locale in HINT_LANGUAGES ? body.locale : 'en';
       const basePrompt = kind === 'reason' ? `${LOAN_REASON_GUIDE}\n\n${REASON_OUTPUT_CONTRACT}` : PROMPTS[kind];
-      const systemPrompt = `${basePrompt}\n${hintNote(kind)}`;
+      const systemPrompt = `${basePrompt}\n${hintLanguageNote(locale, kind)}`;
       if (!text) return jsonResponse({ ok: false, hint: 'Add a bit more so lenders can understand.' });
 
       const ctrl = new AbortController();
@@ -245,8 +273,9 @@ serve(async (req) => {
               : 'good';
          const ok = PASSING.has(category);
          const hint = category === 'good' ? '' : (verdict.hint ?? '').trim() || (ok ? '' : 'Tell lenders what the money will be used for.');
-         const suggestion = category === 'good' ? '' : (verdict.suggestion ?? '').trim().slice(0, 200);
-         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category }));
+         // No English translation for a non-English reason: writing it in English is part of the screening.
+         const suggestion = category === 'good' || category === 'not_english' ? '' : (verdict.suggestion ?? '').trim().slice(0, 200);
+         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category, locale }));
          await recordCheck({ user_id: userId, kind, text, ok, category, hint, suggestion });
          return jsonResponse({ ok, category, hint, suggestion });
       }

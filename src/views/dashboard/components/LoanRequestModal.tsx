@@ -40,6 +40,7 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
+import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -52,7 +53,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
@@ -1346,6 +1347,7 @@ export default function LoanRequestModal({
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
    // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
+   const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
       // 'pending' = waiting for typing to settle before asking; nothing judged yet.
       status: 'idle' | 'pending' | 'checking' | 'ok' | 'weak' | 'unavailable';
@@ -1606,7 +1608,7 @@ export default function LoanRequestModal({
       if (isCheckingBeforeVerify) return;
       setIsCheckingBeforeVerify(true);
       const verdict = await Promise.race([
-         checkLoanReason(reason.trim()),
+         checkLoanReason(reason.trim(), reasonLocale),
          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
       ]);
       setIsCheckingBeforeVerify(false);
@@ -2021,7 +2023,7 @@ export default function LoanRequestModal({
          return;
       }
 
-      const cached = getCachedReasonVerdict(trimmed);
+      const cached = getCachedReasonVerdict(trimmed, reasonLocale);
       if (cached) {
          setLiveReasonCheck({
             status: cached.ok ? 'ok' : 'weak',
@@ -2046,7 +2048,7 @@ export default function LoanRequestModal({
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
          setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
-         const verdict = await checkLoanReason(trimmed);
+         const verdict = await checkLoanReason(trimmed, reasonLocale);
          if (cancelled) return;
          if (!verdict.checked) {
             setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
@@ -2064,7 +2066,7 @@ export default function LoanRequestModal({
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale]);
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
       const rules: Record<string, string> = {};
@@ -2100,8 +2102,10 @@ export default function LoanRequestModal({
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
          rules.reason = 'too_short';
       } else if (reasonQuality.code === 'not-english') {
-         // Lenders are in the US/EU: a request they can't read can't be funded.
-         errors.reason = 'Please write your reason in English so lenders can read it.';
+         // Lenders are in the US/EU: a request they can't read can't be funded. The AI's hint says it in
+         // the borrower's language when it came back in time.
+         errors.reason =
+            (liveReasonCheck.status === 'weak' && liveReasonCheck.hint) || 'Please write your reason in English so lenders can read it.';
          rules.reason = 'not_english_offline';
       } else if (liveReasonCheck.status === 'weak') {
          // The check that ran while they typed already said this reason doesn't tell lenders what
@@ -2113,7 +2117,7 @@ export default function LoanRequestModal({
 
       setTermErrors(errors);
       if (Object.keys(rules).length > 0) {
-         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules) });
+         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules), locale: reasonLocale });
       }
 
       // Make sure the first problem is actually seen: if the borrower tapped submit from the
@@ -3092,11 +3096,16 @@ export default function LoanRequestModal({
                                        // Offline shape check first (instant), then whatever the
                                        // effort check came back with. The tick only appears once
                                        // both have actually passed it.
-                                       const weakHint = !reasonQuality.ok
-                                          ? reasonQuality.hint
-                                          : liveReasonCheck.status === 'weak'
-                                            ? liveReasonCheck.hint || 'Add a bit more detail so lenders understand the need.'
-                                            : '';
+                                       // The AI's hint, when it has one, explains in the borrower's app
+                                       // language; prefer it over the offline check's English line.
+                                       const weakHint =
+                                          liveReasonCheck.status === 'weak' && liveReasonCheck.hint
+                                             ? liveReasonCheck.hint
+                                             : !reasonQuality.ok
+                                               ? reasonQuality.hint
+                                               : liveReasonCheck.status === 'weak'
+                                                 ? 'Add a bit more detail so lenders understand the need.'
+                                                 : '';
                                        if (weakHint) {
                                           return (
                                              <span className="inline-flex items-start gap-1.5 font-medium text-[#92400e]">

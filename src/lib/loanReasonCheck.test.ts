@@ -98,4 +98,17 @@ describe('loan reason check', () => {
       expect(verdict.category).toBe('not_english');
       expect(verdict.suggestion).toBe("Paying the electricity bill and my mother's medicine before payday.");
    });
+
+   it('sends the app language and keeps a separate verdict per language', async () => {
+      invoke.mockResolvedValue({ data: { ok: false, hint: 'Anong bills? Kuryente, tubig, o renta?', category: 'vague' }, error: null });
+
+      await checkLoanReason('pay bills', 'fil');
+      expect(invoke).toHaveBeenCalledWith('check-loan-input', { body: { text: 'pay bills', kind: 'reason', locale: 'fil' } });
+      expect(getCachedReasonVerdict('pay bills', 'fil')?.hint).toBe('Anong bills? Kuryente, tubig, o renta?');
+      expect(getCachedReasonVerdict('pay bills')).toBeUndefined();
+
+      await checkLoanReason('pay bills');
+      expect(invoke).toHaveBeenLastCalledWith('check-loan-input', { body: { text: 'pay bills', kind: 'reason', locale: 'en' } });
+      expect(invoke).toHaveBeenCalledTimes(2);
+   });
 });
