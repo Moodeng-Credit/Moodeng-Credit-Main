@@ -362,7 +362,7 @@ export default function ReferralCodesSection() {
                               {p.status === 'unpaid' ? '💸 ' : ''}
                               {personLabel(p.owner)}{' '}
                               {p.status === 'unpaid' ? (
-                                 <span className="text-amber-300">needs money now — they referred a user</span>
+                                 <span className="text-amber-300">needs money now — their referral took a loan and repaid it</span>
                               ) : (
                                  <span className="text-emerald-300">was paid</span>
                               )}
@@ -398,7 +398,7 @@ export default function ReferralCodesSection() {
                </ul>
             ) : (
                <p className="mt-2 text-base font-bold text-[#6f6385]">
-                  {loading ? 'Loading…' : 'Nobody is owed right now. When someone uses a code with an owner, it shows up here and in Telegram.'}
+                  {loading ? 'Loading…' : 'Nobody is owed right now. When someone who used an owned code repays a loan, the owner shows up here and in Telegram.'}
                </p>
             )}
          </article>

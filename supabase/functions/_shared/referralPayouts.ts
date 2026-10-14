@@ -1,7 +1,7 @@
 // Referral code owner payouts → admin Telegram card with "✅ Paid" / "⏳ Not paid yet" buttons.
 //
-// A user redeems a code that has an owner (referral_codes.owner_user_id) → a referral_code_payouts
-// row (status 'unpaid') → this card. ✅ Paid flips it to 'paid' and stamps the card; ⏳ Not paid yet
+// A user redeems a code that has an owner (referral_codes.owner_user_id), takes a loan and repays it
+// → a referral_code_payouts row (status 'unpaid') → this card. ✅ Paid flips it to 'paid' and stamps the card; ⏳ Not paid yet
 // leaves it unpaid and keeps a ✅ Paid button on the card. Paying in the admin panel stamps the card
 // too (referral-payout-telegram-notification, event 'decided').
 
@@ -43,7 +43,7 @@ export const payoutSelect =
 
 export const buildPayoutCard = (p: PayoutRow) =>
    [
-      `💸 ${name(p.owner)} needs money now — they referred a user`,
+      `💸 ${name(p.owner)} needs money now — someone they referred took a loan and repaid it`,
       '',
       `Code: ${p.code}`,
       `Owner: ${name(p.owner)}${p.owner?.username ? ` (@${p.owner.username})` : ''}${p.owner?.email ? ` · ${p.owner.email}` : ''}`,
