@@ -1889,15 +1889,17 @@ export interface AdminReferralCode {
    current_uses: number;
    expires_at: string | null;
    created_at: string;
+   owner_user_id: string | null;
+   owner: { id: string; username: string | null; email: string | null } | null;
 }
+
+const REFERRAL_CODE_SELECT =
+   'id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at, owner_user_id, owner:users!referral_codes_owner_user_id_fkey(id, username, email)';
 
 export async function listReferralCodes(): Promise<AdminReferralCode[]> {
    const supabase = getSupabaseBrowserClient();
    const data = (await requireOk(
-      supabase
-         .from('referral_codes')
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
-         .order('created_at', { ascending: false })
+      supabase.from('referral_codes').select(REFERRAL_CODE_SELECT).order('created_at', { ascending: false })
    )) as AnyRow[] | null;
    return (data ?? []).map((row) => ({ ...row, boost_amount: toNumber(row.boost_amount) })) as AdminReferralCode[];
 }
@@ -1918,7 +1920,7 @@ export async function createReferralCode(input: {
             max_uses: input.max_uses ?? null,
             expires_at: input.expires_at ?? null
          })
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
+         .select(REFERRAL_CODE_SELECT)
          .single()
    );
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
@@ -1927,12 +1929,7 @@ export async function createReferralCode(input: {
 export async function setReferralCodeActive(id: string, isActive: boolean): Promise<AdminReferralCode> {
    const supabase = getSupabaseBrowserClient();
    const data = await requireOk(
-      supabase
-         .from('referral_codes')
-         .update({ is_active: isActive })
-         .eq('id', id)
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
-         .single()
+      supabase.from('referral_codes').update({ is_active: isActive }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
 }
@@ -1952,15 +1949,33 @@ export async function updateReferralCode(
    if (changes.boost_amount !== undefined) patch.boost_amount = changes.boost_amount;
    if (changes.max_uses !== undefined) patch.max_uses = changes.max_uses;
    if (changes.expires_at !== undefined) patch.expires_at = changes.expires_at;
+   const data = await requireOk(supabase.from('referral_codes').update(patch).eq('id', id).select(REFERRAL_CODE_SELECT).single());
+   return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+// Link (or unlink with null) the person behind a code.
+export async function setReferralCodeOwner(id: string, ownerUserId: string | null): Promise<AdminReferralCode> {
+   const supabase = getSupabaseBrowserClient();
    const data = await requireOk(
-      supabase
-         .from('referral_codes')
-         .update(patch)
-         .eq('id', id)
-         .select('id, code, boost_amount, is_active, max_uses, current_uses, expires_at, created_at')
-         .single()
+      supabase.from('referral_codes').update({ owner_user_id: ownerUserId }).eq('id', id).select(REFERRAL_CODE_SELECT).single()
    );
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
+}
+
+export interface AdminUserOption {
+   id: string;
+   username: string | null;
+   email: string | null;
+}
+
+// Username/email substring search for the owner picker.
+export async function searchUsersForPicker(search: string, limit = 20): Promise<AdminUserOption[]> {
+   const supabase = getSupabaseBrowserClient();
+   const term = search.trim().replace(/[%,()]/g, '');
+   let query = supabase.from('users').select('id, username, email').order('username', { ascending: true }).limit(limit);
+   if (term) query = query.or(`username.ilike.%${term}%,email.ilike.%${term}%`);
+   const data = (await requireOk(query)) as AdminUserOption[] | null;
+   return data ?? [];
 }
 
 // Only for codes with current_uses === 0 — FK refs from users/loans block redeemed codes.
