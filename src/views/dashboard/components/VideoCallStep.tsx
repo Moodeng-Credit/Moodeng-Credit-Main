@@ -2,6 +2,8 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 
 import { CalendarPlus, CheckCircle, Globe } from 'lucide-react';
 
+import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
+
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playDing } from '@/lib/uiSounds';
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -190,16 +192,7 @@ export default function VideoCallStep({
 
          {isScheduled ? (
             <div className="flex flex-col gap-3">
-               <div className="flex items-center gap-3 rounded-[18px] border-2 border-[#4aa256] bg-[#eefbf2] px-4 py-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#4aa256] text-white">
-                     <CheckCircle aria-hidden="true" className="size-6" strokeWidth={2.4} />
-                  </span>
-                  <span className="flex min-w-0 flex-col text-left">
-                     <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a]">You&apos;re booked with {host === 'emma' ? 'Emma' : 'the Moodeng team'}!</span>
-                     {formattedBooked ? <span className="text-[15px] leading-[20px] text-[#3c8248]">{formattedBooked}</span> : null}
-                     <span className="text-[13px] leading-[18px] text-[#3c8248]/80">Zoom link by email · reminder on Messenger</span>
-                  </span>
-               </div>
+               <BookedCallCard host={host} bookedStartsAt={bookedStartsAt} formattedBooked={formattedBooked} />
                {calendarLinks ? (
                   <div className="grid grid-cols-2 gap-2">
                      <a
@@ -281,5 +274,72 @@ export default function VideoCallStep({
             <GhostButton onClick={onBack}>Back</GhostButton>
          </div>
       </div>
+   );
+}
+
+const formatCountdown = (ms: number) => {
+   if (ms <= 0) return 'Starting now';
+   const minutes = Math.floor(ms / 60000);
+   const days = Math.floor(minutes / 1440);
+   const hours = Math.floor((minutes % 1440) / 60);
+   const mins = minutes % 60;
+   if (days > 0) return `Starts in ${days}d ${hours}h`;
+   if (hours > 0) return `Starts in ${hours}h ${mins}m`;
+   return `Starts in ${mins}m`;
+};
+
+/**
+ * The green "You're booked" card. 3 people tapped it with nothing happening; now the check bounces,
+ * a few sparkles pop, and the date line flips in place to a live countdown for 4s.
+ */
+function BookedCallCard({
+   host,
+   bookedStartsAt,
+   formattedBooked
+}: {
+   host: string | null | undefined;
+   bookedStartsAt: string | null | undefined;
+   formattedBooked: string | null;
+}) {
+   const { flipped, flip } = useTapFlip(4000);
+   const { ref, play } = useReplayClass<HTMLSpanElement>();
+   const { burst, layer } = useFloatingParticles();
+   const [now, setNow] = useState(() => Date.now());
+
+   useEffect(() => {
+      if (!flipped) return;
+      setNow(Date.now());
+      const timer = window.setInterval(() => setNow(Date.now()), 1000);
+      return () => window.clearInterval(timer);
+   }, [flipped]);
+
+   const startsAt = bookedStartsAt ? new Date(bookedStartsAt).getTime() : NaN;
+
+   return (
+      <button
+         type="button"
+         onClick={() => {
+            play('tap-squish');
+            burst(() => <span className="block size-2.5 rounded-full bg-[#4aa256]" />, { count: 5, fullCircle: true, spreadX: 36, rise: 36, originY: '50%' });
+            if (formattedBooked && Number.isFinite(startsAt)) flip();
+         }}
+         className="flex w-full items-center gap-3 rounded-[18px] border-2 border-[#4aa256] bg-[#eefbf2] px-4 py-3 text-left active:scale-[0.99]"
+      >
+         <span className="relative grid size-11 shrink-0 place-items-center">
+            <span ref={ref} className="grid size-11 place-items-center rounded-full bg-[#4aa256] text-white">
+               <CheckCircle aria-hidden="true" className="size-6" strokeWidth={2.4} />
+            </span>
+            {layer}
+         </span>
+         <span className="flex min-w-0 flex-col text-left [perspective:300px]">
+            <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a]">You&apos;re booked with {host === 'emma' ? 'Emma' : 'the Moodeng team'}!</span>
+            {formattedBooked ? (
+               <span className="text-[15px] leading-[20px] text-[#3c8248]">
+                  <FlipFace flipped={flipped} front={formattedBooked} back={<b>{formatCountdown(startsAt - now)}</b>} />
+               </span>
+            ) : null}
+            <span className="text-[13px] leading-[18px] text-[#3c8248]/80">Zoom link by email · reminder on Messenger</span>
+         </span>
+      </button>
    );
 }

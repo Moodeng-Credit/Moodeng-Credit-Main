@@ -1,8 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
    addSpend,
@@ -12,23 +10,24 @@ import {
    loadMarketing,
    type MarketingData,
    saveGoal,
-   setCodeChannel
+   setCodeChannel,
+   setGoalExcluded
 } from '@/app/admin/adminFinance';
 import { addDays, buildFacilityLoans, facilitySummary, manilaDate } from '@/app/admin/creditLineModel';
+import GoalSlotsBoard from '@/app/admin/GoalSlotsBoard';
 import {
    averageYield,
    cacReport,
    funnel,
-   goalProgress,
-   goalSeries,
+   goalSlots,
    type MarketingSpendRow,
    type MonthlyGoals,
    type ReferralCodeRow,
    retention,
    unitEconomics,
-   weeklyPlan,
    whoToContact
 } from '@/app/admin/marketingModel';
+import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
 // Admin → Growth → Marketing: are we on track for the month's lending goal, what each week still needs, what
 // marketing costs per real borrower (vs the CAC target), and who to contact today. Spend is logged here.
@@ -92,13 +91,18 @@ export default function MarketingSection() {
    });
    const [defaults, setDefaults] = useState({ first: 8, later: 3 });
 
+   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
+   const draftMonth = useRef<string | null>(null);
    const load = useCallback(async () => {
       setError(null);
       try {
          const [m, c] = await Promise.all([loadMarketing(month), loadCreditLine().catch(() => null)]);
          setData(m);
          setCredit(c);
-         setGoalDraft(m.goals);
+         // Live reloads keep targets being edited; a new month starts from its saved targets.
+         setGoalDraft((draft) => (draft && draftMonth.current === month ? draft : m.goals));
+         draftMonth.current = month;
+         setUpdatedAt(new Date());
       } catch (err) {
          setError((err as { message?: string })?.message ?? 'Could not load marketing data.');
       }
@@ -107,6 +111,9 @@ export default function MarketingSection() {
    useEffect(() => {
       void load();
    }, [load]);
+
+   // Live: a loan funded or repaid, or a borrower's limit or status changing, refreshes the page.
+   useAdminLiveReload(['loans', 'users'], load);
 
    const run = async (fn: () => Promise<void>) => {
       setBusy(true);
@@ -127,16 +134,14 @@ export default function MarketingSection() {
    const m = useMemo(() => {
       if (!data) return null;
       const goals = data.goals;
-      const progress = goalProgress(data.loans, month, goals.lent_usd, effectiveToday);
-      const series = goalSeries(data.loans, month, goals.lent_usd, effectiveToday);
-      const weeks = weeklyPlan(data.loans, month, goals.lent_usd, effectiveToday);
+      const slots = goalSlots(data.loans, data.users, data.excluded, month, effectiveToday, goals.lent_usd, goals.cac_target_usd);
       const cac = cacReport(data.loans, data.users, data.spend, data.codes, month, goals);
       const funnel30 = funnel(data.users, data.loans, addDays(today, -29), today);
       const funnel60 = funnel(data.users, data.loans, addDays(today, -59), today);
       const ret = retention(data.loans);
       const contacts = whoToContact(data.loans, data.users, today);
       const yieldPerLoan = averageYield(data.loans, addDays(today, -60));
-      return { progress, series, weeks, cac, funnel30, funnel60, ret, contacts, yieldPerLoan };
+      return { slots, cac, funnel30, funnel60, ret, contacts, yieldPerLoan };
    }, [data, month, effectiveToday, today]);
 
    const creditSummary = useMemo(() => {
@@ -174,8 +179,7 @@ export default function MarketingSection() {
 
    if (error && !data) return <p className="text-red-300">{error}</p>;
    if (!data || !m || !goalDraft) return <p className="text-[#a89bb8]">Loading…</p>;
-   const { progress, cac } = m;
-   const thisWeek = m.weeks.find((w) => w.status === 'current');
+   const { cac } = m;
 
    return (
       <div className="space-y-8">
@@ -189,99 +193,29 @@ export default function MarketingSection() {
                   value={month}
                />
             </label>
+            {updatedAt ? (
+               <span className="pb-2 text-xs text-[#a89bb8]">
+                  <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400 align-middle" />
+                  Live · updated {updatedAt.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila' })}
+               </span>
+            ) : null}
             {error ? <p className="text-red-300">{error}</p> : null}
          </div>
 
-         {/* 1. Goal */}
+         {/* 1. Goal, by name */}
          <section className="space-y-4 rounded-3xl border border-[#2a1453] bg-[#160631] p-5">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-               <h3 className="text-xl font-black">Lending goal</h3>
-               <span
-                  className={`rounded-full px-3 py-1 text-sm font-bold ${progress.onTrack ? 'bg-emerald-900/50 text-emerald-300' : 'bg-amber-900/50 text-amber-300'}`}
-               >
-                  {progress.onTrack ? 'On track' : `Behind by ${usd(progress.gap)}`}
-               </span>
-            </div>
-            <Gauge label={`Lent in ${month}`} projected={progress.projected} target={progress.target} value={progress.lent} />
-            <p className="text-xs text-[#a89bb8]">Faded bar: where the current pace lands by month-end ({usd(progress.projected)}).</p>
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-               <Tile label="Days left" sub={`${progress.elapsed} of ${progress.totalDays} gone`} value={String(progress.daysLeft)} />
-               <Tile
-                  label="Pace now / needed"
-                  sub="per day"
-                  tone={progress.pacePerDay >= progress.neededPerDay ? 'good' : 'warn'}
-                  value={`${usd(progress.pacePerDay)} / ${usd(progress.neededPerDay)}`}
-               />
-               <Tile
-                  label="Loans still needed"
-                  sub={`at ${usd(progress.avgLoan)} avg · ~${progress.newNeeded} new + ~${progress.repeatNeeded} returning`}
-                  value={String(progress.loansNeeded)}
-               />
-               <Tile
-                  label="This month so far"
-                  sub={`${progress.newBorrowers} new borrowers · ${progress.repeatLoans} returning loans`}
-                  value={`${progress.loans} loans`}
-               />
-            </div>
-            <div className="h-56">
-               <ResponsiveContainer height="100%" width="100%">
-                  <LineChart data={m.series} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-                     <CartesianGrid stroke="#2a1453" vertical={false} />
-                     <XAxis dataKey="day" stroke="#7a6b8f" tick={{ fontSize: 11 }} />
-                     <YAxis stroke="#7a6b8f" tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} width={44} />
-                     <Tooltip
-                        contentStyle={{ background: '#12052a', border: '1px solid #2a1453' }}
-                        formatter={(v) => (v === null ? '—' : `$${v}`)}
-                        labelFormatter={(d) => `Day ${d}`}
-                     />
-                     <Line dataKey="actual" dot={false} name="Lent" stroke="#8336f0" strokeWidth={2.5} type="stepAfter" />
-                     <Line dataKey="projected" dot={false} name="Current pace" stroke="#f5b942" strokeDasharray="6 4" strokeWidth={2} />
-                     <Line dataKey="target" dot={false} name="Path to goal" stroke="#7a6b8f" strokeDasharray="2 4" strokeWidth={2} />
-                  </LineChart>
-               </ResponsiveContainer>
-            </div>
-            <div className="overflow-x-auto">
-               <table className="w-full text-left text-sm">
-                  <thead className="text-[#a89bb8]">
-                     <tr>
-                        <th className="p-2">Week</th>
-                        <th className="p-2">Lent</th>
-                        <th className="p-2">Loans</th>
-                        <th className="p-2">Needed</th>
-                        <th className="p-2" />
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {m.weeks.map((w) => (
-                        <tr className={`border-t border-[#2a1453] ${w.status === 'current' ? 'bg-[#241044]' : ''}`} key={w.start}>
-                           <td className="p-2">
-                              {w.start.slice(5)} → {w.end.slice(5)} {w.status === 'current' ? <b>(this week)</b> : null}
-                           </td>
-                           <td className="p-2">{usd(w.lent)}</td>
-                           <td className="p-2">{w.loans}</td>
-                           <td className="p-2">
-                              {w.needed === null ? '—' : `${usd(w.needed)} (~${Math.ceil(w.needed / Math.max(progress.avgLoan, 1))} loans)`}
-                           </td>
-                           <td className="p-2">
-                              {w.status === 'done' ? null : w.lent >= (w.needed ?? 0) ? (
-                                 <span className="text-emerald-300">✓ hit</span>
-                              ) : (
-                                 <span className="text-amber-300">{usd((w.needed ?? 0) - w.lent)} to go</span>
-                              )}
-                           </td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-            {thisWeek ? (
-               <p className="text-sm">
-                  <b>This week:</b> {usd(thisWeek.lent)} lent of {usd(thisWeek.needed ?? 0)} needed.{' '}
-                  {thisWeek.lent >= (thisWeek.needed ?? 0)
-                     ? 'On target.'
-                     : `Need about ${Math.ceil(((thisWeek.needed ?? 0) - thisWeek.lent) / Math.max(progress.avgLoan, 1))} more loans.`}
-               </p>
-            ) : null}
+            <GoalSlotsBoard
+               budget={data.goals.marketing_budget_usd}
+               busy={busy}
+               cacTarget={data.goals.cac_target_usd}
+               isCurrentMonth={month === today.slice(0, 7)}
+               onExclude={(userId, who) => {
+                  if (window.confirm(`Stop counting ${who} toward this month's goal? They can still borrow as normal.`))
+                     void run(() => setGoalExcluded(userId, true));
+               }}
+               onRestore={(userId) => void run(() => setGoalExcluded(userId, false))}
+               slots={m.slots}
+            />
             {creditSummary ? (
                <div className="pt-2">
                   <Gauge

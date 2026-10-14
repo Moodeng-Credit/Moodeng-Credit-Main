@@ -83,6 +83,18 @@ vi.mock('@/app/admin/adminFinance', () => ({
             repayment_status: 'Unpaid',
             loan_amount: 20,
             total_repayment_amount: 22
+         },
+         {
+            id: 'b',
+            borrower_user_id: 'u2',
+            loan_status: 'Lent',
+            created_at: '2026-09-01T00:00:00Z',
+            funded_at: '2026-09-01T02:00:00Z',
+            due_date: '2026-10-01T00:00:00Z',
+            repaid_at: '2026-09-30T02:00:00Z',
+            repayment_status: 'Paid',
+            loan_amount: 15,
+            total_repayment_amount: 17
          }
       ],
       users: [
@@ -96,11 +108,25 @@ vi.mock('@/app/admin/adminFinance', () => ({
             messenger_verified_at: null,
             redeemed_referral_code_id: null,
             credit_limit: 15
+         },
+         {
+            id: 'u2',
+            username: 'princess',
+            display_name: 'Princess Cabantugan',
+            facebook_name: null,
+            created_at: '2026-08-30T00:00:00Z',
+            verified: true,
+            messenger_verified_at: null,
+            redeemed_referral_code_id: null,
+            credit_limit: 20,
+            account_status: 'active',
+            loan_access_status: 'approved'
          }
       ],
       spend: [{ id: 1, spent_on: '2026-10-03', channel: 'poster', amount_usd: 20, referral_code_id: null, note: 'Cebu IT Park' }],
       codes: [{ id: 'c1', code: 'POSTER-01', channel: 'poster', label: 'Cebu' }],
-      goals: { lent_usd: 500, marketing_budget_usd: 50, cac_target_usd: 5 }
+      goals: { lent_usd: 500, marketing_budget_usd: 50, cac_target_usd: 5 },
+      excluded: new Set<string>()
    })),
    addFacilityLoan: vi.fn(),
    addLedgerEntry: vi.fn(),
@@ -110,7 +136,8 @@ vi.mock('@/app/admin/adminFinance', () => ({
    addSpend: vi.fn(),
    deleteSpend: vi.fn(),
    saveGoal: vi.fn(),
-   setCodeChannel: vi.fn()
+   setCodeChannel: vi.fn(),
+   setGoalExcluded: vi.fn()
 }));
 
 class ResizeObserverStub {
@@ -160,13 +187,16 @@ describe('finance admin pages', () => {
       act(() => root.unmount());
    });
 
-   it('shows the lending goal, weekly plan, spend vs budget and who to contact', async () => {
+   it('shows the goal by name, spend vs budget and who to contact', async () => {
       const { default: MarketingSection } = await import('@/app/admin/MarketingSection');
       const root = await render(createElement(MarketingSection));
       const text = container.textContent ?? '';
-      expect(text).toContain('Lending goal');
-      expect(text).toContain('$20 / $500');
-      expect(text).toContain('(this week)');
+      expect(text).toContain('Goal: $500 lent');
+      expect(text).toContain('Already lent');
+      expect(text).toContain('Manuel'); // lent this month
+      expect(text).toContain('Princess Cabantugan'); // repaid, can borrow again now
+      expect(text).toContain('Still need from new people');
+      expect(text).toContain('This week');
       expect(text).toContain('Spent this month');
       expect(text).toContain('$20.00');
       expect(text).toContain('Does the spend pay off?');

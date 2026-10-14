@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildAndroidIntentUrl, detectInAppBrowser } from '@/lib/inAppBrowser';
+import { buildAndroidIntentUrl, detectInAppBrowser, watchForFailedHandOff } from '@/lib/inAppBrowser';
 
 // Real-world user-agent strings captured from the various in-app browsers.
 const UA = {
@@ -92,5 +92,39 @@ describe('buildAndroidIntentUrl', () => {
       expect(intent).toContain('package=com.android.chrome');
       expect(intent).toContain(`S.browser_fallback_url=${encodeURIComponent('https://moodeng.app/lend/loan/42?ref=fb')}`);
       expect(intent.endsWith(';end')).toBe(true);
+   });
+});
+
+describe('watchForFailedHandOff', () => {
+   afterEach(() => {
+      vi.useRealTimers();
+   });
+
+   it('reports a failed hand-off when the page is still visible after the delay', () => {
+      vi.useFakeTimers();
+      const onStillHere = vi.fn();
+      watchForFailedHandOff(onStillHere, 1500);
+      vi.advanceTimersByTime(1499);
+      expect(onStillHere).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(onStillHere).toHaveBeenCalledTimes(1);
+   });
+
+   it('stays quiet when the page loses focus (the other browser opened)', () => {
+      vi.useFakeTimers();
+      const onStillHere = vi.fn();
+      watchForFailedHandOff(onStillHere, 1500);
+      window.dispatchEvent(new Event('blur'));
+      vi.advanceTimersByTime(2000);
+      expect(onStillHere).not.toHaveBeenCalled();
+   });
+
+   it('stays quiet after cleanup', () => {
+      vi.useFakeTimers();
+      const onStillHere = vi.fn();
+      const stop = watchForFailedHandOff(onStillHere, 1500);
+      stop();
+      vi.advanceTimersByTime(2000);
+      expect(onStillHere).not.toHaveBeenCalled();
    });
 });

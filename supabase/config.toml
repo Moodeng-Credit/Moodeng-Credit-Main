@@ -188,3 +188,6 @@ verify_jwt = true
 # Scheduler-only (pg_cron with the secret key); checks isInternalRequest itself.
 [functions.social-weekly-recap]
 verify_jwt = false
+
+[functions.referral-payout-telegram-notification]
+verify_jwt = false

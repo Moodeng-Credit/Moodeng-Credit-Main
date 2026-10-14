@@ -22,6 +22,7 @@ import {
    reportingPeriods,
    toCsv
 } from '@/app/admin/creditLineModel';
+import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
 // Admin → Finance → Credit line: everything a credit-line lender's monthly report needs (BitRepo: Schedule B),
 // live from our records — balances, interest owed, every loan with its txs and rationale, the fund-flow ledger,
@@ -109,6 +110,9 @@ export default function CreditLineSection() {
    useEffect(() => {
       void load();
    }, [load]);
+
+   // Live: new facility loans and repayments show up without a refresh.
+   useAdminLiveReload(['loans'], load);
 
    const facility = data?.facility ?? null;
    const loans = useMemo(() => (data ? buildFacilityLoans(data.loans, data.ledger, asOf) : []), [data, asOf]);
