@@ -3137,18 +3137,20 @@ export default function LoanRequestModal({
                                  </div>
                               ) : null}
                               {(() => {
-                                 // A ready-to-post rewrite built from their own words (the English
-                                 // translation when they wrote in another language). One tap uses it.
+                                 // A ready-to-post rewrite built from their own words. One tap uses it.
+                                 // Never the English translation of a non-English reason: writing it in
+                                 // English themselves is part of the screening (lenders only read English),
+                                 // and a one-tap translation let someone who can't write English through.
                                  const suggestion =
-                                    liveReasonCheck.suggestion && liveReasonCheck.suggestion.trim() !== reason.trim()
+                                    liveReasonCheck.category !== 'not_english' &&
+                                    liveReasonCheck.suggestion &&
+                                    liveReasonCheck.suggestion.trim() !== reason.trim()
                                        ? liveReasonCheck.suggestion
                                        : '';
                                  const suggestionRow = suggestion ? (
                                     <div className="mt-1.5 flex items-start justify-between gap-md-2 rounded-md-md bg-md-primary-100 px-md-2 py-md-1 dark:bg-[#281b35]">
                                        <p className="min-w-0 text-md-b3 leading-[18px] text-md-heading">
-                                          <span className="font-semibold text-md-primary-1200">
-                                             {liveReasonCheck.category === 'not_english' ? 'In English: ' : 'Try this: '}
-                                          </span>
+                                          <span className="font-semibold text-md-primary-1200">Try this: </span>
                                           {suggestion}
                                        </p>
                                        <button
