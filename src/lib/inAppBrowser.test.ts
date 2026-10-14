@@ -23,6 +23,12 @@ const UA = {
 };
 
 describe('detectInAppBrowser', () => {
+   it('recognizes the iPhone Facebook app browser (userbuds, 2026-10-14)', () => {
+      const ua =
+         'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G71 [FBAN/FBIOS;FBAV/579.0.0.23.106;FBBV/0;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/26.6;FBSS/3;FBCR/;FBID/phone;FBLC/en_US;FBOP/5]';
+      expect(detectInAppBrowser(ua, { standalone: false })).toMatchObject({ isInApp: true, os: 'ios', appName: 'Facebook' });
+   });
+
    // An iOS email app opening a sign-in link (captured from a borrower's logins, 2026-09-22).
    const iosAppWebView =
       'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';

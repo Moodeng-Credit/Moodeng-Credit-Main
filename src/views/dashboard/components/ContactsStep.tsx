@@ -1,4 +1,4 @@
-import { type MouseEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -15,6 +15,7 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
+import { detectInAppBrowser, openInSafari } from '@/lib/inAppBrowser';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -155,7 +156,14 @@ export default function ContactsStep({
    const [messengerDidntOpen, setMessengerDidntOpen] = useState(false);
    // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
    const androidMessenger = isAndroidBrowser();
-   const iosMessenger = !androidMessenger && isIOSBrowser();
+   // iPhone inside Facebook's / Instagram's own browser: the m.me link never reaches our bot there
+   // (userbuds, 2026-10-14: tapped, Messenger never came up, left). So it gets the Android card instead:
+   // the code first, then "Copy code & open Messenger", plus a way out to Safari, where m.me works.
+   const inAppInfo = useMemo(() => detectInAppBrowser(), []);
+   const iosInAppMessenger =
+      !androidMessenger && isIOSBrowser() && inAppInfo.isInApp && inAppInfo.appName !== null && inAppInfo.appName !== 'Messenger';
+   const codeFirstMessenger = androidMessenger || iosInAppMessenger;
+   const iosMessenger = !androidMessenger && !iosInAppMessenger && isIOSBrowser();
    // Computers: a QR for the phone plus copy-and-paste here (see isDesktopBrowser, DesktopMessengerCard).
    const desktopMessenger = !androidMessenger && !iosMessenger && isDesktopBrowser();
    // iOS: a code + m.me link ready before the tap (see isIOSBrowser above).
@@ -581,7 +589,8 @@ export default function ContactsStep({
             is_ios: /iphone|ipad|ipod/i.test(navigator.userAgent),
             in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
             is_desktop: desktopMessenger,
-            flow: channel === 'messenger' && androidMessenger ? 'paste_code' : channel === 'messenger' && desktopMessenger ? 'qr' : 'link'
+            ios_in_app: iosInAppMessenger ? inAppInfo.appName : null,
+            flow: channel === 'messenger' && codeFirstMessenger ? 'paste_code' : channel === 'messenger' && desktopMessenger ? 'qr' : 'link'
          });
          if (channel === 'messenger' && desktopMessenger) {
             // Nothing opens: the card shows the QR (for their phone) and the code to paste here.
@@ -594,7 +603,7 @@ export default function ContactsStep({
             startPolling(channel);
             return;
          }
-         if (channel === 'messenger' && androidMessenger) {
+         if (channel === 'messenger' && codeFirstMessenger) {
             // Nothing opens yet: the card now shows the code and the button that opens our chat.
             setMessengerLink(MESSENGER_APP_CHAT_LINK);
             setMessengerCode(String(code));
@@ -653,12 +662,18 @@ export default function ContactsStep({
             />
          ) : null}
 
-         {messengerLink && !messengerVerified && androidMessenger && messengerCode ? (
+         {messengerLink && !messengerVerified && codeFirstMessenger && messengerCode ? (
             <div
                aria-live="polite"
                className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-4 text-left"
             >
                <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Connect on Messenger</span>
+               {iosInAppMessenger ? (
+                  <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                     You&apos;re in {inAppInfo.appName}&apos;s browser, which can&apos;t confirm Messenger by itself. Copy the code,
+                     send it to us on Messenger, and you&apos;re done.
+                  </p>
+               ) : null}
                <div className="flex items-center gap-2">
                   <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
                      {messengerCode}
@@ -683,8 +698,22 @@ export default function ContactsStep({
                </a>
                {messengerDidntOpen ? (
                   <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
-                     Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
+                     {iosInAppMessenger
+                        ? 'Messenger didn’t open? Open the Messenger app yourself, search Moodeng Credit, and paste the code (already copied).'
+                        : 'Messenger didn’t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.'}
                   </p>
+               ) : null}
+               {iosInAppMessenger ? (
+                  <button
+                     type="button"
+                     onClick={() => {
+                        track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName });
+                        openInSafari(window.location.href, inAppInfo);
+                     }}
+                     className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                  >
+                     Or open Moodeng in Safari instead
+                  </button>
                ) : null}
                <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
                   <li className="flex gap-2">
@@ -792,7 +821,7 @@ export default function ContactsStep({
             </>
          ) : (
             <OptionCard
-               badge={androidMessenger || desktopMessenger ? '1 min' : '1 tap'}
+               badge={codeFirstMessenger || desktopMessenger ? '1 min' : '1 tap'}
                disabled={startingChannel !== null}
                done={messengerVerified}
                doneLabel="Verified"
@@ -803,10 +832,10 @@ export default function ContactsStep({
                   tapAgain && preparedMessenger
                      ? 'Ready — tap again to open Messenger.'
                      : startingChannel === 'messenger'
-                     ? androidMessenger || desktopMessenger
+                     ? codeFirstMessenger || desktopMessenger
                         ? 'Getting your code…'
                         : 'Opening Messenger…'
-                     : androidMessenger
+                     : codeFirstMessenger
                        ? 'Opens our chat. Say hi and you’re connected.'
                        : desktopMessenger
                          ? 'Scan a code with your phone, or chat with us here.'
