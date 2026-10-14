@@ -507,6 +507,7 @@ export const vietnameseCoverageE: Record<string, string> = {
    "Couldn't book that time. Try again, or contact support.": 'Không đặt được khung giờ đó. Hãy thử lại hoặc liên hệ bộ phận hỗ trợ.',
    "You're booked with": 'Bạn đã đặt lịch với',
    'the Moodeng team': 'đội ngũ Moodeng',
+   'George or Emma': 'George hoặc Emma',
    'Google Calendar': 'Google Lịch',
    "You've missed two calls, so booking is paused for a week.": 'Bạn đã lỡ hai cuộc gọi, nên việc đặt lịch tạm dừng trong một tuần.',
    'You can pick a new time from': 'Bạn có thể chọn giờ mới từ',

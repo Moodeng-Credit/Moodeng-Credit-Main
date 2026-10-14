@@ -628,6 +628,7 @@ export const thaiCoverageB: Record<string, string> = {
    "Couldn't book that time. Try again, or contact support.": 'จองเวลานั้นไม่ได้ ลองอีกครั้ง หรือติดต่อฝ่ายช่วยเหลือ',
    "You're booked with": 'คุณนัดหมายกับ',
    'the Moodeng team': 'ทีม Moodeng',
+   'George or Emma': 'George หรือ Emma',
    'Zoom link by email · reminder on Messenger': 'ลิงก์ Zoom ส่งทางอีเมล · แจ้งเตือนทาง Messenger',
    'Google Calendar': 'Google ปฏิทิน',
    'Finding open times…': 'กำลังค้นหาเวลาที่ว่าง…',

@@ -332,7 +332,7 @@ function BookedCallCard({
             {layer}
          </span>
          <span className="flex min-w-0 flex-col text-left [perspective:300px]">
-            <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a]">You&apos;re booked with {host === 'emma' ? 'Emma' : 'the Moodeng team'}!</span>
+            <span className="text-[18px] font-bold leading-[22px] text-[#2f7a3a]">You&apos;re booked with George or Emma!</span>
             {formattedBooked ? (
                <span className="text-[15px] leading-[20px] text-[#3c8248]">
                   <FlipFace flipped={flipped} front={formattedBooked} back={<b>{formatCountdown(startsAt - now)}</b>} />
