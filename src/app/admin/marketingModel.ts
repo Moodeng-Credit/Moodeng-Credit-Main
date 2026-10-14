@@ -2,6 +2,7 @@
 // each week to get there, what marketing costs per real borrower, and who to contact. Pure functions over loans,
 // users and the spend log, so the page and tests agree. Dates are Manila calendar dates.
 import { addDays, daysBetween, manilaDate } from '@/app/admin/creditLineModel';
+import { getNextCreditTier } from '@/config/creditTiers';
 
 export interface MarketingLoan {
    id: string;
@@ -26,6 +27,11 @@ export interface MarketingUser {
    messenger_verified_at: string | null;
    redeemed_referral_code_id: string | null;
    credit_limit: number | null;
+   // Some real borrowers sit on test-flagged accounts; their non-test loans still count, but they stay out of
+   // the signup funnel and outreach lists.
+   is_test?: boolean;
+   account_status?: string | null;
+   loan_access_status?: string | null;
 }
 
 export interface MarketingSpendRow {
@@ -188,6 +194,7 @@ export function weeklyPlan(loans: MarketingLoan[], month: string, target: number
 
 export function funnel(users: MarketingUser[], loans: MarketingLoan[], from: string, to: string) {
    const cohort = users.filter((u) => {
+      if (u.is_test) return false;
       const d = manilaDate(u.created_at);
       return d >= from && d <= to;
    });
@@ -360,7 +367,7 @@ export function whoToContact(loans: MarketingLoan[], users: MarketingUser[], tod
       .map(([id, repaidOn]) => ({ user: userById.get(id) as MarketingUser, repaidOn, daysSince: daysBetween(repaidOn, today) }))
       .sort((a, b) => a.daysSince - b.daysSince);
    const verifiedNeverBorrowed = users
-      .filter((u) => u.verified && !borrowed.has(u.id))
+      .filter((u) => u.verified && !u.is_test && !borrowed.has(u.id))
       .map((u) => ({ user: u, signedUp: manilaDate(u.created_at), requested: requested.has(u.id) }))
       .sort((a, b) => b.signedUp.localeCompare(a.signedUp));
    const dueSoon = list
@@ -374,4 +381,111 @@ export function whoToContact(loans: MarketingLoan[], users: MarketingUser[], tod
       .filter((r) => r.daysToDue >= 0 && r.daysToDue <= 2)
       .sort((a, b) => a.daysToDue - b.daysToDue);
    return { canReborrow, verifiedNeverBorrowed, dueSoon };
+}
+
+export interface GoalSlot {
+   userId: string;
+   name: string;
+   username: string | null;
+   amount: number;
+}
+
+// The month's lending goal, filled by name: loans already made this month, people who can take another loan
+// before the month ends (and the limit they'd get), and how many new borrowers fill the rest.
+export function goalSlots(
+   loans: MarketingLoan[],
+   users: MarketingUser[],
+   excluded: Set<string>,
+   month: string,
+   today: string,
+   target: number,
+   cacTarget: number
+) {
+   const userById = new Map(users.map((u) => [u.id, u]));
+   const nameOf = (id: string) => {
+      const u = userById.get(id);
+      return u?.display_name?.trim() || u?.username || 'Unknown';
+   };
+   const end = monthEnd(month);
+   const list = funded(loans);
+
+   const done = list
+      .filter((l) => inMonth(manilaDate(l.funded_at as string), month))
+      .map((l) => ({
+         loanId: l.id,
+         userId: l.borrower_user_id,
+         name: nameOf(l.borrower_user_id),
+         username: userById.get(l.borrower_user_id)?.username ?? null,
+         amount: Number(l.loan_amount),
+         date: manilaDate(l.funded_at as string)
+      }));
+   const lent = done.reduce((s, d) => s + d.amount, 0);
+
+   // Only the current (or a future) month can still have comebacks.
+   const comeback: Array<GoalSlot & { when: string | null }> = [];
+   const leftOut: GoalSlot[] = [];
+   if (today <= end) {
+      const byBorrower = new Map<string, MarketingLoan[]>();
+      for (const l of list) byBorrower.set(l.borrower_user_id, [...(byBorrower.get(l.borrower_user_id) ?? []), l]);
+      for (const [userId, own] of byBorrower) {
+         const u = userById.get(userId);
+         if (!u || (u.account_status && u.account_status !== 'active') || (u.loan_access_status && u.loan_access_status !== 'approved'))
+            continue;
+         const open = own.filter((l) => !isRepaid(l));
+         if (!open.length && !own.some(isRepaid)) continue;
+         const dues = open.map((l) => (l.due_date ? manilaDate(l.due_date) : '9999-12-31'));
+         if (dues.some((d) => d < today)) continue; // overdue: not a candidate
+         const lastDue = dues.sort().pop() ?? null;
+         if (lastDue && lastDue > end) continue; // not free again this month
+         const limit = Number(u.credit_limit ?? 15);
+         // A single loan at the full limit, repaid in full, moves them up a tier.
+         const amount = open.some((l) => Number(l.loan_amount) >= limit) ? getNextCreditTier(limit) : limit;
+         const slot = { userId, name: nameOf(userId), username: u.username, amount };
+         if (excluded.has(userId)) leftOut.push(slot);
+         else comeback.push({ ...slot, when: lastDue });
+      }
+      comeback.sort((a, b) => (a.when ?? '').localeCompare(b.when ?? '') || a.name.localeCompare(b.name));
+   }
+   const comebackSum = comeback.reduce((s, c) => s + c.amount, 0);
+
+   // New borrowers' first loans: their recent average, else $16.
+   const numbers = loanNumbers(loans);
+   const recentFirsts = list.filter((l) => numbers.get(l.id) === 1 && manilaDate(l.funded_at as string) >= addDays(today, -60));
+   const firstLoan = recentFirsts.length ? recentFirsts.reduce((s, l) => s + Number(l.loan_amount), 0) / recentFirsts.length : 16;
+
+   const gap = Math.max(0, target - lent - comebackSum);
+   const need = Math.ceil(gap / Math.max(firstLoan, 1));
+
+   // Spread the new borrowers over the month's remaining Monday-start weeks by days left in each.
+   const weeks: Array<{ start: string; end: string; count: number }> = [];
+   let cursor = today > monthStart(month) ? today : monthStart(month);
+   while (cursor <= end) {
+      const dow = (new Date(`${cursor}T00:00:00Z`).getUTCDay() + 6) % 7;
+      const weekEnd = addDays(cursor, 6 - dow) < end ? addDays(cursor, 6 - dow) : end;
+      weeks.push({ start: cursor, end: weekEnd, count: 0 });
+      cursor = addDays(weekEnd, 1);
+   }
+   const totalDays = weeks.reduce((s, w) => s + daysBetween(w.start, w.end) + 1, 0);
+   let assigned = 0;
+   weeks.forEach((w, i) => {
+      const share =
+         i === weeks.length - 1 ? need - assigned : Math.round((need * (daysBetween(w.start, w.end) + 1)) / Math.max(totalDays, 1));
+      w.count = Math.max(0, Math.min(share, need - assigned));
+      assigned += w.count;
+   });
+
+   return {
+      target,
+      done,
+      lent,
+      comeback,
+      comebackSum,
+      leftOut,
+      firstLoan,
+      gap,
+      need,
+      cost: need * cacTarget,
+      posters: Math.ceil(need / 4),
+      weeks
+   };
 }
