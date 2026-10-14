@@ -183,7 +183,12 @@ export default function ContactsStep({
    const push = usePushNotifications(userId);
    const [pushError, setPushError] = useState('');
    const pushOn = push.isSupported && push.permission === 'granted' && push.isSubscribed;
-   const pushRequired = push.isSupported;
+   // Blocked in the browser (they tapped "Block" on Chrome's prompt, often the one that pops up on its
+   // own after sign-in): the site can't ask again, so a tap only ever said "blocked" and Continue stayed
+   // locked. A borrower on 2026-10-13 tapped ~30 times over 17 minutes. Reminders become optional
+   // here, the card says how to unblock, and Messenger and email still reach them.
+   const pushBlocked = push.isSupported && push.permission === 'denied';
+   const pushRequired = push.isSupported && !pushBlocked;
 
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
@@ -191,8 +196,10 @@ export default function ContactsStep({
    const handleEnablePush = async () => {
       setPushError('');
       const outcome = await push.enable();
+      track('contact_push_outcome', { source, outcome });
       if (outcome === 'permission-denied') {
-         setPushError('Notifications are blocked. Allow them for moodeng.app in your browser settings, then tap again.');
+         // The card's subtitle now says how to unblock, and Continue is open.
+         setPushError('');
       } else if (outcome === 'permission-dismissed') {
          setPushError('Tap Allow when your phone asks, so we can remind you before your due date.');
       } else if (outcome === 'failed') {
@@ -805,11 +812,11 @@ export default function ContactsStep({
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
          {/* Onboarding: one thing at a time — reminders only once Messenger is confirmed. */}
-         {pushRequired && (contactVerified || source !== 'connect') ? (
+         {(pushRequired || pushBlocked) && (contactVerified || source !== 'connect') ? (
             // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
             <div className={nudgeReminders ? 'connect-shake' : undefined}>
                <OptionCard
-                  badge="Required"
+                  badge={pushBlocked ? 'Optional' : 'Required'}
                   disabled={push.isBusy}
                   done={pushOn}
                   doneLabel="On"
@@ -818,7 +825,9 @@ export default function ContactsStep({
                   subtitle={
                      push.isBusy
                         ? 'Turning on…'
-                        : nudgeReminders
+                        : pushBlocked
+                          ? 'Blocked in your browser. Tap ⓘ next to moodeng.app → Notifications → Allow.'
+                          : nudgeReminders
                           ? 'One more tap — turn on reminders and you’re through.'
                           : 'We remind you before your due date'
                   }

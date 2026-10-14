@@ -345,6 +345,18 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(onContinue).toHaveBeenCalledTimes(1);
    });
 
+   it('lets them continue when notifications are blocked in the browser, and says how to unblock', async () => {
+      // Chrome won't ask again once someone tapped Block, so requiring reminders was a dead end.
+      push.state.isSupported = true;
+      push.state.permission = 'denied';
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-10-13T00:00:00Z' };
+      await render();
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).not.toContain('Turn on reminders to continue.');
+      expect(container.textContent).toContain('Blocked in your browser');
+      expect(container.textContent).toContain('Optional');
+   });
+
    it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
       push.state.isSupported = true;
       push.state.permission = 'default';
