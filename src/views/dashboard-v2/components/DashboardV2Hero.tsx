@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import clsx from 'clsx';
+import { Heart, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDelight';
 import UserAvatar from '@/components/UserAvatar';
 
 import { DASHBOARD_V2_ASSETS, getMoodengAsset, getTierTrackAsset } from '@/views/dashboard-v2/assets';
@@ -48,6 +50,64 @@ const getPandesalMarkerX = (pandesal: number) => {
 
 // Keep a sliver of fill visible whenever any credit is available, like the design's empty state.
 const CREDIT_BAR_MIN_PERCENT = 3;
+
+/**
+ * The Moodeng reacts when tapped: a squish-and-bounce with pandesal floating up (hearts once a loan
+ * is repaid). Five quick taps make it dizzy, with stars. PostHog had 5 people tapping the Moodeng
+ * and 6 rapid-tapping the tier arrows beside it with nothing happening. No text is added.
+ */
+function PettableMoodeng({ src, alt, mood, isLocked }: { src: string; alt: string; mood: MoodengMood; isLocked: boolean }) {
+   const { ref, play } = useReplayClass<HTMLSpanElement>();
+   const { burst, layer } = useFloatingParticles();
+   const recentTaps = useRef<number[]>([]);
+
+   const handleTap = () => {
+      const now = Date.now();
+      recentTaps.current = [...recentTaps.current.filter((t) => now - t < 1500), now];
+      if (recentTaps.current.length >= 5) {
+         recentTaps.current = [];
+         play('tap-dizzy');
+         burst(() => <Star className="size-5 fill-[#ffce1b] text-[#e0a800]" strokeWidth={1.5} />, {
+            count: 6,
+            fullCircle: true,
+            spreadX: 74,
+            rise: 56,
+            originY: '28%'
+         });
+         return;
+      }
+      play('tap-squish');
+      burst(
+         () =>
+            mood === 'repaid' ? (
+               <Heart className="size-6 fill-[#ff5c8a] text-[#e23d6d]" strokeWidth={1.5} />
+            ) : (
+               <DesignImage src={DASHBOARD_V2_ASSETS.pandesalSmall} className="size-6 object-contain" />
+            ),
+         { count: 2, spreadX: 70, rise: 90 }
+      );
+   };
+
+   return (
+      <button
+         type="button"
+         onClick={handleTap}
+         aria-label="Pet your Moodeng"
+         className="absolute left-1/2 h-[164px] w-[164px] -translate-x-1/2 touch-manipulation select-none"
+         style={{ top: CHARACTER_TOP[mood] }}
+      >
+         <span ref={ref} className="block h-full w-full">
+            <DesignImage
+               src={src}
+               alt={alt}
+               // Designer: a tier the borrower hasn't reached yet shows in gray (fully opaque) while browsing with the arrows.
+               className={clsx('h-full w-full transition-[filter] duration-300', isLocked && 'grayscale')}
+            />
+         </span>
+         {layer}
+      </button>
+   );
+}
 
 const formatUsd = (value: number) => `$${Number.isInteger(value) ? value : value.toFixed(2)}`;
 
@@ -136,15 +196,11 @@ export default function DashboardV2Hero({ model, showRealAvatar }: DashboardV2He
          ) : null}
 
          {/* Moodeng + tier browsing */}
-         <DesignImage
+         <PettableMoodeng
             src={getMoodengAsset(browsedTier.id, model.mood)}
             alt={`${browsedTier.label} Moodeng${browsedTierIndex > currentTierIndex ? ' (not reached yet)' : ''}`}
-            // Designer: a tier the borrower hasn't reached yet shows in gray (fully opaque) while browsing with the arrows.
-            className={clsx(
-               'absolute left-1/2 h-[164px] w-[164px] -translate-x-1/2 transition-[filter] duration-300',
-               browsedTierIndex > currentTierIndex && 'grayscale'
-            )}
-            style={{ top: CHARACTER_TOP[model.mood] }}
+            mood={model.mood}
+            isLocked={browsedTierIndex > currentTierIndex}
          />
          <button
             type="button"

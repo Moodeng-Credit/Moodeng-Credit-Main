@@ -1,7 +1,9 @@
-import { Fragment } from 'react';
+import { Fragment, useRef } from 'react';
 
 import clsx from 'clsx';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+import { useFloatingParticles, useReplayClass } from '@/components/motion/TapDelight';
 
 import { formatCurrency } from '@/utils/decimalHelpers';
 
@@ -54,16 +56,56 @@ export function ClaimVoucherButton({ onClaim }: { onClaim: () => void }) {
    );
 }
 
+const CONFETTI_COLORS = ['#6b55f7', '#ffce1b', '#2f8a4a', '#ff5c8a', '#4492f1'];
+
+/**
+ * A finished milestone's "Done" pill. 3 people tapped it with nothing happening; now it pops with
+ * confetti and then opens All Milestones, where the full list lives.
+ */
+function DonePill({ to }: { to: string }) {
+   const navigate = useNavigate();
+   const { ref, play } = useReplayClass<HTMLButtonElement>();
+   const { burst, layer } = useFloatingParticles();
+   const navTimer = useRef<number | null>(null);
+
+   return (
+      <button
+         ref={ref}
+         type="button"
+         onClick={() => {
+            play('tap-squish');
+            burst(
+               (index) => (
+                  <span
+                     className="block h-2.5 w-1.5 rounded-[2px]"
+                     style={{ background: CONFETTI_COLORS[index % CONFETTI_COLORS.length] }}
+                  />
+               ),
+               { count: 10, fullCircle: true, spreadX: 60, rise: 44, originY: '50%' }
+            );
+            if (navTimer.current) window.clearTimeout(navTimer.current);
+            navTimer.current = window.setTimeout(() => navigate(to), 650);
+         }}
+         className={clsx('relative', PILL_BUTTON, 'bg-[#e3f5e8] text-[#2f8a4a] dark:bg-[#113522] dark:text-[#70e4a6]')}
+      >
+         Done
+         {layer}
+      </button>
+   );
+}
+
 function MilestoneAction({
    milestone,
    onAction,
    onClaim,
-   voucherState
+   voucherState,
+   allMilestonesHref
 }: {
    milestone: DashboardV2Milestone;
    onAction: (milestone: DashboardV2Milestone) => void;
    onClaim: () => void;
    voucherState: VoucherState;
+   allMilestonesHref: string;
 }) {
    // The database decides voucher eligibility, so its answer wins over the milestone's own status.
    if (milestone.isVoucher && (milestone.status === 'unlocked' || voucherState !== 'none')) {
@@ -71,7 +113,7 @@ function MilestoneAction({
    }
 
    if (milestone.status === 'unlocked') {
-      return <span className={clsx(PILL_BUTTON, 'bg-[#e3f5e8] text-[#2f8a4a] dark:bg-[#113522] dark:text-[#70e4a6]')}>Done</span>;
+      return <DonePill to={allMilestonesHref} />;
    }
 
    if (milestone.status === 'locked') {
@@ -148,7 +190,13 @@ export function MilestonesSection({
                            </p>
                         </div>
                      </div>
-                     <MilestoneAction milestone={milestone} onAction={onGet} onClaim={onClaim} voucherState={voucherState} />
+                     <MilestoneAction
+                        milestone={milestone}
+                        onAction={onGet}
+                        onClaim={onClaim}
+                        voucherState={voucherState}
+                        allMilestonesHref={allMilestonesHref}
+                     />
                   </div>
                </Fragment>
             ))}
