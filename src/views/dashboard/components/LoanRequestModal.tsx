@@ -35,10 +35,12 @@ import {
    X
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
+import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -51,7 +53,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
@@ -432,6 +434,28 @@ const UsdcIcon = () => (
       />
    </svg>
 );
+
+// Words a sentence doesn't end on. The reason check used to fire 0.9s after the 40th character, so
+// "I am building a good credit history and I" came back "vague — what is the money for?" while the
+// borrower was still typing it (most "vague" verdicts in Oct 2026 were cut off like that).
+const DANGLING_WORDS = new Set([
+   'a', 'an', 'the', 'and', 'or', 'but', 'so', 'for', 'to', 'of', 'in', 'on', 'at', 'by', 'from', 'with', 'as',
+   'because', 'that', 'which', 'my', 'our', 'your', 'his', 'her', 'their', 'i', 'im', "i'm", 'is', 'am', 'are',
+   'was', 'will', 'have', 'has', 'need', 'buy', 'pay', 'use', 'some'
+]);
+
+const looksUnfinished = (text: string) => {
+   const trimmed = text.trim();
+   if (/[.!?…)"']$/.test(trimmed)) return false;
+   const lastWord = trimmed.split(/\s+/).pop()?.toLowerCase().replace(/[^a-z']/g, '') ?? '';
+   return DANGLING_WORDS.has(lastWord);
+};
+
+/** Which loan-form rule stopped a submit, so PostHog shows what trips borrowers (8 of 16 needed 3+ taps). */
+const trackLoanFormRule = (event: string, properties: Record<string, unknown>) => {
+   if (!import.meta.env.PROD) return;
+   posthog.capture(event, properties);
+};
 
 const PRAISE_WORDS = ['Nice!', 'Great pick!', 'Awesome!', "You're on a roll!", 'Looking good!'];
 
@@ -1323,8 +1347,10 @@ export default function LoanRequestModal({
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
    // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
+   const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
-      status: 'idle' | 'checking' | 'ok' | 'weak' | 'unavailable';
+      // 'pending' = waiting for typing to settle before asking; nothing judged yet.
+      status: 'idle' | 'pending' | 'checking' | 'ok' | 'weak' | 'unavailable';
       hint: string;
       suggestion: string;
       category: ReasonCategory | '';
@@ -1582,7 +1608,7 @@ export default function LoanRequestModal({
       if (isCheckingBeforeVerify) return;
       setIsCheckingBeforeVerify(true);
       const verdict = await Promise.race([
-         checkLoanReason(reason.trim()),
+         checkLoanReason(reason.trim(), reasonLocale),
          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
       ]);
       setIsCheckingBeforeVerify(false);
@@ -1968,6 +1994,17 @@ export default function LoanRequestModal({
    //   2. check-loan-input (DeepSeek) — the same judge that runs on submit, pulled forward so
    //      the tick means what it says instead of appearing and then being contradicted.
    // Both only withhold the tick; neither blocks. The submit gate stays the enforcement point.
+   // What to put in the empty repayment field: the typical return for this size (and at least the
+   // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
+   // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
+   const suggestedRepayment = (() => {
+      const borrow = Number(loanAmount);
+      if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
+      const range = suggestedReturnRange(borrow);
+      const typical = borrow + Math.max(range?.lo ?? 1, 1);
+      const min = minimumRepayment(borrow, days)?.amount ?? 0;
+      return Math.ceil(Math.max(typical, min) * 2) / 2;
+   })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
    const reasonShapeOk = reasonMeetsLength && reasonQuality.ok;
@@ -1986,7 +2023,7 @@ export default function LoanRequestModal({
          return;
       }
 
-      const cached = getCachedReasonVerdict(trimmed);
+      const cached = getCachedReasonVerdict(trimmed, reasonLocale);
       if (cached) {
          setLiveReasonCheck({
             status: cached.ok ? 'ok' : 'weak',
@@ -2005,10 +2042,13 @@ export default function LoanRequestModal({
       }
 
       let cancelled = false;
-      setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
+      setLiveReasonCheck({ status: 'pending', hint: '', suggestion: '', category: '' });
+      // Give a half-written sentence time to be finished before judging it.
+      const settleMs = looksUnfinished(trimmed) ? 4000 : 1500;
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
-         const verdict = await checkLoanReason(trimmed);
+         setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
+         const verdict = await checkLoanReason(trimmed, reasonLocale);
          if (cancelled) return;
          if (!verdict.checked) {
             setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
@@ -2020,50 +2060,63 @@ export default function LoanRequestModal({
             suggestion: verdict.suggestion,
             category: verdict.category
          });
-      }, 900);
+      }, settleMs);
 
       return () => {
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale]);
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
+      const rules: Record<string, string> = {};
 
       const amount = Number(loanAmount);
       if (!loanAmount || Number.isNaN(amount) || amount <= 0) {
          errors.amount = 'Enter how much you want to borrow.';
+         rules.amount = 'missing';
       } else if (amount > limitAmount) {
          errors.amount = `That's above your current limit of $${limitAmount}.`;
+         rules.amount = 'over_limit';
       }
 
       const repayment = Number(totalRepaymentAmount);
       if (!totalRepaymentAmount || Number.isNaN(repayment)) {
          errors.repayment = 'Enter the amount you will repay.';
+         rules.repayment = 'missing';
       } else if (!Number.isNaN(amount) && repayment < amount + 1) {
          errors.repayment = 'Repayment must be at least $1 more than you borrow.';
+         rules.repayment = 'below_borrow_plus_1';
       }
 
       if (!isRepaymentDateFilled) {
          errors.date = 'Choose when you will repay.';
+         rules.date = 'missing';
       }
 
       const trimmedReason = reason.trim();
       if (!trimmedReason) {
          errors.reason = 'Please add a reason so lenders know what the loan is for.';
+         rules.reason = 'missing';
       } else if (trimmedReason.length < REASON_MIN_LENGTH) {
          errors.reason = `Please add a little more — at least ${REASON_MIN_LENGTH} characters (${trimmedReason.length}/${REASON_MIN_LENGTH}).`;
+         rules.reason = 'too_short';
       } else if (reasonQuality.code === 'not-english') {
          // Lenders are in the US/EU: a request they can't read can't be funded.
          errors.reason = 'Please write your reason in English so lenders can read it.';
+         rules.reason = 'not_english_offline';
       } else if (liveReasonCheck.status === 'weak') {
          // The check that ran while they typed already said this reason doesn't tell lenders what
          // the money is for. Stop here, on the step where they can fix it, not after the bio,
          // contacts and call steps. The hint and a ready rewrite show under the field.
          errors.reason = liveReasonCheck.hint || 'Tell lenders what the money will be used for.';
+         rules.reason = `ai_${liveReasonCheck.category || 'weak'}`;
       }
 
       setTermErrors(errors);
+      if (Object.keys(rules).length > 0) {
+         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules), locale: reasonLocale });
+      }
 
       // Make sure the first problem is actually seen: if the borrower tapped submit from the
       // bottom of the form, scroll the first invalid field into view (the error is inline, not
@@ -2098,6 +2151,7 @@ export default function LoanRequestModal({
             if (!showBorrowerContextStep && !validateTerms()) return;
             const low = !showBorrowerContextStep ? lowRepaymentCheck() : null;
             if (low) {
+               trackLoanFormRule('loan_form_low_return_nudge', { amount: Number(loanAmount), repay: Number(totalRepaymentAmount) });
                setReturnNudge(low);
                return;
             }
@@ -2121,6 +2175,7 @@ export default function LoanRequestModal({
          const low = lowRepaymentCheck();
          if (low) {
             event.preventDefault();
+            trackLoanFormRule('loan_form_low_return_nudge', { amount: Number(loanAmount), repay: Number(totalRepaymentAmount) });
             setReturnNudge(low);
             return;
          }
@@ -2797,6 +2852,13 @@ export default function LoanRequestModal({
                                     if (termErrors.amount) setTermErrors((prev) => ({ ...prev, amount: undefined }));
                                  }}
                                  onFocus={scrollFieldIntoView}
+                                 onBlur={() => {
+                                    // Say it when they leave the field, not after they tap Make Your Request.
+                                    const value = Number(loanAmount);
+                                    if (loanAmount && Number.isFinite(value) && value > limitAmount) {
+                                       setTermErrors((prev) => ({ ...prev, amount: `That's above your current limit of $${limitAmount}.` }));
+                                    }
+                                 }}
                                  className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
                                  id="borrow-amount"
                                  inputMode="decimal"
@@ -2832,12 +2894,23 @@ export default function LoanRequestModal({
                                  if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
                               }}
                               onFocus={scrollFieldIntoView}
+                              onBlur={() => {
+                                 const borrow = Number(loanAmount);
+                                 const repay = Number(totalRepaymentAmount);
+                                 if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
+                                    setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' }));
+                                 }
+                              }}
                               className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
                                  termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
                               }`}
                               id="repayment-amount"
                               inputMode="decimal"
-                              placeholder="Must be more than the borrowed amount"
+                              placeholder={
+                                 suggestedRepayment
+                                    ? `Suggested: $${Number.isInteger(suggestedRepayment) ? suggestedRepayment : suggestedRepayment.toFixed(2)}`
+                                    : 'Must be more than the borrowed amount'
+                              }
                               type="text"
                               value={totalRepaymentAmount}
                            />
@@ -3028,7 +3101,7 @@ export default function LoanRequestModal({
                                        // Couldn't reach the check — say nothing rather than tick
                                        // text nobody judged. Submit still works; the gate there
                                        // fails open too.
-                                       if (liveReasonCheck.status === 'unavailable') {
+                                       if (liveReasonCheck.status === 'unavailable' || liveReasonCheck.status === 'pending') {
                                           return <span>Short and specific helps lenders trust it.</span>;
                                        }
                                        if (liveReasonCheck.status !== 'ok') {

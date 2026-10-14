@@ -69,6 +69,31 @@ Reply with ONLY a JSON object, no other text:
 
 type Kind = 'reason' | 'profession' | 'situation';
 
+// The hint is read by the borrower, in the language they picked in the app; the suggestion is what
+// lenders will read, so it stays English. Before this every hint was English, even to someone who
+// had just written in Tagalog, and a "vague" verdict was a bare question with nothing to go on.
+const HINT_LANGUAGES: Record<string, string> = {
+   en: 'simple English (8th-grade level)',
+   fil: 'natural, simple Taglish — everyday Tagalog mixed with English, like a friendly ate or kuya (8th-grade level)',
+   id: 'simple, friendly Bahasa Indonesia',
+   th: 'simple, friendly Thai',
+   vi: 'simple, friendly Vietnamese'
+};
+
+const hintLanguageNote = (locale: string, kind: Kind) => {
+   const language = HINT_LANGUAGES[locale] ?? HINT_LANGUAGES.en;
+   const reasonExtras =
+      kind === 'reason'
+         ? `
+- For "vague" and "placeholder": make the hint useful, not just a question. Pick up what they started to say and give 2–3 short examples of the detail lenders want (which bill, whose medicine, what they're buying), e.g. "Anong bills? Kuryente, tubig, o renta?".
+- If the text looks cut off mid-sentence, kindly ask them to finish the sentence and say what the money is for.
+- For "not_english": in the hint, say lenders only read English and that they can use the English version below.
+- Keep "suggestion" in English no matter what — lenders read it.`
+         : '';
+   return `
+LANGUAGE: Write "hint" in ${language}. One or two short sentences, friendly, never blaming.${reasonExtras}`;
+};
+
 // Each field the borrower types gets its own rubric. The shared goal: is the input
 // specific and understandable enough for a lender, or is it low-effort filler?
 // Note profession: a SHORT answer ("teacher") is fine — we only flag unclear
@@ -164,11 +189,14 @@ serve(async (req) => {
          return jsonResponse({ ok: true, skipped: 'no_api_key' });
       }
 
-      const body = (await req.json().catch(() => ({}))) as { text?: string; reason?: string; kind?: Kind };
+      const body = (await req.json().catch(() => ({}))) as { text?: string; reason?: string; kind?: Kind; locale?: string };
       // Accept `text` (new) or `reason` (back-compat); default to the reason rubric.
       const text = (body.text ?? body.reason ?? '').trim();
       const kind: Kind = body.kind && KINDS.has(body.kind) ? body.kind : 'reason';
-      const systemPrompt = kind === 'reason' ? `${LOAN_REASON_GUIDE}\n\n${REASON_OUTPUT_CONTRACT}` : PROMPTS[kind];
+      // Older app versions send no locale: they get English hints, as before.
+      const locale = typeof body.locale === 'string' && body.locale in HINT_LANGUAGES ? body.locale : 'en';
+      const basePrompt = kind === 'reason' ? `${LOAN_REASON_GUIDE}\n\n${REASON_OUTPUT_CONTRACT}` : PROMPTS[kind];
+      const systemPrompt = `${basePrompt}\n${hintLanguageNote(locale, kind)}`;
       if (!text) return jsonResponse({ ok: false, hint: 'Add a bit more so lenders can understand.' });
 
       const ctrl = new AbortController();
@@ -234,7 +262,7 @@ serve(async (req) => {
          const ok = PASSING.has(category);
          const hint = category === 'good' ? '' : (verdict.hint ?? '').trim() || (ok ? '' : 'Tell lenders what the money will be used for.');
          const suggestion = category === 'good' ? '' : (verdict.suggestion ?? '').trim().slice(0, 200);
-         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category }));
+         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category, locale }));
          await recordCheck({ user_id: userId, kind, text, ok, category, hint, suggestion });
          return jsonResponse({ ok, category, hint, suggestion });
       }
