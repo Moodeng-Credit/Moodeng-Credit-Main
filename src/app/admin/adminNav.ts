@@ -8,6 +8,7 @@ export type AdminTab =
    | 'credit-line-cost'
    | 'marketing'
    | 'calls'
+   | 'fillout'
    | 'calendar'
    | 'analytics'
    | 'ux-health'
@@ -51,6 +52,7 @@ export const navGroups: NavGroup[] = [
       items: [
          { id: 'users', label: 'Directory' },
          { id: 'calls', label: 'Call approvals' },
+         { id: 'fillout', label: 'Fillout' },
          { id: 'borrower-contacts', label: 'Borrower contacts' },
          { id: 'email', label: 'Email users' },
          { id: 'campaigns', label: 'Campaigns' }
@@ -133,6 +135,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'credit-line-cost',
    'marketing',
    'calls',
+   'fillout',
    'calendar',
    'analytics',
    'ux-health',

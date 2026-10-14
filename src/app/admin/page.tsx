@@ -13,6 +13,7 @@ import AdminShell from '@/app/admin/AdminShell';
 import { type AdminTab, isAdminTab, navGroups } from '@/app/admin/adminNav';
 import CalendarSection from '@/app/admin/CalendarSection';
 import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
+import FilloutSection from '@/app/admin/FilloutSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
@@ -1791,6 +1792,8 @@ function AdminPanel() {
          ) : null}
 
          {activeTab === 'calls' ? <CallApprovalsSection onCountChange={setCallApprovalCount} /> : null}
+
+         {activeTab === 'fillout' ? <FilloutSection /> : null}
 
          {activeTab === 'calendar' ? <CalendarSection /> : null}
 
