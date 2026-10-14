@@ -50,7 +50,16 @@ export default function InAppBrowserNotice(): JSX.Element | null {
    // Android only: we tried to hand off to Chrome and the page is still here (Facebook's in-app
    // browser ignores the intent link). Switch to step-by-step "⋮ → Open in Chrome" instructions.
    const [handOffFailed, setHandOffFailed] = useState(false);
+   // The "Tap ⋮ up here" pointer sits over the top-right corner (Help / Home on the dashboard), so it
+   // only shows for a few seconds; the steps in the card stay.
+   const [showPointer, setShowPointer] = useState(false);
    const stopWatchingRef = useRef<(() => void) | null>(null);
+
+   useEffect(() => {
+      if (!showPointer) return;
+      const timer = window.setTimeout(() => setShowPointer(false), 6000);
+      return () => window.clearTimeout(timer);
+   }, [showPointer]);
 
    // Detect on the client only (user-agent isn't meaningful during SSR/build).
    useEffect(() => {
@@ -89,6 +98,7 @@ export default function InAppBrowserNotice(): JSX.Element | null {
          stopWatchingRef.current?.();
          stopWatchingRef.current = watchForFailedHandOff(() => {
             setHandOffFailed(true);
+            setShowPointer(true);
             track('inapp_open_failed', info);
          });
          return;
@@ -101,15 +111,17 @@ export default function InAppBrowserNotice(): JSX.Element | null {
       return (
          <>
             {/* Points at the in-app browser's own ⋮ menu, which sits just above the page, top right. */}
-            <div
-               className="pointer-events-none fixed right-2 top-1 z-[9999] flex flex-col items-end motion-safe:animate-bounce"
-               aria-hidden="true"
-            >
-               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="mr-2">
-                  <path d="M12 20V5m0 0-6 6m6-6 6 6" stroke="#6c3fe0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-               </svg>
-               <span className="rounded-full bg-[#6c3fe0] px-3 py-1 text-[13px] font-semibold text-white shadow-lg">Tap ⋮ up here</span>
-            </div>
+            {showPointer ? (
+               <div
+                  className="pointer-events-none fixed right-2 top-1 z-[9999] flex flex-col items-end motion-safe:animate-bounce"
+                  aria-hidden="true"
+               >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="mr-2">
+                     <path d="M12 20V5m0 0-6 6m6-6 6 6" stroke="#6c3fe0" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="rounded-full bg-[#6c3fe0] px-3 py-1 text-[13px] font-semibold text-white shadow-lg">Tap ⋮ up here</span>
+               </div>
+            ) : null}
             <div
                role="dialog"
                aria-label="Open Moodeng in Chrome"
