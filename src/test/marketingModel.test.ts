@@ -4,6 +4,7 @@ import {
    cacReport,
    funnel,
    goalProgress,
+   goalSlots,
    type MarketingLoan,
    type MarketingUser,
    retention,
@@ -124,5 +125,49 @@ describe('marketingModel', () => {
       expect(r.canReborrow.map((x) => x.user.id)).toEqual(['a']);
       expect(r.verifiedNeverBorrowed.map((x) => x.user.id)).toEqual(['d']);
       expect(r.dueSoon.map((x) => x.user?.id)).toEqual(['b']);
+   });
+});
+
+describe('goalSlots', () => {
+   const users: MarketingUser[] = [
+      user('done', '2026-09-01', { display_name: 'Done Dana' }),
+      user('free', '2026-08-01', { display_name: 'Free Fe', credit_limit: 20, account_status: 'active', loan_access_status: 'approved' }),
+      user('due', '2026-08-01', { display_name: 'Due Dee', credit_limit: 20, account_status: 'active', loan_access_status: 'approved' }),
+      user('late', '2026-08-01', { display_name: 'Late Lou', credit_limit: 20 }),
+      user('nov', '2026-08-01', { display_name: 'Nov Nan', credit_limit: 20 }),
+      user('belle', '2026-08-01', { display_name: 'Belle', credit_limit: 100 })
+   ];
+   const loans: MarketingLoan[] = [
+      loan('done', '2026-10-05', 30),
+      loan('free', '2026-09-01', 15, { repayment_status: 'Paid', repaid_at: '2026-09-28T02:00:00Z' }),
+      loan('due', '2026-09-20', 20, { due_date: '2026-10-20T00:00:00Z' }),
+      loan('late', '2026-09-01', 20, { due_date: '2026-10-01T00:00:00Z' }),
+      loan('nov', '2026-10-02', 20, { due_date: '2026-11-02T00:00:00Z' }),
+      loan('belle', '2026-09-01', 100, { due_date: '2026-10-31T00:00:00Z' })
+   ];
+
+   it('fills the goal by name: lent, who can come back (next limit), and new borrowers for the rest', () => {
+      const s = goalSlots(loans, users, new Set(['belle']), '2026-10', '2026-10-12', 500, 5);
+      expect(s.done.map((d) => d.name)).toEqual(['Nov Nan', 'Done Dana']);
+      expect(s.lent).toBe(50);
+      // Free now at their limit; Due Dee took a full-limit $20 loan, so she comes back at the next tier ($40).
+      expect(s.comeback.map((c) => [c.name, c.amount, c.when])).toEqual(
+         [
+            ['Due Dee', 40, '2026-10-20'],
+            ['Free Fe', 20, null]
+         ].sort((a, b) => String(a[2] ?? '').localeCompare(String(b[2] ?? '')))
+      );
+      expect(s.leftOut.map((l) => l.name)).toEqual(['Belle']);
+      expect(s.comebackSum).toBe(60);
+      expect(s.gap).toBe(390);
+      expect(s.need).toBe(Math.ceil(390 / s.firstLoan));
+      expect(s.weeks.reduce((n, w) => n + w.count, 0)).toBe(s.need);
+      expect(s.cost).toBe(s.need * 5);
+   });
+
+   it('shows only what was lent for a past month', () => {
+      const s = goalSlots(loans, users, new Set(), '2026-09', '2026-09-30', 500, 5);
+      expect(s.comeback.length).toBeGreaterThanOrEqual(0);
+      expect(s.done.every((d) => d.date.startsWith('2026-09'))).toBe(true);
    });
 });

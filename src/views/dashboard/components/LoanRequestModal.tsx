@@ -40,6 +40,7 @@ import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
+import { FlipFace, useTapFlip } from '@/components/motion/TapDelight';
 import AskSupportButton from '@/components/support/AskSupportButton';
 import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
@@ -55,8 +56,10 @@ import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
+import { useUsdcRate } from '@/lib/useUsdcRate';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
 import { requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -457,6 +460,39 @@ const trackLoanFormRule = (event: string, properties: Record<string, unknown>) =
    if (!import.meta.env.PROD) return;
    posthog.capture(event, properties);
 };
+
+/**
+ * The USDC chip on the amount field. 5 people tapped it expecting something; now it flips in place
+ * to the amount in pesos (or "1 USDC = $1" outside the Philippines) and flips back after 3s.
+ */
+function UsdcAmountChip({ amount }: { amount: string }) {
+   const { flipped, flip } = useTapFlip(3000);
+   const phpRate = useUsdcRate('php');
+   const [inPhilippines] = useState(() => isLikelyPhilippines());
+   const value = Number(amount);
+   const pesos = Math.round((Number.isFinite(value) && value > 0 ? value : 1) * phpRate.value).toLocaleString();
+   const back = inPhilippines ? (Number.isFinite(value) && value > 0 ? `≈ ₱${pesos}` : `$1 ≈ ₱${pesos}`) : '1 USDC = $1';
+
+   return (
+      <button
+         type="button"
+         onClick={flip}
+         aria-label={flipped ? back : 'USDC'}
+         className="flex min-w-[112px] items-center justify-center self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100 [perspective:400px] active:brightness-95"
+      >
+         <FlipFace
+            flipped={flipped}
+            front={
+               <span className="flex items-center gap-md-1">
+                  <UsdcIcon />
+                  USDC
+               </span>
+            }
+            back={<span className="whitespace-nowrap font-semibold">{back}</span>}
+         />
+      </button>
+   );
+}
 
 const PRAISE_WORDS = ['Nice!', 'Great pick!', 'Awesome!', "You're on a roll!", 'Looking good!'];
 
@@ -2900,13 +2936,7 @@ export default function LoanRequestModal({
                            <div
                               className={`flex items-center ${inputShellClass} ${termErrors.amount ? '!border-md-red-500' : amountValid ? '!border-md-primary-900' : ''}`}
                            >
-                              <span
-                                 aria-hidden="true"
-                                 className="flex min-w-[112px] items-center justify-center gap-md-1 self-stretch border-r border-md-neutral-600 bg-[#2775ca] px-md-3 py-md-2 text-md-b1 font-normal text-md-neutral-100"
-                              >
-                                 <UsdcIcon />
-                                 USDC
-                              </span>
+                              <UsdcAmountChip amount={loanAmount} />
                               <input
                                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
                                     // Whole cents only: a lender's wallet sends 2-decimal amounts, so a

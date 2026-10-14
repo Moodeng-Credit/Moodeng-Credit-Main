@@ -1962,6 +1962,51 @@ export async function setReferralCodeOwner(id: string, ownerUserId: string | nul
    return { ...(data as AnyRow), boost_amount: toNumber((data as AnyRow).boost_amount) } as AdminReferralCode;
 }
 
+// Referral code owner payouts (referral_code_payouts) — one row per redemption of an owned code.
+export interface AdminReferralPayout {
+   id: string;
+   referral_code_id: string;
+   code: string;
+   status: 'unpaid' | 'paid';
+   paid_at: string | null;
+   paid_by: string | null;
+   created_at: string;
+   owner: { id: string; username: string | null; display_name: string | null; email: string | null } | null;
+   referred: { id: string; username: string | null; display_name: string | null; email: string | null } | null;
+}
+
+const REFERRAL_PAYOUT_SELECT =
+   'id, referral_code_id, code, status, paid_at, paid_by, created_at, owner:users!referral_code_payouts_owner_user_id_fkey(id, username, display_name, email), referred:users!referral_code_payouts_referred_user_id_fkey(id, username, display_name, email)';
+
+export async function listReferralPayouts(): Promise<AdminReferralPayout[]> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase.from('referral_code_payouts').select(REFERRAL_PAYOUT_SELECT).order('created_at', { ascending: false }).limit(200)
+   );
+   return (data ?? []) as unknown as AdminReferralPayout[];
+}
+
+export async function setReferralPayoutStatus(
+   id: string,
+   status: 'unpaid' | 'paid',
+   paidBy: string | null
+): Promise<AdminReferralPayout> {
+   const supabase = getSupabaseBrowserClient();
+   const data = await requireOk(
+      supabase
+         .from('referral_code_payouts')
+         .update(
+            status === 'paid'
+               ? { status, paid_at: new Date().toISOString(), paid_by: paidBy }
+               : { status, paid_at: null, paid_by: null }
+         )
+         .eq('id', id)
+         .select(REFERRAL_PAYOUT_SELECT)
+         .single()
+   );
+   return data as unknown as AdminReferralPayout;
+}
+
 export interface AdminUserOption {
    id: string;
    username: string | null;

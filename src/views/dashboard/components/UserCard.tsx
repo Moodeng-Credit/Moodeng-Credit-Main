@@ -2,13 +2,14 @@ import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { format, parseISO } from 'date-fns';
-import { ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Trash2 } from 'lucide-react';
+import { BadgeCheck, ChevronRight, Clock, ExternalLink, Loader2, Send, Share2, Sparkles, Trash2 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useAccount, useSwitchChain } from 'wagmi';
 import { getAccount } from 'wagmi/actions';
 
 import FundingMethodModal, { type FundLoanTarget } from '@/components/funding/FundingMethodModal';
+import { FlipFace, useFloatingParticles, useReplayClass, useTapFlip } from '@/components/motion/TapDelight';
 import LenderFundedPopup from '@/components/funding/LenderFundedPopup';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -742,9 +743,7 @@ export default function UserCard(loan: UserCardProps) {
                            <span className="text-md-neutral-700">{borrowerDisplayName}</span>
                         )}
                      </p>
-                     <span className="inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)]">
-                        <span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>
-                     </span>
+                     <GoodStandingBadge isVerified={borrowerIsVerified === true} />
                   </div>
                   {/* Network Badge */}
                   <img src="/icons/base-account.svg" alt="Base" className="w-6 h-6 rounded-[3.4px]" />
@@ -763,12 +762,7 @@ export default function UserCard(loan: UserCardProps) {
                         ${formatCurrency(loanData.loanAmount)}
                      </p>
                   </div>
-                  <div className="flex flex-col gap-1">
-                     <p className="text-md-b3 font-medium text-[#585858]">Get back USDC</p>
-                     <p className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">
-                        ${formatCurrency(loanData.totalRepaymentAmount)}
-                     </p>
-                  </div>
+                  <GetBackAmount loanAmount={loanData.loanAmount} totalRepaymentAmount={loanData.totalRepaymentAmount} />
                </div>
             </div>
 
@@ -976,5 +970,83 @@ export default function UserCard(loan: UserCardProps) {
             />
          ) : null}
       </>
+   );
+}
+
+/**
+ * Lenders tapped "Good Standing" (4 people) with nothing happening. It now sparkles, and for a
+ * verified borrower flips in place to "ID verified" for 3s. No extra text stays on the card.
+ */
+function GoodStandingBadge({ isVerified }: { isVerified: boolean }) {
+   const { flipped, flip } = useTapFlip(3000);
+   const { ref, play } = useReplayClass<HTMLButtonElement>();
+   const { burst, layer } = useFloatingParticles();
+
+   const handleTap = (e: MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      play('tap-wiggle');
+      burst(() => <Sparkles className="size-4 text-[#f5b301]" strokeWidth={2} />, { count: 3, spreadX: 50, rise: 34, originY: '20%' });
+      if (isVerified) flip();
+   };
+
+   return (
+      <button
+         ref={ref}
+         type="button"
+         onClick={handleTap}
+         className="relative inline-flex items-center justify-center px-md-1 py-md-0 rounded-[30px] border border-md-green-600 bg-[rgba(0,134,36,0.05)] [perspective:300px]"
+      >
+         <FlipFace
+            flipped={flipped}
+            front={<span className="text-md-b4 font-semibold text-md-green-600">Good Standing</span>}
+            back={
+               <span className="inline-flex items-center gap-0.5 text-md-b4 font-semibold text-md-green-600">
+                  <BadgeCheck className="size-3.5" strokeWidth={2.25} aria-hidden="true" />
+                  ID verified
+               </span>
+            }
+         />
+         {layer}
+      </button>
+   );
+}
+
+/** "Get back USDC" flips in place to the lender's profit for 3s, then back (2 people tapped it). */
+function GetBackAmount({ loanAmount, totalRepaymentAmount }: { loanAmount: number; totalRepaymentAmount: number }) {
+   const { flipped, flip } = useTapFlip(3000);
+   const profit = Math.max(totalRepaymentAmount - loanAmount, 0);
+   const percent = loanAmount > 0 ? Math.round((profit / loanAmount) * 100) : 0;
+
+   return (
+      <button
+         type="button"
+         onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            flip();
+         }}
+         className="flex flex-col gap-1 text-left [perspective:300px]"
+      >
+         <FlipFace
+            flipped={flipped}
+            front={
+               <span className="flex flex-col gap-1">
+                  <span className="text-md-b3 font-medium text-[#585858]">Get back USDC</span>
+                  <span className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">
+                     ${formatCurrency(totalRepaymentAmount)}
+                  </span>
+               </span>
+            }
+            back={
+               <span className="flex flex-col gap-1">
+                  <span className="text-md-b3 font-medium text-[#585858]">Your profit {percent}%</span>
+                  <span className="text-[20px] leading-[1.2] tracking-[-0.04em] font-semibold text-md-green-600">
+                     +${formatCurrency(profit)}
+                  </span>
+               </span>
+            }
+         />
+      </button>
    );
 }
