@@ -8,9 +8,12 @@ export function useTapFlip(ms = 3000) {
    const [flipped, setFlipped] = useState(false);
    const timerRef = useRef<number | null>(null);
 
-   useEffect(() => () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-   }, []);
+   useEffect(
+      () => () => {
+         if (timerRef.current) window.clearTimeout(timerRef.current);
+      },
+      []
+   );
 
    const flip = useCallback(() => {
       if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -43,9 +46,12 @@ export function useReplayClass<T extends HTMLElement>() {
    const ref = useRef<T | null>(null);
    const timerRef = useRef<number | null>(null);
 
-   useEffect(() => () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-   }, []);
+   useEffect(
+      () => () => {
+         if (timerRef.current) window.clearTimeout(timerRef.current);
+      },
+      []
+   );
 
    const play = useCallback((className: string) => {
       const el = ref.current;
