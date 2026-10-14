@@ -370,6 +370,7 @@ export const filipinoCoverageG: Record<string, string> = {
    "Couldn't book that time. Try again, or contact support.": 'Hindi ma-book ang oras na iyan. Subukan ulit, o makipag-ugnayan sa support.',
    "You're booked with": 'Naka-book ka na kasama',
    'the Moodeng team': 'ang Moodeng team',
+   'George or Emma': 'George o Emma',
    "You've missed two calls, so booking is paused for a week.":
       'Dalawang call na ang na-miss mo, kaya naka-pause ang booking nang isang linggo.',
    'You can pick a new time from': 'Puwede kang pumili ng bagong oras simula',

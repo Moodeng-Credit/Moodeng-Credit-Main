@@ -81,7 +81,8 @@ export const sendBookedMessenger = (u: CallUser) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    // Emma's "Confirm the initial meeting" script, with this booking's own join link.
-   const withWhom = u.video_call_host === 'emma' ? 'Emma Moodeng' : 'the Moodeng team';
+   // Every call sits on Emma's calendar with George invited, and whoever's free takes it.
+   const withWhom = 'George or Emma from Moodeng';
    const link = u.video_call_join_url
       ? `You can join from your computer, tablet or phone:\n${u.video_call_join_url}`
       : 'The join link is in your email.';

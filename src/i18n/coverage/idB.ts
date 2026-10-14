@@ -906,6 +906,7 @@ export const indonesianCoverageB: Record<string, string> = {
       'Sapa singkat lewat video dengan tim Moodeng — lihat cara kerja Moodeng dan tanyakan apa saja.',
    "You're booked with": 'Jadwalmu sudah terpesan dengan',
    'the Moodeng team': 'tim Moodeng',
+   'George or Emma': 'George atau Emma',
    'Zoom link by email · reminder on Messenger': 'Tautan Zoom lewat email · pengingat di Messenger',
    'Google Calendar': 'Google Kalender',
    'Finding open times…': 'Mencari waktu yang tersedia…',

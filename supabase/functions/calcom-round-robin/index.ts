@@ -16,8 +16,8 @@ import { needsPreKycGate } from '../_shared/preKycGate.ts';
 //
 // Two actions (POST JSON): { action: 'slots', timeZone } returns the merged available start times;
 // { action: 'book', start, timeZone } books the slot and stamps users.video_call_scheduled_at.
-// Optional { host: 'emma' | 'george' } on both pins the call to one host — referred borrowers book
-// Emma's exchange-setup call (how to deposit and repay locally) instead of the round-robin.
+// Calls are booked on CALL_HOST's calendar (Emma, 2026-10-14) with the other cofounder as a guest;
+// optional { host: 'emma' | 'george' } on both pins a different host.
 // verify_jwt is on, so only a signed-in borrower can call it; we take their identity from the JWT,
 // never from the body, so nobody can book as someone else. The host Cal.com API keys live only in
 // this function's env, never in the client.
@@ -35,6 +35,9 @@ const HOSTS = [
 ].filter((h) => h.apiKey);
 
 const CAL_BASE = 'https://api.cal.com/v2';
+
+// Whose calendar (open hours + Zoom) every call is booked on unless the request pins another host.
+const CALL_HOST = 'emma';
 
 // When the team takes calls, whatever Cal.com says (George, 2026-10-13, both hosts). Local wall-clock time
 // in CALL_TIME_ZONE, by weekday (0 = Sunday). A slot is offered only if the whole call fits inside a
@@ -242,14 +245,14 @@ serve(async (req) => {
    }
    if (resolved.length === 0) return json({ error: 'no_events' }, 500);
 
-   // Pinned host (e.g. Emma for referred borrowers): only that host's calendar is offered/booked.
-   // If that host isn't configured (no API key / event type), fall back to the whole team rather
-   // than leave the borrower unable to book at all — and log it so it gets fixed.
-   if (payload.host) {
-      const pinned = resolved.filter((h) => h.id === payload.host);
-      if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
-      else console.error(`calcom-round-robin: host '${payload.host}' not configured — falling back to round-robin`);
-   }
+   // Every call goes on one host's calendar — Emma's by default, whose Cal.com makes the calls on the
+   // shared support@ Zoom (George's made Cal Video links) — and the other cofounder is invited as a
+   // guest, so whoever's free joins. If that host isn't configured (no API key / event type), fall
+   // back to the whole team rather than leave the borrower unable to book — and log it to get fixed.
+   const bookingHost = payload.host || CALL_HOST;
+   const pinned = resolved.filter((h) => h.id === bookingHost);
+   if (pinned.length > 0) resolved.splice(0, resolved.length, ...pinned);
+   else console.error(`calcom-round-robin: host '${bookingHost}' not configured — falling back to round-robin`);
 
    // Two strikes: repeat no-shows wait a week before they can take another slot from the hosts.
    // Gated flows record a no-show on the access request; the open flow only on the user, so both
