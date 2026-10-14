@@ -15,7 +15,7 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
-import { detectInAppBrowser, openInSafari } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, openInSafari, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -164,6 +164,14 @@ export default function ContactsStep({
       !androidMessenger && isIOSBrowser() && inAppInfo.isInApp && inAppInfo.appName !== null && inAppInfo.appName !== 'Messenger';
    const codeFirstMessenger = androidMessenger || iosInAppMessenger;
    const iosMessenger = !androidMessenger && !iosInAppMessenger && isIOSBrowser();
+   const iosInAppCardShown = iosInAppMessenger && Boolean(messengerLink) && !messengerVerified && Boolean(messengerCode);
+   // The card explains the in-app browser and offers Safari itself, so the global banner would only
+   // cover it (it hid the Safari button and the steps in the 2026-10-14 preview).
+   useEffect(() => {
+      if (!iosInAppCardShown) return;
+      setInAppNoticeHidden(true);
+      return () => setInAppNoticeHidden(false);
+   }, [iosInAppCardShown]);
    // Computers: a QR for the phone plus copy-and-paste here (see isDesktopBrowser, DesktopMessengerCard).
    const desktopMessenger = !androidMessenger && !iosMessenger && isDesktopBrowser();
    // iOS: a code + m.me link ready before the tap (see isIOSBrowser above).
@@ -720,14 +728,29 @@ export default function ContactsStep({
                      <b>1.</b>
                      <span>Tap the blue button. Our chat opens in Messenger.</span>
                   </li>
-                  <li className="flex gap-2">
-                     <b>2.</b>
-                     <span>Tap Get Started, or send us a message. We connect you automatically.</span>
-                  </li>
-                  <li className="flex gap-2">
-                     <b>3.</b>
-                     <span>Not green after a minute? Paste the code (already copied) and send it.</span>
-                  </li>
+                  {iosInAppMessenger ? (
+                     <>
+                        <li className="flex gap-2">
+                           <b>2.</b>
+                           <span>Paste the code (already copied) and send it. We confirm you automatically.</span>
+                        </li>
+                        <li className="flex gap-2">
+                           <b>3.</b>
+                           <span>Messenger didn&apos;t open? Open the Messenger app, search Moodeng Credit, and paste the code there.</span>
+                        </li>
+                     </>
+                  ) : (
+                     <>
+                        <li className="flex gap-2">
+                           <b>2.</b>
+                           <span>Tap Get Started, or send us a message. We connect you automatically.</span>
+                        </li>
+                        <li className="flex gap-2">
+                           <b>3.</b>
+                           <span>Not green after a minute? Paste the code (already copied) and send it.</span>
+                        </li>
+                     </>
+                  )}
                </ol>
                <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
                   <Loader2 aria-hidden="true" className="size-5 shrink-0 animate-spin text-[#6b55f7]" strokeWidth={2.5} />

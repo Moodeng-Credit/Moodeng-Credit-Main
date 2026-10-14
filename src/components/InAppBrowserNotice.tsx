@@ -4,7 +4,14 @@ import posthog from 'posthog-js';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
 
-import { detectInAppBrowser, type InAppBrowserInfo, openInSafari, openInSystemBrowser, watchForFailedHandOff } from '@/lib/inAppBrowser';
+import {
+   detectInAppBrowser,
+   type InAppBrowserInfo,
+   openInSafari,
+   openInSystemBrowser,
+   watchForFailedHandOff,
+   watchInAppNoticeHidden
+} from '@/lib/inAppBrowser';
 
 const DISMISS_KEY = 'moodeng_inapp_notice_dismissed';
 
@@ -46,6 +53,8 @@ function rememberDismissed(): void {
 export default function InAppBrowserNotice(): JSX.Element | null {
    const [info, setInfo] = useState<InAppBrowserInfo | null>(null);
    const [dismissed, setDismissed] = useState(false);
+   // Hidden while a screen shows its own help for this (see setInAppNoticeHidden).
+   const [hiddenByScreen, setHiddenByScreen] = useState(false);
    const [copied, setCopied] = useState(false);
    // Android only: we tried to hand off to Chrome and the page is still here (Facebook's in-app
    // browser ignores the intent link). Switch to step-by-step "⋮ → Open in Chrome" instructions.
@@ -65,10 +74,14 @@ export default function InAppBrowserNotice(): JSX.Element | null {
    useEffect(() => {
       setInfo(detectInAppBrowser());
       setDismissed(wasDismissed());
-      return () => stopWatchingRef.current?.();
+      const unwatch = watchInAppNoticeHidden(setHiddenByScreen);
+      return () => {
+         unwatch();
+         stopWatchingRef.current?.();
+      };
    }, []);
 
-   if (!info?.isInApp || dismissed) return null;
+   if (!info?.isInApp || dismissed || hiddenByScreen) return null;
 
    const appLabel = info.appName ?? 'this app';
 
