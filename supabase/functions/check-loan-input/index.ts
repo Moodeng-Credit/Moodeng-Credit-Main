@@ -74,15 +74,26 @@ type Kind = 'reason' | 'profession' | 'situation';
 // so example words are given in English and every flagged hint ends by asking for an English answer.
 // Before: every hint was English, often a bare question, and people who couldn't tell what was wrong
 // kept resubmitting (8 of 16 borrowers needed 3+ tries).
-const HINT_LANGUAGES: Record<string, { name: string; answerInEnglish: string }> = {
-   en: { name: 'simple English (8th-grade level)', answerInEnglish: '' },
+// `sample` shows the model the language to write in: on real DeepSeek, a Bahasa user who typed in
+// English got an English explanation until it had a sample to follow.
+const HINT_LANGUAGES: Record<string, { name: string; answerInEnglish: string; sample: string }> = {
+   en: { name: 'simple English (8th-grade level)', answerInEnglish: '', sample: '' },
    fil: {
       name: 'natural, simple Taglish — everyday Tagalog mixed with English, like a friendly ate or kuya (8th-grade level)',
-      answerInEnglish: 'Sagutin sa English.'
+      answerInEnglish: 'Sagutin sa English.',
+      sample: 'Kailangan malaman ng lenders kung saan mapupunta ang pera.'
    },
-   id: { name: 'simple, friendly Bahasa Indonesia', answerInEnglish: 'Jawab dalam bahasa Inggris.' },
-   th: { name: 'simple, friendly Thai', answerInEnglish: 'ตอบเป็นภาษาอังกฤษ' },
-   vi: { name: 'simple, friendly Vietnamese', answerInEnglish: 'Hãy trả lời bằng tiếng Anh.' }
+   id: {
+      name: 'simple, friendly Bahasa Indonesia',
+      answerInEnglish: 'Jawab dalam bahasa Inggris.',
+      sample: 'Pemberi pinjaman perlu tahu uangnya akan dipakai untuk apa.'
+   },
+   th: { name: 'simple, friendly Thai', answerInEnglish: 'ตอบเป็นภาษาอังกฤษ', sample: 'ผู้ให้กู้ต้องรู้ว่าเงินจะนำไปใช้ทำอะไร' },
+   vi: {
+      name: 'simple, friendly Vietnamese',
+      answerInEnglish: 'Hãy trả lời bằng tiếng Anh.',
+      sample: 'Người cho vay cần biết số tiền sẽ được dùng vào việc gì.'
+   }
 };
 
 const hintLanguageNote = (locale: string, kind: Kind) => {
@@ -97,13 +108,14 @@ const hintLanguageNote = (locale: string, kind: Kind) => {
 - For "vague": say lenders need to know exactly what the money is for, ask about what they started to say, and give 2–3 example details as short ENGLISH phrases in quotes, e.g. Which bills? "electricity bill", "water bill", "rent".
 - For "placeholder": say it looks like random or test text and lenders need their real reason; give 2 English example phrases.
 - If the text looks cut off mid-sentence: kindly say to finish the sentence and say what the money is for.
-- For "not_english": say lenders only read English, so the reason must be written in English; give a short English sentence starter in quotes, e.g. "I need this loan to pay for ...". Do NOT translate their text.
+- For "not_english": say lenders only read English, so the reason must be written in English; give only the open-ended English starter "I need this loan to pay for ..." — never fill in what their money is for, not even partly. Do NOT translate their text.
 - For "not_allowed": say kindly which purpose we can't fund and why, in one sentence.
 - For "tip": one short optional tip.
 - "suggestion" stays in English, and is empty for "not_english".`
          : '';
    return `
-HINT LANGUAGE AND STYLE: Write "hint" in ${language.name}. At most 2 short sentences plus the examples, friendly, never blaming, no jargon. Keep example phrases in English.${reasonRules}${endWith}`;
+HINT LANGUAGE AND STYLE: Write "hint" in ${language.name} — even when the borrower wrote in English or in another language.${language.sample ? ` Write it in that language like this sample sentence: "${language.sample}". Only the example phrases in quotes stay in English.` : ''} At most 2 short sentences plus the examples, friendly, never blaming, no jargon. Keep example phrases in English.${reasonRules}
+- Never invent facts in "suggestion": if they wrote "bills", the suggestion says "bills", not which bills.${endWith}`;
 };
 
 // Each field the borrower types gets its own rubric. The shared goal: is the input
@@ -157,7 +169,10 @@ const KINDS: ReadonlySet<string> = new Set<Kind>(['reason', 'profession', 'situa
 // stopped on submit again and again. Same model with thinking ON, which reasons before answering —
 // slower and pricier, so it only runs for these few. It sees their earlier attempts, lets the reason
 // through when it really does say what the money is for, and otherwise explains exactly what's missing.
-const SECOND_OPINION_TIMEOUT_MS = 25000;
+// Measured on real DeepSeek (2026-10-14): second opinions took 2–12s, one ran past 25s. The quick
+// check runs at the same time, so if the second opinion isn't back in 10s the borrower gets the quick
+// verdict instead of waiting.
+const SECOND_OPINION_TIMEOUT_MS = 10000;
 const SECOND_OPINION_MODEL_LABEL = `${DEEPSEEK_MODEL}+thinking`;
 
 type Attempt = { text: string; hint: string };
@@ -167,7 +182,7 @@ SECOND OPINION: You are the senior reviewer. This borrower has already been aske
 ${history.map((a, i) => `${i + 1}. "${a.text}" -> told: "${a.hint}"`).join('\n')}
 
 - Judge only the latest input. Be fair: if it tells a lender what the money is for, it is "good" or "tip" — say so, even if an earlier check flagged something similar. Only flag it if there is really a problem a lender would mind.
-- If you do flag it, the hint must be clearer than before: briefly acknowledge they've tried, say exactly what is still missing in plain words, and give one example sentence built from THEIR words, in English in quotes. Never translate a non-English reason for them; for "not_english", give an English sentence starter instead.`;
+- If you do flag it, the hint must be clearer than before: briefly acknowledge they've tried, say exactly what is still missing in plain words, and give one example sentence built from THEIR words, in English in quotes. Never translate a non-English reason for them, not even partly: for "not_english", give only the starter "I need this loan to pay for ..." and never fill in their purpose (on real DeepSeek, "Saya butuh uang untuk bayar listrik" got the example "I need this loan to pay for electricity." — that is a translation).`;
 
 /** One DeepSeek call. Returns the parsed verdict, or why it couldn't be had. */
 const askDeepSeek = async ({
@@ -183,34 +198,52 @@ const askDeepSeek = async ({
    thinking: boolean;
    timeoutMs: number;
 }): Promise<{ verdict: RawVerdict | null; failure?: 'unreachable' | 'error' | 'parse'; status?: number }> => {
+   // The timer covers the whole answer: DeepSeek starts responding at once and keeps the connection
+   // open while it thinks, so a timer cleared when the response starts never fired (a 10s second
+   // opinion ran 19s on real DeepSeek).
    const ctrl = new AbortController();
    const timeout = setTimeout(() => ctrl.abort(), timeoutMs);
-   let aiRes: Response;
    try {
-      aiRes = await fetch('https://api.deepseek.com/chat/completions', {
-         method: 'POST',
-         signal: ctrl.signal,
-         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-         body: JSON.stringify({
-            model: DEEPSEEK_MODEL,
-            // Thinking is on by default. The quick check is a one-line classification, so it skips it;
-            // the second opinion keeps it, with room for the reasoning before the JSON answer.
-            thinking: { type: thinking ? 'enabled' : 'disabled' },
-            ...(thinking ? {} : { temperature: 0 }),
-            max_tokens: thinking ? 4000 : 400,
-            response_format: { type: 'json_object' },
-            messages: [
-               { role: 'system', content: systemPrompt },
-               { role: 'user', content: userContent }
-            ]
-         })
-      });
+      return await readDeepSeek({ apiKey, systemPrompt, userContent, thinking, signal: ctrl.signal });
    } catch (err) {
       console.error('check-loan-input: DeepSeek fetch failed', { thinking, err: String(err) });
       return { verdict: null, failure: 'unreachable' };
    } finally {
       clearTimeout(timeout);
    }
+};
+
+const readDeepSeek = async ({
+   apiKey,
+   systemPrompt,
+   userContent,
+   thinking,
+   signal
+}: {
+   apiKey: string;
+   systemPrompt: string;
+   userContent: string;
+   thinking: boolean;
+   signal: AbortSignal;
+}): Promise<{ verdict: RawVerdict | null; failure?: 'unreachable' | 'error' | 'parse'; status?: number }> => {
+   const aiRes = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      signal,
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+         model: DEEPSEEK_MODEL,
+         // Thinking is on by default. The quick check is a one-line classification, so it skips it;
+         // the second opinion keeps it, with room for the reasoning before the JSON answer.
+         thinking: { type: thinking ? 'enabled' : 'disabled' },
+         ...(thinking ? {} : { temperature: 0 }),
+         max_tokens: thinking ? 4000 : 400,
+         response_format: { type: 'json_object' },
+         messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userContent }
+         ]
+      })
+   });
    if (!aiRes.ok) {
       console.error('check-loan-input: DeepSeek error', aiRes.status, await aiRes.text());
       return { verdict: null, failure: 'error', status: aiRes.status };
@@ -301,7 +334,11 @@ serve(async (req) => {
          .map((a) => ({ text: a.text.slice(0, 200), hint: typeof a.hint === 'string' ? a.hint.slice(0, 200) : '' }));
       let verdict: RawVerdict | null = null;
       let escalated = false;
-      if (kind === 'reason' && body.escalate === true) {
+      const wantsSecondOpinion = kind === 'reason' && body.escalate === true;
+      // Started together with the second opinion (not after it), so a slow or failed second opinion
+      // costs no extra wait.
+      const quickCall = askDeepSeek({ apiKey, systemPrompt, userContent, thinking: false, timeoutMs: AI_TIMEOUT_MS });
+      if (wantsSecondOpinion) {
          const second = await askDeepSeek({
             apiKey,
             systemPrompt: `${systemPrompt}\n${secondOpinionNote(history)}`,
@@ -314,7 +351,7 @@ serve(async (req) => {
       }
 
       if (!verdict) {
-         const quick = await askDeepSeek({ apiKey, systemPrompt, userContent, thinking: false, timeoutMs: AI_TIMEOUT_MS });
+         const quick = await quickCall;
          if (quick.failure === 'error') {
             // Debounced ping to the admin KYC group — this check fails open, so
             // without the alert nobody would ever notice it's off.
