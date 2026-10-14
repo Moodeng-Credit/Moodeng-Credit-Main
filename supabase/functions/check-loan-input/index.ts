@@ -153,6 +153,79 @@ Examples:
 
 const KINDS: ReadonlySet<string> = new Set<Kind>(['reason', 'profession', 'situation']);
 
+// Second opinion for a borrower who is stuck: their reason was flagged on 2+ attempts, or they were
+// stopped on submit again and again. Same model with thinking ON, which reasons before answering —
+// slower and pricier, so it only runs for these few. It sees their earlier attempts, lets the reason
+// through when it really does say what the money is for, and otherwise explains exactly what's missing.
+const SECOND_OPINION_TIMEOUT_MS = 25000;
+const SECOND_OPINION_MODEL_LABEL = `${DEEPSEEK_MODEL}+thinking`;
+
+type Attempt = { text: string; hint: string };
+
+const secondOpinionNote = (history: Attempt[]) => `
+SECOND OPINION: You are the senior reviewer. This borrower has already been asked to fix their reason ${history.length} time(s) and may be frustrated. Earlier attempts and what they were told:
+${history.map((a, i) => `${i + 1}. "${a.text}" -> told: "${a.hint}"`).join('\n')}
+
+- Judge only the latest input. Be fair: if it tells a lender what the money is for, it is "good" or "tip" — say so, even if an earlier check flagged something similar. Only flag it if there is really a problem a lender would mind.
+- If you do flag it, the hint must be clearer than before: briefly acknowledge they've tried, say exactly what is still missing in plain words, and give one example sentence built from THEIR words, in English in quotes. Never translate a non-English reason for them; for "not_english", give an English sentence starter instead.`;
+
+/** One DeepSeek call. Returns the parsed verdict, or why it couldn't be had. */
+const askDeepSeek = async ({
+   apiKey,
+   systemPrompt,
+   userContent,
+   thinking,
+   timeoutMs
+}: {
+   apiKey: string;
+   systemPrompt: string;
+   userContent: string;
+   thinking: boolean;
+   timeoutMs: number;
+}): Promise<{ verdict: RawVerdict | null; failure?: 'unreachable' | 'error' | 'parse'; status?: number }> => {
+   const ctrl = new AbortController();
+   const timeout = setTimeout(() => ctrl.abort(), timeoutMs);
+   let aiRes: Response;
+   try {
+      aiRes = await fetch('https://api.deepseek.com/chat/completions', {
+         method: 'POST',
+         signal: ctrl.signal,
+         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            model: DEEPSEEK_MODEL,
+            // Thinking is on by default. The quick check is a one-line classification, so it skips it;
+            // the second opinion keeps it, with room for the reasoning before the JSON answer.
+            thinking: { type: thinking ? 'enabled' : 'disabled' },
+            ...(thinking ? {} : { temperature: 0 }),
+            max_tokens: thinking ? 4000 : 400,
+            response_format: { type: 'json_object' },
+            messages: [
+               { role: 'system', content: systemPrompt },
+               { role: 'user', content: userContent }
+            ]
+         })
+      });
+   } catch (err) {
+      console.error('check-loan-input: DeepSeek fetch failed', { thinking, err: String(err) });
+      return { verdict: null, failure: 'unreachable' };
+   } finally {
+      clearTimeout(timeout);
+   }
+   if (!aiRes.ok) {
+      console.error('check-loan-input: DeepSeek error', aiRes.status, await aiRes.text());
+      return { verdict: null, failure: 'error', status: aiRes.status };
+   }
+   const data = await aiRes.json();
+   const content: string = data?.choices?.[0]?.message?.content ?? '';
+   const verdict = parseVerdict(content);
+   if (!verdict) {
+      // Log finish_reason so we can tell truncation ('length') from an empty/garbled body.
+      console.error('check-loan-input: unparseable AI content', JSON.stringify({ thinking, finishReason: data?.choices?.[0]?.finish_reason, content }));
+      return { verdict: null, failure: 'parse' };
+   }
+   return { verdict };
+};
+
 // Who is asking, from the JWT the gateway already verified (verify_jwt = true), so no extra
 // auth round trip. Anonymous calls (anon key) have no subject.
 const callerUserId = (req: Request): string | null => {
@@ -178,12 +251,13 @@ const recordCheck = async (row: {
    category: string | null;
    hint: string;
    suggestion: string;
+   model?: string;
 }) => {
    try {
       const url = Deno.env.get('SUPABASE_URL');
       const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       if (!url || !key) return;
-      const { error } = await createClient(url, key).from('loan_input_checks').insert({ ...row, model: DEEPSEEK_MODEL });
+      const { error } = await createClient(url, key).from('loan_input_checks').insert({ ...row, model: row.model ?? DEEPSEEK_MODEL });
       if (error) console.error('check-loan-input: failed to record check', error.message);
    } catch (err) {
       console.error('check-loan-input: failed to record check', err);
@@ -201,7 +275,14 @@ serve(async (req) => {
          return jsonResponse({ ok: true, skipped: 'no_api_key' });
       }
 
-      const body = (await req.json().catch(() => ({}))) as { text?: string; reason?: string; kind?: Kind; locale?: string };
+      const body = (await req.json().catch(() => ({}))) as {
+         text?: string;
+         reason?: string;
+         kind?: Kind;
+         locale?: string;
+         escalate?: boolean;
+         history?: Attempt[];
+      };
       // Accept `text` (new) or `reason` (back-compat); default to the reason rubric.
       const text = (body.text ?? body.reason ?? '').trim();
       const kind: Kind = body.kind && KINDS.has(body.kind) ? body.kind : 'reason';
@@ -211,56 +292,38 @@ serve(async (req) => {
       const systemPrompt = `${basePrompt}\n${hintLanguageNote(locale, kind)}`;
       if (!text) return jsonResponse({ ok: false, hint: 'Add a bit more so lenders can understand.' });
 
-      const ctrl = new AbortController();
-      const timeout = setTimeout(() => ctrl.abort(), AI_TIMEOUT_MS);
-      let aiRes: Response;
-      try {
-         aiRes = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            signal: ctrl.signal,
-            headers: {
-               Authorization: `Bearer ${apiKey}`,
-               'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-               model: DEEPSEEK_MODEL,
-               // Thinking is on by default; this is a one-line classification, so skip it.
-               thinking: { type: 'disabled' },
-               temperature: 0,
-               // Headroom for the hint and suggestion so the JSON never truncates.
-               max_tokens: 400,
-               response_format: { type: 'json_object' },
-               messages: [
-                  { role: 'system', content: systemPrompt },
-                  { role: 'user', content: `Input: "${text}"` }
-               ]
-            })
+      const userContent = `Input: "${text}"`;
+
+      // Stuck borrower: try the second opinion first; if it fails or times out, fall back to the quick check.
+      const history = (Array.isArray(body.history) ? body.history : [])
+         .filter((a): a is Attempt => typeof a?.text === 'string')
+         .slice(-5)
+         .map((a) => ({ text: a.text.slice(0, 200), hint: typeof a.hint === 'string' ? a.hint.slice(0, 200) : '' }));
+      let verdict: RawVerdict | null = null;
+      let escalated = false;
+      if (kind === 'reason' && body.escalate === true) {
+         const second = await askDeepSeek({
+            apiKey,
+            systemPrompt: `${systemPrompt}\n${secondOpinionNote(history)}`,
+            userContent,
+            thinking: true,
+            timeoutMs: SECOND_OPINION_TIMEOUT_MS
          });
-      } catch (err) {
-         // Timeout or network error — never block the borrower.
-         console.error('check-loan-input: DeepSeek fetch failed', err);
-         return jsonResponse({ ok: true, skipped: 'ai_unreachable' }); // fail open
-      } finally {
-         clearTimeout(timeout);
+         verdict = second.verdict;
+         escalated = verdict !== null;
       }
 
-      if (!aiRes.ok) {
-         console.error('check-loan-input: DeepSeek error', aiRes.status, await aiRes.text());
-         // Debounced ping to the admin KYC group — this check fails open, so
-         // without the alert nobody would ever notice it's off.
-         await alertDeepSeekFailure('check-loan-input', aiRes.status);
-         return jsonResponse({ ok: true, skipped: 'ai_error' }); // fail open
-      }
-
-      const data = await aiRes.json();
-      const content: string = data?.choices?.[0]?.message?.content ?? '';
-      const finishReason: string = data?.choices?.[0]?.finish_reason ?? '';
-
-      const verdict = parseVerdict(content);
       if (!verdict) {
-         // Log finish_reason so we can tell truncation ('length') from an empty/garbled body.
-         console.error('check-loan-input: unparseable AI content', JSON.stringify({ finishReason, content }));
-         return jsonResponse({ ok: true, skipped: 'parse_error' }); // fail open
+         const quick = await askDeepSeek({ apiKey, systemPrompt, userContent, thinking: false, timeoutMs: AI_TIMEOUT_MS });
+         if (quick.failure === 'error') {
+            // Debounced ping to the admin KYC group — this check fails open, so
+            // without the alert nobody would ever notice it's off.
+            await alertDeepSeekFailure('check-loan-input', quick.status ?? 0);
+            return jsonResponse({ ok: true, skipped: 'ai_error' }); // fail open
+         }
+         if (quick.failure === 'unreachable') return jsonResponse({ ok: true, skipped: 'ai_unreachable' }); // fail open
+         if (quick.failure === 'parse' || !quick.verdict) return jsonResponse({ ok: true, skipped: 'parse_error' }); // fail open
+         verdict = quick.verdict;
       }
 
       const userId = callerUserId(req);
@@ -275,9 +338,18 @@ serve(async (req) => {
          const hint = category === 'good' ? '' : (verdict.hint ?? '').trim() || (ok ? '' : 'Tell lenders what the money will be used for.');
          // No English translation for a non-English reason: writing it in English is part of the screening.
          const suggestion = category === 'good' || category === 'not_english' ? '' : (verdict.suggestion ?? '').trim().slice(0, 200);
-         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category, locale }));
-         await recordCheck({ user_id: userId, kind, text, ok, category, hint, suggestion });
-         return jsonResponse({ ok, category, hint, suggestion });
+         console.log(JSON.stringify({ evt: 'loan_input_verdict', kind, len: text.length, ok, category, locale, escalated }));
+         await recordCheck({
+            user_id: userId,
+            kind,
+            text,
+            ok,
+            category,
+            hint,
+            suggestion,
+            model: escalated ? SECOND_OPINION_MODEL_LABEL : DEEPSEEK_MODEL
+         });
+         return jsonResponse({ ok, category, hint, suggestion, escalated });
       }
 
       const ok = verdict.ok !== false; // default to allowing unless explicitly rejected

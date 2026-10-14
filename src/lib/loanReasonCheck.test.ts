@@ -111,4 +111,23 @@ describe('loan reason check', () => {
       expect(invoke).toHaveBeenLastCalledWith('check-loan-input', { body: { text: 'pay bills', kind: 'reason', locale: 'en' } });
       expect(invoke).toHaveBeenCalledTimes(2);
    });
+
+   it('asks for a second opinion even when a quick verdict is cached, and remembers the escalated one', async () => {
+      invoke.mockResolvedValueOnce({ data: { ok: false, hint: 'Which bills?', category: 'vague' }, error: null });
+      await checkLoanReason('pay my bills this month', 'en');
+
+      invoke.mockResolvedValueOnce({ data: { ok: true, hint: '', category: 'good', escalated: true }, error: null });
+      const history = [{ text: 'need money', hint: 'What is it for?' }];
+      const second = await checkLoanReason('pay my bills this month', 'en', { history });
+
+      expect(invoke).toHaveBeenLastCalledWith('check-loan-input', {
+         body: { text: 'pay my bills this month', kind: 'reason', locale: 'en', escalate: true, history }
+      });
+      expect(second).toMatchObject({ ok: true, escalated: true });
+
+      // The escalated verdict now answers both quick and second-opinion asks without another call.
+      expect(await checkLoanReason('pay my bills this month', 'en')).toMatchObject({ ok: true, escalated: true });
+      expect(await checkLoanReason('pay my bills this month', 'en', { history })).toMatchObject({ escalated: true });
+      expect(invoke).toHaveBeenCalledTimes(2);
+   });
 });

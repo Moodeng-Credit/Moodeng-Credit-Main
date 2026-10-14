@@ -26,7 +26,12 @@ export type ReasonVerdict = {
    suggestion: string;
    /** False when the check couldn't run (offline, timeout, bad response) — we failed open. */
    checked: boolean;
+   /** True when the slower "second opinion" reviewer judged it (see `escalate`). */
+   escalated?: boolean;
 };
+
+/** An earlier attempt that was flagged, sent to the second-opinion reviewer as context. */
+export type ReasonAttempt = { text: string; hint: string };
 
 /** App language the borrower picked; the check writes its hint in it (the suggestion stays English for lenders). */
 export type ReasonCheckLocale = 'en' | 'fil' | 'id' | 'th' | 'vi';
@@ -45,18 +50,31 @@ export const getCachedReasonVerdict = (text: string, locale: ReasonCheckLocale =
  * unreachable check returns `{ ok: true, checked: false }` so the request still goes through
  * — callers use `checked` to decide whether they're allowed to *praise* the text.
  */
-export const checkLoanReason = async (text: string, locale: ReasonCheckLocale = 'en'): Promise<ReasonVerdict> => {
+export const checkLoanReason = async (
+   text: string,
+   locale: ReasonCheckLocale = 'en',
+   /**
+    * Second opinion for a borrower who is stuck (flagged repeatedly, or stopped on submit again and
+    * again): a slower reasoning model sees their earlier attempts, lets the reason through if it
+    * actually says what the money is for, and otherwise explains exactly what's missing.
+    */
+   escalation?: { history: ReasonAttempt[] }
+): Promise<ReasonVerdict> => {
    const key = normalizeKey(text, locale);
    const cached = verdicts.get(key);
-   if (cached) return cached;
+   // A quick verdict doesn't answer a request for a second opinion; an escalated one answers both.
+   if (cached && (!escalation || cached.escalated)) return cached;
 
-   const pending = inFlight.get(key);
+   const flightKey = escalation ? `${key}|second-opinion` : key;
+   const pending = inFlight.get(flightKey);
    if (pending) return pending;
 
    const request = (async (): Promise<ReasonVerdict> => {
       try {
          const { data, error } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-            body: { text: text.trim(), kind: 'reason', locale }
+            body: escalation
+               ? { text: text.trim(), kind: 'reason', locale, escalate: true, history: escalation.history.slice(-5) }
+               : { text: text.trim(), kind: 'reason', locale }
          });
          if (error || typeof data?.ok !== 'boolean') {
             // Fail open, but don't remember it — a network blip shouldn't pin a verdict for
@@ -68,7 +86,8 @@ export const checkLoanReason = async (text: string, locale: ReasonCheckLocale = 
             hint: data.hint ?? '',
             category: (data.category as ReasonCategory | undefined) ?? '',
             suggestion: data.suggestion ?? '',
-            checked: true
+            checked: true,
+            ...(data.escalated === true ? { escalated: true } : {})
          };
          verdicts.set(key, verdict);
          return verdict;
@@ -76,11 +95,11 @@ export const checkLoanReason = async (text: string, locale: ReasonCheckLocale = 
          console.error('check-loan-input (reason) failed, allowing:', error);
          return { ok: true, hint: '', category: '', suggestion: '', checked: false };
       } finally {
-         inFlight.delete(key);
+         inFlight.delete(flightKey);
       }
    })();
 
-   inFlight.set(key, request);
+   inFlight.set(flightKey, request);
    return request;
 };
 

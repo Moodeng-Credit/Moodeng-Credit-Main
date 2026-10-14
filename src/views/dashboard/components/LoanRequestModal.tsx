@@ -6,6 +6,7 @@ import {
    type KeyboardEvent,
    type PointerEvent,
    type RefObject,
+   useCallback,
    useEffect,
    useRef,
    useState
@@ -53,7 +54,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
@@ -1350,12 +1351,27 @@ export default function LoanRequestModal({
    const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
       // 'pending' = waiting for typing to settle before asking; nothing judged yet.
-      status: 'idle' | 'pending' | 'checking' | 'ok' | 'weak' | 'unavailable';
+      // 'reviewing' = the second opinion is thinking it over (see isStuck).
+      status: 'idle' | 'pending' | 'checking' | 'reviewing' | 'ok' | 'weak' | 'unavailable';
       hint: string;
       suggestion: string;
       category: ReasonCategory | '';
+      escalated?: boolean;
    }>({ status: 'idle', hint: '', suggestion: '', category: '' });
    const liveChecksUsedRef = useRef(0);
+   // Second opinion. Once a borrower is stuck — two different reasons flagged, or stopped on submit by
+   // the reason twice — the check goes to the slower reasoning reviewer with their earlier attempts. It
+   // lets a reason through that really is fine, or explains exactly what's still missing.
+   const flaggedAttemptsRef = useRef<ReasonAttempt[]>([]);
+   const blockedReasonSubmitsRef = useRef(0);
+   const currentReasonRef = useRef('');
+   const noteFlagged = useCallback((text: string, hint: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || flaggedAttemptsRef.current.some((a) => a.text === trimmed)) return;
+      flaggedAttemptsRef.current = [...flaggedAttemptsRef.current, { text: trimmed, hint }].slice(-5);
+   }, []);
+   const isStuck = useCallback(() => flaggedAttemptsRef.current.length >= 2 || blockedReasonSubmitsRef.current >= 2, []);
+   const historyExcluding = useCallback((text: string) => flaggedAttemptsRef.current.filter((a) => a.text !== text.trim()), []);
 
    const isVerified = !showVerify;
    const verifyUiState = getVerificationUiState(user);
@@ -2024,12 +2040,14 @@ export default function LoanRequestModal({
       }
 
       const cached = getCachedReasonVerdict(trimmed, reasonLocale);
-      if (cached) {
+      // A quick "weak" verdict isn't the last word for a stuck borrower: ask for the second opinion.
+      if (cached && (cached.ok || cached.escalated || !isStuck())) {
          setLiveReasonCheck({
             status: cached.ok ? 'ok' : 'weak',
             hint: cached.hint,
             suggestion: cached.suggestion,
-            category: cached.category
+            category: cached.category,
+            escalated: cached.escalated
          });
          return;
       }
@@ -2047,18 +2065,29 @@ export default function LoanRequestModal({
       const settleMs = looksUnfinished(trimmed) ? 4000 : 1500;
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
-         setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
-         const verdict = await checkLoanReason(trimmed, reasonLocale);
+         const stuck = isStuck();
+         setLiveReasonCheck({ status: stuck ? 'reviewing' : 'checking', hint: '', suggestion: '', category: '' });
+         const verdict = await checkLoanReason(trimmed, reasonLocale, stuck ? { history: historyExcluding(trimmed) } : undefined);
          if (cancelled) return;
          if (!verdict.checked) {
             setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
             return;
          }
+         if (!verdict.ok) noteFlagged(trimmed, verdict.hint);
+         if (verdict.escalated) {
+            trackLoanFormRule('loan_reason_second_opinion', {
+               passed: verdict.ok,
+               category: verdict.category,
+               attempts: flaggedAttemptsRef.current.length,
+               from: 'typing'
+            });
+         }
          setLiveReasonCheck({
             status: verdict.ok ? 'ok' : 'weak',
             hint: verdict.hint,
             suggestion: verdict.suggestion,
-            category: verdict.category
+            category: verdict.category,
+            escalated: verdict.escalated
          });
       }, settleMs);
 
@@ -2066,7 +2095,34 @@ export default function LoanRequestModal({
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale, isStuck, historyExcluding, noteFlagged]);
+   currentReasonRef.current = reason.trim();
+
+   // Stopped on submit again by the reason: get the second opinion on this same text right away.
+   const runSecondOpinion = async (text: string) => {
+      setLiveReasonCheck((prev) => ({ ...prev, status: 'reviewing' }));
+      const verdict = await checkLoanReason(text, reasonLocale, { history: historyExcluding(text) });
+      if (currentReasonRef.current !== text) return; // they've edited it since; the live check takes over
+      if (!verdict.checked) {
+         setLiveReasonCheck((prev) => ({ ...prev, status: 'weak' }));
+         return;
+      }
+      trackLoanFormRule('loan_reason_second_opinion', {
+         passed: verdict.ok,
+         category: verdict.category,
+         attempts: flaggedAttemptsRef.current.length,
+         from: 'submit'
+      });
+      setLiveReasonCheck({
+         status: verdict.ok ? 'ok' : 'weak',
+         hint: verdict.hint,
+         suggestion: verdict.suggestion,
+         category: verdict.category,
+         escalated: verdict.escalated
+      });
+      // Passed: clear the red message so the next tap goes through. Still weak: show the clearer hint.
+      setTermErrors((prev) => ({ ...prev, reason: verdict.ok ? undefined : verdict.hint || prev.reason }));
+   };
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
       const rules: Record<string, string> = {};
@@ -2107,6 +2163,9 @@ export default function LoanRequestModal({
          errors.reason =
             (liveReasonCheck.status === 'weak' && liveReasonCheck.hint) || 'Please write your reason in English so lenders can read it.';
          rules.reason = 'not_english_offline';
+      } else if (liveReasonCheck.status === 'reviewing') {
+         errors.reason = 'One moment, taking a closer look at your reason.';
+         rules.reason = 'reviewing';
       } else if (liveReasonCheck.status === 'weak') {
          // The check that ran while they typed already said this reason doesn't tell lenders what
          // the money is for. Stop here, on the step where they can fix it, not after the bio,
@@ -2116,6 +2175,11 @@ export default function LoanRequestModal({
       }
 
       setTermErrors(errors);
+      if (rules.reason && rules.reason !== 'reviewing' && rules.reason !== 'missing' && rules.reason !== 'too_short') {
+         blockedReasonSubmitsRef.current += 1;
+         noteFlagged(trimmedReason, errors.reason ?? '');
+         if (isStuck() && !liveReasonCheck.escalated) void runSecondOpinion(trimmedReason);
+      }
       if (Object.keys(rules).length > 0) {
          trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules), locale: reasonLocale });
       }
@@ -3119,6 +3183,9 @@ export default function LoanRequestModal({
                                        // fails open too.
                                        if (liveReasonCheck.status === 'unavailable' || liveReasonCheck.status === 'pending') {
                                           return <span>Short and specific helps lenders trust it.</span>;
+                                       }
+                                       if (liveReasonCheck.status === 'reviewing') {
+                                          return <span className="font-medium text-md-neutral-1200">Taking a closer look…</span>;
                                        }
                                        if (liveReasonCheck.status !== 'ok') {
                                           return <span className="font-medium text-md-neutral-1200">Checking your reason…</span>;
