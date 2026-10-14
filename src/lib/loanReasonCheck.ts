@@ -28,25 +28,21 @@ export type ReasonVerdict = {
    checked: boolean;
 };
 
-/** App language the borrower picked; the check writes its hint in it (the suggestion stays English for lenders). */
-export type ReasonCheckLocale = 'en' | 'fil' | 'id' | 'th' | 'vi';
-
-const normalizeKey = (text: string, locale: ReasonCheckLocale = 'en') => `${locale}|${text.trim().replace(/\s+/g, ' ').toLowerCase()}`;
+const normalizeKey = (text: string) => text.trim().replace(/\s+/g, ' ').toLowerCase();
 
 const verdicts = new Map<string, ReasonVerdict>();
 const inFlight = new Map<string, Promise<ReasonVerdict>>();
 
 /** Verdict already known for this text, without asking. */
-export const getCachedReasonVerdict = (text: string, locale: ReasonCheckLocale = 'en'): ReasonVerdict | undefined =>
-   verdicts.get(normalizeKey(text, locale));
+export const getCachedReasonVerdict = (text: string): ReasonVerdict | undefined => verdicts.get(normalizeKey(text));
 
 /**
  * Ask the effort check about a reason. Never throws and never blocks the borrower: an
  * unreachable check returns `{ ok: true, checked: false }` so the request still goes through
  * — callers use `checked` to decide whether they're allowed to *praise* the text.
  */
-export const checkLoanReason = async (text: string, locale: ReasonCheckLocale = 'en'): Promise<ReasonVerdict> => {
-   const key = normalizeKey(text, locale);
+export const checkLoanReason = async (text: string): Promise<ReasonVerdict> => {
+   const key = normalizeKey(text);
    const cached = verdicts.get(key);
    if (cached) return cached;
 
@@ -56,7 +52,7 @@ export const checkLoanReason = async (text: string, locale: ReasonCheckLocale = 
    const request = (async (): Promise<ReasonVerdict> => {
       try {
          const { data, error } = await getSupabaseBrowserClient().functions.invoke('check-loan-input', {
-            body: { text: text.trim(), kind: 'reason', locale }
+            body: { text: text.trim(), kind: 'reason' }
          });
          if (error || typeof data?.ok !== 'boolean') {
             // Fail open, but don't remember it — a network blip shouldn't pin a verdict for

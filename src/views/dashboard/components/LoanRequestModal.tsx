@@ -40,7 +40,6 @@ import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
-import { useOptionalLocalization } from '@/i18n/LocalizationProvider';
 import { MoreCharactersLabel } from '@/i18n/SentenceLabels';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -53,7 +52,7 @@ import type { LoanFlow } from '@/hooks/useLoanFlow';
 import type { BorrowerContextState } from '@/lib/borrowerContextFit';
 import type { LoanRequestFlowState } from '@/lib/loanRequestDraft';
 import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
-import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
+import { checkLoanReason, getCachedReasonVerdict, type ReasonCategory } from '@/lib/loanReasonCheck';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
@@ -1347,7 +1346,6 @@ export default function LoanRequestModal({
    // 'unavailable' = the check couldn't run, so we stay silent rather than praise unchecked text.
    // `suggestion` is a ready-to-post English rewrite built from their text (the translation when
    // it wasn't in English); `category` says why it was flagged, or 'tip' for a pass with advice.
-   const reasonLocale = (useOptionalLocalization()?.locale ?? 'en') as ReasonCheckLocale;
    const [liveReasonCheck, setLiveReasonCheck] = useState<{
       // 'pending' = waiting for typing to settle before asking; nothing judged yet.
       status: 'idle' | 'pending' | 'checking' | 'ok' | 'weak' | 'unavailable';
@@ -1608,7 +1606,7 @@ export default function LoanRequestModal({
       if (isCheckingBeforeVerify) return;
       setIsCheckingBeforeVerify(true);
       const verdict = await Promise.race([
-         checkLoanReason(reason.trim(), reasonLocale),
+         checkLoanReason(reason.trim()),
          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 8000))
       ]);
       setIsCheckingBeforeVerify(false);
@@ -2023,7 +2021,7 @@ export default function LoanRequestModal({
          return;
       }
 
-      const cached = getCachedReasonVerdict(trimmed, reasonLocale);
+      const cached = getCachedReasonVerdict(trimmed);
       if (cached) {
          setLiveReasonCheck({
             status: cached.ok ? 'ok' : 'weak',
@@ -2048,7 +2046,7 @@ export default function LoanRequestModal({
       const timer = window.setTimeout(async () => {
          liveChecksUsedRef.current += 1;
          setLiveReasonCheck({ status: 'checking', hint: '', suggestion: '', category: '' });
-         const verdict = await checkLoanReason(trimmed, reasonLocale);
+         const verdict = await checkLoanReason(trimmed);
          if (cancelled) return;
          if (!verdict.checked) {
             setLiveReasonCheck({ status: 'unavailable', hint: '', suggestion: '', category: '' });
@@ -2066,7 +2064,7 @@ export default function LoanRequestModal({
          cancelled = true;
          window.clearTimeout(timer);
       };
-   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code, reasonLocale]);
+   }, [reason, reasonShapeOk, reasonMeetsLength, reasonQuality.code]);
    const validateTerms = (): boolean => {
       const errors: typeof termErrors = {};
       const rules: Record<string, string> = {};
@@ -2115,7 +2113,7 @@ export default function LoanRequestModal({
 
       setTermErrors(errors);
       if (Object.keys(rules).length > 0) {
-         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules), locale: reasonLocale });
+         trackLoanFormRule('loan_form_validation_error', { ...rules, fields: Object.keys(rules) });
       }
 
       // Make sure the first problem is actually seen: if the borrower tapped submit from the
