@@ -355,6 +355,15 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).not.toContain('Turn on reminders to continue.');
       expect(container.textContent).toContain('Blocked in your browser');
       expect(container.textContent).toContain('Optional');
+
+      // Tapping the card opens the picture guide instead of a tap that can only fail.
+      const remindersCard = Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').includes('Turn on reminders'));
+      await act(async () => {
+         remindersCard?.click();
+      });
+      expect(container.querySelector('[aria-labelledby="unblock-guide-title"]')).not.toBeNull();
+      expect(container.textContent).toContain('Switch it to Allow');
+      expect(push.enable).not.toHaveBeenCalled();
    });
 
    it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {

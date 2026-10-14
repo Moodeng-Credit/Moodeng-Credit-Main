@@ -19,6 +19,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
+import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
 // Messenger line — either one is enough, since not everyone uses WhatsApp. Both are platform-only
@@ -193,13 +194,21 @@ export default function ContactsStep({
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
 
+   // Blocked: the card opens a picture guide to unblocking instead of a tap that can only fail.
+   const [showUnblockGuide, setShowUnblockGuide] = useState(false);
+   const [guideStillBlocked, setGuideStillBlocked] = useState(false);
+   useEffect(() => {
+      if (pushOn) setShowUnblockGuide(false);
+   }, [pushOn]);
+
    const handleEnablePush = async () => {
       setPushError('');
       const outcome = await push.enable();
       track('contact_push_outcome', { source, outcome });
       if (outcome === 'permission-denied') {
-         // The card's subtitle now says how to unblock, and Continue is open.
-         setPushError('');
+         // Blocked in the browser: show how to unblock (the card now opens the guide), Continue stays open.
+         setGuideStillBlocked(showUnblockGuide);
+         setShowUnblockGuide(true);
       } else if (outcome === 'permission-dismissed') {
          setPushError('Tap Allow when your phone asks, so we can remind you before your due date.');
       } else if (outcome === 'failed') {
@@ -821,12 +830,20 @@ export default function ContactsStep({
                   done={pushOn}
                   doneLabel="On"
                   icon={<BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />}
-                  onClick={() => void handleEnablePush()}
+                  onClick={() => {
+                     if (pushBlocked) {
+                        track('contact_push_guide_opened', { source });
+                        setGuideStillBlocked(false);
+                        setShowUnblockGuide(true);
+                        return;
+                     }
+                     void handleEnablePush();
+                  }}
                   subtitle={
                      push.isBusy
                         ? 'Turning on…'
                         : pushBlocked
-                          ? 'Blocked in your browser. Tap ⓘ next to moodeng.app → Notifications → Allow.'
+                          ? 'Blocked in your browser. Tap to see how to turn it on.'
                           : nudgeReminders
                           ? 'One more tap — turn on reminders and you’re through.'
                           : 'We remind you before your due date'
@@ -841,6 +858,14 @@ export default function ContactsStep({
              still reach them — so we just leave it out. */}
 
          {pushError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{pushError}</p> : null}
+
+         <NotificationsUnblockGuide
+            open={showUnblockGuide}
+            isChecking={push.isBusy}
+            stillBlocked={guideStillBlocked}
+            onCheckAgain={() => void handleEnablePush()}
+            onClose={() => setShowUnblockGuide(false)}
+         />
 
          <div className="mt-auto flex flex-col gap-1 pt-2">
             {/* Onboarding: someone who comes back here (e.g. the phone's back button from About you)
