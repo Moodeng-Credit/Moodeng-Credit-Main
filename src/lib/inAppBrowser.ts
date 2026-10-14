@@ -115,6 +115,25 @@ export function openInSystemBrowser(url: string, info?: InAppBrowserInfo): boole
    return false;
 }
 
+// A screen that already shows its own in-app-browser help (the Messenger step's code card on an
+// iPhone inside Facebook) hides the global InAppBrowserNotice, which would otherwise slide over it.
+const NOTICE_HIDDEN_EVENT = 'moodeng:inapp-notice-hidden';
+let noticeHidden = false;
+
+export function setInAppNoticeHidden(hidden: boolean): void {
+   noticeHidden = hidden;
+   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(NOTICE_HIDDEN_EVENT, { detail: hidden }));
+}
+
+/** Calls `onChange` with the current hidden state now and on every change; returns an unsubscribe. */
+export function watchInAppNoticeHidden(onChange: (hidden: boolean) => void): () => void {
+   onChange(noticeHidden);
+   if (typeof window === 'undefined') return () => {};
+   const listener = (event: Event) => onChange(Boolean((event as CustomEvent<boolean>).detail));
+   window.addEventListener(NOTICE_HIDDEN_EVENT, listener);
+   return () => window.removeEventListener(NOTICE_HIDDEN_EVENT, listener);
+}
+
 /** True when the in-app browser is Facebook's own (the Facebook app or Messenger). */
 export function isFacebookInApp(info: InAppBrowserInfo): boolean {
    return info.isInApp && (info.appName === 'Facebook' || info.appName === 'Messenger');
