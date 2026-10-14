@@ -1,7 +1,8 @@
 // Weekly social recap for the team: how the Facebook Page and its posts (our posters) did last week,
 // and how many people came to moodeng.app from Facebook / TikTok and signed up. Posted Monday morning
-// to the Telegram team group (Alerts Moodeng HQ, telegram_bot_settings.team_group_chat_id) and Discord
-// #social-media (DISCORD_SOCIAL_WEBHOOK_URL), ending with a short to-do for Emma (tag links, CTA, poster QRs).
+// to Telegram Social Media HQ (social_group_chat_id, else team_group_chat_id) and Discord
+// #social-media (DISCORD_SOCIAL_WEBHOOK_URL), then 💡 rule-based takeaways, 🚀 4 growth ideas from DeepSeek (DEEPSEEK_API_KEY;
+// skipped if it fails), and a short to-do for Emma (tag links, CTA, poster QRs).
 //
 // Facebook: FACEBOOK_PAGE_TOKEN (a Page token for FACEBOOK_PAGE_ID that doesn't expire, made from
 // George's login on the Moodeng Messaging app, 2026-10-14) — read-only use. Metrics Meta still returns
@@ -129,6 +130,48 @@ const tiktokVideos = async (apifyToken: string) => {
       link: v.webVideoUrl ?? ''
    }));
    return { videos, followers: items[0]?.authorMeta?.fans as number | undefined };
+};
+
+// 🚀 Growth ideas from DeepSeek, grounded in this week's recap text. Optional: skipped on any failure.
+const IDEAS_PROMPT = `You are a scrappy growth advisor for Moodeng Credit, a tiny microloan app (moodeng.app) for
+Filipino and Indonesian gig workers: small USDC loans (about $20 average) that build a credit level, repaid on time to unlock
+bigger loans. Team: 2-3 people, near-zero budget. Channels today: Facebook Page posts, TikTok @moodeng.credit, printed posters
+with QR codes (~$20 per 4 users), referrals ($5 + $5-10 per repaying borrower). Target cost: about $5 per repaying borrower.
+Given last week's recap, give 4 NEW, concrete ideas the team can do this week to get more sign-ups who repay.
+Rules: each idea is one or two short sentences in plain English (8th-grade level), names the channel, says the cost, and gives a
+rough expected result as a range with "(rough guess)" when it is not backed by the numbers. Prefer cheap experiments that
+produce a number we can measure next week (always with a ?src= tag). At most one idea may be a paid Facebook ad test, max $30.
+Don't repeat generic advice already in the recap (tag links, add a CTA). No markdown, no headings.
+Return JSON: {"ideas": ["...", "...", "...", "..."]}`;
+
+const growthIdeas = async (recap: string, totals: string): Promise<string[]> => {
+   const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+   if (!apiKey) return [];
+   try {
+      const res = await fetch('https://api.deepseek.com/chat/completions', {
+         method: 'POST',
+         signal: AbortSignal.timeout(60_000),
+         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            model: 'deepseek-v4-pro',
+            thinking: { type: 'disabled' },
+            temperature: 0.7,
+            max_tokens: 900,
+            response_format: { type: 'json_object' },
+            messages: [
+               { role: 'system', content: IDEAS_PROMPT },
+               { role: 'user', content: `${totals}\n\nLAST WEEK'S RECAP:\n${recap}` }
+            ]
+         })
+      });
+      if (!res.ok) throw new Error(`DeepSeek ${res.status}`);
+      const body = await res.json();
+      const ideas = JSON.parse(body.choices?.[0]?.message?.content ?? '{}').ideas;
+      return Array.isArray(ideas) ? ideas.filter((i: unknown) => typeof i === 'string' && i.trim()).slice(0, 4) : [];
+   } catch (err) {
+      console.error('social-weekly-recap: growth ideas failed', err instanceof Error ? err.message : err);
+      return [];
+   }
 };
 
 serve(async (req) => {
@@ -266,6 +309,13 @@ serve(async (req) => {
    const unknown = (bySource.get('unknown') ?? 0) + [...bySource.entries()].filter(([k]) => k.endsWith('(untagged)')).reduce((t, [, n]) => t + n, 0);
    if (signups && unknown / signups >= 0.5) tips.push(`${unknown} of ${signups} sign-ups had no ?src tag, so we can't tell which post brought them. Tag every link.`);
    if (tips.length) lines.push('', '💡 Takeaways', ...tips.map((t) => `• ${t}`));
+
+   const [{ count: accounts }, { count: fundedAll }] = await Promise.all([
+      supabase.from('users').select('id', { count: 'exact', head: true }),
+      supabase.from('loans').select('id', { count: 'exact', head: true }).eq('loan_status', 'Lent').eq('is_test', false)
+   ]);
+   const ideas = await growthIdeas(lines.join('\n'), `ALL TIME: ${accounts ?? '?'} accounts, ${fundedAll ?? '?'} loans funded.`);
+   if (ideas.length) lines.push('', '🚀 Ideas to try this week (AI, check before acting)', ...ideas.map((t, i) => `${i + 1}. ${t}`));
 
    // The weekly to-do for whoever posts (Emma), so every post and poster can be counted next week.
    lines.push(
