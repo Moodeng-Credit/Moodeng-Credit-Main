@@ -88,14 +88,14 @@ describe('VideoCallStep — free round-robin anonymous booking', () => {
       expect(bookCall).toBeTruthy();
       expect((bookCall?.[1] as { body?: { start?: string } })?.body?.start).toBe('2026-10-01T09:00:00.000Z');
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("booked with the Moodeng team");
+      expect(container.textContent).toContain("booked with George or Emma");
    });
 
    it('enables Continue on load for a borrower already booked', async () => {
       supa.state.usersRow = { video_call_scheduled_at: '2026-09-01T09:00:00Z', video_call_starts_at: '2026-09-01T09:00:00Z' };
       await render();
       expect(continueButton(container).disabled).toBe(false);
-      expect(container.textContent).toContain("booked with the Moodeng team");
+      expect(container.textContent).toContain("booked with George or Emma");
    });
 
    it('explains the one-week pause (and offers no times) after two missed calls', async () => {
