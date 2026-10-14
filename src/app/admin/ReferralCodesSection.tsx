@@ -10,9 +10,10 @@ import {
    listReferralCodes,
    logAdminAction,
    setReferralCodeActive,
+   setReferralCodeOwner,
    updateReferralCode
 } from './adminSupabase';
-
+import UserPicker from './UserPicker';
 
 const boostErrorMessage = `Boost must land the $${STARTING_CREDIT_LIMIT} start on a credit level: ${REFERRAL_BOOST_OPTIONS.map((b) => `+$${b}`).join(', ')}.`;
 
@@ -172,6 +173,33 @@ export default function ReferralCodesSection() {
       }
    }, []);
 
+   const [pickingOwnerId, setPickingOwnerId] = useState<string | null>(null);
+
+   const setOwner = useCallback(async (c: AdminReferralCode, owner: { id: string; username: string | null } | null) => {
+      setBusy(c.id);
+      setError(null);
+      try {
+         const updated = await setReferralCodeOwner(c.id, owner?.id ?? null);
+         await logAdminAction({
+            action: owner ? 'referral_code_owner_set' : 'referral_code_owner_cleared',
+            target_table: 'referral_codes',
+            target_id: c.id,
+            metadata: {
+               code: c.code,
+               owner_user_id: owner?.id ?? null,
+               owner_username: owner?.username ?? null,
+               previous_owner_user_id: c.owner_user_id
+            }
+         });
+         setCodes((prev) => prev.map((row) => (row.id === c.id ? updated : row)));
+         setPickingOwnerId(null);
+      } catch (err) {
+         setError(errorMessage(err));
+      } finally {
+         setBusy(null);
+      }
+   }, []);
+
    const [editingId, setEditingId] = useState<string | null>(null);
    const [editBoost, setEditBoost] = useState('');
    const [editMaxUses, setEditMaxUses] = useState('');
@@ -268,11 +296,7 @@ export default function ReferralCodesSection() {
             </div>
          </div>
 
-         {error ? (
-            <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">
-               {error}
-            </div>
-         ) : null}
+         {error ? <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">{error}</div> : null}
 
          <article className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
             <h4 className="text-xl font-black">New code</h4>
@@ -325,13 +349,16 @@ export default function ReferralCodesSection() {
             </div>
             {newTotalLimit != null ? (
                <p className="mt-3 rounded-xl bg-[#241044] px-3 py-2 text-base font-black text-[#cfc6dd]">
-                  New borrower total credit limit: <span className="text-white">${STARTING_CREDIT_LIMIT} start + ${Number(newBoost)} boost = ${newTotalLimit}</span>
+                  New borrower total credit limit:{' '}
+                  <span className="text-white">
+                     ${STARTING_CREDIT_LIMIT} start + ${Number(newBoost)} boost = ${newTotalLimit}
+                  </span>
                </p>
             ) : null}
             <p className="mt-2 text-sm font-medium text-[#6f6385]">
-               Leave max uses and expiry empty for a code that works forever. Expiry is end of that day, your local time. Boost is
-               the starting-limit bump in USDC — a new borrower starts at ${STARTING_CREDIT_LIMIT} and lands at $
-               {STARTING_CREDIT_LIMIT} + boost.
+               Leave max uses and expiry empty for a code that works forever. Expiry is end of that day, your local time. Boost is the
+               starting-limit bump in USDC — a new borrower starts at ${STARTING_CREDIT_LIMIT} and lands at ${STARTING_CREDIT_LIMIT} +
+               boost.
             </p>
          </article>
 
@@ -356,13 +383,24 @@ export default function ReferralCodesSection() {
                                  {c.current_uses} used{c.max_uses != null ? ` of ${c.max_uses}` : ''}
                                  {c.expires_at ? ` · expires ${new Date(c.expires_at).toLocaleDateString()}` : ''}
                               </p>
+                              <p className="mt-1 text-base font-bold text-[#cfc6dd]">
+                                 Owner:{' '}
+                                 {c.owner ? (
+                                    <span className="text-white">
+                                       {c.owner.username || 'Unnamed user'}
+                                       {c.owner.email ? (
+                                          <span className="text-sm font-medium text-[#a89bb8]"> · {c.owner.email}</span>
+                                       ) : null}
+                                    </span>
+                                 ) : (
+                                    <span className="text-[#6f6385]">not linked</span>
+                                 )}
+                              </p>
                               <p className="mt-1 text-sm font-medium text-[#6f6385]">
                                  created {new Date(c.created_at).toLocaleDateString()}
                               </p>
                            </div>
-                           <span
-                              className={`shrink-0 rounded-full px-3 py-1 text-sm font-black uppercase ${statusClass(status)}`}
-                           >
+                           <span className={`shrink-0 rounded-full px-3 py-1 text-sm font-black uppercase ${statusClass(status)}`}>
                               {status}
                            </span>
                         </div>
@@ -376,6 +414,27 @@ export default function ReferralCodesSection() {
                            >
                               {editingId === c.id ? 'Cancel' : 'Edit'}
                            </button>
+                           <button
+                              type="button"
+                              onClick={() => setPickingOwnerId(pickingOwnerId === c.id ? null : c.id)}
+                              disabled={busy === c.id}
+                              className="rounded-xl bg-[#34234f] px-4 py-2 text-base font-black text-white disabled:opacity-50"
+                           >
+                              {c.owner ? 'Change owner' : 'Link owner'}
+                           </button>
+                           {c.owner ? (
+                              <button
+                                 type="button"
+                                 onClick={() => {
+                                    if (window.confirm(`Unlink ${c.owner?.username || 'this user'} from ${c.code}?`))
+                                       void setOwner(c, null);
+                                 }}
+                                 disabled={busy === c.id}
+                                 className="rounded-xl bg-[#241044] px-4 py-2 text-base font-black text-[#cfc6dd] disabled:opacity-50"
+                              >
+                                 Unlink
+                              </button>
+                           ) : null}
                            <button
                               type="button"
                               onClick={() => toggleActive(c)}
@@ -395,6 +454,14 @@ export default function ReferralCodesSection() {
                               </button>
                            ) : null}
                         </div>
+
+                        {pickingOwnerId === c.id ? (
+                           <UserPicker
+                              disabled={busy === c.id}
+                              onPick={(u) => void setOwner(c, u)}
+                              onCancel={() => setPickingOwnerId(null)}
+                           />
+                        ) : null}
 
                         {editingId === c.id ? (
                            <div className="mt-3 rounded-xl border border-[#3d1f6e] bg-[#150730] p-4">
@@ -446,8 +513,8 @@ export default function ReferralCodesSection() {
                                  ) : null}
                               </div>
                               <p className="mt-2 text-sm font-medium text-[#6f6385]">
-                                 The code itself can&apos;t change. Empty max uses or expiry means unlimited / never expires. Expiry
-                                 is end of that day, your local time.
+                                 The code itself can&apos;t change. Empty max uses or expiry means unlimited / never expires. Expiry is end
+                                 of that day, your local time.
                               </p>
                            </div>
                         ) : null}
