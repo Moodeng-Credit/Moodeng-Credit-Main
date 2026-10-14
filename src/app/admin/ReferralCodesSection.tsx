@@ -5,12 +5,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isValidReferralBoost, REFERRAL_BOOST_OPTIONS, STARTING_CREDIT_LIMIT } from '../../config/creditTiers';
 import {
    type AdminReferralCode,
+   type AdminReferralPayout,
    createReferralCode,
    deleteReferralCode,
    listReferralCodes,
+   listReferralPayouts,
    logAdminAction,
    setReferralCodeActive,
    setReferralCodeOwner,
+   setReferralPayoutStatus,
    updateReferralCode
 } from './adminSupabase';
 import UserPicker from './UserPicker';
@@ -50,6 +53,10 @@ function statusClass(s: CodeStatus): string {
    return 'bg-amber-900/50 text-amber-300';
 }
 
+function personLabel(p: AdminReferralPayout['owner']): string {
+   return p?.display_name?.trim() || p?.username || p?.email || 'Unknown user';
+}
+
 function errorMessage(err: unknown): string {
    const anyErr = err as { code?: string; message?: string } | null;
    if (anyErr?.code === '23505') return 'That code already exists.';
@@ -59,6 +66,8 @@ function errorMessage(err: unknown): string {
 
 export default function ReferralCodesSection() {
    const [codes, setCodes] = useState<AdminReferralCode[]>([]);
+   const [payouts, setPayouts] = useState<AdminReferralPayout[]>([]);
+   const [showPaid, setShowPaid] = useState(false);
    const [loading, setLoading] = useState(false);
    const [busy, setBusy] = useState<string | null>(null);
    const [error, setError] = useState<string | null>(null);
@@ -74,7 +83,9 @@ export default function ReferralCodesSection() {
       setLoading(true);
       setError(null);
       try {
-         setCodes(await listReferralCodes());
+         const [codeRows, payoutRows] = await Promise.all([listReferralCodes(), listReferralPayouts()]);
+         setCodes(codeRows);
+         setPayouts(payoutRows);
       } catch (err) {
          setError(errorMessage(err));
       } finally {
@@ -172,6 +183,33 @@ export default function ReferralCodesSection() {
          setBusy(null);
       }
    }, []);
+
+   const setPayoutStatus = useCallback(async (p: AdminReferralPayout, status: 'unpaid' | 'paid') => {
+      setBusy(p.id);
+      setError(null);
+      try {
+         const updated = await setReferralPayoutStatus(p.id, status, status === 'paid' ? 'admin panel' : null);
+         await logAdminAction({
+            action: status === 'paid' ? 'referral_payout_paid' : 'referral_payout_unpaid',
+            target_table: 'referral_code_payouts',
+            target_id: p.id,
+            metadata: { code: p.code, owner_user_id: p.owner?.id ?? null, referred_user_id: p.referred?.id ?? null }
+         });
+         setPayouts((prev) => prev.map((row) => (row.id === p.id ? updated : row)));
+      } catch (err) {
+         setError(errorMessage(err));
+      } finally {
+         setBusy(null);
+      }
+   }, []);
+
+   const unpaidByCode = useMemo(() => {
+      const counts = new Map<string, number>();
+      for (const p of payouts) if (p.status === 'unpaid') counts.set(p.referral_code_id, (counts.get(p.referral_code_id) ?? 0) + 1);
+      return counts;
+   }, [payouts]);
+
+   const shownPayouts = useMemo(() => (showPaid ? payouts : payouts.filter((p) => p.status === 'unpaid')), [payouts, showPaid]);
 
    const [pickingOwnerId, setPickingOwnerId] = useState<string | null>(null);
 
@@ -298,6 +336,73 @@ export default function ReferralCodesSection() {
 
          {error ? <div className="rounded-2xl border border-red-900 bg-red-950/40 p-4 text-lg font-bold text-red-300">{error}</div> : null}
 
+         <article className="rounded-2xl border border-amber-700/60 bg-[#1c0a3a] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+               <h4 className="text-xl font-black">
+                  Payouts owed{' '}
+                  <span className="text-base font-bold text-amber-300">({payouts.filter((p) => p.status === 'unpaid').length} unpaid)</span>
+               </h4>
+               <button
+                  type="button"
+                  onClick={() => setShowPaid((v) => !v)}
+                  className="rounded-full bg-[#241044] px-4 py-1.5 text-sm font-black text-[#a89bb8]"
+               >
+                  {showPaid ? 'Hide paid' : 'Show paid'}
+               </button>
+            </div>
+            {shownPayouts.length ? (
+               <ul className="mt-3 space-y-2">
+                  {shownPayouts.map((p) => (
+                     <li
+                        key={p.id}
+                        className={`flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 ${p.status === 'unpaid' ? 'bg-amber-950/40' : 'bg-[#241044]'}`}
+                     >
+                        <div className="min-w-0">
+                           <p className="text-base font-black text-white">
+                              {p.status === 'unpaid' ? '💸 ' : ''}
+                              {personLabel(p.owner)}{' '}
+                              {p.status === 'unpaid' ? (
+                                 <span className="text-amber-300">needs money now — they referred a user</span>
+                              ) : (
+                                 <span className="text-emerald-300">was paid</span>
+                              )}
+                           </p>
+                           <p className="text-sm font-medium text-[#a89bb8]">
+                              <span className="font-mono font-black text-[#cfc6dd]">{p.code}</span> · referred {personLabel(p.referred)} ·{' '}
+                              {new Date(p.created_at).toLocaleDateString()}
+                              {p.status === 'paid' && p.paid_at
+                                 ? ` · paid ${new Date(p.paid_at).toLocaleDateString()}${p.paid_by ? ` by ${p.paid_by}` : ''}`
+                                 : ''}
+                           </p>
+                        </div>
+                        <div className="flex gap-2">
+                           <button
+                              type="button"
+                              onClick={() => setPayoutStatus(p, 'paid')}
+                              disabled={busy === p.id || p.status === 'paid'}
+                              className={`rounded-xl px-4 py-2 text-base font-black text-white disabled:opacity-50 ${p.status === 'paid' ? 'bg-emerald-700' : 'bg-[#8336f0]'}`}
+                           >
+                              ✅ Paid
+                           </button>
+                           <button
+                              type="button"
+                              onClick={() => setPayoutStatus(p, 'unpaid')}
+                              disabled={busy === p.id || p.status === 'unpaid'}
+                              className={`rounded-xl px-4 py-2 text-base font-black disabled:opacity-50 ${p.status === 'unpaid' ? 'bg-amber-800 text-white' : 'bg-[#34234f] text-white'}`}
+                           >
+                              ⏳ Not paid yet
+                           </button>
+                        </div>
+                     </li>
+                  ))}
+               </ul>
+            ) : (
+               <p className="mt-2 text-base font-bold text-[#6f6385]">
+                  {loading ? 'Loading…' : 'Nobody is owed right now. When someone uses a code with an owner, it shows up here and in Telegram.'}
+               </p>
+            )}
+         </article>
+
          <article className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5">
             <h4 className="text-xl font-black">New code</h4>
             <div className="mt-3 flex flex-wrap items-end gap-3">
@@ -395,6 +500,11 @@ export default function ReferralCodesSection() {
                                  ) : (
                                     <span className="text-[#6f6385]">not linked</span>
                                  )}
+                                 {unpaidByCode.get(c.id) ? (
+                                    <span className="ml-2 rounded-full bg-amber-900/60 px-2 py-0.5 text-sm font-black text-amber-300">
+                                       💸 {unpaidByCode.get(c.id)} payout{unpaidByCode.get(c.id) === 1 ? '' : 's'} owed
+                                    </span>
+                                 ) : null}
                               </p>
                               <p className="mt-1 text-sm font-medium text-[#6f6385]">
                                  created {new Date(c.created_at).toLocaleDateString()}
