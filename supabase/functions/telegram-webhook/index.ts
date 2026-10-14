@@ -28,6 +28,7 @@ import {
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
+import { buildPayoutCallback, markPayoutPaid, parsePayoutCallback } from '../_shared/referralPayouts.ts';
 import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
 import {
    closeTelegramForumTopic,
@@ -346,7 +347,8 @@ const handleLoanAccessCommand = async (supabase: SupabaseClient, message: Telegr
 
 // The inline buttons on admin cards: la: (loan-access Approve / Reject / Showed up / No-show),
 // vc: (open-flow call attendance), vo: (GrabFood voucher claim Mark sent / Reject), mv: (stuck
-// Facebook confirmation → Mark Facebook verified) and kr: (out of KYC tries → 3 more tries).
+// Facebook confirmation → Mark Facebook verified), kr: (out of KYC tries → 3 more tries) and rp:
+// (referral code owner payout ✅ Paid / ⏳ Not paid yet).
 // Honored only when the card sits in an admin channel, so a forwarded card can't be tapped from
 // anywhere else.
 //
@@ -367,13 +369,30 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
    const voucher = parsed || outcome ? null : parseVoucherCallback(query.data);
    const messenger = parsed || outcome || voucher ? null : parseMessengerVerifyCallback(query.data);
    const kycRetry = parsed || outcome || voucher || messenger ? null : parseKycRetryCallback(query.data);
-   if (!parsed && !outcome && !voucher && !messenger && !kycRetry) {
+   const payout = parsed || outcome || voucher || messenger || kycRetry ? null : parsePayoutCallback(query.data);
+   if (!parsed && !outcome && !voucher && !messenger && !kycRetry && !payout) {
       await answerCallback(query.id, 'Unknown action.');
       return;
    }
    const cardChatId = query.message?.chat.id;
    if (!cardChatId || !adminChatIds.includes(String(cardChatId))) {
       await answerCallback(query.id, 'Not allowed here.');
+      return;
+   }
+
+   // ⏳ Not paid yet: nothing to save — it stays unpaid. Keep just ✅ Paid (+ links) on the card.
+   if (payout?.decision === 'unpaid') {
+      const card = query.message;
+      const links = (card?.reply_markup?.inline_keyboard ?? []).filter((row) => row.some((b) => 'url' in b));
+      await Promise.all([
+         answerCallback(query.id, "⏳ Left as not paid yet — tap ✅ Paid once they're paid."),
+         card
+            ? setCardButtons(cardChatId, card.message_id, [
+                 [{ text: '✅ Paid', callback_data: buildPayoutCallback('paid', payout.payoutId) }],
+                 ...links
+              ])
+            : null
+      ]);
       return;
    }
 
@@ -399,6 +418,8 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
          result = await recordCallOutcome(supabase, outcome.userId, outcome.outcome, by, outcome.callKey);
       } else if (voucher) {
          result = await decideVoucherClaim(supabase, voucher.claimId, voucher.decision, by);
+      } else if (payout) {
+         result = await markPayoutPaid(supabase, payout.payoutId, by);
       } else if (messenger) {
          result = await markMessengerVerified(supabase, messenger.userId, by);
       } else {
