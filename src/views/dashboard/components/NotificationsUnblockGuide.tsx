@@ -1,10 +1,12 @@
-import { Bell, Lock, SlidersHorizontal, X } from 'lucide-react';
+import type { ReactNode } from 'react';
+
+import { Bell, Lock, Pointer, SlidersHorizontal, X } from 'lucide-react';
 
 import { GhostButton, PrimaryButton } from '@/views/dashboard/components/connectKit';
 
 // Picture guide for turning notifications back on once the browser has blocked them. One red line
 // ("Allow them for moodeng.app in your browser settings") left borrowers to find a three-level menu
-// on their own; a borrower on 2026-10-13 spent 17 minutes on it. Each step draws what they'll see.
+// on their own; a borrower on 2026-10-13 spent 17 minutes on it. Each step shows what they'll see.
 
 const isSamsungInternet = () => typeof navigator !== 'undefined' && /SamsungBrowser/i.test(navigator.userAgent);
 
@@ -16,8 +18,28 @@ function StepNumber({ n }: { n: number }) {
    );
 }
 
-/** Ring that pulses around the thing to tap in each drawing. */
-const tapRing = 'ring-2 ring-[#6b55f7] ring-offset-2 motion-safe:animate-pulse';
+/** A hand pointing at the thing to tap — so the drawing reads as "do this in your browser". */
+function TapHand({ className }: { className: string }) {
+   return (
+      <span className={`absolute motion-safe:animate-bounce ${className}`}>
+         <Pointer className="size-6 fill-white text-[#6b55f7] drop-shadow-[0_2px_2px_rgba(27,10,54,0.35)]" strokeWidth={2} />
+      </span>
+   );
+}
+
+/**
+ * A grey framed "screenshot" of the browser. Not interactive and deliberately not styled like the
+ * app's own controls: an earlier version drew a live-looking switch people would try to flip here.
+ */
+function Picture({ children }: { children: ReactNode }) {
+   return (
+      <div aria-hidden="true" className="pointer-events-none ml-10 select-none rounded-[14px] bg-[#e9e5ef] p-2 dark:bg-[#2a2235]">
+         <div className="relative rounded-[10px] bg-[#fbfafc] px-2.5 py-2 text-[13px] text-[#5f536d] dark:bg-[#1f1830] dark:text-[#b5acbe]">
+            {children}
+         </div>
+      </div>
+   );
+}
 
 export default function NotificationsUnblockGuide({
    open,
@@ -67,13 +89,15 @@ export default function NotificationsUnblockGuide({
                         Tap the icon next to the address at the top
                      </span>
                   </div>
-                  {/* The browser's address bar, as they'll see it. */}
-                  <div className="ml-10 flex h-11 items-center gap-2 rounded-full bg-[#f1eff4] px-2 dark:bg-[#241b38]">
-                     <span className={`flex size-8 items-center justify-center rounded-full bg-white dark:bg-[#17121F] ${tapRing}`}>
-                        <SiteIcon className="size-4 text-[#1b0a36] dark:text-[#F8F4FF]" strokeWidth={2.25} aria-hidden="true" />
-                     </span>
-                     <span className="text-[15px] text-[#40354f] dark:text-[#D8CEE6]">moodeng.app</span>
-                  </div>
+                  <Picture>
+                     <div className="flex h-8 items-center gap-2 rounded-full bg-[#ece9f1] px-1.5 dark:bg-[#2a2235]">
+                        <span className="flex size-6 items-center justify-center rounded-full bg-white dark:bg-[#17121F]">
+                           <SiteIcon className="size-3.5" strokeWidth={2.25} />
+                        </span>
+                        <span>moodeng.app</span>
+                     </div>
+                     <TapHand className="left-[22px] top-[26px]" />
+                  </Picture>
                </li>
 
                <li className="flex flex-col gap-2">
@@ -81,14 +105,15 @@ export default function NotificationsUnblockGuide({
                      <StepNumber n={2} />
                      <span className="text-[15px] font-semibold text-[#1b0a36] dark:text-[#F8F4FF]">Tap Notifications</span>
                   </div>
-                  <div className="ml-10 flex flex-col gap-1 rounded-[16px] border border-[#ece9f1] p-2 dark:border-[#2c2439]">
-                     <span className="px-2 text-[12px] text-[#877897]">Permissions</span>
-                     <span className={`flex items-center gap-2 rounded-[10px] px-2 py-1.5 ${tapRing}`}>
-                        <Bell className="size-4 text-[#1b0a36] dark:text-[#F8F4FF]" strokeWidth={2.25} aria-hidden="true" />
-                        <span className="text-[15px] text-[#1b0a36] dark:text-[#F8F4FF]">Notifications</span>
-                        <span className="ml-auto text-[13px] text-[#d51728]">Blocked</span>
+                  <Picture>
+                     <span className="block text-[11px] text-[#9a8fb0]">Permissions</span>
+                     <span className="mt-1 flex items-center gap-2">
+                        <Bell className="size-3.5" strokeWidth={2.25} />
+                        <span>Notifications</span>
+                        <span className="ml-auto text-[#c2414f]">Blocked</span>
                      </span>
-                  </div>
+                     <TapHand className="left-[118px] top-[32px]" />
+                  </Picture>
                </li>
 
                <li className="flex flex-col gap-2">
@@ -96,15 +121,16 @@ export default function NotificationsUnblockGuide({
                      <StepNumber n={3} />
                      <span className="text-[15px] font-semibold text-[#1b0a36] dark:text-[#F8F4FF]">Switch it to Allow</span>
                   </div>
-                  <div className="ml-10 flex items-center gap-3 rounded-[16px] border border-[#ece9f1] px-3 py-2 dark:border-[#2c2439]">
-                     <span className="text-[15px] text-[#1b0a36] dark:text-[#F8F4FF]">Allow</span>
-                     <span
-                        className={`ml-auto flex h-6 w-11 items-center justify-end rounded-full bg-[#4aa256] p-0.5 ${tapRing}`}
-                        aria-hidden="true"
-                     >
-                        <span className="size-5 rounded-full bg-white" />
+                  <Picture>
+                     <span className="flex items-center gap-2">
+                        <span>Allow</span>
+                        {/* Drawn off, with the hand on it: the step is to switch it on. */}
+                        <span className="ml-auto flex h-4 w-7 items-center rounded-full bg-[#cfc8d8] p-0.5 dark:bg-[#40354f]">
+                           <span className="size-3 rounded-full bg-white" />
+                        </span>
                      </span>
-                  </div>
+                     <TapHand className="right-[6px] top-[18px]" />
+                  </Picture>
                </li>
             </ol>
 
