@@ -111,7 +111,8 @@ describe('/auth/verify-code', () => {
       await render('/auth/verify-code?phone=%2B639171234567');
       expect(container.textContent).toContain('Check your texts');
       expect(container.textContent).toContain('0917 123 4567');
-      expect(container.textContent).toContain('Comes from SEMAPHORE or Moodeng. Never share it.');
+      expect(container.textContent).toContain('Look for a text from SEMAPHORE.');
+      expect(container.textContent).toContain('Never share it with anyone.');
       expect(container.textContent).toContain('Usually under a minute.');
       expect(container.querySelector('#verification-email')).toBeNull();
       expect((container.querySelector('#verification-code') as HTMLInputElement).placeholder).toBe('000000');
@@ -158,7 +159,7 @@ describe('/auth/verify-code', () => {
          JSON.stringify({ channel: 'sms', target: '+639171234567', mode: 'signin', sentAt, expiresAt: sentAt + 600_000, resends: 2 })
       );
       await render('/auth/verify-code?phone=%2B639171234567');
-      expect(container.textContent).toContain('Not here yet? Check your signal and Messages › Spam.');
+      expect(container.textContent).toContain('Not here yet? Look for a text from SEMAPHORE, check your signal and Messages › Spam.');
       expect(container.textContent).toContain('Get the code by email instead');
       expect(container.textContent).toContain('Message us on Messenger');
    });

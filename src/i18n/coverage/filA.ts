@@ -925,13 +925,16 @@ export const filipinoCoverageA: Record<string, string> = {
    'Too many tries': 'Sobrang daming try',
    'Create one with a code. No password needed.': 'Gumawa gamit ang code. Walang password.',
    'Check your texts': 'Tingnan ang texts mo',
-   'Comes from SEMAPHORE or Moodeng. Never share it.': 'Galing sa SEMAPHORE o Moodeng. Huwag itong ibigay kahit kanino.',
+   'Look for a text from SEMAPHORE.': 'Hanapin ang text galing sa SEMAPHORE.',
+   "That's the company that sends our codes, so it's safe to type the code here. Never share it with anyone.":
+      'Sila ang nagpapadala ng mga code namin, kaya ligtas i-type ang code dito. Huwag itong ibigay kahit kanino.',
    'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.':
       'I-type ang 8-digit code sa ibaba, o i-tap ang Confirm Email sa pinakabagong email ng Moodeng.',
    'Code from the text': 'Code mula sa text',
    'Code from the email': 'Code mula sa email',
    'Usually under a minute.': 'Kadalasan wala pang isang minuto.',
-   'Not here yet? Check your signal and Messages › Spam.': 'Wala pa? Tingnan ang signal mo at ang Messages › Spam.',
+   'Not here yet? Look for a text from SEMAPHORE, check your signal and Messages › Spam.':
+      'Wala pa? Hanapin ang text galing sa SEMAPHORE, at tingnan ang signal mo at ang Messages › Spam.',
    'Not here yet? Check Spam and Promotions.': 'Wala pa? Tingnan ang Spam at Promotions.',
    'That code is wrong. Check the latest text from Moodeng.': 'Mali ang code. Tingnan ang pinakabagong text mula sa Moodeng.',
    'That code is wrong. Check the latest email from Moodeng.': 'Mali ang code. Tingnan ang pinakabagong email mula sa Moodeng.',

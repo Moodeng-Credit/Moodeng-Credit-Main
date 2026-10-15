@@ -220,7 +220,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
       waitedSeconds < TIP_AFTER_SECONDS
          ? 'Usually under a minute.'
          : isSms
-           ? 'Not here yet? Check your signal and Messages › Spam.'
+           ? 'Not here yet? Look for a text from SEMAPHORE, check your signal and Messages › Spam.'
            : 'Not here yet? Check Spam and Promotions.';
 
    return (
@@ -310,11 +310,18 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         </div>
                      </div>
                   )}
-                  <p className="mt-2 text-sm font-medium leading-5 text-[#70617F] dark:text-[#A89BB8]">
-                     {isSms
-                        ? 'Comes from SEMAPHORE or Moodeng. Never share it.'
-                        : 'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.'}
-                  </p>
+                  {isSms ? (
+                     // Until Semaphore approves the "Moodeng" sender name, every text shows SEMAPHORE as the
+                     // sender, which reads like a scam unless we say so first.
+                     <p className="mt-3 rounded-2xl border border-[#DCC7FF] bg-[#F3EFFE] px-4 py-3 text-sm font-medium leading-5 text-[#3D2A63] dark:border-[#40354F] dark:bg-[#281b35] dark:text-[#E4D8F7]">
+                        <b>Look for a text from SEMAPHORE.</b> That&apos;s the company that sends our codes, so it&apos;s safe to
+                        type the code here. Never share it with anyone.
+                     </p>
+                  ) : (
+                     <p className="mt-2 text-sm font-medium leading-5 text-[#70617F] dark:text-[#A89BB8]">
+                        Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.
+                     </p>
+                  )}
 
                   <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                      <div className="space-y-2">

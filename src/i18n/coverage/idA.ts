@@ -1044,13 +1044,16 @@ export const indonesianCoverageA: Record<string, string> = {
    'Too many tries': 'Terlalu banyak percobaan',
    'Create one with a code. No password needed.': 'Buat dengan kode. Tanpa kata sandi.',
    'Check your texts': 'Cek SMS kamu',
-   'Comes from SEMAPHORE or Moodeng. Never share it.': 'Dari SEMAPHORE atau Moodeng. Jangan berikan ke siapa pun.',
+   'Look for a text from SEMAPHORE.': 'Cari SMS dari SEMAPHORE.',
+   "That's the company that sends our codes, so it's safe to type the code here. Never share it with anyone.":
+      'Mereka yang mengirim kode kami, jadi aman mengetik kodenya di sini. Jangan berikan ke siapa pun.',
    'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.':
       'Ketik kode 8 angka di bawah, atau ketuk Confirm Email di email Moodeng terbaru.',
    'Code from the text': 'Kode dari SMS',
    'Code from the email': 'Kode dari email',
    'Usually under a minute.': 'Biasanya kurang dari satu menit.',
-   'Not here yet? Check your signal and Messages › Spam.': 'Belum masuk? Cek sinyal dan Pesan › Spam.',
+   'Not here yet? Look for a text from SEMAPHORE, check your signal and Messages › Spam.':
+      'Belum masuk? Cari SMS dari SEMAPHORE, cek sinyal dan Pesan › Spam.',
    'Not here yet? Check Spam and Promotions.': 'Belum masuk? Cek Spam dan Promosi.',
    'That code is wrong. Check the latest text from Moodeng.': 'Kode salah. Cek SMS terbaru dari Moodeng.',
    'That code is wrong. Check the latest email from Moodeng.': 'Kode salah. Cek email terbaru dari Moodeng.',
