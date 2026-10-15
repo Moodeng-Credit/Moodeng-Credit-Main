@@ -5,6 +5,8 @@ import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
+import { PhFlag } from '@/components/auth/PhFlag';
+
 import { useResendCooldown } from '@/hooks/useResendCooldown';
 
 import {
@@ -60,7 +62,7 @@ export function pickInitialChannel(options: {
 
 /**
  * One way in for sign-up and sign-in: one field that takes a Philippine mobile number (SMS code)
- * or an email (email code). The pill on the left shows which ("📱 +63 ▾" / "✉️ ▾") and switches
+ * or an email (email code). The pill on the left shows which ("🇵🇭 +63 ▾" / "✉️ ▾") and switches
  * it; typing a letter or "@" switches to email, digits to phone. Sign-up creates the account;
  * sign-in never does. The code screen is /auth/verify-code.
  */
@@ -247,7 +249,7 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                aria-label={smsEnabled ? (isSms ? 'Using phone. Switch to email' : 'Using email. Switch to phone') : 'Email'}
                className="flex h-11 shrink-0 items-center gap-1 rounded-xl bg-[#F2EEF7] px-2.5 text-base font-semibold text-[#250650] disabled:cursor-default dark:bg-[#2A1D40] dark:text-[#F8F4FF]"
             >
-               <span aria-hidden>{isSms ? '📱' : '✉️'}</span>
+               {isSms ? <PhFlag /> : <span aria-hidden>✉️</span>}
                {isSms ? <span>+63</span> : null}
                {smsEnabled ? <ChevronDown className="h-4 w-4 text-[#70617F]" aria-hidden /> : null}
             </button>
