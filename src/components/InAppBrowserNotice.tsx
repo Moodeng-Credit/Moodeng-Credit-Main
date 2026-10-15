@@ -5,10 +5,10 @@ import posthog from 'posthog-js';
 import AskSupportButton from '@/components/support/AskSupportButton';
 
 import {
+   buildAndroidIntentUrl,
    detectInAppBrowser,
    type InAppBrowserInfo,
    openInSafari,
-   openInSystemBrowser,
    watchForFailedHandOff,
    watchInAppNoticeHidden
 } from '@/lib/inAppBrowser';
@@ -104,10 +104,10 @@ export default function InAppBrowserNotice(): JSX.Element | null {
    const handleOpen = () => {
       const url = window.location.href;
       if (info.canBreakOut) {
-         track('inapp_open_tapped', info);
+         track('inapp_open_tapped', info, { method: 'link' });
          // Copy now, while we still have the tap: if Chrome doesn't open, the link is ready to paste.
+         // The hand-off itself is the button's own href (see below), not a script redirect.
          void copyText(url);
-         openInSystemBrowser(url, info);
          stopWatchingRef.current?.();
          stopWatchingRef.current = watchForFailedHandOff(() => {
             setHandOffFailed(true);
@@ -237,13 +237,26 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                   )}
                </p>
                <div className="mt-3 flex items-center gap-2">
-                  <button
-                     type="button"
-                     onClick={handleOpen}
-                     className="rounded-xl bg-[#6c3fe0] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-95"
-                  >
-                     {primaryLabel}
-                  </button>
+                  {info.canBreakOut ? (
+                     // A real link the person taps. Facebook's Android browser ignored the old script
+                     // redirect to this intent:// URL (11 of 30 tapped Sept–Oct 2026, 1 reached Chrome);
+                     // WebViews hand a tapped intent:// link to Android far more often than a scripted one.
+                     <a
+                        href={buildAndroidIntentUrl(window.location.href)}
+                        onClick={handleOpen}
+                        className="rounded-xl bg-[#6c3fe0] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-95"
+                     >
+                        {primaryLabel}
+                     </a>
+                  ) : (
+                     <button
+                        type="button"
+                        onClick={handleOpen}
+                        className="rounded-xl bg-[#6c3fe0] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-95"
+                     >
+                        {primaryLabel}
+                     </button>
+                  )}
                   {info.os === 'ios' ? (
                      <button
                         type="button"
