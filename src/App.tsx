@@ -16,6 +16,7 @@ import Footer from '@/components/Footer';
 import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import LenderHomeScreenPushPrompt from '@/components/funding/LenderHomeScreenPushPrompt';
 import Header from '@/components/Header/Header';
+import { PendingCodeBanner } from '@/components/auth/PendingCodeBanner';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
@@ -251,6 +252,8 @@ export default function App() {
    return (
       <BottomNavActionProvider key={location.pathname}>
          <InAppBrowserNotice />
+         {/* Back after Facebook killed the page mid-sign-in: one tap to the code screen. */}
+         <PendingCodeBanner />
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
          <SocialContactRequiredNotifier />

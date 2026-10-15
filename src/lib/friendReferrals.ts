@@ -7,7 +7,12 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  */
 
 export type VoucherReward =
-   'first_on_time_repayment' | 'referral_inviter' | 'referral_invitee' | 'tier_rising' | 'tier_prime' | 'tier_apex';
+   | 'first_on_time_repayment'
+   | 'referral_inviter'
+   | 'referral_invitee'
+   | 'tier_rising'
+   | 'tier_prime'
+   | 'tier_apex';
 export type VoucherClaimStatus = 'pending' | 'sent' | 'rejected';
 export type RedeemInviteResult = 'joined' | 'invalid_code' | 'self_referral' | 'already_referred' | 'not_a_new_account';
 
@@ -34,6 +39,7 @@ export interface MyRewards {
 export const EMPTY_REWARDS: MyRewards = { invitedCount: 0, qualifiedCount: 0, wasReferred: false, claimable: [], claims: [] };
 
 const PENDING_INVITE_KEY = 'moodeng.pendingInviteCode';
+export const PENDING_INVITE_STORAGE_KEY = PENDING_INVITE_KEY;
 const INVITE_CODE_PATTERN = /^[A-Z]{6}[0-9]{5}$/;
 
 export const normalizeInviteCode = (code: string) => code.trim().toUpperCase();

@@ -6,3 +6,4 @@ export { SignUpFormErrorAlert } from './SignUpFormErrorAlert';
 export { FacebookAuthButton, SocialAuthButtons, useFacebookPrimary } from './SocialAuthButtons';
 export { SocialButton } from './SocialButton';
 export type { SocialButtonVariant } from './SocialButton';
+export { PasswordlessAuthForm } from './PasswordlessAuthForm';

@@ -238,7 +238,7 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                <p className="text-[15px] font-semibold leading-tight text-[#1b0a36] dark:text-[#F8F4FF]">Open Moodeng in your browser</p>
                <p className="mt-1 text-[13px] leading-snug text-[#5b5470] dark:text-[#B5ACBE]">
                   {info.canBreakOut ? (
-                     <>Sign-in and wallet payments don&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
+                     <>Google sign-in and wallet payments don&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
                   ) : (
                      <>
                         Sign-in doesn&apos;t stay saved and wallet payments don&apos;t work inside {appLabel}. Tap{' '}

@@ -51,8 +51,7 @@ export function AuthErrorAlert({
       return (
          <div className="w-full rounded-[10px] border border-red-200 bg-red-50/80 px-4 py-4">
             <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">
-               That password didn&apos;t work. If you&apos;re not sure it&apos;s right, resetting it only takes a
-               minute.
+               That password didn&apos;t work. If you&apos;re not sure it&apos;s right, resetting it only takes a minute.
             </p>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
                <Link to={resetPasswordHref} className="text-sm font-semibold text-[#8336F0] hover:underline">
@@ -74,9 +73,7 @@ export function AuthErrorAlert({
    if (type === 'email_not_found') {
       return (
          <div className="w-full rounded-[10px] border-[0.8px] border-[#FDAFB6] px-4 py-4" style={{ background: 'rgba(251, 55, 72, 0.1)' }}>
-            <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">
-               No account found with this email address.
-            </p>
+            <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">No account found with this email address.</p>
             {onRetry && (
                <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
                   <button type="button" onClick={onRetry} className="font-semibold text-[#8336F0] hover:underline">
@@ -96,12 +93,8 @@ export function AuthErrorAlert({
    if (type === 'new_user') {
       return (
          <div className="w-full rounded-[10px] border border-[#D8C7FF] bg-[#F5EFFF] px-4 py-4">
-            <p className="text-sm font-semibold text-[#250650] tracking-[-0.02em]">
-               Looks like you are new to Moodeng.
-            </p>
-            <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
-               Create an account first, then verify the email code Moodeng sends you.
-            </p>
+            <p className="text-sm font-semibold text-[#250650] tracking-[-0.02em]">No Moodeng account uses this email.</p>
+            <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">Create one with a code. No password needed.</p>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
                <Link to={signupHref} className="text-sm font-semibold text-[#8336F0] hover:underline">
                   Create account
@@ -118,9 +111,7 @@ export function AuthErrorAlert({
 
    return (
       <div className="w-full rounded-[10px] border border-red-200 bg-red-50/80 px-4 py-4">
-         <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">
-            The email or password you entered is incorrect.
-         </p>
+         <p className="text-sm font-medium text-[#4D4359] tracking-[-0.02em]">Wrong email or password.</p>
          <p className="mt-2 text-sm text-[#4D4359] tracking-[-0.02em]">
             {onRetry ? (
                <button type="button" onClick={onRetry} className="font-semibold text-[#8336F0] hover:underline">

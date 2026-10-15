@@ -1,6 +1,7 @@
-import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 
 import { Mail } from 'lucide-react';
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -19,11 +20,13 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
-import { detectInAppBrowser } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { showPasswordlessSignup } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 import { Icons } from '@/views/login/components/Icons';
+import PasswordlessSignUpScreen from '@/views/signup/PasswordlessSignUpScreen';
 import '@/views/signup/styles/signup.css';
 
 const LINK_PURPLE = '#8336F0';
@@ -55,7 +58,15 @@ function getErrorMessage(err: unknown, fallback: string): string {
    return fallback;
 }
 
+// In-app browsers (Facebook, Messenger, Instagram, TikTok, LINE, other webviews) get the passwordless
+// phone/email code screen; other browsers keep the
+// email + password form below (for now: PASSWORDLESS_SIGNUP_EVERYWHERE flips it for everyone).
 export default function SignUpPage() {
+   const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
+   return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
+}
+
+function PasswordSignUpPage() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
@@ -63,7 +74,10 @@ export default function SignUpPage() {
    const initialEmail = searchParams.get('email')?.trim() ?? '';
    const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
    // Inside Facebook's (or any app's) browser Google sign-in can't work, so email leads there.
-   const inAppBrowser = useMemo(() => detectInAppBrowser().isInApp, []);
+   const inApp = useMemo(() => detectInAppBrowser(), []);
+   const inAppBrowser = inApp.isInApp;
+   // Facebook/Messenger: email + the 8-digit code is the way in (Google is only a small "open in Chrome" line).
+   const facebookInApp = isFacebookInApp(inApp);
    // Inside Facebook/Messenger/Instagram (once Facebook login is on) "Continue with Facebook" leads, above email.
    const facebookPrimary = useFacebookPrimary();
    const [username, setUsername] = useState('');
@@ -73,6 +87,10 @@ export default function SignUpPage() {
    const [showPassWeak, setShowPassWeak] = useState(false);
    const [accountErrorType, setAccountErrorType] = useState<SignUpErrorType>(null);
    const isWorldId = WorldId.INACTIVE;
+
+   useEffect(() => {
+      if (import.meta.env.PROD && facebookInApp) posthog.capture('signup_inapp_email_shown', { app: inApp.appName, os: inApp.os });
+   }, [facebookInApp, inApp]);
 
    const navigateToEmailConfirmation = (nextEmail: string) => {
       // Replace so Back never returns to the sign-up form after a successful submit
@@ -171,7 +189,10 @@ export default function SignUpPage() {
    const handleRegisterError = (errorMsg: string) => {
       const lower = (errorMsg || '').toLowerCase();
       const isEmailError =
-         lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key') || lower.includes('already registered');
+         lower.includes('email') ||
+         lower.includes('duplicate') ||
+         lower.includes('users_email_key') ||
+         lower.includes('already registered');
       if (isEmailError) {
          setAccountErrorType(
             lower.includes('lock')
@@ -205,6 +226,7 @@ export default function SignUpPage() {
          return;
       }
       if (isWorldId && password && email) {
+         if (import.meta.env.PROD && facebookInApp) posthog.capture('signup_inapp_email_submitted', { app: inApp.appName, os: inApp.os });
          handleFormRegister();
       }
    };
@@ -262,6 +284,11 @@ export default function SignUpPage() {
                                  className="max-w-[400px] min-h-[56px] font-semibold"
                               />
                            )}
+                           {facebookInApp ? (
+                              <p className="mt-2 max-w-[400px] text-center text-sm leading-5 text-[#5b5470]">
+                                 Works right here in {inApp.appName}: we&apos;ll email you an 8-digit code.
+                              </p>
+                           ) : null}
                            <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
                            <SocialAuthButtons
                               isSignUp
@@ -309,7 +336,9 @@ export default function SignUpPage() {
                         Create your Moodeng Account
                      </h1>
                      <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-6">
-                        It takes just a few minutes to get started.
+                        {facebookInApp
+                           ? 'Pick a password, then enter the 8-digit code we email you.'
+                           : 'It takes just a few minutes to get started.'}
                      </p>
 
                      <form onSubmit={handleRegister} className="flex flex-col gap-5">

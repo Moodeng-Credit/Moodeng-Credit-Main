@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
 
@@ -221,6 +222,8 @@ export default function DashboardV2() {
                         <WalletBalanceCard />
                      </div>
                   ) : null}
+                  {/* An email added later (phone sign-ups) waiting for its code. */}
+                  {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
                   {!model.isVerified ? <VerifyIdentityBanner onVerify={handleVerify} /> : null}

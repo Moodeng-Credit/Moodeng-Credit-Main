@@ -12,7 +12,13 @@ const FB_ANDROID_UA =
    'Mozilla/5.0 (Linux; Android 13; SM-A145F Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/125.0.6422.165 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/470.0.0.40.82;]';
 const FB_IOS_UA =
    'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.40.82;]';
+const MESSENGER_IOS_UA =
+   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/MessengerForiOS;FBAV/460.0.0.37.111;FBBV/600000000;FBDV/iPhone14,5;FBMD/iPhone;FBSN/iOS;FBSV/17.5;FBSS/3;FBCR/;FBID/phone;FBLC/en_US;FBOP/5]';
+const INSTAGRAM_ANDROID_UA =
+   'Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/126.0.6478.71 Mobile Safari/537.36 Instagram 337.0.0.35.102 Android';
 const CHROME_ANDROID_UA = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36';
+const SAFARI_IOS_UA =
+   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 
 describe('Google sign-in inside an app browser', () => {
    let container: HTMLDivElement;
@@ -41,23 +47,47 @@ describe('Google sign-in inside an app browser', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('Facebook on Android: the Google button opens the page in Chrome and says email works here', async () => {
+   // No full-width Google button at all: the Google logo button is the only <svg> with Google's blue.
+   const hasGoogleButton = () => container.querySelector('path[fill="#4285F4"]') !== null;
+
+   it('Facebook on Android: no Google button, just a small line linking to Chrome', async () => {
       await renderWith(FB_ANDROID_UA);
-      const link = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Google: open in Chrome'));
-      expect(link?.getAttribute('href')).toMatch(/^intent:\/\/.*package=com\.android\.chrome/);
-      expect(container.textContent).toContain('Google sign-in doesn’t work inside Facebook'.replace('’', "'"));
+      expect(hasGoogleButton()).toBe(false);
       expect(container.textContent).not.toContain('Sign Up with Google');
+      expect(container.textContent).not.toContain('Google: open in');
+      expect(container.textContent).toContain('Google sign-in works in Chrome, not inside Facebook.');
+      const link = Array.from(container.querySelectorAll('a')).find((a) => a.textContent === 'Open in Chrome');
+      expect(link?.getAttribute('href')).toMatch(/^intent:\/\/.*package=com\.android\.chrome/);
    });
 
-   it('Facebook on iPhone: the Google button points to Safari', async () => {
+   it('Facebook on iPhone: no Google button, the line offers Safari', async () => {
       await renderWith(FB_IOS_UA);
-      expect(container.textContent).toContain('Google: open in Safari');
+      expect(hasGoogleButton()).toBe(false);
+      expect(container.textContent).toContain('Google sign-in works in Safari, not inside Facebook.');
+      expect(Array.from(container.querySelectorAll('button')).some((b) => b.textContent === 'Open in Safari')).toBe(true);
    });
 
-   it('a real browser keeps the normal Google button', async () => {
-      await renderWith(CHROME_ANDROID_UA);
+   it('Messenger on iPhone: no Google button either', async () => {
+      await renderWith(MESSENGER_IOS_UA);
+      expect(hasGoogleButton()).toBe(false);
+      expect(container.textContent).toContain('not inside Messenger.');
+   });
+
+   it('other app browsers (Instagram) keep the full-width "Google: open in Chrome" button', async () => {
+      await renderWith(INSTAGRAM_ANDROID_UA);
+      expect(hasGoogleButton()).toBe(true);
+      expect(container.textContent).toContain('Google: open in Chrome');
+   });
+
+   it.each([
+      ['Chrome on Android', CHROME_ANDROID_UA],
+      ['Safari on iPhone', SAFARI_IOS_UA]
+   ])('%s keeps the normal Google button', async (_name, ua) => {
+      await renderWith(ua);
+      expect(hasGoogleButton()).toBe(true);
       expect(container.textContent).toContain('Sign Up with Google');
       expect(container.textContent).not.toContain('open in Chrome');
+      expect(container.textContent).not.toContain('Google sign-in works in');
    });
 });
 
@@ -99,14 +129,11 @@ describe('Continue with Facebook', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('stays a grayed-out "coming soon" tile while the flag is off', async () => {
+   it('is not shown at all while the flag is off (no grayed "coming soon" tile)', async () => {
       await renderWith(FB_ANDROID_UA);
-      const [tile] = facebookButtons();
-      expect(tile.getAttribute('aria-label')).toBe('Facebook sign-in coming soon');
-      expect(tile.getAttribute('aria-disabled')).toBe('true');
+      expect(facebookButtons()).toHaveLength(0);
       expect(container.textContent).not.toContain('Continue with Facebook');
-      await act(async () => tile.click());
-      expect(signInWithOAuth).not.toHaveBeenCalled();
+      expect(container.textContent).not.toContain('Soon');
    });
 
    it("inside Facebook's browser it is the main button, first on the page, and starts Supabase's Facebook OAuth", async () => {
@@ -116,7 +143,7 @@ describe('Continue with Facebook', () => {
       expect(buttons).toHaveLength(1);
       expect(buttons[0].textContent).toContain('Continue with Facebook');
       expect(container.querySelector('button, a')).toBe(buttons[0]);
-      expect(container.textContent).toContain('Facebook and email work here.');
+      expect(container.textContent).toContain('Google sign-in works in Safari, not inside Facebook.');
 
       await act(async () => buttons[0].click());
       expect(signInWithOAuth).toHaveBeenCalledWith({

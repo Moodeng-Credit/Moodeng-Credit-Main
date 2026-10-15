@@ -5,6 +5,12 @@ import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
+import { FIRST_TOUCH_STORAGE_KEY } from '@/lib/attribution';
+import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
+import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
+import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
+import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
+import { generatePhoneUsername, phonePlaceholderEmail, SMS_TEST_FLAG_KEY } from '@/lib/phoneAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -144,7 +150,8 @@ const ensureUserProfileRow = async (
    authUser: SupabaseAuthUser,
    overrides?: { username?: string; email?: string; isWorldId?: string | WorldIdStatus }
 ): Promise<UserRow> => {
-   const email = overrides?.email ?? authUser.email;
+   // Phone-only accounts have no email; public.users.email is NOT NULL, so they get a placeholder.
+   const email = overrides?.email ?? (authUser.email || (authUser.phone ? phonePlaceholderEmail(authUser.id) : undefined));
 
    if (!email) {
       throw new Error('Email is required to seed user profile');
@@ -553,6 +560,79 @@ export const registerUser = createAsyncThunk(
    }
 );
 
+export type OtpChannel = 'sms' | 'email';
+export type OtpTarget = { channel: 'sms'; phone: string } | { channel: 'email'; email: string };
+export type OtpMode = 'signin' | 'signup';
+
+// What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
+// request they arrived with, attribution, where to go after signing in, testing flags.
+const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
+const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY];
+
+/**
+ * Sends a one-time sign-in code by SMS (PH numbers, through the Semaphore Send SMS hook) or email.
+ * Sign-up creates the account on first use; sign-in never does (Supabase then answers "Signups
+ * not allowed for otp", shown as "No Moodeng account uses this number/email").
+ */
+export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (params: OtpTarget & { mode: OtpMode }) => {
+   const supabase = supabaseClient();
+   const { mode, ...target } = params;
+   const shouldCreateUser = mode === 'signup';
+
+   // Same reason as registerUser: a leftover session from another account must not be refreshed
+   // mid-sign-in and route them back into that old account. Local only: don't sign that account
+   // out on its other devices.
+   const {
+      data: { session: staleSession }
+   } = await supabase.auth.getSession();
+   if (staleSession) {
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
+
+   // user_metadata is only applied when the account is created. `passwordless` tells Account
+   // settings and onboarding that this account has no password yet.
+   const { error } =
+      target.channel === 'sms'
+         ? await supabase.auth.signInWithOtp({
+              phone: target.phone,
+              options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
+           })
+         : await supabase.auth.signInWithOtp({
+              email: target.email,
+              options: {
+                 shouldCreateUser,
+                 emailRedirectTo: getAuthRedirectUrl(),
+                 data: { username: target.email.split('@')[0], passwordless: true }
+              }
+           });
+
+   if (error) throw error;
+   return { channel: target.channel };
+});
+
+/** Checks the code from requestOtpCode and signs the person in. */
+export const verifyOtpCode = createAsyncThunk('auth/verifyOtpCode', async (params: OtpTarget & { token: string }) => {
+   const supabase = supabaseClient();
+   const { data, error } =
+      params.channel === 'sms'
+         ? await supabase.auth.verifyOtp({ phone: params.phone, token: params.token, type: 'sms' })
+         : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
+
+   if (error) throw error;
+
+   // New account = no profile row yet (fetchCurrentUserProfile creates it just below).
+   let isNewUser = false;
+   if (data.user?.id) {
+      const { data: existingProfile } = await supabase.from('users').select('id').eq('id', data.user.id).maybeSingle();
+      isNewUser = !existingProfile;
+   }
+
+   const user = await fetchCurrentUserProfile();
+   setLastUsedAuth(params.channel === 'sms' ? 'phone' : 'email');
+   return { username: user.username, user, isNewUser };
+});
+
 export const registerWithGoogle = createAsyncThunk(
    'auth/registerWithGoogle',
    async ({ googleCredential }: { googleCredential: string }) => {
@@ -917,6 +997,19 @@ const authSlice = createSlice({
             }
          })
          .addCase(registerUser.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = (action.error.message as string) || null;
+         })
+         .addCase(verifyOtpCode.pending, (state) => {
+            state.isLoading = true;
+            state.error = null;
+         })
+         .addCase(verifyOtpCode.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(verifyOtpCode.rejected, (state, action) => {
             state.isLoading = false;
             state.error = (action.error.message as string) || null;
          })

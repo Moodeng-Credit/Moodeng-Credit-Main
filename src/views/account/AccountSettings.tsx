@@ -12,6 +12,8 @@ import { useThemeMode } from '@/components/ThemeModeProvider';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
+import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
+import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 import { useNotificationPrefs } from '@/hooks/useNotificationPrefs';
@@ -22,6 +24,7 @@ import type { WalletConnectorKey } from '@/config/wagmiConfig';
 import { WALLET_CONNECTOR_NAMES } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
+import { checkPhPhone, formatPhPhone, isPlaceholderEmail, isSmsLoginEnabled, SMS_NON_PH_MESSAGE } from '@/lib/phoneAuth';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_LABEL, type VerificationUiState } from '@/lib/verificationUiState';
@@ -53,10 +56,6 @@ const ICON_MASK: React.CSSProperties = {
    WebkitMaskPosition: 'center',
    maskPosition: 'center'
 };
-
-function isTelegramPlaceholderEmail(email?: string | null) {
-   return /^telegram_\d+@moodeng\.(app|credit)$/i.test(email ?? '');
-}
 
 function EditableAvatar({ size = 64, onClick }: { size?: number; onClick?: () => void }) {
    return (
@@ -339,10 +338,12 @@ function PasswordInput({
 
 // ─── Change Password Modal ───
 
-function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function ChangePasswordModal({ isOpen, onClose, authPhone }: { isOpen: boolean; onClose: () => void; authPhone: string | null }) {
    const dispatch = useDispatch<AppDispatch>();
    const { showToast } = useToast();
    const userEmail = useSelector((state: RootState) => state.auth.user?.email);
+   // Phone-only accounts have a placeholder email: check the current password against the phone.
+   const signInId = userEmail && !isPlaceholderEmail(userEmail) ? { email: userEmail } : authPhone ? { phone: authPhone } : null;
    const [oldPassword, setOldPassword] = useState('');
    const [newPassword, setNewPassword] = useState('');
    const [confirmPassword, setConfirmPassword] = useState('');
@@ -376,7 +377,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
          return;
       }
 
-      if (!userEmail) {
+      if (!signInId) {
          setError('Unable to verify current account');
          return;
       }
@@ -384,10 +385,7 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       setIsSubmitting(true);
 
       const supabase = getSupabaseBrowserClient();
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
-         email: userEmail,
-         password: oldPassword
-      });
+      const { error: verifyError } = await supabase.auth.signInWithPassword({ ...signInId, password: oldPassword });
       if (verifyError) {
          setIsSubmitting(false);
          setError('Current password is incorrect');
@@ -447,6 +445,169 @@ function ChangePasswordModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                      }}
                   />
                ) : null}
+            </button>
+            <button
+               type="button"
+               onClick={handleClose}
+               className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
+            >
+               Cancel
+            </button>
+         </div>
+      </div>
+   );
+}
+
+// ─── Set Password Modal (passwordless accounts) ───
+
+function SetPasswordModal({ isOpen, onClose, onSaved }: { isOpen: boolean; onClose: () => void; onSaved: () => void }) {
+   const { showToast } = useToast();
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={onClose}>
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <div className="flex flex-col gap-2 items-center text-center">
+               <h2 className="text-md-h4 font-semibold text-md-heading">Set a password</h2>
+               <p className="text-md-b1 text-md-neutral-1200">Optional. You can keep logging in with a code; a password is a backup.</p>
+            </div>
+            <SetPasswordForm
+               onSaved={() => {
+                  showToast(TOAST_TYPES.SUCCESS, 'Password saved', 'You can now log in with a code or your password.');
+                  onSaved();
+                  onClose();
+               }}
+            />
+            <button
+               type="button"
+               onClick={onClose}
+               className="w-full py-md-3 px-md-4 border border-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-primary-1200"
+            >
+               Not now
+            </button>
+         </div>
+      </div>
+   );
+}
+
+// ─── Add Phone Modal (PH numbers, SMS code) ───
+
+function AddPhoneModal({ isOpen, onClose, onAdded }: { isOpen: boolean; onClose: () => void; onAdded: () => void }) {
+   const { showToast } = useToast();
+   const [step, setStep] = useState<'enterPhone' | 'enterCode'>('enterPhone');
+   const [phone, setPhone] = useState('');
+   const [e164, setE164] = useState('');
+   const [code, setCode] = useState('');
+   const [error, setError] = useState('');
+   const [isSubmitting, setIsSubmitting] = useState(false);
+
+   const handleClose = () => {
+      setStep('enterPhone');
+      setPhone('');
+      setE164('');
+      setCode('');
+      setError('');
+      onClose();
+   };
+
+   const sendCode = async () => {
+      setError('');
+      const check = checkPhPhone(phone);
+      if (check.kind === 'non_ph') {
+         setError(SMS_NON_PH_MESSAGE);
+         return;
+      }
+      if (check.kind !== 'ok') {
+         setError('Enter a Philippine mobile number, like 0917 123 4567.');
+         return;
+      }
+      setIsSubmitting(true);
+      const { error: updateError } = await getSupabaseBrowserClient().auth.updateUser({ phone: check.e164 });
+      setIsSubmitting(false);
+      if (updateError) {
+         const taken = updateError.code === 'phone_exists' || /already (been )?registered|already exists/i.test(updateError.message ?? '');
+         setError(taken ? 'This number already has a Moodeng account.' : updateError.message || 'Could not send a code. Try again in a minute.');
+         return;
+      }
+      setE164(check.e164);
+      setStep('enterCode');
+   };
+
+   const confirmCode = async () => {
+      setError('');
+      if (code.length < 6) {
+         setError('Enter the code from the text message.');
+         return;
+      }
+      setIsSubmitting(true);
+      const { error: verifyError } = await getSupabaseBrowserClient().auth.verifyOtp({ phone: e164, token: code, type: 'phone_change' });
+      setIsSubmitting(false);
+      if (verifyError) {
+         setError('That code did not work. Check the latest text from Moodeng.');
+         return;
+      }
+      showToast(TOAST_TYPES.SUCCESS, 'Phone added', `You can now log in with a code sent to ${formatPhPhone(e164)}.`);
+      onAdded();
+      handleClose();
+   };
+
+   if (!isOpen) return null;
+
+   return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#12071f]/50 px-5" onClick={handleClose}>
+         <div
+            className="bg-white rounded-md-lg p-md-4 w-full max-w-modal flex flex-col gap-md-3 items-center"
+            onClick={(e) => e.stopPropagation()}
+         >
+            <div className="flex flex-col gap-2 items-center text-center">
+               <h2 className="text-md-h4 font-semibold text-md-heading">Add a phone number</h2>
+               <p className="text-md-b1 text-md-neutral-1200">
+                  {step === 'enterPhone'
+                     ? 'Log in with a text code too. Philippine mobile numbers only.'
+                     : `Enter the code we texted to ${formatPhPhone(e164)}.`}
+               </p>
+            </div>
+            {step === 'enterPhone' ? (
+               <div className="flex w-full items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2">
+                  <span className="text-md-b1 font-semibold text-md-heading">+63</span>
+                  <input
+                     type="tel"
+                     inputMode="tel"
+                     autoComplete="tel-national"
+                     value={phone}
+                     onChange={(e) => {
+                        setPhone(e.target.value);
+                        setError('');
+                     }}
+                     placeholder="917 123 4567"
+                     className="flex-1 bg-transparent text-md-b1 text-md-neutral-1200 outline-none min-w-0"
+                  />
+               </div>
+            ) : (
+               <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => {
+                     setCode(e.target.value.replace(/\D/g, '').slice(0, 8));
+                     setError('');
+                  }}
+                  placeholder="Code"
+                  className="w-full bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2 text-center text-md-h5 tracking-[0.18em] text-md-neutral-1200 outline-none"
+               />
+            )}
+            {error ? <p className="text-md-b3 text-md-red-400 text-center w-full">{error}</p> : null}
+            <button
+               type="button"
+               disabled={isSubmitting}
+               onClick={step === 'enterPhone' ? sendCode : confirmCode}
+               className="w-full py-md-3 px-md-4 bg-md-primary-1200 rounded-md-lg text-md-b1 font-semibold text-md-neutral-100 disabled:opacity-50"
+            >
+               {isSubmitting ? 'Please wait…' : step === 'enterPhone' ? 'Text me a code' : 'Add phone'}
             </button>
             <button
                type="button"
@@ -1345,13 +1506,17 @@ export default function AccountSettings() {
    const user = useSelector((state: RootState) => state.auth.user);
    const { connector, chain } = useAccount();
    const { disconnectAsync } = useDisconnect();
-   const { isEmailPasswordUser } = useAuthProvider();
+   const authInfo = useAuthProvider();
+   const { isCodeOrPasswordUser, hasPassword, canSetPassword, authPhone } = authInfo;
+   const smsLoginEnabled = useMemo(() => isSmsLoginEnabled(), []);
    const { isDarkMode, setMode } = useThemeMode();
    const { showToast } = useToast();
 
    const currentDisplayName = user?.displayName ?? user?.username ?? '';
    const [showNameModal, setShowNameModal] = useState(false);
    const [showPasswordModal, setShowPasswordModal] = useState(false);
+   const [showSetPasswordModal, setShowSetPasswordModal] = useState(false);
+   const [showAddPhoneModal, setShowAddPhoneModal] = useState(false);
    const [showEmailModal, setShowEmailModal] = useState(false);
    const [showTelegramAlertsModal, setShowTelegramAlertsModal] = useState(false);
    const [showBioInfoModal, setShowBioInfoModal] = useState(false);
@@ -1390,10 +1555,11 @@ export default function AccountSettings() {
       baseWalletLock.provider !== 'unknown' &&
       !baseWalletLock.isConfirmedBorrowerWallet;
    const borrowerNeedsBaseWallet = isBorrower && !baseWalletLock.isConfirmedBorrowerWallet;
-   const hasTelegramPlaceholderEmail = isTelegramPlaceholderEmail(user?.email);
+   // Telegram, LINE and phone sign-ups have a placeholder email nobody reads.
+   const hasTelegramPlaceholderEmail = isPlaceholderEmail(user?.email);
    const emailFieldValue = hasTelegramPlaceholderEmail ? 'No email added' : user?.email || 'No email added';
-   const emailActionLabel = hasTelegramPlaceholderEmail ? 'Add' : isEmailPasswordUser ? 'Change' : undefined;
-   const canEditEmail = isEmailPasswordUser || hasTelegramPlaceholderEmail;
+   const emailActionLabel = hasTelegramPlaceholderEmail ? 'Add' : isCodeOrPasswordUser ? 'Change' : undefined;
+   const canEditEmail = isCodeOrPasswordUser || hasTelegramPlaceholderEmail;
    const emailHelpCopy = hasTelegramPlaceholderEmail
       ? 'Add an email for account recovery and important alerts.'
       : 'Used for account recovery and important alerts.';
@@ -1682,8 +1848,10 @@ export default function AccountSettings() {
          ? verificationState === 'verified'
             ? 'Identity verified'
             : VERIFICATION_STATE_LABEL[verificationState]
-         : isEmailPasswordUser
-           ? 'Password & sign-in'
+         : isCodeOrPasswordUser
+           ? hasPassword
+              ? 'Password & sign-in'
+              : 'Sign in with a code'
            : 'Sign-in',
       wallet: hasWallet ? `${walletLabel} · ${truncateAddress(user?.walletAddress || '')}` : 'No wallet connected',
       notifications: `${activeNotificationCount} of 3 preferences enabled`
@@ -1855,6 +2023,7 @@ export default function AccountSettings() {
                            />
                         </SettingsGroup>
 
+                        <ConfirmEmailReminder placement="settings" />
                         <SettingsGroup label="Contact" description={emailHelpCopy}>
                            <SettingsFieldRow
                               title="Email address"
@@ -1862,6 +2031,14 @@ export default function AccountSettings() {
                               actionLabel={canEditEmail ? emailActionLabel : undefined}
                               onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
                            />
+                           {authPhone || smsLoginEnabled ? (
+                              <SettingsFieldRow
+                                 title="Phone number"
+                                 value={authPhone ? formatPhPhone(authPhone) : 'No phone added'}
+                                 actionLabel={authPhone ? undefined : 'Add'}
+                                 onAction={authPhone ? undefined : () => setShowAddPhoneModal(true)}
+                              />
+                           ) : null}
                         </SettingsGroup>
 
                         {isBorrower ? (
@@ -1904,7 +2081,24 @@ export default function AccountSettings() {
 
                   {activeSection === 'security' ? (
                      <div className="flex flex-col gap-md-4">
-                        {isEmailPasswordUser ? (
+                        {canSetPassword && !hasPassword ? (
+                           <SettingsGroup label="Sign-in" description="You log in with a code sent to your phone or email.">
+                              <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
+                                 <div className="min-w-0 flex-1">
+                                    <p className="text-md-b1 font-semibold text-md-heading">Set a password (optional)</p>
+                                    <p className="text-md-b2 font-medium text-md-neutral-1200">A backup way in. Codes keep working.</p>
+                                 </div>
+                                 <button
+                                    type="button"
+                                    onClick={() => setShowSetPasswordModal(true)}
+                                    className="min-h-11 shrink-0 rounded-md-input px-md-1 text-md-b2 font-semibold text-md-primary-900 transition-colors duration-150 hover:bg-md-neutral-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900"
+                                 >
+                                    Set
+                                 </button>
+                              </div>
+                           </SettingsGroup>
+                        ) : null}
+                        {isCodeOrPasswordUser && hasPassword ? (
                            <SettingsGroup label="Sign-in">
                               <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
                                  <div className="min-w-0 flex-1">
@@ -2379,7 +2573,9 @@ export default function AccountSettings() {
             onSave={handleSaveAvatar}
          />
 
-         <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} />
+         <ChangePasswordModal isOpen={showPasswordModal} onClose={() => setShowPasswordModal(false)} authPhone={authPhone} />
+         <SetPasswordModal isOpen={showSetPasswordModal} onClose={() => setShowSetPasswordModal(false)} onSaved={authInfo.refresh} />
+         <AddPhoneModal isOpen={showAddPhoneModal} onClose={() => setShowAddPhoneModal(false)} onAdded={authInfo.refresh} />
          <ChangeEmailModal isOpen={showEmailModal} onClose={() => setShowEmailModal(false)} />
          <ChangeDisplayNameModal isOpen={showNameModal} onClose={() => setShowNameModal(false)} currentName={currentDisplayName} />
          <EditBioInfoModal isOpen={showBioInfoModal} onClose={() => setShowBioInfoModal(false)} user={user} />
