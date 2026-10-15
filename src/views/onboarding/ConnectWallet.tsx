@@ -7,7 +7,6 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAccount, useConnect } from 'wagmi';
 
-import { WalletEmailField } from '@/components/account/WalletEmailField';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
@@ -290,8 +289,6 @@ function BorrowerConnectView({
                      Your loan lands here — created from your Moodeng login, no app needed. Earn Pandesal points too.
                   </p>
                </div>
-               {/* Phone sign-ups have no email yet: they give one here and confirm it later. */}
-               <WalletEmailField />
                <InstantWalletButton onClick={onCreateInstantWallet} isDisabled={isCreatingInstantWallet} phase={instantWalletPhase} />
                {isCreatingInstantWallet && !instantWalletError ? (
                   <p className="mt-md-2 max-w-[360px] text-md-b3 font-medium text-md-neutral-700">
@@ -548,7 +545,6 @@ function LenderConnectView({
                         </p>
                      </div>
                   </div>
-                  <WalletEmailField />
                   <button
                      type="button"
                      onClick={onCreateInstantWallet}

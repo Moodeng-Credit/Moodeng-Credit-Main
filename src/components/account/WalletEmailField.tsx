@@ -7,12 +7,24 @@ import { useAccountEmail } from '@/hooks/useAccountEmail';
 import { describeEmailChangeError, isValidEmail, requestEmailChange } from '@/lib/accountEmail';
 import { detectInAppBrowser } from '@/lib/inAppBrowser';
 
+type WalletEmailFieldProps = {
+   label?: string;
+   /** Helper under the field; defaults to "We'll ask you to confirm it later…". */
+   helper?: string;
+   /** Render nothing once an email is pending (the dashboard shows ConfirmEmailReminder instead). */
+   hideWhenPending?: boolean;
+};
+
 /**
- * Inside the Instant Wallet card: accounts with no real email (phone sign-ups) give one here. It is
- * saved as a pending change and confirmed LATER with a code (ConfirmEmailReminder), because leaving
- * Facebook's browser to open an email may not bring them back. Never blocks creating the wallet.
+ * Email field for accounts with no real email (phone sign-ups). It is saved as a pending change and
+ * confirmed LATER with a code (ConfirmEmailReminder), so nobody has to leave Facebook's browser to
+ * open their inbox. Used by AddEmailCard on the dashboard, after the first loan request.
  */
-export function WalletEmailField() {
+export function WalletEmailField({
+   label = 'Your email (for your wallet and receipts)',
+   helper,
+   hideWhenPending = false
+}: WalletEmailFieldProps = {}) {
    const { needsEmail, pendingEmail, refresh } = useAccountEmail();
    const [email, setEmail] = useState('');
    const [editing, setEditing] = useState(false);
@@ -55,6 +67,7 @@ export function WalletEmailField() {
    };
 
    if (shownPending && !editing) {
+      if (hideWhenPending) return null;
       return (
          <p className="mb-md-4 flex max-w-[340px] items-start gap-2 text-left text-md-b3 font-medium text-md-neutral-700" role="status">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-md-green-700" aria-hidden />
@@ -79,7 +92,7 @@ export function WalletEmailField() {
    return (
       <form onSubmit={handleSubmit} className="mb-md-4 flex w-full max-w-[340px] flex-col gap-1.5 text-left" noValidate>
          <label htmlFor="wallet-email" className="text-md-b2 font-semibold text-md-heading dark:text-md-neutral-100">
-            Your email (for your wallet and receipts)
+            {label}
          </label>
          <div className="flex h-12 items-center gap-2 rounded-md-input border border-md-neutral-600 bg-md-neutral-100 px-3 focus-within:border-md-primary-900 dark:bg-transparent">
             <Mail className="h-4 w-4 shrink-0 text-md-neutral-700" aria-hidden />
@@ -112,8 +125,12 @@ export function WalletEmailField() {
             </p>
          ) : (
             <p className="text-md-b3 font-medium text-md-neutral-700">
-               We&apos;ll ask you to confirm it later.{' '}
-               {inApp.isInApp ? `You don't need to leave ${inApp.appName ?? 'this app'} now.` : "You don't need to open your inbox now."}
+               {helper ?? (
+                  <>
+                     We&apos;ll ask you to confirm it later.{' '}
+                     {inApp.isInApp ? `You don't need to leave ${inApp.appName ?? 'this app'} now.` : "You don't need to open your inbox now."}
+                  </>
+               )}
             </p>
          )}
       </form>
