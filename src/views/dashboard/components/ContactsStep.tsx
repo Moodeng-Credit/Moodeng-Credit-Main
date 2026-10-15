@@ -19,7 +19,7 @@ import { detectInAppBrowser, openInSafari, setInAppNoticeHidden } from '@/lib/in
 import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
-import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
+import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
 import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
@@ -244,6 +244,10 @@ export default function ContactsStep({
    }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
    const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
+   // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
+   // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
+   // the Facebook step (WhatsApp in particular looks like a way to "reach you").
+   const hasReminderStep = pushRequired || pushBlocked || pushUnavailable || offerWhatsAppReminders;
 
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
@@ -740,6 +744,8 @@ export default function ContactsStep({
             <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
          )}
 
+         {hasReminderStep ? <StepLabel done={contactVerified} n={1} text="Connect Facebook" /> : null}
+
          {showWhatsApp ? (
             <OptionCard
                badge="1 tap"
@@ -955,8 +961,22 @@ export default function ContactsStep({
 
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
-         {/* Onboarding: one thing at a time — reminders only once Messenger is confirmed. */}
-         {(pushRequired || pushBlocked || pushUnavailable) && (contactVerified || source !== 'connect') ? (
+         {hasReminderStep ? <StepLabel done={pushOn || whatsappVerified} n={2} text="Payment reminders" /> : null}
+         {/* One thing at a time: reminders unlock once Facebook is connected. */}
+         {hasReminderStep && !contactVerified ? (
+            <LockedStepCard
+               hint="Unlocks after step 1"
+               icon={
+                  offerWhatsAppReminders ? (
+                     <MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />
+                  ) : (
+                     <BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />
+                  )
+               }
+               title={offerWhatsAppReminders ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
+            />
+         ) : null}
+         {(pushRequired || pushBlocked || pushUnavailable) && contactVerified ? (
             // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
             <div className={nudgeReminders ? 'connect-shake' : undefined}>
                <OptionCard
@@ -989,7 +1009,7 @@ export default function ContactsStep({
                />
             </div>
          ) : null}
-         {offerWhatsAppReminders && (contactVerified || source !== 'connect') ? (
+         {offerWhatsAppReminders && contactVerified ? (
             <WhatsAppRemindersCard
                onVerified={() => setWhatsappVerified(true)}
                source={source}
@@ -1024,6 +1044,9 @@ export default function ContactsStep({
             <PrimaryButton disabled={!canContinue || isSubmitting} onClick={handleContinue}>
                {isSubmitting ? 'Submitting…' : 'Continue'}
             </PrimaryButton>
+            {!contactVerified && hasReminderStep ? (
+               <p className="text-center text-md-b3 text-[#877897]">Connect Facebook to continue.</p>
+            ) : null}
             {contactVerified && pushRequired && !pushOn ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
             ) : null}

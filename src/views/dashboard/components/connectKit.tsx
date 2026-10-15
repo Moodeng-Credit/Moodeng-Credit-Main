@@ -1,6 +1,6 @@
 import { type ButtonHTMLAttributes, type CSSProperties, type MouseEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { Check } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 
 import { playSuccess } from '@/lib/uiSounds';
 
@@ -206,6 +206,35 @@ export function OptionCard({
       <button className={cardClass} disabled={disabled} onClick={onClick} style={cardStyle} type="button">
          {body}
       </button>
+   );
+}
+
+// "Step 1 · Connect Facebook" above a card, so a two-part screen reads in order. Green with a tick once done.
+export function StepLabel({ n, text, done = false }: { n: number; text: string; done?: boolean }) {
+   return (
+      <p className={`-mb-2 text-[13px] font-bold uppercase tracking-[0.08em] ${done ? 'text-[#2f7a3a] dark:text-[#7ee2a0]' : 'text-[#6b55f7] dark:text-[#b4a6ff]'}`}>
+         Step {n}
+         {done ? ' ✓' : ''} · {text}
+      </p>
+   );
+}
+
+// A step that can't be started yet: greyed out with a lock and what unlocks it, so nobody taps it first.
+export function LockedStepCard({ icon, title, hint }: { icon: ReactNode; title: string; hint: string }) {
+   return (
+      <div
+         aria-disabled="true"
+         className="flex min-h-[88px] w-full items-center gap-3 rounded-[18px] border-2 border-dashed border-[#d6d0e3] bg-[#f6f5f9] px-4 py-3 text-left dark:border-[#40354f] dark:bg-[#1b1526]"
+      >
+         <span className="grid size-11 shrink-0 place-items-center opacity-40">{icon}</span>
+         <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-[20px] font-bold leading-[24px] text-[#a49cb5]">{title}</span>
+            <span className="flex items-center gap-1 text-[14px] leading-[18px] text-[#a49cb5]">
+               <Lock aria-hidden="true" className="size-3.5" strokeWidth={2.5} />
+               {hint}
+            </span>
+         </span>
+      </div>
    );
 }
 
