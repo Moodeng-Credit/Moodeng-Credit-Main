@@ -17,7 +17,7 @@ export function AddEmailCard() {
    return (
       <section
          aria-label="Add your email"
-         className="mx-5 rounded-[12px] border border-[#E7D8FF] bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] dark:border-[#2D1F4A] dark:bg-[#1E1530]"
+         className="mx-5 rounded-[12px] border [&_form]:mb-0 border-[#E7D8FF] bg-white px-4 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] dark:border-[#2D1F4A] dark:bg-[#1E1530]"
       >
          <div className="mb-3 flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-[#2A1D40]">
