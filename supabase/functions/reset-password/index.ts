@@ -7,6 +7,22 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// A3 of the pre-account-takeover guard (migration 20261016120000): once someone resets the password
+// with a code or link that was sent to the account's inbox, the email is proven, so the account's
+// auth_email_proof row (if any) is resolved. GoTrue's /verify issues every OTP session with amr
+// method 'otp', email and SMS alike, so an 'otp' session only counts when the account has no phone
+// that an SMS code could have come from.
+const INBOX_AMR_METHODS = new Set(['otp', 'recovery', 'magiclink'])
+const sessionProvesInbox = (jwt: string, phone: string | undefined): boolean => {
+  if (phone) return false
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return Array.isArray(payload.amr) && payload.amr.some((entry: { method?: string }) => INBOX_AMR_METHODS.has(entry?.method ?? ''))
+  } catch {
+    return false
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -29,6 +45,8 @@ serve(async (req) => {
 
     let userId: string;
     let userEmail: string;
+    // True when this reset came through the inbox (recovery link or emailed code), see A3 above.
+    let provedInbox = false;
 
     // If a token is provided, we verify it to get a user
     if (token) {
@@ -46,7 +64,8 @@ serve(async (req) => {
         }
         userId = data.user.id;
         userEmail = data.user.email;
-        
+        provedInbox = true;
+
         if (!userEmail) {
             return new Response(
                 JSON.stringify({ error: 'User email not found' }),
@@ -64,7 +83,8 @@ serve(async (req) => {
         }
 
         // Get user from auth header
-        const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+        const accessToken = authHeader.replace('Bearer ', '')
+        const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken)
 
         if (userError || !user) {
             return new Response(
@@ -74,6 +94,7 @@ serve(async (req) => {
         }
         userId = user.id;
         userEmail = user.email ?? '';
+        provedInbox = sessionProvesInbox(accessToken, user.phone);
 
         if (!userEmail) {
             return new Response(
@@ -134,6 +155,19 @@ serve(async (req) => {
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
         );
+    }
+
+    // 4. Inbox proven → resolve any pending auth_email_proof row. Best-effort: the password is already
+    // set, and an unresolved row only means a later Google/Facebook link wipes this password again.
+    if (provedInbox) {
+        const { error: proofError } = await supabase
+            .from('auth_email_proof')
+            .update({ resolved_at: new Date().toISOString(), resolved_by: 'password_reset' })
+            .eq('user_id', userId)
+            .is('resolved_at', null);
+        if (proofError) {
+            console.error('Error resolving auth_email_proof:', proofError);
+        }
     }
 
     return new Response(
