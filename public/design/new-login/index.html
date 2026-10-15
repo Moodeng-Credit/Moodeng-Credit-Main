@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>[hidden]{display:none!important} img{max-width:100%}</style>
+<title>Moodeng New Login Screens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: phone screenshots in a wrapping grid, grouped by where people see them; captions under each phone. */
+:root {
+  --bg: #f7f4fc;
+  --surface: #ffffff;
+  --ink: #1b0a36;
+  --muted: #625a74;
+  --line: #e6def3;
+  --accent: #6010d2;
+  --accent-soft: #efe6fd;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.5; margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 48px; }
+header { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 5vw, 48px); line-height: 1.05; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; margin: 0; }
+p { margin: 0; }
+.lede { font-size: 19px; color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; }
+.fact { background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: 999px; }
+section { display: flex; flex-direction: column; gap: 18px; }
+.section-intro { color: var(--muted); max-width: 70ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 28px 22px; align-items: start; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.phone { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 8px; box-shadow: 0 10px 30px rgba(27, 10, 54, .08); }
+.phone img { display: block; width: 100%; height: auto; border-radius: 19px; }
+figcaption { display: flex; flex-direction: column; gap: 3px; }
+figcaption b { font-size: 16px; }
+figcaption span { font-size: 15px; color: var(--muted); }
+.n { font-family: var(--font-display); color: var(--accent); margin-right: 4px; }
+footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Moodeng · 15 Oct 2026</span>
+    <h1>New sign-up and log-in screens</h1>
+    <p class="lede">Built for people who open Moodeng from a Facebook or Messenger link. Last month about 40 of them opened sign-up inside Facebook and never got in, mostly because Google sign-in doesn't work there. Now they sign up with a Philippine phone number or an email, get a code, and never need a password.</p>
+    <div class="facts">
+      <span class="fact">No password</span>
+      <span class="fact">🇵🇭 Phone or email</span>
+      <span class="fact">Works inside Facebook</span>
+      <span class="fact">Same account in Chrome later</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Inside Facebook or Messenger</h2>
+    <p class="section-intro">One field. Filipinos start on their phone number; anyone can switch to email. Google is a small "open in Chrome" line instead of a button that fails.</p>
+    <div class="grid">
+      <figure><div class="phone"><img src="/design/new-login/screens/01-fb-signup-phone.png" alt="Sign up screen with a +63 phone number field" loading="lazy"></div><figcaption><b><span class="n">1</span>Sign up with phone</b><span>+63 is built in. "We'll text you a code. No password."</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/02-fb-signup-email.png" alt="Sign up screen in email mode" loading="lazy"></div><figcaption><b><span class="n">2</span>Or with email</b><span>Tells Google users they can type their Gmail and get a code.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/03-fb-non-ph-number.png" alt="Notice that SMS codes only work for Philippine numbers" loading="lazy"></div><figcaption><b><span class="n">3</span>Not a Philippine number</b><span>Switches them to email on its own.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/08-fb-login.png" alt="Log in screen inside Facebook with phone field" loading="lazy"></div><figcaption><b><span class="n">4</span>Log in</b><span>"Text me a code". Email and password still there for people who want them.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/07-fb-finish-logging-in.png" alt="Banner saying finish logging in, enter your code" loading="lazy"></div><figcaption><b><span class="n">5</span>Facebook closed the page?</b><span>"Finish logging in" brings them back to the code for 10 minutes.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>The code screen</h2>
+    <p class="section-intro">Texts come from "SEMAPHORE" (our SMS company) until the "Moodeng" sender name is approved in 3–5 days, so the screen says so up front.</p>
+    <div class="grid">
+      <figure><div class="phone"><img src="/design/new-login/screens/04-code-screen-text.png" alt="Code screen telling people to look for a text from SEMAPHORE" loading="lazy"></div><figcaption><b><span class="n">6</span>Check your texts</b><span>Number shown big, with "Change". The code fills in and continues by itself.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/05-code-screen-still-waiting.png" alt="Code screen with tips after the text hasn't arrived" loading="lazy"></div><figcaption><b><span class="n">7</span>Text didn't come</b><span>Tips, then "Get the code by email instead" or "Message us on Messenger".</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/06-code-screen-email.png" alt="Code screen for an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Email code</b><span>Type the code, or tap the button in the email.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>After they're in</h2>
+    <p class="section-intro">New accounts get one question to avoid duplicates. Phone sign-ups add an email later, without leaving Facebook. A password is always optional.</p>
+    <div class="grid">
+      <figure><div class="phone"><img src="/design/new-login/screens/10-new-or-returning.png" alt="Question: have you used Moodeng before?" loading="lazy"></div><figcaption><b><span class="n">9</span>"Have you used Moodeng before?"</b><span>Stops returning borrowers making a second, empty account.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/11-wallet-card-email.png" alt="Email field inside the Create Instant Wallet card" loading="lazy"></div><figcaption><b><span class="n">10</span>Email in the wallet step</b><span>Phone sign-ups add an email here and confirm it later.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/12-confirm-email-reminder.png" alt="Dashboard card asking to confirm the email with a code" loading="lazy"></div><figcaption><b><span class="n">11</span>Confirm your email</b><span>Code typed right on the dashboard. Resend or fix a typo.</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/13-optional-password.png" alt="Optional add a password card" loading="lazy"></div><figcaption><b><span class="n">12</span>Password is optional</b><span>"You can always sign in with a code instead."</span></figcaption></figure>
+      <figure><div class="phone"><img src="/design/new-login/screens/14-settings-add-phone.png" alt="Settings dialog to add a phone number" loading="lazy"></div><figcaption><b><span class="n">13</span>Add a phone in Settings</b><span>Any account (Google, LINE, Telegram too) can add one to log in by text.</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>In a normal browser (Chrome)</h2>
+    <p class="section-intro">Nothing removed. Two new buttons let anyone who signed up inside Facebook log in from Chrome with a code.</p>
+    <div class="grid">
+      <figure><div class="phone"><img src="/design/new-login/screens/09-chrome-login.png" alt="Chrome log in page with Email me a code and Text me a code buttons" loading="lazy"></div><figcaption><b><span class="n">14</span>Log in in Chrome</b><span>Google and password as before, plus "Email me a code" and "Text me a code".</span></figcaption></figure>
+    </div>
+  </section>
+
+  <footer>Screens 9–13 appear after signing in and are shown with sample data. Screenshots taken at phone size from the code that went live on 15 Oct 2026.</footer>
+</div>
+</body>
+</html>

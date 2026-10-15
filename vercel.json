@@ -21,6 +21,7 @@
 
     { "src": "^/repay-design-brief/?$", "dest": "/design/repay-brief/index.html" },
     { "src": "^/repay-design-brief-2/?$", "dest": "/design/repay-round2/index.html" },
+    { "src": "^/new-login-screens/?$", "dest": "/design/new-login/index.html" },
 
     { "src": "^/blogs/?$", "dest": "/blogs/index.html" },
     { "src": "^/blogs/([^/]+)/?$", "dest": "/blogs/$1/index.html" },
