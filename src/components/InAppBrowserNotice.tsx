@@ -1,6 +1,7 @@
 import { type JSX, useEffect, useRef, useState } from 'react';
 
 import posthog from 'posthog-js';
+import { useSelector } from 'react-redux';
 
 import AskSupportButton from '@/components/support/AskSupportButton';
 
@@ -12,6 +13,8 @@ import {
    watchForFailedHandOff,
    watchInAppNoticeHidden
 } from '@/lib/inAppBrowser';
+import { isOpenfortWalletProvider } from '@/lib/walletProvider';
+import type { RootState } from '@/store/store';
 
 const DISMISS_KEY = 'moodeng_inapp_notice_dismissed';
 
@@ -46,15 +49,21 @@ function rememberDismissed(): void {
 
 /**
  * Global, mounted once at the app root. When the page is running inside a social/messaging
- * in-app browser (Messenger, Facebook, Instagram, LINE…), Google sign-in and wallet
- * connections silently fail. This shows a dismissable notice that gets the user into their
- * real browser — one tap on Android (Chrome intent), guided instructions on iOS.
+ * in-app browser (Messenger, Facebook, Instagram, LINE…), outside wallets (Base etc.) silently
+ * fail. This shows a dismissable notice that gets the user into their real browser — one tap on
+ * Android (Chrome intent), guided instructions on iOS.
+ *
+ * Only for signed-in people with an outside wallet (2026-10-15). Everyone else can now do the whole
+ * journey inside Facebook — code sign-in, the Instant Wallet, onboarding, the loan request — and
+ * George wants them kept there, so the banner no longer tells them to leave.
  */
 export default function InAppBrowserNotice(): JSX.Element | null {
    const [info, setInfo] = useState<InAppBrowserInfo | null>(null);
    const [dismissed, setDismissed] = useState(false);
    // Hidden while a screen shows its own help for this (see setInAppNoticeHidden).
    const [hiddenByScreen, setHiddenByScreen] = useState(false);
+   const walletProvider = useSelector((state: RootState) => state.auth.user?.walletProvider ?? null);
+   const hasOutsideWallet = Boolean(walletProvider) && !isOpenfortWalletProvider(walletProvider);
    const [copied, setCopied] = useState(false);
    // Android only: we tried to hand off to Chrome and the page is still here (Facebook's in-app
    // browser ignores the intent link). Switch to step-by-step "⋮ → Open in Chrome" instructions.
@@ -81,7 +90,7 @@ export default function InAppBrowserNotice(): JSX.Element | null {
       };
    }, []);
 
-   const visible = Boolean(info?.isInApp) && !dismissed && !hiddenByScreen;
+   const visible = Boolean(info?.isInApp) && hasOutsideWallet && !dismissed && !hiddenByScreen;
 
    // How many people see the "Open in Chrome/Safari" notice and how many close it — once per page load.
    const shownTrackedRef = useRef(false);
@@ -91,7 +100,7 @@ export default function InAppBrowserNotice(): JSX.Element | null {
       track('inapp_notice_shown', info);
    }, [visible, info]);
 
-   if (!info?.isInApp || dismissed || hiddenByScreen) return null;
+   if (!info?.isInApp || !hasOutsideWallet || dismissed || hiddenByScreen) return null;
 
    const appLabel = info.appName ?? 'this app';
 
@@ -238,10 +247,10 @@ export default function InAppBrowserNotice(): JSX.Element | null {
                <p className="text-[15px] font-semibold leading-tight text-[#1b0a36] dark:text-[#F8F4FF]">Open Moodeng in your browser</p>
                <p className="mt-1 text-[13px] leading-snug text-[#5b5470] dark:text-[#B5ACBE]">
                   {info.canBreakOut ? (
-                     <>Google sign-in and wallet payments don&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
+                     <>Your wallet doesn&apos;t work inside {appLabel}. Tap below to continue in Chrome.</>
                   ) : (
                      <>
-                        Sign-in doesn&apos;t stay saved and wallet payments don&apos;t work inside {appLabel}. Tap{' '}
+                        Your wallet doesn&apos;t work inside {appLabel}. Tap{' '}
                         <span className="font-semibold">•••</span> at the top, choose <span className="font-semibold">Open in Browser</span>
                         , or use a button below.
                      </>

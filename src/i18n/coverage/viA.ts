@@ -373,6 +373,7 @@ export const vietnameseCoverageA: Record<string, string> = {
    // src/components/InAppBrowserNotice.tsx
    'Open Moodeng in your browser': 'Mở Moodeng trong trình duyệt',
    "Google sign-in and wallet payments don't work inside": 'Đăng nhập bằng Google và thanh toán bằng ví không hoạt động trong',
+   "Your wallet doesn't work inside": 'Ví của bạn không hoạt động trong',
    '. Tap below to continue in Chrome.': '. Nhấn bên dưới để tiếp tục trong Chrome.',
    '. Tap': '. Nhấn',
    'at the top, choose': 'ở phía trên, chọn',

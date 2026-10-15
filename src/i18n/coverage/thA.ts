@@ -384,6 +384,7 @@ export const thaiCoverageA: Record<string, string> = {
    'Open in your browser': 'เปิดในเบราว์เซอร์ของคุณ',
    'Open Moodeng in your browser': 'เปิด Moodeng ในเบราว์เซอร์ของคุณ',
    "Google sign-in and wallet payments don't work inside": 'การเข้าสู่ระบบด้วย Google และการชำระเงินด้วยกระเป๋าเงินใช้งานไม่ได้ใน',
+   "Your wallet doesn't work inside": 'กระเป๋าเงินของคุณใช้งานไม่ได้ใน',
    'this app': 'แอปนี้',
    '. Tap below to continue in Chrome.': ' แตะด้านล่างเพื่อไปต่อใน Chrome',
    '. Tap': ' ให้แตะ',
