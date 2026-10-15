@@ -4,7 +4,16 @@ import { Mail } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
-import { AuthFooter, AuthInputField, DividerWithText, SignUpFormErrorAlert, SocialAuthButtons, SocialButton } from '@/components/auth';
+import {
+   AuthFooter,
+   AuthInputField,
+   DividerWithText,
+   FacebookAuthButton,
+   SignUpFormErrorAlert,
+   SocialAuthButtons,
+   SocialButton,
+   useFacebookPrimary
+} from '@/components/auth';
 import Loading from '@/components/Loading';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
@@ -55,6 +64,8 @@ export default function SignUpPage() {
    const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
    // Inside Facebook's (or any app's) browser Google sign-in can't work, so email leads there.
    const inAppBrowser = useMemo(() => detectInAppBrowser().isInApp, []);
+   // Inside Facebook/Messenger/Instagram (once Facebook login is on) "Continue with Facebook" leads, above email.
+   const facebookPrimary = useFacebookPrimary();
    const [username, setUsername] = useState('');
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
@@ -230,17 +241,31 @@ export default function SignUpPage() {
                      </p>
                      {inAppBrowser ? (
                         <>
-                           <SocialButton
-                              icon={<Mail className="w-5 h-5 text-white" />}
-                              text="Sign Up with Email"
-                              variant="solid"
-                              backgroundColor="#6010D2"
-                              onClick={() => setShowEmailForm(true)}
-                              className="max-w-[400px] min-h-[56px] font-semibold"
-                           />
+                           {facebookPrimary ? (
+                              <>
+                                 <FacebookAuthButton isSignUp variant="full" />
+                                 <SocialButton
+                                    icon={<Mail className="w-5 h-5 text-[#250650] dark:text-[#F8F4FF]" />}
+                                    text="Sign Up with Email"
+                                    variant="outline"
+                                    onClick={() => setShowEmailForm(true)}
+                                    className="mt-4 max-w-[400px] min-h-[56px] border-[#B5ACBE]"
+                                 />
+                              </>
+                           ) : (
+                              <SocialButton
+                                 icon={<Mail className="w-5 h-5 text-white" />}
+                                 text="Sign Up with Email"
+                                 variant="solid"
+                                 backgroundColor="#6010D2"
+                                 onClick={() => setShowEmailForm(true)}
+                                 className="max-w-[400px] min-h-[56px] font-semibold"
+                              />
+                           )}
                            <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
                            <SocialAuthButtons
                               isSignUp
+                              hideFacebook
                               onGoogleSuccess={handleGoogleAuth}
                               onGoogleError={handleOAuthError}
                               onTelegramAuth={handleTelegramAuth}
