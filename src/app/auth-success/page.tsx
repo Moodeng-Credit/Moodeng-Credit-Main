@@ -125,6 +125,7 @@ function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
          <OnboardingHeader hideBack />
          <main className="flex flex-1 flex-col justify-center px-5 pb-14">
             <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-4 text-center">
+               <img src="/hippos/thinking.png" alt="" className="h-[120px] w-auto object-contain" />
                {returning ? (
                   <>
                      <h1 className="text-[30px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] dark:text-white">
