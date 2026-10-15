@@ -34,6 +34,7 @@ vi.mock('@/components/ToastSystem/hooks/useToast', () => ({ useToast: () => ({ s
 const { DUPLICATE_EMAIL_MESSAGE, describeEmailChangeError, dismissConfirmEmailReminder, hasRealEmail, isConfirmEmailReminderDismissed } =
    await import('@/lib/accountEmail');
 const { WalletEmailField } = await import('@/components/account/WalletEmailField');
+const { AddEmailCard } = await import('@/components/account/AddEmailCard');
 const { ConfirmEmailReminder } = await import('@/components/account/ConfirmEmailReminder');
 
 describe('account email helpers', () => {
@@ -135,6 +136,25 @@ describe('email in the Instant Wallet card, confirmed later', () => {
          input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
       });
       expect(h.updateUser).toHaveBeenCalledTimes(1);
+   });
+
+   it('dashboard card (after the first loan request): asks phone-only accounts for an email', async () => {
+      await render(createElement(AddEmailCard));
+      expect(container.textContent).toContain('Add your email');
+      expect(container.textContent).toContain('For loan receipts and payment reminders.');
+      expect(container.textContent).toContain("We'll send a code to confirm it.");
+   });
+
+   it('dashboard card hides for real emails and once an email is pending (the confirm card takes over)', async () => {
+      h.user = { email: 'maria@example.com', new_email: null };
+      h.profileEmail = 'maria@example.com';
+      await render(createElement(AddEmailCard));
+      expect(container.innerHTML).toBe('');
+
+      h.user = { email: '', new_email: 'maria@example.com' };
+      h.profileEmail = 'phone_abc@moodeng.app';
+      await render(createElement(AddEmailCard));
+      expect(container.innerHTML).toBe('');
    });
 
    it('an email that already has an account gets the log-in hint', async () => {

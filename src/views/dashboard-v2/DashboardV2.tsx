@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { AddEmailCard } from '@/components/account/AddEmailCard';
 import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import GuidedTourPreview from '@/components/GuidedTourPreview';
 import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
@@ -128,6 +129,11 @@ export default function DashboardV2() {
    const isBorrower = useIsBorrower();
    const userId = useSelector((state: RootState) => state.auth.user?.id) ?? '';
    const authUser = useSelector((state: RootState) => state.auth.user);
+   // Phone sign-ups are asked for an email only after their first loan request, so nothing slows
+   // them down on the way there (they often do the whole thing inside Facebook's browser).
+   const hasRequestedLoan = useSelector((state: RootState) =>
+      (state.loans.loans.gloans || []).some((loan) => loan.borrowerUser === userId)
+   );
    // In manual review — or declined — without a confirmed Facebook/WhatsApp line: point them to the
    // Facebook step, so the team can tell them the result (review) or talk them through it (declined).
    const verificationState = getVerificationUiState(authUser);
@@ -222,7 +228,8 @@ export default function DashboardV2() {
                         <WalletBalanceCard />
                      </div>
                   ) : null}
-                  {/* An email added later (phone sign-ups) waiting for its code. */}
+                  {/* Phone sign-ups: add an email after the first loan request, then confirm it with a code. */}
+                  {isReal && hasRequestedLoan ? <AddEmailCard /> : null}
                   {isReal ? <ConfirmEmailReminder placement="dashboard" /> : null}
                   {model.showWithdraw ? <WithdrawBanner onWithdraw={() => navigate('/withdraw')} /> : null}
                   {showConnectFacebook ? <ConnectFacebookBanner declined={verificationState === 'declined'} language={language} onConnect={() => navigate('/verify')} /> : null}
