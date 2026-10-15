@@ -21,6 +21,8 @@ export function AuthFooter() {
             </p>
             <p className="text-xs text-[#4D4359] text-center tracking-[-0.02em]">
                © 2026 Moodeng Credit All Rights Reserved
+               <br />
+               Operated by Building Credit Asia LLC, a Colorado limited liability company.
             </p>
          </div>
       </footer>

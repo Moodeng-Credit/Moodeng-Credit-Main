@@ -8,7 +8,7 @@ const sections = [
       content: (
          <>
             <p className="text-base leading-6 tracking-[-0.02em] text-[#4D4359]">
-               Moodeng Credit ("Moodeng", "we", "our", or "us") respects your privacy and is committed to
+               Moodeng Credit, operated by Building Credit Asia LLC, a Colorado limited liability company ("Moodeng", "we", "our", or "us"), respects your privacy and is committed to
                protecting your personal information. This Privacy Policy explains how we collect, use, store,
                share, and protect information when you use the Moodeng Credit platform — including our website,
                mobile applications, lending marketplace, identity verification services, and related products.
