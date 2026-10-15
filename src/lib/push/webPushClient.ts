@@ -132,6 +132,22 @@ const setPushOptedOut = (optedOut: boolean) => {
 
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
+/**
+ * Why the last sync came back 'failed', so the caller can tell a phone that can't do push (Chrome
+ * refused to subscribe) from our own bug (the save to Supabase failed). A borrower on 2026-10-15
+ * got 'failed' 22 times and we couldn't tell which it was.
+ */
+export type PushFailure = { stage: 'service-worker' | 'subscribe' | 'save'; errorName?: string; errorMessage?: string };
+
+let lastPushFailure: PushFailure | null = null;
+
+export const getLastPushFailure = (): PushFailure | null => lastPushFailure;
+
+const describeError = (error: unknown): Pick<PushFailure, 'errorName' | 'errorMessage'> =>
+   error instanceof Error
+      ? { errorName: error.name, errorMessage: error.message.slice(0, 200) }
+      : { errorMessage: String(error).slice(0, 200) };
+
 export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
    if (!isPushSupported()) {
       return null;
@@ -145,6 +161,7 @@ export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistra
          .then((registration) => navigator.serviceWorker.ready.then(() => registration))
          .catch((error) => {
             console.warn('Push service worker registration failed', error);
+            lastPushFailure = { stage: 'service-worker', ...describeError(error) };
             registrationPromise = null;
             return null;
          });
@@ -155,6 +172,7 @@ export const registerPushServiceWorker = async (): Promise<ServiceWorkerRegistra
 
 const persistSubscription = async (subscription: PushSubscription, locale: string): Promise<boolean> => {
    if (!isSupabaseBrowserConfigured()) {
+      lastPushFailure = { stage: 'save', errorMessage: 'supabase not configured' };
       return false;
    }
 
@@ -163,6 +181,7 @@ const persistSubscription = async (subscription: PushSubscription, locale: strin
    const auth = json.keys?.auth ?? arrayBufferToBase64Url(subscription.getKey('auth'));
 
    if (!p256dh || !auth) {
+      lastPushFailure = { stage: 'save', errorMessage: 'subscription has no keys' };
       return false;
    }
 
@@ -178,6 +197,7 @@ const persistSubscription = async (subscription: PushSubscription, locale: strin
 
    if (error) {
       console.warn('Failed to store push subscription', error.message);
+      lastPushFailure = { stage: 'save', errorName: error.code, errorMessage: error.message.slice(0, 200) };
       return false;
    }
 
@@ -214,6 +234,7 @@ export const syncPushSubscription = (options: { locale?: string; promptIfNeeded?
 };
 
 const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean }): Promise<PushRegistrationOutcome> => {
+   lastPushFailure = null;
    const { locale = 'en', promptIfNeeded = false } = options;
 
    if (!isPushSupported()) {
@@ -248,6 +269,7 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
 
    const registration = await registerPushServiceWorker();
    if (!registration) {
+      lastPushFailure ??= { stage: 'service-worker' };
       return 'failed';
    }
 
@@ -292,6 +314,7 @@ const runPushSync = async (options: { locale?: string; promptIfNeeded?: boolean 
       return 'subscribed';
    } catch (error) {
       console.warn('Push subscription failed', error);
+      lastPushFailure = { stage: 'subscribe', ...describeError(error) };
       return 'failed';
    }
 };
