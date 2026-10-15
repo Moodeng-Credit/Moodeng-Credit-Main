@@ -19,6 +19,7 @@ import {
    type StuckBorrower,
    type StuckCode
 } from '../_shared/messengerStuckAlert.ts';
+import { handleRemindersStuck, REMINDERS_CORS } from '../_shared/remindersStuckHandler.ts';
 import { buildMessengerVerifyLink, MESSENGER_PAGE_URL } from '../_shared/sendpulse.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 
@@ -35,6 +36,10 @@ import { isInternalRequest } from '../_shared/internalAuth.ts';
 // code here is that borrower's latest attempt. users.messenger_stuck_alerted_at keeps it to one
 // email + one ping per borrower per day.
 //
+// Also serves "reminders couldn't turn on" (body `reminders: true`), from the onboarding app and a
+// daily pg_cron health check: see _shared/remindersStuckHandler.ts. It lives here because the
+// project is at Supabase's edge-function limit.
+//
 // verify_jwt stays on (no config.toml entry → project default), and the pg_cron job calls it with
 // the service key, so only a valid project token reaches it.
 
@@ -45,10 +50,14 @@ const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 serve(async (req) => {
+   // The browser preflights the app's reminders report; the cron job never sends OPTIONS.
+   if (req.method === 'OPTIONS') return new Response('ok', { headers: REMINDERS_CORS });
    if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: 'not_configured' }, 500);
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+   const body = await req.json().catch(() => ({}));
+   if (body?.reminders === true) return handleRemindersStuck(req, body, svc);
    if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
    const now = Date.now();
 

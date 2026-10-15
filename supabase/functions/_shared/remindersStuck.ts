@@ -1,4 +1,4 @@
-// Wording + rules for "reminders couldn't turn on" (reminders-stuck edge function).
+// Wording + rules for "reminders couldn't turn on" (served by messenger-stuck-alerts, body `reminders: true`).
 //
 // The onboarding Facebook step asks borrowers to turn on push reminders. When a phone can't (the
 // browser blocks notifications, Chrome fails to subscribe, or they're inside Facebook's own browser,
@@ -129,7 +129,7 @@ export const buildRemindersStuckAlert = (
       .join('\n');
 };
 
-// Daily check (pg_cron → reminders-stuck { mode: 'daily_check' }): if borrowers kept reaching the
+// Daily check (pg_cron → messenger-stuck-alerts { reminders: true, mode: 'daily_check' }): if borrowers kept reaching the
 // reminders card but no phone signed up for reminders, push is probably broken for everyone (a
 // Chrome update, a bad VAPID key, our save failing) rather than one odd phone. On 2026-10-15 we only
 // noticed after a borrower messaged the Page.
