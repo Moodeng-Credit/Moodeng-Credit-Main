@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Moodeng Login Test</title>
+<!--
+  Public test page for the phone / email code sign-in and the onboarding inside Facebook's browser
+  (moodeng.app/login-test). Testers go through each case on their own phone and tap what happened.
+  Every answer goes to PostHog as `login_test_result` with the phone (iPhone/Android) and browser
+  (Facebook, Messenger, Chrome, Safari…) detected here, so the team sees results per device in the
+  "Login Testing" PostHog dashboard. Same reporting pattern as /messenger-test.html.
+-->
+<style>
+  :root { --bg:#f7f5fb; --card:#fff; --ink:#1b0a36; --muted:#5d5470; --line:#e6def3; --brand:#6010d2; --brand-soft:#f1e9fe; --ok:#15803d; --ok-soft:#e5f6ea; --bad:#b91c1c; --bad-soft:#fde8e8; --meh:#92400e; --meh-soft:#fff3dd; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:24px; line-height:1.2; margin:0 0 6px; }
+  h2 { font-size:18px; margin:0; }
+  h3 { font-size:15px; margin:18px 0 6px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  p { margin:0; }
+  .muted { color:var(--muted); font-size:14px; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0; }
+  .device { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .chip { font-size:13px; font-weight:700; padding:3px 10px; border-radius:99px; background:var(--brand-soft); color:var(--brand); }
+  .chip.warn { background:var(--meh-soft); color:var(--meh); }
+  label.name { display:block; font-size:14px; font-weight:600; margin-top:10px; }
+  input[type=text], textarea { width:100%; font:inherit; font-size:16px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; background:#fbfafd; color:var(--ink); }
+  textarea { min-height:64px; resize:vertical; }
+  .case { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin:12px 0; }
+  .case.done-worked { border-color:#9ad8ad; }
+  .case.done-failed { border-color:#f1a3a3; }
+  .case.done-unsure { border-color:#f2cf8f; }
+  .head { display:flex; gap:10px; align-items:flex-start; }
+  .letter { flex:0 0 32px; height:32px; border-radius:10px; background:var(--brand); color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .where { font-size:12px; font-weight:700; color:var(--muted); margin-top:2px; }
+  ol { margin:10px 0 0; padding-left:22px; font-size:15px; }
+  ol li { margin:3px 0; }
+  .expect { margin-top:10px; font-size:14px; background:var(--brand-soft); border-radius:10px; padding:8px 10px; }
+  .open { display:block; text-align:center; margin-top:10px; padding:11px; border-radius:12px; background:var(--brand); color:#fff; font-weight:700; text-decoration:none; }
+  .open.secondary { background:#fff; color:var(--brand); border:1px solid var(--brand); }
+  .answers { display:flex; gap:8px; margin-top:12px; }
+  .answers button { flex:1; min-height:46px; border:1px solid var(--line); background:#faf9fd; border-radius:12px; font:inherit; font-size:15px; font-weight:600; color:var(--ink); }
+  .answers button.picked.worked { background:var(--ok-soft); border-color:var(--ok); color:var(--ok); }
+  .answers button.picked.failed { background:var(--bad-soft); border-color:var(--bad); color:var(--bad); }
+  .answers button.picked.unsure { background:var(--meh-soft); border-color:var(--meh); color:var(--meh); }
+  .note { margin-top:8px; }
+  .note button { margin-top:6px; min-height:40px; width:100%; border:0; border-radius:10px; background:var(--ink); color:#fff; font:inherit; font-weight:600; }
+  .sent { font-size:13px; color:var(--ok); margin-top:6px; min-height:18px; }
+  .progress { position:sticky; top:0; z-index:2; background:var(--bg); padding:8px 0; font-size:14px; font-weight:700; }
+  .bar { height:6px; background:var(--line); border-radius:99px; overflow:hidden; margin-top:4px; }
+  .bar span { display:block; height:100%; background:var(--brand); width:0; }
+  button.copy { margin-top:8px; min-height:46px; width:100%; border:0; border-radius:12px; background:var(--brand); color:#fff; font:inherit; font-weight:700; }
+  a { color:var(--brand); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Moodeng login test</h1>
+  <p class="muted">Thank you for helping! Go through each test on your phone and tap what happened. Your answers are sent to the Moodeng team automatically.</p>
+
+  <div class="box">
+    <h2>Your phone</h2>
+    <div class="device" id="device"></div>
+    <p class="muted" id="deviceHint" style="margin-top:8px"></p>
+    <label class="name" for="who">Your name</label>
+    <input type="text" id="who" placeholder="e.g. Emma" autocomplete="name">
+  </div>
+
+  <div class="box">
+    <h2>Before you start</h2>
+    <ol>
+      <li>Most tests should be done <b>inside Facebook or Messenger</b>, like a real borrower. Send this link to yourself in Messenger and tap it: <b>moodeng.app/login-test</b></li>
+      <li>Use a <b>Philippine phone number you can receive texts on</b>, and an email you can open.</li>
+      <li>Use a <b>new number and email</b> that have never been used on Moodeng, so you get a fresh account.</li>
+      <li>When a test opens Moodeng, come back here with the <b>Back</b> button and tap what happened.</li>
+    </ol>
+  </div>
+
+  <div class="progress"><span id="progressText">0 of 0 done</span><div class="bar"><span id="progressBar"></span></div></div>
+
+  <div id="cases"></div>
+
+  <div class="box">
+    <h2>All done?</h2>
+    <p class="muted">Your answers were already sent. If you want, copy them and paste them in our Messenger chat too.</p>
+    <button class="copy" id="copy" type="button">Copy my results</button>
+    <p class="sent" id="copied"></p>
+  </div>
+</div>
+
+<script>
+(function () {
+  var POSTHOG_KEY = 'phc_qjr9yzwxKTun5ofaWE5z6QWrpY9dV9TsRMMRmX2rooEV';
+  var POSTHOG_URL = 'https://us.i.posthog.com/i/v0/e/';
+  var STORE = 'moodeng.loginTest.v1';
+  var ROUND = '2026-10-15';
+
+  // ---- Device detection (same signals as src/lib/inAppBrowser.ts) ----
+  var ua = navigator.userAgent || '';
+  var os = /iPhone|iPad|iPod/i.test(ua) ? 'iPhone' : /Android/i.test(ua) ? 'Android' : 'Computer';
+  var browser =
+    /Messenger|MESSENGER|Orca/i.test(ua) && /FBAN|FBAV|FB_IAB/i.test(ua) ? 'Messenger' :
+    /FBAN|FBAV|FB_IAB/i.test(ua) ? 'Facebook' :
+    /Instagram/i.test(ua) ? 'Instagram' :
+    /Line\//i.test(ua) ? 'LINE' :
+    /TikTok|musical_ly|BytedanceWebview/i.test(ua) ? 'TikTok' :
+    /CriOS|Chrome/i.test(ua) && !/EdgA|Edg\/|SamsungBrowser|OPR/i.test(ua) ? 'Chrome' :
+    /SamsungBrowser/i.test(ua) ? 'Samsung Internet' :
+    /Safari/i.test(ua) && os === 'iPhone' ? 'Safari' : 'Other browser';
+  var inApp = ['Facebook', 'Messenger', 'Instagram', 'LINE', 'TikTok'].indexOf(browser) !== -1;
+  var where = inApp ? 'in_app' : 'normal_browser';
+
+  var dev = document.getElementById('device');
+  [os, browser + (inApp ? ' (inside the app)' : '')].forEach(function (t, i) {
+    var c = document.createElement('span'); c.className = 'chip' + (i === 1 && !inApp ? ' warn' : ''); c.textContent = t; dev.appendChild(c);
+  });
+  document.getElementById('deviceHint').textContent = inApp
+    ? 'Great, you are inside ' + browser + ', like a real borrower. Do the "Inside Facebook" tests here.'
+    : 'You are in a normal browser. Do the "In Chrome or Safari" tests here. For the others, send moodeng.app/login-test to yourself in Messenger and open it there.';
+
+  // ---- Test cases ----
+  var CASES = [
+    { group: 'Inside Facebook or Messenger', id: 'A', title: 'Sign up with your phone', where: 'Inside Facebook', open: '/sign-up', steps: [
+      'Tap "Open Moodeng" below.',
+      'You should see a 🇵🇭 +63 box. Type your number (e.g. 0917 123 4567) and tap Continue.',
+      'Wait for a text from SEMAPHORE (up to 1 minute). Type the code. It should continue by itself.',
+      'You should see "Have you used Moodeng before?". Tap "New to Moodeng".'
+    ], expect: 'The text arrives, the code works, and you get into Moodeng without a password.' },
+    { group: 'Inside Facebook or Messenger', id: 'B', title: 'Wrong code and resend', where: 'Inside Facebook', open: '/sign-in', steps: [
+      'Log out first if you are logged in (Account → Log out).',
+      'Tap "Open Moodeng", type your number, tap "Text me a code".',
+      'Type a wrong code like 111111. You should see a clear "wrong code" message.',
+      'Wait 60 seconds and tap "Resend code". A new text should arrive. Type it.'
+    ], expect: 'Wrong code is explained, Resend works after 60 seconds, the new code logs you in.' },
+    { group: 'Inside Facebook or Messenger', id: 'C', title: 'Facebook closed the page', where: 'Inside Facebook', open: '/sign-in', steps: [
+      'Log out first. Tap "Open Moodeng", type your number, tap "Text me a code".',
+      'Before typing the code, close the page completely (the X at the top), then tap the moodeng.app link again in Messenger.',
+      'Go to moodeng.app/sign-in. You should see "Finish logging in: enter your code" at the top. Tap it and type the code.'
+    ], expect: 'You can finish logging in without asking for a new code.' },
+    { group: 'Inside Facebook or Messenger', id: 'D', title: 'Sign up with email', where: 'Inside Facebook', open: '/sign-up', steps: [
+      'Use a NEW email. Tap "Open Moodeng", then "Use email instead".',
+      'Type your email and tap Continue.',
+      'Check your email: the subject should start with the code. Come back to Facebook and type it.'
+    ], expect: 'The email arrives with the code in the subject, and the code gets you in without leaving Facebook for long.' },
+    { group: 'Inside Facebook or Messenger', id: 'E', title: 'A number from another country', where: 'Inside Facebook', open: '/sign-up', steps: [
+      'Tap "Open Moodeng". In the phone box, type +971 50 123 4567 (a UAE number).'
+    ], expect: 'It says SMS codes are for Philippine numbers only and switches you to email.' },
+    { group: 'Inside Facebook or Messenger', id: 'F', title: 'What you see on the sign-up page', where: 'Inside Facebook', open: '/sign-up', steps: [
+      'Tap "Open Moodeng" and look at the page.'
+    ], expect: 'Only phone or email. No Google, Telegram or LINE buttons (just a small "open in Chrome" line for Google). No password box.' },
+    { group: 'Inside Facebook or Messenger', id: 'G', title: 'Onboarding: create your wallet', where: 'Inside Facebook', open: '/dashboard', steps: [
+      'Logged in as the account from test A. Tap "Open Moodeng" and follow the steps to "Create Instant Wallet".',
+      'Tap it and wait a few seconds.'
+    ], expect: 'The wallet is created inside Facebook. No email is asked. No banner telling you to open Chrome.' },
+    { group: 'Inside Facebook or Messenger', id: 'H', title: 'Onboarding: connect Messenger', where: 'Inside Facebook', open: '/dashboard', steps: [
+      'Continue onboarding to the "Connect on Messenger" step and follow it.',
+      'Come back to Moodeng after Messenger.'
+    ], expect: 'Messenger opens our chat, and back in Moodeng the step shows as connected.' },
+    { group: 'Inside Facebook or Messenger', id: 'I', title: 'Onboarding: about you and book the call', where: 'Inside Facebook', open: '/dashboard', steps: [
+      'Fill in "Tell us about you".',
+      'Book a time for the 15-minute call. (You can cancel it afterwards in the confirmation.)'
+    ], expect: 'Everything works without leaving Facebook. The call time shows in the app.' },
+    { group: 'Inside Facebook or Messenger', id: 'J', title: 'Ask for a loan and the ID check', where: 'Inside Facebook', open: '/dashboard', steps: [
+      'Only if your account is already approved after the call: start a loan request.',
+      'Go through the ID check (Didit). Allow the camera if asked.'
+    ], expect: 'The camera opens inside Facebook and you come back to Moodeng after the ID check. (Skip this test if you are not approved yet.)', optional: true },
+    { group: 'Inside Facebook or Messenger', id: 'K', title: '"Add your email" after the loan request', where: 'Inside Facebook', open: '/dashboard', steps: [
+      'Only after test J (you made a loan request with a phone account): open the dashboard.',
+      'You should see "Add your email". Type an email and tap Save.',
+      'A "Confirm your email" card should appear. Type the code from the email.'
+    ], expect: 'The email card only appears after the loan request, and the code confirms it.', optional: true },
+
+    { group: 'In Chrome or Safari', id: 'L', title: 'Log in with your phone from Chrome or Safari', where: 'Normal browser', open: '/sign-in', steps: [
+      'Open this page in Chrome (Android) or Safari (iPhone), not Facebook.',
+      'Tap "Open Moodeng", tap "Text me a code", type the same number as test A.',
+      'Type the code from the text.'
+    ], expect: 'You get into the SAME account as inside Facebook (same name and wallet), and you are NOT asked "Have you used Moodeng before?".' },
+    { group: 'In Chrome or Safari', id: 'M', title: 'Log in with an email code from Chrome or Safari', where: 'Normal browser', open: '/sign-in', steps: [
+      'Tap "Open Moodeng", tap "Email me a code", type the email from test D.',
+      'Type the code from the email.'
+    ], expect: 'You get into the same account as test D, no password needed.' },
+    { group: 'In Chrome or Safari', id: 'N', title: 'Tap the button in the email', where: 'Normal browser', open: '/sign-in', steps: [
+      'Log out. Tap "Open Moodeng", tap "Email me a code", type your email.',
+      'In your email app, tap "Log in to Moodeng" instead of typing the code.'
+    ], expect: 'It opens Moodeng logged in (in Chrome, Safari or the email app\'s browser), not an error.' },
+    { group: 'In Chrome or Safari', id: 'O', title: 'Add a phone in Settings', where: 'Normal browser', open: '/account/settings', steps: [
+      'Use an account made with email or Google (not your phone).',
+      'Open Settings → Phone number → Add. Type a number, tap "Text me a code", type the code.'
+    ], expect: 'The phone is added, and next time you can log in with "Text me a code".', optional: true }
+  ];
+
+  // ---- State ----
+  var load = function () { try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { return {}; } };
+  var save = function (s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} };
+  var state = load();
+  if (!state.deviceId) { state.deviceId = 'lt-' + Math.random().toString(36).slice(2, 10); }
+  state.results = state.results || {};
+  var whoInput = document.getElementById('who');
+  whoInput.value = state.who || new URLSearchParams(location.search).get('who') || '';
+  whoInput.addEventListener('change', function () { state.who = whoInput.value.trim(); save(state); });
+  save(state);
+
+  var send = function (props) {
+    var body = JSON.stringify({
+      api_key: POSTHOG_KEY, event: 'login_test_result', distinct_id: state.deviceId,
+      properties: Object.assign({
+        round: ROUND, tester: (whoInput.value || '').trim(), os: os, browser: browser, in_app: inApp, where: where,
+        user_agent: ua, $current_url: location.href, $lib: 'login-test-page'
+      }, props)
+    });
+    try { fetch(POSTHOG_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }); } catch (e) {}
+  };
+
+  // ---- Render ----
+  var ANSWERS = [['worked', '✅ Worked'], ['failed', '❌ Didn\'t work'], ['unsure', '🤷 Not sure']];
+  var container = document.getElementById('cases');
+  var lastGroup = null;
+
+  var updateProgress = function () {
+    var done = CASES.filter(function (c) { return state.results[c.id] && state.results[c.id].answer; }).length;
+    document.getElementById('progressText').textContent = done + ' of ' + CASES.length + ' tests done';
+    document.getElementById('progressBar').style.width = Math.round((done / CASES.length) * 100) + '%';
+  };
+
+  CASES.forEach(function (c) {
+    if (c.group !== lastGroup) {
+      var h = document.createElement('h3'); h.textContent = c.group; container.appendChild(h); lastGroup = c.group;
+    }
+    var card = document.createElement('div'); card.className = 'case'; card.id = 'case-' + c.id;
+    var steps = c.steps.map(function (s) { return '<li>' + s.replace(/</g, '&lt;').replace(/&lt;b>/g, '<b>').replace(/&lt;\/b>/g, '</b>') + '</li>'; }).join('');
+    card.innerHTML =
+      '<div class="head"><div class="letter">' + c.id + '</div><div><h2></h2><div class="where"></div></div></div>' +
+      '<ol>' + steps + '</ol>' +
+      '<div class="expect"><b>Should happen:</b> <span class="exp"></span></div>' +
+      (c.open ? '<a class="open" href="' + c.open + '">Open Moodeng</a>' : '') +
+      '<div class="answers"></div>' +
+      '<div class="note"><textarea placeholder="What happened? (optional, but very helpful if it didn\'t work)"></textarea><button type="button">Send note</button></div>' +
+      '<p class="sent"></p>';
+    card.querySelector('h2').textContent = c.title;
+    card.querySelector('.where').textContent = c.where + (c.optional ? ' · optional' : '');
+    card.querySelector('.exp').textContent = c.expect;
+
+    var r = state.results[c.id] || {};
+    var answersBox = card.querySelector('.answers');
+    var sent = card.querySelector('.sent');
+    var note = card.querySelector('textarea');
+    note.value = r.note || '';
+
+    var paint = function () {
+      var cur = state.results[c.id] || {};
+      card.className = 'case' + (cur.answer ? ' done-' + cur.answer : '');
+      Array.prototype.forEach.call(answersBox.children, function (b) {
+        b.className = b.dataset.answer === cur.answer ? 'picked ' + cur.answer : '';
+      });
+    };
+
+    ANSWERS.forEach(function (a) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = a[1]; b.dataset.answer = a[0];
+      b.addEventListener('click', function () {
+        var cur = state.results[c.id] || {};
+        cur.answer = a[0]; cur.at = new Date().toISOString(); state.results[c.id] = cur; save(state);
+        send({ case_id: c.id, case_title: c.title, answer: a[0], note: (note.value || '').trim() || null });
+        sent.textContent = 'Sent. Thank you!';
+        paint(); updateProgress();
+      });
+      answersBox.appendChild(b);
+    });
+
+    card.querySelector('.note button').addEventListener('click', function () {
+      var cur = state.results[c.id] || {};
+      cur.note = (note.value || '').trim(); state.results[c.id] = cur; save(state);
+      if (!cur.note) { sent.textContent = 'Type what happened first.'; return; }
+      send({ case_id: c.id, case_title: c.title, answer: cur.answer || 'note_only', note: cur.note });
+      sent.textContent = 'Note sent. Thank you!';
+    });
+
+    if (c.open) {
+      card.querySelector('.open').addEventListener('click', function () {
+        send({ case_id: c.id, case_title: c.title, answer: 'opened', note: null });
+      });
+    }
+
+    paint();
+    container.appendChild(card);
+  });
+  updateProgress();
+
+  // ---- Copy results ----
+  document.getElementById('copy').addEventListener('click', function () {
+    var lines = ['Moodeng login test (' + ROUND + ')', 'Tester: ' + (whoInput.value || '?'), 'Phone: ' + os + ', ' + browser];
+    CASES.forEach(function (c) {
+      var cur = state.results[c.id] || {};
+      lines.push(c.id + '. ' + c.title + ': ' + (cur.answer || 'not done') + (cur.note ? ' — ' + cur.note : ''));
+    });
+    var text = lines.join('\n');
+    var done = function () { document.getElementById('copied').textContent = 'Copied. Paste it in our Messenger chat.'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { window.prompt('Copy your results:', text); });
+    } else {
+      window.prompt('Copy your results:', text);
+    }
+  });
+})();
+</script>
+</body>
+</html>
