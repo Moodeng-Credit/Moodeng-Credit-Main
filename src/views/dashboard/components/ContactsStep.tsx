@@ -66,6 +66,8 @@ const RETURN_GRACE_MS = 4_000;
 // and shut — every failed Android attempt looked like this, 0.2–0.5s), or never hidden at all within
 // NOT_OPENED_AFTER_MS of the tap. Either way, go straight to the backups instead of "keep waiting".
 const BOUNCE_MS = 1_500;
+// Reminders that fail to turn on this many times (not blocked — broken) stop blocking Continue.
+const PUSH_FAILURES_BEFORE_OPTIONAL = 2;
 const NOT_OPENED_AFTER_MS = 3_000;
 const MOODENG_FACEBOOK_PAGE_URL = `https://www.facebook.com/${MESSENGER_PAGE_ID}`;
 
@@ -205,7 +207,13 @@ export default function ContactsStep({
    // locked. A borrower on 2026-10-13 tapped ~30 times over 17 minutes. Reminders become optional
    // here, the card says how to unblock, and Messenger and email still reach them.
    const pushBlocked = push.isSupported && push.permission === 'denied';
-   const pushRequired = push.isSupported && !pushBlocked;
+   // Allowed, but this phone can't actually subscribe (Chrome's push service unreachable — e.g. no
+   // working Google Play services). Every tap returns 'failed' before reaching our server, so
+   // Continue stayed locked: a borrower on 2026-10-15 tapped 22 times, gave up before booking her
+   // call, and messaged the Page "the reminder won't turn on". Two failures → reminders are optional.
+   const [pushFailures, setPushFailures] = useState(0);
+   const pushUnavailable = pushFailures >= PUSH_FAILURES_BEFORE_OPTIONAL;
+   const pushRequired = push.isSupported && !pushBlocked && !pushUnavailable;
 
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
@@ -228,7 +236,16 @@ export default function ContactsStep({
       } else if (outcome === 'permission-dismissed') {
          setPushError('Tap Allow when your phone asks, so we can remind you before your due date.');
       } else if (outcome === 'failed') {
-         setPushError("Couldn't turn on reminders — try again in a moment.");
+         const failures = pushFailures + 1;
+         setPushFailures(failures);
+         if (failures >= PUSH_FAILURES_BEFORE_OPTIONAL) {
+            track('contact_push_unavailable', { source, failures });
+            setPushError('');
+         } else {
+            setPushError("Couldn't turn on reminders — try once more.");
+         }
+      } else if (outcome === 'subscribed' || outcome === 'already-subscribed') {
+         setPushFailures(0);
       }
    };
    // Still show WhatsApp to a returning borrower who verified it before, so they can see why
@@ -873,11 +890,11 @@ export default function ContactsStep({
          {verifyError ? <p className="text-center text-md-b3 font-normal text-md-red-500">{verifyError}</p> : null}
 
          {/* Onboarding: one thing at a time — reminders only once Messenger is confirmed. */}
-         {(pushRequired || pushBlocked) && (contactVerified || source !== 'connect') ? (
+         {(pushRequired || pushBlocked || pushUnavailable) && (contactVerified || source !== 'connect') ? (
             // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
             <div className={nudgeReminders ? 'connect-shake' : undefined}>
                <OptionCard
-                  badge={pushBlocked ? 'Optional' : 'Required'}
+                  badge={pushBlocked || pushUnavailable ? 'Optional' : 'Required'}
                   disabled={push.isBusy}
                   done={pushOn}
                   doneLabel="On"
@@ -896,6 +913,8 @@ export default function ContactsStep({
                         ? 'Turning on…'
                         : pushBlocked
                           ? 'Blocked in your browser. Tap to see how to turn it on.'
+                          : pushUnavailable
+                          ? 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
                           : nudgeReminders
                           ? 'One more tap — turn on reminders and you’re through.'
                           : 'We remind you before your due date'
