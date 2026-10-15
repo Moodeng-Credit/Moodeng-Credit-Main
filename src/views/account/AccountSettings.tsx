@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 
+import { PhFlag } from '@/components/auth/PhFlag';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import TelegramAuthButton from '@/components/TelegramAuthButton';
 import { useThemeMode } from '@/components/ThemeModeProvider';
@@ -572,6 +573,7 @@ function AddPhoneModal({ isOpen, onClose, onAdded }: { isOpen: boolean; onClose:
             </div>
             {step === 'enterPhone' ? (
                <div className="flex w-full items-center gap-2 bg-md-neutral-100 border border-md-neutral-600 rounded-md-input shadow-md-card px-md-3 py-md-2">
+                  <PhFlag />
                   <span className="text-md-b1 font-semibold text-md-heading">+63</span>
                   <input
                      type="tel"

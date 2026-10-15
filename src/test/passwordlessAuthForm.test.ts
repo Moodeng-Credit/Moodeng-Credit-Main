@@ -9,7 +9,7 @@ import { detectInAppBrowser } from '@/lib/inAppBrowser';
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
 
-// The passwordless form: ONE field with a 📱 +63 / ✉️ pill. Phone first for visitors in the
+// The passwordless form: ONE field with a 🇵🇭 +63 / ✉️ pill. Phone first for visitors in the
 // Philippines (or whatever they used last time); letters/@ switch to email, digits to phone; a
 // non-PH number moves them to email; sign-in never creates an account.
 const h = vi.hoisted(() => ({
@@ -121,11 +121,11 @@ describe('PasswordlessAuthForm', () => {
       sessionStorage.clear();
    });
 
-   it('in the Philippines: one phone field with the 📱 +63 pill, "0917 123 4567", no password, no tabs', async () => {
+   it('in the Philippines: one phone field with the 🇵🇭 +63 pill, "0917 123 4567", no password, no tabs', async () => {
       await render({ mode: 'signup' });
       expect(input().type).toBe('tel');
       expect(input().placeholder).toBe('0917 123 4567');
-      expect(container.textContent).toContain('📱');
+      expect(container.querySelector('svg rect[fill="#0038A8"]')).not.toBeNull(); // 🇵🇭 flag
       expect(container.textContent).toContain('+63');
       expect(container.textContent).toContain('Philippine numbers only.');
       expect(button('Use email instead')).toBeDefined();
