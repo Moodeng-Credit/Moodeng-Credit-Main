@@ -10,7 +10,7 @@ import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isFacebookFamilyApp, isFacebookLoginEnabled } from '@/lib/facebookAuth';
-import { buildAndroidIntentUrl, detectInAppBrowser, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
+import { buildAndroidIntentUrl, detectInAppBrowser, isFacebookInApp, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
@@ -168,6 +168,10 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const [handOffSteps, setHandOffSteps] = useState(false);
    const stopWatchingRef = useRef<(() => void) | null>(null);
    const googleInApp = inApp.isInApp && (inApp.os === 'android' || inApp.os === 'ios');
+   // Facebook/Messenger: only 9 of 76 visitors got in (Sep–Oct 2026), while email + code did work there.
+   // So Google isn't a button at all — just a small "open in Chrome" line under the other options.
+   const googleAsLine = googleInApp && isFacebookInApp(inApp);
+   const handOffBrowser = inApp.os === 'ios' ? 'Safari' : 'Chrome';
    const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
    const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
 
@@ -250,7 +254,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
          {facebookPrimary && !hideFacebook ? <FacebookAuthButton isSignUp={isSignUp} variant="full" /> : null}
 
          {/* Google inside an app's browser: hand off to Chrome/Safari, where Google sign-in works */}
-         {clientId && googleInApp ? (
+         {clientId && googleInApp && !googleAsLine ? (
             <div className="w-full">
                <a
                   href={inApp.os === 'android' ? buildAndroidIntentUrl(window.location.href) : undefined}
@@ -356,6 +360,44 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
                </div>
             )}
          </div>
+
+         {/* Google inside Facebook/Messenger: a small line, not a button (email above is the way in) */}
+         {clientId && googleAsLine ? (
+            <p className="text-sm leading-5 text-[#5b5470] dark:text-[#B5ACBE]">
+               {handOffSteps ? (
+                  inApp.os === 'ios' ? (
+                     <>
+                        For Google, tap <b>•••</b> at the top, choose <b>Open in Browser</b>, then tap Google there.
+                     </>
+                  ) : (
+                     <>
+                        For Google, tap <b>⋮</b> at the top right, choose <b>Open in Chrome</b>, then tap Google there.
+                     </>
+                  )
+               ) : (
+                  <>
+                     Google sign-in works in {handOffBrowser}, not inside {inApp.appName}.{' '}
+                     {inApp.os === 'android' ? (
+                        <a
+                           href={buildAndroidIntentUrl(window.location.href)}
+                           onClick={handleGoogleInApp}
+                           className="font-semibold text-[#8336F0] underline underline-offset-2"
+                        >
+                           Open in Chrome
+                        </a>
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={handleGoogleInApp}
+                           className="font-semibold text-[#8336F0] underline underline-offset-2"
+                        >
+                           Open in Safari
+                        </button>
+                     )}
+                  </>
+               )}
+            </p>
+         ) : null}
       </div>
    );
 }

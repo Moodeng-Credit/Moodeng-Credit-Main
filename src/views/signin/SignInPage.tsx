@@ -1,4 +1,5 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
+import posthog from 'posthog-js';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 
@@ -11,6 +12,7 @@ import {
    SocialAuthButtons
 } from '@/components/auth';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
+import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getPostSignInPath } from '@/lib/postSignInPath';
 import { Icons } from '@/views/login/components/Icons';
@@ -42,6 +44,13 @@ export default function SignInPage() {
    const [errorProvider, setErrorProvider] = useState<string | null>(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
+   // Facebook/Messenger's browser: Google can't sign in there, so the email form comes first.
+   const inApp = useMemo(() => detectInAppBrowser(), []);
+   const facebookInApp = isFacebookInApp(inApp);
+
+   useEffect(() => {
+      if (import.meta.env.PROD && facebookInApp) posthog.capture('signin_inapp_email_shown', { app: inApp.appName, os: inApp.os });
+   }, [facebookInApp, inApp]);
 
    const getEmailHasProfile = async (value: string) => {
       const supabase = getSupabaseBrowserClient();
@@ -57,6 +66,7 @@ export default function SignInPage() {
       setErrorType(null);
       setErrorProvider(null);
       if (!email || !password) return;
+      if (import.meta.env.PROD && facebookInApp) posthog.capture('signin_inapp_email_submitted', { app: inApp.appName, os: inApp.os });
 
       setIsLoading(true);
       try {
@@ -165,6 +175,16 @@ export default function SignInPage() {
 
    if (isLoading) return <Loading />;
 
+   const socialAuth = (
+      <SocialAuthButtons
+         isSignUp={false}
+         onGoogleSuccess={handleGoogleAuth}
+         onGoogleError={() => setShowAccount(true)}
+         onTelegramAuth={handleTelegramAuth}
+      />
+   );
+   const orDivider = <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />;
+
    return (
       <div className="flex justify-center items-center min-h-screen py-6 sm:py-12 px-4">
          <div
@@ -188,16 +208,10 @@ export default function SignInPage() {
                   Sign in to access your account.
                </p>
 
-               {/* Social auth */}
+               {/* Social auth (below the email form inside Facebook/Messenger) */}
                <div className="w-full flex flex-col gap-4">
-                  <SocialAuthButtons
-                     isSignUp={false}
-                     onGoogleSuccess={handleGoogleAuth}
-                     onGoogleError={() => setShowAccount(true)}
-                     onTelegramAuth={handleTelegramAuth}
-                  />
-
-                  <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />
+                  {facebookInApp ? null : socialAuth}
+                  {facebookInApp ? null : orDivider}
 
                   {/* Email / Password form */}
                   <form onSubmit={handleLogin} className="flex flex-col gap-5">
@@ -309,6 +323,9 @@ export default function SignInPage() {
                         Take a tour first
                      </Link>
                   </form>
+
+                  {facebookInApp ? orDivider : null}
+                  {facebookInApp ? socialAuth : null}
                </div>
             </div>
 

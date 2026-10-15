@@ -387,7 +387,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Copy link': 'Salin link',
    'Open in your browser': 'Buka di browser kamu',
    'Open Moodeng in your browser': 'Buka Moodeng di browser kamu',
-   "Sign-in and wallet payments don't work inside": 'Login dan pembayaran lewat dompet tidak berfungsi di dalam',
+   "Google sign-in and wallet payments don't work inside": 'Login dengan Google dan pembayaran lewat dompet tidak berfungsi di dalam',
    '. Tap below to continue in Chrome.': '. Ketuk di bawah untuk lanjut di Chrome.',
    '. Tap': '. Ketuk',
    'at the top, choose': 'di bagian atas, pilih',

@@ -216,7 +216,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Copy link': 'Kopyahin ang link',
    'Open in your browser': 'Buksan sa browser mo',
    'Open Moodeng in your browser': 'Buksan ang Moodeng sa browser mo',
-   "Sign-in and wallet payments don't work inside": 'Hindi gumagana ang sign-in at wallet payments sa loob ng',
+   "Google sign-in and wallet payments don't work inside": 'Hindi gumagana ang Google sign-in at wallet payments sa loob ng',
    '. Tap below to continue in Chrome.': '. I-tap sa ibaba para magpatuloy sa Chrome.',
    '. Tap': '. I-tap ang',
    'at the top, choose': 'sa itaas, piliin ang',
