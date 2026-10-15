@@ -23,6 +23,17 @@ const browserFor = (os: RemindersStuckOs) => (os === 'ios' ? 'Safari' : 'Chrome'
 /** The borrower's Messenger note: what happened and how to fix it in Chrome/Safari. Taglish, like the Page's replies. */
 export const buildRemindersStuckMessage = (reason: RemindersStuckReason, os: RemindersStuckOs, name?: string | null) => {
    const hi = firstName(name) ? `Hi ${firstName(name)}!` : 'Hi!';
+   if (reason === 'failed') {
+      // Notifications were allowed and they were already in Chrome/Safari: the phone itself can't
+      // take them (often no Google services). Retry steps would only send them back to a dead end.
+      return [
+         `${hi} Nakita naming hindi gumagana ang reminders sa phone mo — hindi mo ito kasalanan, at wala ka nang kailangang gawin.`,
+         '',
+         'Dito na lang namin ipapadala ang reminders mo sa Messenger (video call at due date), kaya huwag i-mute ang chat na ito. 🙏',
+         '',
+         'Puwede ka nang mag-Continue. Mag-message lang kung may tanong. 🦛'
+      ].join('\n');
+   }
    const browser = browserFor(os);
    const steps =
       reason === 'blocked'
@@ -60,10 +71,34 @@ const REASON_LABEL: Record<RemindersStuckReason, string> = {
    in_app: "they're inside Facebook's browser, which has no reminders"
 };
 
+export type RemindersStuckFailure = { stage: 'service-worker' | 'subscribe' | 'save'; errorName?: string; errorMessage?: string };
+
+const FAILURE_STAGES = ['service-worker', 'subscribe', 'save'] as const;
+
+/** Validates the app-reported failure detail (untrusted input) and trims it for the alert. */
+export const parseRemindersStuckFailure = (raw: unknown): RemindersStuckFailure | null => {
+   if (!raw || typeof raw !== 'object') return null;
+   const r = raw as Record<string, unknown>;
+   if (!FAILURE_STAGES.includes(r.stage as RemindersStuckFailure['stage'])) return null;
+   const text = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 200) : undefined);
+   return { stage: r.stage as RemindersStuckFailure['stage'], errorName: text(r.errorName), errorMessage: text(r.errorMessage) };
+};
+
+const STAGE_LABEL: Record<RemindersStuckFailure['stage'], string> = {
+   subscribe: 'Chrome refused to sign the phone up (phone-side)',
+   'service-worker': "the app's background worker didn't start",
+   save: '⚠️ OUR SIDE: saving the sign-up to our database failed — check register_push_subscription'
+};
+
+const describeFailure = (failure: RemindersStuckFailure) => {
+   const error = [failure.errorName, failure.errorMessage].filter(Boolean).join(': ');
+   return `Where: ${STAGE_LABEL[failure.stage]}${error ? ` — ${error}` : ''}`;
+};
+
 export type MessengerOutcome = 'sent' | 'not_connected' | 'window_closed' | 'failed';
 
 const MESSENGER_LINE: Record<MessengerOutcome, string> = {
-   sent: '💬 Bot sent them the Chrome/Safari steps on Messenger.',
+   sent: '💬 Bot messaged them on Messenger.',
    not_connected: "💬 Not messaged: Facebook isn't connected yet.",
    window_closed: "💬 Not messaged: outside Messenger's 24h window. Reach them from the Page inbox.",
    failed: '💬 Messenger send failed. Reach them from the Page inbox.'
@@ -75,7 +110,8 @@ export const buildRemindersStuckAlert = (
    reason: RemindersStuckReason,
    os: RemindersStuckOs,
    messenger: MessengerOutcome,
-   failures?: number
+   failures?: number,
+   failure?: RemindersStuckFailure | null
 ) => {
    const who = borrower.display_name?.trim() || borrower.username || 'A borrower';
    const handle = [borrower.username ? `@${borrower.username}` : null, borrower.email].filter(Boolean).join(' · ');
@@ -85,9 +121,29 @@ export const buildRemindersStuckAlert = (
       `🔕 Reminders didn't turn on — ${who}`,
       handle,
       `Why: ${REASON_LABEL[reason]}${tries} (${phone})`,
+      failure ? describeFailure(failure) : null,
       MESSENGER_LINE[messenger],
       'They can still continue and book their call.'
    ]
       .filter(Boolean)
       .join('\n');
 };
+
+// Daily check (pg_cron → reminders-stuck { mode: 'daily_check' }): if borrowers kept reaching the
+// reminders card but no phone signed up for reminders, push is probably broken for everyone (a
+// Chrome update, a bad VAPID key, our save failing) rather than one odd phone. On 2026-10-15 we only
+// noticed after a borrower messaged the Page.
+export const REMINDERS_HEALTH_MIN_REACHED = 3;
+
+export const shouldAlertRemindersHealth = (reached: number, subscribed: number) =>
+   reached >= REMINDERS_HEALTH_MIN_REACHED && subscribed === 0;
+
+export const buildRemindersHealthAlert = (counts: { reached: number; subscribed: number; stuck: number }) =>
+   [
+      '🚨 No one turned on reminders in the last 24h',
+      `${counts.reached} borrowers connected Facebook (and reached the reminders step), but 0 phones signed up for reminders.`,
+      counts.stuck ? `${counts.stuck} of them hit "reminders didn't turn on" — see those alerts for the error.` : null,
+      'iPhones outside the Home Screen never sign up, so check whether these were Android. If they were, push may be broken for everyone: try "Turn on reminders" on an Android phone.'
+   ]
+      .filter(Boolean)
+      .join('\n');

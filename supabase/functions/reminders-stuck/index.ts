@@ -3,14 +3,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { isInternalRequest } from '../_shared/internalAuth.ts';
 import {
+   buildRemindersHealthAlert,
    buildRemindersStuckAlert,
    buildRemindersStuckMessage,
    type MessengerOutcome,
+   parseRemindersStuckFailure,
    REMINDERS_REALERT_AFTER_MS,
    REMINDERS_STUCK_REASONS,
    type RemindersStuckOs,
-   type RemindersStuckReason
+   type RemindersStuckReason,
+   shouldAlertRemindersHealth
 } from '../_shared/remindersStuck.ts';
 import { findMessengerContactIdByCode, getMessengerContact, isInsideMessagingWindow, sendMessengerMessage } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
@@ -20,6 +24,8 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 //   1. The bot messages them on Messenger how to fix it in Chrome/Safari (they just connected, so
 //      Messenger's 24h window is open).
 //   2. The team gets a line in the KYC Telegram group and Discord #kyc.
+// Also { mode: 'daily_check' } from pg_cron (internal secret only): alerts the team when borrowers
+// reached the reminders card in the last 24h but no phone signed up for reminders.
 // Wording lives in _shared/remindersStuck.ts. users.reminders_stuck_alerted_at keeps it to once per
 // borrower per day. verify_jwt stays on: the caller is the signed-in borrower, and only ever about
 // themselves.
@@ -39,6 +45,36 @@ const OSES: readonly RemindersStuckOs[] = ['android', 'ios', 'other'];
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
+
+const sendTeamAlert = async (svc: Svc, text: string, userLink?: { text: string; url: string }) => {
+   const { data: chatRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
+   const kycChatId = (chatRow as { value?: string } | null)?.value;
+   if (kycChatId) {
+      await sendTelegramMessage(kycChatId, userLink ? `${text}\n${userLink.text}: ${userLink.url}` : text).catch((err: unknown) =>
+         console.error('reminders-stuck: telegram send failed', err instanceof Error ? err.message : err)
+      );
+   }
+   await postDiscord(
+      { content: userLink ? `${text}\n${userLink.text}: <${userLink.url}>` : text },
+      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
+   );
+};
+
+// Daily (pg_cron): borrowers reached the reminders card but no phone signed up → tell the team.
+const runDailyCheck = async (svc: Svc) => {
+   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+   const count = async (table: string, column: string) => {
+      const { count: n, error } = await svc.from(table).select('id', { count: 'exact', head: true }).gte(column, since);
+      if (error) throw new Error(`${table}: ${error.message}`);
+      return n ?? 0;
+   };
+   const reached = await count('users', 'messenger_verified_at');
+   const subscribed = await count('push_subscriptions', 'created_at');
+   const stuck = await count('users', 'reminders_stuck_alerted_at');
+   const alerted = shouldAlertRemindersHealth(reached, subscribed);
+   if (alerted) await sendTeamAlert(svc, buildRemindersHealthAlert({ reached, subscribed, stuck }));
+   return { reached, subscribed, stuck, alerted };
+};
 
 // The stored id should be the SendPulse contact id; older verifications may hold something else, so
 // fall back to the contact the verification code was saved on (same as admin-messenger).
@@ -67,15 +103,27 @@ serve(async (req) => {
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: 'not_configured' }, 500);
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+   const body = await req.json().catch(() => ({}));
+
+   if (body?.mode === 'daily_check') {
+      if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
+      try {
+         return json({ ok: true, ...(await runDailyCheck(svc)) });
+      } catch (err) {
+         console.error('reminders-stuck: daily check failed', err instanceof Error ? err.message : err);
+         return json({ error: 'daily_check_failed' }, 500);
+      }
+   }
+
    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
    const { data: auth } = token ? await svc.auth.getUser(token) : { data: null };
    const userId = auth?.user?.id;
    if (!userId) return json({ error: 'unauthorized' }, 401);
 
-   const body = await req.json().catch(() => ({}));
    const reason = REMINDERS_STUCK_REASONS.includes(body?.reason) ? (body.reason as RemindersStuckReason) : null;
    if (!reason) return json({ error: 'invalid_reason' }, 400);
    const os: RemindersStuckOs = OSES.includes(body?.os) ? body.os : 'other';
+   const failure = reason === 'failed' ? parseRemindersStuckFailure(body?.failure) : null;
    const failures = Number.isInteger(body?.failures) && body.failures > 0 && body.failures < 1000 ? (body.failures as number) : undefined;
 
    // Claim today's alert first, so a double report (two tabs, a retry) can't message them twice.
@@ -102,18 +150,8 @@ serve(async (req) => {
       }
    }
 
-   const text = buildRemindersStuckAlert(borrower, reason, os, messenger, failures);
-   const { data: chatRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'kyc_alert_chat_id').maybeSingle();
-   const kycChatId = (chatRow as { value?: string } | null)?.value;
-   if (kycChatId) {
-      await sendTelegramMessage(kycChatId, `${text}\n${OPEN_IN_ADMIN_TEXT}: ${adminUserUrl(borrower.id, borrower.username)}`).catch(
-         (err: unknown) => console.error('reminders-stuck: telegram send failed', err instanceof Error ? err.message : err)
-      );
-   }
-   await postDiscord(
-      { content: `${text}\n${OPEN_IN_ADMIN_TEXT}: <${adminUserUrl(borrower.id, borrower.username)}>` },
-      { prefer: ['DISCORD_KYC_WEBHOOK_URL'] }
-   );
+   const text = buildRemindersStuckAlert(borrower, reason, os, messenger, failures, failure);
+   await sendTeamAlert(svc, text, { text: OPEN_IN_ADMIN_TEXT, url: adminUserUrl(borrower.id, borrower.username) });
 
    return json({ ok: true, messenger });
 });

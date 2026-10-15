@@ -16,6 +16,7 @@ import {
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import { detectInAppBrowser, openInSafari, setInAppNoticeHidden } from '@/lib/inAppBrowser';
+import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
@@ -212,6 +213,8 @@ export default function ContactsStep({
    // Continue stayed locked: a borrower on 2026-10-15 tapped 22 times, gave up before booking her
    // call, and messaged the Page "the reminder won't turn on". Two failures → reminders are optional.
    const [pushFailures, setPushFailures] = useState(0);
+   // Why the last tap failed (Chrome refused vs. our save failed), for PostHog and the team alert.
+   const lastPushFailureRef = useRef<PushFailure | null>(null);
    const pushUnavailable = pushFailures >= PUSH_FAILURES_BEFORE_OPTIONAL;
    const pushRequired = push.isSupported && !pushBlocked && !pushUnavailable;
 
@@ -237,7 +240,9 @@ export default function ContactsStep({
       const os = androidMessenger ? 'android' : isIOSBrowser() ? 'ios' : 'other';
       track('contact_push_stuck_reported', { source, reason: remindersStuckReason, os });
       void getSupabaseBrowserClient()
-         .functions.invoke('reminders-stuck', { body: { reason: remindersStuckReason, os, failures: pushFailures || undefined } })
+         .functions.invoke('reminders-stuck', {
+            body: { reason: remindersStuckReason, os, failures: pushFailures || undefined, failure: lastPushFailureRef.current ?? undefined }
+         })
          .catch(() => undefined);
    }, [remindersStuckReason, androidMessenger, source, pushFailures]);
 
@@ -251,7 +256,13 @@ export default function ContactsStep({
    const handleEnablePush = async () => {
       setPushError('');
       const outcome = await push.enable();
-      track('contact_push_outcome', { source, outcome });
+      const failure = outcome === 'failed' ? getLastPushFailure() : null;
+      if (failure) lastPushFailureRef.current = failure;
+      track('contact_push_outcome', {
+         source,
+         outcome,
+         ...(failure ? { failure_stage: failure.stage, error_name: failure.errorName, error_message: failure.errorMessage } : {})
+      });
       if (outcome === 'permission-denied') {
          // Blocked in the browser: show how to unblock (the card now opens the guide), Continue stays open.
          setGuideStillBlocked(showUnblockGuide);
