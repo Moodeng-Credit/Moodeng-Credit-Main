@@ -21,10 +21,12 @@ import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { showPasswordlessSignup } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
 import { Icons } from '@/views/login/components/Icons';
+import PasswordlessSignUpScreen from '@/views/signup/PasswordlessSignUpScreen';
 import '@/views/signup/styles/signup.css';
 
 const LINK_PURPLE = '#8336F0';
@@ -56,7 +58,14 @@ function getErrorMessage(err: unknown, fallback: string): string {
    return fallback;
 }
 
+// Facebook/Messenger's browser gets the passwordless Phone | Email screen; other browsers keep the
+// email + password form below (for now: PASSWORDLESS_SIGNUP_EVERYWHERE flips it for everyone).
 export default function SignUpPage() {
+   const passwordless = useMemo(() => showPasswordlessSignup(isFacebookInApp(detectInAppBrowser())), []);
+   return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
+}
+
+function PasswordSignUpPage() {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
@@ -179,7 +188,10 @@ export default function SignUpPage() {
    const handleRegisterError = (errorMsg: string) => {
       const lower = (errorMsg || '').toLowerCase();
       const isEmailError =
-         lower.includes('email') || lower.includes('duplicate') || lower.includes('users_email_key') || lower.includes('already registered');
+         lower.includes('email') ||
+         lower.includes('duplicate') ||
+         lower.includes('users_email_key') ||
+         lower.includes('already registered');
       if (isEmailError) {
          setAccountErrorType(
             lower.includes('lock')
@@ -323,7 +335,9 @@ export default function SignUpPage() {
                         Create your Moodeng Account
                      </h1>
                      <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-6">
-                        {facebookInApp ? 'Pick a password, then enter the 8-digit code we email you.' : 'It takes just a few minutes to get started.'}
+                        {facebookInApp
+                           ? 'Pick a password, then enter the 8-digit code we email you.'
+                           : 'It takes just a few minutes to get started.'}
                      </p>
 
                      <form onSubmit={handleRegister} className="flex flex-col gap-5">

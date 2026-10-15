@@ -7,8 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
 
-// /sign-up and /sign-in inside Facebook/Messenger's browser: email (+ the 8-digit code) leads,
-// Google is only a small "open in Chrome" line, and PostHog gets signup/signin_inapp_email_* events.
+// /sign-up and /sign-in inside Facebook/Messenger's browser: the passwordless code form (email, or a
+// PH phone once SMS is on) leads, Google is only a small "open in Chrome" line, and PostHog gets
+// signup/signin_inapp_email_* events.
 const analytics = vi.hoisted(() => ({ capture: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: analytics.capture } }));
 
@@ -16,6 +17,7 @@ vi.mock('posthog-js', () => ({ default: { capture: analytics.capture } }));
 vi.mock('react-redux', () => ({ useDispatch: () => () => ({ unwrap: () => new Promise(() => {}) }) }));
 vi.mock('@/store/slices/authSlice', () => ({
    registerUser: vi.fn(() => ({ type: 'registerUser' })),
+   requestOtpCode: vi.fn(() => ({ type: 'requestOtpCode' })),
    registerWithGoogle: vi.fn(),
    registerWithTelegram: vi.fn(),
    loginUser: vi.fn(() => ({ type: 'loginUser' })),
@@ -89,11 +91,13 @@ describe('email first inside Facebook/Messenger', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('/sign-up in Facebook: email is the first button, says a code is coming, and Google is not a button', async () => {
+   it('/sign-up in Facebook: the passwordless code form comes first, says a code is coming, and Google is not a button', async () => {
       await render(SignUpPage, FB_ANDROID_UA);
-      const emailButton = buttonWithText('Sign Up with Email');
-      expect(emailButton).not.toBeNull();
-      expect(container.querySelector('button, a')).toBe(emailButton);
+      expect(container.textContent).toContain('Sign up to Moodeng');
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      const continueButton = buttonWithText('Continue');
+      expect(continueButton).not.toBeNull();
+      expect(container.querySelector('button, a')).toBe(continueButton);
       expect(container.textContent).toContain("Works right here in Facebook: we'll email you an 8-digit code.");
       expect(container.textContent).not.toContain('Sign Up with Google');
       expect(container.querySelector('path[fill="#4285F4"]')).toBeNull();
@@ -102,11 +106,7 @@ describe('email first inside Facebook/Messenger', () => {
 
    it('/sign-up in Messenger: submitting the email form is tracked', async () => {
       await render(SignUpPage, MESSENGER_IOS_UA);
-      await act(async () => buttonWithText('Sign Up with Email')?.click());
-      expect(container.textContent).toContain('Pick a password, then enter the 8-digit code we email you.');
-
       await type(container.querySelector('input[type="email"]') as HTMLInputElement, 'new.user@example.com');
-      await type(container.querySelector('input[type="password"]') as HTMLInputElement, 'longenough1');
       await submit();
       expect(analytics.capture).toHaveBeenCalledWith('signup_inapp_email_submitted', { app: 'Messenger', os: 'ios' });
    });
@@ -128,16 +128,19 @@ describe('email first inside Facebook/Messenger', () => {
       expect(container.textContent).not.toContain('Sign In with Google');
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_shown', { app: 'Facebook', os: 'android' });
 
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      expect(buttonWithText('Use password instead')).not.toBeNull();
       await type(container.querySelector('input[type="email"]') as HTMLInputElement, 'me@example.com');
-      await type(container.querySelector('input[type="password"]') as HTMLInputElement, 'secret-pass');
       await submit();
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_submitted', { app: 'Facebook', os: 'android' });
    });
 
-   it('/sign-in in Chrome is unchanged: Google button above the email form', async () => {
+   it('/sign-in in Chrome: Google button above the email + password form, which offers a code instead', async () => {
       await render(SignInPage, CHROME_ANDROID_UA);
       const google = buttonWithText('Sign In with Google') as HTMLButtonElement;
       expect(isBefore(google, container.querySelector('form') as HTMLFormElement)).toBe(true);
+      expect(container.querySelector('input[type="password"]')).not.toBeNull();
+      expect(buttonWithText('Email me a code')).not.toBeNull();
       expect(events()).toEqual([]);
    });
 });

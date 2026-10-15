@@ -1,9 +1,12 @@
-import { type JSX, type ReactNode } from 'react';
+import { type JSX, type ReactNode, useState } from 'react';
 
-import { CheckCircle2, ChevronRight, HelpCircle } from 'lucide-react';
+import { CheckCircle2, ChevronRight, HelpCircle, KeyRound } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
+import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
+import { useAuthProvider } from '@/hooks/useAuthProvider';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -57,6 +60,44 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
    );
 }
 
+/**
+ * Onboarding's one password nudge: optional and skippable. Codes keep working either way, so
+ * nothing waits on it (Proceed stays the main button).
+ */
+function OptionalPasswordCard(): JSX.Element | null {
+   const { isCodeOrPasswordUser, hasPassword, isLoading } = useAuthProvider();
+   const [isOpen, setIsOpen] = useState(false);
+   const [saved, setSaved] = useState(false);
+
+   if (isLoading || !isCodeOrPasswordUser || (hasPassword && !saved)) return null;
+
+   if (saved) {
+      return (
+         <p className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#BCEFD0] bg-[#EDFFF4] px-4 py-3 text-sm font-semibold text-[#0D7A3C] dark:border-[#1A4A30] dark:bg-[#0F2A1E] dark:text-[#5DFFA0]">
+            <CheckCircle2 className="h-4 w-4" />
+            Password saved. You can still log in with a code.
+         </p>
+      );
+   }
+
+   return (
+      <div className="w-full rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] p-4 text-left dark:border-[#2D1F4A] dark:bg-[#1E1530]">
+         {isOpen ? (
+            <SetPasswordForm onSaved={() => setSaved(true)} />
+         ) : (
+            <button type="button" onClick={() => setIsOpen(true)} className="flex w-full items-center gap-3 text-left">
+               <KeyRound className="h-5 w-5 shrink-0 text-[#8336F0]" strokeWidth={1.8} />
+               <span className="min-w-0 flex-1">
+                  <span className="block text-base font-semibold text-[#040033] dark:text-white">Add a password (optional)</span>
+                  <span className="block text-sm text-[#70617F] dark:text-[#c8b8e8]">You can always sign in with a code instead.</span>
+               </span>
+               <ChevronRight className="h-5 w-5 shrink-0 text-[#70617F]" />
+            </button>
+         )}
+      </div>
+   );
+}
+
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
 
@@ -85,6 +126,7 @@ function AccountCreatedView(): JSX.Element {
                   Proceed
                   <ChevronRight className="h-5 w-5" />
                </button>
+               <OptionalPasswordCard />
             </section>
          </main>
       </div>

@@ -1,19 +1,29 @@
 import { type ChangeEvent, type FormEvent, type JSX, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+
+import { ArrowLeft, CheckCircle2, HelpCircle, Mail, RefreshCcw, Smartphone } from 'lucide-react';
+import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
-import { ArrowLeft, CheckCircle2, HelpCircle, Mail, RefreshCcw } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import Loading from '@/components/Loading';
 import { ThemeToggle } from '@/components/ThemeToggle';
+
 import { useResendCooldown } from '@/hooks/useResendCooldown';
-import { getAuthRedirectUrl } from '@/lib/authRedirect';
-import { PENDING_VERIFICATION_EMAIL_KEY, SIGNUP_RESEND_STORAGE_KEY } from '@/lib/authPaths';
-import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
-import { fetchUser } from '@/store/slices/authSlice';
+
+import { PENDING_VERIFICATION_EMAIL_KEY, SIGNUP_RESEND_STORAGE_KEY, SMS_RESEND_STORAGE_KEY } from '@/lib/authPaths';
+import { detectInAppBrowser } from '@/lib/inAppBrowser';
+import { describeOtpError } from '@/lib/otpErrors';
+import { checkPhPhone, formatPhPhone } from '@/lib/phoneAuth';
+import { getPostSignInPath } from '@/lib/postSignInPath';
+import { isSupabaseBrowserConfigured } from '@/lib/supabase/client';
+import { requestOtpCode, verifyOtpCode } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 
 const CREATED_PATH = '/auth-success?type=created';
 const CODE_LENGTH = 8;
+// The SMS code length is set in Supabase (Auth > Providers > Phone). Accept 6 to 8 digits so the
+// screen keeps working whatever it is set to.
+const SMS_MIN_CODE_LENGTH = 6;
 
 function normalizeCode(value: string): string {
    return value.replace(/\D/g, '').slice(0, CODE_LENGTH);
@@ -24,8 +34,12 @@ export default function AuthVerifyCodePage(): JSX.Element {
    const dispatch = useDispatch<AppDispatch>();
    const [searchParams] = useSearchParams();
    const queryEmail = searchParams.get('email')?.trim() ?? '';
-   const storedEmail =
-      typeof window !== 'undefined' ? sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY)?.trim() ?? '' : '';
+   // Phone sign-in: ?phone=+639XXXXXXXXX (only a valid PH mobile number counts).
+   const phoneCheck = checkPhPhone(searchParams.get('phone') ?? '');
+   const phone = phoneCheck.kind === 'ok' ? phoneCheck.e164 : null;
+   const isSms = phone !== null;
+   const minCodeLength = isSms ? SMS_MIN_CODE_LENGTH : CODE_LENGTH;
+   const storedEmail = typeof window !== 'undefined' ? (sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY)?.trim() ?? '') : '';
    const [email, setEmail] = useState(queryEmail || storedEmail);
    const [code, setCode] = useState('');
    const [error, setError] = useState<string | null>(null);
@@ -33,7 +47,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [isResending, setIsResending] = useState(false);
    const [showLoginHint, setShowLoginHint] = useState(false);
-   const { isCoolingDown, secondsLeft, startCooldown } = useResendCooldown(SIGNUP_RESEND_STORAGE_KEY);
+   const { isCoolingDown, secondsLeft, startCooldown } = useResendCooldown(isSms ? SMS_RESEND_STORAGE_KEY : SIGNUP_RESEND_STORAGE_KEY);
    const emailInputRef = useRef<HTMLInputElement>(null);
    const codeInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,13 +60,20 @@ export default function AuthVerifyCodePage(): JSX.Element {
    // Land the user straight in the field they need to fill next: the code if we
    // already know their email, otherwise the email field itself.
    useEffect(() => {
-      if (email.trim()) {
+      if (isSms || email.trim()) {
          codeInputRef.current?.focus();
       } else {
          emailInputRef.current?.focus();
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
+
+   // Back to the form they came from (sign-up or sign-in), or the sign-in page on a fresh tab.
+   const goBackToChange = () => {
+      const historyIdx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+      if (historyIdx > 0) navigate(-1);
+      else navigate(isSms ? '/sign-in?method=phone' : '/sign-in?method=email');
+   };
 
    const handleEmailChange = (event: ChangeEvent<HTMLInputElement>) => {
       setEmail(event.target.value);
@@ -65,51 +86,58 @@ export default function AuthVerifyCodePage(): JSX.Element {
       setError(null);
    };
 
-   const finishVerification = async () => {
-      const user = await dispatch(fetchUser()).unwrap().catch(() => null);
-      sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
-      navigate(user?.userRole ? '/dashboard' : CREATED_PATH, { replace: true });
-   };
-
    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       setError(null);
       setMessage(null);
+      setShowLoginHint(false);
 
-      const trimmedEmail = email.trim();
-      if (!trimmedEmail) {
-         setError('Enter the email address you used to sign up.');
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!isSms && !trimmedEmail) {
+         setError('Enter the email address the code was sent to.');
          return;
       }
 
-      if (code.length !== CODE_LENGTH) {
-         setError(`Enter the ${CODE_LENGTH}-digit code from your email.`);
+      if (code.length < minCodeLength) {
+         setError(isSms ? 'Enter the code from the text message.' : `Enter the ${CODE_LENGTH}-digit code from your email.`);
          return;
       }
 
       if (!isSupabaseBrowserConfigured()) {
-         setError('Email verification is not configured in this local app.');
+         setError('Sign-in codes are not configured in this local app.');
          return;
       }
 
       setIsSubmitting(true);
       try {
-         const supabase = getSupabaseBrowserClient();
-         const { error: verifyError } = await supabase.auth.verifyOtp({
-            email: trimmedEmail,
-            token: code,
-            type: 'signup'
-         });
-
-         if (verifyError) {
-            // Tapping Confirm Email (often in another browser) uses up the same one-time token, so the
-            // code then fails here even though the account is confirmed: offer the password log-in.
-            setError('That code did not work. Check the latest email from Moodeng and try again.');
-            setShowLoginHint(true);
-            return;
+         const { user, isNewUser } = await dispatch(
+            verifyOtpCode(phone ? { channel: 'sms', phone, token: code } : { channel: 'email', email: trimmedEmail, token: code })
+         ).unwrap();
+         if (import.meta.env.PROD) {
+            const inApp = detectInAppBrowser();
+            posthog.capture('otp_verified', {
+               channel: isSms ? 'sms' : 'email',
+               new_user: isNewUser,
+               in_app_browser: inApp.isInApp ? (inApp.appName ?? 'unknown') : null
+            });
          }
-
-         await finishVerification();
+         sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY);
+         navigate(user.userRole ? await getPostSignInPath(user) : CREATED_PATH, { replace: true });
+      } catch (err) {
+         const view = describeOtpError(err, isSms ? 'sms' : 'email');
+         const lower = String((err as { message?: unknown })?.message ?? '').toLowerCase();
+         if (lower.includes('expired') || lower.includes('invalid') || lower.includes('token')) {
+            setError(
+               isSms
+                  ? 'That code did not work. Check the latest text from Moodeng, or send a new code.'
+                  : 'That code did not work. Check the latest email from Moodeng and try again.'
+            );
+            // Tapping the button in the email (often in another browser) uses up the same one-time
+            // code, so the code then fails here even though they are signed in over there.
+            setShowLoginHint(!isSms);
+         } else {
+            setError(view.message);
+         }
       } finally {
          setIsSubmitting(false);
       }
@@ -121,36 +149,25 @@ export default function AuthVerifyCodePage(): JSX.Element {
 
       if (isCoolingDown) return;
 
-      const trimmedEmail = email.trim();
-      if (!trimmedEmail) {
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!isSms && !trimmedEmail) {
          setError('Enter your email first, then resend the code.');
          return;
       }
 
       if (!isSupabaseBrowserConfigured()) {
-         setError('Email verification is not configured in this local app.');
+         setError('Sign-in codes are not configured in this local app.');
          return;
       }
 
       setIsResending(true);
       try {
-         const supabase = getSupabaseBrowserClient();
-         const { error: resendError } = await supabase.auth.resend({
-            type: 'signup',
-            email: trimmedEmail,
-            options: {
-               emailRedirectTo: getAuthRedirectUrl()
-            }
-         });
-
-         if (resendError) {
-            setError(resendError.message || 'Could not resend the code. Try again in a moment.');
-            return;
-         }
-
-         sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, trimmedEmail);
+         await dispatch(requestOtpCode(phone ? { channel: 'sms', phone } : { channel: 'email', email: trimmedEmail })).unwrap();
+         if (!isSms) sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, trimmedEmail);
          startCooldown();
-         setMessage('New code sent. Use the latest email from Moodeng.');
+         setMessage(isSms ? 'New code sent. Use the latest text from Moodeng.' : 'New code sent. Use the latest email from Moodeng.');
+      } catch (err) {
+         setError(describeOtpError(err, isSms ? 'sms' : 'email').message);
       } finally {
          setIsResending(false);
       }
@@ -165,9 +182,9 @@ export default function AuthVerifyCodePage(): JSX.Element {
          <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col">
             <div className="mb-5 flex items-center justify-between">
                <Link
-                  to="/sign-up"
+                  to="/sign-in"
                   className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FDFCFD] text-[#6010D2] shadow-[0_8px_24px_rgba(36,14,62,0.08)] transition hover:bg-[#F2EAFE] dark:bg-[#1E1530] dark:text-[#C084FC] dark:hover:bg-[#2A1D40]"
-                  aria-label="Back to sign up"
+                  aria-label="Back"
                >
                   <ArrowLeft className="h-6 w-6" />
                </Link>
@@ -189,7 +206,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
                      <div className="mb-5 flex h-[196px] w-[196px] items-center justify-center overflow-hidden rounded-[28px] border border-[#DCC7FF] bg-white shadow-[0_12px_28px_rgba(36,14,62,0.06)] dark:border-[#2D1F4A] dark:bg-[#1E1530]">
                         <img
                            src="/hippos/hippo-purple-envelope-email.png"
-                           alt="Moodeng holding an envelope"
+                           alt={isSms ? 'Moodeng with a message' : 'Moodeng holding an envelope'}
                            className="h-full w-full object-contain drop-shadow-[0_12px_22px_rgba(36,14,62,0.10)]"
                         />
                      </div>
@@ -197,42 +214,67 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         Welcome to Moodeng
                      </p>
                      <h1 className="text-[34px] font-semibold leading-[1.08] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
-                        Confirm your email
+                        {isSms ? 'Check your texts' : 'Check your email'}
                      </h1>
                      <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
-                        Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.
+                        {isSms && phone
+                           ? `We texted a code to ${formatPhPhone(phone)}. It can take a minute to arrive.`
+                           : 'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.'}
                      </p>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-5">
-                     <div className="space-y-2">
-                        <label
-                           htmlFor="verification-email"
-                           className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]"
-                        >
-                           Email address
-                        </label>
-                        <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)] dark:border-[#3D2D5A] dark:bg-[#1E1530]">
-                           <Mail className="h-5 w-5 shrink-0 text-[#8336F0] dark:text-[#C084FC]" strokeWidth={1.8} />
-                           <input
-                              id="verification-email"
-                              ref={emailInputRef}
-                              type="email"
-                              value={email}
-                              onChange={handleEmailChange}
-                              placeholder="you@example.com"
-                              autoComplete="email"
-                              className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
-                           />
+                     {isSms && phone ? (
+                        <div className="space-y-2">
+                           <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 text-base font-semibold text-[#040033] dark:border-[#2D1F4A] dark:bg-[#1E1530] dark:text-[#F0EAFF]">
+                              <Smartphone className="h-5 w-5 shrink-0 text-[#8336F0] dark:text-[#C084FC]" strokeWidth={1.8} />
+                              <span className="whitespace-nowrap">{formatPhPhone(phone)}</span>
+                           </div>
+                           <button
+                              type="button"
+                              onClick={goBackToChange}
+                              className="text-sm font-semibold text-[#6010D2] underline-offset-2 hover:underline dark:text-[#C084FC]"
+                           >
+                              Wrong number? Change it
+                           </button>
                         </div>
-                     </div>
+                     ) : (
+                        <div className="space-y-2">
+                           <label
+                              htmlFor="verification-email"
+                              className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]"
+                           >
+                              Email address
+                           </label>
+                           <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)] dark:border-[#3D2D5A] dark:bg-[#1E1530]">
+                              <Mail className="h-5 w-5 shrink-0 text-[#8336F0] dark:text-[#C084FC]" strokeWidth={1.8} />
+                              <input
+                                 id="verification-email"
+                                 ref={emailInputRef}
+                                 type="email"
+                                 value={email}
+                                 onChange={handleEmailChange}
+                                 placeholder="you@example.com"
+                                 autoComplete="email"
+                                 className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
+                              />
+                           </div>
+                           <button
+                              type="button"
+                              onClick={goBackToChange}
+                              className="text-sm font-semibold text-[#6010D2] underline-offset-2 hover:underline dark:text-[#C084FC]"
+                           >
+                              Wrong email? Change it
+                           </button>
+                        </div>
+                     )}
 
                      <div className="space-y-2">
                         <label
                            htmlFor="verification-code"
                            className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]"
                         >
-                           Verification code
+                           {isSms ? 'Code from the text' : 'Code from the email'}
                         </label>
                         <input
                            id="verification-code"
@@ -256,7 +298,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         <p className="rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-medium leading-5 text-[#4D4359] dark:border-[#2D1F4A] dark:bg-[#1E1530] dark:text-[#A89BB8]">
                            Already tapped Confirm Email in the email? Your account is ready.{' '}
                            <Link to="/sign-in" className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]">
-                              Log in with your email and password
+                              Log in
                            </Link>
                         </p>
                      ) : null}
@@ -269,10 +311,10 @@ export default function AuthVerifyCodePage(): JSX.Element {
 
                      <button
                         type="submit"
-                        disabled={code.length !== CODE_LENGTH || !email.trim()}
+                        disabled={code.length < minCodeLength || (!isSms && !email.trim())}
                         className="h-14 w-full rounded-2xl bg-[#6010D2] text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition hover:opacity-95 disabled:bg-[#BDB5C7] disabled:text-[#FDFCFD] dark:disabled:bg-[#2D1F4A] dark:disabled:text-[#6B5880]"
                      >
-                        Verify email
+                        Continue
                      </button>
                   </form>
 
@@ -287,10 +329,10 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         {isResending ? 'Sending...' : isCoolingDown ? `Resend in ${secondsLeft}s` : 'Resend code'}
                      </button>
                      <Link
-                        to="/sign-in"
+                        to={isSms ? '/sign-in?method=email' : '/sign-in'}
                         className="flex h-12 items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
                      >
-                        Already verified? Log in
+                        {isSms ? 'Use email instead' : 'Use phone or password'}
                      </Link>
                   </div>
                </section>
