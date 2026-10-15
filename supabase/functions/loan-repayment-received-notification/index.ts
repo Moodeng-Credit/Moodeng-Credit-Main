@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { sendEmail } from '../_shared/email.ts';
+import { isPlaceholderEmail } from '../_shared/placeholderEmail.ts';
 import { getTelegramBotSettingEnabled } from '../_shared/borrowerNotificationDelivery.ts';
 import {
    buildLenderRepaymentEmail,
@@ -230,7 +231,8 @@ serve(async (req) => {
    let pushSent = false;
    const notificationRows: Array<{ loan_id: string; user_id: string; notification_type: LoanNotificationType }> = [];
 
-   if (borrower?.email && !borrowerAlreadySent) {
+   // A made-up address (Telegram/LINE/phone sign-up) can't be emailed; this send isn't in a try/catch.
+   if (borrower?.email && !isPlaceholderEmail(borrower.email) && !borrowerAlreadySent) {
       const parsedPaidAt = loan.updated_at ? new Date(loan.updated_at) : new Date();
       const paidAt = Number.isNaN(parsedPaidAt.getTime()) ? new Date() : parsedPaidAt;
       const trustPointRewardData = await loadTrustPointRewardData(supabase, borrower.id, paidAt);

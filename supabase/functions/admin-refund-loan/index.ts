@@ -140,6 +140,10 @@ const sendEmail = async (to: string, subject: string, text: string, html?: strin
    const key = Deno.env.get('RESEND_API_KEY');
    const from = Deno.env.get('RESEND_FROM') || 'support@moodeng.app';
    if (!key) throw new Error('Missing RESEND_API_KEY');
+   // Telegram/LINE/phone accounts have a made-up address nobody reads (see _shared/placeholderEmail.ts).
+   if (/^(telegram|line|phone)_[^@]+@moodeng\.(app|credit)$/i.test(to.trim())) {
+      throw new Error('Skipped: this account has no real email address (placeholder)');
+   }
    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },

@@ -1,3 +1,5 @@
+import { isPlaceholderEmail, PlaceholderEmailError } from './placeholderEmail.ts';
+
 export const sendEmail = async (
    recipientEmail: string,
    subject: string,
@@ -16,7 +18,13 @@ export const sendEmail = async (
       throw new Error('Missing RESEND_API_KEY environment variable');
    }
 
-   const ccList = cc ? (Array.isArray(cc) ? cc : [cc]).filter((addr) => addr?.trim()) : [];
+   // Telegram/LINE/phone accounts have a made-up address nobody reads. Callers catch this like any
+   // failed send, so nothing is counted as delivered and their other channels still go out.
+   if (isPlaceholderEmail(recipientEmail)) {
+      throw new PlaceholderEmailError();
+   }
+
+   const ccList = cc ? (Array.isArray(cc) ? cc : [cc]).filter((addr) => addr?.trim() && !isPlaceholderEmail(addr)) : [];
 
    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
