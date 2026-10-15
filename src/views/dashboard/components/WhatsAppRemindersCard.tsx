@@ -135,6 +135,28 @@ export default function WhatsAppRemindersCard({
    }
 
    return (
+      <WhatsAppCodePanel
+         code={code}
+         copied={copied}
+         onCopy={() => void copyCode()}
+         onOpenTap={() => track('contact_whatsapp_reminders_open_tapped', { source })}
+      />
+   );
+}
+
+// The "waiting" state: open WhatsApp again, or send the code by hand. Exported for the design preview.
+export function WhatsAppCodePanel({
+   code,
+   copied,
+   onCopy,
+   onOpenTap
+}: {
+   code: string;
+   copied: boolean;
+   onCopy: () => void;
+   onOpenTap?: () => void;
+}) {
+   return (
       <div aria-live="polite" className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#9fe3b4] bg-[#eefbf2] px-4 py-4 text-left">
          <span className="text-[18px] font-bold leading-[22px] text-[#1f7a3d]">Turn on WhatsApp reminders</span>
          {/* A real link the borrower taps: from script, some in-app browsers never hand wa.me to WhatsApp. */}
@@ -142,20 +164,20 @@ export default function WhatsAppRemindersCard({
             href={buildWhatsAppVerifyLink(code)}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => track('contact_whatsapp_reminders_open_tapped', { source })}
+            onClick={onOpenTap}
             className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 text-[16px] font-bold text-white"
          >
             <MessageCircle aria-hidden="true" className="size-5" strokeWidth={2.5} />
             Open WhatsApp and hit send
          </a>
          <p className="text-[14px] leading-[19px] text-[#3f5a47]">
-            WhatsApp didn&apos;t open? Send this code to <b>{WHATSAPP_BUSINESS_NUMBER_DISPLAY}</b> on WhatsApp yourself:
+            WhatsApp didn&apos;t open? Send this code to <b className="whitespace-nowrap">{WHATSAPP_BUSINESS_NUMBER_DISPLAY}</b> on WhatsApp yourself:
          </p>
          <div className="flex items-center gap-2">
             <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">{code}</code>
             <button
                type="button"
-               onClick={() => void copyCode()}
+               onClick={onCopy}
                className="rounded-lg border border-[#9fe3b4] bg-white px-3 py-2 text-[13px] font-bold text-[#1f7a3d]"
             >
                {copied ? 'Copied' : 'Copy'}

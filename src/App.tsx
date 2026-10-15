@@ -112,6 +112,7 @@ import DashboardV2 from '@/views/dashboard-v2/DashboardV2';
 import DashboardV2Milestones from '@/views/dashboard-v2/DashboardV2Milestones';
 import { DashboardV2InviteLanding, DashboardV2Referral } from '@/views/dashboard-v2/DashboardV2Rewards';
 import LoanRequestPreview from '@/views/dashboard/LoanRequestPreview';
+import WhatsAppRemindersPreview from '@/views/dashboard/WhatsAppRemindersPreview';
 import RequestBoard from '@/views/dashboard/RequestBoard';
 import FundWalletPreview from '@/views/fund/FundWalletPreview';
 import Repay from '@/views/repay/Repay';
@@ -345,6 +346,7 @@ export default function App() {
             {import.meta.env.DEV ? <Route path="/account-settings-preview" element={<SettingsStylePreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/fund-wallet-preview" element={<FundWalletPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/loan-request-preview" element={<LoanRequestPreview />} /> : null}
+            {import.meta.env.DEV ? <Route path="/whatsapp-reminders-preview" element={<WhatsAppRemindersPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/admin/pricing-preview" element={<PricingHealthPreview />} /> : null}
             {import.meta.env.DEV ? <Route path="/history-preview" element={<TransactionDetail />} /> : null}
 
