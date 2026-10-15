@@ -40,6 +40,10 @@ export type LoanNotificationRecipient = {
    notif_push?: boolean | null;
    /** SendPulse contact id from the "Confirm Facebook" flow; set only for Messenger-verified borrowers. */
    messenger_psid?: string | null;
+   /** SendPulse WhatsApp contact id from the "Confirm WhatsApp" opt-in; set only once they sent their code. */
+   whatsapp_contact_id?: string | null;
+   /** WhatsApp reminders opt-out (STOP). Undefined is treated as opted in, matching the column default. */
+   notif_whatsapp?: boolean | null;
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';

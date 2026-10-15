@@ -22,6 +22,7 @@ import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, OptionCard, PrimaryButton } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
+import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
 // Messenger line — either one is enough, since not everyone uses WhatsApp. Both are platform-only
@@ -218,13 +219,36 @@ export default function ContactsStep({
    const pushUnavailable = pushFailures >= PUSH_FAILURES_BEFORE_OPTIONAL;
    const pushRequired = push.isSupported && !pushBlocked && !pushUnavailable;
 
-   const contactVerified = whatsappVerified || messengerVerified;
+   // Facebook is the required contact line. A WhatsApp line only counts here when the old "WhatsApp
+   // instead of Messenger" card is switched on; otherwise WhatsApp is just the reminders channel below.
+   const contactVerified = messengerVerified || (whatsappEnabled && whatsappVerified);
    const canContinue = contactVerified && (pushOn || !pushRequired);
+
+   // Where notifications can't work (no push at all here, blocked, or broken on this phone), offer
+   // WhatsApp reminders instead. Recommended, not required: someone without WhatsApp still gets
+   // Messenger and email. Off until the borrower_whatsapp_enabled setting is on.
+   const [whatsappRemindersEnabled, setWhatsappRemindersEnabled] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().rpc('get_whatsapp_reminders_enabled');
+            if (!cancelled) setWhatsappRemindersEnabled(data === true);
+         } catch {
+            // Can't tell: leave WhatsApp reminders off, the step works as before.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, []);
+   const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
+   const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
 
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
    // to fix it in Chrome/Safari and the team gets a heads-up (messenger-stuck-alerts, `reminders: true`), at most once a day.
-   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn
+   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified
       ? null
       : pushUnavailable
         ? 'failed'
@@ -288,9 +312,9 @@ export default function ContactsStep({
          setPushFailures(0);
       }
    };
-   // Still show WhatsApp to a returning borrower who verified it before, so they can see why
-   // Continue is already enabled.
-   const showWhatsApp = whatsappEnabled || whatsappVerified;
+   // The "WhatsApp instead of Messenger" card, only when that option is switched on (WhatsApp reminders
+   // have their own card below).
+   const showWhatsApp = whatsappEnabled;
 
    // Pick up an already-verified line from a previous application — this is an account-level fact,
    // not a per-loan one, so a returning borrower shouldn't have to re-verify every time.
@@ -340,7 +364,7 @@ export default function ContactsStep({
    // Confirmed during this visit (not a line verified on an earlier application).
    useEffect(() => {
       if (confirmedTrackedRef.current || attemptsRef.current === 0) return;
-      const channel = messengerVerified ? 'messenger' : whatsappVerified ? 'whatsapp' : null;
+      const channel = messengerVerified ? 'messenger' : whatsappEnabled && whatsappVerified ? 'whatsapp' : null;
       if (!channel) return;
       confirmedTrackedRef.current = true;
       setConfirmedNow(true);
@@ -367,7 +391,7 @@ export default function ContactsStep({
          seconds_since_last_start: secondsSince(lastStartedAtRef.current),
          left_app: leftForMessengerRef.current
       });
-   }, [messengerVerified, whatsappVerified, source]);
+   }, [messengerVerified, whatsappVerified, whatsappEnabled, source]);
 
    // Live push from the database the moment the bot confirms (users is in the realtime publication,
    // and RLS limits it to their own row). The 3s poll and the on-return re-check stay as backups.
@@ -396,12 +420,14 @@ export default function ContactsStep({
    }, [onContinue]);
    const autoContinueTimerRef = useRef<number | null>(null);
    useEffect(() => {
+      // Not while the WhatsApp reminders offer is up: moving on by itself would hide it before they see it.
       if (source !== 'connect' || !confirmedNow || !canContinue || autoContinueTimerRef.current !== null) return;
+      if (offerWhatsAppReminders && !whatsappVerified) return;
       autoContinueTimerRef.current = window.setTimeout(() => {
          track('contact_verify_auto_continue', { source, attempts: attemptsRef.current, push_on: pushOn });
          onContinueRef.current();
       }, AUTO_CONTINUE_MS);
-   }, [source, confirmedNow, canContinue, pushOn]);
+   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified]);
    useEffect(
       () => () => {
          if (autoContinueTimerRef.current !== null) window.clearTimeout(autoContinueTimerRef.current);
@@ -963,6 +989,15 @@ export default function ContactsStep({
                />
             </div>
          ) : null}
+         {offerWhatsAppReminders && (contactVerified || source !== 'connect') ? (
+            <WhatsAppRemindersCard
+               onVerified={() => setWhatsappVerified(true)}
+               source={source}
+               userId={userId}
+               verified={whatsappVerified}
+            />
+         ) : null}
+
          {/* Where push can't run (iPhone not on the Home Screen, Facebook's in-app browser) we used
              to show "In Safari, tap Share → Add to Home Screen…" here. It read like a scam and
              confused people into stopping, and it never blocked Continue — Messenger and email

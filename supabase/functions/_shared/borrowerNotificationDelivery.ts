@@ -16,8 +16,49 @@ import {
    type PushLocale,
    type PushPayload
 } from './pushMessages.ts';
-import { type MessengerCard, sendMessengerMessage } from './sendpulse.ts';
+import { type MessengerCard, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+
+// WhatsApp reminders: the Meta-approved Utility templates (created in SendPulse → WhatsApp bot →
+// Templates). Every template takes the same three body variables: {{1}} name, {{2}} amount in USDC,
+// {{3}} when: "tomorrow" / "today" for the due ones, how late for overdue ("2 days", read as
+// "… is overdue (2 days late)"), and has a static "Repay now" URL button to https://moodeng.app/repay.
+// "Due in 3 days" gets no WhatsApp: push, email and Messenger cover it, and every message costs money.
+export const WHATSAPP_REMINDER_TEMPLATES: Partial<Record<LoanNotificationType, string>> = {
+   final_reminder: 'moodeng_due_tomorrow',
+   due_today: 'moodeng_due_today',
+   overdue: 'moodeng_overdue'
+};
+
+// Kill switch, starts 'false': WhatsApp only goes out once the templates are approved and someone turns
+// it on (telegram_bot_settings, like the Telegram one).
+export const BORROWER_WHATSAPP_SETTING_KEY = 'borrower_whatsapp_enabled';
+
+export const buildWhatsAppReminderTemplate = (
+   type: LoanNotificationType,
+   recipient: LoanNotificationRecipient,
+   aggregate: LoanNotificationAggregate | undefined
+): WhatsAppTemplate | null => {
+   const name = WHATSAPP_REMINDER_TEMPLATES[type];
+   if (!name || !aggregate) return null;
+   // The overdue job's label is "N day(s)", or "overdue" when it has no deadline to measure from.
+   const lateBy = aggregate.dueLabel && aggregate.dueLabel !== 'overdue' ? aggregate.dueLabel : 'a little';
+   const when = type === 'due_today' ? 'today' : type === 'final_reminder' ? 'tomorrow' : lateBy;
+   return {
+      name,
+      language: { code: 'en' },
+      components: [
+         {
+            type: 'body',
+            parameters: [
+               { type: 'text', text: recipient.username?.trim() || 'there' },
+               { type: 'text', text: formatUsdcAmount(aggregate.totalAmount) },
+               { type: 'text', text: when }
+            ]
+         }
+      ]
+   };
+};
 
 /** Telegram/LINE/phone sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…, phone_<id>@…). */
 export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
@@ -28,6 +69,7 @@ export type BorrowerNotificationDeliveryResult = {
    telegramSent: boolean;
    pushSent: boolean;
    messengerSent: boolean;
+   whatsappSent: boolean;
 };
 
 const REMINDER_TYPES: LoanNotificationType[] = ['urgent_reminder', 'final_reminder', 'due_today', 'overdue'];
@@ -177,9 +219,10 @@ export const sendBorrowerLoanNotification = async (
 ): Promise<BorrowerNotificationDeliveryResult> => {
    // If the user has opted out of this notification category, skip silently
    if (options.notifEnabled === false) {
-      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false };
+      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false, whatsappSent: false };
    }
 
+   let whatsappSent = false;
    let emailSent = false;
    let telegramSent = false;
    let pushSent = false;
@@ -281,9 +324,27 @@ export const sendBorrowerLoanNotification = async (
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → not sent (no Facebook connected)`);
    }
 
-   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent) {
+   // WhatsApp, for borrowers who opted in by sending their code to our business number (usually because
+   // notifications can't work on their phone, e.g. Facebook's in-app browser). Push goes first: "due
+   // tomorrow" only goes to WhatsApp when no push landed; "due today" and "overdue" go to both, since
+   // those are the ones that matter. Off until the kill switch is on (templates approved). Additive,
+   // like push and Messenger: never fails the other channels.
+   const whatsappTemplate =
+      recipient.whatsapp_contact_id && recipient.notif_whatsapp !== false && options.push?.supabase
+         ? buildWhatsAppReminderTemplate(type, recipient, aggregate)
+         : null;
+   if (whatsappTemplate && !(type === 'final_reminder' && pushSent)) {
+      const enabled = await getTelegramBotSettingEnabled(options.push!.supabase, BORROWER_WHATSAPP_SETTING_KEY).catch(() => false);
+      if (enabled) {
+         const result = await sendWhatsAppTemplate(recipient.whatsapp_contact_id, whatsappTemplate);
+         whatsappSent = result.ok;
+         console.log(`[borrowerNotification] WhatsApp "${type}" (${whatsappTemplate.name}) → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+      }
+   }
+
+   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent && !whatsappSent) {
       throw firstError;
    }
 
-   return { emailSent, telegramSent, pushSent, messengerSent };
+   return { emailSent, telegramSent, pushSent, messengerSent, whatsappSent };
 };

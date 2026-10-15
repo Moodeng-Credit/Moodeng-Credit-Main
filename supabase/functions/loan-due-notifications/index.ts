@@ -71,7 +71,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp')
       .in('id', userIds);
 
    if (error || !data) {
@@ -278,7 +278,7 @@ const notifyBorrower = async (
    // A push that landed counts as delivered on its own, so a borrower who has the
    // app on their phone but no email on file still gets the reminder recorded —
    // otherwise the hourly cron would re-send it every hour.
-   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent) {
+   if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent && !delivery.whatsappSent) {
       return false;
    }
 
@@ -408,7 +408,7 @@ serve(async (req) => {
       // Reachable on at least one channel. Push counts, so a borrower with the
       // app on their phone but no email or Telegram on file still gets reminded.
       // Messenger counts as a channel too (same as the overdue job), so Messenger-only borrowers get reminders.
-      if ((!borrower.email || isPlaceholderEmail(borrower.email)) && !borrower.chat_id && !borrower.messenger_psid && !pushableBorrowerIds.has(borrowerId)) {
+      if ((!borrower.email || isPlaceholderEmail(borrower.email)) && !borrower.chat_id && !borrower.messenger_psid && !borrower.whatsapp_contact_id && !pushableBorrowerIds.has(borrowerId)) {
          continue;
       }
 

@@ -119,8 +119,10 @@ describe('ContactsStep on a computer', () => {
       await act(async () => {
          root.render(createElement(ContactsStep, { userId: 'user-1', source: 'connect', onBack: vi.fn(), onContinue: vi.fn() }));
       });
-      // No code is minted until they tap (the stuck-borrower alert keys off the tap).
-      expect(supa.rpc).not.toHaveBeenCalled();
+      // No code is minted until they tap (the stuck-borrower alert keys off the tap). Reading the
+      // WhatsApp-reminders switch is fine.
+      expect(supa.rpc).not.toHaveBeenCalledWith('start_contact_verification', expect.anything());
+      expect(supa.rpc).not.toHaveBeenCalledWith('start_whatsapp_verification');
       expect(container.textContent).toContain('Scan a code with your phone');
 
       const card = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Connect Messenger'));
