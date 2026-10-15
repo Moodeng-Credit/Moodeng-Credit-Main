@@ -451,6 +451,30 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(channelCard(container, 'WhatsApp')).toBeUndefined();
    });
 
+   it('locks "Turn on reminders" as step 2 until Facebook is connected, then unlocks it', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      await render();
+      expect(container.textContent).toContain('Step 2 · Payment reminders');
+      expect(container.textContent).toContain('Unlocks after step 1');
+      expect(Array.from(container.querySelectorAll('button')).some((b) => b.textContent?.includes('Turn on reminders'))).toBe(false);
+   });
+
+   it('shows the reminders button itself once Facebook is connected', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'default';
+      supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+      await render();
+      expect(container.textContent).toContain('Step 1 ✓ · Connect Facebook');
+      expect(container.textContent).not.toContain('Unlocks after step 1');
+      expect(container.textContent).toContain('Turn on reminders');
+   });
+
+   it('shows no step numbers when there is no reminders step', async () => {
+      await render();
+      expect(container.textContent).not.toContain('Step 1');
+   });
+
    describe('WhatsApp reminders (where notifications can\'t work)', () => {
       const remindersOn = () =>
          supa.rpc.mockImplementation(async (name: string) =>
@@ -465,6 +489,16 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          expect(container.textContent).toContain('Get reminders on WhatsApp');
          // Recommended, not required: Facebook alone still lets them through.
          expect(continueButton(container).disabled).toBe(false);
+      });
+
+      it('shows Step 1 / Step 2 with WhatsApp locked until Facebook is connected', async () => {
+         remindersOn();
+         await render();
+         expect(container.textContent).toContain('Step 1 · Connect Facebook');
+         expect(container.textContent).toContain('Step 2 · Payment reminders');
+         expect(container.textContent).toContain('Unlocks after step 1');
+         expect(channelCard(container, 'Get reminders on WhatsApp')).toBeUndefined();
+         expect(container.textContent).toContain('Connect Facebook to continue.');
       });
 
       it('shows nothing about WhatsApp reminders while the switch is off', async () => {
