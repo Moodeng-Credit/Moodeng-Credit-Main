@@ -357,7 +357,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).toContain('Optional');
 
       // Tapping the card opens the picture guide instead of a tap that can only fail.
-      const remindersCard = Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').includes('Turn on reminders'));
+      const remindersCard = Array.from(container.querySelectorAll('button')).find((b) =>
+         (b.textContent ?? '').includes('Turn on reminders')
+      );
       await act(async () => {
          remindersCard?.click();
       });
@@ -383,6 +385,30 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(push.enable).toHaveBeenCalledTimes(1);
       await render();
       expect(continueButton(container).disabled).toBe(false);
+   });
+
+   it('stops requiring reminders after they fail twice on a phone that cannot subscribe', async () => {
+      push.state.isSupported = true;
+      push.state.permission = 'granted';
+      push.enable.mockImplementationOnce(async () => 'failed').mockImplementationOnce(async () => 'failed');
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: '2026-09-25T00:00:00Z' };
+      await render();
+      const remindersCard = () =>
+         Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').includes('Turn on reminders'));
+
+      await act(async () => {
+         remindersCard()?.click();
+      });
+      expect(continueButton(container).disabled).toBe(true);
+      expect(container.textContent).toContain("Couldn't turn on reminders");
+
+      await act(async () => {
+         remindersCard()?.click();
+      });
+      expect(push.enable).toHaveBeenCalledTimes(2);
+      expect(continueButton(container).disabled).toBe(false);
+      expect(container.textContent).toContain('Not working on this phone');
+      expect(container.textContent).not.toContain('Turn on reminders to continue.');
    });
 
    it('does not block an iPhone-Safari borrower, and shows no Home Screen instructions', async () => {
