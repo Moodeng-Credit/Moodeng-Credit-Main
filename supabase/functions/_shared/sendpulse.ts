@@ -241,3 +241,73 @@ export const sendMessengerMessage = async (
       return { ok: false, reason: 'send_failed' };
    }
 };
+
+// ---------------------------------------------------------------------------------------------------
+// WhatsApp (same SendPulse account and credentials, separate API under /whatsapp).
+//
+// The business number +66 95 165 9077 is connected through SendPulse (coexistence with the WhatsApp
+// Business app), so Meta delivers its messages to SendPulse, not to our whatsapp-webhook (that one only
+// ever served Meta's test number). Borrowers opt in by sending their one-time code to the number; the
+// SendPulse "Confirm WhatsApp" flow posts it to sendpulse-messenger-verify (channel 'whatsapp'), which
+// stores the SendPulse contact id in users.whatsapp_contact_id.
+//
+// A reminder days after the borrower last wrote to us is business-initiated, so it has to be a template
+// Meta approved (category Utility). Free text would only work inside 24h of their last message.
+const WHATSAPP_API = `${API}/whatsapp`;
+
+export type SendPulseWhatsAppContact = {
+   id: string;
+   status?: number; // 1 active, 2 unsubscribed
+   channel_data?: { name?: string; first_name?: string; last_name?: string | null; phone?: string | number | null };
+};
+
+export const getWhatsAppContact = async (contactId: string): Promise<SendPulseWhatsAppContact | null> => {
+   try {
+      const token = await getToken();
+      if (!token) return null;
+      const res = await fetch(`${WHATSAPP_API}/contacts/get?id=${encodeURIComponent(contactId)}`, {
+         headers: { Authorization: `Bearer ${token}` }
+      });
+      const body = await res.json().catch(() => null);
+      return res.ok && body?.data ? (body.data as SendPulseWhatsAppContact) : null;
+   } catch (err) {
+      console.error('[sendpulse] whatsapp contacts/get failed', err instanceof Error ? err.message : err);
+      return null;
+   }
+};
+
+/** Digits only (E.164 without '+'), or null. SendPulse may hand the phone back as a number. */
+export const normalizeWhatsAppPhone = (raw: unknown): string | null => {
+   const digits = String(raw ?? '').replace(/\D/g, '');
+   return digits.length >= 8 && digits.length <= 15 ? digits : null;
+};
+
+export type WhatsAppTemplate = {
+   name: string;
+   language: { code: string };
+   components?: Array<{ type: 'header' | 'body' | 'button'; parameters: Array<{ type: 'text'; text: string }> }>;
+};
+
+/** Sends an approved template to a SendPulse WhatsApp contact. Never throws. */
+export const sendWhatsAppTemplate = async (contactId: string | null | undefined, template: WhatsAppTemplate): Promise<SendPulseResult> => {
+   if (!contactId) return { ok: false, reason: 'no_contact' };
+   if (!isSendPulseConfigured()) return { ok: false, reason: 'not_configured' };
+   try {
+      const token = await getToken();
+      if (!token) return { ok: false, reason: 'auth_failed' };
+      const res = await fetch(`${WHATSAPP_API}/contacts/sendTemplate`, {
+         method: 'POST',
+         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({ contact_id: contactId, template })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok || body?.success === false) {
+         console.error('[sendpulse] whatsapp sendTemplate failed', res.status, JSON.stringify(body)?.slice(0, 300));
+         return { ok: false, reason: 'send_failed' };
+      }
+      return { ok: true };
+   } catch (err) {
+      console.error('[sendpulse] whatsapp sendTemplate threw', err instanceof Error ? err.message : err);
+      return { ok: false, reason: 'send_failed' };
+   }
+};

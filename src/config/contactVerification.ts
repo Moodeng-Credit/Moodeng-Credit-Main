@@ -7,12 +7,16 @@
  * production Calendly links are ready — VITE_ vars take over here without a code change.
  */
 
-// digits-only, no '+', the format wa.me needs. Falls back to the current Meta test number.
-export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '15551939271';
+// digits-only, no '+', the format wa.me needs. The real business number (George's +66, connected through
+// SendPulse on 2026-10-16), replacing Meta's test number.
+export const WHATSAPP_BUSINESS_NUMBER = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER || '66951659077';
+// How the number reads on screen, for people who send their code by hand.
+export const WHATSAPP_BUSINESS_NUMBER_DISPLAY = import.meta.env.VITE_WHATSAPP_BUSINESS_NUMBER_DISPLAY || '+66 95 165 9077';
 
-// Facebook first: the WhatsApp option stays hidden until a real business number is connected (the
-// fallback above is Meta's sandbox number, not fit for real borrowers). Set
-// VITE_WHATSAPP_VERIFY_ENABLED=true to bring it back. Borrowers already WhatsApp-verified still pass.
+// Facebook is required (George): WhatsApp is not offered as a way to "reach you" instead of Messenger,
+// only as the reminders channel where notifications can't work (WhatsAppRemindersCard, switched on with
+// the borrower_whatsapp_enabled setting). VITE_WHATSAPP_VERIFY_ENABLED=true would bring back the old
+// "WhatsApp instead of Messenger" card.
 export const WHATSAPP_VERIFY_ENABLED = import.meta.env.VITE_WHATSAPP_VERIFY_ENABLED === 'true';
 
 // Borrowers the team already knows well — they skip the "how can we reach you" (Facebook) card at

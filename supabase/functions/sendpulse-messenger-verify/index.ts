@@ -8,7 +8,14 @@ import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
 import { claimContactRows } from '../_shared/messengerContactLog.ts';
 import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
 import { verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
-import { findMessengerContactIdByCode, getMessengerContact, messengerDisplayName, sendMessengerMessage } from '../_shared/sendpulse.ts';
+import {
+   findMessengerContactIdByCode,
+   getMessengerContact,
+   getWhatsAppContact,
+   messengerDisplayName,
+   normalizeWhatsAppPhone,
+   sendMessengerMessage
+} from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
@@ -115,6 +122,103 @@ const followUpWithStatus = async (svc: Svc, userId: string, contactId: string | 
    }
 };
 
+// WhatsApp reminders opt-in (channel 'whatsapp'). Same idea as Messenger, on the WhatsApp bot: the
+// borrower sends "Verify my Moodeng account: MDNG-XXXXXX" (pre-filled by the app's wa.me link, or the
+// code they copied) to our business number, and SendPulse's "Confirm WhatsApp" flow (keyword MDNG)
+// posts {"channel":"whatsapp","message":"{{last_message}}","contact_id":"{{contact_id}}","phone":"{{phone}}"}.
+// A "STOP" flow posts {"channel":"whatsapp","action":"opt_out","contact_id":"{{contact_id}}"}.
+// The number on file comes from SendPulse's contact when it has one; the flow's {{phone}} is the
+// fallback (this endpoint is behind the shared secret either way).
+type VerifyBody = {
+   code?: string;
+   ref?: string;
+   message?: string;
+   psid?: string;
+   contact_id?: string;
+   name?: string;
+   channel?: string;
+   action?: string;
+   phone?: string;
+};
+
+const handleWhatsApp = async (svc: Svc, body: VerifyBody, nowIso: string): Promise<Response> => {
+   const contactId = body.contact_id ? String(body.contact_id) : null;
+   if (!contactId) return json({ ok: false, error: 'no_contact' });
+
+   if (body.action === 'opt_out') {
+      const { error } = await svc.from('users').update({ notif_whatsapp: false }).eq('whatsapp_contact_id', contactId);
+      if (error) console.error('sendpulse-messenger-verify: whatsapp opt-out failed', error.message);
+      return json({ ok: !error });
+   }
+
+   const raw = String(body.code ?? body.ref ?? body.message ?? '').trim();
+   if (!raw) return json({ ok: false, error: 'no_code' });
+
+   for (const cand of extractMessengerCodes(raw)) {
+      const { data, error } = await svc
+         .from('contact_verification_codes')
+         .select('id, user_id, expires_at')
+         .eq('code', cand)
+         .eq('channel', 'whatsapp')
+         .is('verified_at', null)
+         .limit(1);
+      if (error) {
+         console.error('sendpulse-messenger-verify: whatsapp lookup failed', error.message);
+         continue;
+      }
+      const pending = data?.[0];
+      if (!pending) continue;
+      if (new Date(pending.expires_at).getTime() < Date.now()) return json({ ok: false, error: 'expired' });
+
+      const contact = await getWhatsAppContact(contactId);
+      const phone = normalizeWhatsAppPhone(contact?.channel_data?.phone) ?? normalizeWhatsAppPhone(body.phone);
+
+      const { data: claimed, error: codeError } = await svc
+         .from('contact_verification_codes')
+         .update({ verified_at: nowIso, ...(phone ? { sender_wa_id: phone } : {}) })
+         .eq('id', pending.id)
+         .is('verified_at', null)
+         .select('id')
+         .maybeSingle();
+      if (codeError) {
+         console.error('sendpulse-messenger-verify: whatsapp mark code failed', codeError.message);
+         return json({ ok: false, error: 'update_failed' }, 500);
+      }
+      if (!claimed) return json({ ok: true, already: true });
+
+      const { error: userError } = await svc
+         .from('users')
+         .update({
+            whatsapp_verified_at: nowIso,
+            whatsapp_contact_id: contactId,
+            notif_whatsapp: true,
+            ...(phone ? { whatsapp_number: phone } : {})
+         })
+         .eq('id', pending.user_id);
+      if (userError) {
+         console.error('sendpulse-messenger-verify: whatsapp user update failed', userError.message);
+         return json({ ok: false, error: 'update_failed' }, 500);
+      }
+      console.log(`sendpulse-messenger-verify: WhatsApp reminders on for ${String(pending.user_id).slice(0, 8)}${phone ? '' : ' (no phone from SendPulse)'}`);
+      return json({ ok: true });
+   }
+
+   // Sent twice (the pre-filled message, then the copied code): a code confirmed in the last few
+   // minutes is a repeat, not a failure.
+   const recentCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+   for (const cand of extractMessengerCodes(raw)) {
+      const { data: repeat } = await svc
+         .from('contact_verification_codes')
+         .select('id')
+         .eq('code', cand)
+         .eq('channel', 'whatsapp')
+         .gte('verified_at', recentCutoff)
+         .limit(1);
+      if (repeat?.length) return json({ ok: true, already: true });
+   }
+   return json({ ok: false, error: 'no_match' });
+};
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
    if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
@@ -132,12 +236,14 @@ serve(async (req) => {
       return json({ ok: false, error: 'not_configured' }, 500);
    }
 
-   let body: { code?: string; ref?: string; message?: string; psid?: string; contact_id?: string; name?: string };
+   let body: VerifyBody;
    try {
       body = await req.json();
    } catch {
       return json({ ok: false, error: 'bad_request' }, 400);
    }
+
+   if (body.channel === 'whatsapp') return await handleWhatsApp(createClient(SUPABASE_URL, SERVICE_KEY), body, new Date().toISOString());
 
    // Accept whichever field SendPulse is configured to send the code in.
    const raw = String(body.code ?? body.ref ?? body.message ?? '').trim();

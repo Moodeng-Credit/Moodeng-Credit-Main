@@ -65,7 +65,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -333,10 +333,10 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(continueButton(container).disabled).toBe(false);
    });
 
-   it('enables Continue immediately for a returning borrower whose WhatsApp is already verified', async () => {
+   it('does not let a verified WhatsApp stand in for Facebook (Facebook is required)', async () => {
       supa.state.usersRow.whatsapp_verified_at = '2026-09-01T00:00:00Z';
       await render();
-      expect(continueButton(container).disabled).toBe(false);
+      expect(continueButton(container).disabled).toBe(true);
    });
 
    it('calls onContinue when Continue is clicked after a channel is verified', async () => {
@@ -445,11 +445,68 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).not.toContain('(one option)');
    });
 
-   it('still shows WhatsApp to a returning borrower who already verified it', async () => {
+   it('does not show the old WhatsApp contact card to a borrower who verified WhatsApp before', async () => {
       supa.state.usersRow.whatsapp_verified_at = '2026-09-01T00:00:00Z';
       await render();
-      expect(container.textContent).toContain('WhatsApp');
-      expect(container.textContent).toContain('Verified');
+      expect(channelCard(container, 'WhatsApp')).toBeUndefined();
+   });
+
+   describe('WhatsApp reminders (where notifications can\'t work)', () => {
+      const remindersOn = () =>
+         supa.rpc.mockImplementation(async (name: string) =>
+            name === 'get_whatsapp_reminders_enabled' ? { data: true, error: null } : supa.state.rpcResult
+         );
+      afterEach(() => supa.rpc.mockImplementation(async () => supa.state.rpcResult));
+
+      it('offers WhatsApp reminders when the switch is on and push is unsupported', async () => {
+         remindersOn();
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).toContain('Get reminders on WhatsApp');
+         // Recommended, not required: Facebook alone still lets them through.
+         expect(continueButton(container).disabled).toBe(false);
+      });
+
+      it('shows nothing about WhatsApp reminders while the switch is off', async () => {
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
+
+      it('does not offer WhatsApp when push works', async () => {
+         remindersOn();
+         push.state.isSupported = true;
+         push.state.permission = 'granted';
+         push.state.isSubscribed = true;
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
+
+      it('tapping it starts a WhatsApp code and shows the code to send by hand', async () => {
+         remindersOn();
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         await render();
+         const card = channelCard(container, 'Get reminders on WhatsApp');
+         await act(async () => {
+            card?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+            await Promise.resolve();
+            await Promise.resolve();
+         });
+         expect(supa.rpc).toHaveBeenCalledWith('start_whatsapp_verification');
+         expect(openSpy.mock.calls.at(-1)?.[0]).toContain('wa.me/66951659077');
+         expect(container.textContent).toContain('MDNG-ABC123');
+         expect(container.textContent).toContain('+66 95 165 9077');
+      });
+
+      it('shows WhatsApp reminders as on once verified', async () => {
+         remindersOn();
+         supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+         supa.state.usersRow.whatsapp_verified_at = '2026-10-16T00:00:00Z';
+         await render();
+         expect(container.textContent).toContain('WhatsApp reminders');
+         expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+      });
    });
 
    it('WhatsApp button keeps the original RPC entry point and opens a wa.me link', async () => {
