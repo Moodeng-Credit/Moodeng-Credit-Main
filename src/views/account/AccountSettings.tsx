@@ -12,6 +12,7 @@ import { useThemeMode } from '@/components/ThemeModeProvider';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import UserAvatar from '@/components/UserAvatar';
+import { ConfirmEmailReminder } from '@/components/account/ConfirmEmailReminder';
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
 
 import { useAuthProvider } from '@/hooks/useAuthProvider';
@@ -2021,6 +2022,7 @@ export default function AccountSettings() {
                            />
                         </SettingsGroup>
 
+                        <ConfirmEmailReminder placement="settings" />
                         <SettingsGroup label="Contact" description={emailHelpCopy}>
                            <SettingsFieldRow
                               title="Email address"
