@@ -305,8 +305,10 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
          )}
          {googleError ? <p className="text-sm font-medium leading-5 text-[#B91C1C]">{googleError}</p> : null}
 
-         {/* Secondary providers as small logo-square tiles, left-aligned under the Google button */}
-         <div className="flex w-full min-w-0 items-center justify-start gap-3">
+         {/* Secondary providers as small logo-square tiles, left-aligned under the Google button. Not inside
+             an app's browser (Facebook, Messenger, Instagram…): there it's phone or email only, and the
+             form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15). */}
+         <div className={inApp.isInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
             {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
             <div className="relative">
                <TelegramLoginTile />
