@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // account gets (public.users.email is NOT NULL, so a placeholder, never the number).
 const h = vi.hoisted(() => ({
    authUser: null as null | Record<string, unknown>,
+   session: null as null | Record<string, unknown>,
+   signOut: vi.fn<(options?: unknown) => Promise<{ error: null }>>(async () => ({ error: null })),
    inserts: [] as Record<string, unknown>[],
    signInWithOtp: vi.fn<(args: unknown) => Promise<{ error: null | { message: string } }>>(async () => ({ error: null })),
    verifyOtp: vi.fn<(args: unknown) => Promise<{ data: { user: { id: string } }; error: null | { message: string } }>>(async () => ({
@@ -18,8 +20,8 @@ vi.mock('@/lib/authRedirect', () => ({ getAuthRedirectUrl: () => 'https://mooden
 vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       auth: {
-         getSession: async () => ({ data: { session: null } }),
-         signOut: vi.fn(),
+         getSession: async () => ({ data: { session: h.session } }),
+         signOut: h.signOut,
          signInWithOtp: h.signInWithOtp,
          verifyOtp: h.verifyOtp,
          getUser: async () => ({ data: { user: h.authUser }, error: null })
@@ -50,11 +52,14 @@ describe('passwordless OTP thunks', () => {
       h.verifyOtp.mockClear();
       h.inserts = [];
       h.authUser = null;
+      h.session = null;
+      h.signOut.mockClear();
       localStorage.clear();
+      sessionStorage.clear();
    });
 
-   it('phone: signInWithOtp with the E.164 number, creating the account with a neutral username', async () => {
-      await run(requestOtpCode({ channel: 'sms', phone: '+639171234567' }));
+   it('phone sign-up: signInWithOtp with the E.164 number, creating the account with a neutral username', async () => {
+      await run(requestOtpCode({ channel: 'sms', phone: '+639171234567', mode: 'signup' }));
       const args = h.signInWithOtp.mock.calls[0][0] as {
          phone: string;
          options: { shouldCreateUser: boolean; data: { username: string; passwordless: boolean } };
@@ -65,8 +70,8 @@ describe('passwordless OTP thunks', () => {
       expect(args.options.data.username).toMatch(/^moodeng-[a-z2-9]{6}$/);
    });
 
-   it('email: signInWithOtp with the email, redirect to /auth/confirm and the email local-part as username', async () => {
-      await run(requestOtpCode({ channel: 'email', email: 'maria.santos@example.com' }));
+   it('email sign-up: signInWithOtp with the email, redirect to /auth/confirm and the email local-part as username', async () => {
+      await run(requestOtpCode({ channel: 'email', email: 'maria.santos@example.com', mode: 'signup' }));
       expect(h.signInWithOtp).toHaveBeenCalledWith({
          email: 'maria.santos@example.com',
          options: {
@@ -77,9 +82,30 @@ describe('passwordless OTP thunks', () => {
       });
    });
 
+   it('sign-in never creates an account (shouldCreateUser false), by phone or email', async () => {
+      await run(requestOtpCode({ channel: 'sms', phone: '+639171234567', mode: 'signin' }));
+      await run(requestOtpCode({ channel: 'email', email: 'maria@example.com', mode: 'signin' }));
+      const calls = h.signInWithOtp.mock.calls.map(
+         ([args]) => (args as { options: { shouldCreateUser: boolean } }).options.shouldCreateUser
+      );
+      expect(calls).toEqual([false, false]);
+   });
+
+   it('a leftover session is signed out on this device only, keeping a pending invite code', async () => {
+      h.session = { user: { id: 'old' } };
+      localStorage.setItem('moodeng.pendingInviteCode', JSON.stringify({ code: 'MARIA5' }));
+      localStorage.setItem('persist:root', 'old account data');
+      sessionStorage.setItem('pendingSharedRequestId', 'loan-1');
+      await run(requestOtpCode({ channel: 'email', email: 'maria@example.com', mode: 'signin' }));
+      expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(localStorage.getItem('moodeng.pendingInviteCode')).toContain('MARIA5');
+      expect(sessionStorage.getItem('pendingSharedRequestId')).toBe('loan-1');
+      expect(localStorage.getItem('persist:root')).toBeNull();
+   });
+
    it('a refused request rejects with the Supabase error', async () => {
       h.signInWithOtp.mockResolvedValueOnce({ error: { message: 'Wait a minute before asking for another code.' } });
-      const result = await run(requestOtpCode({ channel: 'sms', phone: '+639171234567' }));
+      const result = await run(requestOtpCode({ channel: 'sms', phone: '+639171234567', mode: 'signin' }));
       expect((result as { error?: { message?: string } }).error?.message).toBe('Wait a minute before asking for another code.');
    });
 

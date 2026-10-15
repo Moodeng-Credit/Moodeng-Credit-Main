@@ -1,6 +1,7 @@
 import { type JSX, type ReactNode, useState } from 'react';
 
 import { CheckCircle2, ChevronRight, HelpCircle, KeyRound } from 'lucide-react';
+import { useDispatch } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { SetPasswordForm } from '@/components/auth/SetPasswordForm';
@@ -9,6 +10,9 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuthProvider } from '@/hooks/useAuthProvider';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
+import { logoutUser } from '@/store/slices/authSlice';
+import type { AppDispatch } from '@/store/store';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
 
 type AuthSuccessCardProps = {
@@ -65,11 +69,11 @@ function AuthSuccessShell({ imageSrc, imageAlt, eyebrow, title, body, children }
  * nothing waits on it (Proceed stays the main button).
  */
 function OptionalPasswordCard(): JSX.Element | null {
-   const { isCodeOrPasswordUser, hasPassword, isLoading } = useAuthProvider();
+   const { canSetPassword, hasPassword, isLoading } = useAuthProvider();
    const [isOpen, setIsOpen] = useState(false);
    const [saved, setSaved] = useState(false);
 
-   if (isLoading || !isCodeOrPasswordUser || (hasPassword && !saved)) return null;
+   if (isLoading || !canSetPassword || (hasPassword && !saved)) return null;
 
    if (saved) {
       return (
@@ -98,12 +102,95 @@ function OptionalPasswordCard(): JSX.Element | null {
    );
 }
 
+/**
+ * Asked once, right after a code made a NEW account in a browser that looks Filipino: people who
+ * borrowed before with another phone/email/Google often make a second, empty account by mistake.
+ * "I've used Moodeng before" signs this new one out and sends them to log in the old way.
+ */
+function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
+   const navigate = useNavigate();
+   const dispatch = useDispatch<AppDispatch>();
+   const [returning, setReturning] = useState(false);
+
+   const logInWith = async (method: 'phone' | 'email' | 'google') => {
+      await dispatch(logoutUser()).catch(() => undefined);
+      navigate(method === 'google' ? '/sign-in' : `/sign-in?method=${method}`, { replace: true });
+   };
+
+   const choice =
+      'flex h-14 w-full items-center justify-center rounded-2xl text-base font-semibold tracking-[-0.02em] transition hover:opacity-95';
+
+   return (
+      <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white dark:from-[#100d17] dark:to-[#100d17] max-w-[440px] mx-auto w-full">
+         <OnboardingHeader hideBack />
+         <main className="flex flex-1 flex-col justify-center px-5 pb-14">
+            <section className="mx-auto flex w-full max-w-[400px] flex-col items-center gap-4 text-center">
+               {returning ? (
+                  <>
+                     <h1 className="text-[30px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] dark:text-white">
+                        Log in the way you did before
+                     </h1>
+                     <p className="text-base font-medium leading-6 text-[#6D6D6D] dark:text-[#c8b8e8]">
+                        Log in with the phone, email or Google you used before. Your loans and points are there.
+                     </p>
+                     <button type="button" onClick={() => void logInWith('phone')} className={`${choice} bg-[#6010D2] text-white`}>
+                        Log in with my phone number
+                     </button>
+                     <button
+                        type="button"
+                        onClick={() => void logInWith('email')}
+                        className={`${choice} border border-[#B5ACBE] text-[#250650] dark:text-white`}
+                     >
+                        Log in with my email
+                     </button>
+                     <button
+                        type="button"
+                        onClick={() => void logInWith('google')}
+                        className={`${choice} border border-[#B5ACBE] text-[#250650] dark:text-white`}
+                     >
+                        Log in with Google
+                     </button>
+                     <button
+                        type="button"
+                        onClick={onNew}
+                        className="text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                     >
+                        I&apos;m new after all
+                     </button>
+                  </>
+               ) : (
+                  <>
+                     <h1 className="text-[30px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] dark:text-white">
+                        Have you used Moodeng before?
+                     </h1>
+                     <button type="button" onClick={onNew} className={`${choice} bg-[#6010D2] text-white`}>
+                        New to Moodeng
+                     </button>
+                     <button
+                        type="button"
+                        onClick={() => setReturning(true)}
+                        className={`${choice} border border-[#B5ACBE] text-[#250650] dark:text-white`}
+                     >
+                        I&apos;ve used Moodeng before
+                     </button>
+                  </>
+               )}
+            </section>
+         </main>
+      </div>
+   );
+}
+
 function AccountCreatedView(): JSX.Element {
    const navigate = useNavigate();
+   const [searchParams] = useSearchParams();
+   const [askReturning, setAskReturning] = useState(() => searchParams.get('new') === '1' && isLikelyPhilippines());
 
    const handleProceed = () => {
       navigate('/onboarding/role', { replace: true });
    };
+
+   if (askReturning) return <ReturningUserQuestion onNew={() => setAskReturning(false)} />;
 
    return (
       <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#FBFAFD] to-white dark:from-[#100d17] dark:to-[#100d17] max-w-[440px] mx-auto w-full">

@@ -97,8 +97,11 @@ describe('email first inside Facebook/Messenger', () => {
       expect(container.querySelector('input[type="password"]')).toBeNull();
       const continueButton = buttonWithText('Continue');
       expect(continueButton).not.toBeNull();
-      expect(container.querySelector('button, a')).toBe(continueButton);
-      expect(container.textContent).toContain("Works right here in Facebook: we'll email you an 8-digit code.");
+      // The code form (its field, then Continue) comes before any sign-in provider.
+      const firstControl = container.querySelector('button, a, input');
+      expect(firstControl && container.querySelector('form')?.contains(firstControl)).toBe(true);
+      expect(container.textContent).toContain("Used Google before? Type your Gmail and we'll email you a code.");
+      expect(container.textContent).toContain('Signed up with Telegram or LINE?');
       expect(container.textContent).not.toContain('Sign Up with Google');
       expect(container.querySelector('path[fill="#4285F4"]')).toBeNull();
       expect(analytics.capture).toHaveBeenCalledWith('signup_inapp_email_shown', { app: 'Facebook', os: 'android' });

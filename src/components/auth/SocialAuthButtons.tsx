@@ -158,9 +158,7 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
-   const [lastUsed] = useState(getLastUsedAuth);
-   const [showFacebookSoon, setShowFacebookSoon] = useState(false);
-   const facebookSoonTimer = useRef<number | null>(null);
+   const lastUsed = useMemo(() => getLastUsedAuth(), []);
    // Google refuses to sign in inside an app's built-in browser (Facebook, Messenger, Instagram…):
    // 6 people tapped "Sign up with Google" inside Facebook on 2026-10-13/14 and none got through.
    // There the button hands off to Chrome (Android) or Safari (iPhone) instead, and says so.
@@ -180,17 +178,9 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
       : isSignUp
         ? 'Sign Up with Google'
         : 'Sign In with Google';
-   // Until Facebook login is switched on (VITE_FACEBOOK_LOGIN_ENABLED) the tile is grayed out; tapping it flashes a "Soon" hint.
-   const facebookLabel = 'Facebook sign-in coming soon';
-
-   const handleFacebookComingSoon = () => {
-      if (facebookSoonTimer.current) window.clearTimeout(facebookSoonTimer.current);
-      setShowFacebookSoon(true);
-      facebookSoonTimer.current = window.setTimeout(() => setShowFacebookSoon(false), 1800);
-   };
+   // Facebook stays hidden until it is switched on (VITE_FACEBOOK_LOGIN_ENABLED): no grayed "Soon" tile.
 
    useEffect(() => () => {
-      if (facebookSoonTimer.current) window.clearTimeout(facebookSoonTimer.current);
       stopWatchingRef.current?.();
    }, []);
 
@@ -329,36 +319,14 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
                {lastUsed === 'line' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
-            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (grayed out "Soon" until the app is approved) */}
+            {/* TikTok: redirects to TikTok Login Kit, handled by the tiktok-login edge fn (hidden until the app is approved / ?tiktok=1) */}
             <div className="relative">
                <TikTokLoginButton isSignUp={isSignUp} iconOnly />
                {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
-            {/* Facebook: a live tile once enabled (the big button above when inside Facebook); until then grayed out with a "Soon" hint */}
-            {facebookEnabled ? (
-               facebookPrimary ? null : (
-                  <FacebookAuthButton isSignUp={isSignUp} variant="tile" />
-               )
-            ) : (
-               <div className="relative">
-                  <button
-                     type="button"
-                     onClick={handleFacebookComingSoon}
-                     aria-disabled="true"
-                     aria-label={facebookLabel}
-                     title={facebookLabel}
-                     className="flex h-14 w-14 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#F3F1F5] opacity-60 grayscale transition-opacity hover:opacity-70 dark:border-[#40354F] dark:bg-[#17121F]"
-                  >
-                     <FacebookLogo />
-                  </button>
-                  {showFacebookSoon ? (
-                     <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6B6577] px-2 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm dark:bg-[#4B4256]">
-                        Soon
-                     </span>
-                  ) : null}
-               </div>
-            )}
+            {/* Facebook: a live tile once enabled (the big button above when inside Facebook); hidden until then */}
+            {facebookEnabled && !facebookPrimary ? <FacebookAuthButton isSignUp={isSignUp} variant="tile" /> : null}
          </div>
 
          {/* Google inside Facebook/Messenger: a small line, not a button (email above is the way in) */}

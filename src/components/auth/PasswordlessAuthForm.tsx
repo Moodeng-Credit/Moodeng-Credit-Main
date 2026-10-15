@@ -1,11 +1,9 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { Mail, Smartphone } from 'lucide-react';
+import { ChevronDown, LoaderCircle } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-import { AuthInputField } from '@/components/auth/AuthInputField';
 
 import { useResendCooldown } from '@/hooks/useResendCooldown';
 
@@ -16,19 +14,21 @@ import {
    SIGNUP_RESEND_STORAGE_KEY,
    SMS_RESEND_STORAGE_KEY
 } from '@/lib/authPaths';
-import { type InAppBrowserInfo, isFacebookInApp } from '@/lib/inAppBrowser';
+import { buildAndroidIntentUrl, type InAppBrowserInfo, isFacebookInApp, openInSafari, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
+import { getLastUsedAuth } from '@/lib/lastUsedAuth';
 import { describeOtpError } from '@/lib/otpErrors';
+import { savePendingCode } from '@/lib/pendingCode';
 import { checkPhPhone, isSmsLoginEnabled, SMS_NON_PH_MESSAGE } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { type OtpChannel, requestOtpCode } from '@/store/slices/authSlice';
+import { type OtpChannel, type OtpMode, requestOtpCode } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 
 type Props = {
-   mode: 'signin' | 'signup';
+   mode: OtpMode;
    inApp: InAppBrowserInfo;
    initialEmail?: string;
-   /** Open on this tab (e.g. the sign-in page's "Text me a code" button). */
+   /** Start in this mode (e.g. the sign-in page's "Text me a code" button). */
    initialChannel?: OtpChannel;
    /** Sign-in only: show "Use password instead" for people who set a password. */
    onUsePassword?: () => void;
@@ -36,62 +36,108 @@ type Props = {
 
 const inAppName = (inApp: InAppBrowserInfo) => (inApp.isInApp ? (inApp.appName ?? 'unknown') : null);
 
+// Typing a letter or "@" means an email; digits (or +) mean a phone number.
+const looksLikeEmail = (value: string) => /[a-z@]/i.test(value);
+const looksLikePhone = (value: string) => /^\s*\+?[\d\s\-().]+$/.test(value) && /\d/.test(value);
+
+/** Phone or email to start with: the way they logged in last time, else phone for visitors in the Philippines. */
+export function pickInitialChannel(options: {
+   smsEnabled: boolean;
+   initialChannel?: OtpChannel;
+   initialEmail?: string;
+   method?: string | null;
+   lastUsed?: string | null;
+   inPhilippines: boolean;
+}): OtpChannel {
+   if (!options.smsEnabled || options.initialEmail) return 'email';
+   if (options.initialChannel) return options.initialChannel;
+   if (options.method === 'phone') return 'sms';
+   if (options.method === 'email') return 'email';
+   if (options.lastUsed === 'phone') return 'sms';
+   if (options.lastUsed === 'email' || options.lastUsed === 'google') return 'email';
+   return options.inPhilippines ? 'sms' : 'email';
+}
+
 /**
- * One way in for sign-up and sign-in: a Philippine mobile number (SMS code) or an email (email
- * code). The code screen is /auth/verify-code. New numbers/emails get an account, existing ones
- * are signed in; nobody needs a password.
+ * One way in for sign-up and sign-in: one field that takes a Philippine mobile number (SMS code)
+ * or an email (email code). The pill on the left shows which ("📱 +63 ▾" / "✉️ ▾") and switches
+ * it; typing a letter or "@" switches to email, digits to phone. Sign-up creates the account;
+ * sign-in never does. The code screen is /auth/verify-code.
  */
 export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialChannel, onUsePassword }: Props) {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [searchParams] = useSearchParams();
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
-   // Phone first for visitors in the Philippines; ?method=email|phone picks the tab explicitly.
-   const [channel, setChannel] = useState<OtpChannel>(() => {
-      if (!smsEnabled || initialEmail) return 'email';
-      if (initialChannel) return initialChannel;
-      const method = searchParams.get('method');
-      if (method === 'email' || method === 'phone') return method === 'phone' ? 'sms' : 'email';
-      return isLikelyPhilippines() ? 'sms' : 'email';
-   });
-   const [phone, setPhone] = useState('');
-   const [email, setEmail] = useState(initialEmail);
+   const [channel, setChannel] = useState<OtpChannel>(() =>
+      pickInitialChannel({
+         smsEnabled,
+         initialChannel,
+         initialEmail,
+         method: searchParams.get('method'),
+         lastUsed: getLastUsedAuth(),
+         inPhilippines: isLikelyPhilippines()
+      })
+   );
+   const [value, setValue] = useState(initialEmail);
    const [error, setError] = useState<string | null>(null);
    const [notice, setNotice] = useState<string | null>(null);
+   const [noAccount, setNoAccount] = useState(false);
    const [isSending, setIsSending] = useState(false);
-   const [focusEmail, setFocusEmail] = useState(false);
-   const emailFieldRef = useRef<HTMLDivElement>(null);
+   // After "Philippine numbers only", typing digits must not flip straight back to phone.
+   const [stayOnEmail, setStayOnEmail] = useState(false);
+   const inputRef = useRef<HTMLInputElement>(null);
    const emailCooldown = useResendCooldown(SIGNUP_RESEND_STORAGE_KEY);
    const smsCooldown = useResendCooldown(SMS_RESEND_STORAGE_KEY);
    const facebookInApp = isFacebookInApp(inApp);
+   const isSms = channel === 'sms';
 
+   // The "Open Moodeng in your browser" banner says Google doesn't work here, which reads as if
+   // nothing works here. This form does, so the banner stays hidden on it.
    useEffect(() => {
-      if (!focusEmail || channel !== 'email') return;
-      emailFieldRef.current?.querySelector('input')?.focus();
-      setFocusEmail(false);
-   }, [focusEmail, channel]);
+      if (!inApp.isInApp) return;
+      setInAppNoticeHidden(true);
+      return () => setInAppNoticeHidden(false);
+   }, [inApp.isInApp]);
 
-   const switchToEmail = (message: string | null) => {
-      setChannel('email');
-      setNotice(message);
+   const switchTo = (next: OtpChannel, options: { keepValue?: boolean; message?: string | null; focus?: boolean } = {}) => {
+      setChannel(next);
+      if (!options.keepValue) setValue('');
+      setNotice(options.message ?? null);
       setError(null);
-      setFocusEmail(true);
+      setNoAccount(false);
+      if (next === 'sms') setStayOnEmail(false);
+      if (options.focus !== false) window.requestAnimationFrame(() => inputRef.current?.focus());
    };
 
    const redirectNonPh = (source: 'input' | 'hook') => {
       if (import.meta.env.PROD) posthog.capture('sms_non_ph_redirected', { source, mode, in_app_browser: inAppName(inApp) });
-      setPhone('');
-      switchToEmail(SMS_NON_PH_MESSAGE);
+      setStayOnEmail(true);
+      switchTo('email', { message: SMS_NON_PH_MESSAGE });
    };
 
-   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
       setError(null);
       setNotice(null);
-      if (checkPhPhone(e.target.value).kind === 'non_ph') {
-         redirectNonPh('input');
+      setNoAccount(false);
+      if (isSms) {
+         if (looksLikeEmail(next)) {
+            switchTo('email', { keepValue: true });
+            setValue(next);
+            return;
+         }
+         if (checkPhPhone(next).kind === 'non_ph') {
+            redirectNonPh('input');
+            return;
+         }
+      } else if (smsEnabled && !stayOnEmail && looksLikePhone(next)) {
+         switchTo('sms', { keepValue: true });
+         setValue(next);
+         if (checkPhPhone(next).kind === 'non_ph') redirectNonPh('input');
          return;
       }
-      setPhone(e.target.value);
+      setValue(next);
    };
 
    const trackRequested = (sentChannel: OtpChannel, target: string) => {
@@ -108,13 +154,13 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
          .catch(() => capture(null));
    };
 
-   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
+   const send = async (requestMode: OtpMode) => {
       setError(null);
       setNotice(null);
+      setNoAccount(false);
 
-      if (channel === 'sms') {
-         const check = checkPhPhone(phone);
+      if (isSms) {
+         const check = checkPhPhone(value);
          if (check.kind === 'non_ph') {
             redirectNonPh('input');
             return;
@@ -125,23 +171,29 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
          }
          setIsSending(true);
          try {
-            await dispatch(requestOtpCode({ channel: 'sms', phone: check.e164 })).unwrap();
+            await dispatch(requestOtpCode({ channel: 'sms', phone: check.e164, mode: requestMode })).unwrap();
             smsCooldown.startCooldown();
+            savePendingCode({ channel: 'sms', target: check.e164, mode: requestMode });
             trackRequested('sms', check.e164);
             navigate(buildPhoneCodePath(check.e164));
          } catch (err) {
             const view = describeOtpError(err, 'sms');
             if (view.nonPh) redirectNonPh('hook');
-            else if (view.switchToEmail) switchToEmail(view.message);
-            else setError(view.message);
+            else if (view.noAccount) {
+               setNoAccount(true);
+               setError(view.message);
+            } else if (view.switchToEmail) {
+               setStayOnEmail(true);
+               switchTo('email', { message: view.message });
+            } else setError(view.message);
          } finally {
             setIsSending(false);
          }
          return;
       }
 
-      const trimmedEmail = email.trim().toLowerCase();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      const email = value.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
          setError('Enter your email address.');
          return;
       }
@@ -153,110 +205,68 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
       }
       setIsSending(true);
       try {
-         await dispatch(requestOtpCode({ channel: 'email', email: trimmedEmail })).unwrap();
+         await dispatch(requestOtpCode({ channel: 'email', email, mode: requestMode })).unwrap();
          emailCooldown.startCooldown();
-         sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, trimmedEmail);
-         trackRequested('email', trimmedEmail);
-         navigate(buildEmailConfirmationPath(trimmedEmail));
+         sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, email);
+         savePendingCode({ channel: 'email', target: email, mode: requestMode });
+         trackRequested('email', email);
+         navigate(buildEmailConfirmationPath(email));
       } catch (err) {
-         setError(describeOtpError(err, 'email').message);
+         const view = describeOtpError(err, 'email');
+         setNoAccount(Boolean(view.noAccount));
+         setError(view.message);
       } finally {
          setIsSending(false);
       }
    };
 
-   const tabClass = (active: boolean) =>
-      `flex h-11 flex-1 items-center justify-center gap-2 rounded-xl text-base font-semibold tracking-[-0.02em] transition-colors ${
-         active
-            ? 'bg-white text-[#250650] shadow-[0_2px_8px_rgba(36,14,62,0.10)] dark:bg-[#2A1D40] dark:text-[#F8F4FF]'
-            : 'text-[#70617F] hover:text-[#250650] dark:text-[#A89BB8]'
-      }`;
+   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      void send(mode);
+   };
+
+   const browserName = inApp.os === 'ios' ? 'Safari' : 'Chrome';
+   const helper = isSms
+      ? inApp.isInApp
+         ? "Philippine numbers only. We'll text you a code. No password."
+         : 'Philippine numbers only.'
+      : inApp.isInApp
+        ? "Used Google before? Type your Gmail and we'll email you a code."
+        : "We'll email you a code.";
 
    return (
-      <form onSubmit={handleSubmit} className="flex w-full max-w-[400px] flex-col gap-4" noValidate>
-         {smsEnabled ? (
-            <div role="tablist" aria-label="Get your code by" className="flex gap-1 rounded-2xl bg-[#F2EEF7] p-1 dark:bg-[#1E1530]">
-               <button
-                  type="button"
-                  role="tab"
-                  aria-selected={channel === 'sms'}
-                  className={tabClass(channel === 'sms')}
-                  onClick={() => {
-                     setChannel('sms');
-                     setError(null);
-                     setNotice(null);
-                  }}
-               >
-                  <Smartphone className="h-5 w-5" strokeWidth={1.8} />
-                  Phone
-               </button>
-               <button
-                  type="button"
-                  role="tab"
-                  aria-selected={channel === 'email'}
-                  className={tabClass(channel === 'email')}
-                  onClick={() => switchToEmail(null)}
-               >
-                  <Mail className="h-5 w-5" strokeWidth={1.8} />
-                  Email
-               </button>
-            </div>
-         ) : null}
-
-         {channel === 'sms' ? (
-            <div className="flex flex-col gap-2">
-               <label htmlFor="otp-phone" className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F8F4FF]">
-                  Mobile number
-               </label>
-               <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] px-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)] focus-within:border-[#8336F0] dark:border-[#3D2D5A] dark:bg-[#1E1530]">
-                  <span className="shrink-0 text-base font-semibold text-[#250650] dark:text-[#F8F4FF]" aria-hidden>
-                     🇵🇭 +63
-                  </span>
-                  <input
-                     id="otp-phone"
-                     type="tel"
-                     inputMode="tel"
-                     autoComplete="tel-national"
-                     placeholder="917 123 4567"
-                     value={phone}
-                     onChange={handlePhoneChange}
-                     aria-describedby="otp-phone-help"
-                     className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
-                  />
-               </div>
-               <p id="otp-phone-help" className="text-sm leading-5 text-[#5b5470] dark:text-[#A89BB8]">
-                  Philippine numbers only for now. Not in the Philippines?{' '}
-                  <button
-                     type="button"
-                     onClick={() => switchToEmail(null)}
-                     className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]"
-                  >
-                     Use email
-                  </button>
-                  .
-               </p>
-            </div>
-         ) : (
-            <div ref={emailFieldRef} className="flex flex-col gap-2">
-               <AuthInputField
-                  label="Email address"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                     setEmail(e.target.value);
-                     setError(null);
-                  }}
-                  icon={<Mail className="h-5 w-5 text-[#8336F0]" strokeWidth={1.8} />}
-                  autoComplete="email"
-               />
-               <p className="text-sm leading-5 text-[#5b5470] dark:text-[#A89BB8]">
-                  {facebookInApp
-                     ? `Works right here in ${inApp.appName}: we'll email you an 8-digit code.`
-                     : "We'll email you an 8-digit code."}
-               </p>
-            </div>
-         )}
+      <form onSubmit={handleSubmit} className="flex w-full max-w-[400px] flex-col gap-3" noValidate>
+         <label htmlFor="otp-input" className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F8F4FF]">
+            {isSms ? 'Mobile number' : 'Email address'}
+         </label>
+         <div className="flex h-14 items-center gap-2 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] pl-1.5 pr-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)] focus-within:border-[#8336F0] dark:border-[#3D2D5A] dark:bg-[#1E1530]">
+            <button
+               type="button"
+               onClick={() => (smsEnabled ? switchTo(isSms ? 'email' : 'sms') : undefined)}
+               disabled={!smsEnabled}
+               aria-label={smsEnabled ? (isSms ? 'Using phone. Switch to email' : 'Using email. Switch to phone') : 'Email'}
+               className="flex h-11 shrink-0 items-center gap-1 rounded-xl bg-[#F2EEF7] px-2.5 text-base font-semibold text-[#250650] disabled:cursor-default dark:bg-[#2A1D40] dark:text-[#F8F4FF]"
+            >
+               <span aria-hidden>{isSms ? '📱' : '✉️'}</span>
+               {isSms ? <span>+63</span> : null}
+               {smsEnabled ? <ChevronDown className="h-4 w-4 text-[#70617F]" aria-hidden /> : null}
+            </button>
+            <input
+               id="otp-input"
+               ref={inputRef}
+               type={isSms ? 'tel' : 'email'}
+               inputMode={isSms ? 'tel' : 'email'}
+               autoComplete={isSms ? 'tel-national' : 'email'}
+               placeholder={isSms ? '0917 123 4567' : 'you@example.com'}
+               value={value}
+               onChange={handleChange}
+               aria-describedby="otp-help"
+               className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
+            />
+         </div>
+         <p id="otp-help" className="text-sm leading-5 text-[#5b5470] dark:text-[#A89BB8]">
+            {helper}
+         </p>
 
          {notice ? (
             <p
@@ -267,22 +277,53 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             </p>
          ) : null}
          {error ? (
-            <p
+            <div
                role="alert"
                className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413] dark:border-[#4A1A20] dark:bg-[#2A0F14] dark:text-[#FF8090]"
             >
-               {error}
-            </p>
+               <p>{error}</p>
+               {noAccount ? (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                     <button
+                        type="button"
+                        onClick={() => void send('signup')}
+                        className="rounded-xl bg-[#6010D2] px-3 py-2 text-sm font-semibold text-white"
+                     >
+                        Create account
+                     </button>
+                     {smsEnabled ? (
+                        <button
+                           type="button"
+                           onClick={() => switchTo(isSms ? 'email' : 'sms')}
+                           className="rounded-xl border border-[#B5ACBE] bg-white px-3 py-2 text-sm font-semibold text-[#250650] dark:bg-transparent dark:text-[#F8F4FF]"
+                        >
+                           {isSms ? 'Use email instead' : 'Use phone instead'}
+                        </button>
+                     ) : null}
+                  </div>
+               ) : null}
+            </div>
          ) : null}
 
          <button
             type="submit"
             disabled={isSending}
-            className="h-14 w-full rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:opacity-60"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:opacity-70"
             style={{ backgroundColor: '#6010D2' }}
          >
-            {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : channel === 'sms' ? 'Text me a code' : 'Email me a code'}
+            {isSending ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : null}
+            {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}
          </button>
+
+         {smsEnabled ? (
+            <button
+               type="button"
+               onClick={() => switchTo(isSms ? 'email' : 'sms')}
+               className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+            >
+               {isSms ? 'Use email instead' : 'Use phone number instead'}
+            </button>
+         ) : null}
 
          {onUsePassword ? (
             <button
@@ -292,6 +333,29 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             >
                Use password instead
             </button>
+         ) : null}
+
+         {inApp.isInApp ? (
+            <p className="text-center text-xs leading-5 text-[#70617F] dark:text-[#A89BB8]">
+               Signed up with Telegram or LINE?{' '}
+               {inApp.os === 'android' ? (
+                  <a
+                     href={buildAndroidIntentUrl(window.location.href)}
+                     className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]"
+                  >
+                     Open in Chrome
+                  </a>
+               ) : (
+                  <button
+                     type="button"
+                     onClick={() => openInSafari(window.location.href, inApp)}
+                     className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]"
+                  >
+                     Open in {browserName}
+                  </button>
+               )}
+               .
+            </p>
          ) : null}
       </form>
    );

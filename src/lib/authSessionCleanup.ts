@@ -15,10 +15,13 @@ const PRESERVED_LOCAL_KEYS = [THEME_MODE_STORAGE_KEY, 'md_locale', 'md_locale_ch
  * which is exactly the onboarding loop this clears. Used on sign out and before a new
  * signup attempt.
  */
-export const clearClientAuthState = (): void => {
+export const clearClientAuthState = (options: { keepLocal?: string[]; keepSession?: string[] } = {}): void => {
    if (typeof window === 'undefined') return;
 
-   const preserved = PRESERVED_LOCAL_KEYS.map((key) => [key, safeGet(window.localStorage, key)] as const);
+   const preserved = [...PRESERVED_LOCAL_KEYS, ...(options.keepLocal ?? [])].map(
+      (key) => [key, safeGet(window.localStorage, key)] as const
+   );
+   const preservedSession = (options.keepSession ?? []).map((key) => [key, safeGet(window.sessionStorage, key)] as const);
 
    try {
       window.localStorage.clear();
@@ -33,6 +36,14 @@ export const clearClientAuthState = (): void => {
          window.localStorage.setItem(key, value);
       } catch {
          // Ignore — losing a UI preference is harmless next to a clean auth slate.
+      }
+   }
+   for (const [key, value] of preservedSession) {
+      if (value === null) continue;
+      try {
+         window.sessionStorage.setItem(key, value);
+      } catch {
+         // Ignore.
       }
    }
 };

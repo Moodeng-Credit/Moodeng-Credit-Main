@@ -118,12 +118,9 @@ describe('describeOtpError', () => {
          message: 'Wait a minute before asking for another code.',
          switchToEmail: false
       });
-      const cap = describeOtpError(
-         { message: 'Too many codes for this number today. Use your email instead, or try again tomorrow.', status: 429 },
-         'sms'
-      );
+      const cap = describeOtpError({ message: 'Too many codes today. Use email, or try tomorrow.', status: 429 }, 'sms');
       expect(cap.switchToEmail).toBe(true);
-      expect(cap.message).toContain('Too many codes for this number today');
+      expect(cap.message).toBe('Too many codes today. Use email, or try tomorrow.');
    });
 
    it('the overall daily brake keeps its wording and moves them to email', () => {

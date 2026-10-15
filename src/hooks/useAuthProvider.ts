@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
+import { isPlaceholderEmail } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
 type AuthProvider = 'email' | 'phone' | 'google' | 'facebook' | 'telegram' | 'line' | null;
@@ -39,6 +40,11 @@ export function useAuthProvider(): {
    /** Signed up with an email or PH phone code (or an email + password): can set/change a password. */
    isCodeOrPasswordUser: boolean;
    hasPassword: boolean;
+   /**
+    * Can add a password: a code/password account with a real email. Password login is email-only,
+    * so phone-only accounts aren't offered one (it couldn't be used to log in).
+    */
+   canSetPassword: boolean;
    authPhone: string | null;
    authEmail: string | null;
    isLoading: boolean;
@@ -87,6 +93,7 @@ export function useAuthProvider(): {
       isEmailPasswordUser: provider === 'email',
       isCodeOrPasswordUser: provider === 'email' || provider === 'phone',
       hasPassword,
+      canSetPassword: (provider === 'email' || provider === 'phone') && Boolean(authEmail) && !isPlaceholderEmail(authEmail),
       authPhone,
       authEmail,
       isLoading,

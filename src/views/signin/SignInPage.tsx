@@ -3,14 +3,16 @@ import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from '
 import { Mail, Smartphone } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { AuthErrorAlert, AuthFooter, AuthInputField, DividerWithText, PasswordlessAuthForm, SocialAuthButtons } from '@/components/auth';
 import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { rememberNextPath } from '@/lib/authNext';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { getPostSignInPath } from '@/lib/postSignInPath';
+import { BANNED_MESSAGE } from '@/lib/otpErrors';
 import { isSmsLoginEnabled, showPasswordlessSignup } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loginUser, loginWithGoogle, loginWithTelegram, type OtpChannel } from '@/store/slices/authSlice';
@@ -25,10 +27,11 @@ const isBannedError = (err: unknown) => {
    return e?.code === 'user_banned' || /\bbanned\b/i.test(e?.message ?? '');
 };
 
-const BANNED_MESSAGE = 'This account has been closed. If you think this is a mistake, contact support on Telegram.';
 
 export default function SignInPage() {
    const navigate = useNavigate();
+   const location = useLocation();
+   const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
    const toast = useToast();
    const [email, setEmail] = useState('');
@@ -45,9 +48,9 @@ export default function SignInPage() {
    // Facebook/Messenger's browser: Google can't sign in there, so the email form comes first.
    const inApp = useMemo(() => detectInAppBrowser(), []);
    const facebookInApp = isFacebookInApp(inApp);
-   // Where sign-up is passwordless (Facebook/Messenger), sign-in opens on the code form too.
+   // Where sign-up is passwordless (any in-app browser), sign-in opens on the code form too.
    // Everywhere else the password form stays first, with "Email me a code" / "Text me a code".
-   const [usePassword, setUsePassword] = useState(() => !showPasswordlessSignup(facebookInApp));
+   const [usePassword, setUsePassword] = useState(() => !showPasswordlessSignup(inApp.isInApp));
    const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(undefined);
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
    const switchToCode = (channel: OtpChannel) => {
@@ -55,6 +58,15 @@ export default function SignInPage() {
       setCodeChannel(channel);
       setUsePassword(false);
    };
+
+   // Came here from a protected page (or ?next=): go back there after signing in, whichever way
+   // they sign in (password, Google, Telegram, a code, the email link). See lib/authNext.
+   useEffect(() => {
+      const from = (location.state as { from?: { pathname?: string; search?: string } } | null)?.from;
+      if (from?.pathname) rememberNextPath(`${from.pathname}${from.search ?? ''}`);
+      else if (searchParams.get('next')) rememberNextPath(searchParams.get('next'));
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
    useEffect(() => {
       if (import.meta.env.PROD && facebookInApp) posthog.capture('signin_inapp_email_shown', { app: inApp.appName, os: inApp.os });
@@ -207,8 +219,8 @@ export default function SignInPage() {
 
                {/* Social auth (below the email form inside Facebook/Messenger) */}
                <div className="w-full flex flex-col gap-4">
-                  {facebookInApp ? null : socialAuth}
-                  {facebookInApp ? null : orDivider}
+                  {inApp.isInApp ? null : socialAuth}
+                  {inApp.isInApp ? null : orDivider}
 
                   {usePassword ? null : (
                      <div className="flex justify-center">
@@ -235,13 +247,13 @@ export default function SignInPage() {
                               error={showAccount && errorType !== 'provider_failed'}
                               errorMessage={
                                  showAccount && errorType === 'too_many_attempts'
-                                    ? 'Too many attempts detected'
+                                    ? 'Too many tries'
                                     : showAccount && errorType === 'new_user'
-                                      ? 'New account needed'
+                                      ? 'No account with this email'
                                       : showAccount && errorType === 'email_not_found'
-                                        ? 'Email not found'
+                                        ? 'No account with this email'
                                         : showAccount && errorType === 'incorrect_credentials'
-                                          ? 'Incorrect credentials'
+                                          ? 'Wrong email or password'
                                           : undefined
                               }
                               icon={<Icons.email />}
@@ -352,8 +364,8 @@ export default function SignInPage() {
                      Take a tour first
                   </Link>
 
-                  {facebookInApp ? orDivider : null}
-                  {facebookInApp ? socialAuth : null}
+                  {inApp.isInApp ? orDivider : null}
+                  {inApp.isInApp ? socialAuth : null}
                </div>
             </div>
 

@@ -8,11 +8,19 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const KEY = 'md_first_touch';
+export const FIRST_TOUCH_STORAGE_KEY = KEY;
 const SENT_KEY = 'md_first_touch_sent';
 
 type Touch = { src: string | null; campaign: string | null; referrer: string | null; landing: string; at: string };
 
-const clean = (value: string | null, max = 80) => (value ? value.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, '-').slice(0, max) || null : null);
+const clean = (value: string | null, max = 80) =>
+   value
+      ? value
+           .trim()
+           .toLowerCase()
+           .replace(/[^a-z0-9._-]+/g, '-')
+           .slice(0, max) || null
+      : null;
 
 const referrerHost = () => {
    try {

@@ -5,7 +5,12 @@ import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { detachPushSubscriptionForSignOut } from '@/lib/push/webPushClient';
 import { clearClientAuthState } from '@/lib/authSessionCleanup';
 import { setLastUsedAuth } from '@/lib/lastUsedAuth';
-import { generatePhoneUsername, phonePlaceholderEmail } from '@/lib/phoneAuth';
+import { FIRST_TOUCH_STORAGE_KEY } from '@/lib/attribution';
+import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
+import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
+import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
+import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
+import { generatePhoneUsername, phonePlaceholderEmail, SMS_TEST_FLAG_KEY } from '@/lib/phoneAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -557,23 +562,32 @@ export const registerUser = createAsyncThunk(
 
 export type OtpChannel = 'sms' | 'email';
 export type OtpTarget = { channel: 'sms'; phone: string } | { channel: 'email'; email: string };
+export type OtpMode = 'signin' | 'signup';
+
+// What a stale-session cleanup before a code sign-in must NOT wipe: an invite code or shared
+// request they arrived with, attribution, where to go after signing in, testing flags.
+const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_KEY, AUTH_NEXT_STORAGE_KEY, LAST_USED_AUTH_STORAGE_KEY, SMS_TEST_FLAG_KEY, 'force_ph'];
+const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY];
 
 /**
  * Sends a one-time sign-in code by SMS (PH numbers, through the Semaphore Send SMS hook) or email.
- * Passwordless: the same step signs people up and signs them in. A new number/email gets an
- * account on first use (shouldCreateUser), an existing one just gets a code.
+ * Sign-up creates the account on first use; sign-in never does (Supabase then answers "Signups
+ * not allowed for otp", shown as "No Moodeng account uses this number/email").
  */
-export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (target: OtpTarget) => {
+export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (params: OtpTarget & { mode: OtpMode }) => {
    const supabase = supabaseClient();
+   const { mode, ...target } = params;
+   const shouldCreateUser = mode === 'signup';
 
    // Same reason as registerUser: a leftover session from another account must not be refreshed
-   // mid-sign-in and route them back into that old account.
+   // mid-sign-in and route them back into that old account. Local only: don't sign that account
+   // out on its other devices.
    const {
       data: { session: staleSession }
    } = await supabase.auth.getSession();
    if (staleSession) {
-      await supabase.auth.signOut();
-      clearClientAuthState();
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
    }
 
    // user_metadata is only applied when the account is created. `passwordless` tells Account
@@ -582,12 +596,12 @@ export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (tar
       target.channel === 'sms'
          ? await supabase.auth.signInWithOtp({
               phone: target.phone,
-              options: { shouldCreateUser: true, data: { username: generatePhoneUsername(), passwordless: true } }
+              options: { shouldCreateUser, data: { username: generatePhoneUsername(), passwordless: true } }
            })
          : await supabase.auth.signInWithOtp({
               email: target.email,
               options: {
-                 shouldCreateUser: true,
+                 shouldCreateUser,
                  emailRedirectTo: getAuthRedirectUrl(),
                  data: { username: target.email.split('@')[0], passwordless: true }
               }

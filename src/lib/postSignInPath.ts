@@ -1,4 +1,6 @@
 import { fetchDefaultedBorrowerSupport } from '@/hooks/useDefaultedBorrowerSupport';
+
+import { takeNextPath } from '@/lib/authNext';
 import { clearPendingSharedRequestId, getPendingSharedRequestId } from '@/lib/pendingSharedRequest';
 
 /**
@@ -12,6 +14,10 @@ export const getPostSignInPath = async (user: { id: string; accountStatus?: stri
 
    const defaultedBorrower = await fetchDefaultedBorrowerSupport(user.id);
    if (defaultedBorrower.overdueAmount > 0) return '/account-restricted';
+
+   // A protected page sent them to sign in: take them back there.
+   const nextPath = takeNextPath();
+   if (nextPath) return nextPath;
 
    // If they arrived via a shared request link before signing in, return them to that exact
    // request (opened on the board) instead of the generic dashboard.

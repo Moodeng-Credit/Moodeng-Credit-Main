@@ -92,7 +92,7 @@ select '5th text in a day is sent', public.send_sms_semaphore(pg_temp.event('639
 select pg_temp.age_sends('2 minutes');
 insert into results
 select '6th text in a day is refused',
-       public.send_sms_semaphore(pg_temp.event('639171234567')) -> 'error' ->> 'message' like 'Too many codes for this number today.%',
+       public.send_sms_semaphore(pg_temp.event('639171234567')) -> 'error' ->> 'message' = 'Too many codes today. Use email, or try tomorrow.',
        null;
 select pg_temp.age_sends('25 hours');
 insert into results

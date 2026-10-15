@@ -129,14 +129,11 @@ describe('Continue with Facebook', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('stays a grayed-out "coming soon" tile while the flag is off', async () => {
+   it('is not shown at all while the flag is off (no grayed "coming soon" tile)', async () => {
       await renderWith(FB_ANDROID_UA);
-      const [tile] = facebookButtons();
-      expect(tile.getAttribute('aria-label')).toBe('Facebook sign-in coming soon');
-      expect(tile.getAttribute('aria-disabled')).toBe('true');
+      expect(facebookButtons()).toHaveLength(0);
       expect(container.textContent).not.toContain('Continue with Facebook');
-      await act(async () => tile.click());
-      expect(signInWithOAuth).not.toHaveBeenCalled();
+      expect(container.textContent).not.toContain('Soon');
    });
 
    it("inside Facebook's browser it is the main button, first on the page, and starts Supabase's Facebook OAuth", async () => {

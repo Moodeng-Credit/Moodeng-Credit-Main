@@ -61,6 +61,34 @@ export function formatPhPhone(e164: string): string {
    return `+63 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
 }
 
+/** +639171234567 → "0917 123 4567", the way people write their own number. */
+export function formatPhLocal(e164: string): string {
+   const local = e164.replace(/^\+63/, '');
+   if (!/^9\d{9}$/.test(local)) return e164;
+   return `0${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+}
+
+const envNumber = (value: unknown, fallback: number, min: number, max: number): number => {
+   const n = Number(value);
+   return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
+};
+
+/**
+ * Code lengths must match Supabase Auth: email OTP length is 8 on our project (the code screen has
+ * said 8 digits since #1163); the SMS OTP length is Supabase's default 6 unless changed in
+ * Auth > Providers > Phone. Set VITE_SMS_OTP_LENGTH if it is changed.
+ */
+export const EMAIL_CODE_LENGTH = 8;
+export const SMS_CODE_LENGTH = envNumber(import.meta.env.VITE_SMS_OTP_LENGTH, 6, 6, 10);
+
+/**
+ * How long a code works, to tell "expired" from "wrong" (Supabase says "expired or invalid" for
+ * both). Email: Supabase's default 1 hour. SMS: set to 10 minutes in Auth > Providers > Phone
+ * (Supabase's default 60 seconds is too short for slow texts); VITE_SMS_OTP_EXPIRY_SECONDS if not.
+ */
+export const EMAIL_CODE_TTL_SECONDS = 3600;
+export const SMS_CODE_TTL_SECONDS = envNumber(import.meta.env.VITE_SMS_OTP_EXPIRY_SECONDS, 600, 30, 86400);
+
 /** A neutral username for phone sign-ups: never the number itself. */
 export function generatePhoneUsername(random: () => number = Math.random): string {
    const alphabet = 'abcdefghijkmnpqrstuvwxyz23456789';
@@ -102,14 +130,14 @@ export function isSmsLoginEnabled(): boolean {
 }
 
 /**
- * Show the passwordless sign-up screen (Phone | Email, no password) to everyone, not only inside
- * Facebook/Messenger's browser. One-line switch once it has proven itself there.
+ * Show the passwordless sign-up screen (phone or email code, no password) to everyone, not only
+ * inside in-app browsers. One-line switch once it has proven itself there.
  */
 export const PASSWORDLESS_SIGNUP_EVERYWHERE = false;
 
-/** Sign-up uses the passwordless screen in Facebook/Messenger's browser (or everywhere, see above; ?passwordless=1 to preview). */
-export function showPasswordlessSignup(isFacebookBrowser: boolean): boolean {
-   if (PASSWORDLESS_SIGNUP_EVERYWHERE || isFacebookBrowser) return true;
+/** Sign-up uses the passwordless screen in in-app browsers (or everywhere, see above; ?passwordless=1 to preview). */
+export function showPasswordlessSignup(isInAppBrowser: boolean): boolean {
+   if (PASSWORDLESS_SIGNUP_EVERYWHERE || isInAppBrowser) return true;
    try {
       return new URLSearchParams(window.location.search).get('passwordless') === '1';
    } catch {

@@ -5,9 +5,11 @@ export type OtpErrorView = {
    /** Move them to the email tab (non-PH number, or SMS not available right now). */
    switchToEmail?: boolean;
    nonPh?: boolean;
+   /** Sign-in with a number/email that has no account (sign-in never creates one). */
+   noAccount?: boolean;
 };
 
-const BANNED_MESSAGE = 'This account has been closed. If you think this is a mistake, contact support on Telegram.';
+export const BANNED_MESSAGE = 'This account has been closed. If you think this is a mistake, message us on Messenger.';
 
 /**
  * Turns a signInWithOtp / verifyOtp failure into something a borrower can act on. Messages from
@@ -19,6 +21,13 @@ export function describeOtpError(err: unknown, channel: OtpChannel): OtpErrorVie
    const lower = message.toLowerCase();
 
    if (e.code === 'user_banned' || /\bbanned\b/.test(lower)) return { message: BANNED_MESSAGE };
+
+   if (e.code === 'otp_disabled' || lower.includes('signups not allowed')) {
+      return {
+         message: channel === 'sms' ? 'No Moodeng account uses this number.' : 'No Moodeng account uses this email.',
+         noAccount: true
+      };
+   }
 
    if (lower.includes('philippine numbers only')) {
       return { message: 'SMS codes work for Philippine numbers only. Use your email instead', switchToEmail: true, nonPh: true };

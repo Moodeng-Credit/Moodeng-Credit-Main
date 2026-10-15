@@ -314,7 +314,7 @@ begin
     insert into private.sms_otp_sends (phone_hash, status) values (v_hash, 'rejected_daily_cap');
     return jsonb_build_object('error', jsonb_build_object(
       'http_code', 429,
-      'message', 'Too many codes for this number today. Use your email instead, or try again tomorrow.'));
+      'message', 'Too many codes today. Use email, or try tomorrow.'));
   end if;
 
   if v_decision = 'global_cap' then

@@ -58,10 +58,11 @@ function getErrorMessage(err: unknown, fallback: string): string {
    return fallback;
 }
 
-// Facebook/Messenger's browser gets the passwordless Phone | Email screen; other browsers keep the
+// In-app browsers (Facebook, Messenger, Instagram, TikTok, LINE, other webviews) get the passwordless
+// phone/email code screen; other browsers keep the
 // email + password form below (for now: PASSWORDLESS_SIGNUP_EVERYWHERE flips it for everyone).
 export default function SignUpPage() {
-   const passwordless = useMemo(() => showPasswordlessSignup(isFacebookInApp(detectInAppBrowser())), []);
+   const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
    return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
 }
 

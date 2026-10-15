@@ -528,7 +528,8 @@ function AddPhoneModal({ isOpen, onClose, onAdded }: { isOpen: boolean; onClose:
       const { error: updateError } = await getSupabaseBrowserClient().auth.updateUser({ phone: check.e164 });
       setIsSubmitting(false);
       if (updateError) {
-         setError(updateError.message || 'Could not send a code. Try again in a minute.');
+         const taken = updateError.code === 'phone_exists' || /already (been )?registered|already exists/i.test(updateError.message ?? '');
+         setError(taken ? 'This number already has a Moodeng account.' : updateError.message || 'Could not send a code. Try again in a minute.');
          return;
       }
       setE164(check.e164);
@@ -1506,7 +1507,7 @@ export default function AccountSettings() {
    const { connector, chain } = useAccount();
    const { disconnectAsync } = useDisconnect();
    const authInfo = useAuthProvider();
-   const { isCodeOrPasswordUser, hasPassword, authPhone } = authInfo;
+   const { isCodeOrPasswordUser, hasPassword, canSetPassword, authPhone } = authInfo;
    const smsLoginEnabled = useMemo(() => isSmsLoginEnabled(), []);
    const { isDarkMode, setMode } = useThemeMode();
    const { showToast } = useToast();
@@ -2030,7 +2031,7 @@ export default function AccountSettings() {
                               actionLabel={canEditEmail ? emailActionLabel : undefined}
                               onAction={canEditEmail ? () => setShowEmailModal(true) : undefined}
                            />
-                           {authPhone || (smsLoginEnabled && isCodeOrPasswordUser) ? (
+                           {authPhone || smsLoginEnabled ? (
                               <SettingsFieldRow
                                  title="Phone number"
                                  value={authPhone ? formatPhPhone(authPhone) : 'No phone added'}
@@ -2080,7 +2081,7 @@ export default function AccountSettings() {
 
                   {activeSection === 'security' ? (
                      <div className="flex flex-col gap-md-4">
-                        {isCodeOrPasswordUser && !hasPassword ? (
+                        {canSetPassword && !hasPassword ? (
                            <SettingsGroup label="Sign-in" description="You log in with a code sent to your phone or email.">
                               <div className="flex min-h-[68px] items-center gap-md-2 px-md-3 py-md-2">
                                  <div className="min-w-0 flex-1">

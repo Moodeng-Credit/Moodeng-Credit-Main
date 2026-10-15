@@ -32,15 +32,16 @@ export function useAccountEmail(): { isLoading: boolean; needsEmail: boolean; pe
          return;
       }
       let cancelled = false;
-      getSupabaseBrowserClient()
-         .auth.getUser()
-         .then(({ data }) => {
+      const load = async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().auth.getUser();
             if (cancelled) return;
             setState({ isLoading: false, authEmail: data.user?.email || null, pendingEmail: data.user?.new_email || null });
-         })
-         .catch(() => {
+         } catch {
             if (!cancelled) setState((s) => ({ ...s, isLoading: false }));
-         });
+         }
+      };
+      void load();
       return () => {
          cancelled = true;
       };

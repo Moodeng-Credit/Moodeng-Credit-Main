@@ -7,9 +7,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import Loading from '@/components/Loading';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
+import { takeNextPath } from '@/lib/authNext';
 import { buildEmailConfirmationPath, PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/authPaths';
 import { isMissingProviderEmailError } from '@/lib/facebookAuth';
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
+import { clearPendingCode } from '@/lib/pendingCode';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -65,7 +67,8 @@ export function getAuthConfirmDestination(isRecoveryRedirect: boolean, userRole?
       return RECOVERY_PATH;
    }
 
-   return userRole ? '/dashboard' : CREATED_PATH;
+   // Signed in from the email link: back to the page that sent them to sign in, if any.
+   return userRole ? (takeNextPath() ?? '/dashboard') : CREATED_PATH;
 }
 
 /**
@@ -105,6 +108,9 @@ export default function AuthConfirmPage() {
          finishedRef.current = true;
          if (isRecoveryRedirect) {
             markPasswordRecoveryReady();
+         } else if (path !== VERIFY_FALLBACK) {
+            // Signed in with the email's button: the code they were waiting for is no longer needed.
+            clearPendingCode();
          }
          navigate(path, { replace: true });
       };
