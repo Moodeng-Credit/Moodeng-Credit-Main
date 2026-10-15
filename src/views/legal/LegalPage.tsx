@@ -6,7 +6,14 @@ type LegalPageProps = {
    type: 'terms' | 'privacy';
 };
 
+// Who "we" are, first on both pages (Meta checks that the site names the business behind it).
+const whoWeAre = {
+   title: 'Who we are',
+   body: 'Moodeng Credit is operated by Building Credit Asia LLC, a Colorado limited liability company ("Moodeng", "we", "us"). Questions: support@moodeng.app.'
+};
+
 const termsSections = [
+   whoWeAre,
    {
       title: 'Using Moodeng',
       body: 'Moodeng Credit helps borrowers request small USDC loans and helps lenders review those requests. You are responsible for the information you submit, the wallet you connect, and the loan terms you accept.'
@@ -30,6 +37,7 @@ const termsSections = [
 ];
 
 const privacySections = [
+   whoWeAre,
    {
       title: 'What we collect',
       body: 'Moodeng may collect account details such as your email, display name, role, wallet address, borrower context, loan requests, repayment records, support messages, and basic product analytics.'
