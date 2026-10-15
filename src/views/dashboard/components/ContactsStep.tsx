@@ -223,7 +223,7 @@ export default function ContactsStep({
 
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
-   // to fix it in Chrome/Safari and the team gets a heads-up (reminders-stuck), at most once a day.
+   // to fix it in Chrome/Safari and the team gets a heads-up (messenger-stuck-alerts, `reminders: true`), at most once a day.
    const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn
       ? null
       : pushUnavailable
@@ -240,8 +240,14 @@ export default function ContactsStep({
       const os = androidMessenger ? 'android' : isIOSBrowser() ? 'ios' : 'other';
       track('contact_push_stuck_reported', { source, reason: remindersStuckReason, os });
       void getSupabaseBrowserClient()
-         .functions.invoke('reminders-stuck', {
-            body: { reason: remindersStuckReason, os, failures: pushFailures || undefined, failure: lastPushFailureRef.current ?? undefined }
+         .functions.invoke('messenger-stuck-alerts', {
+            body: {
+               reminders: true,
+               reason: remindersStuckReason,
+               os,
+               failures: pushFailures || undefined,
+               failure: lastPushFailureRef.current ?? undefined
+            }
          })
          .catch(() => undefined);
    }, [remindersStuckReason, androidMessenger, source, pushFailures]);

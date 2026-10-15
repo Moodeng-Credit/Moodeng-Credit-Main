@@ -1,9 +1,6 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from '../_shared/adminCards.ts';
-import { postDiscord } from '../_shared/discord.ts';
-import { isInternalRequest } from '../_shared/internalAuth.ts';
+import { adminUserUrl, OPEN_IN_ADMIN_TEXT } from './adminCards.ts';
+import { postDiscord } from './discord.ts';
+import { isInternalRequest } from './internalAuth.ts';
 import {
    buildRemindersHealthAlert,
    buildRemindersStuckAlert,
@@ -15,10 +12,13 @@ import {
    type RemindersStuckOs,
    type RemindersStuckReason,
    shouldAlertRemindersHealth
-} from '../_shared/remindersStuck.ts';
-import { findMessengerContactIdByCode, getMessengerContact, isInsideMessagingWindow, sendMessengerMessage } from '../_shared/sendpulse.ts';
-import { sendTelegramMessage } from '../_shared/telegram.ts';
+} from './remindersStuck.ts';
+import { findMessengerContactIdByCode, getMessengerContact, isInsideMessagingWindow, sendMessengerMessage } from './sendpulse.ts';
+import { sendTelegramMessage } from './telegram.ts';
 
+// Served by messenger-stuck-alerts for any request whose body has `reminders: true` (the project is
+// at Supabase's edge-function limit, so this lives inside an existing function instead of its own).
+//
 // Called by the onboarding Facebook step (ContactsStep) when a borrower's reminders can't turn on:
 // { reason: 'failed' | 'blocked' | 'in_app', os, failures? }.
 //   1. The bot messages them on Messenger how to fix it in Chrome/Safari (they just connected, so
@@ -30,16 +30,13 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 // borrower per day. verify_jwt stays on: the caller is the signed-in borrower, and only ever about
 // themselves.
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
-const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-
-const CORS = {
+export const REMINDERS_CORS = {
    'Access-Control-Allow-Origin': '*',
    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
    'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 const json = (body: Record<string, unknown>, status = 200) =>
-   new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
+   new Response(JSON.stringify(body), { status, headers: { ...REMINDERS_CORS, 'Content-Type': 'application/json' } });
 
 const OSES: readonly RemindersStuckOs[] = ['android', 'ios', 'other'];
 
@@ -51,7 +48,7 @@ const sendTeamAlert = async (svc: Svc, text: string, userLink?: { text: string; 
    const kycChatId = (chatRow as { value?: string } | null)?.value;
    if (kycChatId) {
       await sendTelegramMessage(kycChatId, userLink ? `${text}\n${userLink.text}: ${userLink.url}` : text).catch((err: unknown) =>
-         console.error('reminders-stuck: telegram send failed', err instanceof Error ? err.message : err)
+         console.error('reminders: telegram send failed', err instanceof Error ? err.message : err)
       );
    }
    await postDiscord(
@@ -97,20 +94,14 @@ const findContact = async (svc: Svc, userId: string, storedId: string | null) =>
    return contactId && contact ? { id: contactId, contact } : null;
 };
 
-serve(async (req) => {
-   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
-   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-   if (!SUPABASE_URL || !SERVICE_KEY) return json({ error: 'not_configured' }, 500);
-
-   const svc = createClient(SUPABASE_URL, SERVICE_KEY);
-   const body = await req.json().catch(() => ({}));
-
+// deno-lint-ignore no-explicit-any
+export const handleRemindersStuck = async (req: Request, body: any, svc: Svc): Promise<Response> => {
    if (body?.mode === 'daily_check') {
       if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
       try {
          return json({ ok: true, ...(await runDailyCheck(svc)) });
       } catch (err) {
-         console.error('reminders-stuck: daily check failed', err instanceof Error ? err.message : err);
+         console.error('reminders: daily check failed', err instanceof Error ? err.message : err);
          return json({ error: 'daily_check_failed' }, 500);
       }
    }
@@ -146,7 +137,7 @@ serve(async (req) => {
          const text = buildRemindersStuckMessage(reason, os, borrower.facebook_name || borrower.display_name);
          const result = await sendMessengerMessage(found.id, { text });
          messenger = result.ok ? 'sent' : 'failed';
-         if (!result.ok) console.error('reminders-stuck: messenger send failed', result.reason);
+         if (!result.ok) console.error('reminders: messenger send failed', result.reason);
       }
    }
 
@@ -154,4 +145,4 @@ serve(async (req) => {
    await sendTeamAlert(svc, text, { text: OPEN_IN_ADMIN_TEXT, url: adminUserUrl(borrower.id, borrower.username) });
 
    return json({ ok: true, messenger });
-});
+};

@@ -369,7 +369,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.querySelector('[aria-labelledby="unblock-guide-title"]')).not.toBeNull();
       expect(container.textContent).toContain('Switch it to Allow');
       expect(push.enable).not.toHaveBeenCalled();
-      expect(supa.invoke).toHaveBeenCalledWith('reminders-stuck', { body: expect.objectContaining({ reason: 'blocked' }) });
+      expect(supa.invoke).toHaveBeenCalledWith('messenger-stuck-alerts', { body: expect.objectContaining({ reminders: true, reason: 'blocked' }) });
    });
 
    it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
@@ -414,7 +414,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.textContent).toContain('Not working on this phone');
       expect(container.textContent).not.toContain('Turn on reminders to continue.');
       // The bot tells them how to fix it in Chrome/Safari, and the team hears about it.
-      expect(supa.invoke).toHaveBeenCalledWith('reminders-stuck', { body: expect.objectContaining({ reason: 'failed', failures: 2 }) });
+      expect(supa.invoke).toHaveBeenCalledWith('messenger-stuck-alerts', { body: expect.objectContaining({ reminders: true, reason: 'failed', failures: 2 }) });
    });
 
    it('does not block an iPhone-Safari borrower, and shows no Home Screen instructions', async () => {
