@@ -18,7 +18,8 @@ const supa = vi.hoisted(() => {
    return {
       state,
       rpc: vi.fn(async () => state.rpcResult),
-      maybeSingle: vi.fn(async () => ({ data: state.usersRow }))
+      maybeSingle: vi.fn(async () => ({ data: state.usersRow })),
+      invoke: vi.fn(async () => ({ data: { ok: true }, error: null }))
    };
 });
 
@@ -43,6 +44,7 @@ vi.mock('@/lib/supabase/client', () => ({
    getSupabaseBrowserClient: () => ({
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: supa.maybeSingle }) }) }),
       rpc: supa.rpc,
+      functions: { invoke: supa.invoke },
       // ContactsStep's live subscription (Supabase Realtime): a no-op channel here.
       channel: () => ({
          on(this: object) {
@@ -85,6 +87,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
       supa.rpc.mockClear();
+      supa.invoke.mockClear();
       push.state.isSupported = false;
       push.state.permission = 'unsupported';
       push.state.isSubscribed = false;
@@ -366,6 +369,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(container.querySelector('[aria-labelledby="unblock-guide-title"]')).not.toBeNull();
       expect(container.textContent).toContain('Switch it to Allow');
       expect(push.enable).not.toHaveBeenCalled();
+      expect(supa.invoke).toHaveBeenCalledWith('reminders-stuck', { body: expect.objectContaining({ reason: 'blocked' }) });
    });
 
    it('requires reminders on a push-capable device: Continue stays off until they are turned on', async () => {
@@ -409,6 +413,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       expect(continueButton(container).disabled).toBe(false);
       expect(container.textContent).toContain('Not working on this phone');
       expect(container.textContent).not.toContain('Turn on reminders to continue.');
+      // The bot tells them how to fix it in Chrome/Safari, and the team hears about it.
+      expect(supa.invoke).toHaveBeenCalledWith('reminders-stuck', { body: expect.objectContaining({ reason: 'failed', failures: 2 }) });
    });
 
    it('does not block an iPhone-Safari borrower, and shows no Home Screen instructions', async () => {

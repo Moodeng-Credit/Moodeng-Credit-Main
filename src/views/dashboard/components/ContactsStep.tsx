@@ -218,6 +218,29 @@ export default function ContactsStep({
    const contactVerified = whatsappVerified || messengerVerified;
    const canContinue = contactVerified && (pushOn || !pushRequired);
 
+   // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
+   // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
+   // to fix it in Chrome/Safari and the team gets a heads-up (reminders-stuck), at most once a day.
+   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn
+      ? null
+      : pushUnavailable
+        ? 'failed'
+        : pushBlocked
+          ? 'blocked'
+          : androidMessenger && inAppInfo.isInApp && !push.isSupported
+            ? 'in_app'
+            : null;
+   const remindersStuckReportedRef = useRef(false);
+   useEffect(() => {
+      if (!remindersStuckReason || remindersStuckReportedRef.current) return;
+      remindersStuckReportedRef.current = true;
+      const os = androidMessenger ? 'android' : isIOSBrowser() ? 'ios' : 'other';
+      track('contact_push_stuck_reported', { source, reason: remindersStuckReason, os });
+      void getSupabaseBrowserClient()
+         .functions.invoke('reminders-stuck', { body: { reason: remindersStuckReason, os, failures: pushFailures || undefined } })
+         .catch(() => undefined);
+   }, [remindersStuckReason, androidMessenger, source, pushFailures]);
+
    // Blocked: the card opens a picture guide to unblocking instead of a tap that can only fail.
    const [showUnblockGuide, setShowUnblockGuide] = useState(false);
    const [guideStillBlocked, setGuideStillBlocked] = useState(false);
