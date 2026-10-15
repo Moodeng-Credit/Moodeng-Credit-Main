@@ -8,6 +8,7 @@ import Loading from '@/components/Loading';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 import { buildEmailConfirmationPath, PENDING_VERIFICATION_EMAIL_KEY } from '@/lib/authPaths';
+import { isMissingProviderEmailError } from '@/lib/facebookAuth';
 import { markPasswordRecoveryReady } from '@/lib/passwordRecovery';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import { fetchUser } from '@/store/slices/authSlice';
@@ -245,6 +246,41 @@ export default function AuthConfirmPage() {
       // Supabase returns "User is banned" for a suspended account. Telling them their link "did not
       // work" sent them round in circles retrying sign-in; say what it is and where to go instead.
       const isBanned = /\bbanned\b/i.test(error);
+      // Facebook accounts made with a phone number (or where the email permission was declined) give us
+      // no email, and Supabase refuses the sign-in. Say so plainly and send them to email sign-up.
+      const isMissingEmail = isMissingProviderEmailError(error);
+
+      if (isMissingEmail) {
+         return (
+            <div className="min-h-screen bg-[#FBFAFD] px-4 py-6 text-[#040033] dark:bg-[#0D0B14] dark:text-[#F0EAFF] sm:px-6 sm:py-10">
+               <main className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-[480px] flex-col justify-center">
+                  <section className="rounded-[28px] border border-[#E7D8FF] bg-[#FDFCFD] px-5 py-7 text-center shadow-[0_18px_50px_rgba(36,14,62,0.08)] dark:border-[#2D1F4A] dark:bg-[#160F28] sm:px-7">
+                     <p className="mb-2 text-sm font-extrabold uppercase tracking-[0.18em] text-[#8336F0] dark:text-[#C084FC]">
+                        Account access
+                     </p>
+                     <h1 className="text-[30px] font-semibold leading-[1.1] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
+                        Facebook didn’t share an email
+                     </h1>
+                     <p className="mx-auto mt-3 max-w-[350px] text-base font-medium leading-6 text-[#70617F] dark:text-[#A89BB8]">
+                        We need an email for your account. Sign up with your email instead — it takes a minute.
+                     </p>
+                     <Link
+                        to="/sign-up"
+                        className="mt-6 flex h-14 w-full items-center justify-center rounded-2xl bg-[#6010D2] text-base font-semibold text-[#FDFCFD] transition hover:opacity-95"
+                     >
+                        Sign up with email
+                     </Link>
+                     <Link
+                        to="/sign-in"
+                        className="mt-3 flex h-12 w-full items-center justify-center rounded-2xl border border-[#E0D7E8] text-sm font-semibold text-[#4D4359] transition hover:bg-[#F8F4FC] dark:border-[#2D1F4A] dark:text-[#A89BB8] dark:hover:bg-[#1E1530]"
+                     >
+                        Back to sign in
+                     </Link>
+                  </section>
+               </main>
+            </div>
+         );
+      }
 
       if (isBanned) {
          return (

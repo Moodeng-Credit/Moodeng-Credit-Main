@@ -9,6 +9,7 @@ import LastUsedBadge from './LastUsedBadge';
 import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { isFacebookFamilyApp, isFacebookLoginEnabled } from '@/lib/facebookAuth';
 import { buildAndroidIntentUrl, detectInAppBrowser, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
@@ -18,15 +19,17 @@ interface SocialAuthButtonsProps {
    onGoogleSuccess?: (credential: string) => void;
    onGoogleError?: () => void;
    onTelegramAuth: (authData: Record<string, string>) => void;
+   /** The page already shows the big Facebook button elsewhere (sign-up puts it above email). */
+   hideFacebook?: boolean;
 }
 
 const btnBase =
    'w-full min-w-0 flex flex-row justify-center items-center gap-2.5 px-4 py-4 h-[56px] min-h-[56px] rounded-xl transition-opacity hover:opacity-95 cursor-pointer overflow-hidden';
 
-const FacebookLogo = ({ size = 30 }: { size?: number }) => (
+const FacebookLogo = ({ size = 30, color = '#1877F2' }: { size?: number; color?: string }) => (
    <svg width={size} height={size} viewBox="0 0 24 24" className="shrink-0" aria-hidden="true">
       <path
-         fill="#1877F2"
+         fill={color}
          d="M24 12c0-6.627-5.373-12-12-12S0 5.373 0 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.491 0-1.956.925-1.956 1.874V12h3.328l-.532 3.469h-2.796v8.385C19.612 22.954 24 17.99 24 12z"
       />
    </svg>
@@ -53,7 +56,105 @@ const GoogleLogo = () => (
    </svg>
 );
 
-export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
+/** True when "Continue with Facebook" should be the main button on this page (Facebook/Messenger/Instagram's browser). */
+export function useFacebookPrimary(): boolean {
+   return useMemo(() => isFacebookLoginEnabled() && isFacebookFamilyApp(detectInAppBrowser()), []);
+}
+
+/**
+ * Facebook login through Supabase Auth's Facebook provider (OAuth redirect, returns via /auth/confirm).
+ * 'full' is the main button inside Facebook's own browser, where the person is already signed in to
+ * Facebook; 'tile' is the small square next to Telegram/LINE everywhere else.
+ */
+export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; variant: 'full' | 'tile' }) {
+   const [isLoading, setIsLoading] = useState(false);
+   const [error, setError] = useState('');
+   const lastUsed = useMemo(() => getLastUsedAuth(), []);
+   const label = 'Continue with Facebook';
+   const failMessage = isSignUp
+      ? 'Facebook sign-up could not start. Please try again or use email.'
+      : 'Facebook sign-in could not start. Please try again or use email.';
+
+   const handleClick = async () => {
+      if (isLoading) return;
+      setError('');
+
+      if (!isSupabaseBrowserConfigured()) {
+         setError('Facebook sign-in is not configured in this local app. Ask for the .env.keys file, then restart the dev server.');
+         return;
+      }
+
+      setIsLoading(true);
+      if (import.meta.env.PROD) {
+         const inApp = detectInAppBrowser();
+         posthog.capture('facebook_login_tapped', { app: inApp.appName ?? 'browser', os: inApp.os, sign_up: isSignUp, variant });
+      }
+      try {
+         // Recorded before the redirect: the return goes through /auth/confirm, which can't tell which tile was tapped.
+         setLastUsedAuth('facebook');
+         const { error: oauthError } = await getSupabaseBrowserClient().auth.signInWithOAuth({
+            provider: 'facebook',
+            options: { redirectTo: getAuthRedirectUrl(), scopes: 'email,public_profile' }
+         });
+         if (oauthError) {
+            console.error('[SocialAuthButtons] Facebook OAuth error:', oauthError.message);
+            setError(oauthError.message || failMessage);
+            setIsLoading(false);
+         }
+         // On success the browser redirects to Facebook — leave the loading state on
+      } catch (err) {
+         console.error('[SocialAuthButtons] Facebook OAuth exception:', err);
+         setError(err instanceof Error ? err.message : failMessage);
+         setIsLoading(false);
+      }
+   };
+
+   const errorLine = error ? <p className="mt-2 text-sm font-medium leading-5 text-[#B91C1C]">{error}</p> : null;
+
+   if (variant === 'tile') {
+      return (
+         <div className="relative">
+            <button
+               type="button"
+               onClick={handleClick}
+               disabled={isLoading}
+               aria-label={label}
+               title={label}
+               className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F] ${
+                  isLoading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+               }`}
+            >
+               <FacebookLogo />
+            </button>
+            {lastUsed === 'facebook' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+            {error ? <p className="absolute left-0 top-full mt-1 w-64 text-xs font-medium leading-4 text-[#B91C1C]">{error}</p> : null}
+         </div>
+      );
+   }
+
+   return (
+      <div className="relative w-full max-w-[400px]">
+         <button
+            type="button"
+            onClick={handleClick}
+            disabled={isLoading}
+            className={`${btnBase} bg-[#1877F2] font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+         >
+            <FacebookLogo size={24} color="#FFFFFF" />
+            <span
+               className="min-w-0 truncate text-base font-semibold tracking-[-0.02em] text-white"
+               style={{ fontFamily: 'SF Pro Display, sans-serif' }}
+            >
+               {isLoading ? 'Opening Facebook...' : label}
+            </span>
+         </button>
+         {lastUsed === 'facebook' && <LastUsedBadge className="-top-2 right-3" />}
+         {errorLine}
+      </div>
+   );
+}
+
+export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
@@ -67,13 +168,15 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
    const [handOffSteps, setHandOffSteps] = useState(false);
    const stopWatchingRef = useRef<(() => void) | null>(null);
    const googleInApp = inApp.isInApp && (inApp.os === 'android' || inApp.os === 'ios');
+   const facebookEnabled = useMemo(() => isFacebookLoginEnabled(), []);
+   const facebookPrimary = facebookEnabled && isFacebookFamilyApp(inApp);
 
    const googleLabel = googleInApp
       ? `Google: open in ${inApp.os === 'ios' ? 'Safari' : 'Chrome'}`
       : isSignUp
         ? 'Sign Up with Google'
         : 'Sign In with Google';
-   // Facebook login is not live yet — the tile is grayed out; tapping it flashes a "Soon" hint.
+   // Until Facebook login is switched on (VITE_FACEBOOK_LOGIN_ENABLED) the tile is grayed out; tapping it flashes a "Soon" hint.
    const facebookLabel = 'Facebook sign-in coming soon';
 
    const handleFacebookComingSoon = () => {
@@ -143,6 +246,9 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
 
    return (
       <div className="flex w-full max-w-[400px] min-w-0 flex-col gap-4">
+         {/* Facebook's own browser: the person is already signed in to Facebook, so it leads */}
+         {facebookPrimary && !hideFacebook ? <FacebookAuthButton isSignUp={isSignUp} variant="full" /> : null}
+
          {/* Google inside an app's browser: hand off to Chrome/Safari, where Google sign-in works */}
          {clientId && googleInApp ? (
             <div className="w-full">
@@ -172,7 +278,10 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
                         </>
                      )
                   ) : (
-                     <>Google sign-in doesn&apos;t work inside {inApp.appName ?? 'this app'}. Email works here.</>
+                     <>
+                        Google sign-in doesn&apos;t work inside {inApp.appName ?? 'this app'}.{' '}
+                        {facebookPrimary ? 'Facebook and email work here.' : 'Email works here.'}
+                     </>
                   )}
                </p>
             </div>
@@ -222,24 +331,30 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
                {lastUsed === 'tiktok' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
             </div>
 
-            {/* Facebook: not live yet — grayed out; tapping it flashes a "Soon" hint */}
-            <div className="relative">
-               <button
-                  type="button"
-                  onClick={handleFacebookComingSoon}
-                  aria-disabled="true"
-                  aria-label={facebookLabel}
-                  title={facebookLabel}
-                  className="flex h-14 w-14 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#F3F1F5] opacity-60 grayscale transition-opacity hover:opacity-70 dark:border-[#40354F] dark:bg-[#17121F]"
-               >
-                  <FacebookLogo />
-               </button>
-               {showFacebookSoon ? (
-                  <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6B6577] px-2 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm dark:bg-[#4B4256]">
-                     Soon
-                  </span>
-               ) : null}
-            </div>
+            {/* Facebook: a live tile once enabled (the big button above when inside Facebook); until then grayed out with a "Soon" hint */}
+            {facebookEnabled ? (
+               facebookPrimary ? null : (
+                  <FacebookAuthButton isSignUp={isSignUp} variant="tile" />
+               )
+            ) : (
+               <div className="relative">
+                  <button
+                     type="button"
+                     onClick={handleFacebookComingSoon}
+                     aria-disabled="true"
+                     aria-label={facebookLabel}
+                     title={facebookLabel}
+                     className="flex h-14 w-14 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-xl border border-[#B5ACBE] bg-[#F3F1F5] opacity-60 grayscale transition-opacity hover:opacity-70 dark:border-[#40354F] dark:bg-[#17121F]"
+                  >
+                     <FacebookLogo />
+                  </button>
+                  {showFacebookSoon ? (
+                     <span className="pointer-events-none absolute -top-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#6B6577] px-2 py-0.5 text-[10px] font-semibold leading-none text-white shadow-sm dark:bg-[#4B4256]">
+                        Soon
+                     </span>
+                  ) : null}
+               </div>
+            )}
          </div>
       </div>
    );
