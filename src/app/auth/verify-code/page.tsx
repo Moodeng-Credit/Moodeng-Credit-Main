@@ -32,6 +32,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
    const [message, setMessage] = useState<string | null>(null);
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [isResending, setIsResending] = useState(false);
+   const [showLoginHint, setShowLoginHint] = useState(false);
    const { isCoolingDown, secondsLeft, startCooldown } = useResendCooldown(SIGNUP_RESEND_STORAGE_KEY);
    const emailInputRef = useRef<HTMLInputElement>(null);
    const codeInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +102,10 @@ export default function AuthVerifyCodePage(): JSX.Element {
          });
 
          if (verifyError) {
+            // Tapping Confirm Email (often in another browser) uses up the same one-time token, so the
+            // code then fails here even though the account is confirmed: offer the password log-in.
             setError('That code did not work. Check the latest email from Moodeng and try again.');
+            setShowLoginHint(true);
             return;
          }
 
@@ -196,7 +200,7 @@ export default function AuthVerifyCodePage(): JSX.Element {
                         Confirm your email
                      </h1>
                      <p className="mt-3 max-w-[340px] text-base font-medium leading-6 tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
-                        Enter the 8-digit code from the latest Moodeng email to finish setting up your account.
+                        Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.
                      </p>
                   </div>
 
@@ -246,6 +250,14 @@ export default function AuthVerifyCodePage(): JSX.Element {
                      {error ? (
                         <p className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413] dark:border-[#4A1A20] dark:bg-[#2A0F14] dark:text-[#FF8090]">
                            {error}
+                        </p>
+                     ) : null}
+                     {showLoginHint ? (
+                        <p className="rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm font-medium leading-5 text-[#4D4359] dark:border-[#2D1F4A] dark:bg-[#1E1530] dark:text-[#A89BB8]">
+                           Already tapped Confirm Email in the email? Your account is ready.{' '}
+                           <Link to="/sign-in" className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]">
+                              Log in with your email and password
+                           </Link>
                         </p>
                      ) : null}
                      {message ? (

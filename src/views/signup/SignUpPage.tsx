@@ -66,7 +66,7 @@ export default function SignUpPage() {
    // Inside Facebook's (or any app's) browser Google sign-in can't work, so email leads there.
    const inApp = useMemo(() => detectInAppBrowser(), []);
    const inAppBrowser = inApp.isInApp;
-   // Facebook/Messenger: email + the 6-digit code is the way in (Google is only a small "open in Chrome" line).
+   // Facebook/Messenger: email + the 8-digit code is the way in (Google is only a small "open in Chrome" line).
    const facebookInApp = isFacebookInApp(inApp);
    // Inside Facebook/Messenger/Instagram (once Facebook login is on) "Continue with Facebook" leads, above email.
    const facebookPrimary = useFacebookPrimary();
@@ -273,7 +273,7 @@ export default function SignUpPage() {
                            )}
                            {facebookInApp ? (
                               <p className="mt-2 max-w-[400px] text-center text-sm leading-5 text-[#5b5470]">
-                                 Works right here in {inApp.appName}: we&apos;ll email you a 6-digit code.
+                                 Works right here in {inApp.appName}: we&apos;ll email you an 8-digit code.
                               </p>
                            ) : null}
                            <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
@@ -323,7 +323,7 @@ export default function SignUpPage() {
                         Create your Moodeng Account
                      </h1>
                      <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-6">
-                        {facebookInApp ? 'Pick a password, then enter the 6-digit code we email you.' : 'It takes just a few minutes to get started.'}
+                        {facebookInApp ? 'Pick a password, then enter the 8-digit code we email you.' : 'It takes just a few minutes to get started.'}
                      </p>
 
                      <form onSubmit={handleRegister} className="flex flex-col gap-5">

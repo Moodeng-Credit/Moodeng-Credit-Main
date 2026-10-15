@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
 (globalThis as ReactActGlobal).IS_REACT_ACT_ENVIRONMENT = true;
 
-// /sign-up and /sign-in inside Facebook/Messenger's browser: email (+ the 6-digit code) leads,
+// /sign-up and /sign-in inside Facebook/Messenger's browser: email (+ the 8-digit code) leads,
 // Google is only a small "open in Chrome" line, and PostHog gets signup/signin_inapp_email_* events.
 const analytics = vi.hoisted(() => ({ capture: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: analytics.capture } }));
@@ -94,7 +94,7 @@ describe('email first inside Facebook/Messenger', () => {
       const emailButton = buttonWithText('Sign Up with Email');
       expect(emailButton).not.toBeNull();
       expect(container.querySelector('button, a')).toBe(emailButton);
-      expect(container.textContent).toContain("Works right here in Facebook: we'll email you a 6-digit code.");
+      expect(container.textContent).toContain("Works right here in Facebook: we'll email you an 8-digit code.");
       expect(container.textContent).not.toContain('Sign Up with Google');
       expect(container.querySelector('path[fill="#4285F4"]')).toBeNull();
       expect(analytics.capture).toHaveBeenCalledWith('signup_inapp_email_shown', { app: 'Facebook', os: 'android' });
@@ -103,7 +103,7 @@ describe('email first inside Facebook/Messenger', () => {
    it('/sign-up in Messenger: submitting the email form is tracked', async () => {
       await render(SignUpPage, MESSENGER_IOS_UA);
       await act(async () => buttonWithText('Sign Up with Email')?.click());
-      expect(container.textContent).toContain('Pick a password, then enter the 6-digit code we email you.');
+      expect(container.textContent).toContain('Pick a password, then enter the 8-digit code we email you.');
 
       await type(container.querySelector('input[type="email"]') as HTMLInputElement, 'new.user@example.com');
       await type(container.querySelector('input[type="password"]') as HTMLInputElement, 'longenough1');
@@ -116,7 +116,7 @@ describe('email first inside Facebook/Messenger', () => {
       const google = buttonWithText('Sign Up with Google');
       const email = buttonWithText('Sign Up with Email');
       expect(google && email && isBefore(google, email)).toBe(true);
-      expect(container.textContent).not.toContain('6-digit code');
+      expect(container.textContent).not.toContain('8-digit code');
       expect(events()).toEqual([]);
    });
 
