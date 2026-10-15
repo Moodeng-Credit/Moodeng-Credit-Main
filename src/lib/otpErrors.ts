@@ -24,6 +24,9 @@ export function describeOtpError(err: unknown, channel: OtpChannel): OtpErrorVie
       return { message: 'SMS codes work for Philippine numbers only. Use your email instead', switchToEmail: true, nonPh: true };
    }
 
+   // The hook's overall daily brake: texts are paused for everyone, email still works.
+   if (lower.startsWith('text codes are busy')) return { message, switchToEmail: true };
+
    // Our hook's own limits: keep their wording ("Wait a minute…", "Too many codes…").
    if (lower.startsWith('wait a minute') || lower.startsWith('too many codes')) {
       return { message, switchToEmail: lower.startsWith('too many codes') && channel === 'sms' };

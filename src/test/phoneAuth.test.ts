@@ -126,6 +126,15 @@ describe('describeOtpError', () => {
       expect(cap.message).toContain('Too many codes for this number today');
    });
 
+   it('the overall daily brake keeps its wording and moves them to email', () => {
+      expect(
+         describeOtpError({ message: 'Text codes are busy right now. Use your email instead, or try again later.', status: 429 }, 'sms')
+      ).toEqual({
+         message: 'Text codes are busy right now. Use your email instead, or try again later.',
+         switchToEmail: true
+      });
+   });
+
    it("Supabase's own rate limit reads as plain advice", () => {
       expect(
          describeOtpError({ message: 'For security purposes, you can only request this after 42 seconds.', status: 429 }, 'email').message
