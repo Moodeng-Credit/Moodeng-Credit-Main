@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react';
 
 import { Mail } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -10,6 +10,7 @@ import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
+import { detectInAppBrowser } from '@/lib/inAppBrowser';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -52,6 +53,8 @@ export default function SignUpPage() {
    const toast = useToast();
    const initialEmail = searchParams.get('email')?.trim() ?? '';
    const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
+   // Inside Facebook's (or any app's) browser Google sign-in can't work, so email leads there.
+   const inAppBrowser = useMemo(() => detectInAppBrowser().isInApp, []);
    const [username, setUsername] = useState('');
    const [email, setEmail] = useState(initialEmail);
    const [password, setPassword] = useState('');
@@ -225,20 +228,43 @@ export default function SignUpPage() {
                      <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5 max-w-[400px]">
                         Request short-term loans, repay clearly, and build trust over time.
                      </p>
-                     <SocialAuthButtons
-                        isSignUp
-                        onGoogleSuccess={handleGoogleAuth}
-                        onGoogleError={handleOAuthError}
-                        onTelegramAuth={handleTelegramAuth}
-                     />
-                     <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
-                     <SocialButton
-                        icon={<Mail className="w-5 h-5 text-[#250650] dark:text-[#F8F4FF]" />}
-                        text="Sign Up with Email"
-                        variant="outline"
-                        onClick={() => setShowEmailForm(true)}
-                        className="mb-4 border-[#B5ACBE]"
-                     />
+                     {inAppBrowser ? (
+                        <>
+                           <SocialButton
+                              icon={<Mail className="w-5 h-5 text-white" />}
+                              text="Sign Up with Email"
+                              variant="solid"
+                              backgroundColor="#6010D2"
+                              onClick={() => setShowEmailForm(true)}
+                              className="max-w-[400px] min-h-[56px] font-semibold"
+                           />
+                           <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
+                           <SocialAuthButtons
+                              isSignUp
+                              onGoogleSuccess={handleGoogleAuth}
+                              onGoogleError={handleOAuthError}
+                              onTelegramAuth={handleTelegramAuth}
+                           />
+                           <div className="mb-4" />
+                        </>
+                     ) : (
+                        <>
+                           <SocialAuthButtons
+                              isSignUp
+                              onGoogleSuccess={handleGoogleAuth}
+                              onGoogleError={handleOAuthError}
+                              onTelegramAuth={handleTelegramAuth}
+                           />
+                           <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
+                           <SocialButton
+                              icon={<Mail className="w-5 h-5 text-[#250650] dark:text-[#F8F4FF]" />}
+                              text="Sign Up with Email"
+                              variant="outline"
+                              onClick={() => setShowEmailForm(true)}
+                              className="mb-4 border-[#B5ACBE]"
+                           />
+                        </>
+                     )}
                      <p className="text-center text-base text-[#4D4359] tracking-[-0.02em]">
                         Already have an account?{' '}
                         <Link to="/sign-in" className="font-semibold hover:underline" style={{ color: LINK_PURPLE }}>

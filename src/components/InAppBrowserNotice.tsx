@@ -81,11 +81,22 @@ export default function InAppBrowserNotice(): JSX.Element | null {
       };
    }, []);
 
+   const visible = Boolean(info?.isInApp) && !dismissed && !hiddenByScreen;
+
+   // How many people see the "Open in Chrome/Safari" notice and how many close it — once per page load.
+   const shownTrackedRef = useRef(false);
+   useEffect(() => {
+      if (!visible || !info || shownTrackedRef.current) return;
+      shownTrackedRef.current = true;
+      track('inapp_notice_shown', info);
+   }, [visible, info]);
+
    if (!info?.isInApp || dismissed || hiddenByScreen) return null;
 
    const appLabel = info.appName ?? 'this app';
 
    const handleDismiss = () => {
+      track('inapp_notice_dismissed', info, { after_failed_handoff: handOffFailed });
       rememberDismissed();
       setDismissed(true);
    };

@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+import posthog from 'posthog-js';
 
 import LineLoginButton from '@/components/LineLoginButton';
 import TikTokLoginButton from '@/components/TikTokLoginButton';
@@ -7,6 +9,7 @@ import LastUsedBadge from './LastUsedBadge';
 import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { buildAndroidIntentUrl, detectInAppBrowser, openInSafari, watchForFailedHandOff } from '@/lib/inAppBrowser';
 import { getLastUsedAuth, setLastUsedAuth } from '@/lib/lastUsedAuth';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 
@@ -57,8 +60,19 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
    const [lastUsed] = useState(getLastUsedAuth);
    const [showFacebookSoon, setShowFacebookSoon] = useState(false);
    const facebookSoonTimer = useRef<number | null>(null);
+   // Google refuses to sign in inside an app's built-in browser (Facebook, Messenger, Instagram…):
+   // 6 people tapped "Sign up with Google" inside Facebook on 2026-10-13/14 and none got through.
+   // There the button hands off to Chrome (Android) or Safari (iPhone) instead, and says so.
+   const inApp = useMemo(() => detectInAppBrowser(), []);
+   const [handOffSteps, setHandOffSteps] = useState(false);
+   const stopWatchingRef = useRef<(() => void) | null>(null);
+   const googleInApp = inApp.isInApp && (inApp.os === 'android' || inApp.os === 'ios');
 
-   const googleLabel = isSignUp ? 'Sign Up with Google' : 'Sign In with Google';
+   const googleLabel = googleInApp
+      ? `Google: open in ${inApp.os === 'ios' ? 'Safari' : 'Chrome'}`
+      : isSignUp
+        ? 'Sign Up with Google'
+        : 'Sign In with Google';
    // Facebook login is not live yet — the tile is grayed out; tapping it flashes a "Soon" hint.
    const facebookLabel = 'Facebook sign-in coming soon';
 
@@ -70,7 +84,26 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
 
    useEffect(() => () => {
       if (facebookSoonTimer.current) window.clearTimeout(facebookSoonTimer.current);
+      stopWatchingRef.current?.();
    }, []);
+
+   const trackInAppGoogle = (event: string) => {
+      if (!import.meta.env.PROD) return;
+      posthog.capture(event, { app: inApp.appName ?? 'unknown', os: inApp.os, page: window.location.pathname, sign_up: isSignUp });
+   };
+
+   // Android: the button is a real intent:// link (tapped links get through Facebook's browser more
+   // often than scripted ones). iPhone: try Safari's scheme. Either way, if we're still here 1.5s
+   // later, show the manual steps under the button.
+   const handleGoogleInApp = () => {
+      trackInAppGoogle('inapp_google_tapped');
+      if (inApp.os === 'ios') openInSafari(window.location.href, inApp);
+      stopWatchingRef.current?.();
+      stopWatchingRef.current = watchForFailedHandOff(() => {
+         setHandOffSteps(true);
+         trackInAppGoogle('inapp_google_handoff_failed');
+      });
+   };
    const hasGoogleClientId = typeof clientId === 'string' && clientId.trim().length > 0 && !clientId.startsWith('encrypted:');
 
    const handleGoogleClick = async () => {
@@ -110,8 +143,43 @@ export function SocialAuthButtons({ isSignUp }: SocialAuthButtonsProps) {
 
    return (
       <div className="flex w-full max-w-[400px] min-w-0 flex-col gap-4">
+         {/* Google inside an app's browser: hand off to Chrome/Safari, where Google sign-in works */}
+         {clientId && googleInApp ? (
+            <div className="w-full">
+               <a
+                  href={inApp.os === 'android' ? buildAndroidIntentUrl(window.location.href) : undefined}
+                  role={inApp.os === 'android' ? undefined : 'button'}
+                  onClick={handleGoogleInApp}
+                  className={`${btnBase} border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] dark:border-[#40354F] dark:bg-[#17121F]`}
+               >
+                  <GoogleLogo />
+                  <span
+                     className="min-w-0 truncate text-base font-medium tracking-[-0.02em] text-[#141218] dark:text-[#F8F4FF]"
+                     style={{ fontFamily: 'SF Pro Display, sans-serif' }}
+                  >
+                     {googleLabel}
+                  </span>
+               </a>
+               <p className="mt-2 text-sm leading-5 text-[#5b5470] dark:text-[#B5ACBE]">
+                  {handOffSteps ? (
+                     inApp.os === 'ios' ? (
+                        <>
+                           Tap <b>•••</b> at the top, choose <b>Open in Browser</b>, then tap Google there. Or use email below.
+                        </>
+                     ) : (
+                        <>
+                           Tap <b>⋮</b> at the top right, choose <b>Open in Chrome</b>, then tap Google there. Or use email below.
+                        </>
+                     )
+                  ) : (
+                     <>Google sign-in doesn&apos;t work inside {inApp.appName ?? 'this app'}. Email works here.</>
+                  )}
+               </p>
+            </div>
+         ) : null}
+
          {/* Google: uses Supabase OAuth redirect flow */}
-         {clientId && (
+         {clientId && !googleInApp && (
             <div className="relative w-full">
                <button
                   type="button"
