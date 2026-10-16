@@ -106,8 +106,9 @@ export const rescheduleCalBooking = async (
    if (!apiKey) return { error: 'no_key' };
    const rescheduledBy = await fetchAccountEmail(apiKey);
    let lastMessage = '';
-   // 2024-08-13 is the version the rest of our Cal.com calls use; the newer one is a fallback.
-   for (const version of ['2024-08-13', '2026-02-25']) {
+   // 2026-02-25 first: it takes allowBookingOutOfBounds (the older 2024-08-13 refuses times outside
+   // the host's open hours as "not available"). The older one is the fallback.
+   for (const version of ['2026-02-25', '2024-08-13']) {
       try {
          const res = await fetch(`${CAL_BASE}/bookings/${encodeURIComponent(uid)}/reschedule`, {
             method: 'POST',
@@ -120,10 +121,10 @@ export const rescheduleCalBooking = async (
          if (res.ok && typeof body?.data?.uid === 'string') return { uid: body.data.uid };
          lastMessage = String(body?.error?.message ?? body?.message ?? res.status);
          const msg = lastMessage.toLowerCase();
-         if (msg.includes('no longer available') || msg.includes('already') || msg.includes('busy') || msg.includes('not available')) {
+         console.error(`calcomSlots: reschedule (${version}) refused`, res.status, lastMessage.slice(0, 300));
+         if (msg.includes('no longer available') || msg.includes('already') || msg.includes('busy')) {
             return { error: 'taken', message: lastMessage };
          }
-         console.error(`calcomSlots: reschedule (${version}) failed`, res.status, lastMessage.slice(0, 300));
       } catch (err) {
          lastMessage = err instanceof Error ? err.message : String(err);
          console.error('calcomSlots: reschedule threw', lastMessage);
