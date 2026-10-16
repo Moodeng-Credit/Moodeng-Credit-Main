@@ -112,13 +112,18 @@ export function isPlaceholderEmail(email?: string | null): boolean {
 
 export const SMS_TEST_FLAG_KEY = 'moodeng:sms-login-test';
 
+// Paused 16 Oct 2026: Semaphore delivers nothing until a sender name (MOODENG) is approved, so the
+// phone tab is hidden even where VITE_SMS_LOGIN_ENABLED is on. Set to false once SEMAPHORE_SENDER_NAME
+// is in Vault. ?sms=1 still turns it on for testers.
+export const SMS_LOGIN_PAUSED = true;
+
 /**
  * Whether the phone (SMS code) tab is offered. Off until Semaphore and the Send SMS hook are set
  * up: then set VITE_SMS_LOGIN_ENABLED=true. Before that, testers can turn it on for their browser
  * with ?sms=1 (off again with ?sms=0). Email codes always work.
  */
 export function isSmsLoginEnabled(): boolean {
-   if (import.meta.env.VITE_SMS_LOGIN_ENABLED === 'true') return true;
+   if (!SMS_LOGIN_PAUSED && import.meta.env.VITE_SMS_LOGIN_ENABLED === 'true') return true;
    try {
       const flag = new URLSearchParams(window.location.search).get('sms');
       if (flag === '1') localStorage.setItem(SMS_TEST_FLAG_KEY, '1');
