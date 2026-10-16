@@ -17,6 +17,7 @@ import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import LenderHomeScreenPushPrompt from '@/components/funding/LenderHomeScreenPushPrompt';
 import Header from '@/components/Header/Header';
 import { PendingCodeBanner } from '@/components/auth/PendingCodeBanner';
+import { GuestAccountGate } from '@/components/GuestAccountGate';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
 import { WalletLoadingOverlay } from '@/components/loading/WalletLoadingOverlay';
 import MarketingPageShell from '@/components/marketing/MarketingPageShell';
@@ -253,6 +254,8 @@ export default function App() {
    return (
       <BottomNavActionProvider key={location.pathname}>
          <InAppBrowserNotice />
+         {/* Guests (email-first sign-up) confirm their email + set a password after connecting Facebook. */}
+         <GuestAccountGate />
          {/* Back after Facebook killed the page mid-sign-in: one tap to the code screen. */}
          <PendingCodeBanner />
          <WalletLoadingOverlay />

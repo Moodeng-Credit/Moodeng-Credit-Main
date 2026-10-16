@@ -10,7 +10,7 @@ import { AUTH_NEXT_STORAGE_KEY } from '@/lib/authNext';
 import { PENDING_INVITE_STORAGE_KEY } from '@/lib/friendReferrals';
 import { LAST_USED_AUTH_STORAGE_KEY } from '@/lib/lastUsedAuth';
 import { PENDING_SHARED_REQUEST_KEY } from '@/lib/pendingSharedRequest';
-import { generatePhoneUsername, phonePlaceholderEmail, SMS_TEST_FLAG_KEY } from '@/lib/phoneAuth';
+import { generatePhoneUsername, guestPlaceholderEmail, phonePlaceholderEmail, SMS_TEST_FLAG_KEY } from '@/lib/phoneAuth';
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
@@ -150,8 +150,12 @@ const ensureUserProfileRow = async (
    authUser: SupabaseAuthUser,
    overrides?: { username?: string; email?: string; isWorldId?: string | WorldIdStatus }
 ): Promise<UserRow> => {
-   // Phone-only accounts have no email; public.users.email is NOT NULL, so they get a placeholder.
-   const email = overrides?.email ?? (authUser.email || (authUser.phone ? phonePlaceholderEmail(authUser.id) : undefined));
+   // Phone-only and guest accounts have no (confirmed) email; public.users.email is NOT NULL, so
+   // they get a placeholder. A guest's typed email stays pending in Supabase Auth until confirmed.
+   const email =
+      overrides?.email ??
+      (authUser.email ||
+         (authUser.phone ? phonePlaceholderEmail(authUser.id) : authUser.is_anonymous ? guestPlaceholderEmail(authUser.id) : undefined));
 
    if (!email) {
       throw new Error('Email is required to seed user profile');
@@ -611,6 +615,80 @@ export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (par
    return { channel: target.channel };
 });
 
+export class GuestEmailTakenError extends Error {
+   constructor() {
+      super('This email already has a Moodeng account.');
+      this.name = 'GuestEmailTakenError';
+   }
+}
+
+/**
+ * Email-first sign-up (Facebook/Messenger browsers, guest_signup_enabled): no code now. Creates a
+ * guest (anonymous) account and attaches the email as a pending change, which mails a link + code.
+ * They confirm it and set a password after connecting Facebook (GuestAccountGate); the link also
+ * signs them back in from any browser if this one loses its session.
+ */
+export const startGuestSignup = createAsyncThunk('auth/startGuestSignup', async ({ email }: { email: string }) => {
+   const supabase = supabaseClient();
+
+   const { data: taken } = await supabase.rpc('email_exists', { p_email: email });
+   if (taken === true) throw new GuestEmailTakenError();
+
+   // Same reason as requestOtpCode: never continue inside a leftover session from another account.
+   const {
+      data: { session: staleSession }
+   } = await supabase.auth.getSession();
+   if (staleSession) {
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
+
+   const { error: guestError } = await supabase.auth.signInAnonymously({
+      options: { data: { username: email.split('@')[0], passwordless: true, guest_email: email } }
+   });
+   if (guestError) throw guestError;
+
+   const { error: emailError } = await supabase.auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
+   if (emailError) {
+      await supabase.auth.signOut({ scope: 'local' });
+      if (emailError.code === 'email_exists' || /already been registered|already exists/i.test(emailError.message)) {
+         throw new GuestEmailTakenError();
+      }
+      throw emailError;
+   }
+
+   const user = await fetchCurrentUserProfile();
+   setLastUsedAuth('email');
+   return { username: user.username, user };
+});
+
+/** The email a guest typed at sign-up (pending until they confirm it). */
+export const getGuestPendingEmail = async (): Promise<string | null> => {
+   const {
+      data: { user }
+   } = await supabaseClient().auth.getUser();
+   if (!user?.is_anonymous) return null;
+   return user.new_email || (user.user_metadata?.guest_email as string | undefined) || null;
+};
+
+/** Mails the guest's confirmation link + code again (optionally to a corrected address). */
+export const resendGuestEmail = async (email: string): Promise<void> => {
+   const { error } = await supabaseClient().auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
+   if (error) {
+      if (error.code === 'email_exists' || /already been registered|already exists/i.test(error.message)) {
+         throw new GuestEmailTakenError();
+      }
+      throw error;
+   }
+};
+
+/** Last step for a guest whose email is confirmed: set a password, so they can sign in anywhere. */
+export const setGuestPassword = createAsyncThunk('auth/setGuestPassword', async ({ password }: { password: string }) => {
+   const { error } = await supabaseClient().auth.updateUser({ password, data: { passwordless: false } });
+   if (error) throw error;
+   return await fetchCurrentUserProfile();
+});
+
 /** Checks the code from requestOtpCode and signs the person in. */
 export const verifyOtpCode = createAsyncThunk('auth/verifyOtpCode', async (params: OtpTarget & { token: string }) => {
    const supabase = supabaseClient();
@@ -1008,6 +1086,13 @@ const authSlice = createSlice({
             state.isLoading = false;
             state.username = action.payload.username;
             state.user = action.payload.user;
+         })
+         .addCase(startGuestSignup.fulfilled, (state, action) => {
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(setGuestPassword.fulfilled, (state, action) => {
+            state.user = action.payload;
          })
          .addCase(verifyOtpCode.rejected, (state, action) => {
             state.isLoading = false;

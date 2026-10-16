@@ -15,13 +15,20 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 const h = vi.hoisted(() => ({
    capture: vi.fn(),
    requestOtpCode: vi.fn((args: unknown) => ({ type: 'requestOtpCode', args })),
+   startGuestSignup: vi.fn((args: unknown) => ({ type: 'startGuestSignup', args })),
    unwrap: vi.fn(),
    rpc: vi.fn(),
    inPh: true
 }));
 vi.mock('posthog-js', () => ({ default: { capture: h.capture } }));
 vi.mock('react-redux', () => ({ useDispatch: () => () => ({ unwrap: h.unwrap }) }));
-vi.mock('@/store/slices/authSlice', () => ({ requestOtpCode: h.requestOtpCode }));
+vi.mock('@/store/slices/authSlice', () => ({
+   requestOtpCode: h.requestOtpCode,
+   startGuestSignup: h.startGuestSignup,
+   GuestEmailTakenError: class GuestEmailTakenError extends Error {
+      name = 'GuestEmailTakenError';
+   }
+}));
 vi.mock('@/lib/supabase/client', () => ({ getSupabaseBrowserClient: () => ({ rpc: h.rpc }) }));
 vi.mock('@/lib/isLikelyPhilippines', () => ({ isLikelyPhilippines: () => h.inPh }));
 
@@ -74,7 +81,8 @@ describe('PasswordlessAuthForm', () => {
                      path: '/sign-up',
                      element: createElement(PasswordlessAuthForm, { mode: props.mode, inApp, initialChannel: props.initialChannel })
                   }),
-                  createElement(Route, { path: '/auth/verify-code', element: createElement(Where) })
+                  createElement(Route, { path: '/auth/verify-code', element: createElement(Where) }),
+                  createElement(Route, { path: '/auth-success', element: createElement(Where) })
                )
             )
          );
@@ -104,6 +112,7 @@ describe('PasswordlessAuthForm', () => {
       vi.stubEnv('VITE_SMS_LOGIN_ENABLED', 'true');
       h.capture.mockClear();
       h.requestOtpCode.mockClear();
+      h.startGuestSignup.mockClear();
       h.unwrap.mockReset();
       h.rpc.mockReset();
       h.inPh = true;
@@ -272,5 +281,43 @@ describe('PasswordlessAuthForm', () => {
       await render({ mode: 'signin', initialChannel: 'sms' });
       expect(input().type).toBe('tel');
       expect(container.querySelector('button[type="submit"]')?.textContent).toBe('Text me a code');
+   });
+
+   const guestSwitch = (on: boolean) =>
+      h.rpc.mockImplementation((name: string) =>
+         Promise.resolve(name === 'get_guest_signup_enabled' ? { data: on, error: null } : { data: false, error: null })
+      );
+
+   it('guest sign-up on, in Facebook: Continue creates the guest account (no code) and opens onboarding', async () => {
+      guestSwitch(true);
+      h.unwrap.mockResolvedValue({ user: {}, username: 'new' });
+      await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
+      await type('new.person@example.com');
+      await submit();
+      expect(h.startGuestSignup).toHaveBeenCalledWith({ email: 'new.person@example.com' });
+      expect(h.requestOtpCode).not.toHaveBeenCalled();
+      expect(where()).toBe('/auth-success?type=created&new=1');
+   });
+
+   it('guest sign-up: an email that already has an account offers a sign-in code', async () => {
+      guestSwitch(true);
+      h.unwrap.mockRejectedValueOnce({ name: 'GuestEmailTakenError', message: 'taken' });
+      await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
+      await type('old@example.com');
+      await submit();
+      expect(container.textContent).toContain('This email already has a Moodeng account');
+      h.unwrap.mockResolvedValue({ channel: 'email' });
+      await act(async () => button('Email me a code')?.click());
+      expect(h.requestOtpCode).toHaveBeenCalledWith({ channel: 'email', email: 'old@example.com', mode: 'signin' });
+   });
+
+   it('guest sign-up off (or outside an in-app browser): sign-up still sends a code', async () => {
+      guestSwitch(false);
+      h.unwrap.mockResolvedValue({ channel: 'email' });
+      await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
+      await type('a@example.com');
+      await submit();
+      expect(h.startGuestSignup).not.toHaveBeenCalled();
+      expect(h.requestOtpCode).toHaveBeenCalled();
    });
 });

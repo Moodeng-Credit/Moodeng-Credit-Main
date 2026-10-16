@@ -105,9 +105,22 @@ export function phonePlaceholderEmail(userId: string): string {
    return `phone_${userId.replace(/-/g, '')}@moodeng.app`;
 }
 
-/** Placeholder addresses for accounts that signed up without an email (Telegram, LINE, phone). */
+/**
+ * Guest accounts (email-first sign-up in Facebook's browser) keep this placeholder in
+ * public.users until they confirm their email; the database then swaps in the real address.
+ */
+export function guestPlaceholderEmail(userId: string): string {
+   return `guest_${userId.replace(/-/g, '')}@moodeng.app`;
+}
+
+/** A guest account: signed up with an email it hasn't confirmed yet. */
+export function isGuestEmail(email?: string | null): boolean {
+   return /^guest_[^@]+@moodeng\.app$/i.test((email ?? '').trim());
+}
+
+/** Placeholder addresses for accounts that signed up without an email (Telegram, LINE, phone, guests). */
 export function isPlaceholderEmail(email?: string | null): boolean {
-   return /^(telegram|line|phone)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
+   return /^(telegram|line|phone|guest)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
 }
 
 export const SMS_TEST_FLAG_KEY = 'moodeng:sms-login-test';

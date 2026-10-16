@@ -270,6 +270,11 @@ serve(async (req) => {
          return jsonResponse({ error: 'Invalid authorization token' }, 401);
       }
 
+      // Guest accounts (email-first sign-up) confirm their email before any ID check.
+      if (user.is_anonymous) {
+         return jsonResponse({ error: 'Confirm your email first.', code: 'guest_email_unconfirmed' }, 403);
+      }
+
       let returnTo: string | undefined;
       let kind: SessionKind = 'liveness';
       // kind: 'cashout' only — the exact transfer this scan's approval will be bound to.

@@ -166,3 +166,15 @@ describe('accountHasPassword', async () => {
       expect(accountHasPassword({ app_metadata: { provider: 'google' }, user_metadata: {} })).toBe(false);
    });
 });
+
+describe('guest placeholder email', () => {
+   it('is a placeholder, never the typed address', async () => {
+      const { guestPlaceholderEmail, isGuestEmail, isPlaceholderEmail } = await import('@/lib/phoneAuth');
+      const email = guestPlaceholderEmail('3586-6cc4');
+      expect(email).toBe('guest_35866cc4@moodeng.app');
+      expect(isGuestEmail(email)).toBe(true);
+      expect(isPlaceholderEmail(email)).toBe(true);
+      expect(isGuestEmail('juan@gmail.com')).toBe(false);
+      expect(isGuestEmail('phone_abc@moodeng.app')).toBe(false);
+   });
+});
