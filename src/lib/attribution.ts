@@ -12,6 +12,7 @@ const KEY = 'md_first_touch';
 export const FIRST_TOUCH_STORAGE_KEY = KEY;
 const SENT_KEY = 'md_first_touch_sent';
 const CONTEXT_SENT_KEY = 'md_signup_context_sent';
+const CLICKED_KEY = 'md_post_link_clicked';
 
 type Touch = { src: string | null; campaign: string | null; referrer: string | null; landing: string; at: string };
 
@@ -34,11 +35,34 @@ const referrerHost = () => {
    }
 };
 
+/** Normalizes a ?src= value the way it's stored on the account (lowercase, a-z 0-9 . _ -). */
+export const cleanSrc = (value: string | null) => clean(value);
+
+/** Post links (Admin → Post links): count one click per browser per link. Unknown links are ignored server-side. */
+const recordPostLinkClick = (src: string) => {
+   try {
+      const clicked = JSON.parse(window.localStorage.getItem(CLICKED_KEY) ?? '[]') as string[];
+      if (clicked.includes(src)) return;
+      window.localStorage.setItem(CLICKED_KEY, JSON.stringify([...clicked, src].slice(-50)));
+      void getSupabaseBrowserClient()
+         .rpc('record_post_link_click', { p_src: src })
+         .then(({ error }) => {
+            if (error) console.warn('record_post_link_click failed', error.message);
+         });
+   } catch {
+      // Storage blocked: skip.
+   }
+};
+
 /** Call once on page load. Keeps the first visit, unless a later visit is the first with a ?src tag. */
 export const captureFirstTouch = () => {
    try {
       const params = new URLSearchParams(window.location.search);
       const src = clean(params.get('src') ?? params.get('utm_source'));
+      if (params.get('src')) {
+         const linkSrc = clean(params.get('src'));
+         if (linkSrc) recordPostLinkClick(linkSrc);
+      }
       const saved = window.localStorage.getItem(KEY);
       const previous = saved ? (JSON.parse(saved) as Touch) : null;
       if (previous && (previous.src || !src)) return;

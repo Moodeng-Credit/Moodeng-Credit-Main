@@ -59,6 +59,7 @@ import DemoB2BSection from './DemoB2BSection';
 import DemoB2CSection from './DemoB2CSection';
 import EmailUsersSection from './EmailUsersSection';
 import GrowthAnalyticsSection from './GrowthAnalyticsSection';
+import PostLinksSection from './PostLinksSection';
 import SignupSourcesSection from './SignupSourcesSection';
 import LoanExplorerSection from './LoanExplorerSection';
 import LoanExtensionSection from './LoanExtensionSection';
@@ -1616,6 +1617,18 @@ function AdminPanel() {
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
                </div>
                <GrowthAnalyticsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'post-links' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Post links</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     A tracked link for each Facebook post, and how many clicks, sign-ups and borrowers each one brought.
+                  </p>
+               </div>
+               <PostLinksSection />
             </section>
          ) : null}
 
