@@ -7,7 +7,8 @@ import { postDiscord } from '../_shared/discord.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getCallChangesChatId, notifyBorrower, PAGE_INBOX_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
-import { buildRescheduleUrl, formatCallTimeForTeam } from '../_shared/videoCall.ts';
+import { changeTimeButton } from '../_shared/callReschedule.ts';
+import { formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
@@ -136,7 +137,7 @@ serve(async (req) => {
                if (chat) {
                   await sendTelegramMessage(chat, text, {
                      inlineKeyboard: [
-                        ...(booking.bookingUid ? [[{ text: '🔄 Change call time', url: buildRescheduleUrl(booking.bookingUid) }]] : []),
+                        [changeTimeButton(b.id)],
                         [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(b.id, b.username)]
                      ]
                   });
@@ -145,6 +146,16 @@ serve(async (req) => {
                console.error('calcom-webhook: call-moved telegram failed', err instanceof Error ? err.message : err);
             }
             await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+         }
+         // Tell the borrower too — whether they moved it or we did (🔄 Change time in Telegram).
+         const { data: moved } = await supabase
+            .from('users')
+            .select('messenger_psid, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid')
+            .eq('id', booking.userId)
+            .maybeSingle();
+         if (moved) {
+            const sent = await sendMovedMessenger(moved);
+            if (!sent.ok) console.log('calcom-webhook: moved messenger skipped:', sent.reason);
          }
       }
 

@@ -27,6 +27,7 @@ import {
 } from '../_shared/loanAccess.ts';
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
+import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import { buildPayoutCallback, markPayoutPaid, parsePayoutCallback } from '../_shared/referralPayouts.ts';
 import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
@@ -784,6 +785,27 @@ serve(async (req) => {
       if (update.callback_query) {
          const teamChatId = await getTeamChatId(supabase);
          const kycChatId = await getSetting(supabase, 'kyc_alert_chat_id');
+         // 🔄 Change time picker: the admin chats and the call-changes group.
+         const reschedule = parseRescheduleCallback(update.callback_query.data);
+         if (reschedule) {
+            const query = update.callback_query;
+            const chatId = query.message?.chat.id;
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'call_changes_chat_id')].filter(Boolean).map(String);
+            if (!chatId || !query.message || !allowed.includes(String(chatId))) {
+               await answerCallback(query.id, 'Not allowed here.');
+            } else {
+               await answerCallback(query.id, '⏳ One moment…');
+               try {
+                  const toast = await handleRescheduleStep(supabase, reschedule, chatId, query.message.message_id, adminHandle(query.from));
+                  if (reschedule.step === 'open' && !toast.startsWith('Pick')) await sendTelegramMessage(chatId, toast);
+               } catch (error) {
+                  const reason = error instanceof Error ? error.message : String(error);
+                  console.error('telegram-webhook: change time failed', reason);
+                  await sendTelegramMessage(chatId, `⚠️ Change time failed — try again. (${reason.slice(0, 200)})`);
+               }
+            }
+            return jsonResponse({ message: 'Reschedule handled' });
+         }
          await handleAdminCallback(
             supabase,
             update.callback_query,
@@ -836,6 +858,22 @@ serve(async (req) => {
       ) {
          await handleLenderRosterCommand(supabase, message);
          return jsonResponse({ message: 'Lender roster command handled' });
+      }
+
+      // /move @username — the 🔄 Change time picker for their call. Admin chats + call-changes group.
+      if (/^\/move(?:@\w+)?\b/i.test(message.text ?? '')) {
+         const callChangesChatId = await getSetting(supabase, 'call_changes_chat_id');
+         if (isAdminChannel || (callChangesChatId && String(message.chat.id) === String(callChangesChatId))) {
+            const arg = (message.text ?? '').trim().split(/\s+/)[1]?.replace(/^@/, '') ?? '';
+            if (!arg) {
+               await sendTelegramMessage(message.chat.id, 'Usage: /move @username — then pick the new day and time.');
+            } else {
+               const { data: who } = await supabase.from('users').select('id').ilike('username', escapeLike(arg)).maybeSingle();
+               const reply = who ? await postReschedulePicker(supabase, message.chat.id, (who as { id: string }).id) : `No borrower called @${arg}.`;
+               if (!reply.startsWith('Pick')) await sendTelegramMessage(message.chat.id, reply);
+            }
+            return jsonResponse({ message: 'Move command handled' });
+         }
       }
 
       // Manual Messenger verification confirm — either admin channel.
