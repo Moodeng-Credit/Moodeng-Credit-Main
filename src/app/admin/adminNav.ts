@@ -8,6 +8,7 @@ export type AdminTab =
    | 'credit-line-cost'
    | 'marketing'
    | 'signups'
+   | 'post-links'
    | 'calls'
    | 'fillout'
    | 'calendar'
@@ -96,6 +97,7 @@ export const navGroups: NavGroup[] = [
       items: [
          { id: 'marketing', label: 'Marketing' },
          { id: 'signups', label: 'Sign-up sources' },
+         { id: 'post-links', label: 'Post links' },
          { id: 'analytics', label: 'Analytics' },
          { id: 'ux-health', label: 'UX health' },
          { id: 'on-chain', label: 'On-chain' },
@@ -140,6 +142,7 @@ export const ALL_ADMIN_TABS: readonly AdminTab[] = [
    'fillout',
    'calendar',
    'signups',
+   'post-links',
    'analytics',
    'ux-health',
    'on-chain',
