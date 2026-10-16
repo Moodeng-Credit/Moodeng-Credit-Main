@@ -226,7 +226,8 @@ export default function ContactsStep({
 
    // Where notifications can't work (no push at all here, blocked, or broken on this phone), offer
    // WhatsApp reminders instead. Recommended, not required: someone without WhatsApp still gets
-   // Messenger and email. Off until the borrower_whatsapp_enabled setting is on.
+   // Messenger and email. Off until the borrower_whatsapp_card_enabled setting is on (sending has its
+   // own switch, borrower_whatsapp_enabled).
    const [whatsappRemindersEnabled, setWhatsappRemindersEnabled] = useState(false);
    useEffect(() => {
       let cancelled = false;

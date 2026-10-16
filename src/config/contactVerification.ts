@@ -15,7 +15,7 @@ export const WHATSAPP_BUSINESS_NUMBER_DISPLAY = import.meta.env.VITE_WHATSAPP_BU
 
 // Facebook is required (George): WhatsApp is not offered as a way to "reach you" instead of Messenger,
 // only as the reminders channel where notifications can't work (WhatsAppRemindersCard, switched on with
-// the borrower_whatsapp_enabled setting). VITE_WHATSAPP_VERIFY_ENABLED=true would bring back the old
+// the borrower_whatsapp_card_enabled setting; sending is borrower_whatsapp_enabled). VITE_WHATSAPP_VERIFY_ENABLED=true would bring back the old
 // "WhatsApp instead of Messenger" card.
 export const WHATSAPP_VERIFY_ENABLED = import.meta.env.VITE_WHATSAPP_VERIFY_ENABLED === 'true';
 
