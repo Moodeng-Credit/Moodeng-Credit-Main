@@ -26,7 +26,7 @@ import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
-import { formatCallTimeForTeam } from './videoCall.ts';
+import { buildRescheduleUrl, formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
@@ -118,10 +118,11 @@ export type BorrowerRow = {
    video_call_starts_at?: string | null;
    video_call_timezone?: string | null;
    video_call_confirmed_at?: string | null;
+   video_call_booking_uid?: string | null;
 };
 
 export const BORROWER_COLUMNS =
-   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at';
+   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_booking_uid';
 export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referral_code, channel, status, created_at';
 
 export const shortId = (id: string) => id.slice(0, 8);
@@ -200,7 +201,11 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
             text,
             keyboard: [
                ...decisionKeyboard(request),
-               [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)]
+               [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)],
+               // Same Cal.com reschedule page the borrower gets on Messenger — either side can move it.
+               ...(isCall && borrower.video_call_booking_uid
+                  ? [[{ text: '🔄 Change call time', url: buildRescheduleUrl(borrower.video_call_booking_uid) }]]
+                  : [])
             ]
          });
       } catch (err) {

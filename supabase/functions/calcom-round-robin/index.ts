@@ -368,7 +368,7 @@ serve(async (req) => {
                })
                .eq('id', user.id)
                .select(
-                  'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at'
+                  'messenger_psid, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid'
                )
                .maybeSingle();
             // Messenger confirmation with the "✅ I'll be there" button — best-effort, never blocks.
