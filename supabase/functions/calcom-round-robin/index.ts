@@ -292,7 +292,10 @@ serve(async (req) => {
                const sent = await sendBookedMessenger(booked);
                if (!sent.ok) console.log('calcom-round-robin: messenger confirmation skipped:', sent.reason);
             }
-            let teamChat = Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || '';
+            // Bookings go to the call-changes ("rearrange meetings") group with their 🔄 Change time
+            // button; the team group only until that group is set.
+            const { data: callChanges } = await svc.from('telegram_bot_settings').select('value').eq('key', 'call_changes_chat_id').maybeSingle();
+            let teamChat = ((callChanges as { value?: string } | null)?.value) || Deno.env.get('TELEGRAM_TEAM_GROUP_CHAT_ID') || '';
             if (!teamChat) {
                const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
                teamChat = ((setting as { value?: string } | null)?.value) ?? '';
