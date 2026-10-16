@@ -214,7 +214,7 @@ export function GuestAccountGate() {
                   ) : (
                      <form onSubmit={confirmCode} className="flex flex-col gap-3" noValidate>
                         <p className="text-sm text-[#4D4359] dark:text-[#C9BEDA]">
-                           We sent a {EMAIL_CODE_LENGTH}-digit code to <strong>{pendingEmail ?? 'your email'}</strong>. Check your
+                           We sent an {EMAIL_CODE_LENGTH}-digit code to <strong>{pendingEmail ?? 'your email'}</strong>. Check your
                            inbox and spam, then come back here.
                         </p>
                         <input
