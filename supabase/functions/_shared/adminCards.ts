@@ -42,7 +42,16 @@ export type CardLink = { text: string; url: string };
 
 // The after-state of a card. `by` and `at` make the footer ("Decided by @george · …", or another
 // `verb` such as "Tapped by" for an already-decided tap); `detail` goes under the header.
-export type CardStamp = { header: string; detail?: string | null; by?: string | null; at?: Date; verb?: string };
+// `buttons` (Telegram only) stay on the decided card above its links — e.g. ✅ Approve anyway on a
+// no-show, for a borrower who turns up late and gets a separate call.
+export type CardStamp = {
+   header: string;
+   detail?: string | null;
+   by?: string | null;
+   at?: Date;
+   verb?: string;
+   buttons?: TelegramInlineKeyboard;
+};
 
 // Telegram rejects a message (and an edit) longer than this, counted in UTF-16 code units — the
 // same as a JS string's length.
@@ -112,6 +121,14 @@ export const openInAdminButton = (userId: string, username?: string | null): Car
    url: adminUserUrl(userId, username)
 });
 
+// ✅ Approve anyway, for a no-show card: they turned up late / apologised and the team met them on a
+// separate call. Same callback as the call card's ✅ Showed up ("vc:a:<user id>", parsed by
+// videoCallOutcome.parseOutcomeCallback) but without a call key, so it still works after a rebook.
+// recordCallOutcome turns the no-show into "showed up", approves them and sends the approval message.
+export const approveAnywayButtons = (userId: string): TelegramInlineKeyboard => [
+   [{ text: '✅ Approve anyway (met them later)', callback_data: `vc:a:${userId}` }]
+];
+
 // Adds the 👤 Open in admin link to a set of link rows unless one is already there.
 export const withAdminLink = (rows: CardLink[][], userId: string | null | undefined, username?: string | null): CardLink[][] =>
    !userId || rows.some((row) => row.some((b) => b.text === OPEN_IN_ADMIN_TEXT)) ? rows : [...rows, [openInAdminButton(userId, username)]];
@@ -165,6 +182,7 @@ export const stampCard = async (
    links: CardLink[][],
    stamp: CardStamp
 ) => {
+   const keyboard: TelegramInlineKeyboard = [...(stamp.buttons ?? []), ...links];
    try {
       await callTelegramApi('editMessageText', {
          chat_id: chatId,
@@ -172,7 +190,7 @@ export const stampCard = async (
          text: renderDecidedCard(originalText, stamp),
          disable_web_page_preview: true,
          // Without reply_markup Telegram drops the keyboard; with only links, the decision buttons go.
-         ...(links.length ? { reply_markup: { inline_keyboard: links } } : {})
+         ...(keyboard.length ? { reply_markup: { inline_keyboard: keyboard } } : {})
       });
       return true;
    } catch (err) {

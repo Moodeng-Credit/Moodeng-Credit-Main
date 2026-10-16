@@ -13,6 +13,7 @@
 
 import {
    adminUserUrl,
+   approveAnywayButtons,
    type CardStamp,
    OPEN_IN_ADMIN_TEXT,
    openInAdminButton,
@@ -486,9 +487,11 @@ export const decideLoanAccess = async (
    const stamp: CardStamp = {
       header: loanAccessStampHeader(decision, personName(borrower, request.display_name), { call: request.kind === 'call' }),
       detail: held || null,
-      by: decidedBy
+      by: decidedBy,
+      ...(decision === 'no_show' ? { buttons: approveAnywayButtons(request.user_id) } : {})
    };
-   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp);
+   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
+   await stampDecisionCards(svc, 'loan_access', request.user_id, stamp, { final: decision !== 'no_show' });
 
    await notifyBorrower(svc, borrower, decision);
 

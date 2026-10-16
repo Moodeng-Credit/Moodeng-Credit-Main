@@ -12,7 +12,7 @@
 // if nobody has tapped by then (autoMarkNoShow). Showing up still needs a human ✅ — the call is
 // where the host judges they're ready to borrow.
 
-import { type CardStamp, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
+import { approveAnywayButtons, type CardStamp, openInAdminButton, personName, sendAdminCard, stampDecisionCards } from './adminCards.ts';
 import { ATTENDANCE_COLUMNS, type AttendanceFields, describeAttendance, zoomActiveForHost } from './attendance.ts';
 import { postDiscord } from './discord.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
@@ -276,9 +276,11 @@ export const recordCallOutcome = async (
               ? loanAccessStampHeader('approved', name, { call: true })
               : loanAccessStampHeader(correctingNoShow ? 'corrected' : 'attended', name),
       detail: held || null,
-      by: decidedBy
+      by: decidedBy,
+      ...(outcome === 'no_show' ? { buttons: approveAnywayButtons(userId) } : {})
    };
-   await stampDecisionCards(svc, 'loan_access', userId, stamp);
+   // A no-show keeps its cards remembered, so ✅ Approve anyway can stamp them all again later.
+   await stampDecisionCards(svc, 'loan_access', userId, stamp, { final: outcome !== 'no_show' });
 
    const summary = `${outcome === 'attended' ? (approvedNow ? '✅ Showed up → approved' : '✅ Showed up') : '❌ No-show'}: ${who(updated as BorrowerRow)} — by ${decidedBy}${held ? `\n${held}` : ''}`;
    await postDiscord({ content: `📞 Video call ${summary}` }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
@@ -305,7 +307,7 @@ export const autoMarkNoShow = async (svc: SupabaseClient, userId: string): Promi
       : `🤖 ${result.summary}\nZoom never saw them join, so they've been asked to book a new time. If they did make it, send /showed ${userId} and their request goes back on the board.`;
    try {
       const chat = await getAdminChatId(svc);
-      if (chat) await sendTelegramMessage(chat, text);
+      if (chat) await sendTelegramMessage(chat, text, { inlineKeyboard: approveAnywayButtons(userId) });
    } catch (err) {
       console.error('videoCallOutcome: auto no-show telegram failed', err instanceof Error ? err.message : err);
    }
