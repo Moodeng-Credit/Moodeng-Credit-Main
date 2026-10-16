@@ -429,8 +429,9 @@ const handleAdminCallback = async (supabase: SupabaseClient, query: TelegramCall
          const stamp: CardStamp =
             result.stamp ?? (result.ok ? { header: result.summary, by } : { header: alreadyDecidedHeader(result.summary), by, verb: 'Tapped by' });
          if (remembered) {
-            // Still remembered = the decision didn't stamp it (nothing changed): stamp it here.
-            if (await claimCard(supabase, cardChatId, card.message_id)) {
+            // Still remembered = the decision didn't stamp it (nothing changed): stamp it here. A
+            // no-show (stamp with buttons) did stamp it and keeps it remembered for ✅ Approve anyway.
+            if (!result.stamp?.buttons && (await claimCard(supabase, cardChatId, card.message_id))) {
                await stampCard(cardChatId, card.message_id, remembered.text, remembered.links, stamp);
             }
          } else {
