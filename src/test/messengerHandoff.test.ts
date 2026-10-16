@@ -68,6 +68,12 @@ describe('MessengerHandoff', () => {
       expect(rpc).toHaveBeenCalledWith('mark_messenger_chat_opened_by_code', { p_code: 'MDNG-ABC123' });
    });
 
+   it('opened in Safari from Facebook\'s browser (?from=fb): sends them back to Facebook, not a computer', async () => {
+      await renderAt('/fb/MDNG-ABC123?from=fb', IPHONE_UA);
+      expect(container.textContent).toContain('go back to Moodeng in Facebook');
+      expect(container.textContent).not.toContain('computer');
+   });
+
    it('shows Connected on the phone once the code is verified', async () => {
       rpc.mockImplementation(async (fn: string) => ({ data: fn === 'messenger_code_verified' ? true : null, error: null }));
       await renderAt('/fb/MDNG-ABC123', IPHONE_UA);

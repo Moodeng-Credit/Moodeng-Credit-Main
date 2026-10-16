@@ -58,6 +58,13 @@ vi.mock('@/lib/supabase/client', () => ({
    })
 }));
 
+// Records where "Or open Moodeng in Safari instead" sends them (jsdom can't follow x-safari- links).
+const safari = vi.hoisted(() => ({ open: vi.fn(() => true) }));
+vi.mock('@/lib/inAppBrowser', async (importOriginal) => ({
+   ...(await importOriginal<Record<string, unknown>>()),
+   openInSafari: safari.open
+}));
+
 // Imported after the mock is registered so the component picks up the mocked client.
 const { default: ContactsStep } = await import('@/views/dashboard/components/ContactsStep');
 
@@ -298,6 +305,36 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       } finally {
          document.removeEventListener('click', blockNavigation, true);
       }
+   });
+
+   it('iPhone in Facebook: records the tap before leaving, and Safari opens the no-sign-in code page', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value:
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBAV/582.0.0.26.106;FBSN/iOS]',
+         configurable: true
+      });
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText: vi.fn(async () => undefined) } }));
+      safari.open.mockClear();
+      await render();
+      await tapMessengerCard();
+      const chatLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
+      expect(chatLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+
+      // Following the link at once cancelled the stamp in Facebook's browser, so the page holds it
+      // until the stamp is sent.
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      await act(async () => {
+         chatLink?.dispatchEvent(click);
+         await Promise.resolve();
+      });
+      expect(click.defaultPrevented).toBe(true);
+      expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
+
+      // Safari doesn't share Facebook's login: it gets /fb/<code>, which needs none.
+      await act(async () => {
+         buttonByText(container, 'Or open Moodeng in Safari instead')?.click();
+      });
+      expect(safari.open).toHaveBeenCalledWith(`${window.location.origin}/fb/MDNG-ABC123?from=fb`, expect.anything());
    });
 
    it('picks the attempt back up, with the code showing, after an Android fallback left the page', async () => {
