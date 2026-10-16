@@ -889,6 +889,9 @@ export const filipinoCoverageA: Record<string, string> = {
 
    // Passwordless code login (sign-up/sign-in, code screen, password + email later), PR #1164
    'Sign up to Moodeng': 'Mag-sign up sa Moodeng',
+   'No password needed.': 'Walang password.',
+   'Used Google before? Type the same Gmail. No code needed now.':
+      'Nag-Google ka na dati? I-type ang parehong Gmail. Walang code na kailangan ngayon.',
    "No password needed. We'll send you a code.": 'Walang password. Padadalhan ka namin ng code.',
    "We'll send you a code. No password needed.": 'Padadalhan ka namin ng code. Walang password.',
    'Philippine numbers only.': 'Philippine numbers lang.',

@@ -126,7 +126,7 @@ export default function PasswordlessSignUpScreen() {
                   Sign up to Moodeng
                </h1>
                <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5 max-w-[400px]">
-                  No password needed. We&apos;ll send you a code.
+                  No password needed.
                </p>
 
                {inAppBrowser ? (

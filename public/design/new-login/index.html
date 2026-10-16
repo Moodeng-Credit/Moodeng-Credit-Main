@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <style>[hidden]{display:none!important} img{max-width:100%}</style>
-<title>Moodeng New Login Screens</title>
+<title>Moodeng Sign-up Flow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Source+Sans+3:wght@400;600;700&display=swap">
 <style>
-/* Layout: phone screenshots in a wrapping grid, grouped by where people see them; captions under each phone. */
+/* Layout: tabs switch between the flow live now, the flow once WhatsApp reminders are approved, and the
+   earlier (15 Oct) screens. Phone screenshots in a wrapping grid, captions under each phone. */
 :root {
   --bg: #f7f4fc;
   --surface: #ffffff;
@@ -19,17 +20,20 @@
   --line: #e6def3;
   --accent: #6010d2;
   --accent-soft: #efe6fd;
+  --wa: #0b8f4d;
+  --wa-soft: #e3f6ea;
+  --bubble: #dcf8c6;
   --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
   --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; --wa: #5fd394; --wa-soft: #12301f; --bubble: #1f4a32; color-scheme: dark; }
 }
-:root[data-theme="dark"] { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; color-scheme: dark; }
+:root[data-theme="dark"] { --bg: #110c1a; --surface: #1a1326; --ink: #f1eafd; --muted: #b1a6c4; --line: #33284a; --accent: #b88bff; --accent-soft: #2a1d45; --wa: #5fd394; --wa-soft: #12301f; --bubble: #1f4a32; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.5; margin: 0; }
-.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 48px; }
-header { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 36px; }
+header { display: flex; flex-direction: column; gap: 10px; max-width: 780px; }
 .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 5vw, 48px); line-height: 1.05; margin: 0; text-wrap: balance; }
 h2 { font-family: var(--font-display); font-weight: 700; font-size: 26px; margin: 0; }
@@ -37,8 +41,16 @@ p { margin: 0; }
 .lede { font-size: 19px; color: var(--muted); }
 .facts { display: flex; flex-wrap: wrap; gap: 8px; }
 .fact { background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: 999px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--bg); padding-top: 8px; z-index: 2; }
+.tab { appearance: none; border: 0; background: none; font: inherit; font-weight: 700; color: var(--muted); padding: 10px 14px; border-bottom: 3px solid transparent; cursor: pointer; text-align: left; }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab small { display: block; font-weight: 600; font-size: 12px; color: var(--muted); }
+.panel { display: flex; flex-direction: column; gap: 44px; }
 section { display: flex; flex-direction: column; gap: 18px; }
-.section-intro { color: var(--muted); max-width: 70ch; }
+.section-intro { color: var(--muted); max-width: 72ch; }
+.note { background: var(--accent-soft); border-radius: 16px; padding: 14px 16px; max-width: 80ch; }
+.note.wa { background: var(--wa-soft); }
+code { font-size: .9em; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 28px 22px; align-items: start; }
 figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .phone { background: var(--surface); border: 1px solid var(--line); border-radius: 26px; padding: 8px; box-shadow: 0 10px 30px rgba(27, 10, 54, .08); }
@@ -47,77 +59,164 @@ figcaption { display: flex; flex-direction: column; gap: 3px; }
 figcaption b { font-size: 16px; }
 figcaption span { font-size: 15px; color: var(--muted); }
 .n { font-family: var(--font-display); color: var(--accent); margin-right: 4px; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 700; font-size: 15px; }
+.steps span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+.steps i { font-style: normal; color: var(--muted); }
+.chat { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.chat .who { font-size: 13px; font-weight: 700; color: var(--wa); }
+.bubble { background: var(--bubble); border-radius: 14px 14px 14px 4px; padding: 10px 12px; font-size: 15px; }
+.bubble .btn { margin-top: 8px; border-top: 1px solid rgba(0,0,0,.08); padding-top: 8px; text-align: center; font-weight: 700; color: var(--accent); }
 footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <span class="eyebrow">Moodeng · 15 Oct 2026</span>
-    <h1>New sign-up and log-in screens</h1>
-    <p class="lede">Built for people who open Moodeng from a Facebook or Messenger link. Last month about 40 of them opened sign-up inside Facebook and never got in, mostly because Google sign-in doesn't work there. Now they sign up with a Philippine phone number or an email, get a code, and never need a password.</p>
+    <span class="eyebrow">Moodeng · updated 16 Oct 2026</span>
+    <h1>How people sign up and get in</h1>
+    <p class="lede">Most borrowers arrive from a Facebook post and open Moodeng inside Facebook's own browser, where Google sign-in can't work. In the 30 days before this change, 26 people opened sign-up inside Facebook and only 5 got an account. Now they sign up with just their email, no code, and confirm it later, once they're approved.</p>
     <div class="facts">
-      <span class="fact">No password</span>
-      <span class="fact">🇵🇭 Phone or email</span>
-      <span class="fact">Works inside Facebook</span>
-      <span class="fact">Same account in Chrome later</span>
+      <span class="fact">Email only to start</span>
+      <span class="fact">No code until approved</span>
+      <span class="fact">Confirm by tapping the email</span>
+      <span class="fact">Then out of Facebook for KYC</span>
     </div>
   </header>
 
-  <section>
-    <h2>Inside Facebook or Messenger</h2>
-    <p class="section-intro">One field. Filipinos start on their phone number; anyone can switch to email. Google is a small "open in Chrome" line instead of a button that fails.</p>
-    <div class="grid">
-      <figure><div class="phone"><img src="/design/new-login/screens/01-fb-signup-phone.png" alt="Sign up screen with a +63 phone number field" loading="lazy"></div><figcaption><b><span class="n">1</span>Sign up with phone</b><span>+63 is built in. "We'll text you a code. No password."</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/02-fb-signup-email.png" alt="Sign up screen in email mode" loading="lazy"></div><figcaption><b><span class="n">2</span>Or with email</b><span>Tells Google users they can type their Gmail and get a code.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/03-fb-non-ph-number.png" alt="Notice that SMS codes only work for Philippine numbers" loading="lazy"></div><figcaption><b><span class="n">3</span>Not a Philippine number</b><span>Switches them to email on its own.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/08-fb-login.png" alt="Log in screen inside Facebook with phone field" loading="lazy"></div><figcaption><b><span class="n">4</span>Log in</b><span>"Text me a code". Email and password still there for people who want them.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/07-fb-finish-logging-in.png" alt="Banner saying finish logging in, enter your code" loading="lazy"></div><figcaption><b><span class="n">5</span>Facebook closed the page?</b><span>"Finish logging in" brings them back to the code for 10 minutes.</span></figcaption></figure>
-    </div>
-  </section>
+  <div class="tabs" role="tablist" aria-label="Flow versions">
+    <button class="tab" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="true">Live now<small>16 Oct</small></button>
+    <button class="tab" role="tab" id="tab-whatsapp" aria-controls="panel-whatsapp" aria-selected="false" tabindex="-1">When WhatsApp is approved<small>Meta reviewing</small></button>
+    <button class="tab" role="tab" id="tab-before" aria-controls="panel-before" aria-selected="false" tabindex="-1">Earlier version<small>15 Oct</small></button>
+  </div>
 
-  <section>
-    <h2>The code screen</h2>
-    <p class="section-intro">Texts come from "SEMAPHORE" (our SMS company) until the "Moodeng" sender name is approved in 3–5 days, so the screen says so up front.</p>
-    <div class="grid">
-      <figure><div class="phone"><img src="/design/new-login/screens/04-code-screen-text.png" alt="Code screen telling people to look for a text from SEMAPHORE" loading="lazy"></div><figcaption><b><span class="n">6</span>Check your texts</b><span>Number shown big, with "Change". The code fills in and continues by itself.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/05-code-screen-still-waiting.png" alt="Code screen with tips after the text hasn't arrived" loading="lazy"></div><figcaption><b><span class="n">7</span>Text didn't come</b><span>Tips, then "Get the code by email instead" or "Message us on Messenger".</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/06-code-screen-email.png" alt="Code screen for an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Email code</b><span>Type the code, or tap the button in the email.</span></figcaption></figure>
+  <!-- ===================== LIVE NOW ===================== -->
+  <div class="panel" role="tabpanel" id="panel-now" aria-labelledby="tab-now">
+    <div class="steps" aria-label="The steps in order">
+      <span>1 Sign up (email)</span><i>→</i><span>2 Onboarding</span><i>→</i><span>3 Connect Facebook</span><i>→</i><span>4 Video call</span><i>→</i><span>5 Approved: confirm email + password</span><i>→</i><span>6 ID check in Chrome</span><i>→</i><span>7 Loan</span>
     </div>
-  </section>
 
-  <section>
-    <h2>After they're in</h2>
-    <p class="section-intro">New accounts get one question to avoid duplicates. Phone sign-ups go all the way to their loan request inside Facebook; only then do we ask for an email. A password is always optional.</p>
-    <div class="grid">
-      <figure><div class="phone"><img src="/design/new-login/screens/10-new-or-returning.png" alt="Question: have you used Moodeng before?" loading="lazy"></div><figcaption><b><span class="n">9</span>"Have you used Moodeng before?"</b><span>Stops returning borrowers making a second, empty account.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/11-add-email-card.png" alt="Dashboard card asking for an email after the first loan request" loading="lazy"></div><figcaption><b><span class="n">10</span>Add your email, later</b><span>Only after their first loan request, so nothing slows them down on the way.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/12-confirm-email-reminder.png" alt="Dashboard card asking to confirm the email with a code" loading="lazy"></div><figcaption><b><span class="n">11</span>Confirm your email</b><span>Code typed right on the dashboard. Resend or fix a typo.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/13-optional-password.png" alt="Optional add a password card" loading="lazy"></div><figcaption><b><span class="n">12</span>Password is optional</b><span>"You can always sign in with a code instead."</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/14-settings-add-phone.png" alt="Settings dialog to add a phone number" loading="lazy"></div><figcaption><b><span class="n">13</span>Add a phone in Settings</b><span>Any account (Google, LINE, Telegram too) can add one to log in by text.</span></figcaption></figure>
-    </div>
-  </section>
+    <section>
+      <h2>1 · Sign up inside Facebook</h2>
+      <p class="section-intro">One field, no code, no password. Behind the scenes it's a guest account that keeps the email they typed but can't sign in with it yet. Supabase emails them a confirmation link and code straight away, but they don't need to open it now.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/n-fb-signup.png" alt="Sign up inside Facebook with only an email field and Continue" loading="lazy"></div><figcaption><b><span class="n">1</span>Type your email</b><span>Google is a small "open in Chrome" line, since it can't work here. If the email already has an account, it offers "Email me a code" to sign in instead.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-created.png" alt="Your account has been created" loading="lazy"></div><figcaption><b><span class="n">2</span>Straight in</b><span>No leaving Facebook to read a code. Onboarding starts right away.</span></figcaption></figure>
+      </div>
+    </section>
 
-  <section>
-    <h2>In a normal browser (Chrome)</h2>
-    <p class="section-intro">Nothing removed. Two new buttons let anyone who signed up inside Facebook log in from Chrome with a code.</p>
-    <div class="grid">
-      <figure><div class="phone"><img src="/design/new-login/screens/09-chrome-login.png" alt="Chrome log in page with Email me a code and Text me a code buttons" loading="lazy"></div><figcaption><b><span class="n">14</span>Log in in Chrome</b><span>Google and password as before, plus "Email me a code" and "Text me a code".</span></figcaption></figure>
-    </div>
-  </section>
+    <section>
+      <h2>3 · Connect Facebook, then reminders</h2>
+      <p class="section-intro">Step 1 is required: Messenger is how we reach them, and anyone stuck later can message us. Step 2 is payment reminders: phone notifications where they work, otherwise the WhatsApp card. Confirming a WhatsApp number already works; the reminder messages start once Meta approves them (next tab).</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/15-whatsapp-reminders-locked.png" alt="Step 1 Connect Facebook, step 2 reminders locked" loading="lazy"></div><figcaption><b><span class="n">3</span>Step 1, then step 2</b><span>Reminders unlock after Facebook is connected.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/16-whatsapp-reminders-offer.png" alt="Card offering reminders on WhatsApp" loading="lazy"></div><figcaption><b><span class="n">4</span>WhatsApp, where notifications can't work</b><span>Facebook's browser, or iPhone Safari outside the Home Screen app. Recommended, never blocks Continue.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/17-whatsapp-reminders-code.png" alt="Open WhatsApp with the code typed" loading="lazy"></div><figcaption><b><span class="n">5</span>Hit send in WhatsApp</b><span>The code is typed for them. That confirms the number, with no Meta approval needed.</span></figcaption></figure>
+      </div>
+    </section>
 
-  <section>
-    <h2>Reminders when notifications can't work</h2>
-    <p class="section-intro">Facebook's browser can never show notifications, and iPhone Safari only can from the Home Screen app. Those borrowers get payment reminders on WhatsApp instead: one tap, hit send. The screen is now two numbered steps: 1 Connect Facebook (required), 2 Payment reminders. Switched off until Meta approves the three reminder messages.</p>
-    <div class="grid">
-      <figure><div class="phone"><img src="/design/new-login/screens/15-whatsapp-reminders-locked.png" alt="Step 1 Connect Facebook, step 2 WhatsApp reminders locked" loading="lazy"></div><figcaption><b><span class="n">15</span>Step 1, then step 2</b><span>Reminders stay locked until Facebook is connected, so nobody starts with WhatsApp thinking it's the Facebook step.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/16-whatsapp-reminders-offer.png" alt="Card offering payment reminders on WhatsApp under a verified Messenger card" loading="lazy"></div><figcaption><b><span class="n">16</span>"Get reminders on WhatsApp"</b><span>Shows only where notifications can't work. Recommended, never blocks Continue.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/17-whatsapp-reminders-code.png" alt="WhatsApp card with an Open WhatsApp button and a code to send by hand" loading="lazy"></div><figcaption><b><span class="n">17</span>Hit send in WhatsApp</b><span>The code is typed for them. If Facebook doesn't open WhatsApp, they copy it and send it to +66 95 165 9077.</span></figcaption></figure>
-      <figure><div class="phone"><img src="/design/new-login/screens/18-whatsapp-reminders-on.png" alt="WhatsApp reminders card showing On" loading="lazy"></div><figcaption><b><span class="n">18</span>Reminders on</b><span>Turns green when their message arrives. They get "due tomorrow", "due today" and "overdue" on WhatsApp; replying STOP turns it off.</span></figcaption></figure>
-    </div>
-  </section>
+    <section>
+      <h2>5 · Approved after the call: confirm email, leave Facebook</h2>
+      <p class="section-intro">This screen covers the app once they're approved, before the ID check. Inside Facebook it tells them to tap the button in our email: that opens Moodeng in Chrome or Safari, already signed in to the same account, so the ID check runs outside Facebook. Typing the code also works.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/n-approved-confirm.png" alt="You're approved. Steps to confirm the email, code box, Messenger help" loading="lazy"></div><figcaption><b><span class="n">6</span>"You're approved 🎉"</b><span>Three steps, a code box, "Send a new code", "Wrong email? Change it" and "Stuck? Message us on Messenger".</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-password.png" alt="Email confirmed, set a password" loading="lazy"></div><figcaption><b><span class="n">7</span>Set a password</b><span>Shown wherever they confirmed, usually Chrome. From then on it's a normal account: email + password, Google, or an email code.</span></figcaption></figure>
+      </div>
+      <p class="note">Until the email is confirmed, the database refuses loans and payments from guest accounts, and the ID check won't start. If Facebook's browser forgets them, the link in the email signs them back into the same account from any browser.</p>
+    </section>
 
-  <footer>Screens 9–13 appear after signing in and are shown with sample data. Screenshots taken at phone size from the code that went live on 15 Oct 2026; screens 15–18 (Step 1 / Step 2 and WhatsApp reminders) added 16 Oct 2026 with a sample code. In Chrome, step 2 is the usual "Turn on reminders" (notifications) card.</footer>
+    <section>
+      <h2>Logging in</h2>
+      <p class="section-intro">Phone codes (SMS) are paused for everyone until the "MOODENG" sender name is approved, so these screens are email only.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/n-fb-login.png" alt="Log in inside Facebook with an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Inside Facebook</b><span>"Email me a code". "Use password instead" for people who set one.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-login.png" alt="Log in in Chrome with Google, password and Email me a code" loading="lazy"></div><figcaption><b><span class="n">9</span>In Chrome</b><span>Google and password as before, plus "Email me a code".</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-signup.png" alt="Sign up in Chrome with Google or email and password" loading="lazy"></div><figcaption><b><span class="n">10</span>Sign up in Chrome</b><span>Unchanged: Google, or email + password with a confirmation email.</span></figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== WHEN WHATSAPP IS APPROVED ===================== -->
+  <div class="panel" role="tabpanel" id="panel-whatsapp" aria-labelledby="tab-whatsapp" hidden>
+    <p class="note wa"><b>What changes:</b> nothing on the screens people already see. Once Meta approves the three reminder messages and SendPulse has funds, one switch (<code>borrower_whatsapp_enabled</code>) starts sending them. Borrowers who confirmed WhatsApp get them; replying STOP turns them off.</p>
+
+    <section>
+      <h2>Reminders on</h2>
+      <p class="section-intro">Same card as today; once sending is on, it promises something that actually arrives.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/18-whatsapp-reminders-on.png" alt="WhatsApp reminders card showing On" loading="lazy"></div><figcaption><b><span class="n">1</span>"Reminders on"</b><span>Turns green when their message arrives. Messenger and email reminders carry on as well.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>The three messages</h2>
+      <p class="section-intro">Utility messages in English, each with a "Repay now" button to moodeng.app/repay. "Due tomorrow" goes out only if no phone notification landed. Shown with sample values.</p>
+      <div class="grid">
+        <div class="chat"><span class="who">Due tomorrow · moodeng_due_tomorrow</span><div class="bubble">Hi Juan, your Moodeng loan of 20 USDC is due tomorrow, 8:00 AM. Repay on time to keep growing your credit level.<div class="btn">Repay now</div></div></div>
+        <div class="chat"><span class="who">Due today · moodeng_due_today</span><div class="bubble">Hi Juan, your Moodeng loan of 20 USDC is due today (8:00 AM). Tap below to repay.<div class="btn">Repay now</div></div></div>
+        <div class="chat"><span class="who">Overdue · moodeng_overdue</span><div class="bubble">Hi Juan, your Moodeng loan of 20 USDC is overdue. Repay now to protect your credit level, or reply here if you need help.<div class="btn">Repay now</div></div></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>To turn it on</h2>
+      <p class="section-intro">1. Meta approves the 3 messages (WhatsApp Manager → Message templates says Approved). 2. Add about $5 in SendPulse, with auto-recharge off. 3. Flip <code>borrower_whatsapp_enabled</code> to true. 4. Test from a second phone: send the code, receive a reminder, send STOP.</p>
+    </section>
+  </div>
+
+  <!-- ===================== EARLIER VERSION ===================== -->
+  <div class="panel" role="tabpanel" id="panel-before" aria-labelledby="tab-before" hidden>
+    <p class="note">The 15 Oct version, kept for reference. Sign-up needed a code before onboarding, and phone (SMS) codes were offered. SMS is paused for now; the "add email later" cards apply to phone sign-ups only.</p>
+    <section>
+      <h2>Sign-up with a code (replaced)</h2>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/01-fb-signup-phone.png" alt="Sign up with a +63 phone number" loading="lazy"></div><figcaption><b>Sign up with phone</b><span>Paused until the SMS sender name is approved.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/02-fb-signup-email.png" alt="Sign up with email and a code" loading="lazy"></div><figcaption><b>Sign up with email + code</b><span>Replaced by email with no code (Live now, screen 1).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/03-fb-non-ph-number.png" alt="Not a Philippine number notice" loading="lazy"></div><figcaption><b>Not a Philippine number</b><span>SMS only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/04-code-screen-text.png" alt="Code screen for a text" loading="lazy"></div><figcaption><b>Check your texts</b><span>SMS only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/05-code-screen-still-waiting.png" alt="Text didn't come tips" loading="lazy"></div><figcaption><b>Text didn't come</b><span>SMS only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/06-code-screen-email.png" alt="Email code screen" loading="lazy"></div><figcaption><b>Email code</b><span>Still used for logging in with a code.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/07-fb-finish-logging-in.png" alt="Finish logging in banner" loading="lazy"></div><figcaption><b>Facebook closed the page?</b><span>Still live for code log-ins.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/08-fb-login.png" alt="Log in inside Facebook with phone" loading="lazy"></div><figcaption><b>Log in with phone</b><span>Now email only (Live now, screen 8).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/09-chrome-login.png" alt="Chrome log in with text and email code buttons" loading="lazy"></div><figcaption><b>Chrome log in</b><span>"Text me a code" hidden while SMS is paused.</span></figcaption></figure>
+      </div>
+    </section>
+    <section>
+      <h2>After they're in (phone sign-ups)</h2>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/10-new-or-returning.png" alt="Have you used Moodeng before?" loading="lazy"></div><figcaption><b>"Have you used Moodeng before?"</b><span>Still asked of new accounts.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/11-add-email-card.png" alt="Add your email card" loading="lazy"></div><figcaption><b>Add your email, later</b><span>Phone sign-ups only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/12-confirm-email-reminder.png" alt="Confirm your email card" loading="lazy"></div><figcaption><b>Confirm your email</b><span>Phone sign-ups only.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/13-optional-password.png" alt="Optional password card" loading="lazy"></div><figcaption><b>Password is optional</b><span>Code sign-ups.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/14-settings-add-phone.png" alt="Add a phone in settings" loading="lazy"></div><figcaption><b>Add a phone in Settings</b><span>Hidden while SMS is paused.</span></figcaption></figure>
+      </div>
+    </section>
+  </div>
+
+  <footer>Screenshots taken at phone size on moodeng.app on 16 Oct 2026, as Facebook's Android browser (Chrome for screens 9–10). The email shown is a sample. "Earlier version" screens are from 15 Oct.</footer>
 </div>
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    try { history.replaceState(null, '', '#' + tab.id.replace('tab-', '')); } catch (e) {}
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { show(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      show(next); next.focus();
+    });
+  });
+  var start = document.getElementById('tab-' + (location.hash || '').slice(1));
+  if (start) show(start);
+})();
+</script>
 </body>
 </html>

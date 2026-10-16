@@ -270,9 +270,12 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
       ? inApp.isInApp
          ? "Philippine numbers only. We'll text you a code. No password."
          : 'Philippine numbers only.'
-      : inApp.isInApp
-        ? "Used Google before? Type your Gmail and we'll email you a code."
-        : "We'll email you a code.";
+      : mode === 'signup' && guestSignupEnabled
+        ? // Email-first sign-up: no code now; they confirm the email after they're approved.
+          'Used Google before? Type the same Gmail. No code needed now.'
+        : inApp.isInApp
+          ? "Used Google before? Type your Gmail and we'll email you a code."
+          : "We'll email you a code.";
 
    return (
       <form onSubmit={handleSubmit} className="flex w-full max-w-[400px] flex-col gap-3" noValidate>
