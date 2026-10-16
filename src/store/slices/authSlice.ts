@@ -671,6 +671,17 @@ export const getGuestPendingEmail = async (): Promise<string | null> => {
    return user.new_email || (user.user_metadata?.guest_email as string | undefined) || null;
 };
 
+/**
+ * A former guest who confirmed their email (often by the emailed link, in another browser) but
+ * hasn't set a password yet.
+ */
+export const convertedGuestNeedsPassword = async (): Promise<boolean> => {
+   const {
+      data: { user }
+   } = await supabaseClient().auth.getUser();
+   return Boolean(user && !user.is_anonymous && user.user_metadata?.guest_email && user.user_metadata?.passwordless === true);
+};
+
 /** Mails the guest's confirmation link + code again (optionally to a corrected address). */
 export const resendGuestEmail = async (email: string): Promise<void> => {
    const { error } = await supabaseClient().auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
