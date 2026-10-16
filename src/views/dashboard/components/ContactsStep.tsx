@@ -6,6 +6,7 @@ import posthog from 'posthog-js';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
+   buildMessengerHandoffLink,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
@@ -592,14 +593,14 @@ export default function ContactsStep({
 
    // Android: the borrower's own tap on the chat link, so copying is allowed and Messenger opens. The
    // link navigates by itself; this only copies the code and keeps the attempt for when they're back.
-   const openMessengerChat = (link: string = MESSENGER_APP_CHAT_LINK) => {
+   const openMessengerChat = (event?: MouseEvent<HTMLAnchorElement>, link: string = MESSENGER_APP_CHAT_LINK) => {
       if (!messengerCode) return;
       track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: desktopMessenger });
       setMessengerDidntOpen(false);
       void copyMessengerCode('open_chat');
       // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
       // without sending the code. Best-effort: the code still works if this never lands.
-      void getSupabaseBrowserClient()
+      const stamp = getSupabaseBrowserClient()
          .rpc('mark_messenger_chat_opened')
          .then(({ error }) => {
             if (error) console.error('mark_messenger_chat_opened failed', error.message);
@@ -608,6 +609,15 @@ export default function ContactsStep({
       awaitingMessengerRef.current = true;
       writePending({ userId, code: messengerCode, link, at: Date.now() });
       armNotOpenedCheck();
+      // iPhone in Facebook's browser: following the link right away cancels the stamp mid-flight (George,
+      // 2026-10-16: the preflight reached us, the POST never did), so the bot couldn't match them when
+      // they opened Messenger themselves. Wait for it (at most 1.5s), then follow the link.
+      if (iosInAppMessenger && event) {
+         event.preventDefault();
+         void Promise.race([stamp, new Promise((resolve) => window.setTimeout(resolve, 1500))]).then(() => {
+            window.location.href = link;
+         });
+      }
    };
 
    // Messenger is opening (or about to): remember the attempt and start watching for the bot.
@@ -788,7 +798,7 @@ export default function ContactsStep({
                    code request, or as m.me, Messenger never comes up. */}
                <a
                   href={MESSENGER_APP_CHAT_LINK}
-                  onClick={() => openMessengerChat()}
+                  onClick={(event) => openMessengerChat(event)}
                   className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
                >
                   <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
@@ -806,7 +816,10 @@ export default function ContactsStep({
                      type="button"
                      onClick={() => {
                         track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName });
-                        openInSafari(window.location.href, inAppInfo);
+                        // Our no-sign-in page for this code (/fb/<code>), not this page: Safari doesn't share
+                        // Facebook's browser's login (guest accounts can't sign back in at all), and there the
+                        // m.me link with the code confirms them by itself. This card turns green on its own.
+                        openInSafari(messengerCode ? `${buildMessengerHandoffLink(messengerCode)}?from=fb` : window.location.href, inAppInfo);
                      }}
                      className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
                   >
@@ -858,7 +871,7 @@ export default function ContactsStep({
                code={messengerCode}
                codeCopied={codeCopied}
                onCopy={() => void copyMessengerCode('copy_button')}
-               onOpenChat={() => openMessengerChat(MESSENGER_PAGE_CHAT_LINK)}
+               onOpenChat={() => openMessengerChat(undefined, MESSENGER_PAGE_CHAT_LINK)}
                onPageLink={() => track('contact_verify_page_link_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: true })}
             />
          ) : messengerLink && !messengerVerified ? (

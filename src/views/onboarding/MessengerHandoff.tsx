@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Facebook } from 'lucide-react';
 import posthog from 'posthog-js';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 import { buildMessengerVerifyLink, isAndroidBrowser, MESSENGER_APP_CHAT_LINK, MESSENGER_CODE_PATTERN } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -14,7 +14,9 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 //   * Android — m.me never reaches the Messenger app from the browser, so our chat opens without the
 //     code, exactly like the in-app Android button: the tap is stamped by code (no sign-in here) and the
 //     bot connects them by timing when they say hi; pasting the code (already copied) is the backup.
-// The computer's card turns green on its own once the bot confirms.
+// The computer's card turns green on its own once the bot confirms. ?from=fb is the same page opened in
+// Safari from Facebook's iPhone browser (ContactsStep), where Messenger can't be opened: wording says
+// Facebook instead of computer.
 
 type Phone = 'ios' | 'android' | 'other';
 
@@ -39,6 +41,8 @@ const track = (event: string, properties: Record<string, unknown>) => {
 export default function MessengerHandoff() {
    const { code: rawCode = '' } = useParams<{ code: string }>();
    const code = rawCode.trim().toUpperCase();
+   const [searchParams] = useSearchParams();
+   const where = searchParams.get('from') === 'fb' ? 'in Facebook' : 'on your computer';
    const valid = MESSENGER_CODE_PATTERN.test(code);
    const phone = useMemo(detectPhone, []);
    const [copied, setCopied] = useState(false);
@@ -106,14 +110,14 @@ export default function MessengerHandoff() {
                <>
                   <h1 className="text-[26px] font-extrabold leading-[32px] text-[#1f7a3d]">✓ Connected!</h1>
                   <p className="text-[16px] leading-[22px] text-[#594d65]">
-                     Your Messenger is linked. Go back to Moodeng on your computer to continue.
+                     Your Messenger is linked. Go back to Moodeng {where} to continue.
                   </p>
                </>
             ) : !valid ? (
                <>
                   <h1 className="text-[24px] font-extrabold leading-[30px] text-[#26143f]">This link doesn&apos;t look right</h1>
                   <p className="text-[16px] leading-[22px] text-[#594d65]">
-                     Go back to Moodeng on your computer and tap <b>Connect Messenger</b> again for a new code.
+                     Go back to Moodeng {where} and tap <b>Connect Messenger</b> again for a new code.
                   </p>
                </>
             ) : (
@@ -178,7 +182,7 @@ export default function MessengerHandoff() {
                      </>
                   )}
                   <p className="mt-2 rounded-2xl bg-[#e9f8ee] px-4 py-3 dark:bg-[#12301e] text-[15px] font-semibold leading-[20px] text-[#1f7a3d]">
-                     Then look at your computer — Moodeng turns green on its own.
+                     Then go back to Moodeng {where} — it turns green on its own.
                   </p>
                </>
             )}
