@@ -7,6 +7,8 @@ import { postDiscord } from '../_shared/discord.ts';
 import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../_shared/videoCall.ts';
 import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
+import { changeTimeButton } from '../_shared/callReschedule.ts';
+import { CAL_BASE, fetchAccountEmail, fetchSlots, resolveEventTypeId } from '../_shared/calcomSlots.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
@@ -26,7 +28,6 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-const EVENT_SLUG = '15min'; // both hosts' "Video interview" events use this slug
 const DAYS_AHEAD = 14;
 
 const HOSTS = [
@@ -34,56 +35,9 @@ const HOSTS = [
    { id: 'emma', apiKey: Deno.env.get('CALCOM_API_KEY_EMMA') ?? '' }
 ].filter((h) => h.apiKey);
 
-const CAL_BASE = 'https://api.cal.com/v2';
 
 // Whose calendar (open hours + Zoom) every call is booked on unless the request pins another host.
 const CALL_HOST = 'emma';
-
-// When the team takes calls, whatever Cal.com says (George, 2026-10-13, both hosts). Local wall-clock time
-// in CALL_TIME_ZONE, by weekday (0 = Sunday). A slot is offered only if the whole call fits inside a
-// window, so a 15-minute call can start at 11:45 but not 12:00, and the last one of the night is 22:45.
-const CALL_MINUTES = 15;
-const CALL_TIME_ZONE = 'Asia/Bangkok';
-type Window = { from: string; to: string };
-const WEEKDAY_HOURS: Window[] = [
-   { from: '10:00', to: '12:00' },
-   { from: '16:00', to: '23:00' }
-];
-const OPEN_HOURS: Record<number, Window[]> = {
-   0: [{ from: '13:00', to: '23:00' }],
-   1: WEEKDAY_HOURS,
-   2: WEEKDAY_HOURS,
-   3: WEEKDAY_HOURS,
-   4: WEEKDAY_HOURS,
-   5: WEEKDAY_HOURS,
-   6: [
-      { from: '09:00', to: '12:00' },
-      { from: '13:00', to: '18:00' },
-      { from: '21:00', to: '23:00' }
-   ]
-};
-
-const toMinutes = (hhmm: string) => {
-   const [h, m] = hhmm.split(':').map(Number);
-   return h * 60 + m;
-};
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const localTime = (iso: string) => {
-   const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: CALL_TIME_ZONE,
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23'
-   }).formatToParts(new Date(iso));
-   const value = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
-   return { weekday: WEEKDAYS.indexOf(value('weekday')), minutes: Number(value('hour')) * 60 + Number(value('minute')) };
-};
-export const isOpenSlot = (iso: string) => {
-   const { weekday, minutes } = localTime(iso);
-   const end = minutes + CALL_MINUTES;
-   return (OPEN_HOURS[weekday] ?? []).some((w) => minutes >= toMinutes(w.from) && end <= toMinutes(w.to));
-};
 
 const CORS = {
    'Access-Control-Allow-Origin': '*',
@@ -93,45 +47,6 @@ const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
-
-// Resolve a host's "Video interview" event type id (slug EVENT_SLUG) from their account.
-const resolveEventTypeId = async (apiKey: string): Promise<number | null> => {
-   const res = await fetch(`${CAL_BASE}/event-types`, { headers: { Authorization: `Bearer ${apiKey}` } });
-   if (!res.ok) return null;
-   const body = await res.json();
-   for (const group of body?.data?.eventTypeGroups ?? []) {
-      for (const et of group?.eventTypes ?? []) {
-         if (et?.slug === EVENT_SLUG) return et.id as number;
-      }
-   }
-   return null;
-};
-
-// Flattened list of available start strings for a host between two YMD dates.
-const fetchSlots = async (apiKey: string, eventTypeId: number, start: string, end: string, timeZone: string): Promise<string[]> => {
-   const url = `${CAL_BASE}/slots?eventTypeId=${eventTypeId}&start=${start}&end=${end}&timeZone=${encodeURIComponent(timeZone)}`;
-   const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': '2024-09-04' } });
-   if (!res.ok) return [];
-   const body = await res.json();
-   const days = body?.data ?? {};
-   const out: string[] = [];
-   for (const list of Object.values(days) as Array<Array<{ start?: string }>>) {
-      for (const slot of list) if (slot?.start && isOpenSlot(slot.start)) out.push(slot.start);
-   }
-   return out;
-};
-
-// The Cal.com account email behind a host's API key — who gets the invite when they're a guest.
-const fetchAccountEmail = async (apiKey: string): Promise<string | null> => {
-   try {
-      const res = await fetch(`${CAL_BASE}/me`, { headers: { Authorization: `Bearer ${apiKey}` } });
-      if (!res.ok) return null;
-      const body = await res.json();
-      return typeof body?.data?.email === 'string' && body.data.email ? body.data.email : null;
-   } catch {
-      return null;
-   }
-};
 
 type Attendee = { name: string; email: string; timeZone: string; language: string };
 
@@ -193,7 +108,8 @@ const notifyTeamBooking = async (
          await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: tgChat, text })
+            // 🔄 Change time: the bot lists the free times and moves the booking (callReschedule.ts).
+            body: JSON.stringify({ chat_id: tgChat, text, ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id)]] } } : {}) })
          });
       } catch (err) {
          console.error('calcom-round-robin: telegram booking notify failed', err);

@@ -110,6 +110,17 @@ export const sendBookedMessenger = (u: CallUser) => {
    });
 };
 
+// The call moved (the borrower or the team rescheduled it on Cal.com): the new time, the join link,
+// and the ✅ / 🔄 card again (the move cleared their "I'll be there").
+export const sendMovedMessenger = (u: CallUser) => {
+   if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   return sendMessengerMessage(u.messenger_psid, {
+      text: `📅 Your meeting with Moodeng has moved to ${when} via Zoom.\n${joinLine(u)}\n\nPlease have your ID or passport ready.`,
+      card: callCard('See you then?', u)
+   });
+};
+
 // Day-before (stage 1) and hour-before (stage 2). Only lands if we're still inside the 24h window
 // (sendMessengerMessage checks); push + Telegram cover the rest.
 export const sendReminderMessenger = (u: CallUser, stage: 1 | 2) => {

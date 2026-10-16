@@ -26,7 +26,8 @@ import { sendPushToUser } from './pushDelivery.ts';
 import type { PushLocale, PushPayload } from './pushMessages.ts';
 import { getMessengerContact, messengerDisplayName, sendMessengerMessage } from './sendpulse.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
-import { buildRescheduleUrl, formatCallTimeForTeam } from './videoCall.ts';
+import { changeTimeButton } from './callReschedule.ts';
+import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
@@ -209,10 +210,8 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
             keyboard: [
                ...decisionKeyboard(request),
                [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)],
-               // Same Cal.com reschedule page the borrower gets on Messenger — either side can move it.
-               ...(isCall && borrower.video_call_booking_uid
-                  ? [[{ text: '🔄 Change call time', url: buildRescheduleUrl(borrower.video_call_booking_uid) }]]
-                  : [])
+               // Move the call from right here: the bot lists the free times (callReschedule.ts).
+               ...(isCall && borrower.video_call_booking_uid ? [[changeTimeButton(borrower.id)]] : [])
             ]
          });
       } catch (err) {
