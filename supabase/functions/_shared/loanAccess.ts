@@ -89,6 +89,13 @@ export const getAdminChatId = async (svc: SupabaseClient): Promise<string | null
    return byKey.get('kyc_alert_chat_id') || Deno.env.get('TEAM_TELEGRAM_CHAT_ID') || byKey.get('team_group_chat_id') || null;
 };
 
+// Call changes (moved, cancelled, slot freed) go to their own group — setting call_changes_chat_id,
+// registered with /chatid — so the team sees every rearranged call in one place. Admin chat until set.
+export const getCallChangesChatId = async (svc: SupabaseClient): Promise<string | null> => {
+   const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'call_changes_chat_id').maybeSingle();
+   return (data as { value?: string } | null)?.value || (await getAdminChatId(svc));
+};
+
 export type RequestRow = {
    id: string;
    user_id: string;
