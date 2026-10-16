@@ -23,7 +23,7 @@ import { describeOtpError } from '@/lib/otpErrors';
 import { savePendingCode } from '@/lib/pendingCode';
 import { checkPhPhone, isSmsLoginEnabled, SMS_NON_PH_MESSAGE } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { type OtpChannel, type OtpMode, requestOtpCode } from '@/store/slices/authSlice';
+import { GuestEmailTakenError, type OtpChannel, type OtpMode, requestOtpCode, startGuestSignup } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 
 type Props = {
@@ -35,6 +35,9 @@ type Props = {
    /** Sign-in only: show "Use password instead" for people who set a password. */
    onUsePassword?: () => void;
 };
+
+// Same screen a brand-new account lands on after verifying a code.
+const GUEST_CREATED_PATH = '/auth-success?type=created&new=1';
 
 const inAppName = (inApp: InAppBrowserInfo) => (inApp.isInApp ? (inApp.appName ?? 'unknown') : null);
 
@@ -93,6 +96,22 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    const smsCooldown = useResendCooldown(SMS_RESEND_STORAGE_KEY);
    const facebookInApp = isFacebookInApp(inApp);
    const isSms = channel === 'sms';
+   // Email-first sign-up (guest account, no code until after Facebook) — in-app browsers only,
+   // behind the guest_signup_enabled setting.
+   const [guestSignupEnabled, setGuestSignupEnabled] = useState(false);
+   const [emailTaken, setEmailTaken] = useState(false);
+   useEffect(() => {
+      if (mode !== 'signup' || !inApp.isInApp) return;
+      let cancelled = false;
+      void Promise.resolve(getSupabaseBrowserClient().rpc('get_guest_signup_enabled'))
+         .then(({ data }) => {
+            if (!cancelled) setGuestSignupEnabled(data === true);
+         })
+         .catch(() => undefined);
+      return () => {
+         cancelled = true;
+      };
+   }, [mode, inApp.isInApp]);
 
    // The "Open Moodeng in your browser" banner says Google doesn't work here, which reads as if
    // nothing works here. This form does, so the banner stays hidden on it.
@@ -205,6 +224,25 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             os: inApp.os
          });
       }
+      setEmailTaken(false);
+      if (requestMode === 'signup' && guestSignupEnabled) {
+         setIsSending(true);
+         try {
+            await dispatch(startGuestSignup({ email })).unwrap();
+            if (import.meta.env.PROD) posthog.capture('guest_signup_started', { in_app_browser: inAppName(inApp) });
+            navigate(GUEST_CREATED_PATH, { replace: true });
+         } catch (err) {
+            if ((err as { name?: string })?.name === new GuestEmailTakenError().name) {
+               setEmailTaken(true);
+               setError('This email already has a Moodeng account. We can email you a code to sign in.');
+            } else {
+               setError(describeOtpError(err, 'email').message);
+            }
+         } finally {
+            setIsSending(false);
+         }
+         return;
+      }
       setIsSending(true);
       try {
          await dispatch(requestOtpCode({ channel: 'email', email, mode: requestMode })).unwrap();
@@ -284,6 +322,15 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413] dark:border-[#4A1A20] dark:bg-[#2A0F14] dark:text-[#FF8090]"
             >
                <p>{error}</p>
+               {emailTaken ? (
+                  <button
+                     type="button"
+                     onClick={() => void send('signin')}
+                     className="mt-2 rounded-xl bg-[#6010D2] px-3 py-2 text-sm font-semibold text-white"
+                  >
+                     Email me a code
+                  </button>
+               ) : null}
                {noAccount ? (
                   <div className="mt-2 flex flex-wrap gap-2">
                      <button
