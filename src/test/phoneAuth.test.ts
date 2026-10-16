@@ -89,7 +89,7 @@ describe('flags', () => {
       expect(showPasswordlessSignup(false)).toBe(true);
    });
 
-   it('SMS login: off until VITE_SMS_LOGIN_ENABLED=true, testers can opt in with ?sms=1', () => {
+   it('SMS login: paused even with VITE_SMS_LOGIN_ENABLED=true, testers can opt in with ?sms=1', () => {
       expect(isSmsLoginEnabled()).toBe(false);
       window.history.replaceState(null, '', '/sign-in?sms=1');
       expect(isSmsLoginEnabled()).toBe(true);
@@ -98,7 +98,7 @@ describe('flags', () => {
       window.history.replaceState(null, '', '/sign-in?sms=0');
       expect(isSmsLoginEnabled()).toBe(false);
       vi.stubEnv('VITE_SMS_LOGIN_ENABLED', 'true');
-      expect(isSmsLoginEnabled()).toBe(true);
+      expect(isSmsLoginEnabled()).toBe(false);
    });
 });
 

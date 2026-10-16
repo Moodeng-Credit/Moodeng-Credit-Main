@@ -108,6 +108,8 @@ describe('PasswordlessAuthForm', () => {
       h.rpc.mockReset();
       h.inPh = true;
       localStorage.clear();
+      // SMS is paused for everyone (SMS_LOGIN_PAUSED); these tests use the tester opt-in.
+      localStorage.setItem('moodeng:sms-login-test', '1');
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -169,6 +171,7 @@ describe('PasswordlessAuthForm', () => {
 
    it('no SMS yet: email only, no pill switch or phone link', async () => {
       vi.stubEnv('VITE_SMS_LOGIN_ENABLED', '');
+      localStorage.removeItem('moodeng:sms-login-test');
       await render({ mode: 'signup' });
       expect(input().type).toBe('email');
       expect(button('Use phone number instead')).toBeUndefined();
