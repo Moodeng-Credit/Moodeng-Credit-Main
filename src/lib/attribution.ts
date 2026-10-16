@@ -96,6 +96,8 @@ export const describeBrowser = (userAgent?: string, standalone?: boolean): { bro
          ((window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
             (window.matchMedia?.('(display-mode: standalone)').matches ?? false)));
    if (isStandalone) return { browser: 'Home Screen app', os };
+   // The Google app's own browser (search results opened inside it).
+   if (/\bGSA\//.test(ua)) return { browser: 'Google app', os };
    if (/SamsungBrowser/i.test(ua)) return { browser: 'Samsung Internet', os };
    if (/EdgA?\/|EdgiOS/i.test(ua)) return { browser: 'Edge', os };
    if (/OPR\/|OPiOS|Opera/i.test(ua)) return { browser: 'Opera', os };

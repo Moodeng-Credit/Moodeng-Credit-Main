@@ -46,7 +46,8 @@ function detectAppName(ua: string): string | null {
    if (/\bFBAN|\bFBAV|FB_IAB|FB4A|FBIOS/i.test(ua)) return 'Facebook';
    if (/Instagram/i.test(ua)) return 'Instagram';
    if (/\bLine\//i.test(ua)) return 'LINE';
-   if (/musical_ly|Bytedance|TikTok|BytedanceWebview/i.test(ua)) return 'TikTok';
+   // TikTok's in-app browser often only says "trill" (AppName/trill).
+   if (/musical_ly|Bytedance|TikTok|BytedanceWebview|\btrill_|AppName\/trill/i.test(ua)) return 'TikTok';
    if (/Twitter/i.test(ua)) return 'X (Twitter)';
    if (/Snapchat/i.test(ua)) return 'Snapchat';
    if (/KAKAOTALK/i.test(ua)) return 'KakaoTalk';
