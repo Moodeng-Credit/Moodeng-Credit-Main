@@ -37,7 +37,7 @@ const RANGES = [
    { days: 3650, label: 'All time' }
 ];
 
-// Browser tags started on 16 Oct 2026; older accounts have none.
+// Browser tags started on 16 Oct 2026; older accounts were backfilled from PostHog where it had them.
 export const NOT_TAGGED = 'Not tagged';
 
 /** "fb-bonds-oct8" from ?src=, else the site they came from, else direct. */
@@ -181,7 +181,7 @@ export default function SignupSourcesSection() {
             <div className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4">
                <p className="text-xs uppercase tracking-wide text-[#a89bb8]">Browser tagged</p>
                <p className="mt-1 text-2xl font-black text-white">
-                  {tagged} <span className="text-sm font-semibold text-[#a89bb8]">since 16 Oct</span>
+                  {tagged} <span className="text-sm font-semibold text-[#a89bb8]">{pct(tagged, rows.length)}</span>
                </p>
             </div>
          </div>

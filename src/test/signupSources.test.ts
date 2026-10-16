@@ -14,6 +14,10 @@ const SAFARI_IOS =
    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 const SAMSUNG =
    'Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/23.0 Chrome/115.0 Mobile Safari/537.36';
+const TIKTOK_ANDROID =
+   'Mozilla/5.0 (Linux; Android 14; TECNO KL8 Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/153.0 Mobile Safari/537.36 trill_470103 AppName/trill ByteLocale/en';
+const GOOGLE_APP_IOS =
+   'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) GSA/439.4.980558000 Mobile/15E148 Safari/604.1';
 const MAC_CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36';
 
 describe('describeBrowser (sign-up tag)', () => {
@@ -27,6 +31,8 @@ describe('describeBrowser (sign-up tag)', () => {
       expect(describeBrowser(SAMSUNG, false).browser).toBe('Samsung Internet');
       expect(describeBrowser(MAC_CHROME, false)).toEqual({ browser: 'Chrome', os: 'desktop' });
       expect(describeBrowser(SAFARI_IOS, true).browser).toBe('Home Screen app');
+      expect(describeBrowser(TIKTOK_ANDROID, false)).toEqual({ browser: 'TikTok app', os: 'android' });
+      expect(describeBrowser(GOOGLE_APP_IOS, false)).toEqual({ browser: 'Google app', os: 'ios' });
    });
 });
 
