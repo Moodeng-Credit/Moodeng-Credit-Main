@@ -292,6 +292,7 @@ describe('PasswordlessAuthForm', () => {
       guestSwitch(true);
       h.unwrap.mockResolvedValue({ user: {}, username: 'new' });
       await render({ mode: 'signup', ua: FB_UA, initialChannel: 'email' });
+      expect(container.textContent).toContain('Used Google before? Type the same Gmail. No code needed now.');
       await type('new.person@example.com');
       await submit();
       expect(h.startGuestSignup).toHaveBeenCalledWith({ email: 'new.person@example.com' });

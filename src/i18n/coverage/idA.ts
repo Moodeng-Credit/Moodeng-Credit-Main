@@ -1012,6 +1012,8 @@ export const indonesianCoverageA: Record<string, string> = {
 
    // Passwordless code login (sign-up/sign-in, code screen, password + email later), PR #1164
    'Sign up to Moodeng': 'Daftar di Moodeng',
+   'No password needed.': 'Tanpa kata sandi.',
+   'Used Google before? Type the same Gmail. No code needed now.': 'Dulu pakai Google? Ketik Gmail yang sama. Belum perlu kode sekarang.',
    "No password needed. We'll send you a code.": 'Tanpa kata sandi. Kami kirim kode.',
    "We'll send you a code. No password needed.": 'Kami kirim kode. Tanpa kata sandi.',
    'Philippine numbers only.': 'Hanya nomor Filipina.',
