@@ -226,8 +226,9 @@ export const handleRescheduleStep = async (
       }
       if (result.error === 'taken') {
          const view = daysView(u, await freeSlots(svc, u));
-         await edit(chatId, messageId, { text: `⚠️ That time was just taken.\n\n${view.text}`, keyboard: view.keyboard });
-         return 'That time was just taken';
+         const why = result.message ? ` (Cal.com: ${result.message.slice(0, 150)})` : '';
+         await edit(chatId, messageId, { text: `⚠️ That time is busy on the calendar${why}.\n\n${view.text}`, keyboard: view.keyboard });
+         return 'That time is busy';
       }
       await edit(chatId, messageId, {
          text: `${header(u)}\n\n⚠️ Cal.com didn't move it${result.message ? ` (${result.message.slice(0, 200)})` : ''}. Nothing changed — try again, or use Cal.com.`,
