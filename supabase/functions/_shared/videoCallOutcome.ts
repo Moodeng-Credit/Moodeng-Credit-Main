@@ -22,6 +22,7 @@ import {
    decideLoanAccess,
    decisionKeyboard,
    getAdminChatId,
+   getCallChangesChatId,
    loanAccessStampHeader,
    notifyBorrower,
    PAGE_INBOX_URL,
@@ -337,7 +338,7 @@ export const closeReleasedCall = async (svc: SupabaseClient, userId: string, whe
 
    const text = `🗓️ Freed ${who(borrower as BorrowerRow)}'s slot (${whenForTeam}) — they never confirmed after two asks. They've been asked to pick a new time.`;
    try {
-      const chat = await getAdminChatId(svc);
+      const chat = await getCallChangesChatId(svc);
       if (chat) await sendTelegramMessage(chat, text);
    } catch (err) {
       console.error('videoCallOutcome: release telegram failed', err instanceof Error ? err.message : err);

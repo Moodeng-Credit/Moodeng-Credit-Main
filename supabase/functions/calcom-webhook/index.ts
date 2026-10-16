@@ -1,12 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
+import { openInAdminButton, personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { BORROWER_COLUMNS, getAdminChatId, notifyBorrower, who } from '../_shared/loanAccess.ts';
+import { BORROWER_COLUMNS, type BorrowerRow, getCallChangesChatId, notifyBorrower, PAGE_INBOX_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { buildRescheduleUrl, formatCallTimeForTeam } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
@@ -118,6 +119,35 @@ serve(async (req) => {
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);
 
+      // Moved (by the borrower or by us, via 🔄 Change time or Cal.com): tell the call-changes group.
+      const previousStart = (current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? null;
+      if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt) {
+         const { data: borrower } = await supabase.from('users').select(BORROWER_COLUMNS).eq('id', booking.userId).maybeSingle();
+         if (borrower) {
+            const b = borrower as BorrowerRow;
+            const text = [
+               `🔄 Call moved: ${who(b)}`,
+               `Was: ${formatCallTimeForTeam(previousStart, b.video_call_timezone)}`,
+               `Now: ${formatCallTimeForTeam(booking.startsAt, b.video_call_timezone)}`,
+               'Reminders restart for the new time, and they’re asked to confirm again.'
+            ].join('\n');
+            try {
+               const chat = await getCallChangesChatId(supabase);
+               if (chat) {
+                  await sendTelegramMessage(chat, text, {
+                     inlineKeyboard: [
+                        ...(booking.bookingUid ? [[{ text: '🔄 Change call time', url: buildRescheduleUrl(booking.bookingUid) }]] : []),
+                        [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(b.id, b.username)]
+                     ]
+                  });
+               }
+            } catch (err) {
+               console.error('calcom-webhook: call-moved telegram failed', err instanceof Error ? err.message : err);
+            }
+            await postDiscord({ content: text }, { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] });
+         }
+      }
+
       // A pending call request stays open until a week after the call — follow the new time.
       if (booking.startsAt) {
          const { error: expiryError } = await supabase
@@ -179,7 +209,7 @@ serve(async (req) => {
          await notifyBorrower(supabase, borrower, 'call_cancelled');
          const text = `🗓️ ${who(borrower)} cancelled their call — their request is closed and they've been asked to rebook.`;
          try {
-            const chat = await getAdminChatId(supabase);
+            const chat = await getCallChangesChatId(supabase);
             if (chat) await sendTelegramMessage(chat, text);
          } catch (err) {
             console.error('calcom-webhook: admin telegram failed', err instanceof Error ? err.message : err);
