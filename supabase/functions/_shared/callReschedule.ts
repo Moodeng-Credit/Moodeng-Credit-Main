@@ -8,12 +8,14 @@
 // Cal.com then fires BOOKING_RESCHEDULED and calcom-webhook does the rest: new time on the borrower's
 // row, reminders restart, the borrower is told on Messenger, and the call-changes group is posted.
 //
-// The free times are the same ones the borrower's booking page offers (calcomSlots.ts: the host's
-// Cal.com availability inside the team's open hours), always re-read, never cached.
+// The team picks from every 15 minutes, 10 AM–10 PM Bangkok, today and the next 2 days (George,
+// 2026-10-16) — wider than the borrower's booking page, since we arrange it with them directly. Times
+// another borrower's call already holds are left out; Cal.com is told to allow times outside Emma's
+// open hours (rescheduleCalBooking), and still refuses a time her calendar is busy.
 //
 // callback_data (max 64 bytes): "rs:<o|b|x>:<user id>", "rs:d:<user id>:<YYYYMMDD>",
 // "rs:<s|y>:<user id>:<start in base-36 minutes>".
-import { CALL_TIME_ZONE, fetchSlots, hostApiKey, rescheduleCalBooking, resolveEventTypeId } from './calcomSlots.ts';
+import { CALL_MINUTES, CALL_TIME_ZONE, rescheduleCalBooking } from './calcomSlots.ts';
 import { callTelegramApi, sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 
@@ -21,7 +23,11 @@ import { formatCallTimeForTeam } from './videoCall.ts';
 type SupabaseClient = any;
 
 const PREFIX = 'rs:';
-const DAYS_AHEAD = 14;
+// Today plus this many days.
+const DAYS_AHEAD = 2;
+// The team's picker hours, Bangkok: first start 10:00, last call ends by 22:00.
+const PICKER_FROM_MIN = 10 * 60;
+const PICKER_TO_MIN = 22 * 60;
 // Not offered: anything starting sooner than this (the borrower needs time to see the new time).
 const MIN_LEAD_MS = 30 * 60_000;
 const DEFAULT_HOST = 'emma';
@@ -75,19 +81,40 @@ const nameOf = (u: CallRow) => u.display_name?.trim() || (u.username ? `@${u.use
 const hasUpcomingCall = (u: CallRow | null): u is CallRow & { video_call_starts_at: string; video_call_booking_uid: string } =>
    Boolean(u?.video_call_booking_uid && u.video_call_starts_at && Date.parse(u.video_call_starts_at) > Date.now());
 
-// Free starts on the borrower's host's calendar, soonest first, minus their current time.
-export const freeSlots = async (u: CallRow): Promise<string[]> => {
-   const apiKey = hostApiKey(u.video_call_host || DEFAULT_HOST);
-   if (!apiKey) return [];
-   const eventTypeId = await resolveEventTypeId(apiKey);
-   if (!eventTypeId) return [];
-   const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-   const slots = await fetchSlots(apiKey, eventTypeId, ymd(Date.now() - 86400000), ymd(Date.now() + DAYS_AHEAD * 86400000), CALL_TIME_ZONE);
-   const current = u.video_call_starts_at ? Date.parse(u.video_call_starts_at) : NaN;
-   const earliest = Date.now() + MIN_LEAD_MS;
-   return [...new Set(slots.map((s) => new Date(s).toISOString()))]
-      .filter((s) => Date.parse(s) >= earliest && Date.parse(s) !== current)
-      .sort();
+// Every 15-minute start, 10:00–21:45 Bangkok, today and the next DAYS_AHEAD days — minus the past
+// (plus a 30-minute lead), their current time, and any time another borrower's call already holds.
+export const pickerSlots = (now: number, current: string | null, taken: number[]): string[] => {
+   const out: string[] = [];
+   const earliest = now + MIN_LEAD_MS;
+   const currentMs = current ? Date.parse(current) : NaN;
+   for (let d = 0; d <= DAYS_AHEAD; d++) {
+      const day = bangkokDay(new Date(now + d * 86400000).toISOString());
+      const date = `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}`;
+      for (let m = PICKER_FROM_MIN; m + CALL_MINUTES <= PICKER_TO_MIN; m += 15) {
+         const hh = String(Math.floor(m / 60)).padStart(2, '0');
+         const mm = String(m % 60).padStart(2, '0');
+         const ms = Date.parse(`${date}T${hh}:${mm}:00+07:00`);
+         if (ms < earliest || ms === currentMs) continue;
+         if (taken.some((t) => Math.abs(t - ms) < CALL_MINUTES * 60_000)) continue;
+         out.push(new Date(ms).toISOString());
+      }
+   }
+   return out;
+};
+
+export const freeSlots = async (svc: SupabaseClient, u: CallRow): Promise<string[]> => {
+   const now = Date.now();
+   const { data } = await svc
+      .from('users')
+      .select('video_call_starts_at')
+      .neq('id', u.id)
+      .not('video_call_booking_uid', 'is', null)
+      .gte('video_call_starts_at', new Date(now).toISOString())
+      .lte('video_call_starts_at', new Date(now + (DAYS_AHEAD + 1) * 86400000).toISOString());
+   const taken = ((data ?? []) as Array<{ video_call_starts_at: string | null }>)
+      .map((r) => Date.parse(r.video_call_starts_at ?? ''))
+      .filter((t) => !Number.isNaN(t));
+   return pickerSlots(now, u.video_call_starts_at, taken);
 };
 
 const header = (u: CallRow & { video_call_starts_at: string }) =>
@@ -100,7 +127,7 @@ export const daysView = (u: CallRow & { video_call_starts_at: string }, slots: s
    const byDay = new Map<string, string[]>();
    for (const s of slots) byDay.set(bangkokDay(s), [...(byDay.get(bangkokDay(s)) ?? []), s]);
    if (!byDay.size) {
-      return { text: `${header(u)}\n\nNo free times in the next ${DAYS_AHEAD} days on Cal.com.`, keyboard: [closeRow(u.id)] };
+      return { text: `${header(u)}\n\nNo open times left today or in the next ${DAYS_AHEAD} days.`, keyboard: [closeRow(u.id)] };
    }
    const buttons = [...byDay.entries()].map(([day, list]) => ({
       text: `${dayLabel(list[0])} · ${list.length}`,
@@ -150,7 +177,7 @@ export const postReschedulePicker = async (svc: SupabaseClient, chatId: number |
    const u = await loadCall(svc, userId);
    if (!u) return 'Borrower not found.';
    if (!hasUpcomingCall(u)) return `${nameOf(u)} has no upcoming call to move.`;
-   const view = daysView(u, await freeSlots(u));
+   const view = daysView(u, await freeSlots(svc, u));
    await sendTelegramMessage(chatId, view.text, { inlineKeyboard: view.keyboard });
    return 'Pick a new time below 👇';
 };
@@ -184,7 +211,7 @@ export const handleRescheduleStep = async (
    if (action.step === 'yes' && action.arg) {
       const start = startFromKey(action.arg);
       if (Date.parse(start) < Date.now() + 5 * 60_000) {
-         await edit(chatId, messageId, daysView(u, await freeSlots(u)));
+         await edit(chatId, messageId, daysView(u, await freeSlots(svc, u)));
          return 'That time has passed — pick another.';
       }
       await edit(chatId, messageId, { text: `${header(u)}\n\n⏳ Moving it to ${formatCallTimeForTeam(start, u.video_call_timezone)}…`, keyboard: [] });
@@ -198,7 +225,7 @@ export const handleRescheduleStep = async (
          return '✅ Moved';
       }
       if (result.error === 'taken') {
-         const view = daysView(u, await freeSlots(u));
+         const view = daysView(u, await freeSlots(svc, u));
          await edit(chatId, messageId, { text: `⚠️ That time was just taken.\n\n${view.text}`, keyboard: view.keyboard });
          return 'That time was just taken';
       }
@@ -209,7 +236,7 @@ export const handleRescheduleStep = async (
       return "Cal.com didn't move it";
    }
 
-   const slots = await freeSlots(u);
+   const slots = await freeSlots(svc, u);
    if (action.step === 'day' && action.arg) {
       await edit(chatId, messageId, dayView(u, slots, action.arg));
       return 'Pick a time';

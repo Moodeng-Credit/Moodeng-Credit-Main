@@ -112,7 +112,9 @@ export const rescheduleCalBooking = async (
          const res = await fetch(`${CAL_BASE}/bookings/${encodeURIComponent(uid)}/reschedule`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${apiKey}`, 'cal-api-version': version, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start, reschedulingReason: reason, ...(rescheduledBy ? { rescheduledBy } : {}) })
+            // allowBookingOutOfBounds: the team may pick outside the host's Cal.com open hours (it is
+            // honored for the host's own key; Cal.com still refuses a time the host is busy).
+            body: JSON.stringify({ start, reschedulingReason: reason, allowBookingOutOfBounds: true, ...(rescheduledBy ? { rescheduledBy } : {}) })
          });
          const body = await res.json().catch(() => ({}));
          if (res.ok && typeof body?.data?.uid === 'string') return { uid: body.data.uid };

@@ -1,6 +1,6 @@
 import { assert, assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { bangkokDay, buildRescheduleCallback, dayView, daysView, parseRescheduleCallback, startKey } from './callReschedule.ts';
+import { bangkokDay, buildRescheduleCallback, dayView, daysView, parseRescheduleCallback, pickerSlots, startKey } from './callReschedule.ts';
 
 const USER = '8dd3bb85-e8f8-4f21-aedc-016ba68bc35b';
 const call = {
@@ -37,5 +37,21 @@ Deno.test('days group by Bangkok date; a day lists its times', () => {
    assertEquals(days.keyboard[0].map((b) => b.text), ['Sat, Oct 17 · 1', 'Sun, Oct 18 · 2']);
    const sunday = dayView(call, slots, '20261018');
    assertEquals(sunday.keyboard[0].map((b) => b.text), ['6:30 AM', '4:15 PM']);
-   assert(daysView(call, []).text.includes('No free times'));
+   assert(daysView(call, []).text.includes('No open times'));
+});
+
+Deno.test('picker: every 15 min 10:00–21:45 Bangkok, today + 2 days, minus taken and current', () => {
+   // 2026-10-16 21:37 Bangkok: nothing left today (last start 21:45 is inside the 30-min lead).
+   const now = Date.parse('2026-10-16T21:37:00+07:00');
+   const current = '2026-10-17T10:30:00+07:00';
+   const taken = [Date.parse('2026-10-17T15:00:00+07:00')];
+   const slots = pickerSlots(now, current, taken);
+   const days = [...new Set(slots.map(bangkokDay))];
+   assertEquals(days, ['20261017', '20261018']);
+   const sat = slots.filter((s) => bangkokDay(s) === '20261017');
+   assertEquals(sat.length, 48 - 2); // 48 starts, minus their current 10:30 and the taken 15:00
+   assertEquals(sat[0], new Date('2026-10-17T10:00:00+07:00').toISOString());
+   assertEquals(sat.at(-1), new Date('2026-10-17T21:45:00+07:00').toISOString());
+   assert(!sat.includes(new Date(current).toISOString()));
+   assert(!sat.includes(new Date('2026-10-17T15:00:00+07:00').toISOString()));
 });
