@@ -425,6 +425,7 @@ const initialState: AuthState = {
    username: null,
    isLoading: false,
    isAuthChecked: false,
+   isSigningOut: false,
    error: null,
    userProfiles: {}
 };
@@ -583,16 +584,9 @@ export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (par
    const { mode, ...target } = params;
    const shouldCreateUser = mode === 'signup';
 
-   // Same reason as registerUser: a leftover session from another account must not be refreshed
-   // mid-sign-in and route them back into that old account. Local only: don't sign that account
-   // out on its other devices.
    const {
       data: { session: staleSession }
    } = await supabase.auth.getSession();
-   if (staleSession) {
-      await supabase.auth.signOut({ scope: 'local' });
-      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
-   }
 
    // user_metadata is only applied when the account is created. `passwordless` tells Account
    // settings and onboarding that this account has no password yet.
@@ -611,7 +605,18 @@ export const requestOtpCode = createAsyncThunk('auth/requestOtpCode', async (par
               }
            });
 
+   // Nothing is signed out until the code is on its way: a refused request (no account for that
+   // email, rate limit) must never cost the session they're in.
    if (error) throw error;
+
+   // Same reason as registerUser: a leftover session from another account must not be refreshed
+   // mid-sign-in and route them back into that old account. Local only: don't sign that account
+   // out on its other devices. A guest (anonymous) session stays until the code is checked
+   // (verifyOtpCode): it's their only way back in, and the code may never arrive.
+   if (staleSession && !staleSession.user?.is_anonymous) {
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
    return { channel: target.channel };
 });
 
@@ -634,10 +639,21 @@ export const startGuestSignup = createAsyncThunk('auth/startGuestSignup', async 
    const { data: taken } = await supabase.rpc('email_exists', { p_email: email });
    if (taken === true) throw new GuestEmailTakenError();
 
-   // Same reason as requestOtpCode: never continue inside a leftover session from another account.
    const {
       data: { session: staleSession }
    } = await supabase.auth.getSession();
+
+   // Already a guest on this browser (tapped again, or back after Facebook reloaded the page): keep
+   // that account and its progress. Signing it out would lose it, since its email isn't confirmed.
+   if (staleSession?.user?.is_anonymous) {
+      const pendingEmail = staleSession.user.new_email || (staleSession.user.user_metadata?.guest_email as string | undefined);
+      if (pendingEmail?.toLowerCase() !== email.toLowerCase()) await resendGuestEmail(email);
+      const user = await fetchCurrentUserProfile();
+      setLastUsedAuth('email');
+      return { username: user.username, user };
+   }
+
+   // Same reason as requestOtpCode: never continue inside a leftover session from another account.
    if (staleSession) {
       await supabase.auth.signOut({ scope: 'local' });
       clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
@@ -703,12 +719,21 @@ export const setGuestPassword = createAsyncThunk('auth/setGuestPassword', async 
 /** Checks the code from requestOtpCode and signs the person in. */
 export const verifyOtpCode = createAsyncThunk('auth/verifyOtpCode', async (params: OtpTarget & { token: string }) => {
    const supabase = supabaseClient();
+   const {
+      data: { session: priorSession }
+   } = await supabase.auth.getSession();
    const { data, error } =
       params.channel === 'sms'
          ? await supabase.auth.verifyOtp({ phone: params.phone, token: params.token, type: 'sms' })
          : await supabase.auth.verifyOtp({ email: params.email, token: params.token, type: 'email' });
 
    if (error) throw error;
+
+   // A guest session that requestOtpCode kept: the code worked, so drop that guest's cached data
+   // now (the new session is in cookies, which this doesn't touch).
+   if (priorSession?.user?.is_anonymous && priorSession.user.id !== data.user?.id) {
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
 
    // New account = no profile row yet (fetchCurrentUserProfile creates it just below).
    let isNewUser = false;
@@ -1174,7 +1199,14 @@ const authSlice = createSlice({
                state.userProfiles[user.id] = user;
             }
          })
+         .addCase(logoutUser.pending, (state) => {
+            state.isSigningOut = true;
+         })
+         .addCase(logoutUser.rejected, (state) => {
+            state.isSigningOut = false;
+         })
          .addCase(logoutUser.fulfilled, (state) => {
+            state.isSigningOut = false;
             state.user = defaultUser;
             state.username = null;
             state.error = null;
@@ -1188,6 +1220,7 @@ const authSlice = createSlice({
                // does not flash back to the public state while Supabase confirms auth.
                // AuthInitializer still clears it when Supabase confirms there is no session.
                state.isAuthChecked = false;
+               state.isSigningOut = false;
             }
          );
    }

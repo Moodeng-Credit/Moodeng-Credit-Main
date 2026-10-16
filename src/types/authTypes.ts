@@ -3,6 +3,8 @@ export interface AuthState {
    username: string | null;
    isLoading: boolean;
    isAuthChecked: boolean;
+   /** A sign-out is in progress (its network calls run before the session is gone). */
+   isSigningOut?: boolean;
    error: string | null;
    isWorldId?: WorldIdStatus;
    cs?: number;

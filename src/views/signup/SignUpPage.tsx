@@ -19,6 +19,8 @@ import Loading from '@/components/Loading';
 import { TOAST_TYPES } from '@/components/ToastSystem/config/toastConfig';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
+
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { showPasswordlessSignup } from '@/lib/phoneAuth';
@@ -63,6 +65,9 @@ function getErrorMessage(err: unknown, fallback: string): string {
 // email + password form below (for now: PASSWORDLESS_SIGNUP_EVERYWHERE flips it for everyone).
 export default function SignUpPage() {
    const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
+   // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
+   const redirectingSignedIn = useSignedInRedirect();
+   if (redirectingSignedIn) return <Loading />;
    return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
 }
 

@@ -9,6 +9,8 @@ import { AuthErrorAlert, AuthFooter, AuthInputField, DividerWithText, Passwordle
 import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
+import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
+
 import { rememberNextPath } from '@/lib/authNext';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { getPostSignInPath } from '@/lib/postSignInPath';
@@ -53,6 +55,8 @@ export default function SignInPage() {
    const [usePassword, setUsePassword] = useState(() => !showPasswordlessSignup(inApp.isInApp));
    const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(undefined);
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
+   // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
+   const redirectingSignedIn = useSignedInRedirect();
    const switchToCode = (channel: OtpChannel) => {
       handleRetry();
       setCodeChannel(channel);
@@ -186,7 +190,7 @@ export default function SignInPage() {
       }
    };
 
-   if (isLoading) return <Loading />;
+   if (isLoading || redirectingSignedIn) return <Loading />;
 
    const socialAuth = (
       <SocialAuthButtons

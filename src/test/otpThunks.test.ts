@@ -11,7 +11,12 @@ const h = vi.hoisted(() => ({
    verifyOtp: vi.fn<(args: unknown) => Promise<{ data: { user: { id: string } }; error: null | { message: string } }>>(async () => ({
       data: { user: { id: 'u-1' } },
       error: null
-   }))
+   })),
+   signInAnonymously: vi.fn<(args: unknown) => Promise<{ error: null }>>(async () => ({ error: null })),
+   updateUser: vi.fn<(args: unknown, options?: unknown) => Promise<{ error: null | { message: string; code?: string } }>>(async () => ({
+      error: null
+   })),
+   rpc: vi.fn<(name: string, args: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({ data: false, error: null }))
 }));
 
 vi.mock('@/lib/recordSessionIp', () => ({ recordSessionIp: vi.fn() }));
@@ -24,8 +29,11 @@ vi.mock('@/lib/supabase/client', () => ({
          signOut: h.signOut,
          signInWithOtp: h.signInWithOtp,
          verifyOtp: h.verifyOtp,
+         signInAnonymously: h.signInAnonymously,
+         updateUser: h.updateUser,
          getUser: async () => ({ data: { user: h.authUser }, error: null })
       },
+      rpc: h.rpc,
       from: () => {
          const builder = {
             select: () => builder,
@@ -41,7 +49,7 @@ vi.mock('@/lib/supabase/client', () => ({
    })
 }));
 
-const { requestOtpCode, verifyOtpCode } = await import('@/store/slices/authSlice');
+const { requestOtpCode, startGuestSignup, verifyOtpCode } = await import('@/store/slices/authSlice');
 
 const run = async <T>(thunk: (dispatch: never, getState: never, extra: never) => Promise<T>) =>
    thunk((() => undefined) as never, (() => ({})) as never, undefined as never);
@@ -54,6 +62,9 @@ describe('passwordless OTP thunks', () => {
       h.authUser = null;
       h.session = null;
       h.signOut.mockClear();
+      h.signInAnonymously.mockClear();
+      h.updateUser.mockClear();
+      h.rpc.mockClear();
       localStorage.clear();
       sessionStorage.clear();
    });
@@ -101,6 +112,87 @@ describe('passwordless OTP thunks', () => {
       expect(localStorage.getItem('moodeng.pendingInviteCode')).toContain('MARIA5');
       expect(sessionStorage.getItem('pendingSharedRequestId')).toBe('loan-1');
       expect(localStorage.getItem('persist:root')).toBeNull();
+   });
+
+   it('signs a leftover session out only after the code is sent', async () => {
+      h.session = { user: { id: 'old' } };
+      h.signInWithOtp.mockImplementationOnce(async () => {
+         expect(h.signOut).not.toHaveBeenCalled();
+         return { error: null };
+      });
+      await run(requestOtpCode({ channel: 'email', email: 'maria@example.com', mode: 'signin' }));
+      expect(h.signOut).toHaveBeenCalledTimes(1);
+   });
+
+   it('a refused code request never signs anyone out', async () => {
+      h.session = { user: { id: 'old' } };
+      localStorage.setItem('persist:root', 'their data');
+      h.signInWithOtp.mockResolvedValueOnce({ error: { message: 'Signups not allowed for otp' } });
+      const result = await run(requestOtpCode({ channel: 'email', email: 'maria@example.com', mode: 'signin' }));
+      expect((result as { error?: { message?: string } }).error?.message).toBe('Signups not allowed for otp');
+      expect(h.signOut).not.toHaveBeenCalled();
+      expect(localStorage.getItem('persist:root')).toBe('their data');
+   });
+
+   // Oct 16 2026: a guest back on /sign-in typed her pending email; the session was signed out
+   // first, then the code was refused (422), and she was locked out of her guest account.
+   it('a guest (anonymous) session survives a code request, refused or sent', async () => {
+      h.session = { user: { id: 'guest-1', is_anonymous: true } };
+      localStorage.setItem('persist:root', 'guest progress');
+      h.signInWithOtp.mockResolvedValueOnce({ error: { message: 'Signups not allowed for otp' } });
+      await run(requestOtpCode({ channel: 'email', email: 'emma@example.com', mode: 'signin' }));
+      await run(requestOtpCode({ channel: 'email', email: 'emma@example.com', mode: 'signup' }));
+      expect(h.signInWithOtp).toHaveBeenCalledTimes(2);
+      expect(h.signOut).not.toHaveBeenCalled();
+      expect(localStorage.getItem('persist:root')).toBe('guest progress');
+   });
+
+   it("a kept guest session's cached data is cleared once the code signs someone else in", async () => {
+      h.session = { user: { id: 'guest-1', is_anonymous: true } };
+      localStorage.setItem('persist:root', 'guest progress');
+      localStorage.setItem('moodeng.pendingInviteCode', JSON.stringify({ code: 'MARIA5' }));
+      h.authUser = { id: 'u-1', email: 'maria@example.com', user_metadata: {}, app_metadata: { provider: 'email' } };
+      await run(verifyOtpCode({ channel: 'email', email: 'maria@example.com', token: '87654321' }));
+      expect(localStorage.getItem('persist:root')).toBeNull();
+      expect(localStorage.getItem('moodeng.pendingInviteCode')).toContain('MARIA5');
+   });
+
+   it('a wrong code keeps the guest session and its data', async () => {
+      h.session = { user: { id: 'guest-1', is_anonymous: true } };
+      localStorage.setItem('persist:root', 'guest progress');
+      h.verifyOtp.mockResolvedValueOnce({ data: { user: { id: 'u-1' } }, error: { message: 'Token has expired or is invalid' } });
+      await run(verifyOtpCode({ channel: 'email', email: 'maria@example.com', token: '00000000' }));
+      expect(h.signOut).not.toHaveBeenCalled();
+      expect(localStorage.getItem('persist:root')).toBe('guest progress');
+   });
+
+   it('guest sign-up again on a browser that already has a guest: same account, no sign-out', async () => {
+      h.session = { user: { id: 'guest-1', is_anonymous: true, new_email: 'emma@example.com', user_metadata: {} } };
+      h.authUser = { id: 'guest-1', is_anonymous: true, user_metadata: { username: 'emma' }, app_metadata: {} };
+      const result = await run(startGuestSignup({ email: 'Emma@example.com' }));
+      expect((result as { payload: { user: { id: string } } }).payload.user.id).toBe('guest-1');
+      expect(h.signOut).not.toHaveBeenCalled();
+      expect(h.signInAnonymously).not.toHaveBeenCalled();
+      // Same email: nothing re-sent.
+      expect(h.updateUser).not.toHaveBeenCalled();
+   });
+
+   it('guest sign-up with a different email on an existing guest moves the pending email', async () => {
+      h.session = { user: { id: 'guest-1', is_anonymous: true, new_email: 'emma@example.com', user_metadata: {} } };
+      h.authUser = { id: 'guest-1', is_anonymous: true, user_metadata: { username: 'emma' }, app_metadata: {} };
+      await run(startGuestSignup({ email: 'emma.new@example.com' }));
+      expect(h.updateUser).toHaveBeenCalledWith({ email: 'emma.new@example.com' }, { emailRedirectTo: 'https://moodeng.app/auth/confirm' });
+      expect(h.signOut).not.toHaveBeenCalled();
+      expect(h.signInAnonymously).not.toHaveBeenCalled();
+   });
+
+   it("guest sign-up over another (real) account's session still signs that one out first", async () => {
+      h.session = { user: { id: 'old', is_anonymous: false } };
+      h.authUser = { id: 'guest-2', is_anonymous: true, user_metadata: { username: 'emma' }, app_metadata: {} };
+      await run(startGuestSignup({ email: 'emma@example.com' }));
+      expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
+      expect(h.signInAnonymously).toHaveBeenCalledTimes(1);
+      expect(h.updateUser).toHaveBeenCalledWith({ email: 'emma@example.com' }, { emailRedirectTo: 'https://moodeng.app/auth/confirm' });
    });
 
    it('a refused request rejects with the Supabase error', async () => {

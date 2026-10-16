@@ -32,6 +32,8 @@ vi.mock('@/lib/supabase/client', () => ({
    isSupabaseBrowserConfigured: () => true
 }));
 vi.mock('@/lib/postSignInPath', () => ({ getPostSignInPath: vi.fn() }));
+// Signed out here (useSignedInRedirect has its own test).
+vi.mock('@/hooks/useSignedInRedirect', () => ({ useSignedInRedirect: () => false }));
 vi.mock('@/components/LineLoginButton', () => ({ default: () => null }));
 vi.mock('@/components/TikTokLoginButton', () => ({ default: () => null }));
 vi.mock('@/components/auth/TelegramLoginTile', () => ({ default: () => null }));
