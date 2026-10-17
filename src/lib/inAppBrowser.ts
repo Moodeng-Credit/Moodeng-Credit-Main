@@ -1,3 +1,5 @@
+import { copyTextFromTap } from '@/lib/inAppHandoff';
+
 // Detects when the app is running inside a social/messaging in-app browser (a WebView),
 // e.g. the browser embedded in Facebook, Messenger, Instagram, LINE or TikTok.
 //
@@ -210,10 +212,25 @@ export function watchForFailedHandOff(onStillHere: () => void, delayMs = 1500): 
    return cleanup;
 }
 
-/** Attempt to open `url` in Safari (iOS best-effort). Returns true when a hand-off was attempted. */
+/** Event the app listens for to show "how to open it in Safari" (SafariHelpSheet). Detail: { url, copied }. */
+export const SAFARI_HELP_EVENT = 'moodeng:safari-help';
+
+/**
+ * Attempt to open `url` in Safari (iOS best-effort). Returns true when a hand-off was attempted.
+ * Inside Facebook's / Messenger's / Instagram's iPhone browser the x-safari link is dropped (it did
+ * nothing for Emma, 2026-10-17), so there it copies the link (call it straight from the tap) and asks
+ * the app to show the ⋯ → "Open in external browser" steps instead. Returns false then.
+ */
 export function openInSafari(url: string, info?: InAppBrowserInfo): boolean {
    if (typeof window === 'undefined') return false;
-   const target = buildSafariUrl(url, info);
+   const detected = info ?? detectInAppBrowser();
+   if (detected.os === 'ios' && detected.isInApp && ['Facebook', 'Messenger', 'Instagram'].includes(detected.appName ?? '')) {
+      void copyTextFromTap(url).then((result) => {
+         window.dispatchEvent(new CustomEvent(SAFARI_HELP_EVENT, { detail: { url, copied: result.ok } }));
+      });
+      return false;
+   }
+   const target = buildSafariUrl(url, detected);
    if (!target) return false;
    try {
       window.location.href = target;

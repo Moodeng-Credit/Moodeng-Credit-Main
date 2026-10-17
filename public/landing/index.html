@@ -81,7 +81,9 @@
 
             var mobileQuery = new URLSearchParams(window.location.search);
             if (window.matchMedia('(max-width: 699px)').matches && mobileQuery.get('desktop') !== '1') {
-               window.location.replace('/landing/old-mobile.html?theme=professional');
+               // Keep ?src= (Facebook post links) and the rest: the phone page records them.
+               mobileQuery.set('theme', 'professional');
+               window.location.replace('/landing/old-mobile.html?' + mobileQuery.toString() + window.location.hash);
             }
          })();
       </script>
@@ -968,5 +970,6 @@
       <script src="https://web-iota-sage-38.vercel.app/widget.js" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
 
       <script src="/landing/continue-banner.js?v=20261017-1" defer></script>
+      <script src="/landing/open-in-browser.js?v=20261018-1" defer></script>
    </body>
 </html>
