@@ -496,6 +496,34 @@ export const loginWithTelegram = createAsyncThunk('auth/loginWithTelegram', asyn
    };
 });
 
+/**
+ * Frees an email held by a sign-up that was started over 2 minutes ago and never finished (never
+ * confirmed, never signed in, no profile), so starting again with that email works. Supabase would
+ * otherwise refuse the email forever ("already registered"). Never blocks sign-up: a failed call is
+ * ignored and the normal checks decide.
+ */
+const releaseUnfinishedSignup = async (email: string): Promise<void> => {
+   try {
+      await supabaseClient().rpc('release_unfinished_signup', { p_email: email });
+   } catch {
+      // Best effort only.
+   }
+};
+
+/**
+ * Undoes a guest sign-up that failed after signing in anonymously: deletes that empty guest login
+ * (the database only allows it while it has no email and no profile), then drops the session.
+ */
+const discardEmptyGuest = async (): Promise<void> => {
+   const supabase = supabaseClient();
+   try {
+      await supabase.rpc('discard_empty_guest');
+   } catch {
+      // Best effort only: the sign-out below still runs.
+   }
+   await supabase.auth.signOut({ scope: 'local' });
+};
+
 export const registerUser = createAsyncThunk(
    'auth/register',
    async (userData: { username: string; isWorldId: string; password: string; email: string }) => {
@@ -512,6 +540,9 @@ export const registerUser = createAsyncThunk(
          await supabase.auth.signOut();
          clearClientAuthState();
       }
+
+      // A sign-up with this email they started earlier and never finished must not block this one.
+      await releaseUnfinishedSignup(userData.email);
 
       // Check if email already exists (via a scoped RPC, not a broad users read).
       // If it does, attempt an implicit login with the password they just typed.
@@ -663,6 +694,9 @@ export const startGuestSignup = createAsyncThunk('auth/startGuestSignup', async 
       clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
    }
 
+   // An unfinished sign-up with this email (e.g. a code never entered) would make Supabase refuse it.
+   await releaseUnfinishedSignup(email);
+
    const { error: guestError } = await supabase.auth.signInAnonymously({
       options: { data: { username: email.split('@')[0], passwordless: true, guest_email: email } }
    });
@@ -670,7 +704,7 @@ export const startGuestSignup = createAsyncThunk('auth/startGuestSignup', async 
 
    const { error: emailError } = await supabase.auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
    if (emailError) {
-      await supabase.auth.signOut({ scope: 'local' });
+      await discardEmptyGuest();
       if (emailError.code === 'email_exists' || /already been registered|already exists/i.test(emailError.message)) {
          throw new GuestEmailTakenError();
       }
@@ -704,6 +738,7 @@ export const convertedGuestNeedsPassword = async (): Promise<boolean> => {
 
 /** Mails the guest's confirmation link + code again (optionally to a corrected address). */
 export const resendGuestEmail = async (email: string): Promise<void> => {
+   await releaseUnfinishedSignup(email);
    const { error } = await supabaseClient().auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
    if (error) {
       if (error.code === 'email_exists' || /already been registered|already exists/i.test(error.message)) {
