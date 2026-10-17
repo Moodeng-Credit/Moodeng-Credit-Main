@@ -7,6 +7,7 @@ import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
 import { BORROW_POSTER_CARD, BORROW_POSTER_TEXT, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
 import { logMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
+import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
 import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import {
@@ -67,7 +68,8 @@ const confirmCode = async (code: string, contactId: string, name: string | null)
       const res = await fetch(`${SUPABASE_URL}/functions/v1/sendpulse-messenger-verify`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json', 'x-sendpulse-secret': VERIFY_SECRET },
-         body: JSON.stringify({ code, contact_id: contactId, name })
+         // quiet: the SendPulse flow handling the same message already tells them if it didn't work.
+         body: JSON.stringify({ code, contact_id: contactId, name, quiet: true })
       });
       return ((await res.json().catch(() => null)) as VerifyResult | null) ?? { ok: false, error: `http_${res.status}` };
    } catch (err) {
@@ -140,9 +142,7 @@ const matchByTiming = async (svc: Svc, event: SendPulseEvent, contactId: string,
    const chat = await kycChat(svc);
    if (chat) await sendTelegramMessage(chat, note).catch((err: unknown) => console.error('sendpulse-events: telegram note failed', err));
    await postDiscord({ content: note }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });
-   await sendMessengerMessage(contactId, {
-      text: "✅ You're connected! Go back to the Moodeng app to continue — it's already updated."
-   });
+   await sendMessengerMessage(contactId, { text: CONNECTED_BY_TIMING_TEXT });
    return true;
 };
 

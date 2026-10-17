@@ -27,3 +27,23 @@ export const continueLinkText = (signupBrowser: string | null | undefined): stri
    signupBrowser && IN_APP_SIGNUP_BROWSERS.has(signupBrowser)
       ? `👉 Tap here to continue where you left off: ${CONTINUE_URL}\n(Started in the Facebook app? Just go back there, it's already updated.)`
       : null;
+
+// The bot heard from someone but couldn't confirm them yet. The flow used to answer only "that link
+// didn't work, go back and get a fresh one", even when they had just tapped Continue before pasting a
+// perfectly good code (George, Android, 2026-10-18), and gave no way back to Moodeng. Every one of
+// these replies now says what to do and links back to moodeng.app.
+export type NotYetReason = 'no_code' | 'no_match' | 'expired';
+
+export const notYetReplyText = (reason: NotYetReason): string => {
+   const back = `👉 Back to Moodeng: ${CONTINUE_URL}`;
+   if (reason === 'no_code') {
+      return `Almost done! 📋 Paste your Moodeng code here and send it. It's already copied: tap the message box, hold, and choose Paste.\n\n${back}`;
+   }
+   if (reason === 'expired') {
+      return `That code has expired (codes last 30 minutes). Go back to Moodeng and tap Connect Messenger for a new one.\n\n${back}`;
+   }
+   return `That code didn't match. Check it and send it again, or go back to Moodeng to see your code.\n\n${back}`;
+};
+
+// Connected without a code: they came in through our button within the minute (timing match).
+export const CONNECTED_BY_TIMING_TEXT = `✅ You're connected! Go back to Moodeng to continue, it's already updated.\n\n👉 Back to Moodeng: ${CONTINUE_URL}`;
