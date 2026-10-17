@@ -29,18 +29,24 @@ export default function WhatsAppRemindersCard({
    userId,
    source,
    verified,
-   onVerified
+   onVerified,
+   required = false
 }: {
    userId: string;
    source: string;
    verified: boolean;
    onVerified: () => void;
+   // Loan request for a borrower only email reaches: the card blocks Continue, so it says so.
+   required?: boolean;
 }) {
    const [code, setCode] = useState<string | null>(null);
    const [starting, setStarting] = useState(false);
    const [error, setError] = useState('');
    const [copied, setCopied] = useState(false);
    const pollRef = useRef<number | null>(null);
+   // Required (they can't be reached on WhatsApp today, e.g. they sent STOP): an old
+   // whatsapp_verified_at doesn't count, only a new one stamped by this code.
+   const staleVerifiedAtRef = useRef<string | null>(null);
 
    const stopPolling = () => {
       if (pollRef.current !== null) {
@@ -52,7 +58,7 @@ export default function WhatsAppRemindersCard({
 
    const check = useCallback(async () => {
       const { data } = await getSupabaseBrowserClient().from('users').select('whatsapp_verified_at').eq('id', userId).maybeSingle();
-      if (data?.whatsapp_verified_at) {
+      if (data?.whatsapp_verified_at && data.whatsapp_verified_at !== staleVerifiedAtRef.current) {
          stopPolling();
          track('contact_whatsapp_reminders_on', { source });
          onVerified();
@@ -79,6 +85,10 @@ export default function WhatsAppRemindersCard({
       setStarting(true);
       track('contact_whatsapp_reminders_tapped', { source });
       try {
+         if (required && staleVerifiedAtRef.current === null) {
+            const { data: row } = await getSupabaseBrowserClient().from('users').select('whatsapp_verified_at').eq('id', userId).maybeSingle();
+            staleVerifiedAtRef.current = row?.whatsapp_verified_at ?? null;
+         }
          const { data, error: rpcError } = await getSupabaseBrowserClient().rpc('start_whatsapp_verification');
          if (rpcError || !data) throw rpcError ?? new Error('No code returned');
          const newCode = String(data);
@@ -122,7 +132,7 @@ export default function WhatsAppRemindersCard({
       return (
          <>
             <OptionCard
-               badge="Recommended"
+               badge={required ? 'Required' : 'Recommended'}
                disabled={starting}
                icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
                onClick={() => void start()}

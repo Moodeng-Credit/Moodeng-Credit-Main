@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildBorrowerContactRows } from '@/app/admin/adminSupabase';
-import { CONTACT_STEP_EXEMPT_USER_IDS, requestContactSteps } from '@/config/contactVerification';
+import { CONTACT_STEP_EXEMPT_USER_IDS, onlyEmailReaches, requestContactSteps } from '@/config/contactVerification';
 
 const BELLE = [...CONTACT_STEP_EXEMPT_USER_IDS];
 
@@ -30,6 +30,25 @@ describe('end-of-request steps: who gets the Facebook card and who gets the vide
          expect(requestContactSteps({ userId, isExistingBorrower: true, hasAppliedReferral: false })).toEqual({ contacts: false, videoCall: false });
          expect(requestContactSteps({ userId, isExistingBorrower: false, hasAppliedReferral: false })).toEqual({ contacts: false, videoCall: false });
       }
+   });
+});
+
+describe('who gets reminders required on their next request (only email reaches them)', () => {
+   const none = { push_working: false, messenger_reachable: false, whatsapp_reachable: false };
+
+   it('no push, no Messenger link, no WhatsApp: required', () => {
+      expect(onlyEmailReaches(none)).toBe(true);
+   });
+
+   it('any one working channel: not required', () => {
+      expect(onlyEmailReaches({ ...none, push_working: true })).toBe(false);
+      expect(onlyEmailReaches({ ...none, messenger_reachable: true })).toBe(false);
+      expect(onlyEmailReaches({ ...none, whatsapp_reachable: true })).toBe(false);
+   });
+
+   it('unknown (the check failed): today’s flow, nothing extra', () => {
+      expect(onlyEmailReaches(null)).toBe(false);
+      expect(onlyEmailReaches(undefined)).toBe(false);
    });
 });
 

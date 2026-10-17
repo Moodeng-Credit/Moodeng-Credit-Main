@@ -61,7 +61,7 @@ import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
-import { requestContactSteps } from '@/config/contactVerification';
+import { onlyEmailReaches, type ReminderReach, requestContactSteps } from '@/config/contactVerification';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getVerificationUiState, VERIFICATION_STATE_CTA } from '@/lib/verificationUiState';
 import { fetchUser, updateBorrowerContext, updateUser } from '@/store/slices/authSlice';
@@ -1340,6 +1340,28 @@ export default function LoanRequestModal({
          cancelled = true;
       };
    }, [user.id]);
+   // No working push, no Messenger link and no WhatsApp → only email reaches them, so the contacts step
+   // comes back with reminders required (George, 2026-10-18). Unknown (RPC failed) → today's flow.
+   // Only for those who already confirmed a line: anyone else connects Facebook in the step, and that
+   // gives Messenger, so they're reachable (2026-10-18: 7 past borrowers, all without Facebook yet).
+   const [onlyEmail, setOnlyEmail] = useState(false);
+   const needsReminders = onlyEmail && Boolean(user.hasVerifiedContact);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data, error } = await getSupabaseBrowserClient().rpc('get_my_reminder_reach');
+            const reach = (Array.isArray(data) ? data[0] : data) as ReminderReach | null;
+            if (cancelled || error) return;
+            setOnlyEmail(onlyEmailReaches(reach));
+         } catch {
+            // Can't tell: leave the step as it was.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, [user.id]);
    const [contactsStepDone, setContactsStepDone] = useState(false);
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
@@ -1515,7 +1537,7 @@ export default function LoanRequestModal({
       hasAppliedReferral: hasReferral,
       hasAttendedCall: Boolean(user.attendedCall)
    });
-   const needsContactsStep = contactSteps.contacts && !user.hasVerifiedContact;
+   const needsContactsStep = contactSteps.contacts && (!user.hasVerifiedContact || needsReminders);
 
    // The real, path-aware list of steps for THIS borrower — drives the progress rail so the dot
    // count and "Step X of Y" match exactly what they'll go through.
@@ -2827,8 +2849,15 @@ export default function LoanRequestModal({
                   onBack={handleContactsStepBack}
                   onContinue={handleContactsStepContinue}
                   isSubmitting={isSubmitting}
+                  requireReminders={needsReminders}
                   intro={
-                     isExistingBorrower ? (
+                     needsReminders ? (
+                        <ConnectHero
+                           image={CONNECT_HIPPOS.hello}
+                           subtitle="Turn on payment reminders so you never miss a due date."
+                           title="One quick thing 💜"
+                        />
+                     ) : isExistingBorrower ? (
                         <ConnectHero
                            image={CONNECT_HIPPOS.hello}
                            subtitle={
