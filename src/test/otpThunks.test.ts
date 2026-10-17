@@ -217,6 +217,8 @@ describe('passwordless OTP thunks', () => {
          email: 'phone_1b2c3d4e000040008000123456789abc@moodeng.app'
       });
       expect(JSON.stringify(h.inserts[0])).not.toContain('9171234567');
+      // Not a Telegram login: the metadata username must not become a (unique) Telegram username.
+      expect(h.inserts[0]).not.toHaveProperty('telegram_username');
       expect((result as { payload: { isNewUser: boolean } }).payload.isNewUser).toBe(true);
       expect(localStorage.getItem('moodeng:last-auth-method')).toBe('phone');
    });
@@ -226,6 +228,13 @@ describe('passwordless OTP thunks', () => {
       await run(verifyOtpCode({ channel: 'email', email: 'maria@example.com', token: '87654321' }));
       expect(h.verifyOtp).toHaveBeenCalledWith({ email: 'maria@example.com', token: '87654321', type: 'email' });
       expect(h.inserts[0]).toMatchObject({ email: 'maria@example.com' });
+   });
+
+   it('email sign-up with a username in its metadata: no fake Telegram username (it is unique)', async () => {
+      h.authUser = { id: 'u-3', email: 'gayporn123@atomicmail.io', user_metadata: { username: 'gayporn123' }, app_metadata: { provider: 'email' } };
+      await run(verifyOtpCode({ channel: 'email', email: 'gayporn123@atomicmail.io', token: '87654321' }));
+      expect(h.inserts[0]).toMatchObject({ email: 'gayporn123@atomicmail.io' });
+      expect(h.inserts[0]).not.toHaveProperty('telegram_username');
    });
 
    it('a wrong code rejects', async () => {
