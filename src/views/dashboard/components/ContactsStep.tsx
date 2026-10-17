@@ -178,6 +178,17 @@ export default function ContactsStep({
    const iosInAppMessenger =
       !androidMessenger && isIOSBrowser() && inAppInfo.isInApp && inAppInfo.appName !== null && inAppInfo.appName !== 'Messenger';
    const codeFirstMessenger = androidMessenger || iosInAppMessenger;
+   // Android inside Facebook's / Messenger's own browser: a borrower who has chatted with our Page before
+   // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
+   // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
+   const androidInApp = androidMessenger && inAppInfo.isInApp;
+   // Their tap on "Copy code & open Messenger" copies the code and shows how to paste it, then opens
+   // Messenger by itself after a short countdown (or at once if they tap). Facebook's Android browser
+   // sometimes ignores an app link the page opens without a tap, so if the page is still showing a
+   // moment later, the button asks for a tap instead.
+   const [pasteCard, setPasteCard] = useState(false);
+   const [pasteCountdown, setPasteCountdown] = useState<number | null>(null);
+   const [autoOpenStuck, setAutoOpenStuck] = useState(false);
    const iosMessenger = !androidMessenger && !iosInAppMessenger && isIOSBrowser();
    const iosInAppCardShown = iosInAppMessenger && Boolean(messengerLink) && !messengerVerified && Boolean(messengerCode);
    // The card explains the in-app browser and offers Safari itself, so the global banner would only
@@ -621,11 +632,16 @@ export default function ContactsStep({
 
    // Android: the borrower's own tap on the chat link, so copying is allowed and Messenger opens. The
    // link navigates by itself; this only copies the code and keeps the attempt for when they're back.
-   const openMessengerChat = (event?: MouseEvent<HTMLAnchorElement>, link: string = MESSENGER_APP_CHAT_LINK) => {
+   const openMessengerChat = (event?: MouseEvent<HTMLAnchorElement>, link: string = MESSENGER_APP_CHAT_LINK, auto = false) => {
       if (!messengerCode) return;
-      track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: desktopMessenger });
+      track('contact_verify_open_chat_tapped', { source, channel: 'messenger', attempts: attemptsRef.current, desktop: desktopMessenger, auto });
       setMessengerDidntOpen(false);
-      void copyMessengerCode('open_chat');
+      // Copying needs a tap; the automatic open after the countdown relies on the earlier one. A tap
+      // also ends the countdown (the automatic open keeps it at 0, so its "still here?" check runs).
+      if (!auto) {
+         setPasteCountdown(null);
+         void copyMessengerCode('open_chat');
+      }
       // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
       // without sending the code. Best-effort: the code still works if this never lands.
       void getSupabaseBrowserClient()
@@ -644,6 +660,34 @@ export default function ContactsStep({
       }
       armNotOpenedCheck();
    };
+
+   // Android in Facebook's browser: the first tap copies the code and shows the paste card; Messenger
+   // opens on its own when the countdown ends.
+   const showPasteCard = () => {
+      if (!messengerCode) return;
+      void copyMessengerCode('open_chat');
+      track('contact_verify_paste_card_shown', { source, channel: 'messenger', attempts: attemptsRef.current });
+      setAutoOpenStuck(false);
+      setPasteCard(true);
+      setPasteCountdown(3);
+   };
+   useEffect(() => {
+      if (pasteCountdown === null) return undefined;
+      if (pasteCountdown > 0) {
+         const timer = window.setTimeout(() => setPasteCountdown((n) => (n === null ? null : n - 1)), 1000);
+         return () => window.clearTimeout(timer);
+      }
+      openMessengerChat(undefined, MESSENGER_APP_CHAT_LINK, true);
+      window.location.href = MESSENGER_APP_CHAT_LINK;
+      const stuck = window.setTimeout(() => {
+         if (document.visibilityState === 'visible') {
+            track('contact_verify_auto_open_ignored', { source, channel: 'messenger' });
+            setAutoOpenStuck(true);
+         }
+      }, 2000);
+      return () => window.clearTimeout(stuck);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [pasteCountdown]);
 
    // Messenger is opening (or about to): remember the attempt and start watching for the bot.
    const beginMessengerWait = (code: string, link: string, flow: 'link' | 'link_tap') => {
@@ -906,33 +950,83 @@ export default function ContactsStep({
                      </div>
                      {/* A plain link the borrower taps, as in the Android test: opened from script after the
                          code request, or as m.me, Messenger never comes up. */}
-                     <a
-                        href={MESSENGER_APP_CHAT_LINK}
-                        onClick={(event) => openMessengerChat(event)}
-                        className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
-                     >
-                        <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                        Copy code & open Messenger
-                     </a>
+                     {androidInApp && pasteCard ? (
+                        <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">📋 Code copied: {messengerCode}</p>
+                           <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
+                              In our chat, press and hold the message box, tap <b>Paste</b>, then <b>Send</b>.
+                           </p>
+                           <a
+                              href={MESSENGER_APP_CHAT_LINK}
+                              onClick={(event) => openMessengerChat(event)}
+                              className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                           >
+                              <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                              {autoOpenStuck
+                                 ? 'Tap to open Messenger'
+                                 : pasteCountdown !== null && pasteCountdown > 0
+                                   ? `Open Messenger (${pasteCountdown})`
+                                   : 'Open Messenger'}
+                           </a>
+                        </div>
+                     ) : androidInApp ? (
+                        <button
+                           type="button"
+                           onClick={showPasteCard}
+                           className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                        >
+                           <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                           Copy code & open Messenger
+                        </button>
+                     ) : (
+                        <a
+                           href={MESSENGER_APP_CHAT_LINK}
+                           onClick={(event) => openMessengerChat(event)}
+                           className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                        >
+                           <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                           Copy code & open Messenger
+                        </a>
+                     )}
                      {messengerDidntOpen ? (
                         <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
                            Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
                         </p>
                      ) : null}
-                     <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
-                        <li className="flex gap-2">
-                           <b>1.</b>
-                           <span>Tap the blue button. Our chat opens in Messenger.</span>
-                        </li>
-                        <li className="flex gap-2">
-                           <b>2.</b>
-                           <span>Tap Get Started, or send us a message. We connect you automatically.</span>
-                        </li>
-                        <li className="flex gap-2">
-                           <b>3.</b>
-                           <span>Not green after a minute? Paste the code (already copied) and send it.</span>
-                        </li>
-                     </ol>
+                     {androidInApp ? (
+                        <ol className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65]">
+                           <li className="flex gap-2">
+                              <b>1.</b>
+                              <span>Tap the blue button. It copies your code and opens our chat.</span>
+                           </li>
+                           <li className="flex gap-2">
+                              <b>2.</b>
+                              <span>
+                                 <b>Paste the code in the chat and send it:</b> press and hold the message box, tap Paste, then Send. (Or tap the
+                                 code that shows above your keyboard.)
+                              </span>
+                           </li>
+                           <li className="flex gap-2">
+                              <b>3.</b>
+                              <span>Come back here. It turns green on its own.</span>
+                           </li>
+                        </ol>
+                     ) : (
+                        <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
+                           <li className="flex gap-2">
+                              <b>1.</b>
+                              <span>Tap the blue button. Our chat opens in Messenger.</span>
+                           </li>
+                           <li className="flex gap-2">
+                              <b>2.</b>
+                              <span>Tap Get Started, or send us a message. We connect you automatically.</span>
+                           </li>
+                           <li className="flex gap-2">
+                              <b>3.</b>
+                              <span>Not green after a minute? Paste the code (already copied) and send it.</span>
+                           </li>
+                        </ol>
+                     )}
                   </>
                )}
                <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
@@ -1041,7 +1135,9 @@ export default function ContactsStep({
                      ? codeFirstMessenger || desktopMessenger
                         ? 'Getting your code…'
                         : 'Opening Messenger…'
-                     : codeFirstMessenger
+                     : androidInApp || iosInAppMessenger
+                       ? 'Copy your code and send it to us on Messenger.'
+                       : codeFirstMessenger
                        ? 'Opens our chat. Say hi and you’re connected.'
                        : desktopMessenger
                          ? 'Scan a code with your phone, or chat with us here.'
