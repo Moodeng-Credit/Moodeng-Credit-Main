@@ -98,6 +98,7 @@ import WorldIdVerification from '@/app/verify-world-id/page';
 import VerifyFlow from '@/app/verify/page';
 import WhyLend from '@/app/whylend/page';
 import CreditLineLenderPage from '@/views/creditline/CreditLineLenderPage';
+import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { identifyClarity } from '@/lib/analytics/clarity';
 import { recordSignupContext, recordSignupSource } from '@/lib/attribution';
@@ -278,6 +279,8 @@ export default function App() {
             <Route path="/creditline" element={<CreditLineLenderPage />} />
             {/* Desktop Messenger QR lands here on the phone (no sign-in; the code is the key). */}
             <Route path="/fb/:code" element={<MessengerHandoff />} />
+            {/* "Pick up where you left off": the Messenger bot's link back, and the home page's. */}
+            <Route path="/continue" element={<ContinuePage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/account-restricted" element={<AccountRestrictedPage />} />
             <Route path="/mfa-challenge" element={<MfaChallengePage />} />

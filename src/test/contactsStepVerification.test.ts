@@ -307,34 +307,60 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       }
    });
 
-   it('iPhone in Facebook: records the tap before leaving, and Safari opens the no-sign-in code page', async () => {
+   it('iPhone in Facebook: no dead app links — copy the code (stamped), and Safari via ⋯ carries the code', async () => {
       Object.defineProperty(navigator, 'userAgent', {
          value:
             'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBAV/582.0.0.26.106;FBSN/iOS]',
          configurable: true
       });
-      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText: vi.fn(async () => undefined) } }));
+      // Facebook's iPhone browser refuses the modern copy call; the old command still copies.
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error('NotAllowedError'))) } }));
+      const exec = document.execCommand;
+      document.execCommand = vi.fn(() => true);
       safari.open.mockClear();
       await render();
       await tapMessengerCard();
-      const chatLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Copy code & open Messenger'));
-      expect(chatLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
 
-      // Following the link at once cancelled the stamp in Facebook's browser, so the page holds it
-      // until the stamp is sent.
-      const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+      // Every app link is dropped there (Emma, 2026-10-17): nothing on the card tries to open one.
+      const appLinks = Array.from(container.querySelectorAll('a')).filter((a) => /^(fb-messenger|x-safari|googlechrome)/.test(a.getAttribute('href') ?? ''));
+      expect(appLinks).toHaveLength(0);
+      expect(container.textContent).toContain('MDNG-ABC123');
+
       await act(async () => {
-         chatLink?.dispatchEvent(click);
+         buttonByText(container, 'Copy code')?.click();
          await Promise.resolve();
       });
-      expect(click.defaultPrevented).toBe(true);
+      expect(document.execCommand).toHaveBeenCalledWith('copy');
       expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
+      expect(container.textContent).toContain('Code copied ✓');
 
-      // Safari doesn't share Facebook's login: it gets /fb/<code>, which needs none.
+      // "Open in Safari" shows the ⋯ steps and puts the code in the address Facebook's menu will open.
       await act(async () => {
-         buttonByText(container, 'Or open Moodeng in Safari instead')?.click();
+         buttonByText(container, 'Or open in Safari instead')?.click();
       });
-      expect(safari.open).toHaveBeenCalledWith(`${window.location.origin}/fb/MDNG-ABC123?from=fb`, expect.anything());
+      expect(safari.open).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('Open in external browser');
+      expect(new URL(window.location.href).searchParams.get('fbcode')).toBe('MDNG-ABC123');
+      document.execCommand = exec;
+   });
+
+   it('iPhone in Facebook: says so when the code could not be copied', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBSN/iOS]',
+         configurable: true
+      });
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText: vi.fn(async () => Promise.reject(new Error('NotAllowedError'))) } }));
+      const exec = document.execCommand;
+      document.execCommand = vi.fn(() => false);
+      await render();
+      await tapMessengerCard();
+      await act(async () => {
+         buttonByText(container, 'Copy code')?.click();
+         await Promise.resolve();
+         await Promise.resolve();
+      });
+      expect(container.textContent).toContain("Copy didn't work here");
+      document.execCommand = exec;
    });
 
    it('picks the attempt back up, with the code showing, after an Android fallback left the page', async () => {

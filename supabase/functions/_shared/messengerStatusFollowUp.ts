@@ -15,3 +15,15 @@ export const verificationFollowUpText = (user: {
    }
    return null;
 };
+
+// Signed up inside Facebook's or Messenger's own browser. On iPhone, Messenger's browser is thrown away
+// when they close it to paste their code, and they had no way back (Emma, 2026-10-17). So these borrowers
+// get a link to moodeng.app/continue, which sends them on to their next step. Everyone else gets no
+// link, as above: it would open Moodeng inside Messenger's browser, away from the tab they were using.
+const IN_APP_SIGNUP_BROWSERS = new Set(['Facebook app', 'Messenger app']);
+export const CONTINUE_URL = 'https://moodeng.app/continue?via=bot';
+
+export const continueLinkText = (signupBrowser: string | null | undefined): string | null =>
+   signupBrowser && IN_APP_SIGNUP_BROWSERS.has(signupBrowser)
+      ? `👉 Tap here to continue where you left off: ${CONTINUE_URL}\n(Started in the Facebook app? Just go back there, it's already updated.)`
+      : null;
