@@ -363,6 +363,48 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       document.execCommand = exec;
    });
 
+   it('Android in Facebook\'s browser: the tap copies the code, shows how to paste it, then opens Messenger', async () => {
+      Object.defineProperty(navigator, 'userAgent', {
+         value:
+            'Mozilla/5.0 (Linux; Android 15; Pixel 7 Build/AP4A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/155.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/540.0.0.0;]',
+         configurable: true
+      });
+      const writeText = vi.fn(async () => undefined);
+      vi.stubGlobal('navigator', Object.assign(Object.create(navigator), { clipboard: { writeText } }));
+      await render();
+      await tapMessengerCard();
+      // Paste is the main step here (a returning chatter sends us nothing when the chat opens).
+      expect(container.textContent).toContain('Paste the code in the chat and send it');
+
+      {
+         await act(async () => {
+            buttonByText(container, 'Copy code & open Messenger')?.click();
+            await Promise.resolve();
+         });
+         expect(writeText).toHaveBeenCalledWith('MDNG-ABC123');
+         expect(container.textContent).toContain('📋 Code copied: MDNG-ABC123');
+         expect(container.textContent).toContain('Open Messenger (3)');
+         expect(supa.rpc).not.toHaveBeenCalledWith('mark_messenger_chat_opened');
+
+         // The countdown ends → Messenger opens by itself, and the tap time is recorded for the bot.
+         for (let i = 0; i < 3; i += 1) {
+            await act(async () => {
+               vi.advanceTimersByTime(1000);
+            });
+         }
+         expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
+         const openLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open Messenger'));
+         expect(openLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
+
+         // Still on the page 2s later: Facebook ignored it, so ask for a tap.
+         await act(async () => {
+            vi.advanceTimersByTime(2100);
+            await Promise.resolve();
+         });
+         expect(container.textContent).toContain('Tap to open Messenger');
+      }
+   });
+
    it('picks the attempt back up, with the code showing, after an Android fallback left the page', async () => {
       window.sessionStorage.setItem(
          'moodeng.messengerVerifyPending',
