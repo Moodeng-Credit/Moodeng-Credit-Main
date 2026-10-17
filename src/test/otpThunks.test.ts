@@ -16,7 +16,11 @@ const h = vi.hoisted(() => ({
    updateUser: vi.fn<(args: unknown, options?: unknown) => Promise<{ error: null | { message: string; code?: string } }>>(async () => ({
       error: null
    })),
-   rpc: vi.fn<(name: string, args: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({ data: false, error: null }))
+   rpc: vi.fn<(name: string, args?: unknown) => Promise<{ data: unknown; error: null }>>(async () => ({ data: false, error: null })),
+   signUp: vi.fn<(args: unknown) => Promise<{ data: { user: unknown }; error: null }>>(async () => ({
+      data: { user: { id: 'u-new', identities: [{ id: 'i-1' }] } },
+      error: null
+   }))
 }));
 
 vi.mock('@/lib/recordSessionIp', () => ({ recordSessionIp: vi.fn() }));
@@ -31,6 +35,7 @@ vi.mock('@/lib/supabase/client', () => ({
          verifyOtp: h.verifyOtp,
          signInAnonymously: h.signInAnonymously,
          updateUser: h.updateUser,
+         signUp: h.signUp,
          getUser: async () => ({ data: { user: h.authUser }, error: null })
       },
       rpc: h.rpc,
@@ -49,7 +54,7 @@ vi.mock('@/lib/supabase/client', () => ({
    })
 }));
 
-const { requestOtpCode, startGuestSignup, verifyOtpCode } = await import('@/store/slices/authSlice');
+const { registerUser, requestOtpCode, startGuestSignup, verifyOtpCode } = await import('@/store/slices/authSlice');
 
 const run = async <T>(thunk: (dispatch: never, getState: never, extra: never) => Promise<T>) =>
    thunk((() => undefined) as never, (() => ({})) as never, undefined as never);
@@ -64,7 +69,9 @@ describe('passwordless OTP thunks', () => {
       h.signOut.mockClear();
       h.signInAnonymously.mockClear();
       h.updateUser.mockClear();
-      h.rpc.mockClear();
+      h.rpc.mockReset();
+      h.rpc.mockImplementation(async () => ({ data: false, error: null }));
+      h.signUp.mockClear();
       localStorage.clear();
       sessionStorage.clear();
    });
@@ -193,6 +200,59 @@ describe('passwordless OTP thunks', () => {
       expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
       expect(h.signInAnonymously).toHaveBeenCalledTimes(1);
       expect(h.updateUser).toHaveBeenCalledWith({ email: 'emma@example.com' }, { emailRedirectTo: 'https://moodeng.app/auth/confirm' });
+   });
+
+   it('guest sign-up frees an unfinished earlier sign-up with that email before attaching it', async () => {
+      h.authUser = { id: 'guest-3', is_anonymous: true, user_metadata: { username: 'emma' }, app_metadata: {} };
+      const order: string[] = [];
+      h.rpc.mockImplementation(async (name: string) => {
+         order.push(name);
+         return { data: name === 'release_unfinished_signup', error: null };
+      });
+      h.updateUser.mockImplementationOnce(async () => {
+         order.push('updateUser');
+         return { error: null };
+      });
+      const result = await run(startGuestSignup({ email: 'emma@example.com' }));
+      expect(h.rpc).toHaveBeenCalledWith('release_unfinished_signup', { p_email: 'emma@example.com' });
+      expect(order.indexOf('release_unfinished_signup')).toBeLessThan(order.indexOf('updateUser'));
+      expect((result as { payload: { user: { id: string } } }).payload.user.id).toBe('guest-3');
+   });
+
+   it('guest sign-up still goes ahead when freeing the email fails', async () => {
+      h.authUser = { id: 'guest-4', is_anonymous: true, user_metadata: { username: 'emma' }, app_metadata: {} };
+      h.rpc.mockImplementation(async (name: string) => {
+         if (name === 'release_unfinished_signup') throw new Error('network');
+         return { data: false, error: null };
+      });
+      const result = await run(startGuestSignup({ email: 'emma@example.com' }));
+      expect(h.signInAnonymously).toHaveBeenCalledTimes(1);
+      expect(h.updateUser).toHaveBeenCalledWith({ email: 'emma@example.com' }, { emailRedirectTo: 'https://moodeng.app/auth/confirm' });
+      expect((result as { payload: { user: { id: string } } }).payload.user.id).toBe('guest-4');
+   });
+
+   it('a taken email after signing in as a guest deletes that empty guest and signs it out', async () => {
+      h.updateUser.mockResolvedValueOnce({
+         error: { message: 'A user with this email address has already been registered', code: 'email_exists' }
+      });
+      const result = await run(startGuestSignup({ email: 'taken@example.com' }));
+      expect((result as { error?: { name?: string } }).error?.name).toBe('GuestEmailTakenError');
+      expect(h.rpc).toHaveBeenCalledWith('discard_empty_guest');
+      expect(h.signOut).toHaveBeenCalledWith({ scope: 'local' });
+      // No profile row was created for the throwaway guest.
+      expect(h.inserts).toHaveLength(0);
+   });
+
+   it('email+password sign-up frees an unfinished earlier sign-up before checking the email', async () => {
+      const order: string[] = [];
+      h.rpc.mockImplementation(async (name: string) => {
+         order.push(name);
+         return { data: false, error: null };
+      });
+      await run(registerUser({ username: 'emma', isWorldId: 'INACTIVE', password: 'Secret123!', email: 'emma@example.com' }));
+      expect(order.slice(0, 2)).toEqual(['release_unfinished_signup', 'email_exists']);
+      expect(h.rpc).toHaveBeenCalledWith('release_unfinished_signup', { p_email: 'emma@example.com' });
+      expect(h.signUp).toHaveBeenCalledTimes(1);
    });
 
    it('a refused request rejects with the Supabase error', async () => {
