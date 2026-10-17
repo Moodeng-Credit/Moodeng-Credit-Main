@@ -7,7 +7,7 @@ import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/faceboo
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
 import { claimContactRows } from '../_shared/messengerContactLog.ts';
 import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
-import { verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
+import { continueLinkText, verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
 import {
    findMessengerContactIdByCode,
    getMessengerContact,
@@ -107,8 +107,13 @@ const followUpWithStatus = async (svc: Svc, userId: string, contactId: string | 
    try {
       if (!contactId) return;
       await new Promise((resolve) => setTimeout(resolve, FOLLOW_UP_DELAY_MS));
-      const { data: user } = await svc.from('users').select('is_world_id, is_didit, didit_id_status').eq('id', userId).maybeSingle();
-      const text = user ? verificationFollowUpText(user) : null;
+      const { data: user } = await svc
+         .from('users')
+         .select('is_world_id, is_didit, didit_id_status, signup_browser')
+         .eq('id', userId)
+         .maybeSingle();
+      const parts = user ? [verificationFollowUpText(user), continueLinkText(user.signup_browser)].filter(Boolean) : [];
+      const text = parts.length ? parts.join('\n\n') : null;
       if (!text) {
          console.log(`sendpulse-messenger-verify: no status follow-up for ${userId.slice(0, 8)} (not verified or in review)`);
          return;

@@ -16,7 +16,8 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
-import { detectInAppBrowser, openInSafari, setInAppNoticeHidden } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
+import { buildArmedUrl, copyTextFromTap, stripFbCode } from '@/lib/inAppHandoff';
 import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { playSuccess } from '@/lib/uiSounds';
@@ -161,6 +162,11 @@ export default function ContactsStep({
    const [messengerCode, setMessengerCode] = useState<string | null>(null);
    const [showTypedCode, setShowTypedCode] = useState(false);
    const [codeCopied, setCodeCopied] = useState(false);
+   // The copy was refused (nothing copied): say so, and show how to copy it by hand.
+   const [copyFailed, setCopyFailed] = useState(false);
+   // iPhone in Facebook's browser: the "⋯ → Open in external browser" steps are showing.
+   const [externalHowTo, setExternalHowTo] = useState(false);
+   const [linkCopied, setLinkCopied] = useState(false);
    // Android: the app link did nothing (no Messenger app, or Messenger stuck) — say what to do instead.
    const [messengerDidntOpen, setMessengerDidntOpen] = useState(false);
    // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
@@ -181,6 +187,15 @@ export default function ContactsStep({
       setInAppNoticeHidden(true);
       return () => setInAppNoticeHidden(false);
    }, [iosInAppCardShown]);
+   // While the "⋯ → Open in external browser" steps show, the address carries the code (?fbcode=):
+   // Facebook's menu opens whatever address the page shows, and Safari, which can't see this browser's
+   // sign-in, then lands on the code's own page instead of the home page (src/main.tsx).
+   useEffect(() => {
+      if (!iosInAppCardShown || !externalHowTo || !messengerCode) return;
+      window.history.replaceState(window.history.state, '', buildArmedUrl(window.location.href, messengerCode));
+      track('contact_verify_external_howto_shown', { source, channel: 'messenger', app: inAppInfo.appName });
+      return () => window.history.replaceState(window.history.state, '', stripFbCode(window.location.href));
+   }, [iosInAppCardShown, externalHowTo, messengerCode, source, inAppInfo.appName]);
    // Computers: a QR for the phone plus copy-and-paste here (see isDesktopBrowser, DesktopMessengerCard).
    const desktopMessenger = !androidMessenger && !iosMessenger && isDesktopBrowser();
    // iOS: a code + m.me link ready before the tap (see isIOSBrowser above).
@@ -593,13 +608,14 @@ export default function ContactsStep({
 
    const copyMessengerCode = async (via: 'copy_button' | 'open_chat') => {
       if (!messengerCode) return;
-      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current, via });
-      try {
-         await navigator.clipboard.writeText(messengerCode);
+      // Straight from the tap: Facebook's iPhone browser refuses the modern copy call (Emma, 2026-10-17),
+      // so copyTextFromTap tries the old one first, and tells us whether anything was copied.
+      const result = await copyTextFromTap(messengerCode);
+      track('contact_verify_code_copied', { source, channel: 'messenger', attempts: attemptsRef.current, via, ok: result.ok, method: result.method });
+      setCopyFailed(!result.ok);
+      if (result.ok) {
          setCodeCopied(true);
          window.setTimeout(() => setCodeCopied(false), 2000);
-      } catch {
-         // Clipboard blocked: the code is on screen to type by hand.
       }
    };
 
@@ -612,7 +628,7 @@ export default function ContactsStep({
       void copyMessengerCode('open_chat');
       // The tap time lets the bot connect them by timing (sendpulse-events) when they open the chat
       // without sending the code. Best-effort: the code still works if this never lands.
-      const stamp = getSupabaseBrowserClient()
+      void getSupabaseBrowserClient()
          .rpc('mark_messenger_chat_opened')
          .then(({ error }) => {
             if (error) console.error('mark_messenger_chat_opened failed', error.message);
@@ -620,16 +636,13 @@ export default function ContactsStep({
       leftAtRef.current = null;
       awaitingMessengerRef.current = true;
       writePending({ userId, code: messengerCode, link, at: Date.now() });
-      armNotOpenedCheck();
-      // iPhone in Facebook's browser: following the link right away cancels the stamp mid-flight (George,
-      // 2026-10-16: the preflight reached us, the POST never did), so the bot couldn't match them when
-      // they opened Messenger themselves. Wait for it (at most 1.5s), then follow the link.
-      if (iosInAppMessenger && event) {
-         event.preventDefault();
-         void Promise.race([stamp, new Promise((resolve) => window.setTimeout(resolve, 1500))]).then(() => {
-            window.location.href = link;
-         });
+      // iPhone in Facebook's browser: nothing opens from here (every app link is dropped), so there's
+      // no "Messenger didn't open" to detect — they go to Messenger themselves.
+      if (iosInAppMessenger) {
+         event?.preventDefault();
+         return;
       }
+      armNotOpenedCheck();
    };
 
    // Messenger is opening (or about to): remember the attempt and start watching for the bot.
@@ -789,73 +802,128 @@ export default function ContactsStep({
             >
                <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Connect on Messenger</span>
                {iosInAppMessenger ? (
-                  <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
-                     You&apos;re in {inAppInfo.appName}&apos;s browser, which can&apos;t confirm Messenger by itself. Copy the code,
-                     send it to us on Messenger, and you&apos;re done.
-                  </p>
-               ) : null}
-               <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
-                     {messengerCode}
-                  </code>
-                  <button
-                     type="button"
-                     onClick={() => void copyMessengerCode('copy_button')}
-                     className="rounded-lg border border-[#c9bdf5] bg-white px-3 py-2 text-[13px] font-bold text-[#6b55f7]"
-                  >
-                     {codeCopied ? 'Copied' : 'Copy'}
-                  </button>
-               </div>
-               {/* A plain link the borrower taps, as in the Android test: opened from script after the
-                   code request, or as m.me, Messenger never comes up. */}
-               <a
-                  href={MESSENGER_APP_CHAT_LINK}
-                  onClick={(event) => openMessengerChat(event)}
-                  className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
-               >
-                  <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                  Copy code & open Messenger
-               </a>
-               {messengerDidntOpen ? (
-                  <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
-                     {iosInAppMessenger
-                        ? 'Messenger didn’t open? Open the Messenger app yourself, search Moodeng Credit, and paste the code (already copied).'
-                        : 'Messenger didn’t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.'}
-                  </p>
-               ) : null}
-               {iosInAppMessenger ? (
-                  <button
-                     type="button"
-                     onClick={() => {
-                        track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName });
-                        // Our no-sign-in page for this code (/fb/<code>), not this page: Safari doesn't share
-                        // Facebook's browser's login (guest accounts can't sign back in at all), and there the
-                        // m.me link with the code confirms them by itself. This card turns green on its own.
-                        openInSafari(messengerCode ? `${buildMessengerHandoffLink(messengerCode)}?from=fb` : window.location.href, inAppInfo);
-                     }}
-                     className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
-                  >
-                     Or open Moodeng in Safari instead
-                  </button>
-               ) : null}
-               <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
-                  <li className="flex gap-2">
-                     <b>1.</b>
-                     <span>Tap the blue button. Our chat opens in Messenger.</span>
-                  </li>
-                  {iosInAppMessenger ? (
-                     <>
+                  <>
+                     {/* iPhone inside Facebook's / Messenger's own browser. Nothing can open Messenger or Safari
+                         from here (both app links are dropped; Emma, 2026-10-17), so the borrower carries the
+                         code over themselves. The bot confirms it, and this card turns green on its own
+                         (realtime + poll) whenever they come back. Same words for both apps: on iPhone both
+                         say FBAN/FBIOS, so we can't tell which one this is. */}
+                     <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                        Send this code to <b>Moodeng Credit</b> on Messenger and you&apos;re done.
+                     </p>
+                     <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
+                        {messengerCode}
+                     </code>
+                     <button
+                        type="button"
+                        onClick={() => openMessengerChat()}
+                        className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                     >
+                        <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                        {codeCopied ? 'Code copied ✓' : 'Copy code'}
+                     </button>
+                     {copyFailed ? (
+                        <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                           Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
+                        </p>
+                     ) : null}
+                     <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
+                        <li className="flex gap-2">
+                           <b>1.</b>
+                           <span>Copy the code.</span>
+                        </li>
                         <li className="flex gap-2">
                            <b>2.</b>
-                           <span>Paste the code (already copied) and send it. We confirm you automatically.</span>
+                           <span>
+                              <b>In Messenger?</b> Tap <b>Done</b> or <b>✕</b> at the top. <b>In Facebook?</b> Open your{' '}
+                              <b>Messenger</b> app.
+                           </span>
                         </li>
                         <li className="flex gap-2">
                            <b>3.</b>
-                           <span>Messenger didn&apos;t open? Open the Messenger app, search Moodeng Credit, and paste the code there.</span>
+                           <span>
+                              Open the <b>Moodeng Credit</b> chat (search for it), paste the code, and send it.
+                           </span>
                         </li>
-                     </>
-                  ) : (
-                     <>
+                        <li className="flex gap-2">
+                           <b>4.</b>
+                           <span>
+                              We reply with a <b>Continue</b> link. Tap it to come back. Started in Facebook? Swipe right along
+                              the bottom edge of the screen to go back to Facebook. This page turns green on its own.
+                           </span>
+                        </li>
+                     </ol>
+                     {externalHowTo ? (
+                        <div className="flex flex-col gap-2 rounded-xl bg-white px-3 py-3 text-[14px] leading-[19px] text-[#594d65]">
+                           <b className="text-[15px] text-[#26143f]">Open in Safari instead</b>
+                           <span>
+                              1. Tap <b>⋯</b> at the top of this screen.
+                           </span>
+                           <span>
+                              2. Tap <b>Open in external browser</b> (or <b>Open in Safari</b>).
+                           </span>
+                           <span>Safari opens your code page, and Messenger opens from there with the code.</span>
+                           <button
+                              type="button"
+                              onClick={() => {
+                                 const link = `${buildMessengerHandoffLink(messengerCode)}?from=fb`;
+                                 void copyTextFromTap(link).then((result) => {
+                                    track('contact_verify_external_link_copied', { source, channel: 'messenger', ok: result.ok });
+                                    setLinkCopied(result.ok);
+                                 });
+                              }}
+                              className="self-start font-bold text-[#6b55f7] underline underline-offset-4"
+                           >
+                              {linkCopied ? 'Link copied ✓ Paste it into Safari' : 'No ⋯ menu? Copy the link for Safari'}
+                           </button>
+                        </div>
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={() => {
+                              track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName });
+                              setExternalHowTo(true);
+                           }}
+                           className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                        >
+                           Or open in Safari instead
+                        </button>
+                     )}
+                  </>
+               ) : (
+                  <>
+                     <div className="flex items-center gap-2">
+                        <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
+                           {messengerCode}
+                        </code>
+                        <button
+                           type="button"
+                           onClick={() => void copyMessengerCode('copy_button')}
+                           className="rounded-lg border border-[#c9bdf5] bg-white px-3 py-2 text-[13px] font-bold text-[#6b55f7]"
+                        >
+                           {codeCopied ? 'Copied' : 'Copy'}
+                        </button>
+                     </div>
+                     {/* A plain link the borrower taps, as in the Android test: opened from script after the
+                         code request, or as m.me, Messenger never comes up. */}
+                     <a
+                        href={MESSENGER_APP_CHAT_LINK}
+                        onClick={(event) => openMessengerChat(event)}
+                        className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                     >
+                        <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                        Copy code & open Messenger
+                     </a>
+                     {messengerDidntOpen ? (
+                        <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                           Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
+                        </p>
+                     ) : null}
+                     <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
+                        <li className="flex gap-2">
+                           <b>1.</b>
+                           <span>Tap the blue button. Our chat opens in Messenger.</span>
+                        </li>
                         <li className="flex gap-2">
                            <b>2.</b>
                            <span>Tap Get Started, or send us a message. We connect you automatically.</span>
@@ -864,9 +932,9 @@ export default function ContactsStep({
                            <b>3.</b>
                            <span>Not green after a minute? Paste the code (already copied) and send it.</span>
                         </li>
-                     </>
-                  )}
-               </ol>
+                     </ol>
+                  </>
+               )}
                <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
                   <Loader2 aria-hidden="true" className="size-5 shrink-0 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
                   <span>Waiting for your message. This turns green on its own.</span>

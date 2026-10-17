@@ -5,6 +5,7 @@ import posthog from 'posthog-js';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import { buildMessengerVerifyLink, isAndroidBrowser, MESSENGER_APP_CHAT_LINK, MESSENGER_CODE_PATTERN } from '@/config/contactVerification';
+import { copyTextFromTap } from '@/lib/inAppHandoff';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 // moodeng.app/fb/<code> — what the desktop Messenger QR (DesktopMessengerCard) opens on the borrower's
@@ -42,7 +43,8 @@ export default function MessengerHandoff() {
    const { code: rawCode = '' } = useParams<{ code: string }>();
    const code = rawCode.trim().toUpperCase();
    const [searchParams] = useSearchParams();
-   const where = searchParams.get('from') === 'fb' ? 'in Facebook' : 'on your computer';
+   const fromFacebook = searchParams.get('from') === 'fb';
+   const where = fromFacebook ? 'in Facebook' : 'on your computer';
    const valid = MESSENGER_CODE_PATTERN.test(code);
    const phone = useMemo(detectPhone, []);
    const [copied, setCopied] = useState(false);
@@ -81,12 +83,11 @@ export default function MessengerHandoff() {
    }, [valid, connected, code, phone]);
 
    const copy = async () => {
-      try {
-         await navigator.clipboard.writeText(code);
+      // Straight from the tap; when nothing could be copied, the code is on screen to type.
+      const result = await copyTextFromTap(code);
+      if (result.ok) {
          setCopied(true);
          window.setTimeout(() => setCopied(false), 2000);
-      } catch {
-         // Clipboard blocked: the code is on screen to type.
       }
    };
 
@@ -112,6 +113,11 @@ export default function MessengerHandoff() {
                   <p className="text-[16px] leading-[22px] text-[#594d65]">
                      Your Messenger is linked. Go back to Moodeng {where} to continue.
                   </p>
+                  {fromFacebook && phone === 'ios' ? (
+                     <p className="text-[15px] leading-[21px] text-[#594d65]">
+                        To go back, swipe right along the bottom edge of the screen, or tap <b>◀ Facebook</b> at the top left.
+                     </p>
+                  ) : null}
                </>
             ) : !valid ? (
                <>

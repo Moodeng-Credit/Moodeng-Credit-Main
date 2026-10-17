@@ -18,6 +18,7 @@ import { applyThemeMode, getStoredThemeMode } from '@/lib/themeMode';
 import App from './App.tsx';
 import './globals.css';
 import { captureFirstTouch } from '@/lib/attribution';
+import { hasStoredSession, resolveFbCodeAddress } from '@/lib/inAppHandoff';
 
 applyThemeMode(getStoredThemeMode());
 setupStaleChunkReload();
@@ -195,6 +196,11 @@ const appTree = (
       </BrowserRouter>
    </LocalizationProvider>
 );
+
+// Opened from Facebook's "⋯ → Open in external browser" while the Messenger card showed its steps
+// (?fbcode=): Safari isn't signed in, so go to that code's own page. Before the router reads the address.
+const fbCodeAddress = resolveFbCodeAddress(window.location.href, hasStoredSession());
+if (fbCodeAddress) window.history.replaceState(window.history.state, '', fbCodeAddress);
 
 // Remember where this visitor came from (?src= tag or referrer) for sign-up attribution.
 captureFirstTouch();
