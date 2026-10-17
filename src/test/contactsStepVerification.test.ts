@@ -622,7 +622,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          expect(container.textContent).not.toContain('Get reminders on WhatsApp');
       });
 
-      it('tapping it starts a WhatsApp code and shows the code to send by hand', async () => {
+      it('tapping it starts a WhatsApp code and shows it with an Open WhatsApp link (nothing opens by itself)', async () => {
          remindersOn();
          supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
          await render();
@@ -633,7 +633,11 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             await Promise.resolve();
          });
          expect(supa.rpc).toHaveBeenCalledWith('start_whatsapp_verification');
-         expect(openSpy.mock.calls.at(-1)?.[0]).toContain('wa.me/66951659077');
+         // Nothing opens by itself (Facebook's browser shows the wa.me web page instead of the app):
+         // the panel's button is a real link they tap.
+         expect(openSpy.mock.calls.some((call) => String(call[0]).includes('wa.me'))).toBe(false);
+         const waLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open WhatsApp and hit send'));
+         expect(waLink?.getAttribute('href')).toContain('wa.me/66951659077');
          expect(container.textContent).toContain('MDNG-ABC123');
          expect(container.textContent).toContain('+66 95 165 9077');
       });
