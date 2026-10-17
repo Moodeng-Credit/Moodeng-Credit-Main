@@ -133,9 +133,12 @@ export default function Welcome() {
          <OnboardingHeader title={copy.title} />
 
          <div className="flex flex-col gap-md-4 p-md-4">
-            <img src="/hippos/welcome.png" alt="Moodeng hippo" className="w-[110px] h-[96px] object-cover" />
-
-            <OnboardingLanguagePicker />
+            {/* The language chips sit in the open space beside the hippo, so "Get started" fits on the
+                first screen without scrolling. */}
+            <div className="flex items-start gap-md-3 w-full">
+               <img src="/hippos/welcome.png" alt="Moodeng hippo" className="w-[96px] h-[84px] object-cover shrink-0" />
+               <OnboardingLanguagePicker compact />
+            </div>
 
             <div className="flex flex-col gap-md-0 w-full">
                {user?.userRole === 'lender' ? (
