@@ -92,8 +92,10 @@ export default function WhatsAppRemindersCard({
          const { data, error: rpcError } = await getSupabaseBrowserClient().rpc('start_whatsapp_verification');
          if (rpcError || !data) throw rpcError ?? new Error('No code returned');
          const newCode = String(data);
+         // No automatic open: opened by the page after the code request, Facebook's browser shows the
+         // api.whatsapp.com web page instead of the app (George, 2026-10-18). The panel's green button is
+         // a real link they tap, which hands the message to WhatsApp.
          setCode(newCode);
-         window.open(buildWhatsAppVerifyLink(newCode), '_blank', 'noopener,noreferrer');
          stopPolling();
          pollRef.current = window.setInterval(() => void check(), POLL_MS);
       } catch (err) {
@@ -136,7 +138,7 @@ export default function WhatsAppRemindersCard({
                disabled={starting}
                icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
                onClick={() => void start()}
-               subtitle={starting ? 'Opening WhatsApp…' : 'Notifications can’t work here. Tap, then hit send in WhatsApp.'}
+               subtitle={starting ? 'Getting your code…' : 'Notifications can’t work here. Tap to get your code, then send it on WhatsApp.'}
                title="Get reminders on WhatsApp"
             />
             {error ? <p className="text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
