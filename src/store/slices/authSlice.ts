@@ -77,7 +77,11 @@ const getTelegramProfileUpdates = (authData?: TelegramAuthData): Database['publi
       }
    }
 
-   if (authData?.username) {
+   // Only a real Telegram login (it carries a Telegram id). Email, guest and phone sign-ups also put a
+   // `username` in their metadata (the part before the @); copying that here made a fake, unique
+   // Telegram username, so the next person with the same email start couldn't sign up at all
+   // ("users_telegram_username_key", George 2026-10-18), and admin showed them as on Telegram.
+   if (telegramId !== undefined && authData?.username) {
       updates.telegram_username = authData.username;
    }
 
