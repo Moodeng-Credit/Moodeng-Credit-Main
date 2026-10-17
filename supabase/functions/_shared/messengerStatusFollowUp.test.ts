@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { CONTINUE_URL, continueLinkText, verificationFollowUpText } from './messengerStatusFollowUp.ts';
+import { CONTINUE_URL, continueLinkText, notYetReplyText, verificationFollowUpText } from './messengerStatusFollowUp.ts';
 
 Deno.test('a borrower already approved (Didit or World ID) hears their ID is already verified', () => {
    assertEquals(verificationFollowUpText({ is_didit: 'ACTIVE' })?.startsWith('✅'), true);
@@ -26,4 +26,16 @@ Deno.test('everyone else gets no link', () => {
    assertEquals(continueLinkText('Chrome'), null);
    assertEquals(continueLinkText('Safari'), null);
    assertEquals(continueLinkText(null), null);
+});
+
+Deno.test('every "not yet" reply links back to Moodeng', () => {
+   for (const reason of ['no_code', 'no_match', 'expired'] as const) {
+      assertEquals(notYetReplyText(reason).includes(CONTINUE_URL), true);
+   }
+});
+
+Deno.test('no code: tells them to paste it, not that it failed', () => {
+   const text = notYetReplyText('no_code');
+   assertEquals(text.includes('Paste'), true);
+   assertEquals(/didn't work|expired/i.test(text), false);
 });

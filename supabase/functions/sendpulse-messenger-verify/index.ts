@@ -5,9 +5,10 @@ import { personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { buildFacebookConnectedAlert, type LoanRecord } from '../_shared/facebookConnectedAlert.ts';
 import { extractMessengerCodes } from '../_shared/messengerCodes.ts';
+import { decideTimingMatch, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
 import { claimContactRows } from '../_shared/messengerContactLog.ts';
 import { messengerVerifiedStamp } from '../_shared/messengerStuckAlert.ts';
-import { continueLinkText, verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
+import { CONNECTED_BY_TIMING_TEXT, continueLinkText, type NotYetReason, notYetReplyText, verificationFollowUpText } from '../_shared/messengerStatusFollowUp.ts';
 import {
    findMessengerContactIdByCode,
    getMessengerContact,
@@ -127,6 +128,87 @@ const followUpWithStatus = async (svc: Svc, userId: string, contactId: string | 
    }
 };
 
+// Not confirmed yet (no code, a wrong one, an expired one): tell them what to do, with a link back to
+// Moodeng, instead of leaving them stranded in the chat. Sent a few seconds later, and skipped when they
+// got connected in the meantime: tapping Continue in a brand-new chat also lets sendpulse-events connect
+// them by timing (Android), and they shouldn't read "paste your code" right before "you're connected".
+const NOT_YET_DELAY_MS = 8_000;
+
+// No code, but they came in through our button: if exactly one borrower tapped "Open Messenger" in the
+// last minute and this Facebook account isn't anyone's Moodeng line yet, they're that borrower, so
+// connect them (the same timing rule sendpulse-events uses for brand-new chatters; this one also covers
+// people who had messaged the Page before, which SendPulse doesn't report when they tap Continue).
+// Confirms through this same endpoint, so every rule and alert of a code confirmation applies.
+const connectByTiming = async (svc: Svc, contactId: string, at: number): Promise<boolean> => {
+   const { data: linked } = await svc.from('users').select('id').eq('messenger_psid', contactId).limit(1);
+   if (linked?.length) return false;
+   const { data: rows } = await svc
+      .from('contact_verification_codes')
+      .select('code, user_id, chat_opened_at, expires_at')
+      .eq('channel', 'messenger')
+      .is('verified_at', null)
+      .gt('chat_opened_at', new Date(at - 2 * 60 * 1000).toISOString());
+   const live = ((rows ?? []) as Array<TimingAttempt & { expires_at: string }>).filter((r) => Date.parse(r.expires_at) > Date.now());
+   if (!live.length) return false;
+   const { data: users } = await svc
+      .from('users')
+      .select('id, user_role, account_status, messenger_verified_at')
+      .in('id', [...new Set(live.map((r) => r.user_id))]);
+   const eligible = new Set(
+      ((users ?? []) as Array<{ id: string; user_role: string | null; account_status: string | null; messenger_verified_at: string | null }>)
+         .filter((u) => !u.messenger_verified_at && u.user_role !== 'lender' && (!u.account_status || u.account_status === 'active'))
+         .map((u) => u.id)
+   );
+   const decision = decideTimingMatch(at, live.filter((r) => eligible.has(r.user_id)));
+   if (decision.kind !== 'auto') {
+      if (decision.kind === 'ambiguous') console.log(`sendpulse-messenger-verify: no code, ${decision.userIds.length} borrowers tapped together, not guessing`);
+      return false;
+   }
+   const res = await fetch(`${SUPABASE_URL}/functions/v1/sendpulse-messenger-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-sendpulse-secret': SECRET },
+      body: JSON.stringify({ code: decision.attempt.code, contact_id: contactId, quiet: true })
+   });
+   const result = ((await res.json().catch(() => null)) as { ok?: boolean; already?: boolean } | null) ?? {};
+   const seconds = Math.max(0, Math.round((at - Date.parse(decision.attempt.chat_opened_at)) / 1000));
+   console.log(`sendpulse-messenger-verify: no code → matched by timing (${seconds}s after the tap): ${result.ok ? (result.already ? 'already' : 'connected') : 'refused'}`);
+   return Boolean(result.ok);
+};
+
+const replyNotYet = (svc: Svc, contactId: string | null, reason: NotYetReason) => {
+   if (!contactId) {
+      console.log(`sendpulse-messenger-verify: ${reason}, no contact id to reply to`);
+      return;
+   }
+   const at = Date.now();
+   const reply = (async () => {
+      try {
+         await new Promise((resolve) => setTimeout(resolve, NOT_YET_DELAY_MS));
+         const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+         const { data: connected } = await svc
+            .from('users')
+            .select('id')
+            .eq('messenger_psid', contactId)
+            .gte('messenger_verified_at', since)
+            .limit(1);
+         if (connected?.length) {
+            console.log(`sendpulse-messenger-verify: ${reason} reply skipped, connected meanwhile`);
+            return;
+         }
+         if (reason === 'no_code' && (await connectByTiming(svc, contactId, at))) {
+            const sent = await sendMessengerMessage(contactId, { text: CONNECTED_BY_TIMING_TEXT });
+            console.log(`sendpulse-messenger-verify: connected-by-timing reply → ${sent.ok ? 'sent' : `not sent (${sent.reason})`}`);
+            return;
+         }
+         const result = await sendMessengerMessage(contactId, { text: notYetReplyText(reason) });
+         console.log(`sendpulse-messenger-verify: ${reason} reply → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+      } catch (err) {
+         console.error('sendpulse-messenger-verify: not-yet reply failed', err instanceof Error ? err.message : err);
+      }
+   })();
+   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(reply);
+};
+
 // WhatsApp reminders opt-in (channel 'whatsapp'). Same idea as Messenger, on the WhatsApp bot: the
 // borrower sends "Verify my Moodeng account: MDNG-XXXXXX" (pre-filled by the app's wa.me link, or the
 // code they copied) to our business number, and SendPulse's "Confirm WhatsApp" flow (keyword MDNG)
@@ -143,6 +225,8 @@ type VerifyBody = {
    name?: string;
    channel?: string;
    action?: string;
+   // From sendpulse-events re-checking a message the SendPulse flow also handles: no "not yet" reply.
+   quiet?: boolean;
    phone?: string;
 };
 
@@ -253,9 +337,13 @@ serve(async (req) => {
    // Accept whichever field SendPulse is configured to send the code in.
    const raw = String(body.code ?? body.ref ?? body.message ?? '').trim();
    const psid = body.psid ? String(body.psid) : null;
-   if (!raw) return json({ ok: false, error: 'no_code' });
-
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
+   const replyTo = body.quiet ? null : ((body.contact_id ? String(body.contact_id) : null) ?? psid);
+   if (!raw) {
+      replyNotYet(svc, replyTo, 'no_code');
+      return json({ ok: false, error: 'no_code' });
+   }
+
    const nowIso = new Date().toISOString();
 
    const codes = extractMessengerCodes(raw);
@@ -275,6 +363,7 @@ serve(async (req) => {
       if (!pending) continue;
 
       if (new Date(pending.expires_at).getTime() < Date.now()) {
+         replyNotYet(svc, replyTo, 'expired');
          return json({ ok: false, error: 'expired' });
       }
 
@@ -347,5 +436,6 @@ serve(async (req) => {
    }
 
    // No pending code matched — tell the flow so it can ask the borrower to recheck the code.
+   replyNotYet(svc, replyTo, codes.length ? 'no_match' : 'no_code');
    return json({ ok: false, error: 'no_match' });
 });
