@@ -48,6 +48,14 @@ export const requestContactSteps = ({
    return { contacts: true, videoCall: !isExistingBorrower && !hasAppliedReferral && !hasAttendedCall };
 };
 
+// What get_my_reminder_reach() says about the signed-in borrower (George, 2026-10-18).
+export type ReminderReach = { push_working: boolean; messenger_reachable: boolean; whatsapp_reachable: boolean };
+
+// Only email reaches them: no working push, no Messenger link, no WhatsApp. Their next loan request
+// brings the contacts step back with reminders required. Unknown (null) → false, today's flow.
+export const onlyEmailReaches = (reach: ReminderReach | null | undefined): boolean =>
+   reach != null && !reach.push_working && !reach.messenger_reachable && !reach.whatsapp_reachable;
+
 // Cal.com replaces Calendly for the video-call gate: its free plan has signed webhooks, so the
 // calcom-webhook edge function can confirm a real booking server-side instead of trusting the
 // client. `calLink` is the "<username>/<event-slug>" part after cal.com/ — set the real ones via

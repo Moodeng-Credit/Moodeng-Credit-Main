@@ -115,9 +115,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
    });
 
-   const render = async (userId = 'user-1', whatsappEnabled?: boolean) => {
+   const render = async (userId = 'user-1', whatsappEnabled?: boolean, requireReminders?: boolean) => {
       await act(async () => {
-         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled }));
+         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled, requireReminders }));
       });
       // Flush the initial "already verified?" load.
       await act(async () => {
@@ -568,6 +568,54 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
          expect(openSpy.mock.calls.at(-1)?.[0]).toContain('wa.me/66951659077');
          expect(container.textContent).toContain('MDNG-ABC123');
          expect(container.textContent).toContain('+66 95 165 9077');
+      });
+
+      describe('required (only email reaches them)', () => {
+         it('push can’t work: Continue stays locked until WhatsApp is on, and the card says Required', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(true);
+            expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
+            expect(container.textContent).toContain('Turn on WhatsApp reminders to continue.');
+         });
+
+         it('"I don’t have WhatsApp" lets them through', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(continueButton(container).disabled).toBe(false);
+            expect(container.textContent).not.toContain('Turn on WhatsApp reminders to continue.');
+         });
+
+         it('an old WhatsApp confirmation (sent STOP, or never linked) doesn’t count', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.whatsapp_verified_at = '2026-09-21T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(true);
+            expect(container.textContent).toContain('Get reminders on WhatsApp');
+         });
+
+         it('push works on this phone: push is required as before, no WhatsApp', async () => {
+            remindersOn();
+            push.state.isSupported = true;
+            push.state.permission = 'default';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(true);
+            expect(container.textContent).toContain('Turn on reminders to continue.');
+            expect(container.textContent).not.toContain('Get reminders on WhatsApp');
+         });
+
+         it('WhatsApp card switched off: nothing to require, Facebook is enough', async () => {
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, true);
+            expect(continueButton(container).disabled).toBe(false);
+         });
       });
 
       it('shows WhatsApp reminders as on once verified', async () => {

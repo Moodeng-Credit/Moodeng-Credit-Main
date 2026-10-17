@@ -123,7 +123,8 @@ export default function ContactsStep({
    whatsappEnabled = WHATSAPP_VERIFY_ENABLED,
    isSubmitting = false,
    source,
-   backLabel = 'Back'
+   backLabel = 'Back',
+   requireReminders = false
 }: {
    userId: string;
    onBack: () => void;
@@ -140,6 +141,9 @@ export default function ContactsStep({
    // The secondary button's label. /verify shows this card before the manual-review screen, where
    // "Back" would read oddly, so it passes "Skip for now".
    backLabel?: string;
+   // Loan request for someone only email reaches (no working push, Messenger or WhatsApp): reminders
+   // are required even where push can't work — WhatsApp instead, or "I don't have WhatsApp".
+   requireReminders?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
@@ -223,7 +227,6 @@ export default function ContactsStep({
    // Facebook is the required contact line. A WhatsApp line only counts here when the old "WhatsApp
    // instead of Messenger" card is switched on; otherwise WhatsApp is just the reminders channel below.
    const contactVerified = messengerVerified || (whatsappEnabled && whatsappVerified);
-   const canContinue = contactVerified && (pushOn || !pushRequired);
 
    // Where notifications can't work (no push at all here, blocked, or broken on this phone), offer
    // WhatsApp reminders instead. Recommended, not required: someone without WhatsApp still gets
@@ -246,6 +249,12 @@ export default function ContactsStep({
    }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
    const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
+   // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
+   // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
+   // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
+   const [skippedNoWhatsApp, setSkippedNoWhatsApp] = useState(false);
+   const whatsappRequired = requireReminders && offerWhatsAppReminders && !whatsappVerified && !skippedNoWhatsApp;
+   const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
@@ -333,7 +342,9 @@ export default function ContactsStep({
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
-         if (data.whatsapp_verified_at) setWhatsappVerified(true);
+         // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
+         // an old confirmation doesn't count: they send a fresh code.
+         if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
          if (data.messenger_verified_at) {
             setMessengerVerified(true);
             return;
@@ -346,7 +357,7 @@ export default function ContactsStep({
       return () => {
          cancelled = true;
       };
-   }, [userId, iosMessenger]);
+   }, [userId, iosMessenger, requireReminders]);
 
    useEffect(() => {
       const onHide = () => {
@@ -409,13 +420,14 @@ export default function ContactsStep({
          .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${userId}` }, (payload) => {
             const row = payload.new as { messenger_verified_at?: string | null; whatsapp_verified_at?: string | null };
             if (row.messenger_verified_at) setMessengerVerified(true);
-            if (row.whatsapp_verified_at) setWhatsappVerified(true);
+            // requireReminders: the WhatsApp card watches for its own fresh confirmation instead.
+            if (row.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
          })
          .subscribe();
       return () => {
          void client.removeChannel(channel);
       };
-   }, [userId, contactVerified]);
+   }, [userId, contactVerified, requireReminders]);
 
    // Onboarding: confirmed while they're here → a beat to see the green check, then straight on to the
    // "Facebook connected!" screen, no extra tap. If reminders are still required, the reminders card
@@ -1014,7 +1026,9 @@ export default function ContactsStep({
                         : pushBlocked
                           ? 'Blocked in your browser. Tap to see how to turn it on.'
                           : pushUnavailable
-                          ? 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
+                          ? requireReminders
+                             ? 'Not working on this phone.'
+                             : 'Not working on this phone. You can continue — we’ll remind you on Messenger and email.'
                           : nudgeReminders
                           ? 'One more tap — turn on reminders and you’re through.'
                           : 'We remind you before your due date'
@@ -1026,10 +1040,23 @@ export default function ContactsStep({
          {offerWhatsAppReminders && contactVerified ? (
             <WhatsAppRemindersCard
                onVerified={() => setWhatsappVerified(true)}
+               required={requireReminders && !skippedNoWhatsApp}
                source={source}
                userId={userId}
                verified={whatsappVerified}
             />
+         ) : null}
+         {requireReminders && offerWhatsAppReminders && contactVerified && !whatsappVerified && !skippedNoWhatsApp ? (
+            <button
+               className="self-center text-md-b3 font-[590] text-[#877897] underline"
+               onClick={() => {
+                  track('contact_whatsapp_reminders_skipped', { source, push_blocked: pushBlocked, push_failures: pushFailures });
+                  setSkippedNoWhatsApp(true);
+               }}
+               type="button"
+            >
+               I don&apos;t have WhatsApp
+            </button>
          ) : null}
 
          {/* Where push can't run (iPhone not on the Home Screen, Facebook's in-app browser) we used
@@ -1063,6 +1090,9 @@ export default function ContactsStep({
             ) : null}
             {contactVerified && pushRequired && !pushOn ? (
                <p className="text-center text-md-b3 text-[#877897]">Turn on reminders to continue.</p>
+            ) : null}
+            {contactVerified && whatsappRequired ? (
+               <p className="text-center text-md-b3 text-[#877897]">Turn on WhatsApp reminders to continue.</p>
             ) : null}
             <GhostButton onClick={handleBack}>{backLabel}</GhostButton>
          </div>
