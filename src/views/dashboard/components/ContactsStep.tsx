@@ -181,6 +181,8 @@ export default function ContactsStep({
    // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
    // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
    const androidInApp = androidMessenger && inAppInfo.isInApp;
+   // iPhone too: the Messenger link does open Messenger from there (George's iPhone, 2026-10-18); what
+   // people miss is that they must paste the code. Both get the "📋 Code copied: paste it" card.
    // Their tap on "Copy code & open Messenger" copies the code and shows how to paste it, then opens
    // Messenger by itself after a short countdown (or at once if they tap). Facebook's Android browser
    // sometimes ignores an app link the page opens without a tap, so if the page is still showing a
@@ -651,12 +653,6 @@ export default function ContactsStep({
       leftAtRef.current = null;
       awaitingMessengerRef.current = true;
       writePending({ userId, code: messengerCode, link, at: Date.now() });
-      // iPhone in Facebook's browser: nothing opens from here (every app link is dropped), so there's
-      // no "Messenger didn't open" to detect — they go to Messenger themselves.
-      if (iosInAppMessenger) {
-         event?.preventDefault();
-         return;
-      }
       armNotOpenedCheck();
    };
 
@@ -846,25 +842,48 @@ export default function ContactsStep({
                <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Connect on Messenger</span>
                {iosInAppMessenger ? (
                   <>
-                     {/* iPhone inside Facebook's / Messenger's own browser. Nothing can open Messenger or Safari
-                         from here (both app links are dropped; Emma, 2026-10-17), so the borrower carries the
-                         code over themselves. The bot confirms it, and this card turns green on its own
-                         (realtime + poll) whenever they come back. Same words for both apps: on iPhone both
-                         say FBAN/FBIOS, so we can't tell which one this is. */}
+                     {/* iPhone inside Facebook's / Messenger's own browser: copy the code, open our chat, paste it
+                         (the paste card says so in big letters). The bot confirms it, and this card turns green
+                         on its own (realtime + poll) whenever they come back. Same words for both apps: on
+                         iPhone both say FBAN/FBIOS, so we can't tell which one this is. */}
                      <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
                         Send this code to <b>Moodeng Credit</b> on Messenger and you&apos;re done.
                      </p>
                      <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
                         {messengerCode}
                      </code>
-                     <button
-                        type="button"
-                        onClick={() => openMessengerChat()}
-                        className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
-                     >
-                        <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                        {codeCopied ? 'Code copied ✓' : 'Copy code'}
-                     </button>
+                     {pasteCard ? (
+                        <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                              {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                              <span className="whitespace-nowrap">{messengerCode}</span>
+                           </p>
+                           <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
+                              In our chat, press and hold the message box, tap <b>Paste</b>, then <b>Send</b>.
+                           </p>
+                           <a
+                              href={MESSENGER_APP_CHAT_LINK}
+                              onClick={(event) => openMessengerChat(event)}
+                              className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                           >
+                              <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                              {autoOpenStuck
+                                 ? 'Tap to open Messenger'
+                                 : pasteCountdown !== null && pasteCountdown > 0
+                                   ? `Open Messenger (${pasteCountdown})`
+                                   : 'Open Messenger'}
+                           </a>
+                        </div>
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={showPasteCard}
+                           className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                        >
+                           <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                           Copy code & open Messenger
+                        </button>
+                     )}
                      {copyFailed ? (
                         <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
                            Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
@@ -873,19 +892,19 @@ export default function ContactsStep({
                      <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
                         <li className="flex gap-2">
                            <b>1.</b>
-                           <span>Copy the code.</span>
+                           <span>Tap the blue button. It copies your code and opens our chat.</span>
                         </li>
                         <li className="flex gap-2">
                            <b>2.</b>
                            <span>
-                              <b>In Messenger?</b> Tap <b>Done</b> or <b>✕</b> at the top. <b>In Facebook?</b> Open your{' '}
-                              <b>Messenger</b> app.
+                              <b>Paste the code in the chat and send it:</b> press and hold the message box, tap Paste, then Send.
                            </span>
                         </li>
                         <li className="flex gap-2">
                            <b>3.</b>
                            <span>
-                              Open the <b>Moodeng Credit</b> chat (search for it), paste the code, and send it.
+                              Messenger didn&apos;t open? Tap <b>Done</b> or <b>✕</b> at the top (or open the Messenger app), find the{' '}
+                              <b>Moodeng Credit</b> chat, and paste it there.
                            </span>
                         </li>
                         <li className="flex gap-2">
@@ -938,7 +957,10 @@ export default function ContactsStep({
                          code request, or as m.me, Messenger never comes up. */}
                      {androidInApp && pasteCard ? (
                         <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
-                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">📋 Code copied: {messengerCode}</p>
+                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                              {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                              <span className="whitespace-nowrap">{messengerCode}</span>
+                           </p>
                            <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
                               In our chat, press and hold the message box, tap <b>Paste</b>, then <b>Send</b>.
                            </p>

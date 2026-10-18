@@ -307,7 +307,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       }
    });
 
-   it('iPhone in Facebook: no dead app links — copy the code (stamped), and Safari via ⋯ carries the code', async () => {
+   it('iPhone in Facebook: the tap copies the code and shows how to paste it; Safari via ⋯ carries the code', async () => {
       Object.defineProperty(navigator, 'userAgent', {
          value:
             'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBAV/582.0.0.26.106;FBSN/iOS]',
@@ -321,18 +321,21 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       await render();
       await tapMessengerCard();
 
-      // Every app link is dropped there (Emma, 2026-10-17): nothing on the card tries to open one.
-      const appLinks = Array.from(container.querySelectorAll('a')).filter((a) => /^(fb-messenger|x-safari|googlechrome)/.test(a.getAttribute('href') ?? ''));
-      expect(appLinks).toHaveLength(0);
+      // No x-safari link (dropped there). Paste is the main step.
+      const safariLinks = Array.from(container.querySelectorAll('a')).filter((a) => /^x-safari/.test(a.getAttribute('href') ?? ''));
+      expect(safariLinks).toHaveLength(0);
       expect(container.textContent).toContain('MDNG-ABC123');
+      expect(container.textContent).toContain('Paste the code in the chat and send it');
 
       await act(async () => {
-         buttonByText(container, 'Copy code')?.click();
+         buttonByText(container, 'Copy code & open Messenger')?.click();
          await Promise.resolve();
       });
       expect(document.execCommand).toHaveBeenCalledWith('copy');
-      expect(supa.rpc).toHaveBeenCalledWith('mark_messenger_chat_opened');
-      expect(container.textContent).toContain('Code copied ✓');
+      // The paste card: what to do once Messenger opens, then it opens our chat.
+      expect(container.textContent).toContain('📋 Code copied: MDNG-ABC123');
+      const openLink = Array.from(container.querySelectorAll('a')).find((a) => a.textContent?.includes('Open Messenger'));
+      expect(openLink?.getAttribute('href')).toBe(MESSENGER_APP_CHAT_LINK);
 
       // "Open in Safari" shows the ⋯ steps and puts the code in the address Facebook's menu will open.
       await act(async () => {
@@ -355,7 +358,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       await render();
       await tapMessengerCard();
       await act(async () => {
-         buttonByText(container, 'Copy code')?.click();
+         buttonByText(container, 'Copy code & open Messenger')?.click();
          await Promise.resolve();
          await Promise.resolve();
       });
