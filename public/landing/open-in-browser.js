@@ -149,7 +149,7 @@
                '<div style="display:flex;width:100%;max-width:380px;align-items:flex-end;justify-content:space-between;gap:8px">' +
                '<p style="margin:0;padding-bottom:8px;font-size:22px;line-height:28px;font-weight:800">' +
                (chromeFailed ? 'Chrome didn’t open? ' : '') + 'Open Moodeng in ' + browser + '</p>' +
-               '<img alt="" src="/hippos/hippo-point-menu.png" style="height:128px;width:auto;flex:none;margin-right:-8px;pointer-events:none"></div>' +
+               '<img alt="" src="/hippos/hippo-point-menu.png" style="height:128px;width:auto;flex:none;margin-right:48px;pointer-events:none"></div>' +
                '<div style="margin-top:12px;display:flex;width:100%;max-width:380px;flex-direction:column;gap:16px">' +
                '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">1</span>Tap ' + icon + ' at the top right</p>' +
                '<div aria-hidden="true" style="' + frame + '"><div style="display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +

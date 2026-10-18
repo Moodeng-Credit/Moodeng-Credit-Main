@@ -57,7 +57,7 @@ export default function MenuGuide({
             <p id="menu-guide-title" className="pb-2 text-[22px] font-extrabold leading-[28px]">
                {chromeFailed ? 'Chrome didn’t open? ' : ''}Open Moodeng in {browser}
             </p>
-            <img alt="" className="pointer-events-none -mr-2 h-32 w-auto shrink-0" src="/hippos/hippo-point-menu.png" />
+            <img alt="" className="pointer-events-none mr-12 h-32 w-auto shrink-0" src="/hippos/hippo-point-menu.png" />
          </div>
          <div className="mt-3 flex w-full max-w-[380px] flex-col gap-4">
 
