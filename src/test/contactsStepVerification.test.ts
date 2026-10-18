@@ -72,7 +72,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -115,9 +115,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
    });
 
-   const render = async (userId = 'user-1', whatsappEnabled?: boolean, requireReminders?: boolean) => {
+   const render = async (userId = 'user-1', whatsappEnabled?: boolean, requireReminders?: boolean, source?: 'connect') => {
       await act(async () => {
-         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled, requireReminders }));
+         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled, requireReminders, source }));
       });
       // Flush the initial "already verified?" load.
       await act(async () => {
@@ -655,6 +655,31 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(continueButton(container).disabled).toBe(true);
             expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
             expect(container.textContent).toContain('Turn on WhatsApp reminders to continue.');
+         });
+
+         it('onboarding (connect): WhatsApp is required where notifications can’t work, too', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(continueButton(container).disabled).toBe(true);
+            expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
+            expect(buttonByText(container, 'I don’t have WhatsApp'.replace('’', "'"))).toBeTruthy();
+         });
+
+         it('blocked notifications: one reminders card, WhatsApp first, the bell only after "I don’t have WhatsApp"', async () => {
+            remindersOn();
+            push.state.isSupported = true;
+            push.state.permission = 'denied';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeTruthy();
+            expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
          });
 
          it('"I don’t have WhatsApp" lets them through', async () => {

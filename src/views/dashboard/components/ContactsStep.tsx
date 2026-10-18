@@ -282,8 +282,17 @@ export default function ContactsStep({
    // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
    // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
    const [skippedNoWhatsApp, setSkippedNoWhatsApp] = useState(false);
-   const whatsappRequired = requireReminders && offerWhatsAppReminders && !whatsappVerified && !skippedNoWhatsApp;
+   // Onboarding (George, 18 Oct): we need one way to remind every borrower. Where notifications can't
+   // work (Facebook's / Messenger's browser), that's WhatsApp, required like at loan time, with the same
+   // "I don't have WhatsApp" way out. Confirming it also gives us their phone number.
+   const remindersMandatory = requireReminders || source === 'connect';
+   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !skippedNoWhatsApp;
    const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
+   // One reminders card, not two (George, 18 Oct): where WhatsApp is offered, notifications can't
+   // work, so the bell card only comes back after "I don't have WhatsApp" (how to unblock them).
+   const pushCardPossible = pushRequired || pushBlocked || pushUnavailable;
+   const showPushCard = pushCardPossible && contactVerified && (!offerWhatsAppReminders || skippedNoWhatsApp);
+   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !(skippedNoWhatsApp && pushCardPossible);
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
@@ -1151,7 +1160,7 @@ export default function ContactsStep({
                title={offerWhatsAppReminders ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
             />
          ) : null}
-         {(pushRequired || pushBlocked || pushUnavailable) && contactVerified ? (
+         {showPushCard ? (
             // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
             <div className={nudgeReminders ? 'connect-shake' : undefined}>
                <OptionCard
@@ -1186,16 +1195,16 @@ export default function ContactsStep({
                />
             </div>
          ) : null}
-         {offerWhatsAppReminders && contactVerified ? (
+         {showWhatsAppCard ? (
             <WhatsAppRemindersCard
                onVerified={() => setWhatsappVerified(true)}
-               required={requireReminders && !skippedNoWhatsApp}
+               required={remindersMandatory && !skippedNoWhatsApp}
                source={source}
                userId={userId}
                verified={whatsappVerified}
             />
          ) : null}
-         {requireReminders && offerWhatsAppReminders && contactVerified && !whatsappVerified && !skippedNoWhatsApp ? (
+         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {
