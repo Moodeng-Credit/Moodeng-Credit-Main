@@ -9,7 +9,7 @@
 //
 // Setup (once):
 //   1. Emulator running with Viber signed in (scripts/viber-relay/README.md).
-//   2. ~/.moodeng-viber-relay.json  { "supabaseUrl": "...", "publishableKey": "...", "token": "<VIBER_RELAY_TOKEN>" }
+//   2. ~/.moodeng-viber-relay/config.json  { "supabaseUrl": "...", "publishableKey": "...", "token": "<VIBER_RELAY_TOKEN>" }
 //      The token is the Vault secret VIBER_RELAY_TOKEN; nothing else secret lives on this Mac.
 //
 // Run:   node scripts/viber-relay/relay.mjs              (loop)
@@ -156,7 +156,7 @@ export const sendInOpenChat = async (body) => {
 // Supabase: two RPCs, authorised by the relay token only.
 
 const loadConfig = () => {
-   const path = process.env.VIBER_RELAY_CONFIG ?? join(homedir(), '.moodeng-viber-relay.json');
+   const path = process.env.VIBER_RELAY_CONFIG ?? join(homedir(), '.moodeng-viber-relay', 'config.json');
    const cfg = JSON.parse(readFileSync(path, 'utf8'));
    for (const key of ['supabaseUrl', 'publishableKey', 'token']) if (!cfg[key]) throw new Error(`${path}: missing ${key}`);
    return cfg;

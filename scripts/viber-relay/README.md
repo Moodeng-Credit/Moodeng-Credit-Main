@@ -3,17 +3,22 @@
 Sends Moodeng's Viber reminders and opt-in codes from George's Viber, signed in on the Android emulator
 `MoodengPixel`. Viber's business API costs €100+/month; this drives the Viber app instead.
 
-## Start it
+## How it runs (George's MacBook)
 
-1. Start the emulator: `~/Library/Android/sdk/emulator/emulator -avd MoodengPixel &` (Viber is installed and signed in).
-2. Run `node scripts/viber-relay/relay.mjs`, and leave the terminal open. Every 20 s it sends whatever is queued.
+A login item, `~/Library/LaunchAgents/app.moodeng.viber-relay.plist`, runs `~/.moodeng-viber-relay/start.sh`:
+it boots the emulator with no window, keeps its screen awake, and runs a copy of `relay.mjs` from
+`~/.moodeng-viber-relay/`. launchd restarts it if it stops. Log: `~/.moodeng-viber-relay/relay.log`.
 
-The Mac has to stay awake while the emulator is running. If messages wait more than 10 minutes, the team Telegram
-group gets an alert (`private.viber_watchdog`).
+- Stop: `launchctl bootout gui/$(id -u)/app.moodeng.viber-relay`
+- Start: `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/app.moodeng.viber-relay.plist`
+- After changing `relay.mjs` here, copy it to `~/.moodeng-viber-relay/` and restart.
+
+It only runs while the Mac is awake. Anything unsent after 10 minutes goes to the team Telegram group to send
+by hand (`private.viber_watchdog`).
 
 ## Config
 
-`~/.moodeng-viber-relay.json` (or the path in `VIBER_RELAY_CONFIG`):
+`~/.moodeng-viber-relay/config.json` (or the path in `VIBER_RELAY_CONFIG`):
 
 ```json
 { "supabaseUrl": "https://qplmmxynzxzkfxtayoqr.supabase.co", "publishableKey": "sb_publishable_…", "token": "<Vault VIBER_RELAY_TOKEN>" }
