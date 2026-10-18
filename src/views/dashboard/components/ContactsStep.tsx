@@ -24,6 +24,7 @@ import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
+import TelegramRemindersCard from '@/views/dashboard/components/TelegramRemindersCard';
 import ViberRemindersCard, { ComingSoonChannel } from '@/views/dashboard/components/ViberRemindersCard';
 import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
 
@@ -148,8 +149,9 @@ export default function ContactsStep({
    requireReminders?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
-   // Viber reminders (no WhatsApp): a confirmed Viber number they haven't turned off.
+   // No-WhatsApp reminders: a Viber number they haven't turned off, or a linked Telegram (chat_id).
    const [viberVerified, setViberVerified] = useState(false);
+   const [telegramVerified, setTelegramVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
    const [startingChannel, setStartingChannel] = useState<Channel | null>(null);
    // The Messenger link we opened. Once set, the card shows a short "waiting" state with a button to
@@ -306,22 +308,20 @@ export default function ContactsStep({
    // work (Facebook's / Messenger's browser), that's WhatsApp, required like at loan time, with the same
    // "I don't have WhatsApp" way out. Confirming it also gives us their phone number.
    const remindersMandatory = requireReminders || source === 'connect';
-   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !viberVerified && !skippedNoWhatsApp;
+   // Viber or Telegram on stands in for WhatsApp where notifications can't work.
+   const otherReminderOn = viberVerified || telegramVerified;
+   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp;
    const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
-   // One reminders card, not two (George, 18 Oct): where WhatsApp is offered, notifications can't
-   // work, so the bell card only comes back after "I don't have WhatsApp" (how to unblock them).
-   // After "I don't have WhatsApp": Viber when it's on, else the bell card. A confirmed Viber stands in
-   // for WhatsApp.
-   // Only where notifications can't work (offerWhatsAppReminders): where they do, the bell card stays the
-   // reminders step even for someone who added Viber elsewhere.
-   const pushCardPossible = pushRequired || pushBlocked || pushUnavailable;
-   const viberStandsIn = offerWhatsAppReminders && viberVerified;
-   const offerViberAfterSkip = viberRemindersEnabled && offerWhatsAppReminders && skippedNoWhatsApp && !whatsappVerified;
-   const showViberCard = contactVerified && (viberStandsIn || offerViberAfterSkip);
-   const showPushCard =
-      pushCardPossible && contactVerified && (!offerWhatsAppReminders || (skippedNoWhatsApp && !viberRemindersEnabled && !viberVerified));
-   const showWhatsAppCard =
-      offerWhatsAppReminders && contactVerified && !viberVerified && !(skippedNoWhatsApp && (pushCardPossible || viberRemindersEnabled));
+   // One way to remind them at a time (George, 18–19 Oct). Where notifications work: the bell card.
+   // Where they can't: WhatsApp; after "I don't have WhatsApp": Telegram, Viber (when its relay is on)
+   // and SMS greyed out as coming soon. A linked Viber or Telegram replaces the WhatsApp card.
+   const afterNoWhatsApp = offerWhatsAppReminders && skippedNoWhatsApp && !whatsappVerified;
+   const showPushCard = (pushRequired || pushBlocked || pushUnavailable) && contactVerified && !offerWhatsAppReminders;
+   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !otherReminderOn && !skippedNoWhatsApp;
+   const showTelegramCard = offerWhatsAppReminders && contactVerified && (telegramVerified || (afterNoWhatsApp && !viberVerified));
+   const showViberCard =
+      offerWhatsAppReminders && contactVerified && (viberVerified || (afterNoWhatsApp && viberRemindersEnabled && !telegramVerified));
+   const showSmsComingSoon = afterNoWhatsApp && contactVerified && !otherReminderOn;
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
@@ -330,7 +330,7 @@ export default function ContactsStep({
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
    // to fix it in Chrome/Safari and the team gets a heads-up (messenger-stuck-alerts, `reminders: true`), at most once a day.
-   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified || viberVerified
+   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified || otherReminderOn
       ? null
       : pushUnavailable
         ? 'failed'
@@ -405,11 +405,12 @@ export default function ContactsStep({
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at, viber_verified_at, notif_viber')
+            .select('whatsapp_verified_at, messenger_verified_at, viber_verified_at, notif_viber, chat_id')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
          if (data.viber_verified_at && data.notif_viber !== false) setViberVerified(true);
+         if (data.chat_id) setTelegramVerified(true);
          // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
          // an old confirmation doesn't count: they send a fresh code.
          if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
@@ -508,12 +509,12 @@ export default function ContactsStep({
    useEffect(() => {
       // Not while the WhatsApp reminders offer is up: moving on by itself would hide it before they see it.
       if (source !== 'connect' || !confirmedNow || !canContinue || autoContinueTimerRef.current !== null) return;
-      if (offerWhatsAppReminders && !whatsappVerified && !viberVerified) return;
+      if (offerWhatsAppReminders && !whatsappVerified && !otherReminderOn) return;
       autoContinueTimerRef.current = window.setTimeout(() => {
          track('contact_verify_auto_continue', { source, attempts: attemptsRef.current, push_on: pushOn });
          onContinueRef.current();
       }, AUTO_CONTINUE_MS);
-   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified, viberVerified]);
+   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified, otherReminderOn]);
    useEffect(
       () => () => {
          if (autoContinueTimerRef.current !== null) window.clearTimeout(autoContinueTimerRef.current);
@@ -1234,14 +1235,14 @@ export default function ContactsStep({
                verified={whatsappVerified}
             />
          ) : null}
-         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
-         {offerViberAfterSkip && !viberVerified ? (
-            <>
-               <ComingSoonChannel icon={<i aria-hidden="true" className="fab fa-telegram text-[34px] leading-none" />} title="Telegram reminders" />
-               <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
-            </>
+         {showTelegramCard ? (
+            <TelegramRemindersCard onVerified={() => setTelegramVerified(true)} source={source} userId={userId} verified={telegramVerified} />
          ) : null}
-         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !viberVerified && !skippedNoWhatsApp ? (
+         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
+         {showSmsComingSoon ? (
+            <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
+         ) : null}
+         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {

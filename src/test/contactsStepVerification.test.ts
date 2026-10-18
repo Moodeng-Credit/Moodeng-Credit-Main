@@ -72,7 +72,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Get reminders on Viber') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Get reminders on Viber' | 'Get reminders on Telegram') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -666,7 +666,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(buttonByText(container, 'I don’t have WhatsApp'.replace('’', "'"))).toBeTruthy();
          });
 
-         it('blocked notifications: one reminders card, WhatsApp first, the bell only after "I don’t have WhatsApp"', async () => {
+         it('no WhatsApp: Telegram instead (Viber off), SMS greyed out, never the bell; Telegram linked turns it on', async () => {
             remindersOn();
             push.state.isSupported = true;
             push.state.permission = 'denied';
@@ -677,8 +677,22 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             await act(async () => {
                buttonByText(container, "I don't have WhatsApp")?.click();
             });
-            expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
+            expect(channelCard(container, 'Get reminders on Telegram')).toBeTruthy();
+            expect(channelCard(container, 'Get reminders on Viber')).toBeFalsy();
+            expect(container.textContent).toContain('SMS reminders');
+            expect(container.textContent).toContain('Coming soon');
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('a linked Telegram stands in for WhatsApp', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            (supa.state.usersRow as Record<string, unknown>).chat_id = 123456;
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(container.textContent).toContain('Telegram reminders');
             expect(continueButton(container).disabled).toBe(false);
          });
 
