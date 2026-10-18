@@ -134,30 +134,36 @@
          var showPointer = function (chromeFailed) {
             if (wrap.querySelector('[data-iab-pointer]')) return;
             var icon = isAndroid ? '⋮' : '⋯';
-            var item = isAndroid ? 'Open in Chrome' : '🧭 Open in external browser';
-            var chip = 'border:2px dashed rgba(255,255,255,.7);';
-            var num = 'display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border-radius:999px;background:#FFD43B;color:#1a0f2e;font-weight:900;font-size:16px';
-            var row = 'display:flex;align-items:center;gap:12px;border-radius:16px;background:rgba(255,255,255,.1);padding:12px 16px;font-size:17px;line-height:23px';
+            var item = isAndroid ? 'Open in Chrome' : 'Open in external browser';
+            var ring = 'box-shadow:0 0 0 2px #fff,0 0 0 5px #FFD43B;';
+            var num = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:999px;background:#FFD43B;color:#1a0f2e;font-weight:900;font-size:15px';
+            var stepTitle = 'display:flex;align-items:center;gap:8px;margin:0;font-size:17px;line-height:22px;font-weight:700';
+            var frame = 'pointer-events:none;user-select:none;border-radius:16px;background:#2a2140;padding:10px';
             var pointer = document.createElement('div');
             pointer.setAttribute('data-iab-pointer', '');
             pointer.setAttribute('role', 'dialog');
             pointer.style.cssText =
-               'position:fixed;inset:0;z-index:2147483601;background:#120a1f;color:#fff;box-sizing:border-box;' +
-               'display:flex;flex-direction:column;align-items:flex-end;padding:8px 20px 0;font-family:inherit;text-align:left';
+               'position:fixed;inset:0;z-index:2147483601;overflow-y:auto;background:#120a1f;color:#fff;box-sizing:border-box;' +
+               'display:flex;flex-direction:column;align-items:center;padding:8px 20px 24px;font-family:inherit;text-align:left';
             pointer.innerHTML =
-               '<span aria-hidden="true" style="font-size:52px;line-height:1;font-weight:900;margin-right:8px">↑</span>' +
-               '<div style="margin-top:4px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px">' +
-               '<p style="margin:0;text-align:right;font-size:24px;line-height:30px;font-weight:800">' +
-               (chromeFailed ? 'Chrome didn’t open? ' : '') + 'Open Moodeng in ' + browser + ' in 2 taps</p>' +
-               '<div style="' + row + '"><span style="' + num + '">1</span><span>Tap</span>' +
-               '<span style="' + chip + 'display:flex;align-items:center;justify-content:center;min-width:40px;height:40px;border-radius:999px;padding:0 8px;font-size:22px;font-weight:900;line-height:1">' + icon + '</span>' +
-               '<span>at the top right</span></div>' +
-               '<div style="' + row + '"><span style="' + num + '">2</span><span>Tap</span>' +
-               '<span style="' + chip + 'border-radius:12px;padding:6px 12px;font-size:16px;font-weight:700;line-height:20px">' + item + '</span></div>' +
-               '<p style="margin:0;text-align:right;font-size:14px;line-height:20px;opacity:.7">(or <b>' + (isAndroid ? 'Open in browser' : 'Open in Safari') + '</b>) · ' + browser + ' opens straight on sign-up</p>' +
+               '<div style="display:flex;width:100%;max-width:380px;align-items:flex-end;justify-content:space-between;gap:8px">' +
+               '<p style="margin:0;padding-bottom:8px;font-size:22px;line-height:28px;font-weight:800">' +
+               (chromeFailed ? 'Chrome didn’t open? ' : '') + 'Open Moodeng in ' + browser + '</p>' +
+               '<img alt="" src="/hippos/hippo-point-menu.png" style="height:128px;width:auto;flex:none;margin-right:-8px;pointer-events:none"></div>' +
+               '<div style="margin-top:12px;display:flex;width:100%;max-width:380px;flex-direction:column;gap:16px">' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">1</span>Tap ' + icon + ' at the top right</p>' +
+               '<div aria-hidden="true" style="' + frame + '"><div style="display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +
+               '<span style="font-size:18px;line-height:1">✕</span>' +
+               '<span style="display:flex;flex-direction:column;align-items:center;line-height:1.2"><span style="font-size:14px;font-weight:600">🔒 moodeng.app</span><span style="font-size:11px;color:#8e8e93">' + (app || 'Messenger') + '</span></span>' +
+               '<span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;font-size:20px;font-weight:900;line-height:1;' + ring + '">' + icon + '</span>' +
+               '</div></div></div>' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">2</span>Tap “' + item + '”</p>' +
+               '<div aria-hidden="true" style="' + frame + '"><div style="border-radius:12px;background:#fff;color:#1c1c1e;padding:6px 8px">' +
+               '<div style="display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;' + ring + '">' + (isAndroid ? '🌐 ' : '🧭 ') + item + '</div>' +
+               '</div></div></div>' +
+               '<p style="margin:0;font-size:14px;line-height:20px;opacity:.7">Don’t see it? It may say <b>' + (isAndroid ? 'Open in browser' : 'Open in Safari') + '</b>. ' + browser + ' opens straight on sign-up.</p>' +
                '</div>' +
-               '<img alt="" src="/hippos/hippo-point-up-right.png" style="margin-top:auto;height:160px;width:auto;align-self:flex-start;pointer-events:none">' +
-               '<button data-iab-pointer-close type="button" style="align-self:center;margin:12px 0 32px;min-height:48px;width:100%;max-width:400px;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:none;color:#fff;font:inherit;font-size:16px;font-weight:700">Got it</button>';
+               '<button data-iab-pointer-close type="button" style="margin-top:auto;min-height:48px;width:100%;max-width:400px;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:none;color:#fff;font:inherit;font-size:16px;font-weight:700">Got it</button>';
             pointer.addEventListener('click', function () {
                pointer.remove();
             });

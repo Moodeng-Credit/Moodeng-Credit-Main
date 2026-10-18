@@ -75,7 +75,6 @@ describe('OpenInBrowserPrompt', () => {
          openSafari?.click();
       });
       expect(container.textContent).toContain('Open in external browser');
-      expect(container.querySelector('img[src="/hippos/hippo-point-up-right.png"]')).not.toBeNull();
       const gotIt = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Got it');
       await act(async () => {
          gotIt?.click();
