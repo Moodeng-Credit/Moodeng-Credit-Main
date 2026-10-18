@@ -682,10 +682,10 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(continueButton(container).disabled).toBe(false);
          });
 
-         it('Viber on: "I don’t have WhatsApp" swaps WhatsApp for the Viber card; a confirmed code turns it on', async () => {
+         it('Viber on: "I don’t have WhatsApp" swaps WhatsApp for the Viber card; their number turns it on', async () => {
             supa.rpc.mockImplementation(async (name: string) => {
                if (name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled') return { data: true, error: null };
-               if (name === 'start_viber_verification' || name === 'confirm_viber_verification') return { data: 'ok', error: null };
+               if (name === 'set_my_viber_number') return { data: 'ok', error: null };
                return supa.state.rpcResult;
             });
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
@@ -705,19 +705,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
                phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
             });
             await act(async () => {
-               buttonByText(container, 'Send my code on Viber')?.click();
-            });
-            expect(supa.rpc).toHaveBeenCalledWith('start_viber_verification', { p_phone: '09171234567' });
-            const codeInput = container.querySelector<HTMLInputElement>('input[autocomplete="one-time-code"]')!;
-            await act(async () => {
-               const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
-               setter.call(codeInput, '123456');
-               codeInput.dispatchEvent(new Event('input', { bubbles: true }));
-            });
-            await act(async () => {
                buttonByText(container, 'Turn on Viber reminders')?.click();
             });
-            expect(supa.rpc).toHaveBeenCalledWith('confirm_viber_verification', { p_code: '123456' });
+            expect(supa.rpc).toHaveBeenCalledWith('set_my_viber_number', { p_phone: '09171234567' });
             expect(container.textContent).toContain('Viber reminders');
             expect(container.textContent).toContain('On');
          });
