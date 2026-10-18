@@ -34,4 +34,15 @@ by hand (`private.viber_watchdog`).
 - `--send 63917… "text"`: send one message to a number, without Supabase.
 - `--here "text"`: type and send in the chat that's open now (e.g. My Notes).
 - `--type-check "text"`: type into the open chat, read it back, clear it (never sends).
+- `--inbox`: show borrower replies the relay would forward now (forwards nothing).
+- `--contact 63917…`: save a number as an "MDNG +…" contact.
 - `--dump`: print the screen's elements, to fix taps after a Viber update.
+
+## Replies
+
+Every borrower the relay messages is saved as a phone contact named `MDNG +<number>`. Each pass, the relay
+reads Viber's notifications and forwards new messages from `MDNG` contacts to the team Telegram group
+(`viber_relay_inbound`, copy kept in `viber_inbox`). Messages from anyone else (George's own chats on the
+same account) are never forwarded.
+
+`mac/` holds copies of `start.sh` and the launchd plist installed on George's MacBook.

@@ -19,7 +19,7 @@
 //        node scripts/viber-relay/relay.mjs --dump       (print the screen's UI elements, for fixing taps)
 
 import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -164,9 +164,51 @@ const typeAndSend = async (composer, body) => {
    if (after?.text && after.text.length > 3 && !/^message/i.test(after.text)) throw new Error('not_sent_text_still_in_box');
 };
 
+// ---------------------------------------------------------------------------------------------------
+// Borrowers as phone contacts named "MDNG +<number>": Viber then shows that name on their messages, so
+// the relay can tell borrower chats from George's own (same Viber account) and knows the number.
+
+const contactName = (digits) => `MDNG +${digits}`;
+
+export const ensureContact = async (digits) => {
+   const name = contactName(digits);
+   const found = await shell(
+      `content query --uri content://com.android.contacts/data --projection raw_contact_id --where "mimetype='vnd.android.cursor.item/name' AND data1='${name}'"`
+   );
+   if (/raw_contact_id=\d+/.test(found)) return;
+   await shell('content insert --uri content://com.android.contacts/raw_contacts --bind account_type:n: --bind account_name:n:');
+   const last = await shell("content query --uri content://com.android.contacts/raw_contacts --projection _id --sort '_id DESC'");
+   const rid = last.match(/_id=(\d+)/)?.[1];
+   if (!rid) throw new Error('contact_not_saved');
+   await shell(
+      `content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:${rid} --bind mimetype:s:vnd.android.cursor.item/name --bind data1:s:'${name}'`
+   );
+   await shell(
+      `content insert --uri content://com.android.contacts/data --bind raw_contact_id:i:${rid} --bind mimetype:s:vnd.android.cursor.item/phone_v2 --bind data1:s:+${digits} --bind data2:i:2`
+   );
+};
+
+// New messages in borrower chats, from Viber's notifications: [{ phone, text, key }]. Only senders named
+// "MDNG +<number>"; everything else (George's own chats) is never read past the title.
+export const readInbound = async () => {
+   const dump = await shell('dumpsys notification --noredact');
+   const out = [];
+   for (const record of dump.split(/\n\s*NotificationRecord\(/).slice(1)) {
+      if (!/pkg=com\.viber\.voip /.test(record)) continue;
+      const title = record.match(/android\.title=String \((.*)\)\s*$/m)?.[1] ?? '';
+      const phone = title.match(/^MDNG \+(\d{8,15})\b/)?.[1];
+      if (!phone) continue;
+      const text = record.match(/android\.text=String \((.*)\)\s*$/m)?.[1] ?? '';
+      const when = record.match(/when=(\d+)/)?.[1] ?? '';
+      if (text) out.push({ phone, text, key: `${phone}|${when}|${text}` });
+   }
+   return out;
+};
+
 export const sendViber = async (phone, body) => {
    const digits = String(phone).replace(/\D/g, '');
    if (digits.length < 8) throw new Error('bad_number');
+   await ensureContact(digits);
    await shell(`am start -W -a android.intent.action.VIEW -d 'viber://contact?number=%2B${digits}' ${VIBER_PKG} >/dev/null`);
 
    const contact = await waitFor(findMessageButton, { fail: notOnViber });
@@ -211,7 +253,31 @@ const rpc = async (cfg, name, args) => {
    return body;
 };
 
+// Notifications we already forwarded (they stay until the chat is opened), kept across restarts.
+const SEEN_PATH = join(homedir(), '.moodeng-viber-relay', 'seen.json');
+const loadSeen = () => {
+   try {
+      return new Set(JSON.parse(readFileSync(SEEN_PATH, 'utf8')));
+   } catch {
+      return new Set();
+   }
+};
+const seen = loadSeen();
+
+const forwardInbound = async (cfg) => {
+   let changed = false;
+   for (const msg of await readInbound()) {
+      if (seen.has(msg.key)) continue;
+      await rpc(cfg, 'viber_relay_inbound', { p_token: cfg.token, p_phone: msg.phone, p_body: msg.text });
+      seen.add(msg.key);
+      changed = true;
+      log(`forwarded a Viber reply from …${msg.phone.slice(-4)}`);
+   }
+   if (changed) writeFileSync(SEEN_PATH, JSON.stringify([...seen].slice(-500)));
+};
+
 const pass = async (cfg) => {
+   await forwardInbound(cfg).catch((err) => log('reading replies failed:', err instanceof Error ? err.message : err));
    const rows = await rpc(cfg, 'viber_relay_claim', { p_token: cfg.token, p_limit: 5 });
    for (const row of rows ?? []) {
       try {
@@ -232,6 +298,16 @@ const main = async () => {
    const args = process.argv.slice(2);
    if (args[0] === '--dump') {
       for (const n of await dumpNodes()) if (n.text || n.desc || n.id) console.log(JSON.stringify(n));
+      return;
+   }
+   if (args[0] === '--contact') {
+      await ensureContact(String(args[1]).replace(/\D/g, ''));
+      log('contact saved (or already there)');
+      return;
+   }
+   if (args[0] === '--inbox') {
+      // Print the borrower messages the relay would forward now (forwards nothing).
+      console.log(JSON.stringify(await readInbound(), null, 1));
       return;
    }
    if (args[0] === '--type-check') {
