@@ -72,6 +72,7 @@ import RelayLinksSection from './RelayLinksSection';
 import RiskAssessmentSection from './RiskAssessmentSection';
 import SelfLendingSection from './SelfLendingSection';
 import SupportChatSection from './SupportChatSection';
+import TestLabSection from './TestLabSection';
 import UxHealthSection from './UxHealthSection';
 
 type PersonRole = 'all' | 'borrower' | 'lender' | 'unset';
@@ -1617,6 +1618,18 @@ function AdminPanel() {
                   <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">Users, roles, verifications, and loan performance at a glance.</p>
                </div>
                <GrowthAnalyticsSection />
+            </section>
+         ) : null}
+
+         {activeTab === 'test-lab' ? (
+            <section className="space-y-6">
+               <div>
+                  <h2 className="break-words text-2xl font-black sm:text-3xl">Test lab</h2>
+                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                     Try things for real before people do. Sends here are real and cost credits.
+                  </p>
+               </div>
+               <TestLabSection />
             </section>
          ) : null}
 
