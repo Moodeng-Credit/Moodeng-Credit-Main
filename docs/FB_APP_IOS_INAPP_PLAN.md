@@ -38,13 +38,15 @@ paste, and come back.
 ## This PR (Facebook app on iPhone only)
 
 1. **Detection:** `metaIosHost()` plus unit tests with the real browser IDs.
-2. **Messenger card:** no "open Messenger" button, because it can't work there. Instead:
-   **Copy code**, then four steps: open your Messenger app → search Moodeng Credit → paste & send →
-   come back to Facebook, it turns green by itself. The Copy tap stamps
-   `mark_messenger_chat_opened`, so the bot can also connect them by timing. "Or open in Safari"
+2. **Messenger card (looks like Messenger's):** the same code card and big blue button
+   (**Copy code**), the same "📋 Code copied: paste it in our chat, then Send" card, the same
+   step hippos. Where Messenger's button opens our chat, this one opens a picture guide on its own
+   (`MessengerSwitchGuide`, same style as the Safari guide, with the tapping finger): open your
+   Messenger app → search Moodeng Credit → paste and Send → come back to Facebook. "How to open
+   Messenger" reopens it. The Copy tap stamps `mark_messenger_chat_opened`. "Or open in Safari"
    stays (m.me with the code works there).
-3. **Safari steps:** the Facebook app gets a drawn "Open in external browser" item and "Facebook"
-   under the address, not the Messenger screenshot.
+3. **Safari steps:** the Facebook app gets a drawn menu in the same dark, faded style as the
+   Messenger screenshot, with "Open in external browser" ringed, and "Facebook" under the address.
 4. **Tracking:** `contact_verify_started` gets `ios_host`, and the new card's events carry
    `ios_host: 'facebook'`, so we can compare the two apps.
 

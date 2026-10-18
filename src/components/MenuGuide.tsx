@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { RING, TAP_KEYFRAMES } from '@/components/guideStyles';
 import { metaIosHost } from '@/lib/inAppBrowser';
 
 // The "open in Safari / Chrome" guide for Facebook's / Messenger's own browser. Only the app's own menu
@@ -10,17 +11,9 @@ import { metaIosHost } from '@/lib/inAppBrowser';
 // Used by the first screen (OpenInBrowserPrompt) and by "Open in Safari" anywhere (SafariHelpSheet);
 // public/landing/open-in-browser.js draws the same for the home page.
 
-const RING = 'ring-[3px] ring-[#FFD43B] ring-offset-2 ring-offset-white';
-
 // A finger that taps the spot, with a ripple, so "tap" is obvious (George, 18 Oct: people asked
 // "tap what?"). Placed with its fingertip at (left, top) of the parent, which must be `relative`.
-const TAP_KEYFRAMES = `
-@keyframes mg-tap { 0%, 100% { transform: translate(10px, 14px); } 40%, 62% { transform: translate(0, 0); } 50% { transform: translate(0, 0) scale(0.86); } }
-@keyframes mg-ripple { 0%, 46% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 52% { opacity: 0.95; } 100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .mg-finger, .mg-ripple { animation: none !important; } }
-`;
-
-function TapFinger({ left, top }: { left: string; top: string }) {
+export function TapFinger({ left, top }: { left: string; top: string }) {
    return (
       <span aria-hidden="true" className="pointer-events-none absolute z-10" style={{ left, top }}>
          <span
@@ -37,7 +30,7 @@ function TapFinger({ left, top }: { left: string; top: string }) {
    );
 }
 
-function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+export function Step({ n, title, children }: { n: number; title: string; children?: ReactNode }) {
    return (
       <div className="flex flex-col gap-2">
          <p className="flex items-center gap-2 text-[17px] font-bold leading-[22px]">
@@ -47,9 +40,11 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
             {title}
          </p>
          {/* A picture, not a control: grey frame, no pointer events. */}
-         <div aria-hidden="true" className="pointer-events-none select-none rounded-2xl bg-[#2a2140] p-2.5">
-            {children}
-         </div>
+         {children ? (
+            <div aria-hidden="true" className="pointer-events-none select-none rounded-2xl bg-[#2a2140] p-2.5">
+               {children}
+            </div>
+         ) : null}
       </div>
    );
 }
@@ -73,7 +68,6 @@ export default function MenuGuide({
    // iPhone in the Facebook app (not Messenger): its menu isn't the Messenger one in the screenshot, so
    // it gets the drawn menu item instead, and its own name under the address. Messenger is unchanged.
    const fbAppIos = !isAndroid && metaIosHost() === 'facebook';
-   const drawnMenu = isAndroid || fbAppIos;
 
    return (
       <div
@@ -108,21 +102,41 @@ export default function MenuGuide({
             </Step>
 
             <Step n={2} title={isAndroid ? `Tap “${menuItem}”` : `Tap “${menuItem}”`}>
-               {drawnMenu ? null : (
+               {fbAppIos ? (
+                  // Drawn like the Messenger screenshot below (dark sheet, the rest faded, the one to tap
+                  // ringed) until we have a picture of the Facebook app's own menu.
+                  <div className="relative rounded-xl bg-[#1c1c1e] px-2 py-2 text-[15px] text-white">
+                     {[0, 1].map((row) => (
+                        <div className="flex items-center gap-3 px-2 py-2.5 opacity-30" key={`top-${row}`}>
+                           <span className="size-5 rounded-full bg-white/60" />
+                           <span className="h-2.5 w-28 rounded-full bg-white/60" />
+                        </div>
+                     ))}
+                     <div className={`flex items-center gap-3 rounded-lg px-2 py-2 font-semibold ${RING.replace('ring-offset-white', 'ring-offset-[#1c1c1e]')}`}>
+                        <span className="flex size-5 items-center justify-center rounded bg-white text-[13px] font-black leading-none text-[#1c1c1e]">↗</span>
+                        {menuItem}
+                     </div>
+                     <div className="flex items-center gap-3 px-2 py-2.5 opacity-30">
+                        <span className="size-5 rounded-full bg-white/60" />
+                        <span className="h-2.5 w-24 rounded-full bg-white/60" />
+                     </div>
+                     <TapFinger left="62%" top="58%" />
+                  </div>
+               ) : isAndroid ? null : (
                   // The real Messenger menu (George's iPhone, 18 Oct): everything else faded, the one to tap ringed.
                   <div className="relative">
                      <img alt="" className="w-full rounded-xl" src="/guide/ios-menu-open-external.png" />
                      <TapFinger left="62%" top="62%" />
                   </div>
                )}
-               <div className={drawnMenu ? 'relative rounded-xl bg-white text-[15px] text-[#1c1c1e]' : 'hidden'}>
+               <div className={isAndroid ? 'relative rounded-xl bg-white text-[15px] text-[#1c1c1e]' : 'hidden'}>
                   <div className="px-2 py-1.5">
                      <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 font-semibold ${RING}`}>
                         <span aria-hidden="true">{isAndroid ? '🌐' : '🧭'}</span>
                         {menuItem}
                      </div>
                   </div>
-                  {drawnMenu ? <TapFinger left="62%" top="55%" /> : null}
+                  {isAndroid ? <TapFinger left="62%" top="55%" /> : null}
                </div>
             </Step>
 

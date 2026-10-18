@@ -16,6 +16,7 @@ import {
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import MenuGuide from '@/components/MenuGuide';
+import MessengerSwitchGuide from '@/components/MessengerSwitchGuide';
 import { detectInAppBrowser, metaIosHost, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { buildArmedUrl, copyTextFromTap, stripFbCode } from '@/lib/inAppHandoff';
 import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
@@ -188,6 +189,8 @@ export default function ContactsStep({
    // (userbuds, 10-14). Copying does work there. So it gets copy → switch apps yourself → paste.
    // Messenger's own browser keeps the card below unchanged: there the same link works.
    const fbAppIos = iosInAppMessenger && metaIosHost() === 'facebook';
+   // Facebook app: the picture guide for getting to our chat by hand (opens on its own after Copy).
+   const [switchGuide, setSwitchGuide] = useState(false);
    // Android inside Facebook's / Messenger's own browser: a borrower who has chatted with our Page before
    // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
    // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
@@ -730,6 +733,8 @@ export default function ContactsStep({
             });
       }
       awaitingMessengerRef.current = true;
+      // Where Messenger's browser opens our chat after the tap, this shows how to get there.
+      if (!pasteCard) setSwitchGuide(true);
       setPasteCard(true);
    };
    useEffect(() => {
@@ -932,47 +937,7 @@ export default function ContactsStep({
                          from there, so there's no "open" button that does nothing. They copy, switch to the
                          Messenger app themselves, paste, and come back: Facebook keeps this page meanwhile, and
                          it turns green on its own (realtime + poll + the re-check when it's shown again). */}
-                     {pasteCard ? (
-                        <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
-                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
-                              {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
-                              <span className="select-all whitespace-nowrap">{messengerCode}</span>
-                           </p>
-                           <ol className="flex flex-col gap-2 text-[16px] leading-[22px] text-[#26143f]">
-                              <li className="flex gap-2">
-                                 <b>1.</b>
-                                 <span>
-                                    Leave Facebook and open your <b>Messenger</b> app.
-                                 </span>
-                              </li>
-                              <li className="flex gap-2">
-                                 <b>2.</b>
-                                 <span>
-                                    Open our chat: search <b>Moodeng Credit</b>.
-                                 </span>
-                              </li>
-                              <li className="flex gap-2">
-                                 <b>3.</b>
-                                 <span>
-                                    <b>Paste</b> the code and <b>Send</b>.
-                                 </span>
-                              </li>
-                              <li className="flex gap-2">
-                                 <b>4.</b>
-                                 <span>
-                                    Come back to <b>Facebook</b>. This page turns green by itself.
-                                 </span>
-                              </li>
-                           </ol>
-                           <button
-                              type="button"
-                              onClick={copyForFacebookApp}
-                              className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
-                           >
-                              {codeCopied ? 'Copied ✓' : 'Copy code again'}
-                           </button>
-                        </div>
-                     ) : (
+                     {pasteCard ? null : (
                         <>
                            <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
                               Send this code to us on Messenger.
@@ -980,16 +945,40 @@ export default function ContactsStep({
                            <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
                               {messengerCode}
                            </code>
+                        </>
+                     )}
+                     {pasteCard ? (
+                        <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                              {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                              <span className="select-all whitespace-nowrap">{messengerCode}</span>
+                           </p>
+                           <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
+                              <b>Paste</b> it in our chat, then <b>Send</b>.
+                           </p>
                            <button
                               type="button"
-                              onClick={copyForFacebookApp}
+                              onClick={() => {
+                                 track('contact_verify_switch_guide_shown', { source, channel: 'messenger', ios_host: 'facebook' });
+                                 setSwitchGuide(true);
+                              }}
                               className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
                            >
                               <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
-                              Copy code
+                              How to open Messenger
                            </button>
-                        </>
+                        </div>
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={copyForFacebookApp}
+                           className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                        >
+                           <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                           Copy code
+                        </button>
                      )}
+                     {switchGuide ? <MessengerSwitchGuide code={messengerCode} onClose={() => setSwitchGuide(false)} /> : null}
                      {copyFailed ? (
                         <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
                            Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
