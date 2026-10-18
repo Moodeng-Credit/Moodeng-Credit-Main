@@ -213,6 +213,12 @@ const main = async () => {
    }
    log(`Viber relay running on ${SERIAL}; checking every ${POLL_MS / 1000}s. Ctrl+C to stop.`);
    for (;;) {
+      // Emulator gone (window closed, crash): exit, so launchd re-runs start.sh, which boots it again.
+      const devices = await run(ADB, ['devices']).then((r) => r.stdout).catch(() => '');
+      if (!devices.includes(SERIAL)) {
+         log(`${SERIAL} is gone; exiting so start.sh boots it again`);
+         process.exit(1);
+      }
       try {
          await pass(cfg);
       } catch (err) {
