@@ -2495,7 +2495,25 @@ export interface BorrowerContactRow {
    overdueNowCount: number;
    createdAt: string | null;
    accountStatus: string | null;
+   // How due-date reminders reach them (admin_reminder_reach); undefined until loaded.
+   reminders?: AdminReminderReach;
 }
+
+export interface AdminReminderReach {
+   pushDevices: number;
+   pushOff: boolean;
+   messenger: boolean;
+   whatsappOn: boolean;
+   whatsappStopped: boolean;
+   viberNumber: string | null;
+   viberOn: boolean;
+   telegramOn: boolean;
+   emailOk: boolean;
+}
+
+/** Reminders that arrive any day: phone notifications, WhatsApp, Viber or Telegram (not Messenger's 24h, not email). */
+export const canRemind = (r: AdminReminderReach | undefined) =>
+   Boolean(r && ((r.pushDevices > 0 && !r.pushOff) || r.whatsappOn || r.viberOn || r.telegramOn));
 
 const clean = (value: unknown): string | null => {
    const text = typeof value === 'string' ? value.trim() : '';
@@ -2559,7 +2577,7 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
    );
    const borrowers = users.filter((u) => !u.is_test);
    const ids = borrowers.map((u) => u.id);
-   const [loans, kyc, contacts] = await Promise.all([
+   const [loans, kyc, contacts, reach] = await Promise.all([
       queryByIdChunks(ids, (chunk) =>
          requireOk<AnyRow[]>(
             supabase
@@ -2581,11 +2599,30 @@ export async function listBorrowerContacts(): Promise<BorrowerContactRow[]> {
                .limit(5000),
             []
          )
-      )
+      ),
+      optionalOk<AnyRow[]>(supabase.rpc('admin_reminder_reach'), [])
    ]);
+   const reachByUser = new Map<string, AdminReminderReach>();
+   for (const x of reach) {
+      reachByUser.set(x.user_id, {
+         pushDevices: Number(x.push_devices ?? 0),
+         pushOff: Boolean(x.push_off),
+         messenger: Boolean(x.messenger),
+         whatsappOn: Boolean(x.whatsapp_on),
+         whatsappStopped: Boolean(x.whatsapp_stopped),
+         viberNumber: x.viber_number ?? null,
+         viberOn: Boolean(x.viber_on),
+         telegramOn: Boolean(x.telegram_on),
+         emailOk: Boolean(x.email_ok)
+      });
+   }
    const datesByUser = new Map<string, string[]>();
    for (const c of contacts) datesByUser.set(c.user_id, [...(datesByUser.get(c.user_id) ?? []), c.occurred_at]);
-   return buildBorrowerContactRows(borrowers, loans, kyc).map((r) => ({ ...r, messengerContactDates: datesByUser.get(r.id) ?? [] }));
+   return buildBorrowerContactRows(borrowers, loans, kyc).map((r) => ({
+      ...r,
+      messengerContactDates: datesByUser.get(r.id) ?? [],
+      reminders: reachByUser.get(r.id)
+   }));
 }
 
 export interface MessengerProfile {

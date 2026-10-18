@@ -7,6 +7,7 @@ import { AdminLiveRow, useAdminLiveReload } from '@/app/admin/useAdminLive';
 import { CONTACT_STEP_EXEMPT_USER_IDS } from '../../config/contactVerification';
 import {
    type BorrowerContactRow,
+   canRemind,
    getMessengerProfiles,
    listBorrowerContacts,
    logAdminAction,
@@ -17,7 +18,7 @@ import {
 // Every way to reach each borrower in one list — so the team can message a late payer, check who
 // still hasn't added Facebook, or export the lot. Borrowers only; lenders never appear here.
 
-type Filter = 'all' | 'no-facebook' | 'late';
+type Filter = 'all' | 'no-facebook' | 'late' | 'no-reminders';
 
 // Messenger only delivers free-form messages within 24h of the borrower's last message to the Page.
 // Outside it, the team replies from the Page inbox (Meta Business Suite) instead.
@@ -61,7 +62,13 @@ function downloadCsv(rows: BorrowerContactRow[], fbNames: Map<string, string>) {
       'line',
       'funded loans',
       'repaid late',
-      'overdue now'
+      'overdue now',
+      'phone notifications (devices)',
+      'whatsapp reminders',
+      'viber reminders',
+      'telegram reminders',
+      'messenger (24h only)',
+      'reminders reach them'
    ];
    const lines = rows.map((r) =>
       [
@@ -80,7 +87,13 @@ function downloadCsv(rows: BorrowerContactRow[], fbNames: Map<string, string>) {
          r.lineId,
          r.fundedLoanCount,
          r.repaidLateCount,
-         r.overdueNowCount
+         r.overdueNowCount,
+         r.reminders ? (r.reminders.pushOff ? 'turned off' : r.reminders.pushDevices) : null,
+         r.reminders ? (r.reminders.whatsappOn ? 'on' : r.reminders.whatsappStopped ? 'STOP' : '') : null,
+         r.reminders?.viberOn ? `+${r.reminders.viberNumber}` : '',
+         r.reminders ? (r.reminders.telegramOn ? 'on' : '') : null,
+         r.reminders ? (r.reminders.messenger ? 'yes' : '') : null,
+         r.reminders ? (canRemind(r.reminders) ? 'yes' : 'email only') : null
       ]
          .map(csvCell)
          .join(',')
@@ -104,6 +117,31 @@ function Chip({ children, tone = 'plain' }: { children: React.ReactNode; tone?: 
              ? 'bg-red-950/60 text-red-300'
              : 'bg-[#241044] text-[#d8cce8]';
    return <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-bold ${cls}`}>{children}</span>;
+}
+
+// Where due-date reminders go for this borrower. Messenger only delivers within 24h of their last
+// message to the Page, and email is easy to miss, so neither counts as "reaches them".
+export function ReminderChips({ reach }: { reach: NonNullable<BorrowerContactRow['reminders']> }) {
+   return (
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+         <span className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">Reminders</span>
+         {reach.pushOff ? (
+            <Chip tone="bad">🔔 Notifications turned off</Chip>
+         ) : reach.pushDevices > 0 ? (
+            <Chip tone="good">
+               🔔 Notifications on{reach.pushDevices > 1 ? ` (${reach.pushDevices} devices)` : ''}
+            </Chip>
+         ) : (
+            <Chip tone="warn">🔔 No notifications</Chip>
+         )}
+         {reach.whatsappOn ? <Chip tone="good">WhatsApp on</Chip> : reach.whatsappStopped ? <Chip tone="bad">WhatsApp: sent STOP</Chip> : null}
+         {reach.viberOn ? <Chip tone="good">Viber +{reach.viberNumber}</Chip> : null}
+         {reach.telegramOn ? <Chip tone="good">Telegram on</Chip> : null}
+         {reach.messenger ? <Chip>Messenger (24h only)</Chip> : null}
+         {reach.emailOk ? <Chip>Email</Chip> : null}
+         {canRemind(reach) ? null : <Chip tone="bad">Only {reach.emailOk ? 'email' : 'nothing'} reaches them</Chip>}
+      </div>
+   );
 }
 
 export default function BorrowerContactsSection() {
@@ -153,6 +191,7 @@ export default function BorrowerContactsSection() {
       return rows.filter((r) => {
          if (filter === 'no-facebook' && (hasFacebook(r) || CONTACT_STEP_EXEMPT_USER_IDS.has(r.id))) return false;
          if (filter === 'late' && !isLatePayer(r)) return false;
+         if (filter === 'no-reminders' && (!r.reminders || canRemind(r.reminders))) return false;
          if (!q) return true;
          return [r.username, r.kycName, r.displayName, r.email, fbNames.get(r.id), r.telegramUsername, r.facebookContact, r.whatsappNumber, r.lineId]
             .filter(Boolean)
@@ -184,7 +223,8 @@ export default function BorrowerContactsSection() {
       () => ({
          all: rows.length,
          'no-facebook': rows.filter((r) => !hasFacebook(r) && !CONTACT_STEP_EXEMPT_USER_IDS.has(r.id)).length,
-         late: rows.filter(isLatePayer).length
+         late: rows.filter(isLatePayer).length,
+         'no-reminders': rows.filter((r) => r.reminders && !canRemind(r.reminders)).length
       }),
       [rows]
    );
@@ -192,7 +232,8 @@ export default function BorrowerContactsSection() {
    const FILTERS: Array<{ id: Filter; label: string }> = [
       { id: 'all', label: 'All borrowers' },
       { id: 'no-facebook', label: 'Missing Facebook' },
-      { id: 'late', label: 'Late / overdue' }
+      { id: 'late', label: 'Late / overdue' },
+      { id: 'no-reminders', label: 'No reminders' }
    ];
 
    return (
@@ -288,6 +329,7 @@ export default function BorrowerContactsSection() {
                      ) : null}
                      {r.lineId ? <Chip>LINE {r.lineId}</Chip> : null}
                   </div>
+                  {r.reminders ? <ReminderChips reach={r.reminders} /> : null}
 
                   {r.messengerContactDates.length ? (
                      <details className="mt-2 text-sm text-[#b9a9d0]">
