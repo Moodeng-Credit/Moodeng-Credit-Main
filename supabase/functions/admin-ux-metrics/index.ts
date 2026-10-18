@@ -11,6 +11,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // personal key with read scope is required.
 //   Secrets: POSTHOG_PERSONAL_API_KEY (required), POSTHOG_PROJECT_ID (default 492261),
 //            POSTHOG_HOST (default https://us.posthog.com)
+//
+// Also serves the admin search bar's AI answer (it rides along here because the project is at its
+// edge-function cap): { action: 'search', query, pages: [{ id, label, group, hint }] }
+//   → { results: [{ id, why }] } — up to 3 of the given tab ids DeepSeek thinks answer the question.
+//   Secret: DEEPSEEK_API_KEY.
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -136,6 +141,78 @@ function trendTotal(result: any, seriesIndex = 0): number {
    return data.reduce((sum: number, n: number) => sum + Number(n || 0), 0);
 }
 
+// --- Admin search: DeepSeek picks the tabs that answer a plain-words question -------------
+const SEARCH_MODEL = 'deepseek-v4-flash';
+const SEARCH_PROMPT = `You help a lending company's admin find the right page in their admin panel.
+You get the admin's question and a list of pages (id, name, area, what it is for).
+Pick up to 3 pages that best answer the question, best first. Only use ids from the list.
+For each, write "why": one short plain sentence (max 12 words) saying what they can do there for this question.
+If no page fits, return an empty list.
+Reply as JSON: {"results":[{"id":"...","why":"..."}]}`;
+
+type SearchPage = { id: string; label: string; group: string; hint: string };
+
+const clipText = (value: unknown, max: number) => String(value ?? '').slice(0, max);
+
+async function aiSearch(body: any): Promise<Response> {
+   const apiKey = Deno.env.get('DEEPSEEK_API_KEY');
+   if (!apiKey) return json({ error: 'DEEPSEEK_API_KEY secret is not set on this project.' }, 503);
+
+   const query = clipText(body?.query, 200).trim();
+   const pages: SearchPage[] = (Array.isArray(body?.pages) ? body.pages : []).slice(0, 80).map((p: any) => ({
+      id: clipText(p?.id, 40),
+      label: clipText(p?.label, 60),
+      group: clipText(p?.group, 30),
+      hint: clipText(p?.hint, 200)
+   }));
+   if (!query || pages.length === 0) return json({ results: [] });
+
+   const ctrl = new AbortController();
+   const timer = setTimeout(() => ctrl.abort(), 15_000);
+   let res: Response;
+   try {
+      res = await fetch('https://api.deepseek.com/chat/completions', {
+         method: 'POST',
+         signal: ctrl.signal,
+         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            model: SEARCH_MODEL,
+            thinking: { type: 'disabled' },
+            temperature: 0,
+            max_tokens: 300,
+            response_format: { type: 'json_object' },
+            messages: [
+               { role: 'system', content: SEARCH_PROMPT },
+               {
+                  role: 'user',
+                  content: `PAGES:\n${pages.map((p) => `${p.id} | ${p.label} | ${p.group} | ${p.hint}`).join('\n')}\n\nQUESTION: ${query}`
+               }
+            ]
+         })
+      });
+   } catch (err) {
+      return json({ error: err instanceof Error && err.name === 'AbortError' ? 'DeepSeek took too long.' : 'DeepSeek is unreachable.' }, 502);
+   } finally {
+      clearTimeout(timer);
+   }
+   if (!res.ok) return json({ error: `DeepSeek ${res.status}` }, 502);
+
+   let parsed: any = {};
+   try {
+      const reply = await res.json();
+      parsed = JSON.parse(reply?.choices?.[0]?.message?.content ?? '{}');
+   } catch {
+      return json({ error: 'DeepSeek sent an unreadable answer.' }, 502);
+   }
+   const known = new Set(pages.map((p) => p.id));
+   const seen = new Set<string>();
+   const results = (Array.isArray(parsed?.results) ? parsed.results : [])
+      .map((r: any) => ({ id: String(r?.id ?? ''), why: clipText(r?.why, 140).trim() }))
+      .filter((r: { id: string }) => known.has(r.id) && !seen.has(r.id) && seen.add(r.id))
+      .slice(0, 3);
+   return json({ results });
+}
+
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -158,6 +235,9 @@ serve(async (req) => {
       .in('role', ['owner', 'admin', 'support'])
       .maybeSingle();
    if (!adminRow) return json({ error: 'Forbidden: admin account required' }, 403);
+
+   const body = await req.json().catch(() => ({}));
+   if (body?.action === 'search') return aiSearch(body);
 
    const apiKey = Deno.env.get('POSTHOG_PERSONAL_API_KEY');
    if (!apiKey) {

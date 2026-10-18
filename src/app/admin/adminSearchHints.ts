@@ -1,0 +1,48 @@
+import type { AdminTab } from '@/app/admin/adminNav';
+
+// What each admin tab is for, in plain words. The search bar matches these locally ("late" → Coming due)
+// and sends them to DeepSeek so it can pick a tab for a natural-language question. Keep each one short:
+// what you can do there plus the words someone would type looking for it.
+export const TAB_HINTS: Record<AdminTab, string> = {
+   users: 'Every user account: find a person, see their loans, KYC, wallet, points, ban or restrict, approve',
+   calls: 'Approve or reject borrowers after their onboarding video call; showed up / no-show',
+   fillout: 'Screening Questions forms the hosts filled in on onboarding calls; call sheets',
+   'borrower-contacts': 'How to reach each borrower: Messenger, WhatsApp, Telegram, email; message a late payer, export contacts',
+   email: 'Send an email to users; bulk email',
+   campaigns: 'Send one message to an audience over Messenger, email and push; broadcast, blast',
+   loans: 'Every loan: search, filter, status, funded, repaid',
+   requests: 'Loan requests waiting to be funded; fund, reject, remove a request',
+   'coming-due': 'Loans due soon and late or overdue payers this week; repayment reminders, who to chase',
+   extensions: 'Extend a loan due date; give more days to repay',
+   refunds: 'Refund a borrower or lender; overpayment, money back',
+   defaults: 'Overdue loans and default recovery cases; collections',
+   pricing: 'Loan pricing health: fees, interest, APR across loans',
+   'credit-line': 'BitRepo credit line: balances, interest owed, monthly lender report, fund-flow ledger',
+   'real-cost': 'What loans really cost borrowers in pesos or rupiah: fee, exchange rate, exchange fees',
+   'credit-line-cost': 'What the credit line really costs us: interest on deployed funds',
+   risk: 'Risk scores for borrowers; risk assessment, watchlist, blocked',
+   'self-lending': 'Spot people lending to themselves; borrower and lender wallets linked',
+   'mule-risk': 'Money-mule risk: borrowers sharing payout destinations; fraud',
+   marketing: 'Monthly lending goal, weekly targets, marketing spend, CAC, who to contact today',
+   signups: 'Where sign-ups come from: browser, device, login method, source of each new account',
+   'post-links': 'Make a tracked link for a Facebook post; UTM link, campaign link',
+   analytics: 'Growth analytics: sign-ups, verified users, loans over time, funnel',
+   'ux-health': 'UX health: PostHog funnels, rage clicks, errors, Clarity session recordings',
+   'on-chain': 'On-chain activity of the LoanManager contract and admin wallet on Base (Dune)',
+   referrals: 'Referral codes and who referred whom; invite rewards',
+   'grab-vouchers': 'GrabFood vouchers earned by borrowers; send or claim a voucher code',
+   notifications: 'Send an in-app notice to users; announcement inside the app',
+   points: 'IOU points for lenders: balances and point events',
+   'trust-points': 'Pandesal points for borrowers: balances and point events',
+   chat: 'Live support chat with users; reply to tickets and messages',
+   calendar: 'Calendar of onboarding calls and bookings; who has a call today',
+   'test-lab': 'Send a real test SMS through Semaphore and check delivery; text message tester, OTP',
+   relay: 'Liquidity Relay links for funders',
+   'demo-platform': 'B2B demo for partners',
+   'demo-b2c-dashboard': 'B2C dashboard demo',
+   'demo-b2c-assets': 'B2C asset pack for demos',
+   'demo-monday': 'Old B2B demo: the Monday problem',
+   'demo-map': 'Old B2B demo: pool map',
+   'demo-console': 'Old B2B demo: facility console',
+   'demo-spec': 'Old B2B demo: build spec'
+};

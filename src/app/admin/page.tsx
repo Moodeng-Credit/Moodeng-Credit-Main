@@ -16,6 +16,7 @@ import CallApprovalsSection from '@/app/admin/CallApprovalsSection';
 import FilloutSection from '@/app/admin/FilloutSection';
 import { groupCallApprovals } from '@/app/admin/callApprovalsModel';
 import DirectoryApprovalControl from '@/app/admin/DirectoryApprovalControl';
+import { TAB_HINTS } from '@/app/admin/adminSearchHints';
 import type { AdminSearchResult } from '@/app/admin/adminSearchModel';
 import GrabVouchersSection from '@/app/admin/GrabVouchersSection';
 import { BorrowerTimeline, RecentChangesFeed } from '@/app/admin/AdminHistory';
@@ -377,12 +378,12 @@ function AdminPanel() {
    };
    // Global search bar: pages, users and loan requests, jumping straight to the match.
    const searchPages = useMemo(
-      () => visibleNavGroups.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.label }))),
+      () => visibleNavGroups.flatMap((group) => group.items.map((item) => ({ id: item.id, label: item.label, group: group.label, hint: TAB_HINTS[item.id] }))),
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [isFundingAdmin]
    );
    function handleSearchSelect(result: AdminSearchResult) {
-      if (result.kind === 'page') {
+      if (result.kind === 'page' || result.kind === 'ai') {
          setActiveTab(result.id as AdminTab);
       } else if (result.kind === 'user') {
          clearDirectoryFilters();

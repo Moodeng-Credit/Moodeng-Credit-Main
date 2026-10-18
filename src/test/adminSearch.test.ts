@@ -54,4 +54,18 @@ describe('admin global search', () => {
       const school = searchAdmin('school', { pages, users, requests });
       expect(school).toEqual([{ kind: 'request', id: 'r1', title: 'maria_santos · $25', detail: 'School fees' }]);
    });
+
+   it('matches pages on their plain-words hint, after name matches', () => {
+      const hinted = [
+         { id: 'coming-due', label: 'Coming due', group: 'Loans', hint: 'Loans due soon and late or overdue payers this week' },
+         { id: 'test-lab', label: 'Test lab', group: 'More', hint: 'Send a real test SMS through Semaphore' },
+         { id: 'loans', label: 'All loans', group: 'Loans', hint: 'Every loan; run a test search' }
+      ];
+      expect(searchAdmin("who's late this week", { pages: hinted, users: [], requests: [] })[0]).toMatchObject({ id: 'coming-due' });
+      expect(searchAdmin('semaphore', { pages: hinted, users: [], requests: [] })[0]).toMatchObject({ id: 'test-lab' });
+      // "every" names no page but is in All loans' hint; "test" names Test lab, so it beats the hint hit.
+      expect(searchAdmin('every', { pages: hinted, users: [], requests: [] }).map((r) => r.id)).toEqual(['loans']);
+      expect(searchAdmin('test', { pages: hinted, users: [], requests: [] })[0]).toMatchObject({ id: 'test-lab' });
+      expect(searchAdmin('banana bread recipe', { pages: hinted, users: [], requests: [] })).toEqual([]);
+   });
 });

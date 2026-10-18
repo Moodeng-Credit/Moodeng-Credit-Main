@@ -2240,6 +2240,26 @@ export async function getUxMetrics(): Promise<UxMetrics> {
    return result as UxMetrics;
 }
 
+// Admin search bar's AI answer: DeepSeek (server-side, in admin-ux-metrics) picks the tabs that answer a
+// plain-words question, each with a short reason.
+export interface AdminSearchAiPick {
+   id: string;
+   why: string;
+}
+
+export async function askAdminSearchAi(
+   query: string,
+   pages: Array<{ id: string; label: string; group: string; hint?: string }>
+): Promise<AdminSearchAiPick[]> {
+   const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-ux-metrics', {
+      body: { action: 'search', query, pages }
+   });
+   if (error) throw new Error(error.message || 'AI search failed.');
+   const result = data as { results?: AdminSearchAiPick[]; error?: string };
+   if (result?.error) throw new Error(result.error);
+   return result?.results ?? [];
+}
+
 // ---------------------------------------------------------------------------
 // Loan request removal — delete a pending request and tell the borrower why.
 // ---------------------------------------------------------------------------
