@@ -1235,10 +1235,11 @@ export default function ContactsStep({
                verified={whatsappVerified}
             />
          ) : null}
+         {/* Viber first: far more used in the Philippines than Telegram. */}
+         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
          {showTelegramCard ? (
             <TelegramRemindersCard onVerified={() => setTelegramVerified(true)} source={source} userId={userId} verified={telegramVerified} />
          ) : null}
-         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
          {showSmsComingSoon ? (
             <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
          ) : null}
