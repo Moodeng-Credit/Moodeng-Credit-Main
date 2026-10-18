@@ -91,9 +91,6 @@
             var u = new URL(tagged());
             return 'intent://' + u.host + u.pathname + u.search + u.hash + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(u.toString()) + ';end';
          };
-         var steps = isAndroid
-            ? 'Tap <b>⋮</b> at the top right, then <b>Open in Chrome</b> (or <b>Open in browser</b>).'
-            : 'Tap <b>⋯</b> at the top right, then <b>Open in external browser</b> (or <b>Open in Safari</b>).';
 
          var wrap = document.createElement('div');
          wrap.setAttribute('data-iab-prompt', '');
@@ -108,20 +105,13 @@
             // The hippo does what the main action does: people tap the picture instead of the button.
             (isAndroid
                ? '<a data-iab-open data-via="hippo" aria-label="Open in Chrome" href="' + intent() + '"><img alt="" src="/hippos/hippo-chrome.png" style="height:144px;width:auto;display:block"></a>'
-               : '<button data-iab-hippo type="button" aria-label="How to open it in Safari" style="padding:0;border:0;background:none"><img alt="" src="/hippos/hippo-safari.png" style="height:144px;width:auto;display:block"></button>') +
+               : '<button data-iab-hippo type="button" aria-label="Open in Safari" style="padding:0;border:0;background:none"><img alt="" src="/hippos/hippo-safari.png" style="height:144px;width:auto;display:block"></button>') +
             '<h1 style="margin:0;font-size:26px;line-height:32px;font-weight:800">For the best experience, open Moodeng in ' + browser + '</h1>' +
             '<p style="margin:0;font-size:16px;line-height:22px;color:#594d65">Signing up and connecting Facebook work more smoothly there. It takes two taps.</p>' +
             (isAndroid
                ? '<a data-iab-open href="' + intent() + '" style="display:flex;align-items:center;justify-content:center;min-height:56px;width:100%;box-sizing:border-box;border-radius:999px;background:#6b55f7;color:#fff;font-size:17px;font-weight:700;text-decoration:none">Open in Chrome</a>'
-               : '') +
-            '<div data-iab-steps style="width:100%;box-sizing:border-box;border-radius:16px;padding:12px 16px;text-align:left;font-size:15px;line-height:21px;' +
-            (isAndroid ? 'background:rgba(255,255,255,.7);color:#6b5b86' : 'border:2px solid #6b55f7;background:#fff;color:#26143f') +
-            '">' +
-            '<p data-iab-steps-title style="margin:0;font-weight:600">' + (isAndroid ? 'Or do it yourself:' : 'How to open it in Safari:') + '</p>' +
-            '<p style="margin:4px 0 0">' + steps + '</p>' +
-            '<button data-iab-copy type="button" style="margin-top:8px;padding:0;border:0;background:none;font:inherit;font-weight:700;color:#6b55f7;text-decoration:underline;text-underline-offset:4px">No menu? Copy the link for ' + browser + '</button>' +
-            '</div>' +
-            '<button data-iab-continue type="button" style="margin-top:4px;min-height:48px;width:100%;border-radius:999px;border:2px solid #d9d0ee;background:#fff;font:inherit;font-size:16px;font-weight:700;color:#594d65">Continue here instead</button>' +
+               : '<button data-iab-safari type="button" style="display:flex;align-items:center;justify-content:center;min-height:56px;width:100%;border:0;border-radius:999px;background:#6b55f7;color:#fff;font:inherit;font-size:17px;font-weight:700">Open in Safari</button>') +
+            '<button data-iab-continue type="button" style="margin-top:4px;min-height:48px;width:100%;border-radius:999px;border:2px solid #d9d0ee;background:#fff;font:inherit;font-size:16px;font-weight:700;color:#594d65">Continue here</button>' +
             '</div>';
          document.body.appendChild(wrap);
          document.documentElement.style.overflow = 'hidden';
@@ -139,56 +129,59 @@
             } catch (e) {}
             close();
          });
+         // The arrow at the menu that can open the real browser: iPhone's "Open in Safari" shows it at
+         // once (nothing can open Safari for them; Meta blocks it), Android when Chrome didn't open.
+         var showPointer = function (chromeFailed) {
+            if (wrap.querySelector('[data-iab-pointer]')) return;
+            var icon = isAndroid ? '⋮' : '⋯';
+            var item = isAndroid ? 'Open in Chrome' : 'Open in external browser';
+            var ring = 'box-shadow:0 0 0 2px #fff,0 0 0 5px #FFD43B;';
+            var num = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:999px;background:#FFD43B;color:#1a0f2e;font-weight:900;font-size:15px';
+            var stepTitle = 'display:flex;align-items:center;gap:8px;margin:0;font-size:17px;line-height:22px;font-weight:700';
+            var frame = 'pointer-events:none;user-select:none;border-radius:16px;background:#2a2140;padding:10px';
+            var pointer = document.createElement('div');
+            pointer.setAttribute('data-iab-pointer', '');
+            pointer.setAttribute('role', 'dialog');
+            pointer.style.cssText =
+               'position:fixed;inset:0;z-index:2147483601;overflow-y:auto;background:#120a1f;color:#fff;box-sizing:border-box;' +
+               'display:flex;flex-direction:column;align-items:center;padding:8px 20px 24px;font-family:inherit;text-align:left';
+            pointer.innerHTML =
+               '<div style="display:flex;width:100%;max-width:380px;align-items:flex-end;justify-content:space-between;gap:8px">' +
+               '<p style="margin:0;padding-bottom:8px;font-size:22px;line-height:28px;font-weight:800">' +
+               (chromeFailed ? 'Chrome didn’t open? ' : '') + 'Open Moodeng in ' + browser + '</p>' +
+               '<img alt="" src="/hippos/hippo-point-menu.png" style="height:128px;width:auto;flex:none;margin-right:48px;pointer-events:none"></div>' +
+               '<div style="margin-top:12px;display:flex;width:100%;max-width:380px;flex-direction:column;gap:16px">' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">1</span>Tap ' + icon + ' at the top right</p>' +
+               '<div aria-hidden="true" style="' + frame + '"><div style="display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +
+               '<span style="font-size:18px;line-height:1">✕</span>' +
+               '<span style="display:flex;flex-direction:column;align-items:center;line-height:1.2"><span style="font-size:14px;font-weight:600">🔒 moodeng.app</span><span style="font-size:11px;color:#8e8e93">' + (app || 'Messenger') + '</span></span>' +
+               '<span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;font-size:20px;font-weight:900;line-height:1;' + ring + '">' + icon + '</span>' +
+               '</div></div></div>' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">2</span>Tap “' + item + '”</p>' +
+               '<div aria-hidden="true" style="' + frame + '"><div style="border-radius:12px;background:#fff;color:#1c1c1e;padding:6px 8px">' +
+               '<div style="display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;' + ring + '">' + (isAndroid ? '🌐 ' : '🧭 ') + item + '</div>' +
+               '</div></div></div>' +
+               '<p style="margin:0;font-size:14px;line-height:20px;opacity:.7">Don’t see it? It may say <b>' + (isAndroid ? 'Open in browser' : 'Open in Safari') + '</b>. ' + browser + ' opens straight on sign-up.</p>' +
+               '</div>' +
+               '<button data-iab-pointer-close type="button" style="margin-top:auto;min-height:48px;width:100%;max-width:400px;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:none;color:#fff;font:inherit;font-size:16px;font-weight:700">Got it</button>';
+            pointer.addEventListener('click', function () {
+               pointer.remove();
+            });
+            wrap.appendChild(pointer);
+         };
          Array.prototype.forEach.call(wrap.querySelectorAll('[data-iab-open]'), function (open) {
             open.addEventListener('click', function () {
                track('iab_prompt_open_tapped', { via: open.getAttribute('data-via') || 'button' });
                setTimeout(function () {
-                  if (document.visibilityState !== 'visible') return;
-                  var box = wrap.querySelector('[data-iab-steps]');
-                  box.style.border = '2px solid #6b55f7';
-                  box.style.background = '#fff';
-                  box.style.color = '#26143f';
-                  wrap.querySelector('[data-iab-steps-title]').textContent = 'Chrome didn’t open? Two taps:';
+                  if (document.visibilityState === 'visible') showPointer(true);
                }, 1500);
             });
          });
-         var copyButton = wrap.querySelector('[data-iab-copy]');
-         var hippo = wrap.querySelector('[data-iab-hippo]');
-         if (hippo) {
-            // iPhone: no button can open Safari, so the hippo points at the ⋯ steps and copies the link.
-            hippo.addEventListener('click', function () {
-               track('iab_prompt_hippo_tapped', {});
-               var box = wrap.querySelector('[data-iab-steps]');
-               box.style.transition = 'transform .2s';
-               box.style.transform = 'scale(1.04)';
-               setTimeout(function () {
-                  box.style.transform = '';
-               }, 1200);
-               copyButton.click();
+         Array.prototype.forEach.call(wrap.querySelectorAll('[data-iab-safari], [data-iab-hippo]'), function (el) {
+            el.addEventListener('click', function () {
+               track('iab_prompt_open_tapped', { via: el.hasAttribute('data-iab-hippo') ? 'hippo' : 'safari_button' });
+               showPointer(false);
             });
-         }
-         copyButton.addEventListener('click', function () {
-            var btn = copyButton;
-            var link = tagged();
-            var ok = false;
-            try {
-               var field = document.createElement('textarea');
-               field.value = link;
-               field.setAttribute('readonly', '');
-               field.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;font-size:16px';
-               document.body.appendChild(field);
-               field.select();
-               field.setSelectionRange(0, link.length);
-               ok = document.execCommand('copy');
-               document.body.removeChild(field);
-            } catch (err) {}
-            var done = function (copied) {
-               track('iab_prompt_link_copied', { ok: copied });
-               if (copied) btn.textContent = 'Link copied ✓ Paste it into ' + browser;
-            };
-            if (ok) done(true);
-            else if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(function () { done(true); }, function () { done(false); });
-            else done(false);
          });
       };
 

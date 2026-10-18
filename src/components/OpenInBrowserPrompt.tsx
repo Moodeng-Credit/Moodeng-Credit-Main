@@ -4,8 +4,8 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 
+import MenuGuide from '@/components/MenuGuide';
 import { buildAndroidIntentUrl, detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
-import { copyTextFromTap } from '@/lib/inAppHandoff';
 import {
    handoffAddress,
    IAB_ARRIVED_PARAM,
@@ -41,9 +41,9 @@ export default function OpenInBrowserPrompt() {
    const [enabled, setEnabled] = useState(false);
    const [continuedHere, setContinuedHere] = useState(readContinuedHere);
    const [triedChrome, setTriedChrome] = useState(false);
-   const [linkCopied, setLinkCopied] = useState(false);
-   // iPhone: tapping the hippo points at the ⋯ steps (there's no button that can open Safari).
-   const [stepsPulse, setStepsPulse] = useState(false);
+   // The arrow at the menu that can open the real browser: iPhone's "Open in Safari" shows it at once
+   // (nothing can open Safari for them; Meta blocks it), Android shows it when Chrome didn't open.
+   const [pointer, setPointer] = useState(false);
    const shownTracked = useRef(false);
    const isAndroid = info.os === 'android';
    const browser = isAndroid ? 'Chrome' : 'Safari';
@@ -107,33 +107,17 @@ export default function OpenInBrowserPrompt() {
       track('iab_prompt_open_tapped', { os: info.os, app: info.appName, via });
       // Facebook's Android browser often ignores the hand-off; if we're still here, point at the ⋮ menu.
       window.setTimeout(() => {
-         if (document.visibilityState === 'visible') setTriedChrome(true);
+         if (document.visibilityState === 'visible') {
+            setTriedChrome(true);
+            setPointer(true);
+         }
       }, 1500);
    };
 
-   const pointAtSteps = () => {
-      track('iab_prompt_hippo_tapped', { os: info.os, app: info.appName });
-      setStepsPulse(true);
-      window.setTimeout(() => setStepsPulse(false), 1200);
-      copyLink();
+   const showPointer = () => {
+      track('iab_prompt_open_tapped', { os: info.os, app: info.appName, via: 'safari_button' });
+      setPointer(true);
    };
-
-   const copyLink = () => {
-      void copyTextFromTap(handoffAddress(window.location.href)).then((result) => {
-         track('iab_prompt_link_copied', { os: info.os, ok: result.ok });
-         setLinkCopied(result.ok);
-      });
-   };
-
-   const menuSteps = isAndroid ? (
-      <>
-         Tap <b>⋮</b> at the top right, then <b>Open in Chrome</b> (or <b>Open in browser</b>).
-      </>
-   ) : (
-      <>
-         Tap <b>⋯</b> at the top right, then <b>Open in external browser</b> (or <b>Open in Safari</b>).
-      </>
-   );
 
    return (
       <div
@@ -153,7 +137,7 @@ export default function OpenInBrowserPrompt() {
                   <img alt="" className="h-36 w-auto" src={HIPPO.android} />
                </a>
             ) : (
-               <button aria-label="How to open it in Safari" onClick={pointAtSteps} type="button">
+               <button aria-label="Open in Safari" onClick={showPointer} type="button">
                   <img alt="" className="h-36 w-auto" src={HIPPO.ios} />
                </button>
             )}
@@ -172,30 +156,32 @@ export default function OpenInBrowserPrompt() {
                >
                   Open in Chrome
                </a>
-            ) : null}
-
-            <div
-               className={`w-full rounded-2xl px-4 py-3 text-left text-[15px] leading-[21px] transition-transform ${stepsPulse ? 'scale-[1.04]' : ''} ${
-                  isAndroid && !triedChrome
-                     ? 'bg-white/70 text-[#6b5b86] dark:bg-white/5 dark:text-[#c9bdd9]'
-                     : 'border-2 border-[#6b55f7] bg-white text-[#26143f] dark:bg-white/10 dark:text-white'
-               }`}
-            >
-               <p className="font-semibold">{isAndroid ? (triedChrome ? 'Chrome didn’t open? Two taps:' : 'Or do it yourself:') : 'How to open it in Safari:'}</p>
-               <p className="mt-1">{menuSteps}</p>
-               <button className="mt-2 font-bold text-[#6b55f7] underline underline-offset-4" onClick={copyLink} type="button">
-                  {linkCopied ? `Link copied ✓ Paste it into ${browser}` : `No menu? Copy the link for ${browser}`}
+            ) : (
+               <button
+                  className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#6b55f7] px-4 text-[17px] font-bold text-white"
+                  onClick={showPointer}
+                  type="button"
+               >
+                  Open in Safari
                </button>
-            </div>
+            )}
 
             <button
                className="mt-1 min-h-[48px] w-full rounded-full border-2 border-[#d9d0ee] bg-white px-4 text-[16px] font-bold text-[#594d65] dark:border-white/20 dark:bg-transparent dark:text-[#c9bdd9]"
                onClick={continueHere}
                type="button"
             >
-               Continue here instead
+               Continue here
             </button>
          </div>
+         {pointer ? (
+            <MenuGuide
+               chromeFailed={isAndroid ? triedChrome : false}
+               onClose={() => setPointer(false)}
+               opensOnSignUp={location.pathname.startsWith('/sign-up')}
+               os={isAndroid ? 'android' : 'ios'}
+            />
+         ) : null}
       </div>
    );
 }

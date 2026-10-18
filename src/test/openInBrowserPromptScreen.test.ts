@@ -64,12 +64,23 @@ describe('OpenInBrowserPrompt', () => {
       expect(new URL(window.location.href).searchParams.get('ia')).toBe('1');
    });
 
-   it('iPhone in Facebook: Safari hippo and the ⋯ steps; "Continue here" closes it and is remembered', async () => {
+   it('iPhone in Facebook: Safari hippo, Open in Safari points at ⋯, and "Continue here" closes it and is remembered', async () => {
       await render(FB_IOS);
       expect(container.textContent).toContain('open Moodeng in Safari');
       expect(container.querySelector('img[src="/hippos/hippo-safari.png"]')).not.toBeNull();
+      // Just two buttons; the ⋯ steps appear when they tap Open in Safari.
+      expect(container.textContent).not.toContain('Open in external browser');
+      const openSafari = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Open in Safari');
+      await act(async () => {
+         openSafari?.click();
+      });
       expect(container.textContent).toContain('Open in external browser');
-      const cont = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Continue here instead'));
+      const gotIt = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Got it');
+      await act(async () => {
+         gotIt?.click();
+      });
+      expect(container.textContent).not.toContain('Open in external browser');
+      const cont = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Continue here');
       await act(async () => {
          cont?.click();
       });
