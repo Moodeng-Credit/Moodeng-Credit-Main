@@ -325,7 +325,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       const safariLinks = Array.from(container.querySelectorAll('a')).filter((a) => /^x-safari/.test(a.getAttribute('href') ?? ''));
       expect(safariLinks).toHaveLength(0);
       expect(container.textContent).toContain('MDNG-ABC123');
-      expect(container.textContent).toContain('Paste the code in the chat and send it');
+      // Short card inside Facebook's browser: no step list (George, 18 Oct).
+      expect(container.textContent).not.toContain('Tap the blue button');
 
       await act(async () => {
          buttonByText(container, 'Copy code & open Messenger')?.click();
@@ -339,7 +340,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
 
       // "Open in Safari" shows the ⋯ steps and puts the code in the address Facebook's menu will open.
       await act(async () => {
-         buttonByText(container, 'Or open in Safari instead')?.click();
+         buttonByText(container, 'Or open in Safari')?.click();
       });
       expect(safari.open).not.toHaveBeenCalled();
       expect(container.textContent).toContain('Open in external browser');
@@ -377,7 +378,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       await render();
       await tapMessengerCard();
       // Paste is the main step here (a returning chatter sends us nothing when the chat opens).
-      expect(container.textContent).toContain('Paste the code in the chat and send it');
+      // Short card inside Facebook's browser: no step list (George, 18 Oct).
+      expect(container.textContent).not.toContain('Tap the blue button');
 
       {
          await act(async () => {
