@@ -16,7 +16,7 @@ import {
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
 import MenuGuide from '@/components/MenuGuide';
-import { detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
+import { detectInAppBrowser, metaIosHost, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { buildArmedUrl, copyTextFromTap, stripFbCode } from '@/lib/inAppHandoff';
 import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -182,6 +182,12 @@ export default function ContactsStep({
    const iosInAppMessenger =
       !androidMessenger && isIOSBrowser() && inAppInfo.isInApp && inAppInfo.appName !== null && inAppInfo.appName !== 'Messenger';
    const codeFirstMessenger = androidMessenger || iosInAppMessenger;
+   // iPhone, the Facebook app itself (not Messenger, which says the same FBAN/FBIOS; see metaIosHost).
+   // There the Messenger app link does nothing: George, 2026-10-18, tapped "Open Messenger" 9 times and
+   // the page never left (auto-open ignored, contact_verify_not_opened each time); m.me didn't either
+   // (userbuds, 10-14). Copying does work there. So it gets copy → switch apps yourself → paste.
+   // Messenger's own browser keeps the card below unchanged: there the same link works.
+   const fbAppIos = iosInAppMessenger && metaIosHost() === 'facebook';
    // Android inside Facebook's / Messenger's own browser: a borrower who has chatted with our Page before
    // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
    // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
@@ -708,6 +714,24 @@ export default function ContactsStep({
       setPasteCard(true);
       setPasteCountdown(3);
    };
+
+   // iPhone in the Facebook app: copy and show the "go to Messenger yourself" steps. Nothing opens (the
+   // app ignores it), so no countdown. The tap stamp still lets the bot connect them by timing
+   // (sendpulse-events) if they open our chat without sending the code.
+   const copyForFacebookApp = () => {
+      if (!messengerCode) return;
+      void copyMessengerCode('copy_button');
+      if (!pasteCard) {
+         track('contact_verify_paste_card_shown', { source, channel: 'messenger', attempts: attemptsRef.current, ios_host: 'facebook' });
+         void getSupabaseBrowserClient()
+            .rpc('mark_messenger_chat_opened')
+            .then(({ error }) => {
+               if (error) console.error('mark_messenger_chat_opened failed', error.message);
+            });
+      }
+      awaitingMessengerRef.current = true;
+      setPasteCard(true);
+   };
    useEffect(() => {
       if (pasteCountdown === null) return undefined;
       if (pasteCountdown > 0) {
@@ -802,6 +826,7 @@ export default function ContactsStep({
             in_app_browser: /FBAN|FBAV|FB_IAB|Instagram|Messenger/i.test(navigator.userAgent),
             is_desktop: desktopMessenger,
             ios_in_app: iosInAppMessenger ? inAppInfo.appName : null,
+            ios_host: metaIosHost(),
             flow: channel === 'messenger' && codeFirstMessenger ? 'paste_code' : channel === 'messenger' && desktopMessenger ? 'qr' : 'link'
          });
          if (channel === 'messenger' && desktopMessenger) {
@@ -901,7 +926,91 @@ export default function ContactsStep({
                className="flex w-full flex-col gap-3 rounded-[18px] border-2 border-[#c9bdf5] bg-[#f6f2ff] px-4 py-4 text-left"
             >
                <span className="text-[18px] font-bold leading-[22px] text-[#4c239f]">Connect on Messenger</span>
-               {iosInAppMessenger ? (
+               {fbAppIos ? (
+                  <>
+                     {/* iPhone inside the Facebook app (not Messenger): nothing on the page can open Messenger
+                         from there, so there's no "open" button that does nothing. They copy, switch to the
+                         Messenger app themselves, paste, and come back: Facebook keeps this page meanwhile, and
+                         it turns green on its own (realtime + poll + the re-check when it's shown again). */}
+                     {pasteCard ? (
+                        <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
+                           <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
+                              {copyFailed ? 'Press and hold to copy: ' : '📋 Code copied: '}
+                              <span className="select-all whitespace-nowrap">{messengerCode}</span>
+                           </p>
+                           <ol className="flex flex-col gap-2 text-[16px] leading-[22px] text-[#26143f]">
+                              <li className="flex gap-2">
+                                 <b>1.</b>
+                                 <span>
+                                    Leave Facebook and open your <b>Messenger</b> app.
+                                 </span>
+                              </li>
+                              <li className="flex gap-2">
+                                 <b>2.</b>
+                                 <span>
+                                    Open our chat: search <b>Moodeng Credit</b>.
+                                 </span>
+                              </li>
+                              <li className="flex gap-2">
+                                 <b>3.</b>
+                                 <span>
+                                    <b>Paste</b> the code and <b>Send</b>.
+                                 </span>
+                              </li>
+                              <li className="flex gap-2">
+                                 <b>4.</b>
+                                 <span>
+                                    Come back to <b>Facebook</b>. This page turns green by itself.
+                                 </span>
+                              </li>
+                           </ol>
+                           <button
+                              type="button"
+                              onClick={copyForFacebookApp}
+                              className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                           >
+                              {codeCopied ? 'Copied ✓' : 'Copy code again'}
+                           </button>
+                        </div>
+                     ) : (
+                        <>
+                           <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                              Send this code to us on Messenger.
+                           </p>
+                           <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
+                              {messengerCode}
+                           </code>
+                           <button
+                              type="button"
+                              onClick={copyForFacebookApp}
+                              className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#0866FF] px-4 text-[16px] font-bold text-white"
+                           >
+                              <Facebook aria-hidden="true" className="size-5" strokeWidth={2.5} />
+                              Copy code
+                           </button>
+                        </>
+                     )}
+                     {copyFailed ? (
+                        <p className="rounded-xl bg-[#fff4e0] px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#9a5b00]">
+                           Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
+                        </p>
+                     ) : null}
+                     {externalHowTo ? (
+                        <MenuGuide onClose={() => setExternalHowTo(false)} os="ios" />
+                     ) : (
+                        <button
+                           type="button"
+                           onClick={() => {
+                              track('contact_verify_open_in_safari_tapped', { source, channel: 'messenger', app: inAppInfo.appName, ios_host: 'facebook' });
+                              setExternalHowTo(true);
+                           }}
+                           className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
+                        >
+                           Or open in Safari
+                        </button>
+                     )}
+                  </>
+               ) : iosInAppMessenger ? (
                   <>
                      {/* iPhone inside Facebook's / Messenger's own browser: copy the code, open our chat, paste it
                          (the paste card says so in big letters). The bot confirms it, and this card turns green

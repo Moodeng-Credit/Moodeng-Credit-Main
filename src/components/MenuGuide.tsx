@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { metaIosHost } from '@/lib/inAppBrowser';
+
 // The "open in Safari / Chrome" guide for Facebook's / Messenger's own browser. Only the app's own menu
 // (top right) can open the real browser: on iPhone nothing on the page can open Safari (Meta blocks it).
 // So we show what to tap the way apps do it: small pictures of the browser's top bar with the menu
@@ -68,6 +70,10 @@ export default function MenuGuide({
    const browser = isAndroid ? 'Chrome' : 'Safari';
    const menuIcon = isAndroid ? '⋮' : '⋯';
    const menuItem = isAndroid ? 'Open in Chrome' : 'Open in external browser';
+   // iPhone in the Facebook app (not Messenger): its menu isn't the Messenger one in the screenshot, so
+   // it gets the drawn menu item instead, and its own name under the address. Messenger is unchanged.
+   const fbAppIos = !isAndroid && metaIosHost() === 'facebook';
+   const drawnMenu = isAndroid || fbAppIos;
 
    return (
       <div
@@ -92,7 +98,7 @@ export default function MenuGuide({
                   <span className="text-[18px] leading-none">✕</span>
                   <span className="flex flex-col items-center leading-tight">
                      <span className="text-[14px] font-semibold">🔒 moodeng.app</span>
-                     <span className="text-[11px] text-[#8e8e93]">Messenger</span>
+                     <span className="text-[11px] text-[#8e8e93]">{fbAppIos ? 'Facebook' : 'Messenger'}</span>
                   </span>
                   <span className={`flex size-8 items-center justify-center rounded-full text-[20px] font-black leading-none ${RING}`}>
                      {menuIcon}
@@ -102,21 +108,21 @@ export default function MenuGuide({
             </Step>
 
             <Step n={2} title={isAndroid ? `Tap “${menuItem}”` : `Tap “${menuItem}”`}>
-               {isAndroid ? null : (
+               {drawnMenu ? null : (
                   // The real Messenger menu (George's iPhone, 18 Oct): everything else faded, the one to tap ringed.
                   <div className="relative">
                      <img alt="" className="w-full rounded-xl" src="/guide/ios-menu-open-external.png" />
                      <TapFinger left="62%" top="62%" />
                   </div>
                )}
-               <div className={isAndroid ? 'relative rounded-xl bg-white text-[15px] text-[#1c1c1e]' : 'hidden'}>
+               <div className={drawnMenu ? 'relative rounded-xl bg-white text-[15px] text-[#1c1c1e]' : 'hidden'}>
                   <div className="px-2 py-1.5">
                      <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 font-semibold ${RING}`}>
                         <span aria-hidden="true">{isAndroid ? '🌐' : '🧭'}</span>
                         {menuItem}
                      </div>
                   </div>
-                  {isAndroid ? <TapFinger left="62%" top="55%" /> : null}
+                  {drawnMenu ? <TapFinger left="62%" top="55%" /> : null}
                </div>
             </Step>
 
