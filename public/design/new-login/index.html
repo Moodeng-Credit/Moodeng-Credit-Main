@@ -72,7 +72,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 <body>
 <div class="wrap">
   <header>
-    <span class="eyebrow">Moodeng · updated 16 Oct 2026</span>
+    <span class="eyebrow">Moodeng · updated 18 Oct 2026</span>
     <h1>How people sign up and get in</h1>
     <p class="lede">Most borrowers arrive from a Facebook post and open Moodeng inside Facebook's own browser, where Google sign-in can't work. In the 30 days before this change, 26 people opened sign-up inside Facebook and only 5 got an account. Now they sign up with just their email, no code, and confirm it later, once they're approved.</p>
     <div class="facts">
@@ -84,13 +84,71 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
   </header>
 
   <div class="tabs" role="tablist" aria-label="Flow versions">
-    <button class="tab" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="true">Live now<small>16 Oct</small></button>
+    <button class="tab" role="tab" id="tab-browsers" aria-controls="panel-browsers" aria-selected="true">By browser · live now<small>18 Oct</small></button>
+    <button class="tab" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="false" tabindex="-1">Sign-up steps<small>16 Oct</small></button>
     <button class="tab" role="tab" id="tab-whatsapp" aria-controls="panel-whatsapp" aria-selected="false" tabindex="-1">When WhatsApp is approved<small>Meta reviewing</small></button>
     <button class="tab" role="tab" id="tab-before" aria-controls="panel-before" aria-selected="false" tabindex="-1">Earlier version<small>15 Oct</small></button>
   </div>
 
+  <!-- ===================== BY BROWSER (18 OCT) ===================== -->
+  <div class="panel" role="tabpanel" id="panel-browsers" aria-labelledby="tab-browsers">
+    <p class="note">What people see on each phone and browser, live on moodeng.app since 18 Oct. Inside Facebook's and Messenger's own browsers, nothing on a web page can open Safari, and Chrome only sometimes. So the first screen offers the better browser with one tap and a <b>Continue here</b> for everyone else, and every step works in both.</p>
+
+    <section>
+      <h2>iPhone · inside Messenger</h2>
+      <p class="section-intro">The only way out to Safari is Messenger's own ⋯ menu, so "Open in Safari" shows exactly where to tap. The Messenger step copies the code and says, in big letters, to paste it.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-1-first.png" alt="For the best experience, open Moodeng in Safari, with Open in Safari and Continue here" loading="lazy"></div><figcaption><b><span class="n">1</span>First screen</b><span>Signed-out visitors only. "Continue here" is remembered.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-2-guide.png" alt="Guide: tap the three dots, then Open in external browser" loading="lazy"></div><figcaption><b><span class="n">2</span>"Open in Safari"</b><span>The hippo points at the real ⋯. Steps 1 and 2 are pictures, not buttons. Safari then opens straight on sign-up.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-3-home.png" alt="Home page with a yellow Get your first loan button" loading="lazy"></div><figcaption><b><span class="n">3</span>"Continue here": home page</b><span>Phone home page with the yellow button.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-4-signup.png" alt="Sign up to Moodeng with an email field" loading="lazy"></div><figcaption><b><span class="n">4</span>Sign up</b><span>Email only. Its "Open in Safari" links show the same guide (they did nothing before).</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-5-card.png" alt="Connect on Messenger card with Copy code and open Messenger" loading="lazy"></div><figcaption><b><span class="n">5</span>Connect Facebook</b><span>"Copy code &amp; open Messenger". Steps lead with pasting.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-iab-6-paste.png" alt="Code copied card with paste instructions and Open Messenger countdown" loading="lazy"></div><figcaption><b><span class="n">6</span>After the tap</b><span>"📋 Code copied: paste it, then Send", then Messenger opens. The bot's reply has a "Continue" link back.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>iPhone · inside the Facebook app</h2>
+      <p class="section-intro">Same screens as Messenger: on iPhone both apps' browsers look identical to us. The only difference: to reach our chat they switch to the Messenger app, then swipe back to Facebook, where the page has turned green.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-ios-fbapp-guide.png" alt="Guide with the three dots ringed" loading="lazy"></div><figcaption><b><span class="n">1</span>"Open in Safari" from the home page</b><span>Same guide, home page version.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>iPhone · Safari</h2>
+      <p class="section-intro">No first screen. Google sign-in works, and the Messenger step is one tap: the link carries the code and Messenger confirms by itself.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-1-signup.png" alt="Welcome to Moodeng Credit with Sign up with Google" loading="lazy"></div><figcaption><b><span class="n">1</span>Sign up</b><span>Where "Open in Safari" lands. Google, Telegram or email.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-2-card.png" alt="Confirming on Messenger, keep this screen open" loading="lazy"></div><figcaption><b><span class="n">2</span>Connect Facebook: one tap</b><span>Messenger opens with the code and confirms; this turns green by itself.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-3-code-page.png" alt="Connected! Go back to Moodeng in Facebook" loading="lazy"></div><figcaption><b><span class="n">3</span>Code page (from Facebook)</b><span>If they started inside Facebook: connected here, then back to Facebook.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-safari-4-continue.png" alt="Go back to where you started" loading="lazy"></div><figcaption><b><span class="n">4</span>Bot's "Continue" link, signed out</b><span>Shown in a browser where they aren't signed in.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>Android · inside Facebook / Messenger</h2>
+      <p class="section-intro">"Open in Chrome" tries to open Chrome directly; if Facebook blocks it, the ⋮ guide appears. The Messenger step is the same paste card as iPhone, and the bot also connects new chatters by timing.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-1-first.png" alt="For the best experience, open Moodeng in Chrome" loading="lazy"></div><figcaption><b><span class="n">1</span>First screen</b><span>Open in Chrome, or Continue here.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-2-guide.png" alt="Chrome didn't open guide with the menu ringed" loading="lazy"></div><figcaption><b><span class="n">2</span>Chrome didn't open</b><span>Tap ⋮, then Open in Chrome.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-3-card.png" alt="Connect on Messenger card for Android in Facebook" loading="lazy"></div><figcaption><b><span class="n">3</span>Connect Facebook</b><span>Steps lead with pasting.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-iab-4-paste.png" alt="Code copied card with Open Messenger countdown" loading="lazy"></div><figcaption><b><span class="n">4</span>After the tap</b><span>Code copied, how to paste, then Messenger opens.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>Android · Chrome</h2>
+      <p class="section-intro">No first screen. Sign-up is the same page as Safari. Messenger: tap, then say hi or tap Get Started, and new chatters connect by timing; pasting the code always works.</p>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/b-and-chrome-1-card.png" alt="Connect on Messenger card in Chrome" loading="lazy"></div><figcaption><b><span class="n">1</span>Connect Facebook</b><span>Copy code &amp; open Messenger.</span></figcaption></figure>
+      </div>
+    </section>
+    <p class="note">How these were made: iPhone screens in the iOS Simulator (Messenger and Facebook screens in a stand-in that behaves like their browser); Android screens rendered with the same code as Android Facebook and Chrome, so the frame isn't Android's. The code shown is a sample.</p>
+  </div>
+
   <!-- ===================== LIVE NOW ===================== -->
-  <div class="panel" role="tabpanel" id="panel-now" aria-labelledby="tab-now">
+  <div class="panel" role="tabpanel" id="panel-now" aria-labelledby="tab-now" hidden>
     <div class="steps" aria-label="The steps in order">
       <span>1 Sign up (email)</span><i>→</i><span>2 Onboarding</span><i>→</i><span>3 Connect Facebook</span><i>→</i><span>4 Video call</span><i>→</i><span>5 Approved: confirm email + password</span><i>→</i><span>6 ID check in Chrome</span><i>→</i><span>7 Loan</span>
     </div>
