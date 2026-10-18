@@ -44,6 +44,8 @@ export default function OpenInBrowserPrompt() {
    const [linkCopied, setLinkCopied] = useState(false);
    // iPhone: tapping the hippo points at the ⋯ steps (there's no button that can open Safari).
    const [stepsPulse, setStepsPulse] = useState(false);
+   // iPhone: "Open in Safari" can't open Safari (Meta blocks it), so it points at the ⋯ menu that can.
+   const [pointer, setPointer] = useState(false);
    const shownTracked = useRef(false);
    const isAndroid = info.os === 'android';
    const browser = isAndroid ? 'Chrome' : 'Safari';
@@ -111,6 +113,11 @@ export default function OpenInBrowserPrompt() {
       }, 1500);
    };
 
+   const showPointer = () => {
+      track('iab_prompt_open_tapped', { os: info.os, app: info.appName, via: 'safari_button' });
+      setPointer(true);
+   };
+
    const pointAtSteps = () => {
       track('iab_prompt_hippo_tapped', { os: info.os, app: info.appName });
       setStepsPulse(true);
@@ -172,16 +179,24 @@ export default function OpenInBrowserPrompt() {
                >
                   Open in Chrome
                </a>
-            ) : null}
+            ) : (
+               <button
+                  className="flex min-h-[56px] w-full items-center justify-center rounded-full bg-[#6b55f7] px-4 text-[17px] font-bold text-white"
+                  onClick={showPointer}
+                  type="button"
+               >
+                  Open in Safari
+               </button>
+            )}
 
             <div
                className={`w-full rounded-2xl px-4 py-3 text-left text-[15px] leading-[21px] transition-transform ${stepsPulse ? 'scale-[1.04]' : ''} ${
-                  isAndroid && !triedChrome
+                  (isAndroid && !triedChrome) || (!isAndroid && !stepsPulse)
                      ? 'bg-white/70 text-[#6b5b86] dark:bg-white/5 dark:text-[#c9bdd9]'
                      : 'border-2 border-[#6b55f7] bg-white text-[#26143f] dark:bg-white/10 dark:text-white'
                }`}
             >
-               <p className="font-semibold">{isAndroid ? (triedChrome ? 'Chrome didn’t open? Two taps:' : 'Or do it yourself:') : 'How to open it in Safari:'}</p>
+               <p className="font-semibold">{isAndroid ? (triedChrome ? 'Chrome didn’t open? Two taps:' : 'Or do it yourself:') : 'Two taps:'}</p>
                <p className="mt-1">{menuSteps}</p>
                <button className="mt-2 font-bold text-[#6b55f7] underline underline-offset-4" onClick={copyLink} type="button">
                   {linkCopied ? `Link copied ✓ Paste it into ${browser}` : `No menu? Copy the link for ${browser}`}
@@ -196,6 +211,27 @@ export default function OpenInBrowserPrompt() {
                Continue here instead
             </button>
          </div>
+         {pointer ? (
+            <button
+               aria-label="Close"
+               className="fixed inset-0 z-[1002] flex flex-col items-end bg-black/90 px-5 pt-3 text-right text-white"
+               onClick={() => setPointer(false)}
+               type="button"
+            >
+               <span aria-hidden="true" className="mr-1 animate-bounce text-[56px] leading-none">
+                  ↑
+               </span>
+               <span className="mt-2 text-[24px] font-extrabold leading-[30px]">
+                  Tap <b>⋯</b> up here
+               </span>
+               <span className="mt-1 text-[18px] leading-[25px]">
+                  then <b>Open in external browser</b>
+                  <br />
+                  (or <b>Open in Safari</b>)
+               </span>
+               <span className="mt-6 text-[15px] leading-[21px] text-white/80">Safari opens straight on sign-up.</span>
+            </button>
+         ) : null}
       </div>
    );
 }

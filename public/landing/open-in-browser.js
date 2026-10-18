@@ -113,11 +113,11 @@
             '<p style="margin:0;font-size:16px;line-height:22px;color:#594d65">Signing up and connecting Facebook work more smoothly there. It takes two taps.</p>' +
             (isAndroid
                ? '<a data-iab-open href="' + intent() + '" style="display:flex;align-items:center;justify-content:center;min-height:56px;width:100%;box-sizing:border-box;border-radius:999px;background:#6b55f7;color:#fff;font-size:17px;font-weight:700;text-decoration:none">Open in Chrome</a>'
-               : '') +
+               : '<button data-iab-safari type="button" style="display:flex;align-items:center;justify-content:center;min-height:56px;width:100%;border:0;border-radius:999px;background:#6b55f7;color:#fff;font:inherit;font-size:17px;font-weight:700">Open in Safari</button>') +
             '<div data-iab-steps style="width:100%;box-sizing:border-box;border-radius:16px;padding:12px 16px;text-align:left;font-size:15px;line-height:21px;' +
-            (isAndroid ? 'background:rgba(255,255,255,.7);color:#6b5b86' : 'border:2px solid #6b55f7;background:#fff;color:#26143f') +
+            'background:rgba(255,255,255,.7);color:#6b5b86' +
             '">' +
-            '<p data-iab-steps-title style="margin:0;font-weight:600">' + (isAndroid ? 'Or do it yourself:' : 'How to open it in Safari:') + '</p>' +
+            '<p data-iab-steps-title style="margin:0;font-weight:600">' + (isAndroid ? 'Or do it yourself:' : 'Two taps:') + '</p>' +
             '<p style="margin:4px 0 0">' + steps + '</p>' +
             '<button data-iab-copy type="button" style="margin-top:8px;padding:0;border:0;background:none;font:inherit;font-weight:700;color:#6b55f7;text-decoration:underline;text-underline-offset:4px">No menu? Copy the link for ' + browser + '</button>' +
             '</div>' +
@@ -152,6 +152,28 @@
                }, 1500);
             });
          });
+         var safariButton = wrap.querySelector('[data-iab-safari]');
+         if (safariButton) {
+            // iPhone: nothing can open Safari for them (Meta blocks it), so point at the ⋯ menu that can.
+            safariButton.addEventListener('click', function () {
+               track('iab_prompt_open_tapped', { via: 'safari_button' });
+               var pointer = document.createElement('button');
+               pointer.type = 'button';
+               pointer.setAttribute('aria-label', 'Close');
+               pointer.style.cssText =
+                  'position:fixed;inset:0;z-index:2147483601;border:0;background:rgba(0,0,0,.9);color:#fff;' +
+                  'display:flex;flex-direction:column;align-items:flex-end;text-align:right;padding:12px 20px;font:inherit';
+               pointer.innerHTML =
+                  '<span aria-hidden="true" style="font-size:56px;line-height:1;margin-right:4px">\u2191</span>' +
+                  '<span style="margin-top:8px;font-size:24px;line-height:30px;font-weight:800">Tap <b>\u22EF</b> up here</span>' +
+                  '<span style="margin-top:4px;font-size:18px;line-height:25px">then <b>Open in external browser</b><br>(or <b>Open in Safari</b>)</span>' +
+                  '<span style="margin-top:24px;font-size:15px;line-height:21px;opacity:.8">Safari opens straight on sign-up.</span>';
+               pointer.addEventListener('click', function () {
+                  pointer.remove();
+               });
+               wrap.appendChild(pointer);
+            });
+         }
          var copyButton = wrap.querySelector('[data-iab-copy]');
          var hippo = wrap.querySelector('[data-iab-hippo]');
          if (hippo) {
