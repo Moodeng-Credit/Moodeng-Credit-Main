@@ -137,6 +137,22 @@ export function watchInAppNoticeHidden(onChange: (hidden: boolean) => void): () 
    return () => window.removeEventListener(NOTICE_HIDDEN_EVENT, listener);
 }
 
+/**
+ * iPhone only: which Meta app's browser this is. Both say FBAN/FBIOS (so appName is 'Facebook' for
+ * both), but PostHog pageviews from Sept–Oct 2026 split cleanly on two more markers:
+ * - The Facebook app: FBOP/5, and on current versions also "Safari/604.1" + IABMV/1. Arrives from
+ *   facebook.com with ?fbclid (posts and ads). userbuds' 10-14 sign-up was this one.
+ * - Messenger: FBOP/80, no Safari/ token. Arrives direct (links in our chat, the bot's /continue).
+ * Anything else (unknown FBOP, a future format) returns null, and callers keep today's behaviour.
+ */
+export function metaIosHost(userAgent?: string): 'facebook' | 'messenger' | null {
+   const ua = userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : '');
+   if (detectOs(ua) !== 'ios' || !/\bFBAN\/FBIOS\b/.test(ua)) return null;
+   if (/\bIABMV\//.test(ua) || /\bFBOP\/5\b/.test(ua)) return 'facebook';
+   if (/\bFBOP\/80\b/.test(ua)) return 'messenger';
+   return null;
+}
+
 /** True when the in-app browser is Facebook's own (the Facebook app or Messenger). */
 export function isFacebookInApp(info: InAppBrowserInfo): boolean {
    return info.isInApp && (info.appName === 'Facebook' || info.appName === 'Messenger');

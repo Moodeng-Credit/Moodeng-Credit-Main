@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { buildAndroidIntentUrl, detectInAppBrowser, watchForFailedHandOff } from '@/lib/inAppBrowser';
+import { buildAndroidIntentUrl, detectInAppBrowser, metaIosHost, watchForFailedHandOff } from '@/lib/inAppBrowser';
 
 // Real-world user-agent strings captured from the various in-app browsers.
 const UA = {
@@ -87,6 +87,37 @@ describe('detectInAppBrowser', () => {
    it('treats real Chrome (mobile and desktop) as a normal browser', () => {
       expect(detectInAppBrowser(UA.chromeAndroid).isInApp).toBe(false);
       expect(detectInAppBrowser(UA.chromeDesktop).isInApp).toBe(false);
+   });
+});
+
+// Real iPhone user agents from PostHog pageviews (2026-10-18): same FBAN/FBIOS, different apps.
+const META_IOS = {
+   facebookApp:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 Safari/604.1 [FBAN/FBIOS;FBAV/582.0.0.37.71;FBBV/1084662387;FBDV/iPhone12,8;FBMD/iPhone;FBSN/iOS;FBSV/26.6.1;FBSS/2;FBID/phone;FBLC/en_TH;FBOP/5;FBRV/1092614939;IABMV/1]',
+   facebookAppOld:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G71 [FBAN/FBIOS;FBAV/579.0.0.23.106;FBBV/0;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/26.6;FBSS/3;FBCR/;FBID/phone;FBLC/en_US;FBOP/5]',
+   messenger:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/23G83 [FBAN/FBIOS;FBAV/582.0.0.26.106;FBBV/1084662339;FBDV/iPhone12,8;FBMD/iPhone;FBSN/iOS;FBSV/26.6.1;FBSS/2;FBCR/;FBID/phone;FBLC/en_TH;FBOP/80]'
+};
+
+describe('metaIosHost', () => {
+   it('tells the Facebook app from Messenger on iPhone', () => {
+      expect(metaIosHost(META_IOS.facebookApp)).toBe('facebook');
+      expect(metaIosHost(META_IOS.facebookAppOld)).toBe('facebook');
+      expect(metaIosHost(META_IOS.messenger)).toBe('messenger');
+   });
+
+   it('both still count as the Facebook in-app browser', () => {
+      for (const ua of Object.values(META_IOS)) {
+         expect(detectInAppBrowser(ua, { standalone: false })).toMatchObject({ isInApp: true, os: 'ios', appName: 'Facebook' });
+      }
+   });
+
+   it('says nothing for other browsers or an unknown format', () => {
+      expect(metaIosHost(UA.safariIos)).toBeNull();
+      expect(metaIosHost(UA.facebookAndroid)).toBeNull();
+      expect(metaIosHost(UA.messengerIos)).toBeNull();
+      expect(metaIosHost(META_IOS.messenger.replace('FBOP/80', 'FBOP/9'))).toBeNull();
    });
 });
 
