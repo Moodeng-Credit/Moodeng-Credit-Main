@@ -72,7 +72,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Get reminders on Viber' | 'Get reminders on Telegram') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Viber reminders' | 'Telegram reminders') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -679,8 +679,8 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             });
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
             expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
-            expect(channelCard(container, 'Get reminders on Telegram')).toBeTruthy();
-            expect(channelCard(container, 'Get reminders on Viber')).toBeFalsy();
+            expect(channelCard(container, 'Telegram reminders')).toBeTruthy();
+            expect(channelCard(container, 'Viber reminders')).toBeFalsy();
             expect(container.textContent).toContain('SMS reminders');
             expect(container.textContent).toContain('Coming soon');
             expect(continueButton(container).disabled).toBe(false);
@@ -710,7 +710,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
             expect(continueButton(container).disabled).toBe(false);
             await act(async () => {
-               channelCard(container, 'Get reminders on Viber')?.click();
+               channelCard(container, 'Viber reminders')?.click();
             });
             const phoneInput = container.querySelector<HTMLInputElement>('#viber-number')!;
             await act(async () => {

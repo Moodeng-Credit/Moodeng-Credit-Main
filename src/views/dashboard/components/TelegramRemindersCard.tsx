@@ -100,8 +100,8 @@ export default function TelegramRemindersCard({
                disabled={busy}
                icon={telegramIcon}
                onClick={() => void start()}
-               subtitle={busy ? 'Getting your link…' : 'No WhatsApp? We’ll remind you on Telegram before your due date.'}
-               title="Get reminders on Telegram"
+               subtitle={busy ? 'Getting your link…' : 'We’ll remind you on Telegram before your due date.'}
+               title="Telegram reminders"
             />
             {error ? <p className="text-center text-md-b3 font-normal text-md-red-500">{error}</p> : null}
          </>

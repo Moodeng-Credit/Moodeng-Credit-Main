@@ -53,8 +53,8 @@ export default function ViberRemindersCard({
                track('contact_viber_reminders_tapped', { source });
                setStep('number');
             }}
-            subtitle="No WhatsApp? We’ll remind you on Viber before your due date."
-            title="Get reminders on Viber"
+            subtitle="We’ll remind you on Viber before your due date."
+            title="Viber reminders"
          />
       );
    }
