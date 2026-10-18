@@ -166,7 +166,6 @@ export default function ContactsStep({
    const [copyFailed, setCopyFailed] = useState(false);
    // iPhone in Facebook's browser: the "⋯ → Open in external browser" steps are showing.
    const [externalHowTo, setExternalHowTo] = useState(false);
-   const [linkCopied, setLinkCopied] = useState(false);
    // Android: the app link did nothing (no Messenger app, or Messenger stuck) — say what to do instead.
    const [messengerDidntOpen, setMessengerDidntOpen] = useState(false);
    // Android: code first, then a direct tap on "Copy code & open Messenger" (see the comment at the top).
@@ -906,20 +905,7 @@ export default function ContactsStep({
                            <span>
                               2. Tap <b>Open in external browser</b> (or <b>Open in Safari</b>).
                            </span>
-                           <span>Safari opens your code page, and Messenger opens from there with the code.</span>
-                           <button
-                              type="button"
-                              onClick={() => {
-                                 const link = `${buildMessengerHandoffLink(messengerCode)}?from=fb`;
-                                 void copyTextFromTap(link).then((result) => {
-                                    track('contact_verify_external_link_copied', { source, channel: 'messenger', ok: result.ok });
-                                    setLinkCopied(result.ok);
-                                 });
-                              }}
-                              className="self-start font-bold text-[#6b55f7] underline underline-offset-4"
-                           >
-                              {linkCopied ? 'Link copied ✓ Paste it into Safari' : 'No ⋯ menu? Copy the link for Safari'}
-                           </button>
+                           <span>Safari opens your code page, and Messenger opens from there with the code. Nothing to copy.</span>
                         </div>
                      ) : (
                         <button
