@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+   <!-- Moodeng Viber relay: emulator (no window) + relay loop, at login, restarted if it stops.
+        Stop:  launchctl bootout gui/$(id -u)/app.moodeng.viber-relay
+        Start: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/app.moodeng.viber-relay.plist -->
+   <key>Label</key>
+   <string>app.moodeng.viber-relay</string>
+   <key>ProgramArguments</key>
+   <array>
+      <string>/bin/zsh</string>
+      <string>/Users/georgelerner/.moodeng-viber-relay/start.sh</string>
+   </array>
+   <key>RunAtLoad</key>
+   <true/>
+   <!-- Restarting the relay must not take the emulator down with it. -->
+   <key>AbandonProcessGroup</key>
+   <true/>
+   <key>KeepAlive</key>
+   <true/>
+   <key>ThrottleInterval</key>
+   <integer>60</integer>
+   <key>StandardOutPath</key>
+   <string>/Users/georgelerner/.moodeng-viber-relay/relay.log</string>
+   <key>StandardErrorPath</key>
+   <string>/Users/georgelerner/.moodeng-viber-relay/relay.log</string>
+</dict>
+</plist>

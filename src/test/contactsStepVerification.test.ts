@@ -12,7 +12,7 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 // component reads on load and on every poll, and the code start_*_verification hands back.
 const supa = vi.hoisted(() => {
    const state = {
-      usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null },
+      usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null, viber_verified_at: null as string | null },
       rpcResult: { data: 'MDNG-ABC123' as unknown, error: null as unknown }
    };
    return {
@@ -72,7 +72,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Viber reminders' | 'Telegram reminders') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -91,7 +91,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
    beforeEach(() => {
       vi.useFakeTimers();
       window.sessionStorage.clear();
-      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null, viber_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
       supa.rpc.mockClear();
       supa.invoke.mockClear();
@@ -115,9 +115,9 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
       Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
    });
 
-   const render = async (userId = 'user-1', whatsappEnabled?: boolean, requireReminders?: boolean) => {
+   const render = async (userId = 'user-1', whatsappEnabled?: boolean, requireReminders?: boolean, source?: 'connect') => {
       await act(async () => {
-         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled, requireReminders }));
+         root.render(createElement(ContactsStep, { userId, onBack: vi.fn(), onContinue, whatsappEnabled, requireReminders, source }));
       });
       // Flush the initial "already verified?" load.
       await act(async () => {
@@ -655,6 +655,98 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(continueButton(container).disabled).toBe(true);
             expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
             expect(container.textContent).toContain('Turn on WhatsApp reminders to continue.');
+         });
+
+         it('onboarding (connect): WhatsApp is required where notifications can’t work, too', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(continueButton(container).disabled).toBe(true);
+            expect(channelCard(container, 'Get reminders on WhatsApp')?.textContent).toContain('Required');
+            expect(buttonByText(container, 'I don’t have WhatsApp'.replace('’', "'"))).toBeTruthy();
+         });
+
+         it('no WhatsApp: Telegram instead (Viber off), SMS greyed out, never the bell; Telegram linked turns it on', async () => {
+            remindersOn();
+            push.state.isSupported = true;
+            push.state.permission = 'denied';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeTruthy();
+            expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(channelCard(container, 'Turn on reminders')).toBeFalsy();
+            expect(channelCard(container, 'Telegram reminders')).toBeTruthy();
+            expect(channelCard(container, 'Viber reminders')).toBeFalsy();
+            expect(container.textContent).toContain('SMS reminders');
+            expect(container.textContent).toContain('Coming soon');
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('a linked Telegram stands in for WhatsApp', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            (supa.state.usersRow as Record<string, unknown>).chat_id = 123456;
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(container.textContent).toContain('Telegram reminders');
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('Viber on: "I don’t have WhatsApp" swaps WhatsApp for the Viber card; their number turns it on', async () => {
+            supa.rpc.mockImplementation(async (name: string) => {
+               if (name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled') return { data: true, error: null };
+               if (name === 'set_my_viber_number') return { data: 'ok', error: null };
+               return supa.state.rpcResult;
+            });
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
+            await act(async () => {
+               channelCard(container, 'Viber reminders')?.click();
+            });
+            const phoneInput = container.querySelector<HTMLInputElement>('#viber-number')!;
+            await act(async () => {
+               const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+               setter.call(phoneInput, '09171234567');
+               phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            await act(async () => {
+               buttonByText(container, 'Turn on Viber reminders')?.click();
+            });
+            expect(supa.rpc).toHaveBeenCalledWith('set_my_viber_number', { p_phone: '09171234567' });
+            expect(container.textContent).toContain('Viber reminders');
+            expect(container.textContent).toContain('On');
+         });
+
+         it('a confirmed Viber number stands in for WhatsApp', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('Viber added elsewhere doesn’t hide the bell where notifications work', async () => {
+            supa.rpc.mockImplementation(async (name: string) =>
+               name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled' ? { data: true, error: null } : supa.state.rpcResult
+            );
+            push.state.isSupported = true;
+            push.state.permission = 'default';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
+            expect(container.textContent).not.toContain('Viber reminders');
+            expect(continueButton(container).disabled).toBe(true);
          });
 
          it('"I don’t have WhatsApp" lets them through', async () => {

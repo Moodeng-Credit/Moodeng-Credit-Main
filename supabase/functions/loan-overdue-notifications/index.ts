@@ -98,7 +98,7 @@ const loadBorrowers = async (supabase: SupabaseClient, userIds: string[]): Promi
 
    const { data, error } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp')
+      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, notif_transaction_activity, notif_push, messenger_psid, whatsapp_contact_id, notif_whatsapp, viber_number, notif_viber')
       .in('id', userIds);
 
    if (error || !data) {
@@ -336,7 +336,7 @@ serve(async (req) => {
       // One borrower's failed send must not stop the run for everyone after them (or the team post).
       try {
          const borrower = borrowers.get(borrowerId);
-         if (!borrower || ((!borrower.email || isPlaceholderEmail(borrower.email)) && !borrower.chat_id && !borrower.messenger_psid && !borrower.whatsapp_contact_id && !pushableBorrowerIds.has(borrowerId))) {
+         if (!borrower || ((!borrower.email || isPlaceholderEmail(borrower.email)) && !borrower.chat_id && !borrower.messenger_psid && !borrower.whatsapp_contact_id && !borrower.viber_number && !pushableBorrowerIds.has(borrowerId))) {
             continue;
          }
 
@@ -399,7 +399,7 @@ serve(async (req) => {
             }
          );
 
-         if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent && !delivery.whatsappSent) {
+         if (!delivery.emailSent && !delivery.telegramSent && !delivery.pushSent && !delivery.messengerSent && !delivery.whatsappSent && !delivery.viberQueued) {
             continue;
          }
 

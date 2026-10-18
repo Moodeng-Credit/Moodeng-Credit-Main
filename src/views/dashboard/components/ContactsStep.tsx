@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BellRing, Facebook, Loader2 } from 'lucide-react';
+import { BellRing, Facebook, Loader2, MessageSquareText } from 'lucide-react';
 import posthog from 'posthog-js';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -24,6 +24,8 @@ import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
+import TelegramRemindersCard from '@/views/dashboard/components/TelegramRemindersCard';
+import ViberRemindersCard, { ComingSoonChannel } from '@/views/dashboard/components/ViberRemindersCard';
 import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
@@ -147,6 +149,9 @@ export default function ContactsStep({
    requireReminders?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
+   // No-WhatsApp reminders: a Viber number they haven't turned off, or a linked Telegram (chat_id).
+   const [viberVerified, setViberVerified] = useState(false);
+   const [telegramVerified, setTelegramVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
    const [startingChannel, setStartingChannel] = useState<Channel | null>(null);
    // The Messenger link we opened. Once set, the card shows a short "waiting" state with a button to
@@ -276,14 +281,47 @@ export default function ContactsStep({
          cancelled = true;
       };
    }, []);
+   // Viber reminders, offered after "I don't have WhatsApp" (borrower_viber_card_enabled, off until the
+   // relay on George's Mac is running).
+   const [viberRemindersEnabled, setViberRemindersEnabled] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().rpc('get_viber_reminders_enabled');
+            if (!cancelled) setViberRemindersEnabled(data === true);
+         } catch {
+            // Can't tell: no Viber card, the step works as before.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
    const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
    // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
    // the way out so nobody is locked in (2026-10-13: ~30 taps on a reminder that could never turn on).
    // Without the WhatsApp card on, there's nothing else to ask for, so it's the old rule.
    const [skippedNoWhatsApp, setSkippedNoWhatsApp] = useState(false);
-   const whatsappRequired = requireReminders && offerWhatsAppReminders && !whatsappVerified && !skippedNoWhatsApp;
+   // Onboarding (George, 18 Oct): we need one way to remind every borrower. Where notifications can't
+   // work (Facebook's / Messenger's browser), that's WhatsApp, required like at loan time, with the same
+   // "I don't have WhatsApp" way out. Confirming it also gives us their phone number.
+   const remindersMandatory = requireReminders || source === 'connect';
+   // Viber or Telegram on stands in for WhatsApp where notifications can't work.
+   const otherReminderOn = viberVerified || telegramVerified;
+   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp;
    const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
+   // One way to remind them at a time (George, 18–19 Oct). Where notifications work: the bell card.
+   // Where they can't: WhatsApp; after "I don't have WhatsApp": Telegram, Viber (when its relay is on)
+   // and SMS greyed out as coming soon. A linked Viber or Telegram replaces the WhatsApp card.
+   const afterNoWhatsApp = offerWhatsAppReminders && skippedNoWhatsApp && !whatsappVerified;
+   const showPushCard = (pushRequired || pushBlocked || pushUnavailable) && contactVerified && !offerWhatsAppReminders;
+   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !otherReminderOn && !skippedNoWhatsApp;
+   const showTelegramCard = offerWhatsAppReminders && contactVerified && (telegramVerified || (afterNoWhatsApp && !viberVerified));
+   const showViberCard =
+      offerWhatsAppReminders && contactVerified && (viberVerified || (afterNoWhatsApp && viberRemindersEnabled && !telegramVerified));
+   const showSmsComingSoon = afterNoWhatsApp && contactVerified && !otherReminderOn;
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
@@ -292,7 +330,7 @@ export default function ContactsStep({
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
    // to fix it in Chrome/Safari and the team gets a heads-up (messenger-stuck-alerts, `reminders: true`), at most once a day.
-   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified
+   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified || otherReminderOn
       ? null
       : pushUnavailable
         ? 'failed'
@@ -367,10 +405,12 @@ export default function ContactsStep({
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at')
+            .select('whatsapp_verified_at, messenger_verified_at, viber_verified_at, notif_viber, chat_id')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
+         if (data.viber_verified_at && data.notif_viber !== false) setViberVerified(true);
+         if (data.chat_id) setTelegramVerified(true);
          // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
          // an old confirmation doesn't count: they send a fresh code.
          if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
@@ -469,12 +509,12 @@ export default function ContactsStep({
    useEffect(() => {
       // Not while the WhatsApp reminders offer is up: moving on by itself would hide it before they see it.
       if (source !== 'connect' || !confirmedNow || !canContinue || autoContinueTimerRef.current !== null) return;
-      if (offerWhatsAppReminders && !whatsappVerified) return;
+      if (offerWhatsAppReminders && !whatsappVerified && !otherReminderOn) return;
       autoContinueTimerRef.current = window.setTimeout(() => {
          track('contact_verify_auto_continue', { source, attempts: attemptsRef.current, push_on: pushOn });
          onContinueRef.current();
       }, AUTO_CONTINUE_MS);
-   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified]);
+   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified, otherReminderOn]);
    useEffect(
       () => () => {
          if (autoContinueTimerRef.current !== null) window.clearTimeout(autoContinueTimerRef.current);
@@ -1151,7 +1191,7 @@ export default function ContactsStep({
                title={offerWhatsAppReminders ? 'Get reminders on WhatsApp' : 'Turn on reminders'}
             />
          ) : null}
-         {(pushRequired || pushBlocked || pushUnavailable) && contactVerified ? (
+         {showPushCard ? (
             // Just confirmed Facebook in onboarding: this is the one tap left, so it shakes and says so.
             <div className={nudgeReminders ? 'connect-shake' : undefined}>
                <OptionCard
@@ -1186,16 +1226,24 @@ export default function ContactsStep({
                />
             </div>
          ) : null}
-         {offerWhatsAppReminders && contactVerified ? (
+         {showWhatsAppCard ? (
             <WhatsAppRemindersCard
                onVerified={() => setWhatsappVerified(true)}
-               required={requireReminders && !skippedNoWhatsApp}
+               required={remindersMandatory && !skippedNoWhatsApp}
                source={source}
                userId={userId}
                verified={whatsappVerified}
             />
          ) : null}
-         {requireReminders && offerWhatsAppReminders && contactVerified && !whatsappVerified && !skippedNoWhatsApp ? (
+         {/* Viber first: far more used in the Philippines than Telegram. */}
+         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
+         {showTelegramCard ? (
+            <TelegramRemindersCard onVerified={() => setTelegramVerified(true)} source={source} userId={userId} verified={telegramVerified} />
+         ) : null}
+         {showSmsComingSoon ? (
+            <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
+         ) : null}
+         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !otherReminderOn && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {
