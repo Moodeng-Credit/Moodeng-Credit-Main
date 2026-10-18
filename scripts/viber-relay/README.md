@@ -33,4 +33,5 @@ by hand (`private.viber_watchdog`).
 
 - `--send 63917… "text"`: send one message to a number, without Supabase.
 - `--here "text"`: type and send in the chat that's open now (e.g. My Notes).
+- `--type-check "text"`: type into the open chat, read it back, clear it (never sends).
 - `--dump`: print the screen's elements, to fix taps after a Viber update.

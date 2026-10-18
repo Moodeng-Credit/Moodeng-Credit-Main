@@ -312,11 +312,14 @@ export default function ContactsStep({
    // work, so the bell card only comes back after "I don't have WhatsApp" (how to unblock them).
    // After "I don't have WhatsApp": Viber when it's on, else the bell card. A confirmed Viber stands in
    // for WhatsApp.
+   // Only where notifications can't work (offerWhatsAppReminders): where they do, the bell card stays the
+   // reminders step even for someone who added Viber elsewhere.
    const pushCardPossible = pushRequired || pushBlocked || pushUnavailable;
+   const viberStandsIn = offerWhatsAppReminders && viberVerified;
    const offerViberAfterSkip = viberRemindersEnabled && offerWhatsAppReminders && skippedNoWhatsApp && !whatsappVerified;
-   const showViberCard = contactVerified && (viberVerified || offerViberAfterSkip);
+   const showViberCard = contactVerified && (viberStandsIn || offerViberAfterSkip);
    const showPushCard =
-      pushCardPossible && contactVerified && !viberVerified && (!offerWhatsAppReminders || (skippedNoWhatsApp && !viberRemindersEnabled));
+      pushCardPossible && contactVerified && (!offerWhatsAppReminders || (skippedNoWhatsApp && !viberRemindersEnabled && !viberVerified));
    const showWhatsAppCard =
       offerWhatsAppReminders && contactVerified && !viberVerified && !(skippedNoWhatsApp && (pushCardPossible || viberRemindersEnabled));
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.

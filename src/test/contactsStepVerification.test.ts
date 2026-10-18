@@ -721,6 +721,20 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
             expect(continueButton(container).disabled).toBe(false);
          });
 
+         it('Viber added elsewhere doesn’t hide the bell where notifications work', async () => {
+            supa.rpc.mockImplementation(async (name: string) =>
+               name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled' ? { data: true, error: null } : supa.state.rpcResult
+            );
+            push.state.isSupported = true;
+            push.state.permission = 'default';
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
+            expect(container.textContent).not.toContain('Viber reminders');
+            expect(continueButton(container).disabled).toBe(true);
+         });
+
          it('"I don’t have WhatsApp" lets them through', async () => {
             remindersOn();
             supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';

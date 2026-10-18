@@ -54,6 +54,7 @@ const dumpNodes = async () => {
          id: attr('resource-id'),
          cls: attr('class'),
          clickable: attr('clickable') === 'true',
+         focused: attr('focused') === 'true',
          x: Math.round((Number(b[1]) + Number(b[3])) / 2),
          y: Math.round((Number(b[2]) + Number(b[4])) / 2)
       });
@@ -63,7 +64,8 @@ const dumpNodes = async () => {
 
 const tap = (node) => shell(`input tap ${node.x} ${node.y}`);
 
-// `input text` only takes plain ASCII, with spaces as %s and shell characters escaped.
+// `input text` only takes plain ASCII, with spaces as %s. The command goes through the device's shell
+// inside single quotes, so only ' itself needs escaping ('\'').
 const toInputText = (text) =>
    text
       .replace(/[‘’]/g, "'")
@@ -71,8 +73,9 @@ const toInputText = (text) =>
       .replace(/[–—]/g, '-')
       .replace(/\s+/g, ' ')
       .replace(/[^\x20-\x7E]/g, '')
-      .replace(/([\\'"`$&|;<>()*?!#~^[\]{}])/g, '\\$1')
       .replace(/ /g, '%s');
+
+const shellQuote = (text) => `'${text.replace(/'/g, `'\\''`)}'`;
 
 const findComposer = (nodes) =>
    nodes.find((n) => n.id === `${VIBER_PKG}:id/send_text`) ?? nodes.find((n) => n.cls === 'android.widget.EditText');
@@ -103,19 +106,54 @@ const waitFor = async (pick, { tries = 10, fail } = {}) => {
 // Send one message: open the number's contact page, tap Message, type, tap Send, check the box emptied.
 // (viber://chat?number= shows "Request unavailable" on current Viber; viber://contact?number= works.)
 
-const typeAndSend = async (composer, body) => {
-   await tap(composer);
+// What the box should hold once typed: the same text `input text` can type, with real spaces.
+const expectedText = (body) => toInputText(body).replace(/%s/g, ' ');
+const normalize = (text) => text.replace(/\s+/g, ' ').trim();
+
+// Empty the box: tap it, jump to the end, delete. (No Ctrl+A: on this emulator it opened Calendar.)
+const clearComposer = async () => {
+   const box = findComposer(await dumpNodes());
+   if (!box || !box.text || /^message/i.test(box.text)) return;
+   await tap(box);
+   // Down to the last line, to its end, then delete everything (MOVE_END alone stays on one line).
+   const downs = Array(20).fill('20').join(' ');
+   const dels = Array(box.text.length + 10).fill('67').join(' ');
+   await shell(`input keyevent ${downs} 123 ${dels}`);
    await sleep(300);
-   // Long texts in one go can drop characters; type in short pieces.
-   const text = toInputText(body);
-   for (let i = 0; i < text.length; i += 60) {
-      let piece = text.slice(i, i + 60);
-      // Don't split an escape (\x) or a %s across pieces.
-      while (piece.endsWith('\\') || piece.endsWith('%')) piece = piece.slice(0, -1);
-      i -= 60 - piece.length;
-      await shell(`input text "${piece}"`);
-   }
+};
+
+const typeInto = async (composer, body) => {
+   await tap(composer);
    await sleep(500);
+   // Typing anywhere else fires keyboard shortcuts (it opened Calendar once), so only into a focused box.
+   if (!findComposer(await dumpNodes())?.focused) throw new Error('message_box_not_focused');
+   // Viber's box drops characters when text arrives faster than it can take it (60- and 20-character
+   // pieces both lost letters), so type one word at a time with a pause after each.
+   const words = toInputText(body).split('%s');
+   for (let i = 0; i < words.length; i += 1) {
+      const word = i < words.length - 1 ? `${words[i]}%s` : words[i];
+      if (word) await shell(`input text ${shellQuote(word)}`);
+      await sleep(250);
+   }
+   await sleep(700);
+};
+
+const typeAndSend = async (composer, body) => {
+   const want = normalize(expectedText(body));
+   // Read the box back before sending: a pop-up mid-typing once swallowed words (2026-10-19). Retype
+   // once; if it's still wrong, don't send a garbled reminder, fail (the team gets it after 3 tries).
+   let typed = '';
+   for (let attempt = 0; attempt < 2; attempt += 1) {
+      await clearComposer();
+      const box = findComposer(await dumpNodes()) ?? composer;
+      await typeInto(box, body);
+      typed = normalize(findComposer(await dumpNodes())?.text ?? '');
+      if (typed === want) break;
+   }
+   if (typed !== want) {
+      await clearComposer();
+      throw new Error(`typing_mismatch: box had "${typed.slice(0, 120)}"`);
+   }
 
    const send = findSend(await dumpNodes());
    if (!send) throw new Error('send_button_not_found');
@@ -194,6 +232,18 @@ const main = async () => {
    const args = process.argv.slice(2);
    if (args[0] === '--dump') {
       for (const n of await dumpNodes()) if (n.text || n.desc || n.id) console.log(JSON.stringify(n));
+      return;
+   }
+   if (args[0] === '--type-check') {
+      // Type into the open chat, read it back, clear it. Never sends.
+      const body = args.slice(1).join(' ');
+      await clearComposer();
+      const box = findComposer(await dumpNodes());
+      if (!box) throw new Error('no_chat_open');
+      await typeInto(box, body);
+      const typed = normalize(findComposer(await dumpNodes())?.text ?? '');
+      log(typed === normalize(expectedText(body)) ? 'MATCH' : `MISMATCH: "${typed}"`);
+      await clearComposer();
       return;
    }
    if (args[0] === '--here') {

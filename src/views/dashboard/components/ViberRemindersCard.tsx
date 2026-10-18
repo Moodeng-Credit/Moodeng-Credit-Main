@@ -22,7 +22,8 @@ const VIBER_PURPLE = '#7360F2';
 const viberIcon = <i aria-hidden="true" className="fab fa-viber text-[38px] leading-none" style={{ color: VIBER_PURPLE }} />;
 
 const SAVE_ERRORS: Record<string, string> = {
-   invalid_number: 'That number doesn’t look right. Use the one your Viber is on, like 0917 123 4567.'
+   invalid_number: 'That number doesn’t look right. Use the one your Viber is on, like 0917 123 4567.',
+   too_many: 'Too many number changes today. Try again tomorrow, or message us on Messenger.'
 };
 
 export default function ViberRemindersCard({
