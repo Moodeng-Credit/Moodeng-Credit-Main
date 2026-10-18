@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BellRing, Facebook, Loader2 } from 'lucide-react';
+import { BellRing, Facebook, Loader2, MessageSquareText } from 'lucide-react';
 import posthog from 'posthog-js';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -24,7 +24,7 @@ import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
-import ViberRemindersCard from '@/views/dashboard/components/ViberRemindersCard';
+import ViberRemindersCard, { ComingSoonChannel } from '@/views/dashboard/components/ViberRemindersCard';
 import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
@@ -1235,6 +1235,12 @@ export default function ContactsStep({
             />
          ) : null}
          {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
+         {offerViberAfterSkip && !viberVerified ? (
+            <>
+               <ComingSoonChannel icon={<i aria-hidden="true" className="fab fa-telegram text-[34px] leading-none" />} title="Telegram reminders" />
+               <ComingSoonChannel icon={<MessageSquareText aria-hidden="true" className="size-8" strokeWidth={2} />} title="SMS reminders" />
+            </>
+         ) : null}
          {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !viberVerified && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"

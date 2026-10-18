@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import posthog from 'posthog-js';
 
@@ -114,6 +114,25 @@ export default function ViberRemindersCard({
             {busy ? 'Saving…' : 'Turn on Viber reminders'}
          </button>
          {error ? <p className="text-[14px] leading-[19px] text-md-red-500">{error}</p> : null}
+      </div>
+   );
+}
+
+// Other channels for people without WhatsApp, shown greyed out under Viber until they're built (George,
+// 2026-10-19): Telegram, and SMS once Semaphore approves our sender name. Not buttons, just a heads-up.
+export function ComingSoonChannel({ icon, title }: { icon: ReactNode; title: string }) {
+   return (
+      <div
+         aria-disabled="true"
+         className="flex min-h-[64px] w-full select-none items-center gap-3 rounded-[18px] border-2 border-[#e4e0ea] bg-[#f5f4f7] px-4 py-2.5 text-left dark:border-white/10 dark:bg-white/5"
+      >
+         <span className="grid size-11 shrink-0 place-items-center text-[#a9a2b4]">{icon}</span>
+         <span className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="text-[17px] font-bold leading-[22px] text-[#9a92a6]">{title}</span>
+            <span className="rounded-full bg-[#e4e0ea] px-2 py-0.5 text-[12px] font-bold text-[#7d7589] dark:bg-white/10 dark:text-[#b9b2c4]">
+               Coming soon
+            </span>
+         </span>
       </div>
    );
 }
