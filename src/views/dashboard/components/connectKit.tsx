@@ -16,7 +16,11 @@ export const CONNECT_HIPPOS = {
    waiting: '/hippos/connect/waiting.png', // hugging the calendar — call booked
    approved: '/hippos/connect/approved.png', // confetti — ready to apply
    cashout: '/hippos/connect/cashout.png', // wallet — what's the loan for
-   missed: '/hippos/connect/missed.png' // "oops" + reschedule — coming back after a rejection
+   missed: '/hippos/connect/missed.png', // "oops" + reschedule — coming back after a rejection
+   codeCopied: '/hippos/connect/code-copied.png', // thumbs up + code card — code copied, go paste it
+   connected: '/hippos/connect/connected.png', // confetti + Messenger check — Facebook connected
+   notifications: '/hippos/connect/notifications.png', // bell ringing — turn on notifications
+   whatsapp: '/hippos/connect/whatsapp.png' // WhatsApp phone — reminders where notifications can't work
 } as const;
 
 const FIGMA = {

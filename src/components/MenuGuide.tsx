@@ -10,6 +10,31 @@ import type { ReactNode } from 'react';
 
 const RING = 'ring-[3px] ring-[#FFD43B] ring-offset-2 ring-offset-white';
 
+// A finger that taps the spot, with a ripple, so "tap" is obvious (George, 18 Oct: people asked
+// "tap what?"). Placed with its fingertip at (left, top) of the parent, which must be `relative`.
+const TAP_KEYFRAMES = `
+@keyframes mg-tap { 0%, 100% { transform: translate(10px, 14px); } 40%, 62% { transform: translate(0, 0); } 50% { transform: translate(0, 0) scale(0.86); } }
+@keyframes mg-ripple { 0%, 46% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; } 52% { opacity: 0.95; } 100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mg-finger, .mg-ripple { animation: none !important; } }
+`;
+
+function TapFinger({ left, top }: { left: string; top: string }) {
+   return (
+      <span aria-hidden="true" className="pointer-events-none absolute z-10" style={{ left, top }}>
+         <span
+            className="mg-ripple absolute left-0 top-0 size-10 rounded-full border-[3px] border-[#FFD43B]"
+            style={{ animation: 'mg-ripple 1.6s ease-out infinite' }}
+         />
+         <span
+            className="mg-finger absolute -left-[15px] -top-[3px] block text-[34px] leading-none drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]"
+            style={{ animation: 'mg-tap 1.6s ease-in-out infinite' }}
+         >
+            👆
+         </span>
+      </span>
+   );
+}
+
 function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
    return (
       <div className="flex flex-col gap-2">
@@ -52,6 +77,7 @@ export default function MenuGuide({
          onClick={onClose}
          role="dialog"
       >
+         <style>{TAP_KEYFRAMES}</style>
          {/* The hippo looks at them and points up-right at the real menu, just above this page. */}
          <div className="flex w-full max-w-[380px] items-end justify-between gap-2">
             <p id="menu-guide-title" className="pb-2 text-[22px] font-extrabold leading-[28px]">
@@ -62,7 +88,7 @@ export default function MenuGuide({
          <div className="mt-3 flex w-full max-w-[380px] flex-col gap-4">
 
             <Step n={1} title={`Tap ${menuIcon} at the top right`}>
-               <div className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-[#1c1c1e]">
+               <div className="relative flex items-center justify-between rounded-xl bg-white px-3 py-2 text-[#1c1c1e]">
                   <span className="text-[18px] leading-none">✕</span>
                   <span className="flex flex-col items-center leading-tight">
                      <span className="text-[14px] font-semibold">🔒 moodeng.app</span>
@@ -71,17 +97,26 @@ export default function MenuGuide({
                   <span className={`flex size-8 items-center justify-center rounded-full text-[20px] font-black leading-none ${RING}`}>
                      {menuIcon}
                   </span>
+                  <TapFinger left="calc(100% - 28px)" top="50%" />
                </div>
             </Step>
 
-            <Step n={2} title={`Tap “${menuItem}”`}>
-               <div className="overflow-hidden rounded-xl bg-white text-[15px] text-[#1c1c1e]">
+            <Step n={2} title={isAndroid ? `Tap “${menuItem}”` : `Tap “${menuItem}”`}>
+               {isAndroid ? null : (
+                  // The real Messenger menu (George's iPhone, 18 Oct): everything else faded, the one to tap ringed.
+                  <div className="relative">
+                     <img alt="" className="w-full rounded-xl" src="/guide/ios-menu-open-external.png" />
+                     <TapFinger left="62%" top="62%" />
+                  </div>
+               )}
+               <div className={isAndroid ? 'relative rounded-xl bg-white text-[15px] text-[#1c1c1e]' : 'hidden'}>
                   <div className="px-2 py-1.5">
                      <div className={`flex items-center gap-2 rounded-lg px-2 py-1.5 font-semibold ${RING}`}>
                         <span aria-hidden="true">{isAndroid ? '🌐' : '🧭'}</span>
                         {menuItem}
                      </div>
                   </div>
+                  {isAndroid ? <TapFinger left="62%" top="55%" /> : null}
                </div>
             </Step>
 

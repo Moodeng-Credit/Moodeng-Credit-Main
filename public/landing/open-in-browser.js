@@ -139,6 +139,21 @@
             var num = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:999px;background:#FFD43B;color:#1a0f2e;font-weight:900;font-size:15px';
             var stepTitle = 'display:flex;align-items:center;gap:8px;margin:0;font-size:17px;line-height:22px;font-weight:700';
             var frame = 'pointer-events:none;user-select:none;border-radius:16px;background:#2a2140;padding:10px';
+            // A finger that taps each spot, with a ripple (same as the app's MenuGuide).
+            if (!document.getElementById('mg-tap-style')) {
+               var st = document.createElement('style');
+               st.id = 'mg-tap-style';
+               st.textContent =
+                  '@keyframes mg-tap{0%,100%{transform:translate(10px,14px)}40%,62%{transform:translate(0,0)}50%{transform:translate(0,0) scale(.86)}}' +
+                  '@keyframes mg-ripple{0%,46%{transform:translate(-50%,-50%) scale(.3);opacity:0}52%{opacity:.95}100%{transform:translate(-50%,-50%) scale(1.7);opacity:0}}' +
+                  '@media (prefers-reduced-motion:reduce){.mg-finger,.mg-ripple{animation:none!important}}';
+               document.head.appendChild(st);
+            }
+            var finger = function (left, top) {
+               return '<span aria-hidden="true" style="position:absolute;z-index:10;pointer-events:none;left:' + left + ';top:' + top + '">' +
+                  '<span class="mg-ripple" style="position:absolute;left:0;top:0;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:3px solid #FFD43B;animation:mg-ripple 1.6s ease-out infinite"></span>' +
+                  '<span class="mg-finger" style="position:absolute;left:-15px;top:-3px;display:block;font-size:34px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));animation:mg-tap 1.6s ease-in-out infinite">\uD83D\uDC46</span></span>';
+            };
             var pointer = document.createElement('div');
             pointer.setAttribute('data-iab-pointer', '');
             pointer.setAttribute('role', 'dialog');
@@ -152,15 +167,18 @@
                '<img alt="" src="/hippos/hippo-point-menu.png" style="height:128px;width:auto;flex:none;margin-right:48px;pointer-events:none"></div>' +
                '<div style="margin-top:12px;display:flex;width:100%;max-width:380px;flex-direction:column;gap:16px">' +
                '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">1</span>Tap ' + icon + ' at the top right</p>' +
-               '<div aria-hidden="true" style="' + frame + '"><div style="display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +
+               '<div aria-hidden="true" style="' + frame + '"><div style="position:relative;display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +
                '<span style="font-size:18px;line-height:1">✕</span>' +
                '<span style="display:flex;flex-direction:column;align-items:center;line-height:1.2"><span style="font-size:14px;font-weight:600">🔒 moodeng.app</span><span style="font-size:11px;color:#8e8e93">' + (app || 'Messenger') + '</span></span>' +
                '<span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;font-size:20px;font-weight:900;line-height:1;' + ring + '">' + icon + '</span>' +
+               finger('calc(100% - 28px)', '50%') +
                '</div></div></div>' +
-               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">2</span>Tap “' + item + '”</p>' +
-               '<div aria-hidden="true" style="' + frame + '"><div style="border-radius:12px;background:#fff;color:#1c1c1e;padding:6px 8px">' +
-               '<div style="display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;' + ring + '">' + (isAndroid ? '🌐 ' : '🧭 ') + item + '</div>' +
-               '</div></div></div>' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">2</span>Tap “' + item + '”' + '</p>' +
+               '<div aria-hidden="true" style="' + frame + '">' +
+               (isAndroid
+                  ? '<div style="position:relative;border-radius:12px;background:#fff;color:#1c1c1e;padding:6px 8px"><div style="display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;' + ring + '">🌐 ' + item + '</div>' + finger('62%', '55%') + '</div>'
+                  : '<div style="position:relative"><img alt="" src="/guide/ios-menu-open-external.png" style="display:block;width:100%;border-radius:12px">' + finger('62%', '62%') + '</div>') +
+               '</div></div>' +
                '<p style="margin:0;font-size:14px;line-height:20px;opacity:.7">Don’t see it? It may say <b>' + (isAndroid ? 'Open in browser' : 'Open in Safari') + '</b>. ' + browser + ' opens straight on sign-up.</p>' +
                '</div>' +
                '<button data-iab-pointer-close type="button" style="margin-top:auto;min-height:48px;width:100%;max-width:400px;border-radius:999px;border:2px solid rgba(255,255,255,.4);background:none;color:#fff;font:inherit;font-size:16px;font-weight:700">Got it</button>';

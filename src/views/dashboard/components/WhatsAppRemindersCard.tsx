@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { MessageCircle } from 'lucide-react';
 import posthog from 'posthog-js';
 
 import { buildWhatsAppVerifyLink, WHATSAPP_BUSINESS_NUMBER_DISPLAY } from '@/config/contactVerification';
@@ -124,7 +123,7 @@ export default function WhatsAppRemindersCard({
          <OptionCard
             done
             doneLabel="On"
-            icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
+            icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
             title="WhatsApp reminders"
          />
       );
@@ -136,7 +135,7 @@ export default function WhatsAppRemindersCard({
             <OptionCard
                badge={required ? 'Required' : 'Recommended'}
                disabled={starting}
-               icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
+               icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
                onClick={() => void start()}
                subtitle={starting ? 'Getting your code…' : 'Notifications can’t work here. Tap to get your code, then send it on WhatsApp.'}
                title="Get reminders on WhatsApp"
@@ -179,7 +178,7 @@ export function WhatsAppCodePanel({
             onClick={onOpenTap}
             className="flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 text-[16px] font-bold text-white"
          >
-            <MessageCircle aria-hidden="true" className="size-5" strokeWidth={2.5} />
+            <i aria-hidden="true" className="fab fa-whatsapp text-[22px] leading-none" />
             Open WhatsApp and hit send
          </a>
          <p className="text-[14px] leading-[19px] text-[#3f5a47]">

@@ -1,12 +1,11 @@
-import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { cloneElement, isValidElement, type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { BellRing, Facebook, Loader2, MessageCircle } from 'lucide-react';
+import { BellRing, Facebook, Loader2 } from 'lucide-react';
 import posthog from 'posthog-js';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 import {
-   buildMessengerHandoffLink,
    buildMessengerVerifyLink,
    buildWhatsAppVerifyLink,
    isAndroidBrowser,
@@ -16,6 +15,7 @@ import {
    MESSENGER_PAGE_ID,
    WHATSAPP_VERIFY_ENABLED
 } from '@/config/contactVerification';
+import MenuGuide from '@/components/MenuGuide';
 import { detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { buildArmedUrl, copyTextFromTap, stripFbCode } from '@/lib/inAppHandoff';
 import { getLastPushFailure, type PushFailure } from '@/lib/push/webPushClient';
@@ -181,6 +181,8 @@ export default function ContactsStep({
    // sends us nothing when the chat opens, so "say hi and you're connected" left them waiting (George,
    // 2026-10-18). There, pasting the code is the main step. Chrome keeps the say-hi wording: it works.
    const androidInApp = androidMessenger && inAppInfo.isInApp;
+   // Either phone inside Facebook's / Messenger's browser: the short card.
+   const inAppCard = androidInApp || iosInAppMessenger;
    // iPhone too: the Messenger link does open Messenger from there (George's iPhone, 2026-10-18); what
    // people miss is that they must paste the code. Both get the "📋 Code copied: paste it" card.
    // Their tap on "Copy code & open Messenger" copies the code and shows how to paste it, then opens
@@ -813,10 +815,29 @@ export default function ContactsStep({
       onBack();
    };
 
+   // The hippo follows the step (George, 18 Oct): code copied → Facebook connected → turn on
+   // notifications, or WhatsApp reminders where notifications can't work.
+   const stateHippo = !contactVerified
+      ? pasteCard
+         ? CONNECT_HIPPOS.codeCopied
+         : null
+      : pushOn || whatsappVerified
+        ? CONNECT_HIPPOS.connected
+        : offerWhatsAppReminders
+          ? CONNECT_HIPPOS.whatsapp
+          : pushRequired
+            ? CONNECT_HIPPOS.notifications
+            : CONNECT_HIPPOS.connected;
+   // A caller's own hero (onboarding) keeps its words; only the default waving hippo is swapped.
+   const hero =
+      intro && isValidElement<{ image?: string }>(intro) && intro.type === ConnectHero && intro.props.image === CONNECT_HIPPOS.hello && stateHippo
+         ? cloneElement(intro, { image: stateHippo })
+         : intro;
+
    return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-5 py-5 text-md-b2 text-md-heading">
-         {intro ?? (
-            <ConnectHero image={CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
+         {hero ?? (
+            <ConnectHero image={stateHippo ?? CONNECT_HIPPOS.hello} subtitle="Only Moodeng sees this — never lenders." title="How can we reach you?" />
          )}
 
          {hasReminderStep ? <StepLabel done={contactVerified} n={1} text="Connect Facebook" /> : null}
@@ -827,7 +848,7 @@ export default function ContactsStep({
                disabled={startingChannel !== null}
                done={whatsappVerified}
                doneLabel="Verified"
-               icon={<MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />}
+               icon={<i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />}
                onClick={() => handleVerify('whatsapp')}
                subtitle={startingChannel === 'whatsapp' ? 'Opening WhatsApp…' : 'Just hit send — nothing to type'}
                title="WhatsApp"
@@ -846,12 +867,16 @@ export default function ContactsStep({
                          (the paste card says so in big letters). The bot confirms it, and this card turns green
                          on its own (realtime + poll) whenever they come back. Same words for both apps: on
                          iPhone both say FBAN/FBIOS, so we can't tell which one this is. */}
-                     <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
-                        Send this code to <b>Moodeng Credit</b> on Messenger and you&apos;re done.
-                     </p>
-                     <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
-                        {messengerCode}
-                     </code>
+                     {pasteCard ? null : (
+                        <>
+                           <p className="rounded-xl bg-white px-3 py-2 text-[14px] font-semibold leading-[19px] text-[#594d65]">
+                              Send this code to us on Messenger.
+                           </p>
+                           <code className="select-all rounded-lg bg-white px-3 py-3 text-center text-[24px] font-bold tracking-wide text-md-heading">
+                              {messengerCode}
+                           </code>
+                        </>
+                     )}
                      {pasteCard ? (
                         <div className="flex flex-col gap-3 rounded-2xl border-2 border-[#0866FF] bg-white px-4 py-4">
                            <p className="text-[18px] font-extrabold leading-[23px] text-[#26143f]">
@@ -859,7 +884,7 @@ export default function ContactsStep({
                               <span className="whitespace-nowrap">{messengerCode}</span>
                            </p>
                            <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
-                              In our chat, press and hold the message box, tap <b>Paste</b>, then <b>Send</b>.
+                              <b>Paste</b> it in our chat, then <b>Send</b>.
                            </p>
                            <a
                               href={MESSENGER_APP_CHAT_LINK}
@@ -889,43 +914,8 @@ export default function ContactsStep({
                            Copy didn&apos;t work here. Press and hold the code above, then tap Copy.
                         </p>
                      ) : null}
-                     <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
-                        <li className="flex gap-2">
-                           <b>1.</b>
-                           <span>Tap the blue button. It copies your code and opens our chat.</span>
-                        </li>
-                        <li className="flex gap-2">
-                           <b>2.</b>
-                           <span>
-                              <b>Paste the code in the chat and send it:</b> press and hold the message box, tap Paste, then Send.
-                           </span>
-                        </li>
-                        <li className="flex gap-2">
-                           <b>3.</b>
-                           <span>
-                              Messenger didn&apos;t open? Tap <b>Done</b> or <b>✕</b> at the top (or open the Messenger app), find the{' '}
-                              <b>Moodeng Credit</b> chat, and paste it there.
-                           </span>
-                        </li>
-                        <li className="flex gap-2">
-                           <b>4.</b>
-                           <span>
-                              We reply with a <b>Continue</b> link. Tap it to come back. Started in Facebook? Swipe right along
-                              the bottom edge of the screen to go back to Facebook. This page turns green on its own.
-                           </span>
-                        </li>
-                     </ol>
                      {externalHowTo ? (
-                        <div className="flex flex-col gap-2 rounded-xl bg-white px-3 py-3 text-[14px] leading-[19px] text-[#594d65]">
-                           <b className="text-[15px] text-[#26143f]">Open in Safari instead</b>
-                           <span>
-                              1. Tap <b>⋯</b> at the top of this screen.
-                           </span>
-                           <span>
-                              2. Tap <b>Open in external browser</b> (or <b>Open in Safari</b>).
-                           </span>
-                           <span>Safari opens your code page, and Messenger opens from there with the code. Nothing to copy.</span>
-                        </div>
+                        <MenuGuide onClose={() => setExternalHowTo(false)} os="ios" />
                      ) : (
                         <button
                            type="button"
@@ -935,13 +925,13 @@ export default function ContactsStep({
                            }}
                            className="flex min-h-[44px] items-center justify-center rounded-full border-2 border-[#0866FF] bg-white px-4 text-[15px] font-bold text-[#0866FF]"
                         >
-                           Or open in Safari instead
+                           Or open in Safari
                         </button>
                      )}
                   </>
                ) : (
                   <>
-                     <div className="flex items-center gap-2">
+                     <div className={androidInApp && pasteCard ? 'hidden' : 'flex items-center gap-2'}>
                         <code className="flex-1 rounded-lg bg-white px-3 py-2 text-center text-[20px] font-bold tracking-wide text-md-heading">
                            {messengerCode}
                         </code>
@@ -962,7 +952,7 @@ export default function ContactsStep({
                               <span className="whitespace-nowrap">{messengerCode}</span>
                            </p>
                            <p className="text-[16px] font-semibold leading-[22px] text-[#26143f]">
-                              In our chat, press and hold the message box, tap <b>Paste</b>, then <b>Send</b>.
+                              <b>Paste</b> it in our chat, then <b>Send</b>.
                            </p>
                            <a
                               href={MESSENGER_APP_CHAT_LINK}
@@ -1001,25 +991,7 @@ export default function ContactsStep({
                            Messenger didn&apos;t open? Open Facebook, search Moodeng Credit, tap Message, and say hi.
                         </p>
                      ) : null}
-                     {androidInApp ? (
-                        <ol className="flex flex-col gap-1.5 text-[15px] leading-[20px] text-[#594d65]">
-                           <li className="flex gap-2">
-                              <b>1.</b>
-                              <span>Tap the blue button. It copies your code and opens our chat.</span>
-                           </li>
-                           <li className="flex gap-2">
-                              <b>2.</b>
-                              <span>
-                                 <b>Paste the code in the chat and send it:</b> press and hold the message box, tap Paste, then Send. (Or tap the
-                                 code that shows above your keyboard.)
-                              </span>
-                           </li>
-                           <li className="flex gap-2">
-                              <b>3.</b>
-                              <span>Come back here. It turns green on its own.</span>
-                           </li>
-                        </ol>
-                     ) : (
+                     {androidInApp ? null : (
                         <ol className="flex flex-col gap-1.5 text-[14px] leading-[19px] text-[#594d65]">
                            <li className="flex gap-2">
                               <b>1.</b>
@@ -1039,14 +1011,19 @@ export default function ContactsStep({
                )}
                <div className="flex items-center gap-2 text-[14px] leading-[18px] text-[#6b5b86]">
                   <Loader2 aria-hidden="true" className="size-5 shrink-0 animate-spin text-[#6b55f7]" strokeWidth={2.5} />
-                  <span>Waiting for your message. This turns green on its own.</span>
+                  <span>{inAppCard ? 'Waiting for your code…' : 'Waiting for your message. This turns green on its own.'}</span>
                </div>
-               <p className="text-[13px] leading-[17px] text-[#877897]">
-                  No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.
-               </p>
-               <p className="text-[13px] leading-[17px] text-[#877897]">
-                  Still stuck? We&apos;ll email you, and our team will help you finish.
-               </p>
+               {/* Inside Facebook's browser: as little reading as possible (George, 18 Oct). */}
+               {inAppCard ? null : (
+                  <>
+                     <p className="text-[13px] leading-[17px] text-[#877897]">
+                        No Messenger app? Open Facebook, search Moodeng Credit, tap Message, and send the code there.
+                     </p>
+                     <p className="text-[13px] leading-[17px] text-[#877897]">
+                        Still stuck? We&apos;ll email you, and our team will help you finish.
+                     </p>
+                  </>
+               )}
             </div>
          ) : messengerLink && !messengerVerified && desktopMessenger && messengerCode ? (
             <DesktopMessengerCard
@@ -1166,7 +1143,7 @@ export default function ContactsStep({
                hint="Unlocks after step 1"
                icon={
                   offerWhatsAppReminders ? (
-                     <MessageCircle aria-hidden="true" className="size-9 text-[#25D366]" strokeWidth={2} />
+                     <i aria-hidden="true" className="fab fa-whatsapp text-[38px] leading-none text-[#25D366]" />
                   ) : (
                      <BellRing aria-hidden="true" className="size-9 text-[#6b55f7]" strokeWidth={2} />
                   )
