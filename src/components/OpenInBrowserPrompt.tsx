@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
 
+import MenuGuide from '@/components/MenuGuide';
 import { buildAndroidIntentUrl, detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import {
    handoffAddress,
@@ -174,25 +175,12 @@ export default function OpenInBrowserPrompt() {
             </button>
          </div>
          {pointer ? (
-            <button
-               aria-label="Close"
-               className="fixed inset-0 z-[1002] flex flex-col items-end bg-black/90 px-5 pt-3 text-right text-white"
-               onClick={() => setPointer(false)}
-               type="button"
-            >
-               <span aria-hidden="true" className="mr-1 animate-bounce text-[56px] leading-none">
-                  ↑
-               </span>
-               <span className="mt-2 text-[24px] font-extrabold leading-[30px]">
-                  {isAndroid && triedChrome ? 'Chrome didn’t open? ' : ''}Tap <b>{isAndroid ? '⋮' : '⋯'}</b> up here
-               </span>
-               <span className="mt-1 text-[18px] leading-[25px]">
-                  then <b>{isAndroid ? 'Open in Chrome' : 'Open in external browser'}</b>
-                  <br />
-                  (or <b>{isAndroid ? 'Open in browser' : 'Open in Safari'}</b>)
-               </span>
-               <span className="mt-6 text-[15px] leading-[21px] text-white/80">{browser} opens straight on sign-up.</span>
-            </button>
+            <MenuGuide
+               chromeFailed={isAndroid ? triedChrome : false}
+               onClose={() => setPointer(false)}
+               opensOnSignUp={location.pathname.startsWith('/sign-up')}
+               os={isAndroid ? 'android' : 'ios'}
+            />
          ) : null}
       </div>
    );

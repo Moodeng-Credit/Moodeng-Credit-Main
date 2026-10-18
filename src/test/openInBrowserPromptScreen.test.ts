@@ -75,10 +75,12 @@ describe('OpenInBrowserPrompt', () => {
          openSafari?.click();
       });
       expect(container.textContent).toContain('Open in external browser');
-      const pointer = Array.from(container.querySelectorAll('button')).find((b) => b.getAttribute('aria-label') === 'Close');
+      expect(container.querySelector('img[src="/hippos/hippo-point-up-right.png"]')).not.toBeNull();
+      const gotIt = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Got it');
       await act(async () => {
-         pointer?.click();
+         gotIt?.click();
       });
+      expect(container.textContent).not.toContain('Open in external browser');
       const cont = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Continue here');
       await act(async () => {
          cont?.click();
