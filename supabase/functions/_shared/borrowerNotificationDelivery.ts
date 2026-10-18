@@ -60,6 +60,31 @@ export const buildWhatsAppReminderTemplate = (
    };
 };
 
+// Viber reminders (no WhatsApp): queued in viber_outbox for the relay on George's Mac, which types
+// them into an ordinary Viber account (supabase/migrations/20261019090000_viber_reminders.sql). Plain
+// text, so the same types as WhatsApp; free per message, but each one is a tap on a real account, so
+// "due in 3 days" stays on the other channels.
+export const VIBER_REMINDER_TYPES: LoanNotificationType[] = ['final_reminder', 'due_today', 'overdue'];
+export const BORROWER_VIBER_SETTING_KEY = 'borrower_viber_enabled';
+
+export const buildViberReminderText = (
+   type: LoanNotificationType,
+   recipient: LoanNotificationRecipient,
+   aggregate: LoanNotificationAggregate | undefined
+): string | null => {
+   if (!VIBER_REMINDER_TYPES.includes(type) || !aggregate) return null;
+   const name = recipient.username?.trim() || 'there';
+   const amount = `${formatUsdcAmount(aggregate.totalAmount)} USDC`;
+   const lateBy = aggregate.dueLabel && aggregate.dueLabel !== 'overdue' ? aggregate.dueLabel : null;
+   const line =
+      type === 'final_reminder'
+         ? `your Moodeng Credit payment of ${amount} is due tomorrow.`
+         : type === 'due_today'
+           ? `your Moodeng Credit payment of ${amount} is due today.`
+           : `your Moodeng Credit payment of ${amount} is overdue${lateBy ? ` (${lateBy} late)` : ''}. Paying now protects your credit level.`;
+   return `Hi ${name}, ${line}\n\nRepay here: https://moodeng.app/repay`;
+};
+
 /** Telegram/LINE/phone sign-ups get a placeholder address nobody reads (telegram_<id>@moodeng.app, line_<id>@…, phone_<id>@…). */
 export const isPlaceholderEmail = (email: string | null | undefined): boolean =>
    /^(telegram|line|phone)_[^@]+@moodeng\.(app|credit)$/i.test((email ?? '').trim());
@@ -70,6 +95,7 @@ export type BorrowerNotificationDeliveryResult = {
    pushSent: boolean;
    messengerSent: boolean;
    whatsappSent: boolean;
+   viberQueued: boolean;
 };
 
 const REMINDER_TYPES: LoanNotificationType[] = ['urgent_reminder', 'final_reminder', 'due_today', 'overdue'];
@@ -219,10 +245,11 @@ export const sendBorrowerLoanNotification = async (
 ): Promise<BorrowerNotificationDeliveryResult> => {
    // If the user has opted out of this notification category, skip silently
    if (options.notifEnabled === false) {
-      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false, whatsappSent: false };
+      return { emailSent: false, telegramSent: false, pushSent: false, messengerSent: false, whatsappSent: false, viberQueued: false };
    }
 
    let whatsappSent = false;
+   let viberQueued = false;
    let emailSent = false;
    let telegramSent = false;
    let pushSent = false;
@@ -342,9 +369,27 @@ export const sendBorrowerLoanNotification = async (
       }
    }
 
-   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent && !whatsappSent) {
+   // Viber, for borrowers who confirmed a Viber number (no WhatsApp). Same push-first rule as WhatsApp.
+   // Queued, not sent: the relay picks it up within a minute while it runs, and the watchdog tells the
+   // team if it doesn't. Off until borrower_viber_enabled is on.
+   const viberText =
+      recipient.viber_number && recipient.notif_viber !== false && options.push?.supabase
+         ? buildViberReminderText(type, recipient, aggregate)
+         : null;
+   if (viberText && !(type === 'final_reminder' && pushSent)) {
+      const enabled = await getTelegramBotSettingEnabled(options.push!.supabase, BORROWER_VIBER_SETTING_KEY).catch(() => false);
+      if (enabled) {
+         const { error } = await options.push!.supabase
+            .from('viber_outbox')
+            .insert({ user_id: options.push!.userId, phone: recipient.viber_number, body: viberText, kind: 'reminder' });
+         viberQueued = !error;
+         console.log(`[borrowerNotification] Viber "${type}" → ${error ? `not queued (${error.message})` : 'queued'}`);
+      }
+   }
+
+   if (firstError && !emailSent && !telegramSent && !pushSent && !messengerSent && !whatsappSent && !viberQueued) {
       throw firstError;
    }
 
-   return { emailSent, telegramSent, pushSent, messengerSent, whatsappSent };
+   return { emailSent, telegramSent, pushSent, messengerSent, whatsappSent, viberQueued };
 };

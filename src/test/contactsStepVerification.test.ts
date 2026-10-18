@@ -12,7 +12,7 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 // component reads on load and on every poll, and the code start_*_verification hands back.
 const supa = vi.hoisted(() => {
    const state = {
-      usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null },
+      usersRow: { whatsapp_verified_at: null as string | null, messenger_verified_at: null as string | null, viber_verified_at: null as string | null },
       rpcResult: { data: 'MDNG-ABC123' as unknown, error: null as unknown }
    };
    return {
@@ -72,7 +72,7 @@ const buttonByText = (container: HTMLElement, text: string) =>
    Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.trim() === text);
 
 // The channels are big option cards now (title + badge + subtitle in one button).
-const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders') =>
+const channelCard = (container: HTMLElement, channel: 'Messenger' | 'WhatsApp' | 'Get reminders on WhatsApp' | 'Turn on reminders' | 'Get reminders on Viber') =>
    Array.from(container.querySelectorAll('button')).find((b) => (b.textContent ?? '').trim().startsWith(channel));
 
 const continueButton = (container: HTMLElement) => {
@@ -91,7 +91,7 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
    beforeEach(() => {
       vi.useFakeTimers();
       window.sessionStorage.clear();
-      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null };
+      supa.state.usersRow = { whatsapp_verified_at: null, messenger_verified_at: null, viber_verified_at: null };
       supa.state.rpcResult = { data: 'MDNG-ABC123', error: null };
       supa.rpc.mockClear();
       supa.invoke.mockClear();
@@ -678,6 +678,55 @@ describe('ContactsStep — WhatsApp OR Messenger verified line', () => {
                buttonByText(container, "I don't have WhatsApp")?.click();
             });
             expect(channelCard(container, 'Turn on reminders')).toBeTruthy();
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
+         });
+
+         it('Viber on: "I don’t have WhatsApp" swaps WhatsApp for the Viber card; a confirmed code turns it on', async () => {
+            supa.rpc.mockImplementation(async (name: string) => {
+               if (name === 'get_whatsapp_reminders_enabled' || name === 'get_viber_reminders_enabled') return { data: true, error: null };
+               if (name === 'start_viber_verification' || name === 'confirm_viber_verification') return { data: 'ok', error: null };
+               return supa.state.rpcResult;
+            });
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
+            await act(async () => {
+               buttonByText(container, "I don't have WhatsApp")?.click();
+            });
+            expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
+            expect(continueButton(container).disabled).toBe(false);
+            await act(async () => {
+               channelCard(container, 'Get reminders on Viber')?.click();
+            });
+            const phoneInput = container.querySelector<HTMLInputElement>('#viber-number')!;
+            await act(async () => {
+               const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+               setter.call(phoneInput, '09171234567');
+               phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            await act(async () => {
+               buttonByText(container, 'Send my code on Viber')?.click();
+            });
+            expect(supa.rpc).toHaveBeenCalledWith('start_viber_verification', { p_phone: '09171234567' });
+            const codeInput = container.querySelector<HTMLInputElement>('input[autocomplete="one-time-code"]')!;
+            await act(async () => {
+               const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+               setter.call(codeInput, '123456');
+               codeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            await act(async () => {
+               buttonByText(container, 'Turn on Viber reminders')?.click();
+            });
+            expect(supa.rpc).toHaveBeenCalledWith('confirm_viber_verification', { p_code: '123456' });
+            expect(container.textContent).toContain('Viber reminders');
+            expect(container.textContent).toContain('On');
+         });
+
+         it('a confirmed Viber number stands in for WhatsApp', async () => {
+            remindersOn();
+            supa.state.usersRow.messenger_verified_at = '2026-09-25T00:00:00Z';
+            supa.state.usersRow.viber_verified_at = '2026-10-19T00:00:00Z';
+            await render('user-1', undefined, false, 'connect');
             expect(channelCard(container, 'Get reminders on WhatsApp')).toBeFalsy();
             expect(continueButton(container).disabled).toBe(false);
          });

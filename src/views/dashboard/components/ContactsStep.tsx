@@ -24,6 +24,7 @@ import { playSuccess } from '@/lib/uiSounds';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, LockedStepCard, OptionCard, PrimaryButton, StepLabel } from '@/views/dashboard/components/connectKit';
 import DesktopMessengerCard from '@/views/dashboard/components/DesktopMessengerCard';
 import NotificationsUnblockGuide from '@/views/dashboard/components/NotificationsUnblockGuide';
+import ViberRemindersCard from '@/views/dashboard/components/ViberRemindersCard';
 import WhatsAppRemindersCard from '@/views/dashboard/components/WhatsAppRemindersCard';
 
 // End-of-application "how we reach you" step: a *verified* WhatsApp line OR a *verified* Facebook
@@ -147,6 +148,8 @@ export default function ContactsStep({
    requireReminders?: boolean;
 }) {
    const [whatsappVerified, setWhatsappVerified] = useState(false);
+   // Viber reminders (no WhatsApp): a confirmed Viber number they haven't turned off.
+   const [viberVerified, setViberVerified] = useState(false);
    const [messengerVerified, setMessengerVerified] = useState(false);
    const [startingChannel, setStartingChannel] = useState<Channel | null>(null);
    // The Messenger link we opened. Once set, the card shows a short "waiting" state with a button to
@@ -276,6 +279,23 @@ export default function ContactsStep({
          cancelled = true;
       };
    }, []);
+   // Viber reminders, offered after "I don't have WhatsApp" (borrower_viber_card_enabled, off until the
+   // relay on George's Mac is running).
+   const [viberRemindersEnabled, setViberRemindersEnabled] = useState(false);
+   useEffect(() => {
+      let cancelled = false;
+      (async () => {
+         try {
+            const { data } = await getSupabaseBrowserClient().rpc('get_viber_reminders_enabled');
+            if (!cancelled) setViberRemindersEnabled(data === true);
+         } catch {
+            // Can't tell: no Viber card, the step works as before.
+         }
+      })();
+      return () => {
+         cancelled = true;
+      };
+   }, []);
    const pushCantWork = !push.isSupported || pushBlocked || pushUnavailable;
    const offerWhatsAppReminders = whatsappRemindersEnabled && pushCantWork;
    // requireReminders: where push can't work, WhatsApp becomes required, with "I don't have WhatsApp" as
@@ -286,13 +306,19 @@ export default function ContactsStep({
    // work (Facebook's / Messenger's browser), that's WhatsApp, required like at loan time, with the same
    // "I don't have WhatsApp" way out. Confirming it also gives us their phone number.
    const remindersMandatory = requireReminders || source === 'connect';
-   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !skippedNoWhatsApp;
+   const whatsappRequired = remindersMandatory && offerWhatsAppReminders && !whatsappVerified && !viberVerified && !skippedNoWhatsApp;
    const canContinue = contactVerified && (pushOn || !pushRequired) && !whatsappRequired;
    // One reminders card, not two (George, 18 Oct): where WhatsApp is offered, notifications can't
    // work, so the bell card only comes back after "I don't have WhatsApp" (how to unblock them).
+   // After "I don't have WhatsApp": Viber when it's on, else the bell card. A confirmed Viber stands in
+   // for WhatsApp.
    const pushCardPossible = pushRequired || pushBlocked || pushUnavailable;
-   const showPushCard = pushCardPossible && contactVerified && (!offerWhatsAppReminders || skippedNoWhatsApp);
-   const showWhatsAppCard = offerWhatsAppReminders && contactVerified && !(skippedNoWhatsApp && pushCardPossible);
+   const offerViberAfterSkip = viberRemindersEnabled && offerWhatsAppReminders && skippedNoWhatsApp && !whatsappVerified;
+   const showViberCard = contactVerified && (viberVerified || offerViberAfterSkip);
+   const showPushCard =
+      pushCardPossible && contactVerified && !viberVerified && (!offerWhatsAppReminders || (skippedNoWhatsApp && !viberRemindersEnabled));
+   const showWhatsAppCard =
+      offerWhatsAppReminders && contactVerified && !viberVerified && !(skippedNoWhatsApp && (pushCardPossible || viberRemindersEnabled));
    // Two numbered steps whenever there's a reminders step: 1 Connect Facebook, 2 Payment reminders.
    // Step 2 stays locked until Facebook is connected, so nobody starts with reminders thinking that's
    // the Facebook step (WhatsApp in particular looks like a way to "reach you").
@@ -301,7 +327,7 @@ export default function ContactsStep({
    // Reminders can't turn on here — blocked, failing on this phone, or Facebook's browser on Android
    // (no push at all, but Chrome has it). Once they've connected Facebook, the bot messages them how
    // to fix it in Chrome/Safari and the team gets a heads-up (messenger-stuck-alerts, `reminders: true`), at most once a day.
-   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified
+   const remindersStuckReason: 'failed' | 'blocked' | 'in_app' | null = !contactVerified || pushOn || whatsappVerified || viberVerified
       ? null
       : pushUnavailable
         ? 'failed'
@@ -376,10 +402,11 @@ export default function ContactsStep({
       (async () => {
          const { data } = await getSupabaseBrowserClient()
             .from('users')
-            .select('whatsapp_verified_at, messenger_verified_at')
+            .select('whatsapp_verified_at, messenger_verified_at, viber_verified_at, notif_viber')
             .eq('id', userId)
             .maybeSingle();
          if (cancelled || !data) return;
+         if (data.viber_verified_at && data.notif_viber !== false) setViberVerified(true);
          // requireReminders means WhatsApp can't reach them now (no linked contact, or they sent STOP), so
          // an old confirmation doesn't count: they send a fresh code.
          if (data.whatsapp_verified_at && !requireReminders) setWhatsappVerified(true);
@@ -478,12 +505,12 @@ export default function ContactsStep({
    useEffect(() => {
       // Not while the WhatsApp reminders offer is up: moving on by itself would hide it before they see it.
       if (source !== 'connect' || !confirmedNow || !canContinue || autoContinueTimerRef.current !== null) return;
-      if (offerWhatsAppReminders && !whatsappVerified) return;
+      if (offerWhatsAppReminders && !whatsappVerified && !viberVerified) return;
       autoContinueTimerRef.current = window.setTimeout(() => {
          track('contact_verify_auto_continue', { source, attempts: attemptsRef.current, push_on: pushOn });
          onContinueRef.current();
       }, AUTO_CONTINUE_MS);
-   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified]);
+   }, [source, confirmedNow, canContinue, pushOn, offerWhatsAppReminders, whatsappVerified, viberVerified]);
    useEffect(
       () => () => {
          if (autoContinueTimerRef.current !== null) window.clearTimeout(autoContinueTimerRef.current);
@@ -1204,7 +1231,8 @@ export default function ContactsStep({
                verified={whatsappVerified}
             />
          ) : null}
-         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !skippedNoWhatsApp ? (
+         {showViberCard ? <ViberRemindersCard onVerified={() => setViberVerified(true)} source={source} verified={viberVerified} /> : null}
+         {remindersMandatory && offerWhatsAppReminders && contactVerified && !whatsappVerified && !viberVerified && !skippedNoWhatsApp ? (
             <button
                className="self-center text-md-b3 font-[590] text-[#877897] underline"
                onClick={() => {

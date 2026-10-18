@@ -44,6 +44,10 @@ export type LoanNotificationRecipient = {
    whatsapp_contact_id?: string | null;
    /** WhatsApp reminders opt-out (STOP). Undefined is treated as opted in, matching the column default. */
    notif_whatsapp?: boolean | null;
+   /** Viber number confirmed with a code (digits, no +); reminders go out through the Viber relay. */
+   viber_number?: string | null;
+   /** Viber reminders opt-out. Undefined is treated as opted in, matching the column default. */
+   notif_viber?: boolean | null;
    trust_points_total?: number | string | null;
    trust_points_reward?: number | string | null;
    trust_points_reward_kind?: 'potential' | 'earned';
