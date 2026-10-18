@@ -58,6 +58,7 @@ import { minimumRepayment, suggestedReturnRange } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
+import { getPushPermission, hasActivePushSubscription, isPushConfigured, isPushSupported } from '@/lib/push/webPushClient';
 import { uploadAvatarForCurrentUser } from '@/lib/supabase/avatarStorage';
 import { useUsdcRate } from '@/lib/useUsdcRate';
 import { playDing, playSuccess, setSoundsEnabled, useSoundsEnabled } from '@/lib/uiSounds';
@@ -1345,7 +1346,23 @@ export default function LoanRequestModal({
    // Only for those who already confirmed a line: anyone else connects Facebook in the step, and that
    // gives Messenger, so they're reachable (2026-10-18: 7 past borrowers, all without Facebook yet).
    const [onlyEmail, setOnlyEmail] = useState(false);
-   const needsReminders = onlyEmail && Boolean(user.hasVerifiedContact);
+   // Notifications can work in this browser (e.g. they came back in Chrome) but aren't on for this
+   // device: require them here too, whatever else reaches them (George, 2026-10-19). Blocked ones aren't
+   // asked again (the step makes them optional), and Facebook's browser / iPhone Safari can't show them.
+   const [pushOffHere, setPushOffHere] = useState(false);
+   useEffect(() => {
+      if (!isPushSupported() || !isPushConfigured() || getPushPermission() === 'denied') return undefined;
+      let cancelled = false;
+      hasActivePushSubscription()
+         .then((on) => {
+            if (!cancelled) setPushOffHere(!on);
+         })
+         .catch(() => undefined);
+      return () => {
+         cancelled = true;
+      };
+   }, [user.id]);
+   const needsReminders = (onlyEmail || pushOffHere) && Boolean(user.hasVerifiedContact);
    useEffect(() => {
       let cancelled = false;
       (async () => {
