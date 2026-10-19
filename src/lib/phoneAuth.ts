@@ -1,4 +1,5 @@
-// Phone sign-in is Philippines only: SMS codes go out through Semaphore, a PH-only gateway.
+// Phone sign-in is Philippines only: SMS codes go out through UniSMS, a PH-only gateway, on its
+// shared "Unisoft" sender, which reaches Globe, TM and DITO but not Smart, TNT or Sun.
 // Everyone else (Indonesia, Filipinos abroad on foreign SIMs, other countries) uses email.
 
 export const SMS_NON_PH_MESSAGE = 'SMS codes work for Philippine numbers only. Use your email instead';
@@ -68,6 +69,36 @@ export function formatPhLocal(e164: string): string {
    return `0${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
 }
 
+export type PhNetwork = 'globe' | 'dito' | 'smart';
+
+// First four digits → network, from the NTC assignments as listed by FilipiKnow and Wikipedia
+// (Oct 2026). Only prefixes both agree on: anything unclear (0924/0934/0944 moved from Sun to DITO,
+// 0951, 0970, 0973, 0974…) is left out and treated as unknown, which never blocks anyone. People
+// can also keep their number when they switch networks, so this is a hint, not a rule.
+const GLOBE_PREFIXES = new Set(
+   '0817 0904 0905 0906 0915 0916 0917 0926 0927 0935 0936 0937 0945 0952 0953 0954 0955 0956 0965 0966 0967 0975 0976 0977 0978 0979 0995 0996 0997'.split(
+      ' '
+   )
+);
+const DITO_PREFIXES = new Set('0895 0896 0897 0898 0991 0992 0993 0994'.split(' '));
+// Smart, TNT and Sun (Smart's).
+const SMART_PREFIXES = new Set(
+   '0813 0907 0908 0909 0910 0911 0912 0913 0914 0918 0919 0920 0921 0922 0923 0925 0928 0929 0930 0931 0932 0933 0938 0939 0940 0941 0942 0943 0946 0947 0948 0949 0950 0960 0961 0962 0963 0964 0968 0969 0981 0985 0989 0998 0999'.split(
+      ' '
+   )
+);
+
+/** The network a PH mobile number (+639XXXXXXXXX) was issued on, or null when we can't tell. */
+export function phNetwork(e164: string): PhNetwork | null {
+   const local = e164.replace(/^\+63/, '');
+   if (!/^9\d{9}$/.test(local)) return null;
+   const prefix = `0${local.slice(0, 3)}`;
+   if (GLOBE_PREFIXES.has(prefix)) return 'globe';
+   if (DITO_PREFIXES.has(prefix)) return 'dito';
+   if (SMART_PREFIXES.has(prefix)) return 'smart';
+   return null;
+}
+
 const envNumber = (value: unknown, fallback: number, min: number, max: number): number => {
    const n = Number(value);
    return Number.isInteger(n) && n >= min && n <= max ? n : fallback;
@@ -125,26 +156,25 @@ export function isPlaceholderEmail(email?: string | null): boolean {
 
 export const SMS_TEST_FLAG_KEY = 'moodeng:sms-login-test';
 
-// Paused 16 Oct 2026: Semaphore delivers nothing until a sender name (MOODENG) is approved, so the
-// phone tab is hidden even where VITE_SMS_LOGIN_ENABLED is on. Set to false once SEMAPHORE_SENDER_NAME
-// is in Vault. ?sms=1 still turns it on for testers.
-export const SMS_LOGIN_PAUSED = true;
+// On since 19 Oct 2026: codes go out through UniSMS (Semaphore never approved a sender name). The
+// switch back off is this line.
+export const SMS_LOGIN_ON = true;
 
 /**
- * Whether the phone (SMS code) tab is offered. Off until Semaphore and the Send SMS hook are set
- * up: then set VITE_SMS_LOGIN_ENABLED=true. Before that, testers can turn it on for their browser
- * with ?sms=1 (off again with ?sms=0). Email codes always work.
+ * Whether the phone (SMS code) option is offered. ?sms=0 turns it off for this browser (and ?sms=1
+ * back on), for testing either way. Email codes always work.
  */
 export function isSmsLoginEnabled(): boolean {
-   if (!SMS_LOGIN_PAUSED && import.meta.env.VITE_SMS_LOGIN_ENABLED === 'true') return true;
    try {
       const flag = new URLSearchParams(window.location.search).get('sms');
-      if (flag === '1') localStorage.setItem(SMS_TEST_FLAG_KEY, '1');
-      if (flag === '0') localStorage.removeItem(SMS_TEST_FLAG_KEY);
-      return localStorage.getItem(SMS_TEST_FLAG_KEY) === '1';
+      if (flag === '1' || flag === '0') localStorage.setItem(SMS_TEST_FLAG_KEY, flag);
+      const stored = localStorage.getItem(SMS_TEST_FLAG_KEY);
+      if (stored === '0') return false;
+      if (stored === '1') return true;
    } catch {
-      return false;
+      // Storage blocked: the default below.
    }
+   return SMS_LOGIN_ON;
 }
 
 /**

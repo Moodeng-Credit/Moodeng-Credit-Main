@@ -19,7 +19,7 @@ import {
 } from '@/store/slices/authSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 
-type Stage = 'code' | 'change' | 'password';
+type Stage = 'code' | 'change' | 'add' | 'password';
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -29,6 +29,9 @@ const MIN_PASSWORD_LENGTH = 8;
  * guests anyway). Inside Facebook's browser the main way is the emailed button: it opens Moodeng in
  * their real browser, signed in, which gets them out of Facebook for KYC. Typing the code also works.
  * Wherever they confirm, they're then asked to set a password. Shows over every page until done.
+ *
+ * Phone guests (phone-first sign-up) have no email yet: they start by adding one ("add" stage), then
+ * confirm it and set a password the same way.
  */
 export function GuestAccountGate() {
    const dispatch = useDispatch<AppDispatch>();
@@ -59,7 +62,10 @@ export function GuestAccountGate() {
       if (!needsConfirm) return;
       let cancelled = false;
       void getGuestPendingEmail().then((email) => {
-         if (!cancelled) setPendingEmail(email);
+         if (cancelled) return;
+         setPendingEmail(email);
+         // A phone guest: nothing to confirm yet, so ask for an email first.
+         if (!email) setStage((current) => (current === 'code' ? 'add' : current));
       });
       if (import.meta.env.PROD) posthog.capture('guest_confirm_shown');
       return () => {
@@ -195,10 +201,12 @@ export function GuestAccountGate() {
             ) : (
                <>
                   <h1 className="text-2xl font-bold tracking-[-0.02em] text-[#040033] dark:text-[#F8F4FF]">
-                     {user?.loanAccessStatus === 'approved' ? <>You&apos;re approved 🎉</> : 'Confirm your email'}
+                     {user?.loanAccessStatus === 'approved' ? <>You&apos;re approved 🎉</> : stage === 'add' ? 'Add your email' : 'Confirm your email'}
                   </h1>
                   <p className="text-base text-[#4D4359] dark:text-[#C9BEDA]">
-                     One last step before your ID check: confirm your email.
+                     {stage === 'add'
+                        ? 'One last step before your ID check: add your email, so you can sign in from any phone or browser.'
+                        : 'One last step before your ID check: confirm your email.'}
                   </p>
                   {inApp.isInApp && stage === 'code' ? (
                      <ol className="flex list-decimal flex-col gap-2 rounded-2xl bg-[#F2EEF7] py-4 pl-9 pr-4 text-sm leading-5 text-[#250650] dark:bg-[#2A1D40] dark:text-[#F8F4FF]">
@@ -212,7 +220,7 @@ export function GuestAccountGate() {
                      </ol>
                   ) : null}
 
-                  {stage === 'change' ? (
+                  {stage === 'change' || stage === 'add' ? (
                      <form
                         onSubmit={(e) => {
                            e.preventDefault();
@@ -247,9 +255,11 @@ export function GuestAccountGate() {
                            {busy ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : null}
                            Send code
                         </button>
-                        <button type="button" onClick={() => setStage('code')} className={linkClass}>
-                           Back
-                        </button>
+                        {stage === 'change' ? (
+                           <button type="button" onClick={() => setStage('code')} className={linkClass}>
+                              Back
+                           </button>
+                        ) : null}
                      </form>
                   ) : (
                      <form onSubmit={confirmCode} className="flex flex-col gap-3" noValidate>

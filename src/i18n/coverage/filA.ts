@@ -907,6 +907,25 @@ export const filipinoCoverageA: Record<string, string> = {
    'Use password instead': 'Password na lang',
    'Signed up with Telegram or LINE?': 'Nag-sign up gamit ang Telegram o LINE?',
    'Enter a Philippine mobile number, like 0917 123 4567.': 'Maglagay ng Philippine mobile number, gaya ng 0917 123 4567.',
+   // Phone-first sign-up and the email-or-number sign-in box (UniSMS), 2026-10-19
+   'Globe, TM or DITO number. No code needed now.': 'Globe, TM o DITO number. Walang code na kailangan ngayon.',
+   "Globe, TM or DITO number. We'll text you a code.": 'Globe, TM o DITO number. Ite-text namin ang code.',
+   'Globe or TM number. No code needed now.': 'Globe o TM number. Walang code na kailangan ngayon.',
+   "Globe or TM number · we'll text you a code": 'Globe o TM number · ite-text namin ang code',
+   'DITO number. No code needed now.': 'DITO number. Walang code na kailangan ngayon.',
+   "DITO number · we'll text you a code": 'DITO number · ite-text namin ang code',
+   "Smart, TNT and Sun numbers can't get text codes yet.": 'Hindi pa makakatanggap ng text code ang Smart, TNT at Sun numbers.',
+   'Use your email, or a Globe, TM or DITO number if you have one.': 'Gamitin ang email mo, o Globe, TM o DITO number kung meron ka.',
+   'My number is on Globe, TM or DITO': 'Globe, TM o DITO ang number ko',
+   'This number already has a Moodeng account. We can text you a code to sign in.':
+      'May Moodeng account na ang number na ito. Ite-text namin ang code para makapag-sign in ka.',
+   'Add your email': 'Idagdag ang email mo',
+   'One last step before your ID check: add your email, so you can sign in from any phone or browser.':
+      'Isang huling hakbang bago ang ID check: idagdag ang email mo para makapag-sign in ka sa kahit anong phone o browser.',
+   'Email or mobile number': 'Email o mobile number',
+   'Type your full email': 'I-type ang buong email mo',
+   'Enter your email or number': 'Ilagay ang email o number mo',
+   'No password?': 'Walang password?',
    'Enter your email address.': 'Ilagay ang email address mo.',
    'No Moodeng account uses this number.': 'Walang Moodeng account na gumagamit ng number na ito.',
    'No Moodeng account uses this email.': 'Walang Moodeng account na gumagamit ng email na ito.',
@@ -929,7 +948,7 @@ export const filipinoCoverageA: Record<string, string> = {
    'Too many tries': 'Sobrang daming try',
    'Create one with a code. No password needed.': 'Gumawa gamit ang code. Walang password.',
    'Check your texts': 'Tingnan ang texts mo',
-   'Look for a text from SEMAPHORE.': 'Hanapin ang text galing sa SEMAPHORE.',
+   'Look for a text from Unisoft.': 'Hanapin ang text galing sa Unisoft.',
    "That's the company that sends our codes, so it's safe to type the code here. Never share it with anyone.":
       'Sila ang nagpapadala ng mga code namin, kaya ligtas i-type ang code dito. Huwag itong ibigay kahit kanino.',
    'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.':
@@ -937,8 +956,8 @@ export const filipinoCoverageA: Record<string, string> = {
    'Code from the text': 'Code mula sa text',
    'Code from the email': 'Code mula sa email',
    'Usually under a minute.': 'Kadalasan wala pang isang minuto.',
-   'Not here yet? Look for a text from SEMAPHORE, check your signal and Messages › Spam.':
-      'Wala pa? Hanapin ang text galing sa SEMAPHORE, at tingnan ang signal mo at ang Messages › Spam.',
+   'Not here yet? Look for a text from Unisoft, check your signal and Messages › Spam.':
+      'Wala pa? Hanapin ang text galing sa Unisoft, at tingnan ang signal mo at ang Messages › Spam.',
    'Not here yet? Check Spam and Promotions.': 'Wala pa? Tingnan ang Spam at Promotions.',
    'That code is wrong. Check the latest text from Moodeng.': 'Mali ang code. Tingnan ang pinakabagong text mula sa Moodeng.',
    'That code is wrong. Check the latest email from Moodeng.': 'Mali ang code. Tingnan ang pinakabagong email mula sa Moodeng.',

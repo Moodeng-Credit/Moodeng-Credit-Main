@@ -37,6 +37,8 @@ export interface User {
    avatarBackground?: string;
    /** User-facing name shown across profile surfaces. Falls back to username when unset. */
    displayName?: string;
+   /** Their Facebook name, stored when they connect Messenger (server-written, read-only here). */
+   facebookName?: string;
    googleId?: string;
    walletAddress?: string;
    walletChainId?: number;
