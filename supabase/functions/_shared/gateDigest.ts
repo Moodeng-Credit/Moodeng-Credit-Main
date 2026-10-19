@@ -3,7 +3,8 @@
 //      until the request expires a week after the call;
 //   📭 connected Messenger, no call coming up    — never booked, cancelled, or missed it and never
 //      rebooked: the biggest drop-off, and we can now message them.
-// Nothing is sent on a day with nothing to report.
+// Nothing is sent on a day with nothing to report. Test accounts (users.is_test — /testaccount in the
+// admin Telegram) are never listed.
 
 import { needsPreKycGate } from './preKycGate.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
@@ -62,6 +63,7 @@ export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): 
       .select('id, display_name, users!inner(id, username, email, display_name, video_call_starts_at, video_call_timezone)')
       .eq('status', 'pending')
       .eq('kind', 'call')
+      .eq('users.is_test', false)
       .order('created_at', { ascending: true });
    if (error) throw new Error(error.message);
    const waiting = ((pending ?? []) as Array<{
@@ -76,6 +78,7 @@ export const collectGateDigest = async (svc: SupabaseClient, now = Date.now()): 
       .from('users')
       .select('id, username, email, display_name, messenger_verified_at, video_call_starts_at, video_call_timezone, video_call_outcome')
       .not('messenger_verified_at', 'is', null)
+      .eq('is_test', false)
       .or(`video_call_starts_at.is.null,video_call_starts_at.lt.${new Date(now).toISOString()}`)
       .in('loan_access_status', ['none', 'rejected'])
       .gte('messenger_verified_at', new Date(now - UNBOOKED_WINDOW_DAYS * 86400000).toISOString())

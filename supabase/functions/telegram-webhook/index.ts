@@ -457,6 +457,7 @@ const handlePendingCommand = async (supabase: SupabaseClient, message: TelegramM
       .from('loan_access_requests')
       .select('id, user_id, kind, display_name, created_at, users!inner(username, email, video_call_starts_at)')
       .eq('status', 'pending')
+      .eq('users.is_test', false)
       .order('created_at', { ascending: true })
       .limit(30);
    if (error) throw new Error(error.message);
@@ -571,6 +572,61 @@ const handleKycRetryCommand = async (supabase: SupabaseClient, message: Telegram
    // Same as the 🔁 button on the "Out of KYC tries" card, which it stamps.
    const result = await resetKycTries(supabase, user.id, adminHandle(message.from));
    await sendTelegramMessage(chatId, result.summary);
+   return true;
+};
+
+// Test accounts (users.is_test): left out of the ☀️ Onboarding check-in, /pending and the money
+// stats, so team test sign-ups don't read as real people to chase.
+//   /testaccount                      list them
+//   /testaccount @a @b …              mark as test
+//   /testaccount off @a …             mark as real again
+const handleTestAccountCommand = async (supabase: SupabaseClient, message: TelegramMessage) => {
+   const match = (message.text ?? '').trim().match(/^\/testaccount(?:@\w+)?(?:\s+([\s\S]+))?/i);
+   if (!match) return false;
+   const chatId = message.chat.id;
+   const words = (match[1] ?? '').trim().split(/\s+/).filter(Boolean);
+   const off = words[0]?.toLowerCase() === 'off';
+   const handles = (off ? words.slice(1) : words).map((w) => w.replace(/^@/, '').replace(/,$/, '')).filter(Boolean);
+
+   if (!handles.length) {
+      if (off) {
+         await sendTelegramMessage(chatId, 'Usage: /testaccount off @username');
+         return true;
+      }
+      const { data } = await supabase.from('users').select('username, email').eq('is_test', true).order('created_at', { ascending: false }).limit(50);
+      const rows = (data ?? []) as Array<{ username: string | null; email: string | null }>;
+      await sendTelegramMessage(
+         chatId,
+         rows.length
+            ? `🧪 Test accounts (${rows.length}):\n${rows.map((r, i) => `${i + 1}. ${r.username ? `@${r.username}` : r.email}`).join('\n')}\n\nAdd with /testaccount @username · undo with /testaccount off @username`
+            : 'No test accounts yet. Add with /testaccount @username'
+      );
+      return true;
+   }
+
+   const done: string[] = [];
+   const missing: string[] = [];
+   for (const handle of handles) {
+      const { data: user } = /^[0-9a-f-]{36}$/i.test(handle)
+         ? await supabase.from('users').select('id, username').eq('id', handle).maybeSingle()
+         : await supabase.from('users').select('id, username').ilike('username', escapeLike(handle)).maybeSingle();
+      if (!user) {
+         missing.push(handle);
+         continue;
+      }
+      const { error } = await supabase.from('users').update({ is_test: !off }).eq('id', user.id);
+      if (error) throw new Error(error.message);
+      done.push(user.username ? `@${user.username}` : user.id);
+   }
+   await sendTelegramMessage(
+      chatId,
+      [
+         done.length ? `🧪 ${off ? 'Marked real again' : 'Marked as test'}: ${done.join(', ')} — by ${adminHandle(message.from)}` : null,
+         missing.length ? `No user found for: ${missing.join(', ')}` : null
+      ]
+         .filter(Boolean)
+         .join('\n')
+   );
    return true;
 };
 
@@ -904,6 +960,12 @@ serve(async (req) => {
       if (isAdminChannel && /^\/kycretry\b/i.test(message.text ?? '')) {
          await handleKycRetryCommand(supabase, message);
          return jsonResponse({ message: 'KYC retry command handled' });
+      }
+
+      // Test-account flag — either admin channel.
+      if (isAdminChannel && /^\/testaccount\b/i.test(message.text ?? '')) {
+         await handleTestAccountCommand(supabase, message);
+         return jsonResponse({ message: 'Test account command handled' });
       }
 
       // Pre-KYC gate switch — either admin channel.
