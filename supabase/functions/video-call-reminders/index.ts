@@ -5,6 +5,7 @@ import { zoomActiveForHost } from '../_shared/attendance.ts';
 import { sendPushToUser } from '../_shared/pushDelivery.ts';
 import type { PushLocale, PushPayload } from '../_shared/pushMessages.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from '../_shared/telegram.ts';
+import { testAccountRow } from '../_shared/testAccount.ts';
 import {
    buildConfirmUrl,
    formatCallTime,
@@ -280,7 +281,7 @@ const SHEET_ALERT_BEFORE_MIN = 20;
 const alertCallSheets = async (svc: any, now: number): Promise<number> => {
    const { data } = await svc
       .from('users')
-      .select('id, username, display_name, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_sheet_alerted_for')
+      .select('id, username, display_name, video_call_host, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_sheet_alerted_for, is_test')
       .gt('video_call_starts_at', new Date(now - 10 * 60 * 1000).toISOString())
       .lt('video_call_starts_at', new Date(now + SHEET_ALERT_BEFORE_MIN * 60 * 1000).toISOString())
       .is('video_call_outcome', null)
@@ -294,6 +295,7 @@ const alertCallSheets = async (svc: any, now: number): Promise<number> => {
       video_call_timezone: string | null;
       video_call_join_url: string | null;
       video_call_sheet_alerted_for: string | null;
+      is_test: boolean | null;
    }>;
    const { data: chatRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
    const chatId = (chatRow?.value as string | undefined) ?? Deno.env.get('TEAM_TELEGRAM_CHAT_ID');
@@ -317,7 +319,8 @@ const alertCallSheets = async (svc: any, now: number): Promise<number> => {
       const text = `📋 Call ${minutes > 0 ? `in ${minutes} min` : 'starting now'} — ${name}\n${formatCallTimeForTeam(u.video_call_starts_at, u.video_call_timezone)}${host}\n\nOpen the call sheet before you join and fill it in during the call.`;
       const keyboard: TelegramInlineKeyboard = [
          [{ text: '📋 Open call sheet', url: sheetUrl }],
-         ...(u.video_call_join_url ? [[{ text: '🎥 Join Zoom', url: u.video_call_join_url }]] : [])
+         ...(u.video_call_join_url ? [[{ text: '🎥 Join Zoom', url: u.video_call_join_url }]] : []),
+         ...testAccountRow(u.id, u.is_test)
       ];
       if (chatId) {
          await sendTelegramMessage(chatId, text, { inlineKeyboard: keyboard }).catch((err) =>

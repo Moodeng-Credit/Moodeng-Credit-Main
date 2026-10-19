@@ -77,6 +77,8 @@ serve(async (req) => {
    const { data: borrowers, error: usersError } = await svc
       .from('users')
       .select('id, username, display_name, email, user_role, account_status, messenger_verified_at, messenger_stuck_alerted_at')
+      // Test accounts (users.is_test) are never "stuck".
+      .eq('is_test', false)
       .in(
          'id',
          (codes as StuckCode[]).map((c) => c.user_id)

@@ -124,7 +124,7 @@ export const handleRemindersStuck = async (req: Request, body: any, svc: Svc): P
       .update({ reminders_stuck_alerted_at: new Date(now).toISOString() })
       .eq('id', userId)
       .or(`reminders_stuck_alerted_at.is.null,reminders_stuck_alerted_at.lt."${new Date(now - REMINDERS_REALERT_AFTER_MS).toISOString()}"`)
-      .select('id, username, display_name, facebook_name, email, messenger_psid, messenger_verified_at')
+      .select('id, username, display_name, facebook_name, email, messenger_psid, messenger_verified_at, is_test')
       .maybeSingle();
    if (!borrower) return json({ ok: true, skipped: 'already_alerted' });
 
@@ -141,6 +141,8 @@ export const handleRemindersStuck = async (req: Request, body: any, svc: Svc): P
       }
    }
 
+   // Test accounts still get the how-to above, but the team isn't pinged about them.
+   if (borrower.is_test) return json({ ok: true, messenger, skipped: 'test_account' });
    const text = buildRemindersStuckAlert(borrower, reason, os, messenger, failures, failure);
    await sendTeamAlert(svc, text, { text: OPEN_IN_ADMIN_TEXT, url: adminUserUrl(borrower.id, borrower.username) });
 

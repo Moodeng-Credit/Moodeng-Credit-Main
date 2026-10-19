@@ -18,6 +18,7 @@ import {
    sendMessengerMessage
 } from '../_shared/sendpulse.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
+import { testAccountRow } from '../_shared/testAccount.ts';
 
 // SendPulse → Moodeng bridge for Facebook Messenger contact verification.
 //
@@ -56,7 +57,7 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       const [{ data: borrower }, { data: loans }, { data: chatRow }, contact, { data: sharing }] = await Promise.all([
          svc
             .from('users')
-            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason')
+            .select('username, display_name, email, is_didit, is_world_id, didit_id_status, didit_decline_reason, is_test')
             .eq('id', userId)
             .maybeSingle(),
          svc.from('loans').select('funded_at, due_date, repaid_at, is_test').eq('borrower_user_id', userId),
@@ -84,7 +85,7 @@ const announceConnected = async (svc: Svc, userId: string, contactId: string | n
       );
       const chat = (chatRow as { value?: string } | null)?.value;
       if (chat)
-         await sendTelegramMessage(chat, text).catch((err: unknown) =>
+         await sendTelegramMessage(chat, borrower.is_test ? `${text}\n🧪 Test account` : text, borrower.is_test ? {} : { inlineKeyboard: testAccountRow(userId) }).catch((err: unknown) =>
             console.error('sendpulse-messenger-verify: telegram ping failed', err)
          );
       await postDiscord({ content: text }, { prefer: ['DISCORD_KYC_WEBHOOK_URL'] });

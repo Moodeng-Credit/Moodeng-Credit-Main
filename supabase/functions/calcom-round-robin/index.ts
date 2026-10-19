@@ -8,6 +8,7 @@ import { formatCallTimeForTeam, newConfirmToken, sendBookedMessenger } from '../
 import { bookingCooldownUntil, hostsFreeAt, mergeSlots, orderHostsToTry, preferSoonSlots, recheckRange, teamGuests } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 import { changeTimeButton } from '../_shared/callReschedule.ts';
+import { testAccountRow } from '../_shared/testAccount.ts';
 import { CAL_BASE, fetchAccountEmail, fetchSlots, resolveEventTypeId } from '../_shared/calcomSlots.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 
@@ -94,11 +95,12 @@ const notifyTeamBooking = async (
    joinUrl: string | null,
    tgChat: string,
    // deno-lint-ignore no-explicit-any
-   borrower?: { svc: any; id: string; username?: string | null }
+   borrower?: { svc: any; id: string; username?: string | null; isTest?: boolean | null }
 ) => {
    const text =
       `📅 New Moodeng call booked\nHost: ${hostId}\nWith: ${attendee.name} (${attendee.email})\nWhen: ${formatCallTimeForTeam(start, attendee.timeZone)}` +
-      `\nJoin: ${joinUrl ?? 'no link on the booking — check the host’s Cal.com'}`;
+      `\nJoin: ${joinUrl ?? 'no link on the booking — check the host’s Cal.com'}` +
+      (borrower?.isTest ? '\n🧪 Test account' : '');
 
    // tgChat is the admins-only channel (telegram_bot_settings.team_group_chat_id), resolved by the
    // caller — never the lender or support group.
@@ -109,7 +111,12 @@ const notifyTeamBooking = async (
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             // 🔄 Change time: the bot lists the free times and moves the booking (callReschedule.ts).
-            body: JSON.stringify({ chat_id: tgChat, text, ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id)]] } } : {}) })
+            // 🧪 Test account?: one tap (+ confirm) marks a team test booking (testAccount.ts).
+            body: JSON.stringify({
+               chat_id: tgChat,
+               text,
+               ...(borrower ? { reply_markup: { inline_keyboard: [[changeTimeButton(borrower.id)], ...testAccountRow(borrower.id, borrower.isTest)] } } : {})
+            })
          });
       } catch (err) {
          console.error('calcom-round-robin: telegram booking notify failed', err);
@@ -218,7 +225,7 @@ serve(async (req) => {
 
       const { data: prof } = await svc
          .from('users')
-         .select('email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_scheduled_at, video_call_outcome')
+         .select('email, display_name, username, video_call_booking_uid, video_call_starts_at, video_call_host, video_call_scheduled_at, video_call_outcome, is_test')
          .eq('id', user.id)
          .maybeSingle();
       // One booking per person: a quick double-book is refused, and booking again replaces the old
@@ -300,7 +307,7 @@ serve(async (req) => {
                const { data: setting } = await svc.from('telegram_bot_settings').select('value').eq('key', 'team_group_chat_id').maybeSingle();
                teamChat = ((setting as { value?: string } | null)?.value) ?? '';
             }
-            await notifyTeamBooking(hostId, start, attendee, result.joinUrl, teamChat, { svc, id: user.id, username: prof?.username });
+            await notifyTeamBooking(hostId, start, attendee, result.joinUrl, teamChat, { svc, id: user.id, username: prof?.username, isTest: prof?.is_test });
             // Free the slot they had before. Our row already points at the new booking, so the cancel
             // webhook for the old uid matches nothing and sends no "your call was cancelled".
             if (previousBooking && previousBooking.uid !== result.uid) {

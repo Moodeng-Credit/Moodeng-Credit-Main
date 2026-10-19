@@ -32,11 +32,19 @@ import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOut
 import { buildPayoutCallback, markPayoutPaid, parsePayoutCallback } from '../_shared/referralPayouts.ts';
 import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
 import {
+   callTelegramApi,
    closeTelegramForumTopic,
    createTelegramForumTopic,
    sendTelegramMessage,
    type TelegramInlineKeyboard
 } from '../_shared/telegram.ts';
+import {
+   parseTestAccountCallback,
+   type TestAccountCallback,
+   testAccountConfirmKeyboard,
+   testAccountQuestion,
+   withoutTestAccountRow
+} from '../_shared/testAccount.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -69,6 +77,7 @@ type TelegramMessage = {
    chat: TelegramChat;
    from?: TelegramUser;
    reply_markup?: { inline_keyboard?: TelegramInlineKeyboard };
+   reply_to_message?: TelegramMessage;
 };
 
 type TelegramCallbackQuery = {
@@ -630,6 +639,68 @@ const handleTestAccountCommand = async (supabase: SupabaseClient, message: Teleg
    return true;
 };
 
+// 🧪 Test account? on a person card (_shared/testAccount.ts): ask → a confirm under the card;
+// ✅ Yes → users.is_test and the 🧪 row comes off the card; ✖ No → the confirm goes away.
+const handleTestAccountCallback = async (
+   supabase: SupabaseClient,
+   query: TelegramCallbackQuery,
+   step: TestAccountCallback,
+   allowedChatIds: string[]
+) => {
+   const msg = query.message;
+   if (!msg || !allowedChatIds.includes(String(msg.chat.id))) {
+      await answerCallback(query.id, 'Not allowed here.');
+      return;
+   }
+   const chatId = msg.chat.id;
+   if (step.step === 'no') {
+      await answerCallback(query.id, 'Left as a real account.');
+      await callTelegramApi('deleteMessage', { chat_id: chatId, message_id: msg.message_id }).catch(() =>
+         setCardButtons(chatId, msg.message_id, [])
+      );
+      return;
+   }
+
+   const { data: user } = await supabase.from('users').select('id, username, display_name, is_test').eq('id', step.userId).maybeSingle();
+   if (!user) {
+      await answerCallback(query.id, 'Account not found.');
+      return;
+   }
+   const name = [user.display_name?.trim(), user.username ? `@${user.username}` : null].filter(Boolean).join(' ') || personName(user);
+
+   if (step.step === 'ask') {
+      if (user.is_test) {
+         await answerCallback(query.id, `${name} is already a test account.`);
+         await setCardButtons(chatId, msg.message_id, withoutTestAccountRow(msg.reply_markup?.inline_keyboard));
+         return;
+      }
+      await answerCallback(query.id, 'Confirm below 👇');
+      await callTelegramApi('sendMessage', {
+         chat_id: chatId,
+         text: testAccountQuestion(name),
+         ...(msg.message_thread_id ? { message_thread_id: msg.message_thread_id } : {}),
+         reply_parameters: { message_id: msg.message_id, allow_sending_without_reply: true },
+         reply_markup: { inline_keyboard: testAccountConfirmKeyboard(user.id) }
+      });
+      return;
+   }
+
+   const { error } = await supabase.from('users').update({ is_test: true }).eq('id', user.id);
+   if (error) {
+      await answerCallback(query.id, `⚠️ Didn't save — tap again. (${error.message.slice(0, 120)})`);
+      return;
+   }
+   await answerCallback(query.id, '🧪 Marked as a test account.');
+   await callTelegramApi('editMessageText', {
+      chat_id: chatId,
+      message_id: msg.message_id,
+      text: `🧪 ${name} is now a test account — by ${adminHandle(query.from)}\nUndo with /testaccount off ${user.username ? `@${user.username}` : user.id}`,
+      reply_markup: { inline_keyboard: [] }
+   }).catch((err: unknown) => console.error('telegram-webhook: test confirm edit failed', err instanceof Error ? err.message : err));
+   const card = msg.reply_to_message;
+   if (card?.reply_markup?.inline_keyboard) await setCardButtons(chatId, card.message_id, withoutTestAccountRow(card.reply_markup.inline_keyboard));
+};
+
 const verifyTelegramSecret = (req: Request) => {
    const expectedSecret = Deno.env.get('TELEGRAM_WEBHOOK_SECRET');
    if (!expectedSecret) {
@@ -861,6 +932,13 @@ serve(async (req) => {
                }
             }
             return jsonResponse({ message: 'Reschedule handled' });
+         }
+         // 🧪 Test account?: the admin chats and the call-changes group (where the moved-call cards go).
+         const testAccount = parseTestAccountCallback(update.callback_query.data);
+         if (testAccount) {
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'call_changes_chat_id')].filter(Boolean).map(String);
+            await handleTestAccountCallback(supabase, update.callback_query, testAccount, allowed);
+            return jsonResponse({ message: 'Test account handled' });
          }
          await handleAdminCallback(
             supabase,
