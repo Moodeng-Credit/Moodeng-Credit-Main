@@ -14,6 +14,9 @@
            : /Instagram/i.test(ua)
              ? 'Instagram'
              : null;
+      // iPhone, the Facebook app itself (FBOP/5, newer ones also IABMV/1) vs Messenger (FBOP/80): both say
+      // FBAN/FBIOS. Same rule as metaIosHost() in src/lib/inAppBrowser.ts. Only the Facebook app's guide changes.
+      var fbAppIos = os === 'ios' && /\bFBAN\/FBIOS\b/.test(ua) && (/\bIABMV\//.test(ua) || /\bFBOP\/5\b/.test(ua));
       var params = new URLSearchParams(window.location.search);
       var POSTHOG_KEY = 'phc_qjr9yzwxKTun5ofaWE5z6QWrpY9dV9TsRMMRmX2rooEV';
 
@@ -154,6 +157,9 @@
                   '<span class="mg-ripple" style="position:absolute;left:0;top:0;width:40px;height:40px;box-sizing:border-box;border-radius:999px;border:3px solid #FFD43B;animation:mg-ripple 1.6s ease-out infinite"></span>' +
                   '<span class="mg-finger" style="position:absolute;left:-15px;top:-3px;display:block;font-size:34px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));animation:mg-tap 1.6s ease-in-out infinite">\uD83D\uDC46</span></span>';
             };
+            var fadedRow = function (width) {
+               return '<div style="display:flex;align-items:center;gap:12px;padding:10px 8px;opacity:.3"><span style="width:20px;height:20px;border-radius:999px;background:rgba(255,255,255,.6)"></span><span style="height:10px;width:' + width + 'px;border-radius:999px;background:rgba(255,255,255,.6)"></span></div>';
+            };
             var pointer = document.createElement('div');
             pointer.setAttribute('data-iab-pointer', '');
             pointer.setAttribute('role', 'dialog');
@@ -177,7 +183,15 @@
                '<div aria-hidden="true" style="' + frame + '">' +
                (isAndroid
                   ? '<div style="position:relative;border-radius:12px;background:#fff;color:#1c1c1e;padding:6px 8px"><div style="display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;' + ring + '">🌐 ' + item + '</div>' + finger('62%', '55%') + '</div>'
-                  : '<div style="position:relative"><img alt="" src="/guide/ios-menu-open-external.png" style="display:block;width:100%;border-radius:12px">' + finger('62%', '62%') + '</div>') +
+                  : fbAppIos
+                    ? // Drawn like the Messenger screenshot (dark, the rest faded, the one to tap ringed) until we
+                      // have a picture of the Facebook app's own menu (same as the app's MenuGuide).
+                      '<div style="position:relative;border-radius:12px;background:#1c1c1e;color:#fff;padding:8px;font-size:15px">' +
+                      fadedRow(112) + fadedRow(112) +
+                      '<div style="display:flex;align-items:center;gap:12px;border-radius:8px;padding:8px;font-weight:600;box-shadow:0 0 0 2px #1c1c1e,0 0 0 5px #FFD43B">' +
+                      '<span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:4px;background:#fff;color:#1c1c1e;font-size:13px;font-weight:900;line-height:1">↗</span>' + item + '</div>' +
+                      fadedRow(96) + finger('62%', '58%') + '</div>'
+                    : '<div style="position:relative"><img alt="" src="/guide/ios-menu-open-external.png" style="display:block;width:100%;border-radius:12px">' + finger('62%', '62%') + '</div>') +
                '</div></div>' +
                '<p style="margin:0;font-size:14px;line-height:20px;opacity:.7">Don’t see it? It may say <b>' + (isAndroid ? 'Open in browser' : 'Open in Safari') + '</b>. ' + browser + ' opens straight on sign-up.</p>' +
                '</div>' +
