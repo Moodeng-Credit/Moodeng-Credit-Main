@@ -31,6 +31,7 @@ import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
 import { loadNeedsIdCheck } from './preKycGate.ts';
+import { testAccountRow } from './testAccount.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseClient = any;
@@ -127,10 +128,11 @@ export type BorrowerRow = {
    video_call_timezone?: string | null;
    video_call_confirmed_at?: string | null;
    video_call_booking_uid?: string | null;
+   is_test?: boolean | null;
 };
 
 export const BORROWER_COLUMNS =
-   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_booking_uid';
+   'id, username, email, display_name, chat_id, notif_account_activity, is_didit, is_world_id, didit_id_status, messenger_psid, messenger_verified_at, whatsapp_verified_at, loan_access_status, video_call_starts_at, video_call_timezone, video_call_confirmed_at, video_call_booking_uid, is_test';
 export const REQUEST_COLUMNS = 'id, user_id, kind, display_name, reason, referral_code, channel, status, created_at';
 
 export const shortId = (id: string) => id.slice(0, 8);
@@ -182,6 +184,7 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
             ? '📞 Referred borrower booked their setup call with Emma'
             : '📞 New borrower booked their intro call'
          : '🤝 New borrower wants to connect',
+      borrower.is_test ? '🧪 Test account' : null,
       preKyc ? '🪪 Not ID-verified yet — after you approve them they apply, and verify their ID as the last step.' : null,
       `Who: ${who(borrower, request.display_name)}`,
       `KYC: ${kyc}`,
@@ -211,7 +214,8 @@ export const notifyAdminsOfRequest = async (svc: SupabaseClient, request: Reques
                ...decisionKeyboard(request),
                [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(borrower.id, borrower.username)],
                // Move the call from right here: the bot lists the free times (callReschedule.ts).
-               ...(isCall && borrower.video_call_booking_uid ? [[changeTimeButton(borrower.id)]] : [])
+               ...(isCall && borrower.video_call_booking_uid ? [[changeTimeButton(borrower.id)]] : []),
+               ...testAccountRow(borrower.id, borrower.is_test)
             ]
          });
       } catch (err) {

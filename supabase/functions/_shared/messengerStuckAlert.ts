@@ -1,6 +1,7 @@
 import { type CardStamp, openInAdminButton, stampDecisionCards } from './adminCards.ts';
 import { postDiscord } from './discord.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
+import { testAccountRow } from './testAccount.ts';
 
 // When a borrower's Facebook (Messenger) confirmation stalls:
 //   * the messenger-stuck-alerts cron emails the borrower a fresh way through (link + code) and posts
@@ -157,7 +158,8 @@ export const messengerStuckKeyboard = (
    username?: string | null
 ): TelegramInlineKeyboard => [
    [{ text: label, callback_data: buildMessengerVerifyCallback(userId) }],
-   [{ text: '💬 Open Page inbox', url: pageInboxUrl }, openInAdminButton(userId, username)]
+   [{ text: '💬 Open Page inbox', url: pageInboxUrl }, openInAdminButton(userId, username)],
+   ...testAccountRow(userId)
 ];
 
 // The after-state of a borrower's Messenger cards, whoever verified them.
