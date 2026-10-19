@@ -67,31 +67,187 @@ figcaption span { font-size: 15px; color: var(--muted); }
 .bubble { background: var(--bubble); border-radius: 14px 14px 14px 4px; padding: 10px 12px; font-size: 15px; }
 .bubble .btn { margin-top: 8px; border-top: 1px solid rgba(0,0,0,.08); padding-top: 8px; text-align: center; font-weight: 700; color: var(--accent); }
 footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+/* "All flows" tab: one card per flow with why / where / Given-When-Then scenarios. */
+.flow { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+.why { border-left: 4px solid var(--accent); padding: 2px 0 2px 14px; max-width: 80ch; }
+.why b { color: var(--accent); }
+.where { display: flex; flex-wrap: wrap; gap: 6px; }
+.where span { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.where span.no { background: transparent; border: 1px dashed var(--line); color: var(--muted); }
+.bdd { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.scenario { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; font-size: 15.5px; }
+.scenario .title { font-weight: 700; margin-bottom: 4px; }
+.scenario p { padding-left: 3.6em; text-indent: -3.6em; }
+.scenario p b { display: inline-block; width: 3.6em; text-indent: 0; color: var(--accent); font-weight: 700; }
+.matrix-wrap { overflow-x: auto; }
+.matrix { width: 100%; min-width: 560px; border-collapse: separate; border-spacing: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; font-size: 15.5px; }
+.matrix th, .matrix td { text-align: left; vertical-align: top; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.matrix tr:last-child td { border-bottom: 0; }
+.matrix thead th { background: var(--accent-soft); color: var(--accent); }
+.matrix td:first-child { font-weight: 700; }
+@media (max-width: 640px) { .flow { padding: 16px; } .scenario p { padding-left: 0; text-indent: 0; } .scenario p b { width: auto; margin-right: 6px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <span class="eyebrow">Moodeng · updated 18 Oct 2026</span>
+    <span class="eyebrow">Moodeng · updated 19 Oct 2026</span>
     <h1>How people sign up and get in</h1>
-    <p class="lede">Most borrowers arrive from a Facebook post and open Moodeng inside Facebook's own browser, where Google sign-in can't work. In the 30 days before this change, 26 people opened sign-up inside Facebook and only 5 got an account. Now they sign up with just their email, no code, and confirm it later, once they're approved.</p>
+    <p class="lede">Most borrowers arrive from a Facebook post and open Moodeng inside Facebook's or Messenger's own browser, where Google sign-in can't work. Since 19 Oct, Filipinos there can sign up with just their mobile number (or email), with no code. Codes come later, only when they're really needed. Each flow below is a scenario: <b>Given</b> the situation, <b>When</b> they do something, <b>Then</b> what they see, with why the flow exists and where it's offered.</p>
     <div class="facts">
-      <span class="fact">Email only to start</span>
+      <span class="fact">Phone or email to start</span>
       <span class="fact">No code until approved</span>
-      <span class="fact">Confirm by tapping the email</span>
-      <span class="fact">Then out of Facebook for KYC</span>
+      <span class="fact">Smart / TNT / Sun → email, for now</span>
+      <span class="fact">Email + password to finish</span>
+      <span class="fact">Codes come from "Unisoft"</span>
     </div>
   </header>
 
   <div class="tabs" role="tablist" aria-label="Flow versions">
-    <button class="tab" role="tab" id="tab-browsers" aria-controls="panel-browsers" aria-selected="true">By browser · live now<small>18 Oct</small></button>
+    <button class="tab" role="tab" id="tab-flows" aria-controls="panel-flows" aria-selected="true">All flows · live now<small>19 Oct</small></button>
+    <button class="tab" role="tab" id="tab-browsers" aria-controls="panel-browsers" aria-selected="false" tabindex="-1">By browser<small>18 Oct</small></button>
     <button class="tab" role="tab" id="tab-now" aria-controls="panel-now" aria-selected="false" tabindex="-1">Sign-up steps<small>16 Oct</small></button>
     <button class="tab" role="tab" id="tab-whatsapp" aria-controls="panel-whatsapp" aria-selected="false" tabindex="-1">When WhatsApp is approved<small>Meta reviewing</small></button>
     <button class="tab" role="tab" id="tab-before" aria-controls="panel-before" aria-selected="false" tabindex="-1">Earlier version<small>15 Oct</small></button>
   </div>
 
+  <!-- ===================== ALL FLOWS (19 OCT) ===================== -->
+  <div class="panel" role="tabpanel" id="panel-flows" aria-labelledby="tab-flows">
+    <section>
+      <h2>Who sees what</h2>
+      <p class="section-intro">Two things decide the screens: where they opened Moodeng, and whether they look like a visitor in the Philippines (phone set to Manila time, a Philippine language or region, or Filipino picked in our language menu). Phone codes only work for Philippine numbers, so everyone else gets email.</p>
+      <div class="matrix-wrap">
+        <table class="matrix">
+          <thead><tr><th></th><th>Inside Facebook / Messenger</th><th>Chrome / Safari</th></tr></thead>
+          <tbody>
+            <tr><td>Visitor in the Philippines</td><td><b>Sign up:</b> mobile number first, email one tap away. No code.<br><b>Sign in:</b> text code or email code.</td><td><b>Sign up:</b> Google or email, unchanged.<br><b>Sign in:</b> one "Email or mobile number" box.</td></tr>
+            <tr><td>Everyone else</td><td><b>Sign up:</b> email, no code.<br><b>Sign in:</b> email code.</td><td>Unchanged: Google, email + password, "No password? Email me a code". Typing 09… or +63… still switches to phone.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="steps" aria-label="The steps in order">
+        <span>1 Sign up (phone or email)</span><i>→</i><span>2 Messenger</span><i>→</i><span>3 About you</span><i>→</i><span>4 Your goal</span><i>→</i><span>5 Video call</span><i>→</i><span>6 Approved: email + password</span><i>→</i><span>7 ID check</span><i>→</i><span>8 Loan + reminders</span>
+      </div>
+    </section>
+
+    <article class="flow">
+      <h2><span class="n">1</span>Sign up with a mobile number inside Facebook</h2>
+      <p class="why"><b>Why:</b> the email box was where people stopped. In the first days of email sign-up inside Facebook, 18 people saw it and only 10 sent it (team tests included, so a rough number). Everyone there has a phone number and types it faster than an email. No code now, because leaving Facebook to read a text or an email is exactly where people get lost.</p>
+      <div class="where"><span>Facebook + Messenger browsers</span><span>iPhone + Android</span><span>Visitors in the Philippines</span><span class="no">Not Chrome / Safari sign-up: Google and email work well there</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: a Globe, TM or DITO number</p><p><b>Given</b> I opened Moodeng inside Facebook, in the Philippines</p><p><b>When</b> I type 0956 996 7993</p><p><b>Then</b> I see "✓ Globe or TM number. No code needed now."</p><p><b>When</b> I tap Continue</p><p><b>Then</b> my account is made and onboarding starts, and no text is sent</p></div>
+        <div class="scenario"><p class="title">Scenario: the number already has an account</p><p><b>Given</b> 0956 996 7993 already has a Moodeng account</p><p><b>When</b> I try to sign up with it</p><p><b>Then</b> I see "This number already has a Moodeng account"</p><p><b>And</b> "Text me a code" signs me in instead of making a second account</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-phone.png" alt="Sign up to Moodeng with a +63 mobile number field" loading="lazy"></div><figcaption><b>Sign up</b><span>Phone first, with the 🇵🇭 +63 pill. "Use email instead" is one tap.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-globe.png" alt="Green note: Globe or TM number, no code needed now" loading="lazy"></div><figcaption><b>A Globe number</b><span>The green note appears once the number is complete.</span></figcaption></figure>
+      </div>
+      <p class="note">Behind the scenes it's a guest account, like email sign-up: the number is attached but not confirmed. The database refuses loans, payments and the ID check from guests until step 6.</p>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">2</span>Smart, TNT and Sun numbers go to email</h2>
+      <p class="why"><b>Why:</b> our texts go out through UniSMS on its shared "Unisoft" sender name. Semaphore banned our own names, and a sender name of our own needs Philippine business papers. That shared sender can't reach Smart, TNT or Sun, which is roughly half of the Philippines. Rather than let someone sign up with a number we can never text, we say so before they tap.</p>
+      <div class="where"><span>Everywhere a mobile number is typed</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: a Smart number</p><p><b>Given</b> I type 0918 123 4567</p><p><b>Then</b> I see "Smart, TNT and Sun numbers can't get text codes yet"</p><p><b>And</b> the button says "Use email instead"</p><p><b>When</b> I tap it</p><p><b>Then</b> the email box opens, empty and ready</p></div>
+        <div class="scenario"><p class="title">Scenario: a number that moved to Globe</p><p><b>Given</b> my 0918 number moved from Smart to Globe</p><p><b>When</b> I tap "My number is on Globe, TM or DITO"</p><p><b>Then</b> I can carry on with my number</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-smart.png" alt="Orange note: Smart, TNT and Sun numbers can't get text codes yet" loading="lazy"></div><figcaption><b>A Smart number</b><span>The button becomes "Use email instead".</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-email.png" alt="Sign up with an email address field" loading="lazy"></div><figcaption><b>Email instead</b><span>The email sign-up from 16 Oct: no code now either.</span></figcaption></figure>
+      </div>
+      <p class="note">The network is guessed from the first four digits. Prefixes the sources disagree on are treated as unknown and never block anyone. If a Smart number still slips through, UniSMS refuses the text and the form moves them to email by itself.</p>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">3</span>Inside Facebook, only what works there</h2>
+      <p class="why"><b>Why:</b> Google sign-in can't work inside Facebook's browser, and the screen had grown long: a Telegram/LINE line, an "OR / Google works in Chrome" box, "Use password instead", "Take a tour first" and the company lines. Borrowers came for one thing, so it's now the form, the email/phone switch, Log in / Sign up, and a short footer. "How it works" goes to the borrower walkthrough on /academy instead of the GitBook docs.</p>
+      <div class="where"><span>Facebook + Messenger browsers</span><span class="no">Instagram, LINE, TikTok browsers keep the Telegram/LINE line</span><span class="no">Chrome / Safari unchanged</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: the sign-up screen inside Facebook</p><p><b>Given</b> I opened sign-up inside Facebook</p><p><b>Then</b> I see the form and "Already have an account? Log In"</p><p><b>And</b> no Google button, Telegram/LINE line, tour link or company lines</p><p><b>And</b> the footer reads Privacy · Terms · How it works</p></div>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">4</span>Sign in with a mobile number</h2>
+      <p class="why"><b>Why:</b> returning borrowers who signed up by phone need a way back in without an email. A code every time is what proves the number is theirs, or anyone could type someone else's number.</p>
+      <div class="where"><span>Everywhere, for Philippine numbers</span><span class="no">Not Smart / TNT / Sun yet</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signing in by text</p><p><b>Given</b> my account uses 0956 996 7993</p><p><b>When</b> I type it and tap "Text me a code"</p><p><b>Then</b> a text arrives from "Unisoft": "Your Moodeng Credit sign-in code is 123456. Please do not share. Expires in 10 minutes."</p><p><b>And</b> the code screen tells me to look for a text from Unisoft</p></div>
+        <div class="scenario"><p class="title">Scenario: no account with that number</p><p><b>Given</b> no account uses the number</p><p><b>When</b> I ask for a code on the sign-in screen</p><p><b>Then</b> I see "No Moodeng account uses this number" with "Create account" or "Use email instead"</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signin-phone.png" alt="Welcome back, mobile number field, Text me a code" loading="lazy"></div><figcaption><b>Sign in inside Facebook</b><span>Phone or email code. No password link there.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-code-unisoft.png" alt="Check your texts, look for a text from Unisoft" loading="lazy"></div><figcaption><b>The code screen</b><span>"Look for a text from Unisoft", since the sender name isn't ours. The keyboard offers the code from the text.</span></figcaption></figure>
+      </div>
+      <p class="note">Why "Unisoft": the texts come from UniSMS's shared sender, so phones show "Unisoft" as the sender. The message itself starts with "Your Moodeng Credit sign-in code…", and UniSMS only accepts code messages in that form (brand, code, purpose, expiry).</p>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">5</span>Chrome / Safari sign-in: one "Email or mobile number" box</h2>
+      <p class="why"><b>Why:</b> before, phone and email codes were two small buttons under a password form, easy to miss, and the password box made it look like a phone number needed a password. Google, Microsoft and Amazon all use one box and show the password only once it's clearly needed.</p>
+      <div class="where"><span>Chrome / Safari</span><span>Visitors in the Philippines</span><span class="no">Everyone else: "Email address" + password, as before</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: nothing typed yet</p><p><b>Given</b> I open sign-in in Chrome, in the Philippines</p><p><b>Then</b> I see one "Email or mobile number" box and Continue</p><p><b>And</b> no password box yet</p></div>
+        <div class="scenario"><p class="title">Scenario: an email</p><p><b>When</b> I type maria.santos@gmail.com</p><p><b>Then</b> the password box appears and the button says "Sign In to Moodeng"</p><p><b>And</b> "No password? Email me a code" is right below</p></div>
+        <div class="scenario"><p class="title">Scenario: a number</p><p><b>When</b> I type 0956…</p><p><b>Then</b> the box becomes the 🇵🇭 +63 field and the button says "Text me a code"</p></div>
+        <div class="scenario"><p class="title">Scenario: a Filipino abroad</p><p><b>Given</b> my phone is set to Dubai time, so I see "Email address"</p><p><b>When</b> I type 09… or +63…</p><p><b>Then</b> it switches to phone anyway</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-empty.png" alt="Email or mobile number box with Continue" loading="lazy"></div><figcaption><b>Nothing typed</b><span>Google and Telegram/LINE stay above the OR line.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-email.png" alt="Email typed, password box shown" loading="lazy"></div><figcaption><b>An email</b><span>The password field was on the page all along, out of sight, so saved passwords still fill in.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-phone.png" alt="Number typed, +63 field and Text me a code" loading="lazy"></div><figcaption><b>A number</b><span>Same text-code form as inside Facebook.</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">6</span>Getting back in before approval</h2>
+      <p class="why"><b>Why:</b> Facebook's browser sometimes forgets people (the page reloads, or they open the link again from Messenger). A guest has no password yet, so each kind of guest has its own way back.</p>
+      <div class="where"><span>Guests, before step 6</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signed up with a number</p><p><b>Given</b> I signed up with 0956 996 7993 and Facebook lost my session</p><p><b>When</b> I sign in with that number</p><p><b>Then</b> I get a text code and I'm back in the same account</p><p><b>And</b> this is the only text anyone gets before approval</p></div>
+        <div class="scenario"><p class="title">Scenario: signed up with email</p><p><b>Given</b> I signed up with email inside Facebook</p><p><b>When</b> I tap the link in the email we sent at sign-up</p><p><b>Then</b> I'm back in the same account, in any browser</p></div>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">7</span>After approval: finish your account</h2>
+      <p class="why"><b>Why:</b> before the ID check, everyone needs a way in that works in any phone or browser (email + password), and the button in our email moves them out of Facebook for the ID check, which works better in Safari or Chrome. Until this is done, the database refuses loans, payments and the ID check from guests.</p>
+      <div class="where"><span>Guests only, phone or email</span><span>Covers every page once approved after the video call</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: signed up with email, inside Facebook</p><p><b>Given</b> I'm approved after the call</p><p><b>Then</b> I see "You're approved 🎉" and three steps: open the email, tap Confirm, Moodeng opens in Safari/Chrome already signed in</p><p><b>Or</b> I type the 8-digit code from the email</p></div>
+        <div class="scenario"><p class="title">Scenario: wrong email</p><p><b>When</b> I tap "Wrong email? Change it" and fix the address</p><p><b>Then</b> a new link and code go to the new address</p></div>
+        <div class="scenario"><p class="title">Scenario: email confirmed</p><p><b>Given</b> I confirmed, here or in another browser</p><p><b>Then</b> I'm asked to set a password</p><p><b>And</b> from then on email + password works everywhere</p></div>
+        <div class="scenario"><p class="title">Scenario: signed up with a number</p><p><b>Given</b> I'm approved and have no email yet</p><p><b>Then</b> I see "Add your email" first</p><p><b>And</b> then the same confirm and password steps</p></div>
+      </div>
+      <div class="grid">
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-confirm-fb.png" alt="You're approved, three steps to confirm the email inside Facebook" loading="lazy"></div><figcaption><b>Confirm, inside Facebook</b><span>Tapping Confirm in the email is the main way.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-confirm-chrome.png" alt="You're approved, code box only" loading="lazy"></div><figcaption><b>Confirm, in Chrome</b><span>Just the code box.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-change-email.png" alt="Change the email address" loading="lazy"></div><figcaption><b>Wrong email? Change it</b><span>Sends a new link and code.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-password.png" alt="Email confirmed, set a password" loading="lazy"></div><figcaption><b>Set a password</b><span>Wherever they confirmed.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-gate-add-email.png" alt="You're approved, add your email" loading="lazy"></div><figcaption><b>Phone sign-ups: add your email</b><span>New on 19 Oct. Then the same confirm and password steps.</span></figcaption></figure>
+      </div>
+    </article>
+
+    <article class="flow">
+      <h2><span class="n">8</span>Reminders, and what we fill in for them</h2>
+      <p class="why"><b>Why:</b> Messenger is how we reach borrowers, so it stays required. Phone notifications don't work inside Facebook's browser, so there they pick WhatsApp, or Viber or Telegram after "I don't have WhatsApp". SMS can't carry reminders yet: the shared Unisoft sender only sends sign-in codes. Anything we already know, we fill in, so there's less to type.</p>
+      <div class="where"><span>Onboarding and the loan request</span></div>
+      <div class="bdd">
+        <div class="scenario"><p class="title">Scenario: Viber reminders</p><p><b>Given</b> I signed up with my number</p><p><b>When</b> I tap "Viber reminders"</p><p><b>Then</b> my number is already filled in: "Is your Viber on this number? Change it if not."</p></div>
+        <div class="scenario"><p class="title">Scenario: the bio</p><p><b>Given</b> I connected Messenger, so Moodeng knows my Facebook name</p><p><b>When</b> I reach "How lenders see you"</p><p><b>Then</b> my name is already filled in with my Facebook name, and I can change it</p></div>
+        <div class="scenario"><p class="title">Scenario: WhatsApp reminders</p><p><b>When</b> I tap the WhatsApp card</p><p><b>Then</b> WhatsApp opens with the message typed for me: I only hit send</p></div>
+      </div>
+    </article>
+
+    <p class="note"><b>Switches, if something needs to go back:</b> phone sign-in everywhere: <code>SMS_LOGIN_ON</code> in <code>src/lib/phoneAuth.ts</code> (<code>?sms=0</code> turns it off in one browser for testing). No-code sign-up inside Facebook: <code>guest_signup_enabled</code>. The "open in Safari/Chrome" first screen: <code>iab_open_prompt_enabled</code>. Texts: Vault <code>UNISMS_SECRET_KEY</code> + <code>UNISMS_SENDER_ID</code> (without the key, the text hook falls back to Semaphore, which sends nothing).</p>
+    <p class="note">How these were made: the phone screens are moodeng.app's own code (PR #1226) at iPhone size, made to look like Facebook's iPhone browser or Android Chrome in the Philippines. The finish-your-account screens use sample data. Numbers and emails shown are samples.</p>
+  </div>
+
   <!-- ===================== BY BROWSER (18 OCT) ===================== -->
-  <div class="panel" role="tabpanel" id="panel-browsers" aria-labelledby="tab-browsers">
+  <div class="panel" role="tabpanel" id="panel-browsers" aria-labelledby="tab-browsers" hidden>
+    <p class="note">18 Oct snapshot: the first screen and the Messenger step are still like this; the sign-up form itself is now phone-first (All flows tab).</p>
     <p class="note">What people see on each phone and browser, live on moodeng.app since 18 Oct. Inside Facebook's and Messenger's own browsers, nothing on a web page can open Safari, and Chrome only sometimes. So the first screen offers the better browser with one tap and a <b>Continue here</b> for everyone else, and every step works in both.</p>
 
     <section>
@@ -149,6 +305,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
   <!-- ===================== LIVE NOW ===================== -->
   <div class="panel" role="tabpanel" id="panel-now" aria-labelledby="tab-now" hidden>
+    <p class="note">16 Oct snapshot, kept for history. Email sign-up still works this way; phone sign-up, the email-or-number sign-in and the "Add your email" step are in the All flows tab.</p>
     <div class="steps" aria-label="The steps in order">
       <span>1 Sign up (email)</span><i>→</i><span>2 Onboarding</span><i>→</i><span>3 Connect Facebook</span><i>→</i><span>4 Video call</span><i>→</i><span>5 Approved: confirm email + password</span><i>→</i><span>6 ID check in Chrome</span><i>→</i><span>7 Loan</span>
     </div>
@@ -184,7 +341,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
     <section>
       <h2>Logging in</h2>
-      <p class="section-intro">Phone codes (SMS) are paused for everyone until the "MOODENG" sender name is approved, so these screens are email only.</p>
+      <p class="section-intro">On 16 Oct phone codes (SMS) were paused, so these screens were email only. Texts came back on 19 Oct through UniSMS (All flows tab).</p>
       <div class="grid">
         <figure><div class="phone"><img src="/design/new-login/screens/n-fb-login.png" alt="Log in inside Facebook with an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Inside Facebook</b><span>"Email me a code". "Use password instead" for people who set one.</span></figcaption></figure>
         <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-login.png" alt="Log in in Chrome with Google, password and Email me a code" loading="lazy"></div><figcaption><b><span class="n">9</span>In Chrome</b><span>Google and password as before, plus "Email me a code".</span></figcaption></figure>
@@ -223,7 +380,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
 
   <!-- ===================== EARLIER VERSION ===================== -->
   <div class="panel" role="tabpanel" id="panel-before" aria-labelledby="tab-before" hidden>
-    <p class="note">The 15 Oct version, kept for reference. Sign-up needed a code before onboarding, and phone (SMS) codes were offered. SMS is paused for now; the "add email later" cards apply to phone sign-ups only.</p>
+    <p class="note">The 15 Oct version, kept for reference. Sign-up needed a code before onboarding, and phone (SMS) codes were offered. SMS was paused from 16 to 19 Oct and is back through UniSMS; phone sign-ups now add their email after approval instead (All flows tab).</p>
     <section>
       <h2>Sign-up with a code (replaced)</h2>
       <div class="grid">
@@ -250,7 +407,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     </section>
   </div>
 
-  <footer>Screenshots taken at phone size on moodeng.app on 16 Oct 2026, as Facebook's Android browser (Chrome for screens 9–10). The email shown is a sample. "Earlier version" screens are from 15 Oct.</footer>
+  <footer>All flows: 19 Oct 2026, from the code in PR #1226. Sign-up steps: 16 Oct, as Facebook's Android browser. By browser: 18 Oct. Earlier version: 15 Oct. Numbers and emails shown are samples.</footer>
 </div>
 <script>
 (function () {
