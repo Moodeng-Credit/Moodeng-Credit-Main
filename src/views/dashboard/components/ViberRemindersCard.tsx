@@ -2,6 +2,7 @@ import { type ReactNode, useState } from 'react';
 
 import posthog from 'posthog-js';
 
+import { checkPhPhone, formatPhLocal } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { OptionCard } from '@/views/dashboard/components/connectKit';
 
@@ -39,6 +40,22 @@ export default function ViberRemindersCard({
    const [phone, setPhone] = useState('');
    const [busy, setBusy] = useState(false);
    const [error, setError] = useState('');
+   // Signed up with their phone: start from that number, they only change it if Viber is on another.
+   const [prefilled, setPrefilled] = useState(false);
+
+   const prefillSignupNumber = async () => {
+      try {
+         const {
+            data: { user }
+         } = await getSupabaseBrowserClient().auth.getUser();
+         const check = checkPhPhone(user?.phone ? `+${user.phone}` : '');
+         if (check.kind !== 'ok') return;
+         setPhone((current) => current || formatPhLocal(check.e164));
+         setPrefilled(true);
+      } catch {
+         // No number to offer: they type it.
+      }
+   };
 
    if (verified) {
       return <OptionCard done doneLabel="On" icon={viberIcon} title="Viber reminders" />;
@@ -52,6 +69,7 @@ export default function ViberRemindersCard({
             onClick={() => {
                track('contact_viber_reminders_tapped', { source });
                setStep('number');
+               void prefillSignupNumber();
             }}
             subtitle="We’ll remind you on Viber before your due date."
             title="Viber reminders"
@@ -92,7 +110,9 @@ export default function ViberRemindersCard({
          </span>
 
          <label className="text-[14px] leading-[19px] text-[#4f4566]" htmlFor="viber-number">
-            Your Viber number. We’ll send your payment reminders there.
+            {prefilled
+               ? 'Is your Viber on this number? Change it if not. We’ll send your payment reminders there.'
+               : 'Your Viber number. We’ll send your payment reminders there.'}
          </label>
          <input
             autoComplete="tel"
@@ -119,7 +139,8 @@ export default function ViberRemindersCard({
 }
 
 // Other channels for people without WhatsApp, shown greyed out under Viber until they're built (George,
-// 2026-10-19): Telegram, and SMS once Semaphore approves our sender name. Not buttons, just a heads-up.
+// 2026-10-19): Telegram, and SMS once we have our own sender name (UniSMS's shared one only sends
+// sign-in codes). Not buttons, just a heads-up.
 export function ComingSoonChannel({ icon, title }: { icon: ReactNode; title: string }) {
    return (
       <div

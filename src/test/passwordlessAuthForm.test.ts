@@ -16,6 +16,7 @@ const h = vi.hoisted(() => ({
    capture: vi.fn(),
    requestOtpCode: vi.fn((args: unknown) => ({ type: 'requestOtpCode', args })),
    startGuestSignup: vi.fn((args: unknown) => ({ type: 'startGuestSignup', args })),
+   startGuestPhoneSignup: vi.fn((args: unknown) => ({ type: 'startGuestPhoneSignup', args })),
    unwrap: vi.fn(),
    rpc: vi.fn(),
    inPh: true
@@ -25,8 +26,12 @@ vi.mock('react-redux', () => ({ useDispatch: () => () => ({ unwrap: h.unwrap }) 
 vi.mock('@/store/slices/authSlice', () => ({
    requestOtpCode: h.requestOtpCode,
    startGuestSignup: h.startGuestSignup,
+   startGuestPhoneSignup: h.startGuestPhoneSignup,
    GuestEmailTakenError: class GuestEmailTakenError extends Error {
       name = 'GuestEmailTakenError';
+   },
+   GuestPhoneTakenError: class GuestPhoneTakenError extends Error {
+      name = 'GuestPhoneTakenError';
    }
 }));
 vi.mock('@/lib/supabase/client', () => ({ getSupabaseBrowserClient: () => ({ rpc: h.rpc }) }));
@@ -113,12 +118,11 @@ describe('PasswordlessAuthForm', () => {
       h.capture.mockClear();
       h.requestOtpCode.mockClear();
       h.startGuestSignup.mockClear();
+      h.startGuestPhoneSignup.mockClear();
       h.unwrap.mockReset();
       h.rpc.mockReset();
       h.inPh = true;
       localStorage.clear();
-      // SMS is paused for everyone (SMS_LOGIN_PAUSED); these tests use the tester opt-in.
-      localStorage.setItem('moodeng:sms-login-test', '1');
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -138,7 +142,7 @@ describe('PasswordlessAuthForm', () => {
       expect(input().placeholder).toBe('0917 123 4567');
       expect(container.querySelector('svg rect[fill="#0038A8"]')).not.toBeNull(); // 🇵🇭 flag
       expect(container.textContent).toContain('+63');
-      expect(container.textContent).toContain('Philippine numbers only.');
+      expect(container.textContent).toContain("Globe, TM or DITO number. We'll text you a code.");
       expect(button('Use email instead')).toBeDefined();
       expect(container.querySelector('[role="tablist"]')).toBeNull();
       expect(container.querySelector('input[type="password"]')).toBeNull();
@@ -170,17 +174,20 @@ describe('PasswordlessAuthForm', () => {
       expect(input().value).toBe('0917');
    });
 
-   it('in-app browsers get the plain helper lines and the Telegram/LINE way out', async () => {
+   it('Facebook/Messenger: plain helper lines, no Telegram/LINE line (other in-app browsers keep it)', async () => {
       await render({ mode: 'signup', ua: FB_UA });
-      expect(container.textContent).toContain("We'll text you a code. No password.");
-      expect(container.textContent).toContain('Signed up with Telegram or LINE?');
+      expect(container.textContent).toContain("Globe, TM or DITO number. We'll text you a code.");
+      expect(container.textContent).not.toContain('Signed up with Telegram or LINE?');
       await act(async () => button('Use email instead')?.click());
       expect(container.textContent).toContain("Used Google before? Type your Gmail and we'll email you a code.");
+      act(() => root.unmount());
+      root = createRoot(container);
+      await render({ mode: 'signup', ua: INSTAGRAM_UA });
+      expect(container.textContent).toContain('Signed up with Telegram or LINE?');
    });
 
-   it('no SMS yet: email only, no pill switch or phone link', async () => {
-      vi.stubEnv('VITE_SMS_LOGIN_ENABLED', '');
-      localStorage.removeItem('moodeng:sms-login-test');
+   it('SMS off (?sms=0): email only, no pill switch or phone link', async () => {
+      localStorage.setItem('moodeng:sms-login-test', '0');
       await render({ mode: 'signup' });
       expect(input().type).toBe('email');
       expect(button('Use phone number instead')).toBeUndefined();
@@ -310,6 +317,45 @@ describe('PasswordlessAuthForm', () => {
       h.unwrap.mockResolvedValue({ channel: 'email' });
       await act(async () => button('Email me a code')?.click());
       expect(h.requestOtpCode).toHaveBeenCalledWith({ channel: 'email', email: 'old@example.com', mode: 'signin' });
+   });
+
+   it('phone network: a Globe number gets a green check, a Smart number is pointed to email (with a way past)', async () => {
+      await render({ mode: 'signup' });
+      await type('0956 996 7993');
+      expect(container.textContent).toContain("Globe or TM number · we'll text you a code");
+      await type('0918 123 4567');
+      expect(container.textContent).toContain("Smart, TNT and Sun numbers can't get text codes yet.");
+      expect(container.querySelector('button[type="submit"]')).toBeNull();
+      expect(button('Use email instead')).toBeDefined();
+      await act(async () => button('My number is on Globe, TM or DITO')?.click());
+      expect(container.querySelector('button[type="submit"]')?.textContent).toBe('Continue');
+      await act(async () => button('Use email instead')?.click());
+      expect(input().type).toBe('email');
+   });
+
+   it('guest sign-up on, in Facebook: a phone number creates the guest account (no code, no text)', async () => {
+      guestSwitch(true);
+      h.unwrap.mockResolvedValue({ user: {}, username: 'new' });
+      await render({ mode: 'signup', ua: FB_UA });
+      await type('0956 996 7993');
+      expect(container.textContent).toContain('Globe or TM number. No code needed now.');
+      await submit();
+      expect(h.startGuestPhoneSignup).toHaveBeenCalledWith({ phone: '+639569967993' });
+      expect(h.requestOtpCode).not.toHaveBeenCalled();
+      expect(where()).toBe('/auth-success?type=created&new=1');
+      expect(h.capture).toHaveBeenCalledWith('guest_signup_started', { channel: 'sms', network: 'globe', in_app_browser: 'Facebook' });
+   });
+
+   it('guest sign-up: a number that already has an account offers a sign-in text', async () => {
+      guestSwitch(true);
+      h.unwrap.mockRejectedValueOnce({ name: 'GuestPhoneTakenError', message: 'taken' });
+      await render({ mode: 'signup', ua: FB_UA });
+      await type('0956 996 7993');
+      await submit();
+      expect(container.textContent).toContain('This number already has a Moodeng account.');
+      h.unwrap.mockResolvedValue({ channel: 'sms' });
+      await act(async () => button('Text me a code')?.click());
+      expect(h.requestOtpCode).toHaveBeenCalledWith({ channel: 'sms', phone: '+639569967993', mode: 'signin' });
    });
 
    it('guest sign-up off (or outside an in-app browser): sign-up still sends a code', async () => {

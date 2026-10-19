@@ -12,6 +12,8 @@ type ReactActGlobal = typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 // signup/signin_inapp_email_* events.
 const analytics = vi.hoisted(() => ({ capture: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: analytics.capture } }));
+const where = vi.hoisted(() => ({ inPh: false }));
+vi.mock('@/lib/isLikelyPhilippines', () => ({ isLikelyPhilippines: () => where.inPh }));
 
 // The register/login thunks never settle here: we only care that the form was submitted.
 vi.mock('react-redux', () => ({ useDispatch: () => () => ({ unwrap: () => new Promise(() => {}) }) }));
@@ -81,6 +83,7 @@ describe('email first inside Facebook/Messenger', () => {
       vi.stubEnv('VITE_GOOGLE_CLIENT_ID', 'test-client-id');
       vi.stubEnv('PROD', true);
       analytics.capture.mockClear();
+      where.inPh = false;
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -93,7 +96,7 @@ describe('email first inside Facebook/Messenger', () => {
       Object.defineProperty(window.navigator, 'userAgent', { value: originalUA, configurable: true });
    });
 
-   it('/sign-up in Facebook: the passwordless code form comes first, says a code is coming, and Google is not a button', async () => {
+   it('/sign-up in Facebook: the code form, nothing else (no Google, Telegram/LINE, tour or company lines)', async () => {
       await render(SignUpPage, FB_ANDROID_UA);
       expect(container.textContent).toContain('Sign up to Moodeng');
       expect(container.querySelector('input[type="password"]')).toBeNull();
@@ -103,7 +106,11 @@ describe('email first inside Facebook/Messenger', () => {
       const firstControl = container.querySelector('button, a, input');
       expect(firstControl && container.querySelector('form')?.contains(firstControl)).toBe(true);
       expect(container.textContent).toContain("Used Google before? Type your Gmail and we'll email you a code.");
-      expect(container.textContent).toContain('Signed up with Telegram or LINE?');
+      expect(container.textContent).not.toContain('Signed up with Telegram or LINE?');
+      expect(container.textContent).not.toContain('Google sign-in works in');
+      expect(container.textContent).not.toContain('Take a tour first');
+      expect(container.textContent).not.toContain('Building Credit Asia LLC');
+      expect(container.querySelector('a[href="/academy"]')?.textContent).toBe('How it works');
       expect(container.textContent).not.toContain('Sign Up with Google');
       expect(container.querySelector('path[fill="#4285F4"]')).toBeNull();
       expect(analytics.capture).toHaveBeenCalledWith('signup_inapp_email_shown', { app: 'Facebook', os: 'android' });
@@ -125,16 +132,17 @@ describe('email first inside Facebook/Messenger', () => {
       expect(events()).toEqual([]);
    });
 
-   it('/sign-in in Facebook: the email form comes before the small Google line', async () => {
+   it('/sign-in in Facebook: just the code form (no Google line, password link, tour or company lines)', async () => {
       await render(SignInPage, FB_ANDROID_UA);
-      const form = container.querySelector('form') as HTMLFormElement;
-      const googleLine = Array.from(container.querySelectorAll('p')).find((p) => p.textContent?.includes('Google sign-in works in Chrome'));
-      expect(googleLine && isBefore(form, googleLine)).toBe(true);
+      expect(container.querySelector('form')).not.toBeNull();
+      expect(container.textContent).not.toContain('Google sign-in works in');
       expect(container.textContent).not.toContain('Sign In with Google');
+      expect(container.textContent).not.toContain('Take a tour first');
+      expect(container.textContent).not.toContain('Building Credit Asia LLC');
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_shown', { app: 'Facebook', os: 'android' });
 
       expect(container.querySelector('input[type="password"]')).toBeNull();
-      expect(buttonWithText('Use password instead')).not.toBeNull();
+      expect(buttonWithText('Use password instead')).toBeNull();
       await type(container.querySelector('input[type="email"]') as HTMLInputElement, 'me@example.com');
       await submit();
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_submitted', { app: 'Facebook', os: 'android' });
@@ -147,5 +155,27 @@ describe('email first inside Facebook/Messenger', () => {
       expect(container.querySelector('input[type="password"]')).not.toBeNull();
       expect(buttonWithText('Email me a code')).not.toBeNull();
       expect(events()).toEqual([]);
+   });
+   it('/sign-in in Chrome, in the Philippines: one email-or-number box; password only for an email, a number goes to texts', async () => {
+      where.inPh = true;
+      await render(SignInPage, CHROME_ANDROID_UA);
+      expect(container.textContent).toContain('Email or mobile number');
+      const box = container.querySelector('input[autocomplete="username"]') as HTMLInputElement;
+      expect(box.placeholder).toBe('Email or 0917 123 4567');
+      // The password is still on the page (saved passwords fill in) but out of sight until it's an email.
+      const passwordWrap = (container.querySelector('input[type="password"]') as HTMLInputElement).closest('[aria-hidden]');
+      expect(passwordWrap?.className).toContain('sr-only');
+      expect(buttonWithText('Continue')).not.toBeNull();
+      expect(buttonWithText('Text me a code')).toBeNull();
+
+      await type(box, 'maria@example.com');
+      expect((container.querySelector('input[type="password"]') as HTMLInputElement).closest('.sr-only')).toBeNull();
+      expect(buttonWithText('Sign In to Moodeng')).not.toBeNull();
+      expect(container.textContent).toContain('No password?');
+
+      await type(container.querySelector('input[autocomplete="username"]') as HTMLInputElement, '0956');
+      const phone = container.querySelector('#otp-input') as HTMLInputElement;
+      expect(phone.type).toBe('tel');
+      expect(phone.value).toBe('0956');
    });
 });

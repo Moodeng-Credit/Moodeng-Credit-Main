@@ -7,8 +7,10 @@ import {
    generatePhoneUsername,
    isPlaceholderEmail,
    isSmsLoginEnabled,
+   phNetwork,
    phonePlaceholderEmail,
-   showPasswordlessSignup
+   showPasswordlessSignup,
+   SMS_TEST_FLAG_KEY
 } from '@/lib/phoneAuth';
 
 describe('checkPhPhone: PH mobile numbers to E.164', () => {
@@ -89,16 +91,30 @@ describe('flags', () => {
       expect(showPasswordlessSignup(false)).toBe(true);
    });
 
-   it('SMS login: paused even with VITE_SMS_LOGIN_ENABLED=true, testers can opt in with ?sms=1', () => {
+   it('SMS login: on for everyone (UniSMS); ?sms=0 turns it off for this browser, ?sms=1 back on', () => {
+      localStorage.removeItem(SMS_TEST_FLAG_KEY);
+      expect(isSmsLoginEnabled()).toBe(true);
+      window.history.replaceState(null, '', '/sign-in?sms=0');
+      expect(isSmsLoginEnabled()).toBe(false);
+      window.history.replaceState(null, '', '/sign-in');
       expect(isSmsLoginEnabled()).toBe(false);
       window.history.replaceState(null, '', '/sign-in?sms=1');
       expect(isSmsLoginEnabled()).toBe(true);
       window.history.replaceState(null, '', '/sign-in');
       expect(isSmsLoginEnabled()).toBe(true);
-      window.history.replaceState(null, '', '/sign-in?sms=0');
-      expect(isSmsLoginEnabled()).toBe(false);
-      vi.stubEnv('VITE_SMS_LOGIN_ENABLED', 'true');
-      expect(isSmsLoginEnabled()).toBe(false);
+      localStorage.removeItem(SMS_TEST_FLAG_KEY);
+   });
+
+   it('phNetwork: Globe/TM, DITO and Smart/TNT/Sun by prefix; unclear prefixes are unknown', () => {
+      expect(phNetwork('+639569967993')).toBe('globe');
+      expect(phNetwork('+639171234567')).toBe('globe');
+      expect(phNetwork('+639911234567')).toBe('dito');
+      expect(phNetwork('+639181234567')).toBe('smart');
+      expect(phNetwork('+639291234567')).toBe('smart');
+      expect(phNetwork('+639221234567')).toBe('smart');
+      expect(phNetwork('+639241234567')).toBeNull();
+      expect(phNetwork('+639511234567')).toBeNull();
+      expect(phNetwork('+6281234567')).toBeNull();
    });
 });
 

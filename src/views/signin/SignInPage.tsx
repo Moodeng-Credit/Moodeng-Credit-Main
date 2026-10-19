@@ -1,6 +1,5 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { Mail, Smartphone } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,6 +12,7 @@ import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
 
 import { rememberNextPath } from '@/lib/authNext';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { getPostSignInPath } from '@/lib/postSignInPath';
 import { BANNED_MESSAGE } from '@/lib/otpErrors';
 import { isSmsLoginEnabled, showPasswordlessSignup } from '@/lib/phoneAuth';
@@ -28,6 +28,9 @@ const isBannedError = (err: unknown) => {
    const e = err as { code?: string; message?: string } | null;
    return e?.code === 'user_banned' || /\bbanned\b/i.test(e?.message ?? '');
 };
+
+// Someone typing a Philippine mobile number into the email box: 09…, +63… or 63…
+const startsLikePhMobile = (value: string) => /^(\+63|63|09)/.test(value.replace(/[\s\-().]/g, ''));
 
 
 export default function SignInPage() {
@@ -47,6 +50,7 @@ export default function SignInPage() {
    const [errorProvider, setErrorProvider] = useState<string | null>(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
    const [rememberMe, setRememberMe] = useState(true);
+   const [identifierError, setIdentifierError] = useState<string | null>(null);
    // Facebook/Messenger's browser: Google can't sign in there, so the email form comes first.
    const inApp = useMemo(() => detectInAppBrowser(), []);
    const facebookInApp = isFacebookInApp(inApp);
@@ -54,13 +58,30 @@ export default function SignInPage() {
    // Everywhere else the password form stays first, with "Email me a code" / "Text me a code".
    const [usePassword, setUsePassword] = useState(() => !showPasswordlessSignup(inApp.isInApp));
    const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(undefined);
+   const [codePhone, setCodePhone] = useState('');
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
+   // Visitors in the Philippines get one "Email or mobile number" box, like Google's sign-in: a
+   // number moves them to the text-code form, an email brings up the password. Everyone else keeps
+   // email + password (typing 09…/+63… still switches to phone, for Filipinos abroad).
+   const emailOrPhone = useMemo(() => smsEnabled && isLikelyPhilippines(), [smsEnabled]);
+   const showPasswordFields = !emailOrPhone || email.includes('@') || password.length > 0;
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
-   const switchToCode = (channel: OtpChannel) => {
+   const switchToCode = (channel: OtpChannel, phone = '') => {
       handleRetry();
+      setCodePhone(phone);
       setCodeChannel(channel);
       setUsePassword(false);
+   };
+
+   const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value;
+      if (smsEnabled && startsLikePhMobile(next)) {
+         setEmail('');
+         switchToCode('sms', next);
+         return;
+      }
+      setEmail(next);
    };
 
    // Came here from a protected page (or ?next=): go back there after signing in, whichever way
@@ -89,6 +110,11 @@ export default function SignInPage() {
       setShowAccount(false);
       setErrorType(null);
       setErrorProvider(null);
+      setIdentifierError(null);
+      if (emailOrPhone && !email.includes('@')) {
+         setIdentifierError(email.trim() ? 'Type your full email' : 'Enter your email or number');
+         return;
+      }
       if (!email || !password) return;
       if (import.meta.env.PROD && facebookInApp) posthog.capture('signin_inapp_email_submitted', { app: inApp.appName, os: inApp.os });
 
@@ -229,11 +255,13 @@ export default function SignInPage() {
                   {usePassword ? null : (
                      <div className="flex justify-center">
                         <PasswordlessAuthForm
-                           key={codeChannel ?? 'default'}
+                           key={`${codeChannel ?? 'default'}-${codePhone}`}
                            mode="signin"
                            inApp={inApp}
                            initialChannel={codeChannel}
-                           onUsePassword={() => setUsePassword(true)}
+                           initialPhone={codePhone}
+                           // Facebook/Messenger: kept short; anyone with a password can still use a code.
+                           onUsePassword={facebookInApp ? undefined : () => setUsePassword(true)}
                         />
                      </div>
                   )}
@@ -243,14 +271,18 @@ export default function SignInPage() {
                      <form onSubmit={handleLogin} className="flex flex-col gap-5">
                         <div className="flex flex-col gap-5">
                            <AuthInputField
-                              label="Email Address"
-                              type="email"
-                              placeholder="Enter your email address"
+                              label={emailOrPhone ? 'Email or mobile number' : 'Email Address'}
+                              type={emailOrPhone ? 'text' : 'email'}
+                              placeholder={emailOrPhone ? 'Email or 0917 123 4567' : 'Enter your email address'}
                               value={email}
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                              error={showAccount && errorType !== 'provider_failed'}
+                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                                 setIdentifierError(null);
+                                 handleEmailChange(e);
+                              }}
+                              error={Boolean(identifierError) || (showAccount && errorType !== 'provider_failed')}
                               errorMessage={
-                                 showAccount && errorType === 'too_many_attempts'
+                                 identifierError ??
+                                 (showAccount && errorType === 'too_many_attempts'
                                     ? 'Too many tries'
                                     : showAccount && errorType === 'new_user'
                                       ? 'No account with this email'
@@ -258,11 +290,14 @@ export default function SignInPage() {
                                         ? 'No account with this email'
                                         : showAccount && errorType === 'incorrect_credentials'
                                           ? 'Wrong email or password'
-                                          : undefined
+                                          : undefined)
                               }
                               icon={<Icons.email />}
+                              autoComplete={emailOrPhone ? 'username' : 'email'}
                            />
-                           <div className="flex flex-col gap-2">
+                           {/* Email-or-number box: the password shows once it's clearly an email. Kept on the
+                               page (just out of sight) so saved passwords still fill in. */}
+                           <div className={showPasswordFields ? 'flex flex-col gap-2' : 'sr-only'} aria-hidden={!showPasswordFields}>
                               <AuthInputField
                                  label="Password"
                                  type="password"
@@ -272,6 +307,7 @@ export default function SignInPage() {
                                  error={showAccount && errorType !== 'provider_failed'}
                                  icon={<Icons.lock />}
                                  showEyeToggle
+                                 autoComplete="current-password"
                               />
                               <Link
                                  to="/forgot-password"
@@ -299,7 +335,7 @@ export default function SignInPage() {
                            />
                         )}
 
-                        <div className="flex flex-row items-center gap-2 w-full max-w-[400px] h-6">
+                        <div className={`flex flex-row items-center gap-2 w-full max-w-[400px] h-6 ${showPasswordFields ? '' : 'hidden'}`}>
                            <label className="flex flex-row items-center gap-2 cursor-pointer shrink-0">
                               <span className="relative flex size-6 shrink-0">
                                  <input
@@ -328,30 +364,21 @@ export default function SignInPage() {
                            className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
                            style={{ backgroundColor: '#6010D2' }}
                         >
-                           Sign In to Moodeng
+                           {showPasswordFields ? 'Sign In to Moodeng' : 'Continue'}
                         </button>
 
-                        {/* Passwordless accounts (made in Facebook's browser) sign in here from any browser. */}
-                        <div className={`grid gap-3 ${smsEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                        {/* Passwordless accounts (made in Facebook's browser) sign in here from any browser. A
+                            number typed in the box above goes to the text-code form by itself. */}
+                        <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
+                           No password?{' '}
                            <button
                               type="button"
                               onClick={() => switchToCode('email')}
-                              className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#B5ACBE] text-sm font-semibold text-[#250650] transition hover:bg-[#F8F4FC] dark:text-[#F8F4FF] dark:hover:bg-[#1E1530]"
+                              className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
                            >
-                              <Mail className="h-4 w-4" strokeWidth={1.8} />
                               Email me a code
                            </button>
-                           {smsEnabled ? (
-                              <button
-                                 type="button"
-                                 onClick={() => switchToCode('sms')}
-                                 className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#B5ACBE] text-sm font-semibold text-[#250650] transition hover:bg-[#F8F4FC] dark:text-[#F8F4FF] dark:hover:bg-[#1E1530]"
-                              >
-                                 <Smartphone className="h-4 w-4" strokeWidth={1.8} />
-                                 Text me a code
-                              </button>
-                           ) : null}
-                        </div>
+                        </p>
                      </form>
                   ) : null}
 
@@ -361,19 +388,22 @@ export default function SignInPage() {
                         Sign Up
                      </Link>
                   </p>
-                  <Link
-                     to="/request-board?tour=1"
-                     className="text-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
-                  >
-                     Take a tour first
-                  </Link>
+                  {facebookInApp ? null : (
+                     <Link
+                        to="/request-board?tour=1"
+                        className="text-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
+                     >
+                        Take a tour first
+                     </Link>
+                  )}
 
-                  {inApp.isInApp ? orDivider : null}
-                  {inApp.isInApp ? socialAuth : null}
+                  {/* Google and Telegram can't sign in inside Facebook/Messenger: left out there. */}
+                  {inApp.isInApp && !facebookInApp ? orDivider : null}
+                  {inApp.isInApp && !facebookInApp ? socialAuth : null}
                </div>
             </div>
 
-            <AuthFooter />
+            <AuthFooter short={facebookInApp} />
          </div>
       </div>
    );
