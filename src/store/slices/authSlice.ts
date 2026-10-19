@@ -156,10 +156,11 @@ const ensureUserProfileRow = async (
 ): Promise<UserRow> => {
    // Phone-only and guest accounts have no (confirmed) email; public.users.email is NOT NULL, so
    // they get a placeholder. A guest's typed email stays pending in Supabase Auth until confirmed.
+   // Guest first: a phone guest has a (still unconfirmed) phone but is a guest all the same.
    const email =
       overrides?.email ??
       (authUser.email ||
-         (authUser.phone ? phonePlaceholderEmail(authUser.id) : authUser.is_anonymous ? guestPlaceholderEmail(authUser.id) : undefined));
+         (authUser.is_anonymous ? guestPlaceholderEmail(authUser.id) : authUser.phone ? phonePlaceholderEmail(authUser.id) : undefined));
 
    if (!email) {
       throw new Error('Email is required to seed user profile');
@@ -223,6 +224,7 @@ const mapSupabaseRowToUser = (row: UserRow, avatarUrl?: string, displayName?: st
    avatarUrl,
    avatarBackground,
    displayName: displayName ?? row.display_name ?? undefined,
+   facebookName: (row as UserRow & { facebook_name?: string | null }).facebook_name?.trim() || undefined,
    googleId: row.google_id ?? undefined,
    walletAddress: row.wallet_address ?? undefined,
    walletChainId: (row as UserRow & { wallet_chain_id?: number | null }).wallet_chain_id ?? undefined,
@@ -610,7 +612,7 @@ const KEEP_THROUGH_OTP_LOCAL = [PENDING_INVITE_STORAGE_KEY, FIRST_TOUCH_STORAGE_
 const KEEP_THROUGH_OTP_SESSION = [PENDING_SHARED_REQUEST_KEY];
 
 /**
- * Sends a one-time sign-in code by SMS (PH numbers, through the Semaphore Send SMS hook) or email.
+ * Sends a one-time sign-in code by SMS (PH numbers, through the Send SMS hook and UniSMS) or email.
  * Sign-up creates the account on first use; sign-in never does (Supabase then answers "Signups
  * not allowed for otp", shown as "No Moodeng account uses this number/email").
  */
@@ -716,6 +718,65 @@ export const startGuestSignup = createAsyncThunk('auth/startGuestSignup', async 
    return { username: user.username, user };
 });
 
+export class GuestPhoneTakenError extends Error {
+   constructor() {
+      super('This number already has a Moodeng account.');
+      this.name = 'GuestPhoneTakenError';
+   }
+}
+
+/**
+ * Phone-first sign-up (Facebook/Messenger browsers, guest_signup_enabled): no code now, no text.
+ * Creates a guest (anonymous) account and attaches the number to it, unconfirmed
+ * (claim_guest_phone). If this browser loses the session, signing in with the number texts a code
+ * that gets them back in. After they're approved they add an email and a password (GuestAccountGate).
+ */
+export const startGuestPhoneSignup = createAsyncThunk('auth/startGuestPhoneSignup', async ({ phone }: { phone: string }) => {
+   const supabase = supabaseClient();
+
+   const {
+      data: { session: staleSession }
+   } = await supabase.auth.getSession();
+
+   // Already a guest on this browser with this number (tapped again, or Facebook reloaded the page).
+   // Asked from the server: the session's copy of the user predates claim_guest_phone.
+   if (staleSession?.user?.is_anonymous) {
+      const {
+         data: { user: current }
+      } = await supabase.auth.getUser();
+      if (current?.is_anonymous && `+${current.phone ?? ''}` === phone) {
+         const user = await fetchCurrentUserProfile();
+         setLastUsedAuth('phone');
+         return { username: user.username, user };
+      }
+   }
+
+   const { data: taken } = await supabase.rpc('phone_has_account', { p_phone: phone });
+   if (taken === true) throw new GuestPhoneTakenError();
+
+   // Same reason as requestOtpCode: never continue inside a leftover session from another account.
+   if (staleSession) {
+      await supabase.auth.signOut({ scope: 'local' });
+      clearClientAuthState({ keepLocal: KEEP_THROUGH_OTP_LOCAL, keepSession: KEEP_THROUGH_OTP_SESSION });
+   }
+
+   const { error: guestError } = await supabase.auth.signInAnonymously({
+      options: { data: { username: generatePhoneUsername(), passwordless: true, guest_phone: phone } }
+   });
+   if (guestError) throw guestError;
+
+   const { data: claim, error: claimError } = await supabase.rpc('claim_guest_phone', { p_phone: phone });
+   if (claimError || claim !== 'ok') {
+      await discardEmptyGuest();
+      if (claim === 'taken') throw new GuestPhoneTakenError();
+      throw claimError ?? new Error('Could not start your sign-up. Try again.');
+   }
+
+   const user = await fetchCurrentUserProfile();
+   setLastUsedAuth('phone');
+   return { username: user.username, user };
+});
+
 /** The email a guest typed at sign-up (pending until they confirm it). */
 export const getGuestPendingEmail = async (): Promise<string | null> => {
    const {
@@ -736,10 +797,14 @@ export const convertedGuestNeedsPassword = async (): Promise<boolean> => {
    return Boolean(user && !user.is_anonymous && user.user_metadata?.guest_email && user.user_metadata?.passwordless === true);
 };
 
-/** Mails the guest's confirmation link + code again (optionally to a corrected address). */
+/**
+ * Mails the guest's confirmation link + code again (optionally to a corrected address). Also how a
+ * phone guest adds their first email. guest_email marks them as a converted guest, so they're asked
+ * for a password after confirming, wherever they confirm.
+ */
 export const resendGuestEmail = async (email: string): Promise<void> => {
    await releaseUnfinishedSignup(email);
-   const { error } = await supabaseClient().auth.updateUser({ email }, { emailRedirectTo: getAuthRedirectUrl() });
+   const { error } = await supabaseClient().auth.updateUser({ email, data: { guest_email: email } }, { emailRedirectTo: getAuthRedirectUrl() });
    if (error) {
       if (error.code === 'email_exists' || /already been registered|already exists/i.test(error.message)) {
          throw new GuestEmailTakenError();
@@ -1163,6 +1228,10 @@ const authSlice = createSlice({
             state.user = action.payload.user;
          })
          .addCase(startGuestSignup.fulfilled, (state, action) => {
+            state.username = action.payload.username;
+            state.user = action.payload.user;
+         })
+         .addCase(startGuestPhoneSignup.fulfilled, (state, action) => {
             state.username = action.payload.username;
             state.user = action.payload.user;
          })

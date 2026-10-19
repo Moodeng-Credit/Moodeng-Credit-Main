@@ -21,9 +21,17 @@ import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { getLastUsedAuth } from '@/lib/lastUsedAuth';
 import { describeOtpError } from '@/lib/otpErrors';
 import { savePendingCode } from '@/lib/pendingCode';
-import { checkPhPhone, isSmsLoginEnabled, SMS_NON_PH_MESSAGE } from '@/lib/phoneAuth';
+import { checkPhPhone, isSmsLoginEnabled, phNetwork, SMS_NON_PH_MESSAGE } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import { GuestEmailTakenError, type OtpChannel, type OtpMode, requestOtpCode, startGuestSignup } from '@/store/slices/authSlice';
+import {
+   GuestEmailTakenError,
+   GuestPhoneTakenError,
+   type OtpChannel,
+   type OtpMode,
+   requestOtpCode,
+   startGuestPhoneSignup,
+   startGuestSignup
+} from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 
 type Props = {
@@ -32,6 +40,8 @@ type Props = {
    initialEmail?: string;
    /** Start in this mode (e.g. the sign-in page's "Text me a code" button). */
    initialChannel?: OtpChannel;
+   /** A number already typed elsewhere (the sign-in page's email box): opens on phone with it. */
+   initialPhone?: string;
    /** Sign-in only: show "Use password instead" for people who set a password. */
    onUsePassword?: () => void;
 };
@@ -69,7 +79,7 @@ export function pickInitialChannel(options: {
  * it; typing a letter or "@" switches to email, digits to phone. Sign-up creates the account;
  * sign-in never does. The code screen is /auth/verify-code.
  */
-export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialChannel, onUsePassword }: Props) {
+export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialChannel, initialPhone = '', onUsePassword }: Props) {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [searchParams] = useSearchParams();
@@ -77,14 +87,14 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    const [channel, setChannel] = useState<OtpChannel>(() =>
       pickInitialChannel({
          smsEnabled,
-         initialChannel,
+         initialChannel: initialPhone ? 'sms' : initialChannel,
          initialEmail,
          method: searchParams.get('method'),
          lastUsed: getLastUsedAuth(),
          inPhilippines: isLikelyPhilippines()
       })
    );
-   const [value, setValue] = useState(initialEmail);
+   const [value, setValue] = useState(initialEmail || initialPhone);
    const [error, setError] = useState<string | null>(null);
    const [notice, setNotice] = useState<string | null>(null);
    const [noAccount, setNoAccount] = useState(false);
@@ -100,6 +110,13 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    // behind the guest_signup_enabled setting.
    const [guestSignupEnabled, setGuestSignupEnabled] = useState(false);
    const [emailTaken, setEmailTaken] = useState(false);
+   const [phoneTaken, setPhoneTaken] = useState(false);
+   // UniSMS's shared sender can't text Smart, TNT or Sun numbers. The prefix is only a hint (people
+   // keep their number when they switch networks), so "My number is on Globe…" lets them carry on.
+   const [smartOverride, setSmartOverride] = useState(false);
+   const phoneCheck = isSms ? checkPhPhone(value) : null;
+   const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
+   const smartBlocked = network === 'smart' && !smartOverride;
    useEffect(() => {
       if (mode !== 'signup' || !inApp.isInApp) return;
       let cancelled = false;
@@ -112,6 +129,16 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
          cancelled = true;
       };
    }, [mode, inApp.isInApp]);
+
+   // Carried over from the sign-in page's email box mid-typing: keep the keyboard up where they were.
+   useEffect(() => {
+      if (!initialPhone) return;
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
    // The "Open Moodeng in your browser" banner says Google doesn't work here, which reads as if
    // nothing works here. This form does, so the banner stays hidden on it.
@@ -142,6 +169,8 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
       setError(null);
       setNotice(null);
       setNoAccount(false);
+      setPhoneTaken(false);
+      setSmartOverride(false);
       if (isSms) {
          if (looksLikeEmail(next)) {
             switchTo('email', { keepValue: true });
@@ -188,6 +217,28 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
          }
          if (check.kind !== 'ok') {
             setError('Enter a Philippine mobile number, like 0917 123 4567.');
+            return;
+         }
+         setPhoneTaken(false);
+         // Phone-first sign-up: no code now, like the email guest sign-up.
+         if (requestMode === 'signup' && guestSignupEnabled) {
+            setIsSending(true);
+            try {
+               await dispatch(startGuestPhoneSignup({ phone: check.e164 })).unwrap();
+               if (import.meta.env.PROD) {
+                  posthog.capture('guest_signup_started', { channel: 'sms', network, in_app_browser: inAppName(inApp) });
+               }
+               navigate(GUEST_CREATED_PATH, { replace: true });
+            } catch (err) {
+               if ((err as { name?: string })?.name === new GuestPhoneTakenError().name) {
+                  setPhoneTaken(true);
+                  setError('This number already has a Moodeng account. We can text you a code to sign in.');
+               } else {
+                  setError(describeOtpError(err, 'sms').message);
+               }
+            } finally {
+               setIsSending(false);
+            }
             return;
          }
          setIsSending(true);
@@ -266,10 +317,11 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    };
 
    const browserName = inApp.os === 'ios' ? 'Safari' : 'Chrome';
+   const phoneGuestSignup = mode === 'signup' && guestSignupEnabled;
    const helper = isSms
-      ? inApp.isInApp
-         ? "Philippine numbers only. We'll text you a code. No password."
-         : 'Philippine numbers only.'
+      ? phoneGuestSignup
+         ? 'Globe, TM or DITO number. No code needed now.'
+         : "Globe, TM or DITO number. We'll text you a code."
       : mode === 'signup' && guestSignupEnabled
         ? // Email-first sign-up: no code now; they confirm the email after they're approved.
           'Used Google before? Type the same Gmail. No code needed now.'
@@ -307,9 +359,42 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
             />
          </div>
-         <p id="otp-help" className="text-sm leading-5 text-[#5b5470] dark:text-[#A89BB8]">
-            {helper}
-         </p>
+         {isSms && (network === 'globe' || network === 'dito') ? (
+            <p
+               id="otp-help"
+               role="status"
+               className="rounded-2xl bg-[#E9F6EE] px-4 py-2.5 text-sm font-semibold leading-5 text-[#1B5E36] dark:bg-[#12301F] dark:text-[#8FE0AE]"
+            >
+               <span aria-hidden>✓ </span>
+               {network === 'globe'
+                  ? phoneGuestSignup
+                     ? 'Globe or TM number. No code needed now.'
+                     : "Globe or TM number · we'll text you a code"
+                  : phoneGuestSignup
+                    ? 'DITO number. No code needed now.'
+                    : "DITO number · we'll text you a code"}
+            </p>
+         ) : isSms && smartBlocked ? (
+            <div
+               id="otp-help"
+               role="status"
+               className="rounded-2xl border border-[#F3D39A] bg-[#FDF1E3] px-4 py-3 text-sm leading-5 text-[#7A4508] dark:border-[#4A3510] dark:bg-[#2A1E0A] dark:text-[#F3C77A]"
+            >
+               <p className="font-semibold">Smart, TNT and Sun numbers can&apos;t get text codes yet.</p>
+               <p>Use your email, or a Globe, TM or DITO number if you have one.</p>
+               <button
+                  type="button"
+                  onClick={() => setSmartOverride(true)}
+                  className="mt-1.5 text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+               >
+                  My number is on Globe, TM or DITO
+               </button>
+            </div>
+         ) : (
+            <p id="otp-help" className="text-sm leading-5 text-[#5b5470] dark:text-[#A89BB8]">
+               {helper}
+            </p>
+         )}
 
          {notice ? (
             <p
@@ -325,13 +410,13 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413] dark:border-[#4A1A20] dark:bg-[#2A0F14] dark:text-[#FF8090]"
             >
                <p>{error}</p>
-               {emailTaken ? (
+               {emailTaken || phoneTaken ? (
                   <button
                      type="button"
                      onClick={() => void send('signin')}
                      className="mt-2 rounded-xl bg-[#6010D2] px-3 py-2 text-sm font-semibold text-white"
                   >
-                     Email me a code
+                     {phoneTaken ? 'Text me a code' : 'Email me a code'}
                   </button>
                ) : null}
                {noAccount ? (
@@ -357,17 +442,36 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             </div>
          ) : null}
 
-         <button
-            type="submit"
-            disabled={isSending}
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:opacity-70"
-            style={{ backgroundColor: '#6010D2' }}
-         >
-            {isSending ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : null}
-            {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}
-         </button>
+         {smartBlocked ? (
+            <button
+               key="smart-use-email"
+               type="button"
+               onClick={(e) => {
+                  // This button turns into the submit button on re-render; without this the same tap
+                  // would also submit the (now empty) email form.
+                  e.preventDefault();
+                  setStayOnEmail(true);
+                  switchTo('email');
+               }}
+               className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95"
+               style={{ backgroundColor: '#6010D2' }}
+            >
+               Use email instead
+            </button>
+         ) : (
+            <button
+               key="submit"
+               type="submit"
+               disabled={isSending}
+               className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95 disabled:opacity-70"
+               style={{ backgroundColor: '#6010D2' }}
+            >
+               {isSending ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : null}
+               {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}
+            </button>
+         )}
 
-         {smsEnabled ? (
+         {smsEnabled && !smartBlocked ? (
             <button
                type="button"
                onClick={() => switchTo(isSms ? 'email' : 'sms')}
@@ -387,7 +491,8 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             </button>
          ) : null}
 
-         {inApp.isInApp ? (
+         {/* Not in Facebook/Messenger: kept short there (George, 2026-10-19). */}
+         {inApp.isInApp && !facebookInApp ? (
             <p className="text-center text-xs leading-5 text-[#70617F] dark:text-[#A89BB8]">
                Signed up with Telegram or LINE?{' '}
                {inApp.os === 'android' ? (

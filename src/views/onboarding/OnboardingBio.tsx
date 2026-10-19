@@ -60,7 +60,11 @@ export default function OnboardingBio({ user, onBack, onDone }: { user: User; on
    const [searchParams, setSearchParams] = useSearchParams();
    const draft = useMemo(() => readDraft(user.id), [user.id]);
    const [context, setContext] = useState<BorrowerContextState>(draft?.context ?? emptyBorrowerContext);
-   const [profileName, setProfileName] = useState(draft?.profileName || user.displayName || user.username || '');
+   // Their Facebook name (from the Messenger step just before) beats the username, which for phone
+   // and email sign-ups is a made-up handle like moodeng-ab12cd or the start of their email.
+   const [profileName, setProfileName] = useState(
+      draft?.profileName || user.displayName || user.facebookName || (user.username?.startsWith('moodeng-') ? '' : user.username) || ''
+   );
    // Page 2 needs page 1's answer — a reload or shared link on &bio=2 without it starts at page 1.
    const page: 1 | 2 = searchParams.get('bio') === '2' && context.incomeSetup ? 2 : 1;
    const goToPage2 = () => {

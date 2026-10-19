@@ -12,7 +12,8 @@ const h = vi.hoisted(() => ({
    user: null as Record<string, unknown> | null,
    gate: { isGated: false, isLoading: false },
    inApp: false,
-   needsPassword: false
+   needsPassword: false,
+   pendingEmail: 'juan@example.com' as string | null
 }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-redux', () => ({
@@ -25,7 +26,7 @@ vi.mock('@/store/slices/authSlice', () => ({
    confirmEmailChange: vi.fn(),
    convertedGuestNeedsPassword: () => Promise.resolve(h.needsPassword),
    fetchUser: vi.fn(),
-   getGuestPendingEmail: () => Promise.resolve('juan@example.com'),
+   getGuestPendingEmail: () => Promise.resolve(h.pendingEmail),
    GuestEmailTakenError: class GuestEmailTakenError extends Error {
       name = 'GuestEmailTakenError';
    },
@@ -54,6 +55,7 @@ describe('GuestAccountGate', () => {
       h.gate = { isGated: false, isLoading: false };
       h.inApp = false;
       h.needsPassword = false;
+      h.pendingEmail = 'juan@example.com';
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
@@ -92,6 +94,16 @@ describe('GuestAccountGate', () => {
       await render();
       expect(container.textContent).toContain('Email confirmed');
       expect(container.querySelector('#guest-password')).not.toBeNull();
+   });
+
+   it('a phone guest (no email yet), approved: asks to add an email first', async () => {
+      h.user = { id: 'u1', email: GUEST, hasVerifiedContact: true, loanAccessStatus: 'approved' };
+      h.pendingEmail = null;
+      await render();
+      expect(container.textContent).toContain('add your email, so you can sign in from any phone or browser');
+      expect(container.querySelector('#guest-new-email')).not.toBeNull();
+      expect(container.querySelector('#guest-code')).toBeNull();
+      expect(container.textContent).not.toContain('Back');
    });
 
    it('a normal account: nothing', async () => {

@@ -54,7 +54,7 @@ vi.mock('@/lib/supabase/client', () => ({
    })
 }));
 
-const { registerUser, requestOtpCode, startGuestSignup, verifyOtpCode } = await import('@/store/slices/authSlice');
+const { registerUser, requestOtpCode, startGuestPhoneSignup, startGuestSignup, verifyOtpCode } = await import('@/store/slices/authSlice');
 
 const run = async <T>(thunk: (dispatch: never, getState: never, extra: never) => Promise<T>) =>
    thunk((() => undefined) as never, (() => ({})) as never, undefined as never);
@@ -188,7 +188,10 @@ describe('passwordless OTP thunks', () => {
       h.session = { user: { id: 'guest-1', is_anonymous: true, new_email: 'emma@example.com', user_metadata: {} } };
       h.authUser = { id: 'guest-1', is_anonymous: true, user_metadata: { username: 'emma' }, app_metadata: {} };
       await run(startGuestSignup({ email: 'emma.new@example.com' }));
-      expect(h.updateUser).toHaveBeenCalledWith({ email: 'emma.new@example.com' }, { emailRedirectTo: 'https://moodeng.app/auth/confirm' });
+      expect(h.updateUser).toHaveBeenCalledWith(
+         { email: 'emma.new@example.com', data: { guest_email: 'emma.new@example.com' } },
+         { emailRedirectTo: 'https://moodeng.app/auth/confirm' }
+      );
       expect(h.signOut).not.toHaveBeenCalled();
       expect(h.signInAnonymously).not.toHaveBeenCalled();
    });
@@ -229,6 +232,38 @@ describe('passwordless OTP thunks', () => {
       expect(h.signInAnonymously).toHaveBeenCalledTimes(1);
       expect(h.updateUser).toHaveBeenCalledWith({ email: 'emma@example.com' }, { emailRedirectTo: 'https://moodeng.app/auth/confirm' });
       expect((result as { payload: { user: { id: string } } }).payload.user.id).toBe('guest-4');
+   });
+
+   it('phone-first sign-up: a guest login with the number attached, no code sent, guest placeholder email', async () => {
+      h.authUser = { id: 'guest-p1', is_anonymous: true, phone: '639569967993', user_metadata: { username: 'moodeng-abc123' }, app_metadata: {} };
+      const calls: string[] = [];
+      h.rpc.mockImplementation(async (name: string) => {
+         calls.push(name);
+         return { data: name === 'claim_guest_phone' ? 'ok' : false, error: null };
+      });
+      const result = await run(startGuestPhoneSignup({ phone: '+639569967993' }));
+      expect(calls).toEqual(['phone_has_account', 'claim_guest_phone']);
+      expect(h.rpc).toHaveBeenCalledWith('claim_guest_phone', { p_phone: '+639569967993' });
+      expect(h.signInAnonymously).toHaveBeenCalledTimes(1);
+      expect(h.signInWithOtp).not.toHaveBeenCalled();
+      // A guest, not a phone account: the gate asks for an email after approval.
+      expect(h.inserts[0]?.email).toBe('guest_guestp1@moodeng.app');
+      expect((result as { payload: { user: { id: string } } }).payload.user.id).toBe('guest-p1');
+   });
+
+   it('phone-first sign-up with a number that has an account: refused before any guest is made', async () => {
+      h.rpc.mockImplementation(async (name: string) => ({ data: name === 'phone_has_account', error: null }));
+      const result = await run(startGuestPhoneSignup({ phone: '+639569967993' }));
+      expect((result as { error?: { name?: string } }).error?.name).toBe('GuestPhoneTakenError');
+      expect(h.signInAnonymously).not.toHaveBeenCalled();
+   });
+
+   it('phone-first sign-up: number taken in a race after the guest login, the empty guest is deleted', async () => {
+      h.rpc.mockImplementation(async (name: string) => ({ data: name === 'claim_guest_phone' ? 'taken' : false, error: null }));
+      const result = await run(startGuestPhoneSignup({ phone: '+639569967993' }));
+      expect((result as { error?: { name?: string } }).error?.name).toBe('GuestPhoneTakenError');
+      expect(h.rpc).toHaveBeenCalledWith('discard_empty_guest');
+      expect(h.inserts).toHaveLength(0);
    });
 
    it('a taken email after signing in as a guest deletes that empty guest and signs it out', async () => {

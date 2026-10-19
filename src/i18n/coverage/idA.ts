@@ -1028,6 +1028,25 @@ export const indonesianCoverageA: Record<string, string> = {
    'Use password instead': 'Pakai kata sandi saja',
    'Signed up with Telegram or LINE?': 'Daftar pakai Telegram atau LINE?',
    'Enter a Philippine mobile number, like 0917 123 4567.': 'Masukkan nomor HP Filipina, contoh 0917 123 4567.',
+   // Phone-first sign-up and the email-or-number sign-in box (UniSMS), 2026-10-19
+   'Globe, TM or DITO number. No code needed now.': 'Nomor Globe, TM, atau DITO. Belum perlu kode sekarang.',
+   "Globe, TM or DITO number. We'll text you a code.": 'Nomor Globe, TM, atau DITO. Kami kirim kode lewat SMS.',
+   'Globe or TM number. No code needed now.': 'Nomor Globe atau TM. Belum perlu kode sekarang.',
+   "Globe or TM number · we'll text you a code": 'Nomor Globe atau TM · kami kirim kode lewat SMS',
+   'DITO number. No code needed now.': 'Nomor DITO. Belum perlu kode sekarang.',
+   "DITO number · we'll text you a code": 'Nomor DITO · kami kirim kode lewat SMS',
+   "Smart, TNT and Sun numbers can't get text codes yet.": 'Nomor Smart, TNT, dan Sun belum bisa menerima kode SMS.',
+   'Use your email, or a Globe, TM or DITO number if you have one.': 'Pakai email kamu, atau nomor Globe, TM, atau DITO kalau ada.',
+   'My number is on Globe, TM or DITO': 'Nomor saya Globe, TM, atau DITO',
+   'This number already has a Moodeng account. We can text you a code to sign in.':
+      'Nomor ini sudah punya akun Moodeng. Kami bisa kirim kode lewat SMS untuk masuk.',
+   'Add your email': 'Tambahkan email kamu',
+   'One last step before your ID check: add your email, so you can sign in from any phone or browser.':
+      'Satu langkah terakhir sebelum cek ID: tambahkan email kamu, supaya bisa masuk dari HP atau browser mana pun.',
+   'Email or mobile number': 'Email atau nomor HP',
+   'Type your full email': 'Ketik email lengkap kamu',
+   'Enter your email or number': 'Masukkan email atau nomor kamu',
+   'No password?': 'Tidak punya kata sandi?',
    'Enter your email address.': 'Masukkan alamat email kamu.',
    'No Moodeng account uses this number.': 'Belum ada akun Moodeng dengan nomor ini.',
    'No Moodeng account uses this email.': 'Belum ada akun Moodeng dengan email ini.',
@@ -1047,7 +1066,7 @@ export const indonesianCoverageA: Record<string, string> = {
    'Too many tries': 'Terlalu banyak percobaan',
    'Create one with a code. No password needed.': 'Buat dengan kode. Tanpa kata sandi.',
    'Check your texts': 'Cek SMS kamu',
-   'Look for a text from SEMAPHORE.': 'Cari SMS dari SEMAPHORE.',
+   'Look for a text from Unisoft.': 'Cari SMS dari Unisoft.',
    "That's the company that sends our codes, so it's safe to type the code here. Never share it with anyone.":
       'Mereka yang mengirim kode kami, jadi aman mengetik kodenya di sini. Jangan berikan ke siapa pun.',
    'Type the 8-digit code below, or tap Confirm Email in the latest Moodeng email.':
@@ -1055,8 +1074,8 @@ export const indonesianCoverageA: Record<string, string> = {
    'Code from the text': 'Kode dari SMS',
    'Code from the email': 'Kode dari email',
    'Usually under a minute.': 'Biasanya kurang dari satu menit.',
-   'Not here yet? Look for a text from SEMAPHORE, check your signal and Messages › Spam.':
-      'Belum masuk? Cari SMS dari SEMAPHORE, cek sinyal dan Pesan › Spam.',
+   'Not here yet? Look for a text from Unisoft, check your signal and Messages › Spam.':
+      'Belum masuk? Cari SMS dari Unisoft, cek sinyal dan Pesan › Spam.',
    'Not here yet? Check Spam and Promotions.': 'Belum masuk? Cek Spam dan Promosi.',
    'That code is wrong. Check the latest text from Moodeng.': 'Kode salah. Cek SMS terbaru dari Moodeng.',
    'That code is wrong. Check the latest email from Moodeng.': 'Kode salah. Cek email terbaru dari Moodeng.',

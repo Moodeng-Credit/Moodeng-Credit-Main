@@ -138,14 +138,19 @@ export default function PasswordlessSignUpScreen() {
                         </>
                      ) : null}
                      {codeForm}
-                     {orDivider}
-                     <SocialAuthButtons
-                        isSignUp
-                        hideFacebook
-                        onGoogleSuccess={handleGoogleAuth}
-                        onGoogleError={handleOAuthError}
-                        onTelegramAuth={handleTelegramAuth}
-                     />
+                     {/* Google and Telegram can't sign in inside Facebook/Messenger: left out there. */}
+                     {facebookInApp ? null : (
+                        <>
+                           {orDivider}
+                           <SocialAuthButtons
+                              isSignUp
+                              hideFacebook
+                              onGoogleSuccess={handleGoogleAuth}
+                              onGoogleError={handleOAuthError}
+                              onTelegramAuth={handleTelegramAuth}
+                           />
+                        </>
+                     )}
                      <div className="mb-4" />
                   </>
                ) : (
@@ -167,15 +172,17 @@ export default function PasswordlessSignUpScreen() {
                      Log In
                   </Link>
                </p>
-               <Link
-                  to="/request-board?tour=1"
-                  className="mt-4 text-center text-base font-semibold tracking-[-0.02em] text-[#8336F0] hover:underline"
-               >
-                  Take a tour first
-               </Link>
+               {facebookInApp ? null : (
+                  <Link
+                     to="/request-board?tour=1"
+                     className="mt-4 text-center text-base font-semibold tracking-[-0.02em] text-[#8336F0] hover:underline"
+                  >
+                     Take a tour first
+                  </Link>
+               )}
             </div>
 
-            <AuthFooter />
+            <AuthFooter short={facebookInApp} />
          </div>
       </div>
    );
