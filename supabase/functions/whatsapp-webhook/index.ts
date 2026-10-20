@@ -19,6 +19,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 //          (statuses, etc.) gets a 200 with no side effect so Meta doesn't retry it forever.
 
 const VERIFY_TOKEN = Deno.env.get('WHATSAPP_VERIFY_TOKEN') ?? '';
+// Meta signs every POST with the app secret (X-Hub-Signature-256). Without the check anyone could post
+// a fake "message" carrying their own code and any number, and become WhatsApp-verified (security audit
+// 2026-10-21). WhatsApp verification runs through SendPulse now, so with no secret set every POST is
+// refused rather than trusted.
+const APP_SECRET = Deno.env.get('WHATSAPP_APP_SECRET') ?? '';
 const WHATSAPP_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') ?? '';
 const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') ?? '';
 
@@ -48,6 +53,18 @@ type WhatsAppWebhookPayload = {
 };
 
 const textResponse = (body: string, status = 200) => new Response(body, { status });
+
+const hasValidSignature = async (rawBody: string, header: string | null): Promise<boolean> => {
+   if (!APP_SECRET || !header?.startsWith('sha256=')) return false;
+   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(APP_SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+   const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody)));
+   const expected = Array.from(mac, (b) => b.toString(16).padStart(2, '0')).join('');
+   const presented = header.slice('sha256='.length).toLowerCase();
+   if (presented.length !== expected.length) return false;
+   let diff = 0;
+   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ presented.charCodeAt(i);
+   return diff === 0;
+};
 
 const jsonResponse = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -104,9 +121,14 @@ serve(async (req) => {
       return jsonResponse({ ok: true });
    }
 
+   const rawBody = await req.text();
+   if (!(await hasValidSignature(rawBody, req.headers.get('x-hub-signature-256')))) {
+      return textResponse('Forbidden', 403);
+   }
+
    let payload: WhatsAppWebhookPayload;
    try {
-      payload = await req.json();
+      payload = JSON.parse(rawBody);
    } catch {
       return jsonResponse({ ok: true });
    }

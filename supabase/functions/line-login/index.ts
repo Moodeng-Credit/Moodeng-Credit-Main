@@ -150,8 +150,9 @@ Deno.serve(async (req) => {
 
     // No password: the provider's signature was verified above, so mint the session server-side
     // (_shared/mintSession.ts). Passwords derived from the provider id were guessable.
-    await ensureAuthUser(supabaseAdmin, email, lineMetadata)
-    const session = await mintSession(supabaseAdmin, email)
+    const created = await ensureAuthUser(supabaseAdmin, email, lineMetadata)
+    // An account that already existed must be this LINE user's, or it gets locked down first.
+    const session = await mintSession(supabaseAdmin, email, created ? undefined : { key: 'line_id', value: String(lineId) })
     // Always refresh metadata so the photo (and name changes) stay current
     await supabaseAdmin.auth.admin.updateUserById(session.user.id, {
       user_metadata: lineMetadata,

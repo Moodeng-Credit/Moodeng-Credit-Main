@@ -163,8 +163,9 @@ Deno.serve(async (req) => {
 
     // No password: the provider's signature was verified above, so mint the session server-side
     // (_shared/mintSession.ts). Passwords derived from the provider id were guessable.
-    await ensureAuthUser(supabaseAdmin, email, telegramMetadata)
-    const session = await mintSession(supabaseAdmin, email)
+    const created = await ensureAuthUser(supabaseAdmin, email, telegramMetadata)
+    // An account that already existed must be this Telegram user's, or it gets locked down first.
+    const session = await mintSession(supabaseAdmin, email, created ? undefined : { key: 'telegram_id', value: String(id) })
     // Always refresh metadata so the photo (and name changes) stay current
     await supabaseAdmin.auth.admin.updateUserById(session.user.id, {
       user_metadata: telegramMetadata,
