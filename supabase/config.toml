@@ -119,6 +119,11 @@ verify_jwt = true
 [functions.admin-fund-loan]
 verify_jwt = true
 
+# Stableyard credential check (GET /v2/partners/me). Re-checks the caller is an active admin inside
+# the function; Stableyard's Basic-auth credentials stay server-side.
+[functions.stableyard-partner-check]
+verify_jwt = true
+
 [functions.buy-loan-note]
 verify_jwt = true
 
