@@ -55,7 +55,9 @@ const bangkokTime = (iso: string) =>
    new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // Semaphore stamps times in Manila time (UTC+8) with no zone; show them in Bangkok time like the rest.
-const semaphoreTime = (value: string) => {
+// A row can come back without created_at (e.g. an error object wrapped by asArray), so never assume it.
+const semaphoreTime = (value: string | null | undefined) => {
+   if (!value) return '—';
    const parsed = new Date(`${value.replace(' ', 'T')}+08:00`);
    return Number.isNaN(parsed.getTime()) ? value : bangkokTime(parsed.toISOString());
 };
