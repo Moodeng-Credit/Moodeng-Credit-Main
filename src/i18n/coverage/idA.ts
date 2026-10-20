@@ -1063,7 +1063,6 @@ export const indonesianCoverageA: Record<string, string> = {
    "Smart number · we can't text Smart yet": 'Nomor Smart · kami belum bisa kirim SMS ke Smart',
    'Sign up with email': 'Daftar dengan email',
    'Log in with email': 'Masuk dengan email',
-   'Not Smart? Keep this number': 'Bukan Smart? Tetap pakai nomor ini',
    'Log in to my account': 'Masuk ke akun saya',
    'Enter your email address.': 'Masukkan alamat email kamu.',
    'No Moodeng account uses this number.': 'Belum ada akun Moodeng dengan nomor ini.',

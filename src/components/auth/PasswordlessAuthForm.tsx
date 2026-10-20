@@ -102,13 +102,11 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    // behind the guest_signup_enabled setting.
    const [guestSignupEnabled, setGuestSignupEnabled] = useState(false);
    const [emailTaken, setEmailTaken] = useState(false);
-   // UniSMS's shared sender can't text Smart, TNT or Sun numbers. The prefix is only a hint (people
-   // keep their number when they switch networks), so "Not Smart? Keep this number" lets them carry on;
-   // UniSMS refuses a real Smart number anyway and the form then moves them to email.
-   const [smartOverride, setSmartOverride] = useState(false);
+   // UniSMS's shared sender can't text Smart, TNT or Sun numbers, so a Smart-looking prefix goes
+   // straight to "use email". A number that moved off Smart is rare; email works for them too.
    const phoneCheck = isSms ? checkPhPhone(value) : null;
    const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
-   const smartBlocked = network === 'smart' && !smartOverride;
+   const smartBlocked = network === 'smart';
    useEffect(() => {
       if (mode !== 'signup' || !inApp.isInApp) return;
       let cancelled = false;
@@ -161,7 +159,6 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
       setError(null);
       setNotice(null);
       setNoAccount(false);
-      setSmartOverride(false);
       if (isSms) {
          if (looksLikeEmail(next)) {
             switchTo('email', { keepValue: true });
@@ -425,16 +422,6 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}
             </button>
          )}
-
-         {smartBlocked ? (
-            <button
-               type="button"
-               onClick={() => setSmartOverride(true)}
-               className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
-            >
-               Not Smart? Keep this number
-            </button>
-         ) : null}
 
          {/* One line of "instead" links: phone screen offers email; email screen offers phone and,
              on sign-in, a password (passwords go with an email). */}

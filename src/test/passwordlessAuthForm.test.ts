@@ -320,9 +320,6 @@ describe('PasswordlessAuthForm', () => {
       await type('0918 123 4567');
       expect(container.textContent).toContain("Smart number · we can't text Smart yet");
       expect(container.querySelector('button[type="submit"]')).toBeNull();
-      await act(async () => button('Not Smart? Keep this number')?.click());
-      expect(container.querySelector('button[type="submit"]')?.textContent).toBe('Continue');
-      await type('0919 123 4567');
       await act(async () => button('Sign up with email')?.click());
       expect(input().type).toBe('email');
       expect(input().value).toBe('');
