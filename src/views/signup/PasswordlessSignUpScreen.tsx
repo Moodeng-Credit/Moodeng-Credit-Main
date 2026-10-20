@@ -16,7 +16,7 @@ import Loading from '@/components/Loading';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
-import { registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
+import { type OtpChannel, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import '@/views/signup/styles/signup.css';
 
@@ -40,7 +40,7 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * one later). Shown inside Facebook/Messenger's browser, where Google sign-in can't work; see
  * showPasswordlessSignup in lib/phoneAuth for the switch to show it everywhere.
  */
-export default function PasswordlessSignUpScreen() {
+export default function PasswordlessSignUpScreen({ initialChannel }: { initialChannel?: OtpChannel } = {}) {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
@@ -106,7 +106,7 @@ export default function PasswordlessSignUpScreen() {
       return <Loading />;
    }
 
-   const codeForm = <PasswordlessAuthForm mode="signup" inApp={inApp} initialEmail={initialEmail} />;
+   const codeForm = <PasswordlessAuthForm mode="signup" inApp={inApp} initialEmail={initialEmail} initialChannel={initialChannel} />;
    const orDivider = <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />;
 
    return (

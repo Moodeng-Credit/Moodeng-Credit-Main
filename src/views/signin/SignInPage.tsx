@@ -224,6 +224,7 @@ export default function SignInPage() {
          onGoogleSuccess={handleGoogleAuth}
          onGoogleError={() => setShowAccount(true)}
          onTelegramAuth={handleTelegramAuth}
+         onPhone={smsEnabled ? () => switchToCode('sms') : undefined}
       />
    );
    const orDivider = <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />;

@@ -6,6 +6,7 @@ import LineLoginButton from '@/components/LineLoginButton';
 import TikTokLoginButton from '@/components/TikTokLoginButton';
 
 import LastUsedBadge from './LastUsedBadge';
+import PhPhoneLoginTile from './PhPhoneLoginTile';
 import TelegramLoginTile from './TelegramLoginTile';
 
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
@@ -21,6 +22,8 @@ interface SocialAuthButtonsProps {
    onTelegramAuth: (authData: Record<string, string>) => void;
    /** The page already shows the big Facebook button elsewhere (sign-up puts it above email). */
    hideFacebook?: boolean;
+   /** Opens the page's text-code form; shows the Philippine phone tile first in the row. */
+   onPhone?: () => void;
 }
 
 const btnBase =
@@ -154,7 +157,7 @@ export function FacebookAuthButton({ isSignUp, variant }: { isSignUp: boolean; v
    );
 }
 
-export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({ isSignUp, hideFacebook = false, onPhone }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
@@ -309,6 +312,14 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false }: SocialAuth
              an app's browser (Facebook, Messenger, Instagram…): there it's phone or email only, and the
              form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15). */}
          <div className={inApp.isInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
+            {/* Philippine mobile number: opens the text-code form (SMS codes only go to +63 numbers) */}
+            {onPhone ? (
+               <div className="relative">
+                  <PhPhoneLoginTile isSignUp={isSignUp} onClick={onPhone} />
+                  {lastUsed === 'phone' && <LastUsedBadge size="sm" className="-top-2 left-1/2 -translate-x-1/2" />}
+               </div>
+            ) : null}
+
             {/* Telegram: plain icon tile that redirects to Telegram OAuth (no embedded widget) */}
             <div className="relative">
                <TelegramLoginTile />
