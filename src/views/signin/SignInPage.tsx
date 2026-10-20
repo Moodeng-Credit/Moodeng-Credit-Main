@@ -15,7 +15,7 @@ import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { getPostSignInPath } from '@/lib/postSignInPath';
 import { BANNED_MESSAGE } from '@/lib/otpErrors';
-import { isSmsLoginEnabled, showPasswordlessSignup } from '@/lib/phoneAuth';
+import { isSmsLoginEnabled, showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { loginUser, loginWithGoogle, loginWithTelegram, type OtpChannel } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
@@ -56,8 +56,10 @@ export default function SignInPage() {
    const facebookInApp = isFacebookInApp(inApp);
    // Where sign-up is passwordless (any in-app browser), sign-in opens on the code form too.
    // Everywhere else the password form stays first, with "Email me a code" / "Text me a code".
-   const [usePassword, setUsePassword] = useState(() => !showPasswordlessSignup(inApp.isInApp));
-   const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(undefined);
+   // In the Philippines the +63 number box comes first (GCash-style), with Google/Telegram under it.
+   const phoneFirst = useMemo(() => showPhoneFirst(inApp.isInApp), [inApp.isInApp]);
+   const [usePassword, setUsePassword] = useState(() => !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
+   const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(phoneFirst ? 'sms' : undefined);
    const [codePhone, setCodePhone] = useState('');
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
    // Visitors in the Philippines get one "Email or mobile number" box, like Google's sign-in: a
@@ -224,7 +226,6 @@ export default function SignInPage() {
          onGoogleSuccess={handleGoogleAuth}
          onGoogleError={() => setShowAccount(true)}
          onTelegramAuth={handleTelegramAuth}
-         onPhone={smsEnabled ? () => switchToCode('sms') : undefined}
       />
    );
    const orDivider = <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />;
@@ -250,8 +251,8 @@ export default function SignInPage() {
 
                {/* Social auth (below the email form inside Facebook/Messenger) */}
                <div className="w-full flex flex-col gap-4">
-                  {inApp.isInApp ? null : socialAuth}
-                  {inApp.isInApp ? null : orDivider}
+                  {inApp.isInApp || phoneFirst ? null : socialAuth}
+                  {inApp.isInApp || phoneFirst ? null : orDivider}
 
                   {usePassword ? null : (
                      <div className="flex justify-center">
@@ -382,6 +383,9 @@ export default function SignInPage() {
                         </p>
                      </form>
                   ) : null}
+
+                  {phoneFirst ? orDivider : null}
+                  {phoneFirst ? socialAuth : null}
 
                   <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
                      Don&apos;t have an account?{' '}

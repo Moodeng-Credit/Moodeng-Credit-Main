@@ -40,7 +40,7 @@ function getErrorMessage(err: unknown, fallback: string): string {
  * one later). Shown inside Facebook/Messenger's browser, where Google sign-in can't work; see
  * showPasswordlessSignup in lib/phoneAuth for the switch to show it everywhere.
  */
-export default function PasswordlessSignUpScreen({ initialChannel }: { initialChannel?: OtpChannel } = {}) {
+export default function PasswordlessSignUpScreen({ initialChannel, phoneFirst = false }: { initialChannel?: OtpChannel; phoneFirst?: boolean } = {}) {
    const navigate = useNavigate();
    const [searchParams] = useSearchParams();
    const dispatch = useDispatch<AppDispatch>();
@@ -129,7 +129,7 @@ export default function PasswordlessSignUpScreen({ initialChannel }: { initialCh
                   No password needed.
                </p>
 
-               {inAppBrowser ? (
+               {inAppBrowser || phoneFirst ? (
                   <>
                      {facebookPrimary ? (
                         <>

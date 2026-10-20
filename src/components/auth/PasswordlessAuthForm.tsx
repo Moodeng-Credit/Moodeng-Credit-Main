@@ -436,24 +436,32 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             </button>
          ) : null}
 
-         {smsEnabled && !smartBlocked ? (
-            <button
-               type="button"
-               onClick={() => switchTo(isSms ? 'email' : 'sms')}
-               className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
-            >
-               {isSms ? 'Use email instead' : 'Use phone number instead'}
-            </button>
-         ) : null}
-
-         {onUsePassword ? (
-            <button
-               type="button"
-               onClick={onUsePassword}
-               className="self-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline dark:text-[#A89BB8]"
-            >
-               Use password instead
-            </button>
+         {/* One line of "instead" links: phone screen offers email; email screen offers phone and,
+             on sign-in, a password (passwords go with an email). */}
+         {(smsEnabled && !smartBlocked) || (onUsePassword && !isSms) ? (
+            <p className="self-center text-center text-sm text-[#70617F] dark:text-[#A89BB8]">
+               Use{' '}
+               {smsEnabled && !smartBlocked ? (
+                  <button
+                     type="button"
+                     onClick={() => switchTo(isSms ? 'email' : 'sms')}
+                     className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                  >
+                     {isSms ? 'email' : 'phone number'}
+                  </button>
+               ) : null}
+               {smsEnabled && !smartBlocked && onUsePassword && !isSms ? ' or ' : null}
+               {onUsePassword && !isSms ? (
+                  <button
+                     type="button"
+                     onClick={onUsePassword}
+                     className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                  >
+                     password
+                  </button>
+               ) : null}{' '}
+               instead
+            </p>
          ) : null}
 
          {/* Not in Facebook/Messenger: kept short there (George, 2026-10-19). */}

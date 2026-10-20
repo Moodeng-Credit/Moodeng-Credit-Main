@@ -23,7 +23,7 @@ import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
-import { isSmsLoginEnabled, showPasswordlessSignup } from '@/lib/phoneAuth';
+import { showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -65,9 +65,11 @@ function getErrorMessage(err: unknown, fallback: string): string {
 // email + password form below (for now: PASSWORDLESS_SIGNUP_EVERYWHERE flips it for everyone).
 export default function SignUpPage() {
    const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
+   const phoneFirst = useMemo(() => showPhoneFirst(detectInAppBrowser().isInApp), []);
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
    if (redirectingSignedIn) return <Loading />;
+   if (phoneFirst) return <PasswordlessSignUpScreen initialChannel="sms" phoneFirst />;
    return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
 }
 
@@ -78,9 +80,6 @@ function PasswordSignUpPage() {
    const toast = useToast();
    const initialEmail = searchParams.get('email')?.trim() ?? '';
    const [showEmailForm, setShowEmailForm] = useState(!!initialEmail);
-   // The Philippine phone tile swaps this page for the text-code sign-up, opened on the phone box.
-   const [usePhone, setUsePhone] = useState(false);
-   const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
    // Inside Facebook's (or any app's) browser Google sign-in can't work, so email leads there.
    const inApp = useMemo(() => detectInAppBrowser(), []);
    const inAppBrowser = inApp.isInApp;
@@ -244,7 +243,6 @@ function PasswordSignUpPage() {
    if (isLoading) {
       return <Loading />;
    }
-   if (usePhone) return <PasswordlessSignUpScreen initialChannel="sms" />;
 
    return (
       <div className="flex justify-center items-center min-h-screen py-6 sm:py-12 px-4">
@@ -305,7 +303,6 @@ function PasswordSignUpPage() {
                               onGoogleSuccess={handleGoogleAuth}
                               onGoogleError={handleOAuthError}
                               onTelegramAuth={handleTelegramAuth}
-                              onPhone={smsEnabled ? () => setUsePhone(true) : undefined}
                            />
                            <div className="mb-4" />
                         </>
@@ -316,7 +313,6 @@ function PasswordSignUpPage() {
                               onGoogleSuccess={handleGoogleAuth}
                               onGoogleError={handleOAuthError}
                               onTelegramAuth={handleTelegramAuth}
-                              onPhone={smsEnabled ? () => setUsePhone(true) : undefined}
                            />
                            <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" className="my-6" />
                            <SocialButton
