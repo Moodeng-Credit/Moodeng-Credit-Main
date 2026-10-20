@@ -101,7 +101,7 @@ describe('OpenInBrowserPrompt', () => {
          buttonNamed('Open in Safari')?.click();
       });
       expect(buttonNamed('Link copied ✓')).toBeDefined();
-      expect(container.textContent).toContain('✓ Link copiedIf Safari opens without Moodeng, paste it in the address bar.');
+      expect(container.textContent).toContain('✓Link copiedIf Safari opens without Moodeng, paste it in the address bar.');
       expect(buttonNamed('📋Copy link')).toBeUndefined();
    });
 
@@ -112,7 +112,9 @@ describe('OpenInBrowserPrompt', () => {
          buttonNamed('Open in Safari')?.click();
       });
       expect(buttonNamed('Open in Safari')).toBeDefined();
-      expect(container.textContent).not.toContain('✓ Link copied');
+      expect(container.textContent).not.toContain('Link copiedIf');
+      expect(container.textContent).toContain('1Copy the link');
+      expect(container.textContent).toContain('2Tap ⋯ at the top right');
       expect(container.textContent).toContain('So you can paste it if Safari opens without Moodeng.');
       // Their own tap still can't copy: say so, and the guide stays open.
       await act(async () => {
@@ -126,7 +128,7 @@ describe('OpenInBrowserPrompt', () => {
       await act(async () => {
          buttonNamed('📋Copy link')?.click();
       });
-      expect(container.textContent).toContain('✓ Link copiedIf Safari opens without Moodeng, paste it in the address bar.');
+      expect(container.textContent).toContain('✓Link copiedIf Safari opens without Moodeng, paste it in the address bar.');
       expect(buttonNamed('📋Copy link')).toBeUndefined();
    });
 
