@@ -17,6 +17,7 @@ import { LenderFundingPrompt } from '@/components/funding/LenderFundingPrompt';
 import LenderHomeScreenPushPrompt from '@/components/funding/LenderHomeScreenPushPrompt';
 import Header from '@/components/Header/Header';
 import { PendingCodeBanner } from '@/components/auth/PendingCodeBanner';
+import { LandingSessionCookie } from '@/components/landing/LandingSessionCookie';
 import { GuestAccountGate } from '@/components/GuestAccountGate';
 import InAppBrowserNotice from '@/components/InAppBrowserNotice';
 import OpenInBrowserPrompt from '@/components/OpenInBrowserPrompt';
@@ -62,6 +63,7 @@ import LenderPerformance from '@/app/lender/performance/page';
 import LenderRequestBoard from '@/app/lender/request-board/page';
 import LenderSupportedPage from '@/app/lender/supported/page';
 import Login from '@/app/login/page';
+import SignOutPage from '@/app/sign-out/page';
 import MfaChallengePage from '@/app/mfa-challenge/page';
 import MilestonesPage from '@/app/milestones/page';
 import CongratulationsPage from '@/app/onboarding/congratulations/page';
@@ -268,6 +270,8 @@ export default function App() {
          <GuestAccountGate />
          {/* Back after Facebook killed the page mid-sign-in: one tap to the code screen. */}
          <PendingCodeBanner />
+         {/* Tells the static home page whether to show "Continue where you left off" or "Sign out". */}
+         <LandingSessionCookie />
          <WalletLoadingOverlay />
          <ExpiredLoanRequestNotifier />
          <SocialContactRequiredNotifier />
@@ -281,6 +285,7 @@ export default function App() {
 
             {/* Auth */}
             <Route path="/sign-in" element={<Login />} />
+            <Route path="/sign-out" element={<SignOutPage />} />
             {/* Facility lender's report (BitRepo): password-protected, no account needed. */}
             <Route path="/creditline" element={<CreditLineLenderPage />} />
             {/* Desktop Messenger QR lands here on the phone (no sign-in; the code is the key). */}

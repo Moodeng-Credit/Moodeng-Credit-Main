@@ -14,6 +14,7 @@ import { generatePhoneUsername, guestPlaceholderEmail, phonePlaceholderEmail, SM
 import { recordSessionIp } from '@/lib/recordSessionIp';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
+import { clearLandingSessionCookie } from '@/lib/landingSessionCookie';
 import { clearAuthCookieClient } from '@/lib/utils/cookieConfig';
 import {
    type AccountStatus,
@@ -1041,6 +1042,7 @@ export const logoutUser = createAsyncThunk('auth/logout', async () => {
    }
 
    clearAuthCookieClient();
+   clearLandingSessionCookie();
    // Wipe persisted redux + per-user cache so the next login/signup starts on a
    // clean slate and never shows the previous account's data.
    clearClientAuthState();
