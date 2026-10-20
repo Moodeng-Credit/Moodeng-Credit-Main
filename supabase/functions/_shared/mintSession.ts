@@ -26,10 +26,31 @@ export const ensureAuthUser = async (admin: SupabaseClient, email: string, metad
    throw error;
 };
 
-/** A session for `email`, without a password. */
-export const mintSession = async (admin: SupabaseClient, email: string) => {
+/** Server-set marker (app_metadata[key] = value) that this login made or already claimed the account. */
+export type LoginOwner = { key: 'telegram_id' | 'line_id'; value: string };
+
+/**
+ * A session for `email`, without a password.
+ *
+ * With `owner`: an existing account that this login didn't make could have been pre-registered by
+ * someone else (sign up as telegram_<victim id>@moodeng.app, or as the victim's LINE email, with a
+ * password of their choosing). Signing the real person into it would hand that password-holder their
+ * account, so first wipe the password and end every session on it. A real email the owner already
+ * confirmed is left alone: that's their own account, reached through LINE.
+ */
+export const mintSession = async (admin: SupabaseClient, email: string, owner?: LoginOwner) => {
    const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: 'magiclink', email });
    if (linkError) throw linkError;
+   const existing = link?.user;
+   if (owner && existing?.id && existing.app_metadata?.[owner.key] !== owner.value) {
+      const synthetic = /@moodeng\.(app|credit)$/i.test(email);
+      if (synthetic || !existing.email_confirmed_at) {
+         const { error: resetError } = await admin.auth.admin.updateUserById(existing.id, { password: randomPassword() });
+         if (resetError) throw resetError;
+         const { error: revokeError } = await admin.rpc('revoke_auth_sessions', { p_user_id: existing.id });
+         if (revokeError) throw revokeError;
+      }
+   }
    const tokenHash = link?.properties?.hashed_token;
    if (!tokenHash) throw new Error('Could not create a sign-in token');
    // Exchange on a throwaway client: verifyOtp switches the client it runs on to the user's session,
