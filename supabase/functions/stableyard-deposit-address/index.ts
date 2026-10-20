@@ -162,7 +162,11 @@ serve(async (req) => {
          .eq('user_id', userId)
          .eq('status', 'active');
 
-      const wanted = configuredDepositChainIds();
+      // While deposits are admin-only, also issue a Base address so admins can test the full pipeline
+      // (deposit → webhook → wallet) with USDC they already hold on Base. Borrowers never get Base here:
+      // on Base they send straight to their own wallet, free.
+      const testMode = Deno.env.get('STABLEYARD_DEPOSITS_PUBLIC') !== 'true';
+      const wanted = testMode ? [...configuredDepositChainIds(), BASE_CHAIN_ID] : configuredDepositChainIds();
       const have = new Set((addresses ?? []).map((row: { chain_id: number }) => row.chain_id));
       if (wanted.some((chainId) => !have.has(chainId))) {
          const catalog = pickDepositNetworks(await loadNetworks(), wanted);

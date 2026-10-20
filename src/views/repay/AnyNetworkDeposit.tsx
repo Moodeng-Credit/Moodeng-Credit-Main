@@ -39,6 +39,7 @@ type DepositResponse = { enabled: boolean; code?: string; error?: string; addres
 
 const NETWORK_LABELS: Record<number, string> = {
    728126428: 'Tron (TRC20)',
+   8453: 'Base (admin test)',
    56: 'BNB Chain (BEP20)',
    10103: 'Solana',
    42161: 'Arbitrum',
