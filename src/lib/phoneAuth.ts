@@ -1,3 +1,5 @@
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
+
 // Phone sign-in is Philippines only: SMS codes go out through UniSMS, a PH-only gateway, on its
 // shared "Unisoft" sender, which reaches Globe, TM and DITO but not Smart, TNT or Sun.
 // Everyone else (Indonesia, Filipinos abroad on foreign SIMs, other countries) uses email.
@@ -182,6 +184,14 @@ export function isSmsLoginEnabled(): boolean {
  * inside in-app browsers. One-line switch once it has proven itself there.
  */
 export const PASSWORDLESS_SIGNUP_EVERYWHERE = false;
+
+/**
+ * Visitors in the Philippines (outside in-app browsers, which already lead with the code form) get
+ * a GCash-style page: the +63 mobile number box first, Google/Telegram/email under it.
+ */
+export function showPhoneFirst(isInAppBrowser: boolean): boolean {
+   return !isInAppBrowser && isSmsLoginEnabled() && isLikelyPhilippines();
+}
 
 /** Sign-up uses the passwordless screen in in-app browsers (or everywhere, see above; ?passwordless=1 to preview). */
 export function showPasswordlessSignup(isInAppBrowser: boolean): boolean {

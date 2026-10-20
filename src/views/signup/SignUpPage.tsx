@@ -23,7 +23,7 @@ import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
 
 import { buildEmailConfirmationPath } from '@/lib/authPaths';
 import { detectInAppBrowser, isFacebookInApp } from '@/lib/inAppBrowser';
-import { showPasswordlessSignup } from '@/lib/phoneAuth';
+import { showPasswordlessSignup, showPhoneFirst } from '@/lib/phoneAuth';
 import { registerUser, registerWithGoogle, registerWithTelegram } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 import { WorldId } from '@/types/authTypes';
@@ -65,9 +65,11 @@ function getErrorMessage(err: unknown, fallback: string): string {
 // email + password form below (for now: PASSWORDLESS_SIGNUP_EVERYWHERE flips it for everyone).
 export default function SignUpPage() {
    const passwordless = useMemo(() => showPasswordlessSignup(detectInAppBrowser().isInApp), []);
+   const phoneFirst = useMemo(() => showPhoneFirst(detectInAppBrowser().isInApp), []);
    // Already signed in (often a guest whose Facebook page reloaded): straight to their next step.
    const redirectingSignedIn = useSignedInRedirect();
    if (redirectingSignedIn) return <Loading />;
+   if (phoneFirst) return <PasswordlessSignUpScreen initialChannel="sms" phoneFirst />;
    return passwordless ? <PasswordlessSignUpScreen /> : <PasswordSignUpPage />;
 }
 

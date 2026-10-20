@@ -137,7 +137,7 @@ describe('PasswordlessAuthForm', () => {
       expect(container.querySelector('svg rect[fill="#0038A8"]')).not.toBeNull(); // 🇵🇭 flag
       expect(container.textContent).toContain('+63');
       expect(container.textContent).toContain("Globe, TM or DITO number. We'll text you a code.");
-      expect(button('Use email instead')).toBeDefined();
+      expect(button('email')).toBeDefined();
       expect(container.querySelector('[role="tablist"]')).toBeNull();
       expect(container.querySelector('input[type="password"]')).toBeNull();
       expect(container.querySelector('button[type="submit"]')?.textContent).toBe('Continue');
@@ -148,7 +148,7 @@ describe('PasswordlessAuthForm', () => {
       await act(async () => (container.querySelector('button[aria-label^="Using phone"]') as HTMLButtonElement).click());
       expect(input().type).toBe('email');
       expect(container.textContent).toContain('✉️');
-      await act(async () => button('Use phone number instead')?.click());
+      await act(async () => button('phone number')?.click());
       expect(input().type).toBe('tel');
    });
 
@@ -172,7 +172,7 @@ describe('PasswordlessAuthForm', () => {
       await render({ mode: 'signup', ua: FB_UA });
       expect(container.textContent).toContain("Globe, TM or DITO number. We'll text you a code.");
       expect(container.textContent).not.toContain('Signed up with Telegram or LINE?');
-      await act(async () => button('Use email instead')?.click());
+      await act(async () => button('email')?.click());
       expect(container.textContent).toContain("Used Google before? Type your Gmail and we'll email you a code.");
       act(() => root.unmount());
       root = createRoot(container);
@@ -184,7 +184,7 @@ describe('PasswordlessAuthForm', () => {
       localStorage.setItem('moodeng:sms-login-test', '0');
       await render({ mode: 'signup' });
       expect(input().type).toBe('email');
-      expect(button('Use phone number instead')).toBeUndefined();
+      expect(button('phone number')).toBeUndefined();
       await type('0917');
       expect(input().type).toBe('email');
    });
@@ -320,9 +320,6 @@ describe('PasswordlessAuthForm', () => {
       await type('0918 123 4567');
       expect(container.textContent).toContain("Smart number · we can't text Smart yet");
       expect(container.querySelector('button[type="submit"]')).toBeNull();
-      await act(async () => button('Not Smart? Keep this number')?.click());
-      expect(container.querySelector('button[type="submit"]')?.textContent).toBe('Continue');
-      await type('0919 123 4567');
       await act(async () => button('Sign up with email')?.click());
       expect(input().type).toBe('email');
       expect(input().value).toBe('');

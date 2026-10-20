@@ -102,13 +102,11 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    // behind the guest_signup_enabled setting.
    const [guestSignupEnabled, setGuestSignupEnabled] = useState(false);
    const [emailTaken, setEmailTaken] = useState(false);
-   // UniSMS's shared sender can't text Smart, TNT or Sun numbers. The prefix is only a hint (people
-   // keep their number when they switch networks), so "Not Smart? Keep this number" lets them carry on;
-   // UniSMS refuses a real Smart number anyway and the form then moves them to email.
-   const [smartOverride, setSmartOverride] = useState(false);
+   // UniSMS's shared sender can't text Smart, TNT or Sun numbers, so a Smart-looking prefix goes
+   // straight to "use email". A number that moved off Smart is rare; email works for them too.
    const phoneCheck = isSms ? checkPhPhone(value) : null;
    const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
-   const smartBlocked = network === 'smart' && !smartOverride;
+   const smartBlocked = network === 'smart';
    useEffect(() => {
       if (mode !== 'signup' || !inApp.isInApp) return;
       let cancelled = false;
@@ -161,7 +159,6 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
       setError(null);
       setNotice(null);
       setNoAccount(false);
-      setSmartOverride(false);
       if (isSms) {
          if (looksLikeEmail(next)) {
             switchTo('email', { keepValue: true });
@@ -426,34 +423,32 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             </button>
          )}
 
-         {smartBlocked ? (
-            <button
-               type="button"
-               onClick={() => setSmartOverride(true)}
-               className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
-            >
-               Not Smart? Keep this number
-            </button>
-         ) : null}
-
-         {smsEnabled && !smartBlocked ? (
-            <button
-               type="button"
-               onClick={() => switchTo(isSms ? 'email' : 'sms')}
-               className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
-            >
-               {isSms ? 'Use email instead' : 'Use phone number instead'}
-            </button>
-         ) : null}
-
-         {onUsePassword ? (
-            <button
-               type="button"
-               onClick={onUsePassword}
-               className="self-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline dark:text-[#A89BB8]"
-            >
-               Use password instead
-            </button>
+         {/* One line of "instead" links: phone screen offers email; email screen offers phone and,
+             on sign-in, a password (passwords go with an email). */}
+         {(smsEnabled && !smartBlocked) || (onUsePassword && !isSms) ? (
+            <p className="self-center text-center text-sm text-[#70617F] dark:text-[#A89BB8]">
+               Use{' '}
+               {smsEnabled && !smartBlocked ? (
+                  <button
+                     type="button"
+                     onClick={() => switchTo(isSms ? 'email' : 'sms')}
+                     className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                  >
+                     {isSms ? 'email' : 'phone number'}
+                  </button>
+               ) : null}
+               {smsEnabled && !smartBlocked && onUsePassword && !isSms ? ' or ' : null}
+               {onUsePassword && !isSms ? (
+                  <button
+                     type="button"
+                     onClick={onUsePassword}
+                     className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+                  >
+                     password
+                  </button>
+               ) : null}{' '}
+               instead
+            </p>
          ) : null}
 
          {/* Not in Facebook/Messenger: kept short there (George, 2026-10-19). */}

@@ -120,7 +120,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
         <table class="matrix">
           <thead><tr><th></th><th>Inside Facebook / Messenger</th><th>Chrome / Safari</th></tr></thead>
           <tbody>
-            <tr><td>Visitor in the Philippines</td><td><b>Sign up:</b> mobile number first (a text code), email one tap away (no code yet).<br><b>Sign in:</b> text code or email code.</td><td><b>Sign up:</b> Google or email, unchanged.<br><b>Sign in:</b> one "Email or mobile number" box.</td></tr>
+            <tr><td>Visitor in the Philippines</td><td><b>Sign up:</b> mobile number first (a text code), email one tap away (no code yet).<br><b>Sign in:</b> text code or email code.</td><td><b>Sign up and sign in:</b> the 🇵🇭 +63 mobile number box first (a text code), then Google and Telegram under OR. Email is one tap away.</td></tr>
             <tr><td>Everyone else</td><td><b>Sign up:</b> email, no code.<br><b>Sign in:</b> email code.</td><td>Unchanged: Google, email + password, "No password? Email me a code". Typing 09… or +63… still switches to phone.</td></tr>
           </tbody>
         </table>
@@ -151,7 +151,6 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <div class="where"><span>Everywhere a mobile number is typed</span></div>
       <div class="bdd">
         <div class="scenario"><p class="title">Scenario: a Smart number</p><p><b>Given</b> I type 0918 123 4567</p><p><b>Then</b> I see "✕ Smart number · we can't text Smart yet"</p><p><b>And</b> the button says "Sign up with email" ("Log in with email" on sign-in)</p><p><b>When</b> I tap it</p><p><b>Then</b> the email box opens, empty and ready</p></div>
-        <div class="scenario"><p class="title">Scenario: a number that moved to Globe</p><p><b>Given</b> my 0918 number moved from Smart to Globe</p><p><b>When</b> I tap "Not Smart? Keep this number"</p><p><b>Then</b> I can carry on with my number</p></div>
       </div>
       <div class="grid">
         <figure><div class="phone"><img src="/design/new-login/screens/p-fb-signup-smart.png" alt="Orange note: Smart, TNT and Sun numbers can't get text codes yet" loading="lazy"></div><figcaption><b>A Smart number</b><span>One line, one button, one small link (simplified 20 Oct).</span></figcaption></figure>
@@ -185,19 +184,20 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
     </article>
 
     <article class="flow">
-      <h2><span class="n">5</span>Chrome / Safari sign-in: one "Email or mobile number" box</h2>
-      <p class="why"><b>Why:</b> before, phone and email codes were two small buttons under a password form, easy to miss, and the password box made it look like a phone number needed a password. Google, Microsoft and Amazon all use one box and show the password only once it's clearly needed.</p>
-      <div class="where"><span>Chrome / Safari</span><span>Visitors in the Philippines</span><span class="no">Everyone else: "Email address" + password, as before</span></div>
+      <h2><span class="n">5</span>Chrome / Safari in the Philippines: phone first, GCash-style</h2>
+      <p class="why"><b>Why:</b> Filipinos log in to GCash, Maya, Grab and Shopee with a mobile number box that already says +63. A phone tile next to Telegram wasn't clear enough (George, 2026-10-21), so the number box now leads the page, and Google and Telegram sit under OR. The "instead" links are one line per screen.</p>
+      <div class="where"><span>Chrome / Safari</span><span>Visitors in the Philippines (Manila time or a -PH language)</span><span class="no">Everyone else: Google first, then email + password, as before</span></div>
       <div class="bdd">
-        <div class="scenario"><p class="title">Scenario: nothing typed yet</p><p><b>Given</b> I open sign-in in Chrome, in the Philippines</p><p><b>Then</b> I see one "Email or mobile number" box and Continue</p><p><b>And</b> no password box yet</p></div>
-        <div class="scenario"><p class="title">Scenario: an email</p><p><b>When</b> I type maria.santos@gmail.com</p><p><b>Then</b> the password box appears and the button says "Sign In to Moodeng"</p><p><b>And</b> "No password? Email me a code" is right below</p></div>
-        <div class="scenario"><p class="title">Scenario: a number</p><p><b>When</b> I type 0956…</p><p><b>Then</b> the box becomes the 🇵🇭 +63 field and the button says "Text me a code"</p></div>
-        <div class="scenario"><p class="title">Scenario: a Filipino abroad</p><p><b>Given</b> my phone is set to Dubai time, so I see "Email address"</p><p><b>When</b> I type 09… or +63…</p><p><b>Then</b> it switches to phone anyway</p></div>
+        <div class="scenario"><p class="title">Scenario: signing up</p><p><b>Given</b> I open sign-up in Chrome, in the Philippines</p><p><b>Then</b> I see the 🇵🇭 +63 mobile number box and Continue</p><p><b>And</b> "Use email instead", then Google and Telegram under OR</p></div>
+        <div class="scenario"><p class="title">Scenario: logging in</p><p><b>Given</b> I open log-in in Chrome, in the Philippines</p><p><b>Then</b> I see the +63 box and "Text me a code"</p><p><b>And</b> "Use email instead", then Google and Telegram under OR</p></div>
+        <div class="scenario"><p class="title">Scenario: I have a password</p><p><b>When</b> I tap "email" on the log-in page</p><p><b>Then</b> I see "Email me a code" and "Use phone number or password instead"</p><p><b>And</b> "password" opens the email + password form</p></div>
+        <div class="scenario"><p class="title">Scenario: a Smart number</p><p><b>When</b> I type a Smart, TNT or Sun number</p><p><b>Then</b> I see "we can't text Smart yet" and a button to use email</p></div>
       </div>
       <div class="grid">
-        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-empty.png" alt="Email or mobile number box with Continue" loading="lazy"></div><figcaption><b>Nothing typed</b><span>Google and Telegram/LINE stay above the OR line.</span></figcaption></figure>
-        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-email.png" alt="Email typed, password box shown" loading="lazy"></div><figcaption><b>An email</b><span>The password field was on the page all along, out of sight, so saved passwords still fill in.</span></figcaption></figure>
-        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-phone.png" alt="Number typed, +63 field and Text me a code" loading="lazy"></div><figcaption><b>A number</b><span>Same text-code form as inside Facebook.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signup-phone-first.png" alt="Sign up with the +63 mobile number box first, Google and Telegram under OR" loading="lazy"></div><figcaption><b>Sign up</b><span>Where they land. Nothing to choose first.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signup-email.png" alt="Sign up with the email box" loading="lazy"></div><figcaption><b>Sign up, "email" tapped</b><span>Same page, email box. "Use phone number instead" goes back.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-phone-first.png" alt="Log in with the +63 box and Text me a code" loading="lazy"></div><figcaption><b>Log in</b><span>Text me a code, or Google and Telegram under OR.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/p-main-signin-email-code.png" alt="Log in with email, Use phone number or password instead" loading="lazy"></div><figcaption><b>Log in, "email" tapped</b><span>Email me a code. Password users tap "password".</span></figcaption></figure>
       </div>
     </article>
 
@@ -345,7 +345,7 @@ footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line)
       <h2>Logging in</h2>
       <p class="section-intro">On 16 Oct phone codes (SMS) were paused, so these screens were email only. Texts came back on 19 Oct through UniSMS (All flows tab).</p>
       <div class="grid">
-        <figure><div class="phone"><img src="/design/new-login/screens/n-fb-login.png" alt="Log in inside Facebook with an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Inside Facebook</b><span>"Email me a code". "Use password instead" for people who set one.</span></figcaption></figure>
+        <figure><div class="phone"><img src="/design/new-login/screens/n-fb-login.png" alt="Log in inside Facebook with an email code" loading="lazy"></div><figcaption><b><span class="n">8</span>Inside Facebook</b><span>"Email me a code", or "Use phone number instead" for a text code.</span></figcaption></figure>
         <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-login.png" alt="Log in in Chrome with Google, password and Email me a code" loading="lazy"></div><figcaption><b><span class="n">9</span>In Chrome</b><span>Google and password as before, plus "Email me a code".</span></figcaption></figure>
         <figure><div class="phone"><img src="/design/new-login/screens/n-chrome-signup.png" alt="Sign up in Chrome with Google or email and password" loading="lazy"></div><figcaption><b><span class="n">10</span>Sign up in Chrome</b><span>Unchanged: Google, or email + password with a confirmation email.</span></figcaption></figure>
       </div>

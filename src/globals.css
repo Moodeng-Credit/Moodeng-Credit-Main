@@ -132,6 +132,12 @@ html.dark {
    --dv2-tab: #2a2042;
 }
 
+/* Light mode paints its own page. Left blank, a phone or computer in dark mode filled it with black
+   behind light-mode text and boxes (sign-in/sign-up looked half-dark, 2026-10-21). */
+html:not(.dark) {
+   background-color: #ffffff;
+}
+
 html.dark,
 html.dark body,
 html.dark #root {

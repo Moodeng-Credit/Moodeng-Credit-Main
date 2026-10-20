@@ -942,7 +942,6 @@ export const filipinoCoverageA: Record<string, string> = {
    "Smart number · we can't text Smart yet": 'Smart number · hindi pa namin ma-text ang Smart',
    'Sign up with email': 'Mag-sign up gamit ang email',
    'Log in with email': 'Mag-log in gamit ang email',
-   'Not Smart? Keep this number': 'Hindi Smart? Gamitin pa rin ang number na ito',
    'Log in to my account': 'Mag-log in sa account ko',
    'Enter your email address.': 'Ilagay ang email address mo.',
    'No Moodeng account uses this number.': 'Walang Moodeng account na gumagamit ng number na ito.',

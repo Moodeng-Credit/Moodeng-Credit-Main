@@ -142,7 +142,7 @@ describe('email first inside Facebook/Messenger', () => {
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_shown', { app: 'Facebook', os: 'android' });
 
       expect(container.querySelector('input[type="password"]')).toBeNull();
-      expect(buttonWithText('Use password instead')).toBeNull();
+      expect(buttonWithText('password')).toBeNull();
       await type(container.querySelector('input[type="email"]') as HTMLInputElement, 'me@example.com');
       await submit();
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_submitted', { app: 'Facebook', os: 'android' });
@@ -156,26 +156,19 @@ describe('email first inside Facebook/Messenger', () => {
       expect(buttonWithText('Email me a code')).not.toBeNull();
       expect(events()).toEqual([]);
    });
-   it('/sign-in in Chrome, in the Philippines: one email-or-number box; password only for an email, a number goes to texts', async () => {
+   it('/sign-in in Chrome, in the Philippines: the +63 number box comes first, Google under it (GCash-style)', async () => {
       where.inPh = true;
       await render(SignInPage, CHROME_ANDROID_UA);
-      expect(container.textContent).toContain('Email or mobile number');
-      const box = container.querySelector('input[autocomplete="username"]') as HTMLInputElement;
-      expect(box.placeholder).toBe('Email or 0917 123 4567');
-      // The password is still on the page (saved passwords fill in) but out of sight until it's an email.
-      const passwordWrap = (container.querySelector('input[type="password"]') as HTMLInputElement).closest('[aria-hidden]');
-      expect(passwordWrap?.className).toContain('sr-only');
-      expect(buttonWithText('Continue')).not.toBeNull();
-      expect(buttonWithText('Text me a code')).toBeNull();
-
-      await type(box, 'maria@example.com');
-      expect((container.querySelector('input[type="password"]') as HTMLInputElement).closest('.sr-only')).toBeNull();
-      expect(buttonWithText('Sign In to Moodeng')).not.toBeNull();
-      expect(container.textContent).toContain('No password?');
-
-      await type(container.querySelector('input[autocomplete="username"]') as HTMLInputElement, '0956');
       const phone = container.querySelector('#otp-input') as HTMLInputElement;
       expect(phone.type).toBe('tel');
-      expect(phone.value).toBe('0956');
+      expect(container.textContent).toContain('+63');
+      expect(buttonWithText('Text me a code')).not.toBeNull();
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      const google = buttonWithText('Sign In with Google') as HTMLButtonElement;
+      expect(isBefore(phone, google)).toBe(true);
+      // Password sign-in is one step away, on the email screen.
+      expect(buttonWithText('password')).toBeNull();
+      await act(async () => (buttonWithText('email') as HTMLButtonElement).click());
+      expect(buttonWithText('password')).not.toBeNull();
    });
 });
