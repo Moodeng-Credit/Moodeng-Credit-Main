@@ -2,13 +2,12 @@ import type { JSX } from 'react';
 
 import { PhFlag } from './PhFlag';
 
-/** Filled phone handset (Material "call"), small, so the PH flag beside it carries the meaning. */
+/** iPhone-style outline with a notch, small, so the PH flag beside it carries the meaning. */
 const PhoneIcon = () => (
-   <svg width="18" height="18" viewBox="0 0 24 24" className="shrink-0" aria-hidden="true" focusable="false">
-      <path
-         className="fill-[#6010D2] dark:fill-[#C084FC]"
-         d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1.02l-2.2 2.2z"
-      />
+   <svg width="22" height="22" viewBox="0 0 24 24" className="shrink-0" aria-hidden="true" focusable="false">
+      <rect x="5" y="1.5" width="14" height="21" rx="3.4" className="fill-[#6010D2] dark:fill-[#C084FC]" />
+      <rect x="7" y="3.5" width="10" height="17" rx="1.8" className="fill-[#FDFCFD] dark:fill-[#17121F]" />
+      <rect x="9.7" y="4.4" width="4.6" height="1.6" rx="0.8" className="fill-[#6010D2] dark:fill-[#C084FC]" />
    </svg>
 );
 
@@ -29,7 +28,7 @@ export default function PhPhoneLoginTile({ isSignUp, onClick }: { isSignUp: bool
          className="flex h-14 w-14 shrink-0 items-center justify-center gap-1 rounded-xl border border-[#B5ACBE] bg-[#FDFCFD] shadow-[0px_2px_4px_rgba(27,28,29,0.04)] transition-opacity hover:opacity-95 dark:border-[#40354F] dark:bg-[#17121F]"
       >
          <PhoneIcon />
-         <PhFlag className="h-3 w-[18px]" />
+         <PhFlag className="h-[14px] w-[21px]" />
       </button>
    );
 }
