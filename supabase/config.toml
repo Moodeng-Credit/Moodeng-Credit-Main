@@ -124,12 +124,10 @@ verify_jwt = true
 [functions.stableyard-partner-check]
 verify_jwt = true
 
-# Stableyard deposit addresses for the signed-in user (re-checks the session inside the function).
+# Stableyard deposit addresses for the signed-in user AND Stableyard's webhook receiver (one function:
+# the project is at its edge-function cap). verify_jwt is off because webhook deliveries carry no JWT;
+# user requests are checked with getUser() inside, webhooks by HMAC (STABLEYARD_WEBHOOK_SECRET).
 [functions.stableyard-deposit-address]
-verify_jwt = true
-
-# Stableyard webhook receiver: no JWT, authenticated by the HMAC signature (STABLEYARD_WEBHOOK_SECRET).
-[functions.stableyard-webhook]
 verify_jwt = false
 
 [functions.buy-loan-note]

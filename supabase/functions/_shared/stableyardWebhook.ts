@@ -1,24 +1,26 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-import { verifyStableyardWebhook } from '../_shared/stableyard.ts';
-import { syncDeposits } from '../_shared/stableyardSync.ts';
-
-// Stableyard webhook receiver.
+// Stableyard webhook receiver. Served by stableyard-deposit-address (the project is at its
+// edge-function cap, so this can't be its own function): any request carrying
+// x-stableyard-signature is routed here.
 //
 // Setup: Stableyard Partner Dashboard → Developers → Webhooks → new endpoint
-//   URL    = https://<project>.supabase.co/functions/v1/stableyard-webhook
+//   URL    = https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/stableyard-deposit-address
 //   Events = deposit.detected, deposit.settled, deposit.reversed, deposit.requires_intervention, deposit.failed
 // The dashboard shows the signing secret (whsec_…) once: save it as the STABLEYARD_WEBHOOK_SECRET secret.
 //
 // Each delivery: verify the HMAC over the raw body, record the event id (at-least-once delivery →
 // dedupe), then re-read the account's deposits from Stableyard and mirror them (events are prompts to
 // read, never the state itself). 5xx makes Stableyard retry; 4xx (bad signature) is not retried.
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+import { verifyStableyardWebhook } from './stableyard.ts';
+import { syncDeposits } from './stableyardSync.ts';
 
 const json = (body: Record<string, unknown>, status = 200) =>
    new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-serve(async (req) => {
+export const isStableyardWebhook = (req: Request) => req.headers.has('x-stableyard-signature');
+
+export const handleStableyardWebhook = async (req: Request): Promise<Response> => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
    const secret = Deno.env.get('STABLEYARD_WEBHOOK_SECRET')?.trim();
@@ -95,4 +97,4 @@ serve(async (req) => {
       .update({ processed_at: new Date().toISOString(), error: null })
       .eq('event_id', verified.eventId);
    return json({ ok: true });
-});
+};

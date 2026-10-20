@@ -9,6 +9,7 @@ import {
    pickDepositNetworks,
    syncDeposits
 } from '../_shared/stableyardSync.ts';
+import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stableyardWebhook.ts';
 
 // Stableyard deposit addresses for the signed-in user ("send from any chain").
 //
@@ -21,6 +22,9 @@ import {
 //
 // TEST-ONLY until launch: only active admins get addresses (everyone else gets enabled:false and the
 // UI hides itself). Set STABLEYARD_DEPOSITS_PUBLIC=true to open it to all users.
+//
+// Also the Stableyard webhook URL: requests with x-stableyard-signature go to _shared/stableyardWebhook.ts.
+// That's why verify_jwt is off in config.toml — user requests are authenticated below with getUser().
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -88,18 +92,16 @@ const ensureAccount = async (admin: SupabaseClient, userId: string, wallet: stri
       return { ok: false as const, status: 502, error: 'Could not set up crypto deposits right now. Try again in a minute.' };
    }
 
-   const { error } = await admin
-      .from('stableyard_accounts')
-      .upsert(
-         {
-            user_id: userId,
-            account_id: account.id,
-            settlement_wallet: wallet,
-            settlement_chain_id: BASE_CHAIN_ID,
-            updated_at: new Date().toISOString()
-         },
-         { onConflict: 'user_id' }
-      );
+   const { error } = await admin.from('stableyard_accounts').upsert(
+      {
+         user_id: userId,
+         account_id: account.id,
+         settlement_wallet: wallet,
+         settlement_chain_id: BASE_CHAIN_ID,
+         updated_at: new Date().toISOString()
+      },
+      { onConflict: 'user_id' }
+   );
    if (error) console.error('[stableyard-deposit-address] store account failed', error.message);
    return { ok: true as const, accountId: account.id };
 };
@@ -115,6 +117,8 @@ const loadNetworks = async (): Promise<StableyardDepositNetwork[]> => {
 
 serve(async (req) => {
    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+   // Stableyard's signed webhook deliveries share this function (edge-function cap); they carry no JWT.
+   if (isStableyardWebhook(req)) return handleStableyardWebhook(req);
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
    if (Deno.env.get('STABLEYARD_DEPOSITS_DISABLED') === 'true' || !isStableyardConfigured()) {
