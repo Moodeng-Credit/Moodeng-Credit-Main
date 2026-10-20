@@ -89,6 +89,49 @@ describe('OpenInBrowserPrompt', () => {
       expect(new URL(window.location.href).searchParams.get('ia')).toBeNull();
    });
 
+   const buttonNamed = (name: string) => Array.from(container.querySelectorAll('button')).find((b) => b.textContent === name);
+   const setExecCopy = (ok: boolean) => {
+      Object.defineProperty(document, 'execCommand', { value: vi.fn(() => ok), configurable: true });
+   };
+
+   it('iPhone: when the link copies, the button says so and the guide says paste it if needed', async () => {
+      setExecCopy(true);
+      await render(FB_IOS);
+      await act(async () => {
+         buttonNamed('Open in Safari')?.click();
+      });
+      expect(buttonNamed('Link copied ✓')).toBeDefined();
+      expect(container.textContent).toContain('✓Link copiedIf Safari opens without Moodeng, paste it in the address bar.');
+      expect(buttonNamed('📋Copy link')).toBeUndefined();
+   });
+
+   it('iPhone: when the copy is refused, the guide shows the link with Copy link, and says if that fails too', async () => {
+      setExecCopy(false);
+      await render(FB_IOS);
+      await act(async () => {
+         buttonNamed('Open in Safari')?.click();
+      });
+      expect(buttonNamed('Open in Safari')).toBeDefined();
+      expect(container.textContent).not.toContain('Link copiedIf');
+      expect(container.textContent).toContain('1Copy the link');
+      expect(container.textContent).toContain('2Tap ⋯ at the top right');
+      expect(container.textContent).toContain('So you can paste it if Safari opens without Moodeng.');
+      // Their own tap still can't copy: say so, and the guide stays open.
+      await act(async () => {
+         buttonNamed('📋Copy link')?.click();
+      });
+      expect(container.textContent).toContain("Couldn't copy. Press and hold the link, then tap Copy.");
+      expect(container.textContent).toContain('/sign-up?ia=1');
+      expect(container.textContent).toContain('Open in external browser');
+      // Now it works.
+      setExecCopy(true);
+      await act(async () => {
+         buttonNamed('📋Copy link')?.click();
+      });
+      expect(container.textContent).toContain('✓Link copiedIf Safari opens without Moodeng, paste it in the address bar.');
+      expect(buttonNamed('📋Copy link')).toBeUndefined();
+   });
+
    it('not shown when signed in (leaving would lose a guest)', async () => {
       h.auth = { user: { id: 'u1' }, isAuthChecked: true };
       await render(FB_ANDROID);

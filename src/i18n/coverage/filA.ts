@@ -926,6 +926,24 @@ export const filipinoCoverageA: Record<string, string> = {
    'Type your full email': 'I-type ang buong email mo',
    'Enter your email or number': 'Ilagay ang email o number mo',
    'No password?': 'Walang password?',
+   'Copy the link': 'Kopyahin ang link',
+   'Picture': 'Larawan',
+   'Then use the menu at the very top of your screen ↑': 'Tapos gamitin ang menu sa pinakataas ng screen mo ↑',
+   "The pictures below only show what to tap. They aren't buttons.": 'Larawan lang ang nasa ibaba para makita mo kung ano ang ita-tap. Hindi sila mga button.',
+   'If Chrome opens without Moodeng, paste it in the address bar.':
+      'Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
+   'If Safari opens without Moodeng, paste it in the address bar.':
+      'Kung bumukas ang Safari nang walang Moodeng, i-paste ito sa address bar.',
+   'So you can paste it if Chrome opens without Moodeng.':
+      'Para ma-paste mo kung bumukas ang Chrome nang walang Moodeng.',
+   'So you can paste it if Safari opens without Moodeng.':
+      'Para ma-paste mo kung bumukas ang Safari nang walang Moodeng.',
+   "Couldn't copy. Press and hold the link, then tap Copy.": 'Hindi nakopya. Pindutin nang matagal ang link, tapos i-tap ang Copy.',
+   "Smart number · we can't text Smart yet": 'Smart number · hindi pa namin ma-text ang Smart',
+   'Sign up with email': 'Mag-sign up gamit ang email',
+   'Log in with email': 'Mag-log in gamit ang email',
+   'Not Smart? Keep this number': 'Hindi Smart? Gamitin pa rin ang number na ito',
+   'Log in to my account': 'Mag-log in sa account ko',
    'Enter your email address.': 'Ilagay ang email address mo.',
    'No Moodeng account uses this number.': 'Walang Moodeng account na gumagamit ng number na ito.',
    'No Moodeng account uses this email.': 'Walang Moodeng account na gumagamit ng email na ito.',

@@ -23,15 +23,7 @@ import { describeOtpError } from '@/lib/otpErrors';
 import { savePendingCode } from '@/lib/pendingCode';
 import { checkPhPhone, isSmsLoginEnabled, phNetwork, SMS_NON_PH_MESSAGE } from '@/lib/phoneAuth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
-import {
-   GuestEmailTakenError,
-   GuestPhoneTakenError,
-   type OtpChannel,
-   type OtpMode,
-   requestOtpCode,
-   startGuestPhoneSignup,
-   startGuestSignup
-} from '@/store/slices/authSlice';
+import { GuestEmailTakenError, type OtpChannel, type OtpMode, requestOtpCode, startGuestSignup } from '@/store/slices/authSlice';
 import type { AppDispatch } from '@/store/store';
 
 type Props = {
@@ -110,9 +102,9 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    // behind the guest_signup_enabled setting.
    const [guestSignupEnabled, setGuestSignupEnabled] = useState(false);
    const [emailTaken, setEmailTaken] = useState(false);
-   const [phoneTaken, setPhoneTaken] = useState(false);
    // UniSMS's shared sender can't text Smart, TNT or Sun numbers. The prefix is only a hint (people
-   // keep their number when they switch networks), so "My number is on Globe…" lets them carry on.
+   // keep their number when they switch networks), so "Not Smart? Keep this number" lets them carry on;
+   // UniSMS refuses a real Smart number anyway and the form then moves them to email.
    const [smartOverride, setSmartOverride] = useState(false);
    const phoneCheck = isSms ? checkPhPhone(value) : null;
    const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
@@ -169,7 +161,6 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
       setError(null);
       setNotice(null);
       setNoAccount(false);
-      setPhoneTaken(false);
       setSmartOverride(false);
       if (isSms) {
          if (looksLikeEmail(next)) {
@@ -219,28 +210,8 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
             setError('Enter a Philippine mobile number, like 0917 123 4567.');
             return;
          }
-         setPhoneTaken(false);
-         // Phone-first sign-up: no code now, like the email guest sign-up.
-         if (requestMode === 'signup' && guestSignupEnabled) {
-            setIsSending(true);
-            try {
-               await dispatch(startGuestPhoneSignup({ phone: check.e164 })).unwrap();
-               if (import.meta.env.PROD) {
-                  posthog.capture('guest_signup_started', { channel: 'sms', network, in_app_browser: inAppName(inApp) });
-               }
-               navigate(GUEST_CREATED_PATH, { replace: true });
-            } catch (err) {
-               if ((err as { name?: string })?.name === new GuestPhoneTakenError().name) {
-                  setPhoneTaken(true);
-                  setError('This number already has a Moodeng account. We can text you a code to sign in.');
-               } else {
-                  setError(describeOtpError(err, 'sms').message);
-               }
-            } finally {
-               setIsSending(false);
-            }
-            return;
-         }
+         // Phone sign-up texts a code straight away (George, 2026-10-20): it lands on the same phone and
+         // the keyboard offers it, so unlike an email code nobody has to leave Facebook.
          setIsSending(true);
          try {
             await dispatch(requestOtpCode({ channel: 'sms', phone: check.e164, mode: requestMode })).unwrap();
@@ -317,11 +288,8 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
    };
 
    const browserName = inApp.os === 'ios' ? 'Safari' : 'Chrome';
-   const phoneGuestSignup = mode === 'signup' && guestSignupEnabled;
    const helper = isSms
-      ? phoneGuestSignup
-         ? 'Globe, TM or DITO number. No code needed now.'
-         : "Globe, TM or DITO number. We'll text you a code."
+      ? "Globe, TM or DITO number. We'll text you a code."
       : mode === 'signup' && guestSignupEnabled
         ? // Email-first sign-up: no code now; they confirm the email after they're approved.
           'Used Google before? Type the same Gmail. No code needed now.'
@@ -366,30 +334,17 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                className="rounded-2xl bg-[#E9F6EE] px-4 py-2.5 text-sm font-semibold leading-5 text-[#1B5E36] dark:bg-[#12301F] dark:text-[#8FE0AE]"
             >
                <span aria-hidden>✓ </span>
-               {network === 'globe'
-                  ? phoneGuestSignup
-                     ? 'Globe or TM number. No code needed now.'
-                     : "Globe or TM number · we'll text you a code"
-                  : phoneGuestSignup
-                    ? 'DITO number. No code needed now.'
-                    : "DITO number · we'll text you a code"}
+               {network === 'globe' ? "Globe or TM number · we'll text you a code" : "DITO number · we'll text you a code"}
             </p>
          ) : isSms && smartBlocked ? (
-            <div
+            <p
                id="otp-help"
                role="status"
-               className="rounded-2xl border border-[#F3D39A] bg-[#FDF1E3] px-4 py-3 text-sm leading-5 text-[#7A4508] dark:border-[#4A3510] dark:bg-[#2A1E0A] dark:text-[#F3C77A]"
+               className="rounded-2xl bg-[#FDF1E3] px-4 py-2.5 text-sm font-semibold leading-5 text-[#7A4508] dark:bg-[#2A1E0A] dark:text-[#F3C77A]"
             >
-               <p className="font-semibold">Smart, TNT and Sun numbers can&apos;t get text codes yet.</p>
-               <p>Use your email, or a Globe, TM or DITO number if you have one.</p>
-               <button
-                  type="button"
-                  onClick={() => setSmartOverride(true)}
-                  className="mt-1.5 text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
-               >
-                  My number is on Globe, TM or DITO
-               </button>
-            </div>
+               <span aria-hidden>✕ </span>
+               Smart number · we can&apos;t text Smart yet
+            </p>
          ) : (
             <p id="otp-help" className="text-sm leading-5 text-[#5b5470] dark:text-[#A89BB8]">
                {helper}
@@ -410,13 +365,13 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                className="rounded-2xl border border-[#FFD2D8] bg-[#FFF0F2] px-4 py-3 text-sm font-semibold leading-5 text-[#B60413] dark:border-[#4A1A20] dark:bg-[#2A0F14] dark:text-[#FF8090]"
             >
                <p>{error}</p>
-               {emailTaken || phoneTaken ? (
+               {emailTaken ? (
                   <button
                      type="button"
                      onClick={() => void send('signin')}
                      className="mt-2 rounded-xl bg-[#6010D2] px-3 py-2 text-sm font-semibold text-white"
                   >
-                     {phoneTaken ? 'Text me a code' : 'Email me a code'}
+                     Email me a code
                   </button>
                ) : null}
                {noAccount ? (
@@ -456,7 +411,7 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-base font-semibold tracking-[-0.02em] text-[#FDFCFD] transition-opacity hover:opacity-95"
                style={{ backgroundColor: '#6010D2' }}
             >
-               Use email instead
+               {mode === 'signup' ? 'Sign up with email' : 'Log in with email'}
             </button>
          ) : (
             <button
@@ -470,6 +425,16 @@ export function PasswordlessAuthForm({ mode, inApp, initialEmail = '', initialCh
                {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}
             </button>
          )}
+
+         {smartBlocked ? (
+            <button
+               type="button"
+               onClick={() => setSmartOverride(true)}
+               className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+            >
+               Not Smart? Keep this number
+            </button>
+         ) : null}
 
          {smsEnabled && !smartBlocked ? (
             <button

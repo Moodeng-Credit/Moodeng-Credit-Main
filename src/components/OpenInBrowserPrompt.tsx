@@ -6,6 +6,7 @@ import { useLocation } from 'react-router-dom';
 
 import MenuGuide from '@/components/MenuGuide';
 import { buildAndroidIntentUrl, detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
+import { copyTextFromTap } from '@/lib/inAppHandoff';
 import {
    handoffAddress,
    IAB_ARRIVED_PARAM,
@@ -44,6 +45,18 @@ export default function OpenInBrowserPrompt() {
    // The arrow at the menu that can open the real browser: iPhone's "Open in Safari" shows it at once
    // (nothing can open Safari for them; Meta blocks it), Android shows it when Chrome didn't open.
    const [pointer, setPointer] = useState(false);
+   // Both buttons also copy the page link, so they can paste it if the browser opens on its start page.
+   // null until a button has tried. When it worked, the button says so for a moment.
+   const [linkCopied, setLinkCopied] = useState<boolean | null>(null);
+   const [copiedFlash, setCopiedFlash] = useState(false);
+   const copyLink = () => {
+      void copyTextFromTap(handoffAddress(window.location.href)).then((result) => {
+         setLinkCopied(result.ok);
+         if (!result.ok) return;
+         setCopiedFlash(true);
+         window.setTimeout(() => setCopiedFlash(false), 2000);
+      });
+   };
    const shownTracked = useRef(false);
    const isAndroid = info.os === 'android';
    const browser = isAndroid ? 'Chrome' : 'Safari';
@@ -105,6 +118,7 @@ export default function OpenInBrowserPrompt() {
 
    const openChrome = (via: 'button' | 'hippo' = 'button') => {
       track('iab_prompt_open_tapped', { os: info.os, app: info.appName, via });
+      copyLink();
       // Facebook's Android browser often ignores the hand-off; if we're still here, point at the ⋮ menu.
       window.setTimeout(() => {
          if (document.visibilityState === 'visible') {
@@ -116,6 +130,7 @@ export default function OpenInBrowserPrompt() {
 
    const showPointer = () => {
       track('iab_prompt_open_tapped', { os: info.os, app: info.appName, via: 'safari_button' });
+      copyLink();
       setPointer(true);
    };
 
@@ -154,7 +169,7 @@ export default function OpenInBrowserPrompt() {
                   href={buildAndroidIntentUrl(handoffAddress(window.location.href))}
                   onClick={() => openChrome('button')}
                >
-                  Open in Chrome
+                  {copiedFlash ? 'Link copied ✓' : 'Open in Chrome'}
                </a>
             ) : (
                <button
@@ -162,7 +177,7 @@ export default function OpenInBrowserPrompt() {
                   onClick={showPointer}
                   type="button"
                >
-                  Open in Safari
+                  {copiedFlash ? 'Link copied ✓' : 'Open in Safari'}
                </button>
             )}
 
@@ -177,6 +192,8 @@ export default function OpenInBrowserPrompt() {
          {pointer ? (
             <MenuGuide
                chromeFailed={isAndroid ? triedChrome : false}
+               link={handoffAddress(window.location.href)}
+               linkCopied={linkCopied}
                onClose={() => setPointer(false)}
                opensOnSignUp={location.pathname.startsWith('/sign-up')}
                os={isAndroid ? 'android' : 'ios'}
