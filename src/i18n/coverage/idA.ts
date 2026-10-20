@@ -1051,6 +1051,11 @@ export const indonesianCoverageA: Record<string, string> = {
       '📋 Link tersalin. Kalau Chrome terbuka tanpa Moodeng, tempel di kolom alamat.',
    '📋 Link copied. If Safari opens without Moodeng, paste it in the address bar.':
       '📋 Link tersalin. Kalau Safari terbuka tanpa Moodeng, tempel di kolom alamat.',
+   '📋 Copy the link first, in case Chrome opens without Moodeng.':
+      '📋 Salin link-nya dulu, kalau-kalau Chrome terbuka tanpa Moodeng.',
+   '📋 Copy the link first, in case Safari opens without Moodeng.':
+      '📋 Salin link-nya dulu, kalau-kalau Safari terbuka tanpa Moodeng.',
+   "Couldn't copy. Press and hold the link, then tap Copy.": 'Gagal menyalin. Tekan lama link-nya, lalu ketuk Salin.',
    "Smart number · we can't text Smart yet": 'Nomor Smart · kami belum bisa kirim SMS ke Smart',
    'Sign up with email': 'Daftar dengan email',
    'Log in with email': 'Masuk dengan email',

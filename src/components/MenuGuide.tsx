@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { RING, TAP_KEYFRAMES } from '@/components/guideStyles';
 import { metaIosHost } from '@/lib/inAppBrowser';
+import { copyTextFromTap } from '@/lib/inAppHandoff';
 
 // The "open in Safari / Chrome" guide for Facebook's / Messenger's own browser. Only the app's own menu
 // (top right) can open the real browser: on iPhone nothing on the page can open Safari (Meta blocks it).
@@ -53,13 +54,16 @@ export default function MenuGuide({
    os,
    chromeFailed = false,
    opensOnSignUp = false,
-   linkCopied = false,
+   linkCopied = null,
+   link,
    onClose
 }: {
    os: 'ios' | 'android';
    chromeFailed?: boolean;
-   /** The button that opened this also copied the page link. */
-   linkCopied?: boolean;
+   /** Whether the button that opened this copied the page link (null: it didn't try, or hasn't finished). */
+   linkCopied?: boolean | null;
+   /** The page link. When the automatic copy failed, it's shown with a "Copy link" button. */
+   link?: string;
    /** The first screen hands over /sign-up, so say where they'll land. */
    opensOnSignUp?: boolean;
    onClose: () => void;
@@ -71,6 +75,14 @@ export default function MenuGuide({
    // iPhone in the Facebook app (not Messenger): its menu isn't the Messenger one in the screenshot, so
    // it gets the drawn menu item instead, and its own name under the address. Messenger is unchanged.
    const fbAppIos = !isAndroid && metaIosHost() === 'facebook';
+   // The automatic copy can be refused; a tap of their own almost always copies. If even that fails,
+   // the link is selectable so they can press and hold it.
+   const [tapCopy, setTapCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
+   const copied = linkCopied === true || tapCopy === 'copied';
+   const copyFromTap = () => {
+      if (!link) return;
+      void copyTextFromTap(link).then((result) => setTapCopy(result.ok ? 'copied' : 'failed'));
+   };
 
    return (
       <div
@@ -143,10 +155,30 @@ export default function MenuGuide({
                </div>
             </Step>
 
-            {linkCopied ? (
-               <p className="rounded-2xl bg-white/10 px-4 py-3 text-[15px] font-semibold leading-[21px]">
+            {copied ? (
+               <p className="rounded-2xl bg-white/10 px-4 py-3 text-[15px] font-semibold leading-[21px]" role="status">
                   {`📋 Link copied. If ${browser} opens without Moodeng, paste it in the address bar.`}
                </p>
+            ) : linkCopied === false && link ? (
+               // Tapping here mustn't close the guide (the backdrop closes it).
+               <div className="flex flex-col gap-2 rounded-2xl bg-white/10 px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                  <p className="text-[15px] font-semibold leading-[21px]">{`📋 Copy the link first, in case ${browser} opens without Moodeng.`}</p>
+                  <div className="flex items-center gap-2">
+                     <span className="min-w-0 flex-1 select-all break-all rounded-xl bg-white px-3 py-2 text-[14px] text-[#1c1c1e]">{link}</span>
+                     <button
+                        className="min-h-[44px] shrink-0 rounded-full bg-[#FFD43B] px-4 text-[15px] font-bold text-[#1a0f2e]"
+                        onClick={copyFromTap}
+                        type="button"
+                     >
+                        Copy link
+                     </button>
+                  </div>
+                  {tapCopy === 'failed' ? (
+                     <p className="text-[14px] leading-[20px] text-white/80" role="status">
+                        Couldn&apos;t copy. Press and hold the link, then tap Copy.
+                     </p>
+                  ) : null}
+               </div>
             ) : null}
 
             <p className="text-[14px] leading-[20px] text-white/70">

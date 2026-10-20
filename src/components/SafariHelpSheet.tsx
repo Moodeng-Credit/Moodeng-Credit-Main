@@ -9,12 +9,12 @@ import { detectInAppBrowser, SAFARI_HELP_EVENT } from '@/lib/inAppBrowser';
 // that browser drops the Safari link, so openInSafari asks for the ⋯ guide (MenuGuide) instead, the
 // two taps that do work. See openInSafari in src/lib/inAppBrowser.ts.
 export default function SafariHelpSheet() {
-   const [open, setOpen] = useState<{ copied: boolean } | null>(null);
+   const [open, setOpen] = useState<{ copied: boolean; url?: string } | null>(null);
 
    useEffect(() => {
       const onHelp = (event: Event) => {
-         const detail = (event as CustomEvent<{ copied?: boolean }>).detail ?? {};
-         setOpen({ copied: Boolean(detail.copied) });
+         const detail = (event as CustomEvent<{ copied?: boolean; url?: string }>).detail ?? {};
+         setOpen({ copied: Boolean(detail.copied), url: detail.url });
          try {
             posthog.capture('safari_help_shown', { app: detectInAppBrowser().appName, copied: Boolean(detail.copied), page: window.location.pathname });
          } catch {
@@ -27,5 +27,5 @@ export default function SafariHelpSheet() {
 
    if (!open) return null;
 
-   return <MenuGuide linkCopied={open.copied} onClose={() => setOpen(null)} os="ios" />;
+   return <MenuGuide link={open.url} linkCopied={open.copied} onClose={() => setOpen(null)} os="ios" />;
 }

@@ -46,9 +46,16 @@ export default function OpenInBrowserPrompt() {
    // (nothing can open Safari for them; Meta blocks it), Android shows it when Chrome didn't open.
    const [pointer, setPointer] = useState(false);
    // Both buttons also copy the page link, so they can paste it if the browser opens on its start page.
-   const [linkCopied, setLinkCopied] = useState(false);
+   // null until a button has tried. When it worked, the button says so for a moment.
+   const [linkCopied, setLinkCopied] = useState<boolean | null>(null);
+   const [copiedFlash, setCopiedFlash] = useState(false);
    const copyLink = () => {
-      void copyTextFromTap(handoffAddress(window.location.href)).then((result) => setLinkCopied(result.ok));
+      void copyTextFromTap(handoffAddress(window.location.href)).then((result) => {
+         setLinkCopied(result.ok);
+         if (!result.ok) return;
+         setCopiedFlash(true);
+         window.setTimeout(() => setCopiedFlash(false), 2000);
+      });
    };
    const shownTracked = useRef(false);
    const isAndroid = info.os === 'android';
@@ -162,7 +169,7 @@ export default function OpenInBrowserPrompt() {
                   href={buildAndroidIntentUrl(handoffAddress(window.location.href))}
                   onClick={() => openChrome('button')}
                >
-                  Open in Chrome
+                  {copiedFlash ? 'Link copied ✓' : 'Open in Chrome'}
                </a>
             ) : (
                <button
@@ -170,7 +177,7 @@ export default function OpenInBrowserPrompt() {
                   onClick={showPointer}
                   type="button"
                >
-                  Open in Safari
+                  {copiedFlash ? 'Link copied ✓' : 'Open in Safari'}
                </button>
             )}
 
@@ -185,6 +192,7 @@ export default function OpenInBrowserPrompt() {
          {pointer ? (
             <MenuGuide
                chromeFailed={isAndroid ? triedChrome : false}
+               link={handoffAddress(window.location.href)}
                linkCopied={linkCopied}
                onClose={() => setPointer(false)}
                opensOnSignUp={location.pathname.startsWith('/sign-up')}

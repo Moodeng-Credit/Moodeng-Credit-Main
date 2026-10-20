@@ -930,6 +930,11 @@ export const filipinoCoverageA: Record<string, string> = {
       '📋 Na-copy ang link. Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
    '📋 Link copied. If Safari opens without Moodeng, paste it in the address bar.':
       '📋 Na-copy ang link. Kung bumukas ang Safari nang walang Moodeng, i-paste ito sa address bar.',
+   '📋 Copy the link first, in case Chrome opens without Moodeng.':
+      '📋 Kopyahin muna ang link, kung sakaling magbukas ang Chrome nang walang Moodeng.',
+   '📋 Copy the link first, in case Safari opens without Moodeng.':
+      '📋 Kopyahin muna ang link, kung sakaling magbukas ang Safari nang walang Moodeng.',
+   "Couldn't copy. Press and hold the link, then tap Copy.": 'Hindi nakopya. Pindutin nang matagal ang link, tapos i-tap ang Copy.',
    "Smart number · we can't text Smart yet": 'Smart number · hindi pa namin ma-text ang Smart',
    'Sign up with email': 'Mag-sign up gamit ang email',
    'Log in with email': 'Mag-log in gamit ang email',
