@@ -5,7 +5,9 @@
 // Setup: Stableyard Partner Dashboard → Developers → Webhooks → new endpoint
 //   URL    = https://qplmmxynzxzkfxtayoqr.supabase.co/functions/v1/stableyard-deposit-address
 //   Events = deposit.detected, deposit.settled, deposit.reversed, deposit.requires_intervention, deposit.failed
-// The dashboard shows the signing secret (whsec_…) once: save it as the STABLEYARD_WEBHOOK_SECRET secret.
+// The dashboard shows the signing secret (whsec_…) once. It is stored in the DB vault as
+// STABLEYARD_WEBHOOK_SECRET (edge-function secrets are at their 100 cap) and read through the
+// service-role-only RPC public.stableyard_webhook_secret(); an env secret of the same name wins if set.
 //
 // Each delivery: verify the HMAC over the raw body, record the event id (at-least-once delivery →
 // dedupe), then re-read the account's deposits from Stableyard and mirror them (events are prompts to
@@ -23,7 +25,12 @@ export const isStableyardWebhook = (req: Request) => req.headers.has('x-stableya
 export const handleStableyardWebhook = async (req: Request): Promise<Response> => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-   const secret = Deno.env.get('STABLEYARD_WEBHOOK_SECRET')?.trim();
+   const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+   let secret = Deno.env.get('STABLEYARD_WEBHOOK_SECRET')?.trim();
+   if (!secret) {
+      const { data } = await admin.rpc('stableyard_webhook_secret');
+      secret = typeof data === 'string' ? data.trim() : undefined;
+   }
    if (!secret) {
       console.error('[stableyard-webhook] STABLEYARD_WEBHOOK_SECRET is not set');
       // 503 so Stableyard retries once the secret is configured, instead of dropping the event.
@@ -48,8 +55,6 @@ export const handleStableyardWebhook = async (req: Request): Promise<Response> =
    const eventName = event.name ?? verified.eventName;
    const payload = event.payload ?? {};
    const accountId = String(payload.accountId ?? req.headers.get('x-stableyard-account-id') ?? '');
-
-   const admin = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
    const { data: seen } = await admin
       .from('stableyard_webhook_events')
