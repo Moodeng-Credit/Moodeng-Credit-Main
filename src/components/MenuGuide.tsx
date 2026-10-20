@@ -101,30 +101,35 @@ export default function MenuGuide({
             <img alt="" className="pointer-events-none mr-12 h-32 w-auto shrink-0" src="/hippos/hippo-point-menu.png" />
          </div>
          <div className="mt-3 flex w-full max-w-[380px] flex-col gap-4">
-            {/* Their tap already copied the link (or couldn't): say so first, before the menu pictures. */}
+            {/* Their tap already copied the link (or couldn't): say so first, before the menu pictures. Plain
+                text, not a card, and the one real button is purple like the app's own buttons, so it can't be
+                mistaken for the pictures below (George, 20 Oct). */}
             {copied ? (
-               <p className="rounded-2xl bg-white/10 px-4 py-3 text-[15px] font-semibold leading-[21px]" role="status">
-                  {`📋 Link copied. If ${browser} opens without Moodeng, paste it in the address bar.`}
-               </p>
+               <div role="status">
+                  <p className="text-[17px] font-bold leading-[22px] text-[#7CE38B]">✓ Link copied</p>
+                  <p className="text-[14px] leading-[20px] text-white/70">{`If ${browser} opens without Moodeng, paste it in the address bar.`}</p>
+               </div>
             ) : linkCopied === false && link ? (
                // Tapping here mustn't close the guide (the backdrop closes it).
-               <div className="flex flex-col gap-2 rounded-2xl bg-white/10 px-4 py-3" onClick={(event) => event.stopPropagation()}>
-                  <p className="text-[15px] font-semibold leading-[21px]">{`📋 Copy the link first, in case ${browser} opens without Moodeng.`}</p>
-                  <div className="flex items-center gap-2">
-                     <span className="min-w-0 flex-1 select-all break-all rounded-xl bg-white px-3 py-2 text-[14px] text-[#1c1c1e]">{link}</span>
-                     <button
-                        className="min-h-[44px] shrink-0 rounded-full bg-[#FFD43B] px-4 text-[15px] font-bold text-[#1a0f2e]"
-                        onClick={copyFromTap}
-                        type="button"
-                     >
-                        Copy link
-                     </button>
-                  </div>
+               <div className="flex flex-col gap-1.5" onClick={(event) => event.stopPropagation()}>
+                  <button
+                     className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#6b55f7] px-4 text-[17px] font-bold text-white"
+                     onClick={copyFromTap}
+                     type="button"
+                  >
+                     <span aria-hidden="true">📋</span>
+                     Copy link
+                  </button>
                   {tapCopy === 'failed' ? (
-                     <p className="text-[14px] leading-[20px] text-white/80" role="status">
-                        Couldn&apos;t copy. Press and hold the link, then tap Copy.
-                     </p>
-                  ) : null}
+                     <>
+                        <p className="text-[14px] leading-[20px] text-white/80" role="status">
+                           Couldn&apos;t copy. Press and hold the link, then tap Copy.
+                        </p>
+                        <p className="select-all break-all text-[14px] leading-[20px] text-white underline">{link}</p>
+                     </>
+                  ) : (
+                     <p className="text-center text-[14px] leading-[20px] text-white/70">{`So you can paste it if ${browser} opens without Moodeng.`}</p>
+                  )}
                </div>
             ) : null}
 

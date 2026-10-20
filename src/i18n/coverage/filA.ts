@@ -926,14 +926,15 @@ export const filipinoCoverageA: Record<string, string> = {
    'Type your full email': 'I-type ang buong email mo',
    'Enter your email or number': 'Ilagay ang email o number mo',
    'No password?': 'Walang password?',
-   '📋 Link copied. If Chrome opens without Moodeng, paste it in the address bar.':
-      '📋 Na-copy ang link. Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
-   '📋 Link copied. If Safari opens without Moodeng, paste it in the address bar.':
-      '📋 Na-copy ang link. Kung bumukas ang Safari nang walang Moodeng, i-paste ito sa address bar.',
-   '📋 Copy the link first, in case Chrome opens without Moodeng.':
-      '📋 Kopyahin muna ang link, kung sakaling magbukas ang Chrome nang walang Moodeng.',
-   '📋 Copy the link first, in case Safari opens without Moodeng.':
-      '📋 Kopyahin muna ang link, kung sakaling magbukas ang Safari nang walang Moodeng.',
+   '✓ Link copied': '✓ Nakopya ang link',
+   'If Chrome opens without Moodeng, paste it in the address bar.':
+      'Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
+   'If Safari opens without Moodeng, paste it in the address bar.':
+      'Kung bumukas ang Safari nang walang Moodeng, i-paste ito sa address bar.',
+   'So you can paste it if Chrome opens without Moodeng.':
+      'Para ma-paste mo kung bumukas ang Chrome nang walang Moodeng.',
+   'So you can paste it if Safari opens without Moodeng.':
+      'Para ma-paste mo kung bumukas ang Safari nang walang Moodeng.',
    "Couldn't copy. Press and hold the link, then tap Copy.": 'Hindi nakopya. Pindutin nang matagal ang link, tapos i-tap ang Copy.',
    "Smart number · we can't text Smart yet": 'Smart number · hindi pa namin ma-text ang Smart',
    'Sign up with email': 'Mag-sign up gamit ang email',
