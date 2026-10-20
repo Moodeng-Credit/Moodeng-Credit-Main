@@ -95,6 +95,54 @@
             return 'intent://' + u.host + u.pathname + u.search + u.hash + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(u.toString()) + ';end';
          };
 
+         // Both buttons also copy the sign-up link, so they can paste it if the browser opens on its start
+         // page. Same as the app's copyTextFromTap: a hidden field + execCommand from the tap, else the
+         // Clipboard API. Resolves false when nothing was copied, so the guide can offer its own button.
+         var copyText = function (text) {
+            var ok = false;
+            try {
+               var field = document.createElement('textarea');
+               field.value = text;
+               field.setAttribute('readonly', '');
+               field.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+               document.body.appendChild(field);
+               field.select();
+               field.setSelectionRange(0, text.length);
+               ok = document.execCommand('copy');
+               document.body.removeChild(field);
+            } catch (e) {
+               ok = false;
+            }
+            if (ok) return Promise.resolve(true);
+            try {
+               if (navigator.clipboard && navigator.clipboard.writeText) {
+                  return navigator.clipboard.writeText(text).then(
+                     function () {
+                        return true;
+                     },
+                     function () {
+                        return false;
+                     }
+                  );
+               }
+            } catch (e) {}
+            return Promise.resolve(false);
+         };
+         var linkCopied = null; // null until a button has tried
+         var copyLink = function (button) {
+            return copyText(tagged()).then(function (ok) {
+               linkCopied = ok;
+               if (ok && button) {
+                  var label = button.textContent;
+                  button.textContent = 'Link copied ✓';
+                  setTimeout(function () {
+                     button.textContent = label;
+                  }, 2000);
+               }
+               return ok;
+            });
+         };
+
          var wrap = document.createElement('div');
          wrap.setAttribute('data-iab-prompt', '');
          wrap.setAttribute('role', 'dialog');
@@ -141,7 +189,26 @@
             var ring = 'box-shadow:0 0 0 2px #fff,0 0 0 5px #FFD43B;';
             var num = 'display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:999px;background:#FFD43B;color:#1a0f2e;font-weight:900;font-size:15px';
             var stepTitle = 'display:flex;align-items:center;gap:8px;margin:0;font-size:17px;line-height:22px;font-weight:700';
-            var frame = 'pointer-events:none;user-select:none;border-radius:16px;background:#2a2140;padding:10px';
+            var frame = 'position:relative;pointer-events:none;user-select:none;border-radius:16px;background:#2a2140;padding:10px';
+            // The menu steps are pictures, tagged so nobody taps them (George, 20 Oct).
+            var pictureTag = '<span style="position:absolute;top:-10px;right:12px;z-index:20;border-radius:999px;background:#120a1f;padding:0 8px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.6)">Picture</span>';
+            var doneNum = num.replace('background:#FFD43B;color:#1a0f2e', 'background:#7CE38B;color:#0d2a13');
+            var hasCopyStep = linkCopied !== null;
+            var first = hasCopyStep ? 2 : 1;
+            // Step 1: the link (their tap already copied it, or couldn't). The one real button is purple
+            // like the page's own buttons.
+            var copyStep = function (state) {
+               if (state === true) {
+                  return '<p style="' + stepTitle + '"><span style="' + doneNum + '">✓</span>Link copied</p>' +
+                     '<p style="margin:0;padding-left:36px;font-size:14px;line-height:20px;opacity:.7">If ' + browser + ' opens without Moodeng, paste it in the address bar.</p>';
+               }
+               return '<p style="' + stepTitle + '"><span style="' + num + '">1</span>Copy the link</p>' +
+                  '<button data-iab-copy type="button" style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;width:100%;border:0;border-radius:999px;background:#6b55f7;color:#fff;font:inherit;font-size:17px;font-weight:700"><span aria-hidden="true">📋</span>Copy link</button>' +
+                  (state === 'failed'
+                     ? '<p style="margin:0;font-size:14px;line-height:20px;opacity:.8">Couldn’t copy. Press and hold the link, then tap Copy.</p>' +
+                       '<p style="margin:0;font-size:14px;line-height:20px;text-decoration:underline;word-break:break-all;user-select:all;-webkit-user-select:all">' + tagged() + '</p>'
+                     : '<p style="margin:0;text-align:center;font-size:14px;line-height:20px;opacity:.7">So you can paste it if ' + browser + ' opens without Moodeng.</p>');
+            };
             // A finger that taps each spot, with a ripple (same as the app's MenuGuide).
             if (!document.getElementById('mg-tap-style')) {
                var st = document.createElement('style');
@@ -172,15 +239,19 @@
                (chromeFailed ? 'Chrome didn’t open? ' : '') + 'Open Moodeng in ' + browser + '</p>' +
                '<img alt="" src="/hippos/hippo-point-menu.png" style="height:128px;width:auto;flex:none;margin-right:48px;pointer-events:none"></div>' +
                '<div style="margin-top:12px;display:flex;width:100%;max-width:380px;flex-direction:column;gap:16px">' +
-               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">1</span>Tap ' + icon + ' at the top right</p>' +
-               '<div aria-hidden="true" style="' + frame + '"><div style="position:relative;display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +
+               (hasCopyStep ? '<div data-iab-copystep role="status" style="display:flex;flex-direction:column;gap:8px">' + copyStep(linkCopied) + '</div>' : '') +
+               '<div style="border:2px dashed rgba(255,255,255,.25);border-radius:16px;padding:12px 16px">' +
+               '<p style="margin:0;font-size:15px;line-height:21px;font-weight:700">Then use the menu at the very top of your screen ↑</p>' +
+               '<p style="margin:0;font-size:14px;line-height:20px;opacity:.7">The pictures below only show what to tap. They aren’t buttons.</p></div>' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">' + first + '</span>Tap ' + icon + ' at the top right</p>' +
+               '<div aria-hidden="true" style="' + frame + '">' + pictureTag + '<div style="position:relative;display:flex;align-items:center;justify-content:space-between;border-radius:12px;background:#fff;color:#1c1c1e;padding:8px 12px">' +
                '<span style="font-size:18px;line-height:1">✕</span>' +
                '<span style="display:flex;flex-direction:column;align-items:center;line-height:1.2"><span style="font-size:14px;font-weight:600">🔒 moodeng.app</span><span style="font-size:11px;color:#8e8e93">' + (app || 'Messenger') + '</span></span>' +
                '<span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;font-size:20px;font-weight:900;line-height:1;' + ring + '">' + icon + '</span>' +
                finger('calc(100% - 28px)', '50%') +
                '</div></div></div>' +
-               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">2</span>Tap “' + item + '”' + '</p>' +
-               '<div aria-hidden="true" style="' + frame + '">' +
+               '<div style="display:flex;flex-direction:column;gap:8px"><p style="' + stepTitle + '"><span style="' + num + '">' + (first + 1) + '</span>Tap “' + item + '”' + '</p>' +
+               '<div aria-hidden="true" style="' + frame + '">' + pictureTag +
                (isAndroid
                   ? '<div style="position:relative;border-radius:12px;background:#fff;color:#1c1c1e;padding:6px 8px"><div style="display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 8px;font-size:15px;font-weight:600;' + ring + '">🌐 ' + item + '</div>' + finger('62%', '55%') + '</div>'
                   : fbAppIos
@@ -199,11 +270,24 @@
             pointer.addEventListener('click', function () {
                pointer.remove();
             });
+            var step = pointer.querySelector('[data-iab-copystep]');
+            if (step) {
+               // Tapping here mustn't close the guide.
+               step.addEventListener('click', function (event) {
+                  event.stopPropagation();
+                  if (!event.target.closest('[data-iab-copy]')) return;
+                  copyText(tagged()).then(function (ok) {
+                     if (ok) linkCopied = true;
+                     step.innerHTML = copyStep(ok ? true : 'failed');
+                  });
+               });
+            }
             wrap.appendChild(pointer);
          };
          Array.prototype.forEach.call(wrap.querySelectorAll('[data-iab-open]'), function (open) {
             open.addEventListener('click', function () {
                track('iab_prompt_open_tapped', { via: open.getAttribute('data-via') || 'button' });
+               copyLink(open.hasAttribute('data-via') ? null : open);
                setTimeout(function () {
                   if (document.visibilityState === 'visible') showPointer(true);
                }, 1500);
@@ -212,7 +296,9 @@
          Array.prototype.forEach.call(wrap.querySelectorAll('[data-iab-safari], [data-iab-hippo]'), function (el) {
             el.addEventListener('click', function () {
                track('iab_prompt_open_tapped', { via: el.hasAttribute('data-iab-hippo') ? 'hippo' : 'safari_button' });
-               showPointer(false);
+               copyLink(el.hasAttribute('data-iab-hippo') ? null : el).then(function () {
+                  showPointer(false);
+               });
             });
          });
       };
