@@ -119,10 +119,18 @@ verify_jwt = true
 [functions.admin-fund-loan]
 verify_jwt = true
 
-# Stableyard credential check (GET /v2/partners/me). Re-checks the caller is an active admin inside
+# Stableyard credential check (GET /v2/partners/config). Re-checks the caller is an active admin inside
 # the function; Stableyard's Basic-auth credentials stay server-side.
 [functions.stableyard-partner-check]
 verify_jwt = true
+
+# Stableyard deposit addresses for the signed-in user (re-checks the session inside the function).
+[functions.stableyard-deposit-address]
+verify_jwt = true
+
+# Stableyard webhook receiver: no JWT, authenticated by the HMAC signature (STABLEYARD_WEBHOOK_SECRET).
+[functions.stableyard-webhook]
+verify_jwt = false
 
 [functions.buy-loan-note]
 verify_jwt = true
