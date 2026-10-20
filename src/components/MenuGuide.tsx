@@ -31,18 +31,39 @@ export function TapFinger({ left, top }: { left: string; top: string }) {
    );
 }
 
-export function Step({ n, title, children }: { n: number; title: string; children?: ReactNode }) {
+export function Step({
+   n,
+   title,
+   done = false,
+   picture = false,
+   children
+}: {
+   n: number;
+   title: string;
+   /** Already done for them: a green ✓ in place of the number. */
+   done?: boolean;
+   /** Tag the frame "Picture" so nobody tries to tap it (George, 20 Oct). */
+   picture?: boolean;
+   children?: ReactNode;
+}) {
    return (
       <div className="flex flex-col gap-2">
          <p className="flex items-center gap-2 text-[17px] font-bold leading-[22px]">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#FFD43B] text-[15px] font-black text-[#1a0f2e]">
-               {n}
+            <span
+               className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[15px] font-black ${done ? 'bg-[#7CE38B] text-[#0d2a13]' : 'bg-[#FFD43B] text-[#1a0f2e]'}`}
+            >
+               {done ? '✓' : n}
             </span>
             {title}
          </p>
          {/* A picture, not a control: grey frame, no pointer events. */}
          {children ? (
-            <div aria-hidden="true" className="pointer-events-none select-none rounded-2xl bg-[#2a2140] p-2.5">
+            <div aria-hidden="true" className="pointer-events-none relative select-none rounded-2xl bg-[#2a2140] p-2.5">
+               {picture ? (
+                  <span className="absolute -top-2.5 right-3 z-20 rounded-full bg-[#120a1f] px-2 text-[11px] font-bold uppercase tracking-wide text-white/60">
+                     Picture
+                  </span>
+               ) : null}
                {children}
             </div>
          ) : null}
@@ -79,6 +100,9 @@ export default function MenuGuide({
    // the link is selectable so they can press and hold it.
    const [tapCopy, setTapCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
    const copied = linkCopied === true || tapCopy === 'copied';
+   // The copy is step 1 once we know how it went; the menu steps follow it.
+   const copyStep = Boolean(link) && (copied || linkCopied === false);
+   const first = copyStep ? 2 : 1;
    const copyFromTap = () => {
       if (!link) return;
       void copyTextFromTap(link).then((result) => setTapCopy(result.ok ? 'copied' : 'failed'));
@@ -101,39 +125,43 @@ export default function MenuGuide({
             <img alt="" className="pointer-events-none mr-12 h-32 w-auto shrink-0" src="/hippos/hippo-point-menu.png" />
          </div>
          <div className="mt-3 flex w-full max-w-[380px] flex-col gap-4">
-            {/* Their tap already copied the link (or couldn't): say so first, before the menu pictures. Plain
-                text, not a card, and the one real button is purple like the app's own buttons, so it can't be
-                mistaken for the pictures below (George, 20 Oct). */}
-            {copied ? (
-               <div role="status">
-                  <p className="text-[17px] font-bold leading-[22px] text-[#7CE38B]">✓ Link copied</p>
-                  <p className="text-[14px] leading-[20px] text-white/70">{`If ${browser} opens without Moodeng, paste it in the address bar.`}</p>
-               </div>
-            ) : linkCopied === false && link ? (
-               // Tapping here mustn't close the guide (the backdrop closes it).
-               <div className="flex flex-col gap-1.5" onClick={(event) => event.stopPropagation()}>
-                  <button
-                     className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#6b55f7] px-4 text-[17px] font-bold text-white"
-                     onClick={copyFromTap}
-                     type="button"
-                  >
-                     <span aria-hidden="true">📋</span>
-                     Copy link
-                  </button>
-                  {tapCopy === 'failed' ? (
-                     <>
-                        <p className="text-[14px] leading-[20px] text-white/80" role="status">
-                           Couldn&apos;t copy. Press and hold the link, then tap Copy.
-                        </p>
-                        <p className="select-all break-all text-[14px] leading-[20px] text-white underline">{link}</p>
-                     </>
+            {/* First the link (their tap already copied it, or couldn't), then the menu. The one real button
+                is purple like the app's own buttons; the menu steps are tagged pictures, and a line says to tap
+                the real menu at the top (George, 20 Oct: it looked like you tap the pictures to get the link). */}
+            {copyStep ? (
+               <div className="flex flex-col gap-2" onClick={(event) => event.stopPropagation()} role="status">
+                  <Step done={copied} n={1} title={copied ? 'Link copied' : 'Copy the link'} />
+                  {copied ? (
+                     <p className="pl-9 text-[14px] leading-[20px] text-white/70">{`If ${browser} opens without Moodeng, paste it in the address bar.`}</p>
                   ) : (
-                     <p className="text-center text-[14px] leading-[20px] text-white/70">{`So you can paste it if ${browser} opens without Moodeng.`}</p>
+                     <>
+                        <button
+                           className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-[#6b55f7] px-4 text-[17px] font-bold text-white"
+                           onClick={copyFromTap}
+                           type="button"
+                        >
+                           <span aria-hidden="true">📋</span>
+                           Copy link
+                        </button>
+                        {tapCopy === 'failed' ? (
+                           <>
+                              <p className="text-[14px] leading-[20px] text-white/80">Couldn&apos;t copy. Press and hold the link, then tap Copy.</p>
+                              <p className="select-all break-all text-[14px] leading-[20px] text-white underline">{link}</p>
+                           </>
+                        ) : (
+                           <p className="text-center text-[14px] leading-[20px] text-white/70">{`So you can paste it if ${browser} opens without Moodeng.`}</p>
+                        )}
+                     </>
                   )}
                </div>
             ) : null}
 
-            <Step n={1} title={`Tap ${menuIcon} at the top right`}>
+            <div className="rounded-2xl border-2 border-dashed border-white/25 px-4 py-3">
+               <p className="text-[15px] font-bold leading-[21px]">Then use the menu at the very top of your screen ↑</p>
+               <p className="text-[14px] leading-[20px] text-white/70">The pictures below only show what to tap. They aren&apos;t buttons.</p>
+            </div>
+
+            <Step n={first} picture title={`Tap ${menuIcon} at the top right`}>
                <div className="relative flex items-center justify-between rounded-xl bg-white px-3 py-2 text-[#1c1c1e]">
                   <span className="text-[18px] leading-none">✕</span>
                   <span className="flex flex-col items-center leading-tight">
@@ -147,7 +175,7 @@ export default function MenuGuide({
                </div>
             </Step>
 
-            <Step n={2} title={isAndroid ? `Tap “${menuItem}”` : `Tap “${menuItem}”`}>
+            <Step n={first + 1} picture title={`Tap “${menuItem}”`}>
                {fbAppIos ? (
                   // Drawn like the Messenger screenshot below (dark sheet, the rest faded, the one to tap
                   // ringed) until we have a picture of the Facebook app's own menu.

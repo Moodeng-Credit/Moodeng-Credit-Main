@@ -1047,7 +1047,10 @@ export const indonesianCoverageA: Record<string, string> = {
    'Type your full email': 'Ketik email lengkap kamu',
    'Enter your email or number': 'Masukkan email atau nomor kamu',
    'No password?': 'Tidak punya kata sandi?',
-   '✓ Link copied': '✓ Link tersalin',
+   'Copy the link': 'Salin link-nya',
+   'Picture': 'Gambar',
+   'Then use the menu at the very top of your screen ↑': 'Lalu pakai menu di bagian paling atas layarmu ↑',
+   "The pictures below only show what to tap. They aren't buttons.": 'Gambar di bawah hanya menunjukkan apa yang perlu diketuk. Itu bukan tombol.',
    'If Chrome opens without Moodeng, paste it in the address bar.':
       'Kalau Chrome terbuka tanpa Moodeng, tempel di kolom alamat.',
    'If Safari opens without Moodeng, paste it in the address bar.':

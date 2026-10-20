@@ -926,7 +926,10 @@ export const filipinoCoverageA: Record<string, string> = {
    'Type your full email': 'I-type ang buong email mo',
    'Enter your email or number': 'Ilagay ang email o number mo',
    'No password?': 'Walang password?',
-   '✓ Link copied': '✓ Nakopya ang link',
+   'Copy the link': 'Kopyahin ang link',
+   'Picture': 'Larawan',
+   'Then use the menu at the very top of your screen ↑': 'Tapos gamitin ang menu sa pinakataas ng screen mo ↑',
+   "The pictures below only show what to tap. They aren't buttons.": 'Larawan lang ang nasa ibaba para makita mo kung ano ang ita-tap. Hindi sila mga button.',
    'If Chrome opens without Moodeng, paste it in the address bar.':
       'Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
    'If Safari opens without Moodeng, paste it in the address bar.':
