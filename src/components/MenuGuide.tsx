@@ -101,6 +101,32 @@ export default function MenuGuide({
             <img alt="" className="pointer-events-none mr-12 h-32 w-auto shrink-0" src="/hippos/hippo-point-menu.png" />
          </div>
          <div className="mt-3 flex w-full max-w-[380px] flex-col gap-4">
+            {/* Their tap already copied the link (or couldn't): say so first, before the menu pictures. */}
+            {copied ? (
+               <p className="rounded-2xl bg-white/10 px-4 py-3 text-[15px] font-semibold leading-[21px]" role="status">
+                  {`📋 Link copied. If ${browser} opens without Moodeng, paste it in the address bar.`}
+               </p>
+            ) : linkCopied === false && link ? (
+               // Tapping here mustn't close the guide (the backdrop closes it).
+               <div className="flex flex-col gap-2 rounded-2xl bg-white/10 px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                  <p className="text-[15px] font-semibold leading-[21px]">{`📋 Copy the link first, in case ${browser} opens without Moodeng.`}</p>
+                  <div className="flex items-center gap-2">
+                     <span className="min-w-0 flex-1 select-all break-all rounded-xl bg-white px-3 py-2 text-[14px] text-[#1c1c1e]">{link}</span>
+                     <button
+                        className="min-h-[44px] shrink-0 rounded-full bg-[#FFD43B] px-4 text-[15px] font-bold text-[#1a0f2e]"
+                        onClick={copyFromTap}
+                        type="button"
+                     >
+                        Copy link
+                     </button>
+                  </div>
+                  {tapCopy === 'failed' ? (
+                     <p className="text-[14px] leading-[20px] text-white/80" role="status">
+                        Couldn&apos;t copy. Press and hold the link, then tap Copy.
+                     </p>
+                  ) : null}
+               </div>
+            ) : null}
 
             <Step n={1} title={`Tap ${menuIcon} at the top right`}>
                <div className="relative flex items-center justify-between rounded-xl bg-white px-3 py-2 text-[#1c1c1e]">
@@ -154,32 +180,6 @@ export default function MenuGuide({
                   {isAndroid ? <TapFinger left="62%" top="55%" /> : null}
                </div>
             </Step>
-
-            {copied ? (
-               <p className="rounded-2xl bg-white/10 px-4 py-3 text-[15px] font-semibold leading-[21px]" role="status">
-                  {`📋 Link copied. If ${browser} opens without Moodeng, paste it in the address bar.`}
-               </p>
-            ) : linkCopied === false && link ? (
-               // Tapping here mustn't close the guide (the backdrop closes it).
-               <div className="flex flex-col gap-2 rounded-2xl bg-white/10 px-4 py-3" onClick={(event) => event.stopPropagation()}>
-                  <p className="text-[15px] font-semibold leading-[21px]">{`📋 Copy the link first, in case ${browser} opens without Moodeng.`}</p>
-                  <div className="flex items-center gap-2">
-                     <span className="min-w-0 flex-1 select-all break-all rounded-xl bg-white px-3 py-2 text-[14px] text-[#1c1c1e]">{link}</span>
-                     <button
-                        className="min-h-[44px] shrink-0 rounded-full bg-[#FFD43B] px-4 text-[15px] font-bold text-[#1a0f2e]"
-                        onClick={copyFromTap}
-                        type="button"
-                     >
-                        Copy link
-                     </button>
-                  </div>
-                  {tapCopy === 'failed' ? (
-                     <p className="text-[14px] leading-[20px] text-white/80" role="status">
-                        Couldn&apos;t copy. Press and hold the link, then tap Copy.
-                     </p>
-                  ) : null}
-               </div>
-            ) : null}
 
             <p className="text-[14px] leading-[20px] text-white/70">
                Don&apos;t see it? It may say <b>{isAndroid ? 'Open in browser' : 'Open in Safari'}</b>.
