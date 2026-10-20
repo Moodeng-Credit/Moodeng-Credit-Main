@@ -105,16 +105,17 @@ function OptionalPasswordCard(): JSX.Element | null {
 /**
  * Asked once, right after a code made a NEW account in a browser that looks Filipino: people who
  * borrowed before with another phone/email/Google often make a second, empty account by mistake.
- * "I've used Moodeng before" signs this new one out and sends them to log in the old way.
+ * "I've used Moodeng before" signs this new one out and sends them to the sign-in page, which takes
+ * the phone, email or Google they used before (one button, not one per way: George, 2026-10-20).
  */
 function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
    const [returning, setReturning] = useState(false);
 
-   const logInWith = async (method: 'phone' | 'email' | 'google') => {
+   const logIn = async () => {
       await dispatch(logoutUser()).catch(() => undefined);
-      navigate(method === 'google' ? '/sign-in' : `/sign-in?method=${method}`, { replace: true });
+      navigate('/sign-in', { replace: true });
    };
 
    const choice =
@@ -134,22 +135,8 @@ function ReturningUserQuestion({ onNew }: { onNew: () => void }): JSX.Element {
                      <p className="text-base font-medium leading-6 text-[#6D6D6D] dark:text-[#c8b8e8]">
                         Log in with the phone, email or Google you used before. Your loans and points are there.
                      </p>
-                     <button type="button" onClick={() => void logInWith('phone')} className={`${choice} bg-[#6010D2] text-white`}>
-                        Log in with my phone number
-                     </button>
-                     <button
-                        type="button"
-                        onClick={() => void logInWith('email')}
-                        className={`${choice} border border-[#B5ACBE] text-[#250650] dark:text-white`}
-                     >
-                        Log in with my email
-                     </button>
-                     <button
-                        type="button"
-                        onClick={() => void logInWith('google')}
-                        className={`${choice} border border-[#B5ACBE] text-[#250650] dark:text-white`}
-                     >
-                        Log in with Google
+                     <button type="button" onClick={() => void logIn()} className={`${choice} bg-[#6010D2] text-white`}>
+                        Log in to my account
                      </button>
                      <button
                         type="button"

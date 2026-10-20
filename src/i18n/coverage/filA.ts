@@ -926,6 +926,15 @@ export const filipinoCoverageA: Record<string, string> = {
    'Type your full email': 'I-type ang buong email mo',
    'Enter your email or number': 'Ilagay ang email o number mo',
    'No password?': 'Walang password?',
+   '📋 Link copied. If Chrome opens without Moodeng, paste it in the address bar.':
+      '📋 Na-copy ang link. Kung bumukas ang Chrome nang walang Moodeng, i-paste ito sa address bar.',
+   '📋 Link copied. If Safari opens without Moodeng, paste it in the address bar.':
+      '📋 Na-copy ang link. Kung bumukas ang Safari nang walang Moodeng, i-paste ito sa address bar.',
+   "Smart number · we can't text Smart yet": 'Smart number · hindi pa namin ma-text ang Smart',
+   'Sign up with email': 'Mag-sign up gamit ang email',
+   'Log in with email': 'Mag-log in gamit ang email',
+   'Not Smart? Keep this number': 'Hindi Smart? Gamitin pa rin ang number na ito',
+   'Log in to my account': 'Mag-log in sa account ko',
    'Enter your email address.': 'Ilagay ang email address mo.',
    'No Moodeng account uses this number.': 'Walang Moodeng account na gumagamit ng number na ito.',
    'No Moodeng account uses this email.': 'Walang Moodeng account na gumagamit ng email na ito.',

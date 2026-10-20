@@ -27,5 +27,5 @@ export default function SafariHelpSheet() {
 
    if (!open) return null;
 
-   return <MenuGuide onClose={() => setOpen(null)} os="ios" />;
+   return <MenuGuide linkCopied={open.copied} onClose={() => setOpen(null)} os="ios" />;
 }

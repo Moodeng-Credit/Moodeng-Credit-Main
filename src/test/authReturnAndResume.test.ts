@@ -124,13 +124,14 @@ describe('screens', () => {
       expect(container.textContent).toContain('Your account has been created');
    });
 
-   it('"I\'ve used Moodeng before" explains and logs in the old way (signing this new account out)', async () => {
+   it('"I\'ve used Moodeng before": one "Log in to my account" button to sign-in (signing this new account out)', async () => {
       await render('/auth-success?type=created&new=1', createElement(AuthSuccessPage));
       await act(async () => button("I've used Moodeng before")?.click());
       expect(container.textContent).toContain('Log in with the phone, email or Google you used before.');
-      await act(async () => button('Log in with my email')?.click());
+      expect(button('Log in with my email')).toBeFalsy();
+      await act(async () => button('Log in to my account')?.click());
       expect(h.logout).toHaveBeenCalled();
-      expect(container.querySelector('[data-testid="where"]')?.textContent).toBe('/sign-in?method=email');
+      expect(container.querySelector('[data-testid="where"]')?.textContent).toBe('/sign-in');
    });
 
    it('not asked outside the Philippines, or for a returning account', async () => {

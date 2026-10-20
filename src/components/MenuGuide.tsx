@@ -53,10 +53,13 @@ export default function MenuGuide({
    os,
    chromeFailed = false,
    opensOnSignUp = false,
+   linkCopied = false,
    onClose
 }: {
    os: 'ios' | 'android';
    chromeFailed?: boolean;
+   /** The button that opened this also copied the page link. */
+   linkCopied?: boolean;
    /** The first screen hands over /sign-up, so say where they'll land. */
    opensOnSignUp?: boolean;
    onClose: () => void;
@@ -139,6 +142,12 @@ export default function MenuGuide({
                   {isAndroid ? <TapFinger left="62%" top="55%" /> : null}
                </div>
             </Step>
+
+            {linkCopied ? (
+               <p className="rounded-2xl bg-white/10 px-4 py-3 text-[15px] font-semibold leading-[21px]">
+                  {`📋 Link copied. If ${browser} opens without Moodeng, paste it in the address bar.`}
+               </p>
+            ) : null}
 
             <p className="text-[14px] leading-[20px] text-white/70">
                Don&apos;t see it? It may say <b>{isAndroid ? 'Open in browser' : 'Open in Safari'}</b>.

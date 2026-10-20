@@ -1047,6 +1047,15 @@ export const indonesianCoverageA: Record<string, string> = {
    'Type your full email': 'Ketik email lengkap kamu',
    'Enter your email or number': 'Masukkan email atau nomor kamu',
    'No password?': 'Tidak punya kata sandi?',
+   '📋 Link copied. If Chrome opens without Moodeng, paste it in the address bar.':
+      '📋 Link tersalin. Kalau Chrome terbuka tanpa Moodeng, tempel di kolom alamat.',
+   '📋 Link copied. If Safari opens without Moodeng, paste it in the address bar.':
+      '📋 Link tersalin. Kalau Safari terbuka tanpa Moodeng, tempel di kolom alamat.',
+   "Smart number · we can't text Smart yet": 'Nomor Smart · kami belum bisa kirim SMS ke Smart',
+   'Sign up with email': 'Daftar dengan email',
+   'Log in with email': 'Masuk dengan email',
+   'Not Smart? Keep this number': 'Bukan Smart? Tetap pakai nomor ini',
+   'Log in to my account': 'Masuk ke akun saya',
    'Enter your email address.': 'Masukkan alamat email kamu.',
    'No Moodeng account uses this number.': 'Belum ada akun Moodeng dengan nomor ini.',
    'No Moodeng account uses this email.': 'Belum ada akun Moodeng dengan email ini.',
