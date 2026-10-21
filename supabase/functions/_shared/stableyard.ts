@@ -177,8 +177,13 @@ export const stableyard = {
 
    // Account-owner onboarding for fiat rails (QR payments): verify the UPA email, then KYC.
    getEmailStatus: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/email`),
+   // Idempotency-Key is required here. A fresh key per press, so "Send code" again issues a new code
+   // instead of replaying an expired challenge.
    startEmailVerification: (accountId: string, email: string) =>
-      stableyardRequest('POST', `${accountPath(accountId)}/email/verification-challenges`, { body: { email } }),
+      stableyardRequest('POST', `${accountPath(accountId)}/email/verification-challenges`, {
+         body: { email },
+         idempotencyKey: `moodeng-email:${accountId}:${crypto.randomUUID()}`
+      }),
    confirmEmailVerification: (accountId: string, challengeId: string, code: string) =>
       stableyardRequest('POST', `${accountPath(accountId)}/email/verification-challenges/${encodeURIComponent(challengeId)}/confirm`, {
          body: { code }
