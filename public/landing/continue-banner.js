@@ -1,7 +1,8 @@
 // Signed in in this browser (the app keeps its Supabase session in a cookie). The app also leaves an
 // md_landing cookie saying where they are (src/lib/landingSessionCookie.ts):
 //   signout — all set: "Sign in" becomes "Sign out", no banner.
-//   continue (or not known yet) — still signing up / onboarding / applying: "Continue where you left off".
+//   continue (or not known yet) — still signing up / onboarding / applying: "Sign in" becomes "Continue",
+//     "Get a loan" becomes "Sign out", and a "Continue where you left off" banner.
 //     Reopening moodeng.app inside Facebook's / Messenger's browser lands on this static page, and people
 //     took it for "my progress is gone" (Emma, 2026-10-17). /continue sends them on to their next step.
 // Loaded by the home page, its phone version (old-mobile.html) and the other landing pages.
@@ -33,6 +34,37 @@
             return;
          }
          relabel('Continue', '/continue?via=landing');
+         // Mid sign-up they're already getting a loan, so "Get a loan" becomes "Sign out" — otherwise a
+         // fresh account has no way out to switch to another one. Continue keeps the bold style.
+         document
+            .querySelectorAll('a[href="/request-board"], a[href="https://moodeng.app/request-board"]')
+            .forEach(function (link) {
+               if (link.textContent.trim() !== 'Get a loan') return;
+               // Phone header: this one swaps in for Continue on scroll, so it stays Continue; Sign out
+               // is in the menu (below).
+               if (link.classList.contains('head-cta')) {
+                  link.setAttribute('href', '/continue?via=landing');
+                  link.textContent = 'Continue';
+                  return;
+               }
+               link.setAttribute('href', '/sign-out');
+               link.textContent = 'Sign out';
+               var next = link.parentNode.querySelector('a[href="/continue?via=landing"]');
+               if (next) {
+                  var bold = link.className;
+                  link.className = next.className;
+                  next.className = bold;
+               }
+            });
+         // Phone menu (old-mobile.html) has no "Get a loan" to swap, only "Continue →" at the bottom.
+         document.querySelectorAll('.d-foot').forEach(function (foot) {
+            if (foot.querySelector('a[href="/sign-out"]')) return;
+            var out = document.createElement('a');
+            out.href = '/sign-out';
+            out.textContent = 'Sign out';
+            out.style.marginLeft = '28px';
+            foot.appendChild(out);
+         });
          if (document.querySelector('[data-continue-banner]')) return;
          var link = document.createElement('a');
          link.href = '/continue?via=landing';
