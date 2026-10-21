@@ -21,7 +21,7 @@ const DEFAULT_BASE_URL = 'https://prod-api.stableyard.fi';
 
 export type StableyardResult<T = unknown> =
    | { ok: true; status: number; data: T }
-   | { ok: false; status: number; error: string; code?: string; data?: unknown };
+   | { ok: false; status: number; error: string; code?: string; requestId?: string; data?: unknown };
 
 const getAuthHeader = (): string | null => {
    const appId = Deno.env.get('STABLEYARD_APP_ID')?.trim();
@@ -81,6 +81,12 @@ export const stableyardRequest = async <T = unknown>(
       // Stableyard errors look like { error: { code, message, details } }.
       const envelope = data && typeof data === 'object' ? (data as Record<string, unknown>).error : null;
       const code = envelope && typeof envelope === 'object' ? (envelope as { code?: string }).code : undefined;
+      // Stableyard support asks for the request ID with any failure report.
+      const requestId =
+         response.headers.get('x-request-id') ??
+         response.headers.get('request-id') ??
+         (envelope && typeof envelope === 'object' ? (envelope as { requestId?: string }).requestId : undefined) ??
+         undefined;
       const message =
          (envelope && typeof envelope === 'object'
             ? (envelope as { message?: string }).message
@@ -89,7 +95,7 @@ export const stableyardRequest = async <T = unknown>(
               : null) ||
          response.statusText ||
          'Request failed';
-      return { ok: false, status: response.status, error: String(message), code, data };
+      return { ok: false, status: response.status, error: String(message), code, requestId, data };
    }
    return { ok: true, status: response.status, data: data as T };
 };
@@ -168,6 +174,17 @@ export const stableyard = {
       }),
    checkDeposit: (accountId: string, body: { chainId: number; depositAddress: string; transactionHash: string }) =>
       stableyardRequest<Record<string, unknown>>('POST', `${accountPath(accountId)}/deposit-addresses/check`, { body }),
+
+   // Account-owner onboarding for fiat rails (QR payments): verify the UPA email, then KYC.
+   getEmailStatus: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/email`),
+   startEmailVerification: (accountId: string, email: string) =>
+      stableyardRequest('POST', `${accountPath(accountId)}/email/verification-challenges`, { body: { email } }),
+   confirmEmailVerification: (accountId: string, challengeId: string, code: string) =>
+      stableyardRequest('POST', `${accountPath(accountId)}/email/verification-challenges/${encodeURIComponent(challengeId)}/confirm`, {
+         body: { code }
+      }),
+   getKyc: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/kyc`),
+   startKycSession: (accountId: string) => stableyardRequest('POST', `${accountPath(accountId)}/kyc/session`),
 
    getBalances: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/balances`),
    getTransactions: (accountId: string) => stableyardRequest('GET', `${accountPath(accountId)}/transactions`)

@@ -15,6 +15,10 @@ import { handleStableyardWebhook, isStableyardWebhook } from '../_shared/stabley
 //
 // POST {}                    → ensure the user's Stableyard account + addresses exist, return them
 // POST { refresh: true }     → same, and re-read deposits from Stableyard first
+// POST { onboarding: 'status' | 'email_start' | 'email_confirm' | 'kyc_start' }
+//                            → the caller's own account: verify its email and start KYC, which
+//                              Stableyard requires before QR payments. The email is always the
+//                              caller's sign-in email, never one from the client.
 //
 // The account's settlement wallet is the user's own Moodeng wallet on Base (users.wallet_address),
 // so every deposit lands there as USDC and the existing repay flow picks it up. We never accept a
@@ -106,6 +110,58 @@ const ensureAccount = async (admin: SupabaseClient, userId: string, wallet: stri
    return { ok: true as const, accountId: account.id };
 };
 
+const ONBOARDING_ACTIONS = new Set(['status', 'email_start', 'email_confirm', 'kyc_start']);
+
+/** Email verification + KYC for the caller's own Stableyard account (needed for QR payments). */
+const handleOnboarding = async (
+   admin: SupabaseClient,
+   userId: string,
+   email: string,
+   action: string,
+   body: { challengeId?: unknown; code?: unknown }
+) => {
+   const { data: row } = await admin.from('stableyard_accounts').select('account_id').eq('user_id', userId).maybeSingle();
+   const accountId = row?.account_id as string | undefined;
+   if (!accountId) return json({ error: 'No Stableyard account yet. Open the deposit test first to create one.' }, 409);
+
+   const fail = (result: { status: number; error: string; code?: string; requestId?: string; data?: unknown }) =>
+      json(
+         {
+            ok: false,
+            accountId,
+            stableyardStatus: result.status,
+            error: result.error,
+            code: result.code ?? null,
+            requestId: result.requestId ?? null,
+            response: result.data ?? null
+         },
+         502
+      );
+
+   if (action === 'email_start') {
+      if (!email) return json({ error: 'Your Moodeng login has no email to verify.' }, 409);
+      const result = await stableyard.startEmailVerification(accountId, email);
+      return result.ok ? json({ ok: true, accountId, step: 'email_start', result: result.data }) : fail(result);
+   }
+   if (action === 'email_confirm') {
+      const challengeId = String(body.challengeId ?? '').trim();
+      const code = String(body.code ?? '').trim();
+      if (!/^account_email_[A-Za-z0-9_-]+$/.test(challengeId)) return json({ error: 'Send the code first.' }, 400);
+      if (!/^\d{6}$/.test(code)) return json({ error: 'The code is 6 digits.' }, 400);
+      const result = await stableyard.confirmEmailVerification(accountId, challengeId, code);
+      return result.ok ? json({ ok: true, accountId, step: 'email_confirm', result: result.data }) : fail(result);
+   }
+   if (action === 'kyc_start') {
+      const result = await stableyard.startKycSession(accountId);
+      return result.ok ? json({ ok: true, accountId, step: 'kyc_start', result: result.data }) : fail(result);
+   }
+
+   const [emailStatus, kyc] = await Promise.all([stableyard.getEmailStatus(accountId), stableyard.getKyc(accountId)]);
+   if (!emailStatus.ok) return fail(emailStatus);
+   if (!kyc.ok) return fail(kyc);
+   return json({ ok: true, accountId, step: 'status', email: emailStatus.data, kyc: kyc.data });
+};
+
 const loadNetworks = async (): Promise<StableyardDepositNetwork[]> => {
    const result = await stableyard.depositNetworks();
    if (!result.ok) {
@@ -145,6 +201,15 @@ serve(async (req) => {
 
    const body = await req.json().catch(() => ({}));
    const refresh = Boolean(body?.refresh);
+
+   if (ONBOARDING_ACTIONS.has(String(body?.onboarding ?? ''))) {
+      try {
+         return await handleOnboarding(admin, userId, String(userData.user?.email ?? '').trim(), String(body.onboarding), body);
+      } catch (err) {
+         console.error('[stableyard-deposit-address] onboarding error', err);
+         return json({ error: 'Stableyard onboarding is unavailable right now.' }, 500);
+      }
+   }
 
    try {
       const { data: profile } = await admin.from('users').select('wallet_address, wallet_chain_id').eq('id', userId).maybeSingle();
