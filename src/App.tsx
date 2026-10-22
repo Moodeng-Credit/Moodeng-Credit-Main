@@ -106,6 +106,7 @@ import ContinuePage from '@/views/onboarding/ContinuePage';
 import MessengerHandoff from '@/views/onboarding/MessengerHandoff';
 import { identifyClarity } from '@/lib/analytics/clarity';
 import { recordSignupContext, recordSignupSource } from '@/lib/attribution';
+import { trackNewAccount } from '@/lib/metaPixel';
 import { type RootState } from '@/store/store';
 import MoneyGuide from '@/views/academy/MoneyGuide';
 import MoneyGuideTopic from '@/views/academy/MoneyGuideTopic';
@@ -223,8 +224,9 @@ export default function App() {
       if (user?.id) {
          recordSignupSource(user.id);
          recordSignupContext(user.id);
+         trackNewAccount(user.id, user.createdAt);
       }
-   }, [user?.id]);
+   }, [user?.id, user?.createdAt]);
 
    useEffect(() => {
       if (!isPosthogEnabled) {
