@@ -22,7 +22,11 @@ Deno.test('a first-time "Get Started" without a code', () => {
          contactName: 'Aya Albarracin',
          codes: [],
          at: Date.parse('2026-09-29T07:22:40Z'),
-         fromPerson: true
+         fromPerson: true,
+         text: null,
+         hasAttachment: false,
+         isButtonTap: false,
+         payload: null
       }
    ]);
 });
@@ -59,4 +63,29 @@ Deno.test('other channels, junk and odd dates', () => {
    assertEquals(parseSendPulseEvents([{ ...subscribe, date: 1790666560 }], NOW)[0].at, 1790666560000);
    assertEquals(parseSendPulseEvents([{ ...subscribe, date: NOW + 60_000 }], NOW)[0].at, NOW);
    assertEquals(parseSendPulseEvents([{ ...subscribe, date: undefined }], NOW)[0].at, NOW);
+});
+
+Deno.test('what the person wrote: platform text first, then last_message; attachments and button taps', () => {
+   const nested = {
+      ...subscribe,
+      title: 'incoming_message',
+      contact: { ...subscribe.contact, last_message: 'older text' },
+      info: { message: { channel_data: { message: { text: 'how do I repay?' } } } }
+   };
+   const [a] = parseSendPulseEvents([nested], NOW);
+   assertEquals([a.text, a.hasAttachment, a.isButtonTap], ['how do I repay?', false, false]);
+   assertEquals((a.payload as { last_message: string }).last_message, 'older text');
+
+   const lastOnly = { ...subscribe, title: 'incoming_message', contact: { ...subscribe.contact, last_message: 'hello po' } };
+   assertEquals(parseSendPulseEvents([lastOnly], NOW)[0].text, 'hello po');
+
+   const photo = { ...subscribe, title: 'incoming_message', contact: { ...subscribe.contact, last_message: null }, info: { message: { channel_data: { message: { attachments: [{ type: 'image' }] } } } } };
+   const [b] = parseSendPulseEvents([photo], NOW);
+   assertEquals([b.text, b.hasAttachment], [null, true]);
+
+   const tap = { ...subscribe, title: 'incoming_message', info: { message: { channel_data: { postback: { payload: 'GET_STARTED' } } } } };
+   assertEquals(parseSendPulseEvents([tap], NOW)[0].isButtonTap, true);
+
+   // A subscribe never carries text, even though last_message is set.
+   assertEquals(parseSendPulseEvents([subscribe], NOW)[0].text, null);
 });

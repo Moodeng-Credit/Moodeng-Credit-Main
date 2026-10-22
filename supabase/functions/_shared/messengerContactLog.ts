@@ -59,7 +59,8 @@ export const logMessengerContact = async (
    svc: Svc,
    contactId: string,
    kind: ContactKind,
-   at: number
+   at: number,
+   payload: Record<string, unknown> | null = null
 ): Promise<{ userId: string; facebookName: string | null } | null> => {
    const { data: users } = await svc.from('users').select('id, facebook_name').eq('messenger_psid', contactId).limit(1);
    const user = (users as Array<{ id: string; facebook_name: string | null }> | null)?.[0] ?? null;
@@ -68,7 +69,8 @@ export const logMessengerContact = async (
       contact_id: contactId,
       kind,
       source: 'webhook',
-      occurred_at: new Date(at).toISOString()
+      occurred_at: new Date(at).toISOString(),
+      ...(payload ? { payload } : {})
    });
    if (error) console.error('messengerContactLog: insert failed', error.message);
    return user ? { userId: user.id, facebookName: user.facebook_name } : null;
