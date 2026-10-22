@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { Database } from '@/lib/supabase/types';
 import { fetchUser } from '@/store/slices/authSlice';
 import { type CreateLoanData, type Loan, type LoanState } from '@/types/loanTypes';
+import { trackMetaEvent } from '@/lib/metaPixel';
 
 const supabaseClient = () => getSupabaseBrowserClient();
 
@@ -137,6 +138,8 @@ export const createLoan = createAsyncThunk('loans/create', async (loanData: Crea
    if (!data) {
       throw new Error('Failed to create loan');
    }
+
+   trackMetaEvent('SubmitApplication', { value: loanData.loanAmount, currency: 'USD' });
 
    return mapSupabaseLoanToLoan(data);
 });
