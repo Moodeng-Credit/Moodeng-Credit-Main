@@ -3,10 +3,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { adminUserUrl, OPEN_IN_ADMIN_TEXT, sendAdminCard } from '../_shared/adminCards.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
+import { getAdminChatId, PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
 import { BORROW_POSTER_CARD, BORROW_POSTER_TEXT, type PosterCandidate, shouldSendBorrowPoster } from '../_shared/messengerBorrowPoster.ts';
-import { logMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
+import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { CONNECTED_BY_TIMING_TEXT } from '../_shared/messengerStatusFollowUp.ts';
 import { buildMatchSuggestionCard, messengerStuckKeyboard } from '../_shared/messengerStuckAlert.ts';
 import { decideTimingMatch, TIMING_WINDOW_MS, type TimingAttempt } from '../_shared/messengerTimingMatch.ts';
@@ -33,7 +33,10 @@ import { sendTelegramMessage } from '../_shared/telegram.ts';
 // Fail-closed: no secret configured → nothing is accepted.
 //
 // For each subscribe / message FROM a person:
-//   0. Log it to messenger_contact_events (and fill in a known borrower's missing Facebook name).
+//   0. Log it to messenger_contact_events (and fill in a known borrower's missing Facebook name), and
+//      remember the person in messenger_contacts with their Facebook name — registered or not. A
+//      stranger's first message tells the admin chat, once, if they're still unlinked a minute later
+//      (by then a new borrower doing the Facebook step has been connected by their code).
 //   1. It carries an MDNG code (typed in any form, or the mdng_code their link set) → hand it to
 //      sendpulse-messenger-verify, exactly as the SendPulse flows do. Catches typed codes the
 //      keyword trigger missed ("mdng 3d66ad"). Idempotent with the flows: whichever lands first wins.
@@ -58,6 +61,7 @@ const json = (body: Record<string, unknown>, status = 200) =>
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
 type VerifyResult = { ok?: boolean; already?: boolean; error?: string };
 
@@ -270,6 +274,25 @@ const maybeSendBorrowPoster = async (svc: Svc, userId: string, contactId: string
    if (!result.ok) await svc.from('users').update({ borrow_poster_sent_at: null }).eq('id', userId);
 };
 
+// Long enough for the Facebook step's own code (link or typed) to connect a brand-new borrower.
+const STRANGER_ALERT_DELAY_MS = 60_000;
+
+// Someone who isn't a Moodeng user wrote to the Page for the first time: tell the admin chat, so the
+// team knows who they are (and can answer) before they ever sign up.
+const alertNewStranger = async (svc: Svc, contactId: string, facebookName: string | null) => {
+   await new Promise((resolve) => setTimeout(resolve, STRANGER_ALERT_DELAY_MS));
+   const { data: contact } = await svc.from('messenger_contacts').select('user_id').eq('contact_id', contactId).maybeSingle();
+   const { data: linked } = await svc.from('users').select('id').eq('messenger_psid', contactId).limit(1);
+   if ((contact as { user_id?: string | null } | null)?.user_id || (linked as unknown[] | null)?.length) return;
+   const text = `👋 New on Messenger: ${facebookName ?? 'someone'} — not a Moodeng user (yet).\nThey wrote to the Moodeng Credit Page. Their Facebook profile is under "View profile" in the Page inbox.`;
+   try {
+      const chat = await getAdminChatId(svc);
+      if (chat) await sendTelegramMessage(chat, text, { inlineKeyboard: [[{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }]] });
+   } catch (err) {
+      console.error('sendpulse-events: new stranger telegram failed', err instanceof Error ? err.message : err);
+   }
+};
+
 const eventsSecret = async (svc: Svc) => {
    if (ENV_EVENTS_SECRET) return ENV_EVENTS_SECRET;
    const { data } = await svc.from('telegram_bot_settings').select('value').eq('key', 'sendpulse_events_secret').maybeSingle();
@@ -307,6 +330,20 @@ serve(async (req) => {
          const known = await logMessengerContact(svc, event.contactId, /subscri/i.test(event.title) ? 'subscribe' : 'message', event.at);
          if (known && !known.facebookName) {
             await saveFacebookName(svc, known.userId, messengerDisplayName(await getMessengerContact(event.contactId)));
+         }
+         const contactId = event.contactId;
+         const remembered = await rememberMessengerContact(
+            svc,
+            contactId,
+            /subscri/i.test(event.title) ? 'subscribe' : 'message',
+            event.at,
+            known?.userId ?? null,
+            async () => messengerDisplayName(await getMessengerContact(contactId)) ?? event.contactName
+         );
+         if (remembered.isNew && !known) {
+            const alert = alertNewStranger(svc, contactId, remembered.facebookName);
+            if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(alert);
+            else await alert;
          }
          if (known && !/subscri/i.test(event.title)) await maybeSendBorrowPoster(svc, known.userId, event.contactId, event.at);
 
