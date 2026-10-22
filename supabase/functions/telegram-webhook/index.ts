@@ -28,6 +28,7 @@ import {
 import { markMessengerVerified, messengerVerifiedStamp, parseMessengerVerifyCallback } from '../_shared/messengerStuckAlert.ts';
 import { formatCallTime } from '../_shared/videoCall.ts';
 import { handleRescheduleStep, parseRescheduleCallback, postReschedulePicker } from '../_shared/callReschedule.ts';
+import { handleCancelStep, parseCancelCallback } from '../_shared/callCancel.ts';
 import { parseOutcomeCallback, recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 import { buildPayoutCallback, markPayoutPaid, parsePayoutCallback } from '../_shared/referralPayouts.ts';
 import { decideVoucherClaim, parseVoucherCallback } from '../_shared/voucherClaims.ts';
@@ -932,6 +933,29 @@ serve(async (req) => {
                }
             }
             return jsonResponse({ message: 'Reschedule handled' });
+         }
+         // 🗑️ Cancel call: the admin chats, the team group (📋 Call in N min cards) and the call-changes group.
+         const cancel = parseCancelCallback(update.callback_query.data);
+         if (cancel) {
+            const query = update.callback_query;
+            const chatId = query.message?.chat.id;
+            const allowed = [teamChatId, kycChatId, await getSetting(supabase, 'team_group_chat_id'), await getSetting(supabase, 'call_changes_chat_id')]
+               .filter(Boolean)
+               .map(String);
+            if (!chatId || !query.message || !allowed.includes(String(chatId))) {
+               await answerCallback(query.id, 'Not allowed here.');
+            } else {
+               await answerCallback(query.id, '⏳ One moment…');
+               try {
+                  const toast = await handleCancelStep(supabase, cancel, chatId, query.message.message_id, adminHandle(query.from));
+                  if (cancel.step === 'open' && !toast.startsWith('Confirm')) await sendTelegramMessage(chatId, toast);
+               } catch (error) {
+                  const reason = error instanceof Error ? error.message : String(error);
+                  console.error('telegram-webhook: cancel call failed', reason);
+                  await sendTelegramMessage(chatId, `⚠️ Cancel call failed — try again. (${reason.slice(0, 200)})`);
+               }
+            }
+            return jsonResponse({ message: 'Cancel call handled' });
          }
          // 🧪 Test account?: the admin chats and the call-changes group (where the moved-call cards go).
          const testAccount = parseTestAccountCallback(update.callback_query.data);

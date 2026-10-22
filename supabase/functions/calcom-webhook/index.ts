@@ -8,6 +8,7 @@ import { BORROWER_COLUMNS, type BorrowerRow, getCallChangesChatId, notifyBorrowe
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { changeTimeButton } from '../_shared/callReschedule.ts';
+import { cancelCallButton } from '../_shared/callCancel.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
 import { formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
 import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
@@ -138,7 +139,7 @@ serve(async (req) => {
                if (chat) {
                   await sendTelegramMessage(chat, text, {
                      inlineKeyboard: [
-                        [changeTimeButton(b.id)],
+                        [changeTimeButton(b.id), cancelCallButton(b.id)],
                         [{ text: '💬 Open Page inbox', url: PAGE_INBOX_URL }, openInAdminButton(b.id, b.username)],
                         ...testAccountRow(b.id, b.is_test)
                      ]
