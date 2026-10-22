@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { type JSX, useEffect, useRef } from 'react';
 
 import { useSelector } from 'react-redux';
 import { useLocation } from 'react-router-dom';
@@ -6,14 +6,14 @@ import { useLocation } from 'react-router-dom';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 import { TOAST_TYPES } from '@/components/ToastSystem/types';
 
+import MessengerChatButton from '@/components/support/MessengerChatButton';
 import {
    hideSupportLauncher,
    identifySupport,
    isSupportChatEnabled,
    loadSupportChat,
    onSupportMessageReceived,
-   resetSupportSession,
-   showSupportLauncher
+   resetSupportSession
 } from '@/lib/support/liveChat';
 import type { RootState } from '@/store/store';
 
@@ -31,16 +31,20 @@ import type { RootState } from '@/store/store';
 // here, so support copy can change without a deploy. The whole component is
 // inert when live chat is unconfigured (see isSupportChatEnabled).
 
-// The persistent launcher bubble belongs on the help destinations — /support
+// The persistent help button belongs on the help destinations — /support
 // (the "Help & Support Center" that the lender dashboard, request board, history
 // and most in-app "help" links point at) and /help (the answers hub). Everywhere
 // else it stays hidden and support is *summoned* — via openSupportChat() from the
 // "Ask us" error buttons, the support-contacts modal, and an operator-reply toast
 // — rather than following the borrower around every screen. A chat bubble you
 // can't dismiss on a page you didn't ask for help on reads as spam, not support.
+// That button is our own "Chat on Messenger" (MessengerChatButton), not the
+// widget's green bubble: in the Philippines a bare chat bubble reads as SMS,
+// Messenger reads as "talk to the business". The widget's launcher stays hidden
+// everywhere; the widget itself still opens on demand.
 const SHOW_LAUNCHER_PREFIXES = ['/support', '/help'];
 
-export default function LiveChatHost(): null {
+export default function LiveChatHost(): JSX.Element | null {
    const location = useLocation();
    const { showToast } = useToast();
    const user = useSelector((state: RootState) => state.auth.user);
@@ -78,17 +82,12 @@ export default function LiveChatHost(): null {
       });
    }, []);
 
-   // Show the persistent launcher only on the help hub; hide it everywhere else.
-   // openSupportChat() still summons the widget on demand from any screen (error
-   // cards, the support modal, the reply toast), so support is always one tap
-   // away — it just isn't a bubble parked on top of every unrelated page.
+   // The widget's own launcher never shows — the help hub gets the Messenger
+   // button below instead. openSupportChat() still summons the widget on demand
+   // from any screen (error cards, the support modal, the reply toast).
    useEffect(() => {
       if (!isSupportChatEnabled) return;
-      if (SHOW_LAUNCHER_PREFIXES.some((prefix) => location.pathname.startsWith(prefix))) {
-         showSupportLauncher();
-      } else {
-         hideSupportLauncher();
-      }
+      hideSupportLauncher();
    }, [location.pathname]);
 
    // Identity sync. Runs on login and on any profile change that an agent would
@@ -145,5 +144,5 @@ export default function LiveChatHost(): null {
       previousUserId.current = currentUserId;
    }, [isAuthChecked, user?.id]);
 
-   return null;
+   return SHOW_LAUNCHER_PREFIXES.some((prefix) => location.pathname.startsWith(prefix)) ? <MessengerChatButton /> : null;
 }
